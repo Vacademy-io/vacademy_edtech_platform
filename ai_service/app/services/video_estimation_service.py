@@ -81,41 +81,43 @@ def _normalize_duration_band(target_duration: str) -> DurationBand:
 # {"dir_in", "dir_out", "seg_in", "seg_out", "img", "tts"}
 _VIDEO_BASELINES: Dict[Tuple[Tier, DurationBand], Dict[str, int]] = {
     # free — no Director row (script folded into seg); stock-only, no vision review
-    ("free",        "<1 minute"):    {"dir_in":      0, "dir_out":      0, "seg_in":  135000, "seg_out":  165000, "img":  0, "tts":  500},
-    ("free",        "1-2 minutes"):  {"dir_in":      0, "dir_out":      0, "seg_in":  271000, "seg_out":  329000, "img":  1, "tts":  900},
-    ("free",        "2-3 minutes"):  {"dir_in":      0, "dir_out":      0, "seg_in":  452000, "seg_out":  549000, "img":  1, "tts": 1500},
-    ("free",        "3-5 minutes"):  {"dir_in":      0, "dir_out":      0, "seg_in":  722000, "seg_out":  878000, "img":  2, "tts": 2400},
-    ("free",        "5+ minutes"):   {"dir_in":      0, "dir_out":      0, "seg_in": 1084000, "seg_out": 1318000, "img":  2, "tts": 3600},
+    ("free",        "<1 minute"):    {"dir_in":      0, "dir_out":      0, "seg_in":  135000, "seg_out":  165000, "img":  0, "tts":  750},
+    ("free",        "1-2 minutes"):  {"dir_in":      0, "dir_out":      0, "seg_in":  271000, "seg_out":  329000, "img":  1, "tts": 1350},
+    ("free",        "2-3 minutes"):  {"dir_in":      0, "dir_out":      0, "seg_in":  452000, "seg_out":  549000, "img":  1, "tts": 2250},
+    ("free",        "3-5 minutes"):  {"dir_in":      0, "dir_out":      0, "seg_in":  722000, "seg_out":  878000, "img":  2, "tts": 3600},
+    ("free",        "5+ minutes"):   {"dir_in":      0, "dir_out":      0, "seg_in": 1084000, "seg_out": 1318000, "img":  2, "tts": 5400},
     # standard — no Director row (script folded into seg); + vision review
-    ("standard",    "<1 minute"):    {"dir_in":      0, "dir_out":      0, "seg_in":  162000, "seg_out":  195000, "img":  5, "tts":  500},
-    ("standard",    "1-2 minutes"):  {"dir_in":      0, "dir_out":      0, "seg_in":  323000, "seg_out":  391000, "img": 10, "tts":  900},
-    ("standard",    "2-3 minutes"):  {"dir_in":      0, "dir_out":      0, "seg_in":  538000, "seg_out":  651000, "img": 17, "tts": 1500},
-    ("standard",    "3-5 minutes"):  {"dir_in":      0, "dir_out":      0, "seg_in":  862000, "seg_out": 1042000, "img": 27, "tts": 2400},
-    ("standard",    "5+ minutes"):   {"dir_in":      0, "dir_out":      0, "seg_in": 1292000, "seg_out": 1562000, "img": 41, "tts": 3600},
+    ("standard",    "<1 minute"):    {"dir_in":      0, "dir_out":      0, "seg_in":  162000, "seg_out":  195000, "img":  5, "tts":  750},
+    ("standard",    "1-2 minutes"):  {"dir_in":      0, "dir_out":      0, "seg_in":  323000, "seg_out":  391000, "img": 10, "tts": 1350},
+    ("standard",    "2-3 minutes"):  {"dir_in":      0, "dir_out":      0, "seg_in":  538000, "seg_out":  651000, "img": 17, "tts": 2250},
+    ("standard",    "3-5 minutes"):  {"dir_in":      0, "dir_out":      0, "seg_in":  862000, "seg_out": 1042000, "img": 27, "tts": 3600},
+    ("standard",    "5+ minutes"):   {"dir_in":      0, "dir_out":      0, "seg_in": 1292000, "seg_out": 1562000, "img": 41, "tts": 5400},
     # premium — script/Director row + per-shot HTML; + best-of-2
-    ("premium",     "<1 minute"):    {"dir_in":  18000, "dir_out":  27000, "seg_in":  150000, "seg_out":  176000, "img":  5, "tts":  500},
-    ("premium",     "1-2 minutes"):  {"dir_in":  36000, "dir_out":  54000, "seg_in":  300000, "seg_out":  352000, "img": 10, "tts":  900},
-    ("premium",     "2-3 minutes"):  {"dir_in":  60000, "dir_out":  90000, "seg_in":  500000, "seg_out":  586000, "img": 17, "tts": 1500},
-    ("premium",     "3-5 minutes"):  {"dir_in":  96000, "dir_out": 144000, "seg_in":  800000, "seg_out":  938000, "img": 27, "tts": 2400},
-    ("premium",     "5+ minutes"):   {"dir_in": 144000, "dir_out": 216000, "seg_in": 1201000, "seg_out": 1408000, "img": 41, "tts": 3600},
+    ("premium",     "<1 minute"):    {"dir_in":  18000, "dir_out":  27000, "seg_in":  150000, "seg_out":  176000, "img":  5, "tts":  750},
+    ("premium",     "1-2 minutes"):  {"dir_in":  36000, "dir_out":  54000, "seg_in":  300000, "seg_out":  352000, "img": 10, "tts": 1350},
+    ("premium",     "2-3 minutes"):  {"dir_in":  60000, "dir_out":  90000, "seg_in":  500000, "seg_out":  586000, "img": 17, "tts": 2250},
+    ("premium",     "3-5 minutes"):  {"dir_in":  96000, "dir_out": 144000, "seg_in":  800000, "seg_out":  938000, "img": 27, "tts": 3600},
+    ("premium",     "5+ minutes"):   {"dir_in": 144000, "dir_out": 216000, "seg_in": 1201000, "seg_out": 1408000, "img": 41, "tts": 5400},
     # ultra — + hero shots at "max", best-of-3, creativity critic
-    ("ultra",       "<1 minute"):    {"dir_in":  22000, "dir_out":  32000, "seg_in":  170000, "seg_out":  199000, "img":  5, "tts":  500},
-    ("ultra",       "1-2 minutes"):  {"dir_in":  43000, "dir_out":  65000, "seg_in":  339000, "seg_out":  398000, "img": 10, "tts":  900},
-    ("ultra",       "2-3 minutes"):  {"dir_in":  72000, "dir_out": 108000, "seg_in":  566000, "seg_out":  663000, "img": 17, "tts": 1500},
-    ("ultra",       "3-5 minutes"):  {"dir_in": 115000, "dir_out": 173000, "seg_in":  905000, "seg_out": 1061000, "img": 27, "tts": 2400},
-    ("ultra",       "5+ minutes"):   {"dir_in": 173000, "dir_out": 259000, "seg_in": 1357000, "seg_out": 1591000, "img": 41, "tts": 3600},
+    ("ultra",       "<1 minute"):    {"dir_in":  22000, "dir_out":  32000, "seg_in":  170000, "seg_out":  199000, "img":  5, "tts":  750},
+    ("ultra",       "1-2 minutes"):  {"dir_in":  43000, "dir_out":  65000, "seg_in":  339000, "seg_out":  398000, "img": 10, "tts": 1350},
+    ("ultra",       "2-3 minutes"):  {"dir_in":  72000, "dir_out": 108000, "seg_in":  566000, "seg_out":  663000, "img": 17, "tts": 2250},
+    ("ultra",       "3-5 minutes"):  {"dir_in": 115000, "dir_out": 173000, "seg_in":  905000, "seg_out": 1061000, "img": 27, "tts": 3600},
+    ("ultra",       "5+ minutes"):   {"dir_in": 173000, "dir_out": 259000, "seg_in": 1357000, "seg_out": 1591000, "img": 41, "tts": 5400},
     # super_ultra — two-pass Director + the ultra extras
-    ("super_ultra", "<1 minute"):    {"dir_in":  27000, "dir_out":  40000, "seg_in":  189000, "seg_out":  222000, "img":  5, "tts":  500},
-    ("super_ultra", "1-2 minutes"):  {"dir_in":  54000, "dir_out":  81000, "seg_in":  378000, "seg_out":  444000, "img": 10, "tts":  900},
-    ("super_ultra", "2-3 minutes"):  {"dir_in":  90000, "dir_out": 135000, "seg_in":  631000, "seg_out":  740000, "img": 17, "tts": 1500},
-    ("super_ultra", "3-5 minutes"):  {"dir_in": 144000, "dir_out": 216000, "seg_in": 1009000, "seg_out": 1183000, "img": 27, "tts": 2400},
-    ("super_ultra", "5+ minutes"):   {"dir_in": 216000, "dir_out": 324000, "seg_in": 1514000, "seg_out": 1775000, "img": 41, "tts": 3600},
+    ("super_ultra", "<1 minute"):    {"dir_in":  27000, "dir_out":  40000, "seg_in":  189000, "seg_out":  222000, "img":  5, "tts":  750},
+    ("super_ultra", "1-2 minutes"):  {"dir_in":  54000, "dir_out":  81000, "seg_in":  378000, "seg_out":  444000, "img": 10, "tts": 1350},
+    ("super_ultra", "2-3 minutes"):  {"dir_in":  90000, "dir_out": 135000, "seg_in":  631000, "seg_out":  740000, "img": 17, "tts": 2250},
+    ("super_ultra", "3-5 minutes"):  {"dir_in": 144000, "dir_out": 216000, "seg_in": 1009000, "seg_out": 1183000, "img": 27, "tts": 3600},
+    ("super_ultra", "5+ minutes"):   {"dir_in": 216000, "dir_out": 324000, "seg_in": 1514000, "seg_out": 1775000, "img": 41, "tts": 5400},
 }
 
-# The "tts" baselines above are 600 narrated characters per minute of video
-# (900 chars for the 1-2 min band's 90 s median, 1500 for 150 s, ...). The
-# LMS voice picker prices each engine per minute from this.
-TTS_CHARS_PER_MINUTE = 600
+# The "tts" baselines above are 900 narrated characters per minute of video
+# (1350 chars for the 1-2 min band's 90 s median, 2250 for 150 s, ...). The
+# LMS voice picker prices each engine per minute from this. Measured
+# 2026-10-27 on a Sarvam lesson: 4,083 chars in 270 s (147 words/min); the
+# old 600 (~97 words/min) under-priced narration by ~1.5x.
+TTS_CHARS_PER_MINUTE = 900
 
 # Tiers that run a Director pass before per-shot generation.
 _DIRECTOR_TIERS = {"premium", "ultra", "super_ultra"}
@@ -481,8 +483,12 @@ def estimate_video_generation(
 
     # Lesson teacher (Spatius Video API): what the runtime charges — the
     # vendor's video seconds × spatius/video's price × the credit ratio.
+    # "Board only" keeps the teacher off screen, so no teacher video is made
+    # (or charged) even with a teacher picked.
     lesson_cost_row: Optional[Dict[str, Any]] = None
-    if isinstance(lesson, dict) and lesson.get("enabled", True) and (lesson.get("teacher") or {}).get("avatar_id"):
+    if (isinstance(lesson, dict) and lesson.get("enabled", True)
+            and (lesson.get("teacher") or {}).get("avatar_id")
+            and str(lesson.get("layout") or "").strip().lower() != "board"):
         _teacher_s = math.ceil(_duration_seconds_from_band(duration_band) + _LESSON_TEACHER_TAIL_SECONDS)
         _teacher_rate = _get_video_second_price(db, _LESSON_TEACHER_MODEL_ID)
         if not _teacher_rate:

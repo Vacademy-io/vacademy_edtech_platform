@@ -193,14 +193,14 @@ def test_voices_shape_order_and_availability(env):
     assert ps["edge"]["unavailable_reason"] is None
 
 
-def test_credits_per_minute_is_vendor_rate_times_600_chars_times_ratio(env):
+def test_credits_per_minute_is_vendor_rate_times_900_chars_times_ratio(env):
     ps = _providers(env.client.get(PREFIX + "/voices"))
     for pid in ("edge", "sarvam", "smallest", "navana"):
-        want = round(provider_rates.TTS_USD_PER_1K_CHARS[pid] * 0.6 * RATIO, 1)
+        want = round(provider_rates.TTS_USD_PER_1K_CHARS[pid] * 0.9 * RATIO, 1)
         assert ps[pid]["credits_per_minute"] == want
     assert ps["edge"]["credits_per_minute"] == 0
-    assert ps["sarvam"]["credits_per_minute"] == 3.2          # $0.036/1K × 0.6 × 150
-    assert ps["navana"]["credits_per_minute"] == 1.3          # ₹12/10K = $0.0144/1K
+    assert ps["sarvam"]["credits_per_minute"] == 4.9          # $0.036/1K × 0.9 × 150
+    assert ps["navana"]["credits_per_minute"] == 1.9          # ₹12/10K = $0.0144/1K
 
 
 def test_bare_english_lists_indian_us_and_uk_edge_voices(env):
@@ -497,7 +497,7 @@ def test_estimate_breakdown_charges_navana_at_its_rate(monkeypatch):
                                            tts_provider="navana", language="Hindi")
     row = next(r for r in result["estimate"]["breakdown"] if r["component"].startswith("TTS ("))
     assert "navana" in row["detail"]
-    assert row["credits"] == pytest.approx(provider_rates.tts_cost_usd("navana", 1500) * 150, abs=0.01)
+    assert row["credits"] == pytest.approx(provider_rates.tts_cost_usd("navana", 2250) * 150, abs=0.01)
 
 
 class _Ledger:

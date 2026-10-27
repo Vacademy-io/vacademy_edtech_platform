@@ -577,7 +577,7 @@ def test_estimate_prices_premium_tts_and_host_images(priced_estimator):
     rows = _rows(result)
     tts = rows["TTS (premium)"]
     assert "sarvam" in tts["detail"]
-    assert tts["credits"] == pytest.approx(provider_rates.tts_cost_usd("sarvam", 900) * 150, abs=0.01)
+    assert tts["credits"] == pytest.approx(provider_rates.tts_cost_usd("sarvam", 1350) * 150, abs=0.01)
     host_imgs = rows["Avatar reference images (host)"]
     assert host_imgs["credits"] == pytest.approx(15 * 0.05 * 150)    # 90 s / 6 s per shot, Seedream price
     host = rows["Avatar video synthesis (host)"]                      # avatar_video pricing, as charged
@@ -587,6 +587,23 @@ def test_estimate_prices_premium_tts_and_host_images(priced_estimator):
 def test_estimate_without_a_teacher_has_no_teacher_row(priced_estimator):
     rows = _rows(est.estimate_video_generation(None, lesson={"enabled": True, "teacher": None}))
     assert "Lesson teacher (Spatius avatar)" not in rows
+
+
+def test_board_only_layout_has_no_teacher_row_even_with_a_teacher(priced_estimator):
+    # Board only keeps the teacher off screen, so no Spatius video is made:
+    # video feadce4b (2026-10-27) was estimated +27 credits it never spent.
+    teacher = {"avatar_id": "avatar-123"}
+    board = _rows(est.estimate_video_generation(None, lesson={"enabled": True, "teacher": teacher, "layout": "board"}))
+    corner = _rows(est.estimate_video_generation(None, lesson={"enabled": True, "teacher": teacher, "layout": "corner"}))
+    assert "Lesson teacher (Spatius avatar)" not in board
+    assert "Lesson teacher (Spatius avatar)" in corner
+
+
+def test_narration_is_estimated_at_900_chars_per_minute(priced_estimator):
+    # Measured on a Sarvam lesson: 4,083 chars in 270 s (147 words/min).
+    assert est.TTS_CHARS_PER_MINUTE == 900
+    rows = _rows(est.estimate_video_generation(None, target_duration="3-5 minutes", tts_provider="sarvam"))
+    assert "~3,600 characters" in rows["TTS (sarvam)"]["detail"]
 
 
 # ── router pre-flight wiring (fastapi-free: helpers extracted by AST) ───────

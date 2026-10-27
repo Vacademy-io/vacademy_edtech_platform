@@ -19,7 +19,7 @@ Code: `ai_service/app/routers/lms_video.py` (routes),
 | `navana` | Navana | `NAVANA_API_KEY` (comma-separated keys allowed) | 0.0144 (₹12 / 10K) |
 
 Google is not offered: billing is off on its GCP project.
-`credits_per_minute` = USD per 1K chars × 600 chars a minute (the estimator's
+`credits_per_minute` = USD per 1K chars × 900 chars a minute (the estimator's
 TTS baseline) × the live USD→credits ratio, to one decimal.
 
 ## API (`/lms-video/v1`, staff JWT + clientId)
