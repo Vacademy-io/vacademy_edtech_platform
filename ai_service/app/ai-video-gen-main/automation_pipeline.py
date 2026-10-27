@@ -56,6 +56,53 @@ _llm_phase: ContextVar[str] = ContextVar("_llm_phase", default="base")
 _llm_stage: ContextVar[str] = ContextVar("_llm_stage", default="unknown")
 
 
+def _hex_rgb(hex_color: Optional[str]) -> Optional[Tuple[float, float, float]]:
+    m = re.fullmatch(r"#?([0-9a-fA-F]{6}|[0-9a-fA-F]{3})", str(hex_color or "").strip())
+    if not m:
+        return None
+    h = m.group(1)
+    if len(h) == 3:
+        h = "".join(c * 2 for c in h)
+    return tuple(int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))  # type: ignore[return-value]
+
+
+def _brand_board_shade(hex_color: Optional[str]) -> Optional[str]:
+    """A dark board in the institute's hue: the brand colour at 13% lightness,
+    saturation capped at 55% — chalk text (#f0ece0) stays at well over 10:1.
+    #005090 (ITRC blue) → a deep navy. None for an unparseable colour."""
+    import colorsys
+
+    rgb = _hex_rgb(hex_color)
+    if rgb is None:
+        return None
+    h, _l, sat = colorsys.rgb_to_hls(*rgb)
+    r, g, b = colorsys.hls_to_rgb(h, 0.13, min(sat, 0.55))
+    return "#{:02x}{:02x}{:02x}".format(round(r * 255), round(g * 255), round(b * 255))
+
+
+def _brand_tint_light(hex_color: Optional[str]) -> Optional[str]:
+    """The brand hue light enough to draw with on its own dark board (70%
+    lightness, saturation capped at 60%)."""
+    import colorsys
+
+    rgb = _hex_rgb(hex_color)
+    if rgb is None:
+        return None
+    h, _l, sat = colorsys.rgb_to_hls(*rgb)
+    r, g, b = colorsys.hls_to_rgb(h, 0.70, min(sat, 0.6))
+    return "#{:02x}{:02x}{:02x}".format(round(r * 255), round(g * 255), round(b * 255))
+
+
+def _reads_on_dark_board(hex_color: Optional[str]) -> bool:
+    """True when a highlight colour is light enough to read on a dark board
+    (relative luminance >= 0.2)."""
+    rgb = _hex_rgb(hex_color)
+    if rgb is None:
+        return False
+    lin = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb]
+    return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2] >= 0.2
+
+
 def _registry_llm_price(model: str) -> Optional[Tuple[float, float]]:
     """(input, output) USD per token from ai_models — the prices billing uses —
     for pricing LLM events in cost_breakdown.json. None when unknown."""
@@ -12020,6 +12067,39 @@ class VideoGenerationPipeline:
             # layout_theme is already set from template lookup above; keep it consistent
             if layout_theme_id:
                 style_guide["layout_theme"] = layout_theme_id
+
+            # Lesson board in the institute's colours. The dark board kept the
+            # template's green with the brand only in accents (ITRC's blue
+            # lesson came out on a green chalkboard). With a brand colour, the
+            # board becomes a deep shade of it — chalk text keeps its contrast
+            # — and the brand accent becomes the highlight when it reads on a
+            # dark board. A brand colour too dark to read on its own board
+            # (ITRC #005090 on navy) is used as a light tint of the same hue
+            # for strokes and emphasis, and the highlight falls back to the
+            # template's chalk colour. Lesson runs only; other videos are
+            # unchanged.
+            if getattr(self, "_lesson_plan", None) and background_type == "black":
+                _board = _brand_board_shade(primary_color)
+                if _board:
+                    _pal = style_guide["palette"]
+                    _was = str(_pal.get("background") or "")
+                    _pal["background"] = _board
+                    if _hex_rgb(_was):
+                        self._board_color_swap = (_was, _board)
+                    _readable_primary = _reads_on_dark_board(primary_color)
+                    if not _readable_primary:
+                        _light = _brand_tint_light(primary_color)
+                        for _k in ("primary", "accent", "svg_stroke", "mermaid_node_stroke"):
+                            _pal[_k] = _light
+                    _accent = style_config.get("accent_color")
+                    _tpl_annot = ((template or {}).get("palette_override") or {}).get("annotation_color") \
+                        or preset["annotation_color"]
+                    if _accent and _accent != primary_color and _reads_on_dark_board(_accent):
+                        _pal["annotation_color"] = _accent
+                    elif not _readable_primary:
+                        _pal["annotation_color"] = _tpl_annot
+                    print(f"   🎨 Lesson board in brand colours: {_was or '-'} → {_board}"
+                          f" (highlight {_pal.get('annotation_color')})")
 
         # ── Phase B: design identity → style guide fonts + motion label ──
         # The identity is chosen at plan time (before this runs on the html
@@ -24535,6 +24615,12 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
         return "\n".join(lines)
 
     def _ensure_fonts(self, html: str, *, finish: bool = True) -> str:
+        # Shots that hard-code the template's board colour (6 of 55 in the
+        # ITRC lesson wrote #1a3a2a instead of var(--brand-bg)) follow the
+        # brand board too. Idempotent, so it runs before the early return.
+        _swap = getattr(self, "_board_color_swap", None)
+        if _swap and html:
+            html = re.sub(re.escape(_swap[0]), _swap[1], html, flags=re.IGNORECASE)
         # IDEMPOTENT (Phase B): the preamble is now injected EARLY in the LLM
         # path (before bbox lint / vision review, so QA screenshots finally
         # see the fonts, --brand-*/--font-* vars, and the finishing layer) and
