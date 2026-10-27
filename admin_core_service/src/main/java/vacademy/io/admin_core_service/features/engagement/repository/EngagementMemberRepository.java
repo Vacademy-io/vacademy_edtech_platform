@@ -98,8 +98,12 @@ public interface EngagementMemberRepository extends JpaRepository<EngagementMemb
                SET status = 'EXITED', updated_at = now()
              WHERE engine_id = :engineId AND status = 'ACTIVE'
                AND COALESCE(memory_json->>'reconcileRun', '') <> :runId
+               -- A lead enrolled at intake while this run was mid-flight is not in its snapshot;
+               -- leave it to the next run rather than exiting a member that just joined.
+               AND COALESCE(updated_at, created_at) < :runStartedAt
             """, nativeQuery = true)
-    int exitNotStampedBy(@Param("engineId") String engineId, @Param("runId") String runId);
+    int exitNotStampedBy(@Param("engineId") String engineId, @Param("runId") String runId,
+                         @Param("runStartedAt") Instant runStartedAt);
 
     long countByEngineIdAndStatus(String engineId, String status);
 

@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.engagement.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import vacademy.io.admin_core_service.features.audience.service.PlaceholderEmailService;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementMember;
 import vacademy.io.admin_core_service.features.engagement.spi.Subject;
 
@@ -15,12 +16,17 @@ import java.util.Objects;
  * Learners resolve from the student table; leads from audience_response.parent_* fields
  * (the same contact source the campaign-send path uses). A lead that also has a user_id
  * (converted) prefers the student row and falls back to lead contact fields.
+ *
+ * <p>Synthesized "name+phone@vacademy.com" addresses (leads that came in without an email) are
+ * treated as no email: the brain must not pick a channel nobody can receive, and a send to one
+ * is dropped by notification-service anyway.
  */
 @Service
 @RequiredArgsConstructor
 public class ContactResolver {
 
     private final EngagementReadDao dao;
+    private final PlaceholderEmailService placeholderEmailService;
 
     public List<Subject> resolve(List<EngagementMember> members) {
         List<String> userIds = members.stream()
@@ -41,10 +47,16 @@ public class ContactResolver {
                     .audienceResponseId(m.getAudienceResponseId())
                     .name(first(s, 0, l, 0))
                     .phone(first(s, 1, l, 1))
-                    .email(first(s, 2, l, 2))
+                    .email(first(realEmail(s), 2, realEmail(l), 2))
                     .build());
         }
         return subjects;
+    }
+
+    /** The contact row with a placeholder email blanked, so first() falls through to the other source. */
+    private String[] realEmail(String[] row) {
+        if (row == null || row[2] == null || !placeholderEmailService.isPlaceholder(row[2])) return row;
+        return new String[]{row[0], row[1], null};
     }
 
     private static String first(String[] a, int ai, String[] b, int bi) {

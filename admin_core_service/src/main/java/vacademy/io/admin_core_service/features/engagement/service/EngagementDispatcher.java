@@ -8,7 +8,9 @@ import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.engagement.client.EngagementInternalClients;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementAction;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementMember;
+import vacademy.io.admin_core_service.features.engagement.entity.EngagementEngine;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementActionRepository;
+import vacademy.io.admin_core_service.features.engagement.repository.EngagementEngineRepository;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementMemberRepository;
 import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendRequest;
 import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendResponse;
@@ -53,12 +55,19 @@ public class EngagementDispatcher {
      */
     public static final String VAR_TO_PHONE = "_toPhone";
 
+    /** variables_json key for an EMAIL action's subject line (the brain writes it). */
+    public static final String VAR_SUBJECT = "_subject";
+
+    /** The sender every engine email used before channels.EMAIL.emailType existed. */
+    static final String DEFAULT_EMAIL_TYPE = "UTILITY_EMAIL";
+
     private final NotificationService notificationService;
     private final EngagementActionRepository actionRepository;
     private final EngagementMemberRepository memberRepository;
     private final TimelineEventService timelineEventService;
     private final ContactResolver contactResolver;
     private final EngagementInternalClients clients;
+    private final EngagementEngineRepository engineRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
@@ -146,6 +155,7 @@ public class EngagementDispatcher {
         if (subject.getEmail() == null || subject.getEmail().isBlank()) {
             throw new SendRejectedException("No email address on file for this person");
         }
+        String subjectLine = parseVariables(action.getVariablesJson()).get(VAR_SUBJECT);
         UnifiedSendRequest req = UnifiedSendRequest.builder()
                 .instituteId(action.getInstituteId())
                 .channel("EMAIL")
@@ -155,9 +165,9 @@ public class EngagementDispatcher {
                         .name(subject.getName())
                         .build()))
                 .options(UnifiedSendRequest.SendOptions.builder()
-                        .emailSubject(deriveSubject(body))
+                        .emailSubject(subjectLine != null && !subjectLine.isBlank() ? subjectLine : deriveSubject(body))
                         .emailBody(toHtml(body))  // the draft is plain text; EmailService renders HTML
-                        .emailType("UTILITY_EMAIL")
+                        .emailType(emailTypeFor(action))
                         .source(SOURCE)          // → notification_log.source
                         .sourceId(action.getId()) // → correlation_id (Phase 0)
                         .build())
@@ -313,6 +323,26 @@ public class EngagementDispatcher {
                     ? resp.getResults().get(0).getError() : "send not accepted";
             throw new IllegalStateException(what + " send not accepted: " + err);
         }
+    }
+
+    /**
+     * The engine's email sender: channels.EMAIL.emailType names one of the institute's sender nodes
+     * (EMAIL_SETTING.data.&lt;type&gt;), e.g. a dedicated outreach address whose node carries the
+     * unsubscribe footer and a daily cap. Unset → the transactional sender, as before.
+     */
+    private String emailTypeFor(EngagementAction action) {
+        EngagementEngine engine = action.getEngineId() == null ? null
+                : engineRepository.findById(action.getEngineId()).orElse(null);
+        if (engine == null || engine.getChannels() == null) return DEFAULT_EMAIL_TYPE;
+        JsonNode type;
+        try {
+            type = objectMapper.readTree(engine.getChannels()).path("EMAIL").path("emailType");
+        } catch (Exception e) {
+            // Never fall back to the transactional sender here: an outreach engine's mail would
+            // then leave as the institute's OTP/receipt address.
+            throw new SendRejectedException("This engine's email settings can't be read, so nothing was sent.");
+        }
+        return type.isTextual() && !type.asText().isBlank() ? type.asText().trim() : DEFAULT_EMAIL_TYPE;
     }
 
     /** The AI draft is plain text; EmailService renders emailBody as HTML, so preserve line breaks. */

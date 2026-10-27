@@ -71,6 +71,7 @@ public class EngagementDecisionService {
     private int maxScheduleHours;
 
     private static final int MAX_DRAFT_CHARS = 4000;
+    private static final int MAX_SUBJECT_CHARS = 150;
     private static final Set<String> VALID_CHANNELS = Set.of("WHATSAPP", "EMAIL", "IN_APP", "AI_CALL");
     private static final Set<String> VALID_ACTION_TYPES = Set.of("SEND_MESSAGE", "SHARE_LINK", "CALL");
 
@@ -180,6 +181,16 @@ public class EngagementDecisionService {
             return false;
         }
 
+        // 1c. Sequence finished: an engine with channels.maxTouches stops at that many sent messages
+        // per person. Checked before the LLM, so a finished member costs nothing; re-checked monthly
+        // in case the limit is raised.
+        Integer maxTouches = maxTouches(engine);
+        if (maxTouches != null && actionRepository.countByMemberIdAndStatus(member.getId(), "SENT") >= maxTouches) {
+            memberRepository.recordDecision(member.getId(), now, member.getWakeFingerprint(),
+                    member.getConsecutiveNoOps(), heldLease, now.plus(Duration.ofDays(30)));
+            return false;
+        }
+
         // 2. Deterministic wake gate — zero tokens for most members.
         String fingerprint = quantizedFingerprint(bundle.payloadsFor(member.getId()));
         if (!shouldWake(member, engine, fingerprint, bundle, now)) {
@@ -235,6 +246,10 @@ public class EngagementDecisionService {
             if ("WHATSAPP".equals(action.getChannel())) {
                 attachWhatsAppTemplate(action, d, templatesByName);
             }
+            if ("EMAIL".equals(action.getChannel()) && d.subject() != null && !d.subject().isBlank()) {
+                action.setVariablesJson(writeJson(Map.of(EngagementDispatcher.VAR_SUBJECT,
+                        oneLine(d.subject(), MAX_SUBJECT_CHARS))));
+            }
             // Phase 2 — AUTONOMOUS vs COPILOT. Auto-send (kind=SEND; the dispatch job fires it when
             // due) only when ALL hold: the channel's `auto` intent is set, the engine isn't killed,
             // it has GRADUATED (>= first_n human-approved sends), the draft is actually sendable
@@ -242,6 +257,7 @@ public class EngagementDecisionService {
             // copilot TASK exactly as before. A dry run is always SIMULATED (never sends, never caps).
             boolean draftReady = !"WHATSAPP".equals(chosenChannel) || action.getTemplateName() != null;
             boolean autoSend = !dryRun
+                    && !everReplied(bundle, member)
                     && chosenChannel != null
                     && !"AI_CALL".equals(chosenChannel)   // AI calls are task-only; never auto-send them
                     && channelAutoEnabled(engine, chosenChannel)
@@ -281,6 +297,35 @@ public class EngagementDecisionService {
         memberRepository.recordDecision(member.getId(), now, fingerprint, member.getConsecutiveNoOps(),
                 heldLease, member.getNextActionAt());
         return true;
+    }
+
+    /**
+     * True when the person has ever written back on WhatsApp or email (the ledger's lastReplyAt).
+     * Once someone replies, a human owns the conversation: the engine still drafts, but as a task.
+     */
+    private boolean everReplied(DataPointRegistry.CohortBundle bundle, EngagementMember m) {
+        JsonNode ledger = bundle.payloadsFor(m.getId()).get("ledger");
+        if (ledger == null) return false;
+        for (String ch : List.of("whatsapp", "email")) {
+            JsonNode c = ledger.get(ch);
+            if (c != null && !c.isNull() && parseInstant(c.path("lastReplyAt").asText(null)) != null) return true;
+        }
+        return false;
+    }
+
+    /** channels.maxTouches: the most messages one person gets from this engine; null = no limit. */
+    private Integer maxTouches(EngagementEngine engine) {
+        try {
+            JsonNode n = objectMapper.readTree(engine.getChannels()).path("maxTouches");
+            return n.canConvertToInt() && n.asInt() > 0 ? n.asInt() : null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static String oneLine(String s, int max) {
+        String t = s.replaceAll("[\\r\\n]+", " ").trim();
+        return t.length() <= max ? t : t.substring(0, max);
     }
 
     /** True iff channels.<ch>.auto is set — the admin's intent to auto-send proactively on that channel. */

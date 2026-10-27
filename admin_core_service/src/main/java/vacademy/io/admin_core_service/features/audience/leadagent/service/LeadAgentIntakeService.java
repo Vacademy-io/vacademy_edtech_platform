@@ -77,6 +77,15 @@ public class LeadAgentIntakeService {
     private final LeadAgentFieldProvisioner fieldProvisioner;
     private final TransactionTemplate rowTx;
 
+    /** Optional: absent in unit tests that build the service by hand. */
+    private vacademy.io.admin_core_service.features.engagement.service.EngagementEngineService engagementEngineService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setEngagementEngineService(
+            vacademy.io.admin_core_service.features.engagement.service.EngagementEngineService engagementEngineService) {
+        this.engagementEngineService = engagementEngineService;
+    }
+
     public LeadAgentIntakeService(AudienceService audienceService,
                                   AudienceRepository audienceRepository,
                                   AudienceResponseRepository audienceResponseRepository,
@@ -210,8 +219,26 @@ public class LeadAgentIntakeService {
         if (LeadAgentBulkIntakeResponseDTO.CREATED.equals(result.getStatus())
                 && !ALREADY_CREATED.equals(result.getMessage())) {
             writeNote(result.getResponseId(), row, sourceId(row));
+            enrollInEngines(instituteId, audienceId, result.getResponseId());
         }
         return result;
+    }
+
+    /**
+     * The lead has committed: hand it to any live engagement engine on this list now, so outreach
+     * starts within minutes. Best effort — the nightly reconcile enrols it anyway.
+     */
+    private void enrollInEngines(String instituteId, String audienceId, String responseId) {
+        if (engagementEngineService == null || responseId == null) return;
+        try {
+            String userId = audienceResponseRepository.findById(responseId)
+                    .map(vacademy.io.admin_core_service.features.audience.entity.AudienceResponse::getUserId)
+                    .orElse(null);
+            int joined = engagementEngineService.enrollNewLead(instituteId, audienceId, responseId, userId);
+            if (joined > 0) log.info("Lead Agent intake: lead {} joined {} engagement engine(s)", responseId, joined);
+        } catch (Exception e) {
+            log.warn("Lead Agent intake: could not enrol lead {} in engagement engines: {}", responseId, e.getMessage());
+        }
     }
 
     SubmitLeadRequestDTO buildSubmit(String audienceId, LeadAgentBulkIntakeRequestDTO.Row row, String email,

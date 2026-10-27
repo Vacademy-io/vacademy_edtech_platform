@@ -198,6 +198,7 @@ public class EngagementEngineService {
         long activeBefore = memberRepository.countByEngineIdAndStatus(engine.getId(), "ACTIVE");
 
         String runId = UUID.randomUUID().toString();
+        Instant runStartedAt = Instant.now();
         int holdoutPct = engine.getHoldoutPct() != null ? Math.max(0, Math.min(100, engine.getHoldoutPct())) : 0;
         for (Target t : canonical.values()) {
             memberRepository.enrollOrStamp(
@@ -207,7 +208,7 @@ public class EngagementEngineService {
                     runId, holdoutPct);
         }
         // Exit anyone not stamped by this run — unconditional, so an emptied audience exits all.
-        int exited = memberRepository.exitNotStampedBy(engine.getId(), runId);
+        int exited = memberRepository.exitNotStampedBy(engine.getId(), runId, runStartedAt);
 
         long activeAfter = memberRepository.countByEngineIdAndStatus(engine.getId(), "ACTIVE");
         int netNew = (int) Math.max(0, (activeAfter + exited) - activeBefore); // inserts + resurrections
@@ -218,6 +219,46 @@ public class EngagementEngineService {
     }
 
     public record EnrollmentResult(int audienceSize, int newlyEnrolled, int exited) {}
+
+    /** First look for a lead enrolled at intake: a few minutes out, not jittered across the cadence. */
+    static final int INTAKE_FIRST_LOOK_MAX_MINUTES = 15;
+
+    /**
+     * Enrols a lead that just landed in a list into every ACTIVE or DRY_RUN engine targeting that
+     * list, first look within minutes. Without this a new lead waits for the 02:30 UTC reconcile
+     * and then a first look jittered across the whole cadence: 1 to 4 days for a 72 h engine.
+     * Same key as the reconcile, (user_id, audience_response_id), so the nightly run stamps the
+     * row instead of adding a second one. Returns how many engines it joined.
+     */
+    @Transactional
+    public int enrollNewLead(String instituteId, String audienceId, String responseId, String userId) {
+        int joined = 0;
+        for (EngagementEngine engine : engineRepository.findByInstituteIdOrderByCreatedAtDesc(instituteId)) {
+            if (!"ACTIVE".equals(engine.getStatus()) && !"DRY_RUN".equals(engine.getStatus())) continue;
+            if (engine.isSystemManaged() || !targetsAudience(engine, audienceId)) continue;
+            int holdoutPct = engine.getHoldoutPct() != null ? Math.max(0, Math.min(100, engine.getHoldoutPct())) : 0;
+            Instant firstLook = Instant.now().plus(java.time.Duration.ofMinutes(
+                    java.util.concurrent.ThreadLocalRandom.current().nextLong(1, INTAKE_FIRST_LOOK_MAX_MINUTES + 1)));
+            memberRepository.enrollOrStamp(UUID.randomUUID().toString(), engine.getId(), instituteId,
+                    userId, responseId, firstLook, "intake:" + UUID.randomUUID(), holdoutPct);
+            joined++;
+        }
+        return joined;
+    }
+
+    /** True when the engine's audience has an AUDIENCE selector for this list. */
+    boolean targetsAudience(EngagementEngine engine, String audienceId) {
+        try {
+            for (JsonNode sel : objectMapper.readTree(engine.getAudience())) {
+                if ("AUDIENCE".equals(sel.path("type").asText()) && audienceId.equals(sel.path("id").asText())) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Engine {}: unreadable audience — not enrolling intake leads", engine.getId());
+        }
+        return false;
+    }
 
     @Transactional
     public EngagementEngine transition(String engineId, String instituteId, String toStatus) {

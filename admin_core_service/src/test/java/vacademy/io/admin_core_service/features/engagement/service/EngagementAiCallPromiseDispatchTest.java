@@ -235,7 +235,8 @@ class EngagementAiCallPromiseDispatchTest {
             members = mock(EngagementMemberRepository.class);
             contacts = mock(ContactResolver.class);
             dispatcher = new EngagementDispatcher(notifications, actions, members,
-                    mock(TimelineEventService.class), contacts, mock(EngagementInternalClients.class));
+                    mock(TimelineEventService.class), contacts, mock(EngagementInternalClients.class),
+                    mock(EngagementEngineRepository.class));
             member = new EngagementMember();
             member.setId("m1");
             member.setUserId("u1");

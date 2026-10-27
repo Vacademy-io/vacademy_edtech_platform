@@ -287,6 +287,9 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
     int rescheduleDueSend(@Param("id") String id, @Param("scheduledFor") Instant scheduledFor,
                           @Param("now") Instant now);
 
+    /** Messages actually sent to one member — the touch count channels.maxTouches limits. */
+    long countByMemberIdAndStatus(String memberId, String status);
+
     /** Dismissal-rate alarm input (design §7): if this exceeds ~80%, the labels are worthless. */
     @Query(value = """
             SELECT count(*) FILTER (WHERE outcome = 'DISMISSED') AS dismissed, count(*) AS total

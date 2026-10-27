@@ -63,6 +63,49 @@ public class EngagementReadDao {
         return out;
     }
 
+    /**
+     * audienceResponseId → source_type (LEAD_AGENT, WEBSITE, WALK_IN, ...). Every CRM lead gets a
+     * user_id at submit time, so this — not user_id — is what tells a cold, researched
+     * organisation from a person who filled a form.
+     */
+    public Map<String, String> leadSourceTypesByResponseIds(List<String> responseIds) {
+        Map<String, String> out = new HashMap<>();
+        if (responseIds == null || responseIds.isEmpty()) return out;
+        List<?> rows = em.createNativeQuery("""
+                SELECT id, source_type FROM audience_response WHERE id IN (:ids)
+                """)
+                .setParameter("ids", responseIds)
+                .getResultList();
+        for (Object r : rows) {
+            Object[] c = (Object[]) r;
+            if (c[1] != null) out.put((String) c[0], (String) c[1]);
+        }
+        return out;
+    }
+
+    /**
+     * audienceResponseId → the Lead Agent's research on that organisation (lead_candidate.lead_json,
+     * as text), for leads the agent delivered into this institute.
+     */
+    public Map<String, String> leadAgentResearchByResponseIds(List<String> responseIds, String instituteId) {
+        Map<String, String> out = new HashMap<>();
+        if (responseIds == null || responseIds.isEmpty()) return out;
+        List<?> rows = em.createNativeQuery("""
+                SELECT i.response_id, CAST(c.lead_json AS text)
+                FROM lead_agent_intake i
+                JOIN lead_candidate c ON c.id = i.external_id AND c.institute_id = i.institute_id
+                WHERE i.response_id IN (:ids) AND i.institute_id = :instituteId
+                """)
+                .setParameter("ids", responseIds)
+                .setParameter("instituteId", instituteId)
+                .getResultList();
+        for (Object r : rows) {
+            Object[] c = (Object[]) r;
+            if (c[1] != null) out.put((String) c[0], (String) c[1]);
+        }
+        return out;
+    }
+
     // ==================== Enrollment + course activity ====================
 
     /** userId → list of [package_session_id, status, enrolled_date, expiry_date]. */

@@ -41,11 +41,17 @@ public class ProfileDataPointProvider implements DataPointProvider {
                 .sensitivity("LOW").cost("IN_PROCESS").build();
     }
 
+    /** audience_response.source_type of leads the Lead Agent delivered. */
+    static final String LEAD_AGENT_SOURCE = "LEAD_AGENT";
+    /** A cold, researched organisation that has never contacted the institute. */
+    static final String ORGANISATION_PROSPECT = "ORGANISATION_PROSPECT";
+
     @Override
     public Map<String, JsonNode> fetch(FetchContext ctx, List<Subject> subjects) {
         List<String> leadIds = subjects.stream()
                 .map(Subject::getAudienceResponseId).filter(java.util.Objects::nonNull).toList();
         Map<String, Map<String, String>> leadFields = dao.leadCustomFieldsByResponseIds(leadIds);
+        Map<String, String> sourceTypes = dao.leadSourceTypesByResponseIds(leadIds);
 
         Map<String, JsonNode> out = new HashMap<>();
         for (Subject s : subjects) {
@@ -53,12 +59,21 @@ public class ProfileDataPointProvider implements DataPointProvider {
             n.put("name", s.getName());
             n.put("phone", s.getPhone());
             n.put("email", s.getEmail());
-            n.put("subjectType", s.getUserId() != null ? "LEARNER_OR_CONVERTED_LEAD" : "UNCONVERTED_LEAD");
+            // Every CRM lead gets a user_id at submit time, so user_id cannot tell a researched
+            // organisation from a learner. The lead's source can: the Lead Agent's leads never
+            // contacted the institute, and their custom fields are our research, not form answers.
+            boolean prospect = s.getAudienceResponseId() != null
+                    && LEAD_AGENT_SOURCE.equals(sourceTypes.get(s.getAudienceResponseId()));
+            n.put("subjectType", prospect ? ORGANISATION_PROSPECT
+                    : s.getUserId() != null ? "LEARNER_OR_CONVERTED_LEAD" : "UNCONVERTED_LEAD");
             if (s.getAudienceResponseId() != null) {
                 Map<String, String> fields = leadFields.get(s.getAudienceResponseId());
                 if (fields != null && !fields.isEmpty()) {
-                    ObjectNode f = n.putObject("formAnswers");
-                    fields.forEach(f::put);
+                    ObjectNode f = n.putObject(prospect ? "researchNotes" : "formAnswers");
+                    fields.forEach((k, v) -> {
+                        String clean = LeadResearchDataPointProvider.clean(v);
+                        if (clean != null) f.put(k, clean);
+                    });
                 }
             }
             out.put(s.getMemberId(), n);
@@ -69,15 +84,25 @@ public class ProfileDataPointProvider implements DataPointProvider {
     @Override
     public String render(JsonNode p) {
         if (p == null) return "PROFILE: unknown";
+        boolean prospect = ORGANISATION_PROSPECT.equals(p.path("subjectType").asText());
         StringBuilder sb = new StringBuilder("PROFILE: ");
-        sb.append(p.path("name").asText("unnamed"))
-          .append(" [").append(p.path("subjectType").asText("?")).append("]");
+        sb.append(p.hasNonNull("name") ? p.get("name").asText()
+                        : prospect ? "contact name unknown (address the organisation or the role)" : "unnamed")
+          .append(" [").append(prospect
+                        ? "ORGANISATION_PROSPECT: cold — found by our research, has never contacted us"
+                        : p.path("subjectType").asText("?")).append("]");
         if (p.hasNonNull("phone")) sb.append(" phone=").append(p.get("phone").asText());
         if (p.hasNonNull("email")) sb.append(" email=").append(p.get("email").asText());
         JsonNode fa = p.get("formAnswers");
         if (fa != null && fa.size() > 0) {
             sb.append(" | form: ");
             fa.fields().forEachRemaining(e -> sb.append(e.getKey()).append("=")
+                    .append(e.getValue().asText()).append("; "));
+        }
+        JsonNode rn = p.get("researchNotes");
+        if (rn != null && rn.size() > 0) {
+            sb.append(" | research notes (internal, not their words — never quote): ");
+            rn.fields().forEachRemaining(e -> sb.append(e.getKey()).append("=")
                     .append(e.getValue().asText()).append("; "));
         }
         return sb.toString();
