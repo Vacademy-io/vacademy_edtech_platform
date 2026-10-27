@@ -484,6 +484,16 @@ COMPOSITION_CSS = """
   padding: var(--spacing-safe-area, 5%);
   box-sizing: border-box;
 }
+/* A frame given its own width (and no position of its own) is a COLUMN in
+   the shot's own flex/grid row. Absolutely positioned it left the row, and the
+   next column slid over it: a recap printed its closing quote across the
+   takeaway list (lesson feadce4b, 2026-10-27). */
+:is(.comp, .comp-center, .comp-left-column, .comp-right-column, .comp-bottom-anchor,
+    .comp-corner-type, .comp-margin-notes, .comp-stacked-offset, .comp-full-bleed,
+    .comp-spine, .comp-artifact-study)[style*="width"]:not([style*="position"]) {
+  position: relative;
+  inset: auto;
+}
 /* min-width:0 lets a grid item shrink below min-content, which is what allows
    long labels to wrap. Keep it off text-bearing flex rows: those must overflow
    or shrink their type, never collapse to a one-character column. */

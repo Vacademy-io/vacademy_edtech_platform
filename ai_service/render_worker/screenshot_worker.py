@@ -516,7 +516,11 @@ class ScreenshotWorker:
                                 }
                             }
                             if (OV && isLeafText && r.height >= 8 && effOpacity(el, view) >= 0.3) {
-                                texts.push({el: el, r: r, text: text});
+                                // Line boxes, not the bounding rect: two inline spans
+                                // wrapping in one paragraph have bounding rects that
+                                // intersect while their glyphs never touch.
+                                const lines = Array.from(el.getClientRects()).filter(q => q.width > 0 && q.height > 0);
+                                texts.push({el: el, rects: lines.length ? lines : [r], text: text});
                             }
                             // Keep-out zones (lesson teacher area / caption strip).
                             const area = r.width * r.height;
@@ -566,21 +570,31 @@ class ScreenshotWorker:
                                 const a = texts[i], b = texts[j];
                                 if (a.text === b.text) continue;
                                 if (a.el.contains(b.el) || b.el.contains(a.el)) continue;
-                                const ix = Math.min(a.r.right, b.r.right) - Math.max(a.r.left, b.r.left);
-                                const iy = Math.min(a.r.bottom, b.r.bottom) - Math.max(a.r.top, b.r.top);
-                                if (ix <= 6 || iy <= 6) continue;
-                                const small = Math.min(a.r.width * a.r.height, b.r.width * b.r.height);
-                                if (ix * iy < 0.2 * small) continue;
+                                let hit = null;
+                                for (const ra of a.rects) {
+                                    for (const rb of b.rects) {
+                                        const ix = Math.min(ra.right, rb.right) - Math.max(ra.left, rb.left);
+                                        const iy = Math.min(ra.bottom, rb.bottom) - Math.max(ra.top, rb.top);
+                                        if (ix <= 6 || iy <= 6) continue;
+                                        const small = Math.min(ra.width * ra.height, rb.width * rb.height);
+                                        if (ix * iy < 0.2 * small) continue;
+                                        hit = [ra, rb];
+                                        break;
+                                    }
+                                    if (hit) break;
+                                }
+                                if (!hit) continue;
                                 const key = a.text + '|' + b.text;
                                 if (seen.has(key)) continue;
                                 seen.add(key);
+                                const [ra, rb] = hit;
                                 out.push({
                                     selector: cssPath(a.el) + ' × ' + cssPath(b.el),
                                     rect: {
-                                        l: Math.round(Math.max(a.r.left, b.r.left) * 10) / 10,
-                                        t: Math.round(Math.max(a.r.top, b.r.top) * 10) / 10,
-                                        r: Math.round(Math.min(a.r.right, b.r.right) * 10) / 10,
-                                        b: Math.round(Math.min(a.r.bottom, b.r.bottom) * 10) / 10,
+                                        l: Math.round(Math.max(ra.left, rb.left) * 10) / 10,
+                                        t: Math.round(Math.max(ra.top, rb.top) * 10) / 10,
+                                        r: Math.round(Math.min(ra.right, rb.right) * 10) / 10,
+                                        b: Math.round(Math.min(ra.bottom, rb.bottom) * 10) / 10,
                                     },
                                     text: (a.text.slice(0, 38) + ' × ' + b.text.slice(0, 38)),
                                     is_media: false,

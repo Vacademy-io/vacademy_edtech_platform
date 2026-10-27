@@ -263,3 +263,39 @@ def test_fit_math_and_its_limits():
     assert out.count("</div>") == nested.count("</div>") + 1
     assert out.index("</div><script>") > out.index("<p>b</p>")
     assert "'#shot-root > [data-fit-wrap] > p'" in out
+
+
+def test_wrapped_inline_spans_in_one_paragraph_are_not_an_overlap():
+    """'Each sign is <span>development</span>, not <span>a fault to fix</span>.'
+    wrapped over two lines: the spans' bounding rects intersect, their line
+    boxes do not (false positive seen on feadce4b shot 3)."""
+    html = (
+        '<div id="shot-root" style="position:absolute;inset:0;background:#fff">'
+        '<p style="position:absolute;left:80px;top:300px;width:330px;font:400 30px sans-serif;margin:0">'
+        'Each sign is <span id="a">development</span>, not <span id="b">a fault to fix</span>.</p></div>'
+    )
+    rows = _run(lambda w: w.bbox_check_shot(html=html, width=1920, height=842, timestamps=[0.5],
+                                            background="#fff", check_overlap=True))
+    assert [r for r in rows if r.get("zone") == "overlap"] == []
+
+
+def test_a_composition_frame_used_as_a_column_stays_in_its_row():
+    """The recap put `.comp comp-stacked-offset` (absolute, full canvas) in a
+    flex row with width:58%; it left the row and the right column (iceberg +
+    closing quote) slid over the takeaways. A frame with its own width is now
+    a column."""
+    import composition_kit as ck
+    html = (
+        f"<style>{ck.COMPOSITION_CSS}</style>"
+        '<div id="shot-root" style="position:relative;width:100%;height:100%;background:#fff">'
+        '<div style="position:absolute;inset:0;display:flex;padding:0 6%;box-sizing:border-box">'
+        '<div class="comp comp-stacked-offset" style="width:58%">'
+        '<div class="comp-stack"><h2 style="font:700 40px sans-serif;margin:0">SEE THE WHOLE CHILD</h2></div></div>'
+        # The right column's text sits at the list's height, as in the recap.
+        '<div style="width:42%;display:flex;align-items:center">'
+        '<p style="font:400 40px serif;margin:0;padding-top:190px">Those shoes and tears were a message</p></div>'
+        "</div></div>"
+    )
+    rows = _run(lambda w: w.bbox_check_shot(html=html, width=1920, height=842, timestamps=[0.5],
+                                            background="#fff", check_overlap=True))
+    assert [r for r in rows if r.get("zone") == "overlap"] == []
