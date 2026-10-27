@@ -694,6 +694,10 @@ describe("site search", () => {
     await flush();
     const dialog = container.querySelector('[role="dialog"]')!;
     await type(dialog.querySelector("input") as HTMLInputElement, "zzz");
+    // Past the by-name course search's debounce: until it answers it is "Searching…".
+    await act(async () => {
+      await new Promise((r) => setTimeout(r, 350));
+    });
     await flush();
     expect(dialog.textContent).toContain("No results for “zzz”");
     await key(dialog.querySelector("input")!, "Escape");

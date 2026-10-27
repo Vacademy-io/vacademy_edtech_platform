@@ -18,6 +18,7 @@ import {
   courseSearchItems,
   courseSitePath,
   groupSearchResults,
+  mergeCourseRows,
   pageSearchItems,
   rankSiteSearch,
   streamSearchItems,
@@ -28,6 +29,7 @@ import {
 } from "./header-search";
 import { openNotifyForm, retryUnlessMissingLibrary, useHeaderLinkNavigation } from "./header-hooks";
 import { ComingSoonTag } from "./MegaMenuParts";
+import { CourseThumbnail } from "../site-cart/CourseThumbnail";
 import { EDITORIAL_SEARCH_BUTTON, EDITORIAL_SEARCH_ICON } from "./header-chrome";
 
 /**
@@ -55,21 +57,21 @@ export interface HeaderSearchProps {
   variant?: "default" | "editorial";
 }
 
-const fetchSearchCourses = async (instituteId: string): Promise<CourseSearchRow[]> => {
+const fetchSearchCourses = async (instituteId: string, name = "", size = 1000): Promise<CourseSearchRow[]> => {
   const res = await axios.post(
     urlCourseDetails,
     {
       status: [],
       level_ids: [],
       faculty_ids: [],
-      search_by_name: "",
+      search_by_name: name,
       tag: [],
       min_percentage_completed: 0,
       max_percentage_completed: 0,
     },
     {
       // Same request as the catalogue grid, so search spans every course it lists.
-      params: { instituteId, page: 0, size: 1000, sort: "createdAt,desc" },
+      params: { instituteId, page: 0, size, sort: "createdAt,desc" },
       headers: { "Content-Type": "application/json" },
     },
   );
@@ -78,6 +80,10 @@ const fetchSearchCourses = async (instituteId: string): Promise<CourseSearchRow[
 };
 
 const SUGGESTION_LIMIT = 6;
+/** The full list stops at 1000 courses; past that, courses are also searched by name on the server. */
+const NAME_SEARCH_MIN_CHARS = 2;
+const NAME_SEARCH_LIMIT = 20;
+const NAME_SEARCH_DEBOUNCE_MS = 300;
 
 const KindIcon: React.FC<{ kind: SiteSearchItem["kind"] }> = ({ kind }) => {
   const Icon = kind === "course" ? BookOpen : kind === "page" ? FileText : SquaresFour;
@@ -133,6 +139,21 @@ export const HeaderSearch: React.FC<HeaderSearchProps> = ({
     retry: 1,
   });
 
+  // By name on the server too, debounced: a catalogue larger than the full
+  // list's page would otherwise leave its oldest courses unfindable.
+  const [nameQuery, setNameQuery] = useState("");
+  useEffect(() => {
+    const id = setTimeout(() => setNameQuery(query.trim()), NAME_SEARCH_DEBOUNCE_MS);
+    return () => clearTimeout(id);
+  }, [query]);
+  const nameSearchQuery = useQuery({
+    queryKey: ["CATALOGUE_SITE_SEARCH_COURSES_BY_NAME", instituteId, nameQuery],
+    queryFn: () => fetchSearchCourses(instituteId!, nameQuery, NAME_SEARCH_LIMIT),
+    enabled: open && !!instituteId && nameQuery.length >= NAME_SEARCH_MIN_CHARS,
+    staleTime: 60_000,
+    retry: false,
+  });
+
   const treeQueries = useQueries({
     queries: configs.map((c) => ({
       queryKey: ["FOLDER_LIBRARY_PUBLIC", instituteId, (c.libraryId || "").trim()],
@@ -161,7 +182,7 @@ export const HeaderSearch: React.FC<HeaderSearchProps> = ({
     // One result per course opens the version a merged course card opens:
     // the visitor's language when the course has it.
     const languages = courseLanguagesOf(globalSettings?.courseLanguages);
-    return courseSearchItems(coursesQuery.data, {
+    return courseSearchItems(mergeCourseRows(coursesQuery.data, nameSearchQuery.data), {
       translate: siteT,
       preferredLanguage: preferredCourseLanguage(siteLocale, languages),
       languages,
@@ -174,7 +195,7 @@ export const HeaderSearch: React.FC<HeaderSearchProps> = ({
           }),
         ),
     });
-  }, [coursesQuery.data, globalSettings, siteT, siteLocale]);
+  }, [coursesQuery.data, nameSearchQuery.data, globalSettings, siteT, siteLocale]);
 
   const trimmed = query.trim();
   const groups: SearchGroup[] = useMemo(() => {
@@ -293,7 +314,14 @@ export const HeaderSearch: React.FC<HeaderSearchProps> = ({
         ? t("header.searchDialog.pages", "Pages")
         : streamsLabel || t("header.searchDialog.streams", "Streams");
 
-  const coursesLoading = !!trimmed && !!instituteId && coursesQuery.isPending && coursesQuery.fetchStatus !== "idle";
+  // Typing, waiting for the debounce, or fetching by name: not "no results" yet.
+  const nameSearchPending =
+    !!instituteId &&
+    trimmed.length >= NAME_SEARCH_MIN_CHARS &&
+    (trimmed !== nameQuery || nameSearchQuery.isFetching);
+  const coursesLoading =
+    (!!trimmed && !!instituteId && coursesQuery.isPending && coursesQuery.fetchStatus !== "idle") ||
+    (nameSearchPending && !flat.length);
 
   const dialog = (
     <div className="fixed inset-0 z-60 flex items-start justify-center px-4 pt-16 sm:pt-24">
@@ -383,7 +411,11 @@ export const HeaderSearch: React.FC<HeaderSearchProps> = ({
                               active && "bg-primary-50",
                             )}
                           >
-                            <KindIcon kind={item.kind} />
+                            {item.kind === "course" ? (
+                              <CourseThumbnail image={item.image} className="catalogue-aspect-video w-16" />
+                            ) : (
+                              <KindIcon kind={item.kind} />
+                            )}
                             <span className="min-w-0 flex-1">
                               <span className="block truncate text-sm font-medium text-catalogue-text-primary">
                                 {item.title}

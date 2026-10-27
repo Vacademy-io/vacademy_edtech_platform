@@ -6,7 +6,6 @@ import { useTranslation } from "react-i18next";
 import axios from "axios";
 import {
   ArrowLeft,
-  BookOpen,
   CaretRight,
   Folder,
   MagnifyingGlass,
@@ -18,7 +17,8 @@ import { useCourseTerms } from "@/routes/$tagName/-utils/catalogue-naming";
 import { useSiteT } from "@/routes/$tagName/-utils/catalogue-locale";
 import { urlCourseDetails } from "@/constants/urls";
 import { ProductPageOfferComponent } from "./ProductPageOfferComponent";
-import { courseIdOf, courseSitePath, type CourseSearchRow } from "../header/header-search";
+import { courseIdOf, courseImageOf, courseSitePath, type CourseSearchRow } from "../header/header-search";
+import { CourseThumbnail } from "../site-cart/CourseThumbnail";
 import { RouteMatcher } from "../../-services/route-matcher";
 import { useSiteNavigate } from "../../-utils/catalogue-route-search";
 import { resolveCoursePageRoute } from "../../-utils/course-page-routing";
@@ -674,7 +674,9 @@ export const FolderBrowserComponent: React.FC<FolderBrowserProps> = ({
                     onClick={() => openFolder(target)}
                     className="flex w-full items-center gap-3 px-4 py-3 text-start transition-colors hover:bg-catalogue-interactive-hover"
                   >
-                    {isFolder ? (
+                    {node.image_url ? (
+                      <CourseThumbnail image={node.image_url} className="catalogue-aspect-video w-16" />
+                    ) : isFolder ? (
                       <Folder className="size-5 shrink-0 text-catalogue-brand-ink" weight="duotone" aria-hidden="true" />
                     ) : (
                       <ShoppingCartSimple className="size-5 shrink-0 text-catalogue-brand-ink" weight="duotone" aria-hidden="true" />
@@ -709,7 +711,7 @@ export const FolderBrowserComponent: React.FC<FolderBrowserProps> = ({
                     }}
                     className="flex w-full items-center gap-3 px-4 py-3 text-start no-underline transition-colors hover:bg-catalogue-interactive-hover"
                   >
-                    <BookOpen className="size-5 shrink-0 text-catalogue-brand-ink" weight="duotone" aria-hidden="true" />
+                    <CourseThumbnail image={courseImageOf(row)} className="catalogue-aspect-video w-16" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold text-catalogue-text-primary">
                         {siteT(row.package_name || "")}
