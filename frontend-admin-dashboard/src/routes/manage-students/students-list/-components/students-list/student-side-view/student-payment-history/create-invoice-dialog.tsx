@@ -59,6 +59,7 @@ import {
     type AdminDiscountPreview,
     type AdminDiscountRequest,
 } from '@/services/admin-discounts';
+import { useInstituteDefaultCurrency } from '@/services/payment-setting';
 
 // ─── Schema ──────────────────────────────────────────────────────────────────
 
@@ -466,7 +467,10 @@ export function CreateInvoiceDialog({
         staleTime: 5 * 60 * 1000,
     });
 
-    const defaultCurrency = invoiceSettings?.currency ?? 'INR';
+    // The institute's default currency (Settings → Payment) wins over the older
+    // INVOICE_SETTING value, which was seeded as INR for every institute.
+    const instituteCurrency = useInstituteDefaultCurrency();
+    const defaultCurrency = instituteCurrency || (invoiceSettings?.currency ?? 'INR');
 
     const invoiceFormSchema = useMemo(() => buildInvoiceFormSchema(t), [t]);
 

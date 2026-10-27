@@ -37,6 +37,12 @@ import { useInstituteDetailsStore } from '@/stores/students/students-list/useIns
 import PackageSessionRenewalSettings from './PackageSessionRenewalSettings';
 import OfflinePaymentModesSettings from './OfflinePaymentModesSettings';
 import { useTranslation } from 'react-i18next';
+import {
+    DEFAULT_CURRENCY_FIELD,
+    fetchPaymentSetting,
+    useInstituteDefaultCurrency,
+    useSavePaymentSetting,
+} from '@/services/payment-setting';
 
 interface Interval {
     /** payment_plan.id — round-tripped so a save updates the plan instead of replacing it. */
@@ -68,7 +74,29 @@ interface DiscountCoupon {
 const PaymentSettings = () => {
     const { t } = useTranslation('settingsPayment');
     const [editingPlan, setEditingPlan] = useState<PaymentPlan | null>(null);
-    const [currency, setCurrency] = useState<string>('GBP');
+    // The institute's default currency (PAYMENT_SETTING.defaultCurrency). Saved as soon as it is
+    // picked; invoices, payment history and manual renewals use it wherever a payment plan or
+    // payment record carries no currency of its own, and new plans start in it.
+    const instituteCurrency = useInstituteDefaultCurrency();
+    const currency = instituteCurrency || 'GBP';
+    const { mutate: saveDefaultCurrency, isPending: isSavingCurrency } = useSavePaymentSetting();
+    const handleCurrencyChange = async (value: string) => {
+        if (value === instituteCurrency) return;
+        try {
+            // Patch the latest saved blob, not a copy from page load: the save endpoint replaces
+            // the whole PAYMENT_SETTING object, so a stale copy would revert other cards' flags.
+            const latest = await fetchPaymentSetting();
+            saveDefaultCurrency(
+                { ...latest, [DEFAULT_CURRENCY_FIELD]: value },
+                {
+                    onSuccess: () => toast.success(t('defaultCurrencySaved', { currency: value })),
+                    onError: () => toast.error(t('defaultCurrencySaveError')),
+                }
+            );
+        } catch {
+            toast.error(t('defaultCurrencySaveError'));
+        }
+    };
     const [showPaymentPlanCreator, setShowPaymentPlanCreator] = useState(false);
     const [showPlanPreview, setShowPlanPreview] = useState(false);
     const [previewingPlan, setPreviewingPlan] = useState<PaymentPlan | null>(null);
@@ -743,7 +771,11 @@ const PaymentSettings = () => {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label>{t('defaultCurrency')}</Label>
-                            <Select value={currency} onValueChange={(value) => setCurrency(value)}>
+                            <Select
+                                value={currency}
+                                onValueChange={handleCurrencyChange}
+                                disabled={isSavingCurrency}
+                            >
                                 <SelectTrigger>
                                     <SelectValue placeholder={t('selectCurrencyPlaceholder')} />
                                 </SelectTrigger>
@@ -755,6 +787,7 @@ const PaymentSettings = () => {
                                     ))}
                                 </SelectContent>
                             </Select>
+                            <p className="text-xs text-neutral-500">{t('defaultCurrencyHint')}</p>
                         </div>
                     </div>
 

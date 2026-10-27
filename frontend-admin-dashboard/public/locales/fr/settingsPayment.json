@@ -3,6 +3,9 @@
     "addPaymentPlan": "Ajouter un plan de paiement",
     "defaultCurrency": "Devise par défaut",
     "selectCurrencyPlaceholder": "Sélectionner une devise",
+    "defaultCurrencyHint": "Utilisée pour les factures, l'historique des paiements et les renouvellements manuels lorsqu'un plan de paiement n'a pas de devise propre. Enregistrée dès que vous la choisissez.",
+    "defaultCurrencySaved": "Devise par défaut définie sur {{currency}}",
+    "defaultCurrencySaveError": "Impossible d'enregistrer la devise par défaut",
     "sections": {
         "freeOptions": "Options gratuites",
         "paidOptions": "Options payantes"

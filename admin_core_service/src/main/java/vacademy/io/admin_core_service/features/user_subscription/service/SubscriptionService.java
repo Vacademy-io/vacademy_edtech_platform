@@ -486,7 +486,7 @@ public class SubscriptionService {
         // charge an Australian member in rupees, and scale the minor units by the wrong
         // exponent on the way. It is also why that plan's button reads "Pay 192" with no
         // currency at all.
-        request.setCurrency(regionalRenewal ? plan.getRegionalCurrency() : resolveCurrency(invite, payablePlan));
+        request.setCurrency(regionalRenewal ? plan.getRegionalCurrency() : resolveCurrency(invite, payablePlan, instituteId));
         request.setDescription("Membership renewal — "
                 + (payablePlan.getName() != null ? payablePlan.getName() : "subscription"));
         request.setInstituteId(instituteId);
@@ -836,16 +836,16 @@ public class SubscriptionService {
         }
     }
 
-    /** Currency for a renewal: the invite's, else the plan's own, else INR. */
+    /**
+     * Currency for a renewal: the invite's, else the plan's own, else the institute's
+     * PAYMENT_SETTING default, else INR.
+     */
     private String resolveCurrency(vacademy.io.admin_core_service.features.enroll_invite.entity.EnrollInvite invite,
-            vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan plan) {
-        if (invite != null && StringUtils.hasText(invite.getCurrency())) {
-            return invite.getCurrency();
-        }
-        if (plan != null && StringUtils.hasText(plan.getCurrency())) {
-            return plan.getCurrency();
-        }
-        return "INR";
+            vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan plan,
+            String instituteId) {
+        return paymentSettingService.resolveCurrency(instituteId,
+                invite != null ? invite.getCurrency() : null,
+                plan != null ? plan.getCurrency() : null);
     }
 
     /**

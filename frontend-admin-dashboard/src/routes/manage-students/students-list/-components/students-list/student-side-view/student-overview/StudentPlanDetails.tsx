@@ -37,6 +37,7 @@ import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { useGetUserBasicDetails } from '@/services/get_user_basic_details';
+import { fallbackCurrency, getInstituteDefaultCurrency } from '@/utils/institute-currency';
 
 interface StudentPlanDetailsProps {
     userId: string;
@@ -79,7 +80,10 @@ const LAPSED_STATUSES = ['EXPIRED', 'CANCELED', 'PAYMENT_FAILED'];
 
 const getPlanAmount = (plan: UserPlan): number => plan.payment_plan_dto?.actual_price || 0;
 
-const getPlanCurrency = (plan: UserPlan): string => plan.payment_plan_dto?.currency || 'N/A';
+// The plan's currency, else the institute's saved default (Settings → Payment). 'N/A' when
+// neither is known — the card then hides the amount rather than guess a symbol.
+const getPlanCurrency = (plan: UserPlan): string =>
+    plan.payment_plan_dto?.currency || getInstituteDefaultCurrency() || 'N/A';
 
 const getCourseLabel = (plan: UserPlan, t: TFunction): string => {
     const policy = getFirstPolicy(plan);
@@ -270,7 +274,7 @@ const CouponAppliedRow = ({ plan, currency }: { plan: UserPlan; currency: string
               })
             : t('coupon.percentageOff', { point: applied.point })
         : t('coupon.amountOff', {
-              amount: `${getCurrencySymbol(currency === 'N/A' ? 'INR' : currency)}${applied.point}`,
+              amount: `${getCurrencySymbol(currency === 'N/A' ? fallbackCurrency() : currency)}${applied.point}`,
           });
     return (
         <div className="mt-2 flex items-center gap-2 rounded-md border border-success-200 bg-success-50 px-2.5 py-1.5">

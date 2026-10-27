@@ -15,6 +15,7 @@ import {
 import { MyInput } from '@/components/design-system/input';
 import { formatMoney } from '@/utils/payment-currency';
 import { serverErrorMessage, voidPaymentLog, type PaymentVoidResult } from '@/services/payment-logs';
+import { fallbackCurrency } from '@/utils/institute-currency';
 
 /** The payment a void is about to act on — enough to name it in the confirmation. */
 export interface VoidPaymentTarget {
@@ -60,7 +61,7 @@ export function VoidPaymentDialog({ target, onOpenChange, onVoided }: VoidPaymen
     const [reason, setReason] = useState('');
 
     const amountLabel = target
-        ? formatMoney(target.amount ?? 0, target.currency || 'INR', { maximumFractionDigits: 2 })
+        ? formatMoney(target.amount ?? 0, target.currency || fallbackCurrency(), { maximumFractionDigits: 2 })
         : '';
 
     // The dialog closes as soon as the admin confirms, so everything the toast needs travels with

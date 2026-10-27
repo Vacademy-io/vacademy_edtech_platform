@@ -3,6 +3,9 @@
     "addPaymentPlan": "Add Payment Plan",
     "defaultCurrency": "Default Currency",
     "selectCurrencyPlaceholder": "Select currency",
+    "defaultCurrencyHint": "Used for invoices, payment history and manual renewals wherever a payment plan has no currency of its own. Saved as soon as you pick it.",
+    "defaultCurrencySaved": "Default currency set to {{currency}}",
+    "defaultCurrencySaveError": "Could not save the default currency",
     "sections": {
         "freeOptions": "Free Options",
         "paidOptions": "Paid Options"

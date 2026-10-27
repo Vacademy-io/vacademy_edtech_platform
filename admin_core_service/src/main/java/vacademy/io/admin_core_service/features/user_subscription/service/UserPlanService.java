@@ -65,6 +65,10 @@ public class UserPlanService {
     @Autowired
     private vacademy.io.admin_core_service.features.fee_management.service.FeeBillCancellationService feeBillCancellationService;
 
+    // Institute default currency for plans created without one.
+    @Autowired
+    private vacademy.io.admin_core_service.features.institute.service.setting.PaymentSettingService paymentSettingService;
+
     @Autowired
     private UserPlanRepository userPlanRepository;
 
@@ -537,7 +541,8 @@ public class UserPlanService {
                         java.math.BigDecimal.valueOf(accrualAmount),
                         regionallyPriced
                                 ? saved.getRegionalCurrency()
-                                : (paymentPlan.getCurrency() != null ? paymentPlan.getCurrency() : "INR"),
+                                : paymentSettingService.resolveCurrency(
+                                        enrollInvite.getInstituteId(), paymentPlan.getCurrency()),
                         null,
                         "USER_PLAN", saved.getId(),
                         null, accrualRemark,

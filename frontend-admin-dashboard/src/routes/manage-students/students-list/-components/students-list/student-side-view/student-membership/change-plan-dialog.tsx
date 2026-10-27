@@ -16,6 +16,7 @@ import {
     getPlanChangeOptions,
     type PlanChangeTarget,
 } from '@/services/user-plan';
+import { fallbackCurrency } from '@/utils/institute-currency';
 
 interface ChangePlanDialogProps {
     open: boolean;
@@ -28,7 +29,7 @@ interface ChangePlanDialogProps {
 
 const formatPrice = (amount?: number | null, currency?: string | null): string => {
     if (amount == null) return '';
-    return `${getCurrencySymbol(currency || 'INR')}${amount % 1 === 0 ? amount.toFixed(0) : amount.toFixed(2)}`;
+    return `${getCurrencySymbol(currency || fallbackCurrency())}${amount % 1 === 0 ? amount.toFixed(0) : amount.toFixed(2)}`;
 };
 
 /**

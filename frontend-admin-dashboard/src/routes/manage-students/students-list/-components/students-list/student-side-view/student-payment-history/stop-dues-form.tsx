@@ -4,9 +4,10 @@ import { toast } from 'sonner';
 import { getCurrencySymbol } from '@/constants/currencies';
 import { serverErrorMessage } from '@/services/payment-logs';
 import { useStopDues } from '@/routes/manage-students/students-list/-services/cpoSideViewService';
+import { fallbackCurrency } from '@/utils/institute-currency';
 
 const fmt = (n: number, currency?: string | null) => {
-    const code = (currency || 'INR').toUpperCase();
+    const code = (currency || fallbackCurrency()).toUpperCase();
     return `${getCurrencySymbol(code)}${n.toLocaleString(code === 'INR' ? 'en-IN' : 'en-US', {
         maximumFractionDigits: 2,
     })}`;

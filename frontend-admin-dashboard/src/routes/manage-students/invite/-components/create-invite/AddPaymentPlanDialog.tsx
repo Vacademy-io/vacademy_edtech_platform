@@ -12,6 +12,7 @@ import { useCreateCPO } from '@/routes/financial-management/fee-plans/-services/
 import { useTranslation } from 'react-i18next';
 import { splitPlansByType, type PaymentOption } from './-utils/helper';
 import { RegionalPricingDialog } from '@/routes/settings/-components/Payment/RegionalPricingDialog';
+import { getInstituteDefaultCurrency } from '@/utils/institute-currency';
 
 interface PaymentPlansDialogProps {
     form: UseFormReturn<InviteLinkFormValues>;
@@ -196,7 +197,7 @@ const AddPaymentPlanDialog = ({ form }: PaymentPlansDialogProps) => {
                 editingPlan={editingPlan}
                 featuresGlobal={featuresGlobal}
                 setFeaturesGlobal={setFeaturesGlobal}
-                defaultCurrency={'GBP'}
+                defaultCurrency={getInstituteDefaultCurrency() || 'GBP'}
                 isSaving={isSaving}
                 requireApproval={requireApproval}
                 setRequireApproval={setRequireApproval}

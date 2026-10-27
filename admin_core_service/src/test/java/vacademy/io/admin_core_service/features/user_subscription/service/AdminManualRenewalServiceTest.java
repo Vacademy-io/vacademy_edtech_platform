@@ -1,5 +1,8 @@
 package vacademy.io.admin_core_service.features.user_subscription.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
+import vacademy.io.admin_core_service.features.institute.service.setting.PaymentSettingService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -89,7 +92,8 @@ class AdminManualRenewalServiceTest {
         packageSessions = mock(PackageSessionRepository.class);
         studentSessions = mock(StudentSessionRepository.class);
         service = new AdminManualRenewalService(planRepo, mappingRepo, paymentLogService, paymentLogRepo,
-                offline, ledger, access, timeline, invoices, auth, invitations, packageSessions, studentSessions);
+                offline, ledger, access, timeline, invoices, auth, invitations, packageSessions, studentSessions,
+                new PaymentSettingService(mock(InstituteRepository.class), new ObjectMapper()));
 
         EnrollInvite invite = new EnrollInvite();
         invite.setInstituteId(INST);

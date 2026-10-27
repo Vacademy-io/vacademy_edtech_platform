@@ -30,6 +30,7 @@ import { getCurrencySymbol } from '@/constants/currencies';
 import { serverErrorMessage } from '@/services/payment-logs';
 import { AdmissionPackagesSection } from './admission-package-card';
 import { ReopenDuesButton, StopDuesForm } from './stop-dues-form';
+import { fallbackCurrency } from '@/utils/institute-currency';
 
 /**
  * Money for one CPO plan. The currency comes from the plan itself — this used to hard-code
@@ -38,7 +39,7 @@ import { ReopenDuesButton, StopDuesForm } from './stop-dues-form';
  */
 const fmt = (n: number | null | undefined, currency?: string | null) => {
     if (!Number.isFinite(n as number)) return '—';
-    const code = (currency || 'INR').toUpperCase();
+    const code = (currency || fallbackCurrency()).toUpperCase();
     return `${getCurrencySymbol(code)}${(n as number).toLocaleString(
         code === 'INR' ? 'en-IN' : 'en-US',
         {

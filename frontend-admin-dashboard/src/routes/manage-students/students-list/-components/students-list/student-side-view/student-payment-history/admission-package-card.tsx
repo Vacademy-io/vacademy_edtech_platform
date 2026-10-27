@@ -21,11 +21,12 @@ import type {
     AdmissionPackageInstallment,
     AdmissionPackageSummary,
 } from '@/routes/manage-students/students-list/-types/cpo-side-view-types';
+import { fallbackCurrency } from '@/utils/institute-currency';
 
 /** Money in the package's currency (en-IN grouping only for INR), as the course cards show it. */
 const fmt = (n: number | null | undefined, currency?: string | null) => {
     if (!Number.isFinite(n as number)) return '—';
-    const code = (currency || 'INR').toUpperCase();
+    const code = (currency || fallbackCurrency()).toUpperCase();
     return `${getCurrencySymbol(code)}${(n as number).toLocaleString(
         code === 'INR' ? 'en-IN' : 'en-US',
         { maximumFractionDigits: 2 }
