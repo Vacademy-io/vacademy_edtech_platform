@@ -1770,7 +1770,13 @@ class TranscriptCollector(FrameProcessor):
             # का रिश्ता निश्चित हो गया है क्या?" became "the match is fixed" —
             # "बहुत बधाई हो!" — and the caller's real answer came 3 s later. 15
             # of 38 answers taken this way in 10 days began that early.
+            # Not when the sentence before it was a question too: "…right now?
+            # Is that you, or does someone help?" — a "Yes." at the start of the
+            # last one answers the first, which had played in full (sim
+            # yes_over_tail, call 34f258c2).
+            sents = [x for x in re.split(r"(?<=[.!?।？])\s+", last) if x.strip()]
             if (last.endswith(("?", "？")) and 0 < seg_start < stop_t
+                    and not (len(sents) >= 2 and sents[-2].rstrip().endswith(("?", "？")))
                     and ack_t < seg_start + ACK_QUESTION_HEARD_SHARE * (stop_t - seg_start)):
                 logger.info("turn-gate: %r began %.1fs into the %.1fs question %r — before "
                             "they heard it, not an answer", text[:20], ack_t - seg_start,

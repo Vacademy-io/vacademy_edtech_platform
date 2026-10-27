@@ -6117,6 +6117,12 @@ async def test_a_yes_over_the_end_of_the_question_is_still_its_answer():
     # played in full, so a "हाँ" over that line is the answer, however early.
     rec = await _ack_in_last_sentence("हाँ।", _QUIZ_REPLY, into=0.3, sentence_secs=2.4)
     assert len([c for c in rec.cues() if "their ANSWER" in c]) == 1, rec.cues()
+    # Two questions in a row (sim yes_over_tail, call 34f258c2): a "Yes." at the
+    # start of the second answers the first, which had played in full.
+    two = ("And how do you handle the fees and reminders for your classes right now? "
+           "Is that you, or does someone help?")
+    rec = await _ack_in_last_sentence("Yes.", two, into=0.2, sentence_secs=2.0)
+    assert len([c for c in rec.cues() if "their ANSWER" in c]) == 1, rec.cues()
 
 
 @pytest.mark.asyncio
