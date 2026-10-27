@@ -478,6 +478,13 @@ def backlog(db: Session, agent_id: str) -> int:
     ), {"a": agent_id, "s": list(OPEN_STATUSES)}).scalar() or 0)
 
 
+def review_waiting(db: Session, agent_id: str) -> int:
+    """Researched leads waiting for a person to pass or reject them."""
+    return int(db.execute(text(
+        "SELECT COUNT(*) FROM lead_candidate WHERE agent_id = :a AND status = 'REVIEW'"
+    ), {"a": agent_id}).scalar() or 0)
+
+
 def get_candidate(db: Session, candidate_id: str, institute_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
     sql = f"SELECT {CAND_COLS}, {_ORG_JOIN} FROM lead_candidate c JOIN lead_org o ON o.id = c.org_id WHERE c.id = :id"
     params: Dict[str, Any] = {"id": candidate_id}

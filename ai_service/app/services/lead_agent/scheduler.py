@@ -11,8 +11,9 @@ allowlist is empty.
     tick_until, SKIP LOCKED, renewed between steps, released at the end; no
     second worker or run-now ticks an agent while its lease lives) and for each:
     plan (cached weekly),
-    discover when the pipeline backlog is below 3 x the rest of today's quota
-    and the wallet / monthly cap allows, deliver inside the window. Once a day:
+    discover when the pipeline backlog is below 3 x the rest of today's quota,
+    fewer leads wait for review than that rest, and the wallet / monthly cap
+    allows; deliver inside the window. Once a day:
     retention (expired lead_org_page rows, search cache older than 7 days).
   * research pool: up to lead_agent.max_concurrency candidates researched at
     once (READY claimed with SKIP LOCKED, 15-minute lease, 3 attempts -> FAILED).
@@ -116,7 +117,8 @@ def _pipeline_state(agent) -> tuple:
     with ladb.session() as db:
         delivered = int(store.get_day(db, agent["id"], day).get("delivered") or 0)
         backlog = store.backlog(db, agent["id"])
-    return delivered, backlog
+        waiting = store.review_waiting(db, agent["id"])
+    return delivered, backlog, waiting
 
 
 def _set_error(agent_id: str, error: Optional[str]) -> None:
@@ -137,10 +139,14 @@ async def tick_agent(agent: dict) -> dict:
     await asyncio.to_thread(discovery.schedule_discovered, agent)
     await _keep_lease(agent["id"])
     if plan:
-        delivered, backlog = await asyncio.to_thread(_pipeline_state, agent)
+        delivered, backlog, waiting = await asyncio.to_thread(_pipeline_state, agent)
         room = max(0, int(agent.get("daily_quota") or 0) - delivered)
-        summary.update(room=room, backlog=backlog)
-        if room > 0 and backlog < BACKLOG_FACTOR * room:
+        summary.update(room=room, backlog=backlog, review=waiting)
+        if room > 0 and waiting >= room:
+            # The leads waiting for a person already cover the rest of today; more searching would
+            # only grow that queue (2026-10-27: 21 of the first 23 delivered leads came from it).
+            summary["discovery"] = {"skipped": "review queue covers today"}
+        elif room > 0 and backlog < BACKLOG_FACTOR * room:
             ok, why = await asyncio.to_thread(billing.affordable, agent, room)
             if ok:
                 try:

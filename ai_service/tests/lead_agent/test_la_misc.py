@@ -242,6 +242,39 @@ def test_tick_skips_discovery_when_the_wallet_is_short(la_db, monkeypatch):
         assert store.get_agent(db, agent["id"])["last_error"] == "Not enough credits"
 
 
+def test_tick_skips_discovery_while_the_review_queue_covers_today(la_db, monkeypatch):
+    from app.services.lead_agent import delivery, discovery, planner
+
+    agent = make_world(la_db, quota=3, plan=PLAN)
+    for domain in ("a.in", "b.in", "c.in"):
+        make_candidate(la_db, agent, domain, status="REVIEW")
+    needs = []
+
+    async def fake_plan(a, ctx=None):
+        return PLAN
+
+    async def fake_round(a, plan, need):
+        needs.append(need)
+        return {"created": 0}
+
+    async def fake_deliver(a, now=None):
+        return {}
+    monkeypatch.setattr(planner, "ensure_plan", fake_plan)
+    monkeypatch.setattr(discovery, "run_round", fake_round)
+    monkeypatch.setattr(delivery, "deliver", fake_deliver)
+    monkeypatch.setattr(billing, "affordable", lambda a, n: (True, ""))
+    [summary] = asyncio.run(scheduler.tick_once())
+    assert summary["discovery"] == {"skipped": "review queue covers today"} and summary["review"] == 3
+    assert needs == []
+    with la_db() as db:   # a person rejected one: the queue no longer covers the rest of today
+        db.execute(text("UPDATE lead_candidate c SET status = 'REJECTED' FROM lead_org o "
+                        "WHERE o.id = c.org_id AND o.domain = 'a.in'"))
+        db.execute(text("UPDATE lead_agent SET last_tick_at = now() - interval '1 hour'"))
+        db.commit()
+    asyncio.run(scheduler.tick_once())
+    assert needs == [3 * 3]
+
+
 def test_nothing_runs_while_switched_off(la_db, monkeypatch):
     make_world(la_db)
     monkeypatch.setattr(flags, "platform_enabled", lambda: False)

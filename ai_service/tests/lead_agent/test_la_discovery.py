@@ -29,6 +29,7 @@ class FakeSerper:
 
     def __init__(self):
         self.queries = []
+        self.maps_queries = []
 
     async def search(self, query, *, gl=None, location=None, num=10, page=1, counter=None):
         self.queries.append((query, page))
@@ -36,6 +37,7 @@ class FakeSerper:
                 for i, (t, u) in enumerate(ORG_RESULTS, start=1)]
 
     async def maps(self, query, *, gl=None, location=None, page=1, counter=None):
+        self.maps_queries.append((query, page))
         return [{"title": "IIT-PULSE Indore", "website": "http://www.iitpulse.com/", "phone": "+91 98937 04288",
                  "rating": 4.8, "reviews": 890, "address": "AB Rd, Indore", "type": "Coaching center"},
                 {"title": "No Website Tutor", "website": None, "phone": "+91 90000 00000"}]
@@ -122,3 +124,67 @@ def test_round_limit_per_day(la_db, fakes):
                             "rounds": discovery.MAX_ROUNDS_PER_DAY}
     assert asyncio.run(discovery.run_round(agent, agent["plan_json"], 5)) == {"skipped": "round limit for today"}
     assert fakes.queries == []
+
+
+def test_a_bigger_daily_quota_gets_more_rounds(la_db, fakes):
+    assert [discovery.round_limit(q) for q in (None, 5, 16, 17, 100, 1000)] == [8, 8, 8, 9, 50, 60]
+    agent = make_world(la_db, plan=PLAN, quota=100)
+    from app.services.lead_agent import pacing
+    agent["cursor_json"] = {"day": pacing.agent_day(agent["window_json"]).isoformat(),
+                            "rounds": discovery.MAX_ROUNDS_PER_DAY}
+    out = asyncio.run(discovery.run_round(agent, agent["plan_json"], 5))
+    assert "skipped" not in out and fakes.queries
+    agent["cursor_json"]["rounds"] = 50
+    assert asyncio.run(discovery.run_round(agent, agent["plan_json"], 5)) == {"skipped": "round limit for today"}
+
+
+def test_a_rebuilt_plan_searches_from_the_first_results_page(la_db, fakes):
+    agent = make_world(la_db, plan=PLAN)
+    asyncio.run(discovery.run_round(agent, agent["plan_json"], 10))
+    with la_db() as db:
+        agent = store.get_agent(db, agent["id"])
+    assert agent["cursor_json"]["org_page"] == 2
+    new_plan = {**PLAN, "search_queries": ["UPSC coaching Indore", "CA coaching Indore", "Bank PO coaching Indore"]}
+    fakes.queries.clear()
+    asyncio.run(discovery.run_round(agent, new_plan, 10))
+    assert fakes.queries == [("UPSC coaching Indore", 1), ("CA coaching Indore", 1), ("Bank PO coaching Indore", 1)]
+    # the same plan again: the cursor carries on (wrapped, so the next page)
+    with la_db() as db:
+        agent = store.get_agent(db, agent["id"])
+    fakes.queries.clear()
+    asyncio.run(discovery.run_round(agent, new_plan, 10))
+    assert {p for _q, p in fakes.queries} == {2}
+
+
+def test_a_whole_country_is_searched_on_maps_city_by_city(la_db, fakes):
+    agent = make_world(la_db, plan=PLAN)
+    agent["markets_json"] = [{"country": "India"}]
+    plan = {**PLAN, "places": ["India"], "match_places": None, "industries_detail": [
+        {"name": "Coaching institutes", "search_term": "coaching institute"},
+        {"name": "Tutoring centres", "search_term": "tutoring centre"}]}
+    asyncio.run(discovery.run_round(agent, plan, 10))
+    # one place at a time, every industry in it; more searches while the round still needs candidates
+    assert fakes.maps_queries == [("coaching institute Delhi", 1), ("tutoring centre Delhi", 1),
+                                  ("coaching institute Mumbai", 1)]
+    city = _rows(la_db, "SELECT o.city FROM lead_candidate c JOIN lead_org o ON o.id = c.org_id "
+                        "WHERE c.source = 'maps'")
+    assert city == [("Delhi",)]
+    with la_db() as db:
+        agent = store.get_agent(db, agent["id"])
+    assert agent["cursor_json"]["maps_idx"] == 3 and agent["cursor_json"]["maps_page"] == 1
+    agent["markets_json"] = [{"country": "India"}]
+    fakes.maps_queries.clear()
+    asyncio.run(discovery.run_round(agent, plan, 10))
+    assert fakes.maps_queries[0] == ("tutoring centre Mumbai", 1)
+
+
+def test_maps_places_only_expand_a_whole_country_we_know():
+    from app.services.lead_agent import places
+    india = places.maps_places([{"country": "India"}], ["India"])
+    assert india[:3] == ["Delhi", "Mumbai", "Bengaluru"] and len(india) == len(places.MAJOR_CITIES["india"])
+    assert places.maps_places([{"country": "India", "city": "Indore"}], ["Indore"]) == ["Indore"]
+    assert places.maps_places([{"country": "India", "state": "Kerala"}], ["Kerala"]) == ["Kerala"]
+    assert places.maps_places([{"country": "Kenya"}], ["Kenya"]) == ["Kenya"]
+    assert places.maps_places([], [""]) == [""]
+    assert discovery.maps_combos([{"search_term": "a"}, {"name": "b"}], ["X", "", "Y"]) == [
+        ("a", "X"), ("b", "X"), ("a", "Y"), ("b", "Y")]

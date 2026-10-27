@@ -3,16 +3,22 @@
 One round = a slice of the plan's searches through engine.discovery.pipeline.discover
 (search results -> the LLM picks organisations' own sites; buying signals quoted
 and checked), plus the Maps lane (Serper /maps: listings with a website, phone,
-rating and review count). New organisations are deduplicated by registered domain
-against this agent's candidates and the institute's suppressed domains, upserted
-into the shared lead_org table and become lead_candidate rows whose home page is
-scheduled for fetching in the agent's mode.
+rating and review count; up to MAPS_PER_ROUND searches while the round still needs
+candidates, a whole-country market walked city by city, see places.py). New
+organisations are deduplicated by registered domain against this agent's
+candidates and the institute's suppressed domains, upserted into the shared
+lead_org table and become lead_candidate rows whose home page is scheduled for
+fetching in the agent's mode. An agent runs at most round_limit(daily_quota)
+rounds a day.
 
 cursor_json makes each round search something new:
-  {"day": "2026-10-25", "rounds": 2, "org_idx": 8, "org_page": 1, "maps_idx": 3, "maps_page": 1}
+  {"day": "2026-10-25", "rounds": 2, "org_key": "…", "org_idx": 8, "org_page": 1,
+   "maps_key": "…", "maps_idx": 3, "maps_page": 1}
 The plan's organisation searches are taken QUERIES_PER_ROUND at a time; when the
 list wraps, the next pass asks Serper for the next results page (up to MAX_PAGE),
-so day after day the agent goes deeper instead of repeating itself.
+so day after day the agent goes deeper instead of repeating itself. org_key and
+maps_key fingerprint the lists the positions belong to: a rebuilt plan (or other
+industries or places) starts its searches again from the first results page.
 
 Routing: organisation searches and website lookups -> Serper (Google); buying-signal
 and keyword searches -> Parallel (falls back to Serper when Parallel has no key).
@@ -22,12 +28,14 @@ hop back onto the event loop (search.run_sync).
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
+import math
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, Iterable, List, Optional, Set
 
 from . import db as ladb
-from . import engine_api, fetcher, llm, pacing, planner, store
+from . import engine_api, fetcher, llm, pacing, places as places_mod, planner, store
 from . import search as search_mod
 from .search import SearchCounter, SearchFailed, SearchUnavailable
 
@@ -35,7 +43,9 @@ logger = logging.getLogger(__name__)
 
 QUERIES_PER_ROUND = 4
 MAX_PAGE = 5
-MAX_ROUNDS_PER_DAY = 8
+MAX_ROUNDS_PER_DAY = 8          # the least; round_limit() gives a bigger daily quota more
+MAX_ROUNDS_CEILING = 60
+MAPS_PER_ROUND = 3
 MAX_SIGNAL_QUERIES = 2          # per industry per round (Parallel)
 MAX_KEYWORD_QUERIES = 2
 MAX_CANDIDATES_PER_ROUND = 30
@@ -65,6 +75,28 @@ def candidate_source(engine_candidate: Any) -> str:
         label = signals[0].get("source") if signals else None
         return _LABEL_SOURCE.get(label or "", "hiring")
     return "organisation_search"
+
+
+def round_limit(daily_quota: Any) -> int:
+    """Discovery rounds an agent may run in a day: MAX_ROUNDS_PER_DAY, or one for every two leads
+    of its daily quota when that is more (at most MAX_ROUNDS_CEILING). Eight rounds found about a
+    dozen leads a day, so an agent asked for 100 stopped searching by midday (2026-10-27)."""
+    try:
+        quota = int(daily_quota or 0)
+    except (TypeError, ValueError):
+        quota = 0
+    return max(MAX_ROUNDS_PER_DAY, min(MAX_ROUNDS_CEILING, math.ceil(quota / 2)))
+
+
+def _fingerprint(items: Iterable[str]) -> str:
+    return hashlib.sha256("\n".join(items).encode("utf-8")).hexdigest()[:12]
+
+
+def maps_combos(industries: List[dict], places: List[str]) -> List[tuple]:
+    """(search term, place) pairs place by place, so every industry is searched in the first
+    city before the next city starts."""
+    terms = [t for t in ((i.get("search_term") or i.get("name")) for i in industries) if t]
+    return [(term, place) for place in places if place for term in terms]
 
 
 def _slice(items: List[str], start: int, n: int) -> List[str]:
@@ -126,7 +158,7 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
     window = agent.get("window_json")
     day = pacing.agent_day(window)
     cursor = _fresh_cursor(agent.get("cursor_json"), day.isoformat())
-    if int(cursor.get("rounds") or 0) >= MAX_ROUNDS_PER_DAY:
+    if int(cursor.get("rounds") or 0) >= round_limit(agent.get("daily_quota")):
         return {"skipped": "round limit for today"}
     need = max(1, min(int(need), MAX_CANDIDATES_PER_ROUND))
     markets = [m for m in (agent.get("markets_json") or []) if isinstance(m, dict)]
@@ -147,7 +179,12 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
 
     sources = engine_sources(brief)
     org_all = list(plan.get("search_queries") or [])
-    org_slice = _slice(org_all, int(cursor["org_idx"]), QUERIES_PER_ROUND) if "organisation_search" in sources else []
+    org_key = _fingerprint(org_all)
+    if cursor.get("org_key") != org_key:
+        # Another plan: its searches start at the first results page. The plan rebuilt on
+        # 2026-10-27 searched its new queries from page 5, where the old list had got to.
+        cursor.update(org_key=org_key, org_idx=0, org_page=1)
+    org_slice =_slice(org_all, int(cursor["org_idx"]), QUERIES_PER_ROUND) if "organisation_search" in sources else []
     wrapped = bool(org_all) and int(cursor["org_idx"]) + len(org_slice) >= len(org_all)
     signal_set = _signal_query_set(sources, industries, places, plan)
 
@@ -196,8 +233,8 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
                 created.append(cid)
 
     if "maps" in brief_sources(brief) and len(created) < need and industries and places:
-        created += await _maps_lane(agent, cursor, industries, places, gl, counter, skip, exclude, first,
-                                    need - len(created))
+        created += await _maps_lane(agent, cursor, industries, places_mod.maps_places(markets, places), gl,
+                                    counter, skip, exclude, first, need - len(created))
 
     # advance the cursor
     if org_slice:
@@ -210,42 +247,49 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
 
 
 async def _maps_lane(agent, cursor, industries, places, gl, counter, skip, exclude, market, room) -> List[str]:
-    combos = [(i.get("search_term") or i.get("name"), p) for i in industries for p in places if p]
+    combos = maps_combos(industries, places)
     if not combos:
         return []
-    idx = int(cursor.get("maps_idx") or 0)
-    term, place = combos[idx % len(combos)]
-    page = int(cursor.get("maps_page") or 1)
-    cursor["maps_idx"] = (idx + 1) % len(combos)
-    if cursor["maps_idx"] == 0:
-        cursor["maps_page"] = 1 if page >= MAX_PAGE else page + 1
-    try:
-        places_found = await search_mod.serper().maps(f"{term} {place}", gl=gl, page=page, counter=counter)
-    except SearchFailed as exc:
-        logger.warning("lead agent: maps search failed: %s", exc)
-        return []
+    maps_key = _fingerprint(f"{term}|{place}" for term, place in combos)
+    if cursor.get("maps_key") != maps_key:
+        cursor.update(maps_key=maps_key, maps_idx=0, maps_page=1)
     out: List[str] = []
-    for p in places_found:
+    for _ in range(MAPS_PER_ROUND):
         if len(out) >= room:
             break
-        website = p.get("website")
-        if not website:
-            continue
-        domain = engine_api.registered_domain(website)
-        if not domain or domain in skip or engine_api.is_excluded(domain):
-            continue
-        name = (p.get("title") or domain)[:300]
-        if engine_api.left_out(name, exclude):
-            continue
-        skip.add(domain)
-        cid = await asyncio.to_thread(
-            _create, agent, domain=domain, name=name, website=engine_api.homepage(website) or website, source="maps",
-            discovery={"query": f"{term} {place}", "url": website, "title": name,
-                       "maps": {"phone": p.get("phone"), "rating": p.get("rating"), "reviews": p.get("reviews"),
-                                "address": p.get("address"), "type": p.get("type")}},
-            market={**(market or {}), "city": place if place != (market or {}).get("country") else None})
-        if cid:
-            out.append(cid)
+        idx = int(cursor.get("maps_idx") or 0)
+        term, place = combos[idx % len(combos)]
+        page = int(cursor.get("maps_page") or 1)
+        cursor["maps_idx"] = (idx + 1) % len(combos)
+        if cursor["maps_idx"] == 0:
+            cursor["maps_page"] = 1 if page >= MAX_PAGE else page + 1
+        try:
+            places_found = await search_mod.serper().maps(f"{term} {place}", gl=gl, page=page, counter=counter)
+        except SearchFailed as exc:
+            logger.warning("lead agent: maps search failed: %s", exc)
+            break
+        for p in places_found:
+            if len(out) >= room:
+                break
+            website = p.get("website")
+            if not website:
+                continue
+            domain = engine_api.registered_domain(website)
+            if not domain or domain in skip or engine_api.is_excluded(domain):
+                continue
+            name = (p.get("title") or domain)[:300]
+            if engine_api.left_out(name, exclude):
+                continue
+            skip.add(domain)
+            cid = await asyncio.to_thread(
+                _create, agent, domain=domain, name=name, website=engine_api.homepage(website) or website,
+                source="maps",
+                discovery={"query": f"{term} {place}", "url": website, "title": name,
+                           "maps": {"phone": p.get("phone"), "rating": p.get("rating"), "reviews": p.get("reviews"),
+                                    "address": p.get("address"), "type": p.get("type")}},
+                market={**(market or {}), "city": place if place != (market or {}).get("country") else None})
+            if cid:
+                out.append(cid)
     return out
 
 
@@ -307,4 +351,5 @@ def schedule_discovered(agent: Dict[str, Any]) -> int:
     return n
 
 
-__all__ = ["run_round", "brief_sources", "engine_sources", "schedule_discovered", "candidate_source"]
+__all__ = ["run_round", "round_limit", "maps_combos", "brief_sources", "engine_sources", "schedule_discovered",
+           "candidate_source"]
