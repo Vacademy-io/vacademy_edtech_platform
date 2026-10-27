@@ -10,6 +10,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import vacademy.io.admin_core_service.features.timeline.dto.StudentLatestNoteDTO;
 import vacademy.io.admin_core_service.features.timeline.dto.TimelineEventDTO;
 import vacademy.io.admin_core_service.features.timeline.dto.TimelineEventRequestDTO;
@@ -94,6 +97,7 @@ public class TimelineEventService {
                 if (existing.getActorId() == null) existing.setActorId(actorId);
                 if (existing.getActorName() == null) existing.setActorName(actorName);
                 if (existing.getStudentUserId() == null) existing.setStudentUserId(studentUserId);
+                if (existing.getInstituteId() == null) existing.setInstituteId(resolveInstituteId("LEAD", typeId));
                 timelineEventRepository.save(existing);
         }
 
@@ -145,6 +149,7 @@ public class TimelineEventService {
                                 .isPinned(request.getIsPinned() != null ? request.getIsPinned() : false)
                                 .studentUserId(request.getStudentUserId())
                                 .category(category)
+                                .instituteId(resolveInstituteId(request.getType(), request.getTypeId()))
                                 .build();
 
                 TimelineEvent savedEvent = timelineEventRepository.save(event);
@@ -165,22 +170,30 @@ public class TimelineEventService {
 
         @Transactional(readOnly = true)
         public Page<TimelineEventDTO> getTimelineEvents(String type, String typeId, Pageable pageable) {
-                return timelineEventRepository
-                                .findByTypeAndTypeIdOrderByCreatedAtDesc(type, typeId, pageable)
+                String instituteId = requestInstituteId();
+                return (instituteId == null
+                                ? timelineEventRepository.findByTypeAndTypeIdOrderByCreatedAtDesc(type, typeId, pageable)
+                                : timelineEventRepository.findForInstituteByTypeAndTypeId(type, typeId, instituteId, pageable))
                                 .map(this::mapToDTO);
         }
 
         @Transactional(readOnly = true)
         public Page<TimelineEventDTO> getTimelineEventsWithPinnedFirst(String type, String typeId, Pageable pageable) {
-                return timelineEventRepository
-                                .findByTypeAndTypeIdOrderByIsPinnedDescCreatedAtDesc(type, typeId, pageable)
+                String instituteId = requestInstituteId();
+                return (instituteId == null
+                                ? timelineEventRepository.findByTypeAndTypeIdOrderByIsPinnedDescCreatedAtDesc(type, typeId, pageable)
+                                : timelineEventRepository.findForInstituteByTypeAndTypeIdPinnedFirst(type, typeId, instituteId,
+                                                pageable))
                                 .map(this::mapToDTO);
         }
 
         @Transactional(readOnly = true)
         public Page<TimelineEventDTO> getCrossStageTimeline(String studentUserId, Pageable pageable) {
-                return timelineEventRepository
-                                .findByStudentUserIdOrderByIsPinnedDescCreatedAtDesc(studentUserId, pageable)
+                String instituteId = requestInstituteId();
+                return (instituteId == null
+                                ? timelineEventRepository.findByStudentUserIdOrderByIsPinnedDescCreatedAtDesc(studentUserId, pageable)
+                                : timelineEventRepository.findForInstituteByStudentUserIdPinnedFirst(studentUserId, instituteId,
+                                                pageable))
                                 .map(this::mapToDTO);
         }
 
@@ -195,22 +208,33 @@ public class TimelineEventService {
                 List<String> effectiveTypeIds = (typeIds != null && !typeIds.isEmpty())
                                 ? typeIds
                                 : List.of("__no_match__");
-                return timelineEventRepository
-                                .findAllEventsForLead(studentUserId, effectiveTypeIds, pageable)
+                String instituteId = requestInstituteId();
+                return (instituteId == null
+                                ? timelineEventRepository.findAllEventsForLead(studentUserId, effectiveTypeIds, pageable)
+                                : timelineEventRepository.findAllEventsForLeadForInstitute(studentUserId, effectiveTypeIds,
+                                                instituteId, pageable))
                                 .map(this::mapToDTO);
         }
 
         @Transactional(readOnly = true)
         public Page<TimelineEventDTO> getJourneyEvents(String type, String typeId, Pageable pageable) {
-                return timelineEventRepository
-                                .findByTypeAndTypeIdAndCategoryOrderByCreatedAtDesc(type, typeId, TimelineCategory.JOURNEY, pageable)
+                String instituteId = requestInstituteId();
+                return (instituteId == null
+                                ? timelineEventRepository.findByTypeAndTypeIdAndCategoryOrderByCreatedAtDesc(type, typeId,
+                                                TimelineCategory.JOURNEY, pageable)
+                                : timelineEventRepository.findForInstituteByTypeAndTypeIdAndCategory(type, typeId,
+                                                TimelineCategory.JOURNEY, instituteId, pageable))
                                 .map(this::mapToDTO);
         }
 
         @Transactional(readOnly = true)
         public Page<TimelineEventDTO> getCrossStageJourney(String studentUserId, Pageable pageable) {
-                return timelineEventRepository
-                                .findByStudentUserIdAndCategoryOrderByCreatedAtDesc(studentUserId, TimelineCategory.JOURNEY, pageable)
+                String instituteId = requestInstituteId();
+                return (instituteId == null
+                                ? timelineEventRepository.findByStudentUserIdAndCategoryOrderByCreatedAtDesc(studentUserId,
+                                                TimelineCategory.JOURNEY, pageable)
+                                : timelineEventRepository.findForInstituteByStudentUserIdAndCategory(studentUserId,
+                                                TimelineCategory.JOURNEY, instituteId, pageable))
                                 .map(this::mapToDTO);
         }
 
@@ -221,8 +245,11 @@ public class TimelineEventService {
                 Map<String, StudentLatestNoteDTO> result = new HashMap<>();
                 if (studentUserIds == null || studentUserIds.isEmpty()) return result;
 
-                List<TimelineEvent> recentEvents = timelineEventRepository
-                                .findRecentPerStudent(studentUserIds, RECENT_NOTES_PER_STUDENT);
+                String instituteId = requestInstituteId();
+                List<TimelineEvent> recentEvents = instituteId == null
+                                ? timelineEventRepository.findRecentPerStudent(studentUserIds, RECENT_NOTES_PER_STUDENT)
+                                : timelineEventRepository.findRecentPerStudentForInstitute(studentUserIds, instituteId,
+                                                RECENT_NOTES_PER_STUDENT);
                 Map<String, List<TimelineEventDTO>> recentByUser = new HashMap<>();
                 for (TimelineEvent e : recentEvents) {
                         if (e.getStudentUserId() == null) continue;
@@ -231,7 +258,10 @@ public class TimelineEventService {
                 }
 
                 Map<String, Long> countByUser = new HashMap<>();
-                for (Object[] row : timelineEventRepository.countByStudentUserIds(studentUserIds)) {
+                List<Object[]> counts = instituteId == null
+                                ? timelineEventRepository.countByStudentUserIds(studentUserIds)
+                                : timelineEventRepository.countByStudentUserIdsForInstitute(studentUserIds, instituteId);
+                for (Object[] row : counts) {
                         if (row[0] != null) {
                                 countByUser.put((String) row[0], ((Number) row[1]).longValue());
                         }
@@ -265,8 +295,11 @@ public class TimelineEventService {
                 // etc., whose student_user_id is often null). The old
                 // findRecentPerStudent-based version missed the latter, so the
                 // export's journey column carried a single row per lead.
-                List<TimelineEventRepository.JourneyEventRow> rows = timelineEventRepository
-                                .findJourneyRowsForUsers(studentUserIds, JOURNEY_EXPORT_CAP);
+                String instituteId = requestInstituteId();
+                List<TimelineEventRepository.JourneyEventRow> rows = instituteId == null
+                                ? timelineEventRepository.findJourneyRowsForUsers(studentUserIds, JOURNEY_EXPORT_CAP)
+                                : timelineEventRepository.findJourneyRowsForUsersForInstitute(studentUserIds, instituteId,
+                                                JOURNEY_EXPORT_CAP);
                 for (TimelineEventRepository.JourneyEventRow r : rows) {
                         if (r.getJourneyUserId() == null) continue;
                         TimelineCategory category = null;
@@ -297,6 +330,40 @@ public class TimelineEventService {
 
         // ── Private helpers ───────────────────────────────────────────────────
 
+        /**
+         * The institute an event belongs to: the institute of the enquiry or lead profile it
+         * is keyed by when there is one (exact, whoever writes it), else the institute the
+         * request is made for (the dashboard's clientId header), e.g. a note on a person.
+         * Null when neither is known (a background job writing a person-keyed event): that
+         * event shows in every institute, as all events did before. Never fails the write.
+         */
+        private String resolveInstituteId(String type, String typeId) {
+                if (typeId != null && !typeId.isBlank()) {
+                        try {
+                                java.util.Optional<String> owned = java.util.Optional.empty();
+                                if ("LEAD".equals(type) || "AUDIENCE_RESPONSE".equals(type)) {
+                                        owned = timelineEventRepository.findInstituteIdOfResponse(typeId);
+                                } else if ("USER_LEAD_PROFILE".equals(type)) {
+                                        owned = timelineEventRepository.findInstituteIdOfLeadProfile(typeId);
+                                }
+                                if (owned.isPresent() && !owned.get().isBlank()) return owned.get();
+                        } catch (Exception e) {
+                                logger.warn("Could not resolve the institute of {}[{}]: {}", type, typeId, e.getMessage());
+                        }
+                }
+                return requestInstituteId();
+        }
+
+        /** The institute the current request is made for (clientId header); null outside a request. */
+        private String requestInstituteId() {
+                RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
+                if (attributes instanceof ServletRequestAttributes servletAttributes) {
+                        String clientId = servletAttributes.getRequest().getHeader("clientId");
+                        return clientId == null || clientId.isBlank() ? null : clientId.trim();
+                }
+                return null;
+        }
+
         private void saveEvent(String type, String typeId, String actionType,
                         String actorType, String actorId, String actorName,
                         String title, String description, Object metadata,
@@ -323,6 +390,7 @@ public class TimelineEventService {
                                 .metadataJson(metadataJson)
                                 .studentUserId(studentUserId)
                                 .category(category)
+                                .instituteId(resolveInstituteId(type, typeId))
                                 .build();
 
                 timelineEventRepository.save(event);
