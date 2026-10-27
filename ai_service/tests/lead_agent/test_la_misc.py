@@ -242,12 +242,13 @@ def test_tick_skips_discovery_when_the_wallet_is_short(la_db, monkeypatch):
         assert store.get_agent(db, agent["id"])["last_error"] == "Not enough credits"
 
 
-def test_tick_skips_discovery_while_the_review_queue_covers_today(la_db, monkeypatch):
+def test_tick_skips_discovery_once_today_sent_the_rest_of_the_quota_to_review(la_db, monkeypatch):
     from app.services.lead_agent import delivery, discovery, planner
 
     agent = make_world(la_db, quota=3, plan=PLAN)
-    for domain in ("a.in", "b.in", "c.in"):
-        make_candidate(la_db, agent, domain, status="REVIEW")
+    with la_db() as db:
+        store.bump_day(db, agent["id"], pacing.agent_day(agent["window_json"]), review=3)
+        db.commit()
     needs = []
 
     async def fake_plan(a, ctx=None):
@@ -266,9 +267,11 @@ def test_tick_skips_discovery_while_the_review_queue_covers_today(la_db, monkeyp
     [summary] = asyncio.run(scheduler.tick_once())
     assert summary["discovery"] == {"skipped": "review queue covers today"} and summary["review"] == 3
     assert needs == []
-    with la_db() as db:   # a person rejected one: the queue no longer covers the rest of today
-        db.execute(text("UPDATE lead_candidate c SET status = 'REJECTED' FROM lead_org o "
-                        "WHERE o.id = c.org_id AND o.domain = 'a.in'"))
+    # A queue left from earlier days does not hold the agent back: only today's count does.
+    for domain in ("a.in", "b.in", "c.in"):
+        make_candidate(la_db, agent, domain, status="REVIEW")
+    with la_db() as db:
+        db.execute(text("UPDATE lead_agent_day SET day = day - 1"))
         db.execute(text("UPDATE lead_agent SET last_tick_at = now() - interval '1 hour'"))
         db.commit()
     asyncio.run(scheduler.tick_once())
