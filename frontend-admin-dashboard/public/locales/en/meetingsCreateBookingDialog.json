@@ -4,7 +4,9 @@
         "dateRequired": "Date is required",
         "startTimeRequired": "Start time is required",
         "durationRequired": "Duration is required",
-        "emailInvalid": "Enter a valid email"
+        "emailInvalid": "Enter a valid email",
+        "nameLooksLikeEmail": "This looks like an email — put it in Invitee email",
+        "inviteeContactRequired": "Add the invitee's email or phone so they get the invite"
     },
     "durationOption_one": "{{count}} minute",
     "durationOption_other": "{{count}} minutes",

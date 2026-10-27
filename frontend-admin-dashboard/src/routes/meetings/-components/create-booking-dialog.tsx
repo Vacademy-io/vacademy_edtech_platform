@@ -25,15 +25,37 @@ const buildDurationOptions = (t: TFunction) =>
     }));
 
 const buildCreateBookingSchema = (t: TFunction) =>
-    z.object({
-        title: z.string().min(1, t('schema.titleRequired')),
-        date: z.string().min(1, t('schema.dateRequired')),
-        startTime: z.string().min(1, t('schema.startTimeRequired')),
-        durationMinutes: z.string().min(1, t('schema.durationRequired')),
-        inviteeName: z.string().optional(),
-        inviteeEmail: z.string().email(t('schema.emailInvalid')).optional().or(z.literal('')),
-        inviteePhone: z.string().optional(),
-    });
+    z
+        .object({
+            title: z.string().min(1, t('schema.titleRequired')),
+            date: z.string().min(1, t('schema.dateRequired')),
+            startTime: z.string().min(1, t('schema.startTimeRequired')),
+            durationMinutes: z.string().min(1, t('schema.durationRequired')),
+            inviteeName: z.string().optional(),
+            inviteeEmail: z.string().email(t('schema.emailInvalid')).optional().or(z.literal('')),
+            inviteePhone: z.string().optional(),
+        })
+        .superRefine((values, ctx) => {
+            // A named invitee with no email/phone gets no confirmation and no
+            // calendar invite — the booking silently reaches nobody.
+            const name = values.inviteeName?.trim() ?? '';
+            const hasEmail = !!values.inviteeEmail?.trim();
+            const hasPhone = !!values.inviteePhone?.trim();
+            if (!name || hasEmail || hasPhone) return;
+            if (z.string().email().safeParse(name).success) {
+                ctx.addIssue({
+                    code: z.ZodIssueCode.custom,
+                    path: ['inviteeName'],
+                    message: t('schema.nameLooksLikeEmail'),
+                });
+                return;
+            }
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ['inviteeEmail'],
+                message: t('schema.inviteeContactRequired'),
+            });
+        });
 
 type CreateBookingFormValues = z.infer<ReturnType<typeof buildCreateBookingSchema>>;
 

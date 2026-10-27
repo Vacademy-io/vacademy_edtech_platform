@@ -4,7 +4,9 @@
         "dateRequired": "التاريخ مطلوب",
         "startTimeRequired": "وقت البدء مطلوب",
         "durationRequired": "المدة مطلوبة",
-        "emailInvalid": "أدخل بريدًا إلكترونيًا صالحًا"
+        "emailInvalid": "أدخل بريدًا إلكترونيًا صالحًا",
+        "nameLooksLikeEmail": "يبدو هذا بريدًا إلكترونيًا — أدخله في حقل بريد المدعو",
+        "inviteeContactRequired": "أضف بريد المدعو أو هاتفه ليصله الدعوة"
     },
     "durationOption_zero": "{{count}} دقيقة",
     "durationOption_one": "دقيقة واحدة",

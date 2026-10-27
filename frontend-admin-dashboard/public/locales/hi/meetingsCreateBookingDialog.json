@@ -4,7 +4,9 @@
         "dateRequired": "तारीख आवश्यक है",
         "startTimeRequired": "प्रारंभ समय आवश्यक है",
         "durationRequired": "अवधि आवश्यक है",
-        "emailInvalid": "एक मान्य ईमेल दर्ज करें"
+        "emailInvalid": "एक मान्य ईमेल दर्ज करें",
+        "nameLooksLikeEmail": "यह ईमेल लगता है — इसे आमंत्रित व्यक्ति के ईमेल में डालें",
+        "inviteeContactRequired": "आमंत्रित व्यक्ति का ईमेल या फ़ोन जोड़ें ताकि उन्हें आमंत्रण मिले"
     },
     "durationOption_one": "{{count}} मिनट",
     "durationOption_other": "{{count}} मिनट",

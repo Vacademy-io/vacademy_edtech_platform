@@ -159,7 +159,7 @@ public class MeetingBookingService {
             instance = allocateMeetLink(instance, title, duration, timezone);
         }
         if ("CONFIRMED".equals(instance.getStatus())) {
-            instance = pushCalendarEvent(instance, title, timezone);
+            instance = pushCalendarEvent(instance, title, timezone, request.getParticipantUserIds());
         }
         sendConfirmationEmail(instance, title, zone, reminderConfig);
         sendConfirmationWhatsapp(instance, title, zone, reminderConfig);
@@ -299,23 +299,30 @@ public class MeetingBookingService {
     /**
      * Post-commit one-way Google Calendar push: create an event on the institute's
      * connected Google account with the host + invitee as attendees (sendUpdates=all),
-     * so the booking reflects on both calendars. Scope-gated and best-effort inside
+     * so the booking reflects on both calendars. Internal participants picked in the
+     * New Meeting dialog are invited too. Scope-gated and best-effort inside
      * {@link GoogleCalendarService} — a booking is never rolled back if this fails,
      * and institutes without Calendar consent are simply skipped.
      */
-    private BookingInstance pushCalendarEvent(BookingInstance instance, String title, String timezone) {
+    private BookingInstance pushCalendarEvent(BookingInstance instance, String title, String timezone,
+                                              List<String> participantUserIds) {
         try {
             List<String> attendees = new ArrayList<>();
             if (instance.getInviteeEmail() != null && !instance.getInviteeEmail().isBlank()) {
                 attendees.add(instance.getInviteeEmail());
             }
+            Set<String> staffIds = new LinkedHashSet<>();
+            staffIds.add(instance.getHostUserId());
+            if (participantUserIds != null) {
+                participantUserIds.stream().filter(id -> id != null && !id.isBlank()).forEach(staffIds::add);
+            }
             try {
-                authService.getUsersFromAuthServiceByUserIds(List.of(instance.getHostUserId())).stream()
-                        .filter(u -> u.getEmail() != null && !u.getEmail().isBlank())
-                        .findFirst()
-                        .ifPresent(h -> attendees.add(h.getEmail()));
+                authService.getUsersFromAuthServiceByUserIds(new ArrayList<>(staffIds)).stream()
+                        .map(u -> u.getEmail())
+                        .filter(e -> e != null && !e.isBlank())
+                        .forEach(attendees::add);
             } catch (Exception ignore) {
-                // host email is best-effort — the event still lands with the invitee
+                // host/participant emails are best-effort — the event still lands with the invitee
             }
             String description = "Booking with " + firstNonBlank(instance.getInviteeName(), "invitee", "");
             Optional<String> eventId = googleCalendarService.createEvent(

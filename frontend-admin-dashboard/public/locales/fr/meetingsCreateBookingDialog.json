@@ -4,7 +4,9 @@
         "dateRequired": "La date est requise",
         "startTimeRequired": "L'heure de début est requise",
         "durationRequired": "La durée est requise",
-        "emailInvalid": "Saisissez un e-mail valide"
+        "emailInvalid": "Saisissez un e-mail valide",
+        "nameLooksLikeEmail": "Cela ressemble à un e-mail — saisissez-le dans E-mail de l'invité",
+        "inviteeContactRequired": "Ajoutez l'e-mail ou le téléphone de l'invité pour qu'il reçoive l'invitation"
     },
     "durationOption_one": "{{count}} minute",
     "durationOption_many": "{{count}} minutes",
