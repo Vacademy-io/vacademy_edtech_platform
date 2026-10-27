@@ -201,6 +201,9 @@ export const mapRecentLeadToStudent = (lead: RecentLeadDetail): StudentTable => 
     (result as unknown as Record<string, unknown>)._utm_campaign = lead.utm_campaign ?? null;
     (result as unknown as Record<string, unknown>)._utm_source = lead.utm_source ?? null;
     (result as unknown as Record<string, unknown>)._response_id = lead.response_id ?? null;
+    // This enquiry's own number, shown and edited as the lead's when Lead Settings
+    // repeatLead.enquiryNumberPrimary is on (mobile_number stays the login account's).
+    (result as unknown as Record<string, unknown>)._enquiry_mobile = lead.parent_mobile || null;
     return result;
 };
 
@@ -269,6 +272,9 @@ export const mapCampaignRowToStudent = (row: CampaignUserTable): StudentTable =>
     (result as unknown as Record<string, unknown>)._utm_campaign = row._utm_campaign;
     (result as unknown as Record<string, unknown>)._utm_source = row._utm_source;
     (result as unknown as Record<string, unknown>)._response_id = row._response_id ?? null;
+    // See mapRecentLeadToStudent: phone_number is this enquiry's number first.
+    (result as unknown as Record<string, unknown>)._enquiry_mobile =
+        (row.phone_number as string) || null;
     return result;
 };
 

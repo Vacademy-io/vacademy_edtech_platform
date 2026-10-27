@@ -72,6 +72,10 @@
             "label": "Discarded lead goes to a new counsellor",
             "hint": "When a discarded lead enquires again, the list's pool assigns it to the next counsellor, not the one who discarded it. That counsellor gets the follow-up."
         },
+        "enquiryNumberPrimary": {
+            "label": "Lead's number = enquiry number",
+            "hint": "The lead profile shows and edits the number on this enquiry instead of the login account's, and Check Lead also finds a lead by a number it had before an edit."
+        },
         "alsoMatchEmail": {
             "label": "Also match on email",
             "hint": "An enquiry with a new phone number still counts as a repeat when its email matches an existing lead (e.g. a Google form prefilled with another number)."

@@ -14,6 +14,7 @@ import { UPDATE_LEAD_PROFILE } from '@/constants/urls';
 import { useStudentSidebar } from '@/routes/manage-students/students-list/-context/selected-student-sidebar-context';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import { useLeadDedupSettings } from '@/hooks/use-lead-dedup-settings';
 import {
     PencilSimple,
     UserCircle,
@@ -95,6 +96,14 @@ export const EditLeadDetails = () => {
 
     const responseId =
         (selectedStudent as unknown as Record<string, unknown>)?._response_id as string | null;
+    // Lead Settings "Lead's number = enquiry number": Contact number is this enquiry's
+    // number and saves there (parent_mobile), never onto the shared login account.
+    const { settings: dedupSettings } = useLeadDedupSettings({ skip: !responseId });
+    const enquiryFirst = !!responseId && dedupSettings.repeatLead.enquiryNumberPrimary;
+    const enquiryMobile =
+        ((selectedStudent as unknown as Record<string, unknown>)?._enquiry_mobile as
+            | string
+            | null) || '';
     const allResponseFields =
         ((selectedStudent as unknown as Record<string, unknown>)?._response_fields as
             | LeadResponseField[]
@@ -145,14 +154,14 @@ export const EditLeadDetails = () => {
         form.reset({
             full_name: selectedStudent.full_name || '',
             email: selectedStudent.email || '',
-            contact_number: selectedStudent.mobile_number || '',
+            contact_number: (enquiryFirst && enquiryMobile) || selectedStudent.mobile_number || '',
             guardian_name: selectedStudent.fathers_name || '',
             guardian_mobile: selectedStudent.father_mobile_number || '',
             guardian_email: selectedStudent.father_email || '',
             custom_fields: customFields,
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedStudent, openDialog]);
+    }, [selectedStudent, openDialog, enquiryFirst]);
 
     const mutation = useMutation({
         mutationFn: (values: EditLeadFormValues) => {
@@ -164,16 +173,26 @@ export const EditLeadDetails = () => {
                     value: value || '',
                 })
             );
+            // Guardian fields go only when edited: an omitted field is left as it is, while
+            // "" clears it, and a row opened without them (e.g. from a lead list) would
+            // otherwise wipe the enquiry's stored number on any save.
+            const dirty = form.formState.dirtyFields;
             const payload = {
                 user_details: {
                     id: selectedStudent?.user_id,
                     full_name: values.full_name,
                     email: values.email,
-                    mobile_number: values.contact_number || '',
+                    ...(enquiryFirst ? {} : { mobile_number: values.contact_number || '' }),
                 },
-                parent_name: values.guardian_name || '',
-                parent_email: values.guardian_email || '',
-                parent_mobile: values.guardian_mobile || '',
+                ...(dirty.guardian_name ? { parent_name: values.guardian_name || '' } : {}),
+                ...(dirty.guardian_email ? { parent_email: values.guardian_email || '' } : {}),
+                ...(enquiryFirst
+                    ? dirty.contact_number
+                        ? { parent_mobile: values.contact_number || '' }
+                        : {}
+                    : dirty.guardian_mobile
+                      ? { parent_mobile: values.guardian_mobile || '' }
+                      : {}),
                 custom_field_values: customFieldValues,
             };
             return authenticatedAxiosInstance.put(UPDATE_LEAD_PROFILE(responseId || ''), payload);
@@ -187,10 +206,15 @@ export const EditLeadDetails = () => {
                         ...selectedStudent,
                         full_name: values.full_name,
                         email: values.email,
-                        mobile_number: values.contact_number || '',
+                        mobile_number: enquiryFirst
+                            ? selectedStudent.mobile_number
+                            : values.contact_number || '',
                         fathers_name: values.guardian_name || '',
-                        father_mobile_number: values.guardian_mobile || '',
+                        father_mobile_number: enquiryFirst
+                            ? values.contact_number || ''
+                            : values.guardian_mobile || '',
                         father_email: values.guardian_email || '',
+                        ...(enquiryFirst ? { _enquiry_mobile: values.contact_number || null } : {}),
                     },
                     { openOverlay: false }
                 );
@@ -343,15 +367,17 @@ export const EditLeadDetails = () => {
                                 </FormItem>
                             )}
                         />
-                        <div className="elp-phone w-full">
-                            <PhoneInputField
-                                label={t('fields.guardianMobile.label')}
-                                placeholder={t('fields.guardianMobile.placeholder')}
-                                name="guardian_mobile"
-                                control={form.control}
-                                required={false}
-                            />
-                        </div>
+                        {!enquiryFirst && (
+                            <div className="elp-phone w-full">
+                                <PhoneInputField
+                                    label={t('fields.guardianMobile.label')}
+                                    placeholder={t('fields.guardianMobile.placeholder')}
+                                    name="guardian_mobile"
+                                    control={form.control}
+                                    required={false}
+                                />
+                            </div>
+                        )}
                         <FormField
                             control={form.control}
                             name="guardian_email"

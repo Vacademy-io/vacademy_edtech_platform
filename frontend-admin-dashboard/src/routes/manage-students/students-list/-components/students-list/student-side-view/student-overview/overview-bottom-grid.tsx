@@ -2,6 +2,7 @@ import { ClipboardText, Phone } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { ProfileSectionCard, ProfileFieldRow } from '../profile-ui';
 import { StudentTable } from '@/types/student-table-types';
+import { useLeadDedupSettings } from '@/hooks/use-lead-dedup-settings';
 
 /**
  * Overview Bottom Grid — the 2-column layout below Quick Actions per the
@@ -96,17 +97,35 @@ export const OverviewEnrolment = ({
  */
 export const OverviewContact = ({ student, onCopy, copiedField }: ContactProps) => {
     const { t } = useTranslation('manageStudentsOverviewBottomGrid');
+    const leadExtras = student as unknown as Record<string, unknown> | null;
+    const isLead = !!leadExtras?._response_id;
+    const { settings } = useLeadDedupSettings({ skip: !isLead });
 
     if (!student) return null;
 
-    const mobile =
+    const loginMobile =
         student.mobile_number && student.mobile_number.trim() !== ''
             ? student.mobile_number
+            : null;
+    // Lead Settings "Lead's number = enquiry number": a lead shows the number on its
+    // enquiry, the same one the lead lists show; the login account's number, when it
+    // is a different one, is listed under its own label.
+    const enquiryMobile =
+        typeof leadExtras?._enquiry_mobile === 'string' && leadExtras._enquiry_mobile.trim() !== ''
+            ? leadExtras._enquiry_mobile
+            : null;
+    const enquiryFirst = isLead && settings.repeatLead.enquiryNumberPrimary && !!enquiryMobile;
+    const digits = (v: string | null) => (v ?? '').replace(/\D/g, '').slice(-10);
+    const mobile = enquiryFirst ? enquiryMobile : loginMobile;
+    const separateLogin =
+        enquiryFirst && loginMobile && digits(loginMobile) !== digits(enquiryMobile)
+            ? loginMobile
             : null;
     const email = student.email && student.email.trim() !== '' ? student.email : null;
 
     const rows: Array<{ label: string; value: string }> = [];
     if (mobile) rows.push({ label: t('contact.rows.mobileNo'), value: mobile });
+    if (separateLogin) rows.push({ label: t('contact.rows.loginNumber'), value: separateLogin });
     if (email) rows.push({ label: t('contact.rows.email'), value: email });
 
     if (rows.length === 0) return null;

@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -74,7 +75,7 @@ class LeadLookupServiceTest {
         caller = mock(CustomUserDetails.class);
         when(caller.getUserId()).thenReturn(CALLER);
         when(scope.scopedCounsellorUserIds(INSTITUTE, CALLER)).thenReturn(List.of(CALLER));
-        when(responses.lookupMatchingResponseIds(anyString(), anyString(), any(), any(), eq(false), any()))
+        when(responses.lookupMatchingResponseIds(anyString(), anyString(), any(), any(), eq(false), any(), anyBoolean()))
                 .thenReturn(List.of("resp-1"));
         when(followUps.findByAudienceResponseIdInOrderByScheduleTimeDesc(anyList()))
                 .thenReturn(List.of(followUp()));
@@ -185,7 +186,7 @@ class LeadLookupServiceTest {
         service.lookup(INSTITUTE, PHONE, null, null, caller);
 
         verify(responses).lookupByPhoneOrEmail(eq(INSTITUTE), eq(PHONE), isNull(), isNull(), any(), any(),
-                eq("user-exact"));
+                eq("user-exact"), eq(false));
     }
 
     /** Auth search down: the lookup still runs on enquiry numbers, exactly as before. */
@@ -197,7 +198,31 @@ class LeadLookupServiceTest {
         LeadLookupResultDto result = service.lookup(INSTITUTE, PHONE, null, null, caller);
 
         assertTrue(result.isFound());
-        verify(responses).lookupByPhoneOrEmail(eq(INSTITUTE), eq(PHONE), isNull(), isNull(), any(), any(), isNull());
+        verify(responses).lookupByPhoneOrEmail(eq(INSTITUTE), eq(PHONE), isNull(), isNull(), any(), any(), isNull(),
+                eq(false));
+    }
+
+    /** Lead Settings enquiryNumberPrimary on: replaced numbers are matched too. */
+    @Test
+    void replacedNumbersAreMatchedOnlyWithTheSettingOn() {
+        LeadDedupSettingService dedupOn = mock(LeadDedupSettingService.class);
+        LeadDedupSettingService.RepeatLeadSettings repeatLead = new LeadDedupSettingService.RepeatLeadSettings(
+                LeadDedupSettingService.CounsellorMode.SAME_AS_PREVIOUS, null, null,
+                LeadDedupSettingService.StatusMode.KEEP_EXISTING, false, false,
+                LeadDedupSettingService.ReattemptSettings.OFF, false, false, false, true);
+        when(dedupOn.get(anyString())).thenReturn(new LeadDedupSettingService.DedupSettings(true,
+                LeadDedupSettingService.DedupField.PHONE, LeadDedupSettingService.DedupScope.INSTITUTE, List.of(),
+                LeadDedupSettingService.DedupAction.ALLOW_REASSIGN, repeatLead));
+        LeadLookupSettingService settings = mock(LeadLookupSettingService.class);
+        when(settings.get(INSTITUTE)).thenReturn(
+                new LookupSettings(true, SHARED, "field-course", "field-branch", false));
+        LeadLookupService withHistory = new LeadLookupService(responses, settings, scope, followUps, authService, dedupOn);
+        lead(OTHER, "NEW", "LEAD", "NONE");
+
+        withHistory.lookup(INSTITUTE, PHONE, null, null, caller);
+
+        verify(responses).lookupByPhoneOrEmail(eq(INSTITUTE), eq(PHONE), isNull(), isNull(), any(), any(), any(),
+                eq(true));
     }
 
     private void lead(String assignee, String statusKey, String conversion, String enrolment) {
@@ -216,7 +241,7 @@ class LeadLookupServiceTest {
         when(row.getBranchValue()).thenReturn("Pune");
         when(row.getInterestLevel()).thenReturn("Hot");
         when(row.getCreatedAt()).thenReturn(Timestamp.valueOf("2026-10-01 09:00:00"));
-        when(responses.lookupByPhoneOrEmail(anyString(), anyString(), any(), any(), any(), any(), any()))
+        when(responses.lookupByPhoneOrEmail(anyString(), anyString(), any(), any(), any(), any(), any(), anyBoolean()))
                 .thenReturn(Optional.of(row));
     }
 
