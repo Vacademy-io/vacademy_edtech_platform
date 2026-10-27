@@ -68,6 +68,7 @@ import { LeadFormResponseCard } from '@/routes/audience-manager/list/-components
 import { StudentFullHistory } from './student-full-history/student-full-history';
 import { StudentParentProfile } from './student-parent/student-parent-profile';
 import { StudentOnboardingProfile } from './student-onboarding/student-onboarding-profile';
+import { StudentLiveSessions } from './student-live-sessions/student-live-sessions';
 
 type SectionId = StudentSideViewTabId | 'subOrg';
 
@@ -96,6 +97,7 @@ const DEFAULT_ORDER: StudentSideViewTabId[] = [
     'fullHistory',
     'parent',
     'onboarding',
+    'liveSession',
 ];
 
 function orderedVisibleSectionIds(settings: StudentSideViewSettings): StudentSideViewTabId[] {
@@ -290,6 +292,19 @@ export const StudentProfileOverlay = () => {
                         subjectFullName={selectedStudent.full_name}
                         subjectEmail={selectedStudent.email}
                         subjectMobileNumber={selectedStudent.mobile_number}
+                    />
+                );
+            case 'liveSession':
+                return (
+                    <StudentLiveSessions
+                        userId={selectedStudent.user_id || selectedStudent.id}
+                        packageSessionIds={
+                            selectedStudent.all_package_session_ids?.length
+                                ? selectedStudent.all_package_session_ids
+                                : selectedStudent.package_session_id
+                                  ? [selectedStudent.package_session_id]
+                                  : []
+                        }
                     />
                 );
             case 'subOrg':

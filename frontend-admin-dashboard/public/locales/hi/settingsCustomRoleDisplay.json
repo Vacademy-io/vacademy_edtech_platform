@@ -143,7 +143,8 @@
         "fullHistoryTab": "पूरा इतिहास टैब",
         "workflowsTab": "वर्कफ़्लो टैब",
         "parentTab": "अभिभावक टैब",
-        "onboardingTab": "ऑनबोर्डिंग टैब"
+        "onboardingTab": "ऑनबोर्डिंग टैब",
+        "liveSessionTab": "लाइव सत्र टैब"
     },
     "learnerManagement": {
         "title": "शिक्षार्थी प्रबंधन",

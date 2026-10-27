@@ -1,7 +1,10 @@
 import { format, parse } from 'date-fns';
 import { DraftSession, LiveSession } from '../-services/utils';
 
-export const getSessionJoinLink = (session: LiveSession | DraftSession, baseUrl: string) => {
+export const getSessionJoinLink = (
+    session: Pick<LiveSession | DraftSession, 'access_level' | 'schedule_id' | 'session_id'>,
+    baseUrl: string
+) => {
     const normalizedBase = baseUrl
         ? (baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`)
         : '';

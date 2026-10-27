@@ -1166,6 +1166,8 @@ export const ANALYTICS_CURRENTLY_ACTIVE_USERS = `${BASE_URL}/auth-service/v1/ana
 export const STUDENT_ATTENDANCE_REPORT = `${BASE_URL}/admin-core-service/live-session-report/student-report`;
 export const PUBLIC_REGISTRATION_REPORT = `${BASE_URL}/admin-core-service/live-session-report/publicregistration`;
 export const BATCH_SESSION_ATTENDANCE_REPORT = `${BASE_URL}/admin-core-service/live-session-report/by-batch-session`;
+export const LEARNER_LIVE_SESSIONS = `${BASE_URL}/admin-core-service/live-session-report/learner-live-sessions`;
+export const LEARNER_UPCOMING_LIVE_SESSIONS = `${BASE_URL}/admin-core-service/live-session-report/learner-upcoming-sessions`;
 export const LIVE_SESSION_ALL_ATTENDANCE = `${BASE_URL}/admin-core-service/live-session-report/all-attendance`;
 
 // Referral

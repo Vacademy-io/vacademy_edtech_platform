@@ -178,7 +178,8 @@
         "fullHistoryTab": "علامة تبويب السجل الكامل",
         "workflowsTab": "تبويب سير العمل",
         "parentTab": "علامة تبويب ولي الأمر",
-        "onboardingTab": "علامة تبويب التهيئة"
+        "onboardingTab": "علامة تبويب التهيئة",
+        "liveSessionTab": "علامة تبويب الجلسات المباشرة"
     },
     "learnerManagementOptions": {
         "allowPortalAccess": "السماح بالوصول إلى بوابة المتعلم",

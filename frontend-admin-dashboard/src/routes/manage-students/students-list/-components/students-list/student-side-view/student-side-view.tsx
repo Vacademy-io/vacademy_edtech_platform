@@ -31,6 +31,7 @@ import { StudentApplication } from './student-application/student-application';
 import { StudentLeadProfile } from './student-lead-profile/student-lead-profile';
 import { StudentFullHistory } from './student-full-history/student-full-history';
 import { StudentWorkflows } from './student-workflows/student-workflows';
+import { StudentLiveSessions } from './student-live-sessions/student-live-sessions';
 import { StudentParentProfile } from './student-parent/student-parent-profile';
 import { StudentOnboardingProfile } from './student-onboarding/student-onboarding-profile';
 import { LeadFormResponseCard } from '@/routes/audience-manager/list/-components/campaign-users/lead-form-response-card';
@@ -97,6 +98,7 @@ function orderedVisibleTabIds(settings: StudentSideViewSettings): StudentSideVie
         'workflows',
         'parent',
         'onboarding',
+        'liveSession',
     ];
     const orders = settings.tabOrders ?? {};
     return all
@@ -848,6 +850,21 @@ export const StudentSidebar = ({
                                 <StudentWorkflows
                                     userId={selectedStudent.user_id}
                                     instituteId={currentInstituteId}
+                                />
+                            )}
+                        {category === 'liveSession' &&
+                            tabSettings?.liveSessionTab &&
+                            !isEnrollRequestStudentList &&
+                            selectedStudent?.user_id && (
+                                <StudentLiveSessions
+                                    userId={selectedStudent.user_id}
+                                    packageSessionIds={
+                                        selectedStudent.all_package_session_ids?.length
+                                            ? selectedStudent.all_package_session_ids
+                                            : selectedStudent.package_session_id
+                                              ? [selectedStudent.package_session_id]
+                                              : []
+                                    }
                                 />
                             )}
                         {category === 'parent' &&

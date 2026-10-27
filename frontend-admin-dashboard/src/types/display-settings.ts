@@ -195,7 +195,8 @@ export type StudentSideViewTabId =
     | 'fullHistory'
     | 'workflows'
     | 'parent'
-    | 'onboarding';
+    | 'onboarding'
+    | 'liveSession';
 
 export interface StudentSideViewSettings {
     overviewTab: boolean;
@@ -226,6 +227,10 @@ export interface StudentSideViewSettings {
     // (ONBOARDING_SETTING feature). Optional for backward-compat with
     // settings saved before this tab existed.
     onboardingTab?: boolean;
+    // Live Sessions tab — the learner's join link, attendance streak and past
+    // live classes. Optional for backward-compat with settings saved before
+    // this tab existed.
+    liveSessionTab?: boolean;
     /**
      * The Resend control on each outbound row of the Notifications tab, which
      * sends that message to the learner a second time. Not a tab toggle — the
@@ -307,7 +312,8 @@ export type StudentSideViewVisibilityKey =
     | 'fullHistoryTab'
     | 'workflowsTab'
     | 'parentTab'
-    | 'onboardingTab';
+    | 'onboardingTab'
+    | 'liveSessionTab';
 
 export interface LearnerManagementSettings {
     allowPortalAccess: boolean;

@@ -109,6 +109,7 @@ const STUDENT_SIDE_VIEW_DEFAULTS: StudentSideViewSettings = {
     fullHistoryTab: false,
     workflowsTab: false,
     parentTab: false,
+    liveSessionTab: false,
     onboardingTab: false,
 };
 
@@ -220,6 +221,11 @@ const buildStudentSideViewOptions = (
         key: 'onboardingTab',
         label: t('studentSideView.onboardingTab'),
         defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.onboardingTab ?? false,
+    },
+    {
+        key: 'liveSessionTab',
+        label: t('studentSideView.liveSessionTab'),
+        defaultValue: STUDENT_SIDE_VIEW_DEFAULTS.liveSessionTab ?? false,
     },
 ];
 
