@@ -457,6 +457,27 @@ export default function LeadDedupSettings() {
                                             </div>
                                         )}
 
+                                        <div className="flex items-start gap-3">
+                                            <Switch
+                                                id="repeat-discarded-new-counsellor"
+                                                checked={repeatLead.discardedToNewCounsellor}
+                                                onCheckedChange={(v) =>
+                                                    updateRepeatLead({ discardedToNewCounsellor: v })
+                                                }
+                                            />
+                                            <div className="flex flex-col gap-0.5">
+                                                <Label
+                                                    htmlFor="repeat-discarded-new-counsellor"
+                                                    className="cursor-pointer"
+                                                >
+                                                    {t('repeatLead.discardedToNewCounsellor.label')}
+                                                </Label>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {t('repeatLead.discardedToNewCounsellor.hint')}
+                                                </p>
+                                            </div>
+                                        </div>
+
                                         <div className="flex flex-col gap-1.5">
                                             <Label htmlFor="repeat-status-mode">
                                                 {t('repeatLead.statusMode.label')}

@@ -8,6 +8,7 @@
  *                     "specificCounsellorName": null, "statusMode": "KEEP_EXISTING",
  *                     "samePersonByPhone": false, "blockOwnedManualAdd": false,
  *                     "blockOpenLeadManualAdd": false, "alsoMatchEmail": false,
+ *                     "discardedToNewCounsellor": false,
  *                     "reattempt": { "markDuplicate": false, "journeyEntry": false,
  *                                    "notifyOwner": false, "showBadge": false,
  *                                    "followUp": false, "tier": null,
@@ -69,6 +70,7 @@ export interface RepeatLeadSettingsSubtree {
     blockOwnedManualAdd?: boolean;
     blockOpenLeadManualAdd?: boolean;
     alsoMatchEmail?: boolean;
+    discardedToNewCounsellor?: boolean;
     reattempt?: Partial<ReattemptSettings>;
 }
 
@@ -86,6 +88,8 @@ export interface RepeatLeadSettings {
     blockOpenLeadManualAdd: boolean;
     /** Match by phone only: an enquiry with a new phone is still a repeat when its email matches a lead. */
     alsoMatchEmail: boolean;
+    /** A repeat of a discarded (LOST) lead goes to the next pool counsellor, not its earlier owner. */
+    discardedToNewCounsellor: boolean;
     reattempt: ReattemptSettings;
 }
 
@@ -130,6 +134,7 @@ export const REPEAT_LEAD_SETTINGS_DEFAULTS: RepeatLeadSettings = {
     blockOwnedManualAdd: false,
     blockOpenLeadManualAdd: false,
     alsoMatchEmail: false,
+    discardedToNewCounsellor: false,
     reattempt: REATTEMPT_SETTINGS_DEFAULTS,
 };
 
@@ -163,6 +168,7 @@ function withRepeatLeadDefaults(subtree: RepeatLeadSettingsSubtree | undefined):
         blockOwnedManualAdd: subtree?.blockOwnedManualAdd === true,
         blockOpenLeadManualAdd: subtree?.blockOpenLeadManualAdd === true,
         alsoMatchEmail: subtree?.alsoMatchEmail === true,
+        discardedToNewCounsellor: subtree?.discardedToNewCounsellor === true,
         reattempt: {
             markDuplicate: subtree?.reattempt?.markDuplicate === true,
             journeyEntry: subtree?.reattempt?.journeyEntry === true,

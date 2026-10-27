@@ -100,10 +100,25 @@ public class CounselorAssignmentService {
      */
     @Transactional
     public Optional<String> assignCounselorOnIntake(String audienceId) {
-        return assignCounselorForLead(audienceId, true);
+        return assignCounselorForLead(audienceId, true, Set.of());
+    }
+
+    /**
+     * Intake rotation that passes over {@code skipCounselorIds} (a discarded lead's earlier
+     * owner, when it enquires again). When nobody else is eligible the skipped counselors are
+     * picked as usual, so the lead never arrives unowned just because of the skip.
+     */
+    @Transactional
+    public Optional<String> assignCounselorOnIntake(String audienceId, Set<String> skipCounselorIds) {
+        return assignCounselorForLead(audienceId, true, skipCounselorIds == null ? Set.of() : skipCounselorIds);
     }
 
     private Optional<String> assignCounselorForLead(String audienceId, boolean intake) {
+        return assignCounselorForLead(audienceId, intake, Set.of());
+    }
+
+    private Optional<String> assignCounselorForLead(String audienceId, boolean intake,
+                                                    Set<String> skipCounselorIds) {
         // Step 1: resolve the pool
         Optional<CounselorPoolAudience> poolAudienceOpt = poolAudienceRepository.findByAudienceId(audienceId);
         if (poolAudienceOpt.isEmpty()) {
@@ -143,12 +158,16 @@ public class CounselorAssignmentService {
             sendUnassignedAlertToPoolAdmin(pool, audienceId);
             return Optional.empty();
         }
-        List<CounselorPoolMember> candidates = filterEligibleCandidates(pool, allMembers, mode);
-        if (candidates.isEmpty()) {
+        List<CounselorPoolMember> eligible = filterEligibleCandidates(pool, allMembers, mode);
+        if (eligible.isEmpty()) {
             log.info("No ACTIVE (eligible) counselors for audience={} in pool={}", audienceId, poolId);
             sendUnassignedAlertToPoolAdmin(pool, audienceId);
             return Optional.empty();
         }
+        List<CounselorPoolMember> others = skipCounselorIds.isEmpty() ? eligible : eligible.stream()
+                .filter(m -> m.getCounselorUserId() == null || !skipCounselorIds.contains(m.getCounselorUserId()))
+                .toList();
+        List<CounselorPoolMember> candidates = others.isEmpty() ? eligible : others;
 
         // Step 4: pessimistic locks — pool row first (serializes assignments across every list of
         // the pool, so the pool-wide pointer below can't be read by two leads at once), then the

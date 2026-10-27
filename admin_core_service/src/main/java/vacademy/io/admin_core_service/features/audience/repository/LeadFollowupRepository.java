@@ -233,6 +233,23 @@ public interface LeadFollowupRepository extends JpaRepository<LeadFollowup, Stri
            "WHERE lf.id = :id AND lf.status = 'ONGOING' AND lf.isClosed = false")
     int releaseDueTransition(@Param("id") String id);
 
+    /**
+     * Closes the open follow-ups that {@code createdBy} hold on any enquiry of {@code userIds}:
+     * a discarded lead that enquired again moved to a new counsellor, and the earlier owner
+     * could neither act on these (access follows the lead's owner) nor drop them otherwise.
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE LeadFollowup lf SET lf.status = 'COMPLETED', lf.isClosed = true, " +
+           "lf.closerReason = :reason, lf.closedAt = :closedAt " +
+           "WHERE lf.instituteId = :instituteId AND lf.isClosed = false AND lf.createdBy IN :createdBy " +
+           "AND lf.audienceResponseId IN (SELECT ar.id FROM AudienceResponse ar WHERE ar.userId IN :userIds)")
+    int closeOpenByCreatorsForLeadUsers(@Param("instituteId") String instituteId,
+                                        @Param("createdBy") java.util.Collection<String> createdBy,
+                                        @Param("userIds") java.util.Collection<String> userIds,
+                                        @Param("reason") String reason,
+                                        @Param("closedAt") Timestamp closedAt);
+
     /** Overdue twin of {@link #releaseDueTransition}. */
     @Modifying
     @Transactional
