@@ -44,6 +44,7 @@ const LABELS: ExportColumnLabels = {
     nextAction: 'Next action',
     activityNotes: 'Activity & Notes',
     leadJourney: 'Lead Journey',
+    followUpHistory: 'Follow-up history',
 };
 
 describe('exportCustomFields', () => {
@@ -100,7 +101,7 @@ describe('buildExportHeader', () => {
     it('appends one column per custom field, so a Courses field becomes a Courses column', () => {
         const header = buildExportHeader(LABELS, [{ id: 'cf-course', label: 'Courses' }]);
         expect(header[header.length - 1]).toBe('Courses');
-        expect(header).toHaveLength(15);
+        expect(header).toHaveLength(16);
     });
 });
 
@@ -136,6 +137,7 @@ describe('rows line up with the header', () => {
             'Call again',
             '',
             '',
+            '',
             'ADCT OFFLINE PUNE',
         ]);
     });
@@ -168,7 +170,7 @@ describe('rows line up with the header', () => {
         // both land in the note column.
         expect(row[8]).toBe('Spoke, wants next batch — Not interested');
         expect(row[4]).toBe('Aparna Gaikwad');
-        expect(row[14]).toBe('ADCT OFFLINE PUNE');
+        expect(row[15]).toBe('ADCT OFFLINE PUNE');
     });
 
     // The table's Activity column was on screen but not in the CSV.
@@ -203,6 +205,45 @@ describe('rows line up with the header', () => {
             notes: { recent: [note], count: 1 },
         });
         expect(done[header.indexOf('Activity & Notes')]).toContain('CNR, call tomorrow');
+    });
+
+    // Leads migrated from an old CRM have no timeline; their notes are the follow-ups.
+    it('carries every follow-up and what the counsellor wrote on it', () => {
+        const header = buildExportHeader(LABELS, fields);
+        const row = leadToExportRow({}, 'Asha', '', '', '', fields, {
+            followUps: [
+                {
+                    id: 'f1',
+                    audience_response_id: 'ar1',
+                    status: 'COMPLETED',
+                    created_at: '2026-10-13T03:58:00Z',
+                    schedule_time: '2026-10-13T10:57:00Z',
+                    content: '<p>cnr, msg done</p>',
+                    student_response: 'CNR (Call not Receive)',
+                    follow_up_mode: 'Telephonic Call',
+                    next_action: 'Send Course Details',
+                    closer_reason: 'will let us know',
+                    created_by_name: 'Simran',
+                },
+                {
+                    id: 'f2',
+                    audience_response_id: 'ar1',
+                    status: 'OVERDUE',
+                    created_at: '2026-10-14T03:58:00Z',
+                    // Old-CRM "no date".
+                    schedule_time: '1970-01-01T00:00:00Z',
+                    content: 'call later',
+                },
+            ],
+        });
+        const lines = row[header.indexOf('Follow-up history')]!.split('\n');
+        expect(lines).toHaveLength(2);
+        expect(lines[0]).toContain('· due ');
+        expect(lines[0]).toContain(
+            'COMPLETED: cnr, msg done | Response: CNR (Call not Receive) | Mode: Telephonic Call | Next: Send Course Details | Closed: will let us know (Simran)'
+        );
+        expect(lines[1]).not.toContain('due');
+        expect(lines[1]).toContain('OVERDUE: call later');
     });
 
     it('writes an empty cell, never "undefined", for anything the lead has not got', () => {

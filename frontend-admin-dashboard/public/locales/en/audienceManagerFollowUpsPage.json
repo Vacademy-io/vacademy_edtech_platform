@@ -84,7 +84,8 @@
             "followUpMode": "Follow-up mode",
             "nextAction": "Next action",
             "activityNotes": "Activity & Notes",
-            "leadJourney": "Lead Journey (disposition & notes)"
+            "leadJourney": "Lead Journey (disposition & notes)",
+            "followUpHistory": "Follow-up history"
         },
         "progress": "Exporting follow-ups… {{done}} of {{total}}",
         "done_one": "Exported {{count}} follow-up",

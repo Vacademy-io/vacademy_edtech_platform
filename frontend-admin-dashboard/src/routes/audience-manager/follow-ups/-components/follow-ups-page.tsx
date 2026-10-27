@@ -28,6 +28,7 @@ import {
     fetchRecentLeads,
 } from '../../list/-services/get-recent-leads';
 import { fetchCompletedFollowUps } from '../-services/get-completed-follow-ups';
+import { fetchFollowUpHistoryBatch } from '../-services/get-follow-up-history-batch';
 import { handleFetchCampaignsList } from '../../list/-services/get-campaigns-list';
 import {
     buildCampaignTypeFilterOptions,
@@ -159,28 +160,39 @@ const HIDDEN_COLUMNS = new Set(['score']);
 
 /**
  * The table's Activity column is hydrated per page from the timeline, so the export
- * does the same per export page — two batch calls a page, never one per lead. Off
- * when the lead system is, matching the table, which hides the column then.
+ * does the same per export page — a few batch calls a page, never one per lead. The
+ * timeline is off when the lead system is, matching the table, which hides the column
+ * then; follow-up history is this page's own data, so it always comes along.
  */
 const withActivity = async <T,>(
     res: ExportPage<T> | undefined,
-    userIdOf: (row: T) => string | null | undefined,
-    enabled: boolean
+    keys: (row: T) => { userId?: string | null; responseId?: string | null },
+    instituteId: string,
+    timelineEnabled: boolean
 ): Promise<ExportPage<{ row: T; activity?: ExportLeadActivity }> | undefined> => {
     if (!res) return undefined;
     const rows = res.content ?? [];
-    const ids = Array.from(new Set(rows.map(userIdOf).filter((id): id is string => !!id)));
-    const [notes, journey] =
-        enabled && ids.length > 0
-            ? await Promise.all([fetchLatestNotesBatch(ids), fetchLeadJourneyBatch(ids)])
-            : [{}, {}];
+    const distinct = (ids: (string | null | undefined)[]) =>
+        Array.from(new Set(ids.filter((id): id is string => !!id)));
+    const userIds = distinct(rows.map((r) => keys(r).userId));
+    const responseIds = distinct(rows.map((r) => keys(r).responseId));
+    const timeline = timelineEnabled && userIds.length > 0;
+    const [notes, journey, followUps] = await Promise.all([
+        timeline ? fetchLatestNotesBatch(userIds) : undefined,
+        timeline ? fetchLeadJourneyBatch(userIds) : undefined,
+        fetchFollowUpHistoryBatch(instituteId, responseIds),
+    ]);
     return {
         ...res,
         content: rows.map((row) => {
-            const id = userIdOf(row);
+            const { userId, responseId } = keys(row);
             return {
                 row,
-                activity: id ? { notes: notes[id], journey: journey[id] } : undefined,
+                activity: {
+                    notes: userId ? notes?.[userId] : undefined,
+                    journey: userId ? journey?.[userId] : undefined,
+                    followUps: responseId ? followUps[responseId] : undefined,
+                },
             };
         }),
     };
@@ -820,6 +832,7 @@ const FollowUpsContent = () => {
             nextAction: t('export.columns.nextAction'),
             activityNotes: t('export.columns.activityNotes'),
             leadJourney: t('export.columns.leadJourney'),
+            followUpHistory: t('export.columns.followUpHistory'),
         },
         exportFields
     );
@@ -868,7 +881,11 @@ const FollowUpsContent = () => {
                             size,
                             includeLeadDetail: true,
                         }),
-                        (row) => row.lead_user_id,
+                        (row) => ({
+                            userId: row.lead_user_id,
+                            responseId: row.audience_response_id,
+                        }),
+                        instituteId ?? '',
                         showOps
                     ),
                 rowKey: ({ row }) => row.id,
@@ -886,7 +903,11 @@ const FollowUpsContent = () => {
             fetchPage: async (page, size) =>
                 withActivity(
                     await fetchRecentLeads({ ...baseFilter, ...window, page, size }),
-                    (lead) => lead.user?.id || lead.user_id,
+                    (lead) => ({
+                        userId: lead.user?.id || lead.user_id,
+                        responseId: lead.response_id,
+                    }),
+                    instituteId ?? '',
                     showOps
                 ),
             rowKey: ({ row: lead }) => lead.response_id,

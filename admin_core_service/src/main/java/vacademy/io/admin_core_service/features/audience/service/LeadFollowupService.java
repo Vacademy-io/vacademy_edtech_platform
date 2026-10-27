@@ -112,6 +112,93 @@ public class LeadFollowupService {
                 .collect(Collectors.toList());
     }
 
+    /** Cap per call - the export sends one page (200) at a time. */
+    private static final int HISTORY_BATCH_MAX = 500;
+
+    /**
+     * Every follow-up of each lead, oldest first, keyed by audience response id -
+     * the follow-ups CSV's "Follow-up history" column. Migrated leads have no
+     * timeline at all, so their counsellors' notes live only here.
+     *
+     * Same access rule as {@link #listForLead}, applied to the whole page at once:
+     * a scoped counsellor gets the leads assigned inside their scope (or to no one),
+     * and other leads are left out rather than failing the page.
+     */
+    @Transactional(readOnly = true)
+    public Map<String, List<LeadFollowupDto>> historyBatch(String instituteId,
+                                                           List<String> audienceResponseIds,
+                                                           CustomUserDetails user) {
+        if (isBlank(instituteId) || audienceResponseIds == null || audienceResponseIds.isEmpty()) {
+            return Map.of();
+        }
+        List<String> ids = audienceResponseIds.stream()
+                .filter(id -> !isBlank(id))
+                .distinct()
+                .limit(HISTORY_BATCH_MAX)
+                .collect(Collectors.toList());
+        if (ids.isEmpty()) return Map.of();
+
+        java.util.Set<String> allowed = new java.util.HashSet<>(ids);
+        if (counsellorScopeService.isScopedCaller(instituteId, user)) {
+            java.util.Set<String> scope = new java.util.HashSet<>(
+                    counsellorScopeService.scopedCounsellorUserIds(instituteId, user.getUserId()));
+            scope.add(user.getUserId());
+            Map<String, String> leadUserByResponse = new java.util.HashMap<>();
+            audienceResponseRepository.findAllById(ids).forEach(ar -> {
+                if (ar.getUserId() != null) leadUserByResponse.put(ar.getId(), ar.getUserId());
+            });
+            Map<String, String> assigneeByUser = new java.util.HashMap<>();
+            userLeadProfileRepository
+                    .findByUserIdInAndInstituteId(new ArrayList<>(new java.util.HashSet<>(
+                            leadUserByResponse.values())), instituteId)
+                    .forEach(p -> {
+                        if (p.getAssignedCounselorId() != null) {
+                            assigneeByUser.put(p.getUserId(), p.getAssignedCounselorId());
+                        }
+                    });
+            allowed.removeIf(rid -> {
+                String assignee = assigneeByUser.get(leadUserByResponse.get(rid));
+                return assignee != null && !scope.contains(assignee);
+            });
+        }
+
+        List<LeadFollowupDto> rows = leadFollowupRepository
+                .findByAudienceResponseIdInOrderByScheduleTimeDesc(new ArrayList<>(allowed))
+                .stream()
+                .filter(f -> instituteId.equals(f.getInstituteId()))
+                .map(LeadFollowupDto::from)
+                .collect(Collectors.toList());
+
+        java.util.Set<String> actorIds = new java.util.HashSet<>();
+        rows.forEach(d -> {
+            if (!isBlank(d.getCreatedBy())) actorIds.add(d.getCreatedBy());
+            if (!isBlank(d.getClosedBy())) actorIds.add(d.getClosedBy());
+        });
+        if (!actorIds.isEmpty()) {
+            try {
+                Map<String, String> names = authService
+                        .getUsersFromAuthServiceByUserIds(new ArrayList<>(actorIds))
+                        .stream()
+                        .filter(u -> u != null && u.getId() != null && u.getFullName() != null)
+                        .collect(Collectors.toMap(UserDTO::getId, UserDTO::getFullName, (a, b) -> a));
+                rows.forEach(d -> {
+                    d.setCreatedByName(names.get(d.getCreatedBy()));
+                    d.setClosedByName(names.get(d.getClosedBy()));
+                });
+            } catch (Exception e) {
+                // Names are a nicety; the notes still export without them.
+                log.warn("[LeadFollowup] history actor-name hydration failed: {}", e.getMessage());
+            }
+        }
+
+        java.util.Comparator<LeadFollowupDto> byCreated = java.util.Comparator.comparing(
+                LeadFollowupDto::getCreatedAt, java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()));
+        Map<String, List<LeadFollowupDto>> out = new java.util.HashMap<>();
+        rows.stream().sorted(byCreated)
+                .forEach(d -> out.computeIfAbsent(d.getAudienceResponseId(), k -> new ArrayList<>()).add(d));
+        return out;
+    }
+
     /**
      * Pending follow-ups the caller may work on.
      *
