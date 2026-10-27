@@ -300,6 +300,9 @@ class CallDiagnostics:
     # Voice-mode barge-in: acknowledgements the bot talked straight through, and
     # stops made because the caller kept talking past barge_in_voice_secs.
     acks_talked_through: int = 0
+    # Of those, ones over the closing question that began before half of it had
+    # played — not taken as the answer.
+    acks_before_the_question: int = 0
     # FloorGate: replies held because the caller was talking when they were
     # ready; then dropped (caller took the turn), released (caller stopped) or
     # capped (the line never went quiet).
@@ -1117,6 +1120,7 @@ def to_payload(d: CallDiagnostics) -> Dict[str, Any]:
                 "swallowedTurns": d.swallowed_turns,
                 "shortAnswerNoiseReleases": d.short_answer_noise_releases,
                 "acksTalkedThrough": d.acks_talked_through,
+                "acksBeforeTheQuestion": d.acks_before_the_question,
                 "placeholdersFilled": d.placeholders_filled,
                 "alternativesCollapsed": d.alternatives_collapsed,
                 "lateReplyCommits": d.late_reply_commits,

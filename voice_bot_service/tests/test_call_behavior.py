@@ -6073,6 +6073,52 @@ async def test_an_acknowledgement_over_the_sentence_after_the_question_is_its_an
     assert any(getattr(f, "run_llm", False) for f in rec.frames)
 
 
+async def _ack_in_last_sentence(text, reply, into, sentence_secs):
+    """A talked-through ack `into` s after the reply's last sentence began to
+    play; the sentence lasts `sentence_secs`. Returns the recorder."""
+    from pipecat.frames.frames import BotStoppedSpeakingFrame
+    rec = _Rec()
+    seg = {"t": 0.0}
+    tc, state = _voice_collector(rec, cut_after=5.0, bot_started_t=lambda: seg["t"])
+    b.FrameProcessor.process_frame = _noop_super
+    await _feed(tc, text)
+    now = time.time()
+    seg["t"] = now - sentence_secs
+    tc._acked_mid_reply = (text, seg["t"] + into)
+    tc._outcome.transcript.append({"role": "assistant", "text": reply})
+    state["speaking"] = False
+    await tc.process_frame(BotStoppedSpeakingFrame(), b.FrameDirection.UPSTREAM)
+    await asyncio.sleep(0.6)
+    return rec
+
+
+_MATCH_REPLY = ("मैं रीतू हूँ, विवाह सम्मेलन से। मैं आपके बच्चों के लिए रिश्ता ढूंढने में मदद करने के "
+                "लिए बोल रही हूँ। उनकी शादी का रिश्ता निश्चित हो गया है क्या?")
+
+
+@pytest.mark.asyncio
+async def test_a_yes_before_the_question_was_heard_is_not_its_answer():
+    """Call 761a58c0 (2026-10-27): "हाँ" began 0.5 s into the 2.2 s "उनकी शादी का
+    रिश्ता निश्चित हो गया है क्या?" and was taken as "the match is fixed" — "बहुत
+    बधाई हो!". The father's real answer ("तीन बच्चों का हो गया, एक का बाकी है")
+    came 3 s later. A "हाँ" during an earlier sentence is no answer either."""
+    for into in (0.5, -1.0):
+        rec = await _ack_in_last_sentence("हाँ।", _MATCH_REPLY, into=into, sentence_secs=2.2)
+        assert not [f for f in rec.frames if getattr(f, "run_llm", False)], (into, rec.cues())
+        assert not [c for c in rec.cues() if "their ANSWER" in c], (into, rec.cues())
+
+
+@pytest.mark.asyncio
+async def test_a_yes_over_the_end_of_the_question_is_still_its_answer():
+    rec = await _ack_in_last_sentence("हाँ।", _MATCH_REPLY, into=1.6, sentence_secs=2.2)
+    cues = [c for c in rec.cues() if "their ANSWER" in c]
+    assert len(cues) == 1 and "निश्चित हो गया है क्या?" in cues[0], rec.cues()
+    # A short line after the question (call 71d0d5bd): the question had already
+    # played in full, so a "हाँ" over that line is the answer, however early.
+    rec = await _ack_in_last_sentence("हाँ।", _QUIZ_REPLY, into=0.3, sentence_secs=2.4)
+    assert len([c for c in rec.cues() if "their ANSWER" in c]) == 1, rec.cues()
+
+
 @pytest.mark.asyncio
 async def test_an_acknowledgement_over_a_long_statement_after_the_question_is_not_the_answer():
     long = ("क्या मैं link भेज दूँ? पंद्रह questions हैं, सिर्फ पंद्रह मिनट लगते हैं, और result "

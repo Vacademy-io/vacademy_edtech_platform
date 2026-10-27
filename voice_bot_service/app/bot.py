@@ -343,6 +343,9 @@ _GRACEFUL_STOP_DEADLINE_SECS = 25.0
 # who came on after the recording (a11e6709) spoke 3.6 s after its LAST line,
 # with no carrier line following.
 RECORDING_PIECE_SECS = 4.0
+# A "हाँ" over a reply's closing question answers it only if it began once
+# this share of the question had played (TranscriptCollector._answer_ack_after_reply).
+ACK_QUESTION_HEARD_SHARE = 0.5
 
 
 @dataclass
@@ -644,7 +647,8 @@ class TranscriptCollector(FrameProcessor):
             self._user_turn_open = True
         if isinstance(frame, BotStoppedSpeakingFrame) and self._acked_mid_reply is not None:
             try:
-                self.create_task(self._answer_ack_after_reply(*self._acked_mid_reply, time.time()))
+                self.create_task(self._answer_ack_after_reply(*self._acked_mid_reply, time.time(),
+                                                              self._bot_started_t()))
             except Exception:
                 logger.debug("turn-gate: no task manager for the deferred answer")
         if isinstance(frame, (VADUserStartedSpeakingFrame, VADUserStoppedSpeakingFrame)):
@@ -1725,11 +1729,15 @@ class TranscriptCollector(FrameProcessor):
         except Exception:
             logger.exception("turn-gate: voice cut failed")
 
-    async def _answer_ack_after_reply(self, text: str, ack_t: float, stop_t: float):
+    async def _answer_ack_after_reply(self, text: str, ack_t: float, stop_t: float,
+                                      seg_start: float = 0.0):
         """The reply ended after the caller said "हाँ"/"जी" over it without it
         stopping. If the reply ended on a question and the acknowledgement came
         near its end, that WAS their answer — respond to it now, instead of
-        both sides waiting. An earlier one was just "I'm listening"."""
+        both sides waiting. An earlier one was just "I'm listening".
+
+        seg_start: when the reply's last sentence began to play (each sentence
+        is its own stretch of bot audio), 0 when unknown."""
         try:
             await asyncio.sleep(0.4)
             if self._acked_mid_reply is None or self._acked_mid_reply[0] != text:
@@ -1756,6 +1764,20 @@ class TranscriptCollector(FrameProcessor):
             if not ends_on_question(last):
                 return
             q = last_question_in(last) or last[-120:]
+            # The question is the last sentence, and the "हाँ" began before half
+            # of it had played: it answered what came before, not the question.
+            # Call 761a58c0 (2026-10-27): "हाँ" 0.5 s into the 2.2 s "उनकी शादी
+            # का रिश्ता निश्चित हो गया है क्या?" became "the match is fixed" —
+            # "बहुत बधाई हो!" — and the caller's real answer came 3 s later. 15
+            # of 38 answers taken this way in 10 days began that early.
+            if (last.endswith(("?", "？")) and 0 < seg_start < stop_t
+                    and ack_t < seg_start + ACK_QUESTION_HEARD_SHARE * (stop_t - seg_start)):
+                logger.info("turn-gate: %r began %.1fs into the %.1fs question %r — before "
+                            "they heard it, not an answer", text[:20], ack_t - seg_start,
+                            stop_t - seg_start, q[:40])
+                if self._diag is not None:
+                    self._diag.bump("acks_before_the_question")
+                return
             logger.info("turn-gate: %r came over the end of %r — answering it", text[:20], q[:40])
             self._outcome.transcript.append({"role": "user", "text": text})
             self._last_text_t = time.time()
