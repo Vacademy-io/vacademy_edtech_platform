@@ -695,7 +695,14 @@ def with_first_token_timeout(cls, secs: float):
     first token does not arrive within `secs` fails fast. The failure is an
     ordinary exception inside pipecat's LLMContextFrame handling, so it
     becomes a non-fatal ErrorFrame — which is exactly what ServiceSwitcher's
-    failover strategy switches on. 0 or None = no timeout."""
+    failover strategy switches on. 0 or None = no timeout.
+
+    A 429 is retried ONCE inside the same budget, as with_stream_first_token_timeout
+    does for Vertex: Sarvam refuses a request under load and takes the next one
+    (2026-11-03: 30 of 393 gemma4 requests refused, with two or three calls up).
+    get_chat_completions only builds the request and sends it, so a second call is
+    safe, and nothing has been spoken yet. Any other error, a second 429, or a 429
+    with too little budget left fails over as before."""
     if not secs or secs <= 0:
         return cls
 
@@ -704,11 +711,24 @@ def with_first_token_timeout(cls, secs: float):
 
         async def get_chat_completions(self, context):
             t = self.first_token_timeout_secs
-            try:
-                stream = await asyncio.wait_for(super().get_chat_completions(context), timeout=t)
-            except asyncio.TimeoutError as e:
-                raise TimeoutError(f"LLM did not answer within {t:.1f}s (connect)") from e
-            return _FirstChunkGuard(stream, t)
+            t0 = time.monotonic()
+            for attempt in (1, 2):
+                try:
+                    stream = await asyncio.wait_for(
+                        super().get_chat_completions(context),
+                        timeout=max(0.01, t - (time.monotonic() - t0)))
+                except asyncio.TimeoutError as e:
+                    raise TimeoutError(f"LLM did not answer within {t:.1f}s (connect)") from e
+                except Exception as e:
+                    spent = time.monotonic() - t0
+                    left = t - spent - _CAPACITY_RETRY_PAUSE_SECS
+                    if attempt == 2 or not is_capacity_error(e) or left < _CAPACITY_RETRY_MIN_SECS:
+                        raise
+                    logger.warning("llm: %s refused the request (429) after %.2fs — retrying once",
+                                   type(self).__name__, spent)
+                    await asyncio.sleep(_CAPACITY_RETRY_PAUSE_SECS)
+                    continue
+                return _FirstChunkGuard(stream, t)
     _Guarded.__name__ = cls.__name__
     _Guarded.__qualname__ = cls.__qualname__
     return _Guarded
@@ -1049,7 +1069,7 @@ def build_llm(provider: str | None = None, fail_fast: bool = False):
     if prov == "google":
         # Gemini via its OpenAI-compat endpoint, hit directly (no proxy hop).
         # reasoning_effort 'none' via extra_body: 3.1 thinks by default.
-        return _Timed(
+        llm = _Timed(
             api_key=s.gemini_api_key,
             base_url=s.google_llm_base_url,
             model=s.google_llm_model,
@@ -1058,6 +1078,7 @@ def build_llm(provider: str | None = None, fail_fast: bool = False):
                 extra={"extra_body": {"reasoning_effort": "none"}},
             ),
         )
+        return _no_sdk_retry_on_429(llm) if fail_fast else llm
     if prov == "openrouter":
         from pipecat.services.openrouter.llm import OpenRouterLLMService
 
@@ -1073,7 +1094,7 @@ def build_llm(provider: str | None = None, fail_fast: bool = False):
     # JSON null (Python None inside extra_body — the SDK drops None kwargs but
     # keeps them in extra_body): the ONLY value that disables hybrid thinking.
     # 0.14s median TTFT from Mumbai with null; 6-14s (or content=None) without.
-    return _Timed(
+    llm = _Timed(
         api_key=s.sarvam_llm_api_key,
         base_url=s.llm_call_sarvam_base_url or s.sarvam_llm_base_url,
         model=call_sarvam_model(s),
@@ -1082,6 +1103,28 @@ def build_llm(provider: str | None = None, fail_fast: bool = False):
             extra={"extra_body": {"reasoning_effort": None}},
         ),
     )
+    return _no_sdk_retry_on_429(llm) if fail_fast else llm
+
+
+def _no_sdk_retry_on_429(llm):
+    """A primary with a fallback must see a 429 at once. The OpenAI SDK retries
+    it twice with backoff, invisibly: Sarvam's 429 comes back in ~0.1 s, but the
+    turn sat until the 3 s first-token deadline, which counts as a STALL — two
+    of those and the call stays on the fallback to the end (call b3437356,
+    2026-11-03: 18 refusals, Gemini from 53 s on). Now the 429 reaches
+    with_first_token_timeout, which retries it once and then fails over as a
+    capacity error, which hands the next turn back. Only the 429: the SDK still
+    retries connection errors, timeouts, 408/409 and 5xx as before."""
+    client = getattr(llm, "_client", None)
+    base = getattr(client, "_should_retry", None)
+    if base is None:
+        logger.warning("llm: no SDK client to stop retrying 429s on")
+        return llm
+
+    def should_retry(response):
+        return response.status_code != 429 and base(response)
+    client._should_retry = should_retry
+    return llm
 
 
 def build_stt_waterfall(sample_rate: int, language: str | None = None, bias: str | None = None,

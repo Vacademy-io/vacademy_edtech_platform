@@ -5652,6 +5652,113 @@ def test_calls_talk_on_their_own_sarvam_model_and_analysis_keeps_its_own(monkeyp
     assert pv.build_llm("sarvam")._settings.model == "sarvam-105b", "unset = SARVAM_LLM_* as before"
 
 
+def _sarvam_primary(monkeypatch, fail_fast=True):
+    import dataclasses
+    from app import providers as pv
+    from app.config import Settings
+    s = dataclasses.replace(Settings(), llm_provider="sarvam", sarvam_llm_api_key="k",
+                            llm_call_sarvam_base_url="https://api.sarvam.ai/v2",
+                            llm_call_sarvam_model="gemma4",
+                            llm_primary_first_token_timeout_secs=3.0)
+    monkeypatch.setattr(pv, "get_settings", lambda: s)
+    return pv.build_llm("sarvam", fail_fast=fail_fast)
+
+
+def test_the_sdk_leaves_a_429_to_us_and_keeps_its_other_retries(monkeypatch):
+    """Call b3437356 (2026-11-03): 18 Sarvam 429s, each retried by the SDK until
+    the 3 s deadline, so each became a STALL failover — two of those and the call
+    stayed on Gemini to the end. Only the 429 is taken from the SDK: a dropped
+    connection or a 5xx it still retries (review 2026-11-03)."""
+    import httpx
+    req = httpx.Request("POST", "https://api.sarvam.ai/v2/chat/completions")
+    r = lambda code: httpx.Response(code, request=req)
+    primary = _sarvam_primary(monkeypatch)
+    assert "/v2" in str(primary._client.base_url), "the client keeps its endpoint"
+    assert not primary._client._should_retry(r(429))
+    assert all(primary._client._should_retry(r(c)) for c in (408, 409, 500, 502, 503))
+    assert primary._client.max_retries > 0, "connection errors are still retried"
+    alone = _sarvam_primary(monkeypatch, fail_fast=False)
+    assert alone._client._should_retry(r(429)), "no fallback: the SDK keeps its 429 retry"
+    # Every OpenAI-compatible primary shares the guard's 429 retry, so every one
+    # must leave the 429 to it — or the SDK's two retries plus ours run out the
+    # budget and the 429 becomes a stall (review 2026-11-03).
+    import dataclasses
+    from app import providers as pv
+    s = dataclasses.replace(pv.get_settings(), gemini_api_key="k")
+    monkeypatch.setattr(pv, "get_settings", lambda: s)
+    assert not pv.build_llm("google", fail_fast=True)._client._should_retry(r(429))
+    assert pv.build_llm("google")._client._should_retry(r(429))
+
+
+_SSE = ('data: {"id":"x","object":"chat.completion.chunk","created":0,"model":"gemma4",'
+        '"choices":[{"index":0,"delta":{"content":"जी"},"finish_reason":null}]}\n\n'
+        'data: [DONE]\n\n')
+
+
+def _fake_sarvam(primary, codes):
+    """Serve the primary's requests from `codes` (429, 503, 200…); returns the hit log."""
+    import httpx
+    hits = []
+
+    def handle(request):
+        code = codes.pop(0) if codes else 429
+        hits.append(code)
+        if code == 200:
+            return httpx.Response(200, headers={"content-type": "text/event-stream"},
+                                  content=_SSE.encode())
+        return httpx.Response(code, json={"error": {"message": "Rate limit exceeded"
+                                                    if code == 429 else "upstream error"}})
+    primary._client._client = httpx.AsyncClient(transport=httpx.MockTransport(handle))
+    return hits
+
+
+@pytest.mark.asyncio
+async def test_a_sarvam_429_is_retried_once_then_fails_over_as_capacity(monkeypatch):
+    from pipecat.processors.aggregators.llm_context import LLMContext
+    from app import providers as pv
+    primary = _sarvam_primary(monkeypatch)
+    ctx = LLMContext(messages=[{"role": "user", "content": "नमस्ते"}])
+    hits = _fake_sarvam(primary, [429, 200])             # refused once, then served
+    stream = await primary.get_chat_completions(ctx)
+    first = await stream.__anext__()
+    assert first.choices[0].delta.content == "जी" and hits == [429, 200], hits
+    hits = _fake_sarvam(primary, [429, 429, 429])        # refused twice: a capacity failover
+    with pytest.raises(Exception) as err:
+        await primary.get_chat_completions(ctx)
+    assert pv.is_capacity_error(err.value), err.value
+    assert hits == [429, 429], f"one retry, by us, not the SDK's two: {hits}"
+    hits = _fake_sarvam(primary, [503, 200])             # a 5xx is still the SDK's to retry
+    stream = await primary.get_chat_completions(ctx)
+    assert (await stream.__anext__()).choices[0].delta.content == "जी" and hits == [503, 200]
+
+
+@pytest.mark.asyncio
+async def test_the_openai_guard_retries_only_a_429_and_only_with_budget_left():
+    from app.providers import with_first_token_timeout
+
+    class _Svc:
+        def __init__(self):
+            self.calls = 0; self.refuse = 1; self.err = _Refused
+            self.msg = "Error code: 429 - {'error': {'message': 'Rate limit exceeded'}}"
+        async def get_chat_completions(self, context):
+            self.calls += 1
+            if self.calls <= self.refuse:
+                raise self.err(self.msg)
+            return "stream"
+
+    G = with_first_token_timeout(_Svc, 3.0)
+    g = G()
+    assert (await g.get_chat_completions(None))._stream == "stream" and g.calls == 2
+    g = G(); g.err = RuntimeError; g.msg = "Error code: 500 - upstream"   # not a 429: no retry
+    with pytest.raises(RuntimeError):
+        await g.get_chat_completions(None)
+    assert g.calls == 1
+    g = with_first_token_timeout(_Svc, 1.1)()             # too little budget left to retry
+    with pytest.raises(_Refused):
+        await g.get_chat_completions(None)
+    assert g.calls == 1
+
+
 def test_a_429_failover_still_returns_to_the_primary():
     """The second 429 used to leave the call on the fallback for good."""
     import inspect
