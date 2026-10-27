@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import { useNavigate } from '@tanstack/react-router';
 import type { TFunction } from 'i18next';
@@ -21,6 +21,8 @@ import {
     SignIn,
     GraduationCap,
     BellSimple,
+    PaintBrush,
+    Eye,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { downloadTutorialGuidePdf } from '@/routes/settings/-utils/tutorial-guide';
@@ -77,6 +79,9 @@ import {
 } from '@/services/student-display-settings';
 import MaxActiveSessionsSetting from './MaxActiveSessionsSetting';
 import { UsernameStrategyFields } from './UsernameStrategyFields';
+import { StudentLayoutCard } from './StudentLayoutCard';
+import { StudentLivePreview } from './StudentLivePreview';
+import { ThemeEditor, type ThemeEditorDraft } from '../Appearance/ThemeEditor';
 
 /**
  * The widget rows this screen renders: retired ids filtered out (the learner
@@ -95,6 +100,7 @@ function getStudentDisplaySections(t: TFunction): SettingsSectionGroup[] {
         {
             sections: [
                 { id: 'grp-layout', label: t('sections.layoutNav'), icon: SquaresFour },
+                { id: 'grp-theme', label: t('sections.themeLayout'), icon: PaintBrush },
                 { id: 'grp-account', label: t('sections.loginAccount'), icon: SignIn },
                 { id: 'grp-learning', label: t('sections.learningExperience'), icon: GraduationCap },
                 {
@@ -138,6 +144,10 @@ export default function StudentDisplaySettings(): JSX.Element {
     const [hasChanges, setHasChanges] = useState(false);
     const [downloadingGuide, setDownloadingGuide] = useState(false);
     const [loadFailed, setLoadFailed] = useState(false);
+    // Live preview: the learner app in a device frame, fed the unsaved
+    // settings below plus the Theme section's unsaved theme.
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [themeDraft, setThemeDraft] = useState<ThemeEditorDraft | null>(null);
 
     // Snapshot of the last loaded/saved state for the Discard button in the
     // sticky unsaved-changes bar.
@@ -504,12 +514,26 @@ export default function StudentDisplaySettings(): JSX.Element {
         <SettingsPageShell
             title={t('page.title')}
             description={t('page.description')}
-            maxWidth="max-w-7xl"
+            maxWidth={previewOpen ? false : 'max-w-7xl'}
         >
+            <div className={cn(previewOpen && 'xl:flex xl:items-start xl:gap-6')}>
+            <div className="min-w-0 flex-1">
             {/* Save is handled by the sticky UnsavedChangesBar at the bottom of
                 the viewport, so the redundant top + bottom buttons that used
                 to live here have been removed. */}
-            <SettingsSectionsLayout groups={STUDENT_DISPLAY_SECTIONS}>
+            <SettingsSectionsLayout
+                groups={STUDENT_DISPLAY_SECTIONS}
+                toolbar={
+                    <Button
+                        variant={previewOpen ? 'secondary' : 'outline'}
+                        size="sm"
+                        onClick={() => setPreviewOpen((open) => !open)}
+                    >
+                        <Eye className="size-4" />
+                        {previewOpen ? t('toolbar.hidePreview') : t('toolbar.livePreview')}
+                    </Button>
+                }
+            >
             <section id="grp-layout" className="space-y-6">
             <Card>
                 <CardHeader>
@@ -2151,7 +2175,44 @@ export default function StudentDisplaySettings(): JSX.Element {
                 </div>
             </Card>
             </section>
+            <section id="grp-theme" className="space-y-6">
+                {/* The same editor as Settings → Appearance (one THEME_SETTING
+                    blob, its own Save button); here it also feeds the live
+                    preview. */}
+                <Card>
+                    <div className="space-y-3 p-4">
+                        {/* The theme is its own setting with its own Save button;
+                            the page's unsaved-changes bar covers only the rest. */}
+                        <p className="rounded-md bg-info-50 px-3 py-2 text-xs text-info-700">
+                            {t('themeSection.separateSave')}
+                        </p>
+                        <ThemeSectionBoundary
+                            fallback={<div className="text-sm text-danger-600">{t('loadError')}</div>}
+                        >
+                            <Suspense fallback={<div className="text-sm">{t('loading')}</div>}>
+                                <ThemeEditor onDraftChange={setThemeDraft} />
+                            </Suspense>
+                        </ThemeSectionBoundary>
+                    </div>
+                </Card>
+                <StudentLayoutCard
+                    value={settings.layout}
+                    onChange={(layout) => update('layout', layout)}
+                    sidebarTabs={settings.sidebar.tabs}
+                />
+            </section>
             </SettingsSectionsLayout>
+            </div>
+            {previewOpen && (
+                <PreviewDock>
+                    <StudentLivePreview
+                        settings={settings}
+                        themeDraft={themeDraft}
+                        onClose={() => setPreviewOpen(false)}
+                    />
+                </PreviewDock>
+            )}
+            </div>
 
             <UnsavedChangesBar
                 dirty={hasChanges}
@@ -2160,6 +2221,62 @@ export default function StudentDisplaySettings(): JSX.Element {
                 onDiscard={discardChanges}
             />
         </SettingsPageShell>
+    );
+}
+
+// ── Theme section error boundary ────────────────────────────────────────────
+// ThemeEditor reads the institute with a suspense query. If that read fails it
+// must only blank this card, never the rest of Student Display, which did not
+// depend on it before the theme section moved in here.
+class ThemeSectionBoundary extends React.Component<
+    { fallback: React.ReactNode; children: React.ReactNode },
+    { hasError: boolean }
+> {
+    state = { hasError: false };
+    static getDerivedStateFromError() {
+        return { hasError: true };
+    }
+    componentDidCatch(error: unknown) {
+        console.error('Theme section failed to load', error);
+    }
+    render() {
+        return this.state.hasError ? this.props.fallback : this.props.children;
+    }
+}
+
+// ── Live preview dock ───────────────────────────────────────────────────────
+// Keeps the preview in view while the settings column scrolls. CSS sticky
+// cannot do it here: an ancestor in the app layout is overflow-x-hidden, which
+// makes it the sticky container without ever scrolling. So on xl the aside
+// reserves the column and the panel is fixed at that column's position.
+function PreviewDock({ children }: { children: React.ReactNode }): JSX.Element {
+    const ref = useRef<HTMLElement>(null);
+    const [box, setBox] = useState<{ left: number; width: number } | null>(null);
+    useLayoutEffect(() => {
+        const el = ref.current;
+        if (!el) return;
+        const measure = () => {
+            const r = el.getBoundingClientRect();
+            setBox(window.innerWidth >= 1280 ? { left: r.left, width: r.width } : null);
+        };
+        measure();
+        const ro = new ResizeObserver(measure);
+        ro.observe(el);
+        window.addEventListener('resize', measure);
+        return () => {
+            ro.disconnect();
+            window.removeEventListener('resize', measure);
+        };
+    }, []);
+    return (
+        <aside ref={ref} className="mt-6 shrink-0 xl:mt-0 xl:w-2/5">
+            <div
+                className={cn(box && 'fixed bottom-4 top-16 z-10 overflow-y-auto')}
+                style={box ? { left: box.left, width: box.width } : undefined} // design-lint-ignore: docks the panel at its measured column
+            >
+                {children}
+            </div>
+        </aside>
     );
 }
 
