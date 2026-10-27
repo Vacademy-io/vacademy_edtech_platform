@@ -475,6 +475,93 @@ export interface ConcentrationSettings {
 }
 
 // Root
+// Layout (header / navigation / footer bar / wallpaper)
+//
+// Every field is optional and every absent value means "today's behaviour",
+// so an institute that never opens the Layout card renders exactly as before.
+
+/** Screen class the learner is on: < 768px, 768–1023px, ≥ 1024px. */
+export type StudentLayoutDevice = "mobile" | "tablet" | "desktop";
+
+/**
+ * Where the main navigation lives on a device.
+ * - "auto": today's behaviour — sidebar everywhere, plus the bottom tab bar
+ *   on phones for the Play / Cleaner Play skins.
+ * - "sidebar": sidebar only (a slide-in menu on phones), no bottom bar.
+ * - "bottomBar": bottom tab bar only, no sidebar.
+ * - "both": sidebar and bottom tab bar.
+ * - "rail": a slim icon rail on the left with the footer-bar tabs
+ *   (tablet / website / Windows app; on phones it falls back to the bottom bar).
+ */
+export type StudentNavPlacement = "auto" | "sidebar" | "bottomBar" | "both" | "rail";
+
+/** Header items an institute can switch off. Absent = shown. */
+export interface StudentHeaderSettings {
+  showLogo?: boolean;
+  showPageTitle?: boolean;
+  /** Back + Home buttons on inner pages. */
+  showBackHome?: boolean;
+  /** Badges / points pill. */
+  showAchievements?: boolean;
+  showLanguage?: boolean;
+  /** Tutorials help button and the raise-a-query icon. */
+  showHelp?: boolean;
+  showNotifications?: boolean;
+}
+
+export interface StudentBottomBarItem {
+  id: string;
+  label?: string;
+  /** In-app route ("/study-library") or a full https:// URL. */
+  route: string;
+  /** Key from the shared nav icon library (STUDENT_NAV_ICON_KEYS). */
+  icon?: string;
+  /** Uploaded icon image; wins over `icon`. */
+  iconUrl?: string;
+  order: number;
+  visible: boolean;
+  isCustom?: boolean;
+  /** The big raised button in the middle of the bar (one tab at most). */
+  highlight?: boolean;
+}
+
+/**
+ * - "classic": full-width bar stuck to the bottom edge (today's look).
+ * - "floating": a rounded bar floating above the edge, app-style.
+ */
+export type StudentBottomBarStyle = "classic" | "floating";
+
+export interface StudentBottomBarSettings {
+  /** Default "classic". */
+  style?: StudentBottomBarStyle;
+  /** Absent or empty = mirror the sidebar tabs (today's behaviour). */
+  items?: StudentBottomBarItem[];
+  /** Tabs before the rest go under "More". 3–5, default 4. */
+  maxVisible?: number;
+  /** Text under the icons. Default true. */
+  showLabels?: boolean;
+}
+
+export interface StudentWallpaperSettings {
+  enabled?: boolean;
+  imageUrl?: string;
+  /** Phone-specific image; falls back to imageUrl. */
+  mobileImageUrl?: string;
+  /** Hex colour laid over the image to keep text readable. */
+  overlayColor?: string;
+  /** 0–90 (%). Default 0. */
+  overlayOpacity?: number;
+  /** Every page, or the dashboard only. Default "all". */
+  scope?: "all" | "dashboard";
+}
+
+export interface StudentLayoutSettings {
+  navigation?: Partial<Record<StudentLayoutDevice, StudentNavPlacement>>;
+  header?: StudentHeaderSettings;
+  bottomBar?: StudentBottomBarSettings;
+  wallpaper?: StudentWallpaperSettings;
+}
+
 export interface StudentDisplaySettingsData {
   sidebar: {
     visible: boolean;
@@ -498,4 +585,6 @@ export interface StudentDisplaySettingsData {
   concentration: ConcentrationSettings;
   ui: StudentUISettings;
   postLoginRedirectRoute: string;
+  /** Header, navigation placement, footer bar and wallpaper. */
+  layout?: StudentLayoutSettings;
 }
