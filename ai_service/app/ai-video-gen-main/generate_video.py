@@ -511,7 +511,15 @@ def _path_to_data_uri(path: Path) -> str:
     return f"data:{mime};base64,{encoded}"
 
 
-_MEDIA_KEEP_AS_FILE_URL = frozenset({".mp4", ".webm", ".mov", ".m4v", ".ogv", ".mp3", ".wav", ".m4a", ".ogg"})
+# Media that stays a file:// URL instead of being inlined as a data URI. The
+# page is file:// with --allow-file-access-from-files, and the frame loop waits
+# for every <img> of a newly mounted shot to load, so nothing needs inlining —
+# and a data URI rides inside the shot HTML, adding ~1.33x the image size to
+# what the page has to parse when the shot mounts.
+_MEDIA_KEEP_AS_FILE_URL = frozenset({
+    ".mp4", ".webm", ".mov", ".m4v", ".ogv", ".mp3", ".wav", ".m4a", ".ogg",
+    ".png", ".jpg", ".jpeg", ".webp", ".gif", ".svg", ".avif",
+})
 
 
 def _convert_file_urls_to_data_uris(html: str) -> str:
@@ -1473,6 +1481,7 @@ def render_video_from_json(
         print(f"DEBUG: Rendering frame range [{_render_start}, {_render_end}) of {total_frames} total")
 
         _prev_active_ids = set()
+        _mounted_ids: set = set()
         _crossfade_duration: float = float(opts.get("crossfade_duration", 0.0))
         _frame_progress_start = time.time()
         _frame_progress_chunk_size = max(1, _render_end - _render_start)
@@ -1484,7 +1493,22 @@ def render_video_from_json(
             if show_branding and branding_entry:
                 active.append(branding_entry)
             # Update DOM for overlays (part of batch, but snippets need to run first for segment-change detection)
-            page.evaluate("async (entries) => await window.__updateSnippets(entries)", active)
+            # The dispatcher reads an entry's html only when it mounts the
+            # snippet, and unmounts every snippet missing from the list — so an
+            # entry needs its html exactly when it was not sent last frame.
+            # Re-sending ~50 KB of shot HTML per active entry on every frame
+            # was most of the per-frame cost.
+            _send = [
+                e if e.get("id") not in _mounted_ids else {k: v for k, v in e.items() if k != "html"}
+                for e in active
+            ]
+            # The page reports what it actually mounted, so a shot whose mount
+            # failed gets its html again next frame instead of never mounting.
+            _mounted_ids = set(page.evaluate(
+                "async (entries) => { await window.__updateSnippets(entries);"
+                " return Array.from((window.__activeSnippets || new Map()).keys()); }",
+                _send,
+            ) or [])
 
             # Wait for images/fonts/annotations to load when active segments change
             _cur_active_ids = {e["id"] for e in active}

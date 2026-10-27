@@ -405,10 +405,72 @@ _KATEX_CALL = re.compile(r"katex\.render\(\s*([\"'`])((?:\\.|(?!\1).)*)\1", re.D
 _TEX_DELIM = re.compile(r"\\\((.+?)\\\)|\$\$(.+?)\$\$", re.DOTALL)
 
 
+_GSAP_CALL = re.compile(r"gsap\.(?:to|fromTo)\(\s*")
+_TEXT_TARGET = re.compile(
+    r"""(?:getElementById\(\s*['"]([\w-]+)['"]\s*\)|querySelector\(\s*['"]#([\w-]+)['"]\s*\))"""
+    r"""\s*\.\s*(?:textContent|innerText|innerHTML)\s*=\s*([^;}]+)"""
+)
+_NUM = r"-?\d+(?:\.\d+)?"
+
+
+def _call_body(src: str, start: int) -> str:
+    """The argument text of the call whose '(' ends just before `start`."""
+    depth, i = 1, start
+    while i < len(src) and depth:
+        depth += {"(": 1, ")": -1}.get(src[i], 0)
+        i += 1
+    return src[start:i - 1]
+
+
+def _format_final(value: str, expr: str) -> str:
+    fixed = re.search(r"toFixed\(\s*(\d+)\s*\)", expr)
+    if fixed:
+        return f"{float(value):.{int(fixed.group(1))}f}"
+    if re.search(r"Math\.(?:round|floor|ceil|trunc)|parseInt|\|\s*0", expr):
+        return str(int(round(float(value))))
+    return value
+
+
+def resolve_count_ups(html_str: str) -> str:
+    """Write each count-up's FINAL value into its element. Shots animate
+    numbers with `gsap.to(obj,{v:40,…,onUpdate(){el.textContent=Math.round(obj.v)}})`
+    over a "0" in the markup (or tween innerText directly), so the static
+    board read "Territory revenue up 0%" and the fact-check flagged a correct
+    40% (ITRC lesson, 2026-10-22: 2 of 5 findings, each costing a regen)."""
+    src = html_str or ""
+    finals: Dict[str, str] = {}
+    for m in _GSAP_CALL.finditer(src):
+        body = _call_body(src, m.end())
+        target = re.match(r"""(['"])#([\w-]+)\1""", body)
+        if target:  # gsap.to('#n', {innerText: 40, snap: …})
+            unsnapped = re.sub(r"\bsnap\s*:\s*\{[^{}]*\}", "", body)  # snap:{innerText:1} is a step, not a value
+            direct = re.findall(r"\b(?:innerText|textContent)\s*:\s*['\"]?(" + _NUM + ")", unsnapped)
+            if direct:
+                finals[target.group(2)] = _format_final(direct[-1], body)
+            continue
+        var = re.match(r"([A-Za-z_$][\w$]*)\s*,", body)
+        upd = _TEXT_TARGET.search(body)
+        if not (var and upd):
+            continue
+        key = re.search(re.escape(var.group(1)) + r"\.([A-Za-z_$][\w$]*)", upd.group(3))
+        if not key:
+            continue
+        vals = re.findall(r"\b" + re.escape(key.group(1)) + r"\s*:\s*(" + _NUM + ")", body)
+        if vals:  # fromTo: the last object holds the end value
+            finals[upd.group(1) or upd.group(2)] = _format_final(vals[-1], upd.group(3))
+    for el_id, value in finals.items():
+        src = re.sub(
+            r"""(<[^>]*\bid\s*=\s*['"]""" + re.escape(el_id) + r"""['"][^>]*>)[^<]*""",
+            lambda mm, v=value: mm.group(1) + v, src, count=1,
+        )
+    return src
+
+
 def board_text(html_str: str) -> str:
     """What a learner can read on the board: visible text plus KaTeX sources
-    (formulas often live only inside katex.render(...) calls)."""
-    src = html_str or ""
+    (formulas often live only inside katex.render(...) calls). Count-ups read
+    at their final value, which is what stays on screen."""
+    src = resolve_count_ups(html_str or "")
     tex = [m.group(2) for m in _KATEX_CALL.finditer(src)]
     visible = _SCRIPT_BLOCK.sub(" ", src)
     tex += [a or b for a, b in _TEX_DELIM.findall(visible)]

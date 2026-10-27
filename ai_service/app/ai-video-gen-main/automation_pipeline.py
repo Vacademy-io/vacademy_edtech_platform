@@ -56,6 +56,35 @@ _llm_phase: ContextVar[str] = ContextVar("_llm_phase", default="base")
 _llm_stage: ContextVar[str] = ContextVar("_llm_stage", default="unknown")
 
 
+def _registry_llm_price(model: str) -> Optional[Tuple[float, float]]:
+    """(input, output) USD per token from ai_models — the prices billing uses —
+    for pricing LLM events in cost_breakdown.json. None when unknown."""
+    try:
+        from app.db import db_session as _db_ctx
+        from app.services.usage_record_only import _registry_price
+    except ImportError:  # standalone / renderer image: no registry
+        return None
+    with _db_ctx() as _s:
+        return _registry_price(_s, model)
+
+
+def _llm_stage_label() -> str:
+    """The cost-event stage for an LLM call: the caller's `_llm_stage`, else
+    the pipeline method that made the call ("fn:<name>"). 167 of 286 calls in
+    a 10-minute lesson were booked as "unknown" — the per-shot HTML among
+    them — so the report could not say where the tokens went."""
+    stage = _llm_stage.get()
+    if stage != "unknown":
+        return stage
+    try:
+        f = sys._getframe(2)  # 0 = here, 1 = OpenRouterClient.chat, 2 = its caller
+        while f is not None and f.f_code.co_name in ("chat", "_chat", "wrapper", "_call_llm"):
+            f = f.f_back
+        return f"fn:{f.f_code.co_name}" if f is not None else stage
+    except Exception:  # noqa: BLE001
+        return stage
+
+
 # ── V200 stage routing: normalize runtime stage strings to taxonomy IDs ──
 # Call sites set `_llm_stage` to descriptive runtime strings like
 # "brand_asset_regen_shot_3" or "shot_html_seg_5". Those map to canonical
@@ -1597,6 +1626,22 @@ def retry_with_backoff(max_retries=3, initial_delay=2.0, backoff_factor=2.0, exc
     return decorator
 
 
+_JSON_RETRY_NUDGE = (
+    "Your previous reply could not be parsed as JSON — it was cut off or malformed. Reply again with "
+    "ONLY the complete JSON object, in the same shape as asked, with no prose and no code fences. "
+    "Keep the HTML compact so the whole object fits."
+)
+
+
+def _json_failure_hint(raw: Optional[str], usage: Optional[Dict[str, Any]], max_tokens: Optional[int]) -> str:
+    """Why a reply did not parse, for the log: cut off (no closing brace) or
+    malformed, how much of the token budget it used, and how it ends."""
+    txt = (raw or "").rstrip()
+    ct = int((usage or {}).get("completion_tokens", 0) or 0)
+    kind = "malformed" if txt.endswith(("}", "]", "```")) else "cut off"
+    return f"{kind}; {len(txt)} chars, {ct}/{max_tokens} completion tokens, ends {txt[-60:]!r}"
+
+
 def _extract_json_blob(raw: str) -> Any:
     """
     Try to recover a JSON object from a model response.
@@ -2018,6 +2063,7 @@ class OpenRouterClient:
         temperature: float = 0.6,
         max_tokens: int = 2000,
         response_format: Optional[Dict[str, Any]] = None,
+        expect_json: bool = False,
     ) -> Tuple[str, Dict[str, Any]]:
         # Use provided model, then stage-routed model, then chain, then default.
         # Stage routing (V200): when no explicit model is passed AND the
@@ -2186,16 +2232,24 @@ class OpenRouterClient:
                         if self.cost_events is not None:
                             try:
                                 self.cost_events.record_llm(
-                                    stage=_llm_stage.get(),
+                                    stage=_llm_stage_label(),
                                     model=model_to_use,
                                     usage=usage,
                                     phase=_llm_phase.get(),
                                     duration_ms=int((time.perf_counter() - _t_start) * 1000),
+                                    # OpenRouter reports the call's real cost
+                                    # when asked; the Isoquant gateway does not,
+                                    # and the report prices those from ai_models.
+                                    cost_usd=_image_cost_usd(usage) or 0.0,
                                     source=_stage_routed_source,
                                 )
                             except Exception:
                                 pass
 
+                        if expect_json:
+                            return self._ensure_json_reply(
+                                content, usage, messages, model_to_use, temperature, max_tokens, response_format
+                            )
                         return content, usage
                 # inner budget-retry loop exhausted without returning
                 raise ValueError("Model returned an empty string after a max_tokens retry.")
@@ -2233,6 +2287,52 @@ class OpenRouterClient:
         if last_error:
             raise last_error
         raise RuntimeError("No models available to try")
+
+    def _record_outcome(self, outcome: str, model: str) -> None:
+        if self.cost_events is None:
+            return
+        try:
+            self.cost_events.record_llm(stage=_llm_stage_label(), model=model, usage={},
+                                        phase=_llm_phase.get(), outcome=outcome)
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _ensure_json_reply(
+        self, content: str, usage: Dict[str, Any], messages: Sequence[Dict[str, str]], model: str,
+        temperature: float, max_tokens: int, response_format: Optional[Dict[str, Any]],
+    ) -> Tuple[str, Dict[str, Any]]:
+        """A reply the caller will parse as JSON: when it does not parse, say
+        why, book a parse_failed event and ask ONCE more (phase "retry").
+        Fix-up regens used to drop silently on an unparseable reply and ship
+        the uncorrected shot — "60%, 2 days to 8 hours" stayed in the ITRC
+        lesson that way, and every such event still read outcome "ok"."""
+        try:
+            _extract_json_blob(content)
+            return content, usage
+        except ValueError:
+            pass
+        print(f"   ↻ {_llm_stage.get()}: reply was not valid JSON "
+              f"({_json_failure_hint(content, usage, max_tokens)}) — asking once more")
+        self._record_outcome("parse_failed", model)
+        _tok = _llm_phase.set("retry")
+        try:
+            content2, usage2 = self.chat(
+                list(messages) + [{"role": "user", "content": _JSON_RETRY_NUDGE}],
+                model=model, temperature=temperature, max_tokens=max_tokens,
+                response_format=response_format,
+            )
+        finally:
+            _llm_phase.reset(_tok)
+        merged = dict(usage2 or {})
+        for k in ("prompt_tokens", "completion_tokens", "total_tokens"):
+            merged[k] = int((usage or {}).get(k, 0) or 0) + int((usage2 or {}).get(k, 0) or 0)
+        try:
+            _extract_json_blob(content2)
+        except ValueError:
+            self._record_outcome("parse_failed", model)
+            print(f"   ✗ {_llm_stage.get()}: retry was not valid JSON either "
+                  f"({_json_failure_hint(content2, usage2, max_tokens)})")
+        return content2, merged
 
 
 class GoogleCloudTTSClient:
@@ -7270,6 +7370,7 @@ class VideoGenerationPipeline:
         cost_breakdown: Optional[Dict[str, Any]] = None
         try:
             cost_breakdown = self._cost_events.build_report(
+                price_lookup=_registry_llm_price,
                 video_id=getattr(self, "_run_video_id", "unknown"),
                 tier=self._quality_tier,
                 # Reflects what actually ran: "v3" on clean runs, or
@@ -13062,6 +13163,7 @@ class VideoGenerationPipeline:
                     ],
                     temperature=0.4,
                     max_tokens=self._tier_config.get("per_shot_max_tokens", _PER_SHOT_MAX_TOKENS),
+                    expect_json=True,
                 )
             except Exception as exc:
                 print(f"   ⚠️ Shot {shot_idx + 1} brand-asset regen failed ({exc}) — shipping original")
@@ -13241,6 +13343,7 @@ class VideoGenerationPipeline:
                 ],
                 temperature=0.3,
                 max_tokens=self._tier_config.get("per_shot_max_tokens", _PER_SHOT_MAX_TOKENS),
+                expect_json=True,
             )
             for _k in ("prompt_tokens", "completion_tokens", "total_tokens"):
                 usage[_k] = usage.get(_k, 0) + (usage2 or {}).get(_k, 0)
@@ -13449,6 +13552,7 @@ class VideoGenerationPipeline:
                     ],
                     temperature=0.4,
                     max_tokens=self._tier_config.get("per_shot_max_tokens", _PER_SHOT_MAX_TOKENS),
+                    expect_json=True,
                 )
             except Exception as exc:
                 print(f"   ⚠️ Shot {shot_idx + 1} bbox-lint regen failed ({exc}) — shipping original")
@@ -13956,6 +14060,7 @@ class VideoGenerationPipeline:
                     messages=messages,
                     temperature=self._tier_config.get("html_temperature", 0.7),
                     max_tokens=self._tier_config.get("per_shot_max_tokens", _PER_SHOT_MAX_TOKENS),
+                    expect_json=True,
                     model=_regen_model,
                 )
             finally:
@@ -14298,6 +14403,7 @@ class VideoGenerationPipeline:
                     ],
                     temperature=0.4,
                     max_tokens=self._tier_config.get("per_shot_max_tokens", _PER_SHOT_MAX_TOKENS),
+                    expect_json=True,
                     # With screenshots attached: the vision reviewer's model
                     # (else the registry default, which takes images).
                     model=(
@@ -22426,6 +22532,7 @@ class VideoGenerationPipeline:
                                 ],
                                 temperature=0.4,  # lower for more faithful regen
                                 max_tokens=self._tier_config.get("per_shot_max_tokens", _PER_SHOT_MAX_TOKENS),
+                                expect_json=True,
                             )
                         finally:
                             _llm_phase.reset(_phase_tok)

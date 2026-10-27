@@ -27,7 +27,10 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional, Tuple
+
+# (input, output) USD per token for a model id, or None when unknown.
+PriceLookup = Callable[[str], Optional[Tuple[float, float]]]
 
 
 # What a generated image is for. Billing charges every image event once, on
@@ -253,10 +256,35 @@ class CostEventTracker:
         pipeline_version: str,
         run_started_at: Optional[str] = None,
         extra_anomalies: Optional[List[str]] = None,
+        price_lookup: Optional[PriceLookup] = None,
     ) -> Dict[str, Any]:
         """Build the cost_breakdown.json payload. Safe to call multiple times
-        (events are not mutated)."""
+        (events are not mutated).
+
+        An LLM event without a vendor-reported cost (GLM through the Isoquant
+        gateway reports none) is priced from its tokens with `price_lookup` —
+        the same ai_models registry prices billing uses. Without it every GLM
+        call read $0.00 and the report could not show what regens cost.
+        Display only: billing prices LLM tokens itself and never reads these."""
         run_completed_at = _now_iso()
+        priced: Dict[int, Tuple[float, str]] = {}
+        _price_cache: Dict[str, Optional[Tuple[float, float]]] = {}
+        for i, ev in enumerate(self._events):
+            if ev.kind != "llm":
+                continue
+            if ev.cost_usd:
+                priced[i] = (ev.cost_usd, "vendor")
+                continue
+            if price_lookup is None or not (ev.prompt_tokens or ev.completion_tokens):
+                continue
+            if ev.model not in _price_cache:
+                try:
+                    _price_cache[ev.model] = price_lookup(ev.model)
+                except Exception:  # noqa: BLE001 — observability must not fail the run
+                    _price_cache[ev.model] = None
+            p = _price_cache[ev.model]
+            if p:
+                priced[i] = (ev.prompt_tokens * p[0] + ev.completion_tokens * p[1], "registry")
 
         # Roll-ups by phase
         phase_totals: Dict[str, Dict[str, float]] = {
@@ -266,12 +294,12 @@ class CostEventTracker:
         }
         non_llm_total_usd = 0.0
 
-        for ev in self._events:
+        for i, ev in enumerate(self._events):
             bucket = phase_totals.setdefault(ev.phase, _zero_bucket())
             bucket["prompt_tokens"] += ev.prompt_tokens
             bucket["completion_tokens"] += ev.completion_tokens
             bucket["character_count"] += ev.character_count
-            bucket["cost_usd"] += ev.cost_usd
+            bucket["cost_usd"] += priced[i][0] if i in priced else ev.cost_usd
             bucket["event_count"] += 1
             if ev.kind in ("image", "stock", "tts", "ai_video"):
                 non_llm_total_usd += ev.cost_usd
@@ -294,6 +322,21 @@ class CostEventTracker:
 
         # Stage entries (flat list, ordered as recorded — preserves run trace)
         stages = [_event_to_stage_entry(ev) for ev in self._events]
+        for i, (usd, src) in priced.items():
+            stages[i]["cost_usd"] = round(usd, 6)
+            stages[i]["cost_source"] = src
+        llm_usd = sum(usd for usd, _ in priced.values())
+        summary["llm_usd"] = round(llm_usd, 4)
+        llm_unpriced = sum(1 for i, ev in enumerate(self._events)
+                           if ev.kind == "llm" and i not in priced and (ev.prompt_tokens or ev.completion_tokens))
+        if llm_unpriced:
+            summary["llm_unpriced_events"] = llm_unpriced
+        failed = [ev for ev in self._events if ev.outcome not in ("ok", "")]
+        if failed:
+            by_outcome: Dict[str, int] = {}
+            for ev in failed:
+                by_outcome[ev.outcome] = by_outcome.get(ev.outcome, 0) + 1
+            summary["outcomes"] = by_outcome
 
         anomalies = list(self._anomalies)
         if extra_anomalies:
