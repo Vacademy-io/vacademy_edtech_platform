@@ -6,11 +6,19 @@ import type { LeadActionSettings } from '@/types/display-settings';
 interface LeadActionsCardProps {
     settings: LeadActionSettings | undefined;
     onChange: (next: LeadActionSettings) => void;
+    /** The role's default when the flag is absent — true for admin, false otherwise. */
+    defaultAllowEditFormResponses: boolean;
 }
 
-export const LeadActionsCard = ({ settings, onChange }: LeadActionsCardProps) => {
+export const LeadActionsCard = ({
+    settings,
+    onChange,
+    defaultAllowEditFormResponses,
+}: LeadActionsCardProps) => {
     const { t } = useTranslation('settingsLeadActionsCard');
     const showAddLead = settings?.showAddLead === true;
+    const allowEditFormResponses =
+        settings?.allowEditFormResponses ?? defaultAllowEditFormResponses;
 
     return (
         <Card>
@@ -32,6 +40,22 @@ export const LeadActionsCard = ({ settings, onChange }: LeadActionsCardProps) =>
                         checked={showAddLead}
                         onCheckedChange={(checked) =>
                             onChange({ ...settings, showAddLead: checked })
+                        }
+                    />
+                </div>
+                <div className="flex items-center justify-between gap-4 border-t border-neutral-100 py-3.5">
+                    <div>
+                        <div className="text-sm font-medium text-neutral-800">
+                            {t('rows.allowEditFormResponses.label')}
+                        </div>
+                        <div className="mt-0.5 text-caption text-neutral-500">
+                            {t('rows.allowEditFormResponses.hint')}
+                        </div>
+                    </div>
+                    <Switch
+                        checked={allowEditFormResponses}
+                        onCheckedChange={(checked) =>
+                            onChange({ ...settings, allowEditFormResponses: checked })
                         }
                     />
                 </div>

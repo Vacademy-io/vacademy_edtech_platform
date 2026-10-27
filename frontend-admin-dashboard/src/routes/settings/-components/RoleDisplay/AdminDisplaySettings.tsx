@@ -1439,6 +1439,7 @@ export default function AdminDisplaySettings({ onDirtyChange }: RoleDisplayPanel
                     onChange={(next) =>
                         updateSettings((prev) => ({ ...prev, leadActions: next }))
                     }
+                    defaultAllowEditFormResponses={true}
                 />
             )}
             </section>

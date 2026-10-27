@@ -23,5 +23,21 @@
     "errors": {
         "noResponseForCall": "Aucune réponse de campagne liée — impossible de passer un appel depuis ici.",
         "noResponseForAiCall": "Aucune réponse de campagne liée — impossible de passer un appel IA depuis ici."
+    },
+    "editDialog": {
+        "edit": "Modifier",
+        "dialogHeading": "Modifier les réponses du formulaire",
+        "helper": "Corrigez les réponses de ce prospect. Modifier ici son propre téléphone, e-mail ou nom le met aussi à jour sur son profil et dans les listes de prospects.",
+        "readOnly": "Les pièces jointes et les réponses à choix multiples ne sont pas modifiables ici.",
+        "cancel": "Annuler",
+        "saving": "Enregistrement…",
+        "save": "Enregistrer",
+        "updateSuccess": "Réponses du formulaire mises à jour",
+        "updateError": "Échec de la mise à jour des réponses du formulaire",
+        "invalid": {
+            "phone": "Saisissez un numéro complet (au moins 10 chiffres) — c'est le numéro du prospect.",
+            "email": "Saisissez un e-mail valide — c'est l'e-mail du prospect.",
+            "name": "Le nom ne peut pas être vide — c'est le nom du prospect."
+        }
     }
 }

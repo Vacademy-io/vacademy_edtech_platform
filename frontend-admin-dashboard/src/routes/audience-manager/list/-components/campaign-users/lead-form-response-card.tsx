@@ -43,6 +43,9 @@ import {
     useAiCallButtonEnabled,
 } from '@/components/shared/leads';
 import { cn } from '@/lib/utils';
+import { useLeadActionVisibility } from '@/lib/display-settings/lead-actions';
+import { EditFormResponseDialog, type FormResponseSaved } from './edit-form-response-dialog';
+import type { StudentTable } from '@/types/student-table-types';
 
 export interface LeadResponseField {
     id: string;
@@ -320,6 +323,8 @@ interface LeadFormResponseCardViewProps {
     campaignType?: string | null;
     responseId: string | null;
     leadUserId: string | null;
+    /** Called after the answers were edited, with the identity copies that followed. */
+    onAnswersSaved?: (saved: FormResponseSaved) => void;
 }
 
 const LeadFormResponseCardView = ({
@@ -328,8 +333,11 @@ const LeadFormResponseCardView = ({
     campaignType,
     responseId,
     leadUserId,
+    onAnswersSaved,
 }: LeadFormResponseCardViewProps) => {
     const { t } = useTranslation('audienceManagerLeadFormResponseCard');
+    // Display Settings → Lead Actions: on for admin, opt-in for other roles.
+    const { canEditFormResponses } = useLeadActionVisibility();
     const placeCallMutation = usePlaceCall();
     const aiEnabled = useAiCallButtonEnabled();
     const placeAiCallMutation = usePlaceAiCall({ invalidateKeys: [['telephony-call-history']] });
@@ -376,16 +384,24 @@ const LeadFormResponseCardView = ({
 
     return (
         <Card className="border-neutral-200 shadow-none">
-            <CardHeader className="px-4 pb-3 pt-4">
-                <CardTitle className="flex items-center gap-2 text-sm font-semibold text-neutral-800">
-                    <ListChecks className="size-4 text-primary-500" />
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 px-4 pb-3 pt-4">
+                <CardTitle className="flex min-w-0 items-center gap-2 text-sm font-semibold text-neutral-800">
+                    <ListChecks className="size-4 shrink-0 text-primary-500" />
                     {t('card.title')}
                     {campaignTrail && (
-                        <span className="text-xs font-normal text-neutral-500">
+                        <span className="truncate text-xs font-normal text-neutral-500">
                             · {campaignTrail}
                         </span>
                     )}
                 </CardTitle>
+                {canEditFormResponses && responseId && (
+                    <EditFormResponseDialog
+                        responseId={responseId}
+                        leadUserId={leadUserId}
+                        fields={fields}
+                        onSaved={onAnswersSaved}
+                    />
+                )}
             </CardHeader>
             <CardContent className="px-1 pb-3 pt-0">
                 {fields.map((field, idx) => (
@@ -416,7 +432,13 @@ interface UserAudienceMembership {
  * so fields captured on the lead form (e.g. a referrer's name and number) stay
  * visible after enrolment.
  */
-const SavedLeadFormResponses = ({ userId }: { userId: string }) => {
+const SavedLeadFormResponses = ({
+    userId,
+    onAnswersSaved,
+}: {
+    userId: string;
+    onAnswersSaved?: (saved: FormResponseSaved) => void;
+}) => {
     const instituteId = getCurrentInstituteId() ?? '';
 
     // Same key + payload as the Lead Profile tab's audience list, so TanStack dedupes.
@@ -476,6 +498,7 @@ const SavedLeadFormResponses = ({ userId }: { userId: string }) => {
                             campaignType={lead.campaign_type}
                             responseId={lead.response_id ?? responseIds[idx] ?? null}
                             leadUserId={userId}
+                            onAnswersSaved={onAnswersSaved}
                         />
                     </div>
                 );
@@ -483,6 +506,14 @@ const SavedLeadFormResponses = ({ userId }: { userId: string }) => {
         </>
     );
 };
+
+/** The selected row with the identity fields that followed a form-answer edit. */
+const withIdentity = (row: StudentTable, sync: FormResponseSaved['sync']): StudentTable => ({
+    ...row,
+    ...(sync.userDetails.full_name && { full_name: sync.userDetails.full_name }),
+    ...(sync.userDetails.email && { email: sync.userDetails.email }),
+    ...(sync.userDetails.mobile_number && { mobile_number: sync.userDetails.mobile_number }),
+});
 
 interface LeadFormResponseCardProps {
     /**
@@ -494,7 +525,7 @@ interface LeadFormResponseCardProps {
 }
 
 export const LeadFormResponseCard = ({ loadSavedResponses = false }: LeadFormResponseCardProps) => {
-    const { selectedStudent } = useStudentSidebar();
+    const { selectedStudent, setSelectedStudent } = useStudentSidebar();
     // Loose access — `_response_fields` / `_audience_campaign_name` /
     // `_response_id` are attached by audience-list flows only and aren't part
     // of the canonical StudentTable shape. `user_id` IS canonical, so we
@@ -524,6 +555,24 @@ export const LeadFormResponseCard = ({ loadSavedResponses = false }: LeadFormRes
                 campaignType={ext?._audience_campaign_type}
                 responseId={ext?._response_id ?? null}
                 leadUserId={leadUserId}
+                // The answers live on the selected row, so patch it in place —
+                // the list refetch alone would not reach the open side view.
+                onAnswersSaved={({ changed, sync }) => {
+                    if (!selectedStudent) return;
+                    setSelectedStudent(
+                        {
+                            ...withIdentity(selectedStudent, sync),
+                            // A lead row's guardian number IS this enquiry's parent_mobile.
+                            ...(sync.parentMobile && {
+                                father_mobile_number: sync.parentMobile,
+                            }),
+                            _response_fields: fields.map((f) =>
+                                f.id in changed ? { ...f, rawValue: changed[f.id] ?? '' } : f
+                            ),
+                        } as StudentTable,
+                        { openOverlay: false }
+                    );
+                }}
             />
         );
     }
@@ -534,7 +583,17 @@ export const LeadFormResponseCard = ({ loadSavedResponses = false }: LeadFormRes
 
     // Opened from manage-students (an admitted learner): load their saved answers.
     if (!loadSavedResponses || fromLeadSurface || !leadUserId) return null;
-    return <SavedLeadFormResponses userId={leadUserId} />;
+    return (
+        <SavedLeadFormResponses
+            userId={leadUserId}
+            // A learner row keeps its own name/email/mobile copy (backend syncs the
+            // student rows); its guardian fields are unrelated to parent_mobile.
+            onAnswersSaved={({ sync }) => {
+                if (!selectedStudent) return;
+                setSelectedStudent(withIdentity(selectedStudent, sync), { openOverlay: false });
+            }}
+        />
+    );
 };
 
 export default LeadFormResponseCard;

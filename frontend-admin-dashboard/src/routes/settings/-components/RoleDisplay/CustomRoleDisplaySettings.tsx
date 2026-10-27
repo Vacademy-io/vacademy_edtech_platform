@@ -1450,6 +1450,7 @@ export default function CustomRoleDisplaySettings({
                     onChange={(next) =>
                         updateSettings((prev) => ({ ...prev, leadActions: next }))
                     }
+                    defaultAllowEditFormResponses={false}
                 />
             )}
             </section>

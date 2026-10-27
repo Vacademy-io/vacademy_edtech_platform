@@ -98,6 +98,9 @@ public class AudienceService {
     @Autowired
     private AudienceRepository audienceRepository;
 
+    @Autowired
+    private vacademy.io.admin_core_service.features.institute_learner.repository.InstituteStudentRepository instituteStudentRepository;
+
     // Repositories only (never CounselorPoolService) — the pool service already
     // depends on this one, so injecting it back would close a bean cycle.
     @Autowired
@@ -5030,13 +5033,15 @@ public class AudienceService {
      *
      * <p>Writes only where a lead is actually read from — the auth user
      * (name / email / mobile), the {@code audience_response} parent/guardian
-     * fields, and the lead's custom field values. It never touches the
-     * {@code student} table: a lead that never enrolled has no row there, which
-     * is why the learner-profile endpoint cannot serve this case.</p>
+     * fields, and the lead's custom field values. A lead that never enrolled has
+     * no {@code student} row, which is why the learner-profile endpoint cannot
+     * serve this case; when it has enrolled, the edited name / email / mobile are
+     * mirrored onto its {@code student} rows so every surface shows one value.</p>
      *
      * <p>If the edit moves email/phone onto an identity that another lead in the
      * same campaign already owns, it is rejected (409) so two leads cannot
-     * collide on one {@code dedupe_key}.</p>
+     * collide on one {@code dedupe_key}. Only a value that actually changes is
+     * checked — the unchanged half would match this person's own repeat leads.</p>
      */
     @Transactional
     public void updateLeadProfile(String responseId, LeadProfileEditRequestDTO request) {
@@ -5053,9 +5058,22 @@ public class AudienceService {
         // existing record so unsent fields aren't blanked.
         String leadUserId = response.getUserId() != null ? response.getUserId() : response.getStudentUserId();
         if (updates != null && StringUtils.hasText(leadUserId)) {
+            List<UserDTO> existingUsers = authService.getUsersFromAuthServiceByUserIds(List.of(leadUserId));
+            UserDTO existing = (existingUsers != null && !existingUsers.isEmpty()) ? existingUsers.get(0) : null;
+
             String newEmail = updates.getEmail();
             String newPhone = updates.getMobileNumber();
-            if (StringUtils.hasText(newEmail) || StringUtils.hasText(newPhone)) {
+            // Callers send the whole identity (the Overview editor always sends both email and
+            // phone). Only a value that differs from the stored one can collide with another
+            // lead — re-checking the unchanged half would match this person's own repeat leads.
+            String changedEmail = StringUtils.hasText(newEmail)
+                    && (existing == null || !newEmail.trim().equalsIgnoreCase(
+                            existing.getEmail() == null ? "" : existing.getEmail().trim()))
+                    ? newEmail : null;
+            String changedPhone = StringUtils.hasText(newPhone)
+                    && (existing == null || !sameLast10Digits(newPhone, existing.getMobileNumber()))
+                    ? newPhone : null;
+            if (changedEmail != null || changedPhone != null) {
                 // Institute-configured dedup (LEAD_SETTING.data.dedup) — the same check used
                 // at lead creation, so editing a lead's contact info can't silently collide
                 // with another lead the admin's field/scope setting is supposed to catch.
@@ -5068,7 +5086,8 @@ public class AudienceService {
                         : null;
                 if (StringUtils.hasText(instituteId)) {
                     leadDeduplicationService
-                            .checkDuplicate(instituteId, response.getAudienceId(), newEmail, newPhone, responseId)
+                            .checkDuplicate(instituteId, response.getAudienceId(), changedEmail, changedPhone,
+                                    responseId)
                             .ifPresent(match -> {
                                 throw new ConflictException(StringUtils.hasText(match.rejectionMessage())
                                         ? match.rejectionMessage()
@@ -5079,11 +5098,16 @@ public class AudienceService {
                 // Legacy campaign-scoped combined-key check — kept as the baseline safety net
                 // for institutes that haven't configured LEAD_SETTING.data.dedup, and to keep
                 // dedupeKey (used by the enquiry flow's soft-merge) up to date either way.
-                String newKey = leadDeduplicationService.generateDedupeKey(newEmail, newPhone);
+                // The key hashes email AND phone, so an unsent half falls back to the stored one.
+                String keyEmail = StringUtils.hasText(newEmail) ? newEmail
+                        : (existing != null ? existing.getEmail() : null);
+                String keyPhone = StringUtils.hasText(newPhone) ? newPhone
+                        : (existing != null ? existing.getMobileNumber() : null);
+                String newKey = leadDeduplicationService.generateDedupeKey(keyEmail, keyPhone);
                 if (newKey != null && response.getAudienceId() != null) {
                     leadDeduplicationService.findDuplicate(response.getAudienceId(), newKey)
-                            .filter(existing -> !existing.getId().equals(responseId))
-                            .ifPresent(existing -> {
+                            .filter(other -> !other.getId().equals(responseId))
+                            .ifPresent(other -> {
                                 throw new ConflictException(
                                         "A lead already exists with this phone number or email.");
                             });
@@ -5091,11 +5115,10 @@ public class AudienceService {
                 }
             }
 
-            List<UserDTO> existingUsers = authService.getUsersFromAuthServiceByUserIds(List.of(leadUserId));
-            UserDTO existing = (existingUsers != null && !existingUsers.isEmpty()) ? existingUsers.get(0) : null;
             UserDTO merged = (existing != null) ? mergeUserDTO(existing, updates) : updates;
             merged.setId(leadUserId);
             authService.updateUser(merged, leadUserId);
+            syncStudentIdentity(leadUserId, updates);
         }
 
         // 2) Parent/guardian fields on the audience_response row. A cleared field arrives
@@ -5130,6 +5153,37 @@ public class AudienceService {
         }
 
         logger.info("Lead profile updated for response {}", responseId);
+    }
+
+    /**
+     * An enrolled lead also has {@code student} rows, and each keeps its own copy of
+     * name / email / mobile (the Students list and enrolment surfaces read that copy).
+     * Mirror the edited identity onto every row of this user so a number changed from
+     * the lead side shows the same everywhere. Blank values are never copied over.
+     */
+    private void syncStudentIdentity(String userId, UserDTO updates) {
+        boolean hasName = StringUtils.hasText(updates.getFullName());
+        boolean hasEmail = StringUtils.hasText(updates.getEmail());
+        boolean hasMobile = StringUtils.hasText(updates.getMobileNumber());
+        if (!hasName && !hasEmail && !hasMobile) return;
+
+        List<vacademy.io.admin_core_service.features.institute_learner.entity.Student> students =
+                instituteStudentRepository.findByUserId(userId);
+        if (students.isEmpty()) return;
+        students.forEach(student -> {
+            if (hasName) student.setFullName(updates.getFullName().trim());
+            if (hasEmail) student.setEmail(updates.getEmail().trim());
+            if (hasMobile) student.setMobileNumber(updates.getMobileNumber().trim());
+        });
+        instituteStudentRepository.saveAll(students);
+    }
+
+    /** Same number ignoring formatting and a country code — the dedup check's own last-10 rule. */
+    private boolean sameLast10Digits(String a, String b) {
+        String da = a == null ? "" : a.replaceAll("[^0-9]", "");
+        String db = b == null ? "" : b.replaceAll("[^0-9]", "");
+        if (da.length() < 10 || db.length() < 10) return da.equals(db);
+        return da.substring(da.length() - 10).equals(db.substring(db.length() - 10));
     }
 
     /** Trim a form-supplied value, mapping "" (a cleared field) to NULL. */

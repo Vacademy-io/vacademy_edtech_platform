@@ -7,6 +7,10 @@
         "showAddLead": {
             "label": "Afficher « Ajouter un prospect » dans Tous les prospects",
             "hint": "Choisissez un type de campagne et une audience, puis remplissez son formulaire. Le prospect d’un conseiller lui est attribué ; un admin choisit le conseiller. Désactivé par défaut pour tous les rôles."
+        },
+        "allowEditFormResponses": {
+            "label": "Autoriser la modification des réponses du formulaire",
+            "hint": "Affiche un bouton Modifier sur la carte Réponses du formulaire de l'onglet Profil du prospect, pour corriger ses réponses. Activé par défaut pour l'admin, désactivé pour les autres rôles."
         }
     }
 }

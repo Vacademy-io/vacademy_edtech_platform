@@ -956,10 +956,15 @@ export function mergeDisplayWithDefaults(
             false,
     };
 
-    // Lead page actions. Off for every role unless the saved blob turns it on.
+    // Lead page actions. Add New Lead is off for every role unless the saved blob
+    // turns it on; form-answer editing takes the role default (admin ON).
     merged.leadActions = {
         showAddLead:
             incoming?.leadActions?.showAddLead ?? defaults.leadActions?.showAddLead ?? false,
+        allowEditFormResponses:
+            incoming?.leadActions?.allowEditFormResponses ??
+            defaults.leadActions?.allowEditFormResponses ??
+            false,
     };
 
     // Team-tab role visibility + Org Chart tab visibility. Preserve any
