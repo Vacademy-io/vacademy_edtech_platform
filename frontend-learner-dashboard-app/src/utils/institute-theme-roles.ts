@@ -1,3 +1,4 @@
+import { readThemeRoleSettingsRaw } from "@/lib/student-preview";
 import convert from "color-convert";
 import { hslVar } from "@/lib/theme-ramp";
 import { resolveFontStack } from "@/utils/branding";
@@ -25,7 +26,7 @@ import {
 /** Parse the current cached role settings, if any. */
 export function readThemeRoleSettings(): ThemeRoleSettings | null {
   try {
-    const raw = localStorage.getItem(THEME_ROLE_SETTINGS_KEY);
+    const raw = readThemeRoleSettingsRaw();
     return raw ? (JSON.parse(raw) as ThemeRoleSettings) : null;
   } catch {
     return null;

@@ -1,6 +1,6 @@
+import { readThemeRoleSettingsRaw } from "@/lib/student-preview";
 import { Preferences } from "@capacitor/preferences";
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
-import { THEME_ROLE_SETTINGS_KEY } from "@/types/theme-role-settings";
 
 export interface TabBrandingResult {
   iconUrl: string | null;
@@ -239,7 +239,7 @@ export const applyTabBranding = async (
     // font fills in only when there's no white-label override.
     if (!fontFamily) {
       try {
-        const raw = localStorage.getItem(THEME_ROLE_SETTINGS_KEY);
+        const raw = readThemeRoleSettingsRaw();
         const roleSettings = raw ? JSON.parse(raw) : null;
         fontFamily = roleSettings?.roles?.fontFamily || null;
       } catch {

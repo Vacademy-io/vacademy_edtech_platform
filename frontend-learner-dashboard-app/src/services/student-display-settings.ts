@@ -13,6 +13,16 @@ import {
 } from "@/types/student-display-settings";
 import { DEFAULT_STUDENT_DISPLAY_SETTINGS } from "@/constants/display-settings/student-defaults";
 import { resolveUiSkin } from "@/utils/institute-theme-roles";
+import { readStudentPreviewDraft } from "@/lib/student-preview";
+import { setLastStudentLayout } from "@/lib/student-layout";
+
+/** Admin live-preview frame: the unsaved draft replaces the saved settings. */
+function previewDraftSettings(): StudentDisplaySettingsData | null {
+  const display = readStudentPreviewDraft()?.display;
+  return display
+    ? mergeWithDefaults(display as Partial<StudentDisplaySettingsData>)
+    : null;
+}
 
 const LS_KEY = `${STUDENT_DISPLAY_SETTINGS_KEY}_CACHE_V1`;
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -414,6 +424,9 @@ function mergeWithDefaults(
     },
     postLoginRedirectRoute:
       incoming?.postLoginRedirectRoute ?? d.postLoginRedirectRoute,
+    // Sparse on purpose: every absent layout field means today's behaviour,
+    // and lib/student-layout.ts resolves the defaults at read time.
+    ...(incoming?.layout ? { layout: incoming.layout } : {}),
   };
 
   seedExploreCtaVisibility(out, incoming);
@@ -514,6 +527,8 @@ export async function getStudentDisplaySettings(
   forceRefresh = false,
   instituteId?: string
 ): Promise<StudentDisplaySettingsData> {
+  const draft = previewDraftSettings();
+  if (draft) return draft;
   const id = await getInstituteId();
   if (!instituteId) instituteId = id ?? "";
   // Try institute-aware cache first
@@ -573,6 +588,8 @@ export async function getPublicStudentDisplaySettings(
   // visitors who loaded the site earlier). The fresh result refreshes it.
   opts?: { skipLocalCache?: boolean }
 ): Promise<StudentDisplaySettingsData> {
+  const draft = previewDraftSettings();
+  if (draft) return draft;
   if (!instituteId) return DEFAULT_STUDENT_DISPLAY_SETTINGS;
 
   const memo = publicSettingsByInstitute.get(instituteId);
@@ -684,6 +701,7 @@ export async function saveStudentDisplaySettings(
 }
 
 export function clearStudentDisplaySettingsCache(): void {
+  setLastStudentLayout(null);
   try {
     // Clear all institute-specific keys
     const keysToRemove: string[] = [];
