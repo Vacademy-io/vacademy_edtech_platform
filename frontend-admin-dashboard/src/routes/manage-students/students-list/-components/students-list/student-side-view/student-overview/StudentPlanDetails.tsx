@@ -19,6 +19,7 @@ import {
     CalendarCheck,
 } from '@phosphor-icons/react';
 import { useCallback, useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { getUserPlans, UserPlan } from '@/services/user-plan';
 import { getInstituteId } from '@/constants/helper';
 import { ChangePlanDialog } from '../student-membership/change-plan-dialog';
@@ -551,7 +552,10 @@ const PlanCard = ({
             </div>
 
             <div className="mb-3 flex flex-wrap items-center gap-1.5">
-                <PlanStatusBadge status={plan.payment_plan_dto?.status || plan.status} />
+                {/* The member's own plan status. payment_plan_dto.status is the price plan's
+                    catalogue status (ACTIVE while it is on sale), so preferring it labelled
+                    every lapsed membership "Active". */}
+                <PlanStatusBadge status={plan.status} />
                 <EnrollmentStatusBadge enrollmentStatus={enrollmentStatus} />
             </div>
 
@@ -663,7 +667,8 @@ const PlanCard = ({
 
 const StudentPlanDetails = ({ userId, instituteId }: StudentPlanDetailsProps) => {
     const { t } = useTranslation('manageStudentsPlanDetails');
-    const { selectedStudent } = useStudentSidebar();
+    const { selectedStudent, setSelectedStudent } = useStudentSidebar();
+    const queryClient = useQueryClient();
     const [activePlans, setActivePlans] = useState<UserPlan[]>([]);
     const [isLoadingActive, setIsLoadingActive] = useState(false);
     const [showHistoryDialog, setShowHistoryDialog] = useState(false);
@@ -719,6 +724,28 @@ const StudentPlanDetails = ({ userId, instituteId }: StudentPlanDetailsProps) =>
     useEffect(() => {
         loadActivePlans();
     }, [loadActivePlans]);
+
+    // A manual renewal reactivates every access row linked to the plan, but the course
+    // badge reads the students-list row loaded before it (selectedStudent.status), so it
+    // kept saying "Course Inactive" next to a plan that was now Active. Mirror the
+    // reactivation into the open learner and refetch the list so the row catches up too.
+    const handleRenewed = useCallback(
+        (renewedPlan: UserPlan | null) => {
+            loadActivePlans();
+            if (
+                renewedPlan &&
+                selectedStudent &&
+                selectedStudent.status !== 'ACTIVE' &&
+                getFirstPolicy(renewedPlan)?.package_session_id ===
+                    selectedStudent.package_session_id
+            ) {
+                setSelectedStudent({ ...selectedStudent, status: 'ACTIVE' }, { openOverlay: false });
+            }
+            queryClient.invalidateQueries({ queryKey: ['students'] });
+            queryClient.invalidateQueries({ queryKey: ['GET_LEARNER_PACKAGES'] });
+        },
+        [loadActivePlans, selectedStudent, setSelectedStudent, queryClient]
+    );
 
     const handleViewHistory = async () => {
         if (!userId) return;
@@ -838,7 +865,7 @@ const StudentPlanDetails = ({ userId, instituteId }: StudentPlanDetailsProps) =>
                 userPlanId={planToRenew?.id ?? null}
                 instituteId={resolvedInstituteId}
                 planLabel={planToRenew ? getCourseLabel(planToRenew, t) : undefined}
-                onRenewed={loadActivePlans}
+                onRenewed={() => handleRenewed(planToRenew)}
             />
 
             <ChangeEndDateDialog
