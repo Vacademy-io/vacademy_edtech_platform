@@ -62,6 +62,26 @@ public interface CatalogueBlogPostRepository extends JpaRepository<CatalogueBlog
                                           @Param("now") Timestamp now,
                                           Pageable pageable);
 
+    /**
+     * Same as findPublished, minus the given categories. Posts without a
+     * category stay in. Only called with a non-empty list (an empty IN list
+     * is invalid SQL).
+     */
+    @Query(value = """
+            SELECT p FROM CatalogueBlogPost p
+             WHERE p.instituteId = :instituteId
+               AND p.status = 'PUBLISHED'
+               AND p.publishedAt IS NOT NULL AND p.publishedAt <= :now
+               AND (:category IS NULL OR p.category = :category)
+               AND (p.category IS NULL OR p.category NOT IN :excluded)
+             ORDER BY p.publishedAt DESC
+            """)
+    Page<CatalogueBlogPost> findPublishedExcluding(@Param("instituteId") String instituteId,
+                                                   @Param("category") String category,
+                                                   @Param("excluded") List<String> excluded,
+                                                   @Param("now") Timestamp now,
+                                                   Pageable pageable);
+
     /** Categories in use, for the section editor's filter picker and the public filter chips. */
     @Query(value = """
             SELECT DISTINCT p.category FROM CatalogueBlogPost p

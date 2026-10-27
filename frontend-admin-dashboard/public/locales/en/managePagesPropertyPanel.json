@@ -1380,6 +1380,8 @@
     "category": "Show only this category",
     "allCategories": "All categories",
     "categoryHelp": "Pin the section to one category, e.g. a News page and a separate Tips page.",
+    "excludeCategories": "Hide these categories",
+    "excludeCategoriesHelp": "Posts in the switched-on categories won't show in this section, e.g. keep exam guides off the main blog.",
     "showCoverImage": "Show cover image",
     "showExcerpt": "Show excerpt",
     "showDate": "Show date",

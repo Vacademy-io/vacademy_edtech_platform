@@ -5092,6 +5092,35 @@ const BlogEditor = ({ component, pageId, updateComponent }: any) => {
                 </select>
                 <p className="text-xs text-gray-500">{t('blog.categoryHelp')}</p>
             </div>
+            {!props.category && categories.length > 0 && (
+                <div className="space-y-2">
+                    <Label>{t('blog.excludeCategories')}</Label>
+                    <div className="space-y-2 rounded border bg-gray-50 p-3">
+                        {categories.map((c) => {
+                            const excluded: string[] = Array.isArray(props.excludeCategories)
+                                ? props.excludeCategories
+                                : [];
+                            return (
+                                <div key={c} className="flex items-center justify-between">
+                                    <Label className="text-xs">{c}</Label>
+                                    <Switch
+                                        checked={excluded.includes(c)}
+                                        onCheckedChange={(on) =>
+                                            updateProp(
+                                                'excludeCategories',
+                                                on
+                                                    ? [...excluded.filter((x) => x !== c), c]
+                                                    : excluded.filter((x) => x !== c)
+                                            )
+                                        }
+                                    />
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <p className="text-xs text-gray-500">{t('blog.excludeCategoriesHelp')}</p>
+                </div>
+            )}
             <div className="space-y-3 rounded border bg-gray-50 p-3">
                 {toggles.map(([key, label]) => (
                     <div key={key} className="flex items-center justify-between">

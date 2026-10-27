@@ -179,12 +179,34 @@ public class CatalogueBlogService {
 
     /* ── public ────────────────────────────────────────────────────────── */
 
-    public BlogPostPageResponse publicList(String instituteId, String category, int page, int size) {
+    /**
+     * excludeCategories is a comma-separated list of categories a section
+     * leaves out (e.g. exam guides kept off the general blog). They are also
+     * dropped from the filter chips.
+     */
+    public BlogPostPageResponse publicList(String instituteId, String category, String excludeCategories,
+                                           int page, int size) {
         Timestamp now = now();
-        Page<CatalogueBlogPost> rows = repository.findPublished(
-                instituteId, blank(category) ? null : category.trim(), now,
-                PageRequest.of(Math.max(page, 0), clampSize(size)));
-        return toPage(rows, true, repository.distinctCategories(instituteId, true, now));
+        String only = blank(category) ? null : category.trim();
+        List<String> excluded = splitCategories(excludeCategories);
+        PageRequest pageable = PageRequest.of(Math.max(page, 0), clampSize(size));
+        Page<CatalogueBlogPost> rows = excluded.isEmpty()
+                ? repository.findPublished(instituteId, only, now, pageable)
+                : repository.findPublishedExcluding(instituteId, only, excluded, now, pageable);
+        List<String> categories = repository.distinctCategories(instituteId, true, now);
+        if (!excluded.isEmpty()) {
+            categories = categories.stream().filter(c -> !excluded.contains(c)).toList();
+        }
+        return toPage(rows, true, categories);
+    }
+
+    private static List<String> splitCategories(String csv) {
+        if (blank(csv)) return List.of();
+        Set<String> out = new LinkedHashSet<>();
+        for (String part : csv.split(",")) {
+            if (!blank(part)) out.add(part.trim());
+        }
+        return new ArrayList<>(out);
     }
 
     public Optional<BlogPostResponse> publicGet(String instituteId, String slug) {
