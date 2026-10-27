@@ -111,6 +111,11 @@ _VIDEO_BASELINES: Dict[Tuple[Tier, DurationBand], Dict[str, int]] = {
     ("super_ultra", "5+ minutes"):   {"dir_in": 216000, "dir_out": 324000, "seg_in": 1514000, "seg_out": 1775000, "img": 41, "tts": 3600},
 }
 
+# The "tts" baselines above are 600 narrated characters per minute of video
+# (900 chars for the 1-2 min band's 90 s median, 1500 for 150 s, ...). The
+# LMS voice picker prices each engine per minute from this.
+TTS_CHARS_PER_MINUTE = 600
+
 # Tiers that run a Director pass before per-shot generation.
 _DIRECTOR_TIERS = {"premium", "ultra", "super_ultra"}
 
@@ -241,7 +246,7 @@ def _resolve_tts_provider(tts_provider: str, language: str) -> str:
     p = (tts_provider or "").strip().lower()
     if p == "premium":
         return "sarvam" if (language or "").strip().lower() in _INDIAN_LANGUAGES else "google"
-    if p in ("google", "sarvam", "smallest"):
+    if p in ("google", "sarvam", "smallest", "navana"):
         return p
     return "edge"
 

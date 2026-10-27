@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 TTS_USD_PER_1K_CHARS = {
     "smallest": 0.025,     # Lightning v3.1: ~$0.25 per 10k chars (~$0.02/min of audio)
     "sarvam": 0.036,       # Bulbul v3: ₹30 per 10k chars
+    "navana": 0.0144,      # Navana (Bodhi): ₹12 per 10k chars, at Sarvam's ₹83.3/$ above
     "google": 0.016,       # Chirp3-HD: $16 per 1M chars
     "edge": 0.0,
 }

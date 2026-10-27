@@ -129,6 +129,16 @@ jobs:
                 SMALLEST_API_KEY=${{ secrets.SMALLEST_API_KEY }}
             fi
 
+            # Navana (Bodhi) TTS for LMS AI video narration. The GitHub secret lives
+            # in the `voice-bot` ENVIRONMENT (the repo is at the 100-secret limit), so
+            # this job cannot read it: the keys come from a k8s secret created once
+            # by hand (docs/lms/AI_VIDEO_VOICES.md). Absent → Navana is shown
+            # as unavailable in the voice picker.
+            if kubectl get secret ai-navana-tts --namespace "$NAMESPACE" >/dev/null 2>&1; then
+              kubectl set env deployment/"$DEPLOYMENT_NAME" --namespace "$NAMESPACE" \
+                --from=secret/ai-navana-tts --keys=NAVANA_API_KEY
+            fi
+
             # Spatius (premium teacher avatar). Same rule: only when the secret is
             # present; the feature stays dark without SPATIUS_API_KEY + SPATIUS_APP_ID.
             if [ -n "${{ secrets.SPATIUS_API_KEY }}" ] && [ -n "${{ secrets.SPATIUS_APP_ID }}" ]; then

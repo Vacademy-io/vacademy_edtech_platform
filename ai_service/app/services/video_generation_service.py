@@ -241,6 +241,7 @@ _TTS_BILLING_MODELS = {
     "google": "google-cloud-tts",
     "sarvam": "sarvam-bulbul-v3",
     "smallest": "smallest-tts",
+    "navana": "navana-tts",
 }
 _INDIAN_TTS_LANGUAGES = frozenset({
     "hindi", "bengali", "tamil", "telugu", "marathi", "kannada",
@@ -277,7 +278,7 @@ def _resolve_tts_billing(
         requested = (tts_provider or "").strip().lower()
         if requested == "premium":
             vendor = "sarvam" if (language or "").strip().lower() in _INDIAN_TTS_LANGUAGES else "google"
-        elif requested in ("google", "sarvam", "smallest"):
+        elif requested in ("google", "sarvam", "smallest", "navana"):
             vendor = requested
         else:
             vendor = "edge"

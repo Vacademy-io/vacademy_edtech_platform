@@ -26,7 +26,7 @@ from typing import Any, Dict, List, Literal, Optional, Tuple
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy.orm import Session
 
@@ -36,6 +36,7 @@ from ..repositories.ai_video_repository import AiVideoRepository
 from ..schemas.auth import PinnedPrincipal
 from ..schemas.video_generation import LessonConfig, ReferenceFileItem, VideoGenerationRequest
 from ..services import ai_video_policy_service as policy_svc
+from ..services import lms_voice_catalog as voices_svc
 from ..services.tutor.roles import is_staff, normalize_roles
 from . import external_video_generation as ext
 
@@ -59,6 +60,7 @@ Format = Literal["lesson_teacher", "board_explainer", "problem_walkthrough", "qu
 Duration = Literal["1-2 minutes", "2-3 minutes", "3-5 minutes", "5-8 minutes"]
 Quality = Literal["standard", "premium", "ultra"]
 Layout = Literal["auto", "corner", "bubble", "side", "presenter", "board"]
+TtsProvider = Literal["edge", "sarvam", "smallest", "navana"]
 
 
 # ── request ──────────────────────────────────────────────────────────────────
@@ -102,6 +104,9 @@ class LmsVideoRequest(BaseModel):
     layout: Optional[Layout] = None
     voice_gender: Optional[Literal["female", "male"]] = None
     voice_id: Optional[str] = Field(default=None, max_length=120)
+    # The narration engine picked in the dialog. None → inferred from voice_id /
+    # quality as before (or the institute's default voice when neither is set).
+    tts_provider: Optional[TtsProvider] = None
     include_worked_example: Optional[bool] = None
     include_recap: Optional[bool] = None
     subject: Optional[str] = Field(default=None, max_length=80)
@@ -253,8 +258,11 @@ def build_prompt(req: LmsVideoRequest, plan: FormatPlan, source_text: str = "") 
 
 
 def _tts_provider(req: LmsVideoRequest) -> str:
-    """Edge voices (…Neural) are the free standard tier; any other voice id is a
-    premium (Sarvam / Google) voice. Without a voice: premium for Premium/Best."""
+    """An engine picked in the dialog wins. Otherwise Edge voices (…Neural) are
+    the free standard tier; any other voice id is a premium (Sarvam / Google)
+    voice. Without a voice: premium for Premium/Best."""
+    if req.tts_provider:
+        return req.tts_provider
     if req.voice_id:
         return "standard" if req.voice_id.strip().endswith("Neural") else "premium"
     return "standard" if req.quality == "standard" else "premium"
@@ -402,15 +410,63 @@ def _estimate(db: Session, institute_id: str, video_req: VideoGenerationRequest)
     )
 
 
-def _estimate_view(result: Dict[str, Any]) -> Dict[str, Any]:
+def _row_label(component: Any, tts_vendor: Optional[str]) -> Any:
+    """The estimator's "TTS (<tier>)" row reads "Narration (<engine>)" here."""
+    if tts_vendor and isinstance(component, str) and component.startswith("TTS ("):
+        return f"Narration ({voices_svc.provider_label(tts_vendor)})"
+    return component
+
+
+def _estimate_view(result: Dict[str, Any], video_req: Optional[VideoGenerationRequest] = None) -> Dict[str, Any]:
     e = result.get("estimate") or {}
+    tts_vendor = None
+    if video_req is not None:
+        from ..services.video_estimation_service import _resolve_tts_provider
+        tts_vendor = _resolve_tts_provider(video_req.tts_provider, video_req.language)
     return {
         "expected_credits": float(e.get("expected_credits") or 0),
         "low_credits": float(e.get("low_credits") or 0),
         "high_credits": float(e.get("high_credits") or 0),
-        "rows": [{"label": r.get("component"), "credits": float(r.get("credits") or 0)}
+        "rows": [{"label": _row_label(r.get("component"), tts_vendor), "credits": float(r.get("credits") or 0)}
                  for r in (e.get("breakdown") or [])],
     }
+
+
+async def resolve_voice(
+    db: Session, institute_id: str, payload: LmsVideoRequest,
+) -> Tuple[LmsVideoRequest, Optional[Tuple[str, str]]]:
+    """(payload, error). An engine picked in the dialog is checked (configured
+    here, speaks the language, has the voice) and its voice id canonicalised.
+    With neither an engine nor a voice, the institute's default voice applies
+    when it can narrate this language; otherwise today's inference stays."""
+    if payload.tts_provider:
+        try:
+            voice = await voices_svc.check_voice(payload.tts_provider, payload.voice_id, payload.language)
+        except voices_svc.VoiceError as exc:
+            return payload, (exc.code, exc.detail)
+        if voice is not None and voice["id"] != payload.voice_id:
+            payload = payload.model_copy(update={"voice_id": voice["id"]})
+        return payload, None
+    if payload.voice_id:
+        return payload, None
+    try:
+        default = voices_svc.load_default(db, institute_id)
+    except Exception:  # noqa: BLE001
+        logger.warning("[LMS-Video] could not read the default voice of %s", institute_id, exc_info=True)
+        return payload, None
+    if not default:
+        return payload, None
+    try:
+        voice = await voices_svc.check_voice(default["tts_provider"], default["voice_id"], payload.language)
+    except voices_svc.VoiceError as exc:
+        logger.info("[LMS-Video] default voice %s/%s not used for %s: %s", default["tts_provider"],
+                    default["voice_id"], payload.language, exc.detail)
+        return payload, None
+    return payload.model_copy(update={
+        "tts_provider": default["tts_provider"],
+        "voice_id": voice["id"] if voice else default["voice_id"],
+        "voice_gender": default.get("voice_gender") or (voice or {}).get("gender") or payload.voice_gender,
+    }), None
 
 
 def _usage_numbers(db: Session, institute_id: str) -> Tuple[float, int]:
@@ -460,6 +516,9 @@ async def estimate_lms_video(
     db: Session = Depends(db_dependency),
 ):
     inst = principal.institute_id
+    payload, bad_voice = await resolve_voice(db, inst, payload)
+    if bad_voice:
+        return _error(422, *bad_voice)
     try:
         plan, video_req = _prepare(payload, principal)
     except ValidationError as exc:
@@ -470,7 +529,7 @@ async def estimate_lms_video(
     warnings += source_warnings
 
     result = _estimate(db, inst, video_req)
-    est = _estimate_view(result)
+    est = _estimate_view(result, video_req)
     current = (result.get("balance") or {}).get("current")
 
     blocked: Optional[Tuple[str, str]] = plan.error
@@ -659,6 +718,10 @@ async def generate_lms_video(
     if blocked:
         return _error(403, *blocked)
 
+    payload, bad_voice = await resolve_voice(db, inst, payload)
+    if bad_voice:
+        return _error(422, *bad_voice)
+
     # The teacher must be a ready Spatius avatar this institute may use.
     if plan.teacher_used and plan.lesson is not None:
         from ..services.lesson_plan_service import LessonConfigError, resolve_lesson_plan
@@ -681,7 +744,7 @@ async def generate_lms_video(
         return _error(422, "INVALID_REQUEST", _validation_detail(exc))
 
     # 2. Policy: monthly cap + concurrency (need the estimate / DB).
-    est = _estimate_view(_estimate(db, inst, video_req))
+    est = _estimate_view(_estimate(db, inst, video_req), video_req)
     month_used, running = _usage_numbers(db, inst)
     blocked = policy_svc.usage_block(
         policy, expected_credits=est["expected_credits"], month_used=month_used, running=running)
@@ -978,3 +1041,92 @@ async def lms_render(
                 result.get("job_id"), video_id, principal.user_id, opts.resolution, opts.show_captions)
     return {"status": "queued", "progress": 0.0, "video_url": None, "error": None,
             "updated_at": datetime.now(timezone.utc).isoformat()}
+
+
+# ── narration voices ─────────────────────────────────────────────────────────
+# The dialog's voice picker: engines + voices for a language with what a minute
+# of narration costs, an audio preview, and the institute's default voice
+# (set by institute admins; teachers still pick per video).
+
+class VoicePreviewBody(BaseModel):
+    tts_provider: TtsProvider
+    voice_id: str = Field(..., min_length=1, max_length=120)
+    language: str = Field(default="English", min_length=1, max_length=60)
+    text: Optional[str] = Field(default=None, max_length=voices_svc.PREVIEW_TEXT_MAX)
+
+
+class VoiceDefaultBody(BaseModel):
+    tts_provider: TtsProvider
+    voice_id: str = Field(..., min_length=1, max_length=120)
+    voice_gender: Optional[Literal["female", "male"]] = None
+
+
+def _admin_principal(principal: PinnedPrincipal = Depends(_staff_principal)) -> PinnedPrincipal:
+    if not voices_svc.is_admin(principal.roles):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Only institute admins can change the default AI video voice")
+    return principal
+
+
+@router.get("/voices", summary="Narration engines and voices for a language, with credits per minute")
+async def lms_voices(
+    language: str = "English",
+    principal: PinnedPrincipal = Depends(_staff_principal),
+    db: Session = Depends(db_dependency),
+):
+    language = (language or "").strip()[:60] or "English"
+    providers = await voices_svc.catalogue(db, language)
+    return {
+        "language": language,
+        "providers": providers,
+        "default": voices_svc.load_default(db, principal.institute_id),
+        "can_set_default": voices_svc.is_admin(principal.roles),
+    }
+
+
+@router.post("/voices/preview", summary="Hear a voice (MP3; cached, not billed)")
+async def lms_voice_preview(
+    body: VoicePreviewBody,
+    principal: PinnedPrincipal = Depends(_staff_principal),
+):
+    try:
+        voice = await voices_svc.check_voice(body.tts_provider, body.voice_id, body.language)
+    except voices_svc.VoiceError as exc:
+        return _error(422, exc.code, exc.detail)
+    try:
+        audio, hit = await voices_svc.preview_audio(
+            principal.institute_id, body.tts_provider, voice["id"], body.language, body.text)
+    except voices_svc.PreviewRateLimited:
+        return _error(429, "RATE_LIMITED", "Too many voice previews right now. Try again in a few minutes.")
+    except Exception:  # noqa: BLE001
+        logger.warning("[LMS-Video] voice preview failed (%s/%s)", body.tts_provider, body.voice_id, exc_info=True)
+        return _error(502, "PREVIEW_FAILED", "Couldn't play this voice right now. Try again, or pick another voice.")
+    return Response(content=audio, media_type="audio/mpeg",
+                    headers={"Cache-Control": "private, max-age=86400", "X-Preview-Cache": "hit" if hit else "miss"})
+
+
+@router.put("/voices/default", summary="Set the institute's default AI video voice (admins)")
+async def lms_set_default_voice(
+    body: VoiceDefaultBody,
+    principal: PinnedPrincipal = Depends(_admin_principal),
+    db: Session = Depends(db_dependency),
+):
+    try:
+        voice = await voices_svc.check_voice(body.tts_provider, body.voice_id, None)
+    except voices_svc.VoiceError as exc:
+        return _error(422, exc.code, exc.detail)
+    saved = voices_svc.save_default(
+        db, principal.institute_id, tts_provider=body.tts_provider, voice_id=voice["id"],
+        voice_gender=body.voice_gender or voice.get("gender"), user_id=principal.user_id)
+    logger.info("[LMS-Video] default voice of %s set to %s/%s by %s", principal.institute_id,
+                body.tts_provider, voice["id"], principal.user_id)
+    return {"default": saved}
+
+
+@router.delete("/voices/default", summary="Clear the institute's default AI video voice (admins)")
+async def lms_clear_default_voice(
+    principal: PinnedPrincipal = Depends(_admin_principal),
+    db: Session = Depends(db_dependency),
+):
+    removed = voices_svc.clear_default(db, principal.institute_id)
+    return {"default": None, "removed": removed}

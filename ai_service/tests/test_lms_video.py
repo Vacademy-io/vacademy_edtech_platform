@@ -271,7 +271,7 @@ def test_generate_starts_the_shared_runner_with_lms_metadata(env):
     assert set(body) == {"video_id", "estimate", "code_editor", "warnings"}
     assert body["estimate"] == {"expected_credits": 40.0, "low_credits": 30.0, "high_credits": 55.0,
                                 "rows": [{"label": "LLM — per-shot generation", "credits": 30.0},
-                                         {"label": "TTS (standard)", "credits": 10.0}]}
+                                         {"label": "Narration (Free voice)", "credits": 10.0}]}
     started = env.started[-1]
     assert started.video_id == body["video_id"] == started.payload.video_id
     assert started.target_stage == "HTML" and started.institute_id == INST

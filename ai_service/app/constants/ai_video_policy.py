@@ -12,6 +12,12 @@ from typing import Any, Dict, Tuple
 AI_VIDEO_POLICY_KEY = "AI_VIDEO_POLICY"
 AI_VIDEO_POLICY_NAME = "AI Video Policy"
 
+# The institute's default narration voice for new LMS AI videos
+# ({"tts_provider", "voice_id", "voice_gender"}), set by institute admins from
+# the dialog. Kept apart from AI_VIDEO_POLICY, which only super admins write.
+AI_VIDEO_DEFAULTS_KEY = "AI_VIDEO_DEFAULTS"
+AI_VIDEO_DEFAULTS_NAME = "AI Video Defaults"
+
 # Qualities the LMS dialog offers (UI: Standard / Premium / Best). They map 1:1
 # to VideoGenerationRequest.quality_tier.
 AI_VIDEO_QUALITIES: Tuple[str, ...] = ("standard", "premium", "ultra")

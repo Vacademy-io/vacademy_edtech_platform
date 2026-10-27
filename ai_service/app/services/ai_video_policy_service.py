@@ -154,37 +154,32 @@ def _write_settings(db: Session, institute_id: str, blob: Dict[str, Any]) -> Non
     db.commit()
 
 
-def save_policy(db: Session, institute_id: str, policy_data: Dict[str, Any]) -> Dict[str, Any]:
-    """Store `policy_data` (six fields + audit fields) as the institute's policy."""
+def save_setting(db: Session, institute_id: str, key: str, name: str, data: Dict[str, Any]) -> None:
+    """Store `data` as ``setting[key]`` (SettingDto envelope) under the row lock."""
     try:
         blob = _lock_settings(db, institute_id)
         container = blob.get("setting")
         if not isinstance(container, dict):
             container = {}
-        container[AI_VIDEO_POLICY_KEY] = {
-            "key": AI_VIDEO_POLICY_KEY,
-            "name": AI_VIDEO_POLICY_NAME,
-            "data": policy_data,
-        }
+        container[key] = {"key": key, "name": name, "data": data}
         blob["setting"] = container
         _write_settings(db, institute_id, blob)
     except Exception:
         db.rollback()
         raise
-    return normalize_policy(policy_data)
 
 
-def delete_policy(db: Session, institute_id: str) -> bool:
-    """Drop the key (back to platform defaults). True if a policy was removed."""
+def delete_setting(db: Session, institute_id: str, key: str) -> bool:
+    """Drop ``setting[key]`` (and a legacy top-level copy). True if one was removed."""
     try:
         blob = _lock_settings(db, institute_id)
         container = blob.get("setting")
         removed = False
-        if isinstance(container, dict) and AI_VIDEO_POLICY_KEY in container:
-            container.pop(AI_VIDEO_POLICY_KEY, None)
+        if isinstance(container, dict) and key in container:
+            container.pop(key, None)
             removed = True
-        if AI_VIDEO_POLICY_KEY in blob:  # legacy top-level shape
-            blob.pop(AI_VIDEO_POLICY_KEY, None)
+        if key in blob:  # legacy top-level shape
+            blob.pop(key, None)
             removed = True
         if removed:
             _write_settings(db, institute_id, blob)
@@ -194,6 +189,17 @@ def delete_policy(db: Session, institute_id: str) -> bool:
     except Exception:
         db.rollback()
         raise
+
+
+def save_policy(db: Session, institute_id: str, policy_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Store `policy_data` (six fields + audit fields) as the institute's policy."""
+    save_setting(db, institute_id, AI_VIDEO_POLICY_KEY, AI_VIDEO_POLICY_NAME, policy_data)
+    return normalize_policy(policy_data)
+
+
+def delete_policy(db: Session, institute_id: str) -> bool:
+    """Drop the key (back to platform defaults). True if a policy was removed."""
+    return delete_setting(db, institute_id, AI_VIDEO_POLICY_KEY)
 
 
 def merge_policy_update(current: Dict[str, Any], changes: Dict[str, Any]) -> Dict[str, Any]:

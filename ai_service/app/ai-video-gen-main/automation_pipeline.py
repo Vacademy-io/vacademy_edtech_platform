@@ -760,6 +760,9 @@ _VOICE_WPS: Dict[str, float] = {
     "sarvam:soham":    1.80,
     # Provider-tier defaults (used when voice id is unknown)
     "sarvam:_default": 1.75,
+    # Smallest / Navana Indian voices: not yet measured; assumed close to Sarvam.
+    "smallest:_default": 1.85,
+    "navana:_default": 1.80,
     "google:_default": 2.45,   # Google WaveNet/Neural2 — close to legacy 2.6
     "edge:_default":   2.55,   # Edge neural voices — fastest
     "elevenlabs:_default": 2.40,
@@ -4430,8 +4433,8 @@ class VideoGenerationPipeline:
             _provider_resolved = "edge"
         elif _tier_for_tts == "google":
             _provider_resolved = "google"
-        elif _tier_for_tts == "sarvam":
-            _provider_resolved = "sarvam"
+        elif _tier_for_tts in ("sarvam", "smallest", "navana"):
+            _provider_resolved = _tier_for_tts
         else:
             _provider_resolved = "edge"
         self._tts_provider_resolved: str = _provider_resolved
@@ -8245,8 +8248,8 @@ class VideoGenerationPipeline:
             provider_key = "edge"
         elif tier == "google":
             provider_key = "google"
-        elif tier == "sarvam":
-            provider_key = "sarvam"
+        elif tier in ("sarvam", "smallest", "navana"):
+            provider_key = tier
         else:
             provider_key = "edge"
 
@@ -8282,6 +8285,23 @@ class VideoGenerationPipeline:
                 provider_key = "edge"
                 # Fall through to Edge TTS path below
 
+        # --- Smallest / Navana (REST → MP3, Whisper-aligned like Sarvam) ---
+        if provider_key in ("smallest", "navana"):
+            try:
+                return self._synthesize_voice_rest(
+                    provider=provider_key,
+                    script_text=script_text,
+                    response_json=response_json,
+                    audio_path=audio_path,
+                    language=language,
+                    voice_gender=gender_key,
+                    voice_id=voice_id,
+                )
+            except Exception as rest_err:
+                print(f"    ⚠️  {provider_key} TTS failed: {rest_err}")
+                print(f"    🔄 Falling back to Edge TTS...")
+                provider_key = "edge"
+
         # --- Voice Selection Logic (Edge / Google) ---
         # Fallback to English if language not found
         if lang_key not in VOICE_MAPPING:
@@ -8295,6 +8315,11 @@ class VideoGenerationPipeline:
         if voice_id and provider_key == "google":
             selected_voice = voice_id
             print(f"    🗣️  Using explicit voice_id: {selected_voice}")
+        elif voice_id and provider_key == "edge" and voice_id.strip().endswith("Neural"):
+            # An Edge voice picked by name (LMS voice picker). A Sarvam /
+            # Smallest name after a fallback is not one, so it never lands here.
+            selected_voice = voice_id.strip()
+            print(f"    🗣️  Using explicit Edge voice: {selected_voice}")
         else:
             try:
                 selected_voice = VOICE_MAPPING[lang_key][edge_or_google][gender_key]
@@ -11876,9 +11901,11 @@ class VideoGenerationPipeline:
         lang_key = language.lower().strip()
         sarvam_lang = SARVAM_LANG_CODES.get(lang_key, "en-IN")
 
-        # Pick voice: explicit voice_id > default for gender
-        if voice_id and voice_id in SARVAM_VOICES.get(voice_gender, []):
-            speaker = voice_id
+        # Pick voice: explicit voice_id (any gender — the picker names the
+        # voice, not the gender) > default for gender
+        _sarvam_all = set(SARVAM_VOICES.get("male", [])) | set(SARVAM_VOICES.get("female", []))
+        if voice_id and voice_id.strip().lower() in _sarvam_all:
+            speaker = voice_id.strip().lower()
         else:
             speaker = SARVAM_DEFAULT_VOICE.get(voice_gender, "shubh")
 
@@ -11961,9 +11988,30 @@ class VideoGenerationPipeline:
             f.write(wav_bytes)
 
         # Sarvam does not return word-level timestamps.
-        # Use Whisper forced alignment to get word timings.
+        self._write_whisper_alignment(audio_path, response_json, script_text, language,
+                                      fallback_seconds=len(wav_bytes) / (24000 * 2), label="Sarvam")
+        print(f"    ✅ Sarvam TTS pipeline complete (speaker={speaker}, {len(script_text)} chars)")
+
+        return self._voice_result(
+            response_json=response_json, audio_path=audio_path,
+            script_text=script_text, provider="sarvam", voice_id=speaker,
+        )
+
+    def _write_whisper_alignment(
+        self,
+        audio_path: Path,
+        response_json: Path,
+        script_text: str,
+        language: str,
+        *,
+        fallback_seconds: float,
+        label: str,
+    ) -> None:
+        """Word timings for an engine that returns none (Sarvam, Smallest,
+        Navana): Whisper forced alignment, else linear interpolation over the
+        MP3's length; written as the character alignment Edge TTS produces."""
         whisper_lang = WHISPER_LANG_MAP.get(language.lower().strip(), "en")
-        print(f"    🎯 Running Whisper alignment for Sarvam audio (lang={whisper_lang})...")
+        print(f"    🎯 Running Whisper alignment for {label} audio (lang={whisper_lang})...")
         word_entries = _whisper_align(audio_path, language, script_text=script_text)
 
         if not word_entries:
@@ -11975,7 +12023,7 @@ class VideoGenerationPipeline:
                 mp3_info = MP3(str(audio_path))
                 est_dur = mp3_info.info.length
             except Exception:
-                est_dur = len(wav_bytes) / (24000 * 2)  # rough WAV estimate
+                est_dur = fallback_seconds
             words_list = _lre.findall(r'\S+', script_text)
             if words_list and est_dur > 0:
                 per_word = est_dur / len(words_list)
@@ -12012,11 +12060,44 @@ class VideoGenerationPipeline:
             }
         }
         response_json.write_text(json.dumps(final_data))
-        print(f"    ✅ Sarvam TTS pipeline complete (speaker={speaker}, {len(script_text)} chars)")
 
+    def _synthesize_voice_rest(
+        self,
+        *,
+        provider: str,
+        script_text: str,
+        response_json: Path,
+        audio_path: Path,
+        language: str = "English",
+        voice_gender: str = "female",
+        voice_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Smallest.ai Lightning v3.1 or Navana narration (app/services/rest_tts:
+        per-vendor chunking, language codes, Navana's 2-streams-per-key limit),
+        then Whisper alignment as for Sarvam. Raises on failure; the caller
+        falls back to Edge."""
+        from app.services import rest_tts
+
+        speaker = (voice_id or "").strip() or rest_tts.DEFAULT_VOICES[provider].get(voice_gender, "")
+        if not speaker:
+            speaker = rest_tts.DEFAULT_VOICES[provider]["female"]
+        print(f"    🗣️  {provider} voice: {speaker} (lang={language})")
+        mp3_bytes = rest_tts.synthesize_mp3(
+            provider, script_text, language, speaker,
+            pace=round(getattr(self, "_tts_speaking_rate", 1.0) or 1.0, 2),
+        )
+        if not mp3_bytes:
+            raise RuntimeError(f"{provider} TTS returned empty audio")
+        with open(audio_path, "wb") as f:
+            f.write(mp3_bytes)
+        print(f"    ✅ {provider} TTS complete ({len(mp3_bytes)} bytes MP3)")
+
+        self._write_whisper_alignment(audio_path, response_json, script_text, language,
+                                      fallback_seconds=len(mp3_bytes) / 12000.0, label=provider)
+        print(f"    ✅ {provider} TTS pipeline complete (voice={speaker}, {len(script_text)} chars)")
         return self._voice_result(
             response_json=response_json, audio_path=audio_path,
-            script_text=script_text, provider="sarvam", voice_id=speaker,
+            script_text=script_text, provider=provider, voice_id=speaker,
         )
 
     # --- Alignment + words -------------------------------------------------
