@@ -20,6 +20,8 @@ interface AuthModalProps {
     onSignupSuccess?: () => void;
     // Fires after the modal closes for any reason (×, Esc, backdrop, success).
     onClose?: () => void;
+    // Blur whatever sits behind the dialog (e.g. the site under /login).
+    blurBackdrop?: boolean;
     initialMode?: 'login' | 'signup' | 'forgot-password';
 }
 
@@ -35,6 +37,7 @@ export const AuthModal = forwardRef<AuthModalRef, AuthModalProps>(({
     onLoginSuccess,
     onSignupSuccess,
     onClose,
+    blurBackdrop = false,
     initialMode = 'login'
 }, ref) => {
     const { t } = useTranslation("auth");
@@ -439,7 +442,7 @@ export const AuthModal = forwardRef<AuthModalRef, AuthModalProps>(({
                 isVisible
                     ? 'bg-gray-200 bg-opacity-50'
                     : 'bg-opacity-0'
-            }`}
+            }${blurBackdrop ? ' backdrop-blur-sm' : ''}`}
             style={{
                 position: 'fixed',
                 top: 0,
