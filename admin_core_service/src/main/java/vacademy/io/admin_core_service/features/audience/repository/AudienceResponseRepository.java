@@ -3313,8 +3313,35 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
          * Order: a live lead before a deleted one, an owned lead before an unowned one,
          * then newest first. Newest alone let a deleted test entry or an ownerless repeat
          * answer for a phone whose real lead belongs to someone else.
+         *
+         * A duplicate enquiry is never the answer itself, but when it is the one that
+         * matches (a repeat that came with a new phone or email) the lead it repeats is:
+         * the new number lives only on the duplicate row.
          */
         @Query(value = """
+                            WITH matched AS (
+                                   SELECT m.id, m.is_duplicate, m.primary_response_id
+                                   FROM audience_response m
+                                   JOIN audience ma ON ma.id = m.audience_id
+                                   WHERE ma.institute_id = :instituteId
+                                     AND (
+                                          (CAST(:last10 AS text) IS NOT NULL
+                                           AND m.parent_mobile IS NOT NULL
+                                           AND RIGHT(regexp_replace(m.parent_mobile, '[^0-9]', '', 'g'), 10) = CAST(:last10 AS text))
+                                       OR (CAST(:email AS text) IS NOT NULL
+                                           AND m.parent_email IS NOT NULL
+                                           AND LOWER(TRIM(m.parent_email)) = LOWER(TRIM(CAST(:email AS text))))
+                                       OR (CAST(:name AS text) IS NOT NULL
+                                           AND m.parent_name IS NOT NULL
+                                           AND LOWER(TRIM(m.parent_name)) = LOWER(TRIM(CAST(:name AS text))))
+                                     )
+                            ),
+                            targets AS (
+                                   SELECT id FROM matched
+                                   UNION
+                                   SELECT primary_response_id FROM matched
+                                   WHERE matched.is_duplicate = true AND matched.primary_response_id IS NOT NULL
+                            )
                             SELECT ar.id                     AS "responseId",
                                    ar.user_id                AS "userId",
                                    ar.parent_name            AS "leadName",
@@ -3366,18 +3393,8 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                                      AND m.institute_id = a.institute_id
                                      AND m.status IN ('ACTIVE', 'INACTIVE', 'TERMINATED', 'EXPIRED')) enrol ON true
                             WHERE a.institute_id = :instituteId
+                              AND ar.id = ANY(ARRAY(SELECT id FROM targets))
                               AND (ar.is_duplicate IS NULL OR ar.is_duplicate = false)
-                              AND (
-                                   (CAST(:last10 AS text) IS NOT NULL
-                                    AND ar.parent_mobile IS NOT NULL
-                                    AND RIGHT(regexp_replace(ar.parent_mobile, '[^0-9]', '', 'g'), 10) = CAST(:last10 AS text))
-                                OR (CAST(:email AS text) IS NOT NULL
-                                    AND ar.parent_email IS NOT NULL
-                                    AND LOWER(TRIM(ar.parent_email)) = LOWER(TRIM(CAST(:email AS text))))
-                                OR (CAST(:name AS text) IS NOT NULL
-                                    AND ar.parent_name IS NOT NULL
-                                    AND LOWER(TRIM(ar.parent_name)) = LOWER(TRIM(CAST(:name AS text))))
-                              )
                             ORDER BY (ar.audience_status = 'ACTIVE') DESC,
                                      (COALESCE(ulp.assigned_counselor_id, '') <> '') DESC,
                                      ar.submitted_at DESC NULLS LAST, ar.created_at DESC
@@ -3393,29 +3410,43 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
 
         /**
          * Every enquiry by the same person as {@link #lookupByPhoneOrEmail}, same
-         * match rules, newest first — Check Lead's follow-up history spans them all,
-         * so a repeat enquiry still shows the calls made on the earlier one. Enquiries
+         * match rules (a matching duplicate also brings the lead it repeats), newest
+         * first — Check Lead's follow-up history spans them all, so a repeat enquiry
+         * still shows the calls made on the earlier one. Enquiries
          * flagged as duplicates are skipped unless {@code includeDuplicates} — set when the
          * institute's repeat-lead handling flags reattempts, since counsellors log
          * follow-ups on those rows too.
          */
         @Query(value = """
+                            WITH matched AS (
+                                   SELECT m.id, m.is_duplicate, m.primary_response_id
+                                   FROM audience_response m
+                                   JOIN audience ma ON ma.id = m.audience_id
+                                   WHERE ma.institute_id = :instituteId
+                                     AND (
+                                          (CAST(:last10 AS text) IS NOT NULL
+                                           AND m.parent_mobile IS NOT NULL
+                                           AND RIGHT(regexp_replace(m.parent_mobile, '[^0-9]', '', 'g'), 10) = CAST(:last10 AS text))
+                                       OR (CAST(:email AS text) IS NOT NULL
+                                           AND m.parent_email IS NOT NULL
+                                           AND LOWER(TRIM(m.parent_email)) = LOWER(TRIM(CAST(:email AS text))))
+                                       OR (CAST(:name AS text) IS NOT NULL
+                                           AND m.parent_name IS NOT NULL
+                                           AND LOWER(TRIM(m.parent_name)) = LOWER(TRIM(CAST(:name AS text))))
+                                     )
+                            ),
+                            targets AS (
+                                   SELECT id FROM matched
+                                   UNION
+                                   SELECT primary_response_id FROM matched
+                                   WHERE matched.is_duplicate = true AND matched.primary_response_id IS NOT NULL
+                            )
                             SELECT ar.id FROM audience_response ar
                             JOIN audience a ON a.id = ar.audience_id
                             WHERE a.institute_id = :instituteId
+                              AND ar.id = ANY(ARRAY(SELECT id FROM targets))
                               AND (COALESCE(:includeDuplicates, FALSE) = TRUE
                                    OR ar.is_duplicate IS NULL OR ar.is_duplicate = false)
-                              AND (
-                                   (CAST(:last10 AS text) IS NOT NULL
-                                    AND ar.parent_mobile IS NOT NULL
-                                    AND RIGHT(regexp_replace(ar.parent_mobile, '[^0-9]', '', 'g'), 10) = CAST(:last10 AS text))
-                                OR (CAST(:email AS text) IS NOT NULL
-                                    AND ar.parent_email IS NOT NULL
-                                    AND LOWER(TRIM(ar.parent_email)) = LOWER(TRIM(CAST(:email AS text))))
-                                OR (CAST(:name AS text) IS NOT NULL
-                                    AND ar.parent_name IS NOT NULL
-                                    AND LOWER(TRIM(ar.parent_name)) = LOWER(TRIM(CAST(:name AS text))))
-                              )
                             ORDER BY ar.submitted_at DESC NULLS LAST, ar.created_at DESC
                             LIMIT 50
                         """, nativeQuery = true)
