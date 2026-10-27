@@ -44,7 +44,7 @@ public interface EngagementTemplateProposalRepository extends JpaRepository<Enga
                                                   @Param("instituteId") String instituteId);
 
     /** Human approves a draft: AI_PROPOSED/USER_REVIEW → USER_APPROVED. CAS so a stale UI can't skip states. */
-    @Modifying
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Transactional
     @Query(value = """
             UPDATE engagement_template_proposal
@@ -56,11 +56,17 @@ public interface EngagementTemplateProposalRepository extends JpaRepository<Enga
     /**
      * Claim for submission: USER_APPROVED → SUBMITTED. Returns 1 for the single winner so a
      * double-click (or two admins) can't submit the same template to Meta twice. The caller then
-     * re-reads the row (now SUBMITTED) and stamps the notification_template FK via save — kept as a
-     * separate commit because the FK isn't known until notification_service creates the draft, and
-     * that draft (an HTTP side effect) must survive even if admin_core's later steps fail.
+     * re-reads the row (now SUBMITTED) and stamps the notification_template FK with
+     * {@link #stampSubmittedTemplateId} — kept as a separate commit because the FK isn't known until
+     * notification_service creates the draft, and that draft (an HTTP side effect) must survive even
+     * if admin_core's later steps fail.
+     *
+     * <p>Every CAS in this repository clears the persistence context: the caller re-reads the row in
+     * the same request, and under open-session-in-view that re-read otherwise returns the managed
+     * entity as it was BEFORE the update. A full save of that stale copy is what flipped every first
+     * "Submit to Meta" back to USER_APPROVED, so the proposal was never polled.
      */
-    @Modifying
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Transactional
     @Query(value = """
             UPDATE engagement_template_proposal
@@ -70,11 +76,25 @@ public interface EngagementTemplateProposalRepository extends JpaRepository<Enga
     int claimForSubmit(@Param("id") String id, @Param("instituteId") String instituteId, @Param("now") Instant now);
 
     /**
+     * Stamp the notification_template FK on a row this submit claimed. Targeted on purpose: a full
+     * save of the entity would also write back whatever status the in-memory copy holds.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_template_proposal
+               SET notification_template_id = COALESCE(notification_template_id, :fk), updated_at = :now
+             WHERE id = :id AND institute_id = :instituteId AND status = 'SUBMITTED'
+            """, nativeQuery = true)
+    int stampSubmittedTemplateId(@Param("id") String id, @Param("instituteId") String instituteId,
+                                 @Param("fk") String fk, @Param("now") Instant now);
+
+    /**
      * Reconcile from a Meta poll: only a SUBMITTED/META_PENDING row moves (an already-adjudicated or
      * human-touched row is never silently overwritten by a lagging poll). meta_category/rejection are
      * set alongside so the reviewer sees why.
      */
-    @Modifying
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Transactional
     @Query(value = """
             UPDATE engagement_template_proposal
@@ -93,7 +113,7 @@ public interface EngagementTemplateProposalRepository extends JpaRepository<Enga
      * update affects 0 rows and the winning state stands. Used by submit()'s failure path and by
      * the stranded-submission reaper.
      */
-    @Modifying
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Transactional
     @Query(value = """
             UPDATE engagement_template_proposal
@@ -106,7 +126,7 @@ public interface EngagementTemplateProposalRepository extends JpaRepository<Enga
                        @Param("reason") String reason, @Param("now") Instant now);
 
     /** Human abandons a proposal. Only non-terminal, not-yet-live rows. */
-    @Modifying
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Transactional
     @Query(value = """
             UPDATE engagement_template_proposal

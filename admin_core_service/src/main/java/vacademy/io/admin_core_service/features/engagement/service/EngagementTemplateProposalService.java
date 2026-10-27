@@ -202,7 +202,8 @@ public class EngagementTemplateProposalService {
         if (proposalRepository.claimForSubmit(id, instituteId, Instant.now()) == 0) {
             throw new VacademyException("Template is not approvable or is already being submitted");
         }
-        EngagementTemplateProposal p = requireProposal(id, instituteId); // fresh: status == SUBMITTED
+        // Fresh (status == SUBMITTED) because claimForSubmit clears the persistence context.
+        EngagementTemplateProposal p = requireProposal(id, instituteId);
 
         try {
             Map<String, Object> dto = buildTemplateDto(p, actorId);
@@ -256,8 +257,11 @@ public class EngagementTemplateProposalService {
                 throw new VacademyException("notification_service returned no template id");
             }
         }
+        // Commit the FK on its own so a later failure retries via update. A targeted UPDATE, never
+        // save(p): under open-session-in-view p could be the copy read before the SUBMITTED claim,
+        // and a full save wrote USER_APPROVED back — every first submit was then never polled.
+        proposalRepository.stampSubmittedTemplateId(p.getId(), p.getInstituteId(), templateId, Instant.now());
         p.setNotificationTemplateId(templateId);
-        proposalRepository.save(p);   // commit the FK on its own so a later failure retries via update
         return templateId;
     }
 

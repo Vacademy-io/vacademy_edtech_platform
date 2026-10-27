@@ -7,6 +7,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.DynamicUpdate;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.annotations.UuidGenerator;
@@ -21,9 +22,13 @@ import java.time.Instant;
  * The template can only ever be sent once Meta approves it, and Meta may reject or silently
  * re-categorise it (utility→marketing) — both of which demand human review, so both are
  * first-class states here, not error paths.
+ *
+ * {@code @DynamicUpdate}: saving a managed row writes only the columns changed in memory, so a stale
+ * {@code status} nobody touched is not written back over a CAS transition (see the repository).
  */
 @Entity
 @Table(name = "engagement_template_proposal")
+@DynamicUpdate
 @Getter
 @Setter
 public class EngagementTemplateProposal {
