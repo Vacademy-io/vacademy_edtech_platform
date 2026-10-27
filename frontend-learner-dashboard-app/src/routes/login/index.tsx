@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { LoginForm } from "@/components/common/auth/login/forms/page/login-form";
 import { AuthModal, type AuthModalRef } from "@/components/common/auth/modal/AuthModal";
@@ -8,6 +8,14 @@ import { getPublicStudentDisplaySettings } from "@/services/student-display-sett
 import { getTokenFromStorage } from "@/lib/auth/sessionUtility";
 import { TokenKey } from "@/constants/auth/tokens";
 import { navigateAfterLogin } from "@/lib/auth/post-login-redirect";
+import { getCachedRootCatalogueTag } from "@/services/domain-routing";
+import { CatalogueTagContext } from "../$tagName/-components/CatalogueTagContext";
+
+const CourseCataloguePage = lazy(() =>
+  import("../$tagName/-components/CourseCataloguePage").then((m) => ({
+    default: m.CourseCataloguePage,
+  })),
+);
 
 export const Route = createFileRoute("/login/")({
   component: RouteComponent,
@@ -108,13 +116,28 @@ function RouteComponent() {
   }
 
   if (modalView) {
+    // On a host whose "/" is the institute's site, show that site behind the
+    // popup (blurred by the backdrop) instead of a blank page.
+    const rootTag = getCachedRootCatalogueTag();
     return (
       <div className="w-full min-h-screen bg-background">
+        {rootTag && domainRouting.instituteId && (
+          <CatalogueTagContext.Provider value={rootTag}>
+            <Suspense fallback={null}>
+              <CourseCataloguePage
+                tagName={rootTag}
+                instituteId={domainRouting.instituteId}
+                instituteThemeCode={domainRouting.instituteThemeCode}
+              />
+            </Suspense>
+          </CatalogueTagContext.Provider>
+        )}
         <AuthModal
           ref={signupModalRef}
           initialMode={modalView.startOnSignup ? "signup" : "login"}
           onSignupSuccess={handleSignupSuccess}
           onClose={handleModalClose}
+          blurBackdrop={!!rootTag}
           trigger={<span style={{ display: "none" }} aria-hidden="true" />}
         />
       </div>
