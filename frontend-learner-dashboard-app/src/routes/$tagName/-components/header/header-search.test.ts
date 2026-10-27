@@ -6,6 +6,7 @@ import {
   courseImageOf,
   courseSearchItems,
   courseSitePath,
+  folderSearchItems,
   groupSearchResults,
   mergeCourseRows,
   normalizeSearchText,
@@ -248,5 +249,58 @@ describe("course search artwork and by-name rows", () => {
     expect(merged.map((r) => r.package_name)).toEqual(["A", "B"]);
     expect(mergeCourseRows(undefined, [{ id: "c3", package_name: "C" }])).toHaveLength(1);
     expect(mergeCourseRows(base, undefined)).toBe(base);
+  });
+});
+
+describe("folderSearchItems", () => {
+  const node = (
+    id: string,
+    node_type: PublicFolderNode["node_type"],
+    title: string,
+    children: PublicFolderNode[] = [],
+    extra: Partial<PublicFolderNode> = {},
+  ): PublicFolderNode => ({ id, node_type, title, children, ...extra });
+  const tree = [
+    node("history", "FOLDER", "History", [
+      node("ncert", "FOLDER", "History NCERT", [node("pp1", "PRODUCT_PAGE", "History NCERT", [], { image_url: "https://img/1.png" })]),
+      node("pp2", "PRODUCT_PAGE", "Medieval Notes"),
+    ], { image_url: "https://img/history.png" }),
+    node("empty", "FOLDER", "Empty"),
+  ];
+  const opts = { homeLabel: "All", inPath: (p: string) => `in ${p}` };
+  const sections = [{ route: "pdf", libraryId: "lib", rootFolderId: "" }];
+
+  it("lists folders and product pages with the page that shows them, the path and the image", () => {
+    const items = folderSearchItems(sections, { lib: tree }, opts);
+    expect(items.map((i) => [i.id, i.link?.href, i.context, i.image])).toEqual([
+      ["folder:history", "/pdf?folder=history", undefined, "https://img/history.png"],
+      ["folder:ncert", "/pdf?folder=ncert", "in All › History", undefined],
+      ["productPage:pp1", "/pdf?folder=ncert", "in All › History › History NCERT", "https://img/1.png"],
+      ["productPage:pp2", "/pdf?folder=history", "in All › History", undefined],
+    ]);
+  });
+
+  it("finds a folder by name, ahead of a course of the same rank, and never by its path", () => {
+    const items = [
+      item("c1", "course", "History of Banking"),
+      ...folderSearchItems(sections, { lib: tree }, opts),
+    ];
+    const ranked = rankSiteSearch("history", items);
+    expect(ranked.map((i) => i.id)).toEqual(["folder:history", "folder:ncert", "productPage:pp1", "c1"]);
+    expect(groupSearchResults(ranked).map((g) => g.kind)).toEqual(["folders", "courses"]);
+  });
+
+  it("leaves out nodes no section shows, skipped ids, and libraries not loaded yet", () => {
+    const rooted = [{ route: "ncert", libraryId: "lib", rootFolderId: "ncert" }];
+    expect(folderSearchItems(rooted, { lib: tree }, opts).map((i) => [i.id, i.link?.href])).toEqual([
+      ["folder:ncert", "/ncert"],
+      ["productPage:pp1", "/ncert"],
+    ]);
+    expect(folderSearchItems(sections, { lib: tree }, { ...opts, skipIds: new Set(["history"]) }).map((i) => i.id)).toEqual([
+      "folder:ncert",
+      "productPage:pp1",
+      "productPage:pp2",
+    ]);
+    expect(folderSearchItems(sections, {}, opts)).toEqual([]);
   });
 });

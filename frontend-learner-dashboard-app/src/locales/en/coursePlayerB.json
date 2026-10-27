@@ -511,6 +511,7 @@
         "searchDialog": {
             "close": "Close search",
             "courses": "Courses",
+            "folders": "Folders",
             "coursesError": "Courses could not be searched right now.",
             "hint": "Type to search courses, streams and pages.",
             "home": "Home",
