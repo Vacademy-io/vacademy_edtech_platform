@@ -90,7 +90,9 @@
             "followUpNote": "Note de suivi",
             "studentResponse": "Réponse de l'étudiant",
             "followUpMode": "Mode de suivi",
-            "nextAction": "Action suivante"
+            "nextAction": "Action suivante",
+            "activityNotes": "Activité et notes",
+            "leadJourney": "Parcours du prospect (disposition et notes)"
         },
         "progress": "Export des suivis… {{done}} sur {{total}}",
         "done_one": "{{count}} suivi exporté",

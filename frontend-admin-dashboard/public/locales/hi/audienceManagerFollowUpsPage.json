@@ -82,7 +82,9 @@
             "followUpNote": "फ़ॉलो-अप नोट",
             "studentResponse": "छात्र की प्रतिक्रिया",
             "followUpMode": "फ़ॉलो-अप माध्यम",
-            "nextAction": "अगला कदम"
+            "nextAction": "अगला कदम",
+            "activityNotes": "गतिविधि और नोट्स",
+            "leadJourney": "लीड यात्रा (निपटान व नोट्स)"
         },
         "progress": "फ़ॉलो-अप एक्सपोर्ट हो रहे हैं… {{total}} में से {{done}}",
         "done_one": "{{count}} फ़ॉलो-अप एक्सपोर्ट हुआ",

@@ -82,7 +82,9 @@
             "followUpNote": "Follow-up note",
             "studentResponse": "Student response",
             "followUpMode": "Follow-up mode",
-            "nextAction": "Next action"
+            "nextAction": "Next action",
+            "activityNotes": "Activity & Notes",
+            "leadJourney": "Lead Journey (disposition & notes)"
         },
         "progress": "Exporting follow-ups… {{done}} of {{total}}",
         "done_one": "Exported {{count}} follow-up",

@@ -47,7 +47,8 @@ import { StudentSidebarProvider } from '@/routes/manage-students/students-list/-
 import { useStudentSidebar } from '@/routes/manage-students/students-list/-context/selected-student-sidebar-context';
 import { followUpStatusFilter, useLeadSettings } from '@/hooks/use-lead-settings';
 import { useLeadProfiles } from '@/hooks/use-lead-profiles';
-import { useLatestNotesBatch } from '@/hooks/use-latest-notes-batch';
+import { fetchLatestNotesBatch, useLatestNotesBatch } from '@/hooks/use-latest-notes-batch';
+import { fetchLeadJourneyBatch } from '@/components/shared/leads/lead-journey-export';
 import { useLeadStatuses } from '@/hooks/use-lead-statuses';
 import { useLeadCounsellorOptions } from '@/hooks/use-lead-counsellor-options';
 import { useCustomFieldSetup } from '@/routes/audience-manager/list/-hooks/useCustomFieldSetup';
@@ -56,7 +57,9 @@ import {
     completedToExportRow,
     exportCustomFields,
     leadToExportRow,
+    type ExportLeadActivity,
 } from './follow-up-export-columns';
+import type { ExportPage } from '@/components/shared/leads/background-export';
 import { CounsellorFilter } from '@/components/shared/leads/counsellor-filter';
 import { AddLeadNoteDialog } from '@/components/shared/add-lead-note-dialog';
 import { AssignCounselorToLeadDialog } from '@/components/shared/assign-counselor-to-lead-dialog';
@@ -153,6 +156,35 @@ const toWindowParams = (
 const COMPLETED_ALL_TIME = 'ALL';
 // Hidden on this surface to keep triage focused.
 const HIDDEN_COLUMNS = new Set(['score']);
+
+/**
+ * The table's Activity column is hydrated per page from the timeline, so the export
+ * does the same per export page — two batch calls a page, never one per lead. Off
+ * when the lead system is, matching the table, which hides the column then.
+ */
+const withActivity = async <T,>(
+    res: ExportPage<T> | undefined,
+    userIdOf: (row: T) => string | null | undefined,
+    enabled: boolean
+): Promise<ExportPage<{ row: T; activity?: ExportLeadActivity }> | undefined> => {
+    if (!res) return undefined;
+    const rows = res.content ?? [];
+    const ids = Array.from(new Set(rows.map(userIdOf).filter((id): id is string => !!id)));
+    const [notes, journey] =
+        enabled && ids.length > 0
+            ? await Promise.all([fetchLatestNotesBatch(ids), fetchLeadJourneyBatch(ids)])
+            : [{}, {}];
+    return {
+        ...res,
+        content: rows.map((row) => {
+            const id = userIdOf(row);
+            return {
+                row,
+                activity: id ? { notes: notes[id], journey: journey[id] } : undefined,
+            };
+        }),
+    };
+};
 // Static cache keys every mutation on this page must refresh.
 const INVALIDATE_KEYS: string[][] = [['follow-ups'], ['lead-profiles-batch']];
 
@@ -786,6 +818,8 @@ const FollowUpsContent = () => {
             studentResponse: t('export.columns.studentResponse'),
             followUpMode: t('export.columns.followUpMode'),
             nextAction: t('export.columns.nextAction'),
+            activityNotes: t('export.columns.activityNotes'),
+            leadJourney: t('export.columns.leadJourney'),
         },
         exportFields
     );
@@ -824,17 +858,21 @@ const FollowUpsContent = () => {
                 key: 'follow-ups',
                 fileName,
                 header: exportHeader,
-                fetchPage: (page, size) =>
-                    fetchCompletedFollowUps({
-                        instituteId: instituteId ?? '',
-                        counsellorUserId: effectiveCounsellorId,
-                        ...completedParams,
-                        page,
-                        size,
-                        includeLeadDetail: true,
-                    }),
-                rowKey: (row) => row.id,
-                toRow: (row) => completedToExportRow(row, exportFields),
+                fetchPage: async (page, size) =>
+                    withActivity(
+                        await fetchCompletedFollowUps({
+                            instituteId: instituteId ?? '',
+                            counsellorUserId: effectiveCounsellorId,
+                            ...completedParams,
+                            page,
+                            size,
+                            includeLeadDetail: true,
+                        }),
+                        (row) => row.lead_user_id,
+                        showOps
+                    ),
+                rowKey: ({ row }) => row.id,
+                toRow: ({ row, activity }) => completedToExportRow(row, exportFields, activity),
                 labels,
             });
             return;
@@ -845,9 +883,14 @@ const FollowUpsContent = () => {
             key: 'follow-ups',
             fileName,
             header: exportHeader,
-            fetchPage: (page, size) => fetchRecentLeads({ ...baseFilter, ...window, page, size }),
-            rowKey: (lead) => lead.response_id,
-            toRow: (lead) => {
+            fetchPage: async (page, size) =>
+                withActivity(
+                    await fetchRecentLeads({ ...baseFilter, ...window, page, size }),
+                    (lead) => lead.user?.id || lead.user_id,
+                    showOps
+                ),
+            rowKey: ({ row: lead }) => lead.response_id,
+            toRow: ({ row: lead, activity }) => {
                 const vm = recentLeadToVM(lead);
                 return leadToExportRow(
                     lead,
@@ -855,7 +898,8 @@ const FollowUpsContent = () => {
                     vm.email,
                     vm.phone,
                     vm.audience,
-                    exportFields
+                    exportFields,
+                    activity
                 );
             },
             labels,
