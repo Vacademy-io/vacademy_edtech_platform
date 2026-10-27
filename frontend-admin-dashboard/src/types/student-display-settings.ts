@@ -151,6 +151,7 @@ export interface StudentSignupSettings {
     passwordStrategy: PasswordStrategy;
     passwordDelivery: PasswordDelivery;
     presentation?: StudentAuthPresentation;
+    loginPageAsModal?: boolean; // default off; /login opens the signup/login popup instead of the page
 }
 
 // UI

@@ -84,7 +84,9 @@
         "catalogueHeaderAuth": "Catalogue Header Auth",
         "selectPresentation": "Select presentation",
         "presentationPage": "page (navigate to /login)",
-        "presentationModal": "modal (open in-place)"
+        "presentationModal": "modal (open in-place)",
+        "loginPageAsModal": "Open login page as popup",
+        "loginPageAsModalHint": "On: /login shows the Create Account popup (with Sign in below) instead of the full login page."
     },
     "courseSettings": {
         "cardTitle": "Course Settings",

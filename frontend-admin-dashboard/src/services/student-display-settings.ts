@@ -218,6 +218,7 @@ function mergeWithDefaults(
             passwordStrategy: incoming?.signup?.passwordStrategy ?? d.signup.passwordStrategy,
             passwordDelivery: incoming?.signup?.passwordDelivery ?? d.signup.passwordDelivery,
             presentation: incoming?.signup?.presentation ?? d.signup.presentation,
+            loginPageAsModal: incoming?.signup?.loginPageAsModal ?? false,
         },
         permissions: {
             canViewProfile: incoming?.permissions?.canViewProfile ?? d.permissions.canViewProfile,

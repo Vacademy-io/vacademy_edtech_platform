@@ -84,7 +84,9 @@
         "catalogueHeaderAuth": "कैटलॉग हेडर प्रमाणीकरण",
         "selectPresentation": "प्रेजेंटेशन चुनें",
         "presentationPage": "पेज (/login पर जाएं)",
-        "presentationModal": "मोडल (उसी स्थान पर खुले)"
+        "presentationModal": "मोडल (उसी स्थान पर खुले)",
+        "loginPageAsModal": "लॉगिन पेज को पॉपअप में खोलें",
+        "loginPageAsModalHint": "चालू: /login पर पूरे लॉगिन पेज की जगह अकाउंट बनाएं पॉपअप (नीचे साइन इन के साथ) दिखेगा।"
     },
     "courseSettings": {
         "cardTitle": "कोर्स सेटिंग्स",
