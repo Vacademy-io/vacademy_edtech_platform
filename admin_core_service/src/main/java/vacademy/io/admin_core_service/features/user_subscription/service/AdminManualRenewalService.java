@@ -551,11 +551,9 @@ public class AdminManualRenewalService {
         if (StringUtils.hasText(requested)) {
             return requested;
         }
-        // The plan's currency, then its invite's; only with neither the institute's
-        // PAYMENT_SETTING default (else INR).
+        // The plan's currency; without one the institute's PAYMENT_SETTING default (else INR).
         String base = paymentSettingService.resolveCurrency(instituteId,
-                plan.getPaymentPlan() != null ? plan.getPaymentPlan().getCurrency() : null,
-                plan.getEnrollInvite() != null ? plan.getEnrollInvite().getCurrency() : null);
+                plan.getPaymentPlan() != null ? plan.getPaymentPlan().getCurrency() : null);
         return RegionalPriceLock.currency(plan, base);
     }
 

@@ -88,8 +88,9 @@ export const useSavePaymentSetting = () => {
 };
 
 /**
- * The institute's currency for money with none of its own: the saved PAYMENT_SETTING default
- * when loaded, else what the institute details give (`getInstituteDefaultCurrency`), else ''.
+ * The institute's SAVED default currency: from the PAYMENT_SETTING query when loaded, else from
+ * the institute details (`getInstituteDefaultCurrency`), else '' — callers then keep the
+ * fallback they had before this setting existed.
  */
 export const useInstituteDefaultCurrency = (): string => {
     const { data } = usePaymentSetting();

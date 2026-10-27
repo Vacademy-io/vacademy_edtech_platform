@@ -80,13 +80,10 @@ const LAPSED_STATUSES = ['EXPIRED', 'CANCELED', 'PAYMENT_FAILED'];
 
 const getPlanAmount = (plan: UserPlan): number => plan.payment_plan_dto?.actual_price || 0;
 
-// The plan's currency, then its invite's, then the institute's default (Settings → Payment).
-// 'N/A' only when none is known — the card then hides the amount rather than guess a symbol.
+// The plan's currency, else the institute's saved default (Settings → Payment). 'N/A' when
+// neither is known — the card then hides the amount rather than guess a symbol.
 const getPlanCurrency = (plan: UserPlan): string =>
-    plan.payment_plan_dto?.currency ||
-    plan.enroll_invite?.currency ||
-    getInstituteDefaultCurrency() ||
-    'N/A';
+    plan.payment_plan_dto?.currency || getInstituteDefaultCurrency() || 'N/A';
 
 const getCourseLabel = (plan: UserPlan, t: TFunction): string => {
     const policy = getFirstPolicy(plan);

@@ -90,15 +90,17 @@ export const resolveInstituteCurrency = (institute?: InstituteCurrencySource | n
 };
 
 /**
- * The current institute's currency (see `resolveInstituteCurrency`), read from the loaded
- * institute details. For non-React code; components can call it too, it is a cheap read.
+ * The current institute's SAVED default currency (Settings → Payment), or '' when it has not
+ * set one. Deliberately not derived from country: an institute that never sets it must keep
+ * exactly the fallbacks it had before the setting existed. For non-React code; components can
+ * call it too, it is a cheap read of the loaded institute details.
  */
 export const getInstituteDefaultCurrency = (): string =>
-    resolveInstituteCurrency(useInstituteDetailsStore.getState().instituteDetails);
+    readPaymentSettingCurrency(useInstituteDetailsStore.getState().instituteDetails?.setting);
 
 /**
  * The fallback for money shown without a currency of its own (a plan with none, a payment
- * record with none): the institute's currency, else INR — the platform's historical default.
+ * record with none): the institute's saved default, else INR — the platform's old default.
  */
 export const fallbackCurrency = (): string => getInstituteDefaultCurrency() || 'INR';
 

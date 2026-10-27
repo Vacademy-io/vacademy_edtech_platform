@@ -367,9 +367,7 @@ public class PaymentLogService {
             userAccountLedgerService.recordCreditPayment(
                     paymentLog.getUserId(), instituteId,
                     java.math.BigDecimal.valueOf(paymentLog.getPaymentAmount()),
-                    paymentSettingService.resolveCurrency(instituteId, paymentLog.getCurrency(),
-                            paymentLog.getUserPlan().getPaymentPlan() != null
-                                    ? paymentLog.getUserPlan().getPaymentPlan().getCurrency() : null),
+                    paymentSettingService.resolveCurrency(instituteId, paymentLog.getCurrency()),
                     "USER_PLAN", paymentLog.getUserPlan().getId(),
                     paymentLog.getId(), null, "Payment received");
         } catch (Exception e) {

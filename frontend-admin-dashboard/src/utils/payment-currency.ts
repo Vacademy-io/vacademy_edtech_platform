@@ -24,9 +24,9 @@ export const isRealCurrency = (currency?: string | null): boolean => {
  * created in INR. Anything reading the column alone has to guess, and both guesses were wrong
  * somewhere: Manage Payments defaulted to USD (₹1,999 rendered as "$1,999.00") while the dashboard
  * widgets hardcoded ₹ (a genuine $40 charge rendered as "₹40"). Resolve from the plan actually
- * being paid for (then the invite), then the institute's own currency (Settings → Payment
- * default, else its override / country), and return '' only when none of those is known so
- * callers render the amount without a misleading symbol.
+ * being paid for (then the invite), then the institute's saved default currency (Settings →
+ * Payment), and return '' only when none of those is known so callers render the amount
+ * without a misleading symbol.
  */
 export const resolveEntryCurrency = (entry?: PaymentLogEntry | null): string => {
     const match = [

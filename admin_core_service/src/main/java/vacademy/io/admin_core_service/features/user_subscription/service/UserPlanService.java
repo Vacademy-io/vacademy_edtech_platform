@@ -542,8 +542,7 @@ public class UserPlanService {
                         regionallyPriced
                                 ? saved.getRegionalCurrency()
                                 : paymentSettingService.resolveCurrency(
-                                        enrollInvite.getInstituteId(), paymentPlan.getCurrency(),
-                                        enrollInvite.getCurrency()),
+                                        enrollInvite.getInstituteId(), paymentPlan.getCurrency()),
                         null,
                         "USER_PLAN", saved.getId(),
                         null, accrualRemark,

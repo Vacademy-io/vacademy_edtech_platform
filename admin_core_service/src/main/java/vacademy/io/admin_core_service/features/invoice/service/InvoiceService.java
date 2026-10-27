@@ -1893,8 +1893,6 @@ public class InvoiceService {
                 String instituteCurrency = paymentSettingService.getDefaultCurrency(institute.getId());
                 if (instituteCurrency != null) {
                     map.put("currency", instituteCurrency);
-                } else if (!map.containsKey("currency")) {
-                    map.put("currency", paymentSettingService.resolveCurrency(institute.getId()));
                 }
                 return map;
             }
@@ -5217,8 +5215,10 @@ public class InvoiceService {
             }
             invoice.setTaxAmount(taxAmount);
             invoice.setTotalAmount(totalAmount);
-            invoice.setCurrency(paymentSettingService.resolveCurrency(
-                    request.getInstituteId(), request.getCurrency()));
+            // The admin's pick; blank → the institute default (null, as before, when unset).
+            invoice.setCurrency(StringUtils.hasText(request.getCurrency())
+                    ? request.getCurrency()
+                    : paymentSettingService.getDefaultCurrency(request.getInstituteId()));
             invoice.setStatus(INVOICE_STATUS_PENDING_PAYMENT);
             invoice.setTaxIncluded(taxIncluded);
             // Source tracking: admin-created invoices point back to the billed user
@@ -5402,8 +5402,9 @@ public class InvoiceService {
         invoice.setTaxAmount(effectiveTax.taxAmount());
         invoice.setTotalAmount(effectiveTax.totalAmount());
         invoice.setTaxIncluded(effectiveTax.taxIncluded());
-        invoice.setCurrency(paymentSettingService.resolveCurrency(
-                invoice.getInstituteId(), request.getCurrency(), invoice.getCurrency()));
+        invoice.setCurrency(StringUtils.hasText(request.getCurrency())
+                ? request.getCurrency()
+                : paymentSettingService.getDefaultCurrency(invoice.getInstituteId()));
         invoice.setDueDate(request.getDueDate());
         if (request.getInvoiceDate() != null) {
             invoice.setInvoiceDate(request.getInvoiceDate());
