@@ -71,7 +71,7 @@ const pathWhere = (
 const titleOf = (n: PublicFolderNode) => (n.title || "").trim() || (n.product_page_name || "").trim();
 
 /** The page (and `?folder=`) showing the last folder of `path`, or null. */
-const linkFor = (
+export const linkFor = (
   path: PublicFolderNode[],
   libraryId: string,
   sections: FolderBrowserSection[],

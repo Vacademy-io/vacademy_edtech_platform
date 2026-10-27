@@ -8,10 +8,12 @@
  */
 
 import { languageOfLevel, type CourseLanguageOption } from "../../-utils/course-variants";
+import { linkFor, type FolderBrowserSection } from "../../$courseId/-utils/folder-trail";
+import { nodeTitle, pruneEmptyFolders, type PublicFolderNode } from "../../-services/folder-library-service";
 import type { HeaderLink } from "./header-links";
 import type { MegaMenuModel } from "./mega-menu-model";
 
-export type SiteSearchKind = "stream" | "category" | "course" | "page";
+export type SiteSearchKind = "stream" | "category" | "folder" | "productPage" | "course" | "page";
 
 export interface SiteSearchItem {
   id: string;
@@ -28,8 +30,10 @@ export interface SiteSearchItem {
   notifyAudienceId?: string;
   /** A stream or category that is not open yet (shows the "coming soon" tag). */
   comingSoon?: boolean;
-  /** A course's preview artwork (media id or URL); shown instead of the kind icon. */
+  /** A course's or folder's artwork (media id or URL); shown instead of the kind icon. */
   image?: string;
+  /** Second line that is shown but not searched: a folder's path ("in All › History"). */
+  context?: string;
 }
 
 export interface RankedSearchItem extends SiteSearchItem {
@@ -62,12 +66,19 @@ const fieldScore = (field: string, query: string, tokens: string[]): number => {
   return 0;
 };
 
-const KIND_ORDER: Record<SiteSearchKind, number> = { stream: 0, category: 1, course: 2, page: 3 };
+const KIND_ORDER: Record<SiteSearchKind, number> = {
+  stream: 0,
+  category: 1,
+  folder: 2,
+  productPage: 2,
+  course: 3,
+  page: 4,
+};
 
 /**
  * Items that match `query`, best first. Title matches outrank subtitle and
- * keyword matches; ties keep streams before categories before courses before
- * pages, then the original order. An empty query matches nothing.
+ * keyword matches; ties keep streams before categories before folders before
+ * courses before pages, then the original order. An empty query matches nothing.
  */
 export const rankSiteSearch = (query: string, items: SiteSearchItem[]): RankedSearchItem[] => {
   const q = normalizeSearchText(query);
@@ -89,16 +100,22 @@ export const rankSiteSearch = (query: string, items: SiteSearchItem[]): RankedSe
 };
 
 export interface SearchGroup {
-  kind: "streams" | "courses" | "pages";
+  kind: "streams" | "folders" | "courses" | "pages";
   items: RankedSearchItem[];
 }
 
 const groupOf = (kind: SiteSearchKind): SearchGroup["kind"] =>
-  kind === "course" ? "courses" : kind === "page" ? "pages" : "streams";
+  kind === "course"
+    ? "courses"
+    : kind === "page"
+      ? "pages"
+      : kind === "folder" || kind === "productPage"
+        ? "folders"
+        : "streams";
 
 /**
- * Ranked results split into display groups (streams+categories, courses,
- * pages), each capped at `limit`. Groups are ordered by their best match so
+ * Ranked results split into display groups (streams+categories, folders and
+ * product pages, courses, pages), each capped at `limit`. Groups are ordered by their best match so
  * the strongest hit is always on top; the flattened order is what arrow keys
  * walk through.
  */
@@ -185,6 +202,74 @@ export const streamSearchItems = (
         comingSoon: cat.comingSoon,
       });
     }
+  }
+  return out;
+};
+
+const HOME_ROUTES = new Set(["", "home", "homepage"]);
+
+/**
+ * Folders and product pages of the site's Folder Browser libraries, the same
+ * nodes the section's own search box finds. A folder opens the page that shows
+ * it (`?folder=`); a product page opens the folder that holds it. A node no
+ * section shows is left out. `skipIds` drops nodes already listed as mega
+ * menu streams / categories.
+ */
+export const folderSearchItems = (
+  sections: FolderBrowserSection[],
+  trees: Record<string, PublicFolderNode[] | undefined>,
+  opts: {
+    translate?: (s: string) => string;
+    /** First crumb of a path ("All"), as the section shows it. */
+    homeLabel: string;
+    /** The path line ("in {{path}}"). */
+    inPath: (path: string) => string;
+    skipIds?: Set<string>;
+  },
+): SiteSearchItem[] => {
+  const translate = opts.translate || ((s: string) => s);
+  const titleOf = (n: PublicFolderNode) => translate(nodeTitle(n));
+  const out: SiteSearchItem[] = [];
+  const seen = new Set<string>(opts.skipIds);
+
+  for (const libraryId of new Set(sections.map((s) => s.libraryId))) {
+    const roots = trees[libraryId];
+    if (!roots) continue;
+    // The library's top level, for a product page that sits there.
+    const topSection = sections
+      .filter((s) => s.libraryId === libraryId && !s.rootFolderId)
+      .sort((a, b) => Number(HOME_ROUTES.has(a.route.toLowerCase())) - Number(HOME_ROUTES.has(b.route.toLowerCase())))[0];
+
+    const walk = (nodes: PublicFolderNode[], trail: PublicFolderNode[]) => {
+      for (const n of nodes) {
+        const isFolder = n.node_type === "FOLDER";
+        if (!seen.has(n.id)) {
+          seen.add(n.id);
+          const folders = isFolder ? [...trail, n] : trail;
+          const target = folders.length
+            ? linkFor(folders, libraryId, sections)
+            : { route: topSection ? topSection.route : null, folderId: null };
+          if (target.route !== null) {
+            const route = target.route.replace(/^\/+|\/+$/g, "");
+            const qs = target.folderId ? `?folder=${encodeURIComponent(target.folderId)}` : "";
+            const comingSoon = isFolder && !!n.coming_soon;
+            out.push({
+              id: `${isFolder ? "folder" : "productPage"}:${n.id}`,
+              kind: isFolder ? "folder" : "productPage",
+              title: titleOf(n),
+              keywords: [nodeTitle(n), n.description || "", n.product_page_name || ""].filter(Boolean),
+              context: trail.length ? opts.inPath([opts.homeLabel, ...trail.map(titleOf)].join(" › ")) : undefined,
+              link: comingSoon ? null : { href: `/${route}${qs}`, external: false },
+              notifyAudienceId: comingSoon ? n.audience_id || undefined : undefined,
+              comingSoon,
+              image: (n.image_url || "").trim() || undefined,
+            });
+          }
+        }
+        if (isFolder) walk(n.children || [], [...trail, n]);
+      }
+    };
+    walk(pruneEmptyFolders(roots), []);
   }
   return out;
 };

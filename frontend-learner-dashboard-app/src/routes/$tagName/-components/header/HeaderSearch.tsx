@@ -4,19 +4,30 @@ import axios from "axios";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useLocation } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { ArrowRight, BookOpen, FileText, MagnifyingGlass, SquaresFour, X } from "@phosphor-icons/react";
+import {
+  ArrowRight,
+  BookOpen,
+  FileText,
+  Folder,
+  MagnifyingGlass,
+  ShoppingCartSimple,
+  SquaresFour,
+  X,
+} from "@phosphor-icons/react";
 import { urlCourseDetails } from "@/constants/urls";
 import { cn } from "@/lib/utils";
 import { useCatalogueLocale, useSiteT } from "../../-utils/catalogue-locale";
 import { resolveCoursePageRoute } from "../../-utils/course-page-routing";
 import { courseLanguagesOf, preferredCourseLanguage } from "../../-utils/course-variants";
-import { fetchPublicFolderTree } from "../../-services/folder-library-service";
+import { fetchPublicFolderTree, type PublicFolderNode } from "../../-services/folder-library-service";
+import { folderBrowserSections } from "../../$courseId/-utils/folder-trail";
 import type { CourseCatalogueData, GlobalSettings, HeaderMegaMenuConfig } from "../../-types/course-catalogue-types";
 import { buildMegaMenuModel } from "./mega-menu-model";
 import {
   courseIdOf,
   courseSearchItems,
   courseSitePath,
+  folderSearchItems,
   groupSearchResults,
   mergeCourseRows,
   pageSearchItems,
@@ -86,7 +97,16 @@ const NAME_SEARCH_LIMIT = 20;
 const NAME_SEARCH_DEBOUNCE_MS = 300;
 
 const KindIcon: React.FC<{ kind: SiteSearchItem["kind"] }> = ({ kind }) => {
-  const Icon = kind === "course" ? BookOpen : kind === "page" ? FileText : SquaresFour;
+  const Icon =
+    kind === "course"
+      ? BookOpen
+      : kind === "page"
+        ? FileText
+        : kind === "folder"
+          ? Folder
+          : kind === "productPage"
+            ? ShoppingCartSimple
+            : SquaresFour;
   return (
     <span
       aria-hidden="true"
@@ -173,6 +193,40 @@ export const HeaderSearch: React.FC<HeaderSearchProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [configs, treesKey, siteT]);
 
+  // The Folder Browser libraries of the site's pages: their folders and
+  // product pages are found here too, the way the section's own search finds them.
+  const folderSections = useMemo(() => folderBrowserSections(catalogueData?.pages), [catalogueData?.pages]);
+  const folderLibraryIds = useMemo(
+    () => [...new Set(folderSections.map((s) => s.libraryId))],
+    [folderSections],
+  );
+  const folderTreeQueries = useQueries({
+    queries: folderLibraryIds.map((libraryId) => ({
+      queryKey: ["FOLDER_LIBRARY_PUBLIC", instituteId, libraryId],
+      queryFn: () => fetchPublicFolderTree(instituteId!, libraryId),
+      enabled: open && !!instituteId,
+      staleTime: 5 * 60_000,
+      retry: retryUnlessMissingLibrary,
+    })),
+  });
+  const folderTreesKey = folderTreeQueries.map((q) => q.dataUpdatedAt).join("|");
+
+  const folderItems = useMemo(() => {
+    const trees: Record<string, PublicFolderNode[] | undefined> = {};
+    folderLibraryIds.forEach((id, i) => {
+      trees[id] = folderTreeQueries[i]?.data?.roots;
+    });
+    // A folder already listed as a mega menu stream / category is not listed twice.
+    const skipIds = new Set(streamItems.map((item) => item.id.slice(item.id.indexOf(":") + 1)));
+    return folderSearchItems(folderSections, trees, {
+      translate: siteT,
+      homeLabel: t("folderBrowser.home", "All"),
+      inPath: (path) => t("folderBrowser.inPath", { path, defaultValue: "in {{path}}" }),
+      skipIds,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [folderSections, folderLibraryIds, folderTreesKey, streamItems, siteT, t]);
+
   const pageItems = useMemo(
     () => pageSearchItems(catalogueData?.pages, { homeLabel: t("header.searchDialog.home", "Home"), translate: siteT }),
     [catalogueData?.pages, siteT, t],
@@ -208,8 +262,11 @@ export const HeaderSearch: React.FC<HeaderSearchProps> = ({
         { kind: "pages" as const, items: asRanked(pageItems) },
       ].filter((g) => g.items.length);
     }
-    return groupSearchResults(rankSiteSearch(trimmed, [...streamItems, ...courseItems, ...pageItems]), SUGGESTION_LIMIT);
-  }, [trimmed, streamItems, courseItems, pageItems]);
+    return groupSearchResults(
+      rankSiteSearch(trimmed, [...streamItems, ...folderItems, ...courseItems, ...pageItems]),
+      SUGGESTION_LIMIT,
+    );
+  }, [trimmed, streamItems, folderItems, courseItems, pageItems]);
   const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);
 
   useEffect(() => setActiveIndex(0), [trimmed]);
@@ -312,7 +369,9 @@ export const HeaderSearch: React.FC<HeaderSearchProps> = ({
       ? t("header.searchDialog.courses", "Courses")
       : kind === "pages"
         ? t("header.searchDialog.pages", "Pages")
-        : streamsLabel || t("header.searchDialog.streams", "Streams");
+        : kind === "folders"
+          ? t("header.searchDialog.folders", "Folders")
+          : streamsLabel || t("header.searchDialog.streams", "Streams");
 
   // Typing, waiting for the debounce, or fetching by name: not "no results" yet.
   const nameSearchPending =
@@ -411,7 +470,7 @@ export const HeaderSearch: React.FC<HeaderSearchProps> = ({
                               active && "bg-primary-50",
                             )}
                           >
-                            {item.kind === "course" ? (
+                            {item.kind === "course" || item.image ? (
                               <CourseThumbnail image={item.image} className="catalogue-aspect-video w-16" />
                             ) : (
                               <KindIcon kind={item.kind} />
@@ -420,9 +479,9 @@ export const HeaderSearch: React.FC<HeaderSearchProps> = ({
                               <span className="block truncate text-sm font-medium text-catalogue-text-primary">
                                 {item.title}
                               </span>
-                              {item.subtitle && (
+                              {(item.subtitle || item.context) && (
                                 <span className="block truncate text-caption text-catalogue-text-muted">
-                                  {item.subtitle}
+                                  {item.subtitle || item.context}
                                 </span>
                               )}
                             </span>
