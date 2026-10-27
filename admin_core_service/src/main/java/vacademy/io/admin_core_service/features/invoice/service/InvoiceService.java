@@ -216,6 +216,11 @@ public class InvoiceService {
     @Autowired
     private vacademy.io.admin_core_service.features.user_subscription.repository.PaymentOptionRepository paymentOptionRepositoryForVendor;
 
+    // Institute default currency (PAYMENT_SETTING.defaultCurrency) for invoices whose payment
+    // record and plan carry none. Repository-only dependency, so no bean cycle.
+    @Autowired
+    private vacademy.io.admin_core_service.features.institute.service.setting.PaymentSettingService paymentSettingService;
+
     @Value("${default.learner.portal.url:https://learner.vacademy.io}")
     private String learnerPortalUrl;
 
@@ -966,7 +971,7 @@ public class InvoiceService {
 
         // Validate and normalize currency - filter out invalid values like "#" or
         // single characters
-        String currency = normalizeAndValidateCurrency(paymentLogCurrency, planCurrency);
+        String currency = normalizeAndValidateCurrency(paymentLogCurrency, planCurrency, instituteId);
 
         log.info("Final currency used for invoice: '{}'", currency);
 
@@ -1690,7 +1695,7 @@ public class InvoiceService {
                 .taxAmount(taxAmount)
                 .subtotal(subtotal)
                 .totalAmount(totalAmount)
-                .currency(getCurrencyFromPaymentLog(paymentLog, paymentPlan))
+                .currency(getCurrencyFromPaymentLog(paymentLog, paymentPlan, instituteId))
                 .taxIncluded(taxIncluded)
                 .taxRate(taxRate)
                 .taxLabel(taxLabel)
@@ -1883,6 +1888,14 @@ public class InvoiceService {
                 if (!map.containsKey("invoicePdfPlacement")) {
                     map.put("invoicePdfPlacement", InvoicePdfPlacement.INVOICE_EMAIL.name());
                 }
+                // The institute's PAYMENT_SETTING default currency is the one currency setting;
+                // it overrides the older INVOICE_SETTING value (seeded as "INR" everywhere).
+                String instituteCurrency = paymentSettingService.getDefaultCurrency(institute.getId());
+                if (instituteCurrency != null) {
+                    map.put("currency", instituteCurrency);
+                } else if (!map.containsKey("currency")) {
+                    map.put("currency", paymentSettingService.resolveCurrency(institute.getId()));
+                }
                 return map;
             }
         } catch (Exception e) {
@@ -1893,7 +1906,7 @@ public class InvoiceService {
         defaults.put("taxIncluded", false);
         defaults.put("taxRate", 0.0);
         defaults.put("taxLabel", "Tax");
-        defaults.put("currency", "INR");
+        defaults.put("currency", paymentSettingService.resolveCurrency(institute.getId()));
         defaults.put("sendInvoiceEmail", false);
         defaults.put("invoicePdfPlacement", InvoicePdfPlacement.INVOICE_EMAIL.name());
         return defaults;
@@ -3440,14 +3453,14 @@ public class InvoiceService {
     /**
      * Get currency from payment log with proper fallback
      */
-    private String getCurrencyFromPaymentLog(PaymentLog paymentLog, PaymentPlan paymentPlan) {
+    private String getCurrencyFromPaymentLog(PaymentLog paymentLog, PaymentPlan paymentPlan, String instituteId) {
         String paymentLogCurrency = paymentLog != null ? paymentLog.getCurrency() : null;
         String planCurrency = paymentPlan != null ? paymentPlan.getCurrency() : null;
 
         log.info("Getting currency - PaymentLog currency: '{}', Plan currency: '{}'", paymentLogCurrency, planCurrency);
 
         // Validate and normalize currency
-        String currency = normalizeAndValidateCurrency(paymentLogCurrency, planCurrency);
+        String currency = normalizeAndValidateCurrency(paymentLogCurrency, planCurrency, instituteId);
 
         log.info("Final currency selected: '{}'", currency);
         return currency;
@@ -3457,38 +3470,16 @@ public class InvoiceService {
      * Normalize and validate currency code, filtering out invalid values like "#"
      * or symbols
      */
-    private String normalizeAndValidateCurrency(String paymentLogCurrency, String planCurrency) {
-        // List of valid currency codes
-        Set<String> validCurrencyCodes = Set.of("INR", "USD", "EUR", "GBP", "JPY", "AUD", "CAD", "SGD", "AED");
+    private String normalizeAndValidateCurrency(String paymentLogCurrency, String planCurrency,
+            String instituteId) {
+        // Payment log first, then plan; anything that is not a 3-letter code ("#", "$", "N/A")
+        // is skipped. With neither, the institute's PAYMENT_SETTING default, else INR.
+        return paymentSettingService.resolveCurrency(instituteId, paymentLogCurrency, planCurrency);
+    }
 
-        // Try payment log currency first
-        if (paymentLogCurrency != null && !paymentLogCurrency.trim().isEmpty()) {
-            String normalized = paymentLogCurrency.trim().toUpperCase();
-            // Reject if it's a single character (like "#") or not a valid currency code
-            if (normalized.length() >= 3
-                    && (validCurrencyCodes.contains(normalized) || normalized.matches("^[A-Z]{3}$"))) {
-                log.debug("Using payment log currency: '{}'", normalized);
-                return normalized;
-            } else {
-                log.warn("Invalid payment log currency code: '{}', trying plan currency", paymentLogCurrency);
-            }
-        }
-
-        // Try plan currency
-        if (planCurrency != null && !planCurrency.trim().isEmpty()) {
-            String normalized = planCurrency.trim().toUpperCase();
-            if (normalized.length() >= 3
-                    && (validCurrencyCodes.contains(normalized) || normalized.matches("^[A-Z]{3}$"))) {
-                log.debug("Using plan currency: '{}'", normalized);
-                return normalized;
-            } else {
-                log.warn("Invalid plan currency code: '{}', defaulting to INR", planCurrency);
-            }
-        }
-
-        // Default to INR
-        log.info("No valid currency found, defaulting to INR");
-        return "INR";
+    /** An invoice's own currency, else the institute default, else INR. */
+    private String invoiceCurrency(Invoice invoice) {
+        return paymentSettingService.resolveCurrency(invoice.getInstituteId(), invoice.getCurrency());
     }
 
     /** INR symbol: the ₹ glyph when a Unicode font is embedded, else ASCII "Rs. ". */
@@ -5226,7 +5217,8 @@ public class InvoiceService {
             }
             invoice.setTaxAmount(taxAmount);
             invoice.setTotalAmount(totalAmount);
-            invoice.setCurrency(request.getCurrency());
+            invoice.setCurrency(paymentSettingService.resolveCurrency(
+                    request.getInstituteId(), request.getCurrency()));
             invoice.setStatus(INVOICE_STATUS_PENDING_PAYMENT);
             invoice.setTaxIncluded(taxIncluded);
             // Source tracking: admin-created invoices point back to the billed user
@@ -5410,7 +5402,8 @@ public class InvoiceService {
         invoice.setTaxAmount(effectiveTax.taxAmount());
         invoice.setTotalAmount(effectiveTax.totalAmount());
         invoice.setTaxIncluded(effectiveTax.taxIncluded());
-        invoice.setCurrency(request.getCurrency());
+        invoice.setCurrency(paymentSettingService.resolveCurrency(
+                invoice.getInstituteId(), request.getCurrency(), invoice.getCurrency()));
         invoice.setDueDate(request.getDueDate());
         if (request.getInvoiceDate() != null) {
             invoice.setInvoiceDate(request.getInvoiceDate());
@@ -5507,7 +5500,7 @@ public class InvoiceService {
                     + invoice.getStatus() + ")");
         }
 
-        String currency = StringUtils.hasText(invoice.getCurrency()) ? invoice.getCurrency() : "INR";
+        String currency = invoiceCurrency(invoice);
         double amount = invoice.getTotalAmount() != null
                 ? invoice.getTotalAmount().doubleValue() : 0d;
 
@@ -5631,7 +5624,7 @@ public class InvoiceService {
                         "Institute not found: " + invoice.getInstituteId()));
 
         String paymentLink = buildPaymentLink(institute, invoice.getId());
-        String currency = StringUtils.hasText(invoice.getCurrency()) ? invoice.getCurrency() : "INR";
+        String currency = invoiceCurrency(invoice);
         String amountStr = currency + " " + invoice.getTotalAmount()
                 .setScale(2, java.math.RoundingMode.HALF_UP).toPlainString();
 
@@ -5730,7 +5723,7 @@ public class InvoiceService {
         userAccountLedgerService.recordDebitReversal(
                 invoice.getUserId(), invoice.getInstituteId(),
                 invoice.getTotalAmount(),
-                StringUtils.hasText(invoice.getCurrency()) ? invoice.getCurrency() : "INR",
+                invoiceCurrency(invoice),
                 invoice.getDueDate() != null ? invoice.getDueDate().toLocalDate() : null,
                 "ADMIN_INVOICE", invoice.getId(),
                 invoice.getId(),
@@ -6196,7 +6189,7 @@ public class InvoiceService {
         userAccountLedgerService.recordCreditPayment(
                 invoice.getUserId(), invoice.getInstituteId(),
                 invoice.getTotalAmount(),
-                StringUtils.hasText(invoice.getCurrency()) ? invoice.getCurrency() : "INR",
+                invoiceCurrency(invoice),
                 isLiveSessionInvoice ? INVOICE_SOURCE_LIVE_SESSION : "ADMIN_INVOICE", invoice.getId(),
                 paymentLogId, invoice.getId(), "Gateway payment received");
 

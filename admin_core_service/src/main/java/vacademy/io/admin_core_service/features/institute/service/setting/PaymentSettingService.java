@@ -80,6 +80,20 @@ public class PaymentSettingService {
      */
     public static final String AUTOPAY_REQUIRED_ON_RENEWAL_KEY = "autopayRequiredOnManualRenewal";
 
+    /**
+     * ISO 4217 code inside PAYMENT_SETTING.data: the institute's currency wherever a payment
+     * plan, payment record or invoice does not carry one of its own (manual payments,
+     * admin invoices, manual renewals, ledger entries). A currency that IS set on the
+     * plan / record always wins -- this only replaces the hardcoded "INR" fallback, which
+     * stamped rupees on a non-Indian institute's offline payments.
+     */
+    public static final String DEFAULT_CURRENCY_KEY = "defaultCurrency";
+
+    /** What every fallback used before an institute could configure one. */
+    public static final String PLATFORM_FALLBACK_CURRENCY = "INR";
+
+    private static final java.util.regex.Pattern CURRENCY_CODE = java.util.regex.Pattern.compile("^[A-Z]{3}$");
+
     private final InstituteRepository instituteRepository;
     private final ObjectMapper objectMapper;
 
@@ -161,6 +175,63 @@ public class PaymentSettingService {
      */
     public boolean isAutopayRequiredOnManualRenewal(String instituteId) {
         return readFlag(instituteId, AUTOPAY_REQUIRED_ON_RENEWAL_KEY);
+    }
+
+    /**
+     * The institute's configured default currency (PAYMENT_SETTING.data.defaultCurrency),
+     * upper-cased, or {@code null} when it is unset, not a 3-letter code, or unreadable.
+     */
+    public String getDefaultCurrency(String instituteId) {
+        if (instituteId == null || instituteId.isBlank()) {
+            return null;
+        }
+        try {
+            String settingJson = instituteRepository.findById(instituteId)
+                    .map(vacademy.io.common.institute.entity.Institute::getSetting)
+                    .orElse(null);
+            if (settingJson == null || settingJson.isBlank()) {
+                return null;
+            }
+            String value = objectMapper.readTree(settingJson)
+                    .path("setting")
+                    .path(SettingKeyEnums.PAYMENT_SETTING.name())
+                    .path("data")
+                    .path(DEFAULT_CURRENCY_KEY)
+                    .asText(null);
+            return normalizeCurrency(value);
+        } catch (Exception e) {
+            log.warn("[PaymentSetting] Could not read {} for institute {} — no default currency",
+                    DEFAULT_CURRENCY_KEY, instituteId, e);
+            return null;
+        }
+    }
+
+    /**
+     * The first of {@code candidates} that is a real currency code (the plan's, the payment
+     * record's, the request's -- in the caller's order of precedence); else the institute's
+     * {@link #getDefaultCurrency default}; else {@link #PLATFORM_FALLBACK_CURRENCY}.
+     * Blank, "N/A" and symbol values ("#", "$") are skipped rather than returned.
+     */
+    public String resolveCurrency(String instituteId, String... candidates) {
+        if (candidates != null) {
+            for (String candidate : candidates) {
+                String normalized = normalizeCurrency(candidate);
+                if (normalized != null) {
+                    return normalized;
+                }
+            }
+        }
+        String institute = getDefaultCurrency(instituteId);
+        return institute != null ? institute : PLATFORM_FALLBACK_CURRENCY;
+    }
+
+    /** Upper-cased 3-letter code, or {@code null} for anything that is not one. */
+    public static String normalizeCurrency(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim().toUpperCase();
+        return CURRENCY_CODE.matcher(normalized).matches() ? normalized : null;
     }
 
     /** Reads one boolean out of PAYMENT_SETTING.data. False on anything unexpected. */

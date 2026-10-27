@@ -76,6 +76,7 @@ import { toast } from 'sonner';
 import { getCurrencySymbol } from '@/constants/currencies';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import { fallbackCurrency } from '@/utils/institute-currency';
 
 const INVOICES_PER_PAGE = 10;
 
@@ -99,7 +100,7 @@ function formatDate(dateStr: string | null | undefined): string {
  * Unknown codes render as the code itself, never as a wrong symbol.
  */
 function symbolFor(currency?: string | null): string {
-    return getCurrencySymbol((currency || 'INR').toUpperCase());
+    return getCurrencySymbol((currency || fallbackCurrency()).toUpperCase());
 }
 
 /**
@@ -107,7 +108,7 @@ function symbolFor(currency?: string | null): string {
  * grouping ("A$12,34,567.00") is wrong for every non-INR currency.
  */
 function formatAmount(amount: number | null | undefined, currency?: string | null, minimumFractionDigits = 2): string {
-    const code = (currency || 'INR').toUpperCase();
+    const code = (currency || fallbackCurrency()).toUpperCase();
     return Number(amount || 0).toLocaleString(code === 'INR' ? 'en-IN' : 'en-US', {
         minimumFractionDigits,
         maximumFractionDigits: 2,
@@ -1031,7 +1032,7 @@ export const StudentPaymentHistory = () => {
     const fallbackSummary: UserAccountSummaryDTO | null = invoiceList.length > 0
         ? (() => {
               const billable = invoiceList.filter((inv) => !isVoidedInvoice(inv));
-              const currency = billable[0]?.currency || invoiceList[0]?.currency || 'INR';
+              const currency = billable[0]?.currency || invoiceList[0]?.currency || fallbackCurrency();
               const totalAccrued = billable.reduce((s, inv) => s + (inv.total_amount ?? 0), 0);
               const totalPaid = billable
                   .filter((inv) => String(inv.status || '').toUpperCase() === 'PAID')

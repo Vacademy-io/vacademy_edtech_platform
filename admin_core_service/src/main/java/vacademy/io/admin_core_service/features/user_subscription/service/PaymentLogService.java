@@ -107,6 +107,10 @@ public class PaymentLogService {
     @Autowired
     private PaymentLogRepository paymentLogRepository;
 
+    // Institute default currency for payments recorded without one.
+    @Autowired
+    private vacademy.io.admin_core_service.features.institute.service.setting.PaymentSettingService paymentSettingService;
+
     @Autowired
     private PlatformTransactionManager transactionManager;
 
@@ -363,7 +367,9 @@ public class PaymentLogService {
             userAccountLedgerService.recordCreditPayment(
                     paymentLog.getUserId(), instituteId,
                     java.math.BigDecimal.valueOf(paymentLog.getPaymentAmount()),
-                    StringUtils.hasText(paymentLog.getCurrency()) ? paymentLog.getCurrency() : "INR",
+                    paymentSettingService.resolveCurrency(instituteId, paymentLog.getCurrency(),
+                            paymentLog.getUserPlan().getPaymentPlan() != null
+                                    ? paymentLog.getUserPlan().getPaymentPlan().getCurrency() : null),
                     "USER_PLAN", paymentLog.getUserPlan().getId(),
                     paymentLog.getId(), null, "Payment received");
         } catch (Exception e) {

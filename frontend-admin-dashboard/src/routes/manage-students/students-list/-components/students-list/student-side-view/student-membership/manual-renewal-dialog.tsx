@@ -30,6 +30,7 @@ import {
     recordManualRenewal,
 } from '@/services/user-plan';
 import { PlanRemarksPanel } from './plan-remarks';
+import { useInstituteDefaultCurrency } from '@/services/payment-setting';
 
 interface ManualRenewalDialogProps {
     open: boolean;
@@ -140,7 +141,10 @@ export const ManualRenewalDialog = ({
         remarks.trim() !== '' &&
         !detailsError &&
         !mutation.isPending;
-    const currency = preview?.currency || 'INR';
+    // The server already resolves plan → invite → institute default; this only covers a
+    // preview that has not loaded yet.
+    const instituteCurrency = useInstituteDefaultCurrency();
+    const currency = preview?.currency || instituteCurrency || 'INR';
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>

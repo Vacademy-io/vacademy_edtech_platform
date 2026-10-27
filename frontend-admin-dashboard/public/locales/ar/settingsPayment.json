@@ -3,6 +3,9 @@
     "addPaymentPlan": "إضافة خطة دفع",
     "defaultCurrency": "العملة الافتراضية",
     "selectCurrencyPlaceholder": "اختر العملة",
+    "defaultCurrencyHint": "تُستخدم في الفواتير وسجل المدفوعات والتجديدات اليدوية عندما لا تكون لخطة الدفع عملة خاصة بها. تُحفظ فور اختيارها.",
+    "defaultCurrencySaved": "تم تعيين العملة الافتراضية إلى {{currency}}",
+    "defaultCurrencySaveError": "تعذّر حفظ العملة الافتراضية",
     "sections": {
         "freeOptions": "الخيارات المجانية",
         "paidOptions": "الخيارات المدفوعة"

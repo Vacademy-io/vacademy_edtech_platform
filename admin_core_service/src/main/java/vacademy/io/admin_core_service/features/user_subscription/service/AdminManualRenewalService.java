@@ -23,6 +23,7 @@ import vacademy.io.admin_core_service.features.learner_access.enums.LearnerAcces
 import vacademy.io.admin_core_service.features.learner_access.service.LearnerAccessService;
 import vacademy.io.admin_core_service.features.offline_payment.service.OfflinePaymentDetailsService;
 import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
+import vacademy.io.admin_core_service.features.institute.service.setting.PaymentSettingService;
 import vacademy.io.admin_core_service.features.regional_pricing.service.RegionalPriceLock;
 import vacademy.io.admin_core_service.features.timeline.dto.TimelineEventDTO;
 import vacademy.io.admin_core_service.features.timeline.dto.TimelineEventRequestDTO;
@@ -101,6 +102,7 @@ public class AdminManualRenewalService {
     private final PackageSessionLearnerInvitationToPaymentOptionRepository invitationRepository;
     private final PackageSessionRepository packageSessionRepository;
     private final StudentSessionRepository studentSessionRepository;
+    private final PaymentSettingService paymentSettingService;
 
     @Transactional(readOnly = true)
     public ManualRenewalPreviewDTO preview(String userPlanId, String instituteId) {
@@ -113,7 +115,7 @@ public class AdminManualRenewalService {
                 .suggestedEndDate(defaultNewEndDate(plan, new Date()))
                 .validityDays(PlanValidityResolver.resolveValidityDays(plan))
                 .suggestedAmount(RegionalPriceLock.listPrice(plan))
-                .currency(currencyOf(plan, null))
+                .currency(currencyOf(plan, null, instituteId))
                 .autoRenewalEnabled(Boolean.TRUE.equals(plan.getAutoRenewalEnabled()))
                 .renewable(reason == null)
                 .notRenewableReason(reason)
@@ -164,7 +166,7 @@ public class AdminManualRenewalService {
 
         String adminId = admin != null ? admin.getUserId() : null;
         String adminName = admin != null ? admin.getUsername() : null;
-        String currency = currencyOf(plan, req.getCurrency());
+        String currency = currencyOf(plan, req.getCurrency(), instituteId);
 
         // Validate how it was paid before anything is written.
         // A payment mode is enforced (where the institute requires one) only when money changed hands.
@@ -545,12 +547,15 @@ public class AdminManualRenewalService {
         return c.getTime();
     }
 
-    private static String currencyOf(UserPlan plan, String requested) {
+    private String currencyOf(UserPlan plan, String requested, String instituteId) {
         if (StringUtils.hasText(requested)) {
             return requested;
         }
-        String base = plan.getPaymentPlan() != null && StringUtils.hasText(plan.getPaymentPlan().getCurrency())
-                ? plan.getPaymentPlan().getCurrency() : "INR";
+        // The plan's currency, then its invite's; only with neither the institute's
+        // PAYMENT_SETTING default (else INR).
+        String base = paymentSettingService.resolveCurrency(instituteId,
+                plan.getPaymentPlan() != null ? plan.getPaymentPlan().getCurrency() : null,
+                plan.getEnrollInvite() != null ? plan.getEnrollInvite().getCurrency() : null);
         return RegionalPriceLock.currency(plan, base);
     }
 

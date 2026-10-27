@@ -71,6 +71,7 @@ public class CpoSideViewService {
     private final FacultySubjectPackageSessionMappingRepository facultyMappingRepository;
     private final vacademy.io.admin_core_service.features.admission_package.repository.AdmissionPackageCourseRepository admissionPackageCourseRepository;
     private final vacademy.io.admin_core_service.features.fee_management.repository.FeeBillCancellationRepository feeBillCancellationRepository;
+    private final vacademy.io.admin_core_service.features.institute.service.setting.PaymentSettingService paymentSettingService;
 
     // -------------------------------------------------------------------- read
 
@@ -374,10 +375,9 @@ public class CpoSideViewService {
         offlinePaymentDetailsService.pinNumberingValue(instituteId, userPlanId, plan.getUserId(),
                 req.getPaymentDetails());
 
-        String currency = req.getCurrency() != null
-                ? req.getCurrency()
-                : (plan.getPaymentPlan() != null && plan.getPaymentPlan().getCurrency() != null
-                        ? plan.getPaymentPlan().getCurrency() : "INR");
+        // The request's, else the plan's; only with neither the institute's default (else INR).
+        String currency = paymentSettingService.resolveCurrency(instituteId, req.getCurrency(),
+                plan.getPaymentPlan() != null ? plan.getPaymentPlan().getCurrency() : null);
         Date paymentDate = req.getPaymentDate() != null ? req.getPaymentDate()
                 : paymentDetails != null && paymentDetails.paymentDate() != null
                         ? java.sql.Date.valueOf(paymentDetails.paymentDate())
