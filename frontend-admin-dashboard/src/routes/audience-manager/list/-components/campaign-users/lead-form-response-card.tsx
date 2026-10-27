@@ -2,18 +2,27 @@
  * LeadFormResponseCard — surfaces the audience-form answers of a lead in the
  * side-view, stitched alongside the existing Overview content.
  *
- * Only renders when {@code selectedStudent._response_fields} is populated
- * (which campaign-users-table.tsx attaches when a lead row is clicked). For
- * users coming from manage-students / manage-contacts the prop is absent and
- * the card is silently skipped.
+ * Opened from a lead row, it renders {@code selectedStudent._response_fields}
+ * (attached by the lead lists). Rows from manage-students carry no answers, so
+ * the card loads the learner's saved list responses itself — otherwise answers
+ * captured on the lead form vanish from the profile once the lead is enrolled.
  *
  * Each field is rendered with its display name, a type-aware formatted value,
  * and (for {@code multi_select}) a row of chips so multiple selections read
  * cleanly instead of as raw JSON.
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
+import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
+import { GET_USER_AUDIENCES } from '@/constants/urls';
+import { recentLeadResponseFields } from '@/components/shared/leads/lead-view-model';
+import {
+    audienceLeadKey,
+    fetchAudienceLeadByResponseId,
+} from '@/routes/audience-manager/list/-services/get-recent-leads';
 import { ListChecks, FileText, ArrowSquareOut, Phone, Robot } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -305,40 +314,27 @@ const Row = ({
     );
 };
 
-export const LeadFormResponseCard = () => {
-    const { t } = useTranslation('audienceManagerLeadFormResponseCard');
-    const { selectedStudent } = useStudentSidebar();
-    // Loose access — `_response_fields` / `_audience_campaign_name` /
-    // `_response_id` are attached by audience-list flows only and aren't part
-    // of the canonical StudentTable shape. `user_id` IS canonical, so we
-    // read it off the typed object directly.
-    //
-    // `selectedStudent` is nullable: this card renders whenever the side view's
-    // active tab is `lead`, which a tenant can configure as the *default* tab —
-    // so it mounts before any lead is selected (selectedStudent === null).
-    // Optional-chain every read so that case renders nothing instead of
-    // throwing "Cannot read properties of null (reading '_response_fields')".
-    const ext = selectedStudent as unknown as {
-        _response_fields?: LeadResponseField[];
-        _audience_campaign_name?: string;
-        _audience_campaign_type?: string;
-        _response_id?: string | null;
-    } | null;
-    const fields = ext?._response_fields;
-    const responseId = ext?._response_id ?? null;
-    const leadUserId = selectedStudent?.user_id ?? null;
+interface LeadFormResponseCardViewProps {
+    fields: LeadResponseField[];
+    campaignName?: string | null;
+    campaignType?: string | null;
+    responseId: string | null;
+    leadUserId: string | null;
+}
 
-    // Hooks must run unconditionally — set up the mutations before the
-    // empty-fields short-circuit so React's hook order stays stable.
+const LeadFormResponseCardView = ({
+    fields,
+    campaignName,
+    campaignType,
+    responseId,
+    leadUserId,
+}: LeadFormResponseCardViewProps) => {
+    const { t } = useTranslation('audienceManagerLeadFormResponseCard');
     const placeCallMutation = usePlaceCall();
     const aiEnabled = useAiCallButtonEnabled();
     const placeAiCallMutation = usePlaceAiCall({ invalidateKeys: [['telephony-call-history']] });
 
-    if (!fields || fields.length === 0) return null;
-
-    const campaignName = ext?._audience_campaign_name;
     // Channel › list, so the side view reads the same hierarchy as the leads table.
-    const campaignType = ext?._audience_campaign_type;
     const campaignTrail = [campaignType, campaignName].filter(Boolean).join(' › ');
 
     // The Call button shows on the phone-number row only (see {@link isPhoneField}).
@@ -401,6 +397,144 @@ export const LeadFormResponseCard = () => {
             </CardContent>
         </Card>
     );
+};
+
+// A learner can sit in several lists (repeat enquiries); answers from older ones
+// still matter, but a handful is plenty for the side view.
+const MAX_SAVED_RESPONSES = 5;
+
+interface UserAudienceMembership {
+    response_id: string;
+    submitted_at: string | null;
+    audience_status?: string | null;
+}
+
+/**
+ * Form answers for a learner opened from a surface that carries no lead row —
+ * manage-students, once the lead has been admitted. Loads the person's own list
+ * responses (newest first) and renders one card per response that has answers,
+ * so fields captured on the lead form (e.g. a referrer's name and number) stay
+ * visible after enrolment.
+ */
+const SavedLeadFormResponses = ({ userId }: { userId: string }) => {
+    const instituteId = getCurrentInstituteId() ?? '';
+
+    // Same key + payload as the Lead Profile tab's audience list, so TanStack dedupes.
+    const { data: audiences } = useQuery({
+        queryKey: ['user-audiences', userId, instituteId],
+        queryFn: async () => {
+            const response = await authenticatedAxiosInstance({
+                method: 'GET',
+                url: GET_USER_AUDIENCES,
+                params: { userId, instituteId },
+            });
+            return response.data as UserAudienceMembership[];
+        },
+        enabled: !!userId && !!instituteId,
+        staleTime: 2 * 60 * 1000,
+    });
+
+    const responseIds = useMemo(
+        () =>
+            [...(audiences ?? [])]
+                // The endpoint returns deleted leads too (audience_status INACTIVE) — skip them.
+                .filter(
+                    (a) =>
+                        !!a.response_id &&
+                        (a.audience_status ?? 'ACTIVE').toUpperCase() !== 'INACTIVE'
+                )
+                .sort((a, b) => {
+                    const ta = a.submitted_at ? Date.parse(a.submitted_at) : 0;
+                    const tb = b.submitted_at ? Date.parse(b.submitted_at) : 0;
+                    return tb - ta;
+                })
+                .slice(0, MAX_SAVED_RESPONSES)
+                .map((a) => a.response_id),
+        [audiences]
+    );
+
+    const leads = useQueries({
+        queries: responseIds.map((responseId) => ({
+            queryKey: audienceLeadKey(responseId),
+            queryFn: () => fetchAudienceLeadByResponseId(responseId),
+            staleTime: 2 * 60 * 1000,
+        })),
+    });
+
+    return (
+        <>
+            {leads.map((q, idx) => {
+                const lead = q.data;
+                if (!lead) return null;
+                const fields = recentLeadResponseFields(lead);
+                if (fields.length === 0) return null;
+                return (
+                    <div key={responseIds[idx]} className={cn(idx > 0 && 'mt-3')}>
+                        <LeadFormResponseCardView
+                            fields={fields}
+                            campaignName={lead.campaign_name ?? lead.source_audience_name}
+                            campaignType={lead.campaign_type}
+                            responseId={lead.response_id ?? responseIds[idx] ?? null}
+                            leadUserId={userId}
+                        />
+                    </div>
+                );
+            })}
+        </>
+    );
+};
+
+interface LeadFormResponseCardProps {
+    /**
+     * Load the learner's saved answers when the selected row carries none (a learner
+     * opened from manage-students). Callers pass the same gate as their Lead Profile
+     * tab, so nothing is fetched where the lead system is off.
+     */
+    loadSavedResponses?: boolean;
+}
+
+export const LeadFormResponseCard = ({ loadSavedResponses = false }: LeadFormResponseCardProps) => {
+    const { selectedStudent } = useStudentSidebar();
+    // Loose access — `_response_fields` / `_audience_campaign_name` /
+    // `_response_id` are attached by audience-list flows only and aren't part
+    // of the canonical StudentTable shape. `user_id` IS canonical, so we
+    // read it off the typed object directly.
+    //
+    // `selectedStudent` is nullable: this card renders whenever the side view's
+    // active tab is `lead`, which a tenant can configure as the *default* tab —
+    // so it mounts before any lead is selected (selectedStudent === null).
+    // Optional-chain every read so that case renders nothing instead of
+    // throwing "Cannot read properties of null (reading '_response_fields')".
+    const ext = selectedStudent as unknown as {
+        _response_fields?: LeadResponseField[];
+        _audience_campaign_name?: string;
+        _audience_campaign_type?: string;
+        _response_id?: string | null;
+    } | null;
+    const fields = ext?._response_fields;
+    const leadUserId = selectedStudent?.user_id ?? null;
+
+    // Opened from a lead row: the row already carries this response's answers.
+    if (fields) {
+        if (fields.length === 0) return null;
+        return (
+            <LeadFormResponseCardView
+                fields={fields}
+                campaignName={ext?._audience_campaign_name}
+                campaignType={ext?._audience_campaign_type}
+                responseId={ext?._response_id ?? null}
+                leadUserId={leadUserId}
+            />
+        );
+    }
+
+    // A row that carries `_response_id` came from a lead surface (e.g. a Call Log seed
+    // still hydrating) — its own answers arrive with the row, so don't load others.
+    const fromLeadSurface = !!ext && '_response_id' in ext;
+
+    // Opened from manage-students (an admitted learner): load their saved answers.
+    if (!loadSavedResponses || fromLeadSurface || !leadUserId) return null;
+    return <SavedLeadFormResponses userId={leadUserId} />;
 };
 
 export default LeadFormResponseCard;

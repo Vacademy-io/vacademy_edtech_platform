@@ -111,15 +111,13 @@ export const truncateName = (name: string, max = 30) =>
 // ── Row → StudentTable mappers (moved from the two pages) ─────────────────────
 
 /**
- * Map a recent-lead row to a partial StudentTable so the shared StudentSidebar
- * can render its tabs for this respondent. Only fields available from the lead
- * payload are populated; the rest are safe defaults. `_response_fields` +
- * `_audience_campaign_name` are stashed for the side view's LeadFormResponseCard.
+ * A lead's non-empty form answers, labelled from the field definitions that came
+ * back with them. Shared by the row mapper below and by the side view's form-answer
+ * card when it loads a response on its own (a learner opened from manage-students).
  */
-export const mapRecentLeadToStudent = (lead: RecentLeadDetail): StudentTable => {
-    const u = lead.user ?? {};
-    const userId = u.id || lead.user_id || lead.response_id || '';
-
+export const recentLeadResponseFields = (
+    lead: RecentLeadDetail
+): Array<{ id: string; name: string; type: string; rawValue: string | null }> => {
     const responseFields: Array<{
         id: string;
         name: string;
@@ -136,6 +134,20 @@ export const mapRecentLeadToStudent = (lead: RecentLeadDetail): StudentTable => 
         const type = m.fieldType ?? m.field_type ?? 'textfield';
         responseFields.push({ id: fieldId, name, type, rawValue: value });
     });
+    return responseFields;
+};
+
+/**
+ * Map a recent-lead row to a partial StudentTable so the shared StudentSidebar
+ * can render its tabs for this respondent. Only fields available from the lead
+ * payload are populated; the rest are safe defaults. `_response_fields` +
+ * `_audience_campaign_name` are stashed for the side view's LeadFormResponseCard.
+ */
+export const mapRecentLeadToStudent = (lead: RecentLeadDetail): StudentTable => {
+    const u = lead.user ?? {};
+    const userId = u.id || lead.user_id || lead.response_id || '';
+
+    const responseFields = recentLeadResponseFields(lead);
 
     const result: StudentTable = {
         id: userId,

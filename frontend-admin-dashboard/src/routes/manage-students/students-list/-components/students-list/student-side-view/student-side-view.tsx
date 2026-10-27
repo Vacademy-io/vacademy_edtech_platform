@@ -723,7 +723,16 @@ export const StudentSidebar = ({
                         Renders only when the side view was opened from a lead
                         row (campaign-users / recent-leads); manage-students
                         rows don't carry the attached metadata. */}
-                    {category === 'lead' && <LeadFormResponseCard />}
+                    {category === 'lead' && (
+                        <LeadFormResponseCard
+                            loadSavedResponses={
+                                !!tabSettings?.leadTab &&
+                                !leadSettings.isLoading &&
+                                !!leadSettings.enabled &&
+                                !isEnrollRequestStudentList
+                            }
+                        />
+                    )}
                     {/* Where this lead came from. The campaign lives in utm_attribution,
                         not in the form answers, so the card above cannot show it — without
                         this the Lead tab has no campaign anywhere on it. Renders nothing
