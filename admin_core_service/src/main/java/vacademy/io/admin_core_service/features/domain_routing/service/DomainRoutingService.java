@@ -30,12 +30,22 @@ public class DomainRoutingService {
     private final InstituteRepository instituteRepository;
 
     public Optional<DomainRoutingResolveResponse> resolve(String domain, String subdomain) {
+        return resolve(domain, subdomain, null);
+    }
+
+    /**
+     * With a role (the admin app sends ADMIN), that role's exact-subdomain row
+     * beats the wildcard row. Without one, the long-standing order applies.
+     */
+    public Optional<DomainRoutingResolveResponse> resolve(String domain, String subdomain, String role) {
         if (!StringUtils.hasText(domain) || !StringUtils.hasText(subdomain)) {
             return Optional.empty();
         }
 
-        return routingRepository.resolveMapping(domain.trim(), subdomain.trim())
-                .flatMap(this::buildResponse);
+        Optional<InstituteDomainRouting> mapping = StringUtils.hasText(role)
+                ? routingRepository.resolveMappingForRole(domain.trim(), subdomain.trim(), role.trim())
+                : routingRepository.resolveMapping(domain.trim(), subdomain.trim());
+        return mapping.flatMap(this::buildResponse);
     }
 
     /**

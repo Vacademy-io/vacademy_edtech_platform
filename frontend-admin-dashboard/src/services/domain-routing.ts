@@ -299,8 +299,10 @@ export async function resolveInstituteForCurrentHost(): Promise<DomainResolveRes
         }
 
         // Add timeout to prevent indefinite hanging on slow/failing requests
+        // role=ADMIN: this host's own ADMIN row wins over a learner wildcard row
+        // on the same domain (its signup flag, theme and redirect).
         const { data } = await axios.get<DomainResolveResponse>(DOMAIN_ROUTING_RESOLVE, {
-            params: { domain, subdomain },
+            params: { domain, subdomain, role: 'ADMIN' },
             timeout: 5000, // 5 second timeout
         });
         return data;
