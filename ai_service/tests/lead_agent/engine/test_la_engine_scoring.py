@@ -149,6 +149,24 @@ def test_competitor_enterprise_and_micro_carry_risk():
     assert any("Classplus" in r for r in reasons)  # flagged leads are never AUTO
 
 
+def test_a_list_can_take_competitor_users_without_review():
+    pages = [PageText(1, SITE, "home", "Alpha", TYPICAL_HOME)]
+    lead = _lead(pages, [("institute_phone", "+91 98450 12345", SITE, "mobile")], TYPICAL_SIGNALS)
+    classplus = [{"key": "classplus", "name": "Classplus", "kind": "lms", "competitor": True, "evidence": "x", "url": SITE}]
+    flagged = score_lead(lead, BRIEF, classplus, {}, today=TODAY)
+    assert flagged["flags"] == ["competitor_platform:classplus"] and flagged["risk"] == 40
+    bars = {"auto_score": flagged["base_score"], "review_score": 0, "min_contact": "likely"}
+    assert gate(flagged, lead, bars)[0] == "REVIEW"            # by default a person decides on the switch pitch
+    decision, reasons = gate(flagged, lead, {**bars, "auto_competitor_users": True})
+    assert decision == "AUTO", reasons                          # judged without the competitor penalty
+    assert reasons[0].startswith(f"Score {flagged['base_score']} ") and "competitor" in reasons[1]
+    # the other risks still count, and a very large organisation still waits for a person
+    micro = score_lead(lead, BRIEF, classplus, {"tier": "micro", "micro_hint": "home tuition"}, today=TODAY)
+    assert gate(micro, lead, {**bars, "auto_competitor_users": True})[0] == "REVIEW"
+    big = score_lead(lead, BRIEF, classplus, {"tier": "enterprise"}, today=TODAY)
+    assert gate(big, lead, {"auto_score": 0, "review_score": 0, "auto_competitor_users": True})[0] == "REVIEW"
+
+
 @pytest.mark.parametrize("written, days", [
     ("3 days ago", 3), ("Posted 2 weeks ago", 14), ("a month ago", 30), ("30+ days ago", 30), ("today", 0),
     ("yesterday", 1), ("24 September 2026", 31), ("24th Sep 2026", 31), ("2026-10-03", 22), ("Sep 2026", 40),

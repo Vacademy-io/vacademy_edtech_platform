@@ -36,7 +36,9 @@ EXTRACT_MAX_TOKENS = 6000  # reasoning counts as output (llm.REASONING_EFFORT)
 LOOKUP_MAX_TOKENS = 3000  # ~1,500 of it can be reasoning
 LLM_RETRY_S = 600
 INVALID_RETRY_S = 1800
-DEFAULT_GATE = {"auto_score": 70, "review_score": 45, "min_contact": "likely", "require_intent": False}
+DEFAULT_GATE = {"auto_score": 70, "review_score": 45, "min_contact": "likely", "require_intent": False,
+                "auto_competitor_users": False}
+REGATE_MAX = 1000
 
 
 class Rejected(Exception):
@@ -278,4 +280,23 @@ async def research_candidate(candidate_id: str) -> Optional[str]:
     return await asyncio.to_thread(_save, cand, agent, result)
 
 
-__all__ = ["Rejected", "pipeline", "research_candidate", "last10"]
+def regate_waiting(db, agent: Dict[str, Any]) -> int:
+    """The leads waiting for review, gated again with the agent's current gate (an admin lowered
+    the bar or let competitor users through): those it now passes go on to delivery, as research
+    would have sent them. Nothing is rejected or held back here. Returns how many moved."""
+    gate_cfg = {**DEFAULT_GATE, **(agent.get("gate_json") or {})}
+    rows, _total = store.list_candidates(db, agent["id"], status="REVIEW", page=0, size=REGATE_MAX)
+    moved = 0
+    for cand in rows:
+        scored, lead = cand.get("score_json"), cand.get("lead_json")
+        if not isinstance(scored, dict) or not isinstance(lead, dict):
+            continue
+        decision, reasons = engine_api.gate(scored, lead, gate_cfg)
+        if decision == "AUTO" and store.set_candidate(
+                db, cand["id"], expect=["REVIEW"], status="APPROVED", decision="AUTO",
+                score_json={**scored, "gate_reasons": list(reasons)}, not_before="now()"):
+            moved += 1
+    return moved
+
+
+__all__ = ["Rejected", "pipeline", "research_candidate", "regate_waiting", "last10"]

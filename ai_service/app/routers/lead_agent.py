@@ -29,7 +29,7 @@ from sqlalchemy.exc import IntegrityError
 from ..core.security import get_pinned_principal
 from ..schemas.auth import PinnedPrincipal
 from ..services.lead_agent import db as ladb
-from ..services.lead_agent import engine_api, ext_auth, fetcher, flags, llm, models, pacing, store
+from ..services.lead_agent import engine_api, ext_auth, fetcher, flags, llm, models, pacing, research, store
 
 logger = logging.getLogger(__name__)
 
@@ -209,10 +209,20 @@ def _update_agent(db, s: Staff, agent_id: str, body: models.AgentUpdate) -> Dict
     if body.mode is not None:
         fields["mode"] = body.mode
     if body.gate is not None:
-        fields["gate_json"] = body.gate.model_dump()
+        # A setting the request leaves out keeps its saved value: a screen that does not know
+        # auto_competitor_users must not switch it off by saving the bars.
+        saved = {k: v for k, v in (current.get("gate_json") or {}).items() if k in models.Gate.model_fields}
+        try:
+            fields["gate_json"] = models.Gate(**{**saved, **body.gate.model_dump(exclude_unset=True)}).model_dump()
+        except ValueError as exc:
+            raise _err(status.HTTP_422_UNPROCESSABLE_ENTITY, "invalid_gate", str(exc)[:300]) from None
     if body.window is not None:
         fields["window_json"] = body.window.model_dump()
     row = store.update_agent(db, agent_id, s.institute_id, fields)
+    if "gate_json" in fields and fields["gate_json"] != current.get("gate_json"):
+        moved = research.regate_waiting(db, row)
+        if moved:
+            logger.info("lead agent %s: %d lead(s) waiting for review pass the new gate", agent_id, moved)
     return _agent_view(db, row)
 
 

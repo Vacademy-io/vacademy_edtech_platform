@@ -162,6 +162,42 @@ def test_candidates_and_decisions(client, la_db):
     assert stats == []
 
 
+def test_a_new_gate_passes_the_waiting_leads_it_now_accepts(client, la_db):
+    agent = make_world(la_db)
+    lead = {"organisation": {"name": "A", "city": "Indore"},
+            "contacts": [{"kind": "institute_phone", "value": "+91 98765 12345", "quality": "likely"}],
+            "contact_quality": {"level": "likely", "label": "Desk mobile"}}
+    plain = make_candidate(la_db, agent, "a.in", status="REVIEW", score=55, decision="REVIEW", lead_json=lead,
+                           score_json={"score": 55, "base_score": 55, "risk": 0, "flags": []})
+    switcher = make_candidate(la_db, agent, "b.in", status="REVIEW", score=40, decision="REVIEW", lead_json=lead,
+                              score_json={"score": 40, "base_score": 60, "risk": 40,
+                                          "flags": ["competitor_platform:appx"]})
+    big = make_candidate(la_db, agent, "c.in", status="REVIEW", score=50, decision="REVIEW", lead_json=lead,
+                         score_json={"score": 50, "base_score": 65, "risk": 30, "flags": ["enterprise"]})
+
+    def status_of(c):
+        return client.get(f"{BASE}/candidates/{c['id']}").json()["status"]
+
+    r = client.put(f"{BASE}/agents/{agent['id']}", json={"gate": {"auto_score": 50, "review_score": 45}})
+    assert r.status_code == 200 and r.json()["review_waiting"] == 2
+    assert [status_of(c) for c in (plain, switcher, big)] == ["APPROVED", "REVIEW", "REVIEW"]
+    r = client.put(f"{BASE}/agents/{agent['id']}", json={"gate": {"auto_competitor_users": True}})
+    assert r.json()["gate"] == {"auto_score": 50, "review_score": 45, "min_contact": "likely",
+                                "require_intent": False, "auto_competitor_users": True}
+    assert [status_of(c) for c in (switcher, big)] == ["APPROVED", "REVIEW"] and r.json()["review_waiting"] == 1
+    with la_db() as db:
+        row = store.get_candidate(db, switcher["id"])
+    assert row["decision"] == "AUTO" and row["reviewed_by"] is None
+    assert "competitor" in row["score_json"]["gate_reasons"][1]
+    # saving the bars from a screen that does not know the new setting keeps it
+    r = client.put(f"{BASE}/agents/{agent['id']}", json={"gate": {"auto_score": 60, "review_score": 45,
+                                                                   "min_contact": "likely", "require_intent": False}})
+    assert r.json()["gate"]["auto_competitor_users"] is True and r.json()["gate"]["auto_score"] == 60
+    # a merge that breaks the bars' order is refused, not saved
+    r = client.put(f"{BASE}/agents/{agent['id']}", json={"gate": {"review_score": 65}})
+    assert r.status_code == 422 and client.get(f"{BASE}/agents/{agent['id']}").json()["gate"]["review_score"] == 45
+
+
 def test_suppressions_normalise(client):
     r = client.post(f"{BASE}/suppressions", json={"kind": "DOMAIN", "value": "https://WWW.Allen.in/kota",
                                                   "reason": "COMPETITOR"})

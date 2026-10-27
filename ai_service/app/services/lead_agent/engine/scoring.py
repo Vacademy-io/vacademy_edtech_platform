@@ -70,7 +70,8 @@ REVIEW_FLAGS = ("competitor_platform", "enterprise")
 HARD_REJECT_FLAGS = ("no_contact", "site_unreadable", "not_target_segment", "excluded_kind", "deal_breaker",
                      "sells_the_offer")
 
-DEFAULT_GATE = {"auto_score": 70, "review_score": 45, "min_contact": "likely", "require_intent": False}
+DEFAULT_GATE = {"auto_score": 70, "review_score": 45, "min_contact": "likely", "require_intent": False,
+                "auto_competitor_users": False}
 
 
 def _clamp(value: float) -> int:
@@ -368,18 +369,26 @@ def gate(scored: dict, lead: dict, gate_cfg: dict) -> tuple[str, list[str]]:
     (competitor platform, enterprise) whose score is below the bar only because of that flag's risk
     penalty goes to REVIEW instead, so a salesperson decides on the switch pitch.
     AUTO: score >= auto_score, the best contact at least min_contact, a buying signal when
-    require_intent, and no review flag. Otherwise REVIEW."""
+    require_intent, and no review flag. Otherwise REVIEW.
+    auto_competitor_users: a list that takes organisations on a competitor's platform like any
+    other; they are judged on their score without that penalty and the flag holds nothing back."""
     cfg = {**DEFAULT_GATE, **{k: v for k, v in (gate_cfg or {}).items() if v is not None}}
     auto_bar, review_bar = int(cfg["auto_score"]), int(cfg["review_score"])
     min_contact = cfg["min_contact"] if cfg["min_contact"] in CONTACT_ORDER else DEFAULT_GATE["min_contact"]
     flags = list(scored.get("flags") or [])
     score = int(scored.get("score") or 0)
+    switch_ok = bool(cfg.get("auto_competitor_users")) and any(
+        _flag_kind(f) == "competitor_platform" for f in flags)
+    if switch_ok:  # the other risks (enterprise, micro) still count
+        score = _clamp(int(scored.get("base_score") or 0)
+                       - WEIGHT_RISK * max(0, int(scored.get("risk") or 0) - RISK_COMPETITOR))
 
     hard = [f for f in flags if _flag_kind(f) in HARD_REJECT_FLAGS]
     if hard:
         return "REJECT", [_flag_words(f) for f in hard]
 
-    review_flags = [f for f in flags if _flag_kind(f) in REVIEW_FLAGS]
+    review_flags = [f for f in flags if _flag_kind(f) in REVIEW_FLAGS
+                    and not (switch_ok and _flag_kind(f) == "competitor_platform")]
     flag_words = [_flag_words(f) for f in review_flags]
     if score < review_bar:
         if review_flags and int(scored.get("base_score") or 0) >= review_bar:
@@ -397,7 +406,10 @@ def gate(scored: dict, lead: dict, gate_cfg: dict) -> tuple[str, list[str]]:
         blockers.append("No buying signal, and this list requires one")
     blockers += flag_words
     if not blockers:
-        return "AUTO", [f"Score {score} meets the auto-deliver bar ({auto_bar}) with a {level} contact"]
+        met = [f"Score {score} meets the auto-deliver bar ({auto_bar}) with a {level} contact"]
+        if switch_ok:
+            met.append("Already uses a competitor's platform: this list takes them without review")
+        return "AUTO", met
     return "REVIEW", blockers
 
 

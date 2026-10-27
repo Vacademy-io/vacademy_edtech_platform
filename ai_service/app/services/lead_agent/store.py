@@ -34,7 +34,8 @@ ONLINE_SECONDS = 90
 
 AGENT_STATUSES = ("ACTIVE", "PAUSED", "ARCHIVED")
 # The V612 column defaults (bound as parameters: a ':' inside SQL text would read as a bind).
-DEFAULT_GATE_JSON = {"auto_score": 70, "review_score": 45, "min_contact": "likely", "require_intent": False}
+DEFAULT_GATE_JSON = {"auto_score": 70, "review_score": 45, "min_contact": "likely", "require_intent": False,
+                     "auto_competitor_users": False}
 DEFAULT_WINDOW_JSON = {"tz": "Asia/Kolkata", "start": "09:30", "end": "19:00", "days": [1, 2, 3, 4, 5, 6]}
 MODES = ("LOCAL", "REMOTE", "AUTO")
 OPEN_STATUSES = ("DISCOVERED", "FETCHING", "READY", "RESEARCHING", "APPROVED")

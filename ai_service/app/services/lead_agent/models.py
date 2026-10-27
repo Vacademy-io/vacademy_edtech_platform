@@ -169,6 +169,7 @@ class Gate(BaseModel):
     review_score: int = Field(default=45, ge=0, le=100)
     min_contact: ContactLevel = "likely"
     require_intent: bool = False
+    auto_competitor_users: bool = False
 
     @model_validator(mode="after")
     def _order(self) -> "Gate":
