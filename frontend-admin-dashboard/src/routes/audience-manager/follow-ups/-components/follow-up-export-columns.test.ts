@@ -42,6 +42,8 @@ const LABELS: ExportColumnLabels = {
     studentResponse: 'Student response',
     followUpMode: 'Follow-up mode',
     nextAction: 'Next action',
+    activityNotes: 'Activity & Notes',
+    leadJourney: 'Lead Journey',
 };
 
 describe('exportCustomFields', () => {
@@ -98,7 +100,7 @@ describe('buildExportHeader', () => {
     it('appends one column per custom field, so a Courses field becomes a Courses column', () => {
         const header = buildExportHeader(LABELS, [{ id: 'cf-course', label: 'Courses' }]);
         expect(header[header.length - 1]).toBe('Courses');
-        expect(header).toHaveLength(13);
+        expect(header).toHaveLength(15);
     });
 });
 
@@ -132,6 +134,8 @@ describe('rows line up with the header', () => {
             'Not reachable',
             'CALL',
             'Call again',
+            '',
+            '',
             'ADCT OFFLINE PUNE',
         ]);
     });
@@ -164,7 +168,41 @@ describe('rows line up with the header', () => {
         // both land in the note column.
         expect(row[8]).toBe('Spoke, wants next batch — Not interested');
         expect(row[4]).toBe('Aparna Gaikwad');
-        expect(row[12]).toBe('ADCT OFFLINE PUNE');
+        expect(row[14]).toBe('ADCT OFFLINE PUNE');
+    });
+
+    // The table's Activity column was on screen but not in the CSV.
+    it('carries the Activity & Notes and lead journey the table shows', () => {
+        const note = {
+            id: 'n1',
+            action_type: 'NOTE',
+            title: 'Note',
+            description: '<p>CNR, call tomorrow</p>',
+            actor_name: 'Simran',
+            created_at: '2026-10-27T09:21:00Z',
+        };
+        const status = {
+            ...note,
+            id: 's1',
+            title: 'Status changed',
+            description: 'New → Call Back',
+        };
+        const header = buildExportHeader(LABELS, fields);
+        const row = leadToExportRow({}, 'Asha', '', '', '', fields, {
+            notes: { recent: [note], count: 1 },
+            journey: [status, note],
+        });
+        const notesCell = row[header.indexOf('Activity & Notes')]!;
+        const journeyCell = row[header.indexOf('Lead Journey')]!;
+        expect(notesCell).toContain('Note: CNR, call tomorrow (Simran)');
+        expect(notesCell).not.toContain('<p>');
+        expect(journeyCell.split('\n')).toHaveLength(2);
+        expect(journeyCell).toContain('Status changed: New → Call Back (Simran)');
+
+        const done = completedToExportRow({ lead_user_id: 'u9' } as CompletedFollowUp, fields, {
+            notes: { recent: [note], count: 1 },
+        });
+        expect(done[header.indexOf('Activity & Notes')]).toContain('CNR, call tomorrow');
     });
 
     it('writes an empty cell, never "undefined", for anything the lead has not got', () => {

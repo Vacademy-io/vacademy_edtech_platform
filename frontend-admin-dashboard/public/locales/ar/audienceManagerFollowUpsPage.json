@@ -118,7 +118,9 @@
             "followUpNote": "ملاحظة المتابعة",
             "studentResponse": "رد الطالب",
             "followUpMode": "طريقة المتابعة",
-            "nextAction": "الإجراء التالي"
+            "nextAction": "الإجراء التالي",
+            "activityNotes": "النشاط والملاحظات",
+            "leadJourney": "رحلة العميل المحتمل (التصرف والملاحظات)"
         },
         "progress": "جارٍ تصدير المتابعات… {{done}} من {{total}}",
         "done_one": "تم تصدير متابعة واحدة",
