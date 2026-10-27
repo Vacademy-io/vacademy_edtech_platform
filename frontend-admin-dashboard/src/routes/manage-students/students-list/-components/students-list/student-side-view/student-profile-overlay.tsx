@@ -64,6 +64,7 @@ import { StudentPaymentHistory } from './student-payment-history/student-payment
 import { StudentEnquiry } from './student-enquiry/student-enquiry';
 import { StudentApplication } from './student-application/student-application';
 import { StudentLeadProfile } from './student-lead-profile/student-lead-profile';
+import { LeadFormResponseCard } from '@/routes/audience-manager/list/-components/campaign-users/lead-form-response-card';
 import { StudentFullHistory } from './student-full-history/student-full-history';
 import { StudentParentProfile } from './student-parent/student-parent-profile';
 import { StudentOnboardingProfile } from './student-onboarding/student-onboarding-profile';
@@ -261,8 +262,16 @@ export const StudentProfileOverlay = () => {
             case 'application':
                 return <StudentApplication />;
             case 'lead':
+                // Form answers first — same order as the side sheet's Lead tab.
                 return (
-                    <StudentLeadProfile userId={selectedStudent.user_id || selectedStudent.id} />
+                    <div className="flex flex-col gap-3">
+                        <LeadFormResponseCard
+                            loadSavedResponses={!leadSettings.isLoading && !!leadSettings.enabled}
+                        />
+                        <StudentLeadProfile
+                            userId={selectedStudent.user_id || selectedStudent.id}
+                        />
+                    </div>
                 );
             case 'fullHistory':
                 return (
