@@ -28,6 +28,8 @@ export interface SiteSearchItem {
   notifyAudienceId?: string;
   /** A stream or category that is not open yet (shows the "coming soon" tag). */
   comingSoon?: boolean;
+  /** A course's preview artwork (media id or URL); shown instead of the kind icon. */
+  image?: string;
 }
 
 export interface RankedSearchItem extends SiteSearchItem {
@@ -223,6 +225,27 @@ export const courseSitePath = (row: CourseSearchRow, pageRoute: string | null): 
 export const courseIdOf = (row: CourseSearchRow): string =>
   (row.id || row.package_id || row.packageId || "").trim();
 
+/** The artwork a catalogue card shows (same priority); "null" strings count as none. */
+export const courseImageOf = (row: CourseSearchRow): string | undefined =>
+  [row.course_preview_image_media_id, row.course_banner_media_id, row.thumbnail_file_id]
+    .map((v) => (v || "").trim())
+    .find((v) => v && v !== "null");
+
+/**
+ * Rows of a by-name search merged into the full list: the full list is capped
+ * (a large catalogue does not fit one page), so a course past the cap is still
+ * found by its name. Rows of a course already in `base` are dropped.
+ */
+export const mergeCourseRows = (
+  base: CourseSearchRow[] | null | undefined,
+  extra: CourseSearchRow[] | null | undefined,
+): CourseSearchRow[] => {
+  const rows = Array.isArray(base) ? base : [];
+  if (!Array.isArray(extra) || !extra.length) return rows;
+  const known = new Set(rows.map(courseIdOf).filter(Boolean));
+  return [...rows, ...extra.filter((row) => row && !known.has(courseIdOf(row)))];
+};
+
 /**
  * The version of a course a result opens — the one a merged catalogue card
  * opens: the visitor's course language (read from the level name, e.g.
@@ -286,6 +309,7 @@ export const courseSearchItems = (
       subtitle: row.level_name && row.level_name.toUpperCase() !== "DEFAULT" ? translate(row.level_name) : undefined,
       keywords: [...keywords],
       link: href ? { href, external: false } : null,
+      image: courseImageOf(row) ?? versions.map(courseImageOf).find(Boolean),
     });
   }
   return out;

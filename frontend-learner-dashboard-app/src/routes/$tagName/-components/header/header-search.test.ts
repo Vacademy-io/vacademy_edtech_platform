@@ -3,9 +3,11 @@ import type { PublicFolderNode } from "../../-services/folder-library-service";
 import { buildMegaMenuModel } from "./mega-menu-model";
 import { DEFAULT_COURSE_LANGUAGES } from "../../-utils/course-variants";
 import {
+  courseImageOf,
   courseSearchItems,
   courseSitePath,
   groupSearchResults,
+  mergeCourseRows,
   normalizeSearchText,
   pageSearchItems,
   pickCourseVersion,
@@ -218,5 +220,33 @@ describe("courseSearchItems", () => {
     ).toBe("/c1?enrollInviteId=inv&packageSessionId=ps-hi&bannerImage=media-1&level=Hindi");
     expect(courseSitePath({ id: "c1" }, "toddler-reset")).toBe("/toddler-reset");
     expect(courseSitePath({}, null)).toBeNull();
+  });
+});
+
+describe("course search artwork and by-name rows", () => {
+  it("picks the card's image, skipping blanks and the string null", () => {
+    expect(courseImageOf({ course_preview_image_media_id: "p", course_banner_media_id: "b" })).toBe("p");
+    expect(courseImageOf({ course_preview_image_media_id: "null", course_banner_media_id: " b " })).toBe("b");
+    expect(courseImageOf({ course_preview_image_media_id: "", thumbnail_file_id: "t" })).toBe("t");
+    expect(courseImageOf({})).toBeUndefined();
+  });
+
+  it("gives each course result its artwork", () => {
+    const [course] = courseSearchItems(
+      [{ id: "c1", package_name: "Budget 2026", course_preview_image_media_id: "media-1" }],
+      { hrefFor: () => "/c1" },
+    );
+    expect(course.image).toBe("media-1");
+  });
+
+  it("adds by-name rows of courses the capped full list does not have", () => {
+    const base = [{ id: "c1", package_name: "A" }];
+    const merged = mergeCourseRows(base, [
+      { id: "c1", package_name: "A (Hindi)" },
+      { id: "c2", package_name: "B" },
+    ]);
+    expect(merged.map((r) => r.package_name)).toEqual(["A", "B"]);
+    expect(mergeCourseRows(undefined, [{ id: "c3", package_name: "C" }])).toHaveLength(1);
+    expect(mergeCourseRows(base, undefined)).toBe(base);
   });
 });
