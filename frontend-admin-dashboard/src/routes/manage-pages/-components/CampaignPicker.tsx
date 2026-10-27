@@ -105,7 +105,13 @@ export const CampaignPicker = ({
                     status: 'ACTIVE',
                     institute_custom_fields: websiteFormFields(instituteId),
                 },
-                { headers: { Authorization: `Bearer ${getTokenFromCookie(TokenKey.accessToken)}` } }
+                {
+                    headers: {
+                        Authorization: `Bearer ${getTokenFromCookie(TokenKey.accessToken)}`,
+                        // The list is created in this institute; admin-core checks the caller is staff there.
+                        ...(instituteId ? { clientId: instituteId } : {}),
+                    },
+                }
             );
             return { id: String(newId).replace(/^"|"$/g, ''), name: campaignName };
         },
