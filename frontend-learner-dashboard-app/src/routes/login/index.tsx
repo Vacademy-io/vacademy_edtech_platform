@@ -46,7 +46,7 @@ function RouteComponent() {
   const domainRouting = useDomainRouting();
   const [keepPage] = useState(() => needsFullPage(window.location.search));
   // null = still deciding; the institute's signup.loginPageAsModal picks the view.
-  const [modalView, setModalView] = useState<{ startOnSignup: boolean } | false | null>(
+  const [modalView, setModalView] = useState<boolean | null>(
     keepPage ? false : null,
   );
 
@@ -56,15 +56,7 @@ function RouteComponent() {
     // Fresh read: the 24h local copy would hide a newly enabled popup.
     getPublicStudentDisplaySettings(domainRouting.instituteId, { skipLocalCache: true })
       .then((settings) => {
-        if (cancelled) return;
-        const signup = settings?.signup;
-        const providers = signup?.providers;
-        // Same rule as useSignupAvailability: signup must be on and offer a
-        // provider the signup screen can render, else open on Sign in.
-        const startOnSignup =
-          signup?.enabled !== false &&
-          (!providers || !!(providers.google || providers.github || providers.emailOtp));
-        setModalView(signup?.loginPageAsModal === true ? { startOnSignup } : false);
+        if (!cancelled) setModalView(settings?.signup?.loginPageAsModal === true);
       })
       .catch(() => {
         if (!cancelled) setModalView(false);
@@ -135,7 +127,9 @@ function RouteComponent() {
         )}
         <AuthModal
           ref={signupModalRef}
-          initialMode={modalView.startOnSignup ? "signup" : "login"}
+          // Visitors reach /login from a Login button, so open on Sign in;
+          // "Sign up here" inside the popup switches to Create Account.
+          initialMode="login"
           onSignupSuccess={handleSignupSuccess}
           onClose={handleModalClose}
           blurBackdrop={!!rootTag}

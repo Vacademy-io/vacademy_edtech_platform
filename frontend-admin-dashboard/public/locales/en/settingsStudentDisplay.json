@@ -86,7 +86,7 @@
         "presentationPage": "page (navigate to /login)",
         "presentationModal": "modal (open in-place)",
         "loginPageAsModal": "Open login page as popup",
-        "loginPageAsModalHint": "On: /login shows the Create Account popup (with Sign in below) instead of the full login page."
+        "loginPageAsModalHint": "On: /login opens the Sign in popup (with Sign up inside it) over the site instead of the full login page."
     },
     "courseSettings": {
         "cardTitle": "Course Settings",
