@@ -85,6 +85,10 @@ def normalize_lesson_plan(raw: Any) -> Optional[Dict[str, Any]]:
     layout = str(raw.get("layout") or "auto").strip().lower()
     if layout not in LAYOUT_PREFERENCES:
         layout = "auto"
+    if layout == "board":
+        # "Board only" never shows the teacher, so render none: video feadce4b
+        # (2026-10-27) paid Spatius for 270 s of teacher video nobody saw.
+        teacher = None
     if teacher is None:
         layout = "board"
     subject = str(raw.get("subject") or "").strip()[:80] or None

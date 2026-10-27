@@ -982,11 +982,20 @@ export const AIContentPlayer: React.FC<AIContentPlayerProps> = ({
 
         if (navigationMode === 'time_driven') {
             // For VIDEO: find all entries active at current time
-            const active = entries.filter((entry) => {
+            const endOf = (entry: (typeof entries)[number]) => entry.exitTime ?? entry.end ?? Infinity;
+            let active = entries.filter((entry) => {
                 const start = entry.inTime ?? entry.start ?? 0;
-                const end = entry.exitTime ?? entry.end ?? Infinity;
-                return currentTime >= start && currentTime < end;
+                return currentTime >= start && currentTime < endOf(entry);
             });
+            // At (or past) the very end every exitTime is <= currentTime, which
+            // left "No content available" as the last frame. Hold the entries
+            // that end last instead.
+            if (active.length === 0) {
+                const lastEnd = Math.max(...entries.map(endOf));
+                if (Number.isFinite(lastEnd) && currentTime >= lastEnd) {
+                    active = entries.filter((entry) => endOf(entry) === lastEnd);
+                }
+            }
 
             active.sort((a, b) => (a.z ?? 0) - (b.z ?? 0));
 

@@ -36,6 +36,13 @@ def test_no_teacher_means_board_only():
     assert not lm.has_teacher(plan)
 
 
+def test_board_only_drops_a_picked_teacher():
+    # Board only never shows the teacher, so no Spatius video is rendered.
+    plan = lm.normalize_lesson_plan({**TEACHER, "layout": "board"})
+    assert plan["teacher"] is None and plan["layout"] == "board"
+    assert not lm.has_teacher(plan)
+
+
 def test_unknown_layout_falls_back_to_auto():
     plan = lm.normalize_lesson_plan({**TEACHER, "layout": "sideways"})
     assert plan["layout"] == "auto" and lm.has_teacher(plan)
