@@ -27,8 +27,9 @@ public class DomainRoutingController {
     @GetMapping("/resolve")
     @ClientCacheable(maxAgeSeconds = 7200, scope = CacheScope.PRIVATE)
     public ResponseEntity<DomainRoutingResolveResponse> resolveGet(@RequestParam("domain") String domain,
-                                                                   @RequestParam("subdomain") String subdomain) {
-        Optional<DomainRoutingResolveResponse> response = domainRoutingService.resolve(domain, subdomain);
+                                                                   @RequestParam("subdomain") String subdomain,
+                                                                   @RequestParam(value = "role", required = false) String role) {
+        Optional<DomainRoutingResolveResponse> response = domainRoutingService.resolve(domain, subdomain, role);
         return response.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
