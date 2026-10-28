@@ -129,8 +129,8 @@ public class EngagementDispatchJob {
             actionRepository.withdrawDueSend(action.getId(), "Not sent: this person opted out after the decision.", now);
             return false;
         }
-        String leadGone = leadNotSendableReason(
-                policyGate.leadBlock(instituteId, member.getAudienceResponseId()), action);
+        String leadGone = leadNotSendableReason(PolicyGate.effectiveLeadBlock(
+                policyGate.leadBlock(instituteId, member.getAudienceResponseId()), engine, member), action);
         if (leadGone != null) {
             actionRepository.withdrawDueSend(action.getId(), leadGone, now);
             return false;
@@ -273,14 +273,18 @@ public class EngagementDispatchJob {
      * The lead row, re-checked at send time (F2 / L3): the consent store is keyed by user_id, so
      * without this an unconverted lead who opted out in the CRM was still sent to. An AI-call
      * promise is withdrawn only on an opt-out: the person asked for it on the call, and a lead
-     * row the admin tidied away since is no reason to break that promise.
+     * row the admin tidied away (or marked Converted) since is no reason to break that promise.
      */
     static String leadNotSendableReason(PolicyGate.LeadBlock block, EngagementAction action) {
         if (block == PolicyGate.LeadBlock.OPTED_OUT) {
             return "Not sent: this lead opted out in the CRM after the decision.";
         }
-        if (block == PolicyGate.LeadBlock.EXITED && !EngagementAction.SOURCE_AI_CALL.equals(action.getSource())) {
+        boolean promise = EngagementAction.SOURCE_AI_CALL.equals(action.getSource());
+        if (block == PolicyGate.LeadBlock.EXITED && !promise) {
             return "Not sent: this lead was removed from the CRM after the decision.";
+        }
+        if (block == PolicyGate.LeadBlock.CONVERTED && !promise) {
+            return "Not sent: this lead was marked Converted in the CRM after the decision.";
         }
         return null;
     }

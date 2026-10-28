@@ -80,7 +80,17 @@ public class EngagementReplyResponder {
 
     /** Mentions stopping or disinterest without an explicit opt-out: a human reads it, never the bot. */
     static final Pattern STOP_MENTION = Pattern.compile(
-            "(?i)(?:^|[^\\p{L}])(stop|stopped|not interested|no interest|leave me|spam)(?:$|[^\\p{L}])");
+            "(?i)(?:^|[^\\p{L}])(stop|stopped|not interested|no interest|leave me|spam"
+            + "|interested nahi|interest nahi|nahi chahiye|call mat (?:karo|karna|kijiye)|disturb mat)(?:$|[^\\p{L}])");
+
+    /**
+     * Asks to be called (back, later, at a time). A person answers it: an auto-reply would promise
+     * a call nobody schedules. en + Hinglish.
+     */
+    static final Pattern CALLBACK = Pattern.compile(
+            "(?i)(?:^|[^\\p{L}])(call (?:me )?back|callback|call (?:me )?(?:later|tomorrow)"
+            + "|(?:baad|bad) (?:mein|me|main) (?:call|phone|baat)|kal (?:call|phone|baat)"
+            + "|(?:call|phone) (?:karo|karna|kijiye|kar do|kar dena) (?:baad|kal|shaam|subah))(?:$|[^\\p{L}])");
 
     /**
      * Links in a drafted auto-answer: schemed URLs, www.-prefixed, AND bare domain/path tokens
@@ -293,14 +303,16 @@ public class EngagementReplyResponder {
      * A reply that no engine auto-answers. Only a request to stop is acted on here; every other
      * reply is surfaced by the sweep as before (the reply job already pulled the member due).
      * A clear opt-out opts the number out of every engine of the institute and leaves a note in the
-     * inbox. A softer mention ("not interested", "stop") becomes a human task, and the matching
-     * members are marked handled so the sweep does not draft a fresh proactive message meanwhile.
+     * inbox. A softer mention ("not interested", "stop") or a request to be called back becomes a
+     * human task, and the matching members are marked handled so the sweep does not draft a fresh
+     * proactive message meanwhile.
      */
     boolean handleStopWithoutAutoReply(String instituteId, String phone10, String replyText,
                                        String wamid, Instant now) {
         boolean optOut = OPT_OUT.matcher(replyText).find();
         boolean stopMention = !optOut && STOP_MENTION.matcher(replyText).find();
-        if (!optOut && !stopMention) return false;
+        boolean callback = !optOut && !stopMention && CALLBACK.matcher(replyText).find();
+        if (!optOut && !stopMention && !callback) return false;
         if (replyMemberQueries == null) return false;
 
         List<EngagementReplyMemberQueries.LiveMember> live =
@@ -331,8 +343,11 @@ public class EngagementReplyResponder {
             return true;
         }
 
-        note.setRationale(cap("Escalated (stop-mention): they may be asking to stop or saying they are not "
-                + "interested. Read it before anyone messages them again. Their message: " + replyText));
+        note.setRationale(cap(callback
+                ? "Escalated (callback): they asked to be called back. Schedule the call; the engine "
+                        + "drafts nothing new for them until its next check. Their message: " + replyText
+                : "Escalated (stop-mention): they may be asking to stop or saying they are not "
+                        + "interested. Read it before anyone messages them again. Their message: " + replyText));
         actionRepository.save(note);
         for (EngagementReplyMemberQueries.LiveMember m : live) {
             long cadence = m.getCadenceHours() != null ? Math.max(m.getCadenceHours(), 1) : 72;
@@ -370,6 +385,9 @@ public class EngagementReplyResponder {
         }
         if (STOP_MENTION.matcher(inbound).find()) {
             return "Reply may be asking to stop or saying they are not interested — human review required.";
+        }
+        if (CALLBACK.matcher(inbound).find()) {
+            return "Reply asks for a call back — a person should schedule the call.";
         }
         if (ESCALATE_TRIPWIRE.matcher(inbound).find()) {
             return "Reply mentions money/anger/legal terms — human review required.";

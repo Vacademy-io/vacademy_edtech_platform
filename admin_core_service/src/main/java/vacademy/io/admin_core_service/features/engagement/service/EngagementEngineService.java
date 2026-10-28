@@ -147,9 +147,12 @@ public class EngagementEngineService {
     public EnrollmentResult enrollAndReconcile(String engineId, String instituteId) {
         EngagementEngine engine = requireEngine(engineId, instituteId);
 
-        record Target(String userId, String audienceResponseId) {}
+        record Target(String userId, String audienceResponseId, String phone10) {}
         List<Target> raw = new ArrayList<>();
         java.util.Set<String> userSelectorIds = new java.util.LinkedHashSet<>();
+        // A lead the CRM marked Converted is not enrolled where it would only be reached as a lead
+        // (PolicyGate.effectiveLeadBlock), so it leaves as EXITED instead of being revived nightly.
+        boolean targetsLearners = PolicyGate.targetsLearners(engine);
         try {
             JsonNode selectors = objectMapper.readTree(engine.getAudience());
             for (JsonNode sel : selectors) {
@@ -157,9 +160,13 @@ public class EngagementEngineService {
                 String id = sel.path("id").asText("");
                 switch (type) {
                     case "PACKAGE_SESSION" -> dao.userIdsByPackageSession(id, instituteId)
-                            .forEach(uid -> raw.add(new Target(uid, null)));
-                    case "AUDIENCE" -> dao.leadsByAudience(id, instituteId)
-                            .forEach(row -> raw.add(new Target((String) row[1], (String) row[0])));
+                            .forEach(uid -> raw.add(new Target(uid, null, null)));
+                    case "AUDIENCE" -> dao.leadsByAudience(id, instituteId).forEach(row -> {
+                        String userId = (String) row[1];
+                        boolean converted = row.length > 3 && "CONVERTED".equals(row[3]);
+                        if (converted && (userId == null || !targetsLearners)) return;
+                        raw.add(new Target(userId, (String) row[0], row.length > 2 ? (String) row[2] : null));
+                    });
                     case "USER" -> userSelectorIds.add(id);   // validated below against the institute
                     default -> log.warn("Engine {}: unsupported audience selector type '{}' — skipped (ROLE/TAG/CUSTOM_FIELD_FILTER arrive in a later phase)",
                             engineId, type);
@@ -173,7 +180,7 @@ public class EngagementEngineService {
         // institute's user id and exfiltrate their PII through the engine's data-point reads).
         if (!userSelectorIds.isEmpty()) {
             java.util.Set<String> valid = dao.validInstituteUserIds(userSelectorIds, instituteId);
-            userSelectorIds.stream().filter(valid::contains).forEach(uid -> raw.add(new Target(uid, null)));
+            userSelectorIds.stream().filter(valid::contains).forEach(uid -> raw.add(new Target(uid, null, null)));
             userSelectorIds.stream().filter(uid -> !valid.contains(uid))
                     .forEach(uid -> log.warn("Engine {}: USER selector {} is not a member of institute {} — dropped",
                             engineId, uid, instituteId));
@@ -185,16 +192,22 @@ public class EngagementEngineService {
         // any occurrence carries one: a converted lead in an AUDIENCE keeps its respId, so the CRM
         // data points (lead status/tier/counsellor, form answers) can still hydrate. Dropping it
         // would blind exactly the lead-nurture use case an AUDIENCE engine exists for.
+        // A lead without an account is keyed by its phone, so two rows of one person (a re-enquiry,
+        // a second form) are one member; leadsByAudience lists oldest first, so the row kept is stable.
+        // Someone an engine of this institute already holds as opted out is not enrolled again.
+        OptOutMemory optedOut = OptOutMemory.of(dao.optedOutSubjects(instituteId));
         java.util.Map<String, Target> canonical = new java.util.LinkedHashMap<>();
         for (Target t : raw) {
-            String key = t.userId() != null ? "u:" + t.userId() : "l:" + t.audienceResponseId();
+            if (optedOut.covers(t.userId(), t.audienceResponseId(), t.phone10())) continue;
+            String key = t.userId() != null ? "u:" + t.userId()
+                    : t.phone10() != null ? "p:" + t.phone10() : "l:" + t.audienceResponseId();
             Target existing = canonical.get(key);
             if (existing == null) {
                 canonical.put(key, t);
             } else if (existing.audienceResponseId() == null && t.audienceResponseId() != null) {
                 // richer occurrence (has a lead row) wins — keep both ids
                 canonical.put(key, new Target(existing.userId() != null ? existing.userId() : t.userId(),
-                        t.audienceResponseId()));
+                        t.audienceResponseId(), t.phone10()));
             }
         }
 
@@ -238,9 +251,23 @@ public class EngagementEngineService {
     @Transactional
     public int enrollNewLead(String instituteId, String audienceId, String responseId, String userId) {
         int joined = 0;
+        // Looked up once, and only when some engine targets this list.
+        boolean looked = false;
+        String phone10 = null;
         for (EngagementEngine engine : engineRepository.findByInstituteIdOrderByCreatedAtDesc(instituteId)) {
             if (!"ACTIVE".equals(engine.getStatus()) && !"DRY_RUN".equals(engine.getStatus())) continue;
             if (engine.isSystemManaged() || !targetsAudience(engine, audienceId)) continue;
+            if (!looked) {
+                looked = true;
+                phone10 = dao.leadPhone10(responseId);
+                // Someone an engine already holds as opted out (same lead, account or phone) is not enrolled.
+                if (OptOutMemory.of(dao.optedOutSubjects(instituteId)).covers(userId, responseId, phone10)) {
+                    log.info("Intake lead {} not enrolled: this person opted out of the institute's engines", responseId);
+                    return 0;
+                }
+            }
+            // The same person already in this engine through another lead row: one member, not two.
+            if (dao.liveMembersForSamePerson(engine.getId(), responseId, userId, phone10) > 0) continue;
             int holdoutPct = engine.getHoldoutPct() != null ? Math.max(0, Math.min(100, engine.getHoldoutPct())) : 0;
             Instant firstLook = Instant.now().plus(java.time.Duration.ofMinutes(
                     java.util.concurrent.ThreadLocalRandom.current().nextLong(1, INTAKE_FIRST_LOOK_MAX_MINUTES + 1)));
@@ -249,6 +276,32 @@ public class EngagementEngineService {
             joined++;
         }
         return joined;
+    }
+
+    /**
+     * Who this institute's engines hold as opted out, from {@link EngagementReadDao#optedOutSubjects}:
+     * a person is covered by their account, their lead row or their phone.
+     */
+    record OptOutMemory(java.util.Set<String> userIds, java.util.Set<String> responseIds, java.util.Set<String> phones) {
+        static OptOutMemory of(List<Object[]> rows) {
+            java.util.Set<String> users = new java.util.HashSet<>();
+            java.util.Set<String> responses = new java.util.HashSet<>();
+            java.util.Set<String> phones = new java.util.HashSet<>();
+            if (rows != null) {
+                for (Object[] r : rows) {
+                    if (r.length > 0 && r[0] != null) users.add((String) r[0]);
+                    if (r.length > 1 && r[1] != null) responses.add((String) r[1]);
+                    if (r.length > 2 && r[2] != null) phones.add((String) r[2]);
+                }
+            }
+            return new OptOutMemory(users, responses, phones);
+        }
+
+        boolean covers(String userId, String responseId, String phone10) {
+            return (userId != null && userIds.contains(userId))
+                    || (responseId != null && responseIds.contains(responseId))
+                    || (phone10 != null && phones.contains(phone10));
+        }
     }
 
     /** True when the engine's audience has an AUDIENCE selector for this list. */

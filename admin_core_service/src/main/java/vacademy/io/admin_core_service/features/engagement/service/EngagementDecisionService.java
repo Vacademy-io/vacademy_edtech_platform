@@ -166,8 +166,11 @@ public class EngagementDecisionService {
         // 1. Consent — before anything else. The lead row first: an opted-out lead is OPTED_OUT
         // (it survives the reconcile), a lead the admin removed is EXITED (the reconcile revives
         // it if the row comes back).
-        PolicyGate.LeadBlock leadBlock = member.getAudienceResponseId() != null && blockedLeads != null
-                ? blockedLeads.get(member.getAudienceResponseId()) : null;
+        // A lead the CRM marked Converted leaves as EXITED, unless this engine also targets learners.
+        PolicyGate.LeadBlock leadBlock = PolicyGate.effectiveLeadBlock(
+                member.getAudienceResponseId() != null && blockedLeads != null
+                        ? blockedLeads.get(member.getAudienceResponseId()) : null,
+                engine, member);
         if (leadBlock != null) {
             member.setStatus(leadBlock == PolicyGate.LeadBlock.OPTED_OUT ? "OPTED_OUT" : "EXITED");
             memberRepository.save(member);
