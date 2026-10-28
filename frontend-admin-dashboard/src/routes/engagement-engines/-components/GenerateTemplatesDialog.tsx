@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Sparkle } from '@phosphor-icons/react';
+import { useQueryClient } from '@tanstack/react-query';
+import { Sparkle, Warning } from '@phosphor-icons/react';
+import { getInstituteId } from '@/constants/helper';
+import { useEditPrompt } from '../-hooks';
+import { useBriefCheck } from '../-hooks/templates';
 import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
 import { Input } from '@/components/ui/input';
@@ -32,6 +36,7 @@ const LANGUAGES: TemplateLanguage[] = ['en', 'hi', 'hinglish'];
  * and an optional steer. For REGENERATE the count is fixed at one.
  */
 export function GenerateTemplatesDialog({
+    engineId,
     channel,
     mode,
     defaultLanguage,
@@ -39,6 +44,7 @@ export function GenerateTemplatesDialog({
     onClose,
     onGenerate,
 }: {
+    engineId: string;
     channel: 'WHATSAPP' | 'EMAIL';
     mode: GenerateMode;
     defaultLanguage?: string;
@@ -55,6 +61,32 @@ export function GenerateTemplatesDialog({
         LANGUAGES.includes(defaultLanguage as TemplateLanguage) ? (defaultLanguage as TemplateLanguage) : 'en'
     );
     const [feedback, setFeedback] = useState('');
+    // W1: a thin brief gets specific questions; the answers are added to the brief as an amendment,
+    // because the AI may only use facts and links that are in the brief.
+    const qc = useQueryClient();
+    const brief = useBriefCheck(engineId);
+    const amend = useEditPrompt();
+    const [answers, setAnswers] = useState<Record<number, string>>({});
+    const answered = Object.values(answers).some((a) => a.trim());
+    const addAnswers = () => {
+        const qs = brief.data?.questions ?? [];
+        const text = qs
+            .map((q, i) => (answers[i]?.trim() ? `${q}\n${answers[i]!.trim()}` : ''))
+            .filter(Boolean)
+            .join('\n\n');
+        if (!text) return;
+        amend.mutate(
+            { engineId, deltaText: text },
+            {
+                onSuccess: () => {
+                    setAnswers({});
+                    qc.invalidateQueries({
+                        queryKey: ['engagementBriefCheck', getInstituteId() || '', engineId],
+                    });
+                },
+            }
+        );
+    };
 
     const purpose =
         purposeKey === 'custom' ? customPurpose.trim() : purposeKey ? t(`generate.purposes.${purposeKey}`) : '';
@@ -79,6 +111,33 @@ export function GenerateTemplatesDialog({
         <MyDialog heading={heading} open onOpenChange={(o) => !o && onClose()} dialogWidth="max-w-lg">
             <div className="flex flex-col gap-4 p-1">
                 <p className="text-caption text-neutral-500">{t('generate.intro')}</p>
+                {brief.data?.weak && (
+                    <div className="flex flex-col gap-2 rounded-lg border border-warning-200 bg-warning-50 p-3">
+                        <p className="flex items-start gap-2 text-warning-700">
+                            <Warning size={16} className="mt-0.5 shrink-0" />
+                            <span className="text-caption">{t('brief.weak')}</span>
+                        </p>
+                        {brief.data.questions.map((q, i) => (
+                            <div key={q} className="flex flex-col gap-1">
+                                <label className="text-caption text-neutral-700">{q}</label>
+                                <Input
+                                    value={answers[i] ?? ''}
+                                    maxLength={500}
+                                    onChange={(e) => setAnswers((prev) => ({ ...prev, [i]: e.target.value }))}
+                                />
+                            </div>
+                        ))}
+                        <MyButton
+                            buttonType="secondary"
+                            scale="small"
+                            className="w-fit"
+                            disable={!answered || amend.isPending}
+                            onClick={addAnswers}
+                        >
+                            {amend.isPending ? t('brief.adding') : t('brief.addToBrief')}
+                        </MyButton>
+                    </div>
+                )}
                 <div className="grid gap-3 sm:grid-cols-2">
                     <div className="sm:col-span-2">
                         <label className="mb-1 block text-caption text-neutral-500">

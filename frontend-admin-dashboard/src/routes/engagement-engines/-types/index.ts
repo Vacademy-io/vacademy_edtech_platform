@@ -182,7 +182,9 @@ export type ProposalStatus =
     | 'SUPERSEDED'
     | 'WITHDRAWN'
     /** Meta later disabled or paused an approved template; the engine no longer uses it. */
-    | 'META_DISABLED';
+    | 'META_DISABLED'
+    /** Waiting for room under Meta's templates-per-hour limit; submitted automatically. */
+    | 'QUEUED';
 
 export type TemplateCategory = 'MARKETING' | 'UTILITY' | 'AUTHENTICATION';
 
@@ -205,6 +207,15 @@ export interface EngagementTemplateProposal {
     rationale?: string;
     variableSources?: string; // jsonb string: {"name":"profile.firstName",...}
     purpose?: string;
+    headerType?: TemplateHeaderType;
+    headerText?: string;
+    headerMediaUrl?: string;
+    buttons?: string; // jsonb string: [{type,text,url?,phoneNumber?}]
+    /** This proposal is the edited version of that approved one (it replaces it once Meta approves). */
+    replacesId?: string;
+    submittedAt?: string;
+    /** Server warning when a UTILITY template reads as promotion. */
+    categoryWarning?: string | null;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -217,4 +228,17 @@ export interface TemplateEditRequest {
     footerText?: string;
     variableSources?: Record<string, string>;
     purpose?: string;
+    headerType?: TemplateHeaderType;
+    headerText?: string;
+    headerMediaUrl?: string;
+    buttons?: TemplateButton[];
+}
+
+export type TemplateHeaderType = 'NONE' | 'TEXT' | 'IMAGE' | 'VIDEO' | 'DOCUMENT';
+
+export interface TemplateButton {
+    type: 'QUICK_REPLY' | 'URL' | 'PHONE_NUMBER';
+    text: string;
+    url?: string;
+    phoneNumber?: string;
 }

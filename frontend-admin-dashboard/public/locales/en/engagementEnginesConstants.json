@@ -29,7 +29,8 @@
         "metaRecategorised": "Recategorised",
         "superseded": "Superseded",
         "withdrawn": "Withdrawn",
-        "metaDisabled": "Disabled by Meta"
+        "metaDisabled": "Disabled by Meta",
+        "queued": "Queued for Meta"
     },
     "language": {
         "english": "English",

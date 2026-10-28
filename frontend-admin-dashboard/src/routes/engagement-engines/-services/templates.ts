@@ -56,6 +56,21 @@ export const requestWhatsAppAlternatives = async (
     return res.data;
 };
 
+/** W1 — is the engine's brief enough to write templates from; questions for the admin when not. */
+export interface BriefCheck {
+    weak: boolean;
+    words: number;
+    gaps: string[];
+    questions: string[];
+}
+
+export const getBriefCheck = async (engineId: string, instituteId: string): Promise<BriefCheck> => {
+    const res = await authenticatedAxiosInstance.get(`${ENGAGEMENT_TEMPLATES_BASE}/brief-check`, {
+        params: { instituteId, engineId },
+    });
+    return res.data;
+};
+
 // ---- Email templates ----
 export const listEmailTemplates = async (engineId: string, instituteId: string): Promise<EmailTemplate[]> => {
     const res = await authenticatedAxiosInstance.get(ENGAGEMENT_EMAIL_TEMPLATES_BASE, {

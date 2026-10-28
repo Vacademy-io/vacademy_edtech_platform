@@ -8,6 +8,7 @@ import {
     editEmailTemplate,
     generateEmailTemplates,
     generateWhatsAppTemplates,
+    getBriefCheck,
     listEmailTemplates,
     previewEmailTemplate,
     requestWhatsAppAlternatives,
@@ -61,6 +62,17 @@ export const useWhatsAppGenerate = () => {
             onError: (e) => toast.error(errMsg(e, t('toast.generateFailed'))),
         }),
     };
+};
+
+/** W1 brief check; refreshed whenever the brief changes (amendments invalidate the engine). */
+export const useBriefCheck = (engineId: string | undefined, enabled = true) => {
+    const instituteId = getInstituteId() || '';
+    return useQuery({
+        queryKey: ['engagementBriefCheck', instituteId, engineId],
+        queryFn: () => getBriefCheck(engineId as string, instituteId),
+        enabled: enabled && !!engineId && !!instituteId,
+        staleTime: 60 * 1000,
+    });
 };
 
 // ---- Email templates ----

@@ -59,6 +59,7 @@ export const buildProposalStatusMeta = (
     SUPERSEDED: { label: t('proposalStatus.superseded'), tone: 'neutral' },
     WITHDRAWN: { label: t('proposalStatus.withdrawn'), tone: 'neutral' },
     META_DISABLED: { label: t('proposalStatus.metaDisabled'), tone: 'danger' },
+    QUEUED: { label: t('proposalStatus.queued'), tone: 'warning' },
 });
 
 export const buildLanguageOptions = (

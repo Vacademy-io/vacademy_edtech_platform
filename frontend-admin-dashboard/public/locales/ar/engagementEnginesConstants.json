@@ -29,7 +29,8 @@
         "metaRecategorised": "أُعيد تصنيفه",
         "superseded": "استُبدل",
         "withdrawn": "مسحوب",
-        "metaDisabled": "عطّلته Meta"
+        "metaDisabled": "عطّلته Meta",
+        "queued": "في الانتظار لـ Meta"
     },
     "language": {
         "english": "الإنجليزية",

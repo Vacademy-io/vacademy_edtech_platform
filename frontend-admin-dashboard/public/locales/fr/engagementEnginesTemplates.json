@@ -129,7 +129,37 @@
         }
     },
     "whatsapp": {
-        "disabledByMeta": "Meta a désactivé ou suspendu ce modèle ; le moteur ne l'envoie plus. Générez une alternative."
+        "disabledByMeta": "Meta a désactivé ou suspendu ce modèle ; le moteur ne l'envoie plus. Générez une alternative.",
+        "header": "En-tête : {{type}}",
+        "headerTypes": {
+            "NONE": "Aucun",
+            "TEXT": "Texte",
+            "IMAGE": "Image",
+            "VIDEO": "Vidéo",
+            "DOCUMENT": "Document"
+        },
+        "openFile": "ouvrir le fichier",
+        "buttonTypes": {
+            "QUICK_REPLY": "Réponse rapide",
+            "URL": "Lien",
+            "PHONE_NUMBER": "Appel"
+        },
+        "replacesNote": "Nouvelle version d'un modèle approuvé ; elle le remplace une fois approuvée par Meta.",
+        "queuedNote": "En attente : la limite horaire de Meta pour les nouveaux modèles est atteinte. Il sera envoyé automatiquement.",
+        "newVersionNote": "Ce modèle est approuvé. Votre modification devient une nouvelle version pour Meta ; l'actuel continue d'être envoyé jusqu'à son approbation.",
+        "promoWarning": "Ce texte est promotionnel. Meta le traite comme MARKETING ; en UTILITY il peut être recatégorisé ou refusé.",
+        "headerLabel": "En-tête",
+        "headerText": "Texte d'en-tête (60 caractères max.)",
+        "headerFile": {
+            "IMAGE": "Lien de l'image (https, .jpg ou .png)",
+            "VIDEO": "Lien de la vidéo (https, .mp4)",
+            "DOCUMENT": "Lien du document (https, .pdf)"
+        },
+        "buttonsLabel": "Boutons (les liens doivent figurer dans le brief)",
+        "buttonText": "Texte du bouton",
+        "buttonUrl": "lien https:// du brief",
+        "removeButton": "Supprimer le bouton",
+        "addButton": "+ Ajouter un bouton"
     },
     "wizard": {
         "modeTitle": "Comment les e-mails sont rédigés",
@@ -140,5 +170,10 @@
         },
         "coldTitle": "Prospection à froid",
         "coldHint": "Activez si ces personnes ne vous ont jamais contacté (par ex. prospects trouvés par le Lead Agent). Chaque e-mail doit alors expliquer comment ne plus en recevoir."
+    },
+    "brief": {
+        "weak": "Ce brief est maigre : l'IA écrira des messages génériques. Répondez à ce que vous pouvez ; vos réponses sont ajoutées au brief.",
+        "addToBrief": "Ajouter les réponses au brief",
+        "adding": "Ajout…"
     }
 }

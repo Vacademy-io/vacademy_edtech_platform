@@ -183,6 +183,7 @@ export function EmailTemplatesPanel({
 
             {generate && (
                 <GenerateTemplatesDialog
+                    engineId={engineId}
                     channel="EMAIL"
                     mode={generate.mode}
                     defaultLanguage={generate.basedOn?.language ?? language}

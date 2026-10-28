@@ -41,9 +41,18 @@ import { isCompleteSource, type GenerateMode } from '../-types/templates';
 import type {
     EngagementTemplateProposal,
     ProposalStatus,
+    TemplateButton,
     TemplateCategory,
     TemplateEditRequest,
+    TemplateHeaderType,
 } from '../-types';
+
+/** Approved (or later disabled) templates are edited as a new version that replaces them (W15). */
+const NEW_VERSION_ON_EDIT = new Set(['META_APPROVED', 'META_RECATEGORISED', 'META_DISABLED']);
+const HEADER_TYPES: TemplateHeaderType[] = ['NONE', 'TEXT', 'IMAGE', 'VIDEO', 'DOCUMENT'];
+const BUTTON_TYPES: TemplateButton['type'][] = ['QUICK_REPLY', 'URL', 'PHONE_NUMBER'];
+/** Mirror of WhatsAppTemplateRules.PROMO for instant feedback; the server warning is authoritative. */
+const PROMO = /(^|[^\p{L}])(offer|offers|discount|discounts|sale|% off|off on|free|cashback|coupon|promo|deal|deals|limited (time|seats)|hurry|last chance|enrol(l)? now|join now|register now|admissions? open|new batch|special price|scholarship|book now|don'?t miss|chhoot|chhut|muft)($|[^\p{L}])/iu;
 
 const EDITABLE = new Set(['AI_PROPOSED', 'USER_REVIEW', 'META_REJECTED']);
 
@@ -60,6 +69,7 @@ const FLOW_REACHED: Partial<Record<ProposalStatus, number>> = {
     META_APPROVED: 5,
     META_RECATEGORISED: 5,
     META_DISABLED: 4,
+    QUEUED: 3,
 };
 
 /** The five stages, ticked up to the furthest any current proposal has reached. */
@@ -200,6 +210,7 @@ export function TemplateNegotiation({ engineId, language }: { engineId: string; 
 
             {generate && (
                 <GenerateTemplatesDialog
+                    engineId={engineId}
                     channel="WHATSAPP"
                     mode={generate.mode}
                     defaultLanguage={generate.basedOn?.language ?? language}
@@ -297,6 +308,39 @@ function ProposalCard({
                     ))}
                 </ul>
             )}
+            {p.headerType && p.headerType !== 'NONE' && (
+                <p className="text-caption text-neutral-500">
+                    {tTpl('whatsapp.header', { type: tTpl(`whatsapp.headerTypes.${p.headerType}`) })}
+                    {p.headerType === 'TEXT' ? `: ${p.headerText ?? ''}` : ''}
+                    {p.headerType !== 'TEXT' && p.headerMediaUrl && (
+                        <>
+                            {': '}
+                            <a href={p.headerMediaUrl} target="_blank" rel="noreferrer" className="text-primary-600 underline">
+                                {tTpl('whatsapp.openFile')}
+                            </a>
+                        </>
+                    )}
+                </p>
+            )}
+            {safeParse<TemplateButton[]>(p.buttons, []).length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                    {safeParse<TemplateButton[]>(p.buttons, []).map((b, i) => (
+                        <Chip key={i} label={`${b.text} · ${tTpl(`whatsapp.buttonTypes.${b.type}`)}`} />
+                    ))}
+                </div>
+            )}
+            {p.categoryWarning && (
+                <p className="flex items-start gap-2 rounded-lg bg-warning-50 p-2 text-warning-700">
+                    <Info size={14} className="mt-0.5 shrink-0" />
+                    <span className="text-caption">{p.categoryWarning}</span>
+                </p>
+            )}
+            {p.replacesId && (
+                <p className="text-caption text-info-700">{tTpl('whatsapp.replacesNote')}</p>
+            )}
+            {p.status === 'QUEUED' && (
+                <p className="rounded-lg bg-warning-50 p-2 text-caption text-warning-700">{tTpl('whatsapp.queuedNote')}</p>
+            )}
             {p.rationale && <p className="text-caption italic text-neutral-400">{p.rationale}</p>}
             {p.status === 'META_REJECTED' && p.rejectionReason && (
                 <p className="flex items-start gap-2 rounded-lg bg-danger-50 p-2 text-danger-600">
@@ -352,9 +396,10 @@ function ProposalCard({
                         <Copy className="me-1 size-3.5" /> {tTpl('actions.moreLikeThis')}
                     </MyButton>
                 )}
-                {EDITABLE.has(p.status) && (
+                {(EDITABLE.has(p.status) || NEW_VERSION_ON_EDIT.has(p.status)) && (
                     <MyButton buttonType="secondary" scale="small" disable={busy} onClick={onEdit}>
-                        <PencilSimple className="me-1 size-3.5" /> {t('actions.edit')}
+                        <PencilSimple className="me-1 size-3.5" />
+                        {NEW_VERSION_ON_EDIT.has(p.status) ? tTpl('actions.editNewVersion') : t('actions.edit')}
                     </MyButton>
                 )}
                 {(p.status === 'AI_PROPOSED' || p.status === 'USER_REVIEW') && (
@@ -377,7 +422,7 @@ function ProposalCard({
                         <PaperPlaneTilt className="me-1 size-3.5" /> {t('actions.submitToMeta')}
                     </MyButton>
                 )}
-                {['AI_PROPOSED', 'USER_REVIEW', 'USER_APPROVED', 'META_REJECTED', 'META_RECATEGORISED'].includes(
+                {['AI_PROPOSED', 'USER_REVIEW', 'USER_APPROVED', 'QUEUED', 'META_REJECTED', 'META_RECATEGORISED'].includes(
                     p.status
                 ) && (
                     <MyButton
@@ -418,6 +463,13 @@ function EditTemplateDialog({
         return names.map((n, i) => ({ name: n, sample: samples[i] ?? '', source: sources[n] ?? '' }));
     });
     const [purpose, setPurpose] = useState(proposal.purpose ?? '');
+    const [headerType, setHeaderType] = useState<TemplateHeaderType>(proposal.headerType ?? 'NONE');
+    const [headerText, setHeaderText] = useState(proposal.headerText ?? '');
+    const [headerMediaUrl, setHeaderMediaUrl] = useState(proposal.headerMediaUrl ?? '');
+    const [buttons, setButtons] = useState<TemplateButton[]>(() => safeParse<TemplateButton[]>(proposal.buttons, []));
+    const promoWarning = category === 'UTILITY' && PROMO.test(body);
+    const updateButton = (i: number, patch: Partial<TemplateButton>) =>
+        setButtons((prev) => prev.map((b, idx) => (idx === i ? { ...b, ...patch } : b)));
     const [footer, setFooter] = useState(proposal.footerText ?? '');
 
     // Mirror the backend's alignmentProblem() EXACTLY so the FE never enables Save for a body the
@@ -462,6 +514,15 @@ function EditTemplateDialog({
             // "" clears the footer; undefined would mean "keep the current one" to the backend.
             footerText: footer.trim(),
             purpose: purpose.trim() || undefined,
+            headerType,
+            headerText: headerType === 'TEXT' ? headerText.trim() : '',
+            headerMediaUrl: headerType !== 'NONE' && headerType !== 'TEXT' ? headerMediaUrl.trim() : '',
+            buttons: buttons.map((b) => ({
+                type: b.type,
+                text: b.text.trim(),
+                url: b.type === 'URL' ? b.url?.trim() : undefined,
+                phoneNumber: b.type === 'PHONE_NUMBER' ? b.phoneNumber?.trim() : undefined,
+            })),
             variableSources: pairs.some((p) => p.source.trim())
                 ? Object.fromEntries(pairs.map((p) => [p.name.trim(), p.source.trim()]))
                 : undefined,
@@ -475,6 +536,9 @@ function EditTemplateDialog({
             dialogWidth="max-w-xl"
         >
             <div className="flex flex-col gap-4 overflow-y-auto p-1">
+                {NEW_VERSION_ON_EDIT.has(proposal.status) && (
+                    <p className="rounded-lg bg-info-50 p-2 text-caption text-info-700">{tTpl('whatsapp.newVersionNote')}</p>
+                )}
                 <div>
                     <label className="mb-1 block text-caption text-neutral-500">
                         {t('editDialog.bodyLabel', { p1: '{{1}}', p2: '{{2}}' })}
@@ -508,6 +572,9 @@ function EditTemplateDialog({
                         </SelectContent>
                     </Select>
                 </div>
+                {promoWarning && (
+                    <p className="rounded-lg bg-warning-50 p-2 text-caption text-warning-700">{tTpl('whatsapp.promoWarning')}</p>
+                )}
                 <div className="flex flex-col gap-2">
                     <label className="text-caption text-neutral-500">
                         {t('editDialog.variablesLabel', { n: '{{n}}' })}
@@ -564,6 +631,103 @@ function EditTemplateDialog({
                         {t('editDialog.addVariable')}
                     </button>
                     {problem && <p className="text-caption text-danger-600">{problem}</p>}
+                </div>
+                <div className="grid gap-2 sm:grid-cols-3">
+                    <div>
+                        <label className="mb-1 block text-caption text-neutral-500">{tTpl('whatsapp.headerLabel')}</label>
+                        <Select value={headerType} onValueChange={(v) => setHeaderType(v as TemplateHeaderType)}>
+                            <SelectTrigger aria-label={tTpl('whatsapp.headerLabel')}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {HEADER_TYPES.map((h) => (
+                                    <SelectItem key={h} value={h}>
+                                        {tTpl(`whatsapp.headerTypes.${h}`)}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    {headerType === 'TEXT' && (
+                        <div className="sm:col-span-2">
+                            <label className="mb-1 block text-caption text-neutral-500">{tTpl('whatsapp.headerText')}</label>
+                            <Input value={headerText} maxLength={60} onChange={(e) => setHeaderText(e.target.value)} />
+                        </div>
+                    )}
+                    {headerType !== 'NONE' && headerType !== 'TEXT' && (
+                        <div className="sm:col-span-2">
+                            <label className="mb-1 block text-caption text-neutral-500">
+                                {tTpl(`whatsapp.headerFile.${headerType}`)}
+                            </label>
+                            <Input
+                                value={headerMediaUrl}
+                                placeholder="https://"
+                                onChange={(e) => setHeaderMediaUrl(e.target.value)}
+                            />
+                        </div>
+                    )}
+                </div>
+                <div className="flex flex-col gap-2">
+                    <label className="text-caption text-neutral-500">{tTpl('whatsapp.buttonsLabel')}</label>
+                    {buttons.map((b, i) => (
+                        <div key={i} className="flex flex-wrap items-center gap-2">
+                            <Select
+                                value={b.type}
+                                onValueChange={(v) => updateButton(i, { type: v as TemplateButton['type'] })}
+                            >
+                                <SelectTrigger className="w-40" aria-label={tTpl('whatsapp.buttonsLabel')}>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {BUTTON_TYPES.map((bt) => (
+                                        <SelectItem key={bt} value={bt}>
+                                            {tTpl(`whatsapp.buttonTypes.${bt}`)}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Input
+                                className="w-40"
+                                value={b.text}
+                                maxLength={25}
+                                placeholder={tTpl('whatsapp.buttonText')}
+                                onChange={(e) => updateButton(i, { text: e.target.value })}
+                            />
+                            {b.type === 'URL' && (
+                                <Input
+                                    className="min-w-0 flex-1"
+                                    value={b.url ?? ''}
+                                    placeholder={tTpl('whatsapp.buttonUrl')}
+                                    onChange={(e) => updateButton(i, { url: e.target.value })}
+                                />
+                            )}
+                            {b.type === 'PHONE_NUMBER' && (
+                                <Input
+                                    className="min-w-0 flex-1"
+                                    value={b.phoneNumber ?? ''}
+                                    placeholder="+91…"
+                                    onChange={(e) => updateButton(i, { phoneNumber: e.target.value })}
+                                />
+                            )}
+                            <button
+                                type="button"
+                                aria-label={tTpl('whatsapp.removeButton')}
+                                className="text-neutral-400 hover:text-danger-600"
+                                onClick={() => setButtons((prev) => prev.filter((_, idx) => idx !== i))}
+                            >
+                                <Trash className="size-4" />
+                            </button>
+                        </div>
+                    ))}
+                    {buttons.length < 10 && (
+                        <button
+                            type="button"
+                            className="w-fit text-caption text-primary-600"
+                            onClick={() => setButtons((prev) => [...prev, { type: 'QUICK_REPLY', text: '' }])}
+                        >
+                            {tTpl('whatsapp.addButton')}
+                        </button>
+                    )}
                 </div>
                 <div>
                     <label className="mb-1 block text-caption text-neutral-500">

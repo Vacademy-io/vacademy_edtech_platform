@@ -129,7 +129,37 @@
         }
     },
     "whatsapp": {
-        "disabledByMeta": "Meta disabled or paused this template, so the engine no longer sends it. Generate an alternative."
+        "disabledByMeta": "Meta disabled or paused this template, so the engine no longer sends it. Generate an alternative.",
+        "header": "Header: {{type}}",
+        "headerTypes": {
+            "NONE": "None",
+            "TEXT": "Text",
+            "IMAGE": "Image",
+            "VIDEO": "Video",
+            "DOCUMENT": "Document"
+        },
+        "openFile": "open file",
+        "buttonTypes": {
+            "QUICK_REPLY": "Quick reply",
+            "URL": "Link",
+            "PHONE_NUMBER": "Call"
+        },
+        "replacesNote": "New version of an approved template; it replaces that one once Meta approves it.",
+        "queuedNote": "Waiting: Meta's hourly limit for new templates was reached. It is submitted automatically.",
+        "newVersionNote": "This template is approved. Your edit becomes a new version for Meta; the approved one keeps sending until the new one is approved.",
+        "promoWarning": "This reads as promotion. Meta treats it as MARKETING; labelled UTILITY it may be re-categorised or rejected.",
+        "headerLabel": "Header",
+        "headerText": "Header text (up to 60 characters)",
+        "headerFile": {
+            "IMAGE": "Image link (https, .jpg or .png)",
+            "VIDEO": "Video link (https, .mp4)",
+            "DOCUMENT": "Document link (https, .pdf)"
+        },
+        "buttonsLabel": "Buttons (links must be in the brief)",
+        "buttonText": "Button text",
+        "buttonUrl": "https:// link from the brief",
+        "removeButton": "Remove button",
+        "addButton": "+ Add button"
     },
     "wizard": {
         "modeTitle": "How emails are written",
@@ -140,5 +170,10 @@
         },
         "coldTitle": "Cold outreach",
         "coldHint": "Turn on if these people never contacted you (for example leads found by the Lead Agent). Every email must then tell people how to stop."
+    },
+    "brief": {
+        "weak": "This brief is thin, so the AI will write generic messages. Answer what you can; your answers are added to the brief.",
+        "addToBrief": "Add answers to the brief",
+        "adding": "Adding…"
     }
 }

@@ -29,7 +29,8 @@
         "metaRecategorised": "पुनः वर्गीकृत",
         "superseded": "प्रतिस्थापित",
         "withdrawn": "वापस लिया गया",
-        "metaDisabled": "Meta ने बंद किया"
+        "metaDisabled": "Meta ने बंद किया",
+        "queued": "Meta के लिए कतार में"
     },
     "language": {
         "english": "अंग्रेज़ी",
