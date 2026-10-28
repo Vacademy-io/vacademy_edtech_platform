@@ -39,6 +39,13 @@ interface SettingsSectionsLayoutProps {
      * of the sections; the first section is the default.
      */
     defaultActiveId?: string;
+    /**
+     * Optional controlled mode: the parent owns the active section (e.g. a
+     * settings search that jumps to a card on another tab). Omit both to keep
+     * the layout's own state, as every existing caller does.
+     */
+    activeId?: string;
+    onActiveIdChange?: (id: string) => void;
 }
 
 /**
@@ -53,16 +60,24 @@ export function SettingsSectionsLayout({
     children,
     className,
     defaultActiveId,
+    activeId: controlledActiveId,
+    onActiveIdChange,
 }: SettingsSectionsLayoutProps) {
     const allSections = useMemo(
         () => groups.flatMap((g) => g.sections),
         [groups]
     );
-    const [activeId, setActiveId] = useState(
+    const [internalActiveId, setInternalActiveId] = useState(
         defaultActiveId && allSections.some((s) => s.id === defaultActiveId)
             ? defaultActiveId
             : allSections[0]?.id ?? ''
     );
+
+    const activeId = controlledActiveId ?? internalActiveId;
+    const setActiveId = (id: string) => {
+        setInternalActiveId(id);
+        onActiveIdChange?.(id);
+    };
 
     // Guard against an active id that no longer exists (e.g. groups changed).
     const resolvedActive = allSections.some((s) => s.id === activeId)

@@ -6,11 +6,12 @@
         "description": "Control what learners see — sidebar, courses, login, certificates, notifications and more."
     },
     "sections": {
-        "layoutNav": "Layout & Navigation",
+        "layoutNav": "Sidebar & Dashboard",
         "loginAccount": "Login & Account",
-        "learningExperience": "Learning Experience",
+        "learningExperience": "Courses & Learning",
         "notificationsRedirect": "Notifications & Redirect",
-        "themeLayout": "Theme & Layout"
+        "themeLayout": "Look & Layout",
+        "profilePermissions": "Profile & Permissions"
     },
     "common": {
         "label": "Label",
@@ -42,7 +43,9 @@
         "selectUiType": "Select UI type",
         "cleanerPlay": "Cleaner Play",
         "movedToAppearance": "The theme skin now lives in Settings → Appearance, together with corner style, density and surface style.",
-        "openAppearance": "Open Appearance settings"
+        "openAppearance": "Open Appearance settings",
+        "movedToTheme": "The theme skin is now in the Look & Layout tab, together with colours, font, corners and the app layout.",
+        "openTheme": "Open Look & Layout"
     },
     "widgets": {
         "cardTitle": "Dashboard Widgets",
@@ -377,5 +380,13 @@
     },
     "themeSection": {
         "separateSave": "Theme changes are saved with the \"Save theme\" button below. The bar at the bottom of the page saves everything else."
+    },
+    "finder": {
+        "placeholder": "Find a setting — e.g. signup, footer bar, quiz, focus check",
+        "clear": "Clear search",
+        "noResults": "No setting matches that.",
+        "onThisTab": "On this tab:",
+        "themeTitle": "Theme (colours, skin, font)",
+        "sessionsTitle": "Concurrent Session Limit"
     }
 }
