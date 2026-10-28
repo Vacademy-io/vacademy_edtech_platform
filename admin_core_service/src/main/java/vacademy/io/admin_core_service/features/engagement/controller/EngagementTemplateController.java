@@ -41,9 +41,11 @@ public class EngagementTemplateController {
             @RequestParam String instituteId,
             @RequestParam String engineId,
             @RequestParam(required = false) Integer count,
+            @RequestParam(required = false) String purpose,
+            @RequestParam(required = false) String language,
             @RequestAttribute("user") CustomUserDetails user) {
         accessGuard.requireAdmin(user, instituteId);
-        return ResponseEntity.ok(service.recommend(engineId, instituteId, user.getUserId(), count));
+        return ResponseEntity.ok(service.recommend(engineId, instituteId, user.getUserId(), count, purpose, language));
     }
 
     /** "Give me other options" — a fresh round seeded with feedback / a Meta rejection reason. */

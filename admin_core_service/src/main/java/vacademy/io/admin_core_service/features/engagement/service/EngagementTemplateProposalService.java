@@ -15,6 +15,8 @@ import vacademy.io.admin_core_service.features.engagement.entity.EngagementTempl
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementEngineRepository;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementPromptVersionRepository;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementTemplateProposalRepository;
+import vacademy.io.admin_core_service.features.engagement.templates.TemplateVariableSources;
+import vacademy.io.admin_core_service.features.engagement.templates.WhatsAppTemplateRules;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.time.Duration;
@@ -68,9 +70,17 @@ public class EngagementTemplateProposalService {
     /** AI proposes a first batch (round 1) for the engine. Moves a DRAFT WhatsApp engine to TEMPLATES_PENDING. */
     @Transactional
     public List<EngagementTemplateProposal> recommend(String engineId, String instituteId, String createdBy, Integer count) {
+        return recommend(engineId, instituteId, createdBy, count, null, null);
+    }
+
+    /** recommend() with a purpose ("first touch", "missed class") and a language (en | hi | hinglish). */
+    @Transactional
+    public List<EngagementTemplateProposal> recommend(String engineId, String instituteId, String createdBy, Integer count,
+                                                      String purpose, String language) {
         EngagementEngine engine = requireEngine(engineId, instituteId);
         refuseSystemEngine(engine);
-        List<EngagementTemplateProposal> created = generate(engine, null, clampCount(count), createdBy);
+        List<EngagementTemplateProposal> created = generate(engine, null, clampCount(count), createdBy,
+                purpose, validLanguage(language), null);
         // Signal the wizard the engine is mid-negotiation — but NEVER pause a live engine (D8):
         // a prompt edit on an ACTIVE engine that needs a new template keeps running on approved ones.
         if ("DRAFT".equals(engine.getStatus()) && whatsAppEnabled(engine)) {
@@ -88,17 +98,58 @@ public class EngagementTemplateProposalService {
         refuseSystemEngine(engine);
         String feedback = req != null ? req.getFeedback() : null;
         int count = clampCount(req != null ? req.getCount() : null);
-        return generate(engine, feedback, count, createdBy);
+        String mode = req != null && req.getMode() != null ? req.getMode().toUpperCase() : "NEW";
+        if (!Set.of("NEW", "REGENERATE", "MORE_LIKE_THIS").contains(mode)) {
+            throw new VacademyException("mode must be NEW, REGENERATE or MORE_LIKE_THIS");
+        }
+        String purpose = req != null ? req.getPurpose() : null;
+        String language = validLanguage(req != null ? req.getLanguage() : null);
+        EngagementTemplateProposal basedOn = null;
+        String seed = null;
+        if (!"NEW".equals(mode)) {
+            if (req.getBasedOnId() == null) throw new VacademyException("basedOnId is required for " + mode);
+            basedOn = requireProposal(req.getBasedOnId(), instituteId);
+            if (!basedOn.getEngineId().equals(engineId)) throw new VacademyException("Template belongs to another engine");
+            seed = basedOn.getProposedBody();
+            if (purpose == null) purpose = basedOn.getPurpose();
+            if (language == null) language = basedOn.getLanguage();
+            if ("REGENERATE".equals(mode)) {
+                if (!EDITABLE.contains(basedOn.getStatus())) {
+                    throw new VacademyException("Only a draft or a rejected template can be regenerated");
+                }
+                count = 1;
+                if (feedback == null || feedback.isBlank()) {
+                    feedback = "Write a clearly different version of the template above.";
+                }
+            }
+        }
+        List<EngagementTemplateProposal> created = generate(engine, feedback, count, createdBy, purpose, language, seed);
+        if ("REGENERATE".equals(mode)) {
+            // The new draft replaces the old one; withdraw is status-guarded, so a row that moved on
+            // (approved meanwhile) is left alone.
+            proposalRepository.withdraw(basedOn.getId(), instituteId, Instant.now());
+        }
+        return created;
     }
 
-    private List<EngagementTemplateProposal> generate(EngagementEngine engine, String feedback, int count, String createdBy) {
+    private static String validLanguage(String language) {
+        if (language == null || language.isBlank()) return null;
+        if (!Set.of("en", "hi", "hinglish").contains(language)) {
+            throw new VacademyException("language must be en, hi or hinglish");
+        }
+        return language;
+    }
+
+    private List<EngagementTemplateProposal> generate(EngagementEngine engine, String feedback, int count, String createdBy,
+                                                      String purpose, String language, String seed) {
         String compiled = activePrompt(engine);
         List<String> avoid = proposalRepository
                 .findByEngineIdAndInstituteIdOrderByRoundDescCreatedAtDesc(engine.getId(), engine.getInstituteId())
                 .stream().map(EngagementTemplateProposal::getName).filter(n -> n != null && !n.isBlank()).toList();
 
         List<EngagementTemplateAdvisor.Proposal> proposals =
-                advisor.propose(engine, compiled, feedback, avoid, count);
+                advisor.propose(engine, compiled, feedback, avoid, count, purpose, language, seed);
+        List<String> briefLinks = TemplateVariableSources.briefLinks(compiled);
 
         int round = proposalRepository.maxRound(engine.getId()) + 1;
         List<EngagementTemplateProposal> saved = new ArrayList<>();
@@ -114,7 +165,9 @@ public class EngagementTemplateProposalService {
             row.setEngineId(engine.getId());
             row.setInstituteId(engine.getInstituteId());
             row.setName(metaName(p.name()));           // meta-legal + uniqueness-suffixed
-            row.setLanguage(engine.getLanguage());
+            row.setLanguage(language != null ? language : engine.getLanguage());
+            row.setPurpose(cap(p.purpose() != null ? p.purpose() : purpose, 120));
+            row.setVariableSources(writeJson(validSources(p.variableNames(), p.variableSources(), briefLinks)));
             row.setProposedBody(p.body());
             row.setProposedCategory(p.category().toUpperCase());
             row.setStatus("AI_PROPOSED");
@@ -162,6 +215,13 @@ public class EngagementTemplateProposalService {
         if (req.getVariableNames() != null) p.setVariableNames(writeJson(req.getVariableNames()));
         if (req.getSampleValues() != null) p.setSampleValues(writeJson(req.getSampleValues()));
         if (req.getFooterText() != null) p.setFooterText(trimFooter(req.getFooterText()));
+        if (req.getPurpose() != null) p.setPurpose(cap(req.getPurpose(), 120));
+        if (req.getVariableSources() != null) {
+            List<String> sourceProblems = TemplateVariableSources.problems(readJsonArray(p.getVariableNames()),
+                    req.getVariableSources(), TemplateVariableSources.briefLinks(activePrompt(requireEngine(p.getEngineId(), instituteId))));
+            if (!sourceProblems.isEmpty()) throw new VacademyException("Template is not valid: " + sourceProblems.get(0));
+            p.setVariableSources(writeJson(req.getVariableSources()));
+        }
 
         // Re-validate AFTER applying edits so a human can't approve something Meta will reject.
         String problem = alignmentProblem(p.getProposedBody(), readJsonArray(p.getVariableNames()),
@@ -424,7 +484,27 @@ public class EngagementTemplateProposalService {
             if (key.isEmpty()) return "every placeholder needs a variable name";
             if (!seen.add(key)) return "variable name '" + name.trim() + "' is used twice; each placeholder needs its own";
         }
-        return null;
+        // W3/W4: Meta's body rules (start/end variable, adjacent variables, variable density).
+        return WhatsAppTemplateRules.problem(body, null);
+    }
+
+    /** Keep the AI's source for each variable only when that source is valid; the rest are left to the reviewer. */
+    private static Map<String, String> validSources(List<String> variableNames, Map<String, String> sources,
+                                                    List<String> briefLinks) {
+        Map<String, String> out = new java.util.LinkedHashMap<>();
+        if (sources == null || variableNames == null) return out;
+        for (String v : variableNames) {
+            String src = sources.get(v);
+            if (src != null && TemplateVariableSources.problems(List.of(v), Map.of(v, src), briefLinks).isEmpty()) {
+                out.put(v, src.trim());
+            }
+        }
+        return out;
+    }
+
+    private static String cap(String s, int max) {
+        if (s == null) return null;
+        return s.length() <= max ? s : s.substring(0, max);
     }
 
     private String activePrompt(EngagementEngine engine) {

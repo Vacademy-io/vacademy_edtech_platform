@@ -90,6 +90,15 @@ public class EngagementTemplateProposal {
     @Column(name = "sample_values", columnDefinition = "jsonb", nullable = false)
     private String sampleValues = "[]";
 
+    /** {variableName: source} — see templates.TemplateVariableSources (V617). */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "variable_sources", columnDefinition = "jsonb", nullable = false)
+    private String variableSources = "{}";
+
+    /** What the template is for ("first touch", "missed class"), shown to reviewers (V617). */
+    @Column(length = 120)
+    private String purpose;
+
     @Column(name = "footer_text", length = 60)
     private String footerText;
 

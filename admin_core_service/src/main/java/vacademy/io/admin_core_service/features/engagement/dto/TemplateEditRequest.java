@@ -22,4 +22,6 @@ public class TemplateEditRequest {
     private List<String> variableNames;  // parallel to sampleValues
     private List<String> sampleValues;
     private String footerText;           // <=60 chars, static
+    private java.util.Map<String, String> variableSources; // {variableName: source}, see templates.TemplateVariableSources
+    private String purpose;
 }
