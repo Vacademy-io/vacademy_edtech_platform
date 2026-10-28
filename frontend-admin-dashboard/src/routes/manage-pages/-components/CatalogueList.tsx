@@ -25,6 +25,7 @@ import {
     Clock,
     Newspaper,
 } from 'lucide-react';
+import { ChatCircleText } from '@phosphor-icons/react';
 import { useToast } from '@/hooks/use-toast';
 import { useCataloguePermissions } from '../-hooks/use-catalogue-permissions';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
@@ -41,6 +42,8 @@ import { UtmBuilderDialog } from '@/components/common/utm/utm-builder-dialog';
 import { useUtmBuilderEnabled } from '@/hooks/use-utm-builder-enabled';
 import { useBlogManagerStore } from '../-stores/blog-manager-store';
 import { BlogManagerDialog } from './blog/BlogManagerDialog';
+import { ReviewsManagerDialog } from './reviews/ReviewsManagerDialog';
+import { useReviewManagerStore } from '../-stores/review-manager-store';
 import { FolderLibraryDialog } from './folders/FolderLibraryDialog';
 import { useFolderLibraryStore } from '../-stores/folder-library-store';
 import { Folders } from '@phosphor-icons/react';
@@ -79,6 +82,7 @@ export const CatalogueList = () => {
     const instituteId = getCurrentInstituteId();
     const navigate = useNavigate();
     const openBlog = useBlogManagerStore((s) => s.open);
+    const openReviews = useReviewManagerStore((s) => s.open);
     const openFolders = useFolderLibraryStore((s) => s.open);
     // `?blog=list` / `?blog=<postId>` — deep link into the blog manager (MCP
     // hands these out). Consumed once, then stripped so closing the dialog
@@ -170,6 +174,15 @@ export const CatalogueList = () => {
                     >
                         <Newspaper className="size-4" />
                         Blog
+                    </Button>
+                    <Button
+                        variant="outline"
+                        onClick={() => openReviews()}
+                        className="gap-1.5"
+                        title="Approve reviews visitors sent through the Reviews & feedback section"
+                    >
+                        <ChatCircleText className="size-4" />
+                        Reviews
                     </Button>
                     <Button
                         variant="outline"
@@ -406,6 +419,7 @@ export const CatalogueList = () => {
             />
 
             <BlogManagerDialog />
+            <ReviewsManagerDialog />
             <FolderLibraryDialog />
             <CreateCatalogueDialog
                 open={isCreateDialogOpen}
