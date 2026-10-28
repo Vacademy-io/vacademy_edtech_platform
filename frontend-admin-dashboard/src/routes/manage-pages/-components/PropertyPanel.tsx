@@ -63,6 +63,8 @@ import { useInstituteDetailsStore } from '@/stores/students/students-list/useIns
 import { SearchableSelect, type SearchableSelectOption } from '@/components/design-system/searchable-select';
 import { CoursePagesEditor } from './CoursePagesEditor';
 import { useBlogManagerStore } from '../-stores/blog-manager-store';
+import { useReviewManagerStore } from '../-stores/review-manager-store';
+import { ReviewCollectorEditor } from './ReviewCollectorEditor';
 import { LinkPicker } from './LinkPicker';
 import { CampaignPicker, websiteFormFields } from './CampaignPicker';
 import { PromoPopupEditor } from './PromoPopupEditor';
@@ -2229,6 +2231,8 @@ const ComponentEditor = ({ component, pageId, updateComponent, siteConfig }: any
             return <CountdownTimerEditor component={component} pageId={pageId} updateComponent={updateComponent} />;
         case 'promoPopup':
             return <PromoPopupEditor component={component} pageId={pageId} updateComponent={updateComponent} />;
+        case 'reviewCollector':
+            return <ReviewCollectorEditor component={component} pageId={pageId} updateComponent={updateComponent} />;
 
         case 'textBlock':
             return <TextBlockEditor component={component} pageId={pageId} updateComponent={updateComponent} />;
@@ -4263,7 +4267,9 @@ const StatsHighlightsEditor = ({ component, pageId, updateComponent }: any) => {
 // Testimonials Editor
 const TestimonialsEditor = ({ component, pageId, updateComponent }: any) => {
     const { t } = useTranslation('managePagesPropertyPanel');
+    const openReviews = useReviewManagerStore((s) => s.open);
     const { props } = component;
+    const reviewSource = ['reviews', 'both'].includes(props.reviewSource) ? props.reviewSource : 'manual';
 
     const updateProp = (key: string, value: any) => {
         updateComponent(pageId, component.id, {
@@ -4317,6 +4323,66 @@ const TestimonialsEditor = ({ component, pageId, updateComponent }: any) => {
                     <option value="grid-scroll">{t('testimonials.layoutGridScroll')}</option>
                     <option value="static-grid">{t('testimonials.layoutStaticGrid')}</option>
                 </select>
+            </div>
+
+            {/* Approved site reviews (Website Builder → Reviews) next to, or instead of, the quotes below.
+                'manual' is the renderer's default, so it drops the key and old sites stay byte-identical. */}
+            <div className="space-y-3 rounded border p-3">
+                <div className="space-y-2">
+                    <Label>{t('testimonials.reviewSource')}</Label>
+                    <select
+                        className="w-full rounded border px-3 py-2 text-sm"
+                        value={reviewSource}
+                        onChange={(e) => updateProp('reviewSource', e.target.value === 'manual' ? undefined : e.target.value)}
+                    >
+                        <option value="manual">{t('testimonials.reviewSourceManual')}</option>
+                        <option value="both">{t('testimonials.reviewSourceBoth')}</option>
+                        <option value="reviews">{t('testimonials.reviewSourceReviews')}</option>
+                    </select>
+                    <p className="text-xs text-gray-500">{t('testimonials.reviewSourceHint')}</p>
+                </div>
+                {reviewSource !== 'manual' && (
+                    <>
+                        <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                                <Label>{t('testimonials.reviewLimit')}</Label>
+                                <select
+                                    className="w-full rounded border px-3 py-2 text-sm"
+                                    value={String(props.reviewLimit || 9)}
+                                    onChange={(e) => updateProp('reviewLimit', Number(e.target.value))}
+                                >
+                                    {[3, 6, 9, 12, 20].map((n) => (
+                                        <option key={n} value={n}>{n}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>{t('testimonials.reviewMinRating')}</Label>
+                                <select
+                                    className="w-full rounded border px-3 py-2 text-sm"
+                                    value={String(props.reviewMinRating || 4)}
+                                    onChange={(e) => updateProp('reviewMinRating', Number(e.target.value))}
+                                >
+                                    {[1, 3, 4, 5].map((n) => (
+                                        <option key={n} value={n}>
+                                            {n === 1 ? t('testimonials.reviewMinRatingAll') : t('testimonials.reviewMinRatingStars', { count: n })}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                            <Label className="text-xs">{t('testimonials.showAverageRating')}</Label>
+                            <Switch
+                                checked={props.showAverageRating === true}
+                                onCheckedChange={(c) => updateProp('showAverageRating', c)}
+                            />
+                        </div>
+                        <Button type="button" size="sm" variant="outline" className="w-full" onClick={() => openReviews()}>
+                            {t('testimonials.manageReviews')}
+                        </Button>
+                    </>
+                )}
             </div>
 
             {(props.layout || 'carousel') === 'carousel' && (

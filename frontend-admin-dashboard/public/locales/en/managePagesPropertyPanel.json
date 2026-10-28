@@ -910,7 +910,19 @@
     "cardsPerViewHint": "Tablets show up to 2 and phones show 1.",
     "autoplay": "Auto-slide",
     "autoplaySeconds": "Seconds between slides",
-    "photo": "Photo"
+    "photo": "Photo",
+    "reviewSource": "Show approved reviews",
+    "reviewSourceManual": "No, only the quotes below",
+    "reviewSourceBoth": "Yes, after the quotes below",
+    "reviewSourceReviews": "Yes, instead of the quotes below",
+    "reviewSourceHint": "Reviews visitors send through a Reviews & feedback section show here once you approve them.",
+    "reviewLimit": "Most reviews",
+    "reviewMinRating": "Minimum stars",
+    "reviewMinRatingAll": "Any rating",
+    "reviewMinRatingStars_one": "{{count}} star and up",
+    "reviewMinRatingStars_other": "{{count}} stars and up",
+    "showAverageRating": "Show the average rating under the heading",
+    "manageReviews": "Approve reviews"
   },
   "policy": {
     "defaults": {

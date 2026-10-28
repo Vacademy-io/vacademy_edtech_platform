@@ -910,7 +910,23 @@
     "cardsPerViewHint": "تعرض الأجهزة اللوحية بطاقتين كحد أقصى والهواتف بطاقة واحدة.",
     "autoplay": "تمرير تلقائي",
     "autoplaySeconds": "الثواني بين الشرائح",
-    "photo": "الصورة"
+    "photo": "الصورة",
+    "reviewSource": "عرض التقييمات المعتمدة",
+    "reviewSourceManual": "لا، الاقتباسات أدناه فقط",
+    "reviewSourceBoth": "نعم، بعد الاقتباسات أدناه",
+    "reviewSourceReviews": "نعم، بدلًا من الاقتباسات أدناه",
+    "reviewSourceHint": "تظهر هنا التقييمات التي يرسلها الزوار عبر قسم التقييمات والملاحظات بعد اعتمادها.",
+    "reviewLimit": "أقصى عدد للتقييمات",
+    "reviewMinRating": "أقل عدد نجوم",
+    "reviewMinRatingAll": "أي تقييم",
+    "reviewMinRatingStars_zero": "{{count}} نجمة فأكثر",
+    "reviewMinRatingStars_one": "نجمة واحدة فأكثر",
+    "reviewMinRatingStars_two": "نجمتان فأكثر",
+    "reviewMinRatingStars_few": "{{count}} نجوم فأكثر",
+    "reviewMinRatingStars_many": "{{count}} نجمة فأكثر",
+    "reviewMinRatingStars_other": "{{count}} نجمة فأكثر",
+    "showAverageRating": "عرض متوسط التقييم تحت العنوان",
+    "manageReviews": "اعتماد التقييمات"
   },
   "policy": {
     "defaults": {

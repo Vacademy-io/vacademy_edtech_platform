@@ -1,0 +1,188 @@
+{
+    "status": {
+        "PENDING": "Pending",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected"
+    },
+    "tabs": {
+        "PENDING": "Pending",
+        "APPROVED": "Approved",
+        "REJECTED": "Rejected",
+        "ALL": "All"
+    },
+    "list": {
+        "title": "Reviews & feedback",
+        "description": "What visitors sent through the Reviews & feedback section of your websites. Approve a review to show it in testimonials sections set to show reviews.",
+        "search": "Search name, review, course or city",
+        "loadFailed": "Reviews could not be loaded.",
+        "retry": "Try again",
+        "emptyFiltered": "No reviews match this search",
+        "empty": {
+            "PENDING": "No reviews waiting for approval",
+            "APPROVED": "No approved reviews yet",
+            "REJECTED": "No rejected reviews",
+            "ALL": "No reviews yet"
+        },
+        "emptyHint": "Add the Reviews & feedback section to a page of your website to start collecting reviews.",
+        "noText": "Stars only, no written review",
+        "sentOn": "Sent {{date}}",
+        "fromSite": "site: {{site}}",
+        "approve": "Approve",
+        "reject": "Reject",
+        "hide": "Hide",
+        "moreActions": "More actions",
+        "edit": "Edit",
+        "backToPending": "Move back to pending",
+        "delete": "Delete",
+        "previous": "Previous",
+        "next": "Next",
+        "pageOf": "Page {{page}} of {{total}}",
+        "editTitle": "Edit review",
+        "fields": {
+            "rating": "Rating",
+            "name": "Name",
+            "text": "Review",
+            "course": "Course",
+            "city": "City",
+            "designation": "Occupation / designation"
+        },
+        "starsA11y_one": "{{count}} star",
+        "starsA11y_other": "{{count}} stars",
+        "cancel": "Cancel",
+        "save": "Save",
+        "deleteTitle": "Delete this review?",
+        "deleteBody": "The review from {{name}} will be removed permanently. Prefer Reject if you may want it back.",
+        "noInstitute": "No institute selected",
+        "toast": {
+            "APPROVED": {
+                "title": "Approved",
+                "description": "It now shows in testimonials sections set to show reviews."
+            },
+            "REJECTED": {
+                "title": "Rejected"
+            },
+            "PENDING": {
+                "title": "Moved back to pending"
+            },
+            "errorTitle": "Error",
+            "updateFailed": "The review could not be updated",
+            "deleteFailed": "The review could not be deleted",
+            "saved": "Review saved",
+            "deleted": "Review deleted"
+        }
+    },
+    "editor": {
+        "manageHint": "Reviews visitors send wait for your approval. Approved reviews show in Testimonials sections set to show reviews.",
+        "openReviews": "Open reviews",
+        "sections": {
+            "template": "Template",
+            "look": "Look",
+            "behaviour": "When it opens by itself",
+            "visibility": "Visibility",
+            "fields": "What it asks",
+            "text": "Text"
+        },
+        "presets": {
+            "buttonAndPopup": {
+                "label": "Button + popup",
+                "description": "Floating button, and the form opens once after 5 seconds"
+            },
+            "floatingButton": {
+                "label": "Floating button",
+                "description": "Opens only when the visitor clicks it"
+            },
+            "sideTab": {
+                "label": "Side tab",
+                "description": "A tab on the right edge of the screen"
+            },
+            "popupAfterDelay": {
+                "label": "Popup after 5 seconds",
+                "description": "Opens by itself, at most once a week"
+            },
+            "popupFirstVisit": {
+                "label": "On first visit",
+                "description": "Opens as soon as the site loads, only once"
+            },
+            "cornerCard": {
+                "label": "Corner card",
+                "description": "Slides in at the corner, the page stays usable"
+            },
+            "inlineForm": {
+                "label": "Form on the page",
+                "description": "Sits in the page like any section"
+            }
+        },
+        "fields": {
+            "display": "How it asks",
+            "buttonStyle": "Button style",
+            "buttonLabel": "Button text",
+            "position": "Position",
+            "popupStyle": "Form opens as",
+            "backgroundColor": "Section background",
+            "hideAfterSubmit": "Hide the button after the visitor sends a review",
+            "courseOptions": "Course choices (one per line)",
+            "labelFor": "Label for {{field}}",
+            "heading": "Heading",
+            "subheading": "Subheading",
+            "nameLabel": "Name label",
+            "textPlaceholder": "Review placeholder",
+            "submitLabel": "Submit button",
+            "successHeading": "Thank-you heading",
+            "successMessage": "Thank-you message"
+        },
+        "display": {
+            "floatingPopup": "Button + popup",
+            "floating": "Button",
+            "popup": "Popup",
+            "inline": "On the page"
+        },
+        "buttonStyle": {
+            "pill": "Pill",
+            "icon": "Round icon",
+            "tab": "Side tab"
+        },
+        "position": {
+            "bottom-right": "Bottom right",
+            "bottom-left": "Bottom left",
+            "middle-right": "Right edge",
+            "middle-left": "Left edge"
+        },
+        "popupStyle": {
+            "modal": "Centred dialog",
+            "corner": "Corner card"
+        },
+        "hints": {
+            "tabNeedsSide": "A side tab shows on the left or right edge; at a bottom corner it shows as a pill.",
+            "frequency": "It never opens by itself again once the visitor has sent a review.",
+            "alwaysAsked": "Star rating and name are always asked.",
+            "courseOptionsPlaceholder": "SSC CGL\nRailway NTPC",
+            "courseOptions": "Leave empty to let visitors type their course.",
+            "emptyUsesDefault": "Leave a field empty to use the built-in wording in the visitor's language."
+        },
+        "fieldNames": {
+            "reviewText": "Written review",
+            "course": "Course",
+            "city": "City",
+            "designation": "Occupation / designation"
+        },
+        "fieldMode": {
+            "off": "Off",
+            "optional": "Optional",
+            "required": "Required"
+        },
+        "defaults": {
+            "buttonLabel": "Rate us",
+            "heading": "How was your experience?",
+            "subheading": "Your review helps other students choose.",
+            "nameLabel": "Your name",
+            "textLabel": "Your review",
+            "textPlaceholder": "What did you like? What could be better?",
+            "cityLabel": "City",
+            "courseLabel": "Course",
+            "designationLabel": "Occupation / designation",
+            "submitLabel": "Submit review",
+            "successHeading": "Thank you!",
+            "successMessage": "Your review has been sent. It will appear on the site once it is approved."
+        }
+    }
+}

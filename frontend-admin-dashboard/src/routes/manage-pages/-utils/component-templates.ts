@@ -247,6 +247,11 @@ export const buildComponentTemplates = (t: TFunction): Record<string, Omit<Compo
             description: t('testimonialSection.description'),
             layout: 'grid-scroll',
             testimonials: [],
+            // New sections also show approved site reviews (Reviews & feedback
+            // block); sections saved before this keep 'manual' (key absent).
+            reviewSource: 'both',
+            reviewLimit: 9,
+            reviewMinRating: 4,
             backgroundColor: '#F9FAFB', // design-lint-ignore: page-builder template default color
             textColor: '#111827', // design-lint-ignore: page-builder template default color
             styles: {
@@ -775,6 +780,34 @@ export const buildComponentTemplates = (t: TFunction): Record<string, Omit<Compo
             frequency: 'session',
             devices: 'all',
             closeOnBackdrop: true,
+        },
+    },
+    // Reviews & feedback: asks visitors for stars + a short review. Submissions
+    // wait in Website Builder → Reviews; approved ones show in testimonials
+    // sections that read reviews. Empty texts use the built-in wording in the
+    // visitor's site language. display floatingPopup | floating | popup | inline;
+    // buttonStyle pill | icon | tab; position bottom-right | bottom-left |
+    // middle-right | middle-left; popupStyle modal | corner; fields.* off |
+    // optional | required (stars and name are always asked).
+    reviewCollector: {
+        type: 'reviewCollector',
+        enabled: true,
+        props: {
+            display: 'floatingPopup',
+            buttonStyle: 'pill',
+            position: 'bottom-right',
+            popupStyle: 'modal',
+            buttonLabel: '',
+            heading: '',
+            subheading: '',
+            trigger: 'delay',
+            delaySeconds: 5,
+            scrollPercent: 40,
+            frequency: 'once',
+            devices: 'all',
+            hideAfterSubmit: true,
+            fields: { reviewText: 'optional', course: 'optional', city: 'optional', designation: 'optional' },
+            courseOptions: [],
         },
     },
     textBlock: {

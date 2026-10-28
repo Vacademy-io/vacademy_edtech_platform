@@ -33,15 +33,17 @@ import { AiChromePanel } from './AiChromePanel';
 import { RevisionHistoryDialog } from './RevisionHistoryDialog';
 import { PublishCheckDialog } from './PublishCheckDialog';
 import { BlogManagerDialog } from './blog/BlogManagerDialog';
+import { ReviewsManagerDialog } from './reviews/ReviewsManagerDialog';
 import { FolderLibraryDialog } from './folders/FolderLibraryDialog';
 import { useFolderLibraryStore } from '../-stores/folder-library-store';
 import { useBlogManagerStore } from '../-stores/blog-manager-store';
+import { useReviewManagerStore } from '../-stores/review-manager-store';
 import { runPublishChecks, type PublishIssue } from '../-utils/publish-checks';
 import { Button } from '@/components/ui/button';
 import {
     CircleNotch as Loader2, FloppyDisk as Save, Code, Layout as LayoutTemplate,
     ArrowUUpLeft as Undo2, ArrowUUpRight as Redo2, Stack as Layers,
-    PuzzlePiece as PuzzleIcon, List, RocketLaunch, ClockCounterClockwise, Sparkle, ChartLine, Newspaper, Folders, Trash } from '@phosphor-icons/react';
+    PuzzlePiece as PuzzleIcon, List, RocketLaunch, ClockCounterClockwise, Sparkle, ChartLine, Newspaper, Folders, Trash, ChatCircleText } from '@phosphor-icons/react';
 import { useToast } from '@/hooks/use-toast';
 import { isAxiosError } from 'axios';
 import { Route } from '../editor/$tagName';
@@ -92,6 +94,7 @@ export const CatalogueEditorPage = () => {
     const propertyPanelKey = useLocalizedPanelKey(activeLocale);
     const { toast } = useToast();
     const openBlog = useBlogManagerStore((s) => s.open);
+    const openReviews = useReviewManagerStore((s) => s.open);
     const openFolders = useFolderLibraryStore((s) => s.open);
     const { canWrite } = useCataloguePermissions();
 
@@ -677,6 +680,14 @@ export const CatalogueEditorPage = () => {
                     <Button
                         variant="ghost"
                         size="sm"
+                        onClick={() => openReviews()}
+                        title="Reviews — approve what visitors sent through the Reviews & feedback section"
+                    >
+                        <ChatCircleText className="size-4" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
                         onClick={() => openFolders()}
                         title="Folders — organise product pages into folders for the Folder Browser section"
                     >
@@ -831,6 +842,7 @@ export const CatalogueEditorPage = () => {
 
             {/* Blog posts, managed without leaving the builder */}
             <BlogManagerDialog />
+            <ReviewsManagerDialog />
             <FolderLibraryDialog />
 
             {/* Version history */}

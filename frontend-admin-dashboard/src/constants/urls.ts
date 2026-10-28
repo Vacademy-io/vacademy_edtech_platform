@@ -1429,6 +1429,14 @@ export const CATALOGUE_BLOG_POST_UNPUBLISH = (instituteId: string, postId: strin
     `${CATALOGUE_BLOG_BASE_URL}/post/unpublish?instituteId=${instituteId}&postId=${postId}`;
 export const CATALOGUE_BLOG_POST_ARCHIVE = (instituteId: string, postId: string) =>
     `${CATALOGUE_BLOG_BASE_URL}/post/archive?instituteId=${instituteId}&postId=${postId}`;
+// Site reviews — what visitors send through a `reviewCollector` block; approved
+// ones can show in any testimonials section set to read them.
+export const CATALOGUE_REVIEW_BASE_URL = `${BASE_URL}/admin-core-service/v1/catalogue-review`;
+export const CATALOGUE_REVIEWS = (instituteId: string) => `${CATALOGUE_REVIEW_BASE_URL}/reviews?instituteId=${instituteId}`;
+export const CATALOGUE_REVIEW = (instituteId: string, reviewId: string) =>
+    `${CATALOGUE_REVIEW_BASE_URL}/review?instituteId=${instituteId}&reviewId=${reviewId}`;
+export const CATALOGUE_REVIEW_STATUS = (instituteId: string, reviewId: string, status: string) =>
+    `${CATALOGUE_REVIEW_BASE_URL}/review/status?instituteId=${instituteId}&reviewId=${reviewId}&status=${status}`;
 // Folder libraries — admin-curated folder trees (product pages as leaves),
 // read live by the `folderBrowser` section of any of the institute's sites.
 export const FOLDER_LIBRARY_BASE_URL = `${BASE_URL}/admin-core-service/v1/folder-library`;

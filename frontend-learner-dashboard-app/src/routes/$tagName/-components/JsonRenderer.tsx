@@ -73,6 +73,7 @@ import { FolderBrowserComponent } from "./components/FolderBrowserComponent";
 import { AccessPassGridComponent } from "./components/AccessPassGridComponent";
 import { DetailBlocksComponent } from "./components/DetailBlocksComponent";
 import { BlogComponent } from "./components/BlogComponent";
+import { ReviewCollector } from "./components/review/ReviewCollector";
 import { JobOpeningsComponent } from "./components/JobOpeningsComponent";
 import { LeadFormComponent } from "./components/LeadFormComponent";
 import { submitWebsiteLead, isSpamSubmission } from "../-utils/website-lead";
@@ -355,7 +356,8 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
           />
         );
       case "testimonialSection":
-        return <TestimonialSectionComponent key={id} {...props} />;
+        // reviewSource "reviews" | "both" also reads the institute's approved site reviews.
+        return <TestimonialSectionComponent key={id} {...props} instituteId={instituteId} />;
       case "cartComponent":
         return <CartComponent key={id} {...props} instituteId={instituteId} globalSettings={globalSettings} isPreviewMode={isPreviewMode} />;
       case "buyRentSection":
@@ -443,6 +445,24 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
             componentId={id}
             instituteId={instituteId}
             tagName={tagName}
+            isPreviewMode={isPreviewMode}
+            showPreviewStrip={previewChrome}
+            isSelected={id === selectedComponentId}
+          />
+        );
+
+      case "reviewCollector":
+        // Reviews & feedback: a launcher, a self-opening form or an inline
+        // form. Submissions wait for the admin; approved ones can show in a
+        // testimonials section. Portals like the promo popup.
+        return (
+          <ReviewCollector
+            key={id}
+            {...props}
+            componentId={id}
+            instituteId={instituteId}
+            tagName={tagName}
+            pageRoute={page.route || ""}
             isPreviewMode={isPreviewMode}
             showPreviewStrip={previewChrome}
             isSelected={id === selectedComponentId}

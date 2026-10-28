@@ -769,5 +769,48 @@
         "otherCurrencySummary": "कुछ {{courses}} की कीमत दूसरी मुद्रा में है — उनका चेकआउट अलग से करें।",
         "continueAtCurrentPrices": "वर्तमान कीमतों पर जारी रखें",
         "priceChangedFromTo": "कीमत {{from}} से बदलकर {{to}} हो गई है"
+    },
+    "reviewCollector": {
+        "buttonLabel": "रेटिंग दें",
+        "heading": "आपका अनुभव कैसा रहा?",
+        "subheading": "आपका रिव्यू दूसरे छात्रों को सही चुनाव करने में मदद करता है।",
+        "ratingLabel": "आपकी रेटिंग",
+        "ratingName": {
+            "1": "खराब",
+            "2": "ठीक-ठाक",
+            "3": "अच्छा",
+            "4": "बहुत अच्छा",
+            "5": "शानदार"
+        },
+        "starsA11y_one": "{{count}} स्टार",
+        "starsA11y_other": "{{count}} स्टार",
+        "nameLabel": "आपका नाम",
+        "textLabel": "आपका रिव्यू",
+        "textPlaceholder": "क्या अच्छा लगा? क्या बेहतर हो सकता है?",
+        "cityLabel": "शहर",
+        "courseLabel": "कोर्स",
+        "coursePlaceholder": "अपना कोर्स चुनें",
+        "designationLabel": "पेशा / पद",
+        "submit": "रिव्यू भेजें",
+        "sending": "भेजा जा रहा है…",
+        "successHeading": "धन्यवाद!",
+        "successMessage": "आपका रिव्यू भेज दिया गया है। स्वीकृत होने के बाद यह वेबसाइट पर दिखेगा।",
+        "previewNoSave": "प्रीव्यू: कुछ भी सेव नहीं हुआ।",
+        "ratingRequired": "कृपया स्टार रेटिंग चुनें।",
+        "fieldRequired": "यह जानकारी ज़रूरी है।",
+        "tooLong": "यह बहुत लंबा है।",
+        "failed": "रिव्यू नहीं भेजा जा सका। कृपया फिर से कोशिश करें।",
+        "tooMany": "आज आप कई रिव्यू भेज चुके हैं। कृपया कल फिर कोशिश करें।",
+        "close": "बंद करें",
+        "previewTitle": "रिव्यू और फ़ीडबैक",
+        "previewHint": "फ़ॉर्म खोलने के लिए यह ब्लॉक चुनें",
+        "display": {
+            "floatingPopup": "बटन + अपने आप खुलेगा",
+            "floating": "बटन",
+            "popup": "अपने आप खुलेगा",
+            "inline": "पेज पर फ़ॉर्म"
+        },
+        "averageRating_one": "5 में से {{average}} · {{count}} रिव्यू",
+        "averageRating_other": "5 में से {{average}} · {{count}} रिव्यू"
     }
 }

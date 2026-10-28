@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { BlogService } from "../-services/blog-service";
+import { siteVisitorId } from "./site-visitor";
 
 /**
  * Likes on blog posts, for the `blog` section when its `allowLikes` is on.
@@ -15,7 +16,6 @@ import { BlogService } from "../-services/blog-service";
  * the open article) is kept in step through one window event.
  */
 
-const VISITOR_KEY = "catalogue-blog-visitor";
 const LIKED_KEY = "catalogue-blog-liked";
 const LIKE_EVENT = "catalogueBlogLiked";
 /** Enough for any reader; the oldest likes fall off first. */
@@ -47,23 +47,6 @@ const writeLiked = (postId: string, liked: boolean) => {
     window.localStorage.setItem(LIKED_KEY, JSON.stringify(next));
   } catch {
     // Private mode / storage disabled: the like still counts on the server.
-  }
-};
-
-const newVisitorId = (): string => {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
-  return `v${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`;
-};
-
-const visitorId = (): string => {
-  try {
-    const existing = window.localStorage.getItem(VISITOR_KEY);
-    if (existing) return existing;
-    const created = newVisitorId();
-    window.localStorage.setItem(VISITOR_KEY, created);
-    return created;
-  } catch {
-    return newVisitorId();
   }
 };
 
@@ -112,7 +95,7 @@ export const useBlogLike = (
     writeLiked(postId, next);
     setBusy(true);
     try {
-      const res = await BlogService.setLike(instituteId, postId, visitorId(), next);
+      const res = await BlogService.setLike(instituteId, postId, siteVisitorId(), next);
       announce({ postId, liked: res.liked, count: res.like_count });
     } catch {
       setLiked(before.liked);

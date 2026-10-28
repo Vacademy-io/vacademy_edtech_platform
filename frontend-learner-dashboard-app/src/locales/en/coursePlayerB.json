@@ -782,5 +782,48 @@
         "otherCurrencySummary": "Some {{courses}} are priced in a different currency — check them out separately.",
         "continueAtCurrentPrices": "Continue at current prices",
         "priceChangedFromTo": "Price changed from {{from}} to {{to}}"
+    },
+    "reviewCollector": {
+        "buttonLabel": "Rate us",
+        "heading": "How was your experience?",
+        "subheading": "Your review helps other students choose.",
+        "ratingLabel": "Your rating",
+        "ratingName": {
+            "1": "Poor",
+            "2": "Fair",
+            "3": "Good",
+            "4": "Very good",
+            "5": "Excellent"
+        },
+        "starsA11y_one": "{{count}} star",
+        "starsA11y_other": "{{count}} stars",
+        "nameLabel": "Your name",
+        "textLabel": "Your review",
+        "textPlaceholder": "What did you like? What could be better?",
+        "cityLabel": "City",
+        "courseLabel": "Course",
+        "coursePlaceholder": "Select your course",
+        "designationLabel": "Occupation / designation",
+        "submit": "Submit review",
+        "sending": "Sending…",
+        "successHeading": "Thank you!",
+        "successMessage": "Your review has been sent. It will appear on the site once it is approved.",
+        "previewNoSave": "Preview: nothing was saved.",
+        "ratingRequired": "Please choose a star rating.",
+        "fieldRequired": "This field is required.",
+        "tooLong": "This is too long.",
+        "failed": "Could not send your review. Please try again.",
+        "tooMany": "You have sent several reviews today. Please try again tomorrow.",
+        "close": "Close",
+        "previewTitle": "Reviews & feedback",
+        "previewHint": "Select this block to open the form",
+        "display": {
+            "floatingPopup": "button + opens by itself",
+            "floating": "button",
+            "popup": "opens by itself",
+            "inline": "form on the page"
+        },
+        "averageRating_one": "{{average}} out of 5 · {{count}} review",
+        "averageRating_other": "{{average}} out of 5 · {{count}} reviews"
     }
 }

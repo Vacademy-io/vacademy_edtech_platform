@@ -906,7 +906,19 @@
     "cardsPerViewHint": "टैबलेट पर अधिकतम 2 और फ़ोन पर 1 कार्ड दिखेगा।",
     "autoplay": "अपने आप स्लाइड करें",
     "autoplaySeconds": "हर स्लाइड के बीच सेकंड",
-    "photo": "फ़ोटो"
+    "photo": "फ़ोटो",
+    "reviewSource": "स्वीकृत रिव्यू दिखाएँ",
+    "reviewSourceManual": "नहीं, सिर्फ़ नीचे वाले कोट",
+    "reviewSourceBoth": "हाँ, नीचे वाले कोट के बाद",
+    "reviewSourceReviews": "हाँ, नीचे वाले कोट की जगह",
+    "reviewSourceHint": "रिव्यू और फ़ीडबैक सेक्शन से विज़िटर के भेजे रिव्यू आपकी स्वीकृति के बाद यहाँ दिखेंगे।",
+    "reviewLimit": "ज़्यादा से ज़्यादा रिव्यू",
+    "reviewMinRating": "कम से कम स्टार",
+    "reviewMinRatingAll": "कोई भी रेटिंग",
+    "reviewMinRatingStars_one": "{{count}} स्टार और ऊपर",
+    "reviewMinRatingStars_other": "{{count}} स्टार और ऊपर",
+    "showAverageRating": "शीर्षक के नीचे औसत रेटिंग दिखाएँ",
+    "manageReviews": "रिव्यू स्वीकृत करें"
   },
   "policy": {
     "defaults": {
