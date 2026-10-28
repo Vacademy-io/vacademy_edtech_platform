@@ -44,6 +44,8 @@ export interface ReviewSubmission {
   courseName?: string;
   designation?: string;
   visitorKey?: string;
+  /** Answers to the form's custom fields, with the label the visitor saw. */
+  answers?: { key: string; label: string; value: string }[];
   /** Honeypot: hidden from people, so only a bot fills it. */
   website?: string;
 }
@@ -61,6 +63,7 @@ export class ReviewService {
       course_name: review.courseName || null,
       designation: review.designation || null,
       visitor_key: review.visitorKey || null,
+      answers: review.answers && review.answers.length ? review.answers : null,
       website: review.website || null,
     });
   }

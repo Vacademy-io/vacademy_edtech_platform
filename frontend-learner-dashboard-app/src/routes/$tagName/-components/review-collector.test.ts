@@ -22,14 +22,12 @@ import { createRoot, type Root } from "react-dom/client";
 import { ReviewCollector } from "./components/review/ReviewCollector";
 import { TestimonialSectionComponent } from "./components/TestimonialSectionComponent";
 import {
-  DEFAULT_REVIEW_FIELDS,
-  EMPTY_REVIEW,
+  buildReviewSubmission,
   mergeTestimonials,
   normalizeDisplay,
-  normalizeFields,
-  reviewPayload,
+  normalizeFormFields,
   reviewToTestimonial,
-  validateReview,
+  validateReviewForm,
 } from "../-utils/review-collector";
 
 /**
@@ -85,30 +83,72 @@ const typeInto = (input: HTMLInputElement | HTMLTextAreaElement, value: string) 
 };
 const base = { componentId: "c1", instituteId: "inst-1", tagName: "school", pageRoute: "home" };
 
-describe("review form rules", () => {
-  it("needs stars and a name; other fields only when required", () => {
-    expect(validateReview(EMPTY_REVIEW, DEFAULT_REVIEW_FIELDS)).toEqual({ rating: "required", reviewerName: "required" });
-    const ok = { ...EMPTY_REVIEW, rating: 5, reviewerName: "Asha" };
-    expect(validateReview(ok, DEFAULT_REVIEW_FIELDS)).toEqual({});
-    const strict = normalizeFields({ reviewText: "required", city: "required", course: "off" });
-    expect(validateReview(ok, strict)).toEqual({ reviewText: "required", city: "required" });
-  });
-
-  it("sends only the fields the block asks for", () => {
-    const v = { ...EMPTY_REVIEW, rating: 4, reviewerName: " Asha ", city: "Ajmer", courseName: "SSC", designation: "Clerk", reviewText: " Great " };
-    expect(reviewPayload(v, normalizeFields({ course: "off" }))).toEqual({
-      rating: 4,
-      reviewerName: "Asha",
-      reviewText: "Great",
-      city: "Ajmer",
-      courseName: undefined,
-      designation: "Clerk",
+describe("review form fields", () => {
+  it("a block saved before the builder keeps its old fields, order and labels", () => {
+    const fields = normalizeFormFields({
+      fields: { reviewText: "required", course: "optional", city: "optional", designation: "off" },
+      courseLabel: "eBook",
+      courseOptions: ["SSC", "SSC", " "],
     });
+    expect(fields.map((f) => f.kind)).toEqual(["rating", "reviewText", "reviewerName", "courseName", "city"]);
+    expect(fields.find((f) => f.kind === "reviewText")!.required).toBe(true);
+    const course = fields.find((f) => f.kind === "courseName")!;
+    expect(course).toMatchObject({ label: "eBook", options: ["SSC"], width: "half" });
   });
 
-  it("reads unknown settings as the defaults", () => {
+  it("formFields: admin order kept, stars and name forced in and required, built-ins once, unknown kinds dropped", () => {
+    const fields = normalizeFormFields({
+      formFields: [
+        { id: "f_exam", kind: "select", label: "Exam", options: ["SSC", "Railway"], required: true, width: "half" },
+        { id: "reviewerName", kind: "reviewerName", required: false },
+        { id: "city", kind: "city" },
+        { id: "city", kind: "city" },
+        { id: "x", kind: "bogus" },
+        { id: "f_exam", kind: "email", label: "Email" },
+      ],
+    });
+    expect(fields.map((f) => f.id)).toEqual(["rating", "f_exam", "reviewerName", "city", "f_exam_"]);
+    expect(fields.find((f) => f.kind === "reviewerName")!.required).toBe(true);
+    expect(fields[1]).toMatchObject({ kind: "select", width: "half", options: ["SSC", "Railway"], required: true });
+  });
+
+  it("validates required, stars, email, number and phone", () => {
+    const fields = normalizeFormFields({
+      formFields: [
+        { id: "rating", kind: "rating" },
+        { id: "reviewerName", kind: "reviewerName" },
+        { id: "f_mail", kind: "email" },
+        { id: "f_age", kind: "number", required: true },
+        { id: "f_ph", kind: "phone" },
+      ],
+    });
+    expect(validateReviewForm(fields, {})).toEqual({ rating: "required", reviewerName: "required", f_age: "required" });
+    expect(validateReviewForm(fields, { rating: 5, reviewerName: "Asha", f_mail: "nope", f_age: "abc", f_ph: "12" })).toEqual({
+      f_mail: "invalidEmail",
+      f_age: "invalidNumber",
+      f_ph: "invalidPhone",
+    });
+    expect(validateReviewForm(fields, { rating: 5, reviewerName: "Asha", f_mail: "a@b.co", f_age: "21", f_ph: "+91 98765 43210" })).toEqual({});
+  });
+
+  it("sends built-ins to their columns and custom answers with the label shown, blanks left out", () => {
+    const fields = normalizeFormFields({
+      formFields: [
+        { id: "rating", kind: "rating" },
+        { id: "f_exam", kind: "select", label: "Exam", options: ["SSC"] },
+        { id: "reviewerName", kind: "reviewerName" },
+        { id: "city", kind: "city" },
+        { id: "f_note", kind: "textarea" },
+      ],
+    });
+    const out = buildReviewSubmission(fields, { rating: 4, reviewerName: " Asha ", city: "Ajmer", f_exam: "SSC", f_note: "  " }, (f) =>
+      f.label || "default"
+    );
+    expect(out).toEqual({ rating: 4, reviewerName: "Asha", city: "Ajmer", answers: [{ key: "f_exam", label: "Exam", value: "SSC" }] });
+  });
+
+  it("reads unknown display settings as the default", () => {
     expect(normalizeDisplay("bogus")).toBe("floatingPopup");
-    expect(normalizeFields({ city: "nope" }).city).toBe("optional");
   });
 });
 
@@ -242,7 +282,41 @@ describe("ReviewCollector", () => {
     expect(container.querySelector("[data-review-collector=inline] form")).toBeTruthy();
     expect(container.querySelector("textarea")).toBeNull();
     const options = Array.from(container.querySelectorAll("select option")).map((o) => o.textContent);
-    expect(options).toEqual(["reviewCollector.coursePlaceholder", "SSC CGL", "Railway NTPC"]);
+    expect(options).toEqual(["reviewCollector.selectPlaceholder", "SSC CGL", "Railway NTPC"]);
+  });
+
+  it("custom fields render in the admin's order and their answers are sent", async () => {
+    await render(
+      React.createElement(ReviewCollector, {
+        ...base,
+        display: "inline",
+        formFields: [
+          { id: "reviewerName", kind: "reviewerName", label: "Full name" },
+          { id: "f_exam", kind: "select", label: "Exam", options: ["SSC", "Railway"], required: true },
+          { id: "rating", kind: "rating" },
+        ],
+      })
+    );
+    const kinds = Array.from(container.querySelectorAll("[data-review-field]")).map((n) => n.getAttribute("data-review-field"));
+    expect(kinds).toEqual(["reviewerName", "select", "rating"]);
+    expect(container.textContent).toContain("Full name");
+
+    typeInto(container.querySelector<HTMLInputElement>('input[autocomplete="name"]')!, "Asha");
+    await act(async () => container.querySelector<HTMLInputElement>('input[type=radio][value="5"]')!.click());
+    await act(async () => container.querySelector<HTMLFormElement>("form")!.requestSubmit());
+    expect(submit).not.toHaveBeenCalled(); // the required dropdown is empty
+    expect(container.textContent).toContain("reviewCollector.fieldRequired");
+
+    const select = container.querySelector<HTMLSelectElement>("select")!;
+    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value")!.set!.call(select, "Railway");
+    select.dispatchEvent(new Event("change", { bubbles: true }));
+    await act(async () => container.querySelector<HTMLFormElement>("form")!.requestSubmit());
+    expect(submit).toHaveBeenCalledTimes(1);
+    expect(submit.mock.calls[0][0]).toMatchObject({
+      rating: 5,
+      reviewerName: "Asha",
+      answers: [{ key: "f_exam", label: "Exam", value: "Railway" }],
+    });
   });
 
   it("editor preview shows success without sending anything", async () => {
