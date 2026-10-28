@@ -1,6 +1,5 @@
 import React, { Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { useNavigate } from '@tanstack/react-router';
 import type { TFunction } from 'i18next';
 import { UnsavedChangesBar } from '@/components/common/unsaved-changes-bar';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -23,6 +22,9 @@ import {
     BellSimple,
     PaintBrush,
     Eye,
+    MagnifyingGlass,
+    UserCircle,
+    X,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { downloadTutorialGuidePdf } from '@/routes/settings/-utils/tutorial-guide';
@@ -99,10 +101,11 @@ function getStudentDisplaySections(t: TFunction): SettingsSectionGroup[] {
     return [
         {
             sections: [
-                { id: 'grp-layout', label: t('sections.layoutNav'), icon: SquaresFour },
                 { id: 'grp-theme', label: t('sections.themeLayout'), icon: PaintBrush },
-                { id: 'grp-account', label: t('sections.loginAccount'), icon: SignIn },
+                { id: 'grp-layout', label: t('sections.layoutNav'), icon: SquaresFour },
                 { id: 'grp-learning', label: t('sections.learningExperience'), icon: GraduationCap },
+                { id: 'grp-profile', label: t('sections.profilePermissions'), icon: UserCircle },
+                { id: 'grp-account', label: t('sections.loginAccount'), icon: SignIn },
                 {
                     id: 'grp-notifications',
                     label: t('sections.notificationsRedirect'),
@@ -126,7 +129,6 @@ const PROFILE_CARD_TOGGLES = [
 
 export default function StudentDisplaySettings(): JSX.Element {
     const { t } = useTranslation('settingsStudentDisplay');
-    const navigate = useNavigate();
     const STUDENT_DISPLAY_SECTIONS = getStudentDisplaySections(t);
     // Precomputed labels for the tab/sub-tab list renderers below: those loops
     // use `t` as the loop variable name for the tab item (matching the
@@ -148,6 +150,27 @@ export default function StudentDisplaySettings(): JSX.Element {
     // settings below plus the Theme section's unsaved theme.
     const [previewOpen, setPreviewOpen] = useState(false);
     const [themeDraft, setThemeDraft] = useState<ThemeEditorDraft | null>(null);
+    // The open tab is owned here so the settings finder and the "On this tab"
+    // chips can jump to any card, on any tab.
+    const [activeSection, setActiveSection] = useState(
+        STUDENT_DISPLAY_SECTIONS[0]!.sections[0]!.id
+    );
+    const jumpToCard = (cardId: string) => {
+        const entry = SETTINGS_CARD_INDEX.find((c) => c.id === cardId);
+        if (entry) setActiveSection(entry.section);
+        // After the tab switch has rendered: bring the card into view and
+        // flash a ring so the eye lands on it.
+        window.setTimeout(() => {
+            const el = document.getElementById(cardId);
+            if (!el) return;
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            el.classList.add('ring-2', 'ring-primary-400', 'rounded-lg');
+            window.setTimeout(
+                () => el.classList.remove('ring-2', 'ring-primary-400', 'rounded-lg'),
+                1800
+            );
+        }, 60);
+    };
 
     // Snapshot of the last loaded/saved state for the Discard button in the
     // sticky unsaved-changes bar.
@@ -521,8 +544,11 @@ export default function StudentDisplaySettings(): JSX.Element {
             {/* Save is handled by the sticky UnsavedChangesBar at the bottom of
                 the viewport, so the redundant top + bottom buttons that used
                 to live here have been removed. */}
+            <SettingsFinder sections={STUDENT_DISPLAY_SECTIONS} onJump={jumpToCard} />
             <SettingsSectionsLayout
                 groups={STUDENT_DISPLAY_SECTIONS}
+                activeId={activeSection}
+                onActiveIdChange={setActiveSection}
                 toolbar={
                     <Button
                         variant={previewOpen ? 'secondary' : 'outline'}
@@ -535,7 +561,8 @@ export default function StudentDisplaySettings(): JSX.Element {
                 }
             >
             <section id="grp-layout" className="space-y-6">
-            <Card>
+            <SectionJumpChips sectionId="grp-layout" onJump={jumpToCard} />
+            <Card id="sd-sidebar" className="scroll-mt-24 transition-shadow">
                 <CardHeader>
                     <CardTitle>{t('sidebar.cardTitle')}</CardTitle>
                     <CardDescription>
@@ -667,7 +694,7 @@ export default function StudentDisplaySettings(): JSX.Element {
                 </div>
             </Card>
 
-            <Card>
+            <Card id="sd-ui" className="scroll-mt-24 transition-shadow">
                 <CardHeader>
                     <CardTitle>{t('ui.cardTitle')}</CardTitle>
                     <CardDescription>{t('ui.cardDescription')}</CardDescription>
@@ -680,23 +707,14 @@ export default function StudentDisplaySettings(): JSX.Element {
                     ui.type value is still READ by the learner app as a fallback
                     for institutes saved before the move — see resolveUiSkin. */}
                 <div className="space-y-2 p-4 pt-0">
-                    <p className="text-xs text-neutral-500">{t('ui.movedToAppearance')}</p>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                            navigate({
-                                to: '/settings',
-                                search: { selectedTab: 'appearance' },
-                            })
-                        }
-                    >
-                        {t('ui.openAppearance')}
+                    <p className="text-xs text-neutral-500">{t('ui.movedToTheme')}</p>
+                    <Button variant="outline" size="sm" onClick={() => jumpToCard('sd-theme')}>
+                        {t('ui.openTheme')}
                     </Button>
                 </div>
             </Card>
 
-            <Card>
+            <Card id="sd-widgets" className="scroll-mt-24 transition-shadow">
                 <CardHeader>
                     <CardTitle>{t('widgets.cardTitle')}</CardTitle>
                     <CardDescription>{t('widgets.cardDescription')}</CardDescription>
@@ -776,7 +794,8 @@ export default function StudentDisplaySettings(): JSX.Element {
             </section>
 
             <section id="grp-account" className="space-y-6">
-            <Card>
+            <SectionJumpChips sectionId="grp-account" onJump={jumpToCard} />
+            <Card id="sd-login" className="scroll-mt-24 transition-shadow">
                 <CardHeader>
                     <CardTitle>{t('loginSignup.cardTitle')}</CardTitle>
                     <CardDescription>{t('loginSignup.cardDescription')}</CardDescription>
@@ -918,85 +937,14 @@ export default function StudentDisplaySettings(): JSX.Element {
                 </div>
             </Card>
 
-            <MaxActiveSessionsSetting />
+            <div id="sd-sessions" className="scroll-mt-24 transition-shadow">
+                <MaxActiveSessionsSetting />
+            </div>
             </section>
 
-            <section id="grp-learning" className="space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>{t('courseSettings.cardTitle')}</CardTitle>
-                    <CardDescription>{t('courseSettings.cardDescription')}</CardDescription>
-                </CardHeader>
-                <div className="space-y-3 p-4 pt-0">
-                    <div className="flex items-center gap-2">
-                        <Switch
-                            checked={settings.courseSettings.quiz.moveOnlyOnCorrectAnswer}
-                            onCheckedChange={(v) =>
-                                update('courseSettings', {
-                                    ...settings.courseSettings,
-                                    quiz: {
-                                        ...settings.courseSettings.quiz,
-                                        moveOnlyOnCorrectAnswer: v,
-                                    },
-                                })
-                            }
-                        />
-                        <Label className="text-xs">{t('courseSettings.moveOnlyOnCorrect')}</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Switch
-                            checked={settings.courseSettings.quiz.celebrateOnQuizComplete}
-                            onCheckedChange={(v) =>
-                                update('courseSettings', {
-                                    ...settings.courseSettings,
-                                    quiz: {
-                                        ...settings.courseSettings.quiz,
-                                        celebrateOnQuizComplete: v,
-                                    },
-                                })
-                            }
-                        />
-                        <Label className="text-xs">{t('courseSettings.celebrateOnComplete')}</Label>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Switch
-                            checked={settings.courseSettings.quiz.showReportAndCorrectAnswers}
-                            onCheckedChange={(v) =>
-                                update('courseSettings', {
-                                    ...settings.courseSettings,
-                                    quiz: {
-                                        ...settings.courseSettings.quiz,
-                                        showReportAndCorrectAnswers: v,
-                                    },
-                                })
-                            }
-                        />
-                        <Label className="text-xs">{t('courseSettings.showReportAndAnswers')}</Label>
-                    </div>
-                    <p className="pt-2 text-xs font-semibold text-neutral-600">
-                        {t('courseSettings.assignmentHeading')}
-                    </p>
-                    {(['hideAttemptsAllowed', 'hideRepeatedTitle'] as const).map((key) => (
-                        <div key={key} className="flex items-center gap-2">
-                            <Switch
-                                checked={settings.courseSettings.assignment[key]}
-                                onCheckedChange={(v) =>
-                                    update('courseSettings', {
-                                        ...settings.courseSettings,
-                                        assignment: {
-                                            ...settings.courseSettings.assignment,
-                                            [key]: v,
-                                        },
-                                    })
-                                }
-                            />
-                            <Label className="text-xs">{t(`courseSettings.${key}`)}</Label>
-                        </div>
-                    ))}
-                </div>
-            </Card>
-
-            <Card>
+            <section id="grp-profile" className="space-y-6">
+            <SectionJumpChips sectionId="grp-profile" onJump={jumpToCard} />
+            <Card id="sd-permissions" className="scroll-mt-24 transition-shadow">
                 <CardHeader>
                     <CardTitle>{t('permissions.cardTitle')}</CardTitle>
                     <CardDescription>{t('permissions.cardDescription')}</CardDescription>
@@ -1024,7 +972,7 @@ export default function StudentDisplaySettings(): JSX.Element {
                 </div>
             </Card>
 
-            <Card>
+            <Card id="sd-profile" className="scroll-mt-24 transition-shadow">
                 <CardHeader>
                     <CardTitle>{t('profilePage.cardTitle')}</CardTitle>
                     <CardDescription>{t('profilePage.cardDescription')}</CardDescription>
@@ -1062,8 +1010,11 @@ export default function StudentDisplaySettings(): JSX.Element {
                     ))}
                 </div>
             </Card>
+            </section>
 
-            <Card>
+            <section id="grp-learning" className="space-y-6">
+            <SectionJumpChips sectionId="grp-learning" onJump={jumpToCard} />
+            <Card id="sd-course-details" className="scroll-mt-24 transition-shadow">
                 <CardHeader>
                     <CardTitle>{t('courseDetails.cardTitle')}</CardTitle>
                     <CardDescription>{t('courseDetails.cardDescription')}</CardDescription>
@@ -1554,7 +1505,7 @@ export default function StudentDisplaySettings(): JSX.Element {
                 </div>
             </Card>
 
-            <Card>
+            <Card id="sd-all-courses" className="scroll-mt-24 transition-shadow">
                 <CardHeader>
                     <CardTitle>{t('allCourses.cardTitle')}</CardTitle>
                     <CardDescription>{t('allCourses.cardDescription')}</CardDescription>
@@ -1787,7 +1738,7 @@ export default function StudentDisplaySettings(): JSX.Element {
                 the single source of truth — enablement, threshold, template and
                 numbering, plus per-course overrides. */}
 
-            <Card>
+            <Card id="sd-live-classes" className="scroll-mt-24 transition-shadow">
                 <CardHeader>
                     <CardTitle>{t('liveClasses.cardTitle')}</CardTitle>
                     <CardDescription>
@@ -1882,7 +1833,7 @@ export default function StudentDisplaySettings(): JSX.Element {
                 </div>
             </Card>
 
-            <Card>
+            <Card id="sd-tutorials" className="scroll-mt-24 transition-shadow">
                 <CardHeader>
                     <CardTitle>{t('tutorials.cardTitle')}</CardTitle>
                     <CardDescription>
@@ -2009,7 +1960,7 @@ export default function StudentDisplaySettings(): JSX.Element {
                 </div>
             </Card>
 
-            <Card>
+            <Card id="sd-concentration" className="scroll-mt-24 transition-shadow">
                 <CardHeader>
                     <CardTitle>{t('concentration.cardTitle')}</CardTitle>
                     <CardDescription>
@@ -2096,10 +2047,85 @@ export default function StudentDisplaySettings(): JSX.Element {
                     )}
                 </div>
             </Card>
+
+            <Card id="sd-course-settings" className="scroll-mt-24 transition-shadow">
+                <CardHeader>
+                    <CardTitle>{t('courseSettings.cardTitle')}</CardTitle>
+                    <CardDescription>{t('courseSettings.cardDescription')}</CardDescription>
+                </CardHeader>
+                <div className="space-y-3 p-4 pt-0">
+                    <div className="flex items-center gap-2">
+                        <Switch
+                            checked={settings.courseSettings.quiz.moveOnlyOnCorrectAnswer}
+                            onCheckedChange={(v) =>
+                                update('courseSettings', {
+                                    ...settings.courseSettings,
+                                    quiz: {
+                                        ...settings.courseSettings.quiz,
+                                        moveOnlyOnCorrectAnswer: v,
+                                    },
+                                })
+                            }
+                        />
+                        <Label className="text-xs">{t('courseSettings.moveOnlyOnCorrect')}</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Switch
+                            checked={settings.courseSettings.quiz.celebrateOnQuizComplete}
+                            onCheckedChange={(v) =>
+                                update('courseSettings', {
+                                    ...settings.courseSettings,
+                                    quiz: {
+                                        ...settings.courseSettings.quiz,
+                                        celebrateOnQuizComplete: v,
+                                    },
+                                })
+                            }
+                        />
+                        <Label className="text-xs">{t('courseSettings.celebrateOnComplete')}</Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Switch
+                            checked={settings.courseSettings.quiz.showReportAndCorrectAnswers}
+                            onCheckedChange={(v) =>
+                                update('courseSettings', {
+                                    ...settings.courseSettings,
+                                    quiz: {
+                                        ...settings.courseSettings.quiz,
+                                        showReportAndCorrectAnswers: v,
+                                    },
+                                })
+                            }
+                        />
+                        <Label className="text-xs">{t('courseSettings.showReportAndAnswers')}</Label>
+                    </div>
+                    <p className="pt-2 text-xs font-semibold text-neutral-600">
+                        {t('courseSettings.assignmentHeading')}
+                    </p>
+                    {(['hideAttemptsAllowed', 'hideRepeatedTitle'] as const).map((key) => (
+                        <div key={key} className="flex items-center gap-2">
+                            <Switch
+                                checked={settings.courseSettings.assignment[key]}
+                                onCheckedChange={(v) =>
+                                    update('courseSettings', {
+                                        ...settings.courseSettings,
+                                        assignment: {
+                                            ...settings.courseSettings.assignment,
+                                            [key]: v,
+                                        },
+                                    })
+                                }
+                            />
+                            <Label className="text-xs">{t(`courseSettings.${key}`)}</Label>
+                        </div>
+                    ))}
+                </div>
+            </Card>
             </section>
 
             <section id="grp-notifications" className="space-y-6">
-            <Card>
+            <SectionJumpChips sectionId="grp-notifications" onJump={jumpToCard} />
+            <Card id="sd-notifications" className="scroll-mt-24 transition-shadow">
                 <CardHeader>
                     <CardTitle>{t('notifications.cardTitle')}</CardTitle>
                     <CardDescription>{t('notifications.cardDescription')}</CardDescription>
@@ -2161,7 +2187,7 @@ export default function StudentDisplaySettings(): JSX.Element {
                 </div>
             </Card>
 
-            <Card>
+            <Card id="sd-post-login" className="scroll-mt-24 transition-shadow">
                 <CardHeader>
                     <CardTitle>{t('postLoginRedirect.cardTitle')}</CardTitle>
                     <CardDescription>{t('postLoginRedirect.cardDescription')}</CardDescription>
@@ -2176,10 +2202,11 @@ export default function StudentDisplaySettings(): JSX.Element {
             </Card>
             </section>
             <section id="grp-theme" className="space-y-6">
+            <SectionJumpChips sectionId="grp-theme" onJump={jumpToCard} />
                 {/* The same editor as Settings → Appearance (one THEME_SETTING
                     blob, its own Save button); here it also feeds the live
                     preview. */}
-                <Card>
+                <Card id="sd-theme" className="scroll-mt-24 transition-shadow">
                     <div className="space-y-3 p-4">
                         {/* The theme is its own setting with its own Save button;
                             the page's unsaved-changes bar covers only the rest. */}
@@ -2195,11 +2222,13 @@ export default function StudentDisplaySettings(): JSX.Element {
                         </ThemeSectionBoundary>
                     </div>
                 </Card>
-                <StudentLayoutCard
-                    value={settings.layout}
-                    onChange={(layout) => update('layout', layout)}
-                    sidebarTabs={settings.sidebar.tabs}
-                />
+                <div id="sd-app-layout" className="scroll-mt-24 transition-shadow">
+                    <StudentLayoutCard
+                        value={settings.layout}
+                        onChange={(layout) => update('layout', layout)}
+                        sidebarTabs={settings.sidebar.tabs}
+                    />
+                </div>
             </section>
             </SettingsSectionsLayout>
             </div>
@@ -2221,6 +2250,261 @@ export default function StudentDisplaySettings(): JSX.Element {
                 onDiscard={discardChanges}
             />
         </SettingsPageShell>
+    );
+}
+
+// ── Settings finder ─────────────────────────────────────────────────────────
+// Every card on this page, the tab it lives on, and extra words admins search
+// for. Titles and descriptions come from the card's own strings, so the
+// finder matches what the admin reads on screen, in their language.
+interface SettingsCardEntry {
+    id: string;
+    section: string;
+    /** i18n prefix holding cardTitle / cardDescription. */
+    key: string;
+    keywords: string;
+}
+const SETTINGS_CARD_INDEX: SettingsCardEntry[] = [
+    {
+        id: 'sd-theme',
+        section: 'grp-theme',
+        key: 'themeSection',
+        keywords: 'theme brand colour color font skin play corners density gradient appearance',
+    },
+    {
+        id: 'sd-app-layout',
+        section: 'grp-theme',
+        key: 'layoutBuilder',
+        keywords:
+            'footer bottom bar tab header rail navigation wallpaper background live class center button floating mobile tablet windows app',
+    },
+    {
+        id: 'sd-sidebar',
+        section: 'grp-layout',
+        key: 'sidebar',
+        keywords: 'menu tabs sub tabs navigation custom tab app download links',
+    },
+    { id: 'sd-ui', section: 'grp-layout', key: 'ui', keywords: 'skin theme ui type' },
+    {
+        id: 'sd-widgets',
+        section: 'grp-layout',
+        key: 'widgets',
+        keywords: 'dashboard home cards widgets order hide get app',
+    },
+    {
+        id: 'sd-course-details',
+        section: 'grp-learning',
+        key: 'courseDetails',
+        keywords:
+            'course page outline content structure teachers slides feedback doubt mark complete learning path enrolled',
+    },
+    {
+        id: 'sd-all-courses',
+        section: 'grp-learning',
+        key: 'allCourses',
+        keywords: 'courses page tabs in progress completed custom tabs instructor',
+    },
+    {
+        id: 'sd-live-classes',
+        section: 'grp-learning',
+        key: 'liveClasses',
+        keywords: 'live class recordings attendance past sessions materials',
+    },
+    {
+        id: 'sd-tutorials',
+        section: 'grp-learning',
+        key: 'tutorials',
+        keywords: 'tour guide help pdf onboarding walkthrough',
+    },
+    {
+        id: 'sd-concentration',
+        section: 'grp-learning',
+        key: 'concentration',
+        keywords: 'focus check attention video prompt',
+    },
+    {
+        id: 'sd-course-settings',
+        section: 'grp-learning',
+        key: 'courseSettings',
+        keywords: 'quiz correct answers celebrate report',
+    },
+    {
+        id: 'sd-permissions',
+        section: 'grp-profile',
+        key: 'permissions',
+        keywords: 'edit profile delete account files reports access',
+    },
+    {
+        id: 'sd-profile',
+        section: 'grp-profile',
+        key: 'profilePage',
+        keywords: 'profile membership guardian badges academic contact language terms',
+    },
+    {
+        id: 'sd-login',
+        section: 'grp-account',
+        key: 'loginSignup',
+        keywords: 'login signup register google github otp email password username',
+    },
+    {
+        id: 'sd-sessions',
+        section: 'grp-account',
+        key: 'sessions',
+        keywords: 'devices active concurrent sessions logins limit',
+    },
+    {
+        id: 'sd-notifications',
+        section: 'grp-notifications',
+        key: 'notifications',
+        keywords: 'alerts pins overlay announcements stream push',
+    },
+    {
+        id: 'sd-post-login',
+        section: 'grp-notifications',
+        key: 'postLoginRedirect',
+        keywords: 'after login redirect landing page route',
+    },
+];
+
+const learnerPluralTerm = () => getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner);
+
+/** Card title as shown on screen (a few cards keep theirs outside this page). */
+function cardTitle(entry: SettingsCardEntry, t: TFunction): string {
+    if (entry.key === 'themeSection') return t('finder.themeTitle');
+    if (entry.key === 'sessions') return t('finder.sessionsTitle');
+    return t(`${entry.key}.cardTitle`, { learnerPlural: learnerPluralTerm() });
+}
+function cardDescription(entry: SettingsCardEntry, t: TFunction): string {
+    if (entry.key === 'themeSection' || entry.key === 'sessions') return '';
+    return t(`${entry.key}.cardDescription`, {
+        learnerPlural: learnerPluralTerm(),
+        defaultValue: '',
+    });
+}
+
+function SettingsFinder({
+    sections,
+    onJump,
+}: {
+    sections: SettingsSectionGroup[];
+    onJump: (cardId: string) => void;
+}): JSX.Element {
+    const { t } = useTranslation('settingsStudentDisplay');
+    const [query, setQuery] = useState('');
+    const [open, setOpen] = useState(false);
+    const sectionLabel = (id: string) =>
+        sections.flatMap((g) => g.sections).find((s) => s.id === id)?.label ?? '';
+
+    const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+    const results = words.length
+        ? SETTINGS_CARD_INDEX.filter((entry) => {
+              const haystack = [
+                  cardTitle(entry, t),
+                  cardDescription(entry, t),
+                  sectionLabel(entry.section),
+                  entry.keywords,
+              ]
+                  .join(' ')
+                  .toLowerCase();
+              return words.every((w) => haystack.includes(w));
+          }).slice(0, 8)
+        : [];
+
+    const pick = (id: string) => {
+        onJump(id);
+        setOpen(false);
+        setQuery('');
+    };
+
+    return (
+        <div className="relative mb-4 max-w-xl">
+            <MagnifyingGlass className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
+            <Input
+                className="h-9 pe-9 ps-9"
+                placeholder={t('finder.placeholder')}
+                value={query}
+                onChange={(e) => {
+                    setQuery(e.target.value);
+                    setOpen(true);
+                }}
+                onFocus={() => setOpen(true)}
+                // Delay so a click on a result lands before the list closes.
+                onBlur={() => window.setTimeout(() => setOpen(false), 150)}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' && results[0]) pick(results[0].id);
+                    if (e.key === 'Escape') {
+                        setQuery('');
+                        setOpen(false);
+                    }
+                }}
+                aria-label={t('finder.placeholder')}
+            />
+            {query && (
+                <button
+                    type="button"
+                    className="absolute end-2 top-1/2 flex size-6 -translate-y-1/2 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-100"
+                    onClick={() => setQuery('')}
+                    aria-label={t('finder.clear')}
+                >
+                    <X className="size-3.5" />
+                </button>
+            )}
+            {open && words.length > 0 && (
+                <div className="absolute inset-x-0 top-full z-30 mt-1 overflow-hidden rounded-md border border-neutral-200 bg-white shadow-lg">
+                    {results.length === 0 ? (
+                        <p className="px-3 py-2 text-sm text-neutral-500">{t('finder.noResults')}</p>
+                    ) : (
+                        results.map((entry) => (
+                            <button
+                                key={entry.id}
+                                type="button"
+                                className="flex w-full flex-col items-start gap-0.5 px-3 py-2 text-start hover:bg-primary-50"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => pick(entry.id)}
+                            >
+                                <span className="text-sm font-medium text-neutral-800">
+                                    {cardTitle(entry, t)}
+                                </span>
+                                <span className="text-xs text-neutral-500">
+                                    {sectionLabel(entry.section)}
+                                    {cardDescription(entry, t)
+                                        ? ` · ${cardDescription(entry, t)}`
+                                        : ''}
+                                </span>
+                            </button>
+                        ))
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+/** "On this tab" chips: one per card, jumps to it. Hidden for one-card tabs. */
+function SectionJumpChips({
+    sectionId,
+    onJump,
+}: {
+    sectionId: string;
+    onJump: (cardId: string) => void;
+}): JSX.Element | null {
+    const { t } = useTranslation('settingsStudentDisplay');
+    const entries = SETTINGS_CARD_INDEX.filter((c) => c.section === sectionId);
+    if (entries.length < 2) return null;
+    return (
+        <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-neutral-500">{t('finder.onThisTab')}</span>
+            {entries.map((entry) => (
+                <button
+                    key={entry.id}
+                    type="button"
+                    onClick={() => onJump(entry.id)}
+                    className="rounded-full border border-neutral-200 bg-white px-3 py-1 text-xs text-neutral-700 transition-colors hover:border-primary-300 hover:bg-primary-50"
+                >
+                    {cardTitle(entry, t)}
+                </button>
+            ))}
+        </div>
     );
 }
 
