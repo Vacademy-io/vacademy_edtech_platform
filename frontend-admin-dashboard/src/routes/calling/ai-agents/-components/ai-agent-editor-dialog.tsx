@@ -70,12 +70,14 @@ const EDITOR_SECTIONS: { key: string; label: string; icon: Icon }[] = [
     { key: 'actions', label: 'After the call', icon: PaperPlaneTilt },
     { key: 'test', label: 'Test call', icon: Phone },
 ];
-const SYSTEM_PROMPT_PLACEHOLDER = `Who the agent is, its goal, tone and rules. A good prompt covers:
-• the agent's name and who it calls for
-• how it greets the person
-• a short brief about the business
-• common questions callers ask, with the answers
-• what to do when it does not know`;
+const SYSTEM_PROMPT_PLACEHOLDER = `Agent name: e.g. Riya from Bright Future Academy
+Greeting: e.g. Greet the person by name, say who you are and why you are calling, and ask if it is a good time to talk.
+About the business: what you offer, for whom, where, timings, fees.
+Goal of the call: e.g. book a counselling session.
+FAQs:
+Q: What are the fees?  A: …
+Q: Where are you located?  A: …
+Rules: if you do not know an answer, say the team will confirm. Never make up fees or offers.`;
 const sectionId = (key: string) => `ai-agent-editor-${key}`;
 const DIRECTION_SUMMARY: Record<string, string> = {
     OUTBOUND: 'Outbound',
@@ -561,7 +563,7 @@ export function AiAgentEditorDialog({
                                 )}
                             </div>
                             <Textarea
-                                rows={draft.systemPrompt?.trim() ? 12 : 7}
+                                rows={draft.systemPrompt?.trim() ? 12 : 9}
                                 value={draft.systemPrompt ?? ''}
                                 placeholder={SYSTEM_PROMPT_PLACEHOLDER}
                                 onChange={(e) => patch({ systemPrompt: e.target.value })}
