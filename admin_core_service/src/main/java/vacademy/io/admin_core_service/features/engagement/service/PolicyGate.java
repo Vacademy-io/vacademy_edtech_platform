@@ -64,8 +64,38 @@ public class PolicyGate {
      * Why a lead member must not be contacted any more. OPTED_OUT: the lead asked us to stop
      * (overall_status). EXITED: the admin removed the lead row (audience_status INACTIVE) or it
      * is gone; the nightly reconcile would exit it too, and revives it if the row comes back.
+     * CONVERTED: the CRM marked the lead Converted; it stops only members the engine reaches as a
+     * lead (see {@link #effectiveLeadBlock}), and the member leaves as EXITED.
      */
-    public enum LeadBlock { OPTED_OUT, EXITED }
+    public enum LeadBlock { OPTED_OUT, EXITED, CONVERTED }
+
+    private static final ObjectMapper AUDIENCE_READER = new ObjectMapper();
+
+    /**
+     * The block that applies to this member of this engine. A converted lead is done for an engine
+     * that reaches it only as a lead. An engine that also targets learners (a batch or named users)
+     * keeps a converted lead who has an account: enrolment marks a lead Converted, and a learner
+     * engine must not lose the learners it exists for.
+     */
+    public static LeadBlock effectiveLeadBlock(LeadBlock block, EngagementEngine engine, EngagementMember member) {
+        if (block != LeadBlock.CONVERTED) return block;
+        boolean stops = member == null || member.getUserId() == null || !targetsLearners(engine);
+        return stops ? block : null;
+    }
+
+    /** True when the engine's audience has a PACKAGE_SESSION or USER selector (or can't be read). */
+    static boolean targetsLearners(EngagementEngine engine) {
+        if (engine == null || engine.getAudience() == null) return true;
+        try {
+            for (JsonNode sel : AUDIENCE_READER.readTree(engine.getAudience())) {
+                String type = sel.path("type").asText("");
+                if ("PACKAGE_SESSION".equals(type) || "USER".equals(type)) return true;
+            }
+            return false;
+        } catch (Exception e) {
+            return true; // unreadable audience: keep today's behaviour, never stop on a guess
+        }
+    }
 
     /**
      * Batch lead consent for a cohort, by audience_response_id: one query, members without a
@@ -83,6 +113,8 @@ public class PolicyGate {
                 out.put(id, LeadBlock.OPTED_OUT);
             } else if (!"ACTIVE".equals(row[2])) {
                 out.put(id, LeadBlock.EXITED);
+            } else if (row.length > 3 && "CONVERTED".equals(row[3])) {
+                out.put(id, LeadBlock.CONVERTED);
             }
         }
         for (String id : ids) {
