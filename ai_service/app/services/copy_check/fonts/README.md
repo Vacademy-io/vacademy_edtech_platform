@@ -16,7 +16,9 @@ redistributed with this service.
   comment (it is written uphill, ~10.5 degrees) their letters still lean +7.5
   degrees right, and Kalam (+11.5) was the only candidate that leans right at
   all. Every other finalist was upright or slightly back-slanted, which is the
-  loudest trait in the reference hand.
+  loudest trait in the reference hand. It also carries a full Devanagari set,
+  so Hindi language corrections are set in it (annotator._deva_write, shaped
+  by MuPDF's HarfBuzz) - the pen's Latin paths cannot draw Devanagari.
 - `PatrickHand.ttf` — digits only. Kalam's "1" is a bare vertical stroke,
   16px wide against its own "l" at 15px, so a mark of "10" or "1.5" is
   ambiguous. Patrick Hand flags its "1" (23px vs 17px).
