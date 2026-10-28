@@ -243,7 +243,8 @@
           "roundedEdges": true
         }
       },
-      "capabilities": "layout: grid | carousel | slider. media[]: {type: image|video, url, caption, heading, backgroundImage}. Use it for a swipeable row of photos or videos; it carries no per-item button, so for cards that need a CTA use featureGrid with per-feature image + link. Items sit in a 16:9 frame, so portrait book pages are tiny on phones: use scormViewer for a book preview."
+      "capabilities": "layout: grid | carousel | slider. media[]: {type: image|video, url, caption, heading, backgroundImage}. Use it for a swipeable row of photos or videos; it carries no per-item button, so for cards that need a CTA use featureGrid with per-feature image + link.",
+      "usage": "Items sit in a 16:9 frame: portrait book pages are tiny on phones — use scormViewer for a book preview."
     },
     {
       "type": "courseShowcase",
@@ -458,8 +459,8 @@
         "showFullScreen": true,
         "appearance": "book"
       },
-      "capabilities": "launchUrl (ONLY from website_edit(import_scorm)), title (frame bar), height, mobileHeight, showFullScreen, appearance framed|book (book: no card, the player's toolbar / page count / full screen hidden — pages read like a book). Plays a SCORM package without login, like a course slide.",
-      "usage": "A flip-book / comic preview the admin sends as a SCORM zip. Only a SAMPLE package: the full paid one stays inside the course."
+      "capabilities": "launchUrl, appearance framed|book, title, height, mobileHeight.",
+      "usage": "Plays a SCORM package (a flip-book / comic preview) without login, like a course slide. launchUrl ONLY from website_edit(import_scorm). appearance book: no card, the player toolbar / page count / full screen hidden. Only a SAMPLE package: the full paid one stays inside the course."
     },
     {
       "type": "ctaBanner",
@@ -1227,7 +1228,7 @@
         "css": "",
         "prompt": ""
       },
-      "escapeHatch": "ESCAPE HATCH for bespoke sections only. props {html, css, prompt}. Sanitized + rendered in a scoped sandbox: no scripts/iframes/svg/forms; style via the css prop with class selectors using the theme CSS variables (var(--primary-500), var(--catalogue-text-primary), var(--catalogue-heading-font)); must include @media rules; images only from provided URLs. Max 3 per page (one block may contain many repeated sub-blocks, so prefer one well-built block over several). Prefer typed components for ordinary marketing sections; for dense data tables this IS the right tool."
+      "escapeHatch": "ESCAPE HATCH for bespoke sections only. props {html, css, prompt}. Sanitized + rendered in a scoped sandbox: no scripts/iframes/svg/forms; style via the css prop with class selectors using the theme CSS variables (colours are H S% L% channels: hsl(var(--primary-500)), hsl(var(--catalogue-text-primary)), hsl(var(--palette-<name>)); font-family: var(--catalogue-heading-font)); must include @media rules; images only from provided URLs. Max 3 per page (one block may contain many repeated sub-blocks, so prefer one well-built block over several). Prefer typed components for ordinary marketing sections; for dense data tables this IS the right tool."
     }
   ],
   "styleSchema": {

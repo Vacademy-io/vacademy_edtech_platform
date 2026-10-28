@@ -105,7 +105,8 @@ const ESCAPE_HATCH_NOTES = {
     htmlBlock:
         'ESCAPE HATCH for bespoke sections only. props {html, css, prompt}. Sanitized + rendered in a scoped sandbox: ' +
         'no scripts/iframes/svg/forms; style via the css prop with class selectors using the theme CSS variables ' +
-        '(var(--primary-500), var(--catalogue-text-primary), var(--catalogue-heading-font)); must include @media rules; ' +
+        '(colours are H S% L% channels: hsl(var(--primary-500)), hsl(var(--catalogue-text-primary)), hsl(var(--palette-<name>)); ' +
+        'font-family: var(--catalogue-heading-font)); must include @media rules; ' +
         'images only from provided URLs. Max 3 per page (one block may contain many repeated sub-blocks, so prefer one ' +
         'well-built block over several). Prefer typed components for ordinary marketing sections; for dense data tables this IS the right tool.',
 };
@@ -121,9 +122,12 @@ const USAGE = {
         'of sectionHeading+featureGrid whenever the job is to DOCUMENT offerings rather than sell them: one ' +
         'block per offering, keeping every real name — never merge or summarise a list of offerings into a few ' +
         'generic buckets. It has no price/image/enrol fields by design, so it is safe on informational pages.',
+    mediaShowcase:
+        'Items sit in a 16:9 frame: portrait book pages are tiny on phones — use scormViewer for a book preview.',
     scormViewer:
-        'A flip-book / comic preview the admin sends as a SCORM zip. Only a SAMPLE package: the full paid one ' +
-        'stays inside the course.',
+        'Plays a SCORM package (a flip-book / comic preview) without login, like a course slide. launchUrl ONLY ' +
+        'from website_edit(import_scorm). appearance book: no card, the player toolbar / page count / full screen ' +
+        'hidden. Only a SAMPLE package: the full paid one stays inside the course.',
     jobOpenings:
         'For a CAREERS page (route "careers"): a card per job, each job on its own page /<page>/<slug> with an ' +
         'external Apply link. Only jobs the admin gave; never invent roles, pay or form links.',
@@ -187,8 +191,7 @@ const CAPABILITIES = {
     mediaShowcase:
         'layout: grid | carousel | slider. media[]: {type: image|video, url, caption, heading, backgroundImage}. ' +
         'Use it for a swipeable row of photos or videos; it carries no per-item button, so for cards that need ' +
-        'a CTA use featureGrid with per-feature image + link. Items sit in a 16:9 frame, so portrait book pages ' +
-        'are tiny on phones: use scormViewer for a book preview.',
+        'a CTA use featureGrid with per-feature image + link.',
     marquee:
         'A continuously scrolling strip of short claims. items[]: {icon (emoji is correct here), text, link, image, label}. ' +
         'link (optional) makes the item clickable: a page slug, "#anchorId" of a section on the page, or a full URL. ' +
@@ -198,10 +201,7 @@ const CAPABILITIES = {
         'variant: boxed | split. items[]: {title, content (HTML), icon, meta, slot}. The FAQ and ' +
         '"what you get" workhorse.',
     imageGallery: 'columns: 2|3|4. gap. showCaptions. images[]: {src, alt, caption}.',
-    scormViewer:
-        'launchUrl (ONLY from website_edit(import_scorm)), title (frame bar), height, mobileHeight, ' +
-        'showFullScreen, appearance framed|book (book: no card, the player\'s toolbar / page count / full ' +
-        'screen hidden — pages read like a book). Plays a SCORM package without login, like a course slide.',
+    scormViewer: 'launchUrl, appearance framed|book, title, height, mobileHeight.',
     ctaBanner:
         'layout: centered | split. {heading, subheading, button {enabled,text,action,target,style: white|primary|outline}}. ' +
         'The renderer reads exactly these keys — headerText/buttonText are ignored and produce an empty band. ' +

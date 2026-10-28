@@ -325,8 +325,9 @@ def audit_component(comp: Dict[str, Any], can_bind: bool = False, page_route: Op
             issues.append(_issue(
                 "html-hardcoded-color", "fix",
                 "The custom HTML section hardcodes colours, so it will not follow the site theme.",
-                "Replace every literal colour in props.css with theme variables: var(--primary-500), "
-                "var(--catalogue-text-primary), var(--catalogue-bg), var(--catalogue-border).",
+                "Replace every literal colour in props.css with theme colours: hsl(var(--primary-500)), "
+                "hsl(var(--catalogue-text-primary)), hsl(var(--catalogue-bg)), hsl(var(--catalogue-border)) — or "
+                "hsl(var(--palette-<name>)) on a site with a palette.",
                 cid,
             ))
         if css and "@media" not in css:

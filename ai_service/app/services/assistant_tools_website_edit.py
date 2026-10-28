@@ -19,6 +19,7 @@ Actions
     set_layout        the site's header and footer
     add_section       one block with default content (no composition needed)
     set_theme         colours, fonts, radius, atmosphere, motion, palette, content width
+    copy_theme        give a site the look of another of the institute's sites (+ header/footer on request)
     set_catalog_settings  course formats, course languages + version groups, naming, site cart
     set_translations  another language's dictionary (globalSettings.i18n.strings)
     bind_data         point a section / the header mega menu at a folder library, folder or product page
@@ -27,6 +28,7 @@ Actions
     set_seo           meta title / description of a page
     import_image      bring a public https image into the media library
     import_scorm      bring a SCORM zip in (unpacked by admin-core) → launch_url for a scormViewer block
+    upload_url        a one-file presigned upload for a LOCAL image / SCORM zip (then import_image / import_scorm)
     discard_draft     drop the draft, back to what is published
     request_publish   is the draft ready? publish checks + data audit + review + diff vs live +
                       stale-draft verdict + editor link — READ-ONLY, it never publishes (with the
@@ -80,8 +82,8 @@ WEBSITE_EDIT_TOOL_NAME = "website_edit"
 WEBSITE_EDIT_GROUP_KEY = "website_builder_edits"
 
 WEBSITE_EDIT_ACTIONS = (
-    "create_page", "create_site", "add_html_page", "update_page", "set_layout", "add_section", "set_theme",
-    "set_site_settings", "set_courses", "link_lead_form", "set_seo", "import_image", "import_scorm", "discard_draft",
+    "create_page", "create_site", "add_html_page", "update_page", "set_layout", "add_section", "set_theme", "copy_theme",
+    "set_site_settings", "set_courses", "link_lead_form", "set_seo", "import_image", "import_scorm", "upload_url", "discard_draft",
     "set_catalog_settings", "set_translations", "bind_data", "request_publish",
 )
 
@@ -306,12 +308,14 @@ WEBSITE_EDIT_SCHEMA: Dict[str, Any] = {
             "publishes in the dashboard — nothing goes live from here, and nothing here calls a model: "
             "YOU compose the content. Before composing, run website(action='brief_checklist') and "
             "website(action='schema'). Pick an `action`:\n"
-            "- create_page (tag_name OR new_site_name, page, page_type?, theme?, design_source?): validate, audit "
+            "- create_page (tag_name OR new_site_name, page, page_type?, theme?, theme_from?, design_source?): validate, audit "
             "and save a page you composed. Returns issues to fix (resubmit with update_page) and the editor_url. "
             "Pass design_source when the page reproduces a design (Figma, screenshot): review then judges it in "
             "fidelity mode.\n"
-            "- create_site (new_site_name, pages, theme?, site_settings?, header?, footer?, design_source?): a whole "
-            "NEW draft site. A page that is its own frame can carry pages[].design_source.\n"
+            "- create_site (new_site_name, pages, theme?, theme_from?, site_settings?, header?, footer?, design_source?): a whole "
+            "NEW draft site. A page that is its own frame can carry pages[].design_source. theme_from (a site's tag_name, "
+            "create_page / create_site with new_site_name): start the new site with that site's look — palette, colour, fonts, "
+            "radius, width — so it matches the institute's live sites; `theme` then overrides single settings.\n"
             "- add_html_page (tag_name OR new_site_name, route, html, css?, title?, seo?, hide_site_chrome?, "
             "replace_existing?): a STATIC page you write as HTML + CSS (a full document or just the body) — "
             "for pages the block types cannot express, or when the admin hands you HTML. Scripts are removed; "
@@ -324,6 +328,9 @@ WEBSITE_EDIT_SCHEMA: Dict[str, Any] = {
             "with default content.\n"
             "- set_theme (tag_name, theme): colours, fonts, radius, atmosphere, motion, and for a design "
             "(Figma) the exact named palette and the content width.\n"
+            "- copy_theme (tag_name, from_tag_name, include_layout?): give a site the look of another of the institute's "
+            "sites (theme, palette, fonts, motion, light/dark) — never retype a palette by hand. include_layout also copies "
+            "the header and footer. Course formats, cart, languages and naming stay the target's own.\n"
             "- set_catalog_settings (tag_name, catalog_settings): course formats (label + the level names / "
             "tags that mean each), their order, course languages + version groups (the same course in "
             "two languages as ONE card; course ids from website(action='context')), naming (e.g. the Level "
@@ -360,6 +367,10 @@ WEBSITE_EDIT_SCHEMA: Dict[str, Any] = {
             "scormViewer block (props.launchUrl), which plays it on the page without login. A public https link "
             "takes up to 150 MB, base64 up to 25 MB. Put only a SAMPLE package on a public page — never the full "
             "paid one from inside a course.\n"
+            "- upload_url (file_name): for a LOCAL file (an image or a SCORM .zip) too big for data_base64 — a presigned "
+            "POST valid 15 minutes for exactly one file (image ≤ 25 MB, zip ≤ 150 MB). Send it with the returned curl "
+            "command (or the url + fields as multipart form), then import_image(url=file_url) / import_scorm(url=file_url). "
+            "Never expose a local file through a public tunnel instead.\n"
             "- discard_draft (tag_name): throw the draft away — the undo for everything above.\n"
             "- request_publish (tag_name, library_id?): the hand-over check when you think the draft is done. "
             "Runs the pre-publish checks, the data audit and the review (fidelity mode for pages from a design) "
@@ -393,6 +404,9 @@ WEBSITE_EDIT_SCHEMA: Dict[str, Any] = {
                 "hide_site_chrome": {"type": "boolean", "description": "add_html_page: hide the site header/footer on this page (default true — a pasted page usually brings its own)."},
                 "replace_existing": {"type": "boolean", "description": "add_html_page: overwrite a page that already has this route (only if it is an HTML page)."},
                 "theme": _THEME_SCHEMA,
+                "theme_from": {"type": "string", "description": "create_page / create_site with new_site_name: tag_name of an existing site whose look (palette, colour, fonts, radius, width) the new site starts with."},
+                "from_tag_name": {"type": "string", "description": "copy_theme: the site whose look to copy (from website list)."},
+                "include_layout": {"type": "boolean", "description": "copy_theme: also copy the header and footer (default false)."},
                 "site_settings": _SITE_SETTINGS_SCHEMA,
                 "section_type": {"type": "string", "description": "Block type, e.g. testimonialSection, faqSection, courseShowcase, leadForm."},
                 "after_section_id": {"type": "string"},
@@ -400,7 +414,7 @@ WEBSITE_EDIT_SCHEMA: Dict[str, Any] = {
                 "url": {"type": "string", "description": "import_image: public https image URL (incl. Figma MCP asset links). import_scorm: public https link to the SCORM .zip."},
                 "urls": {"type": "array", "items": {"type": "string"}, "description": "import_image: several public https image URLs at once (max 16)."},
                 "data_base64": {"type": "string", "description": "import_image: the image file itself, base64 or a data: URL (max 10 MB) — for local files / design exports. import_scorm: the SCORM .zip itself (max 25 MB)."},
-                "file_name": {"type": "string", "description": "import_image / import_scorm with data_base64: the file's name."},
+                "file_name": {"type": "string", "description": "import_image / import_scorm with data_base64: the file's name. upload_url: the local file's name (its extension decides the allowed type)."},
                 "kind": {"type": "string", "enum": list(IMAGE_KINDS)},
                 "caption": {"type": "string"},
                 "source": {"type": "string", "enum": ["all", "showcase", "product_page"]},
@@ -1454,8 +1468,66 @@ def _page_issues(config: Dict[str, Any], route: str) -> List[Dict[str, Any]]:
             if not i.get("page_route") or str(i["page_route"]).lstrip("/").lower() == r]
 
 
-def _new_site_config(theme: Optional[Dict[str, Any]], site_settings: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+#: The globalSettings keys that make up a site's LOOK (copy_theme / theme_from).
+#: Course formats, the cart, languages, naming and lead settings are the site's
+#: data, not its look, so they are never copied.
+LOOK_KEYS = ("theme", "fonts", "motion", "mode", "compactness")
+
+
+def copy_look(source_gs: Dict[str, Any], target_gs: Dict[str, Any], include_layout: bool = False) -> Dict[str, Any]:
+    """target globalSettings with the source site's look (and header/footer when asked)."""
+    out = copy.deepcopy(target_gs) if isinstance(target_gs, dict) else {}
+    src = source_gs if isinstance(source_gs, dict) else {}
+    for key in LOOK_KEYS:
+        if key in src:
+            out[key] = copy.deepcopy(src[key])
+    src_layout = src.get("layout") if isinstance(src.get("layout"), dict) else {}
+    if include_layout and src_layout:
+        layout = out.get("layout") if isinstance(out.get("layout"), dict) else {}
+        out["layout"] = {**layout, **{k: copy.deepcopy(src_layout[k]) for k in ("header", "footer") if k in src_layout}}
+    return out
+
+
+async def _look_of(ctx: ToolContext, tag_name: Any, action: str) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
+    """globalSettings of the site to copy a look from, or None + error."""
+    if not isinstance(tag_name, str) or not tag_name.strip():
+        return None, _err("missing_argument", action=action, needs=["from_tag_name" if action == "copy_theme" else "theme_from"])
+    source, err = await load_site(ctx, tag_name.strip())
+    if err:
+        return None, {**err, "action": action, "message": f"The site to copy the look from ('{tag_name}') could not be read: "
+                                                         + str(err.get("message") or err.get("error"))}
+    return source["config"].get("globalSettings") or {}, None
+
+
+async def _action_copy_theme(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
+    if err := _require(args, "copy_theme", "tag_name", "from_tag_name"):
+        return err
+    if str(args["tag_name"]).strip() == str(args["from_tag_name"]).strip():
+        return _err("bad_request", message="tag_name and from_tag_name are the same site.")
+    source_gs, err = await _look_of(ctx, args["from_tag_name"], "copy_theme")
+    if err:
+        return err
+    site, err = await _target_site(ctx, args, "copy_theme")
+    if err:
+        return err
+    config = copy.deepcopy(site["config"])
+    include_layout = bool(args.get("include_layout"))
+    config["globalSettings"] = copy_look(source_gs, config.get("globalSettings") or {}, include_layout)
+    revision, err = await save_draft(ctx, site["catalogue_id"], config, "AI_COPILOT", None)
+    if err:
+        return err
+    what = "look, header and footer" if include_layout else "look"
+    return _result(ctx, site, config, revision, f"Copied the {what} of '{args['from_tag_name']}'.",
+                   settings=summarize_global_settings(config["globalSettings"]),
+                   next="Custom-HTML sections keep their own CSS: colour them with hsl(var(--palette-<name>)) / "
+                        "hsl(var(--primary-500)) so they follow this look. Then website(action='preview').")
+
+
+def _new_site_config(theme: Optional[Dict[str, Any]], site_settings: Optional[Dict[str, Any]] = None,
+                     look_from: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     config = {"version": "1.0", "globalSettings": copy.deepcopy(DEFAULT_GLOBAL_SETTINGS), "pages": []}
+    if look_from:
+        config["globalSettings"] = copy_look(look_from, config["globalSettings"])
     if theme:
         config["globalSettings"] = merge_global_settings(config["globalSettings"], theme_to_global_patch(theme))
     if site_settings:
@@ -1487,7 +1559,12 @@ async def _action_create_page(args: Dict[str, Any], ctx: ToolContext) -> Dict[st
         return refusal
 
     site_settings = args.get("site_settings") if isinstance(args.get("site_settings"), dict) else None
-    config = copy.deepcopy(site["config"]) if site else _new_site_config(theme, site_settings)
+    look_from = None
+    if site is None and args.get("theme_from"):
+        look_from, err = await _look_of(ctx, args["theme_from"], "create_page")
+        if err:
+            return err
+    config = copy.deepcopy(site["config"]) if site else _new_site_config(theme, site_settings, look_from)
     if site and theme:
         config["globalSettings"] = merge_global_settings(config.get("globalSettings") or {}, theme_to_global_patch(theme))
     if site and site_settings:
@@ -1540,7 +1617,13 @@ async def _action_create_site(args: Dict[str, Any], ctx: ToolContext) -> Dict[st
     if not pages_in:
         return _err("missing_argument", action="create_site", needs=["pages"])
     theme = args.get("theme") if isinstance(args.get("theme"), dict) else None
-    config = _new_site_config(theme, args.get("site_settings") if isinstance(args.get("site_settings"), dict) else None)
+    look_from = None
+    if args.get("theme_from"):
+        look_from, err = await _look_of(ctx, args["theme_from"], "create_site")
+        if err:
+            return err
+    config = _new_site_config(theme, args.get("site_settings") if isinstance(args.get("site_settings"), dict) else None,
+                              look_from)
     design_source = clean_design_source(args.get("design_source"))
     all_issues: Dict[str, Any] = {}
     all_warnings: List[str] = [f"theme: {p} (left out)" for p in theme_problems(theme)]
@@ -2031,6 +2114,47 @@ async def _action_import_scorm(args: Dict[str, Any], ctx: ToolContext) -> Dict[s
                 "height, mobileHeight} via update_page (insert, or update an existing section).",
     }
     return {k: v for k, v in out.items() if v is not None}
+
+
+#: upload_url: extension → (content type, size cap). Images and SCORM zips only.
+_UPLOAD_TYPES = {
+    "png": ("image/png", 25 * 1024 * 1024), "jpg": ("image/jpeg", 25 * 1024 * 1024),
+    "jpeg": ("image/jpeg", 25 * 1024 * 1024), "webp": ("image/webp", 25 * 1024 * 1024),
+    "gif": ("image/gif", 25 * 1024 * 1024), "svg": ("image/svg+xml", 5 * 1024 * 1024),
+    "zip": ("application/zip", 150 * 1024 * 1024),
+}
+_UPLOAD_EXPIRES_S = 900
+
+
+async def _action_upload_url(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
+    """A presigned POST for one local file into the institute's staging folder."""
+    if err := _require(args, "upload_url", "file_name"):
+        return err
+    raw_name = str(args["file_name"]).strip().replace("\\", "/").rsplit("/", 1)[-1]
+    stem, _, ext = raw_name.rpartition(".")
+    ext = ext.lower()
+    if not stem or ext not in _UPLOAD_TYPES:
+        return _err("bad_request", message="Only images (" + ", ".join(e for e in _UPLOAD_TYPES if e != "zip")
+                                           + ") and SCORM .zip files can be uploaded.")
+    content_type, max_bytes = _UPLOAD_TYPES[ext]
+    safe = (re.sub(r"[^A-Za-z0-9._-]+", "-", stem).strip("-.") or "file")[:80] + "." + ext
+    # A staging prefix of its own, so a lifecycle rule can expire what was only passed through.
+    key = f"page-builder/uploads/{_s3_safe(ctx.principal.institute_id)}/{uuid.uuid4().hex}/{safe}"
+    try:
+        from .s3_service import S3Service
+        post = await asyncio.to_thread(S3Service().presigned_post, key, content_type, max_bytes, _UPLOAD_EXPIRES_S)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("upload_url presign failed: %s", exc)
+        return _err("upload_failed", message="An upload link could not be created.")
+    form = " ".join(f"-F {json.dumps(k + '=' + str(v))}" for k, v in post["fields"].items())
+    then = "import_scorm" if ext == "zip" else "import_image"
+    return {
+        "method": "POST", "url": post["url"], "fields": post["fields"], "file_field": "file",
+        "file_url": post["public_url"], "content_type": content_type, "max_bytes": max_bytes,
+        "expires_in": _UPLOAD_EXPIRES_S,
+        "curl": f"curl -sS -o /dev/null -w '%{{http_code}}' {form} -F \"file=@<path to {raw_name}>\" {post['url']}",
+        "next": f"Send the file (HTTP 204 = stored), then website_edit(action='{then}', url='<file_url>').",
+    }
 
 
 def _s3_safe(value: Any) -> str:
@@ -3383,6 +3507,7 @@ _ACTIONS = {
     "set_layout": _action_set_layout,
     "add_section": _action_add_section,
     "set_theme": _action_set_theme,
+    "copy_theme": _action_copy_theme,
     "set_site_settings": _action_set_site_settings,
     "add_html_page": _action_add_html_page,
     "set_courses": _action_set_courses,
@@ -3390,6 +3515,7 @@ _ACTIONS = {
     "set_seo": _action_set_seo,
     "import_image": _action_import_image,
     "import_scorm": _action_import_scorm,
+    "upload_url": _action_upload_url,
     "discard_draft": _action_discard_draft,
     "set_catalog_settings": _action_set_catalog_settings,
     "set_translations": _action_set_translations,
