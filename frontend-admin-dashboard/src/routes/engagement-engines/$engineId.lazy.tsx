@@ -16,6 +16,7 @@ import {
     Lightning,
     Pause,
     PencilSimple,
+    Trash,
     Play,
     Prohibit,
     Repeat,
@@ -53,6 +54,7 @@ import {
 import { ToneBadge } from './-components/ToneBadge';
 import { TemplateNegotiation } from './-components/TemplateNegotiation';
 import { EmailTemplatesPanel } from './-components/EmailTemplatesPanel';
+import { useDeleteEngine } from './-hooks/engine-edit';
 import { ChannelChip, Chip, IconTile, KeyValue, SubHeading } from './-components/engine-ui';
 import { buildChannelMeta } from './-constants';
 import { buildEngineStatusMeta, buildLanguageOptions, NEXT_STATUSES } from './-constants';
@@ -117,6 +119,9 @@ function EngineDetailPage() {
     const setAutonomy = useSetAutonomy();
     const [amendOpen, setAmendOpen] = useState(false);
     const [confirmArchive, setConfirmArchive] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const deleteEngine = useDeleteEngine();
+    const { t: tEdit } = useTranslation('engagementEnginesEdit');
     const [delta, setDelta] = useState('');
     const { t } = useTranslation('engagementEnginesEngineIdIndex');
     const { t: tConstants } = useTranslation('engagementEnginesConstants');
@@ -338,6 +343,34 @@ function EngineDetailPage() {
                                 );
                             })}
                         </div>
+                        {!engine.systemManaged && (
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                                {engine.status !== 'ARCHIVED' && (
+                                    <MyButton
+                                        buttonType="secondary"
+                                        scale="small"
+                                        onClick={() =>
+                                            navigate({
+                                                to: '/engagement-engines/create',
+                                                search: { edit: engine.id },
+                                            })
+                                        }
+                                    >
+                                        <PencilSimple className="me-1 size-4" /> {tEdit('editSettings')}
+                                    </MyButton>
+                                )}
+                                {['DRAFT', 'TEMPLATES_PENDING', 'ARCHIVED'].includes(engine.status) && (
+                                    <MyButton
+                                        buttonType="secondary"
+                                        scale="small"
+                                        disable={deleteEngine.isPending}
+                                        onClick={() => setConfirmDelete(true)}
+                                    >
+                                        <Trash className="me-1 size-4" /> {tEdit('deletePermanently')}
+                                    </MyButton>
+                                )}
+                            </div>
+                        )}
                         <p className="mt-4 border-t border-neutral-100 pt-3 text-neutral-500">
                             <span className="text-caption">{t('status.footnote')}</span>
                         </p>
@@ -396,6 +429,36 @@ function EngineDetailPage() {
                                 }}
                             >
                                 {t('archiveDialog.confirm')}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+
+                <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>{tEdit('deleteDialog.title')}</AlertDialogTitle>
+                            <AlertDialogDescription>{tEdit('deleteDialog.description')}</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel disabled={deleteEngine.isPending}>
+                                {tEdit('deleteDialog.cancel')}
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                                disabled={deleteEngine.isPending}
+                                className="bg-danger-600 hover:bg-danger-700"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    deleteEngine.mutate(
+                                        { engineId: engine.id, permanent: true },
+                                        {
+                                            onSuccess: () => navigate({ to: '/engagement-engines' }),
+                                            onSettled: () => setConfirmDelete(false),
+                                        }
+                                    );
+                                }}
+                            >
+                                {tEdit('deleteDialog.confirm')}
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>

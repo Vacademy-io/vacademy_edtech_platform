@@ -1,4 +1,4 @@
-import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
+import { createLazyFileRoute, useNavigate, useSearch } from '@tanstack/react-router';
 import { Helmet } from 'react-helmet';
 import { useEffect, useMemo, useState } from 'react';
 import type { Icon } from '@phosphor-icons/react';
@@ -43,7 +43,9 @@ import { getTerminologyPlural } from '@/components/common/layout-container/sideb
 import { ContentTerms, OtherTerms, RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { buildChannelMeta, CHANNEL_ORDER, buildLanguageOptions } from '../-constants';
 import { EmailChannelOptions } from '../-components/EmailChannelOptions';
-import { useCreateEngine, useDataPointCatalog } from '../-hooks';
+import { useCreateEngine, useDataPointCatalog, useEditPrompt, useEngine } from '../-hooks';
+import { useUpdateEngine } from '../-hooks/engine-edit';
+import { safeParse } from '../-utils';
 import {
     CHANNEL_ICON,
     CHANNEL_TINT,
@@ -213,6 +215,13 @@ function CreateEnginePage() {
     const { t: tOptions } = useTranslation('studyLibraryOptions');
     const { t: tConstants } = useTranslation('engagementEnginesConstants');
     const { t } = useTranslation('engagementEnginesCreateIndex');
+    const { t: tEdit } = useTranslation('engagementEnginesEdit');
+    // Edit mode: the same wizard, prefilled from an existing engine; Save sends PUT, not create.
+    const { edit: editId } = useSearch({ strict: false }) as { edit?: string };
+    const isEdit = !!editId;
+    const { data: editData } = useEngine(editId);
+    const updateEngine = useUpdateEngine();
+    const editPrompt = useEditPrompt();
     const TIMEZONE_OPTIONS = buildTimezoneOptions(tOptions);
     const { setNavHeading } = useNavHeadingStore();
     const instituteId = getInstituteId() || '';
@@ -225,7 +234,10 @@ function CreateEnginePage() {
     });
     const campaigns = campaignsPage?.content ?? [];
 
-    useEffect(() => setNavHeading(t('heading')), [setNavHeading, t]);
+    useEffect(
+        () => setNavHeading(isEdit ? tEdit('heading') : t('heading')),
+        [setNavHeading, t, tEdit, isEdit]
+    );
 
     const [step, setStep] = useState(0);
 
@@ -245,6 +257,32 @@ function CreateEnginePage() {
     const [timezone, setTimezone] = useState('Asia/Kolkata');
     const [holdoutPct, setHoldoutPct] = useState('0');
     const [firstN, setFirstN] = useState('');
+
+    // Prefill once per engine when editing. The brief field then holds an optional AMENDMENT:
+    // a brief only grows (the backend keeps every version), it is never overwritten.
+    const [prefilledFor, setPrefilledFor] = useState<string | null>(null);
+    useEffect(() => {
+        const e = editData?.engine;
+        if (!e || prefilledFor === e.id) return;
+        setName(e.name ?? '');
+        setObjective(e.objective ?? '');
+        setLanguage((e.language as EngineLanguage) ?? 'en');
+        setDataPoints(safeParse<string[]>(e.dataPoints, []));
+        setConsentHigh(true);
+        setChannels(safeParse<ChannelsConfig>(e.channels, {}));
+        const sel = safeParse<AudienceSelector[]>(e.audience, []);
+        setBatchIds(sel.filter((x) => x.type === 'PACKAGE_SESSION').map((x) => x.id));
+        setAudienceIds(sel.filter((x) => x.type === 'AUDIENCE').map((x) => x.id));
+        setCadenceHours(String(e.cadenceHours ?? 72));
+        const qh = safeParse<{ startHour?: number; endHour?: number; timezone?: string }>(e.quietHours, {});
+        if (qh.startHour != null) setQuietStart(String(qh.startHour));
+        if (qh.endHour != null) setQuietEnd(String(qh.endHour));
+        if (qh.timezone) setTimezone(qh.timezone);
+        setHoldoutPct(String(e.holdoutPct ?? 0));
+        setFirstN(e.firstN != null ? String(e.firstN) : '');
+        setBrief('');
+        setPrefilledFor(e.id);
+    }, [editData, prefilledFor]);
 
     const batchesLabel = getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch);
     const audiencesLabel = getTerminologyPlural(OtherTerms.AudienceList, SystemTerms.AudienceList);
@@ -273,7 +311,7 @@ function CreateEnginePage() {
     const canProceed = (s: number): boolean => {
         switch (s) {
             case 0:
-                return name.trim().length > 0 && brief.trim().length > 0;
+                return name.trim().length > 0 && (isEdit || brief.trim().length > 0);
             case 1:
                 return !highSelected || consentHigh;
             case 2:
@@ -329,6 +367,27 @@ function CreateEnginePage() {
             setStep(0);
             return;
         }
+        if (isEdit && editId) {
+            // Never save the empty defaults over the real engine before it has loaded.
+            if (prefilledFor !== editId) return;
+            const { brief: amendment, ...payload } = buildPayload();
+            updateEngine.mutate(
+                // firstN cleared in the form = back to the default (-1 tells the backend to clear it).
+                { engineId: editId, payload: { ...payload, firstN: payload.firstN ?? -1 } },
+                {
+                    onSuccess: () => {
+                        const back = () =>
+                            navigate({ to: '/engagement-engines/$engineId', params: { engineId: editId } });
+                        if (amendment) {
+                            editPrompt.mutate({ engineId: editId, deltaText: amendment }, { onSettled: back });
+                        } else {
+                            back();
+                        }
+                    },
+                }
+            );
+            return;
+        }
         createEngine.mutate(buildPayload(), {
             onSuccess: (engine) =>
                 navigate({ to: '/engagement-engines/$engineId', params: { engineId: engine.id } }),
@@ -380,10 +439,20 @@ function CreateEnginePage() {
                     onChangeFunction={(e) => setObjective(e.target.value)}
                 />
             </div>
+            {isEdit && (
+                <div className="flex flex-col gap-1">
+                    <span className="text-subtitle font-regular">{tEdit('currentBrief')}</span>
+                    <div className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded-lg bg-neutral-50 p-3 text-neutral-700">
+                        <span className="text-body">
+                            {editData?.prompt?.compiledText || editData?.engine.objective || '—'}
+                        </span>
+                    </div>
+                </div>
+            )}
             <div className="flex flex-col gap-1">
                 <label htmlFor="engine-brief" className="text-subtitle font-regular">
-                    {t('basics.brief')}
-                    <span className="text-danger-600">*</span>
+                    {isEdit ? tEdit('amendLabel') : t('basics.brief')}
+                    {!isEdit && <span className="text-danger-600">*</span>}
                 </label>
                 <Textarea
                     id="engine-brief"
@@ -392,7 +461,9 @@ function CreateEnginePage() {
                     onChange={(e) => setBrief(e.target.value)}
                     placeholder={t('basics.briefPlaceholder', { learners: learnersLower })}
                 />
-                <p className="text-caption text-neutral-500">{t('basics.briefHint')}</p>
+                <p className="text-caption text-neutral-500">
+                    {isEdit ? tEdit('amendHint') : t('basics.briefHint')}
+                </p>
             </div>
             <div className="w-full sm:w-80">
                 <label className="mb-1 block text-subtitle font-regular">
@@ -833,7 +904,14 @@ function CreateEnginePage() {
                             <MyButton
                                 buttonType="text"
                                 scale="medium"
-                                onClick={() => navigate({ to: '/engagement-engines' })}
+                                onClick={() =>
+                                    isEdit && editId
+                                        ? navigate({
+                                              to: '/engagement-engines/$engineId',
+                                              params: { engineId: editId },
+                                          })
+                                        : navigate({ to: '/engagement-engines' })
+                                }
                             >
                                 {t('actions.cancel')}
                             </MyButton>
@@ -858,12 +936,20 @@ function CreateEnginePage() {
                                 <MyButton
                                     buttonType="primary"
                                     scale="medium"
-                                    disable={createEngine.isPending}
+                                    disable={
+                                        createEngine.isPending ||
+                                        updateEngine.isPending ||
+                                        (isEdit && prefilledFor !== editId)
+                                    }
                                     onClick={submit}
                                 >
-                                    {createEngine.isPending
-                                        ? t('actions.creating')
-                                        : t('actions.create')}
+                                    {isEdit
+                                        ? updateEngine.isPending
+                                            ? tEdit('saving')
+                                            : tEdit('save')
+                                        : createEngine.isPending
+                                          ? t('actions.creating')
+                                          : t('actions.create')}
                                 </MyButton>
                             )}
                         </div>
