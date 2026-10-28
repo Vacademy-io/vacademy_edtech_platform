@@ -252,6 +252,9 @@
     }
   },
   "options": {
+    "dropdown": "Liste",
+    "chips": "Puces",
+    "popup": "Fenêtre",
     "categoryTiles": "Tuiles de catégorie",
     "default": "Par défaut",
     "ocean": "Océan",
@@ -1058,6 +1061,9 @@
     "leadsReceivedWithLast_many": "{{count}} leads reçus · dernier le {{date}}"
   },
   "leadForm": {
+    "columns": "Colonnes",
+    "choiceStyle": "Choix en",
+    "successDisplay": "Remerciement",
     "hint": "Affiche le formulaire d'inscription d'une campagne directement sur la page. Les champs, options et indicateurs obligatoires sont configurés sur la campagne dans Gestionnaire d'audience ; les envois arrivent dans cette campagne avec déduplication, notation et attribution au conseiller.",
     "campaignLabel": "Campagne (formulaire + destination)",
     "titlePlaceholder": "Inscrivez votre intérêt",
@@ -1364,6 +1370,24 @@
     "uploadPdf": "Importer un PDF",
     "clear": "Effacer",
     "openFile": "Ouvrir"
+  },
+  "scormViewer": {
+    "heading": "Package SCORM",
+    "package": "Package SCORM (.zip)",
+    "uploadZip": "Importer le zip SCORM",
+    "uploading": "Import et décompression…",
+    "clear": "Effacer",
+    "onlyZip": "Importez le package SCORM sous forme de fichier .zip.",
+    "tooLarge": "Le zip dépasse {{max}} Mo.",
+    "uploadFailed": "Le package n’a pas pu être importé. Vérifiez qu’il s’agit d’un zip SCORM avec un imsmanifest.xml.",
+    "uploadHelp": "Se lit sur la page sans connexion, comme une diapositive SCORM d’un cours. Rien n’est suivi ici.",
+    "packageReady": "Package importé",
+    "openPackage": "Ouvrir",
+    "barTitle": "Titre du cadre",
+    "barTitlePlaceholder": "ex. Aperçu – premières pages",
+    "frameHeight": "Hauteur du cadre (ordinateur)",
+    "mobileHeight": "Hauteur du cadre (téléphone)",
+    "showFullScreen": "Bouton plein écran"
   },
   "blog": {
     "heading": "Paramètres du blog",

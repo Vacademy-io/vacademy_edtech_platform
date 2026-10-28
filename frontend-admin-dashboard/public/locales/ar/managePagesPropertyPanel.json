@@ -252,6 +252,9 @@
     }
   },
   "options": {
+    "dropdown": "قائمة منسدلة",
+    "chips": "أزرار",
+    "popup": "نافذة منبثقة",
     "categoryTiles": "مربعات الفئات",
     "default": "افتراضي",
     "ocean": "محيط",
@@ -1067,6 +1070,9 @@
     "sendTestLead": "إرسال عميل محتمل تجريبي"
   },
   "leadForm": {
+    "columns": "الأعمدة",
+    "choiceStyle": "عرض الخيارات",
+    "successDisplay": "رسالة الشكر",
     "hint": "يعرض نموذج تسجيل حملة مباشرة على الصفحة. الحقول والخيارات والعلامات الإلزامية تُضبط على الحملة في مدير الجمهور؛ تصل الإرسالات إلى تلك الحملة مع إزالة التكرار والتقييم وتعيين مستشار.",
     "campaignLabel": "الحملة (النموذج + الوجهة)",
     "titlePlaceholder": "سجّل اهتمامك",
@@ -1385,6 +1391,24 @@
     "uploadPdf": "رفع PDF",
     "clear": "مسح",
     "openFile": "فتح"
+  },
+  "scormViewer": {
+    "heading": "حزمة SCORM",
+    "package": "حزمة SCORM (.zip)",
+    "uploadZip": "رفع ملف SCORM المضغوط",
+    "uploading": "جارٍ الرفع وفك الضغط…",
+    "clear": "مسح",
+    "onlyZip": "ارفع حزمة SCORM كملف .zip.",
+    "tooLarge": "الملف المضغوط أكبر من {{max}} ميغابايت.",
+    "uploadFailed": "تعذّر رفع الحزمة. تأكد من أنها ملف SCORM مضغوط يحتوي على imsmanifest.xml.",
+    "uploadHelp": "تعمل على الصفحة دون تسجيل دخول، مثل شريحة SCORM في دورة. لا يتم تتبّع أي شيء هنا.",
+    "packageReady": "تم رفع الحزمة",
+    "openPackage": "فتح",
+    "barTitle": "عنوان الإطار",
+    "barTitlePlaceholder": "مثال: معاينة – الصفحات الأولى",
+    "frameHeight": "ارتفاع الإطار (سطح المكتب)",
+    "mobileHeight": "ارتفاع الإطار (الهاتف)",
+    "showFullScreen": "زر ملء الشاشة"
   },
   "blog": {
     "heading": "إعدادات المدونة",

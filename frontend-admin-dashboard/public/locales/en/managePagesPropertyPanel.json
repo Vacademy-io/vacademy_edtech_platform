@@ -252,6 +252,9 @@
     }
   },
   "options": {
+    "dropdown": "Dropdown",
+    "chips": "Chips",
+    "popup": "Popup",
     "categoryTiles": "Category tiles",
     "default": "Default",
     "ocean": "Ocean",
@@ -1059,6 +1062,9 @@
     "sendTestLead": "Send test lead"
   },
   "leadForm": {
+    "columns": "Columns",
+    "choiceStyle": "Choices as",
+    "successDisplay": "Thank-you",
     "hint": "Renders a campaign's registration form right on the page. Fields, options and mandatory flags are configured on the campaign in Audience Manager; submissions land in that campaign with dedup, scoring and counsellor assignment.",
     "campaignLabel": "Campaign (form + destination)",
     "titlePlaceholder": "Register your interest",
@@ -1361,6 +1367,24 @@
     "uploadPdf": "Upload PDF",
     "clear": "Clear",
     "openFile": "Open"
+  },
+  "scormViewer": {
+    "heading": "SCORM package",
+    "package": "SCORM package (.zip)",
+    "uploadZip": "Upload SCORM zip",
+    "uploading": "Uploading and unpacking…",
+    "clear": "Clear",
+    "onlyZip": "Upload the SCORM package as a .zip file.",
+    "tooLarge": "The zip is larger than {{max}} MB.",
+    "uploadFailed": "The package could not be uploaded. Check that it is a SCORM zip with an imsmanifest.xml.",
+    "uploadHelp": "Plays on the page without login, like a SCORM slide in a course. Nothing is tracked here.",
+    "packageReady": "Package uploaded",
+    "openPackage": "Open",
+    "barTitle": "Frame title",
+    "barTitlePlaceholder": "e.g. Preview – first pages",
+    "frameHeight": "Frame height (desktop)",
+    "mobileHeight": "Frame height (phone)",
+    "showFullScreen": "Full-screen button"
   },
   "blog": {
     "heading": "Blog Settings",

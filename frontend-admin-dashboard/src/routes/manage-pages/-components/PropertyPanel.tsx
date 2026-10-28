@@ -42,6 +42,7 @@ import { ColorPickerField } from './ColorPickerField';
 import { ImageUploadField } from './ImageUploadField';
 import { VideoUploadField } from './VideoUploadField';
 import { DocumentUploadField } from './DocumentUploadField';
+import { ScormUploadField } from './ScormUploadField';
 import { VariantSwitcher } from './VariantSwitcher';
 import { RichTextField } from './RichTextField';
 import { StyleEditor } from './StyleEditor';
@@ -2172,6 +2173,8 @@ const ComponentEditor = ({ component, pageId, updateComponent, siteConfig }: any
             return <VideoEmbedEditor component={component} pageId={pageId} updateComponent={updateComponent} />;
         case 'documentViewer':
             return <DocumentViewerEditor component={component} pageId={pageId} updateComponent={updateComponent} />;
+        case 'scormViewer':
+            return <ScormViewerEditor component={component} pageId={pageId} updateComponent={updateComponent} />;
         case 'ctaBanner':
             return <CtaBannerEditor component={component} pageId={pageId} updateComponent={updateComponent} />;
         case 'pricingTable':
@@ -4689,6 +4692,58 @@ const DocumentViewerEditor = ({ component, pageId, updateComponent }: any) => {
     );
 };
 
+// SCORM Viewer Editor — a SCORM package (flip-book, interactive sample) on the page.
+const ScormViewerEditor = ({ component, pageId, updateComponent }: any) => {
+    const { t } = useTranslation('managePagesPropertyPanel');
+    const { props } = component;
+    const updateProp = (key: string, value: any) =>
+        updateComponent(pageId, component.id, { props: { ...props, [key]: value } });
+    return (
+        <div className="space-y-4">
+            <h4 className="text-sm font-medium">{t('scormViewer.heading')}</h4>
+            <ScormUploadField
+                label={t('scormViewer.package')}
+                value={props.launchUrl || ''}
+                onChange={(url) => updateProp('launchUrl', url)}
+            />
+            <div className="space-y-2">
+                <Label>{t('ctaBanner.headingField')}</Label>
+                <Input value={props.heading || ''} onChange={(e) => updateProp('heading', e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label>{t('faq.subheading')}</Label>
+                <Textarea rows={2} value={props.subheading || ''} onChange={(e) => updateProp('subheading', e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label>{t('scormViewer.barTitle')}</Label>
+                <Input value={props.title || ''} placeholder={t('scormViewer.barTitlePlaceholder')} onChange={(e) => updateProp('title', e.target.value)} />
+            </div>
+            <div className="space-y-2">
+                <Label>{t('scormViewer.frameHeight')}</Label>
+                <select className="w-full rounded border px-3 py-2 text-sm" value={props.height || '75vh'} onChange={(e) => updateProp('height', e.target.value)}>
+                    <option value="560px">{t('documentViewer.heightShort')}</option>
+                    <option value="75vh">{t('documentViewer.heightMedium')}</option>
+                    <option value="90vh">{t('documentViewer.heightTall')}</option>
+                </select>
+            </div>
+            <div className="space-y-2">
+                <Label>{t('scormViewer.mobileHeight')}</Label>
+                <select className="w-full rounded border px-3 py-2 text-sm" value={props.mobileHeight || '70vh'} onChange={(e) => updateProp('mobileHeight', e.target.value)}>
+                    <option value="420px">{t('documentViewer.heightShort')}</option>
+                    <option value="70vh">{t('documentViewer.heightMedium')}</option>
+                    <option value="85vh">{t('documentViewer.heightTall')}</option>
+                </select>
+            </div>
+            <div className="flex items-center justify-between">
+                <Label>{t('scormViewer.showFullScreen')}</Label>
+                <Switch checked={props.showFullScreen !== false} onCheckedChange={(c) => updateProp('showFullScreen', c)} />
+            </div>
+            <ColorPickerField label={t('faq.backgroundColor')} value={props.backgroundColor || ''} onChange={(c) => updateProp('backgroundColor', c)} />
+            <ColorPickerField label={t('header.textColor')} value={props.textColor || ''} onChange={(c) => updateProp('textColor', c)} />
+        </div>
+    );
+};
+
 // CTA Banner Editor
 const CtaBannerEditor = ({ component, pageId, updateComponent }: any) => {
     const { t } = useTranslation('managePagesPropertyPanel');
@@ -5383,6 +5438,35 @@ const LeadFormEditor = ({ component, pageId, updateComponent }: any) => {
                         {(['center', 'left'] as const).map((v) => (
                             <button key={v} onClick={() => updateProp('align', v)}
                                 className={`rounded px-2.5 py-1 text-caption font-medium capitalize ${(props.align || 'center') === v ? 'bg-primary-100 text-primary-500' : 'bg-gray-100 text-gray-600'}`}>{optionLabel(t, v)}</button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+                <div>
+                    <Label className="text-xs">{t('leadForm.columns')}</Label>
+                    <div className="mt-1 flex gap-1">
+                        {([1, 2] as const).map((v) => (
+                            <button key={v} onClick={() => updateProp('columns', v)}
+                                className={`rounded px-2.5 py-1 text-caption font-medium ${(props.columns || 1) === v ? 'bg-primary-100 text-primary-500' : 'bg-gray-100 text-gray-600'}`}>{v}</button>
+                        ))}
+                    </div>
+                </div>
+                <div>
+                    <Label className="text-xs">{t('leadForm.choiceStyle')}</Label>
+                    <div className="mt-1 flex gap-1">
+                        {(['dropdown', 'chips'] as const).map((v) => (
+                            <button key={v} onClick={() => updateProp('choiceStyle', v)}
+                                className={`rounded px-2.5 py-1 text-caption font-medium capitalize ${(props.choiceStyle || 'dropdown') === v ? 'bg-primary-100 text-primary-500' : 'bg-gray-100 text-gray-600'}`}>{optionLabel(t, v)}</button>
+                        ))}
+                    </div>
+                </div>
+                <div>
+                    <Label className="text-xs">{t('leadForm.successDisplay')}</Label>
+                    <div className="mt-1 flex gap-1">
+                        {(['inline', 'popup'] as const).map((v) => (
+                            <button key={v} onClick={() => updateProp('successDisplay', v)}
+                                className={`rounded px-2.5 py-1 text-caption font-medium capitalize ${(props.successDisplay || 'inline') === v ? 'bg-primary-100 text-primary-500' : 'bg-gray-100 text-gray-600'}`}>{optionLabel(t, v)}</button>
                         ))}
                     </div>
                 </div>

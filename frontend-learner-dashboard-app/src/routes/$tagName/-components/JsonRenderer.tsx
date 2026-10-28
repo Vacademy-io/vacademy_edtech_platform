@@ -99,6 +99,7 @@ import { BuyRentSectionComponent } from "./components/BuyRentSectionComponent";
 import { BookCatalogueComponent } from "./components/BookCatalogueComponent";
 import { BookDetailsComponent } from "./components/BookDetailsComponent";
 import { DocumentViewerComponent } from "./components/DocumentViewerComponent";
+import { ScormViewerComponent } from "./components/ScormViewerComponent";
 import { Policy } from "./components/Policy";
 import { RAIL_CLONE_PROPS, useAutoScrollRail, useRailArrows } from "../-utils/use-auto-scroll-rail";
 import { useCatalogueSearchParams } from "../-utils/catalogue-url-state";
@@ -368,6 +369,9 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
         return <VideoEmbedRenderer key={id} {...props} />;
       case "documentViewer":
         return <DocumentViewerComponent key={id} {...props} />;
+      case "scormViewer":
+        // A SCORM package (flip-book, interactive sample) in our player wrapper.
+        return <ScormViewerComponent key={id} {...props} />;
       case "ctaBanner":
         // variant "band" (opt-in): eyebrow, two styled buttons, phone mockup.
         return props?.variant === "band" ? <CtaBand key={id} {...props} /> : <CtaBannerRenderer key={id} {...props} />;

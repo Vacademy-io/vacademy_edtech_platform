@@ -159,6 +159,11 @@
         "openDocument": "فتح المستند",
         "download": "تنزيل PDF"
     },
+    "scormViewer": {
+        "title": "حزمة SCORM",
+        "noPackage": "ارفع ملف SCORM مضغوطًا من اللوحة",
+        "playsInPreview": "تعمل الحزمة في عرض الموقع"
+    },
     "blog": {
         "sampleCategory": "نصائح للدراسة",
         "sampleTitle": "مقال تجريبي {{n}}",

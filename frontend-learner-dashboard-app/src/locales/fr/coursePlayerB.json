@@ -241,6 +241,7 @@
         "goToTestimonial": "Aller au témoignage {{number}}"
     },
     "leadForm": {
+        "close": "Fermer",
         "emptyConfig": "Choisissez une campagne d'audience dans le panneau des propriétés — ses champs de formulaire s'afficheront ici.",
         "errorLoad": "Impossible de charger cette campagne. Vérifiez qu'elle est active et appartient à cet établissement.",
         "emptyFields": "Cette campagne n'a pas encore de champs de formulaire — ajoutez-en dans le gestionnaire d'audience.",

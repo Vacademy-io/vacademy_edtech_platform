@@ -2095,6 +2095,15 @@ def clean_urls(node: Any, allowed_urls: set, warnings: List[str]) -> Any:
                 if len(kept) != len(v):
                     warnings.append(f"Stripped unknown image URL(s) from '{k}'")
                 out[k] = clean_urls(kept, allowed_urls, warnings)
+            # scormViewer launchUrl: the player wrapper of a package WE host
+            # (website_edit import_scorm / the editor's upload) — never a
+            # foreign page framed on the site.
+            elif lk == "launchurl" and isinstance(v, str):
+                if v and v not in allowed_urls:
+                    warnings.append(f"Stripped unknown SCORM launch URL from '{k}'")
+                    out[k] = ""
+                else:
+                    out[k] = v
             # mediaShowcase media[]: image items must use provided URLs; video
             # items (YouTube/Vimeo links) pass through untouched.
             elif lk == "media" and isinstance(v, list):
