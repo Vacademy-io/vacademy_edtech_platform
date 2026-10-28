@@ -390,6 +390,8 @@ export const buildComponentTemplates = (t: TFunction): Record<string, Omit<Compo
             height: '75vh',
             mobileHeight: '70vh',
             showFullScreen: true,
+            // 'book' hides the player's own controls on the page background.
+            appearance: 'book',
         },
     },
 

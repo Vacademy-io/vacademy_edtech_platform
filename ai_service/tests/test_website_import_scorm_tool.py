@@ -116,3 +116,10 @@ def test_hosted_launch_url_is_on_the_asset_allow_list():
     found = edit_mod._asset_urls_in({"type": "scormViewer", "props": {"launchUrl": LAUNCH}}, set())
     assert LAUNCH in found
     assert not edit_mod._asset_urls_in({"props": {"launchUrl": "https://evil.example/x.html"}}, set())
+
+
+def test_html_block_keeps_its_own_hosted_images_only():
+    html = (f'<div><img src="{LAUNCH.replace("scorm/abc/vacademy_player_v2.html", "imports/cover.png")}" alt="c">'
+            '<img src=\'https://evil.example/x.png\'></div>')
+    found = edit_mod._asset_urls_in({"type": "htmlBlock", "props": {"html": html}}, set())
+    assert found == {LAUNCH.replace("scorm/abc/vacademy_player_v2.html", "imports/cover.png")}

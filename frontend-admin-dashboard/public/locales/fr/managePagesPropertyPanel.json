@@ -1372,6 +1372,10 @@
     "openFile": "Ouvrir"
   },
   "scormViewer": {
+    "appearance": "Apparence",
+    "appearanceBook": "Livre (sans commandes)",
+    "appearanceFramed": "Lecteur encadré",
+    "appearanceHelp": "Le mode Livre masque la barre d’outils, le nombre de pages et le bouton plein écran du package : les pages se lisent comme un livre.",
     "heading": "Package SCORM",
     "package": "Package SCORM (.zip)",
     "uploadZip": "Importer le zip SCORM",

@@ -611,11 +611,17 @@ def theme_to_global_patch(theme: Dict[str, Any]) -> Dict[str, Any]:
     if motion in MOTIONS:
         patch["motion"] = {"personality": motion}
     if body_font or heading_font:
-        body_stack = _font_stack(body_font) or "Inter, sans-serif"
-        fonts: Dict[str, Any] = {"enabled": True, "family": body_stack}
+        # A patch: a font that is not sent keeps the site's current one (sending
+        # only a heading font used to reset the body to Inter).
+        fonts: Dict[str, Any] = {"enabled": True}
+        body_stack = _font_stack(body_font)
+        if body_stack:
+            fonts["family"] = body_stack
         head_stack = _font_stack(heading_font)
-        if head_stack and head_stack != body_stack:
-            fonts["headingFamily"] = head_stack
+        if head_stack:
+            # The body's own face is no separate heading font: clear headingFamily
+            # so headings follow the body (it used to keep the old heading font).
+            fonts["headingFamily"] = None if head_stack == body_stack else head_stack
         patch["fonts"] = fonts
     return patch
 
@@ -1129,6 +1135,10 @@ def _is_institute_asset(url: Any) -> bool:
 # drift from the stripper again (it did: `imageUrl` was stripped on every
 # MCP-authored stream icon because only the stripper knew the key).
 _EXTRA_IMAGE_PROP_KEYS = {"url", "launchurl"}
+#: <img src> inside an htmlBlock's `html`. The sanitiser keeps only allow-listed
+#: srcs there, and nothing used to put an htmlBlock's own images on the list, so
+#: every MCP update of a custom-HTML section stripped its (imported) images.
+_HTML_IMG_SRC_RE = re.compile(r"""<img\b[^>]*?\bsrc\s*=\s*["']([^"']+)["']""", re.I)
 
 
 def _asset_urls_in(node: Any, out: set) -> set:
@@ -1138,6 +1148,8 @@ def _asset_urls_in(node: Any, out: set) -> set:
         for k, v in node.items():
             if isinstance(v, str) and (is_image_key(k) or str(k).lower() in _EXTRA_IMAGE_PROP_KEYS) and _is_institute_asset(v):
                 out.add(v)
+            elif isinstance(v, str) and str(k).lower() == "html":
+                out.update(u for u in _HTML_IMG_SRC_RE.findall(v) if _is_institute_asset(u))
             elif isinstance(v, list) and is_image_list_key(k):
                 out.update(u for u in v if isinstance(u, str) and _is_institute_asset(u))
                 _asset_urls_in(v, out)

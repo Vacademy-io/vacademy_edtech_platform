@@ -228,6 +228,7 @@
       "noDocument": "No document configured yet"
     },
     "scormViewer": {
+      "swipeHint": "Swipe to turn the pages",
       "defaultTitle": "Interactive preview",
       "fullScreen": "Full screen",
       "openInNewTab": "Open in a new tab",

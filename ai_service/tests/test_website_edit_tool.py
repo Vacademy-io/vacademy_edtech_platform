@@ -119,7 +119,8 @@ def test_theme_patch_accepts_brand_kit_field_names_and_drops_junk():
                                    "headingFontFamily": "Inter", "borderRadius": "weird", "motion": "calm"})
     # No exact colour with a new preset clears any stale override.
     assert patch["theme"] == {"preset": "rose", "primaryColor": None}
-    assert patch["fonts"] == {"enabled": True, "family": "Inter, sans-serif"}   # same heading font not stored
+    # Same heading font as the body: not stored, and an older heading font is cleared (None drops the key on merge).
+    assert patch["fonts"] == {"enabled": True, "family": "Inter, sans-serif", "headingFamily": None}
     assert patch["motion"] == {"personality": "calm"}
     assert theme_to_global_patch({"nonsense": 1}) == {}
 
@@ -159,6 +160,20 @@ async def test_missing_arguments_are_named():
     assert out["error"] == "missing_argument" and out["needs"] == ["ops"]
     out = await run({"action": "create_page", "tag_name": "main-site", "page": {"route": "x"}})
     assert out["error"] == "missing_argument" and out["needs"] == ["page.components"]
+
+
+def test_theme_fonts_are_a_patch_not_a_reset():
+    gs = {"fonts": {"enabled": True, "family": "Mulish, sans-serif", "headingFamily": "Fraunces, serif"}}
+    lato = edit_mod._font_stack("Lato")
+    # Same face for both: headings follow the body, the old heading font is gone.
+    both = edit_mod.merge_global_settings(gs, edit_mod.theme_to_global_patch({"fonts": {"body": "Lato", "heading": "Lato"}}))
+    assert both["fonts"]["family"] == lato and "headingFamily" not in both["fonts"]
+    # Heading only: the body font is kept, not reset to Inter.
+    head = edit_mod.merge_global_settings(gs, edit_mod.theme_to_global_patch({"fonts": {"heading": "Lato"}}))
+    assert head["fonts"] == {"enabled": True, "family": "Mulish, sans-serif", "headingFamily": lato}
+    # Body only: the separate heading font is kept.
+    body = edit_mod.merge_global_settings(gs, edit_mod.theme_to_global_patch({"fonts": {"body": "Lato"}}))
+    assert body["fonts"]["family"] == lato and body["fonts"]["headingFamily"] == "Fraunces, serif"
 
 
 @pytest.mark.asyncio

@@ -1393,6 +1393,10 @@
     "openFile": "فتح"
   },
   "scormViewer": {
+    "appearance": "المظهر",
+    "appearanceBook": "كتاب (بدون أدوات التحكم)",
+    "appearanceFramed": "مشغّل داخل إطار",
+    "appearanceHelp": "وضع الكتاب يُخفي شريط أدوات الحزمة وعدد الصفحات وزر ملء الشاشة لتُقرأ الصفحات ككتاب على الصفحة.",
     "heading": "حزمة SCORM",
     "package": "حزمة SCORM (.zip)",
     "uploadZip": "رفع ملف SCORM المضغوط",

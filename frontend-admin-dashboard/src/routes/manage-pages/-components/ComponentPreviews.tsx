@@ -953,8 +953,8 @@ const ScormViewerPreview: React.FC<P> = ({ props }) => {
                 </h2>
             )}
             {props.subheading && <p className="mt-2 text-center text-catalogue-text-secondary">{props.subheading}</p>}
-            <div className="mt-6 flex h-72 flex-col overflow-hidden rounded-xl border border-catalogue-border bg-catalogue-bg-elevated shadow-lg">
-                <div className="flex items-center gap-2 border-b border-catalogue-border px-3 py-1.5 text-xs text-catalogue-text-primary">
+            <div className={`mt-6 flex h-72 flex-col overflow-hidden ${props.appearance === 'book' ? '' : 'rounded-xl border border-catalogue-border bg-catalogue-bg-elevated shadow-lg'}`}>
+                <div className={`flex items-center gap-2 border-b border-catalogue-border px-3 py-1.5 text-xs text-catalogue-text-primary ${props.appearance === 'book' ? 'hidden' : ''}`}>
                     <span className="rounded bg-primary-50 px-1 font-bold text-primary-500">SCORM</span>
                     <span className="min-w-0 flex-1 truncate">{props.title || props.heading || t('scormViewer.title')}</span>
                     {props.showFullScreen !== false && <span className="text-catalogue-text-muted">⛶</span>}
