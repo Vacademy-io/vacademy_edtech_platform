@@ -46,4 +46,11 @@ public interface EngagementReplyMemberQueries extends Repository<EngagementMembe
             """, nativeQuery = true)
     List<LiveMember> findLiveMembersByPhone(@Param("instituteId") String instituteId,
                                             @Param("phone10") String phone10);
+
+    /** Of these inbound message ids, the ones a sweep already handled (engagement_handled_reply). */
+    @Query(value = """
+            SELECT wamid FROM engagement_handled_reply
+             WHERE institute_id = :instituteId AND wamid IN (:wamids)
+            """, nativeQuery = true)
+    List<String> handledWamids(@Param("instituteId") String instituteId, @Param("wamids") List<String> wamids);
 }

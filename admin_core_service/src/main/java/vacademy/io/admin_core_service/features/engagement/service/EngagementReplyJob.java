@@ -32,6 +32,10 @@ public class EngagementReplyJob {
     private final EngagementMemberRepository memberRepository;
     private final EngagementReplyResponder replyResponder;
 
+    /** Field-injected (optional) so the constructor is unchanged. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.admin_core_service.features.engagement.repository.EngagementReplyMemberQueries replyQueries;
+
     /** Minimum lookback, and the overlap kept with the previous sweep's window. */
     private static final Duration LOOKBACK = Duration.ofMinutes(3);
     private static final Duration OVERLAP = Duration.ofMinutes(1);
@@ -67,6 +71,11 @@ public class EngagementReplyJob {
             try {
                 JsonNode replies = clients.inboundSince(instituteId, sinceMillis);
                 if (replies == null || !replies.isArray() || replies.isEmpty()) continue;
+                // Windows overlap, so a message is often read twice. One already handled must not pull its
+                // members due again: that would undo a hold (a "not interested" reply) or re-wake someone
+                // a human is answering.
+                replies = withoutHandled(instituteId, replies);
+                if (replies.isEmpty()) continue;
                 // Batch all this institute's reply phones into ONE promotion (avoids 2 unindexable
                 // full scans of student + audience_response PER reply every 2 minutes). This MUST run
                 // before the auto-reply pass — it opens the 24h window the responder gates on.
@@ -113,6 +122,29 @@ public class EngagementReplyJob {
         } catch (Exception e) {
             log.warn("Handled-reply prune failed: {}", e.getMessage());
         }
+    }
+
+    private JsonNode withoutHandled(String instituteId, JsonNode replies) {
+        if (replyQueries == null) return replies;
+        List<String> wamids = new java.util.ArrayList<>();
+        for (JsonNode r : replies) {
+            String w = r.path("wamid").asText(null);
+            if (w != null && !w.isBlank()) wamids.add(w);
+        }
+        if (wamids.isEmpty()) return replies;
+        java.util.Set<String> handled;
+        try {
+            handled = new java.util.HashSet<>(replyQueries.handledWamids(instituteId, wamids));
+        } catch (Exception e) {
+            return replies; // lookup failed: keep the old behaviour rather than drop replies
+        }
+        if (handled.isEmpty()) return replies;
+        com.fasterxml.jackson.databind.node.ArrayNode out =
+                com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.arrayNode();
+        for (JsonNode r : replies) {
+            if (!handled.contains(r.path("wamid").asText(""))) out.add(r);
+        }
+        return out;
     }
 
     private static Instant earliestReceivedAt(JsonNode replies, Instant fallback) {
