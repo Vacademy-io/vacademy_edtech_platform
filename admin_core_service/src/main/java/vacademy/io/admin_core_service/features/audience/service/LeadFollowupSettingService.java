@@ -31,6 +31,19 @@ public class LeadFollowupSettingService {
 
     /** May a closed follow-up's note, closing note and interest level be edited? */
     public boolean allowEditing(String instituteId) {
+        return flag(instituteId, "allowEditing");
+    }
+
+    /**
+     * Does a follow-up's interest level also set the lead's own interest level (tier)?
+     * Applies when a follow-up is created with one, and when the lead's latest
+     * follow-up has it edited.
+     */
+    public boolean syncInterestToLead(String instituteId) {
+        return flag(instituteId, "syncInterestToLead");
+    }
+
+    private boolean flag(String instituteId, String name) {
         if (instituteId == null || instituteId.isBlank()) return false;
         try {
             String settingJson = instituteRepository.findById(instituteId)
@@ -39,10 +52,10 @@ public class LeadFollowupSettingService {
             if (settingJson == null || settingJson.isBlank()) return false;
             JsonNode fields = objectMapper.readTree(settingJson)
                     .path("setting").path("LEAD_SETTING").path("data").path("followUpFields");
-            return fields.path("allowEditing").asBoolean(false);
+            return fields.path(name).asBoolean(false);
         } catch (Exception e) {
-            log.warn("Failed to read follow-up settings for institute {} — editing stays off: {}",
-                    instituteId, e.getMessage());
+            log.warn("Failed to read follow-up settings for institute {} — {} stays off: {}",
+                    instituteId, name, e.getMessage());
             return false;
         }
     }

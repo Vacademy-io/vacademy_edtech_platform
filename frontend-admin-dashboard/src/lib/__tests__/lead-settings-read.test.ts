@@ -90,6 +90,7 @@ describe('follow-up fields config', () => {
             scheduleNextByDefault: false,
             closingNoteOptional: false,
             markDoneLeadStatusAndTier: false,
+            syncInterestToLead: false,
         });
     });
 

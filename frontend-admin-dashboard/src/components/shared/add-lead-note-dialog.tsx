@@ -26,6 +26,7 @@ import {
     useLeadAttributeFields,
 } from '@/components/shared/leads/lead-attribute-fields';
 import { CallRecordingInput } from '@/components/shared/lead-calls/CallRecordingInput';
+import { invalidateLeadCaches } from '@/hooks/use-invalidate-lead-caches';
 import {
     type CallActivity,
     callActivityToMetadata,
@@ -109,7 +110,7 @@ export const AddLeadNoteDialog = ({
     // The lead's own status + tier (institute switch, off by default) — on every tab.
     const leadAttributes = useLeadAttributeFields({ userId, audienceResponseId });
     const notesRequired = useFollowUpNotesRequired();
-    const { keepPopupsOpen } = useFollowUpFeatures();
+    const { keepPopupsOpen, syncInterestToLead } = useFollowUpFeatures();
     // With the institute's "close pop-ups only with X" switch on, a stray click
     // outside (or Escape) no longer closes the dialog and wipes what was typed;
     // only X / Cancel do. Off = the old behaviour.
@@ -202,6 +203,8 @@ export const AddLeadNoteDialog = ({
             queryClient.invalidateQueries({ queryKey: ['latest-notes-batch'] });
             queryClient.invalidateQueries({ queryKey: ['cross-stage-timeline', userId] });
             queryClient.invalidateQueries({ queryKey: ['lead-all-events', userId] });
+            // The backend may have set the lead's interest level from this follow-up.
+            if (syncInterestToLead) invalidateLeadCaches(queryClient, userId);
             onFollowUpScheduled?.();
             onSuccess?.();
             onOpenChange(false);

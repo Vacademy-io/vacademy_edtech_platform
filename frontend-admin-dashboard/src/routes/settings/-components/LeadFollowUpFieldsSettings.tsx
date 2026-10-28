@@ -75,7 +75,8 @@ type BehaviourKey =
     | 'leadStatusAndTier'
     | 'scheduleNextByDefault'
     | 'closingNoteOptional'
-    | 'markDoneLeadStatusAndTier';
+    | 'markDoneLeadStatusAndTier'
+    | 'syncInterestToLead';
 
 /** Label/hint can read the institute's own names for lead status and tier. */
 type Wording = string | ((terms: LeadTerminology) => string);
@@ -112,6 +113,12 @@ const BEHAVIOUR_SWITCHES: { key: BehaviourKey; label: Wording; hint: Wording }[]
         label: (terms) => `${terms.leadStatus} and ${terms.tier} in "Mark complete"`,
         hint: (terms) =>
             `The same ${terms.leadStatus} and ${terms.tier} dropdowns inside "Mark complete" itself, so a counsellor can discard the lead or change its ${terms.tier} while closing. Picking the Lost status unticks "Schedule next follow-up". Needs the switch above on.`,
+    },
+    {
+        key: 'syncInterestToLead',
+        label: (terms) => `Follow-up interest level updates the lead's ${terms.tier}`,
+        hint: (terms) =>
+            `The interest level picked on a follow-up also becomes the lead's ${terms.tier}: when a follow-up is created with one, and when the lead's latest follow-up has it edited. Matched by name (e.g. "Very Hot" sets the Very Hot ${terms.tier}); a value with no matching ${terms.tier} leaves the lead as it is. Editing an older follow-up only fixes that follow-up.`,
     },
     {
         key: 'scheduleNextByDefault',
