@@ -1149,4 +1149,69 @@ public interface StudentSessionInstituteGroupMappingRepository
       """, nativeQuery = true)
   List<Object[]> findAdminsBySubOrgIds(@Param("subOrgIds") List<String> subOrgIds);
 
+  /**
+   * Check Lead fallback: one of these people (ids of users whose own profile phone or
+   * email is the one searched) who is enrolled at the institute. Students admitted
+   * without an enquiry here (migrated admissions, direct enrolments) are on the Contacts
+   * page but have no lead row, so the lead lookup alone calls them "not in the system".
+   *
+   * <p>Only real enrolments count, the same set the lead lookup reads for its admission
+   * stage: invites, abandoned carts and pending approvals are not admissions. Prefers a
+   * person with a live enrolment, then the latest one. The course is the batch's course
+   * (an ACTIVE enrolment first), and the status label is the institute's own word for
+   * CONVERTED, so the card reads the way a converted lead's would.
+   */
+  @Query(value = """
+      SELECT m.user_id                                 AS "userId",
+             ulp.assigned_counselor_id                 AS "counsellorId",
+             ulp.assigned_counselor_name               AS "counsellorName",
+             COALESCE(lt.label, ulp.lead_tier)         AS "interestLevel",
+             (SELECT p.package_name
+                FROM student_session_institute_group_mapping m2
+                JOIN package_session ps ON ps.id = m2.package_session_id
+                JOIN package p ON p.id = ps.package_id
+               WHERE m2.user_id = m.user_id
+                 AND m2.institute_id = m.institute_id
+                 AND m2.status IN ('ACTIVE', 'INACTIVE', 'TERMINATED', 'EXPIRED')
+               ORDER BY (m2.status = 'ACTIVE') DESC, m2.created_at DESC
+               LIMIT 1)                                AS "courseValue",
+             (SELECT ls.label FROM lead_status ls
+               WHERE ls.institute_id = m.institute_id AND ls.status_key = 'CONVERTED'
+               LIMIT 1)                                AS "convertedLabel",
+             COUNT(*) FILTER (WHERE m.status = 'ACTIVE'
+                    AND (m.expiry_date IS NULL OR m.expiry_date > NOW())) AS "activeCount"
+      FROM student_session_institute_group_mapping m
+      LEFT JOIN user_lead_profile ulp
+             ON ulp.user_id = m.user_id AND ulp.institute_id = m.institute_id
+      LEFT JOIN lead_tier lt
+             ON lt.institute_id = m.institute_id AND lt.tier_key = ulp.lead_tier
+      WHERE m.institute_id = :instituteId
+        AND m.user_id = ANY(STRING_TO_ARRAY(CAST(:userIdsCsv AS text), ','))
+        AND m.status IN ('ACTIVE', 'INACTIVE', 'TERMINATED', 'EXPIRED')
+      GROUP BY m.user_id, m.institute_id, ulp.assigned_counselor_id, ulp.assigned_counselor_name,
+               lt.label, ulp.lead_tier
+      ORDER BY "activeCount" DESC, MAX(m.created_at) DESC
+      LIMIT 1
+      """, nativeQuery = true)
+  Optional<EnrolledStudentLookupRow> findEnrolledStudentForLookup(
+      @Param("instituteId") String instituteId,
+      @Param("userIdsCsv") String userIdsCsv);
+
+  /** Projection for {@link #findEnrolledStudentForLookup}. */
+  interface EnrolledStudentLookupRow {
+    String getUserId();
+
+    String getCounsellorId();
+
+    String getCounsellorName();
+
+    String getInterestLevel();
+
+    String getCourseValue();
+
+    String getConvertedLabel();
+
+    Long getActiveCount();
+  }
+
 }

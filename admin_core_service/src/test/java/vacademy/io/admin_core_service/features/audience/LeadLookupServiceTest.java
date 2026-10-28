@@ -13,6 +13,8 @@ import vacademy.io.admin_core_service.features.audience.service.LeadLookupSettin
 import vacademy.io.admin_core_service.features.audience.service.LeadLookupSettingService.LookupSettings;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.counsellor_workbench.service.CounsellorScopeService;
+import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository;
+import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository.EnrolledStudentLookupRow;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
@@ -55,6 +57,7 @@ class LeadLookupServiceTest {
     private LeadFollowupRepository followUps;
     private CounsellorScopeService scope;
     private AuthService authService;
+    private StudentSessionInstituteGroupMappingRepository enrolments;
     private LeadLookupService service;
     private CustomUserDetails caller;
 
@@ -64,12 +67,14 @@ class LeadLookupServiceTest {
         followUps = mock(LeadFollowupRepository.class);
         scope = mock(CounsellorScopeService.class);
         authService = mock(AuthService.class);
+        enrolments = mock(StudentSessionInstituteGroupMappingRepository.class);
         LeadLookupSettingService settings = mock(LeadLookupSettingService.class);
         when(settings.get(INSTITUTE)).thenReturn(
                 new LookupSettings(true, SHARED, "field-course", "field-branch", false));
         LeadDedupSettingService dedupSettings = mock(LeadDedupSettingService.class);
         when(dedupSettings.get(anyString())).thenReturn(LeadDedupSettingService.DEFAULTS);
-        service = new LeadLookupService(responses, settings, scope, followUps, authService, dedupSettings);
+        service = new LeadLookupService(responses, settings, scope, followUps, authService, dedupSettings,
+                enrolments);
 
         caller = mock(CustomUserDetails.class);
         when(caller.getUserId()).thenReturn(CALLER);
@@ -198,6 +203,105 @@ class LeadLookupServiceTest {
 
         assertTrue(result.isFound());
         verify(responses).lookupByPhoneOrEmail(eq(INSTITUTE), eq(PHONE), isNull(), isNull(), any(), any(), isNull());
+    }
+
+    /*
+     * A student admitted without an enquiry here (migrated admission, direct enrolment)
+     * is on the Contacts page, so Check Lead must not call them "not in the system".
+     * In these tests no enquiry matches: the lead query is left unstubbed (empty).
+     */
+
+    @Test
+    void enrolledStudentWithoutEnquiryIsFoundWithInstituteMasking() {
+        profileMatch("student-1");
+        EnrolledStudentLookupRow row = enrolled(OTHER, 1L);
+        when(enrolments.findEnrolledStudentForLookup(INSTITUTE, "student-1")).thenReturn(Optional.of(row));
+
+        LeadLookupResultDto result = service.lookup(INSTITUTE, PHONE, null, null, caller);
+
+        assertTrue(result.isFound());
+        assertEquals("Meera", result.getLeadName());
+        assertNull(result.getLeadMobile(), "phone is not shared with other counsellors");
+        assertEquals("Asha", result.getCounsellorName());
+        assertEquals("Admission Taken", result.getStatus());
+        assertEquals("ADMISSION_ONGOING", result.getStage());
+        assertEquals("Diploma in Cosmetology", result.getCourse());
+        assertNull(result.getCampaignType(), "no enquiry, so no source");
+        assertFalse(result.getFollowUpsVisible());
+        assertNull(result.getFollowUps());
+        verify(followUps, never()).findByAudienceResponseIdInOrderByScheduleTimeDesc(anyList());
+    }
+
+    @Test
+    void ownStudentWithLapsedEnrolmentShowsEverythingAndNoHistory() {
+        profileMatch("student-1");
+        EnrolledStudentLookupRow row = enrolled(CALLER, 0L);
+        when(enrolments.findEnrolledStudentForLookup(INSTITUTE, "student-1")).thenReturn(Optional.of(row));
+
+        LeadLookupResultDto result = service.lookup(INSTITUTE, PHONE, null, null, caller);
+
+        assertTrue(result.isFound());
+        assertEquals(PHONE, result.getLeadMobile());
+        assertEquals("ADMISSION_COMPLETED", result.getStage());
+        assertTrue(result.getFollowUpsVisible());
+        assertEquals("Hot", result.getInterestLevel());
+        assertTrue(result.getFollowUps().isEmpty());
+        assertNull(result.getLeadCreatedAt(), "no enquiry, so no lead-created date");
+        verify(followUps, never()).findByAudienceResponseIdInOrderByScheduleTimeDesc(anyList());
+    }
+
+    @Test
+    void profileMatchWithoutEnrolmentIsStillNotInTheSystem() {
+        profileMatch("student-1");
+        when(enrolments.findEnrolledStudentForLookup(INSTITUTE, "student-1")).thenReturn(Optional.empty());
+
+        assertFalse(service.lookup(INSTITUTE, PHONE, null, null, caller).isFound());
+    }
+
+    @Test
+    void noProfileMatchSkipsTheEnrolmentCheck() {
+        when(authService.searchUserIdsByQuery(PHONE, null)).thenReturn(List.of());
+
+        assertFalse(service.lookup(INSTITUTE, PHONE, null, null, caller).isFound());
+        verify(enrolments, never()).findEnrolledStudentForLookup(any(), any());
+    }
+
+    @Test
+    void enrolmentLookupFailureFallsBackToNotFound() {
+        profileMatch("student-1");
+        when(enrolments.findEnrolledStudentForLookup(any(), any())).thenThrow(new RuntimeException("db down"));
+
+        assertFalse(service.lookup(INSTITUTE, PHONE, null, null, caller).isFound());
+    }
+
+    @Test
+    void aMatchingEnquiryStillAnswersWithoutTheEnrolmentCheck() {
+        lead(OTHER, "PENDING_KEY", "LEAD", "NONE");
+
+        assertTrue(service.lookup(INSTITUTE, PHONE, null, null, caller).isFound());
+        verify(enrolments, never()).findEnrolledStudentForLookup(any(), any());
+    }
+
+    /** The searched phone is the profile number of {@code userId}. */
+    private void profileMatch(String userId) {
+        when(authService.searchUserIdsByQuery(PHONE, null)).thenReturn(List.of(userId));
+        UserDTO student = new UserDTO();
+        student.setId(userId);
+        student.setFullName("Meera");
+        student.setMobileNumber(PHONE);
+        when(authService.getUsersFromAuthServiceByUserIds(anyList())).thenReturn(List.of(student));
+    }
+
+    private EnrolledStudentLookupRow enrolled(String counsellorId, long activeCount) {
+        EnrolledStudentLookupRow row = mock(EnrolledStudentLookupRow.class);
+        when(row.getUserId()).thenReturn("student-1");
+        when(row.getCounsellorId()).thenReturn(counsellorId);
+        when(row.getCounsellorName()).thenReturn("Asha");
+        when(row.getInterestLevel()).thenReturn("Hot");
+        when(row.getCourseValue()).thenReturn("Diploma in Cosmetology");
+        when(row.getConvertedLabel()).thenReturn("Admission Taken");
+        when(row.getActiveCount()).thenReturn(activeCount);
+        return row;
     }
 
     private void lead(String assignee, String statusKey, String conversion, String enrolment) {
