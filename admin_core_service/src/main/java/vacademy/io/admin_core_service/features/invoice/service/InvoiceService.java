@@ -977,9 +977,16 @@ public class InvoiceService {
 
         String paymentMethod = invoicePaymentMethod(firstPaymentLog);
         String transactionId = invoiceTransactionId(firstPaymentLog);
+        // The date the admin picked when recording the payment (gateway logs: when it was made).
         LocalDateTime paymentDate = firstPaymentLog.getDate() != null
-                ? firstPaymentLog.getDate().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime()
+                ? toLocalDateTime(firstPaymentLog.getDate())
                 : LocalDateTime.now();
+        // INVOICE_SETTING.receiptDateFromPayment: date the receipt by that payment date, so a
+        // payment recorded days later is not dated the day it was entered. Off = generation date.
+        Object receiptDateFromPaymentRaw = invoiceSettings.get("receiptDateFromPayment");
+        boolean receiptDateFromPayment = receiptDateFromPaymentRaw instanceof Boolean b
+                ? b : Boolean.parseBoolean(String.valueOf(receiptDateFromPaymentRaw));
+        LocalDateTime receiptDate = receiptDateFromPayment ? paymentDate : LocalDateTime.now();
 
         // Process each payment log
         for (PaymentLog paymentLog : paymentLogs) {
@@ -1138,8 +1145,8 @@ public class InvoiceService {
                 .paymentPlan(paymentLogs.get(0).getUserPlan().getPaymentPlan())
                 .paymentLog(firstPaymentLog) // Primary payment log
                 .paymentLogLineItems(new ArrayList<>()) // Aggregated across all logs
-                .invoiceDate(LocalDateTime.now())
-                .dueDate(LocalDateTime.now())
+                .invoiceDate(receiptDate)
+                .dueDate(receiptDate)
                 .planPrice(totalPlanPrice)
                 .discountAmount(totalDiscountAmount)
                 .taxAmount(taxAmount)
@@ -1680,6 +1687,10 @@ public class InvoiceService {
         List<InvoiceLineItemData> lineItems = buildLineItems(paymentPlan, paymentLogLineItems,
                 taxIncluded, taxRate, taxLabel, subtotal, taxAmount, totalAmount, paymentLog.getId(), planPrice);
 
+        LocalDateTime paymentDate = paymentLog.getDate() != null
+                ? toLocalDateTime(paymentLog.getDate())
+                : LocalDateTime.now();
+
         // Build invoice data
         InvoiceData invoiceData = InvoiceData.builder()
                 .user(user)
@@ -1701,9 +1712,7 @@ public class InvoiceService {
                 .taxLabel(taxLabel)
                 .paymentMethod(invoicePaymentMethod(paymentLog))
                 .transactionId(invoiceTransactionId(paymentLog))
-                .paymentDate(paymentLog.getDate() != null
-                        ? paymentLog.getDate().toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDateTime()
-                        : LocalDateTime.now())
+                .paymentDate(paymentDate)
                 .lineItems(lineItems)
                 .build();
 
@@ -7470,6 +7479,19 @@ public class InvoiceService {
             return sqlDate.toLocalDate();
         }
         return date.toInstant().atZone(java.time.ZoneId.systemDefault()).toLocalDate();
+    }
+
+    /**
+     * Same trap as {@link #toLocalDate}: an offline payment's log is dated with
+     * {@code java.sql.Date.valueOf(...)}, and that same instance reaches receipt generation
+     * before any reload, so {@code toInstant()} would throw.
+     */
+    private static LocalDateTime toLocalDateTime(java.util.Date date) {
+        if (date instanceof java.sql.Date sqlDate) {
+            return sqlDate.toLocalDate().atStartOfDay();
+        }
+        return java.time.Instant.ofEpochMilli(date.getTime())
+                .atZone(java.time.ZoneId.systemDefault()).toLocalDateTime();
     }
 
     /**
