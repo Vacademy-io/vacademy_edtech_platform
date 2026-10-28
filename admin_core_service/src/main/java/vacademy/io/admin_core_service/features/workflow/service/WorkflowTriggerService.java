@@ -39,6 +39,13 @@ public class WorkflowTriggerService {
     @Autowired
     private vacademy.io.admin_core_service.features.workflow.util.WorkflowSubjectResolver workflowSubjectResolver;
 
+    /** Lead sources whose leads never fall back to institute-wide triggers. */
+    static final String LEAD_AGENT_SOURCE = "LEAD_AGENT";
+
+    static boolean isLeadAgentLead(Map<String, Object> contextData) {
+        return contextData != null && LEAD_AGENT_SOURCE.equals(contextData.get("sourceType"));
+    }
+
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Map<String, Object> handleTriggerEvents(String eventName, String eventId, String instituteId,
             Map<String, Object> contextData) {
@@ -69,6 +76,12 @@ public class WorkflowTriggerService {
                 if (!triggers.isEmpty()) {
                     log.info("Found {} SPECIFIC triggers for eventId='{}'. Global triggers will be skipped.",
                             triggers.size(), eventId);
+                } else if (isLeadAgentLead(contextData)) {
+                    // Organisations the Lead Agent found are cold B2B prospects: an institute-wide
+                    // lead workflow (e.g. a "New Enquiry WhatsApp" for students) must not greet
+                    // them. Only workflows attached to their own lead list (or its pool) run.
+                    log.info("Lead Agent lead: institute-wide triggers skipped for event='{}'", eventName);
+                    triggers = List.of();
                 } else {
                     // No specific triggers — fall back to global
                     log.info("No specific triggers found. Falling back to GLOBAL triggers for event='{}'", eventName);
