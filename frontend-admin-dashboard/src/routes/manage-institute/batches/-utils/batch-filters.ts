@@ -51,10 +51,16 @@ const startTime = (batch: BatchType) => {
     return start?.isValid() ? start.valueOf() : 0;
 };
 
-function matches(batch: BatchType, filters: BatchFilters, today: dayjs.Dayjs) {
+function matches(
+    batch: BatchType,
+    filters: BatchFilters,
+    today: dayjs.Dayjs,
+    courseMatchesSearch = false
+) {
     const query = filters.search.trim().toLowerCase();
     if (
         query &&
+        !courseMatchesSearch &&
         !batch.batch_name?.toLowerCase().includes(query) &&
         !batch.invite_code?.toLowerCase().includes(query)
     ) {
@@ -82,22 +88,35 @@ const SORTERS: Record<BatchSort, (a: BatchType, b: BatchType) => number> = {
 export function filterAndSortBatches(
     batches: BatchType[],
     filters: BatchFilters,
-    today = dayjs()
+    today = dayjs(),
+    courseMatchesSearch = false
 ): BatchType[] {
-    return batches.filter((batch) => matches(batch, filters, today)).sort(SORTERS[filters.sort]);
+    return batches
+        .filter((batch) => matches(batch, filters, today, courseMatchesSearch))
+        .sort(SORTERS[filters.sort]);
 }
 
-/** Each course with only its matching batches; a course left with none is dropped while filtering. */
+/**
+ * Each course with only its matching batches; a course left with none is dropped while filtering.
+ * A search that matches the course name keeps all of its batches — a batch's own name often
+ * leaves the course out, and the course header already shows the full batch total.
+ */
 export function applyBatchFilters(
     courses: batchWithStudentDetails[],
     filters: BatchFilters,
     today = dayjs()
 ): batchWithStudentDetails[] {
     const filtering = hasActiveBatchFilters(filters);
+    const query = filters.search.trim().toLowerCase();
     return courses
         .map((course) => ({
             ...course,
-            batches: filterAndSortBatches(course.batches, filters, today),
+            batches: filterAndSortBatches(
+                course.batches,
+                filters,
+                today,
+                !!query && !!course.package_dto.package_name?.toLowerCase().includes(query)
+            ),
         }))
         .filter((course) => !filtering || course.batches.length > 0);
 }

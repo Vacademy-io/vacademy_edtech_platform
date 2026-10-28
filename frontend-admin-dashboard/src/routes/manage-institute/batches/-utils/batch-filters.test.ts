@@ -104,4 +104,30 @@ describe('applyBatchFilters', () => {
             )
         ).toEqual(['c1']);
     });
+
+    it('a search matching the course name keeps every batch of that course', () => {
+        const courses = [
+            course('ICAN TEST', [
+                batch({ batch_name: 'default ICAN TEST' }),
+                batch({ batch_name: '2026_10_28_Morning' }),
+                batch({ batch_name: 'Evening', batch_status: 'INACTIVE' }),
+            ]),
+            course('Other', [batch({ batch_name: 'Alpha' })]),
+        ];
+        const result = applyBatchFilters(
+            courses,
+            { ...DEFAULT_BATCH_FILTERS, search: 'ican' },
+            TODAY
+        );
+        expect(result.map((x) => x.package_dto.id)).toEqual(['ICAN TEST']);
+        expect(result[0]?.batches).toHaveLength(3);
+        // Other filters still apply on top of the course match.
+        expect(
+            applyBatchFilters(
+                courses,
+                { ...DEFAULT_BATCH_FILTERS, search: 'ican', status: 'active' },
+                TODAY
+            )[0]?.batches.map((x) => x.batch_name)
+        ).toEqual(['default ICAN TEST', '2026_10_28_Morning']);
+    });
 });
