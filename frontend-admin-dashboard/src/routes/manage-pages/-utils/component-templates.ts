@@ -247,6 +247,11 @@ export const buildComponentTemplates = (t: TFunction): Record<string, Omit<Compo
             description: t('testimonialSection.description'),
             layout: 'grid-scroll',
             testimonials: [],
+            // New sections also show approved site reviews (Reviews & feedback
+            // block); sections saved before this keep 'manual' (key absent).
+            reviewSource: 'both',
+            reviewLimit: 9,
+            reviewMinRating: 4,
             backgroundColor: '#F9FAFB', // design-lint-ignore: page-builder template default color
             textColor: '#111827', // design-lint-ignore: page-builder template default color
             styles: {

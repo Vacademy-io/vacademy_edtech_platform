@@ -907,7 +907,19 @@
     "cardsPerViewHint": "Les tablettes en affichent 2 au maximum et les téléphones 1.",
     "autoplay": "Défilement automatique",
     "autoplaySeconds": "Secondes entre les diapositives",
-    "photo": "Photo"
+    "photo": "Photo",
+    "reviewSource": "Afficher les avis approuvés",
+    "reviewSourceManual": "Non, seulement les citations ci-dessous",
+    "reviewSourceBoth": "Oui, après les citations ci-dessous",
+    "reviewSourceReviews": "Oui, à la place des citations ci-dessous",
+    "reviewSourceHint": "Les avis envoyés via une section Avis et retours s'affichent ici une fois approuvés.",
+    "reviewLimit": "Nombre maximum d'avis",
+    "reviewMinRating": "Étoiles minimum",
+    "reviewMinRatingAll": "Toutes les notes",
+    "reviewMinRatingStars_one": "{{count}} étoile et plus",
+    "reviewMinRatingStars_other": "{{count}} étoiles et plus",
+    "showAverageRating": "Afficher la note moyenne sous le titre",
+    "manageReviews": "Approuver les avis"
   },
   "policy": {
     "defaults": {

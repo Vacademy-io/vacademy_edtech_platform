@@ -290,6 +290,9 @@
         "description": "Real feedback from our learners.",
         "layout": "grid-scroll",
         "testimonials": [],
+        "reviewSource": "both",
+        "reviewLimit": 9,
+        "reviewMinRating": 4,
         "backgroundColor": "#F9FAFB",
         "textColor": "#111827",
         "styles": {
@@ -299,7 +302,7 @@
           "scrollEnabled": true
         }
       },
-      "capabilities": "layout: grid-scroll (default) | carousel (prev/next arrows + dots). testimonials[]: {name, role, quote (or text/feedback), avatar (the student photo — an image URL), rating (1-5), highlight}. Carousel only: cardsPerView 1-4 (cards in view on desktop; tablets show at most 2, phones 1; default 1 = one large quote at a time), autoplay (advance one card on a timer, pauses on hover), autoplayIntervalMs (default 5000). Use carousel + cardsPerView 3 for many short quotes in a row; carousel alone when the reference shows a single large quote."
+      "capabilities": "layout: grid-scroll (default) | carousel (prev/next arrows + dots). testimonials[]: {name, role, quote (or text/feedback), avatar (the student photo — an image URL), rating (1-5), highlight}. Carousel only: cardsPerView 1-4 (cards in view on desktop; tablets show at most 2, phones 1; default 1 = one large quote at a time), autoplay (advance one card on a timer, pauses on hover), autoplayIntervalMs (default 5000). Use carousel + cardsPerView 3 for many short quotes in a row; carousel alone when the reference shows a single large quote. reviewSource: manual (default — testimonials[] only) | both (testimonials[] then the institute's APPROVED site reviews from a reviewCollector, read live) | reviews (approved reviews only); reviewLimit, reviewMinRating 1-5, showAverageRating. Never invent reviews — use both/reviews when the site collects them."
     },
     {
       "type": "bookCatalogue",
