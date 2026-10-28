@@ -1,5 +1,5 @@
 // batch-section.tsx
-import { useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyDropdown } from '@/components/design-system/dropdown';
@@ -11,6 +11,7 @@ import {
     BookOpen,
     CalendarBlank,
     Copy,
+    CreditCard,
     DotsThreeVertical,
     Eye,
     LinkSimple,
@@ -21,6 +22,10 @@ import {
 import { useNavigate } from '@tanstack/react-router';
 import { BulkAssignDialog } from '@/routes/manage-students/students-list/-components/enroll-bulk/bulk-assign-dialog/BulkAssignDialog';
 import { useQueryClient } from '@tanstack/react-query';
+import { useDefaultInvite } from '@/routes/manage-students/students-list/-services/bulkAssignService';
+import { EditInviteDialogContent } from '@/routes/manage-students/invite/-components/InviteCardMenuOptions';
+import { LoadingSpinner } from '@/components/ai-course-builder/LoadingSpinner';
+import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { useDeleteBatches } from '@/routes/manage-institute/batches/-services/delete-batches';
 import { toast } from 'sonner';
 import createInviteLink from '@/routes/manage-students/invite/-utils/createInviteLink';
@@ -64,6 +69,47 @@ const BatchStatusPill = ({ batch }: { batch: BatchType }) => {
     );
 };
 
+/**
+ * A batch's payment plan lives on its default enroll invite, not on the batch, so this
+ * resolves that invite and opens the same Edit Invite dialog the Invite page uses.
+ */
+const BatchPaymentConfigDialog = ({
+    batch,
+    onClose,
+}: {
+    batch: BatchType;
+    onClose: () => void;
+}) => {
+    const { t } = useTranslation('manageInstituteBatchSection');
+    const queryClient = useQueryClient();
+    const { data: invite, isLoading } = useDefaultInvite(
+        getCurrentInstituteId() ?? '',
+        batch.package_session_id
+    );
+    const inviteId = invite?.id;
+
+    useEffect(() => {
+        if (isLoading || inviteId) return;
+        toast.error(t('toast.noInviteForBatch'));
+        onClose();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isLoading, inviteId]);
+
+    if (!inviteId) return isLoading ? <LoadingSpinner fullScreen /> : null;
+
+    // The single-invite query is cached for an hour; drop it so the next open shows the saved plan.
+    const handleClose = () => {
+        queryClient.invalidateQueries({ queryKey: ['GET_SINGLE_INVITE_DETAILS', inviteId] });
+        onClose();
+    };
+
+    return (
+        <Suspense fallback={<LoadingSpinner fullScreen />}>
+            <EditInviteDialogContent invite={{ id: inviteId }} onClose={handleClose} />
+        </Suspense>
+    );
+};
+
 /** Everything one batch can do — shared by the card and the list row. */
 const useBatchActions = (batch: BatchType) => {
     const { t } = useTranslation('manageInstituteBatchSection');
@@ -71,6 +117,7 @@ const useBatchActions = (batch: BatchType) => {
     const deleteBatchesMutation = useDeleteBatches();
     const { instituteDetails } = useInstituteDetailsStore();
     const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+    const [openPaymentConfig, setOpenPaymentConfig] = useState(false);
     // `batch` is read back as a package_session id — the learner list matches it
     // against batches_for_sessions to hydrate its Batch filter chip. It used to be
     // sent as a display label, which matched no id, so View Batch landed on a list
@@ -122,6 +169,11 @@ const useBatchActions = (batch: BatchType) => {
                       ]
                     : []),
                 {
+                    value: 'payment',
+                    label: t('menu.paymentConfiguration'),
+                    icon: <CreditCard size={16} />,
+                },
+                {
                     value: 'delete',
                     label: t('menu.delete'),
                     icon: <TrashSimple size={16} className="text-danger-500" />,
@@ -130,6 +182,7 @@ const useBatchActions = (batch: BatchType) => {
             handleChange={(value) => {
                 if (value === 'view') viewBatch();
                 if (value === 'copy') copyInviteLink();
+                if (value === 'payment') setOpenPaymentConfig(true);
                 if (value === 'delete') setOpenDeleteDialog(true);
             }}
         >
@@ -185,7 +238,11 @@ const useBatchActions = (batch: BatchType) => {
         </MyDialog>
     );
 
-    return { viewBatch, copyInviteLink, menu, deleteDialog };
+    const paymentConfigDialog = openPaymentConfig ? (
+        <BatchPaymentConfigDialog batch={batch} onClose={() => setOpenPaymentConfig(false)} />
+    ) : null;
+
+    return { viewBatch, copyInviteLink, menu, deleteDialog, paymentConfigDialog };
 };
 
 const InviteCode = ({ batch, onCopy }: { batch: BatchType; onCopy: () => void }) => {
@@ -252,7 +309,8 @@ const BatchEnrollButton = ({
 
 const BatchCard = ({ batch }: { batch: BatchType }) => {
     const { t } = useTranslation('manageInstituteBatchSection');
-    const { viewBatch, copyInviteLink, menu, deleteDialog } = useBatchActions(batch);
+    const { viewBatch, copyInviteLink, menu, deleteDialog, paymentConfigDialog } =
+        useBatchActions(batch);
     const learnerTerm = getTerminology(RoleTerms.Learner, SystemTerms.Learner);
     const start = batch.start_date ? dayjs(batch.start_date) : null;
 
@@ -310,13 +368,15 @@ const BatchCard = ({ batch }: { batch: BatchType }) => {
                 </div>
             </div>
             {deleteDialog}
+            {paymentConfigDialog}
         </>
     );
 };
 
 const BatchRow = ({ batch }: { batch: BatchType }) => {
     const { t } = useTranslation('manageInstituteBatchSection');
-    const { viewBatch, copyInviteLink, menu, deleteDialog } = useBatchActions(batch);
+    const { viewBatch, copyInviteLink, menu, deleteDialog, paymentConfigDialog } =
+        useBatchActions(batch);
     const learnerTerm = getTerminology(RoleTerms.Learner, SystemTerms.Learner);
     const start = batch.start_date ? dayjs(batch.start_date) : null;
 
@@ -360,6 +420,7 @@ const BatchRow = ({ batch }: { batch: BatchType }) => {
                 </div>
             </div>
             {deleteDialog}
+            {paymentConfigDialog}
         </>
     );
 };

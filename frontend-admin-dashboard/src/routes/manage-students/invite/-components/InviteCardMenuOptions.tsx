@@ -33,8 +33,19 @@ interface InviteCardMenuOptionsProps {
     invite: InviteLinkDataInterface;
 }
 
-const EditInviteDialogContent = ({ invite }: { invite: InviteLinkDataInterface }) => {
-    const [openEditDialog, setOpenEditDialog] = useState(true);
+// Also opened from the Batches page (Payment Configuration), which only knows the invite id.
+export const EditInviteDialogContent = ({
+    invite,
+    onClose,
+}: {
+    invite: Pick<InviteLinkDataInterface, 'id'>;
+    onClose?: () => void;
+}) => {
+    const [openEditDialog, setOpenEditDialogState] = useState(true);
+    const setOpenEditDialog = (open: boolean) => {
+        setOpenEditDialogState(open);
+        if (!open) onClose?.();
+    };
     const { getDetailsFromPackageSessionId } = useInstituteDetailsStore();
 
     // Fetch invite details
