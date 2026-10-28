@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.live_session.provider.controller
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.live_session.entity.SessionSchedule;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.google.GoogleAccount;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.google.GoogleJoinPayloadResponse;
@@ -13,11 +14,11 @@ import vacademy.io.admin_core_service.features.live_session.provider.security.Li
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleAccountStore;
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleAttendanceService;
 import vacademy.io.admin_core_service.features.live_session.repository.SessionScheduleRepository;
-import vacademy.io.common.auth.entity.User;
+import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.auth.model.CustomUserDetails;
-import vacademy.io.common.auth.repository.UserRepository;
 import vacademy.io.common.exceptions.VacademyException;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -44,10 +45,10 @@ class GoogleMeetJoinControllerTest {
     private final LiveSessionJoinAuthorizer authorizer = mock(LiveSessionJoinAuthorizer.class);
     private final GoogleAttendanceService attendance = mock(GoogleAttendanceService.class);
     private final GoogleAccountStore accounts = mock(GoogleAccountStore.class);
-    private final UserRepository users = mock(UserRepository.class);
+    private final AuthService auth = mock(AuthService.class);
     private final GoogleMeetManager meet = mock(GoogleMeetManager.class);
     private final GoogleMeetJoinController controller =
-            new GoogleMeetJoinController(schedules, authorizer, attendance, accounts, users, meet);
+            new GoogleMeetJoinController(schedules, authorizer, attendance, accounts, auth, meet);
 
     private final GoogleAccount account = GoogleAccount.builder().id("acc-1").organizerEmail("team@org.in").build();
 
@@ -118,11 +119,13 @@ class GoogleMeetJoinControllerTest {
     }
 
     @Test
-    @DisplayName("host without an email in the token: email read from the users table")
+    @DisplayName("host without an email in the token: email read from auth_service")
     void hostEmailFromDb() {
         role(JoinRole.HOST);
         schedule("acc-1", "spaces/abc", LINK);
-        when(users.findById("u-1")).thenReturn(Optional.of(User.builder().email("db@gmail.com").build()));
+        UserDTO dto = new UserDTO();
+        dto.setEmail("db@gmail.com");
+        when(auth.getUsersFromAuthServiceByUserIds(List.of("u-1"))).thenReturn(List.of(dto));
         when(meet.ensureCohost(account, "spaces/abc", "db@gmail.com")).thenReturn(true);
 
         GoogleJoinPayloadResponse r = controller.join("sch-1", null, user(null)).getBody();
@@ -131,11 +134,11 @@ class GoogleMeetJoinControllerTest {
     }
 
     @Test
-    @DisplayName("host, users lookup throws: join still succeeds without co-host")
+    @DisplayName("host, auth_service lookup throws: join still succeeds without co-host")
     void hostEmailLookupFails() {
         role(JoinRole.HOST);
         schedule("acc-1", "spaces/abc", LINK);
-        when(users.findById("u-1")).thenThrow(new RuntimeException("db down"));
+        when(auth.getUsersFromAuthServiceByUserIds(List.of("u-1"))).thenThrow(new RuntimeException("auth down"));
 
         GoogleJoinPayloadResponse r = controller.join("sch-1", null, user(null)).getBody();
 

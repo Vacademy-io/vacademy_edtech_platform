@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.live_session.entity.SessionSchedule;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.google.GoogleAccount;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.google.GoogleJoinPayloadResponse;
@@ -18,9 +19,11 @@ import vacademy.io.admin_core_service.features.live_session.provider.security.Li
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleAccountStore;
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleAttendanceService;
 import vacademy.io.admin_core_service.features.live_session.repository.SessionScheduleRepository;
+import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.auth.model.CustomUserDetails;
-import vacademy.io.common.auth.repository.UserRepository;
 import vacademy.io.common.exceptions.VacademyException;
+
+import java.util.List;
 
 /**
  * Resolves the Google Meet join URL for an authenticated learner/host and records attendance.
@@ -41,7 +44,7 @@ public class GoogleMeetJoinController {
     private final LiveSessionJoinAuthorizer joinAuthorizer;
     private final GoogleAttendanceService attendanceService;
     private final GoogleAccountStore googleAccountStore;
-    private final UserRepository userRepository;
+    private final AuthService authService;
     private final GoogleMeetManager googleMeetManager;
 
     @GetMapping("/google-meet-join")
@@ -101,35 +104,30 @@ public class GoogleMeetJoinController {
                 .build());
     }
 
-    /** Login email — JWT first, DB fallback. */
+    /**
+     * Login email — token first, then auth_service. The token built from auth_service never carries
+     * the email, and users live in the auth_service DB (not admin_core's), so the lookup goes there.
+     */
     private String resolveUserEmail(CustomUserDetails user) {
         if (user.getEmail() != null && !user.getEmail().isBlank()) {
             return user.getEmail();
         }
         try {
-            return userRepository.findById(user.getUserId())
-                    .map(u -> u.getEmail())
+            return authService.getUsersFromAuthServiceByUserIds(List.of(user.getUserId())).stream()
+                    .map(UserDTO::getEmail)
                     .filter(e -> e != null && !e.isBlank())
+                    .findFirst()
                     .orElse(null);
         } catch (Exception e) {
-            log.warn("google.meet.join email lookup failed userId={}", user.getUserId());
+            log.warn("google.meet.join email lookup failed userId={} reason={}", user.getUserId(), e.getMessage());
             return null;
         }
     }
 
-    /** Display name — JWT full name, DB fallback, then username. */
+    /** Display name — token full name, then username. */
     private String resolveUserName(CustomUserDetails user) {
         if (user.getFullName() != null && !user.getFullName().isBlank()) {
             return user.getFullName();
-        }
-        try {
-            var dbUser = userRepository.findById(user.getUserId());
-            if (dbUser.isPresent() && dbUser.get().getFullName() != null
-                    && !dbUser.get().getFullName().isBlank()) {
-                return dbUser.get().getFullName();
-            }
-        } catch (Exception e) {
-            log.warn("google.meet.join name lookup failed userId={}", user.getUserId());
         }
         return user.getUsername();
     }
