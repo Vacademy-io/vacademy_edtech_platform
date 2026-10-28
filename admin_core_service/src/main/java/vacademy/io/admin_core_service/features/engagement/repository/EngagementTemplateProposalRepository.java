@@ -88,10 +88,64 @@ public interface EngagementTemplateProposalRepository extends JpaRepository<Enga
     @Transactional
     @Query(value = """
             UPDATE engagement_template_proposal
-               SET status = 'SUBMITTED', updated_at = :now
+               SET status = 'SUBMITTED', submitted_at = :now, updated_at = :now
              WHERE id = :id AND institute_id = :instituteId AND status = 'USER_APPROVED'
             """, nativeQuery = true)
     int claimForSubmit(@Param("id") String id, @Param("instituteId") String instituteId, @Param("now") Instant now);
+
+    /** W10 — templates sent to Meta by this institute since a time (Meta limits creations per hour). */
+    @Query(value = """
+            SELECT count(*) FROM engagement_template_proposal
+             WHERE institute_id = :instituteId AND submitted_at IS NOT NULL AND submitted_at >= :since
+            """, nativeQuery = true)
+    long countSubmittedSince(@Param("instituteId") String instituteId, @Param("since") Instant since);
+
+    /** W10 — park an approved proposal until the institute is under Meta's hourly limit again. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_template_proposal
+               SET status = 'QUEUED', updated_at = :now
+             WHERE id = :id AND institute_id = :instituteId AND status = 'USER_APPROVED'
+            """, nativeQuery = true)
+    int queueForMeta(@Param("id") String id, @Param("instituteId") String instituteId, @Param("now") Instant now);
+
+    /** W10 — take a queued proposal back to USER_APPROVED so it can be submitted now. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_template_proposal
+               SET status = 'USER_APPROVED', updated_at = :now
+             WHERE id = :id AND status = 'QUEUED'
+            """, nativeQuery = true)
+    int unqueue(@Param("id") String id, @Param("now") Instant now);
+
+    /** Queued proposals of an institute, oldest first. */
+    @Query(value = """
+            SELECT * FROM engagement_template_proposal
+             WHERE institute_id = :instituteId AND status = 'QUEUED'
+             ORDER BY updated_at ASC
+            """, nativeQuery = true)
+    List<EngagementTemplateProposal> findQueued(@Param("instituteId") String instituteId);
+
+    /** Institutes with templates waiting for Meta capacity. */
+    @Query(value = """
+            SELECT DISTINCT institute_id FROM engagement_template_proposal WHERE status = 'QUEUED'
+            """, nativeQuery = true)
+    List<String> institutesWithQueuedProposals();
+
+    /** W15 — the newest edited version of an approved template (any state), if one exists. */
+    Optional<EngagementTemplateProposal> findFirstByReplacesIdOrderByCreatedAtDesc(String replacesId);
+
+    /** W15 — retire the approved template an edited version replaces, once the new one is approved. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_template_proposal
+               SET status = 'SUPERSEDED', updated_at = :now
+             WHERE id = :id AND status IN ('META_APPROVED', 'META_RECATEGORISED', 'META_DISABLED')
+            """, nativeQuery = true)
+    int supersedeReplaced(@Param("id") String id, @Param("now") Instant now);
 
     /**
      * Stamp the notification_template FK on a row this submit claimed. Targeted on purpose: a full
@@ -150,7 +204,7 @@ public interface EngagementTemplateProposalRepository extends JpaRepository<Enga
             UPDATE engagement_template_proposal
                SET status = 'WITHDRAWN', updated_at = :now
              WHERE id = :id AND institute_id = :instituteId
-               AND status IN ('AI_PROPOSED', 'USER_REVIEW', 'USER_APPROVED', 'META_REJECTED', 'META_RECATEGORISED')
+               AND status IN ('AI_PROPOSED', 'USER_REVIEW', 'USER_APPROVED', 'QUEUED', 'META_REJECTED', 'META_RECATEGORISED')
             """, nativeQuery = true)
     int withdraw(@Param("id") String id, @Param("instituteId") String instituteId, @Param("now") Instant now);
 

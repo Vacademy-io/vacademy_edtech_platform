@@ -70,6 +70,16 @@ public class EngagementTemplateController {
         return ResponseEntity.ok(service.requestAlternatives(engineId, instituteId, req, user.getUserId()));
     }
 
+    /** W1 — whether the brief is enough to write from, and questions for the admin when it is not. */
+    @GetMapping("/brief-check")
+    public ResponseEntity<vacademy.io.admin_core_service.features.engagement.templates.EngagementBriefAdvisor.BriefCheck> briefCheck(
+            @RequestParam String instituteId,
+            @RequestParam String engineId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        accessGuard.requireAdmin(user, instituteId);
+        return ResponseEntity.ok(service.briefCheck(engineId, instituteId));
+    }
+
     @GetMapping
     public ResponseEntity<List<EngagementTemplateProposal>> list(
             @RequestParam String instituteId,

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.features.engagement.client.EngagementInternalClients;
@@ -170,13 +171,22 @@ public class EngagementTemplateProposalService {
             row.setPurpose(cap(p.purpose() != null ? p.purpose() : purpose, 120));
             row.setVariableSources(writeJson(validSources(p.variableNames(), p.variableSources(), briefLinks)));
             row.setProposedBody(p.body());
-            row.setProposedCategory(p.category().toUpperCase());
+            // W6: the AI called a promotional message UTILITY. Meta would re-categorise or reject it,
+            // so propose it as MARKETING and say why; the human can still change it.
+            String category = p.category().toUpperCase();
+            String rationale = p.rationale();
+            if (WhatsAppTemplateRules.categoryWarning(p.body(), category) != null) {
+                category = "MARKETING";
+                rationale = (rationale == null || rationale.isBlank() ? "" : rationale + " ")
+                        + "(Proposed as MARKETING: the text promotes, so UTILITY would be re-categorised by Meta.)";
+            }
+            row.setProposedCategory(category);
             row.setStatus("AI_PROPOSED");
             row.setRound(round);
             row.setVariableNames(writeJson(p.variableNames()));
             row.setSampleValues(writeJson(p.sampleValues()));
             row.setFooterText(trimFooter(p.footerText()));
-            row.setRationale(p.rationale());
+            row.setRationale(rationale);
             row.setCreatedBy(createdBy);
             saved.add(proposalRepository.save(row));
         }
@@ -204,7 +214,12 @@ public class EngagementTemplateProposalService {
     @Transactional
     public EngagementTemplateProposal edit(String id, String instituteId, TemplateEditRequest req, String editedBy) {
         EngagementTemplateProposal p = requireProposal(id, instituteId);
-        if (!EDITABLE.contains(p.getStatus())) {
+        if (APPROVED_OR_DISABLED.contains(p.getStatus())) {
+            // W15: an approved template is not changed in place (Meta would re-review it and the
+            // engine would lose it meanwhile). The edit becomes a new version that replaces it once
+            // Meta approves the new one.
+            p = nextVersionFor(p, editedBy);
+        } else if (!EDITABLE.contains(p.getStatus())) {
             throw new VacademyException("This template can't be edited in state " + p.getStatus());
         }
         if (req.getBody() != null) p.setProposedBody(req.getBody());
@@ -231,12 +246,15 @@ public class EngagementTemplateProposalService {
             p.setVariableSources(writeJson(req.getVariableSources()));
         }
 
-        // Re-validate AFTER applying edits so a human can't approve something Meta will reject.
-        String problem = alignmentProblem(p.getProposedBody(), readJsonArray(p.getVariableNames()),
-                readJsonArray(p.getSampleValues()), p.getProposedCategory());
-        if (problem == null) {
-            problem = WhatsAppTemplateRules.linkProblem(p.getProposedBody(), briefFor(p.getEngineId()));
+        if (req.getHeaderType() != null) p.setHeaderType(req.getHeaderType().trim().toUpperCase());
+        if (req.getHeaderText() != null) p.setHeaderText(req.getHeaderText().isBlank() ? null : req.getHeaderText().trim());
+        if (req.getHeaderMediaUrl() != null) {
+            p.setHeaderMediaUrl(req.getHeaderMediaUrl().isBlank() ? null : req.getHeaderMediaUrl().trim());
         }
+        if (req.getButtons() != null) p.setButtons(writeJson(req.getButtons()));
+
+        // Re-validate AFTER applying edits so a human can't approve something Meta will reject.
+        String problem = fullProblem(p);
         if (problem != null) throw new VacademyException("Template is not valid: " + problem);
 
         p.setStatus("USER_REVIEW");
@@ -267,12 +285,19 @@ public class EngagementTemplateProposalService {
             throw new VacademyException("Approve the template before submitting it to Meta");
         }
         // Defensive re-validate — the row could have been edited then approved through another path.
-        String problem = alignmentProblem(pre.getProposedBody(), readJsonArray(pre.getVariableNames()),
-                readJsonArray(pre.getSampleValues()), pre.getProposedCategory());
-        if (problem == null) {
-            problem = WhatsAppTemplateRules.linkProblem(pre.getProposedBody(), briefFor(pre.getEngineId()));
-        }
+        String problem = fullProblem(pre);
         if (problem != null) throw new VacademyException("Template is not valid: " + problem);
+
+        // W10: Meta limits how many templates a business account can create per hour. Over the limit
+        // the template waits (QUEUED) and the sync job submits it when there is room.
+        if (metaSubmitsPerHour > 0 && proposalRepository.countSubmittedSince(instituteId,
+                Instant.now().minus(Duration.ofHours(1))) >= metaSubmitsPerHour) {
+            if (proposalRepository.queueForMeta(id, instituteId, Instant.now()) == 1) {
+                log.info("Template {} queued: institute {} reached {} Meta submissions this hour", id, instituteId,
+                        metaSubmitsPerHour);
+                return requireProposal(id, instituteId);
+            }
+        }
 
         // Double-submit guard: USER_APPROVED → SUBMITTED, single winner.
         if (proposalRepository.claimForSubmit(id, instituteId, Instant.now()) == 0) {
@@ -308,6 +333,11 @@ public class EngagementTemplateProposalService {
             // this row (e.g. our submit landed but the response was lost), rollbackSubmit affects 0
             // rows and the winning META_* state stands — never un-approve a Meta-approved template.
             proposalRepository.rollbackSubmit(id, null, "Submit failed: " + e.getMessage(), Instant.now());
+            // W10: Meta said "too many" — wait in the queue instead of failing.
+            if (isMetaRateLimit(e) && proposalRepository.queueForMeta(id, instituteId, Instant.now()) == 1) {
+                log.info("Template {} queued after a Meta rate-limit response: {}", id, e.getMessage());
+                return requireProposal(id, instituteId);
+            }
             throw new VacademyException("Template submission failed: " + e.getMessage());
         }
     }
@@ -407,6 +437,7 @@ public class EngagementTemplateProposalService {
                 if (toStatus == null || toStatus.equals(p.getStatus())) continue; // no real change; avoid churn
                 if (proposalRepository.reconcileFromMeta(p.getId(), toStatus, metaCategory, rejection, now) == 1) {
                     changed++;
+                    retireReplacedIfApproved(p, toStatus);
                 }
             } catch (Exception e) {
                 log.warn("Template sync: reconcile failed for proposal {}: {}", p.getId(), e.getMessage());
@@ -485,7 +516,9 @@ public class EngagementTemplateProposalService {
         String toStatus = mapMetaStatus(metaStatus, proposedCategory, metaCategory);
         proposalRepository.reconcileFromMeta(id, toStatus != null ? toStatus : "META_PENDING",
                 metaCategory, rejection, Instant.now());
-        return requireProposal(id, instituteId);
+        EngagementTemplateProposal row = requireProposal(id, instituteId);
+        retireReplacedIfApproved(row, row.getStatus());
+        return row;
     }
 
     private Map<String, Object> buildTemplateDto(EngagementTemplateProposal p, String actorId) {
@@ -494,7 +527,25 @@ public class EngagementTemplateProposalService {
         dto.put("name", p.getName());
         dto.put("language", metaLanguageCode(p.getLanguage()));
         dto.put("category", p.getProposedCategory());
-        dto.put("headerType", "NONE");
+        String headerType = p.getHeaderType() != null ? p.getHeaderType() : "NONE";
+        dto.put("headerType", headerType);
+        if ("TEXT".equals(headerType) && p.getHeaderText() != null) dto.put("headerText", p.getHeaderText());
+        if (!"NONE".equals(headerType) && !"TEXT".equals(headerType) && p.getHeaderMediaUrl() != null) {
+            dto.put("headerSampleUrl", p.getHeaderMediaUrl());
+        }
+        List<WhatsAppTemplateRules.Button> buttons = readButtons(p.getButtons());
+        if (!buttons.isEmpty()) {
+            List<Map<String, Object>> out = new ArrayList<>();
+            for (WhatsAppTemplateRules.Button b : buttons) {
+                Map<String, Object> m = new java.util.HashMap<>();
+                m.put("type", b.type().toUpperCase());
+                m.put("text", b.text().trim());
+                if (b.url() != null) m.put("url", b.url().trim());
+                if (b.phoneNumber() != null) m.put("phoneNumber", b.phoneNumber().trim());
+                out.add(m);
+            }
+            dto.put("buttons", out);
+        }
         dto.put("bodyText", p.getProposedBody());
         if (p.getFooterText() != null) dto.put("footerText", p.getFooterText());
         dto.put("bodyVariableNames", readJsonArray(p.getVariableNames()));
@@ -558,6 +609,119 @@ public class EngagementTemplateProposalService {
             }
         }
         return out;
+    }
+
+    /** W1 brief check; field-injected so the constructor (used by tests) is unchanged. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.admin_core_service.features.engagement.templates.EngagementBriefAdvisor briefAdvisor;
+
+    /** W1 — is the engine's brief enough to write templates from? If not, questions for the admin. */
+    public vacademy.io.admin_core_service.features.engagement.templates.EngagementBriefAdvisor.BriefCheck briefCheck(
+            String engineId, String instituteId) {
+        EngagementEngine engine = requireEngine(engineId, instituteId);
+        if (briefAdvisor == null) {
+            return new vacademy.io.admin_core_service.features.engagement.templates.EngagementBriefAdvisor.BriefCheck(
+                    false, 0, List.of(), List.of());
+        }
+        return briefAdvisor.check(engine, activePrompt(engine));
+    }
+
+    /** Meta's per-hour limit on template creation per business account (W10); 0 turns the queue off. */
+    @Value("${engagement.templates.meta-submits-per-hour:90}")
+    private int metaSubmitsPerHour = 90;
+
+    /** Every rule a proposal must meet before review, approval and submit. Null when fine. */
+    private String fullProblem(EngagementTemplateProposal p) {
+        String problem = alignmentProblem(p.getProposedBody(), readJsonArray(p.getVariableNames()),
+                readJsonArray(p.getSampleValues()), p.getProposedCategory());
+        String brief = problem == null ? briefFor(p.getEngineId()) : null;
+        if (problem == null) problem = WhatsAppTemplateRules.linkProblem(p.getProposedBody(), brief);
+        if (problem == null) {
+            problem = WhatsAppTemplateRules.headerProblem(p.getHeaderType(), p.getHeaderText(), p.getHeaderMediaUrl(), brief);
+        }
+        if (problem == null) problem = WhatsAppTemplateRules.buttonsProblem(readButtons(p.getButtons()), brief);
+        return problem;
+    }
+
+    /**
+     * W15 — the editable next version of an approved template: the existing one if a draft is already
+     * open, otherwise a copy that replaces the approved one when Meta approves it.
+     */
+    private EngagementTemplateProposal nextVersionFor(EngagementTemplateProposal approved, String editedBy) {
+        Optional<EngagementTemplateProposal> open = proposalRepository.findFirstByReplacesIdOrderByCreatedAtDesc(approved.getId())
+                .filter(x -> !Set.of("WITHDRAWN", "SUPERSEDED").contains(x.getStatus()));
+        if (open.isPresent()) {
+            if (EDITABLE.contains(open.get().getStatus())) return open.get();
+            throw new VacademyException("A new version of this template is already " + open.get().getStatus()
+                    .toLowerCase().replace('_', ' ') + "; wait for Meta or withdraw it first");
+        }
+        EngagementTemplateProposal n = new EngagementTemplateProposal();
+        n.setEngineId(approved.getEngineId());
+        n.setInstituteId(approved.getInstituteId());
+        n.setName(metaName(approved.getName() == null ? null : approved.getName().replaceAll("_[0-9a-f]{6}$", "")));
+        n.setLanguage(approved.getLanguage());
+        n.setPurpose(approved.getPurpose());
+        n.setProposedBody(approved.getProposedBody());
+        n.setProposedCategory(approved.getMetaCategory() != null ? approved.getMetaCategory().toUpperCase()
+                : approved.getProposedCategory());
+        n.setVariableNames(approved.getVariableNames());
+        n.setSampleValues(approved.getSampleValues());
+        n.setVariableSources(approved.getVariableSources());
+        n.setFooterText(approved.getFooterText());
+        n.setHeaderType(approved.getHeaderType());
+        n.setHeaderText(approved.getHeaderText());
+        n.setHeaderMediaUrl(approved.getHeaderMediaUrl());
+        n.setButtons(approved.getButtons());
+        n.setRound(proposalRepository.maxRound(approved.getEngineId()) + 1);
+        n.setReplacesId(approved.getId());
+        n.setRationale("Edited version of " + approved.getName());
+        n.setCreatedBy(editedBy);
+        return n;
+    }
+
+    /** W15 — once an edited version is approved by Meta, the template it replaces stops being used. */
+    private void retireReplacedIfApproved(EngagementTemplateProposal p, String status) {
+        if (p.getReplacesId() == null) return;
+        if (!"META_APPROVED".equals(status) && !"META_RECATEGORISED".equals(status)) return;
+        if (proposalRepository.supersedeReplaced(p.getReplacesId(), Instant.now()) == 1) {
+            log.info("Template {} approved; it replaces {}", p.getId(), p.getReplacesId());
+        }
+    }
+
+    /**
+     * W10 — submit queued templates while the institute is under Meta's hourly limit. Called by the
+     * sync job; each one goes through the normal submit (validation, idempotent draft, reconcile).
+     */
+    public int drainQueued(String instituteId) {
+        long room = metaSubmitsPerHour - proposalRepository.countSubmittedSince(instituteId,
+                Instant.now().minus(Duration.ofHours(1)));
+        int submitted = 0;
+        for (EngagementTemplateProposal p : proposalRepository.findQueued(instituteId)) {
+            if (submitted >= room) break;
+            if (proposalRepository.unqueue(p.getId(), Instant.now()) != 1) continue;
+            try {
+                EngagementTemplateProposal out = submit(p.getId(), instituteId, "SYSTEM_QUEUE");
+                if (!"QUEUED".equals(out.getStatus())) submitted++;
+                else break; // Meta pushed back again; wait for the next sweep
+            } catch (Exception e) {
+                log.warn("Queued template {} could not be submitted: {}", p.getId(), e.getMessage());
+            }
+        }
+        return submitted;
+    }
+
+    private static boolean isMetaRateLimit(Exception e) {
+        String m = e.getMessage() == null ? "" : e.getMessage().toLowerCase();
+        return m.contains("rate limit") || m.contains("too many") || m.contains("80008") || m.contains("(#4)");
+    }
+
+    private List<WhatsAppTemplateRules.Button> readButtons(String json) {
+        try {
+            return json == null || json.isBlank() ? List.of()
+                    : objectMapper.readValue(json, new com.fasterxml.jackson.core.type.TypeReference<List<WhatsAppTemplateRules.Button>>() {});
+        } catch (Exception e) {
+            return List.of();
+        }
     }
 
     /** The engine's current brief, or null when the engine can't be read (then any written link fails W2). */

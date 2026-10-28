@@ -24,4 +24,8 @@ public class TemplateEditRequest {
     private String footerText;           // <=60 chars, static
     private java.util.Map<String, String> variableSources; // {variableName: source}, see templates.TemplateVariableSources
     private String purpose;
+    private String headerType;           // NONE | TEXT | IMAGE | VIDEO | DOCUMENT
+    private String headerText;           // TEXT header, <=60 chars
+    private String headerMediaUrl;       // IMAGE / VIDEO / DOCUMENT sample file (https)
+    private List<vacademy.io.admin_core_service.features.engagement.templates.WhatsAppTemplateRules.Button> buttons;
 }

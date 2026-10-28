@@ -30,6 +30,14 @@ public class EngagementTemplateSyncJob {
     @Scheduled(fixedDelayString = "${engagement.template-sync.delay-ms:300000}")
     @SchedulerLock(name = "EngagementTemplateSync", lockAtMostFor = "PT10M", lockAtLeastFor = "PT10S")
     public void sweep() {
+        // W10: submit templates that waited for Meta's hourly limit, before polling the pending ones.
+        for (String instituteId : proposalRepository.institutesWithQueuedProposals()) {
+            try {
+                proposalService.drainQueued(instituteId);
+            } catch (Exception e) {
+                log.warn("Queued-template submit failed for institute {}: {}", instituteId, e.getMessage());
+            }
+        }
         List<String> institutes = proposalRepository.institutesWithPendingProposals();
         if (institutes.isEmpty()) return;
 
