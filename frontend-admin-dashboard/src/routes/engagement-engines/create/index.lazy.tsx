@@ -42,6 +42,7 @@ import { useCampaignsList } from '@/routes/audience-manager/list/-hooks/useCampa
 import { getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, OtherTerms, RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { buildChannelMeta, CHANNEL_ORDER, buildLanguageOptions } from '../-constants';
+import { EmailChannelOptions } from '../-components/EmailChannelOptions';
 import { useCreateEngine, useDataPointCatalog } from '../-hooks';
 import {
     CHANNEL_ICON,
@@ -534,6 +535,12 @@ function CreateEnginePage() {
                                 <p className="text-neutral-500">
                                     <span className="text-caption">{t('channels.callNote')}</span>
                                 </p>
+                            )}
+                            {c === 'EMAIL' && cfg.enabled && (
+                                <EmailChannelOptions
+                                    value={cfg}
+                                    onChange={(patch) => toggleChannel(c, patch)}
+                                />
                             )}
                             {c === 'WHATSAPP' && cfg.enabled && (
                                 <p className="flex items-start gap-2 rounded-lg bg-warning-50 p-2 text-warning-700">

@@ -1,0 +1,144 @@
+{
+    "actions": {
+        "cancel": "Cancel",
+        "generateWithAi": "Generate with AI",
+        "retry": "Retry",
+        "preview": "Preview",
+        "edit": "Edit",
+        "editNewVersion": "Edit (new version)",
+        "approve": "Approve",
+        "regenerate": "Regenerate",
+        "moreLikeThis": "More like this",
+        "archive": "Archive"
+    },
+    "toast": {
+        "generated": "New templates are ready for review.",
+        "regenerated": "Draft regenerated.",
+        "generateFailed": "Could not generate templates.",
+        "saved": "Template saved.",
+        "saveFailed": "Could not save the template.",
+        "approved": "Template approved. The engine can use it now.",
+        "approveFailed": "Could not approve the template.",
+        "archived": "Template archived.",
+        "archiveFailed": "Could not archive the template."
+    },
+    "generate": {
+        "headingWhatsapp": "Generate WhatsApp templates",
+        "headingEmail": "Generate email templates",
+        "headingRegenerate": "Regenerate this draft",
+        "headingMoreLikeThis": "More like this",
+        "intro": "The AI writes from this engine's brief. It only uses facts and links that are in the brief; you review every template before the engine can use it.",
+        "purposeLabel": "What is it for?",
+        "purposeAny": "Anything that fits the brief",
+        "customPlaceholder": "e.g. invite to the Sunday demo class",
+        "purposes": {
+            "firstTouch": "First message",
+            "followUp": "Follow-up after no reply",
+            "missedClass": "Missed a class",
+            "reEngage": "Re-engage after a quiet week",
+            "reminder": "Reminder",
+            "eventInvite": "Event or webinar invite",
+            "custom": "Something else…"
+        },
+        "countLabel": "How many",
+        "languageLabel": "Language",
+        "languages": {
+            "en": "English",
+            "hi": "Hindi",
+            "hinglish": "Hinglish"
+        },
+        "feedbackLabel": "Anything to keep in mind? (optional)",
+        "feedbackPlaceholder": "e.g. shorter, warmer, mention the weekend batch",
+        "generating": "Writing…",
+        "submit": "Generate"
+    },
+    "sources": {
+        "label": "Where {{variable}} comes from",
+        "pick": "Value comes from…",
+        "missing": "source not set",
+        "kinds": {
+            "profile_firstName": "First name",
+            "profile_name": "Full name",
+            "form": "Form answer",
+            "research": "Lead research note",
+            "brief_link": "Link from the brief",
+            "static": "Fixed text",
+            "ai": "Written by AI per person"
+        },
+        "placeholders": {
+            "form": "form field, e.g. course",
+            "research": "research field, e.g. fitSignal",
+            "brief_link": "link number, e.g. 1",
+            "static": "the fixed text"
+        }
+    },
+    "email": {
+        "heading": "Email templates",
+        "approvedCount_one": "{{count}} approved",
+        "approvedCount_other": "{{count}} approved",
+        "subheading": "Emails the engine can send, written by AI from the brief. Approve a template before the engine can use it; editing an approved one makes a new version.",
+        "modes": {
+            "FREE_WRITE": "Email mode: the engine writes each email itself. Approved templates are kept for when you switch modes.",
+            "TEMPLATE_ONLY": "Email mode: the engine only sends approved templates, filling in each person's details.",
+            "TEMPLATE_PLUS_AI_LINE": "Email mode: approved templates, plus one short personal line the AI writes for each person."
+        },
+        "emptyState": "No email templates yet. Generate a few from this engine's brief.",
+        "showOld": "Show archived and older versions",
+        "status": {
+            "AI_PROPOSED": "AI draft",
+            "USER_REVIEW": "In review",
+            "APPROVED": "Approved",
+            "SUPERSEDED": "Older version",
+            "ARCHIVED": "Archived"
+        },
+        "version": "v{{value}}"
+    },
+    "errors": {
+        "loadFailed": "Could not load email templates.",
+        "previewFailed": "Could not render the preview."
+    },
+    "preview": {
+        "heading": "Email preview",
+        "sampleNote": "Filled with the sample values. This is exactly what a send renders.",
+        "missing": "Still empty: {{list}}. A real send waits until every variable has a value."
+    },
+    "edit": {
+        "heading": "Edit email template",
+        "headingNewVersion": "Edit approved template (new version)",
+        "newVersionNote": "Your changes become a new version for review. The approved version keeps sending until you approve this one.",
+        "title": "Title (for you)",
+        "subject": "Subject",
+        "preheader": "Preview line (shown after the subject in the inbox)",
+        "body": "Body (HTML; write variables like {{example}})",
+        "variables": "Variables, a sample value, and where each value comes from",
+        "namePlaceholder": "name, e.g. first_name",
+        "samplePlaceholder": "sample, e.g. Asha",
+        "removeVariable": "Remove variable",
+        "addVariable": "+ Add variable",
+        "livePreview": "Live preview",
+        "saving": "Saving…",
+        "save": "Save",
+        "purpose": "What it is for (optional)",
+        "errors": {
+            "subjectEmpty": "The subject is empty.",
+            "bodyEmpty": "The body is empty.",
+            "badName": "Variable names use lowercase letters, digits and _ only.",
+            "duplicateName": "A variable name is used twice.",
+            "unknownPlaceholder": "{{name}} is used but not listed as a variable.",
+            "noSource": "Say where \"{{name}}\" comes from."
+        }
+    },
+    "whatsapp": {
+        "disabledByMeta": "Meta disabled or paused this template, so the engine no longer sends it. Generate an alternative."
+    },
+    "wizard": {
+        "modeTitle": "How emails are written",
+        "modes": {
+            "FREE_WRITE": "AI writes each email",
+            "TEMPLATE_ONLY": "Approved templates only",
+            "TEMPLATE_PLUS_AI_LINE": "Templates + one AI line"
+        },
+        "coldTitle": "Cold outreach",
+        "coldHint": "Turn on if these people never contacted you (for example leads found by the Lead Agent). Every email must then tell people how to stop."
+    }
+}

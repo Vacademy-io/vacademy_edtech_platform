@@ -28,7 +28,8 @@
         "metaRejected": "مرفوض من Meta",
         "metaRecategorised": "أُعيد تصنيفه",
         "superseded": "استُبدل",
-        "withdrawn": "مسحوب"
+        "withdrawn": "مسحوب",
+        "metaDisabled": "عطّلته Meta"
     },
     "language": {
         "english": "الإنجليزية",

@@ -52,6 +52,7 @@ import {
 } from '@/routes/settings/-components/NamingSettings';
 import { ToneBadge } from './-components/ToneBadge';
 import { TemplateNegotiation } from './-components/TemplateNegotiation';
+import { EmailTemplatesPanel } from './-components/EmailTemplatesPanel';
 import { ChannelChip, Chip, IconTile, KeyValue, SubHeading } from './-components/engine-ui';
 import { buildChannelMeta } from './-constants';
 import { buildEngineStatusMeta, buildLanguageOptions, NEXT_STATUSES } from './-constants';
@@ -69,7 +70,7 @@ import {
     safeParse,
     whatsappEnabled,
 } from './-utils';
-import type { AudienceSelector, EngagementEngine, EngineDetail, QuietHours } from './-types';
+import type { AudienceSelector, ChannelsConfig, EngagementEngine, EngineDetail, QuietHours } from './-types';
 import type { EngineStatus } from './-types';
 
 export const Route = createLazyFileRoute('/engagement-engines/$engineId')({
@@ -157,6 +158,8 @@ function EngineDetailPage() {
     const channelMeta = buildChannelMeta(tConstants);
     const channels = enabledChannels(engine);
     const hasWhatsApp = whatsappEnabled(engine);
+    const emailChannel = safeParse<ChannelsConfig>(engine.channels, {}).EMAIL;
+    const hasEmail = !!emailChannel?.enabled && !engine.systemManaged;
     const quietHours = quietHoursText(engine);
     const dataPointKeys = safeParse<string[]>(engine.dataPoints, []);
     const audience = safeParse<AudienceSelector[]>(engine.audience, []);
@@ -454,7 +457,14 @@ function EngineDetailPage() {
                     )}
                 </div>
 
-                {hasWhatsApp && <TemplateNegotiation engineId={engine.id} />}
+                {hasWhatsApp && <TemplateNegotiation engineId={engine.id} language={engine.language} />}
+                {hasEmail && (
+                    <EmailTemplatesPanel
+                        engineId={engine.id}
+                        language={engine.language}
+                        emailMode={emailChannel?.mode}
+                    />
+                )}
             </div>
 
             {amendOpen && (

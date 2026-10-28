@@ -18,6 +18,10 @@ export interface ChannelConfig {
     auto?: boolean;
     autoReply?: boolean; // WhatsApp only
     emailType?: string; // EMAIL only
+    /** EMAIL only: how drafts are written — see EMAIL_MODES in -types/templates. */
+    mode?: 'FREE_WRITE' | 'TEMPLATE_ONLY' | 'TEMPLATE_PLUS_AI_LINE';
+    /** EMAIL only: the engine writes to people who never contacted us (unsubscribe line required). */
+    coldOutreach?: boolean;
 }
 
 export type ChannelsConfig = Partial<Record<ChannelKey, ChannelConfig>>;
@@ -40,6 +44,8 @@ export interface QuietHours {
 /** The engine entity as returned by GET /engines. */
 export interface EngagementEngine {
     id: string;
+    /** The per-institute "AI Call Actions" engine; admins can't change it (backend isSystemManaged). */
+    systemManaged?: boolean;
     instituteId: string;
     name: string;
     objective?: string;
@@ -174,7 +180,9 @@ export type ProposalStatus =
     | 'META_REJECTED'
     | 'META_RECATEGORISED'
     | 'SUPERSEDED'
-    | 'WITHDRAWN';
+    | 'WITHDRAWN'
+    /** Meta later disabled or paused an approved template; the engine no longer uses it. */
+    | 'META_DISABLED';
 
 export type TemplateCategory = 'MARKETING' | 'UTILITY' | 'AUTHENTICATION';
 
@@ -195,6 +203,8 @@ export interface EngagementTemplateProposal {
     sampleValues: string; // jsonb string: ["Aisha",...]
     footerText?: string;
     rationale?: string;
+    variableSources?: string; // jsonb string: {"name":"profile.firstName",...}
+    purpose?: string;
     createdAt?: string;
     updatedAt?: string;
 }
@@ -205,4 +215,6 @@ export interface TemplateEditRequest {
     variableNames?: string[];
     sampleValues?: string[];
     footerText?: string;
+    variableSources?: Record<string, string>;
+    purpose?: string;
 }

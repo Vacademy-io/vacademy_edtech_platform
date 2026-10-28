@@ -28,7 +28,8 @@
         "metaRejected": "Rejected by Meta",
         "metaRecategorised": "Recategorised",
         "superseded": "Superseded",
-        "withdrawn": "Withdrawn"
+        "withdrawn": "Withdrawn",
+        "metaDisabled": "Disabled by Meta"
     },
     "language": {
         "english": "English",

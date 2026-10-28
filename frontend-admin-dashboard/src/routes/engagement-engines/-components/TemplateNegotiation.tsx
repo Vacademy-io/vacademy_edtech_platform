@@ -2,12 +2,13 @@ import { Fragment, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import {
     ArrowsClockwise,
+    ArrowsCounterClockwise,
     CaretRight,
+    Copy,
     Check,
     Info,
     PaperPlaneTilt,
     PencilSimple,
-    Plus,
     Sparkle,
     Trash,
     WhatsappLogo,
@@ -32,7 +33,11 @@ import { ToneBadge } from './ToneBadge';
 import { Chip } from './engine-ui';
 import { buildProposalStatusMeta, buildTemplateCategoryOptions } from '../-constants';
 import { useTemplateMutation, useTemplates } from '../-hooks';
+import { useWhatsAppGenerate } from '../-hooks/templates';
 import { safeParse } from '../-utils';
+import { GenerateTemplatesDialog } from './GenerateTemplatesDialog';
+import { VariableSourceField } from './VariableSourceField';
+import { isCompleteSource, type GenerateMode } from '../-types/templates';
 import type {
     EngagementTemplateProposal,
     ProposalStatus,
@@ -54,6 +59,7 @@ const FLOW_REACHED: Partial<Record<ProposalStatus, number>> = {
     META_REJECTED: 3,
     META_APPROVED: 5,
     META_RECATEGORISED: 5,
+    META_DISABLED: 4,
 };
 
 /** The five stages, ticked up to the furthest any current proposal has reached. */
@@ -108,11 +114,18 @@ function TemplateBody({ body }: { body: string }) {
     );
 }
 
-export function TemplateNegotiation({ engineId }: { engineId: string }) {
+export function TemplateNegotiation({ engineId, language }: { engineId: string; language?: string }) {
     const { t } = useTranslation('engagementEnginesTemplateNegotiation');
+    const { t: tTpl } = useTranslation('engagementEnginesTemplates');
     const { data: proposals, isLoading, isError } = useTemplates(engineId);
     const m = useTemplateMutation();
+    const gen = useWhatsAppGenerate();
     const [editing, setEditing] = useState<EngagementTemplateProposal | null>(null);
+    const [generate, setGenerate] = useState<{
+        mode: GenerateMode;
+        basedOn?: EngagementTemplateProposal;
+    } | null>(null);
+    const generating = gen.generate.isPending || gen.alternatives.isPending;
 
     const anyProposals = (proposals?.length ?? 0) > 0;
     const reached = Math.max(0, ...(proposals ?? []).map((p) => FLOW_REACHED[p.status] ?? 0));
@@ -134,26 +147,15 @@ export function TemplateNegotiation({ engineId }: { engineId: string }) {
                     >
                         <ArrowsClockwise className="me-1 size-4" /> {t('actions.checkMeta')}
                     </MyButton>
-                    {anyProposals ? (
-                        <MyButton
-                            buttonType="secondary"
-                            scale="small"
-                            disable={m.alternatives.isPending}
-                            onClick={() => m.alternatives.mutate({ engineId })}
-                        >
-                            <Plus className="me-1 size-4" /> {t('actions.moreOptions')}
-                        </MyButton>
-                    ) : (
-                        <MyButton
-                            buttonType="primary"
-                            scale="small"
-                            disable={m.recommend.isPending}
-                            onClick={() => m.recommend.mutate({ engineId })}
-                        >
-                            <Sparkle className="me-1 size-4" />
-                            {m.recommend.isPending ? t('actions.thinking') : t('actions.proposeTemplates')}
-                        </MyButton>
-                    )}
+                    <MyButton
+                        buttonType="primary"
+                        scale="small"
+                        disable={generating}
+                        onClick={() => setGenerate({ mode: 'NEW' })}
+                    >
+                        <Sparkle className="me-1 size-4" />
+                        {generating ? t('actions.thinking') : tTpl('actions.generateWithAi')}
+                    </MyButton>
                 </div>
             }
         >
@@ -187,11 +189,39 @@ export function TemplateNegotiation({ engineId }: { engineId: string }) {
                             p={p}
                             engineId={engineId}
                             onEdit={() => setEditing(p)}
+                            onRegenerate={() => setGenerate({ mode: 'REGENERATE', basedOn: p })}
+                            onMoreLikeThis={() => setGenerate({ mode: 'MORE_LIKE_THIS', basedOn: p })}
+                            generating={generating}
                             mutations={m}
                         />
                     ))}
                 </div>
             </div>
+
+            {generate && (
+                <GenerateTemplatesDialog
+                    channel="WHATSAPP"
+                    mode={generate.mode}
+                    defaultLanguage={generate.basedOn?.language ?? language}
+                    busy={generating}
+                    onClose={() => setGenerate(null)}
+                    onGenerate={(options) => {
+                        const done = { onSuccess: () => setGenerate(null) };
+                        if (generate.mode === 'NEW') {
+                            gen.generate.mutate({ engineId, options }, done);
+                        } else {
+                            gen.alternatives.mutate(
+                                {
+                                    engineId,
+                                    mode: generate.mode,
+                                    options: { ...options, basedOnId: generate.basedOn?.id },
+                                },
+                                done
+                            );
+                        }
+                    }}
+                />
+            )}
 
             {editing && (
                 <EditTemplateDialog
@@ -215,14 +245,22 @@ function ProposalCard({
     p,
     engineId,
     onEdit,
+    onRegenerate,
+    onMoreLikeThis,
+    generating,
     mutations,
 }: {
     p: EngagementTemplateProposal;
     engineId: string;
     onEdit: () => void;
+    onRegenerate: () => void;
+    onMoreLikeThis: () => void;
+    generating: boolean;
     mutations: ReturnType<typeof useTemplateMutation>;
 }) {
     const { t } = useTranslation('engagementEnginesTemplateNegotiation');
+    const { t: tTpl } = useTranslation('engagementEnginesTemplates');
+    const sources = safeParse<Record<string, string>>(p.variableSources, {});
     const { t: tConstants } = useTranslation('engagementEnginesConstants');
     const meta = buildProposalStatusMeta(tConstants)[p.status] ?? {
         label: p.status,
@@ -239,6 +277,7 @@ function ProposalCard({
                     <span className="text-caption">{p.name}</span>
                 </span>
                 {p.language && <Chip label={p.language} />}
+                {p.purpose && <Chip label={p.purpose} />}
                 <ToneBadge label={meta.label} tone={meta.tone} />
                 <span className="ms-auto text-neutral-400">
                     <span className="text-caption">
@@ -248,9 +287,15 @@ function ProposalCard({
             </div>
             <TemplateBody body={p.proposedBody} />
             {vars.length > 0 && (
-                <p className="text-caption text-neutral-500">
-                    {t('proposalCard.variables', { list: vars.join(', ') })}
-                </p>
+                <ul className="flex flex-col gap-0.5">
+                    {vars.map((v, i) => (
+                        <li key={v} className="text-caption text-neutral-500">
+                            <span className="font-mono text-neutral-700">{`{{${i + 1}}} ${v}`}</span>
+                            {' ← '}
+                            {sources[v] ?? tTpl('sources.missing')}
+                        </li>
+                    ))}
+                </ul>
             )}
             {p.rationale && <p className="text-caption italic text-neutral-400">{p.rationale}</p>}
             {p.status === 'META_REJECTED' && p.rejectionReason && (
@@ -277,7 +322,36 @@ function ProposalCard({
                 </p>
             )}
 
+            {p.status === 'META_DISABLED' && (
+                <p className="flex items-start gap-2 rounded-lg bg-danger-50 p-2 text-danger-600">
+                    <XCircle size={14} className="mt-0.5 shrink-0" />
+                    <span className="text-caption">
+                        {p.rejectionReason || tTpl('whatsapp.disabledByMeta')}
+                    </span>
+                </p>
+            )}
+
             <div className="mt-auto flex flex-wrap items-center gap-2">
+                {EDITABLE.has(p.status) && (
+                    <MyButton
+                        buttonType="secondary"
+                        scale="small"
+                        disable={busy || generating}
+                        onClick={onRegenerate}
+                    >
+                        <ArrowsCounterClockwise className="me-1 size-3.5" /> {tTpl('actions.regenerate')}
+                    </MyButton>
+                )}
+                {p.status !== 'WITHDRAWN' && p.status !== 'SUPERSEDED' && (
+                    <MyButton
+                        buttonType="secondary"
+                        scale="small"
+                        disable={busy || generating}
+                        onClick={onMoreLikeThis}
+                    >
+                        <Copy className="me-1 size-3.5" /> {tTpl('actions.moreLikeThis')}
+                    </MyButton>
+                )}
                 {EDITABLE.has(p.status) && (
                     <MyButton buttonType="secondary" scale="small" disable={busy} onClick={onEdit}>
                         <PencilSimple className="me-1 size-3.5" /> {t('actions.edit')}
@@ -336,11 +410,14 @@ function EditTemplateDialog({
     const { t: tConstants } = useTranslation('engagementEnginesConstants');
     const [body, setBody] = useState(proposal.proposedBody);
     const [category, setCategory] = useState<TemplateCategory>(proposal.proposedCategory);
-    const [pairs, setPairs] = useState<{ name: string; sample: string }[]>(() => {
+    const { t: tTpl } = useTranslation('engagementEnginesTemplates');
+    const [pairs, setPairs] = useState<{ name: string; sample: string; source: string }[]>(() => {
         const names = safeParse<string[]>(proposal.variableNames, []);
         const samples = safeParse<string[]>(proposal.sampleValues, []);
-        return names.map((n, i) => ({ name: n, sample: samples[i] ?? '' }));
+        const sources = safeParse<Record<string, string>>(proposal.variableSources, {});
+        return names.map((n, i) => ({ name: n, sample: samples[i] ?? '', source: sources[n] ?? '' }));
     });
+    const [purpose, setPurpose] = useState(proposal.purpose ?? '');
     const [footer, setFooter] = useState(proposal.footerText ?? '');
 
     // Mirror the backend's alignmentProblem() EXACTLY so the FE never enables Save for a body the
@@ -366,6 +443,12 @@ function EditTemplateDialog({
                 rows: t('editDialog.errors.rowCount', { count: pairs.length }),
             });
         }
+        // Sources are all-or-nothing: either every variable says where its value comes from, or none yet.
+        const withSource = pairs.filter((p) => p.source.trim());
+        if (withSource.length > 0) {
+            const incomplete = pairs.find((p) => !isCompleteSource(p.source));
+            if (incomplete) return tTpl('edit.errors.noSource', { name: incomplete.name || '?' });
+        }
         return null;
     })();
     const misaligned = problem !== null;
@@ -378,6 +461,10 @@ function EditTemplateDialog({
             sampleValues: pairs.map((p) => p.sample.trim()),
             // "" clears the footer; undefined would mean "keep the current one" to the backend.
             footerText: footer.trim(),
+            purpose: purpose.trim() || undefined,
+            variableSources: pairs.some((p) => p.source.trim())
+                ? Object.fromEntries(pairs.map((p) => [p.name.trim(), p.source.trim()]))
+                : undefined,
         });
 
     return (
@@ -426,7 +513,8 @@ function EditTemplateDialog({
                         {t('editDialog.variablesLabel', { n: '{{n}}' })}
                     </label>
                     {pairs.map((pair, i) => (
-                        <div key={i} className="flex items-center gap-2">
+                        <div key={i} className="flex flex-col gap-2 rounded-lg border border-neutral-100 p-2">
+                        <div className="flex items-center gap-2">
                             <span className="w-8 font-mono text-caption text-neutral-400">
                                 {`{{${i + 1}}}`}
                             </span>
@@ -459,15 +547,29 @@ function EditTemplateDialog({
                                 <Trash className="size-4" />
                             </button>
                         </div>
+                        <VariableSourceField
+                            variable={pair.name}
+                            value={pair.source}
+                            onChange={(source) =>
+                                setPairs((prev) => prev.map((p, idx) => (idx === i ? { ...p, source } : p)))
+                            }
+                        />
+                        </div>
                     ))}
                     <button
                         type="button"
                         className="w-fit text-caption text-primary-600"
-                        onClick={() => setPairs((prev) => [...prev, { name: '', sample: '' }])}
+                        onClick={() => setPairs((prev) => [...prev, { name: '', sample: '', source: '' }])}
                     >
                         {t('editDialog.addVariable')}
                     </button>
                     {problem && <p className="text-caption text-danger-600">{problem}</p>}
+                </div>
+                <div>
+                    <label className="mb-1 block text-caption text-neutral-500">
+                        {tTpl('edit.purpose')}
+                    </label>
+                    <Input value={purpose} maxLength={120} onChange={(e) => setPurpose(e.target.value)} />
                 </div>
                 <div>
                     <label className="mb-1 block text-caption text-neutral-500">
