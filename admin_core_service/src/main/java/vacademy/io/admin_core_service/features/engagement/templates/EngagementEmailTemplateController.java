@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.engagement.templates;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,6 +37,11 @@ public class EngagementEmailTemplateController {
     }
 
     /** Generate with AI. mode NEW (default), REGENERATE (replace a draft) or MORE_LIKE_THIS (basedOnId). */
+    @Auditable(
+            entityType = "ENGAGEMENT_EMAIL_TEMPLATE",
+            action = "GENERATE",
+            entityIdExpr = "#req?.basedOnId ?: #engineId",
+            descriptionExpr = "'generated email templates with AI (' + (#req?.mode ?: 'NEW') + ') for engine ' + #engineId")
     @PostMapping("/generate")
     public ResponseEntity<List<EngagementEmailTemplateService.View>> generate(
             @RequestParam String instituteId,
@@ -46,6 +52,11 @@ public class EngagementEmailTemplateController {
         return ResponseEntity.ok(service.generate(engineId, instituteId, req, user.getUserId()));
     }
 
+    @Auditable(
+            entityType = "ENGAGEMENT_EMAIL_TEMPLATE",
+            action = "UPDATE",
+            entityIdExpr = "#result?.body?.id ?: #id",
+            descriptionExpr = "'edited email template ' + (#result?.body?.name ?: #id) + ' (v' + (#result?.body?.version ?: '?') + ')'")
     @PutMapping("/{id}")
     public ResponseEntity<EngagementEmailTemplateService.View> edit(
             @PathVariable String id,
@@ -56,6 +67,11 @@ public class EngagementEmailTemplateController {
         return ResponseEntity.ok(service.edit(id, instituteId, req, user.getUserId()));
     }
 
+    @Auditable(
+            entityType = "ENGAGEMENT_EMAIL_TEMPLATE",
+            action = "APPROVE",
+            entityIdExpr = "#id",
+            descriptionExpr = "'approved email template ' + (#result?.body?.name ?: #id) + ' (v' + (#result?.body?.version ?: '?') + ')'")
     @PostMapping("/{id}/approve")
     public ResponseEntity<EngagementEmailTemplateService.View> approve(
             @PathVariable String id,
@@ -65,6 +81,11 @@ public class EngagementEmailTemplateController {
         return ResponseEntity.ok(service.approve(id, instituteId, user.getUserId()));
     }
 
+    @Auditable(
+            entityType = "ENGAGEMENT_EMAIL_TEMPLATE",
+            action = "ARCHIVE",
+            entityIdExpr = "#id",
+            descriptionExpr = "'archived email template ' + (#result?.body?.name ?: #id)")
     @PostMapping("/{id}/archive")
     public ResponseEntity<EngagementEmailTemplateService.View> archive(
             @PathVariable String id,
