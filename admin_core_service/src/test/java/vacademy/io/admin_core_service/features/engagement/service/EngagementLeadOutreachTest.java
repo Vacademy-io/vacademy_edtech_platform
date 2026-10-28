@@ -255,7 +255,8 @@ class EngagementLeadOutreachTest {
             ContactResolver contacts = mock(ContactResolver.class);
             EngagementEngineRepository engines = mock(EngagementEngineRepository.class);
             EngagementDispatcher dispatcher = new EngagementDispatcher(notifications, actions, members,
-                    mock(TimelineEventService.class), contacts, mock(EngagementInternalClients.class), engines);
+                    mock(TimelineEventService.class), contacts, mock(EngagementInternalClients.class), engines,
+                    mock(PolicyGate.class));
             EngagementMember m = new EngagementMember();
             m.setId("m1");
             m.setStatus("ACTIVE");

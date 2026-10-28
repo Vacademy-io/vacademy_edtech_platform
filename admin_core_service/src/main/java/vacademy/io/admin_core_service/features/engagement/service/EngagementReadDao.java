@@ -339,4 +339,26 @@ public class EngagementReadDao {
         for (Object r : rows) out.add((String) r);
         return out;
     }
+
+    /**
+     * The lead rows behind these members, as [id, overall_status, audience_status]. The opt-out
+     * list above is keyed by user_id, so an unconverted lead (no user_id) is invisible to it; the
+     * lead row itself carries its consent (overall_status) and whether the admin removed it
+     * (audience_status). A row missing from the result no longer exists in this institute.
+     */
+    public List<Object[]> leadConsentRows(String instituteId, java.util.Collection<String> audienceResponseIds) {
+        if (audienceResponseIds == null || audienceResponseIds.isEmpty()) return List.of();
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = em.createNativeQuery("""
+                SELECT ar.id, ar.overall_status, ar.audience_status
+                FROM audience_response ar
+                JOIN audience a ON a.id = ar.audience_id
+                WHERE a.institute_id = :instituteId
+                  AND ar.id IN (:ids)
+                """)
+                .setParameter("instituteId", instituteId)
+                .setParameter("ids", audienceResponseIds)
+                .getResultList();
+        return rows;
+    }
 }

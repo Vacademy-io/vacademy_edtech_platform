@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.engagement.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementAction;
@@ -11,6 +12,7 @@ import vacademy.io.admin_core_service.features.engagement.repository.EngagementA
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementEngineRepository;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementMemberRepository;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementPromptVersionRepository;
+import vacademy.io.admin_core_service.features.engagement.repository.EngagementReplyMemberQueries;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.math.BigDecimal;
@@ -101,6 +103,13 @@ public class EngagementReplyResponder {
     @Value("${engagement.sweep.lease-minutes:15}")
     private int leaseMinutes;
 
+    /**
+     * Members reached at a phone regardless of auto-reply. Field-injected and optional so the
+     * constructor stays as it was; without it the no-auto-reply stop path is skipped.
+     */
+    @Autowired(required = false)
+    private EngagementReplyMemberQueries replyMemberQueries;
+
     /** Handle one inbound reply. Returns true if it produced a reply action (answered or escalated). */
     public boolean handleReply(String instituteId, String phone, String replyText, String wamid) {
         if (wamid == null || wamid.isBlank()) return false; // no stable id → can't dedup → skip
@@ -110,7 +119,11 @@ public class EngagementReplyResponder {
         Instant now = Instant.now();
         List<EngagementMemberRepository.AutoReplyCandidate> candidates =
                 memberRepository.findAutoReplyCandidates(instituteId, phone10, now);
-        if (candidates.isEmpty()) return false;
+        if (candidates.isEmpty()) {
+            // No engine will auto-answer this number (auto-reply off, kill switch on, dry run).
+            // A request to stop must still be honoured on every engine.
+            return handleStopWithoutAutoReply(instituteId, phone10, replyText, wamid, now);
+        }
 
         // THE at-most-once gate on this MESSAGE: an (institute, wamid) set insert — exactly one
         // caller across sweeps/replicas/interleavings ever wins. The per-member stamp below is a
@@ -276,6 +289,58 @@ public class EngagementReplyResponder {
     }
 
     /** A deterministic, human-visible escalation task for a reply the auto-send could not settle. */
+    /**
+     * A reply that no engine auto-answers. Only a request to stop is acted on here; every other
+     * reply is surfaced by the sweep as before (the reply job already pulled the member due).
+     * A clear opt-out opts the number out of every engine of the institute and leaves a note in the
+     * inbox. A softer mention ("not interested", "stop") becomes a human task, and the matching
+     * members are marked handled so the sweep does not draft a fresh proactive message meanwhile.
+     */
+    boolean handleStopWithoutAutoReply(String instituteId, String phone10, String replyText,
+                                       String wamid, Instant now) {
+        boolean optOut = OPT_OUT.matcher(replyText).find();
+        boolean stopMention = !optOut && STOP_MENTION.matcher(replyText).find();
+        if (!optOut && !stopMention) return false;
+        if (replyMemberQueries == null) return false;
+
+        List<EngagementReplyMemberQueries.LiveMember> live =
+                replyMemberQueries.findLiveMembersByPhone(instituteId, phone10);
+        if (live.isEmpty()) return false;
+        if (memberRepository.claimHandledReply(instituteId, wamid, now) == 0) return false;
+
+        EngagementReplyMemberQueries.LiveMember target = live.get(0);
+        EngagementAction note = new EngagementAction();
+        note.setEngineId(target.getEngineId());
+        note.setMemberId(target.getMemberId());
+        note.setInstituteId(instituteId);
+        note.setKind("REPLY");
+        note.setActionType("SEND_MESSAGE");
+        note.setChannel("WHATSAPP");
+        note.setStatus("OPEN");
+        note.setPriority(BigDecimal.valueOf(85));
+        note.setScheduledFor(now);
+        note.setExpiresAt(now.plus(Duration.ofHours(taskExpireHours)));
+
+        if (optOut) {
+            int stopped = memberRepository.optOutByPhone(instituteId, phone10, now);
+            note.setRationale(cap("Asked to stop messages — opted out of " + stopped
+                    + " engine membership(s) for this number. No auto-reply was sent. Their message: " + replyText));
+            actionRepository.save(note);
+            log.info("Opt-out reply (no auto-reply engine) for member {}: {} membership(s) opted out",
+                    target.getMemberId(), stopped);
+            return true;
+        }
+
+        note.setRationale(cap("Escalated (stop-mention): they may be asking to stop or saying they are not "
+                + "interested. Read it before anyone messages them again. Their message: " + replyText));
+        actionRepository.save(note);
+        for (EngagementReplyMemberQueries.LiveMember m : live) {
+            long cadence = m.getCadenceHours() != null ? Math.max(m.getCadenceHours(), 1) : 72;
+            memberRepository.markReplyHandled(m.getMemberId(), now, now.plus(Duration.ofHours(cadence)));
+        }
+        return true;
+    }
+
     private void createEscalationTask(EngagementEngine engine,
                                       EngagementMemberRepository.AutoReplyCandidate cand,
                                       EngagementPromptVersion prompt, String suggestedReply,

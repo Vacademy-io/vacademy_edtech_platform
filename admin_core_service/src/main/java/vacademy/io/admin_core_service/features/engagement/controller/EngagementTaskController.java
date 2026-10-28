@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -54,6 +55,11 @@ public class EngagementTaskController {
                 instituteId, statusList, PageRequest.of(page, Math.min(size, 200))));
     }
 
+    @Auditable(
+            entityType = "ENGAGEMENT_TASK",
+            action = "ACK",
+            entityIdExpr = "#taskId",
+            descriptionExpr = "'acknowledged an engagement task'")
     @PostMapping("/{taskId}/ack")
     public ResponseEntity<Void> ack(@PathVariable String taskId,
                                     @RequestParam String instituteId,
@@ -64,6 +70,11 @@ public class EngagementTaskController {
     }
 
     /** Handled outside the system (called them, spoke in person, sent manually). */
+    @Auditable(
+            entityType = "ENGAGEMENT_TASK",
+            action = "DONE",
+            entityIdExpr = "#taskId",
+            descriptionExpr = "'marked an engagement task done'")
     @PostMapping("/{taskId}/done")
     public ResponseEntity<Void> done(@PathVariable String taskId,
                                      @RequestParam String instituteId,
@@ -73,6 +84,11 @@ public class EngagementTaskController {
         return ResponseEntity.ok().build();
     }
 
+    @Auditable(
+            entityType = "ENGAGEMENT_TASK",
+            action = "DISMISS",
+            entityIdExpr = "#taskId",
+            descriptionExpr = "'dismissed an engagement task'")
     @PostMapping("/{taskId}/dismiss")
     public ResponseEntity<Void> dismiss(@PathVariable String taskId,
                                         @RequestParam String instituteId,
@@ -87,6 +103,11 @@ public class EngagementTaskController {
      * (OPEN/ACKED → DISPATCHING) is atomic so two admins can't double-send; then the dispatcher
      * settles to SENT/FAILED. Body {"editedBody": "..."} is optional; absent = send the draft as-is.
      */
+    @Auditable(
+            entityType = "ENGAGEMENT_TASK",
+            action = "SEND",
+            entityIdExpr = "#taskId",
+            descriptionExpr = "'sent an engagement message (' + (#result?.body?.channel ?: '?') + ', ' + (#result?.body?.status ?: '?') + ')'")
     @PostMapping("/{taskId}/send")
     public ResponseEntity<EngagementAction> send(@PathVariable String taskId,
                                                  @RequestParam String instituteId,
@@ -108,6 +129,11 @@ public class EngagementTaskController {
      * have succeeded with a lost response — check the ledger by correlation_id before reopening).
      * FAILED → OPEN so it re-enters the inbox and can be re-sent.
      */
+    @Auditable(
+            entityType = "ENGAGEMENT_TASK",
+            action = "REOPEN",
+            entityIdExpr = "#taskId",
+            descriptionExpr = "'reopened a failed engagement task'")
     @PostMapping("/{taskId}/reopen")
     public ResponseEntity<Void> reopen(@PathVariable String taskId,
                                        @RequestParam String instituteId,

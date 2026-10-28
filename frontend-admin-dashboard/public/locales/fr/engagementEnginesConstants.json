@@ -28,7 +28,9 @@
         "metaRejected": "Rejeté par Meta",
         "metaRecategorised": "Recatégorisé",
         "superseded": "Remplacé",
-        "withdrawn": "Retiré"
+        "withdrawn": "Retiré",
+        "metaDisabled": "Désactivé par Meta",
+        "queued": "En file pour Meta"
     },
     "language": {
         "english": "Anglais",

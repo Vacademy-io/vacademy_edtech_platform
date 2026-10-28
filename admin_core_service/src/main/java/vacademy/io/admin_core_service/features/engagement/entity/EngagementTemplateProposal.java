@@ -4,6 +4,8 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import vacademy.io.admin_core_service.features.engagement.templates.WhatsAppTemplateRules;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
@@ -89,6 +91,49 @@ public class EngagementTemplateProposal {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "sample_values", columnDefinition = "jsonb", nullable = false)
     private String sampleValues = "[]";
+
+    /** {variableName: source} — see templates.TemplateVariableSources (V617). */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "variable_sources", columnDefinition = "jsonb", nullable = false)
+    private String variableSources = "{}";
+
+    /** What the template is for ("first touch", "missed class"), shown to reviewers (V617). */
+    @Column(length = 120)
+    private String purpose;
+
+    /** NONE | TEXT | IMAGE | VIDEO | DOCUMENT (V618, W13). */
+    @Column(name = "header_type", nullable = false, length = 20)
+    private String headerType = "NONE";
+
+    /** TEXT header, at most 60 chars, no variables. */
+    @Column(name = "header_text", length = 60)
+    private String headerText;
+
+    /** IMAGE / VIDEO / DOCUMENT header: an https sample file; uploaded to Meta at submit. */
+    @Column(name = "header_media_url", columnDefinition = "TEXT")
+    private String headerMediaUrl;
+
+    /** [{type: QUICK_REPLY|URL|PHONE_NUMBER, text, url?, phoneNumber?}] (V618, W13/W14). */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb", nullable = false)
+    private String buttons = "[]";
+
+    /** The approved template this one is an edited version of (W15); that one is superseded on approval. */
+    @Column(name = "replaces_id")
+    private String replacesId;
+
+    /** When it was sent to Meta (W10 rate limit). */
+    @Column(name = "submitted_at")
+    private Instant submittedAt;
+
+    /**
+     * W6 — a warning when a UTILITY template reads as promotion (Meta re-categorises or rejects
+     * those, and the number's quality rating suffers). Computed, not stored; shown to reviewers.
+     */
+    @Transient
+    public String getCategoryWarning() {
+        return WhatsAppTemplateRules.categoryWarning(proposedBody, proposedCategory);
+    }
 
     @Column(name = "footer_text", length = 60)
     private String footerText;

@@ -182,17 +182,44 @@ public class EngagementEngineController {
                 }).toList());
     }
 
+    /** Edit an engine's settings (name, channels, audience, cadence, quiet hours, autonomy numbers). */
+    @PutMapping("/{engineId}")
+    @Auditable(
+            entityType = "ENGAGEMENT_ENGINE",
+            action = "UPDATE",
+            entityIdExpr = "#engineId",
+            captureBefore = "@engagementEngineService.requireEngine(#engineId, #instituteId)",
+            descriptionExpr = "'edited engagement engine ' + (#result?.body?.name ?: #engineId)")
+    public ResponseEntity<EngagementEngine> update(@PathVariable String engineId,
+                                                   @RequestParam String instituteId,
+                                                   @RequestBody CreateEngineRequest request,
+                                                   @RequestAttribute("user") CustomUserDetails user) {
+        accessGuard.requireAdmin(user, instituteId);
+        return ResponseEntity.ok(engineService.update(engineId, instituteId, request, user.getUserId()));
+    }
+
+    /**
+     * Archive (default) from any state, or with permanent=true delete an engine that never reached
+     * anyone (no message sent, no WhatsApp template at Meta).
+     */
     @DeleteMapping("/{engineId}")
     @Auditable(
             entityType = "ENGAGEMENT_ENGINE",
-            action = "DELETE",
+            actionExpr = "#permanent == true ? 'DELETE' : 'ARCHIVE'",
+            action = "ARCHIVE",
             entityIdExpr = "#engineId",
-            descriptionExpr = "'archived an engagement engine'")
+            captureBefore = "@engagementEngineService.requireEngine(#engineId, #instituteId)",
+            descriptionExpr = "(#permanent == true ? 'permanently deleted' : 'archived') + ' an engagement engine'")
     public ResponseEntity<Void> archive(@PathVariable String engineId,
                                         @RequestParam String instituteId,
+                                        @RequestParam(required = false, defaultValue = "false") boolean permanent,
                                         @RequestAttribute("user") CustomUserDetails user) {
         accessGuard.requireAdmin(user, instituteId);
-        engineService.transition(engineId, instituteId, "ARCHIVED");
+        if (permanent) {
+            engineService.deletePermanently(engineId, instituteId);
+        } else {
+            engineService.archive(engineId, instituteId);
+        }
         return ResponseEntity.noContent().build();
     }
 }

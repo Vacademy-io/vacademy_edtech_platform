@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.features.engagement.dto.CreateEngineRequest;
@@ -36,6 +37,10 @@ public class EngagementEngineService {
     private final EngagementTemplateProposalRepository templateProposalRepository;
     private final EngagementReadDao dao;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /** Field-injected so the constructor (used directly by tests) stays as it was. */
+    @Autowired(required = false)
+    private EngagementEngineDeletionDao deletionDao;
 
     @Transactional
     public EngagementEngine create(CreateEngineRequest req, String instituteId, String createdBy) {
@@ -260,6 +265,18 @@ public class EngagementEngineService {
         return false;
     }
 
+    /**
+     * Where an engine may go from each status. Mirrors NEXT_STATUSES in the admin dashboard
+     * (engagement-engines/-constants). ARCHIVED is terminal: re-activating an archived engine would
+     * message its old audience again. TEMPLATES_PENDING is entered by the template service, not here.
+     */
+    static final java.util.Map<String, List<String>> NEXT_STATUSES = java.util.Map.of(
+            "DRAFT", List.of("DRY_RUN", "ACTIVE", "ARCHIVED"),
+            "TEMPLATES_PENDING", List.of("DRY_RUN", "ACTIVE", "ARCHIVED"),
+            "DRY_RUN", List.of("ACTIVE", "PAUSED", "ARCHIVED"),
+            "ACTIVE", List.of("PAUSED"),
+            "PAUSED", List.of("ACTIVE", "ARCHIVED"));
+
     @Transactional
     public EngagementEngine transition(String engineId, String instituteId, String toStatus) {
         EngagementEngine engine = requireEngine(engineId, instituteId);
@@ -273,6 +290,12 @@ public class EngagementEngineService {
         }
         List<String> allowed = List.of("DRAFT", "TEMPLATES_PENDING", "DRY_RUN", "ACTIVE", "PAUSED", "ARCHIVED");
         if (!allowed.contains(toStatus)) throw new VacademyException("Unknown status: " + toStatus);
+        String fromStatus = engine.getStatus();
+        if (toStatus.equals(fromStatus)) return engine; // a repeated click changes nothing
+        if (!NEXT_STATUSES.getOrDefault(fromStatus, List.of()).contains(toStatus)) {
+            throw new VacademyException("An engine can't move from " + fromStatus + " to " + toStatus
+                    + ("ARCHIVED".equals(fromStatus) ? ". Archived engines are closed; create a new engine instead." : "."));
+        }
         boolean goingLive = "ACTIVE".equals(toStatus) || "DRY_RUN".equals(toStatus);
         if (goingLive && memberRepository.countByEngineIdAndStatus(engineId, "ACTIVE") == 0) {
             throw new VacademyException("Enroll an audience before activating the engine");
@@ -306,6 +329,90 @@ public class EngagementEngineService {
      * killed, the engine keeps deciding and drafting, but every proactive decision drops to a human
      * copilot task instead of auto-sending — an emergency brake distinct from PAUSED.
      */
+    /**
+     * Edit an engine's settings. Null fields keep their value. The brief is not edited here — it
+     * grows by amendments (editPrompt). A changed audience is re-resolved right away when the
+     * engine already has members, so people who left stop being decided on.
+     */
+    @Transactional
+    public EngagementEngine update(String engineId, String instituteId, CreateEngineRequest req, String editedBy) {
+        EngagementEngine engine = requireEngine(engineId, instituteId);
+        requireAdminManaged(engine);
+        if ("ARCHIVED".equals(engine.getStatus())) {
+            throw new VacademyException("An archived engine can't be edited; create a new engine instead");
+        }
+        if (req.getName() != null) {
+            if (req.getName().isBlank()) throw new VacademyException("Engine name is required");
+            engine.setName(req.getName().trim());
+        }
+        if (req.getObjective() != null) engine.setObjective(req.getObjective().isBlank() ? null : req.getObjective().trim());
+        if (req.getLanguage() != null) engine.setLanguage(validLanguage(req.getLanguage()));
+        if (req.getDataPoints() != null) engine.setDataPoints(writeJson(req.getDataPoints()));
+        if (req.getChannels() != null) engine.setChannels(validObjectJson(req.getChannels(), "channels", "{}"));
+        if (req.getQuietHours() != null) engine.setQuietHours(validObjectJson(req.getQuietHours(), "quietHours", "{}"));
+        if (req.getCadenceHours() != null) {
+            if (req.getCadenceHours() <= 0) throw new VacademyException("cadenceHours must be at least 1");
+            engine.setCadenceHours(req.getCadenceHours());
+        }
+        if (req.getHoldoutPct() != null) engine.setHoldoutPct(Math.max(0, Math.min(100, req.getHoldoutPct())));
+        if (req.getFirstN() != null) engine.setFirstN(req.getFirstN() < 0 ? null : req.getFirstN());
+        boolean audienceChanged = false;
+        if (req.getAudience() != null) {
+            String audience = validAudienceJson(req.getAudience());
+            audienceChanged = !sameJson(audience, engine.getAudience());
+            engine.setAudience(audience);
+        }
+        engine = engineRepository.save(engine);
+        if (audienceChanged && memberRepository.countByEngineIdAndStatus(engine.getId(), "ACTIVE") > 0) {
+            enrollAndReconcile(engine.getId(), instituteId);
+        }
+        log.info("Engine {} edited by {}", engineId, editedBy);
+        return engine;
+    }
+
+    /**
+     * Archive from any state. Stopping is always safe, so unlike the status allow-list (where ACTIVE
+     * only goes to PAUSED) archiving a live engine is allowed here; its due sends are no longer
+     * picked up (the dispatcher only sends for ACTIVE engines) and expire.
+     */
+    @Transactional
+    public EngagementEngine archive(String engineId, String instituteId) {
+        EngagementEngine engine = requireEngine(engineId, instituteId);
+        requireAdminManaged(engine);
+        if ("ARCHIVED".equals(engine.getStatus())) return engine;
+        engine.setStatus("ARCHIVED");
+        return engineRepository.save(engine);
+    }
+
+    /**
+     * Delete permanently — only an engine that never reached anyone: no message sent or attempted and
+     * no WhatsApp template sent to Meta. Anything else must stay archived so its record remains.
+     */
+    @Transactional
+    public void deletePermanently(String engineId, String instituteId) {
+        EngagementEngine engine = requireEngine(engineId, instituteId);
+        requireAdminManaged(engine);
+        if (deletionDao == null) throw new VacademyException("Deleting engines is not available");
+        if ("ACTIVE".equals(engine.getStatus()) || "DRY_RUN".equals(engine.getStatus())) {
+            throw new VacademyException("Pause or archive the engine before deleting it");
+        }
+        if (deletionDao.countReachedPeople(engineId) > 0) {
+            throw new VacademyException("This engine has already messaged people, so it can't be deleted; archive it instead");
+        }
+        if (deletionDao.countTemplatesAtMeta(engineId) > 0) {
+            throw new VacademyException("This engine has WhatsApp templates at Meta, so it can't be deleted; archive it instead");
+        }
+        deletionDao.deleteEngineRows(engineId, instituteId);
+    }
+
+    private boolean sameJson(String a, String b) {
+        try {
+            return objectMapper.readTree(a == null ? "null" : a).equals(objectMapper.readTree(b == null ? "null" : b));
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     @Transactional
     public EngagementEngine setAutonomyKilled(String engineId, String instituteId, boolean killed) {
         EngagementEngine engine = requireEngine(engineId, instituteId);

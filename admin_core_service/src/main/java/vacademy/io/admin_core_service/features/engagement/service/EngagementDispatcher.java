@@ -68,6 +68,7 @@ public class EngagementDispatcher {
     private final ContactResolver contactResolver;
     private final EngagementInternalClients clients;
     private final EngagementEngineRepository engineRepository;
+    private final PolicyGate policyGate;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
@@ -93,6 +94,14 @@ public class EngagementDispatcher {
             // the person opted out (or left the audience) must not reach them afterwards.
             if ("OPTED_OUT".equals(member.getStatus()) || "EXITED".equals(member.getStatus())) {
                 throw new SendRejectedException("This person has opted out or left the audience, so nothing was sent.");
+            }
+            // The member row only learns of a CRM opt-out at the next decision, so a task drafted for
+            // a lead must re-read the lead row before a human sends it (F2 / L3). An AI-call promise
+            // stops only on an opt-out, as in the dispatch job.
+            if (EngagementDispatchJob.leadNotSendableReason(
+                    policyGate.leadBlock(action.getInstituteId(), member.getAudienceResponseId()), action) != null) {
+                throw new SendRejectedException(
+                        "This lead has opted out or was removed in the CRM, so nothing was sent.");
             }
             Subject subject = contactResolver.resolve(List.of(member)).get(0);
 
