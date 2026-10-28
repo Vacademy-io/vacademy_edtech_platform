@@ -1,4 +1,10 @@
 import React, { useState, useEffect } from "react";
+import { ReviewService, type ApprovedReviewPage } from "../../-services/review-service";
+import {
+  mergeTestimonials,
+  normalizeTestimonialSource,
+  reviewToTestimonial,
+} from "../../-utils/review-collector";
 import { useTranslation } from "react-i18next";
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -22,6 +28,20 @@ interface TestimonialSectionProps {
   description: string;
   layout: "grid" | "grid-scroll" | "carousel";
   testimonials: Testimonial[];
+  /**
+   * manual (default, every section saved before reviews existed) = the quotes
+   * above; reviews = approved site reviews (Website Builder → Reviews);
+   * both = the quotes, then the reviews.
+   */
+  reviewSource?: string;
+  /** Most approved reviews to show (default 9). */
+  reviewLimit?: number;
+  /** Only reviews with at least this many stars (default 4). */
+  reviewMinRating?: number;
+  /** "4.8 out of 5 · 120 reviews" under the heading, from every approved review. */
+  showAverageRating?: boolean;
+  /* injected by the renderer */
+  instituteId?: string;
   /** Carousel only: cards in view on desktop (1–4, default 1). Tablet shows at most 2, mobile 1. */
   cardsPerView?: number;
   /** Carousel only: advance one card on a timer; pauses on hover/focus and under reduced motion. */
@@ -107,9 +127,14 @@ const TestimonialCard: React.FC<{ testimonial: Testimonial; hoverEffect?: string
       )}
       {/* Quote */}
       {/* fillHeight: equal-height cards in a row keep the author pinned to the bottom edge */}
-      <blockquote className={`text-sm sm:text-base text-catalogue-text-secondary leading-relaxed mb-5 ${fillHeight ? 'flex-1' : ''}`}>
-        &ldquo;{feedbackText}&rdquo;
-      </blockquote>
+      {/* A star-only review has no quote; the spacer keeps the author at the bottom. */}
+      {feedbackText ? (
+        <blockquote className={`text-sm sm:text-base text-catalogue-text-secondary leading-relaxed mb-5 ${fillHeight ? 'flex-1' : ''}`}>
+          &ldquo;{feedbackText}&rdquo;
+        </blockquote>
+      ) : (
+        fillHeight && <div className="flex-1" aria-hidden="true" />
+      )}
 
       {/* Author */}
       <div className="flex items-center gap-3">
@@ -142,13 +167,52 @@ export const TestimonialSectionComponent: React.FC<TestimonialSectionProps> = ({
   headerText,
   description,
   layout,
-  testimonials,
+  testimonials: authored,
   cardsPerView = 1,
   autoplay = false,
   autoplayIntervalMs = 5000,
   styles = {},
+  reviewSource,
+  reviewLimit = 9,
+  reviewMinRating = 4,
+  showAverageRating = false,
+  instituteId,
 }) => {
   const { t } = useTranslation("coursePlayerB");
+  const source = normalizeTestimonialSource(reviewSource);
+  const [reviews, setReviews] = useState<ApprovedReviewPage | null>(null);
+  useEffect(() => {
+    if (source === "manual" || !instituteId) return;
+    let cancelled = false;
+    ReviewService.listApproved(instituteId, {
+      size: Math.max(1, Math.min(50, Math.round(Number(reviewLimit) || 9))),
+      minRating: Math.max(1, Math.min(5, Math.round(Number(reviewMinRating) || 4))),
+    })
+      .then((res) => {
+        if (!cancelled) setReviews(res);
+      })
+      .catch(() => {
+        // The hand-written quotes still show; reviews are an addition.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [source, instituteId, reviewLimit, reviewMinRating]);
+  const testimonials = mergeTestimonials(
+    Array.isArray(authored) ? authored : [],
+    (reviews?.content || []).map(reviewToTestimonial),
+    source
+  ) as Testimonial[];
+  const average =
+    showAverageRating && source !== "manual" && reviews?.average_rating && reviews.approved_count
+      ? { average: reviews.average_rating, count: reviews.approved_count }
+      : null;
+  const averageLine = average ? (
+    <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-catalogue-text-secondary">
+      <Star size={16} weight="fill" className="text-warning-500" aria-hidden="true" />
+      {t("reviewCollector.averageRating", { average: average.average, count: average.count })}
+    </p>
+  ) : null;
   const { backgroundColor, cardHoverEffect = "none" } = styles;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -191,6 +255,7 @@ export const TestimonialSectionComponent: React.FC<TestimonialSectionProps> = ({
           <div className="text-center">
             <h2 className="text-2xl sm:text-3xl font-bold text-catalogue-text-primary mb-2">{headerText}</h2>
             {description && <p className="text-base sm:text-lg text-catalogue-text-secondary max-w-2xl mx-auto">{description}</p>}
+            {averageLine}
           </div>
 
           <div
@@ -263,6 +328,7 @@ export const TestimonialSectionComponent: React.FC<TestimonialSectionProps> = ({
         <div className="text-center mb-8">
           <h2 className="text-2xl sm:text-3xl font-bold text-catalogue-text-primary mb-2">{headerText}</h2>
           {description && <p className="text-base sm:text-lg text-catalogue-text-secondary max-w-2xl mx-auto">{description}</p>}
+          {averageLine}
         </div>
 
         <div className={`grid gap-5 sm:gap-6 ${

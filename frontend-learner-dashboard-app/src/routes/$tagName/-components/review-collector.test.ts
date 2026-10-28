@@ -20,6 +20,7 @@ vi.mock("@/services/upload_file", () => ({ getPublicUrlWithoutLogin: async () =>
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { ReviewCollector } from "./components/review/ReviewCollector";
+import { TestimonialSectionComponent } from "./components/TestimonialSectionComponent";
 import {
   DEFAULT_REVIEW_FIELDS,
   EMPTY_REVIEW,
@@ -121,6 +122,42 @@ describe("testimonials from reviews", () => {
     expect(mergeTestimonials(manual, [card], "both")).toEqual([manual[0], card]);
   });
 
+  it("a section left on manual never asks the server", async () => {
+    await render(
+      React.createElement(TestimonialSectionComponent, {
+        headerText: "Students",
+        description: "",
+        layout: "grid",
+        testimonials: [{ name: "Ravi", role: "", feedback: "Nice", avatar: "" }],
+        instituteId: "inst-1",
+      })
+    );
+    expect(listApproved).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("Ravi");
+  });
+
+  it("a section on both shows its quotes, then approved reviews", async () => {
+    listApproved.mockResolvedValue({
+      content: [{ id: "r1", rating: 5, reviewer_name: "Asha", review_text: "Loved it", city: "Ajmer" }],
+      page: 0, size: 9, total_elements: 1, total_pages: 1, average_rating: 4.8, approved_count: 12,
+    });
+    await render(
+      React.createElement(TestimonialSectionComponent, {
+        headerText: "Students",
+        description: "",
+        layout: "grid",
+        testimonials: [{ name: "Ravi", role: "", feedback: "Nice", avatar: "" }],
+        instituteId: "inst-1",
+        reviewSource: "both",
+        showAverageRating: true,
+      })
+    );
+    expect(listApproved).toHaveBeenCalledWith("inst-1", { size: 9, minRating: 4 });
+    const text = container.textContent || "";
+    expect(text.indexOf("Ravi")).toBeLessThan(text.indexOf("Asha"));
+    expect(text).toContain("Loved it");
+    expect(text).toContain("reviewCollector.averageRating:12");
+  });
 });
 
 describe("ReviewCollector", () => {
