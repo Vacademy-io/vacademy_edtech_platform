@@ -45,18 +45,25 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
      * BEFORE the LLM call). Counts by subject (user or lead), not by member row, so three
      * engines sharing a learner share the cap.
      */
-    // SIMULATED excluded: a DRY_RUN never consumes the real cadence cap. FAILED counts: it is the
-    // unknown-outcome status (the message may have landed), so leaving it out let a delivered
-    // message go uncounted and the person get more than the cap. NULL subject params
-    // are CAST so Postgres can infer the type (an un-cast null bind → "could not determine
+    // Counts what reached (or is about to reach) the person, never an unsent draft (F4 / S8):
+    // OPEN or ACKED copilot TASKs and REPLY escalations are drafts, and an unattended inbox used
+    // to block new decisions for up to 7 days. Counted: SENT; DISPATCHING (in flight); FAILED (the
+    // unknown-outcome status, the message may have landed); DONE (a human marked it handled, e.g.
+    // called or messaged the person themselves); and an OPEN kind=SEND, which goes out
+    // with no human step, so leaving it out would let the brain queue past the cap. SIMULATED is
+    // never counted (a DRY_RUN never consumes the real cap). A row counts while either its draft or
+    // its send time is in the window, so a draft sent days after it was written still counts for a
+    // full window after it went out. NULL subject
+    // params are CAST so Postgres can infer the type (an un-cast null bind → "could not determine
     // data type of parameter" at runtime — a compile-clean, run-fatal trap on this hot path).
     @Query(value = """
             SELECT count(*) FROM engagement_action a
             JOIN engagement_member m ON m.id = a.member_id
             WHERE a.institute_id = :instituteId
               AND a.kind IN ('TASK', 'SEND', 'REPLY')
-              AND a.status NOT IN ('DISMISSED', 'EXPIRED', 'SIMULATED')
-              AND a.created_at >= :since
+              AND (a.status IN ('SENT', 'DISPATCHING', 'FAILED', 'DONE')
+                   OR (a.kind = 'SEND' AND a.status = 'OPEN'))
+              AND (a.created_at >= :since OR a.dispatched_at >= :since)
               AND ((CAST(:userId AS varchar) IS NOT NULL AND m.user_id = CAST(:userId AS varchar))
                    OR (CAST(:audienceResponseId AS varchar) IS NOT NULL
                        AND m.audience_response_id = CAST(:audienceResponseId AS varchar)))
