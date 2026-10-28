@@ -615,9 +615,15 @@
       "planChangeScheduled": "Moving to {{plan}} on {{date}}.",
       "planChangeCancelScheduled": "Cancel this change",
       "cardDialog": {
-        "title": "Add a card to continue",
-        "description": "We don't have a card saved for this membership yet. Enter one to pay now — we'll save it securely so future renewals are one tap.",
-        "loadingForm": "Loading secure card form..."
+        "title": "Pay by card",
+        "description": "Enter your card to pay {{amount}} and renew your membership. Your card details are encrypted before they leave this page.",
+        "loadingForm": "Loading secure card form...",
+        "pay": "Pay {{amount}}",
+        "processing": "Processing payment...",
+        "cancel": "Cancel",
+        "declined": "Your card was declined. Please check the details or try another card.",
+        "declinedWithCode": "Your card was declined ({{code}}). Please check the details or try another card.",
+        "pending": "Your payment is being confirmed — this can take a minute. Please don't pay again."
       },
       "autopayDefaultNotice": "Future renewals will be charged automatically to this card. You can stop auto-pay any time from this page.",
       "renew": {

@@ -529,6 +529,10 @@ public class EwayPaymentManager implements PaymentServiceStrategy {
 
         responseData.put("transactionId", responseDTO.getTransactionID());
         responseData.put("status", responseDTO.getTransactionStatus());
+        // eWay's own codes (e.g. "D4451", or "V6100" when it rejects the card details before
+        // charging), so a caller can tell the learner why a card was refused.
+        responseData.put("responseMessage", responseDTO.ResponseMessage);
+        responseData.put("errors", responseDTO.Errors);
         responseData.put("amount", amount);
         responseData.put("currency", responseDTO.getPayment() != null ? responseDTO.getPayment().getCurrencyCode() : null);
         responseData.put("created", Instant.now().getEpochSecond());

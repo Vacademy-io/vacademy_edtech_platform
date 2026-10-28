@@ -54,6 +54,7 @@ import {
   type Subscription,
 } from "@/components/common/user-profile/payment-billing/subscription-services";
 import { ChangePlanDialog } from "@/components/common/subscription/ChangePlanDialog";
+import { EwayRenewalCardDialog } from "@/components/common/subscription/EwayRenewalCardDialog";
 import {
   DEFAULT_MANDATE_METHOD,
   MandateMethodPicker,
@@ -281,6 +282,8 @@ function ManageSubscriptions({ instituteId }: { instituteId: string }) {
   const [toChange, setToChange] = useState<Subscription | null>(null);
   const [changingPlanId, setChangingPlanId] = useState<string | null>(null);
   const [renewingPlanId, setRenewingPlanId] = useState<string | null>(null);
+  // eWay renewal waiting on the card form (EwayRenewalCardDialog).
+  const [cardRenewal, setCardRenewal] = useState<Subscription | null>(null);
   // Per-plan "also enable auto-pay" choice (offered only when the invite has
   // autopay configured). Default off: the learner cancelled it deliberately.
   const [autopayChoice, setAutopayChoice] = useState<Record<string, boolean>>({});
@@ -345,6 +348,12 @@ function ManageSubscriptions({ instituteId }: { instituteId: string }) {
   };
 
   const startRenewal = async (sub: Subscription) => {
+    // eWay: take the card here with the shared card form instead of sending the learner
+    // to eWay's hosted page. Nothing is requested until they press pay in the dialog.
+    if ((sub.renewal_vendor ?? "").toUpperCase() === "EWAY") {
+      setCardRenewal(sub);
+      return;
+    }
     try {
       setRenewingPlanId(sub.user_plan_id);
       let email = "";
@@ -866,6 +875,20 @@ function ManageSubscriptions({ instituteId }: { instituteId: string }) {
         onConfirm={(target, withAutopay, mandateMethod) =>
           startPlanChange(toChange as Subscription, target, withAutopay, mandateMethod)
         }
+      />
+
+      <EwayRenewalCardDialog
+        open={Boolean(cardRenewal)}
+        onOpenChange={(open) => {
+          if (!open) setCardRenewal(null);
+        }}
+        subscription={cardRenewal}
+        instituteId={instituteId}
+        priceLabel={formatPrice(cardRenewal?.plan_price, cardRenewal?.currency)}
+        onPaid={() => {
+          setCardRenewal(null);
+          refetchSoon();
+        }}
       />
 
       {/* Gateway checkout host — visually hidden (its built-in card UI shows a

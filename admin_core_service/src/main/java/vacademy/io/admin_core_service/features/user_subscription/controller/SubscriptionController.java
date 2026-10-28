@@ -45,23 +45,22 @@ public class SubscriptionController {
      * than assuming:
      * <ul>
      *   <li>CHECKOUT gateway (Razorpay): order coordinates to open;</li>
-     *   <li>CARD-ON-FILE gateway (eWay), first call: {@code paymentStatus:
-     *       REQUIRES_CARD} and nothing charged -- the client collects a card and
-     *       calls again with it. This is returned EVERY time, including for a
-     *       learner who already has a card saved: see {@code card} below;</li>
-     *   <li>CARD-ON-FILE gateway, second call carrying {@code card}: charged and
-     *       confirmed inline, {@code paymentStatus: PAID}, nothing to open.</li>
+     *   <li>eWay with {@code card} in the body: that card is charged and the renewal
+     *       confirmed inline -- {@code paymentStatus: PAID} or {@code FAILED} (with
+     *       eWay's {@code responseMessage}), nothing to open;</li>
+     *   <li>eWay without a body: {@code paymentStatus: REDIRECT} to eWay's hosted
+     *       card page, kept for older clients.</li>
      * </ul>
      * The withAutopay/mandateMethod pair is meaningless for a stored-token gateway --
-     * there is no mandate to register, so the token on file is what future cycles
-     * charge ({@code instant_renewal} on the list response flags this).
+     * there is no mandate to register ({@code instant_renewal} on the list response
+     * flags this).
      *
-     * <p>{@code card} is the eWay eCrypt payload, sent on the second call. It is
+     * <p>{@code card} is the eWay eCrypt payload from the shared card form. It is
      * required even when the learner has a card saved: a renewal that charges a stored
      * card the moment the button is pressed gives them no chance to confirm and no sight
-     * of which card is billed. The entered card REPLACES the stored one and is what gets
-     * charged. Its card fields are the ONLY thing read -- a customerId in the body is
-     * ignored, since honouring one would let a caller charge somebody else's stored card.
+     * of which card is billed. Its card fields are the ONLY thing read -- a customerId in
+     * the body is ignored, since honouring one would let a caller charge somebody else's
+     * stored card.
      */
     @PostMapping("/{userPlanId}/renew-payment")
     public ResponseEntity<vacademy.io.common.payment.dto.PaymentResponseDTO> renewPayment(
@@ -69,9 +68,10 @@ public class SubscriptionController {
             @RequestParam String instituteId,
             @PathVariable String userPlanId,
             @RequestParam(defaultValue = "false") boolean withAutopay,
-            @RequestParam(required = false) String mandateMethod) {
+            @RequestParam(required = false) String mandateMethod,
+            @RequestBody(required = false) vacademy.io.common.payment.dto.EwayRequestDTO card) {
         return ResponseEntity.ok(subscriptionService.initiateRenewalPayment(
-                user, instituteId, userPlanId, withAutopay, mandateMethod));
+                user, instituteId, userPlanId, withAutopay, mandateMethod, card));
     }
 
     /**

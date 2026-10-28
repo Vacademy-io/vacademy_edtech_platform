@@ -41,6 +41,7 @@ import {
     type Subscription,
 } from "@/hooks/use-subscription-manager";
 import { ChangePlanDialog } from "@/components/common/subscription/ChangePlanDialog";
+import { EwayRenewalCardDialog } from "@/components/common/subscription/EwayRenewalCardDialog";
 import {
     DEFAULT_MANDATE_METHOD,
     MandateMethodPicker,
@@ -77,6 +78,8 @@ export const MyMembershipWidget: React.FC<MyMembershipWidgetProps> = ({ classNam
     const razorpayRef = useRef<RazorpayCheckoutFormRef>(null);
     const [toCancel, setToCancel] = useState<Subscription | null>(null);
     const [toChange, setToChange] = useState<Subscription | null>(null);
+    // eWay renewal waiting on the card form (EwayRenewalCardDialog).
+    const [cardRenewal, setCardRenewal] = useState<Subscription | null>(null);
     // Per-plan "also re-enable auto-pay" choice. Default off: auto-pay being
     // off usually means the learner turned it off deliberately.
     const [autopayChoice, setAutopayChoice] = useState<Record<string, boolean>>({});
@@ -478,7 +481,10 @@ export const MyMembershipWidget: React.FC<MyMembershipWidgetProps> = ({ classNam
                                     <Button
                                         size="sm"
                                         onClick={() =>
-                                            startRenewal(
+                                            // eWay takes the card in our own card form.
+                                            (sub.renewal_vendor ?? "").toUpperCase() === "EWAY"
+                                                ? setCardRenewal(sub)
+                                                : startRenewal(
                                                 sub,
                                                 Boolean(
                                                     sub.autopay_available &&
@@ -531,6 +537,22 @@ export const MyMembershipWidget: React.FC<MyMembershipWidgetProps> = ({ classNam
                     }
                 />
             </div>
+
+            {instituteId && (
+                <EwayRenewalCardDialog
+                    open={Boolean(cardRenewal)}
+                    onOpenChange={(open) => {
+                        if (!open) setCardRenewal(null);
+                    }}
+                    subscription={cardRenewal}
+                    instituteId={instituteId}
+                    priceLabel={formatPrice(cardRenewal?.plan_price, cardRenewal?.currency)}
+                    onPaid={() => {
+                        setCardRenewal(null);
+                        refetchSoon();
+                    }}
+                />
+            )}
 
             <ChangePlanDialog
                 open={Boolean(toChange)}
