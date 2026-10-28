@@ -228,7 +228,9 @@ export const cancelSubscription = async (
  *  - hosted gateway (eWay): paymentStatus === "REDIRECT" and nothing charged —
  *    send the browser to `redirectUrl`, where the gateway collects the card. It
  *    returns to /subscriptions/payment-return, which calls completeRenewalPayment;
- *  - checkout gateway (Razorpay): razorpayKeyId / razorpayOrderId to open.
+ *  - checkout gateway (Razorpay): razorpayKeyId / razorpayOrderId to open;
+ *  - eWay with `card`: already charged — paymentStatus is PAID, FAILED (with eWay's
+ *    responseMessage) or PAYMENT_PENDING (the gateway poller settles it).
  */
 export const initiateRenewalPayment = async (
   instituteId: string,
@@ -236,16 +238,28 @@ export const initiateRenewalPayment = async (
   withAutopay: boolean,
   // Only meaningful with withAutopay: how the fresh mandate is authorised (UPI Autopay
   // or card e-mandate), the same choice the enrol form offers.
-  mandateMethod?: MandateMethod
+  mandateMethod?: MandateMethod,
+  // eWay only: the eCrypt payload from EwayCardForm. The number and CVN are encrypted in
+  // the browser, so only eWay can read them.
+  card?: EwayRenewalCard
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ): Promise<any> => {
-  // No body: the card is never posted to us, it is entered on the gateway's own page.
-  // `undefined` (not `null`) makes axios omit the body and its content-type header
-  // together — posting null let the browser default to form-urlencoded, which the
-  // endpoint could not parse.
+  // Without a card, no body at all: `undefined` (not `null`) makes axios omit the body and
+  // its content-type header together — posting null let the browser default to
+  // form-urlencoded, which the endpoint could not parse.
   const response = await authenticatedAxiosInstance.post(
     `${LEARNER_SUBSCRIPTION_LIST}/${sub.user_plan_id}/renew-payment`,
-    undefined,
+    card
+      ? {
+          card_name: card.cardData.name,
+          expiry_month: card.cardData.expiryMonth,
+          expiry_year: card.cardData.expiryYear,
+          card_number: card.encryptedNumber,
+          cvn: card.encryptedCVN,
+          // Same value the invoice page sends with this card form.
+          country_code: "au",
+        }
+      : undefined,
     {
       params: {
         instituteId,
@@ -256,6 +270,13 @@ export const initiateRenewalPayment = async (
   );
   return response.data;
 };
+
+/** What EwayCardForm's onPaymentReady hands back. */
+export interface EwayRenewalCard {
+  encryptedNumber: string;
+  encryptedCVN: string;
+  cardData: { name: string; expiryMonth: string; expiryYear: string };
+}
 
 /** The checkout/confirmation block of a renewal or plan-change response, wherever it sits. */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -568,9 +568,15 @@
       "planChangeScheduled": "Moving to {{plan}} on {{date}}.",
       "planChangeCancelScheduled": "Cancel this change",
       "cardDialog": {
-        "title": "Ajoutez une carte pour continuer",
-        "description": "Aucune carte n'est enregistrée pour cet abonnement. Saisissez-en une pour payer maintenant — nous l'enregistrerons en toute sécurité afin que les renouvellements suivants se fassent en un seul geste.",
-        "loadingForm": "Chargement du formulaire de carte sécurisé..."
+        "title": "Payer par carte",
+        "description": "Saisissez votre carte pour payer {{amount}} et renouveler votre abonnement. Les données de votre carte sont chiffrées avant de quitter cette page.",
+        "loadingForm": "Chargement du formulaire de carte sécurisé...",
+        "pay": "Payer {{amount}}",
+        "processing": "Paiement en cours...",
+        "cancel": "Annuler",
+        "declined": "Votre carte a été refusée. Vérifiez les informations ou essayez une autre carte.",
+        "declinedWithCode": "Votre carte a été refusée ({{code}}). Vérifiez les informations ou essayez une autre carte.",
+        "pending": "Votre paiement est en cours de confirmation — cela peut prendre une minute. Merci de ne pas payer une seconde fois."
       },
       "autopayDefaultNotice": "Les renouvellements suivants seront prélevés automatiquement sur cette carte. Vous pouvez désactiver le paiement automatique à tout moment depuis cette page.",
       "renew": {
