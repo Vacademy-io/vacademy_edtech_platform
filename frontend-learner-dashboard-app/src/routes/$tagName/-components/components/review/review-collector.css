@@ -1,0 +1,64 @@
+/*
+ * reviewCollector: where the launcher and the corner card sit. --review-bottom
+ * is the height of the phone action bar (measured at runtime), so nothing
+ * hides behind it.
+ */
+.review-anchor {
+  position: fixed;
+  z-index: 50;
+}
+.review-anchor--bottom-right {
+  right: 1.25rem;
+  bottom: calc(var(--review-bottom, 0px) + 1.25rem);
+}
+.review-anchor--bottom-left {
+  left: 1.25rem;
+  bottom: calc(var(--review-bottom, 0px) + 1.25rem);
+}
+.review-anchor--middle-right {
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.review-anchor--middle-left {
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+/* Pill and icon buttons on a middle edge keep a small gap from the edge; the tab touches it. */
+.review-anchor--middle-right.review-anchor--floating {
+  right: 1.25rem;
+}
+.review-anchor--middle-left.review-anchor--floating {
+  left: 1.25rem;
+}
+/* The corner card sits above the launcher's spot and stays inside small screens. */
+.review-corner {
+  position: fixed;
+  z-index: 60;
+  width: min(24rem, calc(100vw - 1.5rem));
+  max-height: calc(100vh - var(--review-bottom, 0px) - 2.5rem);
+  overflow-y: auto;
+  bottom: calc(var(--review-bottom, 0px) + 0.75rem);
+}
+.review-corner--right {
+  right: 0.75rem;
+}
+.review-corner--left {
+  left: 0.75rem;
+}
+@media (min-width: 640px) {
+  .review-corner--right {
+    right: 1.25rem;
+  }
+  .review-corner--left {
+    left: 1.25rem;
+  }
+  .review-corner {
+    bottom: calc(var(--review-bottom, 0px) + 1.25rem);
+  }
+}
+.review-tab-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
