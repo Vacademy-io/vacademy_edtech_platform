@@ -232,6 +232,7 @@
       "noDocument": "لم يتم إعداد أي مستند بعد"
     },
     "scormViewer": {
+      "swipeHint": "اسحب لتقليب الصفحات",
       "defaultTitle": "معاينة تفاعلية",
       "fullScreen": "ملء الشاشة",
       "openInNewTab": "فتح في علامة تبويب جديدة",

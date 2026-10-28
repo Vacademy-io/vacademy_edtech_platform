@@ -455,9 +455,10 @@
         "title": "",
         "height": "75vh",
         "mobileHeight": "70vh",
-        "showFullScreen": true
+        "showFullScreen": true,
+        "appearance": "book"
       },
-      "capabilities": "launchUrl (ONLY from website_edit(import_scorm)), title (frame bar), height, mobileHeight, showFullScreen. Plays a SCORM package on the page without login, like a SCORM slide in a course.",
+      "capabilities": "launchUrl (ONLY from website_edit(import_scorm)), title (frame bar), height, mobileHeight, showFullScreen, appearance framed|book (book: no card, the player's toolbar / page count / full screen hidden — pages read like a book). Plays a SCORM package without login, like a course slide.",
       "usage": "A flip-book / comic preview the admin sends as a SCORM zip. Only a SAMPLE package: the full paid one stays inside the course."
     },
     {

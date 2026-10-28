@@ -54,6 +54,20 @@ describe("scormViewer", () => {
     expect(html).not.toContain("jsonRenderer.scormViewer.fullScreen");
   });
 
+  it("book appearance drops the card and bar and asks the wrapper to hide the player's controls", () => {
+    const html = render({ launchUrl: LAUNCH, appearance: "book", backgroundColor: "#fffdf8", title: "Preview" });
+    expect(html).toContain(`src="${LAUNCH}#vchrome=none&amp;vbg=FFFDF8"`);
+    expect(html).not.toContain("jsonRenderer.scormViewer.fullScreen");
+    expect(html).not.toContain("jsonRenderer.scormViewer.openInNewTab");
+    expect(html).toMatch(/sandbox="[^"]*allow-scripts[^"]*"/);
+  });
+
+  it("book appearance waits for the backdrop colour before framing the package", () => {
+    // No explicit colour: it is read from the page after mount, so SSR paints no frame yet.
+    const html = render({ launchUrl: LAUNCH, appearance: "book" });
+    expect(html).not.toContain("<iframe");
+  });
+
   it("a missing or non-http launch URL shows the placeholder, never a frame", () => {
     for (const launchUrl of ["", "javascript:alert(1)", "not a url", undefined]) {
       const html = render({ heading: "x", launchUrl });

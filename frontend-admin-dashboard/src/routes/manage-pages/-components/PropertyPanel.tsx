@@ -4719,6 +4719,14 @@ const ScormViewerEditor = ({ component, pageId, updateComponent }: any) => {
                 <Input value={props.title || ''} placeholder={t('scormViewer.barTitlePlaceholder')} onChange={(e) => updateProp('title', e.target.value)} />
             </div>
             <div className="space-y-2">
+                <Label>{t('scormViewer.appearance')}</Label>
+                <select className="w-full rounded border px-3 py-2 text-sm" value={props.appearance || 'framed'} onChange={(e) => updateProp('appearance', e.target.value)}>
+                    <option value="book">{t('scormViewer.appearanceBook')}</option>
+                    <option value="framed">{t('scormViewer.appearanceFramed')}</option>
+                </select>
+                <p className="text-xs text-gray-500">{t('scormViewer.appearanceHelp')}</p>
+            </div>
+            <div className="space-y-2">
                 <Label>{t('scormViewer.frameHeight')}</Label>
                 <select className="w-full rounded border px-3 py-2 text-sm" value={props.height || '75vh'} onChange={(e) => updateProp('height', e.target.value)}>
                     <option value="560px">{t('documentViewer.heightShort')}</option>

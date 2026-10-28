@@ -200,7 +200,8 @@ const CAPABILITIES = {
     imageGallery: 'columns: 2|3|4. gap. showCaptions. images[]: {src, alt, caption}.',
     scormViewer:
         'launchUrl (ONLY from website_edit(import_scorm)), title (frame bar), height, mobileHeight, ' +
-        'showFullScreen. Plays a SCORM package on the page without login, like a SCORM slide in a course.',
+        'showFullScreen, appearance framed|book (book: no card, the player\'s toolbar / page count / full ' +
+        'screen hidden — pages read like a book). Plays a SCORM package without login, like a course slide.',
     ctaBanner:
         'layout: centered | split. {heading, subheading, button {enabled,text,action,target,style: white|primary|outline}}. ' +
         'The renderer reads exactly these keys — headerText/buttonText are ignored and produce an empty band. ' +

@@ -1369,6 +1369,10 @@
     "openFile": "Open"
   },
   "scormViewer": {
+    "appearance": "Look",
+    "appearanceBook": "Book (no player controls)",
+    "appearanceFramed": "Framed player",
+    "appearanceHelp": "Book hides the package's own toolbar, page count and full-screen button so the pages read like a book on the page.",
     "heading": "SCORM package",
     "package": "SCORM package (.zip)",
     "uploadZip": "Upload SCORM zip",

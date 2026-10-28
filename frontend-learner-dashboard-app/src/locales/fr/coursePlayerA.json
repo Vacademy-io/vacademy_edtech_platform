@@ -229,6 +229,7 @@
       "noDocument": "Aucun document configuré pour le moment"
     },
     "scormViewer": {
+      "swipeHint": "Balayez pour tourner les pages",
       "defaultTitle": "Aperçu interactif",
       "fullScreen": "Plein écran",
       "openInNewTab": "Ouvrir dans un nouvel onglet",

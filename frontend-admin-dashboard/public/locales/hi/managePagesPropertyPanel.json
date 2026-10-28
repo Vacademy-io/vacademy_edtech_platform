@@ -1365,6 +1365,10 @@
     "openFile": "खोलें"
   },
   "scormViewer": {
+    "appearance": "रूप",
+    "appearanceBook": "किताब (प्लेयर कंट्रोल नहीं)",
+    "appearanceFramed": "फ़्रेम वाला प्लेयर",
+    "appearanceHelp": "किताब वाले रूप में पैकेज का टूलबार, पेज गिनती और फ़ुल-स्क्रीन बटन छिप जाते हैं, ताकि पन्ने पेज पर किताब की तरह दिखें।",
     "heading": "SCORM पैकेज",
     "package": "SCORM पैकेज (.zip)",
     "uploadZip": "SCORM zip अपलोड करें",
