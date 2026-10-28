@@ -103,6 +103,9 @@ export const ScormViewerComponent: React.FC<ScormViewerProps> = ({
   // Start the package now instead of after the wrapper's fallback timer.
   const handleLoad = useCallback(() => {
     setLoaded(true);
+    // Read by the website preview (ai_service page_preview), which waits for
+    // marked frames before its screenshot instead of catching a blank player.
+    iframeRef.current?.setAttribute("data-loaded", "true");
     if (!target) return;
     try {
       iframeRef.current?.contentWindow?.postMessage({ type: "vacademy_scorm_init", cmiData: {} }, target.origin);
@@ -151,6 +154,7 @@ export const ScormViewerComponent: React.FC<ScormViewerProps> = ({
               {bookBg && (
                 <iframe
                   ref={iframeRef}
+                  data-scorm-frame=""
                   src={frameSrc}
                   title={barTitle}
                   onLoad={handleLoad}
@@ -207,6 +211,7 @@ export const ScormViewerComponent: React.FC<ScormViewerProps> = ({
               )}
               <iframe
                 ref={iframeRef}
+                data-scorm-frame=""
                 src={target.href}
                 title={barTitle}
                 onLoad={handleLoad}
