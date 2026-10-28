@@ -213,6 +213,32 @@ class EngagementWhatsAppTemplateUpgradeTest {
     }
 
     @Test
+    @DisplayName("W2: a hard-coded link that is not in the brief is dropped on generate and refused on edit")
+    void W2_linksMustBeInTheBrief() {
+        when(advisor.propose(any(), anyString(), any(), anyList(), anyInt(), any(), any(), any())).thenReturn(List.of(
+                new EngagementTemplateAdvisor.Proposal("bad", "Hi {{1}}, join at https://evil.example.com/x today, see you.",
+                        List.of("name"), List.of("Asha"), null, "UTILITY", "r"),
+                new EngagementTemplateAdvisor.Proposal("ok", "Hi {{1}}, join at https://ee.test/class today, see you.",
+                        List.of("name"), List.of("Asha"), null, "UTILITY", "r")));
+        List<EngagementTemplateProposal> out = service.recommend("e1", "i1", "a", 2, null, null);
+        assertEquals(1, out.size());
+        assertTrue(out.get(0).getProposedBody().contains("ee.test/class"));
+
+        proposal("p-l", "AI_PROPOSED");
+        assertThrows(VacademyException.class, () -> service.edit("p-l", "i1",
+                TemplateEditRequest.builder().body("Hi {{1}}, see evil.example.com at {{2}} today, friends.").build(), "a"));
+    }
+
+    @Test
+    @DisplayName("W3: a footer over 60 chars typed by a human is refused, not silently cut")
+    void W3_longFooterRefused() {
+        proposal("p-f", "AI_PROPOSED");
+        VacademyException ex = assertThrows(VacademyException.class, () -> service.edit("p-f", "i1",
+                TemplateEditRequest.builder().footerText("x".repeat(61)).build(), "a"));
+        assertTrue(ex.getMessage().contains("footer"), ex.getMessage());
+    }
+
+    @Test
     void unknownLanguageOrModeRefused() {
         assertThrows(VacademyException.class, () -> service.recommend("e1", "i1", "a", 1, null, "fr"));
         assertThrows(VacademyException.class, () -> service.requestAlternatives("e1", "i1",

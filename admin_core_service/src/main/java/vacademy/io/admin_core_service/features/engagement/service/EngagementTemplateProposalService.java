@@ -156,6 +156,7 @@ public class EngagementTemplateProposalService {
         int dropped = 0;
         for (EngagementTemplateAdvisor.Proposal p : proposals) {
             String problem = alignmentProblem(p.body(), p.variableNames(), p.sampleValues(), p.category());
+            if (problem == null) problem = WhatsAppTemplateRules.linkProblem(p.body(), compiled);
             if (problem != null) {
                 dropped++;
                 log.warn("Engine {}: dropped AI template proposal '{}' — {}", engine.getId(), p.name(), problem);
@@ -214,7 +215,14 @@ public class EngagementTemplateProposalService {
         }
         if (req.getVariableNames() != null) p.setVariableNames(writeJson(req.getVariableNames()));
         if (req.getSampleValues() != null) p.setSampleValues(writeJson(req.getSampleValues()));
-        if (req.getFooterText() != null) p.setFooterText(trimFooter(req.getFooterText()));
+        if (req.getFooterText() != null) {
+            // W3: a human-typed footer over Meta's limit is refused, not cut mid-word (AI footers are trimmed).
+            if (req.getFooterText().trim().length() > WhatsAppTemplateRules.MAX_FOOTER_CHARS) {
+                throw new VacademyException("Template is not valid: footer exceeds Meta's "
+                        + WhatsAppTemplateRules.MAX_FOOTER_CHARS + "-char limit");
+            }
+            p.setFooterText(trimFooter(req.getFooterText()));
+        }
         if (req.getPurpose() != null) p.setPurpose(cap(req.getPurpose(), 120));
         if (req.getVariableSources() != null) {
             List<String> sourceProblems = TemplateVariableSources.problems(readJsonArray(p.getVariableNames()),
@@ -226,6 +234,9 @@ public class EngagementTemplateProposalService {
         // Re-validate AFTER applying edits so a human can't approve something Meta will reject.
         String problem = alignmentProblem(p.getProposedBody(), readJsonArray(p.getVariableNames()),
                 readJsonArray(p.getSampleValues()), p.getProposedCategory());
+        if (problem == null) {
+            problem = WhatsAppTemplateRules.linkProblem(p.getProposedBody(), briefFor(p.getEngineId()));
+        }
         if (problem != null) throw new VacademyException("Template is not valid: " + problem);
 
         p.setStatus("USER_REVIEW");
@@ -258,6 +269,9 @@ public class EngagementTemplateProposalService {
         // Defensive re-validate — the row could have been edited then approved through another path.
         String problem = alignmentProblem(pre.getProposedBody(), readJsonArray(pre.getVariableNames()),
                 readJsonArray(pre.getSampleValues()), pre.getProposedCategory());
+        if (problem == null) {
+            problem = WhatsAppTemplateRules.linkProblem(pre.getProposedBody(), briefFor(pre.getEngineId()));
+        }
         if (problem != null) throw new VacademyException("Template is not valid: " + problem);
 
         // Double-submit guard: USER_APPROVED → SUBMITTED, single winner.
@@ -544,6 +558,11 @@ public class EngagementTemplateProposalService {
             }
         }
         return out;
+    }
+
+    /** The engine's current brief, or null when the engine can't be read (then any written link fails W2). */
+    private String briefFor(String engineId) {
+        return engineId == null ? null : engineRepository.findById(engineId).map(this::activePrompt).orElse(null);
     }
 
     private static String cap(String s, int max) {

@@ -197,27 +197,11 @@ public final class EmailTemplateRules {
 
     /** Links written into the template text or hrefs, ignoring placeholders. */
     static List<String> linksIn(String in) {
-        List<String> out = new ArrayList<>();
-        String withoutPh = PLACEHOLDER.matcher(in == null ? "" : in).replaceAll(" ")
-                // an email address ("office@school.in") is not a link
-                .replaceAll("(?i)(?:mailto:)?[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}", " ");
-        Matcher m = TemplateVariableSources.URL.matcher(withoutPh);
-        while (m.find()) {
-            String u = m.group().replaceAll("[.,;:!?*_~]+$", "");
-            if (u.toLowerCase(Locale.ROOT).startsWith("mailto")) continue;
-            if (!out.contains(u)) out.add(u);
-        }
-        return out;
+        return TemplateVariableSources.linksIn(in, PLACEHOLDER);
     }
 
     private static boolean linkInBrief(String url, String brief) {
-        if (brief == null) return false;
-        String b = brief.toLowerCase(Locale.ROOT);
-        String u = url.toLowerCase(Locale.ROOT);
-        if (b.contains(u)) return true;
-        // "example.com/join" in the template, "https://example.com/join" in the brief.
-        String bare = u.replaceFirst("^https?://", "").replaceFirst("^www\\.", "");
-        return !bare.isBlank() && b.contains(bare);
+        return TemplateVariableSources.linkInBrief(url, brief);
     }
 
     private static boolean mostlyCapitals(String s) {

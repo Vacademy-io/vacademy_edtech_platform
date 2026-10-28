@@ -57,6 +57,31 @@ public final class TemplateVariableSources {
         return out;
     }
 
+    /** Links written into a template text (placeholders and email addresses ignored), trailing punctuation removed. */
+    public static List<String> linksIn(String text, Pattern placeholder) {
+        List<String> out = new ArrayList<>();
+        String withoutPh = placeholder.matcher(text == null ? "" : text).replaceAll(" ")
+                // an email address ("office@school.in") is not a link
+                .replaceAll("(?i)(?:mailto:)?[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}", " ");
+        Matcher m = URL.matcher(withoutPh);
+        while (m.find()) {
+            String u = m.group().replaceAll("[.,;:!?*_~]+$", "");
+            if (u.toLowerCase(Locale.ROOT).startsWith("mailto")) continue;
+            if (!out.contains(u)) out.add(u);
+        }
+        return out;
+    }
+
+    /** True when the link appears in the brief ("example.com/join" matches "https://example.com/join"). */
+    public static boolean linkInBrief(String url, String brief) {
+        if (brief == null || url == null) return false;
+        String b = brief.toLowerCase(Locale.ROOT);
+        String u = url.toLowerCase(Locale.ROOT);
+        if (b.contains(u)) return true;
+        String bare = u.replaceFirst("^https?://", "").replaceFirst("^www\\.", "");
+        return !bare.isBlank() && b.contains(bare);
+    }
+
     /** Problems with a template's source map; empty = valid. Every declared variable needs a source. */
     public static List<String> problems(List<String> variableNames, Map<String, String> sources, List<String> briefLinks) {
         List<String> out = new ArrayList<>();

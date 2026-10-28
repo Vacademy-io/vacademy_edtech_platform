@@ -17,6 +17,19 @@ public final class WhatsAppTemplateRules {
     private static final Pattern PH = Pattern.compile("\\{\\{\\d+}}");
     private static final Pattern ADJACENT = Pattern.compile("\\{\\{\\d+}}[\\s\\p{Punct}&&[^{]]*\\{\\{\\d+}}");
 
+    /**
+     * W2 — every link written into the body must be in the engine brief (a link can still be a
+     * variable whose source is brief.link.N). Null when fine.
+     */
+    public static String linkProblem(String body, String brief) {
+        for (String url : TemplateVariableSources.linksIn(body, PH)) {
+            if (!TemplateVariableSources.linkInBrief(url, brief)) {
+                return "the link " + url + " is not in the engine brief";
+            }
+        }
+        return null;
+    }
+
     /** A human-readable problem, or null when the body follows Meta's rules. */
     public static String problem(String body, String footer) {
         if (body == null || body.isBlank()) return "empty body";
