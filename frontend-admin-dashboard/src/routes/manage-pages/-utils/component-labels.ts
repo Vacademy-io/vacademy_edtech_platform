@@ -56,6 +56,7 @@ export const COMPONENT_LABELS: Record<string, string> = {
     mapEmbed: 'Map Embed',
     countdownTimer: 'Countdown Timer',
     promoPopup: 'Promo Popup',
+    reviewCollector: 'Reviews & Feedback',
     textBlock: 'Text Block',
     imageBlock: 'Image Block',
     buttonBlock: 'Button',
@@ -110,6 +111,7 @@ export const COMPONENT_DESCRIPTIONS: Record<string, string> = {
     stepsProcess: 'Numbered steps — how enrolling or learning works',
     countdownTimer: 'Counts down to a deadline',
     promoPopup: 'A sale or offer popup that opens by itself — on load, on scroll or on exit',
+    reviewCollector: 'Ask visitors for a star rating and review — floating button, side tab, popup or inline form; you approve before it shows',
     marquee: 'A scrolling ticker of announcements',
 
     // ── Asking for something back ────────────────────────────────────────────

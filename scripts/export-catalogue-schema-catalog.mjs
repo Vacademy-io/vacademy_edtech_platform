@@ -298,6 +298,13 @@ const DATA_BOUND = {
     bookDetails: 'Live single-book detail context.',
     buyRentSection: 'Live buy/rent controls.',
     policyRenderer: 'Renders stored policy documents. Placement only.',
+    reviewCollector:
+        'Live reviews: asks site visitors for a 1-5 star rating, their name and (per `fields`) a written review, ' +
+        'course, city and occupation/designation; submissions wait for the admin in Website Builder → Reviews and ' +
+        'only approved ones become public. Placement + behaviour only: display floatingPopup|floating|popup|inline, ' +
+        'buttonStyle pill|icon|tab, position bottom-right|bottom-left|middle-right|middle-left, popupStyle modal|corner, ' +
+        'trigger delay|scroll|exit, delaySeconds, frequency, devices, fields.* off|optional|required, courseOptions. ' +
+        'Leave text props empty (they default to the site language). One per site is enough — put it on the home page.',
     blog:
         'Live blog: reads the institute\'s PUBLISHED posts (written in Manage Pages → Blog or by an AI app over ' +
         'the MCP `blog_edit` tool). Renders the post list on the page it sits on and one article at ' +

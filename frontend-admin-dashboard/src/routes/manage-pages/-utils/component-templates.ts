@@ -775,6 +775,34 @@ export const buildComponentTemplates = (t: TFunction): Record<string, Omit<Compo
             closeOnBackdrop: true,
         },
     },
+    // Reviews & feedback: asks visitors for stars + a short review. Submissions
+    // wait in Website Builder → Reviews; approved ones show in testimonials
+    // sections that read reviews. Empty texts use the built-in wording in the
+    // visitor's site language. display floatingPopup | floating | popup | inline;
+    // buttonStyle pill | icon | tab; position bottom-right | bottom-left |
+    // middle-right | middle-left; popupStyle modal | corner; fields.* off |
+    // optional | required (stars and name are always asked).
+    reviewCollector: {
+        type: 'reviewCollector',
+        enabled: true,
+        props: {
+            display: 'floatingPopup',
+            buttonStyle: 'pill',
+            position: 'bottom-right',
+            popupStyle: 'modal',
+            buttonLabel: '',
+            heading: '',
+            subheading: '',
+            trigger: 'delay',
+            delaySeconds: 5,
+            scrollPercent: 40,
+            frequency: 'once',
+            devices: 'all',
+            hideAfterSubmit: true,
+            fields: { reviewText: 'optional', course: 'optional', city: 'optional', designation: 'optional' },
+            courseOptions: [],
+        },
+    },
     textBlock: {
         type: 'textBlock',
         enabled: true,

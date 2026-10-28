@@ -1103,6 +1103,29 @@ const PromoPopupPreview: React.FC<P> = ({ props }) => {
     );
 };
 
+/** Reviews & feedback: the form card over a dimmed band, or in the page for the inline display. */
+const ReviewCollectorPreview: React.FC<P> = ({ props }) => {
+    const { t } = useTranslation('managePagesReviews');
+    const inline = props.display === 'inline';
+    return (
+        <section className={`flex justify-center px-6 py-6 ${inline ? 'bg-neutral-50' : 'bg-neutral-800/70'}`}>
+            <div className="w-64 rounded-xl bg-white p-4 shadow-lg">
+                <p className="truncate text-sm font-semibold text-neutral-800">{props.heading || t('editor.defaults.heading')}</p>
+                <div className="mt-2 flex gap-0.5" aria-hidden="true">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                        <Star key={n} size={16} weight={n <= 4 ? 'fill' : 'regular'} className={n <= 4 ? 'text-warning-500' : 'text-neutral-300'} />
+                    ))}
+                </div>
+                <div className="mt-2 h-8 rounded border border-neutral-200" />
+                <div className="mt-2 h-5 rounded border border-neutral-200" />
+                <span className="mt-2 block rounded-md bg-primary-500 py-1.5 text-center text-xs font-semibold text-white">
+                    {props.submitLabel || t('editor.defaults.submitLabel')}
+                </span>
+            </div>
+        </section>
+    );
+};
+
 const PricingPreview: React.FC<P> = ({ props }) => (
     <section className="bg-catalogue-bg-elevated py-12 px-8">
         {props.headerText && (
@@ -1573,6 +1596,8 @@ const ComponentPreviewSwitch: React.FC<{ component: { type: string; props: any }
             );
         case 'promoPopup':
             return <PromoPopupPreview props={props} />;
+        case 'reviewCollector':
+            return <ReviewCollectorPreview props={props} />;
         case 'countdownTimer':
             return (
                 <section className="py-10 px-8 text-center" style={{ backgroundColor: props.backgroundColor || '#1E293B' }}>{/* design-lint-ignore: page-builder default color */}

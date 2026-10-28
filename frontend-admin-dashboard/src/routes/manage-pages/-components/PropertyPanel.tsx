@@ -63,6 +63,7 @@ import { useInstituteDetailsStore } from '@/stores/students/students-list/useIns
 import { SearchableSelect, type SearchableSelectOption } from '@/components/design-system/searchable-select';
 import { CoursePagesEditor } from './CoursePagesEditor';
 import { useBlogManagerStore } from '../-stores/blog-manager-store';
+import { ReviewCollectorEditor } from './ReviewCollectorEditor';
 import { LinkPicker } from './LinkPicker';
 import { CampaignPicker, websiteFormFields } from './CampaignPicker';
 import { PromoPopupEditor } from './PromoPopupEditor';
@@ -2229,6 +2230,8 @@ const ComponentEditor = ({ component, pageId, updateComponent, siteConfig }: any
             return <CountdownTimerEditor component={component} pageId={pageId} updateComponent={updateComponent} />;
         case 'promoPopup':
             return <PromoPopupEditor component={component} pageId={pageId} updateComponent={updateComponent} />;
+        case 'reviewCollector':
+            return <ReviewCollectorEditor component={component} pageId={pageId} updateComponent={updateComponent} />;
 
         case 'textBlock':
             return <TextBlockEditor component={component} pageId={pageId} updateComponent={updateComponent} />;
