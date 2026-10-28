@@ -468,14 +468,17 @@ def test_any_other_template_value_renders_the_usual_copy(env):
 
 def _language_env(env, monkeypatch):
     calls = []
+    hindi = []
 
     async def find_errors(llm, layout_map, model, **kwargs):
         calls.append(model)
+        hindi.append(kwargs.get("allow_hindi"))
         return {"p1_r1": [{"row": "p1_r1", "page_id": "p1", "wrong": "the first", "correct": "The first",
                            "kind": "punctuation", "why": "capital letter", "span": [0.1, 0.3]}]}
 
     from app.services.copy_check import language_feedback
     monkeypatch.setattr(language_feedback, "find_errors", find_errors)
+    env["language_allow_hindi"] = hindi
     return calls
 
 
@@ -502,9 +505,18 @@ def test_language_highlight_lists_errors_without_touching_marks(env, monkeypatch
 def test_language_check_is_off_unless_asked(env, monkeypatch):
     calls = _language_env(env, monkeypatch)
     _run(_payload(exam_context={"subject": "English"}))
-    _run(_payload(exam_context={"language_feedback": "HIGHLIGHT", "answer_language": "Hindi"}))
+    _run(_payload(exam_context={"language_feedback": "HIGHLIGHT", "answer_language": "French"}))
     assert calls == []
     assert all("Language" not in p["feedback"] for p in _posts(env, "question"))
+
+
+def test_language_check_reads_hindi_unless_the_paper_says_english(env, monkeypatch):
+    calls = _language_env(env, monkeypatch)
+    _run(_payload(exam_context={"language_feedback": "HIGHLIGHT", "answer_language": "Hindi"}))
+    _run(_payload(exam_context={"language_feedback": "HIGHLIGHT"}))
+    _run(_payload(exam_context={"language_feedback": "HIGHLIGHT", "answer_language": "en"}))
+    assert len(calls) == 3
+    assert env["language_allow_hindi"] == [True, True, False]
 
 
 def test_answer_left_out_by_a_choice_group_says_so_on_the_copy(env):

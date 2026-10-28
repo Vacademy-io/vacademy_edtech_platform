@@ -751,7 +751,7 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
             grader.token_budget += (TOKENS_PER_PAGE_ALLOWANCE * len(layout_map.get("pages") or [])
                                     + TOKENS_PER_QUESTION_CHECK * len(questions))
         # 2c. Language accuracy, when the institute asked for it: every error in
-        # the student's English, with its correction, found once for the whole
+        # the student's English or Hindi, with its correction, found once for the whole
         # copy. Marks are never touched; each written answer's feedback lists
         # its errors and the copy shows them (step 4).
         language_errors: dict[str, list[dict[str, Any]]] = {}
@@ -763,6 +763,9 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
             language_errors = await language_feedback.find_errors(
                 llm, layout_map, eval_model, institute_id=institute_id, token_sink=grader,
                 cancellation_check=lambda: cancellation.is_cancelled(job_id, process_id),
+                # A page written in Hindi is checked as Hindi unless the paper
+                # declares English answers (a partner exam's "en").
+                allow_hindi=language_feedback.allows_hindi(req.get("exam_context")),
             )
             row_positions = language_feedback.row_positions(layout_map)
         # question id -> the language errors in its answer.

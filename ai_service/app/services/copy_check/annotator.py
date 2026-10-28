@@ -324,6 +324,84 @@ def _latin1(text: str) -> str:
     # "replace" would make an unmapped glyph indistinguishable from one.
     return "".join(ch if ord(ch) < 256 else " " for ch in text)
 
+
+# Hindi on the copy. The pen's Latin paths (hand_render draws letter by letter,
+# penfont has Latin strokes only, base-14 is Latin-1) would strip a Devanagari
+# correction to blanks - and drawing Devanagari a character at a time breaks
+# it anyway: a matra, a conjunct and the reph are shaped from their
+# neighbours. So text with Devanagari in it is set whole, through MuPDF's
+# HarfBuzz shaper, in Kalam - the bundled OFL face the pen already writes
+# Latin in, which carries a full Devanagari set.
+_DEVANAGARI = re.compile("[ऀ-ॿ꣠-ꣿ]")
+_DEVA_FONT_FILE = "Kalam.ttf"
+# Same apparent size as the pen's Latin, which writes Kalam at 1.18x.
+_DEVA_SCALE = 1.18
+_DEVA_LINE = 1.25
+
+
+def _has_devanagari(text: str) -> bool:
+    return bool(_DEVANAGARI.search(text or ""))
+
+
+def _script_safe(text: str) -> str:
+    """_latin1 for Latin text; text with Devanagari keeps its Devanagari (and
+    the joiners conjuncts use) as well as its Latin-1."""
+    if not _has_devanagari(text):
+        return _latin1(text)
+    for bad, good in _LATIN1_SUBSTITUTIONS.items():
+        text = text.replace(bad, good)
+    return "".join(ch if ord(ch) < 256 or _DEVANAGARI.match(ch) or ch in "‌‍" else " "
+                   for ch in text)
+
+
+@lru_cache(maxsize=1)
+def _deva_font() -> Optional[Any]:
+    try:
+        import fitz
+        return fitz.Font(fontfile=os.path.join(_FONT_DIR, _DEVA_FONT_FILE))
+    except Exception:
+        logger.warning("copy-check: Devanagari font %s could not be loaded", _DEVA_FONT_FILE,
+                       exc_info=True)
+        return None
+
+
+def _deva_width(text: str, size: float, scale: float = _DEVA_SCALE) -> float:
+    """Width in points of `text` set by _deva_write at `size`."""
+    font = _deva_font()
+    if font is None:
+        return 0.62 * size * scale * max(1, len(text))
+    # Unshaped advances: a conjunct is a little narrower than its parts, so
+    # this errs wide, which only costs a little blank paper.
+    return font.text_length(text, fontsize=size * scale) * 1.04
+
+
+def _deva_write(page: Any, box: Any, lines: list[str], size: float, colour,
+                scale: float = _DEVA_SCALE) -> bool:
+    """Set `lines` (Devanagari and/or Latin) top-left in `box`, shaped. True
+    when the text went down whole."""
+    import html
+
+    import fitz
+
+    if _deva_font() is None or not lines:
+        return False
+    try:
+        r, g, b = (max(0, min(255, int(round(c * 255)))) for c in colour)
+        css = ("@font-face {font-family: penhi; src: url(%s);} "
+               "body {margin: 0; padding: 0; font-family: penhi; color: rgb(%d,%d,%d);}"
+               % (_DEVA_FONT_FILE, r, g, b))
+        body = "<div style='font-size:%.2fpx; line-height:%.2f'>%s</div>" % (
+            size * scale, _DEVA_LINE, "<br>".join(html.escape(ln) for ln in lines))
+        # A little room on the right and below, so the shaper never wraps or
+        # shrinks a line the measurement said would fit.
+        room = fitz.Rect(box.x0, box.y0, box.x1 + size * 0.6, box.y1 + size * 0.4)
+        spare, _scale = page.insert_htmlbox(room, body, css=css,
+                                            archive=fitz.Archive(_FONT_DIR), scale_low=0)
+        return spare >= 0
+    except Exception:
+        logger.debug("Devanagari text could not be set", exc_info=True)
+        return False
+
 _NOTE_FONTSIZE = 8.5
 
 # Three inks, each meaning one thing. A critic counted four inks doing
@@ -1155,23 +1233,128 @@ def _draw_brace(page: Any, top: float, bottom: float, x: float, colour,
                colour, w, rng, wobble=0.15, overshoot=0.0)
 
 
-def _draw_language(page: Any, rect: Any, ann: dict[str, Any], line_h: float,
-                   page_boxes: list, write_correction: bool = True) -> None:
-    """One language correction: a short rule under the wrong words and, when
-    `write_correction`, the right words written small just above them.
+def _ink_words(imap: Optional[dict], rect: Any, a: float, b: float, words: Any,
+               line_h: float) -> Optional[tuple[float, float]]:
+    """(left, right) in points of words[0]..words[1] of a row, found on its ink.
 
-    The layout has row boxes, not word boxes, so the words are found along the
-    row's measured ink by where they sit in the row's text (`span`, fractions
-    of the text). The correction goes where it touches no writing and no other
-    remark - above the words, else below them; with room for neither the rule
-    stands alone and the answer's feedback carries the correction.
+    `words` is [first, last, words on the row] from the transcript. The row's
+    ink between a and b is cut at its n-1 widest blank gaps into n words; the
+    cut is trusted only when those gaps are clearly wider than any gap left
+    inside a word, so a joined or crowded hand falls back to the caller's
+    estimate (a fraction of the text, which can land a word or two off).
+    """
+    try:
+        i0, i1, n = (int(v) for v in list(words)[:3])
+    except (TypeError, ValueError):
+        return None
+    if not imap or n < 2 or not 0 <= i0 <= i1 < n:
+        return None
+    try:
+        import numpy as np
+
+        ink, sx, sy, off = imap["ink"], imap["sx"], imap["sy"], imap["x0"]
+        h = rect.y1 - rect.y0
+        # The letters' bodies: the band's edges hold the neighbours' ascenders
+        # and descenders, which bridge the gaps between this row's words.
+        y0 = max(0, min(ink.shape[0] - 1, int((rect.y0 + h * 0.2) / sy)))
+        y1 = max(y0 + 1, min(ink.shape[0], int((rect.y1 - h * 0.2) / sy)))
+        c0 = max(0, int(a / sx) - off)
+        c1 = min(ink.shape[1], int(b / sx) - off + 1)
+        if c1 - c0 < 2 * n:
+            return None
+        cols = np.nonzero(ink[y0:y1, c0:c1].any(axis=0))[0]
+        if cols.size < n:
+            return None
+        gaps = np.diff(cols) - 1
+        if int((gaps > 0).sum()) < n - 1:
+            return None
+        order = np.argsort(-gaps, kind="stable")
+        chosen = np.sort(order[:n - 1])
+        narrowest_cut = float(gaps[order[n - 2]]) * sx
+        widest_left = float(gaps[order[n - 1]]) * sx if order.size >= n else 0.0
+        if narrowest_cut < max(1.5, 0.12 * line_h) or narrowest_cut < 1.3 * widest_left:
+            return None
+        starts = [int(cols[0])] + [int(cols[c + 1]) for c in chosen]
+        ends = [int(cols[c]) for c in chosen] + [int(cols[-1])]
+        return ((off + c0 + starts[i0]) * sx, (off + c0 + ends[i1] + 1) * sx)
+    except Exception:
+        logger.debug("could not find the words on the row's ink", exc_info=True)
+        return None
+
+
+def _correction_metrics(text: str, size: float) -> tuple[float, float]:
+    """(width, line step) in points of a correction written at `size`."""
+    if _has_devanagari(text):
+        return _deva_width(text, size), size * _DEVA_SCALE * _DEVA_LINE
+    return _pen_text_width(text, size), size * 1.15
+
+
+def _wrap_correction(text: str, size: float, width: float) -> Optional[list[str]]:
+    """`text` broken into lines no wider than `width`; None when one word is."""
+    lines: list[str] = []
+    cur = ""
+    for word in text.split():
+        trial = f"{cur} {word}".strip()
+        if _correction_metrics(trial, size)[0] <= width:
+            cur = trial
+            continue
+        if not cur or _correction_metrics(word, size)[0] > width:
+            return None
+        lines.append(cur)
+        cur = word
+    if cur:
+        lines.append(cur)
+    return lines or None
+
+
+def _write_correction(page: Any, box: Any, lines: list[str], size: float, rng) -> None:
+    """Write a correction's lines top-left in `box`, in the copy's red."""
+    import fitz
+
+    colour = _STYLE_COLOR["language"]
+    if any(_has_devanagari(ln) for ln in lines) and _deva_write(page, box, lines, size, colour):
+        return
+    step = _correction_metrics(" ".join(lines), size)[1]
+    for i, line in enumerate(lines):
+        # A Devanagari line the shaper refused is not given to the Latin pen,
+        # which would write it as blanks; its Latin part still goes down.
+        line = _latin1(line).strip() if _has_devanagari(line) else line
+        if not line:
+            continue
+        width = _correction_metrics(line, size)[0]
+        _pen_text(page, fitz.Point(box.x0, box.y0 + (i + 1) * step - size * 0.25), line, size,
+                  colour, rng, max_x=box.x0 + width + size, rise=0.0, tilt=0.0)
+
+
+def _draw_language(page: Any, rect: Any, ann: dict[str, Any], line_h: float,
+                   page_boxes: list, write_correction: bool = True,
+                   blockers: Optional[list] = None,
+                   markers: Optional[list] = None) -> Optional[str]:
+    """One language correction: a short rule under the wrong words and, when
+    `write_correction`, the right words written beside them.
+
+    The layout has row boxes, not word boxes, so the words are found on the
+    row's measured ink - by word count when the gaps between words are clear,
+    else by where they sit in the row's text (`span`, fractions of the text).
+
+    A correction is never dropped. It goes, in order of preference:
+      1. just above the words, else just below them, on blank paper;
+      2. in the nearest margin beside the row, numbered, with the same number
+         written at the end of the rule so the two are read together;
+      3. in the margin, smaller, further up or down the page;
+      4. above or below the words a size smaller, touching a little ink;
+      5. wherever above or below the words has the least writing under it.
+    `page_boxes` collects the corrections written on this page (each a box the
+    next must avoid); `blockers` are the remarks, scores and marks already on
+    the page; `markers` is the page's running margin number, [n].
+    Returns where the correction went, or None when none was written.
     """
     import fitz
 
     try:
         f0, f1 = (float(v) for v in (ann.get("span") or [0.0, 1.0])[:2])
     except (TypeError, ValueError):
-        return
+        return None
     f0 = max(0.0, min(1.0, f0))
     f1 = max(f0, min(1.0, f1))
     ink = _INK_SPAN[0]
@@ -1181,6 +1364,9 @@ def _draw_language(page: Any, rect: Any, ann: dict[str, Any], line_h: float,
         a, b = rect.x0, rect.x1
     x0 = a + (b - a) * f0
     x1 = a + (b - a) * f1
+    found = _ink_words(_INK_MAP[0], rect, a, b, ann.get("words"), line_h)
+    if found is not None:
+        x0, x1 = found
     if x1 - x0 < 10.0:
         x1 = min(b, x0 + 10.0)
         x0 = max(a, x1 - 10.0)
@@ -1192,28 +1378,121 @@ def _draw_language(page: Any, rect: Any, ann: dict[str, Any], line_h: float,
                wobble=0.4, overshoot=1.0)
     _ROW_SLOPE[0] = saved
 
-    text = _latin1(" ".join(str(ann.get("text") or "").split()))
+    text = _script_safe(" ".join(str(ann.get("text") or "").split())).strip()
     if not write_correction or not text:
-        return
-    size = max(6.0, min(11.0, line_h * 0.5))
-    width = _pen_text_width(text, size)
-    height = size * 1.15
-    sheet = _CLIP[0]
-    left = x0
-    if sheet is not None and left + width > sheet.x1 - 4.0:
-        left = max(sheet.x0 + 4.0, sheet.x1 - 4.0 - width)
-    for top in (rect.y0 - height - 0.5, drop + 1.5):
-        box = fitz.Rect(left, top, left + width, top + height)
-        if sheet is not None and not sheet.contains(box):
-            continue
-        if _ink_under(_INK_MAP[0], box) > 0.06:
-            continue
-        if any(box.intersects(o) for o in page_boxes):
-            continue
-        _pen_text(page, fitz.Point(box.x0, box.y1 - size * 0.25), text, size,
-                  _STYLE_COLOR["language"], rng, max_x=box.x1 + size, rise=0.0, tilt=0.0)
+        return None
+    size = max(6.0, min(11.0 * _note_k(page), line_h * 0.5))
+    sheet = _CLIP[0] if _CLIP[0] is not None else page.rect
+    # Remarks, scores and marks already written, and the corrections before
+    # this one. Not the layout's row boxes: rows sit edge to edge on a written
+    # page, so the gap above any word is inside the row above it - testing
+    # those refused nearly every correction, and the rule was left alone. The
+    # measured ink is what says whether the gap is blank.
+    avoid = [fitz.Rect(o.x0 - 1.0, o.y0 - 1.0, o.x1 + 1.0, o.y1 + 1.0)
+             for o in list(blockers or []) + list(page_boxes)]
+
+    def hits(box: Any) -> bool:
+        return any(box.intersects(o) for o in avoid)
+
+    def clear(box: Any, max_ink: float) -> bool:
+        # The ink is tested a little outside the box: the pen's letters wander
+        # past the measured width, and a correction touching the student's
+        # word reads as part of it.
+        halo = fitz.Rect(box.x0 - 1.5, box.y0 - 0.5, box.x1 + 1.5, box.y1 + 0.5)
+        return (sheet.contains(box) and not hits(box)
+                and _ink_under(_INK_MAP[0], halo) <= max_ink and _on_paper(_PAPER[0], box))
+
+    def inline(sz: float):
+        width, step = _correction_metrics(text, sz)
+        lo, hi = sheet.x0 + 4.0, sheet.x1 - 4.0 - width
+        lefts: list[float] = []
+        for left in (x0, (x0 + x1 - width) / 2.0, x1 - width):
+            left = max(lo, min(hi, left)) if hi >= lo else lo
+            if all(abs(left - l) > 2.0 for l in lefts):
+                lefts.append(left)
+        for top in (rect.y0 - step - 0.5, drop + 1.5):
+            for left in lefts:
+                yield fitz.Rect(left, top, left + width, top + step), [text]
+
+    row_lo = min(a, x0)
+    row_hi = max(b, x1)
+
+    def margin(sz: float, reach: int, label: str):
+        sides = []
+        gap = 6.0
+        if row_lo - gap - (sheet.x0 + 3.0) >= 14.0:
+            sides.append((x0 - row_lo, sheet.x0 + 3.0, row_lo - gap, "left"))
+        if sheet.x1 - 3.0 - (row_hi + gap) >= 14.0:
+            sides.append((row_hi - x1, row_hi + gap, sheet.x1 - 3.0, "right"))
+        mid = (rect.y0 + rect.y1) / 2.0
+        for _dist, gx0, gx1, side in sorted(sides):
+            # The pen's spacing wanders wider than measured (_ADVANCE_SLACK).
+            lines = _wrap_correction(label, sz, (gx1 - gx0) / 1.06)
+            if not lines:
+                continue
+            width = max(_correction_metrics(ln, sz)[0] for ln in lines) * 1.06
+            step = _correction_metrics(label, sz)[1]
+            height = step * len(lines)
+            # Close to the writing: right-aligned in the left margin.
+            left = gx1 - width if side == "left" else gx0
+            for k in range(0, 2 * reach + 1):
+                shift = (k + 1) // 2 * (1 if k % 2 else -1) * 0.5 * line_h
+                top = mid - height / 2.0 + shift
+                yield fitz.Rect(left, top, left + width, top + height), lines
+
+    def put(box: Any, lines: list[str], sz: float, where: str, number: Optional[int] = None) -> str:
+        _write_correction(page, box, lines, sz, rng)
+        if number is not None:
+            if markers is not None:
+                markers[0] = number
+            # The number hangs off the end of the rule, sitting on it: below
+            # the rule it lands in the next row's letters on a tight page.
+            # Where that spot already holds a note, it goes before the rule.
+            msz = max(5.0, sz * 0.8)
+            mw = _pen_text_width(str(number), msz) * 1.1
+            mbox = fitz.Rect(x1 + 1.0, drop - msz * 0.9, x1 + 1.0 + mw, drop + msz * 0.3)
+            if hits(mbox) or mbox.intersects(box) or any(mbox.intersects(o) for o in page_boxes):
+                mbox = fitz.Rect(x0 - 1.0 - mw, mbox.y0, x0 - 1.0, mbox.y1)
+            _pen_text(page, fitz.Point(mbox.x0, drop + msz * 0.15), str(number), msz,
+                      _STYLE_COLOR["language"], rng, rise=0.0, tilt=0.0)
+            page_boxes.append(mbox)
         page_boxes.append(box)
-        return
+        return where
+
+    for box, lines in inline(size):
+        if clear(box, 0.02):
+            return put(box, lines, size, "inline")
+    number = (markers[0] if markers else 0) + 1
+    label = f"{number}) {text}"
+    msize = max(5.5, size * 0.9)
+    for box, lines in margin(msize, 6, label):
+        if clear(box, 0.01):
+            return put(box, lines, msize, "margin", number)
+    tiny = max(5.0, size * 0.75)
+    for box, lines in margin(tiny, 16, label):
+        if clear(box, 0.03):
+            return put(box, lines, tiny, "margin", number)
+    small = max(5.0, size * 0.8)
+    for box, lines in inline(small):
+        if clear(box, 0.08):
+            return put(box, lines, small, "inline-small")
+    # Nowhere blank: the least-inked spot above or below the words, kept on
+    # the sheet. A correction across a little writing still reads; a rule with
+    # no correction tells the student nothing.
+    best = None
+    for box, lines in inline(small):
+        if box.y0 < sheet.y0 + 1.0:
+            box = fitz.Rect(box.x0, sheet.y0 + 1.0, box.x1, sheet.y0 + 1.0 + box.height)
+        if box.y1 > sheet.y1 - 1.0:
+            box = fitz.Rect(box.x0, sheet.y1 - 1.0 - box.height, box.x1, sheet.y1 - 1.0)
+        cost = (_ink_under(_INK_MAP[0], box) + (1.0 if hits(box) else 0.0)
+                + (0.5 if not _on_paper(_PAPER[0], box) else 0.0))
+        if best is None or cost < best[0]:
+            best = (cost, box, lines)
+    if best is None:
+        return None
+    logger.debug("language correction %r forced over writing (cost %.2f)", text[:40], best[0])
+    return put(best[1], best[2], small, "forced")
 
 
 def _draw_mark(page: Any, rect: Any, style: str, bounds: Any = None,
@@ -3306,12 +3585,18 @@ def _short_feedback(text: str) -> str:
 def _wrap_plain(text: str, fontname: str, size: float, width: float) -> list[str]:
     import fitz
 
+    def length(s: str) -> float:
+        # A line with Hindi in it is set in the Devanagari face (_deva_write).
+        if _has_devanagari(s):
+            return _deva_width(s, size, scale=1.0)
+        return fitz.get_text_length(s, fontname=fontname, fontsize=size)
+
     lines: list[str] = []
     for para in text.split("\n"):
         line = ""
         for word in para.split():
             trial = f"{line} {word}".strip()
-            if line and fitz.get_text_length(trial, fontname=fontname, fontsize=size) > width:
+            if line and length(trial) > width:
                 lines.append(line)
                 line = word
             else:
@@ -3359,7 +3644,7 @@ def _draw_comment_panels(doc: Any, panels: dict[int, Any],
                 said = list(said) + ["Language: " + "; ".join(fixes)]
             label = _panel_label(verdict, labels)
             heading = f"{label}: {_panel_status(verdict)}" if first else f"{label} (contd.)"
-            entries.append((y, v_idx, _latin1(heading), [_latin1(s) for s in said if s]))
+            entries.append((y, v_idx, _latin1(heading), [_script_safe(s) for s in said if s]))
         page = doc[pno]
         k = max(1.0, min(4.0, panel.width / (595.0 * _PANEL_RATIO)))
         pad = 14.0 * k
@@ -3412,7 +3697,11 @@ def _draw_comment_panels(doc: Any, panels: dict[int, Any],
                 if y + body_size * 1.3 > bottom:
                     break
                 y += body_size * 1.3
-                page.insert_text(fitz.Point(x0, y), line, fontname="helv",
+                if _has_devanagari(line) and _deva_write(
+                        page, fitz.Rect(x0, y - body_size * 1.05, x1, y + body_size * 0.35),
+                        [line], body_size, _PANEL_TEXT, scale=1.0):
+                    continue
+                page.insert_text(fitz.Point(x0, y), _latin1(line), fontname="helv",
                                  fontsize=body_size, color=_PANEL_TEXT)
 
 
@@ -3548,7 +3837,8 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
                            order: Optional[dict[str, int]] = None,
                            occupied: Optional[dict[str, list]] = None,
                            drawn: Optional[dict[str, list]] = None,
-                           written: Optional[set] = None) -> None:
+                           written: Optional[set] = None,
+                           rings: Optional[dict[int, list]] = None) -> None:
     """Circle each question's mark in the right margin beside its answer.
 
     placements maps question_number -> (page_no, y). Built from where that
@@ -3559,6 +3849,9 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
     written: the questions whose own score was actually drawn on the page.
     None (a caller that does not track it) treats every score annotation as
     drawn, as before.
+
+    rings: when given, page_no -> the rect of every badge drawn, for marks
+    written after this (the language corrections) to keep clear of.
     """
     import fitz
 
@@ -3730,6 +4023,9 @@ def _place_question_scores(doc: Any, placements: dict[int, tuple],
         # answered out of order is otherwise anyone's guess.
         _draw_score_badge(page, fitz.Point(cx, cy), awarded,
                           out_of=float(out_of) if out_of else None, radius=radius)
+        if rings is not None:
+            rings.setdefault(page_no, []).append(
+                fitz.Rect(cx - radius * 1.4, cy - radius * 1.9, cx + radius * 1.4, cy + radius * 1.4))
 
 
 def _extend_paper(page: Any, scan: Any, strip: Any) -> None:
@@ -4220,6 +4516,10 @@ def build_annotated_pdf(
     # Rects of the rules actually drawn, per page, so a score ring placed later
     # does not fuse with one.
     drawn_rules: dict = {}
+    # Language corrections, drawn last of all (see the loop).
+    language_queue: list = []
+    # page_no -> the per-question score rings drawn, for the corrections to avoid.
+    score_rings: dict = {}
     # Scarce space goes to the marks the student most needs. A richer marking
     # scheme asks for far more ink than a densely written page can hold - 98
     # comments wanted, 31 places for them - and first-come order meant praise
@@ -4407,10 +4707,15 @@ def build_annotated_pdf(
             style = (ann.get("style") or "margin_note").strip().lower()
             if style == "language":
                 # A language correction: the wrong words underlined where they
-                # sit, the correction written above them - or, on the comments-
-                # outside template, listed in the panel beside the answer.
-                _draw_language(page, rect, ann, float(_LINE_H[0] or rect.height or 14.0),
-                               occupied.setdefault(page_id, []), write_correction=not outside)
+                # sit, the correction written beside them - or, on the
+                # comments-outside template, listed in the panel beside the
+                # answer. Drawn after everything else (below), so a slip in
+                # spelling never takes the room a score or a deduction's
+                # reason needed, and it can see where those went.
+                language_queue.append({
+                    "page_no": page_no, "page_id": page_id, "rect": rect, "ann": ann,
+                    "ink_span": _INK_SPAN[0], "line_h": float(_LINE_H[0] or rect.height or 14.0),
+                    "slope": _ROW_SLOPE[0]})
                 if outside and ann.get("text") and ann.get("anchor_text"):
                     key = (page_no, verdict_index[id(verdict)])
                     panel_anchor[key] = min(panel_anchor.get(key, rect.y0), rect.y0)
@@ -4572,7 +4877,7 @@ def build_annotated_pdf(
                     placements[q_no] = (page_no, rect.y1, rect.x1)
 
     _place_question_scores(doc, placements, verdicts, paper, order, occupied, drawn_rules,
-                           written=scores_written)
+                           written=scores_written, rings=score_rings)
 
     if unwritten:
         def use_page(pid: str, pno: int) -> None:
@@ -4588,6 +4893,39 @@ def build_annotated_pdf(
                             if margin_ratio > 0.0 else None)
         drawn += _write_unwritten_reasons(doc, unwritten, order, paper, content,
                                           occupied, use_page)
+
+    if language_queue:
+        # Reading order, so the margin numbers run down each page.
+        language_queue.sort(key=lambda it: (it["page_no"], round(it["rect"].y0, 1),
+                                            it["rect"].x0, float((it["ann"].get("span") or [0])[0])))
+        markers: dict[int, list] = {}
+        placed_where: dict[Any, int] = {}
+        for it in language_queue:
+            pid, pno, rect = it["page_id"], it["page_no"], it["rect"]
+            _CLIP[0] = paper.get(pid)
+            _SHADE[0] = shade_by_page.get(pid)
+            _INK_MAP[0] = ink_maps.get(pid)
+            _PAPER[0] = paper_rows.get(pid)
+            _PLACED[0] = occupied.setdefault(pid + ":notes", [])
+            _LINE_H[0] = line_h_by_page.get(pid)
+            _INK_SPAN[0] = it["ink_span"]
+            _ROW_SLOPE[0] = it["slope"]
+            _MARGIN_X[0] = (content.get(pno, doc[pno].rect).x1
+                            if margin_ratio > 0.0 else None)
+            # The rules already drawn: only the stroke itself, at the foot of
+            # the row band recorded for it, not the whole band.
+            rules = [fitz.Rect(r.x0 + 4.0, r.y1 - 10.0, r.x1 - 4.0, r.y1 - 4.0)
+                     for r in drawn_rules.get(pid, [])]
+            blockers = list(_PLACED[0]) + rules + list(score_rings.get(pno, []))
+            where = _draw_language(doc[pno], rect, it["ann"], it["line_h"],
+                                   occupied.setdefault(pid + ":language", []),
+                                   write_correction=not outside, blockers=blockers,
+                                   markers=markers.setdefault(pno, [0]))
+            placed_where[where] = placed_where.get(where, 0) + 1
+        logger.info("copy-check annotator: %d language correction(s) placed %s",
+                    len(language_queue), placed_where)
+        _INK_SPAN[0] = None
+        _ROW_SLOPE[0] = 0.0
 
     _CLIP[0] = None
     if outside:

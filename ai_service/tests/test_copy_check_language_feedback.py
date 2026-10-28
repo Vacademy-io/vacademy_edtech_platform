@@ -19,13 +19,59 @@ def _reply(*errors):
     return json.dumps({"errors": list(errors)})
 
 
-def test_enabled_only_for_highlight_in_english():
+def test_enabled_only_for_highlight_in_english_or_hindi():
     assert lf.enabled({"language_feedback": "HIGHLIGHT"})
     assert lf.enabled({"language_feedback": "highlight", "answer_language": "English"})
-    assert not lf.enabled({"language_feedback": "HIGHLIGHT", "answer_language": "Hindi"})
+    assert lf.enabled({"language_feedback": "HIGHLIGHT", "answer_language": "Hindi"})
+    assert lf.enabled({"language_feedback": "HIGHLIGHT", "answer_language": "hi"})
+    assert not lf.enabled({"language_feedback": "HIGHLIGHT", "answer_language": "French"})
     assert not lf.enabled({"language_feedback": "OFF"})
     assert not lf.enabled({})
     assert not lf.enabled(None)
+
+
+def test_hindi_is_checked_unless_the_paper_says_english():
+    # The dashboard sends no answer_language; a partner exam that declares
+    # "en" keeps the English-only check.
+    assert lf.allows_hindi({"language_feedback": "HIGHLIGHT"})
+    assert lf.allows_hindi({"answer_language": "Hindi"})
+    assert not lf.allows_hindi({"answer_language": "en"})
+    assert not lf.allows_hindi({"answer_language": "English"})
+    hindi = [{"line_id": "p1_r1", "text": "मेरा माता बाजार गया।"}]
+    english = [{"line_id": "p1_r1", "text": "The poet say that."}]
+    assert lf.system_prompt(hindi, True) == lf.LANGUAGE_SYSTEM_HINDI
+    assert lf.system_prompt(hindi, False) == lf.LANGUAGE_SYSTEM
+    assert lf.system_prompt(english, True) == lf.LANGUAGE_SYSTEM
+
+
+def test_find_errors_sends_a_hindi_page_the_hindi_prompt():
+    layout = {"pages": [{"page_id": "p1", "lines": [
+        {"line_id": "p1_r1", "text": "मेरा माता बाजार गई।"}]}]}
+    reply = _reply({"row": "p1_r1", "wrong": "मेरा माता", "correct": "मेरी माता",
+                    "kind": "grammar", "why": "लिंग"})
+    systems = []
+
+    class LLM:
+        async def chat_completion(self, messages, **kwargs):
+            systems.append(messages[0]["content"])
+            return {"content": reply, "usage": {}}
+
+    found = asyncio.run(lf.find_errors(LLM(), layout, "m", allow_hindi=True))
+    assert systems == [lf.LANGUAGE_SYSTEM_HINDI]
+    (err,) = found["p1_r1"]
+    assert (err["wrong"], err["correct"]) == ("मेरा माता", "मेरी माता")
+    assert err["words"] == [0, 1, 4]
+    # The matra and the halant carry no width: the span is measured on what is drawn.
+    assert 0.0 == err["span"][0] < err["span"][1] < 0.6
+    asyncio.run(lf.find_errors(LLM(), layout, "m"))
+    assert systems[-1] == lf.LANGUAGE_SYSTEM
+
+
+def test_parse_matches_decomposed_nukta():
+    rows = {"p1_r1": {"line_id": "p1_r1", "text": "वह ज़रूरी काम है", "_page_id": "p1"}}
+    decomposed = "\u091c\u093c\u0930\u0942\u0930\u0940"     # ज + nukta + रूरी
+    errors = lf.parse_errors(_reply({"row": "p1_r1", "wrong": decomposed, "correct": "आवश्यक"}), rows)
+    assert [e["words"] for e in errors] == [[1, 1, 4]]
 
 
 def test_objective_answers_are_left_alone():
@@ -137,7 +183,9 @@ def test_feedback_paragraph_and_annotations():
     assert fb.endswith("; and 5 more.")
     assert lf.with_language_feedback("Fine.", []) == "Fine."
     anns = lf.annotations(errors, "q7")
-    assert len(anns) == lf.MAX_MARKS_PER_QUESTION
+    assert len(anns) == 25          # well past the old cap of 8
+    many = errors * 3
+    assert len(lf.annotations(many, "q7")) == lf.MAX_MARKS_PER_QUESTION == 40
     assert anns[0] == {"style": "language", "q": "q7", "target": "p1_r0", "page_id": "p1",
                        "anchor_text": "w0", "text": "c0", "span": [0.1, 0.2], "kind": "grammar"}
 
@@ -190,3 +238,131 @@ def test_language_correction_is_drawn_on_the_usual_copy():
     marked = fitz.open(stream=annotator.build_annotated_pdf(pdf, layout, verdicts), filetype="pdf")[0]
     assert (marked.rect.width, marked.rect.height) == (595, 842)
     assert len(marked.get_drawings()) + len(marked.get_images()) > len(plain.get_drawings()) + len(plain.get_images())
+
+
+# ---- drawing: a correction is always written, in any script ---------------
+
+def _ink_map(inked):
+    """An ink map at 1pt per cell over an A4 page; `inked` = [(x0, x1)] columns
+    inked from top to bottom."""
+    import numpy as np
+
+    ink = np.zeros((842, 595), dtype=bool)
+    for a, b in inked:
+        ink[:, a:b] = True
+    return {"ink": ink, "sx": 1.0, "sy": 1.0, "x0": 0}
+
+
+def _draw_one(monkeypatch, inked, text="cases", words=None):
+    doc = fitz.open()
+    page = doc.new_page(width=595, height=842)
+    # Fresh per-page drawing state (module globals), restored after the test.
+    monkeypatch.setattr(annotator, "_PEN", [None])        # the vector pen: drawings, not images
+    monkeypatch.setattr(annotator, "_CLIP", [fitz.Rect(20, 20, 575, 822)])
+    monkeypatch.setattr(annotator, "_INK_MAP", [_ink_map(inked)])
+    monkeypatch.setattr(annotator, "_INK_SPAN", [(100.0, 500.0)])
+    monkeypatch.setattr(annotator, "_PAPER", [None])
+    row = fitz.Rect(100, 400, 500, 416)
+    ann = {"style": "language", "text": text, "anchor_text": "case", "span": [0.4, 0.5]}
+    if words:
+        ann["words"] = words
+    boxes: list = []
+    where = annotator._draw_language(page, row, ann, 16.0, boxes, markers=[0])
+    return where, page, boxes
+
+
+def test_correction_goes_to_the_margin_when_above_and_below_are_inked(monkeypatch):
+    # Writing runs from x=100 to x=500 on every row: no gap above or below.
+    where, page, boxes = _draw_one(monkeypatch, [(100, 500)])
+    assert where == "margin"
+    # The number at the end of the rule, then the note itself.
+    number, note = boxes
+    assert note.x1 <= 100 or note.x0 >= 500                # in a margin, off the writing
+    assert abs((note.y0 + note.y1) / 2 - 408) <= 16 * 3    # beside its row
+    inked_margin = [d for d in page.get_drawings()
+                    if d["rect"].x1 <= 100 or d["rect"].x0 >= 500]
+    assert inked_margin, "the correction was not written in the margin"
+    assert 100 <= number.x0 <= 500 and number.y0 < 420      # on the rule, by the words
+
+
+def test_correction_is_forced_onto_the_page_when_there_is_no_blank_paper(monkeypatch):
+    where, page, boxes = _draw_one(monkeypatch, [(0, 595)])
+    assert where == "forced"
+    assert boxes and len(page.get_drawings()) > 3            # rule + letters
+
+
+def test_correction_above_the_words_when_the_gap_is_blank(monkeypatch):
+    where, _page, boxes = _draw_one(monkeypatch, [])
+    assert where == "inline"
+    assert boxes[0].y1 <= 400                                 # above the row
+
+
+def test_devanagari_correction_is_set_whole_in_kalam(monkeypatch):
+    where, page, boxes = _draw_one(monkeypatch, [], text="मेरी माता")
+    assert where == "inline"
+    assert "मेरी माता" in page.get_text()
+    assert any("Kalam" in f[3] for f in page.get_fonts())
+
+
+def test_script_safe_keeps_hindi_and_leaves_latin_as_before():
+    assert annotator._script_safe("मेरी माता → ठीक") == "मेरी माता -> ठीक"
+    assert annotator._script_safe("don’t → do not") == annotator._latin1("don’t → do not")
+    assert annotator._script_safe("x中y") == "x y"
+
+
+def test_words_are_found_on_the_rows_ink():
+    m = _ink_map([])
+    # Five words, 30pt wide, 12pt apart; letters 2pt apart inside each word.
+    for k in range(5):
+        x = 100 + k * 42
+        for c in range(x, x + 30, 4):
+            m["ink"][402:414, c:c + 2] = True
+    row = fitz.Rect(100, 400, 400, 416)
+    left, right = annotator._ink_words(m, row, 100, 400, [2, 3, 5], 16.0)
+    assert (round(left), round(right)) == (184, 256)
+    # Gaps that do not stand out from the letter spacing are not trusted.
+    flat = _ink_map([])
+    flat["ink"][402:414, 100:300:6] = True
+    assert annotator._ink_words(flat, row, 100, 400, [1, 2, 5], 16.0) is None
+    assert annotator._ink_words(m, row, 100, 400, None, 16.0) is None
+
+
+def _many_errors_scan(n, text=None):
+    pdf, layout, verdicts = _scan()
+    anns = [verdicts[0]["annotations"][0]]
+    row = layout["pages"][0]["lines"][0]["text"]
+    words = row.split()
+    for i in range(n):
+        w = words[i % len(words)]
+        at = row.index(w)
+        anns.append({"style": "language", "target": "L0", "page_id": "P1", "anchor_text": w,
+                     "text": text or f"fix{i}", "span": [at / len(row), (at + len(w)) / len(row)],
+                     "words": [i % len(words), i % len(words), len(words)]})
+    return pdf, layout, [dict(verdicts[0], annotations=anns)]
+
+
+def test_more_than_eight_corrections_are_all_written(monkeypatch):
+    seen = []
+    real = annotator._draw_language
+
+    def spy(*args, **kwargs):
+        where = real(*args, **kwargs)
+        seen.append(where)
+        return where
+
+    monkeypatch.setattr(annotator, "_draw_language", spy)
+    pdf, layout, verdicts = _many_errors_scan(14)
+    annotator.build_annotated_pdf(pdf, layout, verdicts)
+    assert len(seen) == 14
+    assert None not in seen
+
+
+def test_hindi_corrections_reach_the_copy_and_the_panel():
+    pdf, layout, verdicts = _many_errors_scan(2, text="मेरी माता")
+    page = fitz.open(stream=annotator.build_annotated_pdf(pdf, layout, verdicts), filetype="pdf")[0]
+    assert "मेरी माता" in page.get_text()
+    assert any("Kalam" in f[3] for f in page.get_fonts())
+    out = annotator.build_annotated_pdf(pdf, layout, verdicts, comment_placement="OUTSIDE")
+    page = fitz.open(stream=out, filetype="pdf")[0]
+    panel = page.get_text("text", clip=fitz.Rect(595, 0, page.rect.width, page.rect.height))
+    assert "मेरी माता" in panel
