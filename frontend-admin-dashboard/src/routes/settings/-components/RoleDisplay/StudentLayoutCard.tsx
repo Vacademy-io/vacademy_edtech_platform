@@ -42,10 +42,41 @@ const PLACEMENTS: StudentNavPlacement[] = ['auto', 'sidebar', 'bottomBar', 'both
 /** A left rail has no room on a phone (the learner app would show the bar). */
 const placementsFor = (device: StudentLayoutDevice) =>
     device === 'mobile' ? PLACEMENTS.filter((p) => p !== 'rail') : PLACEMENTS;
+/**
+ * Back and Home were one switch (showBackHome) before; a layout saved then
+ * still drives whichever of the two has no value of its own — the same rule
+ * the learner app applies.
+ */
+const headerItemOn = (
+    header: StudentHeaderSettings | undefined,
+    key: keyof StudentHeaderSettings
+) => {
+    const own = header?.[key];
+    if (typeof own === 'boolean') return own;
+    if (key === 'showBack' || key === 'showHome') return header?.showBackHome !== false;
+    return true;
+};
+/** Writes one header switch; Back / Home replace the legacy combined switch. */
+const withHeaderItem = (
+    header: StudentHeaderSettings | undefined,
+    key: keyof StudentHeaderSettings,
+    checked: boolean
+): StudentHeaderSettings => {
+    if (key !== 'showBack' && key !== 'showHome') return { ...header, [key]: checked };
+    const next: StudentHeaderSettings = {
+        ...header,
+        showBack: headerItemOn(header, 'showBack'),
+        showHome: headerItemOn(header, 'showHome'),
+        [key]: checked,
+    };
+    delete next.showBackHome;
+    return next;
+};
 const HEADER_KEYS: (keyof StudentHeaderSettings)[] = [
     'showLogo',
     'showPageTitle',
-    'showBackHome',
+    'showBack',
+    'showHome',
     'showAchievements',
     'showLanguage',
     'showHelp',
@@ -313,9 +344,9 @@ export function StudentLayoutCard({ value, onChange, sidebarTabs }: StudentLayou
                                     {t(`layoutBuilder.header.items.${key}`)}
                                 </span>
                                 <Switch
-                                    checked={layout.header?.[key] !== false}
+                                    checked={headerItemOn(layout.header, key)}
                                     onCheckedChange={(checked) =>
-                                        set({ header: { ...layout.header, [key]: checked } })
+                                        set({ header: withHeaderItem(layout.header, key, checked) })
                                     }
                                 />
                             </label>

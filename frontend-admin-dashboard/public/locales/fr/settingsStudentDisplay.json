@@ -297,7 +297,8 @@
             "items": {
                 "showLogo": "Logo",
                 "showPageTitle": "Titre de la page",
-                "showBackHome": "Boutons Retour et Accueil",
+                "showBack": "Bouton Retour",
+                "showHome": "Bouton Accueil",
                 "showAchievements": "Badges et points",
                 "showLanguage": "Choix de la langue",
                 "showHelp": "Aide et question",

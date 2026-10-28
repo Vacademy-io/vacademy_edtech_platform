@@ -297,7 +297,8 @@
             "items": {
                 "showLogo": "लोगो",
                 "showPageTitle": "पेज का नाम",
-                "showBackHome": "बैक और होम बटन",
+                "showBack": "बैक बटन",
+                "showHome": "होम बटन",
                 "showAchievements": "बैज और पॉइंट्स",
                 "showLanguage": "भाषा बदलें",
                 "showHelp": "मदद और सवाल पूछें",

@@ -297,7 +297,8 @@
             "items": {
                 "showLogo": "الشعار",
                 "showPageTitle": "عنوان الصفحة",
-                "showBackHome": "زرا الرجوع والرئيسية",
+                "showBack": "زر الرجوع",
+                "showHome": "زر الرئيسية",
                 "showAchievements": "الشارات والنقاط",
                 "showLanguage": "تبديل اللغة",
                 "showHelp": "المساعدة وطرح سؤال",
