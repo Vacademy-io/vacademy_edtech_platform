@@ -92,6 +92,8 @@ final class AiAgentDomain {
         out.add(agent.useCase());
         if (agent.extractionQuestions() != null) out.addAll(agent.extractionQuestions());
         if (agent.dispositions() != null) out.addAll(agent.dispositions());
+        // Uploaded documents say best what the business is, above all for a draft with no brief.
+        out.add(agent.documents());
         return out.toArray(new String[0]);
     }
 }
