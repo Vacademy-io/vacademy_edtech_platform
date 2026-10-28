@@ -68,5 +68,11 @@
         "hint": "Rewrites the prompt, opening line, questions and outcomes together. Keeps your facts unless your notes change them, and reads this agent's recent calls.",
         "running": "Regenerating…",
         "action": "Regenerate"
+    },
+    "documents": {
+        "writeAction": "Write the script from documents",
+        "rewriteAction": "Rewrite with documents",
+        "writing": "Writing…",
+        "draftHint": "Your documents are used for the facts: the business, fees, timings and the questions callers ask. Add a brief above only if you want to steer it."
     }
 }

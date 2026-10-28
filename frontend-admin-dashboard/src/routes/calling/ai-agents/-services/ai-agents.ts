@@ -10,8 +10,8 @@ import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { BASE_URL } from '@/constants/urls';
 
 /** Wire shape of an AI agent — mirrors backend AiAgentDTO. */
-export type { AiAgent } from '@/routes/settings/-components/AiAgentsCard';
-import type { AiAgent } from '@/routes/settings/-components/AiAgentsCard';
+export type { AiAgent, AiAgentKnowledgeDocument } from '@/routes/settings/-components/AiAgentsCard';
+import type { AiAgent, AiAgentKnowledgeDocument } from '@/routes/settings/-components/AiAgentsCard';
 
 export type { VoiceOption, TtsModelId, TtsModelMeta } from './tts-catalog';
 export {
@@ -109,6 +109,81 @@ export const saveAgent = async (agent: AiAgent): Promise<AiAgent> => {
     const { data } = await authenticatedAxiosInstance.post<AiAgent>(AI_AGENTS_URL, agent);
     return data;
 };
+
+/** Same limits as AiAgentService: every document rides in the prompt of every turn. */
+export const MAX_KNOWLEDGE_DOCUMENTS = 10;
+export const MAX_KNOWLEDGE_CHARS = 20_000;
+export const KNOWLEDGE_ACCEPT = '.pdf,.docx,.txt,.md,.csv';
+
+/** Text of an uploaded PDF / DOCX / TXT. Stores nothing; saving the agent does. */
+export const extractKnowledgeDocument = async (
+    instituteId: string,
+    file: File
+): Promise<AiAgentKnowledgeDocument> => {
+    const form = new FormData();
+    form.append('file', file);
+    const { data } = await authenticatedAxiosInstance.post<AiAgentKnowledgeDocument>(
+        `${AI_AGENTS_URL}/knowledge/extract`,
+        form,
+        { params: { instituteId } }
+    );
+    return data;
+};
+
+export interface AgentTestCallResult {
+    callLogId?: string;
+    status?: string;
+    dispatched?: boolean;
+    providerMessage?: string;
+    queuePosition?: number;
+    queueEtaMinutes?: number;
+}
+
+/** The saved agent calls this number now (a real, billed call). */
+export const placeAgentTestCall = async (
+    agentId: string,
+    body: { instituteId: string; phoneNumber: string; name?: string }
+): Promise<AgentTestCallResult> => {
+    const { data } = await authenticatedAxiosInstance.post<AgentTestCallResult>(
+        `${AI_AGENTS_URL}/${encodeURIComponent(agentId)}/test-call`,
+        body
+    );
+    return data;
+};
+
+/** The server's message for a failed request (VacademyException → `ex`). */
+export const agentApiError = (err: unknown, fallback: string): string => {
+    const data = (err as { response?: { data?: { ex?: string; message?: string } } })?.response
+        ?.data;
+    return data?.ex || data?.message || fallback;
+};
+
+/** Starting structure for a new agent's system prompt. */
+export const systemPromptTemplate = (agentName: string): string =>
+    `## Who you are
+You are ${agentName.trim() || '<agent name>'}, calling on behalf of <business name>. Speak warmly and politely. Keep each reply to one or two short sentences and ask one question at a time.
+
+## Greeting
+Greet the person by name, say who you are and why you are calling, and check that it is a good time to talk.
+
+## About the business
+<What you offer, who it is for, where you are, timings, fees or price range, and what makes you different.>
+
+## Goal of the call
+<What a good call ends with, e.g. book a counselling session, or find out the student's class and target exam.>
+
+## Frequently asked questions
+Q: <What are the fees?>
+A: <answer>
+Q: <Where are you located?>
+A: <answer>
+Q: <What are the timings?>
+A: <answer>
+
+## Rules
+- If you do not know an answer, say the team will confirm it. Never make up fees, dates or offers.
+- If the person is busy, ask when to call back.
+- If they are not interested, thank them and end the call politely.`;
 
 export const deleteAgent = async (agentId: string, instituteId: string): Promise<void> => {
     await authenticatedAxiosInstance.delete(`${AI_AGENTS_URL}/${encodeURIComponent(agentId)}`, {

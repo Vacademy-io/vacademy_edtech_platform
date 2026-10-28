@@ -130,8 +130,39 @@ public class AiAgentAssistService {
 
     /** The agent the admin is editing — sent with every operation (unsaved edits included). */
     public record AgentContext(String name, String language, String openingLine, String useCase,
-                               List<String> extractionQuestions, List<String> dispositions) {
+                               List<String> extractionQuestions, List<String> dispositions,
+                               String documents) {
+        /** Without reference documents (V615): every caller before them. */
+        public AgentContext(String name, String language, String openingLine, String useCase,
+                            List<String> extractionQuestions, List<String> dispositions) {
+            this(name, language, openingLine, useCase, extractionQuestions, dispositions, null);
+        }
+
+        boolean hasDocuments() {
+            return documents != null && !documents.isBlank();
+        }
     }
+
+    /**
+     * Added to the task when the admin uploaded reference documents. The documents also ride
+     * with the agent on every call (VoiceBotInternalController), so the script should carry
+     * the essentials in spoken form and leave the detail to them, not copy them.
+     */
+    private static final String DOCUMENTS_RULE = """
+
+            REFERENCE DOCUMENTS: the admin uploaded the business's own material (below, after \
+            the agent facts). Build the script from it:
+            1. An "About the business" part of 3-6 short spoken lines: what is offered, for whom, \
+            where, and the facts a caller needs most.
+            2. An FAQ part with the 5-10 questions callers are most likely to ask, each with a \
+            one- or two-sentence spoken answer taken from the documents.
+            3. Questions to find out and outcomes that fit what the documents say is sold.
+            The full documents are attached to the agent on every call, so do NOT copy them into \
+            the script: keep the script tight and tell the agent to check its reference documents \
+            for anything else. Every fact you write (fees, dates, programs, timings, places, offers, \
+            policies) must come from the documents or the admin's own text. If something the \
+            script needs is missing, say so in change_summary instead of inventing it.
+            """;
 
     // ── What we learned on live calls. Shared by every operation. ─────────────
     private static final String VOICE_RULEBOOK = """
@@ -258,6 +289,12 @@ public class AiAgentAssistService {
     // ─────────────────────────────────────────────────────────────────────────
 
     public Map<String, Object> draft(String instituteId, String brief, AgentContext agent) {
+        // With documents the brief is optional: they say what the business is.
+        if ((brief == null || brief.isBlank()) && agent.hasDocuments()) {
+            brief = "(No brief: write the agent from the reference documents. It calls leads who "
+                    + "enquired, answers their questions and moves them to the next step the "
+                    + "documents describe.)";
+        }
         require(brief, "brief");
         String system = expert("WRITE a complete, production-quality system prompt and opening line for "
                 + "the agent from the admin's plain-language brief, then score your output against the rubric.",
@@ -450,7 +487,7 @@ public class AiAgentAssistService {
     private static String expert(String task, AgentContext agent, boolean general) {
         return "You are an expert architect of real-time AI PHONE agents for "
                 + (general ? "businesses in India. " + GENERAL_AGENT_NOTE : "education businesses in India. ")
-                + task + "\n\n"
+                + task + (agent.hasDocuments() ? DOCUMENTS_RULE : "") + "\n\n"
                 + VOICE_RULEBOOK.replace("{script_rule}", scriptRule(agent.language()))
                 + "\n" + RUBRIC;
     }
@@ -464,6 +501,10 @@ public class AiAgentAssistService {
           .append(notBlank(agent.openingLine()) ? agent.openingLine() : "(none yet — write one)");
         sb.append("\nCurrent questions to find out: ").append(listOrNone(agent.extractionQuestions()));
         sb.append("\nCurrent call outcomes: ").append(listOrNone(agent.dispositions()));
+        if (agent.hasDocuments()) {
+            sb.append("\n\nREFERENCE DOCUMENTS (the business's own material; the only source for "
+                    + "business facts):\n").append(agent.documents());
+        }
         return sb.toString();
     }
 

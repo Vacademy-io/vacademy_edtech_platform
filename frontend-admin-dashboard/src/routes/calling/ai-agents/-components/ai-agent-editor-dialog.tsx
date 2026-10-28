@@ -9,6 +9,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
     PaperPlaneTilt,
+    Phone,
     Play,
     Scroll,
     SpinnerGap,
@@ -38,6 +39,8 @@ import {
     type AgentAssistUpdate,
 } from '@/routes/settings/-components/AiAgentPromptAssistant';
 import { SendRulesEditor } from './send-rules-editor';
+import { AgentKnowledgeDocuments } from './agent-knowledge-documents';
+import { AgentTestCall } from './agent-test-call';
 import {
     DEFAULT_SAMPLE_TEXT,
     EXPRESSIVENESS_OPTIONS,
@@ -52,6 +55,8 @@ import {
     fetchVoices,
     saveAgent,
     voicePreviewUrl,
+    MAX_KNOWLEDGE_CHARS,
+    systemPromptTemplate,
     type AiAgent,
 } from '../-services/ai-agents';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
@@ -63,7 +68,14 @@ const EDITOR_SECTIONS: { key: string; label: string; icon: Icon }[] = [
     { key: 'script', label: 'Script & prompt', icon: Scroll },
     { key: 'goals', label: 'Goals & outcomes', icon: Target },
     { key: 'actions', label: 'After the call', icon: PaperPlaneTilt },
+    { key: 'test', label: 'Test call', icon: Phone },
 ];
+const SYSTEM_PROMPT_PLACEHOLDER = `Who the agent is, its goal, tone and rules. A good prompt covers:
+• the agent's name and who it calls for
+• how it greets the person
+• a short brief about the business
+• common questions callers ask, with the answers
+• what to do when it does not know`;
 const sectionId = (key: string) => `ai-agent-editor-${key}`;
 const DIRECTION_SUMMARY: Record<string, string> = {
     OUTBOUND: 'Outbound',
@@ -187,7 +199,28 @@ export function AiAgentEditorDialog({
 
     const patch = (p: Partial<AiAgent>) => setDraft((prev) => (prev ? { ...prev, ...p } : prev));
 
+    /** Save without closing, for the test call: it must dial what the admin sees. */
+    const saveForTest = async (): Promise<AiAgent> => {
+        if (!draft) throw new Error('Nothing to save');
+        const saved = await saveAgent(draft);
+        setDraft((prev) => (prev ? { ...prev, ...saved } : saved));
+        queryClient.invalidateQueries({ queryKey: ['ai-agents', instituteId] });
+        queryClient.invalidateQueries({ queryKey: ['ai-calling-campaign-options', instituteId] });
+        return saved;
+    };
+
     if (!draft) return null;
+
+    const knowledgeDocuments = draft.knowledgeDocuments ?? [];
+    const knowledgeChars = knowledgeDocuments.reduce((n, d) => n + d.text.length, 0);
+    const knowledgeOver = knowledgeChars > MAX_KNOWLEDGE_CHARS;
+    const testBlockedReason = !draft.name.trim()
+        ? 'Name the agent first.'
+        : draft.enabled === false
+          ? 'Turn the agent on to test it.'
+          : knowledgeOver
+            ? 'The documents are over the limit. Shorten them first.'
+            : null;
 
     // Read-only recap for the side panel — plain values from the draft, no requests.
     const selectedVoice = voices.find((v) => v.id === draft.voice);
@@ -205,6 +238,7 @@ export function AiAgentEditorDialog({
             value: bookingPages.find((bp) => bp.id === draft.bookingPageId)?.title || '—',
         },
         { label: 'Send rules', value: String((draft.sendRules ?? []).length) },
+        { label: 'Documents', value: String(knowledgeDocuments.length) },
     ];
 
     return (
@@ -225,7 +259,7 @@ export function AiAgentEditorDialog({
                     <MyButton
                         buttonType="primary"
                         scale="medium"
-                        disable={saveMutation.isPending || !draft.name.trim()}
+                        disable={saveMutation.isPending || !draft.name.trim() || knowledgeOver}
                         onClick={() => saveMutation.mutate(draft)}
                     >
                         {saveMutation.isPending ? 'Saving…' : 'Save agent'}
@@ -511,13 +545,31 @@ export function AiAgentEditorDialog({
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <Label>System prompt</Label>
+                            <div className="flex items-center justify-between gap-2">
+                                <Label>System prompt</Label>
+                                {!draft.systemPrompt?.trim() && (
+                                    <MyButton
+                                        type="button"
+                                        buttonType="text"
+                                        scale="small"
+                                        onClick={() =>
+                                            patch({ systemPrompt: systemPromptTemplate(draft.name) })
+                                        }
+                                    >
+                                        Start from a template
+                                    </MyButton>
+                                )}
+                            </div>
                             <Textarea
-                                rows={6}
+                                rows={draft.systemPrompt?.trim() ? 12 : 7}
                                 value={draft.systemPrompt ?? ''}
-                                placeholder="Who the agent is, its goal, tone, and rules…"
+                                placeholder={SYSTEM_PROMPT_PLACEHOLDER}
                                 onChange={(e) => patch({ systemPrompt: e.target.value })}
                             />
+                            <p className="text-caption text-neutral-500">
+                                Fill in the parts in &lt;angle brackets&gt;. Or upload your
+                                brochures and fee sheets below and let AI write it.
+                            </p>
                         </div>
                         <AiAgentPromptAssistant
                             instituteId={instituteId}
@@ -529,8 +581,19 @@ export function AiAgentEditorDialog({
                                 openingLine: draft.openingLine,
                                 extractionQuestions: draft.extractionQuestions,
                                 dispositions: draft.dispositions,
+                                documents: knowledgeDocuments.map((d) => ({
+                                    name: d.name,
+                                    text: d.text,
+                                })),
                             }}
                             onApply={(u: AgentAssistUpdate) => patch(u)}
+                            documentsSlot={
+                                <AgentKnowledgeDocuments
+                                    instituteId={instituteId}
+                                    documents={knowledgeDocuments}
+                                    onChange={(docs) => patch({ knowledgeDocuments: docs })}
+                                />
+                            }
                         />
                     </EditorSection>
                     <EditorSection
@@ -622,6 +685,18 @@ export function AiAgentEditorDialog({
                             extractionQuestions={draft.extractionQuestions ?? []}
                             bookingPages={bookingPages}
                             onChange={(sendRules) => patch({ sendRules })}
+                        />
+                    </EditorSection>
+                    <EditorSection
+                        id={sectionId('test')}
+                        icon={Phone}
+                        title="Test call"
+                        hint="Hear the agent on your own phone, without adding a lead to a list."
+                    >
+                        <AgentTestCall
+                            instituteId={instituteId}
+                            disabledReason={testBlockedReason}
+                            saveForTest={saveForTest}
                         />
                     </EditorSection>
                 </div>

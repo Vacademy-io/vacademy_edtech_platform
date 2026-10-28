@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import i18next from 'i18next';
@@ -36,7 +36,15 @@ interface AiAgentPromptAssistantProps {
     fields: AssistAgentFields;
     /** Apply a rewrite: prompt + opening line + questions + outcomes in one go. */
     onApply: (update: AgentAssistUpdate) => void;
+    /** The editor's document upload, shown above the draft so both feed the script. */
+    documentsSlot?: ReactNode;
 }
+
+/** The regenerate notes for "Rewrite with documents". */
+const FROM_DOCUMENTS_NOTES =
+    'Rebuild the script using the uploaded reference documents: a short About the business part, ' +
+    'the questions callers most often ask with short answers from the documents, and questions ' +
+    'to find out that fit what is sold. Keep my existing flow, tone and rules.';
 
 const scoreTone = (score: number) =>
     score >= 75 ? 'text-success-600' : score >= 50 ? 'text-warning-600' : 'text-danger-600';
@@ -113,6 +121,7 @@ export function AiAgentPromptAssistant({
     prompt,
     fields,
     onApply,
+    documentsSlot,
 }: AiAgentPromptAssistantProps) {
     const { t } = useTranslation('settingsAiAgentPromptAssistant');
     const [analysis, setAnalysis] = useState<AssistAnalysis | null>(null);
@@ -150,6 +159,12 @@ export function AiAgentPromptAssistant({
 
     const suggestions = analysis?.suggestions ?? [];
     const hasPrompt = prompt.trim().length > 0;
+    const hasDocuments = (fields.documents ?? []).some((d) => d.text.trim().length > 0);
+
+    const runFromDocuments = () =>
+        hasPrompt
+            ? job.mutate({ op: 'regenerate', extra: { notes: FROM_DOCUMENTS_NOTES } })
+            : job.mutate({ op: 'draft', extra: { brief } });
 
     const applyProposal = () => {
         if (!proposal) return;
@@ -181,6 +196,12 @@ export function AiAgentPromptAssistant({
                     </span>
                 )}
             </div>
+
+            {documentsSlot && (
+                <div className="rounded-md border border-neutral-200 bg-white p-3">
+                    {documentsSlot}
+                </div>
+            )}
 
             {busy && (
                 <p className="text-caption text-neutral-500">
@@ -306,25 +327,48 @@ export function AiAgentPromptAssistant({
                         <MyButton
                             buttonType="primary"
                             scale="small"
-                            disable={busy || brief.trim().length < 10}
+                            disable={busy || (brief.trim().length < 10 && !hasDocuments)}
                             onClick={() => job.mutate({ op: 'draft', extra: { brief } })}
                         >
                             {running === 'draft'
                                 ? t('brief.drafting')
-                                : `${t('brief.action')} ${cost}`}
+                                : `${
+                                      hasDocuments && !brief.trim()
+                                          ? t('documents.writeAction')
+                                          : t('brief.action')
+                                  } ${cost}`}
                         </MyButton>
+                        {hasDocuments && (
+                            <p className="text-caption text-neutral-500">
+                                {t('documents.draftHint')}
+                            </p>
+                        )}
                     </div>
                 ) : (
-                    <MyButton
-                        buttonType="secondary"
-                        scale="small"
-                        disable={busy}
-                        onClick={() => job.mutate({ op: 'analyze', extra: {} })}
-                    >
-                        {running === 'analyze'
-                            ? t('review.reviewing')
-                            : `${t('review.action')} ${cost}`}
-                    </MyButton>
+                    <div className="flex flex-wrap gap-2">
+                        <MyButton
+                            buttonType="secondary"
+                            scale="small"
+                            disable={busy}
+                            onClick={() => job.mutate({ op: 'analyze', extra: {} })}
+                        >
+                            {running === 'analyze'
+                                ? t('review.reviewing')
+                                : `${t('review.action')} ${cost}`}
+                        </MyButton>
+                        {hasDocuments && (
+                            <MyButton
+                                buttonType="secondary"
+                                scale="small"
+                                disable={busy}
+                                onClick={runFromDocuments}
+                            >
+                                {running === 'regenerate'
+                                    ? t('documents.writing')
+                                    : `${t('documents.rewriteAction')} ${cost}`}
+                            </MyButton>
+                        )}
+                    </div>
                 ))}
 
             {/* Score + dimensions */}

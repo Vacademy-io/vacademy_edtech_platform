@@ -51,4 +51,9 @@ public class AiAgentDTO {
      * older client that does not know about rules cannot wipe them.
      */
     private List<AiCallActionRule> sendRules;
+    /**
+     * Reference documents appended to the prompt at call time (V615). Absent on update =
+     * keep what is stored, like sendRules; an explicit empty list removes them all.
+     */
+    private List<AiAgentKnowledgeDocument> knowledgeDocuments;
 }
