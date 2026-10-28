@@ -20,6 +20,11 @@ import {
     useFollowUpFields,
     useFollowUpNotesRequired,
 } from '@/components/shared/leads/follow-up-fields';
+import {
+    LeadAttributeFields,
+    invalidateLeadAttributeCaches,
+    useLeadAttributeFields,
+} from '@/components/shared/leads/lead-attribute-fields';
 import { CallRecordingInput } from '@/components/shared/lead-calls/CallRecordingInput';
 import {
     type CallActivity,
@@ -101,6 +106,8 @@ export const AddLeadNoteDialog = ({
 
     const isFollowUp = actionType === 'FOLLOW_UP';
     const followUpFields = useFollowUpFields();
+    // The lead's own status + tier (institute switch, off by default) — on every tab.
+    const leadAttributes = useLeadAttributeFields({ userId, audienceResponseId });
     const notesRequired = useFollowUpNotesRequired();
     const { keepPopupsOpen } = useFollowUpFeatures();
     // With the institute's "close pop-ups only with X" switch on, a stray click
@@ -129,10 +136,14 @@ export const AddLeadNoteDialog = ({
         setCallActivity(null);
         setScheduleTime('');
         followUpFields.reset();
+        leadAttributes.reset();
     };
 
     const createNoteMutation = useMutation({
         mutationFn: async () => {
+            // Status/tier first: if one fails nothing else is saved, and a retry
+            // after a failed note doesn't post them again.
+            if (await leadAttributes.apply()) invalidateLeadAttributeCaches(queryClient, userId);
             const label = NOTE_ACTION_TYPES.find((t) => t.value === actionType)?.label ?? 'Note';
             const response = await authenticatedAxiosInstance.post(CREATE_TIMELINE_EVENT, {
                 type: 'STUDENT',
@@ -167,13 +178,15 @@ export const AddLeadNoteDialog = ({
     });
 
     const createFollowUpMutation = useMutation({
-        mutationFn: () =>
-            authenticatedAxiosInstance.post(CREATE_LEAD_FOLLOWUP, {
+        mutationFn: async () => {
+            if (await leadAttributes.apply()) invalidateLeadAttributeCaches(queryClient, userId);
+            return authenticatedAxiosInstance.post(CREATE_LEAD_FOLLOWUP, {
                 audience_response_id: audienceResponseId,
                 schedule_time: scheduleTime ? new Date(scheduleTime).toISOString() : null,
                 content: noteText.trim() || null,
                 ...followUpFields.payload,
-            }),
+            });
+        },
         onSuccess: () => {
             toast.success('Follow-up scheduled');
             resetState();
@@ -253,6 +266,12 @@ export const AddLeadNoteDialog = ({
                             </button>
                         ))}
                     </div>
+
+                    {/* The lead's own status + tier — on every tab, since a note or a
+                        call log moves the lead just as often as a follow-up does. */}
+                    {leadAttributes.visible && (
+                        <LeadAttributeFields fields={leadAttributes} portal={false} />
+                    )}
 
                     {/* Schedule time — Follow Up tab only; required to create the
                         lead_followup row that powers the "Follow up at" column. */}
