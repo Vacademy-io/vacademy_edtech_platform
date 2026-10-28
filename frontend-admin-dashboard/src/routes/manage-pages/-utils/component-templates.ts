@@ -377,6 +377,22 @@ export const buildComponentTemplates = (t: TFunction): Record<string, Omit<Compo
         },
     },
 
+    scormViewer: {
+        type: 'scormViewer',
+        enabled: true,
+        props: {
+            heading: t('scormViewer.heading'),
+            subheading: t('scormViewer.subheading'),
+            // Player wrapper URL admin-core returns for an uploaded SCORM zip —
+            // set by ScormUploadField.
+            launchUrl: '',
+            title: '',
+            height: '75vh',
+            mobileHeight: '70vh',
+            showFullScreen: true,
+        },
+    },
+
     ctaBanner: {
         type: 'ctaBanner',
         enabled: true,

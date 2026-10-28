@@ -26,6 +26,7 @@ Actions
     link_lead_form    point a form / popup button at a lead campaign
     set_seo           meta title / description of a page
     import_image      bring a public https image into the media library
+    import_scorm      bring a SCORM zip in (unpacked by admin-core) → launch_url for a scormViewer block
     discard_draft     drop the draft, back to what is published
     request_publish   is the draft ready? publish checks + data audit + review + diff vs live +
                       stale-draft verdict + editor link — READ-ONLY, it never publishes (with the
@@ -80,7 +81,7 @@ WEBSITE_EDIT_GROUP_KEY = "website_builder_edits"
 
 WEBSITE_EDIT_ACTIONS = (
     "create_page", "create_site", "add_html_page", "update_page", "set_layout", "add_section", "set_theme",
-    "set_site_settings", "set_courses", "link_lead_form", "set_seo", "import_image", "discard_draft",
+    "set_site_settings", "set_courses", "link_lead_form", "set_seo", "import_image", "import_scorm", "discard_draft",
     "set_catalog_settings", "set_translations", "bind_data", "request_publish",
 )
 
@@ -354,6 +355,11 @@ WEBSITE_EDIT_SCHEMA: Dict[str, Any] = {
             "the copy already hosted. Figma MCP asset links (https://www.figma.com/api/mcp/asset/…) expire in "
             "7 days — import them in the same session. SVGs are sanitised. Images on pages must come from "
             "list_media or import_image — never invent URLs.\n"
+            "- import_scorm (url | data_base64 + file_name): a SCORM package (.zip with imsmanifest.xml — e.g. a "
+            "flip-book preview) is unpacked and hosted the way a course's SCORM slide is; returns launch_url for a "
+            "scormViewer block (props.launchUrl), which plays it on the page without login. A public https link "
+            "takes up to 150 MB, base64 up to 25 MB. Put only a SAMPLE package on a public page — never the full "
+            "paid one from inside a course.\n"
             "- discard_draft (tag_name): throw the draft away — the undo for everything above.\n"
             "- request_publish (tag_name, library_id?): the hand-over check when you think the draft is done. "
             "Runs the pre-publish checks, the data audit and the review (fidelity mode for pages from a design) "
@@ -391,10 +397,10 @@ WEBSITE_EDIT_SCHEMA: Dict[str, Any] = {
                 "section_type": {"type": "string", "description": "Block type, e.g. testimonialSection, faqSection, courseShowcase, leadForm."},
                 "after_section_id": {"type": "string"},
                 "props": {"type": "object", "description": "add_section: prop overrides for the new block."},
-                "url": {"type": "string", "description": "import_image: public https image URL (incl. Figma MCP asset links)."},
+                "url": {"type": "string", "description": "import_image: public https image URL (incl. Figma MCP asset links). import_scorm: public https link to the SCORM .zip."},
                 "urls": {"type": "array", "items": {"type": "string"}, "description": "import_image: several public https image URLs at once (max 16)."},
-                "data_base64": {"type": "string", "description": "import_image: the image file itself, base64 or a data: URL (max 10 MB) — for local files / design exports."},
-                "file_name": {"type": "string", "description": "import_image with data_base64: the file's name (for the media library)."},
+                "data_base64": {"type": "string", "description": "import_image: the image file itself, base64 or a data: URL (max 10 MB) — for local files / design exports. import_scorm: the SCORM .zip itself (max 25 MB)."},
+                "file_name": {"type": "string", "description": "import_image / import_scorm with data_base64: the file's name."},
                 "kind": {"type": "string", "enum": list(IMAGE_KINDS)},
                 "caption": {"type": "string"},
                 "source": {"type": "string", "enum": ["all", "showcase", "product_page"]},
@@ -1122,7 +1128,7 @@ def _is_institute_asset(url: Any) -> bool:
 # page_builder.is_image_key / is_image_list_key, so the allow-list can never
 # drift from the stripper again (it did: `imageUrl` was stripped on every
 # MCP-authored stream icon because only the stripper knew the key).
-_EXTRA_IMAGE_PROP_KEYS = {"url"}
+_EXTRA_IMAGE_PROP_KEYS = {"url", "launchurl"}
 
 
 def _asset_urls_in(node: Any, out: set) -> set:
@@ -1958,6 +1964,60 @@ async def _import_one_image(args: Dict[str, Any], ctx: ToolContext) -> Dict[str,
         out["deduplicated"] = True
     if source and _is_figma_asset(source):
         out["figma_asset"] = True
+    return {k: v for k, v in out.items() if v is not None}
+
+
+async def _action_import_scorm(args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
+    """A SCORM zip → admin-core's player wrapper URL, for a scormViewer block."""
+    from ..config import get_settings
+    from .assistant_tool_registry import _jwt_headers
+    from .safe_http import SafeFetchError, safe_fetch
+    from .website_scorm_import import (
+        MAX_SOURCE_BYTES, ScormImportError, check_scorm_zip, decode_base64_zip, upload_to_admin_core,
+    )
+
+    url = str(args.get("url") or "").strip()
+    if args.get("data_base64") and url:
+        return _err("bad_request", message="Send either url or data_base64 (with file_name), not both.")
+    try:
+        if args.get("data_base64"):
+            raw, file_name, source = decode_base64_zip(str(args["data_base64"])), args.get("file_name"), None
+        else:
+            if err := _require(args, "import_scorm", "url"):
+                return err
+            if not url.lower().startswith("https://"):
+                return _err("bad_request", message="Only https links can be imported.")
+            try:
+                fetched = await safe_fetch(url, max_bytes=MAX_SOURCE_BYTES, headers={"User-Agent": "VacademyScormImport/1.0"})
+            except SafeFetchError as exc:
+                if exc.code in ("blocked_host", "blocked_address", "bad_url"):
+                    return _err("bad_request", message="That address is not a public website." if exc.code != "bad_url" else exc.message)
+                if exc.code == "too_large":
+                    return _err("too_large", message=f"Packages over {MAX_SOURCE_BYTES // (1024 * 1024)} MB cannot be imported.")
+                logger.warning("import_scorm fetch failed for %s: %s", url[:200], exc.code)
+                return _err("fetch_failed", message="The package could not be downloaded.")
+            if fetched.status_code != 200 or not fetched.content:
+                return _err("fetch_failed", message=f"The package could not be downloaded (HTTP {fetched.status_code}).")
+            from urllib.parse import unquote, urlsplit
+            raw, source = fetched.content, url
+            file_name = args.get("file_name") or unquote(urlsplit(url).path.rsplit("/", 1)[-1])
+        package = await asyncio.to_thread(check_scorm_zip, raw, file_name)
+        del raw
+        body = await upload_to_admin_core(package, get_settings().admin_core_service_base_url, _jwt_headers(ctx))
+    except ScormImportError as exc:
+        return _err(exc.code, message=exc.message)
+
+    out: Dict[str, Any] = {
+        "launch_url": body["launch_url"],
+        "scorm_version": body.get("scorm_version"),
+        "launch_path": body.get("launch_path"),
+        "source": source or f"upload:{package.file_name}",
+        "files": package.entries,
+        "compatibility_fixes": body.get("compatibility_fixes") or None,
+        "compatibility_warnings": body.get("compatibility_warnings") or None,
+        "next": "Place it with a scormViewer block: props {heading, subheading, launchUrl: <launch_url>, title, "
+                "height, mobileHeight} via update_page (insert, or update an existing section).",
+    }
     return {k: v for k, v in out.items() if v is not None}
 
 
@@ -3317,6 +3377,7 @@ _ACTIONS = {
     "link_lead_form": _action_link_lead_form,
     "set_seo": _action_set_seo,
     "import_image": _action_import_image,
+    "import_scorm": _action_import_scorm,
     "discard_draft": _action_discard_draft,
     "set_catalog_settings": _action_set_catalog_settings,
     "set_translations": _action_set_translations,

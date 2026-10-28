@@ -230,6 +230,13 @@
       "loadFailed": "تعذّر عرض المستند هنا.",
       "openInNewTab": "فتح في علامة تبويب جديدة",
       "noDocument": "لم يتم إعداد أي مستند بعد"
+    },
+    "scormViewer": {
+      "defaultTitle": "معاينة تفاعلية",
+      "fullScreen": "ملء الشاشة",
+      "openInNewTab": "فتح في علامة تبويب جديدة",
+      "loading": "جارٍ تحميل المعاينة…",
+      "noPackage": "لم تتم إضافة حزمة SCORM بعد"
     }
   },
   "whatsAppFloatingButton": {

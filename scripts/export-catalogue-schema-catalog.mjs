@@ -121,6 +121,9 @@ const USAGE = {
         'of sectionHeading+featureGrid whenever the job is to DOCUMENT offerings rather than sell them: one ' +
         'block per offering, keeping every real name — never merge or summarise a list of offerings into a few ' +
         'generic buckets. It has no price/image/enrol fields by design, so it is safe on informational pages.',
+    scormViewer:
+        'A flip-book / comic preview the admin sends as a SCORM zip. Only a SAMPLE package: the full paid one ' +
+        'stays inside the course.',
     jobOpenings:
         'For a CAREERS page (route "careers"): a card per job, each job on its own page /<page>/<slug> with an ' +
         'external Apply link. Only jobs the admin gave; never invent roles, pay or form links.',
@@ -184,7 +187,8 @@ const CAPABILITIES = {
     mediaShowcase:
         'layout: grid | carousel | slider. media[]: {type: image|video, url, caption, heading, backgroundImage}. ' +
         'Use it for a swipeable row of photos or videos; it carries no per-item button, so for cards that need ' +
-        'a CTA use featureGrid with per-feature image + link.',
+        'a CTA use featureGrid with per-feature image + link. Items sit in a 16:9 frame, so portrait book pages ' +
+        'are tiny on phones: use scormViewer for a book preview.',
     marquee:
         'A continuously scrolling strip of short claims. items[]: {icon (emoji is correct here), text, link, image, label}. ' +
         'link (optional) makes the item clickable: a page slug, "#anchorId" of a section on the page, or a full URL. ' +
@@ -194,6 +198,9 @@ const CAPABILITIES = {
         'variant: boxed | split. items[]: {title, content (HTML), icon, meta, slot}. The FAQ and ' +
         '"what you get" workhorse.',
     imageGallery: 'columns: 2|3|4. gap. showCaptions. images[]: {src, alt, caption}.',
+    scormViewer:
+        'launchUrl (ONLY from website_edit(import_scorm)), title (frame bar), height, mobileHeight, ' +
+        'showFullScreen. Plays a SCORM package on the page without login, like a SCORM slide in a course.',
     ctaBanner:
         'layout: centered | split. {heading, subheading, button {enabled,text,action,target,style: white|primary|outline}}. ' +
         'The renderer reads exactly these keys — headerText/buttonText are ignored and produce an empty band. ' +
@@ -246,7 +253,8 @@ const DATA_BOUND = {
     leadForm:
         "Embeds an Audience campaign's LIVE registration form (fields defined in the CRM's Audience " +
         "Manager) and submits leads into that campaign. Set ONLY title/subtitle/submitLabel/" +
-        "successMessage/layout/align — audienceId must be chosen by the admin from their existing " +
+        "successMessage/layout/align, columns 1|2, choiceStyle dropdown|chips (pill buttons for a short " +
+        "choice list) and successDisplay inline|popup — audienceId must be chosen by the admin from their existing " +
         "campaigns, so leave it as an empty string and NEVER invent one. Use it for event " +
         "registrations, demo bookings and enquiry sections; contactForm remains fine for a simple " +
         "authored name/email/message form.",

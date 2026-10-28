@@ -941,6 +941,32 @@ const VideoPreview: React.FC<P> = ({ props }) => {
  * loads pdf.js — a static page frame with the file name is enough to place
  * and style the section; the real reader shows in the live preview iframe.
  */
+/** Stand-in frame; the package itself plays in the live preview iframe. */
+const ScormViewerPreview: React.FC<P> = ({ props }) => {
+    const { t } = useTranslation('managePagesComponentPreviews');
+    const hasPackage = typeof props.launchUrl === 'string' && props.launchUrl.trim() !== '';
+    return (
+        <section className="py-10 px-8" style={{ backgroundColor: props.backgroundColor || undefined }}>{/* design-lint-ignore: author-set section colour */}
+            {props.heading && (
+                <h2 className="catalogue-h2 text-center text-catalogue-text-primary" style={{ color: props.textColor || undefined }}>{/* design-lint-ignore: author-set text colour */}
+                    {props.heading}
+                </h2>
+            )}
+            {props.subheading && <p className="mt-2 text-center text-catalogue-text-secondary">{props.subheading}</p>}
+            <div className="mt-6 flex h-72 flex-col overflow-hidden rounded-xl border border-catalogue-border bg-catalogue-bg-elevated shadow-lg">
+                <div className="flex items-center gap-2 border-b border-catalogue-border px-3 py-1.5 text-xs text-catalogue-text-primary">
+                    <span className="rounded bg-primary-50 px-1 font-bold text-primary-500">SCORM</span>
+                    <span className="min-w-0 flex-1 truncate">{props.title || props.heading || t('scormViewer.title')}</span>
+                    {props.showFullScreen !== false && <span className="text-catalogue-text-muted">⛶</span>}
+                </div>
+                <div className="flex flex-1 items-center justify-center bg-catalogue-bg-muted p-4 text-sm text-catalogue-text-muted">
+                    {hasPackage ? t('scormViewer.playsInPreview') : t('scormViewer.noPackage')}
+                </div>
+            </div>
+        </section>
+    );
+};
+
 const DocumentViewerPreview: React.FC<P> = ({ props }) => {
     const { t } = useTranslation('managePagesComponentPreviews');
     const rawName = String(props.documentUrl || '').split('?')[0]?.split('/').pop() || '';
@@ -1336,6 +1362,8 @@ const ComponentPreviewSwitch: React.FC<{ component: { type: string; props: any }
             return <VideoPreview props={props} />;
         case 'documentViewer':
             return <DocumentViewerPreview props={props} />;
+        case 'scormViewer':
+            return <ScormViewerPreview props={props} />;
         case 'ctaBanner':
             return <CtaBannerPreview props={props} />;
         case 'pricingTable':

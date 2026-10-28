@@ -252,6 +252,9 @@
     }
   },
   "options": {
+    "dropdown": "ड्रॉपडाउन",
+    "chips": "चिप्स",
+    "popup": "पॉपअप",
     "categoryTiles": "कैटेगरी टाइल",
     "default": "डिफ़ॉल्ट",
     "ocean": "ओशन",
@@ -1055,6 +1058,9 @@
     "sendTestLead": "टेस्ट लीड भेजें"
   },
   "leadForm": {
+    "columns": "कॉलम",
+    "choiceStyle": "विकल्प ऐसे दिखें",
+    "successDisplay": "धन्यवाद संदेश",
     "hint": "किसी कैंपेन का रजिस्ट्रेशन फॉर्म सीधे पेज पर दिखाता है। फ़ील्ड्स, ऑप्शन्स और अनिवार्य फ़्लैग्स Audience Manager में कैंपेन पर कॉन्फ़िगर होते हैं; सबमिशन उस कैंपेन में dedup, स्कोरिंग और काउंसलर असाइनमेंट के साथ आते हैं।",
     "campaignLabel": "कैंपेन (फॉर्म + डेस्टिनेशन)",
     "titlePlaceholder": "अपनी रुचि रजिस्टर करें",
@@ -1357,6 +1363,24 @@
     "uploadPdf": "PDF अपलोड करें",
     "clear": "हटाएँ",
     "openFile": "खोलें"
+  },
+  "scormViewer": {
+    "heading": "SCORM पैकेज",
+    "package": "SCORM पैकेज (.zip)",
+    "uploadZip": "SCORM zip अपलोड करें",
+    "uploading": "अपलोड और अनपैक हो रहा है…",
+    "clear": "हटाएँ",
+    "onlyZip": "SCORM पैकेज .zip फ़ाइल के रूप में अपलोड करें।",
+    "tooLarge": "zip {{max}} MB से बड़ी है।",
+    "uploadFailed": "पैकेज अपलोड नहीं हो सका। जाँचें कि यह imsmanifest.xml वाला SCORM zip है।",
+    "uploadHelp": "कोर्स की SCORM स्लाइड की तरह पेज पर बिना लॉगिन चलता है। यहाँ कुछ ट्रैक नहीं होता।",
+    "packageReady": "पैकेज अपलोड हो गया",
+    "openPackage": "खोलें",
+    "barTitle": "फ़्रेम का शीर्षक",
+    "barTitlePlaceholder": "जैसे: प्रीव्यू – शुरुआती पेज",
+    "frameHeight": "फ़्रेम की ऊँचाई (डेस्कटॉप)",
+    "mobileHeight": "फ़्रेम की ऊँचाई (फ़ोन)",
+    "showFullScreen": "फ़ुल-स्क्रीन बटन"
   },
   "blog": {
     "heading": "ब्लॉग सेटिंग्स",

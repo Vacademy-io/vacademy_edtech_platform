@@ -243,7 +243,7 @@
           "roundedEdges": true
         }
       },
-      "capabilities": "layout: grid | carousel | slider. media[]: {type: image|video, url, caption, heading, backgroundImage}. Use it for a swipeable row of photos or videos; it carries no per-item button, so for cards that need a CTA use featureGrid with per-feature image + link."
+      "capabilities": "layout: grid | carousel | slider. media[]: {type: image|video, url, caption, heading, backgroundImage}. Use it for a swipeable row of photos or videos; it carries no per-item button, so for cards that need a CTA use featureGrid with per-feature image + link. Items sit in a 16:9 frame, so portrait book pages are tiny on phones: use scormViewer for a book preview."
     },
     {
       "type": "courseShowcase",
@@ -446,6 +446,21 @@
       }
     },
     {
+      "type": "scormViewer",
+      "templateKey": "scormViewer",
+      "exampleProps": {
+        "heading": "Take a look inside",
+        "subheading": "Turn the pages of a short preview.",
+        "launchUrl": "",
+        "title": "",
+        "height": "75vh",
+        "mobileHeight": "70vh",
+        "showFullScreen": true
+      },
+      "capabilities": "launchUrl (ONLY from website_edit(import_scorm)), title (frame bar), height, mobileHeight, showFullScreen. Plays a SCORM package on the page without login, like a SCORM slide in a course.",
+      "usage": "A flip-book / comic preview the admin sends as a SCORM zip. Only a SAMPLE package: the full paid one stays inside the course."
+    },
+    {
       "type": "ctaBanner",
       "templateKey": "ctaBanner",
       "exampleProps": {
@@ -516,7 +531,7 @@
         "layout": "card",
         "align": "center"
       },
-      "dataBound": "Embeds an Audience campaign's LIVE registration form (fields defined in the CRM's Audience Manager) and submits leads into that campaign. Set ONLY title/subtitle/submitLabel/successMessage/layout/align — audienceId must be chosen by the admin from their existing campaigns, so leave it as an empty string and NEVER invent one. Use it for event registrations, demo bookings and enquiry sections; contactForm remains fine for a simple authored name/email/message form."
+      "dataBound": "Embeds an Audience campaign's LIVE registration form (fields defined in the CRM's Audience Manager) and submits leads into that campaign. Set ONLY title/subtitle/submitLabel/successMessage/layout/align, columns 1|2, choiceStyle dropdown|chips (pill buttons for a short choice list) and successDisplay inline|popup — audienceId must be chosen by the admin from their existing campaigns, so leave it as an empty string and NEVER invent one. Use it for event registrations, demo bookings and enquiry sections; contactForm remains fine for a simple authored name/email/message form."
     },
     {
       "type": "contactForm",

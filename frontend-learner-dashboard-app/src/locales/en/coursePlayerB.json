@@ -323,6 +323,7 @@
         "goToTestimonial": "Go to testimonial {{number}}"
     },
     "leadForm": {
+        "close": "Close",
         "emptyConfig": "Pick an audience campaign in the properties panel — its form fields render here.",
         "errorLoad": "Couldn't load this campaign. Check that it is ACTIVE and belongs to this institute.",
         "emptyFields": "This campaign has no form fields yet — add them in Audience Manager.",
