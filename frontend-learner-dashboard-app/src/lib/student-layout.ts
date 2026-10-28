@@ -44,7 +44,8 @@ const PLACEMENTS: readonly StudentNavPlacement[] = [
 export interface ResolvedStudentHeader {
   showLogo: boolean;
   showPageTitle: boolean;
-  showBackHome: boolean;
+  showBack: boolean;
+  showHome: boolean;
   showAchievements: boolean;
   showLanguage: boolean;
   showHelp: boolean;
@@ -102,7 +103,10 @@ export function resolveStudentLayout(
   const header: ResolvedStudentHeader = {
     showLogo: h.showLogo !== false,
     showPageTitle: h.showPageTitle !== false,
-    showBackHome: h.showBackHome !== false,
+    // Back and Home have their own switches; layouts saved with the older
+    // single Back & Home switch keep it for whichever one is not set.
+    showBack: typeof h.showBack === "boolean" ? h.showBack : h.showBackHome !== false,
+    showHome: typeof h.showHome === "boolean" ? h.showHome : h.showBackHome !== false,
     showAchievements: h.showAchievements !== false,
     showLanguage: h.showLanguage !== false,
     showHelp: h.showHelp !== false,
