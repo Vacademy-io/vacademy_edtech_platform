@@ -41,6 +41,8 @@ describe("scormViewer", () => {
     expect(html).toContain(`src="${LAUNCH}"`);
     expect(html).toContain("Preview");
     expect(html).toContain("jsonRenderer.scormViewer.fullScreen");
+    // The website preview waits for marked frames before its screenshot.
+    expect(html).toContain("data-scorm-frame");
   });
 
   it("sandboxes the package: scripts run, the site cannot be navigated away", () => {

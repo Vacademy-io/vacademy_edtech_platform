@@ -138,6 +138,25 @@ def _as_root_page(config: Dict[str, Any], page_route: str) -> Dict[str, Any]:
     return {**config, "pages": [root, *others]}
 
 
+#: A SCORM player (scormViewer) loads its frame lazily, then the package,
+#: then its pages: catching it 400 ms after scrolling to it showed an empty
+#: frame. Frames marked data-scorm-frame set data-loaded once they load.
+_EMBED_WAIT_MS = 8_000
+_EMBED_PAINT_MS = 2_500
+_EMBEDS_READY_JS = "() => !document.querySelector('iframe[data-scorm-frame]:not([data-loaded])')"
+
+
+async def _settle_embeds(page: Any) -> None:
+    """Wait (bounded) for SCORM players on the page to load and paint. A no-op without one."""
+    try:
+        if not await page.evaluate("() => document.querySelectorAll('iframe[data-scorm-frame]').length"):
+            return
+        await page.wait_for_function(_EMBEDS_READY_JS, timeout=_EMBED_WAIT_MS)
+    except Exception:  # noqa: BLE001 — a slow package still gets its screenshot
+        pass
+    await page.wait_for_timeout(_EMBED_PAINT_MS)
+
+
 async def _render(async_playwright: Any, base_url: str, tag_name: str, page_route: str, config: Dict[str, Any],
                   section_id: Optional[str], viewport: str) -> Dict[str, Any]:
     vp = VIEWPORTS.get(viewport) or VIEWPORTS["desktop"]
@@ -174,6 +193,7 @@ async def _render(async_playwright: Any, base_url: str, tag_name: str, page_rout
                     return {"error": "section_not_rendered", "message": "That section is not on the rendered page."}
                 await el.scroll_into_view_if_needed()
                 await page.wait_for_timeout(400)
+                await _settle_embeds(page)
                 data = await el.screenshot(type="jpeg", quality=_JPEG_QUALITY)
                 box = await el.bounding_box() or {}
                 return {"png_base64": base64.b64encode(data).decode(), "width": int(box.get("width") or vp["width"]),
@@ -186,6 +206,7 @@ async def _render(async_playwright: Any, base_url: str, tag_name: str, page_rout
             await page.set_viewport_size({"width": vp["width"], "height": height})
             await page.evaluate("window.scrollTo(0, 0)")
             await page.wait_for_timeout(600)
+            await _settle_embeds(page)
             data = await page.screenshot(type="jpeg", quality=_JPEG_QUALITY, full_page=False)
             return {"png_base64": base64.b64encode(data).decode(), "width": vp["width"], "height": height}
         finally:
@@ -342,6 +363,7 @@ async def _render_fidelity(async_playwright: Any, base_url: str, tag_name: str, 
                 await page.wait_for_timeout(120)
             await page.evaluate("window.scrollTo(0, 0)")
             await page.wait_for_timeout(500)
+            await _settle_embeds(page)
 
             clicked: Optional[bool] = None
             click_changed: Optional[bool] = None
