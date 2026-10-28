@@ -79,6 +79,8 @@ export function useLeadAttributeFields({ userId, audienceResponseId }: UseLeadAt
         setStatusId,
         tierKey,
         setTierKey,
+        /** status_key of the picked status ('' = keep current) — e.g. to spot LOST. */
+        statusKey: activeStatuses.find((s) => s.id === statusId)?.status_key ?? '',
         statusOptions: activeStatuses.map((s) => ({ label: s.label, value: s.id })),
         tierOptions: tiers.map((t) => ({ label: t.label, value: t.tier_key })),
         showStatus,

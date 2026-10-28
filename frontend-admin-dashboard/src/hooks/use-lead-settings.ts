@@ -193,6 +193,20 @@ export interface FollowUpFieldsConfig {
      * save. Changes the LEAD, not the follow-up — unlike {@link interestLevels}.
      */
     leadStatusAndTier: boolean;
+    /** "Mark complete" opens with "Schedule next follow-up" already ticked. */
+    scheduleNextByDefault: boolean;
+    /**
+     * "Mark complete" no longer insists on a closing note. Off = the note is
+     * required, as it has been since closing notes were made mandatory.
+     */
+    closingNoteOptional: boolean;
+    /**
+     * {@link leadStatusAndTier}'s dropdowns inside "Mark complete" itself, so a
+     * counsellor can discard the lead (its LOST status) or change its tier while
+     * closing. Needs leadStatusAndTier on. Off = they show only in the inline
+     * "Schedule next" block, as before.
+     */
+    markDoneLeadStatusAndTier: boolean;
 }
 
 /**
@@ -294,6 +308,9 @@ export const LEAD_SETTINGS_DEFAULTS: LeadSettingsConfig = {
         allowEditing: false,
         reportExports: false,
         leadStatusAndTier: false,
+        scheduleNextByDefault: false,
+        closingNoteOptional: false,
+        markDoneLeadStatusAndTier: false,
     },
     leadLookup: {
         enabled: false,
@@ -388,6 +405,9 @@ export function normaliseFollowUpFields(
         allowEditing: saved?.allowEditing === true,
         reportExports: saved?.reportExports === true,
         leadStatusAndTier: saved?.leadStatusAndTier === true,
+        scheduleNextByDefault: saved?.scheduleNextByDefault === true,
+        closingNoteOptional: saved?.closingNoteOptional === true,
+        markDoneLeadStatusAndTier: saved?.markDoneLeadStatusAndTier === true,
     };
 }
 

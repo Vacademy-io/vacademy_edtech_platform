@@ -72,7 +72,10 @@ type BehaviourKey =
     | 'showHistory'
     | 'allowEditing'
     | 'reportExports'
-    | 'leadStatusAndTier';
+    | 'leadStatusAndTier'
+    | 'scheduleNextByDefault'
+    | 'closingNoteOptional'
+    | 'markDoneLeadStatusAndTier';
 
 /** Label/hint can read the institute's own names for lead status and tier. */
 type Wording = string | ((terms: LeadTerminology) => string);
@@ -103,6 +106,22 @@ const BEHAVIOUR_SWITCHES: { key: BehaviourKey; label: Wording; hint: Wording }[]
         label: (terms) => `${terms.leadStatus} and ${terms.tier} in the activity pop-up`,
         hint: (terms) =>
             `${terms.leadStatus} and ${terms.tier} dropdowns in the Add activity pop-up (Note, Call Log, Follow Up, Meeting), the Lead Profile, "Schedule next" and the post-call sheet. They change the lead itself, start on "Keep current", and are saved only when a counsellor picks something.`,
+    },
+    {
+        key: 'markDoneLeadStatusAndTier',
+        label: (terms) => `${terms.leadStatus} and ${terms.tier} in "Mark complete"`,
+        hint: (terms) =>
+            `The same ${terms.leadStatus} and ${terms.tier} dropdowns inside "Mark complete" itself, so a counsellor can discard the lead or change its ${terms.tier} while closing. Picking the Lost status unticks "Schedule next follow-up". Needs the switch above on.`,
+    },
+    {
+        key: 'scheduleNextByDefault',
+        label: '"Schedule next follow-up" ticked by default',
+        hint: '"Mark complete" opens with "Schedule next follow-up" already ticked. Counsellors can still untick it to just close the follow-up.',
+    },
+    {
+        key: 'closingNoteOptional',
+        label: 'Closing note optional',
+        hint: 'A follow-up can be marked complete without a closing note. Off = the closing note is required.',
     },
 ];
 
