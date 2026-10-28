@@ -14,7 +14,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -54,6 +58,43 @@ public class PolicyGate {
     /** Batch consent check for a cohort — one query. */
     public Set<String> optedOutUserIds(String instituteId, List<String> userIds) {
         return dao.optedOutUserIds(instituteId, userIds);
+    }
+
+    /**
+     * Why a lead member must not be contacted any more. OPTED_OUT: the lead asked us to stop
+     * (overall_status). EXITED: the admin removed the lead row (audience_status INACTIVE) or it
+     * is gone; the nightly reconcile would exit it too, and revives it if the row comes back.
+     */
+    public enum LeadBlock { OPTED_OUT, EXITED }
+
+    /**
+     * Batch lead consent for a cohort, by audience_response_id: one query, members without a
+     * lead row are not looked up. Only blocked leads are in the result.
+     */
+    public Map<String, LeadBlock> blockedLeads(String instituteId, Collection<String> audienceResponseIds) {
+        Map<String, LeadBlock> out = new HashMap<>();
+        if (audienceResponseIds == null || audienceResponseIds.isEmpty()) return out;
+        Set<String> ids = new HashSet<>(audienceResponseIds);
+        Set<String> seen = new HashSet<>();
+        for (Object[] row : dao.leadConsentRows(instituteId, ids)) {
+            String id = (String) row[0];
+            seen.add(id);
+            if ("OPTED_OUT".equals(row[1])) {
+                out.put(id, LeadBlock.OPTED_OUT);
+            } else if (!"ACTIVE".equals(row[2])) {
+                out.put(id, LeadBlock.EXITED);
+            }
+        }
+        for (String id : ids) {
+            if (!seen.contains(id)) out.put(id, LeadBlock.EXITED);
+        }
+        return out;
+    }
+
+    /** {@link #blockedLeads} for one member at send time; null when the lead may be contacted. */
+    public LeadBlock leadBlock(String instituteId, String audienceResponseId) {
+        if (audienceResponseId == null) return null;
+        return blockedLeads(instituteId, List.of(audienceResponseId)).get(audienceResponseId);
     }
 
     /** Per-member pre-LLM gate. Consent is checked at cohort level; this adds the cap. */

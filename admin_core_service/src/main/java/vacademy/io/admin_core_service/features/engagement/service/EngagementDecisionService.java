@@ -109,6 +109,10 @@ public class EngagementDecisionService {
 
         Set<String> optedOut = policyGate.optedOutUserIds(engine.getInstituteId(),
                 members.stream().map(EngagementMember::getUserId).filter(java.util.Objects::nonNull).toList());
+        // The opt-out list above is keyed by user_id, so a lead without one had no live consent
+        // check: an opt-out in the CRM was only seen by the nightly reconcile (F2 / L3).
+        Map<String, PolicyGate.LeadBlock> blockedLeads = policyGate.blockedLeads(engine.getInstituteId(),
+                members.stream().map(EngagementMember::getAudienceResponseId).filter(java.util.Objects::nonNull).toList());
 
         // Channel context is per-ENGINE, not per-member — compute once so the prompt prefix (which
         // now carries the enabled channels + approved WhatsApp templates) stays byte-identical across
@@ -123,7 +127,7 @@ public class EngagementDecisionService {
         int decisions = 0;
         for (EngagementMember member : members) {
             try {
-                decisions += decideOne(engine, prompt, member, bundle, optedOut, dryRun,
+                decisions += decideOne(engine, prompt, member, bundle, optedOut, blockedLeads, dryRun,
                         enabledChannels, whatsappTemplates, templatesByName) ? 1 : 0;
             } catch (Exception e) {
                 // Decision failed AFTER we claimed a lease. Push it out with exponential backoff
@@ -139,7 +143,8 @@ public class EngagementDecisionService {
 
     private boolean decideOne(EngagementEngine engine, EngagementPromptVersion prompt,
                               EngagementMember member, DataPointRegistry.CohortBundle bundle,
-                              Set<String> optedOut, boolean dryRun,
+                              Set<String> optedOut, Map<String, PolicyGate.LeadBlock> blockedLeads,
+                              boolean dryRun,
                               Set<String> enabledChannels,
                               List<EngagementBrainClient.TemplateOption> whatsappTemplates,
                               Map<String, EngagementBrainClient.TemplateOption> templatesByName) {
@@ -158,7 +163,16 @@ public class EngagementDecisionService {
         member = fresh;
         Instant heldLease = fresh.getNextActionAt(); // as stored, so recordDecision can tell it is still ours
 
-        // 1. Consent — before anything else.
+        // 1. Consent — before anything else. The lead row first: an opted-out lead is OPTED_OUT
+        // (it survives the reconcile), a lead the admin removed is EXITED (the reconcile revives
+        // it if the row comes back).
+        PolicyGate.LeadBlock leadBlock = member.getAudienceResponseId() != null && blockedLeads != null
+                ? blockedLeads.get(member.getAudienceResponseId()) : null;
+        if (leadBlock != null) {
+            member.setStatus(leadBlock == PolicyGate.LeadBlock.OPTED_OUT ? "OPTED_OUT" : "EXITED");
+            memberRepository.save(member);
+            return false;
+        }
         PolicyGate.Verdict verdict = policyGate.preDecision(member, optedOut);
         if (verdict == PolicyGate.Verdict.SKIP_OPTED_OUT) {
             member.setStatus("OPTED_OUT");
