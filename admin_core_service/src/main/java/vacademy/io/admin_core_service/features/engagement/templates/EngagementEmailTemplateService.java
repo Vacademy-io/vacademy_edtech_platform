@@ -159,7 +159,11 @@ public class EngagementEmailTemplateService implements EngagementEmailTemplateCa
         EngagementEmailTemplate target;
         if (EngagementEmailTemplate.APPROVED.equals(current.getStatus())) {
             // E9: the approved version keeps sending; the edit becomes the next version for review.
-            target = copyAsNextVersion(current, actor);
+            // A second edit of the approved one updates that pending version instead of starting another.
+            target = repository.findFirstByEngineIdAndInstituteIdAndNameAndStatusInOrderByVersionDesc(
+                            current.getEngineId(), instituteId, current.getName(), List.copyOf(REVIEWABLE))
+                    .filter(p -> p.getVersion() > current.getVersion())
+                    .orElseGet(() -> copyAsNextVersion(current, actor));
         } else if (REVIEWABLE.contains(current.getStatus())) {
             target = current;
         } else {
@@ -200,6 +204,12 @@ public class EngagementEmailTemplateService implements EngagementEmailTemplateCa
         if (!REVIEWABLE.contains(t.getStatus())) {
             throw new VacademyException("Template is not in an approvable state (must be a draft under review)");
         }
+        Optional<EngagementEmailTemplate> live = repository.findFirstByEngineIdAndInstituteIdAndNameAndStatus(
+                t.getEngineId(), instituteId, t.getName(), EngagementEmailTemplate.APPROVED);
+        if (live.isPresent() && live.get().getVersion() > t.getVersion()) {
+            throw new VacademyException("A newer version (v" + live.get().getVersion()
+                    + ") of this template is already approved; edit that one instead");
+        }
         Instant now = Instant.now();
         repository.supersedeApproved(t.getEngineId(), t.getName(), t.getId(), now);
         if (repository.approve(t.getId(), instituteId, actor, now) == 0) {
@@ -235,8 +245,13 @@ public class EngagementEmailTemplateService implements EngagementEmailTemplateCa
     @Override
     public List<EngagementBrainClient.TemplateOption> findApprovedEmailTemplates(String engineId, String instituteId) {
         List<EngagementBrainClient.TemplateOption> out = new ArrayList<>();
+        EngagementEngine engine = engineRepository.findById(engineId).orElse(null);
+        if (engine == null || !instituteId.equals(engine.getInstituteId())) return out;
+        String brief = brief(engine);
+        boolean cold = coldOutreach(engine);
         for (EngagementEmailTemplate t : repository.findByEngineIdAndInstituteIdAndStatusOrderByNameAsc(
                 engineId, instituteId, EngagementEmailTemplate.APPROVED)) {
+            if (EmailTemplateRules.hasBlocking(issues(t, brief, cold))) continue; // broke when the brief changed
             // Keep the placeholders visible so the brain knows which values to supply.
             Map<String, String> keep = new LinkedHashMap<>();
             for (String n : list(t.getVariableNames())) keep.put(n, "{{" + n + "}}");
@@ -265,7 +280,18 @@ public class EngagementEmailTemplateService implements EngagementEmailTemplateCa
     private RenderedEmail rendered(EngagementEmailTemplate t, Map<String, String> variables) {
         EmailTemplateRules.Rendered r = EmailTemplateRules.render(t.getSubject(), t.getBodyHtml(),
                 list(t.getVariableNames()), variables);
-        return new RenderedEmail(t.getId(), t.getName(), t.getVersion(), r.subject(), r.html(), r.text(), r.missing());
+        // Re-check against the engine's current brief: approval was against the brief of that day.
+        List<String> problems = new ArrayList<>();
+        EngagementEngine engine = engineRepository.findById(t.getEngineId()).orElse(null);
+        if (engine == null) {
+            problems.add("the engine no longer exists");
+        } else {
+            issues(t, brief(engine), coldOutreach(engine)).stream()
+                    .filter(i -> i.level() == EmailTemplateRules.Level.BLOCK)
+                    .forEach(i -> problems.add(i.message()));
+        }
+        return new RenderedEmail(t.getId(), t.getName(), t.getVersion(), r.subject(), r.html(), r.text(), r.missing(),
+                problems);
     }
 
     // ------------------------------------------------------------------ helpers

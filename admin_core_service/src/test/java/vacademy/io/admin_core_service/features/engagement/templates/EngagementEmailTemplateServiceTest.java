@@ -228,6 +228,52 @@ class EngagementEmailTemplateServiceTest {
     }
 
     @Test
+    @DisplayName("E9: a second edit of the approved template updates the pending next version, not a new one")
+    void E9_secondEditReusesPendingVersion() {
+        template("t-v1", "first_touch", 1, "APPROVED");
+        EngagementEmailTemplate pending = template("t-v2", "first_touch", 2, "USER_REVIEW");
+        when(repo.findFirstByEngineIdAndInstituteIdAndNameAndStatusInOrderByVersionDesc(eq("e1"), eq("i1"), eq("first_touch"), any()))
+                .thenReturn(Optional.of(pending));
+
+        EngagementEmailTemplateService.View v = service.edit("t-v1", "i1",
+                new EngagementEmailTemplateService.EditRequest(null, null, "Second edit", null, null, null, null, null), "a");
+
+        assertEquals("t-v2", v.id());
+        assertEquals(2, v.version());
+        assertEquals("Second edit", pending.getSubject());
+        verify(repo, never()).maxVersion(anyString(), anyString());
+    }
+
+    @Test
+    @DisplayName("E9: an older version can't be approved over a newer approved one")
+    void E9_olderVersionCantReplaceNewer() {
+        template("t-v2", "first_touch", 2, "USER_REVIEW");
+        EngagementEmailTemplate live = template("t-v3", "first_touch", 3, "APPROVED");
+        when(repo.findFirstByEngineIdAndInstituteIdAndNameAndStatus("e1", "i1", "first_touch", "APPROVED"))
+                .thenReturn(Optional.of(live));
+        VacademyException ex = assertThrows(VacademyException.class, () -> service.approve("t-v2", "i1", "admin"));
+        assertTrue(ex.getMessage().contains("v3"), ex.getMessage());
+        verify(repo, never()).supersedeApproved(anyString(), anyString(), anyString(), any());
+    }
+
+    @Test
+    @DisplayName("E7: once its link leaves the brief, an approved template is not offered to the brain and won't send")
+    void E7_briefDriftAfterApproval() {
+        EngagementEmailTemplate t = template("t-a", "first_touch", 1, "APPROVED");
+        t.setBodyHtml("<p>Hi {{first_name}}, see https://ee.test/old-offer and {{class_link}}</p>");
+        when(repo.findByEngineIdAndInstituteIdAndStatusOrderByNameAsc("e1", "i1", "APPROVED")).thenReturn(List.of(t));
+        when(repo.findFirstByEngineIdAndInstituteIdAndNameAndStatus("e1", "i1", "first_touch", "APPROVED"))
+                .thenReturn(Optional.of(t));
+
+        assertTrue(service.findApprovedEmailTemplates("e1", "i1").isEmpty());
+        EngagementEmailTemplateCatalog.RenderedEmail r = service.render("e1", "i1", "first_touch",
+                Map.of("first_name", "Asha", "class_link", "https://ee.test/class")).orElseThrow();
+        assertFalse(r.sendable());
+        assertTrue(r.problems().get(0).contains("not in the engine brief"), r.problems().toString());
+        assertTrue(r.missingVariables().isEmpty());
+    }
+
+    @Test
     void uniqueNames() {
         Set<String> taken = new HashSet<>(List.of("a", "a_2"));
         assertEquals("a_3", EngagementEmailTemplateService.uniqueName("A", taken));

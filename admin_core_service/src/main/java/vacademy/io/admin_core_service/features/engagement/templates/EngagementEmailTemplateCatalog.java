@@ -17,7 +17,8 @@ import java.util.Optional;
 public interface EngagementEmailTemplateCatalog {
 
     /**
-     * The engine's APPROVED email templates. TemplateOption.name is the template's stable name,
+     * The engine's APPROVED email templates that still pass the rules against the CURRENT brief
+     * (a template whose link was removed from the brief is left out). TemplateOption.name is the template's stable name,
      * TemplateOption.body is "SUBJECT: ...\n\n" + the plain-text body, so the brain can read both.
      */
     List<EngagementBrainClient.TemplateOption> findApprovedEmailTemplates(String engineId, String instituteId);
@@ -30,13 +31,17 @@ public interface EngagementEmailTemplateCatalog {
     Optional<RenderedEmail> renderById(String templateId, String instituteId, Map<String, String> variables);
 
     /**
-     * @param missingVariables declared variables with no non-blank value. A non-empty list means the
-     *                         email must NOT be sent (edge case E2: never send "Hi ,").
+     * @param missingVariables declared variables with no non-blank value (E2: never send "Hi ,")
+     * @param problems         rules the template breaks against the engine's CURRENT brief, e.g. a
+     *                         link that was removed from the brief after approval (E7)
+     * Either list non-empty means the email must NOT be sent.
      */
     record RenderedEmail(String templateId, String templateName, int version,
-                         String subject, String html, String text, List<String> missingVariables) {
+                         String subject, String html, String text, List<String> missingVariables,
+                         List<String> problems) {
         public boolean sendable() {
-            return missingVariables == null || missingVariables.isEmpty();
+            return (missingVariables == null || missingVariables.isEmpty())
+                    && (problems == null || problems.isEmpty());
         }
     }
 }

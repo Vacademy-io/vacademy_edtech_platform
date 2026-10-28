@@ -22,6 +22,10 @@ public interface EngagementEmailTemplateRepository extends JpaRepository<Engagem
 
     Optional<EngagementEmailTemplate> findByIdAndInstituteId(String id, String instituteId);
 
+    /** The newest version of a template in the given statuses (e.g. the pending next version). */
+    Optional<EngagementEmailTemplate> findFirstByEngineIdAndInstituteIdAndNameAndStatusInOrderByVersionDesc(
+            String engineId, String instituteId, String name, List<String> statuses);
+
     @Query(value = """
             SELECT COALESCE(MAX(version), 0) FROM engagement_email_template
              WHERE engine_id = :engineId AND name = :name
