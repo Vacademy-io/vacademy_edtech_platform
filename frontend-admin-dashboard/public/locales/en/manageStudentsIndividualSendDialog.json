@@ -20,6 +20,8 @@
     },
     "systemFields": {
         "fullName": "Full Name",
+        "firstName": "First Name",
+        "lastName": "Last Name",
         "email": "Email",
         "mobileNumber": "Mobile Number",
         "city": "City",

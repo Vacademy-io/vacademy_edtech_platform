@@ -8,6 +8,8 @@
     },
     "systemFields": {
         "fullName": "Nom complet",
+        "firstName": "Prénom",
+        "lastName": "Nom de famille",
         "email": "E-mail",
         "mobileNumber": "Numéro de mobile",
         "city": "Ville",
