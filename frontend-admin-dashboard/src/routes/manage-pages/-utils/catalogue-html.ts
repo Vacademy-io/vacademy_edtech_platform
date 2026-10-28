@@ -154,11 +154,26 @@ export const sanitizeCustomHtml = (html: string, page = false): string =>
  * Render a custom-HTML section into `host`'s shadow root (created on first
  * call). Both renderers call this from an effect keyed on html/css.
  */
+// Theme tokens hold "H S% L%" channels, not colours, so `color: var(--primary-500)`
+// is invalid CSS and the browser drops the declaration. Custom blocks (the
+// website MCP's own guidance said so) used them bare and came out uncoloured,
+// which is why such blocks ended up with hard-coded hex that ignores the theme.
+// A bare reference to a colour token is read as the colour it names; a token
+// the block defines itself, and non-colour tokens (fonts, radii…), are left alone.
+const BARE_COLOUR_TOKEN_RE = /(?<!hsla?\(\s*)var\(\s*(--(?:primary|secondary|tertiary|catalogue|palette)-[\w-]+)\s*\)/g;
+const NON_COLOUR_TOKEN_RE = /font|radius|shadow|width|height|spac|gap|size|duration|ease|index|blur/i;
+export const wrapBareColourTokens = (css: string): string => {
+    const own = new Set(Array.from(css.matchAll(/(--[\w-]+)\s*:/g), (m) => m[1]));
+    return css.replace(BARE_COLOUR_TOKEN_RE, (match: string, name: string) =>
+        own.has(name) || NON_COLOUR_TOKEN_RE.test(name) ? match : `hsl(var(${name}))`,
+    );
+};
+
 export const renderHtmlSection = (host: HTMLElement, html: string, css: string): void => {
     const root = host.shadowRoot ?? host.attachShadow({ mode: 'open' });
     root.innerHTML =
         `<style>:host{display:block;font-family:inherit;color:inherit;}` +
-        `${scrubCss(css || '')}</style>${sanitizeCustomHtml(html || '')}`;
+        `${scrubCss(wrapBareColourTokens(css || ''))}</style>${sanitizeCustomHtml(html || '')}`;
 };
 
 /* ─── Action hooks ───────────────────────────────────────────────────────── */

@@ -196,8 +196,19 @@ def _words(text: Any) -> int:
     return len(strip_html(text, 100000).split()) if isinstance(text, str) else 0
 
 
+_H1_RE = re.compile(r"<h1\b", re.I)
+
+
 def _hero_of(components: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-    return next((c for c in components if _reviews_as_hero(c)), None)
+    hero = next((c for c in components if _reviews_as_hero(c)), None)
+    # A custom-HTML block that opens the page with an <h1> owns the fold just as
+    # a heroSection does (a hero laid out beyond what the typed one can do); it
+    # used to fail "no-hero" and block request_publish.
+    first = components[0] if components else None
+    if hero is None and isinstance(first, dict) and first.get("type") == "htmlBlock" \
+            and _H1_RE.search(str((first.get("props") or {}).get("html") or "")):
+        return first
+    return hero
 
 
 def _bg_of(comp: Dict[str, Any]) -> str:

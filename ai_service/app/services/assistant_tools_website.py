@@ -1211,6 +1211,18 @@ async def _action_brief_checklist(args: Dict[str, Any], ctx: ToolContext) -> Dic
         }
     elif err and err.get("error") == "tag_required":
         known["existing_sites"] = err.get("available")
+    if not site:
+        # A NEW site should look like the institute's live ones (the store, the
+        # main site); without this the interview asked for colours from scratch
+        # and the new site came out in a look of its own.
+        rows = await list_catalogues(ctx)
+        looks = _site_looks(rows) if isinstance(rows, list) else []
+        if looks:
+            known["institute_looks"] = looks
+            known["institute_looks_note"] = (
+                "Ask which live site the new one should look like (offer the first) and pass theme_from=<tag_name> to "
+                "create_page / create_site — or website_edit(action='copy_theme') on an existing site. Pick a new look "
+                "only when the admin asks for one.")
     try:
         row = ctx.db.execute(
             text("SELECT name FROM institutes WHERE id = :id"), {"id": ctx.principal.institute_id}
@@ -1257,6 +1269,30 @@ async def _action_brief_checklist(args: Dict[str, Any], ctx: ToolContext) -> Dic
         },
         "then": "Read website(action='schema', page_type=…) and compose the page JSON yourself; save it with website_edit(action='create_page' | 'create_site'). No credits are used.",
     }
+
+
+def _site_looks(rows: List[Any]) -> List[Dict[str, Any]]:
+    """The look of each LIVE site that has one of its own (brand colour or palette), biggest first."""
+    looks: List[Dict[str, Any]] = []
+    for r in rows:
+        if not isinstance(r, dict) or str(r.get("status") or "").upper() != "ACTIVE":
+            continue
+        config = _parse_config(r.get("catalogue_json")) or {}
+        gs = config.get("globalSettings") or {}
+        theme = gs.get("theme") if isinstance(gs.get("theme"), dict) else {}
+        palette = theme.get("palette") if isinstance(theme.get("palette"), dict) else {}
+        if not theme.get("primaryColor") and not palette:
+            continue
+        fonts = gs.get("fonts") if isinstance(gs.get("fonts"), dict) else {}
+        looks.append({k: v for k, v in {
+            "tag_name": r.get("tag_name"),
+            "primary_color": theme.get("primaryColor"),
+            "fonts": {k2: v2 for k2, v2 in {"body": fonts.get("family"), "heading": fonts.get("headingFamily")}.items() if v2} or None,
+            "palette": {k2: palette[k2] for k2 in ("primary", "cream", "sand", "text") if palette.get(k2)} or None,
+            "pages": len(config.get("pages") or []),
+        }.items() if v})
+    looks.sort(key=lambda x: -int(x.get("pages") or 0))
+    return looks[:6]
 
 
 def _checklist_design_source(raw: Any) -> Optional[Dict[str, Any]]:
