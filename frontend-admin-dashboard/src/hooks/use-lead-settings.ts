@@ -186,6 +186,13 @@ export interface FollowUpFieldsConfig {
     allowEditing: boolean;
     /** Per-lead TAT / SLA / Overdue CSV exports in the Reports Center. */
     reportExports: boolean;
+    /**
+     * The lead's own status and tier (whatever the institute calls them, e.g.
+     * "Action Label" / "Interest Level") as dropdowns in the Add-activity pop-up
+     * and wherever a follow-up is booked, so a counsellor updates them in the same
+     * save. Changes the LEAD, not the follow-up — unlike {@link interestLevels}.
+     */
+    leadStatusAndTier: boolean;
 }
 
 /**
@@ -286,6 +293,7 @@ export const LEAD_SETTINGS_DEFAULTS: LeadSettingsConfig = {
         showHistory: false,
         allowEditing: false,
         reportExports: false,
+        leadStatusAndTier: false,
     },
     leadLookup: {
         enabled: false,
@@ -379,6 +387,7 @@ export function normaliseFollowUpFields(
         showHistory: saved?.showHistory === true,
         allowEditing: saved?.allowEditing === true,
         reportExports: saved?.reportExports === true,
+        leadStatusAndTier: saved?.leadStatusAndTier === true,
     };
 }
 

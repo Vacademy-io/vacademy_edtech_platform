@@ -86,6 +86,7 @@ describe('follow-up fields config', () => {
             showHistory: false,
             allowEditing: false,
             reportExports: false,
+            leadStatusAndTier: false,
         });
     });
 

@@ -13,6 +13,11 @@ import {
     useFollowUpNotesRequired,
 } from './follow-up-fields';
 import { invalidateLeadCaches } from '@/hooks/use-invalidate-lead-caches';
+import {
+    LeadAttributeFields,
+    invalidateLeadAttributeCaches,
+    useLeadAttributeFields,
+} from './lead-attribute-fields';
 import { cn, parseHtmlToString } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -103,6 +108,8 @@ export function CompleteFollowUpPopover({
     // does not book it a second time.
     const [nextScheduled, setNextScheduled] = useState(false);
     const followUpFields = useFollowUpFields();
+    // The lead's own status + tier for the inline next follow-up (institute switch, off by default).
+    const leadAttributes = useLeadAttributeFields({ userId, audienceResponseId });
     const notesRequired = useFollowUpNotesRequired();
     // Institute switch: pop-up closes only from X / Cancel. Off = closes on an
     // outside click / Escape like before, and there is no X.
@@ -136,6 +143,7 @@ export function CompleteFollowUpPopover({
         setNextContent('');
         setNextScheduled(false);
         followUpFields.reset();
+        leadAttributes.reset();
         setSelectedId(null);
     };
 
@@ -149,13 +157,18 @@ export function CompleteFollowUpPopover({
     // two open ones, and "the earliest open one" must not be re-resolved.
     const createMutation = useMutation<unknown, unknown, { closeId: string; closerReason: string }>(
         {
-            mutationFn: () =>
-                authenticatedAxiosInstance.post(CREATE_LEAD_FOLLOWUP, {
+            mutationFn: async () => {
+                // Status/tier first, so a retry after a failed save doesn't post them twice.
+                if (await leadAttributes.apply()) {
+                    invalidateLeadAttributeCaches(queryClient, userId);
+                }
+                return authenticatedAxiosInstance.post(CREATE_LEAD_FOLLOWUP, {
                     audience_response_id: audienceResponseId,
                     schedule_time: new Date(nextTime).toISOString(),
                     content: nextContent || null,
                     ...followUpFields.payload,
-                }),
+                });
+            },
             onSuccess: (_data, { closeId, closerReason }) => {
                 setNextScheduled(true);
                 // Pin it for a retry too, should the close below fail.
@@ -387,6 +400,14 @@ export function CompleteFollowUpPopover({
                                         Answer every field marked * before scheduling this
                                         follow-up.
                                     </p>
+                                )}
+                                {leadAttributes.visible && (
+                                    <LeadAttributeFields
+                                        fields={leadAttributes}
+                                        portal={false}
+                                        // Popover is narrow — stack them.
+                                        className="sm:grid-cols-1"
+                                    />
                                 )}
                                 {followUpFields.visible && (
                                     <FollowUpFields

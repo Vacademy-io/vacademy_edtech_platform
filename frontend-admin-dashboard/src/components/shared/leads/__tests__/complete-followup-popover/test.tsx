@@ -14,6 +14,9 @@ vi.mock('@/constants/urls', () => ({
     GET_LEAD_FOLLOWUPS: (id: string) => `/followups/${id}`,
     CLOSE_LEAD_FOLLOWUP: (id: string) => `/followup/${id}/close`,
     CREATE_LEAD_FOLLOWUP: '/followup',
+    // Read at import time by the lead status / tier hooks.
+    BASE_URL: '',
+    UPDATE_LEAD_TIER: '/tier',
 }));
 vi.mock('sonner', () => ({ toast }));
 vi.mock('@/hooks/use-invalidate-lead-caches', () => ({ invalidateLeadCaches: vi.fn() }));
@@ -30,6 +33,7 @@ vi.mock('@/hooks/use-lead-settings', () => ({
             keepPopupsOpen: flags.keepPopupsOpen,
             showHistory: false,
             allowEditing: false,
+            leadStatusAndTier: false,
         },
     }),
 }));

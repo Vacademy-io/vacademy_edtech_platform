@@ -33,6 +33,7 @@ import {
     normaliseFollowUpFields,
     type FollowUpFieldsConfig,
 } from '@/hooks/use-lead-settings';
+import { useLeadTerminology, type LeadTerminology } from '@/hooks/use-lead-terminology';
 
 const SETTING_KEY = 'LEAD_SETTING';
 const SAVE_URL = GET_INSITITUTE_SETTINGS.replace('/get', '/save-setting');
@@ -66,9 +67,17 @@ const LISTS: { key: ListKey; title: string; hint: string }[] = [
     },
 ];
 
-type BehaviourKey = 'keepPopupsOpen' | 'showHistory' | 'allowEditing' | 'reportExports';
+type BehaviourKey =
+    | 'keepPopupsOpen'
+    | 'showHistory'
+    | 'allowEditing'
+    | 'reportExports'
+    | 'leadStatusAndTier';
 
-const BEHAVIOUR_SWITCHES: { key: BehaviourKey; label: string; hint: string }[] = [
+/** Label/hint can read the institute's own names for lead status and tier. */
+type Wording = string | ((terms: LeadTerminology) => string);
+
+const BEHAVIOUR_SWITCHES: { key: BehaviourKey; label: Wording; hint: Wording }[] = [
     {
         key: 'keepPopupsOpen',
         label: 'Close follow-up pop-ups only with ✕',
@@ -89,7 +98,15 @@ const BEHAVIOUR_SWITCHES: { key: BehaviourKey; label: string; hint: string }[] =
         label: 'Per-lead report exports',
         hint: 'Reports gets per-lead CSV exports: TAT (response time and met / breached per enquiry), SLA (where each lead sits on the SLA clock) and Overdue follow-ups.',
     },
+    {
+        key: 'leadStatusAndTier',
+        label: (terms) => `${terms.leadStatus} and ${terms.tier} in the activity pop-up`,
+        hint: (terms) =>
+            `${terms.leadStatus} and ${terms.tier} dropdowns in the Add activity pop-up (Note, Call Log, Follow Up, Meeting), the Lead Profile, "Schedule next" and the post-call sheet. They change the lead itself, start on "Keep current", and are saved only when a counsellor picks something.`,
+    },
 ];
+
+const wording = (w: Wording, terms: LeadTerminology) => (typeof w === 'string' ? w : w(terms));
 
 async function fetchFollowUpFields(): Promise<FollowUpFieldsConfig> {
     try {
@@ -279,6 +296,7 @@ function OptionListEditor({
 
 export default function LeadFollowUpFieldsSettings() {
     const queryClient = useQueryClient();
+    const terminology = useLeadTerminology();
     const { data, isLoading } = useQuery({
         queryKey: QUERY_KEY,
         queryFn: fetchFollowUpFields,
@@ -369,10 +387,12 @@ export default function LeadFollowUpFieldsSettings() {
                                         onCheckedChange={(v) => update({ [key]: v })}
                                     />
                                     <Label htmlFor={`followup-${key}`} className="cursor-pointer">
-                                        {label}
+                                        {wording(label, terminology)}
                                     </Label>
                                 </div>
-                                <p className="text-xs text-muted-foreground">{hint}</p>
+                                <p className="text-xs text-muted-foreground">
+                                    {wording(hint, terminology)}
+                                </p>
                             </div>
                         ))}
 
