@@ -30,6 +30,8 @@ export interface BlogPostSummary {
   template?: BlogTemplate | null;
   /** Course (package) ids shown as cards under the article, in order. */
   recommended_course_ids?: string[] | null;
+  /** Likes from site visitors; absent on servers older than likes. */
+  like_count?: number | null;
 }
 
 export type BlogTemplate = "CLASSIC" | "SIDEBAR_TOC" | "MAGAZINE" | "FOCUS";
@@ -41,6 +43,11 @@ export interface BlogPostPage {
   total_elements: number;
   total_pages: number;
   categories: string[];
+}
+
+export interface BlogLikeResult {
+  liked: boolean;
+  like_count: number;
 }
 
 export class BlogService {
@@ -71,5 +78,21 @@ export class BlogService {
       if (axios.isAxiosError(err) && err.response?.status === 404) return null;
       throw err;
     }
+  }
+
+  /** Like (liked = true) or unlike a post as this browser's visitor id. */
+  static async setLike(
+    instituteId: string,
+    postId: string,
+    visitorKey: string,
+    liked: boolean
+  ): Promise<BlogLikeResult> {
+    const res = await publicAxios.post<BlogLikeResult>(`${API_BASE}/post/like`, {
+      institute_id: instituteId,
+      post_id: postId,
+      visitor_key: visitorKey,
+      liked,
+    });
+    return res.data;
   }
 }

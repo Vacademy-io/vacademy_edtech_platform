@@ -568,6 +568,8 @@ export const buildComponentTemplates = (t: TFunction): Record<string, Omit<Compo
             showCategory: true,
             showReadingTime: true,
             showCategoryFilter: true,
+            // Heart + count on cards and articles; off until the admin turns it on.
+            allowLikes: false,
             readMoreLabel: t('blog.readMoreLabel'),
             backLabel: t('blog.backLabel'),
             emptyMessage: t('blog.emptyMessage'),
