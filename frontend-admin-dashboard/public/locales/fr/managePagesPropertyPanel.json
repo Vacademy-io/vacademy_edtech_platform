@@ -1392,6 +1392,8 @@
     "showCategory": "Afficher la catégorie",
     "showReadingTime": "Afficher le temps de lecture",
     "showCategoryFilter": "Puces de filtre par catégorie",
+    "allowLikes": "Autoriser les j'aime",
+    "allowLikesHelp": "Les visiteurs peuvent aimer les articles : un cœur avec le total sur chaque carte et sous l'article. Laissez désactivé pour les sections qui ne sont pas un blog, comme les guides d'examen.",
     "readMoreLabel": "Libellé Lire la suite",
     "backLabel": "Libellé Retour à la liste",
     "emptyMessage": "Message quand il n’y a aucun article",

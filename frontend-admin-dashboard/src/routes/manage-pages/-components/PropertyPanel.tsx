@@ -5129,6 +5129,18 @@ const BlogEditor = ({ component, pageId, updateComponent }: any) => {
                     </div>
                 ))}
             </div>
+            {/* Off unless switched on (the toggles above default to on), so
+                sections that are not a blog, e.g. exam guides, stay without it. */}
+            <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                    <Label className="text-xs">{t('blog.allowLikes')}</Label>
+                    <Switch
+                        checked={props.allowLikes === true}
+                        onCheckedChange={(c) => updateProp('allowLikes', c)}
+                    />
+                </div>
+                <p className="text-xs text-gray-500">{t('blog.allowLikesHelp')}</p>
+            </div>
             <div className="space-y-2">
                 <Label>{t('blog.readMoreLabel')}</Label>
                 <Input value={props.readMoreLabel || ''} onChange={(e) => updateProp('readMoreLabel', e.target.value)} />

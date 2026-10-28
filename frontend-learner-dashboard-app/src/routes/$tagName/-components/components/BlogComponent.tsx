@@ -53,6 +53,8 @@ export interface BlogComponentProps {
   showCategory?: boolean;
   showReadingTime?: boolean;
   showCategoryFilter?: boolean;
+  /** Heart + count on the cards and under the article. Off unless switched on. */
+  allowLikes?: boolean;
   readMoreLabel?: string;
   backLabel?: string;
   emptyMessage?: string;
@@ -94,6 +96,7 @@ export const BlogComponent: React.FC<BlogComponentProps> = ({
   showCategory = true,
   showReadingTime = true,
   showCategoryFilter = true,
+  allowLikes = false,
   readMoreLabel,
   backLabel,
   emptyMessage,
@@ -161,6 +164,8 @@ export const BlogComponent: React.FC<BlogComponentProps> = ({
         showAuthor={showAuthor}
         showCategory={showCategory}
         showReadingTime={showReadingTime}
+        allowLikes={allowLikes}
+        isPreviewMode={isPreviewMode}
         sectionStyle={sectionStyle}
         locale={i18n.language}
         onBack={() => navigate({ to: listPath as never })}
@@ -186,6 +191,7 @@ export const BlogComponent: React.FC<BlogComponentProps> = ({
       showCategory={showCategory}
       showReadingTime={showReadingTime}
       showCategoryFilter={showCategoryFilter}
+      allowLikes={allowLikes}
       readMoreLabel={readMoreLabel || t("blog.readMore")}
       emptyMessage={emptyMessage || t("blog.empty")}
       sectionStyle={sectionStyle}
@@ -225,6 +231,7 @@ interface BlogListProps {
   showCategory: boolean;
   showReadingTime: boolean;
   showCategoryFilter: boolean;
+  allowLikes: boolean;
   readMoreLabel: string;
   emptyMessage: string;
   sectionStyle?: React.CSSProperties;
@@ -241,7 +248,7 @@ interface BlogListProps {
 const BlogList: React.FC<BlogListProps> = ({
   heading, subheading, layout, columns, pageSize, category, excludeCategories,
   showCoverImage, showExcerpt, showDate, showAuthor, showCategory, showReadingTime, showCategoryFilter,
-  readMoreLabel, emptyMessage, sectionStyle, instituteId, postPath, onOpenPost, isPreviewMode, onHome, locale,
+  allowLikes, readMoreLabel, emptyMessage, sectionStyle, instituteId, postPath, onOpenPost, isPreviewMode, onHome, locale,
   viewMore,
 }) => {
   const { t } = useTranslation("coursePlayerB");
@@ -368,6 +375,7 @@ const BlogList: React.FC<BlogListProps> = ({
                 showReadingTime={showReadingTime}
                 readMoreLabel={readMoreLabel}
                 locale={locale}
+                likes={allowLikes ? { instituteId, disabled: isPreviewMode } : undefined}
               />
             ))}
           </div>

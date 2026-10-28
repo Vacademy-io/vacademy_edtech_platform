@@ -626,13 +626,14 @@
         "showCategory": true,
         "showReadingTime": true,
         "showCategoryFilter": true,
+        "allowLikes": false,
         "readMoreLabel": "Read more",
         "backLabel": "All posts",
         "emptyMessage": "No posts yet — check back soon.",
         "backgroundColor": "",
         "textColor": ""
       },
-      "dataBound": "Live blog: reads the institute's PUBLISHED posts (written in Manage Pages → Blog or by an AI app over the MCP `blog_edit` tool). Renders the post list on the page it sits on and one article at /<page>/<post-slug>, so put it on a DEDICATED page (route \"blog\"), never on the home page. Placement + look only: heading, subheading, layout grid|list, columns 2|3, pageSize, category (\"\" = all), show* toggles. Never invent posts — there are none in the page JSON."
+      "dataBound": "Live blog: reads the institute's PUBLISHED posts (written in Manage Pages → Blog or by an AI app over the MCP `blog_edit` tool). Renders the post list on the page it sits on and one article at /<page>/<post-slug>, so put it on a DEDICATED page (route \"blog\"), never on the home page. Placement + look only: heading, subheading, layout grid|list, columns 2|3, pageSize, category (\"\" = all), show* toggles, allowLikes (visitor likes on cards and articles; default false, keep it off on non-blog sections such as exam guides). Never invent posts — there are none in the page JSON."
     },
     {
       "type": "jobOpenings",

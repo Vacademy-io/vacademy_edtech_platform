@@ -1389,6 +1389,8 @@
     "showCategory": "Show category",
     "showReadingTime": "Show reading time",
     "showCategoryFilter": "Category filter chips",
+    "allowLikes": "Allow likes",
+    "allowLikesHelp": "Visitors can like posts: a heart with the count on each card and under the article. Leave off for sections that are not a blog, such as exam guides.",
     "readMoreLabel": "Read more label",
     "backLabel": "Back to list label",
     "emptyMessage": "Message when there are no posts",

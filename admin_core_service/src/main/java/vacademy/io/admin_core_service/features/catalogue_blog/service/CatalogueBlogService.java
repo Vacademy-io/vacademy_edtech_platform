@@ -5,9 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.admin_core_service.features.catalogue_blog.dto.BlogLikeRequest;
+import vacademy.io.admin_core_service.features.catalogue_blog.dto.BlogLikeResponse;
 import vacademy.io.admin_core_service.features.catalogue_blog.dto.BlogPostPageResponse;
 import vacademy.io.admin_core_service.features.catalogue_blog.dto.BlogPostRequest;
 import vacademy.io.admin_core_service.features.catalogue_blog.dto.BlogPostResponse;
@@ -28,6 +31,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  * Blog posts of an institute's catalogue sites.
@@ -52,6 +56,8 @@ public class CatalogueBlogService {
     private static final String DEFAULT_TEMPLATE = "CLASSIC";
     private static final Set<String> TEMPLATES = Set.of(DEFAULT_TEMPLATE, "SIDEBAR_TOC", "MAGAZINE", "FOCUS");
     private static final int MAX_RECOMMENDED_COURSES = 6;
+    /** The browser-made visitor id: a UUID in practice, anything id-like up to the column width. */
+    private static final Pattern VISITOR_KEY = Pattern.compile("^[A-Za-z0-9_-]{8,64}$");
 
     @Autowired
     private CatalogueBlogPostRepository repository;
@@ -216,6 +222,31 @@ public class CatalogueBlogService {
                 .map(p -> toResponse(p, true));
     }
 
+    /**
+     * A visitor likes or unlikes a post. Only a post the public can read can be
+     * liked; repeating the same request changes nothing, so a double tap or a
+     * retry never counts twice.
+     */
+    @Transactional
+    public BlogLikeResponse publicSetLike(BlogLikeRequest req) {
+        String instituteId = req == null ? null : req.getInstituteId();
+        String postId = req == null ? null : req.getPostId();
+        String visitorKey = req == null ? null : req.getVisitorKey();
+        if (blank(instituteId) || blank(postId) || visitorKey == null || !VISITOR_KEY.matcher(visitorKey).matches()) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "Invalid like request");
+        }
+        repository.findByIdAndInstituteId(postId, instituteId)
+                .filter(this::isPublic)
+                .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "Post not found"));
+        boolean liked = !Boolean.FALSE.equals(req.getLiked());
+        int changed = liked ? repository.insertLike(postId, visitorKey) : repository.deleteLike(postId, visitorKey);
+        if (changed > 0) {
+            repository.addLikes(postId, liked ? 1 : -1);
+        }
+        Integer count = repository.likeCount(postId);
+        return new BlogLikeResponse(liked, count == null ? 0 : count);
+    }
+
     /* ── helpers ───────────────────────────────────────────────────────── */
 
     private boolean isPublic(CatalogueBlogPost p) {
@@ -378,6 +409,7 @@ public class CatalogueBlogService {
                 .readingMinutes(p.getReadingMinutes())
                 .template(blank(p.getTemplate()) ? DEFAULT_TEMPLATE : p.getTemplate())
                 .recommendedCourseIds(readTags(p.getRecommendedCourseIds()))
+                .likeCount(p.getLikeCount() == null ? 0 : p.getLikeCount())
                 .createdBy(p.getCreatedBy())
                 .updatedBy(p.getUpdatedBy())
                 .createdAt(iso(p.getCreatedAt()))
