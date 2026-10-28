@@ -889,6 +889,58 @@ async function serveFavicon(
   );
 }
 
+// The public lead form, usually loaded inside an iframe on an institute's own
+// site. It has a standalone build (dist/audience-form.html, see
+// src/audience-form-entry.tsx) that boots without the rest of the learner app.
+const AUDIENCE_FORM_PATH = /^\/audience-response\/?$/;
+const AUDIENCE_FORM_MARKER = '<meta name="vacademy-entry" content="audience-form"';
+
+interface AudienceFormAssets {
+  fetch: (request: Request | string) => Promise<Response>;
+}
+
+// Serves the standalone form page for /audience-response, keeping the URL.
+//
+// The full app's response for this request is fetched first and is the
+// fallback for anything unexpected — no ASSETS binding, the page missing from
+// this deploy (Pages would answer with the SPA's index.html), a fetch error —
+// so the visitor then gets exactly what they got before. When the form page is
+// used, it is sent with that response's headers, so public/_headers applies to
+// it unchanged.
+async function serveAudienceFormShell(
+  context: Parameters<PagesFunction>[0],
+  url: URL
+): Promise<Response> {
+  // Unconditional, so the fallback is a full 200 with every header (not a 304
+  // validated against the app's index.html).
+  const unconditional = new Request(context.request);
+  unconditional.headers.delete("if-none-match");
+  unconditional.headers.delete("if-modified-since");
+  const appResponse = await context.next(unconditional);
+
+  try {
+    if (appResponse.status !== 200) return appResponse;
+    const assets = (context.env as { ASSETS?: AudienceFormAssets }).ASSETS;
+    if (!assets) return appResponse;
+    // Pages drops ".html" from asset URLs (and redirects if you ask for it).
+    const res = await assets.fetch(new URL("/audience-form", url.origin).toString());
+    if (!res.ok) return appResponse;
+    const html = await res.text();
+    if (!html.includes(AUDIENCE_FORM_MARKER)) return appResponse;
+
+    const headers = new Headers(appResponse.headers);
+    // These described index.html's bytes, not this page's.
+    for (const name of ["etag", "last-modified", "content-length", "content-encoding", "content-range"]) {
+      headers.delete(name);
+    }
+    headers.set("content-type", "text/html; charset=utf-8");
+    void appResponse.body?.cancel();
+    return new Response(html, { status: 200, headers });
+  } catch {
+    return appResponse;
+  }
+}
+
 export const onRequest: PagesFunction = async (context) => {
   const { request } = context;
   const ua = request.headers.get("user-agent") || "";
@@ -919,6 +971,9 @@ export const onRequest: PagesFunction = async (context) => {
 
   // Only intercept for crawlers
   if (!CRAWLER_UA_REGEX.test(ua)) {
+    if (request.method === "GET" && AUDIENCE_FORM_PATH.test(url.pathname)) {
+      return serveAudienceFormShell(context, url);
+    }
     return context.next();
   }
 
