@@ -262,7 +262,7 @@ export function Navbar() {
       <div className={`navbar sticky ${isChildViewActive() ? "top-10" : "top-0"} z-50 border-b border-primary-200/40 dark:border-neutral-800 flex h-12 md:h-14 items-center justify-between bg-white/80 dark:bg-neutral-900/80 backdrop-blur-sm px-2 md:px-5 py-1.5 md:py-2 transition-all duration-300 w-full overflow-x-auto flex-nowrap [.ui-play_&]:border-b [.ui-play_&]:border-border [.ui-play_&]:bg-white [.ui-play_&]:backdrop-blur-none`}>
         {/* Left Section */}
         <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
-          {header.showBackHome && canGoBack && !isDashboard && (
+          {header.showBack && canGoBack && !isDashboard && (
             <Tooltip delayDuration={0}>
               <TooltipTrigger asChild>
                 <button
@@ -280,7 +280,7 @@ export function Navbar() {
               </TooltipContent>
             </Tooltip>
           )}
-          {header.showBackHome && !isDashboard && (
+          {header.showHome && !isDashboard && (
             <Tooltip delayDuration={0}>
               <TooltipTrigger asChild>
                 <button
@@ -438,7 +438,7 @@ export function Navbar() {
             </div>
           </SidebarTrigger>
         )}
-        {header.showBackHome && canGoBack && !isDashboard && (
+        {header.showBack && canGoBack && !isDashboard && (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <button
@@ -453,7 +453,7 @@ export function Navbar() {
             </TooltipContent>
           </Tooltip>
         )}
-        {header.showBackHome && !isDashboard && (
+        {header.showHome && !isDashboard && (
           <Tooltip delayDuration={0}>
             <TooltipTrigger asChild>
               <button

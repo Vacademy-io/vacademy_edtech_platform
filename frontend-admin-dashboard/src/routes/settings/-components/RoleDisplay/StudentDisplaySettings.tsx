@@ -2276,7 +2276,7 @@ const SETTINGS_CARD_INDEX: SettingsCardEntry[] = [
         section: 'grp-theme',
         key: 'layoutBuilder',
         keywords:
-            'footer bottom bar tab header rail navigation wallpaper background live class center button floating mobile tablet windows app',
+            'footer bottom bar tab header back home button page title logo rail navigation wallpaper background live class center button floating mobile tablet windows app',
     },
     {
         id: 'sd-sidebar',

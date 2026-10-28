@@ -499,7 +499,11 @@ export type StudentNavPlacement = "auto" | "sidebar" | "bottomBar" | "both" | "r
 export interface StudentHeaderSettings {
   showLogo?: boolean;
   showPageTitle?: boolean;
-  /** Back + Home buttons on inner pages. */
+  /** Back arrow on inner pages. Absent = follows showBackHome. */
+  showBack?: boolean;
+  /** Home button on inner pages. Absent = follows showBackHome. */
+  showHome?: boolean;
+  /** Legacy single switch for Back + Home, read when the two above are absent. */
   showBackHome?: boolean;
   /** Badges / points pill. */
   showAchievements?: boolean;

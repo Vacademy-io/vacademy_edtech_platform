@@ -82,6 +82,24 @@ describe("resolveStudentLayout — configured", () => {
     expect(r.header.showNotifications).toBe(true);
   });
 
+  it("back and home switch separately; the legacy combined switch fills in", () => {
+    const opts = { device: "mobile", playSkin: true } as const;
+    const own = resolveStudentLayout({ header: { showHome: false } }, opts);
+    expect(own.header.showBack).toBe(true);
+    expect(own.header.showHome).toBe(false);
+
+    const legacy = resolveStudentLayout({ header: { showBackHome: false } }, opts);
+    expect(legacy.header.showBack).toBe(false);
+    expect(legacy.header.showHome).toBe(false);
+
+    const mixed = resolveStudentLayout(
+      { header: { showBackHome: false, showBack: true } },
+      opts
+    );
+    expect(mixed.header.showBack).toBe(true);
+    expect(mixed.header.showHome).toBe(false);
+  });
+
   it("bottom bar items: visible only, sorted, blank routes dropped; maxVisible clamped", () => {
     const r = resolveStudentLayout(
       {

@@ -306,7 +306,8 @@
             "items": {
                 "showLogo": "Logo",
                 "showPageTitle": "Page title",
-                "showBackHome": "Back & Home buttons",
+                "showBack": "Back button",
+                "showHome": "Home button",
                 "showAchievements": "Badges & points",
                 "showLanguage": "Language switcher",
                 "showHelp": "Help & raise a query",
