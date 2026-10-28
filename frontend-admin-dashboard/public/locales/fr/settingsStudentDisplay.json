@@ -6,11 +6,12 @@
         "description": "Contrôlez ce que voient les apprenants — barre latérale, cours, connexion, certificats, notifications et plus encore."
     },
     "sections": {
-        "layoutNav": "Mise en page et navigation",
+        "layoutNav": "Menu latéral et tableau de bord",
         "loginAccount": "Connexion et compte",
-        "learningExperience": "Expérience d'apprentissage",
+        "learningExperience": "Cours et apprentissage",
         "notificationsRedirect": "Notifications et redirection",
-        "themeLayout": "Thème et mise en page"
+        "themeLayout": "Apparence et mise en page",
+        "profilePermissions": "Profil et autorisations"
     },
     "common": {
         "label": "Libellé",
@@ -42,7 +43,9 @@
         "selectUiType": "Sélectionner le type d'interface",
         "cleanerPlay": "Play épuré",
         "movedToAppearance": "Le thème visuel se trouve désormais dans Paramètres → Apparence, avec le style des coins, la densité et le style de surface.",
-        "openAppearance": "Ouvrir les paramètres d'apparence"
+        "openAppearance": "Ouvrir les paramètres d'apparence",
+        "movedToTheme": "Le style du thème est maintenant dans l'onglet Apparence et mise en page, avec les couleurs, la police, les coins et la mise en page de l'app.",
+        "openTheme": "Ouvrir Apparence et mise en page"
     },
     "widgets": {
         "cardTitle": "Widgets du tableau de bord",
@@ -368,5 +371,13 @@
     },
     "themeSection": {
         "separateSave": "Les modifications du thème s'enregistrent avec le bouton « Save theme » ci-dessous. La barre en bas de page enregistre tout le reste."
+    },
+    "finder": {
+        "placeholder": "Trouver un réglage — ex. inscription, barre du bas, quiz, focus",
+        "clear": "Effacer la recherche",
+        "noResults": "Aucun réglage ne correspond.",
+        "onThisTab": "Dans cet onglet :",
+        "themeTitle": "Thème (couleurs, style, police)",
+        "sessionsTitle": "Limite de sessions simultanées"
     }
 }
