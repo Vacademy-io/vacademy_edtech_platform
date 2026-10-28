@@ -65,6 +65,10 @@ public class CatalogueReview {
     @Column(name = "status", nullable = false, length = 16)
     private String status;
 
+    /** JSON array of {key, label, value}: answers to the form's custom fields (V621). */
+    @Column(name = "answers", columnDefinition = "TEXT")
+    private String answers;
+
     @Column(name = "visitor_key", length = 64)
     private String visitorKey;
 

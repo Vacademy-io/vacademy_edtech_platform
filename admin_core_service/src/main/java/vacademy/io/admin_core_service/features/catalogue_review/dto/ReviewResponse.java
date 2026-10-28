@@ -8,6 +8,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /** One review. The public list leaves the moderation fields out (null). */
 @Data
 @NoArgsConstructor
@@ -29,4 +31,6 @@ public class ReviewResponse {
     private String catalogueTag;
     private String pageRoute;
     private String reviewedAt;
+    /** Custom-field answers (admin only). */
+    private List<ReviewAnswer> answers;
 }

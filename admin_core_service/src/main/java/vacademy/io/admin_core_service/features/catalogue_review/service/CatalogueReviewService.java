@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.catalogue_review.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -7,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.admin_core_service.features.catalogue_review.dto.ReviewAnswer;
 import vacademy.io.admin_core_service.features.catalogue_review.dto.ReviewPageResponse;
 import vacademy.io.admin_core_service.features.catalogue_review.dto.ReviewResponse;
 import vacademy.io.admin_core_service.features.catalogue_review.dto.ReviewSubmitRequest;
@@ -20,6 +23,7 @@ import vacademy.io.common.exceptions.VacademyException;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -53,6 +57,11 @@ public class CatalogueReviewService {
     /** A flood guard for one institute, far above any real class. */
     private static final int MAX_PER_INSTITUTE_PER_HOUR = 300;
     private static final Pattern VISITOR_KEY = Pattern.compile("^[A-Za-z0-9_-]{8,64}$");
+    /** Custom questions per review, and the size of each answer. */
+    private static final int MAX_ANSWERS = 20;
+    private static final int MAX_ANSWER_KEY_CHARS = 64;
+    private static final int MAX_ANSWER_LABEL_CHARS = 120;
+    private static final int MAX_ANSWER_VALUE_CHARS = 1000;
 
     @Autowired
     private CatalogueReviewRepository repository;
@@ -62,6 +71,8 @@ public class CatalogueReviewService {
 
     @Autowired
     private InstituteAccessValidator accessValidator;
+
+    private final ObjectMapper mapper = new ObjectMapper();
 
     /* ── public ────────────────────────────────────────────────────────── */
 
@@ -114,6 +125,7 @@ public class CatalogueReviewService {
                 .designation(limit(req.getDesignation(), MAX_FIELD_CHARS))
                 .status(PENDING)
                 .visitorKey(visitorKey)
+                .answers(writeAnswers(req.getAnswers()))
                 .build());
         return ReviewResponse.builder().id(saved.getId()).status(PENDING).build();
     }
@@ -235,9 +247,42 @@ public class CatalogueReviewService {
             b.status(r.getStatus())
                     .catalogueTag(r.getCatalogueTag())
                     .pageRoute(r.getPageRoute())
-                    .reviewedAt(iso(r.getReviewedAt()));
+                    .reviewedAt(iso(r.getReviewedAt()))
+                    .answers(readAnswers(r.getAnswers()));
         }
         return b.build();
+    }
+
+    /**
+     * Custom-field answers as stored: blank answers dropped, each part cut to
+     * its limit, at most MAX_ANSWERS. Null when nothing is left.
+     */
+    private String writeAnswers(List<ReviewAnswer> answers) {
+        if (answers == null || answers.isEmpty()) return null;
+        List<ReviewAnswer> kept = new ArrayList<>();
+        for (ReviewAnswer a : answers) {
+            if (a == null || kept.size() >= MAX_ANSWERS) continue;
+            String value = limit(a.getValue(), MAX_ANSWER_VALUE_CHARS);
+            if (value == null) continue;
+            String key = limit(a.getKey(), MAX_ANSWER_KEY_CHARS);
+            String label = limit(a.getLabel(), MAX_ANSWER_LABEL_CHARS);
+            kept.add(new ReviewAnswer(key, label == null ? key : label, value));
+        }
+        if (kept.isEmpty()) return null;
+        try {
+            return mapper.writeValueAsString(kept);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private List<ReviewAnswer> readAnswers(String json) {
+        if (blank(json)) return null;
+        try {
+            return mapper.readValue(json, new TypeReference<List<ReviewAnswer>>() {});
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private static String iso(Timestamp t) {
