@@ -52,6 +52,7 @@ public class LeadFollowupService {
     private final vacademy.io.admin_core_service.features.common.repository.CustomFieldValuesRepository customFieldValuesRepository;
     private final vacademy.io.admin_core_service.features.common.repository.CustomFieldRepository customFieldRepository;
     private final LeadFollowupSettingService leadFollowupSettingService;
+    private final FollowUpInterestTierSync followUpInterestTierSync;
     private final vacademy.io.admin_core_service.features.utm_attribution.service.UtmListFilterResolver utmListFilterResolver;
 
     @Transactional
@@ -90,6 +91,10 @@ public class LeadFollowupService {
         liveActivityCounsellorRecorder.recordFollowup(
                 instituteId, LiveActivityAction.FOLLOWUP_CREATED, saved.getId(),
                 user.getUserId(), user.getUserId(), null);
+
+        // A new follow-up is the lead's latest, so its interest level is the lead's now
+        // (institute switch, off by default; runs after commit and never fails this save).
+        followUpInterestTierSync.syncAfterCommit(instituteId, studentUserId, request.getInterestLevel(), user);
 
         return LeadFollowupDto.from(saved);
     }
@@ -597,6 +602,7 @@ public class LeadFollowupService {
     @Transactional
     public LeadFollowupDto update(String id, UpdateLeadFollowupRequest request, CustomUserDetails user) {
         LeadFollowup followup = findOrThrow(id);
+        String interestBefore = followup.getInterestLevel();
         if (Boolean.TRUE.equals(followup.getIsClosed())) {
             editClosed(followup, request, user);
         } else {
@@ -605,7 +611,39 @@ public class LeadFollowupService {
             // An open follow-up has no closing note yet; closerReason is ignored here.
             applyInterestLevel(followup, request);
         }
-        return LeadFollowupDto.from(leadFollowupRepository.save(followup));
+        LeadFollowup saved = leadFollowupRepository.save(followup);
+        syncEditedInterest(saved, interestBefore, user);
+        return LeadFollowupDto.from(saved);
+    }
+
+    /**
+     * An interest level corrected on the lead's latest follow-up is the lead's current
+     * interest, so it updates the lead too (institute switch, off by default). Correcting an
+     * older follow-up only fixes that record: the lead has been called since. Clearing it
+     * leaves the lead alone.
+     */
+    private void syncEditedInterest(LeadFollowup followup, String interestBefore, CustomUserDetails user) {
+        String interest = followup.getInterestLevel();
+        if (isBlank(interest) || interest.equals(interestBefore)) return;
+        if (!isLatestForLead(followup)) return;
+        String leadUserId = audienceResponseRepository.findById(followup.getAudienceResponseId())
+                .map(AudienceResponse::getUserId)
+                .orElse(null);
+        followUpInterestTierSync.syncAfterCommit(followup.getInstituteId(), leadUserId, interest, user);
+    }
+
+    /** Newest by creation among this lead's follow-ups (ties broken by id, so it is stable). */
+    private boolean isLatestForLead(LeadFollowup followup) {
+        return leadFollowupRepository
+                .findByAudienceResponseIdOrderByScheduleTimeAsc(followup.getAudienceResponseId())
+                .stream()
+                .max(java.util.Comparator
+                        .comparing(LeadFollowup::getCreatedAt,
+                                java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder()))
+                        .thenComparing(LeadFollowup::getId,
+                                java.util.Comparator.nullsFirst(java.util.Comparator.naturalOrder())))
+                .map(latest -> java.util.Objects.equals(latest.getId(), followup.getId()))
+                .orElse(false);
     }
 
     private void editClosed(LeadFollowup followup, UpdateLeadFollowupRequest request, CustomUserDetails user) {

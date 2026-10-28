@@ -207,6 +207,12 @@ export interface FollowUpFieldsConfig {
      * "Schedule next" block, as before.
      */
     markDoneLeadStatusAndTier: boolean;
+    /**
+     * A follow-up's {@link interestLevels} answer also sets the lead's own interest
+     * level (tier): when a follow-up is created with one, and when the lead's latest
+     * follow-up has it edited. Matched to a tier by name; done by the backend.
+     */
+    syncInterestToLead: boolean;
 }
 
 /**
@@ -311,6 +317,7 @@ export const LEAD_SETTINGS_DEFAULTS: LeadSettingsConfig = {
         scheduleNextByDefault: false,
         closingNoteOptional: false,
         markDoneLeadStatusAndTier: false,
+        syncInterestToLead: false,
     },
     leadLookup: {
         enabled: false,
@@ -408,6 +415,7 @@ export function normaliseFollowUpFields(
         scheduleNextByDefault: saved?.scheduleNextByDefault === true,
         closingNoteOptional: saved?.closingNoteOptional === true,
         markDoneLeadStatusAndTier: saved?.markDoneLeadStatusAndTier === true,
+        syncInterestToLead: saved?.syncInterestToLead === true,
     };
 }
 

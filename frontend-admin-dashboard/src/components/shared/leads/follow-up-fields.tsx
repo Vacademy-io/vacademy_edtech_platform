@@ -121,6 +121,7 @@ export function useFollowUpFeatures(): {
     scheduleNextByDefault: boolean;
     closingNoteOptional: boolean;
     markDoneLeadStatusAndTier: boolean;
+    syncInterestToLead: boolean;
 } {
     const { followUpFields } = useLeadSettings();
     return {
@@ -131,6 +132,7 @@ export function useFollowUpFeatures(): {
         scheduleNextByDefault: followUpFields.scheduleNextByDefault,
         closingNoteOptional: followUpFields.closingNoteOptional,
         markDoneLeadStatusAndTier: followUpFields.markDoneLeadStatusAndTier,
+        syncInterestToLead: followUpFields.syncInterestToLead,
     };
 }
 
