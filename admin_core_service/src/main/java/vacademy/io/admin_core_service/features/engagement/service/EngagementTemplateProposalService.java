@@ -402,6 +402,50 @@ public class EngagementTemplateProposalService {
         return changed;
     }
 
+    /** Statuses of templates that are (or were) usable and can still change at Meta. */
+    private static final List<String> APPROVED_OR_DISABLED = List.of("META_APPROVED", "META_RECATEGORISED", "META_DISABLED");
+
+    /**
+     * W12 — Meta can disable or pause an APPROVED template later (quality rating). The 5-minute
+     * sync only looks at pending rows, so without this the brain kept picking a template every
+     * send of which would fail. An approved row Meta now reports DISABLED / PAUSED / DELETED
+     * becomes META_DISABLED (findApproved drops it); one Meta re-approves comes back. Needs a
+     * fresh Meta refresh: if the refresh fails nothing changes.
+     */
+    public int syncApproved(String instituteId) {
+        try {
+            clients.syncWhatsAppTemplates(instituteId);
+        } catch (Exception e) {
+            log.warn("Approved-template sync: Meta refresh failed for institute {}: {}", instituteId, e.getMessage());
+            return 0;
+        }
+        int changed = 0;
+        Instant now = Instant.now();
+        for (EngagementTemplateProposal p : proposalRepository.findByInstituteIdAndStatusIn(instituteId, APPROVED_OR_DISABLED)) {
+            if (p.getNotificationTemplateId() == null) continue;
+            try {
+                JsonNode t = clients.getWhatsAppTemplate(p.getNotificationTemplateId());
+                String metaStatus = t.path("status").asText("").toUpperCase();
+                String toStatus = switch (metaStatus) {
+                    case "DISABLED", "PAUSED", "DELETED" -> "META_DISABLED";
+                    case "APPROVED" -> "META_DISABLED".equals(p.getStatus())
+                            ? mapMetaStatus("APPROVED", p.getProposedCategory(), textOrNull(t, "category")) : null;
+                    default -> null;
+                };
+                if (toStatus == null || toStatus.equals(p.getStatus())) continue;
+                String reason = "META_DISABLED".equals(toStatus)
+                        ? (textOrNull(t, "rejectionReason") != null ? textOrNull(t, "rejectionReason")
+                                : "Meta " + metaStatus.toLowerCase() + " this template; it is no longer sent.")
+                        : null;
+                changed += proposalRepository.reconcileApprovedFromMeta(p.getId(), toStatus, reason, now);
+            } catch (Exception e) {
+                log.warn("Approved-template sync failed for proposal {}: {}", p.getId(), e.getMessage());
+            }
+        }
+        if (changed > 0) log.info("Approved-template sync: {} template(s) changed state for institute {}", changed, instituteId);
+        return changed;
+    }
+
     // ----- helpers -----
 
     /** Map a notification_template Meta status → proposal status; null = leave as-is. */

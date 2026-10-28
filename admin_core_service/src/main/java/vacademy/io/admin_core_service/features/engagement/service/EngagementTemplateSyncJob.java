@@ -46,4 +46,21 @@ public class EngagementTemplateSyncJob {
             log.info("Template sync: {} proposal(s) advanced across {} institute(s)", totalChanged, institutes.size());
         }
     }
+
+    /**
+     * W12 — re-check APPROVED templates for a later Meta disable/pause. Hourly, not every 5 minutes:
+     * it refreshes from Meta for every institute that has approved templates.
+     */
+    @Scheduled(fixedDelayString = "${engagement.template-sync.approved-delay-ms:3600000}",
+            initialDelayString = "${engagement.template-sync.approved-initial-delay-ms:600000}")
+    @SchedulerLock(name = "EngagementTemplateApprovedSync", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
+    public void sweepApproved() {
+        for (String instituteId : proposalRepository.institutesWithApprovedProposals()) {
+            try {
+                proposalService.syncApproved(instituteId);
+            } catch (Exception e) {
+                log.warn("Approved-template sync failed for institute {}: {}", instituteId, e.getMessage());
+            }
+        }
+    }
 }

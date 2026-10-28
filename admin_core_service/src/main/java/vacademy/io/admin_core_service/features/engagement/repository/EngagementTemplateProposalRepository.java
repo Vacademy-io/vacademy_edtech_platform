@@ -33,6 +33,24 @@ public interface EngagementTemplateProposalRepository extends JpaRepository<Enga
             """, nativeQuery = true)
     List<String> institutesWithPendingProposals();
 
+    /** Institutes with templates Meta approved (or later disabled) — the hourly W12 re-check. */
+    @Query(value = """
+            SELECT DISTINCT institute_id FROM engagement_template_proposal
+             WHERE status IN ('META_APPROVED', 'META_RECATEGORISED', 'META_DISABLED')
+            """, nativeQuery = true)
+    List<String> institutesWithApprovedProposals();
+
+    /** W12 CAS: an approved template disabled by Meta (or re-approved). Never touches review states. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_template_proposal
+               SET status = :toStatus, rejection_reason = :reason, updated_at = :now
+             WHERE id = :id AND status IN ('META_APPROVED', 'META_RECATEGORISED', 'META_DISABLED')
+            """, nativeQuery = true)
+    int reconcileApprovedFromMeta(@Param("id") String id, @Param("toStatus") String toStatus,
+                                  @Param("reason") String reason, @Param("now") Instant now);
+
     /** Approved-and-usable templates for an engine (for the sender/brain to reference by name). */
     @Query(value = """
             SELECT * FROM engagement_template_proposal

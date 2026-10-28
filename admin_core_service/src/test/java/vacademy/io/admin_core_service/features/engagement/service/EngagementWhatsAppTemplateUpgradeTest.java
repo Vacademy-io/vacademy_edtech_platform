@@ -185,6 +185,34 @@ class EngagementWhatsAppTemplateUpgradeTest {
     }
 
     @Test
+    @DisplayName("W12: an approved template Meta later disables is taken out of use, and comes back when re-approved")
+    void W12_disabledByMeta() {
+        EngagementTemplateProposal approved = proposal("p-a", "META_APPROVED");
+        EngagementTemplateProposal disabled = proposal("p-d", "META_DISABLED");
+        EngagementTemplateProposal still = proposal("p-s", "META_APPROVED");
+        when(proposals.findByInstituteIdAndStatusIn(eq("i1"), anyList())).thenReturn(List.of(approved, disabled, still));
+        when(clients.getWhatsAppTemplate("tpl-p-a")).thenReturn(om.createObjectNode().put("status", "PAUSED"));
+        when(clients.getWhatsAppTemplate("tpl-p-d")).thenReturn(om.createObjectNode().put("status", "APPROVED").put("category", "UTILITY"));
+        when(clients.getWhatsAppTemplate("tpl-p-s")).thenReturn(om.createObjectNode().put("status", "APPROVED"));
+        when(proposals.reconcileApprovedFromMeta(anyString(), anyString(), any(), any())).thenReturn(1);
+
+        assertEquals(2, service.syncApproved("i1"));
+
+        verify(proposals).reconcileApprovedFromMeta(eq("p-a"), eq("META_DISABLED"),
+                argThat(r -> r != null && r.contains("paused")), any());
+        verify(proposals).reconcileApprovedFromMeta(eq("p-d"), eq("META_APPROVED"), isNull(), any());
+        verify(proposals, never()).reconcileApprovedFromMeta(eq("p-s"), anyString(), any(), any());
+    }
+
+    @Test
+    @DisplayName("W12: when the Meta refresh fails nothing is changed (stale data must not disable templates)")
+    void W12_refreshFailureChangesNothing() {
+        when(clients.syncWhatsAppTemplates("i1")).thenThrow(new IllegalStateException("token expired"));
+        assertEquals(0, service.syncApproved("i1"));
+        verify(proposals, never()).reconcileApprovedFromMeta(anyString(), anyString(), any(), any());
+    }
+
+    @Test
     void unknownLanguageOrModeRefused() {
         assertThrows(VacademyException.class, () -> service.recommend("e1", "i1", "a", 1, null, "fr"));
         assertThrows(VacademyException.class, () -> service.requestAlternatives("e1", "i1",
