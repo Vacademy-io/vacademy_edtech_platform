@@ -979,12 +979,18 @@ export const AUTOMATION_FEATURES: AutomationFeature[] = [
                         on: "#ctx['adminContacts']",
                         forEach: { operation: 'SEND_EMAIL', eval: "#ctx['item']" },
                         recipientField: 'email',
+                        // The lead-submission context carries the lead as `user` (every
+                        // path sets it) and its number as `phone` (not on form-webhook
+                        // leads, hence the fallback). There is no `lead` key, and a var
+                        // that fails to evaluate is sent as its expression text, so each
+                        // one is written to come out blank rather than fail.
                         templateVars: {
                             adminName: "#ctx['item'].fullName",
                             campaignName: "#ctx['campaignName']",
-                            leadName: "#ctx['lead']['Full Name']",
-                            leadEmail: "#ctx['lead']['Email']",
-                            leadMobile: "#ctx['lead']['Phone Number']",
+                            leadName: "#ctx['user']?.fullName",
+                            leadEmail: "#ctx['user']?.email",
+                            leadMobile: "#ctx['phone'] ?: #ctx['user']?.mobileNumber",
+                            submissionTime: "#ctx['submissionTime']",
                             instituteName: "#ctx['instituteName']",
                         },
                     }, 250, 410);
