@@ -891,15 +891,58 @@
         "frequency": "once",
         "devices": "all",
         "hideAfterSubmit": true,
-        "fields": {
-          "reviewText": "optional",
-          "course": "optional",
-          "city": "optional",
-          "designation": "optional"
-        },
-        "courseOptions": []
+        "formFields": [
+          {
+            "id": "rating",
+            "kind": "rating",
+            "label": "",
+            "required": true,
+            "width": "full"
+          },
+          {
+            "id": "reviewText",
+            "kind": "reviewText",
+            "label": "",
+            "placeholder": "",
+            "required": false,
+            "width": "full"
+          },
+          {
+            "id": "reviewerName",
+            "kind": "reviewerName",
+            "label": "",
+            "placeholder": "",
+            "required": true,
+            "width": "full"
+          },
+          {
+            "id": "courseName",
+            "kind": "courseName",
+            "label": "",
+            "placeholder": "",
+            "required": false,
+            "options": [],
+            "width": "half"
+          },
+          {
+            "id": "city",
+            "kind": "city",
+            "label": "",
+            "placeholder": "",
+            "required": false,
+            "width": "half"
+          },
+          {
+            "id": "designation",
+            "kind": "designation",
+            "label": "",
+            "placeholder": "",
+            "required": false,
+            "width": "full"
+          }
+        ]
       },
-      "dataBound": "Live reviews: asks site visitors for a 1-5 star rating, their name and (per `fields`) a written review, course, city and occupation/designation; submissions wait for the admin in Website Builder → Reviews and only approved ones become public. Placement + behaviour only: display floatingPopup|floating|popup|inline, buttonStyle pill|icon|tab, position bottom-right|bottom-left|middle-right|middle-left, popupStyle modal|corner, trigger delay|scroll|exit, delaySeconds, frequency, devices, fields.* off|optional|required, courseOptions. Leave text props empty (they default to the site language). One per site is enough — put it on the home page."
+      "dataBound": "Live reviews: asks site visitors for a 1-5 star rating, their name and (per `fields`) a written review, course, city and occupation/designation; submissions wait for the admin in Website Builder → Reviews and only approved ones become public. Placement + behaviour only: display floatingPopup|floating|popup|inline, buttonStyle pill|icon|tab, position bottom-right|bottom-left|middle-right|middle-left, popupStyle modal|corner, trigger delay|scroll|exit, delaySeconds, frequency, devices. formFields[] = the form in order: {id, kind, label, placeholder, required, options, width full|half}; kinds rating + reviewerName (always kept, required), reviewText, courseName, city, designation (each once) and custom text|textarea|select|number|email|phone (id \"f_<word>\", max 10; their answers are stored with the review). Leave text props empty (they default to the site language). One per site is enough — put it on the home page."
     },
     {
       "type": "textBlock",

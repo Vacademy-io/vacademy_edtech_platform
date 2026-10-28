@@ -787,8 +787,11 @@ export const buildComponentTemplates = (t: TFunction): Record<string, Omit<Compo
     // sections that read reviews. Empty texts use the built-in wording in the
     // visitor's site language. display floatingPopup | floating | popup | inline;
     // buttonStyle pill | icon | tab; position bottom-right | bottom-left |
-    // middle-right | middle-left; popupStyle modal | corner; fields.* off |
-    // optional | required (stars and name are always asked).
+    // middle-right | middle-left; popupStyle modal | corner. formFields is the
+    // form in order: built-ins rating | reviewerName (both always, required) |
+    // reviewText | courseName | city | designation, plus custom text | textarea |
+    // select | number | email | phone; each {id, kind, label, placeholder,
+    // required, options, width full|half}; label '' = default wording.
     reviewCollector: {
         type: 'reviewCollector',
         enabled: true,
@@ -806,8 +809,14 @@ export const buildComponentTemplates = (t: TFunction): Record<string, Omit<Compo
             frequency: 'once',
             devices: 'all',
             hideAfterSubmit: true,
-            fields: { reviewText: 'optional', course: 'optional', city: 'optional', designation: 'optional' },
-            courseOptions: [],
+            formFields: [
+                { id: 'rating', kind: 'rating', label: '', required: true, width: 'full' },
+                { id: 'reviewText', kind: 'reviewText', label: '', placeholder: '', required: false, width: 'full' },
+                { id: 'reviewerName', kind: 'reviewerName', label: '', placeholder: '', required: true, width: 'full' },
+                { id: 'courseName', kind: 'courseName', label: '', placeholder: '', required: false, options: [], width: 'half' },
+                { id: 'city', kind: 'city', label: '', placeholder: '', required: false, width: 'half' },
+                { id: 'designation', kind: 'designation', label: '', placeholder: '', required: false, width: 'full' },
+            ],
         },
     },
     textBlock: {

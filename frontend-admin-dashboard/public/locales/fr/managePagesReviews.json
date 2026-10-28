@@ -183,6 +183,46 @@
             "submitLabel": "Envoyer l'avis",
             "successHeading": "Merci !",
             "successMessage": "Votre avis a été envoyé. Il apparaîtra sur le site une fois approuvé."
+        },
+        "formFields": {
+            "title": "Champs du formulaire",
+            "hint": "Le formulaire du visiteur, dans cet ordre.",
+            "add": "Ajouter un champ",
+            "builtinGroup": "Champs standard",
+            "customGroup": "Votre propre question",
+            "kinds": {
+                "rating": "Note en étoiles",
+                "reviewerName": "Nom",
+                "reviewText": "Avis écrit",
+                "courseName": "Formation",
+                "city": "Ville",
+                "designation": "Profession / poste",
+                "text": "Réponse courte",
+                "textarea": "Réponse longue",
+                "select": "Liste déroulante",
+                "number": "Nombre",
+                "email": "E-mail",
+                "phone": "Téléphone"
+            },
+            "label": "Libellé",
+            "placeholder": "Texte indicatif",
+            "options": "Choix (un par ligne)",
+            "optionsHint": "Les visiteurs en choisissent un.",
+            "optionsCourseHint": "Laissez vide pour que les visiteurs saisissent leur formation.",
+            "required": "Obligatoire",
+            "lockedHint": "La note et le nom restent toujours sur le formulaire : un avis a besoin des deux pour devenir un témoignage.",
+            "width": "Largeur",
+            "widthFull": "Pleine",
+            "widthHalf": "Moitié",
+            "edit": "Modifier le champ",
+            "moveUp": "Monter",
+            "moveDown": "Descendre",
+            "delete": "Supprimer le champ",
+            "maxCustom": "Vous pouvez ajouter jusqu'à 10 questions.",
+            "defaults": {
+                "rating": "Votre note",
+                "custom": "Votre réponse"
+            }
         }
     }
 }
