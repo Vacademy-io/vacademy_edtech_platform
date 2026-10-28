@@ -87,6 +87,9 @@ describe('follow-up fields config', () => {
             allowEditing: false,
             reportExports: false,
             leadStatusAndTier: false,
+            scheduleNextByDefault: false,
+            closingNoteOptional: false,
+            markDoneLeadStatusAndTier: false,
         });
     });
 
