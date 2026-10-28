@@ -2,7 +2,8 @@
     "toast": {
         "batchDeletedSuccess": "Batch deleted successfully",
         "batchDeleteFailed": "Failed to delete batch",
-        "inviteLinkCopied": "Invite link copied to clipboard"
+        "inviteLinkCopied": "Invite link copied to clipboard",
+        "noInviteForBatch": "This batch has no invite link yet, so there is no payment plan to configure"
     },
     "batchCard": {
         "studentCount_one": "{{count}} {{term}}",
@@ -37,6 +38,7 @@
         "label": "More actions",
         "view": "View batch",
         "copyInvite": "Copy invite link",
+        "paymentConfiguration": "Payment Configuration",
         "delete": "Delete batch"
     },
     "course": {
