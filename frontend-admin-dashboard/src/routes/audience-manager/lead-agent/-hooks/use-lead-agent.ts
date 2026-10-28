@@ -79,7 +79,22 @@ export const useCandidates = (
         staleTime: 15_000,
     });
 
-export const useCandidate = (candidateId: string, enabled: boolean) =>
+/**
+ * How many approved leads wait for delivery (they wait for the window and today's
+ * quota). Shares the In progress tile's query; polled so the count drops as the
+ * server delivers them.
+ */
+export const useApprovedWaiting = (agentId: string) =>
+    useQuery({
+        queryKey: leadAgentKeys.candidates(agentId, 'APPROVED', 0, 1),
+        queryFn: () => listCandidates(agentId, { status: 'APPROVED', page: 0, size: 1 }),
+        enabled: !!agentId,
+        select: (d) => d.total,
+        staleTime: 15_000,
+        refetchInterval: 60_000,
+    });
+
+export const useCandidate =(candidateId: string, enabled: boolean) =>
     useQuery({
         queryKey: leadAgentKeys.candidate(candidateId),
         queryFn: () => getCandidate(candidateId),
