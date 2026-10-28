@@ -260,6 +260,18 @@ public class EngagementEngineService {
         return false;
     }
 
+    /**
+     * Where an engine may go from each status. Mirrors NEXT_STATUSES in the admin dashboard
+     * (engagement-engines/-constants). ARCHIVED is terminal: re-activating an archived engine would
+     * message its old audience again. TEMPLATES_PENDING is entered by the template service, not here.
+     */
+    static final java.util.Map<String, List<String>> NEXT_STATUSES = java.util.Map.of(
+            "DRAFT", List.of("DRY_RUN", "ACTIVE", "ARCHIVED"),
+            "TEMPLATES_PENDING", List.of("DRY_RUN", "ACTIVE", "ARCHIVED"),
+            "DRY_RUN", List.of("ACTIVE", "PAUSED", "ARCHIVED"),
+            "ACTIVE", List.of("PAUSED"),
+            "PAUSED", List.of("ACTIVE", "ARCHIVED"));
+
     @Transactional
     public EngagementEngine transition(String engineId, String instituteId, String toStatus) {
         EngagementEngine engine = requireEngine(engineId, instituteId);
@@ -273,6 +285,12 @@ public class EngagementEngineService {
         }
         List<String> allowed = List.of("DRAFT", "TEMPLATES_PENDING", "DRY_RUN", "ACTIVE", "PAUSED", "ARCHIVED");
         if (!allowed.contains(toStatus)) throw new VacademyException("Unknown status: " + toStatus);
+        String fromStatus = engine.getStatus();
+        if (toStatus.equals(fromStatus)) return engine; // a repeated click changes nothing
+        if (!NEXT_STATUSES.getOrDefault(fromStatus, List.of()).contains(toStatus)) {
+            throw new VacademyException("An engine can't move from " + fromStatus + " to " + toStatus
+                    + ("ARCHIVED".equals(fromStatus) ? ". Archived engines are closed; create a new engine instead." : "."));
+        }
         boolean goingLive = "ACTIVE".equals(toStatus) || "DRY_RUN".equals(toStatus);
         if (goingLive && memberRepository.countByEngineIdAndStatus(engineId, "ACTIVE") == 0) {
             throw new VacademyException("Enroll an audience before activating the engine");
