@@ -75,6 +75,12 @@ public enum LeadJourneyActionType {
     /** An outreach attempt was made (email, WhatsApp, SMS) — logged by workflow or manually. */
     REACHOUT,
 
+    /**
+     * The lead asked to be called back (on an AI call). Metadata: callback_time_text, due_at,
+     * call_log_id, followup_id; also logged when that callback could not be placed or went unanswered.
+     */
+    CALLBACK_REQUESTED,
+
     // ── Scoring ──────────────────────────────────────────────────────────────
     /** Lead score was recalculated automatically (metadata: old_score, new_score, tier). */
     SCORE_UPDATED,

@@ -6,7 +6,14 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 import vacademy.io.admin_core_service.features.agent.service.LLMService;
+import vacademy.io.admin_core_service.features.audience.dto.CloseLeadFollowupRequest;
+import vacademy.io.admin_core_service.features.audience.dto.CreateLeadFollowupRequest;
+import vacademy.io.admin_core_service.features.audience.dto.LeadFollowupDto;
+import vacademy.io.admin_core_service.features.audience.repository.LeadFollowupRepository;
+import vacademy.io.admin_core_service.features.audience.service.LeadFollowupService;
+import vacademy.io.admin_core_service.features.engagement.service.EngagementCoordinationDao;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementPointsOfContact;
+import vacademy.io.admin_core_service.features.timeline.enums.LeadJourneyActionType;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallRequestDTO;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallingSettingsPojo;
 import vacademy.io.admin_core_service.features.telephony.persistence.entity.AiCallResult;
@@ -30,6 +37,9 @@ class AiCallFollowThroughTest {
     private TimelineEventService timeline;
     private EngagementPointsOfContact poc;
     private LLMService llm;
+    private LeadFollowupService followups;
+    private LeadFollowupRepository followupRepo;
+    private EngagementCoordinationDao coordination;
     private final Instant callAt = Instant.parse("2026-10-29T12:30:00Z");
 
     @BeforeEach
@@ -46,6 +56,17 @@ class AiCallFollowThroughTest {
         ReflectionTestUtils.setField(ft, "pointsOfContact", poc);
         ReflectionTestUtils.setField(ft, "llmService", llm);
         ReflectionTestUtils.setField(ft, "settingsService", settings);
+        followups = mock(LeadFollowupService.class);
+        followupRepo = mock(LeadFollowupRepository.class);
+        coordination = mock(EngagementCoordinationDao.class);
+        ReflectionTestUtils.setField(ft, "leadFollowupService", followups);
+        ReflectionTestUtils.setField(ft, "leadFollowupRepository", followupRepo);
+        ReflectionTestUtils.setField(ft, "coordinationDao", coordination);
+        when(poc.ownerFor("inst1", "user1")).thenReturn("counsellor1");
+        LeadFollowupDto made = mock(LeadFollowupDto.class);
+        when(made.getId()).thenReturn("fu1");
+        when(followups.create(any(), any())).thenReturn(made);
+        when(followupRepo.openIdsWithContentPrefix(any(), any())).thenReturn(java.util.List.of());
         var ok = new vacademy.io.admin_core_service.features.telephony.queue.dto.AiCallQueueDTOs.EnqueueResult();
         ok.setQueued(true);
         when(queue.enqueueAt(any(), any(), any(), any())).thenReturn(ok);
@@ -77,7 +98,8 @@ class AiCallFollowThroughTest {
         llmSays("{\"at\": \"2026-10-31T18:00:00+05:30\"}");
         ft.afterCall(r, "resp1", "user1", "inst1");
         var desc = ArgumentCaptor.forClass(String.class);
-        verify(timeline).logEvent(eq("AUDIENCE_RESPONSE"), eq("resp1"), eq("AI_CALL_SUMMARY"), any(), any(), any(),
+        // Activity & Notes reads the student's own events, like a counsellor's note
+        verify(timeline).logEvent(eq("STUDENT"), eq("user1"), eq("NOTE"), any(), any(), any(),
                 eq("AI call summary"), desc.capture(), any(), eq("user1"));
         assertTrue(desc.getValue().contains("Teacher interested"));
         assertTrue(desc.getValue().contains("Asked to be called back: in two days"), desc.getValue());
@@ -105,7 +127,47 @@ class AiCallFollowThroughTest {
         llmSays("{\"at\": \"2026-10-31T18:00:00+05:30\"}");
         ft.afterCall(r, "resp1", "user1", "inst1");
         verify(queue).enqueueAt(any(), eq(Instant.parse("2026-10-31T12:30:00Z")), eq("res1"), isNull());
-        verify(timeline).logEvent(any(), eq("resp1"), eq("AI_CALLBACK"), any(), any(), any(), eq("Callback scheduled"), any(), any(), any());
+        // the callback is on the Lead Journey, with a fixed event type the journey view icons
+        verify(timeline).logJourneyEvent(eq("AUDIENCE_RESPONSE"), eq("resp1"), eq(LeadJourneyActionType.CALLBACK_REQUESTED),
+                any(), any(), any(), eq("Asked to be called back"), contains("AI call is scheduled"), any(), eq("user1"));
+        // and a CRM follow-up for the same time, owned by the counsellor: the reminder and the safety net
+        var fu = ArgumentCaptor.forClass(CreateLeadFollowupRequest.class);
+        verify(followups).create(fu.capture(), any());
+        assertEquals(Instant.parse("2026-10-31T12:30:00Z"), fu.getValue().getScheduleTime().toInstant());
+        assertTrue(fu.getValue().getContent().startsWith("AI callback:"), fu.getValue().getContent());
+    }
+
+    @Test
+    @DisplayName("a lead who already has an open follow-up gets no second one; the AI call is still scheduled")
+    void noSecondFollowup() {
+        AiCallResult r = result();
+        r.setCallbackAt(Instant.parse("2026-10-31T12:30:00Z"));
+        when(coordination.openFollowups("inst1", "resp1")).thenReturn(1L);
+        ft.afterCall(r, "resp1", "user1", "inst1");
+        verify(followups, never()).create(any(), any());
+        verify(queue).enqueueAt(any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("a connected AI call closes the follow-up the engine made for the callback")
+    void connectedCallClosesFollowup() {
+        AiCallResult r = result();
+        r.setStatus("completed");
+        r.setAiSummary(null);
+        when(followupRepo.openIdsWithContentPrefix("resp1", "AI callback:")).thenReturn(java.util.List.of("fu9"));
+        ft.afterCall(r, "resp1", "user1", "inst1");
+        var close = ArgumentCaptor.forClass(CloseLeadFollowupRequest.class);
+        verify(followups).close(eq("fu9"), close.capture(), any());
+        assertTrue(close.getValue().getCloserReason().contains("reached the lead"));
+    }
+
+    @Test
+    @DisplayName("a call that did not connect leaves the follow-up open")
+    void unconnectedLeavesFollowup() {
+        AiCallResult r = result();
+        r.setStatus("failed");
+        ft.afterCall(r, "resp1", "user1", "inst1");
+        verify(followups, never()).close(any(), any(), any());
     }
 
     @Test
@@ -115,6 +177,12 @@ class AiCallFollowThroughTest {
         r.setDisposition("Callback");
         ft.afterCall(r, "resp1", "user1", "inst1");
         verify(queue, never()).enqueueAt(any(), any(), any(), any());
+        // a human decides when: a follow-up a day out, a journey event and an alert
+        var fu = ArgumentCaptor.forClass(CreateLeadFollowupRequest.class);
+        verify(followups).create(fu.capture(), any());
+        assertTrue(fu.getValue().getContent().contains("No AI call is scheduled"));
+        verify(timeline).logJourneyEvent(eq("AUDIENCE_RESPONSE"), eq("resp1"), eq(LeadJourneyActionType.CALLBACK_REQUESTED),
+                any(), any(), any(), contains("no time"), any(), any(), eq("user1"));
         verify(poc).alert(eq("inst1"), eq("user1"), startsWith("Callback needs a time"), any(), eq("AI_CALLBACK"), eq("res1"));
     }
 
