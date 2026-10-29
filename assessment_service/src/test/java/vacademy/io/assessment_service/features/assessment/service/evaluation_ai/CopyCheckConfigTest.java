@@ -147,4 +147,19 @@ class CopyCheckConfigTest {
         String json = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(r);
         assertThat(json).doesNotContain("copy_check").doesNotContain("copyCheck").doesNotContain("exam_context");
     }
+
+    @Test
+    void deduction_scheme_is_kept_and_sent_and_unknown_keys_do_not_lose_the_rest() {
+        String json = "{\"instructions\":\"Mark strictly.\",\"language_feedback\":\"HIGHLIGHT\","
+                + "\"deduction_scheme\":[{\"symbol\":\"X\",\"marks\":1},{\"symbol\":\"#\",\"marks\":5,"
+                + "\"scope\":\"sentence\"}],\"some_future_key\":true}";
+        CopyCheckConfig.Settings s = CopyCheckConfig.read(json);
+        assertThat(s.getInstructions()).isEqualTo("Mark strictly.");
+        assertThat(s.getDeductionScheme()).hasSize(2);
+        assertThat(CopyCheckConfig.write(s)).contains("\"deduction_scheme\"").doesNotContain("some_future_key");
+        Map<String, Object> ctx = CopyCheckConfig.examContext(s, Map::of);
+        assertThat(ctx).containsEntry("language_feedback", "HIGHLIGHT").containsKey("deduction_scheme");
+        assertThat(CopyCheckConfig.examContext(CopyCheckConfig.read("{\"subject\":\"Law\"}"), Map::of))
+                .doesNotContainKey("deduction_scheme");
+    }
 }

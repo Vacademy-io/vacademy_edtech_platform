@@ -49,8 +49,10 @@ ai_service/app/services/chat_llm_client.py	z-ai/glm-4.6v
 ai_service/app/services/chat_llm_client.py	z-ai/glm-5.3
 ai_service/app/services/chat_llm_client.py	z-ai/glm-5.3-flash
 ai_service/app/services/chat_llm_client.py	z-ai/glm-5.3-flash:batch
+ai_service/app/services/chat_llm_client.py	z-ai/glm-5.3-flashx
 ai_service/app/services/copy_check/deduction_check.py	z-ai/glm-5.3-flash
 ai_service/app/services/copy_check/grader.py	z-ai/glm-5.3-flash
+ai_service/app/services/copy_check/language_vision.py	z-ai/glm-5.3-flashx
 ai_service/app/services/copy_check/math_reread.py	z-ai/glm-5.3-flash
 ai_service/app/services/copy_check/vision_transcript.py	z-ai/glm-5.3-flash
 ai_service/app/services/course_outline_service.py	google/gemini-3.1-flash-image

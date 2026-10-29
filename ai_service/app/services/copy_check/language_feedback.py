@@ -25,6 +25,8 @@ import re
 import unicodedata
 from typing import Any, Optional
 
+from . import deduction_scheme
+
 logger = logging.getLogger(__name__)
 
 HIGHLIGHT = "HIGHLIGHT"
@@ -47,6 +49,8 @@ MAX_ERRORS_PER_PAGE = 30
 MAX_MARKS_PER_QUESTION = 40
 # Errors listed in one question's feedback.
 MAX_FEEDBACK_ERRORS = 20
+# Characters of a whole corrected sentence written on the copy.
+SENTENCE_ON_COPY = 60
 _CONCURRENCY = 3
 _ENGLISH = {"", "en", "eng", "english"}
 _HINDI = {"hi", "hin", "hindi"}
@@ -166,7 +170,9 @@ def enabled(exam_context: Any) -> bool:
     language given - the dashboard sends none)."""
     ctx = exam_context if isinstance(exam_context, dict) else {}
     mode = str(ctx.get("language_feedback") or "").strip().upper()
-    if mode != HIGHLIGHT:
+    # A paper that marks by a printed deduction scheme needs its errors found
+    # to be marked at all.
+    if mode != HIGHLIGHT and not deduction_scheme.parse(ctx):
         return False
     return _answer_language(ctx) in (_ENGLISH | _HINDI)
 
@@ -407,7 +413,8 @@ def feedback_text(errors: list[dict[str, Any]]) -> str:
     parts = []
     for e in errors[:MAX_FEEDBACK_ERRORS]:
         why = f" ({e['why']})" if e.get("why") else ""
-        parts.append(f"\"{e['wrong']}\" → \"{e['correct']}\"{why}")
+        sym = f" [{symbols(e)}]" if e.get("symbol") else ""
+        parts.append(f"\"{e['wrong']}\" → \"{e['correct']}\"{why}{sym}")
     more = len(errors) - MAX_FEEDBACK_ERRORS
     tail = f"; and {more} more" if more > 0 else ""
     return "Language: " + "; ".join(parts) + tail + "."
@@ -428,9 +435,79 @@ def annotations(errors: list[dict[str, Any]], qid: Any) -> list[dict[str, Any]]:
     for e in errors[:MAX_MARKS_PER_QUESTION]:
         out.append({
             "style": "language", "q": str(qid), "target": e["row"], "page_id": e.get("page_id"),
-            "anchor_text": e["wrong"], "text": e["correct"], "span": list(e["span"]),
+            "anchor_text": e["wrong"], "text": correction_label(e), "span": list(e["span"]),
             "kind": e.get("kind"),
         })
+        if e.get("symbol"):
+            out[-1]["symbol"] = symbols(e)
         if e.get("words"):
             out[-1]["words"] = list(e["words"])
     return out
+
+
+def symbols(error: dict[str, Any]) -> str:
+    """The scheme symbol as the examiner writes it: "XX" for two of X."""
+    sym = str(error.get("symbol") or "")
+    n = int(error.get("count") or 1)
+    return sym * n if len(sym) == 1 else (f"{sym}×{n}" if n > 1 else sym)
+
+
+def correction_label(error: dict[str, Any]) -> str:
+    """What is written on the copy: the correction, then its scheme symbol
+    ("Telugu X"); a whole wrong sentence leads with its symbol ("# ...")."""
+    correct = str(error.get("correct") or "")
+    if not error.get("symbol"):
+        return correct
+    if error.get("kind") == "sentence":
+        # A whole sentence does not fit between two written lines; the copy
+        # gets its opening, the feedback the full sentence.
+        if len(correct) > SENTENCE_ON_COPY:
+            correct = correct[:SENTENCE_ON_COPY].rsplit(" ", 1)[0] + " ..."
+        return f"{symbols(error)} {correct}"
+    return f"{correct} {symbols(error)}"
+
+
+def classify(by_row: dict[str, list[dict[str, Any]]], scheme: list[Any]) -> None:
+    """Give the text-only pass's errors a scheme symbol by their kind (the
+    vision pass asks the model for it)."""
+    for errors in by_row.values():
+        for e in errors:
+            entry = deduction_scheme.entry_for(scheme, None, e.get("kind"))
+            if entry is not None:
+                e["symbol"], e["count"] = entry.symbol, 1
+
+
+def answer_pages(answer_rows: Any, layout_map: dict[str, Any]) -> set[str]:
+    """The ids of the pages an answer runs over (answer_rows = [first, last])."""
+    if not isinstance(answer_rows, (list, tuple)) or not answer_rows:
+        return set()
+    positions = row_positions(layout_map)
+    first, last = positions.get(str(answer_rows[0])), positions.get(str(answer_rows[-1]))
+    if first is None or last is None:
+        return set()
+    lo, hi = sorted((first[0], last[0]))
+    pages = layout_map.get("pages") or []
+    return {str(pages[i].get("page_id")) for i in range(lo, hi + 1) if i < len(pages)}
+
+
+def devanagari_share(answer_rows: Any, layout_map: dict[str, Any]) -> float:
+    """Share of an answer's letters that are Devanagari (0 when its rows are
+    unknown)."""
+    if not isinstance(answer_rows, (list, tuple)) or not answer_rows:
+        return 0.0
+    positions = row_positions(layout_map)
+    first, last = positions.get(str(answer_rows[0])), positions.get(str(answer_rows[-1]))
+    if first is None or last is None:
+        return 0.0
+    if last < first:
+        first, last = last, first
+    deva = total = 0
+    for pi, page in enumerate(layout_map.get("pages") or []):
+        for li, line in enumerate(page.get("lines") or []):
+            if not first <= (pi, li) <= last or line.get("printed"):
+                continue
+            for ch in str(line.get("text") or ""):
+                if unicodedata.category(ch).startswith("L") or unicodedata.category(ch) == "Mn":
+                    total += 1
+                    deva += _is_devanagari(ch)
+    return deva / total if total else 0.0
