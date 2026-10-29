@@ -1,3 +1,4 @@
+import type { AssetRequest } from './assets';
 // Types mirror the admin-core-service engagement DTOs/entities. Field names are the backend's
 // (camelCase JSON), so DO NOT rename them.
 
@@ -83,6 +84,8 @@ export interface EngagementEngine {
     autoSendKilled?: boolean;
     firstN?: number | null;
     holdoutPct?: number;
+    /** jsonb string: staff user ids alerted when the engine needs a person. */
+    notifyUserIds?: string;
     nextDueAt?: string;
     lastSweptAt?: string;
     createdBy?: string;
@@ -141,6 +144,10 @@ export interface CreateEngineRequest {
     cadenceHours?: number;
     holdoutPct?: number;
     firstN?: number;
+    /** Team members alerted (bell alert and email) when the engine needs a person; [] clears them. */
+    notifyUserIds?: string[];
+    /** Sendable material collected while creating; saved engines manage it through the assets endpoints. */
+    assets?: AssetRequest[];
 }
 
 // ---- Task inbox ----

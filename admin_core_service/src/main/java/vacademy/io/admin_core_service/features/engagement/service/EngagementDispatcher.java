@@ -59,6 +59,8 @@ public class EngagementDispatcher {
 
     /** variables_json key for an EMAIL action's subject line (the brain writes it). */
     public static final String VAR_SUBJECT = "_subject";
+    /** variables_json key on a REPLY: comma-separated assets asset ids to send with the text. */
+    public static final String VAR_ASSET_IDS = "_assetIds";
     /** B6: the approved email template version a template-only email was drafted on (A3 catalog). */
     public static final String VAR_EMAIL_TEMPLATE = "_emailTemplateId";
 
@@ -74,6 +76,10 @@ public class EngagementDispatcher {
     private final EngagementEngineRepository engineRepository;
     private final PolicyGate policyGate;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /** The engine's assets, for the attachments of a REPLY; optional so a context without it still starts. */
+    @Autowired(required = false)
+    private EngagementAssetService assetService;
 
     /** The templates track's renderer (A3); optional so a context without it still starts. */
     @Autowired(required = false)
@@ -310,10 +316,18 @@ public class EngagementDispatcher {
         if (body == null || body.isBlank()) {
             throw new SendRejectedException("Empty reply — nothing to send");
         }
+        // Assets: a link rides inside the text, a file goes out as its own attachment after it.
+        java.util.List<vacademy.io.admin_core_service.features.engagement.entity.EngagementAsset> assets =
+                assetsFor(action);
+        StringBuilder text = new StringBuilder(body);
+        for (var a : assets) {
+            if ("link".equals(a.getMediaType())) text.append("\n\n").append(a.getTitle()).append(": ").append(a.getUrl());
+        }
+        String message = text.toString();
         // Pre-send local validation mirroring notification_service's 400 guard: reject HERE so the
         // task returns to OPEN (fixable) instead of the remote 400 collapsing into a generic error
         // → FAILED (which hides a never-sent, human-editable reply from the default inbox).
-        if (body.length() > 4096) {
+        if (message.length() > 4096) {
             throw new SendRejectedException(
                     "WhatsApp messages are capped at 4096 characters — shorten the reply and send again.");
         }
@@ -328,10 +342,42 @@ public class EngagementDispatcher {
         // POST may have landed), never OPEN — same at-most-once discipline as the template path.
         // Success = the explicit accepted flag, NOT a non-blank wamid: WATI's session API returns no
         // per-message id after a real delivery, and keying on wamid would fail every WATI reply.
-        JsonNode resp = clients.sendWhatsAppReply(action.getInstituteId(), subject.getPhone(), body, action.getId());
+        JsonNode resp = clients.sendWhatsAppReply(action.getInstituteId(), subject.getPhone(), message, action.getId());
         if (resp == null || !resp.path("accepted").asBoolean(false)) {
             throw new IllegalStateException("whatsapp-reply was not accepted by notification service");
         }
+        if (!message.equals(body)) action.setSentBody(message);
+
+        // The text is out. An attachment that fails now must not turn the action into FAILED (the
+        // person already has the reply), but it must not vanish either: the failure is written on
+        // the action so the counsellor sees what was promised and not delivered.
+        java.util.List<String> undelivered = new java.util.ArrayList<>();
+        for (var a : assets) {
+            if ("link".equals(a.getMediaType())) continue;
+            try {
+                JsonNode r = clients.sendWhatsAppMedia(action.getInstituteId(), subject.getPhone(), a.getMediaType(),
+                        a.getUrl(), a.getTitle(), a.getFilename(), action.getId());
+                if (r == null || !r.path("accepted").asBoolean(false)) undelivered.add(a.getTitle());
+            } catch (Exception e) {
+                log.warn("Asset attachment {} not delivered for action {}: {}", a.getId(), action.getId(), e.getMessage());
+                undelivered.add(a.getTitle());
+            }
+        }
+        if (!undelivered.isEmpty()) {
+            String note = "Attachment not delivered: " + String.join(", ", undelivered)
+                    + " — send it to this person by hand.";
+            action.setErrorMessage(note);
+            action.setRationale(truncate((action.getRationale() == null ? "" : action.getRationale() + " · ") + note, 4000));
+        }
+    }
+
+    /** The assets a REPLY carries (ids in variables_json), restricted to this engine's own assets. */
+    private java.util.List<vacademy.io.admin_core_service.features.engagement.entity.EngagementAsset>
+            assetsFor(EngagementAction action) {
+        String ids = parseVariables(action.getVariablesJson()).get(VAR_ASSET_IDS);
+        if (assetService == null || ids == null || ids.isBlank() || action.getEngineId() == null) return java.util.List.of();
+        return assetService.resolve(action.getEngineId(), java.util.Arrays.stream(ids.split(","))
+                .map(String::trim).filter(x -> !x.isEmpty()).toList());
     }
 
     private void writeReachoutTimeline(EngagementAction action, EngagementMember member,

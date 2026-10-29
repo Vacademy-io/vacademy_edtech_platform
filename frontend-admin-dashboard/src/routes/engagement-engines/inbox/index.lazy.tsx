@@ -15,6 +15,7 @@ import {
     Info,
     MagnifyingGlass,
     PaperPlaneTilt,
+    Paperclip,
     Robot,
     Sparkle,
     Tray,
@@ -62,6 +63,7 @@ import {
     type InboxFilterKey,
 } from '../-constants';
 import { useEngines, useTaskAction, useTaskPeople, useTasks } from '../-hooks';
+import { useAssets } from '../-hooks/assets';
 import { formatDateTime, safeParse } from '../-utils';
 import type { EngagementAction, TaskPerson } from '../-types';
 
@@ -830,6 +832,13 @@ function SendDialog({
     const isFixedTemplate = task.channel === 'WHATSAPP' && task.kind !== 'REPLY' && !!task.templateName;
     const vars = safeParse<Record<string, string>>(task.variablesJson, {});
     const [body, setBody] = useState(task.draftBody ?? '');
+    // Files the engine chose from its assets for this reply; they go out with the text.
+    const attachmentIds = (vars._assetIds ?? '').split(',').filter(Boolean);
+    const { data: engineAssets } = useAssets(attachmentIds.length ? task.engineId : undefined);
+    const attachments = attachmentIds.map((id) => ({
+        id,
+        asset: engineAssets?.find((a) => a.id === id),
+    }));
 
     return (
         <MyDialog
@@ -868,6 +877,32 @@ function SendDialog({
                         <p className="text-caption text-neutral-500">{t('sendDialog.editableNotice')}</p>
                         <Textarea rows={6} value={body} onChange={(e) => setBody(e.target.value)} />
                     </>
+                )}
+                {attachments.length > 0 && (
+                    <div className="rounded-lg border border-neutral-200 p-2">
+                        <p className="mb-1 text-caption text-neutral-500">
+                            {t('sendDialog.attachments')}
+                        </p>
+                        <ul className="flex flex-col gap-1">
+                            {attachments.map(({ id, asset }) => (
+                                <li
+                                    key={id}
+                                    className="flex items-center gap-2 text-caption text-neutral-700"
+                                >
+                                    <Paperclip size={14} className="shrink-0 text-neutral-500" />
+                                    {asset ? (
+                                        <span className="truncate">{asset.title}</span>
+                                    ) : engineAssets ? (
+                                        <span className="text-warning-700">
+                                            {t('sendDialog.attachmentRemoved')}
+                                        </span>
+                                    ) : (
+                                        <Skeleton className="h-4 w-32" />
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
                 )}
                 <div className="flex justify-end gap-2 border-t border-neutral-100 pt-3">
                     <MyButton buttonType="secondary" scale="small" onClick={onClose}>

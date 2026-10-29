@@ -7,7 +7,8 @@
         "channels": "Canaux",
         "audience": "Audience",
         "cadence": "Rythme",
-        "review": "Récapitulatif"
+        "review": "Récapitulatif",
+        "assets": "Ressources"
     },
     "basics": {
         "name": "Nom du moteur",
@@ -123,7 +124,15 @@
             }
         },
         "moreSources": "+{{count}} de plus",
-        "holdoutValue": "{{pct}} % (jamais contactés)"
+        "holdoutValue": "{{pct}} % (jamais contactés)",
+        "assets": "Ressources",
+        "assetsItems": "{{count}} éléments",
+        "assetsNone": "Aucun ajouté",
+        "teamContacts": "Les alertes vont à",
+        "teamContactsCount_one": "{{count}} membre de l'équipe (et le conseiller du prospect)",
+        "teamContactsCount_many": "{{count}} membres de l'équipe (et le conseiller du prospect)",
+        "teamContactsCount_other": "{{count}} membres de l'équipe (et le conseiller du prospect)",
+        "teamContactsNone": "Le conseiller du prospect"
     },
     "actions": {
         "back": "Retour",
@@ -142,7 +151,8 @@
         "channels": "Where it can message",
         "audience": "Who it engages",
         "cadence": "Fréquence, heures calmes",
-        "review": "Check and create"
+        "review": "Check and create",
+        "assets": "Facultatif : brochures, vidéos, liens"
     },
     "footer": {
         "step": "Step {{n}} of {{total}} · {{label}}"
@@ -161,5 +171,16 @@
         "editDescription": "Vos modifications de ce moteur ne seront pas enregistrées.",
         "stay": "Continuer la modification",
         "leave": "Quitter"
+    },
+    "assetsStep": {
+        "lead": "Ajoutez des documents que l'agent peut envoyer sur WhatsApp à la demande d'un prospect. Vous pouvez passer cette étape et en ajouter plus tard depuis la page du moteur."
+    },
+    "team": {
+        "title": "Qui alerter quand une personne est nécessaire",
+        "hint": "Quand l'agent ne peut pas traiter seul une réponse, ou qu'on lui demande un document qu'il n'a pas, ces personnes reçoivent une alerte système et un e-mail. Le conseiller du prospect est toujours prévenu également.",
+        "searchPlaceholder": "Rechercher des membres de l'équipe",
+        "empty": "Aucun membre de l'équipe trouvé",
+        "note": "Choisissez jusqu'à {{max}} personnes.",
+        "loadFailed": "Impossible de charger votre équipe. Réessayez dans un instant."
     }
 }

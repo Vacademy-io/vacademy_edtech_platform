@@ -175,6 +175,21 @@ public class EngagementInternalClients {
                 "/notification-service/internal/v1/engagement/whatsapp-reply", body, "whatsapp-reply");
     }
 
+    /** A assets attachment as a native WhatsApp session media message (image|video|document|audio). */
+    public JsonNode sendWhatsAppMedia(String instituteId, String phone, String mediaType, String mediaUrl,
+                                      String caption, String filename, String correlationId) {
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("instituteId", instituteId);
+        body.put("phone", phone);
+        body.put("mediaType", mediaType);
+        body.put("mediaUrl", mediaUrl);
+        body.put("caption", caption);
+        body.put("filename", filename);
+        body.put("correlationId", correlationId);
+        return post(notificationServerBaseUrl,
+                "/notification-service/internal/v1/engagement/whatsapp-media", body, "whatsapp-media");
+    }
+
     private JsonNode post(String baseUrl, String route, Object body, String what) {
         try {
             ResponseEntity<String> response = internalClientUtils.makeHmacRequest(

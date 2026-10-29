@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Icon } from '@phosphor-icons/react';
 import {
     ArrowSquareOut,
+    BellRinging,
     CalendarBlank,
     CaretDown,
     Check,
@@ -78,6 +79,9 @@ import {
     safeParse,
     scheduleText,
 } from '../-utils';
+import { AssetsPanel } from '../-components/AssetsPanel';
+import { TeamContactsPicker } from '../-components/TeamContactsPicker';
+import { toAssetRequest, type AssetDraftItem } from '../-types/assets';
 import { EnginePlanPreview } from '../-components/EnginePlanPreview';
 import {
     CHANNEL_ICON,
@@ -102,7 +106,18 @@ export const Route = createLazyFileRoute('/engagement-engines/create/')({
     component: CreateEnginePage,
 });
 
-const STEP_KEYS = ['basics', 'dataPoints', 'channels', 'audience', 'cadence', 'review'] as const;
+const STEP_KEYS_EDIT = ['basics', 'dataPoints', 'channels', 'audience', 'cadence', 'review'] as const;
+/** Creating adds the optional Assets step; a saved engine manages its assets on its own page. */
+const STEP_KEYS_CREATE = [
+    'basics',
+    'dataPoints',
+    'channels',
+    'assets',
+    'audience',
+    'cadence',
+    'review',
+] as const;
+type StepKey = (typeof STEP_KEYS_CREATE)[number];
 
 /** Lists fetched per search; more than this asks the admin to type a name. */
 const LIST_PAGE_SIZE = 100;
@@ -144,11 +159,13 @@ function batchOption(b: {
 }
 
 function StepRail({
+    keys,
     current,
     t,
     onGoTo,
     freeJump,
 }: {
+    keys: readonly StepKey[];
     current: number;
     t: TFunction;
     onGoTo: (step: number) => void;
@@ -157,7 +174,7 @@ function StepRail({
 }) {
     return (
         <nav className="flex shrink-0 flex-row gap-1 overflow-x-auto border-b border-neutral-100 bg-neutral-50 p-3 lg:w-64 lg:flex-col lg:border-b-0 lg:border-e lg:p-4">
-            {STEP_KEYS.map((key, i) => {
+            {keys.map((key, i) => {
                 const label = t(`steps.${key}`);
                 const done = i < current;
                 const active = i === current;
@@ -327,7 +344,10 @@ function CreateEnginePage() {
         [setNavHeading, t, tEdit, isEdit]
     );
 
+    const stepKeys: readonly StepKey[] = isEdit ? STEP_KEYS_EDIT : STEP_KEYS_CREATE;
     const [step, setStep] = useState(0);
+    const [assets, setAssets] = useState<AssetDraftItem[]>([]);
+    const [notifyUserIds, setNotifyUserIds] = useState<string[]>([]);
 
     // Form state
     const [name, setName] = useState('');
@@ -384,6 +404,7 @@ function CreateEnginePage() {
         setFirstTouch(qh.firstTouch === 'SCHEDULED' ? 'SCHEDULED' : 'IMMEDIATE');
         setHoldoutPct(String(e.holdoutPct ?? 0));
         setFirstN(e.firstN != null ? String(e.firstN) : '');
+        setNotifyUserIds(safeParse<string[]>(e.notifyUserIds, []));
         setAdvancedOpen((e.holdoutPct ?? 0) > 0 || e.firstN != null);
         setBrief('');
         setPrefilledFor(e.id);
@@ -413,7 +434,7 @@ function CreateEnginePage() {
     } = useChannelReadiness(channels.EMAIL?.emailType);
     // Re-checked each time the Channels step opens: setup may have changed since the wizard loaded.
     useEffect(() => {
-        if (step === 2) recheckReadiness();
+        if (stepKeys[step] === 'channels') recheckReadiness();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [step]);
     const notReady = (c: ChannelKey) => readiness?.[c]?.ready === false;
@@ -482,27 +503,27 @@ function CreateEnginePage() {
 
     /** Why Continue is blocked on a step, in words; null when the step is complete. */
     const blockReason = (s: number): string | null => {
-        switch (s) {
-            case 0:
+        switch (stepKeys[s]) {
+            case 'basics':
                 if (!name.trim()) return t('blocked.name');
                 return isEdit || brief.trim() ? null : t('blocked.brief');
-            case 1:
+            case 'dataPoints':
                 return !highSelected || consentHigh ? null : t('blocked.consent');
-            case 2:
+            case 'channels':
                 if (enabledChannelKeys.length === 0) return t('blocked.channel');
                 return blockedChannels.length
                     ? t('blocked.channelNotReady', {
                           channel: blockedChannels.map((c) => channelMeta[c].label).join(', '),
                       })
                     : null;
-            case 3:
+            case 'audience':
                 return audienceCount > 0
                     ? null
                     : t('blocked.audience', {
                           batches: batchesLabel.toLowerCase(),
                           audiences: audiencesLabel.toLowerCase(),
                       });
-            case 4:
+            case 'cadence':
                 if (Number(cadenceHours) < 1) return t('blocked.cadence');
                 if (sendDays.length === 0) return t('blocked.days');
                 return sendTimeQuiet ? t('blocked.sendTimeQuiet') : null;
@@ -555,6 +576,9 @@ function CreateEnginePage() {
             cadenceHours: Number(cadenceHours),
             holdoutPct: Math.max(0, Math.min(100, Number(holdoutPct) || 0)),
             firstN: firstN.trim() ? Math.max(0, Number(firstN)) : undefined,
+            notifyUserIds,
+            // Create only: a saved engine's assets are managed through its own endpoints.
+            assets: isEdit || assets.length === 0 ? undefined : assets.map(toAssetRequest),
         };
     };
 
@@ -571,7 +595,7 @@ function CreateEnginePage() {
 
     const submit = () => {
         // Editing can save from any step, so check every step, not just the current one.
-        const firstBlocked = STEP_KEYS.findIndex((_, i) => !canProceed(i));
+        const firstBlocked = stepKeys.findIndex((_, i) => !canProceed(i));
         if (firstBlocked >= 0) {
             toast.error(blockReason(firstBlocked) ?? t('errors.nameAndBrief'));
             setStep(firstBlocked);
@@ -891,6 +915,24 @@ function CreateEnginePage() {
                     );
                 })}
             </div>
+            <StepSection
+                icon={BellRinging}
+                title={t('team.title')}
+                hint={t('team.hint')}
+            >
+                <TeamContactsPicker
+                    instituteId={instituteId}
+                    selected={notifyUserIds}
+                    onChange={setNotifyUserIds}
+                />
+            </StepSection>
+        </div>
+    );
+
+    const assetsStep = (
+        <div className="flex flex-col gap-4">
+            <StepLead>{t('assetsStep.lead')}</StepLead>
+            <AssetsPanel items={assets} onItemsChange={setAssets} />
         </div>
     );
 
@@ -1305,6 +1347,20 @@ function CreateEnginePage() {
                             ))}
                         </span>
                     </KeyValue>
+                    {!isEdit && (
+                        <KeyValue label={t('review.assets')}>
+                            {assets.length
+                                ? t('review.assetsItems', { count: assets.length }) +
+                                  ': ' +
+                                  assets.map((v) => v.title).join(', ')
+                                : t('review.assetsNone')}
+                        </KeyValue>
+                    )}
+                    <KeyValue label={t('review.teamContacts')}>
+                        {notifyUserIds.length
+                            ? t('review.teamContactsCount', { count: notifyUserIds.length })
+                            : t('review.teamContactsNone')}
+                    </KeyValue>
                     <KeyValue label={t('review.audienceSources')}>
                         <span className="flex flex-wrap gap-1.5">
                             {audienceNames.slice(0, 6).map((n, i) => (
@@ -1377,14 +1433,16 @@ function CreateEnginePage() {
         </div>
     );
 
-    const stepBodies = [
-        basicsStep,
-        dataPointsStep,
-        channelsStep,
-        audienceStep,
-        cadenceStep,
-        reviewStep,
-    ];
+    const stepBodyByKey: Record<StepKey, JSX.Element> = {
+        basics: basicsStep,
+        dataPoints: dataPointsStep,
+        channels: channelsStep,
+        assets: assetsStep,
+        audience: audienceStep,
+        cadence: cadenceStep,
+        review: reviewStep,
+    };
+    const stepBodies = stepKeys.map((k) => stepBodyByKey[k]);
 
     return (
         <LayoutContainer>
@@ -1410,7 +1468,7 @@ function CreateEnginePage() {
                     </div>
                 </div>
                 <Card className="flex flex-col overflow-hidden rounded-xl border-neutral-200 shadow-sm lg:flex-row">
-                    <StepRail current={step} t={t} onGoTo={setStep} freeJump={isEdit} />
+                    <StepRail keys={stepKeys} current={step} t={t} onGoTo={setStep} freeJump={isEdit} />
                     <div className="flex min-w-0 flex-1 flex-col">
                         <div className="flex-1 p-5">{stepBodies[step]}</div>
                         <div className="flex flex-wrap items-center gap-2 border-t border-neutral-100 bg-neutral-50 px-5 py-3">
@@ -1419,8 +1477,8 @@ function CreateEnginePage() {
                                     <span className="text-caption">
                                         {t('footer.step', {
                                             n: step + 1,
-                                            total: STEP_KEYS.length,
-                                            label: t(`steps.${STEP_KEYS[step]}`),
+                                            total: stepKeys.length,
+                                            label: t(`steps.${stepKeys[step]}`),
                                         })}
                                     </span>
                                 </span>
@@ -1449,7 +1507,7 @@ function CreateEnginePage() {
                             >
                                 {t('actions.back')}
                             </MyButton>
-                            {step < STEP_KEYS.length - 1 && (
+                            {step < stepKeys.length - 1 && (
                                 <MyButton
                                     buttonType={isEdit ? 'secondary' : 'primary'}
                                     scale="medium"
@@ -1460,7 +1518,7 @@ function CreateEnginePage() {
                                 </MyButton>
                             )}
                             {/* Editing: save from any step; creating: only from the review. */}
-                            {(isEdit || step === STEP_KEYS.length - 1) && (
+                            {(isEdit || step === stepKeys.length - 1) && (
                                 <MyButton
                                     buttonType="primary"
                                     scale="medium"

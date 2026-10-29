@@ -34,7 +34,9 @@
         "variables": "Variables",
         "editableNotice": "Modifiez avant l'envoi si vous le souhaitez — votre modification sera envoyée telle quelle.",
         "sending": "Envoi en cours…",
-        "sendNow": "Envoyer maintenant"
+        "sendNow": "Envoyer maintenant",
+        "attachments": "Également envoyé avec cette réponse",
+        "attachmentRemoved": "N'est plus dans les ressources du moteur — il ne sera pas envoyé"
     },
     "needsTemplate": "WhatsApp ne peut envoyer qu’un modèle approuvé, et cette tâche n’en a pas. Traitez-la autrement ou ignorez-la.",
     "toolbar": {

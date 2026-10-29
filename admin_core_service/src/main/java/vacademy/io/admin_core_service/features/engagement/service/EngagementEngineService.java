@@ -46,6 +46,14 @@ public class EngagementEngineService {
     @Autowired(required = false)
     private EngagementChannelReadiness channelReadiness;
 
+    /** Field-injected for the same reason; checks that alert contacts are staff of the institute. */
+    @Autowired(required = false)
+    private vacademy.io.admin_core_service.features.auth_service.service.AuthService authService;
+
+    /** Field-injected for the same reason; the assets are optional on an engine. */
+    @Autowired(required = false)
+    private EngagementAssetService assetService;
+
     @Transactional
     public EngagementEngine create(CreateEngineRequest req, String instituteId, String createdBy) {
         if (req.getName() == null || req.getName().isBlank()) {
@@ -67,6 +75,7 @@ public class EngagementEngineService {
         engine.setChannels(validObjectJson(req.getChannels(), "channels", "{}"));
         engine.setAudience(validAudienceJson(req.getAudience()));
         engine.setQuietHours(validQuietHoursJson(req.getQuietHours()));
+        if (req.getNotifyUserIds() != null) engine.setNotifyUserIds(validNotifyUsersJson(req.getNotifyUserIds(), instituteId));
         if (channelReadiness != null) channelReadiness.requireReady(instituteId, engine.getChannels(), null);
         if (req.getCadenceHours() != null && req.getCadenceHours() > 0) {
             engine.setCadenceHours(req.getCadenceHours());
@@ -90,6 +99,8 @@ public class EngagementEngineService {
         v1.setStatus("ACTIVE");
         v1.setCreatedBy(createdBy);
         promptRepository.save(v1);
+
+        if (assetService != null) assetService.addAll(engine.getId(), instituteId, req.getAssets(), createdBy);
 
         return engine;
     }
@@ -418,6 +429,7 @@ public class EngagementEngineService {
             engine.setChannels(channels);
         }
         if (req.getQuietHours() != null) engine.setQuietHours(validQuietHoursJson(req.getQuietHours()));
+        if (req.getNotifyUserIds() != null) engine.setNotifyUserIds(validNotifyUsersJson(req.getNotifyUserIds(), instituteId));
         if (req.getCadenceHours() != null) {
             if (req.getCadenceHours() <= 0) throw new VacademyException("cadenceHours must be at least 1");
             engine.setCadenceHours(req.getCadenceHours());
@@ -508,6 +520,32 @@ public class EngagementEngineService {
 
     private static String findBase(List<EngagementPromptVersion> historyDesc) {
         return historyDesc.get(historyDesc.size() - 1).getBaseText(); // version 1 holds the immutable base
+    }
+
+    static final int MAX_NOTIFY_USERS = 10;
+
+    /**
+     * The alert contacts as stored JSON. Each must hold a staff role at THIS institute: the alert
+     * carries a lead's name, phone and message, so an id from another institute (or a learner) is
+     * refused rather than trusted. If the auth service can't answer, nothing is accepted.
+     */
+    private String validNotifyUsersJson(List<String> ids, String instituteId) {
+        List<String> clean = ids.stream().filter(i -> i != null && !i.isBlank()).map(String::trim).distinct().toList();
+        if (clean.size() > MAX_NOTIFY_USERS) {
+            throw new VacademyException("Pick at most " + MAX_NOTIFY_USERS + " team members to alert");
+        }
+        if (!clean.isEmpty()) {
+            if (authService == null) throw new VacademyException("Team members can't be verified right now");
+            java.util.Map<String, List<String>> roles = authService.getInstituteRoles(instituteId, clean);
+            List<String> notStaff = clean.stream().filter(id -> {
+                List<String> r = roles.get(id);
+                return r == null || r.stream().noneMatch(x -> x != null && !"STUDENT".equalsIgnoreCase(x));
+            }).toList();
+            if (!notStaff.isEmpty()) {
+                throw new VacademyException("These people are not on this institute's team: " + String.join(", ", notStaff));
+            }
+        }
+        return writeJson(clean);
     }
 
     private String writeJson(Object o) {

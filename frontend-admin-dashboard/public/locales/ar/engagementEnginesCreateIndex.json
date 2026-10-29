@@ -7,7 +7,8 @@
         "channels": "القنوات",
         "audience": "الجمهور",
         "cadence": "التوقيت",
-        "review": "المراجعة"
+        "review": "المراجعة",
+        "assets": "الأصول"
     },
     "basics": {
         "name": "اسم المحرك",
@@ -123,7 +124,18 @@
             }
         },
         "moreSources": "+{{count}} أخرى",
-        "holdoutValue": "{{pct}}% (لا يُراسلون أبدًا)"
+        "holdoutValue": "{{pct}}% (لا يُراسلون أبدًا)",
+        "assets": "الأصول",
+        "assetsItems": "{{count}} عنصر",
+        "assetsNone": "لم تتم إضافة شيء",
+        "teamContacts": "تذهب التنبيهات إلى",
+        "teamContactsCount_zero": "{{count}} عضو فريق (ومستشار العميل المحتمل)",
+        "teamContactsCount_one": "عضو فريق واحد (ومستشار العميل المحتمل)",
+        "teamContactsCount_two": "عضوان في الفريق (ومستشار العميل المحتمل)",
+        "teamContactsCount_few": "{{count}} أعضاء في الفريق (ومستشار العميل المحتمل)",
+        "teamContactsCount_many": "{{count}} عضوًا في الفريق (ومستشار العميل المحتمل)",
+        "teamContactsCount_other": "{{count}} عضو فريق (ومستشار العميل المحتمل)",
+        "teamContactsNone": "مستشار العميل المحتمل"
     },
     "actions": {
         "back": "رجوع",
@@ -142,7 +154,8 @@
         "channels": "Where it can message",
         "audience": "Who it engages",
         "cadence": "عدد المرات، ساعات الهدوء",
-        "review": "Check and create"
+        "review": "Check and create",
+        "assets": "اختياري: كتيبات وفيديوهات وروابط"
     },
     "footer": {
         "step": "Step {{n}} of {{total}} · {{label}}"
@@ -161,5 +174,16 @@
         "editDescription": "لن تُحفظ تغييراتك على هذا المحرك.",
         "stay": "متابعة التعديل",
         "leave": "مغادرة"
+    },
+    "assetsStep": {
+        "lead": "أضف مواد يرسلها الوكيل عبر واتساب عندما يطلبها العميل. يمكنك التخطي وإضافتها لاحقًا من صفحة المحرك."
+    },
+    "team": {
+        "title": "من يُنبَّه عند الحاجة إلى شخص",
+        "hint": "عندما لا يستطيع الوكيل التعامل مع رد بمفرده، أو يطلب أحدهم مادة غير متوفرة لديه، يتلقى هؤلاء تنبيهًا في النظام وبريدًا إلكترونيًا. كما يُبلَّغ مستشار العميل المحتمل دائمًا.",
+        "searchPlaceholder": "ابحث عن أعضاء الفريق",
+        "empty": "لم يُعثر على أعضاء فريق",
+        "note": "اختر حتى {{max}} أشخاص.",
+        "loadFailed": "تعذر تحميل فريقك. حاول مرة أخرى بعد قليل."
     }
 }

@@ -687,6 +687,24 @@ public interface EngagementActionHandler {          // mirrors NodeHandlerRegist
 Every auto-reply still passes `PolicyGate` (consent, cap, credits) and writes `engagement_action` +
 `timeline_event`, so a counsellor opening the lead sees what the AI said.
 
+### 11.1 Assets — material the agent can send (V625)
+
+Grounding in the prompt cannot carry a brochure or a demo video, so each engine has **assets**
+(`engagement_asset`): files and links the admin uploads while creating the engine (wizard step,
+optional) or later on the engine page. Each item has a title and a **description saying what it is and
+when to send it**; that description is what the agent matches a request against.
+
+| Aspect | Decision |
+|---|---|
+| **What the brain sees** | `EngagementReplyBrain.assetCatalogue`: id, type, title, description. **Never the URL** — the model names ids, it does not paste links. |
+| **Found** | `ANSWER` with `assetIds` (max 3). Ids are re-resolved against *this engine's* assets (`EngagementAssetService.resolve`), so an invented or foreign id resolves to nothing. |
+| **Delivery** | Ids ride on the action as `variables_json._assetIds`. `EngagementDispatcher.sendWhatsAppReply` sends the text, then each file as a native WhatsApp session media message (`notification_service` `POST /internal/v1/engagement/whatsapp-media`, Meta `link` / WATI `sendSessionFile`). A `link` item is appended to the text instead. It works the same when a human approves an escalated task: the attachments go with the edited text. |
+| **Attachment fails** | The text has already gone, so the action stays `SENT`; the failure is written to `error_message` and `rationale` so the counsellor can send it by hand. |
+| **Not found** | The brain returns `ESCALATE` with `escalationType=missing_material` and `requestedMaterial`. An `ANSWER` that names ids that do not resolve is turned into the same thing. An OPEN task (priority 90, above other escalations) holds a drafted holding reply, and `EngagementMaterialAlertService` tells the lead's counsellor (the engine's creator if the lead has none) by **bell alert and email**. Each channel is best-effort and independent. |
+| **Link guard** | URLs of assets count as grounded, like links in the brief. The holding reply is never auto-sent: a person sends it. |
+| **Team alerts** | `EngagementTeamAlertService` tells people whenever the engine hands a reply to a person: any escalation, a missing asset, an auto-send that failed. Recipients: the team members picked on the engine (`engagement_engine.notify_user_ids`, V626, max 10, each checked to hold a non-student role at the institute via `AuthService.getInstituteRoles`) **plus** the lead's own counsellor, de-duplicated; the engine's creator only if there is neither. Channels: bell alert and email, sent independently and best-effort. |
+| **Limits** | https URLs only (Meta fetches them), 50 items per engine, media types `document|image|video|audio|link`. |
+
 ---
 
 ## 12. D13 — Safety, consent, cost

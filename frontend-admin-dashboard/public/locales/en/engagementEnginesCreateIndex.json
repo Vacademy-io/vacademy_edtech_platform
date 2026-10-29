@@ -7,7 +7,8 @@
         "channels": "Channels",
         "audience": "Audience",
         "cadence": "Timing",
-        "review": "Review"
+        "review": "Review",
+        "assets": "Assets"
     },
     "basics": {
         "name": "Engine name",
@@ -143,7 +144,14 @@
             }
         },
         "moreSources": "+{{count}} more",
-        "holdoutValue": "{{pct}}% (never messaged)"
+        "holdoutValue": "{{pct}}% (never messaged)",
+        "assets": "Assets",
+        "assetsItems": "{{count}} items",
+        "assetsNone": "None added",
+        "teamContacts": "Alerts go to",
+        "teamContactsCount_one": "{{count}} team member (and the lead's counsellor)",
+        "teamContactsCount_other": "{{count}} team members (and the lead's counsellor)",
+        "teamContactsNone": "The lead's counsellor"
     },
     "actions": {
         "back": "Back",
@@ -162,7 +170,8 @@
         "channels": "Where it can message",
         "audience": "Who it engages",
         "cadence": "When, how often, goal",
-        "review": "Check and create"
+        "review": "Check and create",
+        "assets": "Optional: brochures, videos, links"
     },
     "footer": {
         "step": "Step {{n}} of {{total}} · {{label}}"
@@ -184,5 +193,16 @@
         "editDescription": "Your changes to this engine will not be saved.",
         "stay": "Keep editing",
         "leave": "Leave"
+    },
+    "assetsStep": {
+        "lead": "Add material the agent can send on WhatsApp when a lead asks for it. You can skip this and add material later from the engine page."
+    },
+    "team": {
+        "title": "Who to alert when a person is needed",
+        "hint": "When the agent can't handle a reply on its own, or someone asks for material it doesn't have, these people get a system alert and an email. The lead's own counsellor is always told as well.",
+        "searchPlaceholder": "Search team members",
+        "empty": "No team members found",
+        "note": "Pick up to {{max}} people.",
+        "loadFailed": "Couldn't load your team. Try again in a moment."
     }
 }

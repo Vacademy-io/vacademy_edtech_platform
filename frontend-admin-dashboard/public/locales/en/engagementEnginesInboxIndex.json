@@ -34,7 +34,9 @@
         "variables": "Variables",
         "editableNotice": "Edit before sending if you like — your edit is what goes out.",
         "sending": "Sending…",
-        "sendNow": "Send now"
+        "sendNow": "Send now",
+        "attachments": "Also sent with this reply",
+        "attachmentRemoved": "No longer in the engine's assets — it won't be sent"
     },
     "needsTemplate": "WhatsApp can only send an approved template, and this task has none. Handle it another way, or dismiss it.",
     "toolbar": {

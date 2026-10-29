@@ -11,6 +11,7 @@ import {
     CheckCircle,
     Clock,
     FileText,
+    FolderOpen,
     Flask,
     GearSix,
     Lightning,
@@ -54,6 +55,7 @@ import {
 import { ToneBadge } from './-components/ToneBadge';
 import { TemplateNegotiation } from './-components/TemplateNegotiation';
 import { EmailTemplatesPanel } from './-components/EmailTemplatesPanel';
+import { AssetsPanel } from './-components/AssetsPanel';
 import { CrmActionsPanel } from './-components/CrmActionsPanel';
 import { useDeleteEngine } from './-hooks/engine-edit';
 import { ChannelChip, Chip, IconTile, KeyValue, SubHeading } from './-components/engine-ui';
@@ -138,6 +140,7 @@ function EngineDetailPage() {
     const [confirmActivate, setConfirmActivate] = useState(false);
     const deleteEngine = useDeleteEngine();
     const { t: tEdit } = useTranslation('engagementEnginesEdit');
+    const { t: tAssets } = useTranslation('engagementEnginesAssets');
     const [delta, setDelta] = useState('');
     const { t } = useTranslation('engagementEnginesEngineIdIndex');
     const { t: tConstants } = useTranslation('engagementEnginesConstants');
@@ -633,6 +636,13 @@ function EngineDetailPage() {
                         emailMode={emailChannel?.mode}
                     />
                 )}
+                <SectionCard
+                    title={tAssets('heading')}
+                    subtitle={tAssets('subtitle')}
+                    icon={FolderOpen}
+                >
+                    <AssetsPanel engineId={engine.id} />
+                </SectionCard>
                 <CrmActionsPanel engineId={engine.id} killed={engine.autoSendKilled} />
             </div>
 

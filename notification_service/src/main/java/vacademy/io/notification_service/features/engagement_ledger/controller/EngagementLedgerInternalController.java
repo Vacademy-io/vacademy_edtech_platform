@@ -60,6 +60,24 @@ public class EngagementLedgerInternalController {
         }
     }
 
+    /**
+     * Send a vault attachment as a native WhatsApp session media message. Body {instituteId, phone,
+     * mediaType(image|video|document|audio), mediaUrl, caption?, filename?, correlationId}. Same
+     * window guarantee and internal posture as /whatsapp-reply.
+     */
+    @PostMapping("/whatsapp-media")
+    public ResponseEntity<Map<String, Object>> whatsAppMedia(@RequestBody Map<String, String> body) {
+        try {
+            String wamid = whatsAppInboxService.sendEngagementMedia(
+                    body.get("phone"), body.get("mediaType"), body.get("mediaUrl"), body.get("caption"),
+                    body.get("filename"), body.get("instituteId"), body.get("correlationId"));
+            return ResponseEntity.ok(Map.of("accepted", true, "wamid", wamid != null ? wamid : ""));
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            log.warn("whatsapp-media rejected: {}", e.getReason());
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
+
     @PostMapping("/ledger-batch")
     public ResponseEntity<LedgerBatchResponse> ledgerBatch(@RequestBody LedgerBatchRequest request) {
         try {

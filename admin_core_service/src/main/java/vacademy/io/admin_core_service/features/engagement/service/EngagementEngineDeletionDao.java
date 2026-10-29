@@ -36,7 +36,7 @@ public class EngagementEngineDeletionDao {
     /** Remove the engine and everything that belongs only to it. Call inside a transaction. */
     public void deleteEngineRows(String engineId, String instituteId) {
         for (String table : new String[]{"engagement_action", "engagement_member", "engagement_prompt_version",
-                "engagement_template_proposal", "engagement_email_template"}) {
+                "engagement_template_proposal", "engagement_email_template", "engagement_asset"}) {
             em.createNativeQuery("DELETE FROM " + table + " WHERE engine_id = :engineId AND institute_id = :instituteId")
                     .setParameter("engineId", engineId).setParameter("instituteId", instituteId).executeUpdate();
         }

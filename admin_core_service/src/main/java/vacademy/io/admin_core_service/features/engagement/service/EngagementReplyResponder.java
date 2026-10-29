@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementAction;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementEngine;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementPromptVersion;
+import vacademy.io.admin_core_service.features.engagement.entity.EngagementAsset;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementActionRepository;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementEngineRepository;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementMemberRepository;
@@ -133,6 +134,16 @@ public class EngagementReplyResponder {
     @Autowired(required = false)
     private EngagementReplyMemberQueries replyMemberQueries;
 
+    /** The engine's assets and the team alert for anything that needs a person. Optional like the rest. */
+    @Autowired(required = false)
+    private EngagementAssetService assetService;
+
+    @Autowired(required = false)
+    private EngagementTeamAlertService teamAlertService;
+
+    /** Most files one reply may carry; the model is told 3, this is the server-side cap. */
+    private static final int MAX_ATTACHMENTS = 3;
+
     /** CRM mirror and exits for opt-out / not interested. Optional so the constructor stays as it was. */
     @Autowired(required = false)
     private EngagementLeadOutcomeService outcomeService;
@@ -233,9 +244,15 @@ public class EngagementReplyResponder {
         String compiled = prompt != null && prompt.getCompiledText() != null
                 ? prompt.getCompiledText() : (engine.getObjective() != null ? engine.getObjective() : engine.getName());
 
+        List<EngagementAsset> assets = assetService != null ? assetService.list(engine.getId()) : List.of();
+        // A link the model repeats from a asset is as grounded as one in the brief.
+        StringBuilder grounding = new StringBuilder(compiled);
+        for (EngagementAsset a : assets) grounding.append('\n').append(a.getUrl());
+        String groundTruth = grounding.toString();
+
         EngagementReplyBrain.ReplyDecision decision;
         try {
-            decision = replyBrain.decide(engine, compiled, replyText);
+            decision = replyBrain.decide(engine, compiled, replyText, assets);
         } catch (Exception e) {
             // Brain failure must not swallow the reply: leave it as an escalated task so a human sees it.
             log.warn("Reply brain failed for engine {} — escalating to a human task: {}", engine.getId(), e.getMessage());
@@ -245,11 +262,22 @@ public class EngagementReplyResponder {
 
         // Deterministic server-side backstops — they override an ANSWER verdict, never trust it alone.
         if (decision.isAnswer()) {
-            String override = escalationOverride(replyText, decision.reply(), compiled);
+            String override = escalationOverride(replyText, decision.reply(), groundTruth);
             if (override != null) {
                 log.info("Auto-reply overridden to ESCALATE for member {}: {}", cand.getMemberId(), override);
                 decision = new EngagementReplyBrain.ReplyDecision("ESCALATE", decision.reply(), override, "tripwire");
             }
+        }
+
+        // Attachments: the model names assets ids, the server decides which are real. An id from another
+        // engine (or invented) resolves to nothing. An answer that promised a file we cannot attach
+        // would be a lie, so it becomes a missing-material escalation instead.
+        List<EngagementAsset> attach = assetService == null ? List.of()
+                : assetService.resolve(engine.getId(), decision.assetIds()).stream().limit(MAX_ATTACHMENTS).toList();
+        if (decision.isAnswer() && decision.assetIds() != null && !decision.assetIds().isEmpty() && attach.isEmpty()) {
+            decision = new EngagementReplyBrain.ReplyDecision("ESCALATE", decision.reply(),
+                    "The reply promised material that is not in the assets.", "missing_material",
+                    List.of(), decision.requestedMaterial() != null ? decision.requestedMaterial() : "the material they asked for");
         }
 
         EngagementAction action = new EngagementAction();
@@ -262,11 +290,20 @@ public class EngagementReplyResponder {
         action.setChannel("WHATSAPP");
         action.setStatus("OPEN");
         action.setDraftBody(cap(decision.reply()));
+        if (!attach.isEmpty()) {
+            try {
+                action.setVariablesJson(JSON.writeValueAsString(java.util.Map.of(
+                        EngagementDispatcher.VAR_ASSET_IDS,
+                        String.join(",", attach.stream().map(EngagementAsset::getId).toList()))));
+            } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
+                throw new IllegalStateException(e); // a map of two strings always serializes
+            }
+        }
         action.setRationale(cap(decision.isAnswer() ? decision.reason()
                 : "Escalated (" + (decision.escalationType() != null ? decision.escalationType() : "review") + "): "
                         + decision.reason()));
         // Escalations rank above auto-answers in the human inbox — money/anger/uncertainty need eyes.
-        action.setPriority(BigDecimal.valueOf(decision.isAnswer() ? 60 : 85));
+        action.setPriority(BigDecimal.valueOf(decision.isAnswer() ? 60 : decision.isMissingMaterial() ? 90 : 85));
         action.setScheduledFor(now);
         action.setExpiresAt(now.plus(Duration.ofHours(taskExpireHours)));
         action = actionRepository.save(action);
@@ -312,6 +349,17 @@ public class EngagementReplyResponder {
             // the nudge below keeps the reply alive if they don't finish.
         } else {
             settled = true; // the escalated OPEN task IS the resolution — a human answers via /send
+            if (teamAlertService != null) {
+                // The task is the durable record; people are told now, not when they next open the inbox.
+                var alertMember = memberRepository.findById(cand.getMemberId()).orElse(null);
+                if (alertMember != null) {
+                    if (decision.isMissingMaterial()) {
+                        teamAlertService.notifyMissing(engine, alertMember, action, decision.requestedMaterial(), replyText);
+                    } else {
+                        teamAlertService.notifyEscalated(engine, alertMember, action, decision.reason(), replyText);
+                    }
+                }
+            }
         }
 
         if (settled) {
@@ -531,7 +579,11 @@ public class EngagementReplyResponder {
         task.setPriority(BigDecimal.valueOf(85));
         task.setScheduledFor(now);
         task.setExpiresAt(now.plus(Duration.ofHours(taskExpireHours)));
-        actionRepository.save(task);
+        task = actionRepository.save(task);
+        if (teamAlertService != null) {
+            var alertMember = memberRepository.findById(cand.getMemberId()).orElse(null);
+            if (alertMember != null) teamAlertService.notifyEscalated(engine, alertMember, task, reason, null);
+        }
     }
 
     /** Non-null reason = force ESCALATE despite an ANSWER verdict. Deterministic, no LLM involved. */
