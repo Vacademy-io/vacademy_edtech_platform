@@ -6,6 +6,7 @@ import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
 import { Form } from '@/components/ui/form';
 import { cn } from '@/lib/utils';
+import { CreateCampaignDialog } from '@/routes/audience-manager/list/-components/create-campaign-dialog/CreateCampaignDialog';
 import type { LeadAgent } from '../-types';
 import {
     agentFormSchema,
@@ -85,6 +86,7 @@ export function CreateAgentDialog({
 }) {
     const navigate = useNavigate();
     const [step, setStep] = useState(0);
+    const [createListOpen, setCreateListOpen] = useState(false);
     const create = useCreateAgent();
     const lists = useLeadListOptions(agents);
     const form = useForm<AgentFormValues>({
@@ -96,6 +98,7 @@ export function CreateAgentDialog({
     useEffect(() => {
         if (!open) {
             setStep(0);
+            setCreateListOpen(false);
             form.reset(defaultFormValues());
         }
     }, [open, form]);
@@ -208,6 +211,7 @@ export function CreateAgentDialog({
                             form={form}
                             leadLists={lists.options}
                             leadListsLoading={lists.isLoading}
+                            onCreateList={() => setCreateListOpen(true)}
                         />
                     )}
                     {step === 1 && <AudienceSection form={form} />}
@@ -215,6 +219,17 @@ export function CreateAgentDialog({
                     {step === 3 && <ReviewStep values={values} listName={listName} />}
                 </form>
             </Form>
+            {/* Outside <Form>/<form>: React events bubble through portals, so the list
+                form's submit must not reach the agent form's onSubmit. Still inside
+                MyDialog, so the two Radix dialogs stack. */}
+            <CreateCampaignDialog
+                isOpen={createListOpen}
+                onClose={() => setCreateListOpen(false)}
+                onCreated={(id) =>
+                    form.setValue('audience_id', id, { shouldDirty: true, shouldValidate: true })
+                }
+                onSaveFailed={() => setCreateListOpen(false)}
+            />
         </MyDialog>
     );
 }
