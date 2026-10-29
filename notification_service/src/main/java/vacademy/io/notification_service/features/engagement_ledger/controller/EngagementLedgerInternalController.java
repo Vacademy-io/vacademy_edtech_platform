@@ -107,4 +107,18 @@ public class EngagementLedgerInternalController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    /** WhatsApp sends Meta reported as failed since a cursor (epoch millis) — the engine's delivery check. */
+    @GetMapping("/delivery-failures-since")
+    public ResponseEntity<List<Map<String, Object>>> deliveryFailuresSince(
+            @RequestParam String instituteId,
+            @RequestParam(required = false) Long since) {
+        try {
+            Instant cursor = since != null ? Instant.ofEpochMilli(since) : null;
+            return ResponseEntity.ok(engagementLedgerService.deliveryFailuresSince(instituteId, cursor));
+        } catch (IllegalArgumentException e) {
+            log.warn("delivery-failures-since rejected: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }

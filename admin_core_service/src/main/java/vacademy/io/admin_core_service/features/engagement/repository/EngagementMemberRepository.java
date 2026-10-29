@@ -451,4 +451,25 @@ public interface EngagementMemberRepository extends JpaRepository<EngagementMemb
              WHERE id IN (:ids) AND status IN ('ACTIVE', 'PAUSED')
             """, nativeQuery = true)
     int optOutMembers(@Param("ids") List<String> ids, @Param("now") Instant now);
+
+    /**
+     * The person's most recent membership in any engine of the institute, whatever its status
+     * (a booked meeting usually exits the person). For recording a reply about that meeting.
+     */
+    @Query(value = """
+            SELECT m.* FROM engagement_member m
+             WHERE m.institute_id = :instituteId
+               AND ((CAST(:responseId AS text) IS NOT NULL AND m.audience_response_id = CAST(:responseId AS text))
+                 OR (CAST(:userId AS text) IS NOT NULL AND m.user_id = CAST(:userId AS text)))
+             ORDER BY m.updated_at DESC NULLS LAST
+             LIMIT 1
+            """, nativeQuery = true)
+    java.util.Optional<EngagementMember> findLatestForSubject(@Param("instituteId") String instituteId,
+                                                              @Param("responseId") String responseId,
+                                                              @Param("userId") String userId);
+
+    /** Lead rows of these that already have a membership in any engine (any status). */
+    @Query(value = "SELECT DISTINCT m.audience_response_id FROM engagement_member m "
+            + "WHERE m.audience_response_id IN (:responseIds)", nativeQuery = true)
+    java.util.List<String> responsesWithMembership(@Param("responseIds") java.util.Collection<String> responseIds);
 }

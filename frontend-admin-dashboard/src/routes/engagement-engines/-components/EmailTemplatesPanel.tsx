@@ -256,6 +256,9 @@ function EmailTemplateCard({
                     <span className="text-subtitle">{tpl.title || tpl.name}</span>
                 </span>
                 <ToneBadge label={t(`email.status.${tpl.status}`)} tone={STATUS_TONE[tpl.status]} />
+                {tpl.reusedFromId && (
+                    <Chip label={t('reuse.chip')} className="bg-success-50 text-success-600" />
+                )}
                 <Chip label={t('email.version', { value: tpl.version })} />
                 <Chip label={t(`generate.languages.${tpl.language}`)} />
                 {tpl.purpose && <Chip label={tpl.purpose} />}

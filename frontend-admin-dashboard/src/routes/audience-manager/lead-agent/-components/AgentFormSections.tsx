@@ -44,6 +44,7 @@ import type { SuggestResponse } from '../-types';
 import { dedupe, formatCompetitor, type AgentFormValues } from '../-utils/agent-form';
 import {
     COMPETITOR_KIND_OPTIONS,
+    EFFORT_OPTIONS,
     EXCLUDE_PRESETS,
     FIT_WEIGHT_OPTIONS,
     LIST_LIMITS,
@@ -1352,6 +1353,58 @@ export function PacingSection({ form }: { form: Form }) {
                     </CollapsibleContent>
                 </Collapsible>
             </div>
+
+            <FormField
+                control={form.control}
+                name="effort"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col gap-2">
+                        <SectionHeading
+                            title="Validation effort"
+                            hint="Higher effort finds and confirms more contacts, but costs more per lead."
+                        />
+                        <FormControl>
+                            <RadioGroup
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                className="grid grid-cols-1 gap-2"
+                                aria-label="Validation effort"
+                            >
+                                {EFFORT_OPTIONS.map((o) => {
+                                    const id = `la-effort-${o.value}`;
+                                    return (
+                                        <label
+                                            key={o.value}
+                                            htmlFor={id}
+                                            className={cn(
+                                                'flex cursor-pointer items-start gap-3 rounded-md border p-3',
+                                                field.value === o.value
+                                                    ? 'border-primary-300 bg-primary-50'
+                                                    : 'border-neutral-200'
+                                            )}
+                                        >
+                                            <RadioGroupItem
+                                                id={id}
+                                                value={o.value}
+                                                className="mt-0.5"
+                                            />
+                                            <span className="flex flex-col gap-1">
+                                                <span className="text-body font-semibold text-neutral-800">
+                                                    {o.label}
+                                                </span>
+                                                <span className="text-caption text-neutral-500">
+                                                    {o.note}
+                                                </span>
+                                            </span>
+                                        </label>
+                                    );
+                                })}
+                            </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
         </div>
     );
 }

@@ -16,8 +16,8 @@ from ..schemas import AccountExtraction
 from ..offer import as_offer
 from .catalogue import HIRING_SIGNALS, SIGNALS, ProductScore, hiring_label, matching_role, signal_holds
 from .contacts import (
-    TIERS, Contact, MxLookup, check_mail_domains, describe, email_person, is_person_name, link_people, phone_region,
-    rate_contact,
+    TIERS, Contact, MxLookup, check_mail_domains, describe, email_owner, email_person, is_person_name, link_people,
+    phone_region, rate_contact, send_rank,
 )
 from .evidence import quote_is_supported
 from .extract import PageText
@@ -234,8 +234,14 @@ def rate_contacts(lead: dict[str, Any], buyer_roles: list[str]) -> list[dict[str
             c, site_domain=organisation.get("domain"), organisation=organisation.get("name") or "",
             leaders=leaders, large_chain=large_chain, region=region,
         )
+        if c["kind"] == "published_email":
+            # Whose mailbox it is, so delivery mails the organisation's own address first (contacts.OWNER_RANK).
+            c["owner"] = email_owner(c["value"], site_domain=organisation.get("domain"),
+                                     organisation=organisation.get("name") or "", person=c.get("person"))
         rated.append(c)
-    return sorted(rated, key=lambda c: (TIERS.index(c["quality"]), _KIND_ORDER.get(c["kind"], 9)))
+    # Within a tier and kind: the organisation's own email before an unnamed Gmail, a mobile before a
+    # landline. Tiers are not reordered, so contact_quality and the reach score are unchanged by this.
+    return sorted(rated, key=lambda c: (TIERS.index(c["quality"]), _KIND_ORDER.get(c["kind"], 9), send_rank(c, region)))
 
 
 def _contact_summary(usable: list[dict[str, Any]], decision_maker: dict[str, Any] | None,

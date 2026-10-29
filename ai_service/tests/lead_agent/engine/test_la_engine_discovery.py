@@ -8,9 +8,12 @@ import socket
 from la_engine_fixtures import PLAN, BatchSearch, FakeSearch, asker
 
 from app.services.lead_agent.engine.discovery.domains import homepage, is_excluded, is_portal_name, registered_domain
-from app.services.lead_agent.engine.discovery.pipeline import discover, match_supplied_name, split_budget, usable_results
+from app.services.lead_agent.engine.discovery.pipeline import (
+    check_posts, discover, match_supplied_name, named_places, names_match, post_rules_out, split_budget,
+    usable_results,
+)
 from app.services.lead_agent.engine.discovery.search import SearchFailed, SearchResult
-from app.services.lead_agent.engine.discovery.sources import keyword_queries, signal_queries
+from app.services.lead_agent.engine.discovery.sources import is_job_list, keyword_queries, signal_queries
 from app.services.lead_agent.engine.schemas import DiscoverySelection, SignalSelection
 
 RESULTS = {
@@ -187,7 +190,8 @@ SIGNAL_RESULTS = {"*": [
      "We are hiring an Admission Counsellor for our Jayanagar centre"),
     ("Telecaller jobs in Bangalore - Quess Staffing", "https://www.quesscorp.com/jobs/telecaller",
      "Apply for telecaller jobs with top companies"),
-    ("Alpha Academy | JEE and NEET coaching", "https://www.alphaacademy.in/", "Classroom programmes for JEE and NEET"),
+    ("Alpha Academy | JEE and NEET coaching", "https://www.alphaacademy.in/",
+     "Classroom programmes for JEE and NEET in Bangalore"),
 ]}
 
 
@@ -251,8 +255,10 @@ def test_signals_find_the_hiring_organisation_and_its_website_without_extra_sear
         finding(2, "Beta Classes", "Invented quote that is not in the result"),  # quote check fails
         finding(9, "Ghost Institute", "anything"),  # no such result
     ])
-    # Only results mentioning a hiring word reach the model; the plain website result does not.
-    assert "Quess Staffing" in prompts["signals"] and "Classroom programmes" not in prompts["signals"]
+    # Only results mentioning a hiring word reach the model; the plain website result does not, nor
+    # the staffing firm's list page ("Telecaller jobs in Bangalore").
+    assert "Alpha Academy is hiring" in prompts["signals"] and "Classroom programmes" not in prompts["signals"]
+    assert "Quess Staffing" not in prompts["signals"]
     [alpha] = outcome.candidates
     assert (alpha.name, alpha.source, alpha.domain) == ("Alpha Academy", "signal", "alphaacademy.in")
     assert alpha.detail["website_from"] == "matched in search results"
@@ -405,3 +411,314 @@ def test_the_model_is_asked_with_the_output_model_it_must_fill():
     discover(plan=PLAN, candidate_count=5, seeds=[], sources=["hiring_callers", "organisation_search"], max_queries=2,
              max_signal_queries=2, search=FakeSearch(SIGNAL_RESULTS), ask=ask)
     assert set(asked) == {DiscoverySelection, SignalSelection}
+
+
+# ------------------------------------------------------------------ validity of hiring proof (2026-10-29)
+# Real cases from the "Leads for Vacademy" audit: job posts credited to the wrong organisation.
+
+PATHFINDER_POST = ("https://www.glassdoor.co.in/job-listing/admission-counsellor-the-pathfinder-school-"
+                   "JV_IC4477_KO0,20_KE21,42.htm?jl=1009512345")
+PATHFINDER_RESULTS = {
+    "*": [("The Pathfinder School hiring Admission Counsellor Job in India | Glassdoor", PATHFINDER_POST,
+           "The Pathfinder School is hiring an Admission Counsellor in Kaladhungi, Uttarakhand.")],
+    "The Pathfinder School Kaladhungi Uttarakhand": [
+        ("Pathfinder Academy | Best school in New Delhi", "https://pathfinderacademy.in/",
+         "CBSE school in Dwarka, New Delhi"),
+        ("Pathfinder Global School, Pataudi", "https://www.pathfinderglobalschool.com/",
+         "Day boarding school in Pataudi, Gurugram, Haryana"),
+        ("Pathfinder Boarding School", "https://pathfinderboarding.edu.in/",
+         "Residential CBSE school near Haldwani, Nainital, Uttarakhand"),
+    ],
+}
+PATHFINDER_FINDING = {"result_id": 1, "organisation_name": "The Pathfinder School", "signal": "hiring",
+                      "role_or_need": "Admission Counsellor", "quote": "The Pathfinder School is hiring an Admission Counsellor",
+                      "event_date": None, "location": "Kaladhungi, Uttarakhand"}
+
+
+def pathfinder_run(**kwargs):
+    search = FakeSearch(PATHFINDER_RESULTS)
+    prompts: list[str] = []
+
+    def select_signals(system: str, user: str) -> SignalSelection:
+        prompts.append(user)
+        return SignalSelection(findings=[PATHFINDER_FINDING])
+
+    india = PLAN.model_copy(update={"locations": ["India"]})
+    outcome = discover(plan=india, candidate_count=5, seeds=[], sources=["hiring_callers"], max_queries=0,
+                       max_signal_queries=1, search=search, ask=asker(select_signals=select_signals), **kwargs)
+    return outcome, search, prompts
+
+
+def test_a_hiring_organisations_website_must_be_where_the_post_is():
+    """One Glassdoor post became pathfinderacademy.in (New Delhi), then pathfinderglobalschool.com (Pataudi),
+    then pathfinderboarding.edu.in (Haldwani, next to Kaladhungi): the lookup searched "The Pathfinder School
+    India" and took the first Pathfinder."""
+    outcome, search, _ = pathfinder_run()
+    [school] = outcome.included
+    assert school.domain == "pathfinderboarding.edu.in"
+    assert "The Pathfinder School Kaladhungi Uttarakhand" in search.queries  # the post's place, not "India"
+    assert school.detail["website_from"] == "search: The Pathfinder School Kaladhungi Uttarakhand"
+
+
+def test_the_next_round_never_turns_the_same_post_into_another_organisation():
+    # The post is already behind a candidate: it is not read again, so no lookup runs at all.
+    outcome, search, prompts = pathfinder_run(skip_domains={"pathfinderboarding.edu.in"},
+                                              skip_signal_urls={PATHFINDER_POST.replace("https://www.", "http://")})
+    assert outcome.included == [] and prompts == []
+    assert not any(q.startswith("The Pathfinder School") for q in search.queries)
+    # Even when the post is read again, the right site being taken ends the lookup: no second Pathfinder.
+    outcome, _, _ = pathfinder_run(skip_domains={"pathfinderboarding.edu.in"})
+    assert outcome.included == []
+
+
+def test_a_taken_site_ends_the_name_search():
+    results = [SearchResult("q", i, t, u, s) for i, (t, u, s) in
+               enumerate(PATHFINDER_RESULTS["The Pathfinder School Kaladhungi Uttarakhand"], 1)]
+    assert match_supplied_name("The Pathfinder School", results, set()).url == "https://pathfinderacademy.in/"
+    assert match_supplied_name("The Pathfinder School", results, {"pathfinderacademy.in"}) is None
+    near = ["Kaladhungi", "Uttarakhand"]
+    assert match_supplied_name("The Pathfinder School", results, set(), near).url == "https://pathfinderboarding.edu.in/"
+
+
+def test_the_whole_name_must_match_not_its_first_distinctive_word():
+    ekam = SearchResult("q", 1, "Ekam IAS Academy Hyderabad | Best IAS coaching", "https://ekamiasacademy.com/",
+                        "IAS coaching in Hyderabad")
+    study = SearchResult("q", 2, "The Study IAS | UPSC coaching in Karol Bagh", "https://thestudyias.com/", "Delhi")
+    # "THE STUDY IAS" (Karol Bagh Branch, Delhi) was credited to ekamiasacademy.com in Hyderabad.
+    assert not names_match("THE STUDY IAS", ekam) and names_match("THE STUDY IAS", study)
+    assert match_supplied_name("THE STUDY IAS", [ekam, study], set(), named_places("Karol Bagh Branch, Delhi")) == study
+    # One "Narayana e-Techno School" post went to narayanacoachingcenters.in and narayanaschools.in.
+    narayana = [SearchResult("q", 1, "Narayana Coaching Centers - IIT JEE NEET", "https://narayanacoachingcenters.in/", ""),
+                SearchResult("q", 2, "Narayana Schools | CBSE schools", "https://www.narayanaschools.in/", "e-Techno")]
+    assert match_supplied_name("Narayana e-Techno School", narayana, set()) is None
+    right = SearchResult("q", 3, "Narayana e-Techno School, Kota", "https://kota.narayanaetechno.in/", "")
+    assert match_supplied_name("Narayana e-Techno School", [*narayana, right], set()) == right
+    # Short names need the whole phrase or their words run together in the domain.
+    assert names_match("NV Classes", SearchResult("q", 1, "Home", "https://www.nvclasses.com/", ""))
+    assert not names_match("NV Classes", SearchResult("q", 1, "Home", "https://www.nvidia.com/", ""))
+    # A name told apart only by its place needs the whole name: any public school in Delhi will not do.
+    bbps = SearchResult("q", 1, "Bal Bharati Public School, Delhi", "https://bbps.edu.in/", "")
+    assert not names_match("Delhi Public School", bbps, ["Delhi"])
+
+
+def test_job_board_list_pages_are_never_proof():
+    def result(title, url="https://www.example.com/a"):
+        return SearchResult("q", 1, title, url, "Hiring Admission Counsellor - Delhi/NCR")
+
+    # The Panipat list page became Orane International's Bangalore branch.
+    assert is_job_list(result("215 admissions jobs in Pānīpat, October 2026 | Glassdoor"))
+    assert is_job_list(result("410+ Remote Admission Counsellor Jobs in India (Oct 2026) – Page 4"))
+    assert is_job_list(result("Telecaller jobs in Bangalore - Quess Staffing"))
+    for url in ("https://www.glassdoor.co.in/Job/panipat-admissions-jobs-SRCH_IL.0,7_IC2883094_KO8,18.htm",
+                "https://in.indeed.com/jobs?q=telecaller&l=Delhi", "https://in.indeed.com/q-telecaller-l-delhi-jobs.html",
+                "https://www.naukri.com/admission-counsellor-jobs-in-delhi", "https://www.naukri.com/telecaller-jobs-2",
+                "https://www.linkedin.com/jobs/admission-counsellor-jobs-delhi", "https://www.foundit.in/srp/results?query=x"):
+        assert is_job_list(result("Admission Counsellor", url)), url
+    # Single posts still count.
+    assert not is_job_list(result("The Pathfinder School hiring Admission Counsellor Job in India | Glassdoor",
+                                  PATHFINDER_POST))
+    assert not is_job_list(result("Telecaller - Alpha Academy - Bangalore | Naukri.com", NAUKRI))
+    assert not is_job_list(result("Admission Counsellor - Alpha Academy", "https://in.indeed.com/viewjob?jk=abc"))
+    assert not is_job_list(result("Beta Classes on LinkedIn: We are hiring an Admission Counsellor", LINKEDIN))
+    assert not is_job_list(result("Telecaller - 2 openings - Alpha Academy"))
+
+
+def test_one_post_backs_one_organisation():
+    outcome, _, _ = signal_run([
+        finding(2, "Beta Classes", "We are hiring an Admission Counsellor", role="Admission Counsellor"),
+        finding(2, "Gamma Tutorials", "We are hiring an Admission Counsellor", role="Admission Counsellor"),
+    ])
+    assert [c.name for c in outcome.candidates] == ["Beta Classes"]
+
+
+def test_places_named_by_a_post():
+    assert named_places("Kaladhungi, Uttarakhand") == ["Kaladhungi", "Uttarakhand"]
+    assert named_places("Delhi/NCR") == ["Delhi", "NCR"]
+    assert named_places("Karol Bagh Branch, Delhi") == ["Karol Bagh", "Delhi"]
+    assert named_places("Lucknow, Uttar Pradesh 226010") == ["Lucknow", "Uttar Pradesh"]
+    for nowhere in ("India", "Remote", "Work from home", "Remote - India", "United Arab Emirates", "", None):
+        assert named_places(nowhere) == [], nowhere
+
+
+def test_a_city_known_by_two_names_is_one_place():
+    from app.services.lead_agent.engine.discovery.pipeline import place_keys
+
+    # A post in "Gurgaon" is at the school whose website says "Gurugram" (2026-10-29 replay).
+    pws = SearchResult("q", 1, "Pathways School Gurugram | IB World School", "https://www.pws.edu.in/", "Sector 100")
+    assert match_supplied_name("Pathways School", [pws], set(), named_places("Gurgaon, Haryana")) == pws
+    bombay = SearchResult("q", 1, "Alpha Academy", "https://www.alphabombay.in/", "Coaching classes")
+    assert match_supplied_name("Alpha Academy", [bombay], set(), ["Mumbai"]) == bombay  # the old name in the domain
+    banaras = SearchResult("q", 1, "Alpha Academy, Benares", "https://alpha-academy.in/", "")
+    assert match_supplied_name("Alpha Academy", [banaras], set(), ["Varanasi"]) == banaras
+    assert match_supplied_name("Alpha Academy", [banaras], set(), ["Lucknow"]) is None
+    assert place_keys("Bangalore, Karnataka") == place_keys("Bengaluru, Karnataka") == {"bengaluru", "karnataka"}
+
+
+def test_a_post_without_a_place_falls_back_to_the_plan_place():
+    outcome, search, _ = signal_run([finding(2, "Beta Classes", "We are hiring an Admission Counsellor") | {
+        "location": "India"}])
+    assert "Beta Classes Bangalore" in search.queries
+
+
+def test_a_role_written_like_a_job_post_is_not_searched_as_hiring_hiring():
+    """Stored brief roles read "hiring admission counsellor": searches read "school hiring hiring admission
+    counsellor India"."""
+    queries = signal_queries(["hiring_callers"], [{"search_term": "school"}], "India", 1, ["hiring admission counsellor"])
+    assert queries == [("hiring_callers", "school hiring admission counsellor India")]
+
+
+def test_signal_and_keyword_searches_turn_each_round():
+    """Signal searches were the same every round, so the same posts came back."""
+    coaching = {"search_term": "coaching institute"}
+    roles = ["admission counsellor", "academic counsellor", "telecaller"]
+    rounds = [signal_queries(["hiring_callers", "linkedin_posts"], [coaching], "Jaipur", 2, roles, turn)
+              for turn in range(3)]
+    assert rounds[0] == signal_queries(["hiring_callers", "linkedin_posts"], [coaching], "Jaipur", 2, roles)
+    assert all(len(r) == 2 for r in rounds) and len({tuple(r) for r in rounds}) == 3
+    keywords = ["looking for LMS", "LMS tender", "which LMS"]
+    assert [q for _, q in keyword_queries(keywords, [coaching], "Jaipur", ["web"], 2, 1)] == [
+        "LMS tender coaching institute Jaipur", "which LMS coaching institute Jaipur"]
+
+
+def test_discover_runs_the_turned_searches():
+    search = FakeSearch(SIGNAL_RESULTS)
+    discover(plan=PLAN, candidate_count=5, seeds=[], sources=["hiring_callers"], max_queries=0, max_signal_queries=1,
+             search=search, ask=asker(), signal_turn=1)
+    assert search.queries == ["coaching institute hiring admission counsellor Bangalore"]
+
+
+# ----------------------------------------------------------- the job post itself (effort.open_job_post)
+# read_post(url) -> the post page's HTML or None; a post naming another employer or place drops the signal.
+
+def job_page(employer: str, locality: str | None, region: str | None = None) -> str:
+    """A job board's post page as served: its JobPosting JSON-LD (what Glassdoor, Naukri and LinkedIn publish
+    for search engines) and a JavaScript mount."""
+    address = ", ".join(f'"{k}": "{v}"' for k, v in (("addressLocality", locality), ("addressRegion", region)) if v)
+    return ('<html><head><title>Admission Counsellor job | Glassdoor</title><script type="application/ld+json">'
+            '{"@context": "https://schema.org/", "@type": "JobPosting", "title": "Admission Counsellor", '
+            f'"hiringOrganization": {{"@type": "Organization", "name": "{employer}"}}, '
+            f'"jobLocation": {{"@type": "Place", "address": {{"@type": "PostalAddress", {address}}}}}}}'
+            '</script></head><body><div id="app"></div></body></html>')
+
+
+PATHFINDER_PAGE = job_page("The Pathfinder School", "Kaladhungi", "Uttarakhand")
+# The search result named no place: the lookup ran with the market ("India") and took the first Pathfinder.
+UNPLACED = {**PATHFINDER_FINDING, "location": None}
+UNPLACED_RESULTS = {
+    "*": [("The Pathfinder School hiring Admission Counsellor Job in India | Glassdoor", PATHFINDER_POST,
+           "The Pathfinder School is hiring an Admission Counsellor. Apply now.")],
+    "The Pathfinder School India": PATHFINDER_RESULTS["The Pathfinder School Kaladhungi Uttarakhand"],
+}
+
+
+class Posts:
+    """read_post from canned pages ({url: html}; a missing URL could not be read); records each call."""
+
+    def __init__(self, pages: dict[str, str | None] | None = None, error: Exception | None = None):
+        self.pages, self.error, self.read = pages or {}, error, []
+
+    def __call__(self, url: str) -> str | None:
+        self.read.append(url)
+        if self.error:
+            raise self.error
+        return self.pages.get(url)
+
+
+def post_run(found=UNPLACED, results=UNPLACED_RESULTS, **kwargs):
+    india = PLAN.model_copy(update={"locations": ["India"]})
+    return discover(plan=india, candidate_count=5, seeds=[], sources=["hiring_callers"], max_queries=0,
+                    max_signal_queries=1, search=FakeSearch(results),
+                    ask=asker(select_signals=lambda s, u: SignalSelection(findings=[found])), **kwargs)
+
+
+def test_a_post_in_another_place_drops_the_signal_and_its_candidate():
+    """The Pathfinder School's Glassdoor post is in Kaladhungi, Uttarakhand; pathfinderacademy.in is in New Delhi."""
+    assert [c.domain for c in post_run().included] == ["pathfinderacademy.in"]  # today, without read_post
+    posts = Posts({PATHFINDER_POST: PATHFINDER_PAGE})
+    outcome = post_run(read_post=posts)
+    assert outcome.included == [] and posts.read == [PATHFINDER_POST]
+    [dropped] = outcome.candidates
+    assert dropped.domain == "pathfinderacademy.in" and not dropped.included
+    assert dropped.note == "The job post is in Kaladhungi, Uttarakhand, which pathfinderacademy.in does not mention."
+    assert dropped.detail["signals_ruled_out"][0]["url"] == PATHFINDER_POST
+
+
+def test_a_post_that_cannot_be_read_keeps_the_search_results_decision():
+    # Glassdoor, LinkedIn and Indeed often refuse robots: no page, or the reader fails.
+    for posts in (Posts({}), Posts(error=TimeoutError("slow"))):
+        outcome = post_run(read_post=posts)
+        assert [c.domain for c in outcome.included] == ["pathfinderacademy.in"] and posts.read == [PATHFINDER_POST]
+        assert "post_read" not in outcome.included[0].detail["signals"][0]
+    # A page that names nobody for certain (no JobPosting data) rules nothing out either.
+    outcome = post_run(read_post=Posts({PATHFINDER_POST: "<html><title>The Pathfinder School, Kaladhungi</title></html>"}))
+    assert [c.domain for c in outcome.included] == ["pathfinderacademy.in"]
+
+
+def test_a_post_that_agrees_with_the_website_keeps_the_signal_and_lends_it_its_place():
+    results = {**UNPLACED_RESULTS, "The Pathfinder School India": [
+        ("Pathfinder Boarding School", "https://pathfinderboarding.edu.in/",
+         "Residential CBSE school near Haldwani, Nainital, Uttarakhand")]}
+    outcome = post_run(results=results, read_post=Posts({PATHFINDER_POST: PATHFINDER_PAGE}))
+    [school] = outcome.included
+    assert school.domain == "pathfinderboarding.edu.in"
+    [signal] = school.detail["signals"]
+    assert signal["post_read"] is True and signal["location"] == "Kaladhungi, Uttarakhand"
+    # The search result's own place is kept when it named one.
+    outcome, _, _ = pathfinder_run(read_post=Posts({PATHFINDER_POST: PATHFINDER_PAGE}))
+    assert [c.domain for c in outcome.included] == ["pathfinderboarding.edu.in"]
+
+
+NARAYANA_POST = "https://www.naukri.com/job-listings-counsellor-narayana-e-techno-school-hyderabad-281025500123"
+
+
+def test_a_post_by_another_employer_drops_the_signal():
+    """A "Narayana e-Techno School" post went to narayanacoachingcenters.in: the model named the employer
+    "Narayana", whose site that is; the post itself names the school."""
+    found = {"result_id": 1, "organisation_name": "Narayana", "signal": "hiring", "role_or_need": "Admission Counsellor",
+             "quote": "Narayana is hiring an Admission Counsellor", "event_date": None, "location": "Hyderabad, Telangana"}
+    results = {
+        "*": [("Admission Counsellor - Narayana - Hyderabad | Naukri.com", NARAYANA_POST,
+               "Narayana is hiring an Admission Counsellor in Hyderabad. 1-3 years.")],
+        "Narayana Hyderabad Telangana": [
+            ("Narayana Coaching Centers - IIT JEE NEET coaching in Hyderabad", "https://narayanacoachingcenters.in/",
+             "Narayana Coaching Centers, Hyderabad, Telangana")],
+    }
+    assert [c.domain for c in post_run(found, results).included] == ["narayanacoachingcenters.in"]
+    posts = Posts({NARAYANA_POST: job_page("Narayana e-Techno School", "Hyderabad", "Telangana")})
+    outcome = post_run(found, results, read_post=posts)
+    assert outcome.included == []
+    assert outcome.candidates[0].note == ("The job post is by Narayana e-Techno School, whose name "
+                                          "narayanacoachingcenters.in does not carry.")
+
+
+def test_the_whole_name_rule_judges_the_employer_a_post_names():
+    narayana = SearchResult("q", 1, "Narayana Coaching Centers - IIT JEE NEET", "https://narayanacoachingcenters.in/",
+                            "Hyderabad")
+    right = SearchResult("q", 1, "Narayana e-Techno School, Kota", "https://kota.narayanaetechno.in/", "Kota, Rajasthan")
+    facts = {"organisation": "Narayana e-Techno School", "locations": [], "remote": False}
+    assert post_rules_out(facts, narayana) and post_rules_out(facts, right) is None
+    # A branch or place tail on the employer is not part of its name.
+    dps = SearchResult("q", 1, "Delhi Public School Vadodara | Best school", "https://www.dpsvadodara.com/", "Vadodara")
+    assert post_rules_out({"organisation": "Delhi Public School, Vadodara", "locations": ["Vadodara, Gujarat"]}, dps) is None
+    # Nobody named (generic words, a job portal, a remote job) rules nothing out.
+    assert post_rules_out({"organisation": "Coaching Academy", "locations": []}, narayana) is None
+    assert post_rules_out({"organisation": "Naukri.com", "locations": []}, narayana) is None
+    assert post_rules_out({"organisation": None, "locations": ["Pune, Maharashtra"], "remote": True}, narayana) is None
+    # Another place by its other name is the same place.
+    pws = SearchResult("q", 1, "Pathways School Gurugram | IB World School", "https://www.pws.edu.in/", "Sector 100")
+    assert post_rules_out({"organisation": "Pathways School", "locations": ["Gurgaon, Haryana"]}, pws) is None
+
+
+def test_only_job_post_signals_are_read():
+    signals = [{"key": "hiring", "url": NAUKRI}, {"key": "new_centre", "url": "https://news.example.in/alpha-opens"},
+               {"key": "keyword_need", "url": LINKEDIN}, {"key": "hiring"}]
+    posts = Posts()
+    alpha = SearchResult("q", 1, "Alpha Academy | JEE and NEET coaching", "https://www.alphaacademy.in/", "Bangalore")
+    kept, ruled_out = check_posts(signals, posts, alpha)
+    assert posts.read == [NAUKRI] and kept == signals and ruled_out == []
+
+
+def test_posts_are_only_read_for_organisations_whose_website_was_found():
+    posts = Posts({PATHFINDER_POST: PATHFINDER_PAGE})
+    outcome = post_run(results={"*": UNPLACED_RESULTS["*"]}, read_post=posts)  # the lookup finds nothing
+    assert posts.read == [] and outcome.included[0].website is None

@@ -5,7 +5,8 @@ from __future__ import annotations
 import la_engine_fixtures  # noqa: F401 - puts ai_service on sys.path
 
 from app.services.lead_agent.engine.pagefetch import (
-    MAX_LINKS, MAX_TEXT_CHARS, choose_pages, contact_pages, extraction_pages, parse_page, platform_page,
+    MAX_LINKS, MAX_TEXT_CHARS, choose_pages, contact_pages, extraction_pages, job_post_facts, parse_page, platform_page,
+    read_shell, refresh_url, shell_text,
 )
 
 SITE = "https://www.alpha-academy.in/"
@@ -154,3 +155,113 @@ def test_a_short_plain_page_without_scripts_stays_ok():
     page = parse_page("https://tiny.example.in/", "https://tiny.example.in/",
                       "<html><body><p>Tiny Tutorials, Indore. Call 98450 12345</p></body></html>", 200)
     assert page["access"] == "ok"
+
+
+# ------------------------------------------------------------- shells no browser renders (2026-10-29)
+# Of the 237 "No readable page" rejects of "Leads for Vacademy", 71 home pages were JavaScript shells.
+
+# Shaped like takshacademy.com: a React mount, the organisation's JSON-LD and a real <noscript>.
+TAKSH_SHELL = """<html><head><title>Taksh Academy Vadodara \u2014 Best Coaching Classes in Manjalpur</title>
+<meta name="description" content="Taksh Academy is Vadodara's coaching institute for Class 8, 9 and 10, CBSE and GSEB.">
+<meta property="og:title" content="Taksh Academy Vadodara \u2014 Best Coaching Classes in Manjalpur">
+<script type="application/ld+json">{"@context": "https://schema.org", "@graph": [
+  {"@type": "EducationalOrganization", "name": "Taksh Academy", "telephone": "+91 98250 12345",
+   "email": "mailto:info@takshacademy.example",
+   "address": {"@type": "PostalAddress", "streetAddress": "12 Shiv Complex", "addressLocality": "Vadodara",
+               "addressRegion": "Gujarat", "postalCode": "390011"},
+   "contactPoint": [{"@type": "ContactPoint", "telephone": "+91 265 123 4567", "contactType": "admissions"}]},
+  {"@type": "Person", "name": "Ravi Shah", "telephone": "+91 90000 00001"}]}</script>
+<script type="application/ld+json">{"broken": </script>
+<script src="/static/js/main.js"></script></head>
+<body><div id="root"></div>
+<noscript>You need to enable JavaScript to run this app.</noscript>
+<noscript><h1>Taksh Academy</h1><p>Coaching for Class 8-10 in Manjalpur and Tarsali, Vadodara.</p></noscript>
+</body></html>"""
+
+
+def test_a_shell_is_read_for_what_its_html_carries():
+    record = parse_page("https://www.takshacademy.example/", "https://www.takshacademy.example/", TAKSH_SHELL, 200)
+    assert record["access"] == "js_shell"
+    page = read_shell(record, TAKSH_SHELL)
+    assert page["access"] == "ok" and page["error"] is None
+    text = page["text"]
+    assert text.splitlines()[0].startswith("Taksh Academy Vadodara")
+    assert "CBSE and GSEB" in text  # the description
+    assert "Telephone: +91 98250 12345" in text and "Telephone: +91 265 123 4567" in text
+    assert "Email: info@takshacademy.example" in text
+    assert "Address: 12 Shiv Complex, Vadodara, Gujarat, 390011" in text
+    assert "Coaching for Class 8-10 in Manjalpur" in text  # the real <noscript>
+    assert "enable JavaScript" not in text  # the framework's notice is not the organisation's words
+    assert "Ravi Shah" not in text and "90000 00001" not in text  # a person in the JSON-LD is not the organisation
+    assert text.count("Taksh Academy Vadodara") == 1  # og:title repeats the title: kept once
+    # its numbers reach the contacts the engine extracts from readable pages
+    assert contact_pages([{**page, "page_type": "home"}])[0]["text"] == text
+
+
+def test_a_page_hidden_until_its_scripts_run_is_read_from_its_html():
+    """raycoaching.in, oneaim.co.in: the whole page sits in a hidden wrapper until the scripts show it."""
+    html = ('<html><head><title>Ray Coaching Classes</title>' + '<script src="/a.js"></script>' * 4 + '</head><body>'
+            '<div class="preloader">Loading...</div><div id="page" style="display:none">'
+            '<h1>Ray Coaching Classes, Noida</h1><p>CBSE coaching for classes I to XII since 2009, Sector 62.</p>'
+            '<footer>Call 98100 12345 | raycoaching@example.in</footer></div></body></html>')
+    record = parse_page("https://raycoaching.example/", "https://raycoaching.example/", html, 200)
+    assert record["access"] == "js_shell"
+    page = read_shell(record, html)
+    assert page["access"] == "ok"
+    assert "CBSE coaching for classes I to XII" in page["text"] and "98100 12345" in page["text"]
+
+
+def test_a_shell_that_says_nothing_stays_a_shell_unless_it_links_a_phone():
+    bare = ('<html><head><title>Sigma IT Academy</title><script src="/a.js"></script></head>'
+            '<body><div id="root"></div><noscript>Please enable JavaScript to continue.</noscript></body></html>')
+    record = parse_page("https://sigma.example/", "https://sigma.example/", bare, 200)
+    assert shell_text(bare) == "Sigma IT Academy"
+    assert read_shell(record, bare) is record  # unchanged: still js_shell, still unreadable
+    calls = bare.replace('<div id="root"></div>', '<div id="root"></div><a href="tel:+919812345678">Call</a>')
+    record = parse_page("https://sigma.example/", "https://sigma.example/", calls, 200)
+    assert record["access"] == "js_shell" and read_shell(record, calls)["access"] == "ok"
+    # pages that are not shells are never touched
+    ok = parse_page(SITE, SITE, "<html><body><p>Tiny Tutorials, Indore. Call 98450 12345</p></body></html>", 200)
+    assert read_shell(ok, "<html></html>") is ok
+
+
+def test_a_meta_refresh_says_where_an_empty_page_moved():
+    moved = ('<html><head><meta http-equiv="refresh" content="0;url=https://sxcran.ac.in" />'
+             "<title>Welcome to St. Xavier's College, Ranchi</title></head><body></body></html>")
+    assert refresh_url(moved, "https://www.sxcran.org/") == "https://sxcran.ac.in"
+    assert refresh_url("<meta http-equiv='refresh' content='0; URL=index.php'>",
+                       "https://www.unicodetechnologies.example/") == "https://www.unicodetechnologies.example/index.php"
+    assert refresh_url('<meta http-equiv="Refresh" content="5">', SITE) is None  # reloads itself
+    assert refresh_url('<meta http-equiv="refresh" content="60;url=/news">', SITE) is None  # a slow slideshow
+    assert refresh_url('<meta http-equiv="refresh" content="0;url=javascript:alert(1)">', SITE) is None
+    assert refresh_url(f'<meta http-equiv="refresh" content="0;url={SITE}">', SITE) is None
+    assert refresh_url("<html><body>No refresh</body></html>", SITE) is None
+
+
+# ------------------------------------------------------------------------- job post pages
+
+def _post(job: str) -> str:
+    return (f'<html><head><title>Admission Counsellor job</title><script type="application/ld+json">{job}</script>'
+            '</head><body><div id="app"></div></body></html>')
+
+
+def test_a_job_posts_employer_and_places_come_from_its_structured_data():
+    pathfinder = _post("""{"@context": "https://schema.org/", "@type": "JobPosting", "title": "Admission Counsellor",
+        "hiringOrganization": {"@type": "Organization", "name": "The Pathfinder School"},
+        "jobLocation": {"@type": "Place", "address": {"@type": "PostalAddress", "addressLocality": "Kaladhungi",
+                        "addressRegion": "Uttarakhand", "addressCountry": "IN"}}}""")
+    assert job_post_facts(pathfinder) == {"organisation": "The Pathfinder School",
+                                          "locations": ["Kaladhungi, Uttarakhand"], "remote": False}
+    narayana = _post("""[{"@type": "BreadcrumbList"}, {"@type": ["JobPosting"], "hiringOrganization": "Narayana e-Techno School",
+        "jobLocation": [{"address": {"addressLocality": "Hyderabad", "addressRegion": "Telangana"}},
+                        {"address": "Kukatpally, Hyderabad"}]}]""")
+    assert job_post_facts(narayana) == {"organisation": "Narayana e-Techno School",
+                                        "locations": ["Hyderabad, Telangana", "Kukatpally, Hyderabad"], "remote": False}
+    remote = _post("""{"@type": "JobPosting", "hiringOrganization": {"name": "Confidential"},
+        "jobLocationType": "TELECOMMUTE"}""")
+    assert job_post_facts(remote) == {"organisation": None, "locations": [], "remote": True}
+    # A page without JobPosting data names nobody for certain, whatever its wording says.
+    empty = {"organisation": None, "locations": [], "remote": False}
+    assert job_post_facts("<html><title>Narayana e-Techno School hiring Counsellor</title></html>") == empty
+    assert job_post_facts(_post('{"@type": "Organization", "name": "Glassdoor"}')) == empty
+    assert job_post_facts("") == empty

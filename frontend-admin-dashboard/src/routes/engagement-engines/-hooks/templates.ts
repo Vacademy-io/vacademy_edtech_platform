@@ -39,9 +39,9 @@ export const useWhatsAppGenerate = () => {
         generate: useMutation({
             mutationFn: ({ engineId, options }: { engineId: string; options: GenerateOptions }) =>
                 generateWhatsAppTemplates(engineId, instituteId, options),
-            onSuccess: (_d, v) => {
+            onSuccess: (d, v) => {
                 invalidate(v.engineId);
-                toast.success(t('toast.generated'));
+                toast.success(generatedMessage(t, d));
             },
             onError: (e) => toast.error(errMsg(e, t('toast.generateFailed'))),
         }),
@@ -94,6 +94,19 @@ export const useEmailTemplatePreview = (id: string | undefined) => {
     });
 };
 
+/** "3 ready for review", or how many were taken over from already-approved templates of other engines. */
+const generatedMessage = (
+    t: (key: string, opts?: Record<string, unknown>) => string,
+    created: { reusedFromId?: string | null }[] | undefined
+) => {
+    const reused = (created ?? []).filter((c) => c.reusedFromId).length;
+    const fresh = (created ?? []).length - reused;
+    if (reused === 0) return t('toast.generated');
+    return fresh === 0
+        ? t('toast.allReused', { count: reused })
+        : t('toast.reusedAndGenerated', { reused, fresh });
+};
+
 export const useEmailTemplateMutation = () => {
     const { t } = useTranslation('engagementEnginesTemplates');
     const qc = useQueryClient();
@@ -106,9 +119,11 @@ export const useEmailTemplateMutation = () => {
         generate: useMutation({
             mutationFn: ({ engineId, payload }: { engineId: string; payload: EmailTemplateGenerateRequest }) =>
                 generateEmailTemplates(engineId, instituteId, payload),
-            onSuccess: (_d, v) => {
+            onSuccess: (d, v) => {
                 invalidate(v.engineId);
-                toast.success(v.payload.mode === 'REGENERATE' ? t('toast.regenerated') : t('toast.generated'));
+                toast.success(
+                    v.payload.mode === 'REGENERATE' ? t('toast.regenerated') : generatedMessage(t, d)
+                );
             },
             onError: (e) => toast.error(errMsg(e, t('toast.generateFailed'))),
         }),

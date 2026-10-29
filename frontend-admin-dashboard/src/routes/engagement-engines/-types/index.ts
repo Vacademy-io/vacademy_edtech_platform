@@ -56,6 +56,8 @@ export interface QuietHours {
 export interface ChannelsExtras {
     /** Leave the engine once a meeting is booked with the lead (backend EngagementLeadExitJob). */
     exitOnMeetingBooked?: boolean;
+    /** Booking page the engine books a meeting on when a lead asks for one in a reply. */
+    bookingPageId?: string;
 }
 
 /** GET /engines/channel-readiness: whether the institute has set each channel up. */
@@ -254,6 +256,8 @@ export interface EngagementTemplateProposal {
     buttons?: string; // jsonb string: [{type,text,url?,phoneNumber?}]
     /** This proposal is the edited version of that approved one (it replaces it once Meta approves). */
     replacesId?: string;
+    /** Set when this engine took over an already-approved template of another engine. */
+    reusedFromId?: string | null;
     submittedAt?: string;
     /** Server warning when a UTILITY template reads as promotion. */
     categoryWarning?: string | null;

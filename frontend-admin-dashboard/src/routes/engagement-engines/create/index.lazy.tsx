@@ -1,6 +1,8 @@
 import { createLazyFileRoute, useNavigate, useSearch } from '@tanstack/react-router';
 import { Helmet } from 'react-helmet';
 import { useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { fetchBookingPages } from '@/routes/meetings/-services/meetings-services';
 import type { Icon } from '@phosphor-icons/react';
 import {
     ArrowSquareOut,
@@ -368,6 +370,15 @@ function CreateEnginePage() {
     const [sendDays, setSendDays] = useState<number[]>(DEFAULT_SEND_DAYS);
     const [firstTouch, setFirstTouch] = useState<'IMMEDIATE' | 'SCHEDULED'>('IMMEDIATE');
     const [stopOnMeeting, setStopOnMeeting] = useState(true);
+    // Booking page the engine books on when a lead asks for a meeting; '' = the engine doesn't book.
+    const [bookingPageId, setBookingPageId] = useState('');
+    const { data: bookingPages } = useQuery({
+        queryKey: ['engagementBookingPages', getInstituteId()],
+        queryFn: () => fetchBookingPages({ instituteId: getInstituteId() || '' }),
+        enabled: !!getInstituteId(),
+        staleTime: 5 * 60 * 1000,
+    });
+    const activeBookingPages = (bookingPages ?? []).filter((p) => p.id && (p.status ?? 'ACTIVE') === 'ACTIVE');
     const [holdoutPct, setHoldoutPct] = useState('0');
     const [firstN, setFirstN] = useState('');
     // Advanced (auto-send limit, test group) stays folded unless a value differs from the default.
@@ -384,12 +395,14 @@ function CreateEnginePage() {
         setLanguage((e.language as EngineLanguage) ?? 'en');
         setDataPoints(safeParse<string[]>(e.dataPoints, []));
         setConsentHigh(true);
-        const { exitOnMeetingBooked, ...savedChannels } = safeParse<ChannelsConfig & ChannelsExtras>(
-            e.channels,
-            {}
-        );
+        const {
+            exitOnMeetingBooked,
+            bookingPageId: savedPage,
+            ...savedChannels
+        } = safeParse<ChannelsConfig & ChannelsExtras>(e.channels, {});
         setChannels(savedChannels);
         setStopOnMeeting(exitOnMeetingBooked === true);
+        setBookingPageId(savedPage ?? '');
         const sel = safeParse<AudienceSelector[]>(e.audience, []);
         setBatchIds(sel.filter((x) => x.type === 'PACKAGE_SESSION').map((x) => x.id));
         setAudienceIds(sel.filter((x) => x.type === 'AUDIENCE').map((x) => x.id));
@@ -563,6 +576,7 @@ function CreateEnginePage() {
         const channelsPayload: ChannelsConfig & ChannelsExtras = {
             ...channels,
             exitOnMeetingBooked: stopOnMeeting,
+            ...(bookingPageId ? { bookingPageId } : {}),
         };
         return {
             name: name.trim(),
@@ -1238,6 +1252,34 @@ function CreateEnginePage() {
                         onCheckedChange={setStopOnMeeting}
                     />
                 </label>
+                <div className="flex flex-col gap-1 border-t border-neutral-200 pt-3 md:w-2/3">
+                    <label className="mb-1 block text-subtitle font-regular">
+                        {t('cadence.bookingPage')}
+                    </label>
+                    <Select
+                        value={bookingPageId || 'none'}
+                        onValueChange={(v) => setBookingPageId(v === 'none' ? '' : v)}
+                    >
+                        <SelectTrigger aria-label={t('cadence.bookingPage')}>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="none">{t('cadence.bookingPageNone')}</SelectItem>
+                            {activeBookingPages.map((p) => (
+                                <SelectItem key={p.id} value={p.id as string}>
+                                    {p.title}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <p className="text-neutral-500">
+                        <span className="text-caption">
+                            {activeBookingPages.length
+                                ? t('cadence.bookingPageHint')
+                                : t('cadence.bookingPageEmpty')}
+                        </span>
+                    </p>
+                </div>
             </StepSection>
 
             <EnginePlanPreview
@@ -1246,6 +1288,7 @@ function CreateEnginePage() {
                 channelLabels={enabledChannelKeys.map((c) => channelMeta[c].label)}
                 stopOnMeeting={stopOnMeeting}
                 autoReply={autoReplyOn}
+                bookingPageTitle={activeBookingPages.find((p) => p.id === bookingPageId)?.title}
             />
 
             <Collapsible

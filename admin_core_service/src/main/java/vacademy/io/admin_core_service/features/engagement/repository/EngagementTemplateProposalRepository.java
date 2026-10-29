@@ -212,4 +212,25 @@ public interface EngagementTemplateProposalRepository extends JpaRepository<Enga
     @Query(value = "SELECT COALESCE(MAX(round), 0) FROM engagement_template_proposal WHERE engine_id = :engineId",
             nativeQuery = true)
     int maxRound(@Param("engineId") String engineId);
+
+    /**
+     * Approved WhatsApp templates of the institute's OTHER engines that this engine could take over:
+     * same language, not from an archived or system engine, and not already present on this engine.
+     * One row per template name (the most recently updated).
+     */
+    @Query(value = """
+            SELECT DISTINCT ON (p.name) p.* FROM engagement_template_proposal p
+              JOIN engagement_engine e ON e.id = p.engine_id
+             WHERE p.institute_id = :instituteId AND p.engine_id <> :engineId
+               AND p.status IN ('META_APPROVED', 'META_RECATEGORISED')
+               AND COALESCE(p.language, e.language) = :language
+               AND e.status <> 'ARCHIVED' AND COALESCE(e.created_by, '') <> 'SYSTEM_AI_CALL'
+               AND NOT EXISTS (SELECT 1 FROM engagement_template_proposal x
+                                WHERE x.engine_id = :engineId AND x.name = p.name
+                                  AND x.status NOT IN ('WITHDRAWN', 'SUPERSEDED', 'META_REJECTED'))
+             ORDER BY p.name, p.updated_at DESC
+            """, nativeQuery = true)
+    List<EngagementTemplateProposal> findReusableFromOtherEngines(@Param("instituteId") String instituteId,
+                                                                  @Param("engineId") String engineId,
+                                                                  @Param("language") String language);
 }

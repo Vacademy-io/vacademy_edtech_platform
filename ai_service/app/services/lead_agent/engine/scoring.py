@@ -17,7 +17,9 @@ A lead that passes the gate is called and messaged automatically, so the score a
 Hard rejects (no usable contact, site not readable, not the target segment, selling the offer itself,
 an excluded kind or a deal-breaker) are flagged and always REJECT. Fitting the brief is not enough to be delivered
 automatically: without a buying signal a lead reaches the auto bar only with a full fit and a direct
-contact.
+contact. A lead judged from its Google Maps listing alone (its website could not be read: flag
+"maps_only", research.py) always goes to a person, whatever its score: the listing shows too little
+to score it like a read website.
 
 The engine's catalogue product scores are kept as ``products`` (research/catalogue.py).
 """
@@ -66,7 +68,17 @@ RISK_ENTERPRISE = 30  # national-scale brand: not a self-serve buyer
 RISK_MICRO = 25  # a single tutor or home tuition
 
 # Flags that send a lead to a person (never AUTO), and flags that always reject it.
-REVIEW_FLAGS = ("competitor_platform", "enterprise")
+# possible_duplicate: same name and city as another of the agent's live leads with nothing shared, added
+# after research (lead_agent/dedupe.py; quantumcoaching.in and quantumcoachinginstitute.in, 2026-10-29).
+# maps_only: judged from its Google Maps listing because the website could not be read (2026-10-29 audit:
+# 202 of 237 "No readable page" rejects on "Leads for Vacademy" had a listing with a phone).
+REVIEW_FLAGS = ("competitor_platform", "enterprise", "possible_duplicate", "maps_only")
+# Review flags without a risk penalty: they hold a lead back from AUTO but never lift a score that
+# is below the review bar into REVIEW.
+UNPENALISED_REVIEW_FLAGS = ("possible_duplicate",)
+# Review flags that send a lead to REVIEW whatever its score (unless a hard reject applies): a listing
+# alone cannot show the signals and fit points a website would, so its score is a floor, not a verdict.
+ALWAYS_REVIEW_FLAGS = ("maps_only",)
 HARD_REJECT_FLAGS = ("no_contact", "site_unreadable", "not_target_segment", "excluded_kind", "deal_breaker",
                      "sells_the_offer")
 
@@ -183,6 +195,45 @@ def deal_breaker_hit(phrase: str, name: str, description: str, in_segment: bool)
             return bool(pattern.search(subject))
         return False
     return phrase_found(phrase, name) or phrase_found(phrase, description)
+
+
+# Words that say "an organisation" without saying which kind: a Maps category or name sharing only
+# these with an industry ("Training center" and "tuition centres") does not match it.
+_KIND_FILLER = frozenset({
+    "online", "company", "companies", "centre", "centres", "center", "centers", "service", "services", "business",
+    "businesses", "provider", "providers", "agency", "agencies", "firm", "firms", "brand", "brands", "team",
+    "teams", "organisation", "organisations", "organization", "organizations", "institute", "institutes",
+    "institution", "institutions", "shop", "shops", "store", "stores", "group", "groups", "private", "local",
+    "small", "large", "independent", "new", "other", "office", "offices", "industry", "industries",
+})
+_INDUSTRY_PARTS = re.compile(r"\s*(?:/|,|&|\(|\)|\band\b|\bor\b)\s*", re.I)
+
+
+def maps_kind(category: str | None, name: str | None, industries: list[dict[str, Any]] | None) -> str | None:
+    """The brief's industry that a Google Maps listing's category or name shows, or None.
+
+    Each industry's name and search term is read in parts ("Tutoring and tuition centres" -> "Tutoring",
+    "tuition centres"); a part matches when every distinctive word of it is in the category or name
+    (phrase_found; "Coaching institutes" -> coaching: "Coaching center"), and a school or college part
+    by exclusions' kind patterns (a "University" is a college; a "Business school" is not a K-12 school).
+    For a lead whose website could not be read (2026-10-29): judged without the model, so a category
+    that shares only words like "centre" or "services" with an industry does not count."""
+    subject = f"{category or ''} {name or ''}".strip()
+    if not subject:
+        return None
+    for industry in industries or []:
+        label = (industry.get("name") or industry.get("search_term") or "").strip()
+        for text in (industry.get("search_term"), industry.get("name")):
+            for part in _INDUSTRY_PARTS.split(text or ""):
+                words = [w for w in re.findall(r"[a-z0-9]+", part.lower()) if w not in _KIND_FILLER]
+                if not words:
+                    continue
+                if _kind_phrase(part):
+                    if left_out(subject, [part]):
+                        return label
+                elif phrase_found(" ".join(words), subject):
+                    return label
+    return None
 
 
 # ------------------------------------------------------------------------------------- scoring
@@ -317,7 +368,10 @@ def score_lead(lead: dict, brief: dict, platforms: list[dict], size: dict, *, to
         flags.append("no_contact")
         reasons.append(f"No usable contact: {quality.get('label') or 'none published'}")
     pages = lead.get("pages") or []
-    if lead.get("site_readable") is False or not any(p.get("type") != "job_post" for p in pages):
+    if lead.get("maps_only"):
+        flags.append("maps_only")
+        reasons.append(_FLAG_WORDS["maps_only"])
+    elif lead.get("site_readable") is False or not any(p.get("type") != "job_post" for p in pages):
         flags.append("site_unreadable")
         reasons.append("The organisation's website could not be read")
     if not in_segment:
@@ -367,7 +421,8 @@ def gate(scored: dict, lead: dict, gate_cfg: dict) -> tuple[str, list[str]]:
 
     REJECT: a hard-reject flag, or a score below review_score. A lead flagged for a person
     (competitor platform, enterprise) whose score is below the bar only because of that flag's risk
-    penalty goes to REVIEW instead, so a salesperson decides on the switch pitch.
+    penalty goes to REVIEW instead, so a salesperson decides on the switch pitch; a lead judged from
+    its Google Maps listing alone (maps_only) goes to REVIEW whatever its score.
     AUTO: score >= auto_score, the best contact at least min_contact, a buying signal when
     require_intent, and no review flag. Otherwise REVIEW.
     auto_competitor_users: a list that takes organisations on a competitor's platform like any
@@ -390,8 +445,12 @@ def gate(scored: dict, lead: dict, gate_cfg: dict) -> tuple[str, list[str]]:
     review_flags = [f for f in flags if _flag_kind(f) in REVIEW_FLAGS
                     and not (switch_ok and _flag_kind(f) == "competitor_platform")]
     flag_words = [_flag_words(f) for f in review_flags]
+    if score < review_bar and any(_flag_kind(f) in ALWAYS_REVIEW_FLAGS for f in review_flags):
+        return "REVIEW", [f"Score {score} counts only what is known without the website: a person should decide",
+                          *flag_words]
     if score < review_bar:
-        if review_flags and int(scored.get("base_score") or 0) >= review_bar:
+        penalised = [f for f in review_flags if _flag_kind(f) not in UNPENALISED_REVIEW_FLAGS]
+        if penalised and int(scored.get("base_score") or 0) >= review_bar:
             return "REVIEW", [f"Score {score} after the risk penalty (before it {scored.get('base_score')}): "
                               "a person should decide", *flag_words]
         return "REJECT", [f"Score {score} is below the review bar ({review_bar})"]
@@ -423,7 +482,14 @@ _FLAG_WORDS = {
     "competitor_platform": "Already uses a competitor's platform ({detail}): needs a switch pitch",
     "enterprise": "Very large organisation: not a self-serve buyer",
     "micro": "Single tutor or home tuition",
+    "possible_duplicate": "Possibly the same organisation as {detail} (same name and city): check before it goes out",
+    "maps_only": "Judged from its Google Maps listing: the website could not be read",
 }
+
+
+def flag_words(flag: str) -> str:
+    """A flag in plain words, as gate reasons show it."""
+    return _flag_words(flag)
 
 
 def _flag_words(flag: str) -> str:

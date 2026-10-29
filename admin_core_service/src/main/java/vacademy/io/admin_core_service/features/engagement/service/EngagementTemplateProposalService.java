@@ -66,6 +66,10 @@ public class EngagementTemplateProposalService {
     private final EngagementInternalClients clients;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /** Field-injected so the constructor the tests use is unchanged; absent = always generate. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private EngagementTemplateReuseMatcher reuseMatcher;
+
     // ----- proposal generation -----
 
     /** AI proposes a first batch (round 1) for the engine. Moves a DRAFT WhatsApp engine to TEMPLATES_PENDING. */
@@ -80,15 +84,98 @@ public class EngagementTemplateProposalService {
                                                       String purpose, String language) {
         EngagementEngine engine = requireEngine(engineId, instituteId);
         refuseSystemEngine(engine);
-        List<EngagementTemplateProposal> created = generate(engine, null, clampCount(count), createdBy,
-                purpose, validLanguage(language), null);
+        int want = clampCount(count);
+        String lang = validLanguage(language);
+        // Templates the institute already has approved for another engine come first: they need no new
+        // Meta review. Only what they don't cover is generated.
+        List<EngagementTemplateProposal> reused = reuseApproved(engine, want, purpose, lang, createdBy);
+        List<EngagementTemplateProposal> created = new ArrayList<>(reused);
+        if (reused.size() < want) {
+            try {
+                created.addAll(generate(engine, null, want - reused.size(), createdBy, purpose, lang, null));
+            } catch (VacademyException e) {
+                if (reused.isEmpty()) throw e; // nothing to show: the admin needs the reason
+                log.info("Engine {}: reused {} template(s); the rest could not be generated: {}",
+                        engineId, reused.size(), e.getMessage());
+            }
+        }
         // Signal the wizard the engine is mid-negotiation — but NEVER pause a live engine (D8):
         // a prompt edit on an ACTIVE engine that needs a new template keeps running on approved ones.
-        if ("DRAFT".equals(engine.getStatus()) && whatsAppEnabled(engine)) {
+        // Templates taken over are already approved, so only newly generated ones put it on hold.
+        if ("DRAFT".equals(engine.getStatus()) && whatsAppEnabled(engine) && created.size() > reused.size()) {
             engine.setStatus("TEMPLATES_PENDING");
             engineRepository.save(engine);
         }
         return created;
+    }
+
+    /**
+     * Takes over approved templates of the institute's other engines that fit this engine's brief as
+     * written: a copy for this engine, already approved (same Meta template), pointing at its source.
+     * Skipped: templates whose links come from another engine's brief, or that break the rules
+     * against this brief.
+     */
+    List<EngagementTemplateProposal> reuseApproved(EngagementEngine engine, int want, String purpose,
+                                                   String language, String createdBy) {
+        if (reuseMatcher == null) return List.of();
+        try {
+            String compiled = activePrompt(engine);
+            String lang = language != null ? language : engine.getLanguage();
+            List<EngagementTemplateProposal> pool = new ArrayList<>();
+            for (EngagementTemplateProposal c : proposalRepository
+                    .findReusableFromOtherEngines(engine.getInstituteId(), engine.getId(), lang)) {
+                if (c.getVariableSources() != null && c.getVariableSources().contains("brief.link.")) continue;
+                if (WhatsAppTemplateRules.linkProblem(c.getProposedBody(), compiled) != null) continue;
+                pool.add(c);
+            }
+            if (pool.isEmpty()) return List.of();
+            List<EngagementTemplateReuseMatcher.Candidate> candidates = new ArrayList<>();
+            for (EngagementTemplateProposal c : pool) {
+                candidates.add(new EngagementTemplateReuseMatcher.Candidate(c.getId(), c.getName(), c.getPurpose(),
+                        c.getProposedBody()));
+            }
+            Map<String, String> picked = reuseMatcher.pick(engine.getInstituteId(), "WhatsApp", compiled, purpose,
+                    candidates, want);
+            List<EngagementTemplateProposal> out = new ArrayList<>();
+            int round = proposalRepository.maxRound(engine.getId()) + 1;
+            for (EngagementTemplateProposal src : pool) {
+                String why = picked.get(src.getId());
+                if (why == null) continue;
+                EngagementTemplateProposal row = new EngagementTemplateProposal();
+                row.setEngineId(engine.getId());
+                row.setInstituteId(engine.getInstituteId());
+                row.setNotificationTemplateId(src.getNotificationTemplateId());
+                row.setName(src.getName());
+                row.setLanguage(src.getLanguage());
+                row.setProposedBody(src.getProposedBody());
+                row.setProposedCategory(src.getProposedCategory());
+                row.setMetaCategory(src.getMetaCategory());
+                row.setStatus(src.getStatus());
+                row.setRound(round);
+                row.setVariableNames(src.getVariableNames());
+                row.setSampleValues(src.getSampleValues());
+                row.setVariableSources(src.getVariableSources());
+                row.setPurpose(src.getPurpose());
+                row.setHeaderType(src.getHeaderType());
+                row.setHeaderText(src.getHeaderText());
+                row.setHeaderMediaUrl(src.getHeaderMediaUrl());
+                row.setButtons(src.getButtons());
+                row.setFooterText(src.getFooterText());
+                row.setSubmittedAt(src.getSubmittedAt());
+                row.setReusedFromId(src.getId());
+                row.setRationale(cap("Already approved for another engine, so no new Meta review is needed."
+                        + (why.isBlank() ? "" : " " + why), 1000));
+                row.setCreatedBy(createdBy);
+                out.add(proposalRepository.save(row));
+            }
+            if (!out.isEmpty()) {
+                log.info("Engine {}: took over {} approved template(s) from other engines", engine.getId(), out.size());
+            }
+            return out;
+        } catch (Exception e) {
+            log.warn("Engine {}: template reuse skipped: {}", engine.getId(), e.getMessage());
+            return List.of();
+        }
     }
 
     /** "Give me other options" — a fresh round, seeded with the human's steer / Meta's rejection. */
