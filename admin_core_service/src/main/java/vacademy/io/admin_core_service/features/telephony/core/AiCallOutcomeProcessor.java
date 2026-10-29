@@ -84,6 +84,11 @@ public class AiCallOutcomeProcessor {
     private final CallBillingService billingService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /** See {@link #runOffThread}. Field-injected so the constructor used by tests is unchanged. */
+    @Autowired(required = false)
+    @org.springframework.beans.factory.annotation.Qualifier("aiCallPostCallExecutor")
+    private java.util.concurrent.Executor postCallExecutor;
+
     // @Lazy + field injection (NOT constructor): WorkflowTriggerService transitively
     // reaches the workflow engine, so a final constructor dependency here would form an
     // eager Spring bean cycle that fails context startup (compiles fine, breaks at boot).
@@ -477,7 +482,7 @@ public class AiCallOutcomeProcessor {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    bookTask.run();
+                    runOffThread(bookTask, rRef.getId());
                 }
             });
         } else {
@@ -486,6 +491,27 @@ public class AiCallOutcomeProcessor {
 
         r.setProcessingStatus("PROCESSED");
         aiCallResultRepo.save(r);
+    }
+
+    /**
+     * Runs post-commit work on another thread. Inside afterCommit() the committed
+     * transaction is still bound to this thread, so a PROPAGATION_REQUIRED call made here
+     * joins it instead of starting its own: createBooking failed with "no transaction is in
+     * progress" and send-rule actions were never written (since 17 Oct no AI-call action
+     * reached engagement_action). A thread with nothing bound starts its own transactions.
+     */
+    void runOffThread(Runnable task, String resultId) {
+        if (postCallExecutor != null) {
+            try {
+                postCallExecutor.execute(task);
+                return;
+            } catch (java.util.concurrent.RejectedExecutionException ex) {
+                log.warn("ai-call: post-call pool full for result {} — using a one-off thread", resultId);
+            }
+        }
+        Thread t = new Thread(task, "ai-call-postcall-" + resultId);
+        t.setDaemon(true);
+        t.start();
     }
 
     // ── lead resolution ─────────────────────────────────────────────────────────
