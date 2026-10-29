@@ -85,6 +85,23 @@ public class EngagementInternalClients {
      * become %253A and the server's Instant.parse would 400 → the whole sweep silently no-ops.
      * instituteId is a UUID (URL-safe), so no encoding is needed on it either.
      */
+    /** WhatsApp sends Meta later reported as failed since the cursor: [{correlationId, errorCode, errorMessage}]. */
+    public JsonNode deliveryFailuresSince(String instituteId, long sinceEpochMillis) {
+        try {
+            String route = "/notification-service/internal/v1/engagement/delivery-failures-since"
+                    + "?instituteId=" + instituteId + "&since=" + sinceEpochMillis;
+            ResponseEntity<String> response = internalClientUtils.makeHmacRequest(
+                    clientName, HttpMethod.GET.name(), notificationServerBaseUrl, route, null);
+            if (response == null || !response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                throw new IllegalStateException("delivery-failures-since returned "
+                        + (response != null ? response.getStatusCode() : "null response"));
+            }
+            return objectMapper.readTree(response.getBody());
+        } catch (Exception e) {
+            throw new IllegalStateException("delivery-failures-since failed: " + e.getMessage(), e);
+        }
+    }
+
     public JsonNode inboundSince(String instituteId, long sinceEpochMillis) {
         try {
             String route = "/notification-service/internal/v1/engagement/inbound-since"

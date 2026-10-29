@@ -1476,4 +1476,33 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
             @Param("errorCode") String errorCode,
             @Param("errorMessage") String errorMessage,
             @Param("reportedAt") Instant reportedAt);
+
+    /** One failed delivery of a message the engine sent: its action id (correlation) and Meta's reason. */
+    interface DeliveryFailureRow {
+        String getCorrelationId();
+        String getErrorCode();
+        String getErrorMessage();
+    }
+
+    /**
+     * WhatsApp messages sent with a correlation id (the engine's action id) that Meta later reported
+     * as failed, e.g. error 131049 (per-user marketing cap). The send API accepts such a message,
+     * so the engine marks it SENT; this is how it finds out. Looks only at the failure rows
+     * (WHATSAPP_MESSAGE_FAILED) created since the cursor.
+     */
+    @Query(value = """
+            SELECT DISTINCT ON (nl.correlation_id)
+                   nl.correlation_id AS correlationId,
+                   nl.delivery_error_code AS errorCode,
+                   nl.delivery_error_message AS errorMessage
+              FROM notification_log nl
+             WHERE nl.institute_id = :instituteId
+               AND nl.notification_type = 'WHATSAPP_MESSAGE_FAILED'
+               AND nl.correlation_id IS NOT NULL
+               AND nl.delivery_error_message IS NOT NULL
+               AND nl.created_at >= :since
+             ORDER BY nl.correlation_id, nl.created_at DESC
+            """, nativeQuery = true)
+    java.util.List<DeliveryFailureRow> findWhatsAppDeliveryFailuresSince(@Param("instituteId") String instituteId,
+                                                                          @Param("since") java.time.Instant since);
 }

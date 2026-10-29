@@ -111,6 +111,24 @@ public class EngagementLedgerService {
         return out;
     }
 
+    /** WhatsApp sends Meta reported as failed since the cursor: [{correlationId, errorCode, errorMessage}]. */
+    public List<Map<String, Object>> deliveryFailuresSince(String instituteId, Instant since) {
+        if (instituteId == null || instituteId.isBlank()) {
+            throw new IllegalArgumentException("instituteId is required");
+        }
+        Instant cursor = since != null ? since : Instant.now().minus(Duration.ofHours(1));
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (NotificationLogRepository.DeliveryFailureRow row :
+                notificationLogRepository.findWhatsAppDeliveryFailuresSince(instituteId, cursor)) {
+            Map<String, Object> m = new java.util.HashMap<>();
+            m.put("correlationId", row.getCorrelationId());
+            m.put("errorCode", row.getErrorCode());
+            m.put("errorMessage", row.getErrorMessage());
+            out.add(m);
+        }
+        return out;
+    }
+
     private String payloadBody(String payload) {
         if (payload == null || payload.isBlank()) return null;
         try {
