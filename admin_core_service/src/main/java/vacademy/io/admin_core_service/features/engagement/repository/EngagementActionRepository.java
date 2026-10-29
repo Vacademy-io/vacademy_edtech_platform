@@ -19,21 +19,22 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
      * The caller passes the status filter; SIMULATED (DRY_RUN) rows are surfaced only when
      * the caller explicitly asks for that status, never mixed into the default OPEN/ACKED view.
      */
-    // A FAILED autonomous SEND (kind=SEND) IS surfaced so a human can reconcile/reopen it — but a
-    // pending (OPEN, scheduled) or successful (SENT) auto-send never clutters the human inbox; those
-    // are the dispatch job's business, not a task needing action.
+    // An autonomous SEND (kind=SEND) is surfaced once it has settled: FAILED so a human can
+    // reconcile/reopen it, SENT so the Sent tab shows what the engine sent on its own. The default
+    // view asks for OPEN/ACKED only, so a successful auto-send never clutters "needs action"; a
+    // pending (OPEN, scheduled) auto-send stays the dispatch job's business.
     @Query(value = """
             SELECT * FROM engagement_action
             WHERE institute_id = :instituteId
               AND status IN (:statuses)
-              AND (kind IN ('TASK', 'REPLY') OR (kind = 'SEND' AND status = 'FAILED'))
+              AND (kind IN ('TASK', 'REPLY') OR (kind = 'SEND' AND status IN ('FAILED', 'SENT')))
             ORDER BY priority DESC NULLS LAST, scheduled_for ASC NULLS LAST, created_at DESC
             """,
             countQuery = """
             SELECT count(*) FROM engagement_action
             WHERE institute_id = :instituteId
               AND status IN (:statuses)
-              AND (kind IN ('TASK', 'REPLY') OR (kind = 'SEND' AND status = 'FAILED'))
+              AND (kind IN ('TASK', 'REPLY') OR (kind = 'SEND' AND status IN ('FAILED', 'SENT')))
             """, nativeQuery = true)
     Page<EngagementAction> findInbox(@Param("instituteId") String instituteId,
                                      @Param("statuses") List<String> statuses,
@@ -429,4 +430,26 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
               AND status = 'DONE' AND outcome = 'ACCEPTED'
             """, nativeQuery = true)
     long countApprovedCrmActions(@Param("engineId") String engineId, @Param("actionType") String actionType);
+
+    /**
+     * Meta accepted the send, then reported it undeliverable (e.g. 131049, the per-user marketing
+     * cap). Moves a SENT row to FAILED with Meta's reason so the inbox, the cap and the brain stop
+     * treating it as delivered. Only SENT rows move; a row a human already handled is left alone.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET status = 'FAILED', error_message = :reason, updated_at = :now
+             WHERE id = :id AND status = 'SENT'
+            """, nativeQuery = true)
+    int markDeliveryFailed(@Param("id") String id, @Param("reason") String reason, @Param("now") Instant now);
+
+    /** SENT WhatsApp rows of this institute dispatched since the cursor: the ones a failure report can hit. */
+    @Query(value = """
+            SELECT id FROM engagement_action
+             WHERE institute_id = :instituteId AND status = 'SENT' AND channel = 'WHATSAPP'
+               AND dispatched_at >= :since
+            """, nativeQuery = true)
+    List<String> sentWhatsAppSince(@Param("instituteId") String instituteId, @Param("since") Instant since);
 }
