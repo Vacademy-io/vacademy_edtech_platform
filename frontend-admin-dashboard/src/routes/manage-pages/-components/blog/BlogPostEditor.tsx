@@ -41,6 +41,13 @@ import { useCataloguePermissions } from '../../-hooks/use-catalogue-permissions'
 import { getCatalogueTags } from '../../-services/catalogue-service';
 import { getCatalogueSiteUrl } from '../../-utils/learner-site-url';
 import {
+    findInlineImages,
+    InlineImageUploadError,
+    replaceInlineImages,
+} from '../../-utils/inline-images';
+import { getPublicUrl, UploadFileInS3 } from '@/services/upload_file';
+import { getUserId } from '@/utils/userDetails';
+import {
     BLOG_MAX_RECOMMENDED_COURSES,
     createBlogPost,
     getBlogPost,
@@ -565,6 +572,19 @@ export const BlogPostEditor = ({ postId, onBack, onCreated, onDirtyChange }: Blo
         recommended_course_ids: form.recommendedCourseIds.filter(Boolean),
     });
 
+    // Same bucket and source as the cover image upload.
+    const uploadInlineImage = async (file: File): Promise<string> => {
+        const fileId = await UploadFileInS3(
+            file,
+            undefined,
+            getUserId(),
+            'CATALOGUE_IMAGES',
+            'ADMIN',
+            true
+        );
+        return fileId ? getPublicUrl(fileId) : '';
+    };
+
     const invalidate = () => {
         queryClient.invalidateQueries({ queryKey: ['catalogue-blog-posts', instituteId] });
         queryClient.invalidateQueries({ queryKey: ['catalogue-blog-post', instituteId, postId] });
@@ -573,6 +593,29 @@ export const BlogPostEditor = ({ postId, onBack, onCreated, onDirtyChange }: Blo
     const saveMutation = useMutation({
         mutationFn: async (thenPublish: boolean) => {
             const body = payload();
+            // Pasted HTML often carries its images as base64 text, which can
+            // push the body past the server limit: move them to S3 first.
+            const pastedHtml = body.content_html ?? '';
+            const inlineCount = findInlineImages(pastedHtml).length;
+            if (inlineCount > 0) {
+                const progress = toast({
+                    title:
+                        inlineCount === 1
+                            ? 'Uploading 1 image…'
+                            : `Uploading ${inlineCount} images…`,
+                    description:
+                        'Images pasted inside the article are being uploaded so the post stays light.',
+                });
+                try {
+                    const { html } = await replaceInlineImages(pastedHtml, uploadInlineImage);
+                    body.content_html = html;
+                    setForm((f) =>
+                        f.contentHtml === pastedHtml ? { ...f, contentHtml: html } : f
+                    );
+                } finally {
+                    progress.dismiss();
+                }
+            }
             const saved = isNew
                 ? await createBlogPost(instituteId!, body)
                 : await updateBlogPost(instituteId!, postId, body);
@@ -591,6 +634,7 @@ export const BlogPostEditor = ({ postId, onBack, onCreated, onDirtyChange }: Blo
         },
         onError: (err: unknown) => {
             const message =
+                (err instanceof InlineImageUploadError && err.message) ||
                 (err as { response?: { data?: { ex?: string; message?: string } } })?.response?.data?.ex ||
                 (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
                 'The post could not be saved';
