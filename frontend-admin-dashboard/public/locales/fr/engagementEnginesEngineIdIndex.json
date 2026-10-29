@@ -7,8 +7,8 @@
         "activeMember_one": "membre actif",
         "activeMember_many": "membres actifs",
         "activeMember_other": "membres actifs",
-        "resolveAudience": "Résoudre l'audience",
-        "resolving": "Résolution en cours…"
+        "resolveAudience": "Ajouter les personnes",
+        "resolving": "Ajout en cours…"
     },
     "statusActions": {
         "DRY_RUN": "Lancer un essai à blanc",
@@ -28,10 +28,11 @@
         "channels": "Canaux",
         "noChannels": "Aucun",
         "language": "Langue",
-        "cadenceLabel": "Cadence",
+        "cadenceLabel": "Contact",
         "cadence": "toutes les {{hours}} h",
         "quietHours": "Quiet hours",
-        "dataPoints": "Data points"
+        "dataPoints": "Data points",
+        "noDataPoints": "L'essentiel uniquement"
     },
     "amendDialog": {
         "heading": "Modifier le brief",
@@ -42,24 +43,24 @@
         "saving": "Enregistrement…"
     },
     "autonomy": {
-        "title": "Autonomie",
-        "allowAutoSend": "Autoriser l'envoi automatique",
-        "keepAsCopilot": "Garder en mode copilote",
+        "title": "Envoi automatique",
+        "allowAutoSend": "Autoriser l'envoi auto",
+        "keepAsCopilot": "Arrêter l'envoi auto",
         "autoSendChannels": "Canaux d'envoi automatique",
-        "noAutoSend": "Aucun canal d'envoi automatique — ce moteur ne fait que préparer des tâches que vous envoyez vous-même.",
+        "noAutoSend": "Aucun canal n'envoie seul. Chaque message vous attend dans la boîte des tâches.",
         "holdout": "Groupe témoin",
-        "holdoutValue": "{{pct}} % (inscrits, jamais contactés)",
+        "holdoutValue": "{{pct}} % (ajoutés, jamais contactés)",
         "badge": {
-            "off": "Autonomie désactivée (copilote)",
-            "ramping": "Montée en puissance · {{approved}}/{{target}} approuvés",
+            "off": "Envoi auto désactivé — vous vérifiez chaque message",
+            "ramping": "En essai · {{approved}} sur {{target}} approuvés",
             "sendingAutonomously": "Envoi autonome en cours",
             "dryRun": "Essai à blanc (simulé)",
             "onEngineStatus": "Autonomie activée · moteur {{status}}"
         },
         "statusFor": "Statut {{channel}}",
-        "rampingHintChannel_one": "Encore en mode copilote sur {{channel}}. Envoyez {{count}} brouillon {{channel}} approuvé de plus et ce canal passera à l'envoi autonome.",
+        "rampingHintChannel_one": "Pour le moment, vous vérifiez chaque message {{channel}}. Approuvez-en encore {{count}} et {{channel}} enverra seul.",
         "rampingHintChannel_many": "Encore en mode copilote sur {{channel}}. Envoyez {{count}} brouillons {{channel}} approuvés de plus et ce canal passera à l'envoi autonome.",
-        "rampingHintChannel_other": "Encore en mode copilote sur {{channel}}. Envoyez {{count}} brouillons {{channel}} approuvés de plus et ce canal passera à l'envoi autonome."
+        "rampingHintChannel_other": "Pour le moment, vous vérifiez chaque message {{channel}}. Approuvez-en encore {{count}} et {{channel}} enverra seul."
     },
     "archiveDialog": {
         "title": "Archiver ce moteur ?",
@@ -69,22 +70,36 @@
     },
     "kpi": {
         "members": "Active members",
-        "holdout": "{{pct}}% held out (never messaged)",
+        "holdout": "{{pct}} % en groupe témoin (jamais contactés)",
         "noHoldout": "No holdout",
         "approved": "Approved sends",
-        "graduateAfter": "A channel auto-sends after {{n}} approved sends",
-        "cadence": "Check-in cadence",
+        "graduateAfter": "L'envoi auto démarre après {{n}} approbations",
+        "cadence": "Contact",
         "quiet": "Quiet hours {{window}}",
         "nextRun": "Next check-in",
         "notScheduled": "Not scheduled",
-        "lastRun": "Last run {{when}}"
+        "lastRun": "Dernier passage {{when}}"
     },
     "status": {
         "title": "Status & audience",
-        "sources": "Sources",
+        "sources": "Choisis parmi",
         "people": "people",
         "change": "Change status",
         "noTransitions": "Archived engines can’t change status.",
-        "footnote": "Pause stops the engine deciding and sending. “Keep as copilot” only stops auto-sending."
+        "footnote": "Pause arrête tous les messages. « Arrêter l'envoi auto » continue de rédiger des messages pour que vous les vérifiiez.",
+        "noSources": "Rien de choisi"
+    },
+    "retry": "Réessayer",
+    "noPeople": {
+        "title": "Personne dans ce moteur pour l'instant",
+        "text": "Ajoutez les personnes des groupes et listes choisis. Rien n'est envoyé avant l'activation du moteur."
+    },
+    "activateDialog": {
+        "title": "Démarrer ce moteur pour {{count}} personne(s) ?",
+        "descriptionAuto": "Il commence à contacter les personnes maintenant. Les canaux réglés pour envoyer seuls le feront sans demander après leur essai ; le reste vous attend dans la boîte des tâches.",
+        "descriptionCopilot": "Il commence à rédiger des messages maintenant. Chaque message vous attend dans la boîte des tâches ; rien ne part sans votre accord.",
+        "noPeople": "Personne n'a encore été ajouté, il n'y a donc personne à contacter. Cliquez d'abord sur « Ajouter les personnes ».",
+        "cancel": "Pas encore",
+        "confirm": "Démarrer le moteur"
     }
 }

@@ -9,12 +9,12 @@
     },
     "actionStatus": {
         "open": "Open",
-        "acked": "Acknowledged",
+        "acked": "In progress",
         "dispatching": "Sending…",
         "sent": "Sent",
         "failed": "Failed",
         "done": "Done",
-        "dismissed": "Dismissed",
+        "dismissed": "Skipped",
         "expired": "Expired",
         "simulated": "Simulated"
     },
@@ -47,5 +47,12 @@
         "marketing": "Marketing",
         "utility": "Utility",
         "authentication": "Authentication"
+    },
+    "cadence": {
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "days": "Every {{count}} days",
+        "hours_one": "Every hour",
+        "hours_other": "Every {{count}} hours"
     }
 }

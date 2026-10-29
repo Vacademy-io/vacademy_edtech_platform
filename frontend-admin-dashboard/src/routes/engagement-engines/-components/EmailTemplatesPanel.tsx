@@ -24,6 +24,7 @@ import { SectionCard } from '@/routes/study-library/live-session/-components/das
 import { cn } from '@/lib/utils';
 import { ToneBadge } from './ToneBadge';
 import { Chip } from './engine-ui';
+import { ConfirmDialog } from './ConfirmDialog';
 import { GenerateTemplatesDialog } from './GenerateTemplatesDialog';
 import { VariableSourceField } from './VariableSourceField';
 import { useEmailTemplateMutation, useEmailTemplatePreview, useEmailTemplates } from '../-hooks/templates';
@@ -241,6 +242,7 @@ function EmailTemplateCard({
     const warnings = tpl.issues.filter((i) => i.level === 'WARN');
     const reviewable = REVIEWABLE.has(tpl.status);
     const active = tpl.status !== 'ARCHIVED' && tpl.status !== 'SUPERSEDED';
+    const [confirmArchive, setConfirmArchive] = useState(false);
 
     return (
         <div
@@ -321,11 +323,25 @@ function EmailTemplateCard({
                     </MyButton>
                 )}
                 {active && (
-                    <MyButton buttonType="secondary" scale="small" disable={busy} onClick={onArchive}>
+                    <MyButton
+                        buttonType="secondary"
+                        scale="small"
+                        disable={busy}
+                        onClick={() => setConfirmArchive(true)}
+                    >
                         <Archive className="me-1 size-3.5" /> {t('actions.archive')}
                     </MyButton>
                 )}
             </div>
+            <ConfirmDialog
+                open={confirmArchive}
+                onOpenChange={setConfirmArchive}
+                title={t('confirm.archiveTitle')}
+                description={t('confirm.archiveText')}
+                confirmLabel={t('actions.archive')}
+                cancelLabel={t('confirm.keep')}
+                onConfirm={onArchive}
+            />
         </div>
     );
 }

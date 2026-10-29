@@ -31,6 +31,7 @@ import { SectionCard } from '@/routes/study-library/live-session/-components/das
 import { cn } from '@/lib/utils';
 import { ToneBadge } from './ToneBadge';
 import { Chip } from './engine-ui';
+import { ConfirmDialog } from './ConfirmDialog';
 import { buildProposalStatusMeta, buildTemplateCategoryOptions } from '../-constants';
 import { useTemplateMutation, useTemplates } from '../-hooks';
 import { useWhatsAppGenerate } from '../-hooks/templates';
@@ -280,19 +281,23 @@ function ProposalCard({
     const vars = safeParse<string[]>(p.variableNames, []);
     const busy =
         mutations.approve.isPending || mutations.submit.isPending || mutations.withdraw.isPending;
+    const [confirmWithdraw, setConfirmWithdraw] = useState(false);
+    const categoryLabel =
+        buildTemplateCategoryOptions(tConstants).find((o) => o.value === p.proposedCategory)
+            ?.label ?? p.proposedCategory;
 
     return (
         <div className="flex flex-col gap-3 rounded-xl border border-neutral-200 p-4">
             <div className="flex flex-wrap items-center gap-2">
-                <span className="min-w-0 truncate font-mono font-semibold text-neutral-800">
+                <span className="min-w-0 truncate font-semibold text-neutral-800">
                     <span className="text-caption">{p.name}</span>
                 </span>
-                {p.language && <Chip label={p.language} />}
+                {p.language && <Chip label={languageName(p.language)} />}
                 {p.purpose && <Chip label={p.purpose} />}
                 <ToneBadge label={meta.label} tone={meta.tone} />
                 <span className="ms-auto text-neutral-400">
                     <span className="text-caption">
-                        {t('proposalCard.round', { value: p.round })} · {p.proposedCategory}
+                        {t('proposalCard.round', { value: p.round })} · {categoryLabel}
                     </span>
                 </span>
             </div>
@@ -429,14 +434,35 @@ function ProposalCard({
                         buttonType="secondary"
                         scale="small"
                         disable={busy}
-                        onClick={() => mutations.withdraw.mutate({ id: p.id, engineId })}
+                        onClick={() => setConfirmWithdraw(true)}
                     >
                         <Trash className="me-1 size-3.5" /> {t('actions.withdraw')}
                     </MyButton>
                 )}
             </div>
+            <ConfirmDialog
+                open={confirmWithdraw}
+                onOpenChange={setConfirmWithdraw}
+                title={tTpl('confirm.withdrawTitle')}
+                description={tTpl('confirm.withdrawText')}
+                confirmLabel={t('actions.withdraw')}
+                cancelLabel={tTpl('confirm.keep')}
+                onConfirm={() => mutations.withdraw.mutate({ id: p.id, engineId })}
+            />
         </div>
     );
+}
+
+/** "en_US" → "English (United States)" in the admin's language; the code itself if unknown. */
+function languageName(code: string): string {
+    try {
+        const names = new Intl.DisplayNames([document.documentElement.lang || 'en'], {
+            type: 'language',
+        });
+        return names.of(code.replace('_', '-')) ?? code;
+    } catch {
+        return code;
+    }
 }
 
 function EditTemplateDialog({

@@ -271,6 +271,25 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
                      @Param("expiresAt") Instant expiresAt);
 
     /**
+     * Undo a human Done / Dismiss: DONE or DISMISSED back to OPEN, outcome cleared so the label the
+     * learning loop reads is not the one the admin took back. Expiry pushed out like reopenFailed.
+     * Only TASK / REPLY rows: an OPEN autonomous SEND would be picked up by the dispatch job and go
+     * out with no review.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET status = 'OPEN', outcome = NULL, completed_at = NULL, updated_at = :now,
+                   expires_at = CASE WHEN expires_at IS NULL OR expires_at < :expiresAt
+                                     THEN :expiresAt ELSE expires_at END
+             WHERE id = :id AND institute_id = :instituteId AND status IN ('DONE', 'DISMISSED')
+               AND kind IN ('TASK', 'REPLY')
+            """, nativeQuery = true)
+    int restoreHandled(@Param("id") String id, @Param("instituteId") String instituteId, @Param("now") Instant now,
+                       @Param("expiresAt") Instant expiresAt);
+
+    /**
      * Withdraw a due autonomous SEND that must not go out any more (the person opted out or left
      * the audience after the decision). EXPIRED, not a TASK: a human must not be invited to send it.
      */
