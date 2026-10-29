@@ -28,6 +28,7 @@ import vacademy.io.admin_core_service.features.workflow.dto.execution_log.WhatsA
 import vacademy.io.common.logging.SentryLogger;
 
 import vacademy.io.admin_core_service.features.workflow.service.NotificationRateLimitService;
+import vacademy.io.admin_core_service.features.engagement.service.EngagementWorkflowSuppression;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -49,6 +50,10 @@ public class SendWhatsAppNodeHandler implements NodeHandler {
     private final WorkflowExecutionLogger executionLogger;
     private final NotificationRateLimitService rateLimitService;
     private final InstituteRepository instituteRepository;
+
+    /** Holds lead nurture back from leads an engagement engine is working. Optional: absent = no hold. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private EngagementWorkflowSuppression engagementSuppression;
 
     // Cache for templates (InstituteID:TemplateName -> Template)
     private final Map<String, Template> templateCache = new java.util.concurrent.ConcurrentHashMap<>();
@@ -278,6 +283,11 @@ public class SendWhatsAppNodeHandler implements NodeHandler {
                     instituteRepository.findById(instituteId)
                             .map(Institute::getCountry).orElse(null));
 
+            // Leads an engagement engine is working right now: the engine owns their outreach, so a
+            // nurture workflow skips them (transactional and learner sends are never held).
+            Set<String> engagedPhones = engagementSuppression != null && EngagementWorkflowSuppression.appliesTo(context)
+                    ? engagementSuppression.engagedLeadPhones(instituteId) : Set.of();
+
             // --- OPTIMIZATION START ---
 
             // Map to group users by templateName
@@ -473,6 +483,25 @@ public class SendWhatsAppNodeHandler implements NodeHandler {
                                     .itemData(item)
                                     .errorMessage("Invalid mobile number")
                                     .errorType("VALIDATION_ERROR")
+                                    .failureReason("SKIPPED")
+                                    .build());
+                            continue;
+                        }
+
+                        if (!engagedPhones.isEmpty()
+                                && engagedPhones.contains(EngagementWorkflowSuppression.phoneKey(sanitizedMobile))) {
+                            log.info("Skipping user {}: lead is inside an engagement engine, which owns its outreach.", userId);
+                            results.add("SKIPPED: User " + userId + " - Lead is inside an engagement engine.");
+                            skippedCount++;
+                            failedMessages.add(WhatsAppExecutionDetails.FailedMessage.builder()
+                                    .index(index)
+                                    .mobileNumber(mobileNumber)
+                                    .templateName(templateName)
+                                    .languageCode(languageCode)
+                                    .templateVars(new HashMap<>(templateVars != null ? templateVars : Map.of()))
+                                    .itemData(item)
+                                    .errorMessage("Lead is inside an engagement engine; the engine owns its outreach")
+                                    .errorType("ENGAGEMENT_ENGINE")
                                     .failureReason("SKIPPED")
                                     .build());
                             continue;
