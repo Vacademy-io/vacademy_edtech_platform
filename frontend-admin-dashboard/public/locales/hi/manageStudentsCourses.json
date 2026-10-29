@@ -33,6 +33,7 @@
         "unnamed": "अनाम कोर्स",
         "sessionLabel": "{{term}}: {{name}}"
     },
+    "enrolledOn": "{{date}} को नामांकित",
     "accessWindow": {
         "unlimited": "एक्सेस: असीमित",
         "expired": "एक्सेस {{date}} को समाप्त हुई",
