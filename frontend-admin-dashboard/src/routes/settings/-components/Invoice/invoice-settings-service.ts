@@ -183,6 +183,13 @@ export interface InvoiceSettingsData {
     numberingSeries?: InvoiceNumberingSeries[];
     /** Whether the record-payment dialogs ask for the series field on an enrolment's first payment. */
     numberingSeriesPolicy?: InvoiceNumberingSeriesPolicy;
+    /** Date the receipt by the payment's date instead of the day it is generated. Read by InvoiceService. */
+    receiptDateFromPayment?: boolean;
+    /**
+     * Key of an offline payment mode DATE field (e.g. a Transaction Date) that is the payment
+     * date on the receipt when the payment has it; unset = the date entered while recording.
+     */
+    receiptDateField?: string;
     /**
      * Institute-level invoice defaults set from the admin Create-Invoice dialog (Review
      * step "Institute" group) — corrected institute name/address/contact and default
