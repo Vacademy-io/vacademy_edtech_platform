@@ -259,7 +259,8 @@ export const parseScheduleCsv = (
                     const startTime = cell(raw, 'start_time');
                     const durationHours = cell(raw, 'duration_hours') || '1';
                     const durationMinutes = cell(raw, 'duration_minutes') || '0';
-                    const platform = (cell(raw, 'platform') || 'other').toLowerCase();
+                    const platformCell = cell(raw, 'platform');
+                    const platform = (platformCell || 'other').toLowerCase();
                     const link = cell(raw, 'link');
                     const description = cell(raw, 'description');
 
@@ -349,6 +350,7 @@ export const parseScheduleCsv = (
                         durationHours,
                         durationMinutes,
                         platform,
+                        platformPinned: Boolean(platformCell),
                         link,
                         description,
                         selectedLevels,
