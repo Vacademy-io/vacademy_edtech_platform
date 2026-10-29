@@ -57,6 +57,7 @@ Text160 = Annotated[str, _clip_text(160)]
 Text200 = Annotated[str, _clip_text(200)]
 Text240 = Annotated[str, _clip_text(240)]
 Text300 = Annotated[str, _clip_text(300)]
+Text1500 = Annotated[str, _clip_text(1500)]
 
 
 class ResearchPlan(BaseModel):
@@ -341,6 +342,14 @@ class ProductProfile(BaseModel):
     education: bool = Field(default=False, description="True only if most buyers are education providers.")
     discovery_question: Text160 = Field(
         default="", description="The first question to ask a prospect about how they handle this today."
+    )
+    # The form's product description. Last, so it is written once industries, buyers and fit signals are.
+    description: Text1500 = Field(
+        default="",
+        description="120-200 words of plain prose (no lists or markdown) for an AI that finds and qualifies leads. "
+        "Open with 1-2 sentences (max 300 characters) that stand alone: what is sold, by whom and to which kinds of "
+        "organisations. Then the problem it solves and its main capabilities, who buys it and which organisations fit "
+        "best, visible signs an organisation needs it, and who it is not for. Only facts from the information given.",
     )
 
 
