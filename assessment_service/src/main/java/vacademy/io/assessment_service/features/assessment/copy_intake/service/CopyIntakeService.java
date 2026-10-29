@@ -216,6 +216,15 @@ public class CopyIntakeService {
         if (requested != null && requested.getDeductionScheme() == null) {
             requested.setDeductionScheme(CopyCheckConfig.on(assessment).getDeductionScheme());
         }
+        // Nor the answer language, unless it sends one; "auto" clears it.
+        if (requested != null) {
+            String lang = requested.getAnswerLanguage();
+            if (lang == null || lang.isBlank()) {
+                requested.setAnswerLanguage(CopyCheckConfig.on(assessment).getAnswerLanguage());
+            } else if ("auto".equalsIgnoreCase(lang.trim())) {
+                requested.setAnswerLanguage(null);
+            }
+        }
         if (!CopyCheckConfig.differs(assessment, requested)) {
             return;
         }

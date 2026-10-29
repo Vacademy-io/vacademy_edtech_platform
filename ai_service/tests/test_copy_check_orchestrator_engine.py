@@ -102,6 +102,7 @@ def env(monkeypatch):
 
     async def fake_vision(pdf_url, layout_map, llm, **kwargs):
         import copy
+        state.setdefault("vision_models", []).append(kwargs.get("model"))
         layout = copy.deepcopy(state["layout"])
         layout["vision_quality"] = state["quality"]
         return layout
@@ -505,7 +506,7 @@ def test_language_highlight_lists_errors_without_touching_marks(env, monkeypatch
 def test_language_check_is_off_unless_asked(env, monkeypatch):
     calls = _language_env(env, monkeypatch)
     _run(_payload(exam_context={"subject": "English"}))
-    _run(_payload(exam_context={"language_feedback": "HIGHLIGHT", "answer_language": "French"}))
+    _run(_payload(exam_context={"language_feedback": "HIGHLIGHT", "answer_language": "Kannada"}))
     assert calls == []
     assert all("Language" not in p["feedback"] for p in _posts(env, "question"))
 
@@ -551,3 +552,21 @@ def test_partner_copy_is_drawn_as_before_under_internal_choice(env):
     _run(_payload(choice_groups=[{"question_ids": ["q1", "q2", "q3"], "attempt": 2, "policy": "best"}],
                   paper_max=10, billing_actor="apikey:key-1", page_count=1, rate_snapshot=SNAPSHOT))
     assert all(orchestrator.NOT_COUNTED_NOTE not in str(v["annotations"]) for v in env["rendered"])
+
+
+def test_a_copy_declared_in_an_unreadable_language_is_refused_unbilled(env):
+    _run(_payload(exam_context={"answer_language": "pa"}))
+    failed = _posts(env, "failed")
+    assert failed and failed[0]["error_code"] == "language_not_supported"
+    assert "Punjabi" in failed[0]["error_message"]
+    assert env["graded"] == [] and _posts(env, "question") == [] and env["billed"] == []
+
+
+def test_indian_scripts_are_read_with_the_language_check_model(env, monkeypatch):
+    from app.services.copy_check import language_vision
+    monkeypatch.setattr(language_vision, "language_model", lambda: "strong-reader")
+    _run(_payload(exam_context={"answer_language": "sa"}))
+    _run(_payload(exam_context={"answer_language": "fr"}))
+    _run(_payload())
+    assert env["vision_models"][0] == "strong-reader"
+    assert "strong-reader" not in env["vision_models"][1:]

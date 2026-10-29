@@ -162,4 +162,20 @@ class CopyCheckConfigTest {
         assertThat(CopyCheckConfig.examContext(CopyCheckConfig.read("{\"subject\":\"Law\"}"), Map::of))
                 .doesNotContainKey("deduction_scheme");
     }
+
+    @Test
+    void answer_language_is_kept_as_a_listed_code_and_sent() {
+        CopyCheckConfig.Settings s = CopyCheckConfig.read("{\"answer_language\":\" SA \",\"language_feedback\":\"HIGHLIGHT\"}");
+        assertThat(s.getAnswerLanguage()).isEqualTo("sa");
+        assertThat(CopyCheckConfig.write(s)).contains("\"answer_language\":\"sa\"");
+        assertThat(CopyCheckConfig.examContext(s, Map::of)).containsEntry("answer_language", "sa");
+        // Not a language the copy check knows: dropped, nothing else lost.
+        CopyCheckConfig.Settings unknown = CopyCheckConfig.read("{\"answer_language\":\"klingon\",\"subject\":\"Law\"}");
+        assertThat(unknown.getAnswerLanguage()).isNull();
+        assertThat(unknown.getSubject()).isEqualTo("Law");
+        assertThat(CopyCheckConfig.examContext(unknown, Map::of)).doesNotContainKey("answer_language");
+        // On its own it is a setting (the config is not empty).
+        assertThat(CopyCheckConfig.write(CopyCheckConfig.Settings.builder().answerLanguage("ur").build()))
+                .isEqualTo("{\"answer_language\":\"ur\"}");
+    }
 }

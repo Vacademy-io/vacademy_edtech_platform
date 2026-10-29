@@ -24,7 +24,7 @@ def test_enabled_only_for_highlight_in_english_or_hindi():
     assert lf.enabled({"language_feedback": "highlight", "answer_language": "English"})
     assert lf.enabled({"language_feedback": "HIGHLIGHT", "answer_language": "Hindi"})
     assert lf.enabled({"language_feedback": "HIGHLIGHT", "answer_language": "hi"})
-    assert not lf.enabled({"language_feedback": "HIGHLIGHT", "answer_language": "French"})
+    assert not lf.enabled({"language_feedback": "HIGHLIGHT", "answer_language": "Kannada"})
     assert not lf.enabled({"language_feedback": "OFF"})
     assert not lf.enabled({})
     assert not lf.enabled(None)
@@ -307,7 +307,10 @@ def test_devanagari_correction_is_set_whole_in_kalam(monkeypatch):
 def test_script_safe_keeps_hindi_and_leaves_latin_as_before():
     assert annotator._script_safe("मेरी माता → ठीक") == "मेरी माता -> ठीक"
     assert annotator._script_safe("don’t → do not") == annotator._latin1("don’t → do not")
-    assert annotator._script_safe("x中y") == "x y"
+    # Other scripts are kept for the shaper (answer_language.py); a symbol outside
+    # every script range still becomes a blank.
+    assert annotator._script_safe("x中y") == "x中y"
+    assert annotator._script_safe("x\U0001F600y") == "x y"
 
 
 def test_words_are_found_on_the_rows_ink():

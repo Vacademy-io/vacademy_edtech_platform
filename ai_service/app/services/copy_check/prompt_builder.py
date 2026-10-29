@@ -65,6 +65,15 @@ def _clip(value: Any, cap: int) -> str:
     return text if len(text) <= cap else text[:cap].rstrip() + " …"
 
 
+def _shown(key: str, value: Any) -> Any:
+    """A language code as its name ("sa" -> "Sanskrit") for the prompt."""
+    if key == "answer_language":
+        from .answer_language import code_of, name
+        # "en" (every partner exam so far) is shown exactly as sent.
+        return value if code_of(value) in ("", "en") else name(value)
+    return value
+
+
 def _criteria_context_block(model_answer: Any, exam_context: Any) -> str:
     """The paper's context and the teacher's model answer, for the criteria
     prompt (spec 7.4, T0.24). Before this the generator saw only the question
@@ -79,7 +88,8 @@ def _criteria_context_block(model_answer: Any, exam_context: Any) -> str:
         ("answer_language", "Answers are written in"),
         ("instructions", "Examiner's instructions"),
     )
-    lines = [f"{label}: {_clip(ctx.get(key), _CONTEXT_FIELD_CAP)}" for key, label in labels if str(ctx.get(key) or "").strip()]
+    lines = [f"{label}: {_clip(_shown(key, ctx.get(key)), _CONTEXT_FIELD_CAP)}"
+             for key, label in labels if str(ctx.get(key) or "").strip()]
     if lines:
         parts.append(
             "EXAM CONTEXT (reference data from the institute; pitch the criteria at this level, "
@@ -326,9 +336,17 @@ def examiner_instructions_block(exam_context: Any) -> str:
     They shape marks and feedback; the output contract above them still holds."""
     ctx = exam_context if isinstance(exam_context, dict) else {}
     text = _clip(ctx.get("instructions"), _INSTRUCTIONS_CAP)
+    language = ""
+    from .answer_language import code_of
+    # English (what partner exams have always declared) keeps the prompt as it was.
+    if str(ctx.get("answer_language") or "").strip() and code_of(ctx.get("answer_language")) != "en":
+        shown = _clip(_shown("answer_language", ctx.get("answer_language")), _CONTEXT_FIELD_CAP)
+        language = (f"\n\nANSWER LANGUAGE\nThis paper is answered in {shown}. Read and judge the "
+                    f"student's answer as {shown}; a correct answer in {shown} is never marked down "
+                    "for not being in English.")
     if not text:
-        return ""
-    return (
+        return language
+    return language + (
         "\n\nEXAMINER'S INSTRUCTIONS\n"
         "The institute that set this paper gave these instructions for marking it. Follow them "
         "when deciding marks and writing feedback. They never change the output format, the "

@@ -42,7 +42,7 @@ from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any, Callable, Optional
 
-from . import deduction_scheme as ds
+from . import answer_language, deduction_scheme as ds
 
 logger = logging.getLogger(__name__)
 
@@ -110,6 +110,18 @@ Mark only errors you are SURE of from clearly written letters:
 Hindi handwriting is easy to misread: do NOT mark a मात्रा, nukta, anusvara or conjunct you are
 not certain of, accepted spelling variants, names, or words the student struck out."""
 
+# Any other declared language. Sanskrit and Marathi are written in Devanagari
+# but judged in their own grammar, never as Hindi.
+SPOT_GENERIC = """You are a strict examiner of {language} marking a student's handwritten answer.
+Look at the handwriting itself, word by word. Report what the ink shows; do not fix the student's
+mistakes while reading. Text in {language} is judged as standard {language}, text in English as English.
+
+Mark only errors you are SURE of from clearly written letters: spelling, agreement (gender, number,
+person), case endings and postpositions, verb form and tense, articles, a clearly wrong or missing
+word, a sentence that does not make sense.
+Handwriting is easy to misread: do NOT mark a letter, vowel sign or diacritic you are not certain of,
+accepted spelling variants, names, or words the student struck out. `why` is written in English."""
+
 SPOT_FORMAT = """
 For each error give:
 - wrong: the student's words exactly as the ink shows them (1-8 words, enough to find the spot);
@@ -138,8 +150,12 @@ page). Only then decide:
 Return STRICT JSON only: {"checks": [{"n": 1, "ink": "<letters you see>"}], "keep": [<numbers to keep>]}"""
 
 
-def spot_prompt(hindi: bool, scheme: list[ds.Entry], question_text: str = "") -> str:
-    head = SPOT_HINDI if hindi else SPOT_ENGLISH
+def spot_prompt(hindi: bool, scheme: list[ds.Entry], question_text: str = "", language: str = "") -> str:
+    code = answer_language.code_of(language)
+    if code and code not in ("en", "hi"):
+        head = SPOT_GENERIC.format(language=answer_language.name(code))
+    else:
+        head = SPOT_HINDI if hindi else SPOT_ENGLISH
     fields, example, intro = "", "", ""
     if scheme:
         intro = SCHEME_INTRO.format(block=ds.prompt_block(scheme))
@@ -172,8 +188,12 @@ def _nfc(text: Any) -> str:
 
 
 def norm(text: Any) -> str:
-    """Lower-case words only, for comparing a quote with a correction or a row."""
-    return " ".join(re.findall(r"\w+", _nfc(text).lower()))
+    """Lower-case words only, for comparing a quote with a correction or a row.
+    Letters, digits and combining marks: `\\w` alone drops an Indic vowel sign,
+    which made "कि" -> "की" or "खरीदा" -> "खरीदे" compare equal and be thrown
+    away as a correction that changes nothing."""
+    kept = "".join(ch if unicodedata.category(ch)[0] in "LMN" else " " for ch in _nfc(text).lower())
+    return " ".join(kept.split())
 
 
 def _devanagari(text: str) -> bool:
@@ -245,7 +265,9 @@ def reading_slip(wrong: str, correct: str, kind: str = "") -> bool:
     nw, nc = norm(wrong), norm(correct)
     if not nw or nw == nc:
         return True
-    if _devanagari(wrong):
+    if not answer_language.is_latin(wrong):
+        # The shape/sound tables below are Latin letters; any other script
+        # is guarded by the strict transcript match in to_error instead.
         return False
     if str(kind or "").strip().lower() not in ("spelling", ""):
         return False
@@ -331,7 +353,7 @@ def to_error(item: dict[str, Any], page_id: str, rows: list[dict[str, Any]],
     wrong, correct = _nfc(item.get("wrong")), _nfc(item.get("correct"))
     if not wrong or not correct:
         return None
-    hit = match_row(wrong, correct, rows, strict=_devanagari(wrong))
+    hit = match_row(wrong, correct, rows, strict=not answer_language.is_latin(wrong))
     if hit is None:
         return None
     row, start, end, _score = hit
@@ -460,13 +482,14 @@ async def _ask_once(llm: Any, model: str, system: str, text: str, image_b64: str
 
 async def check_band(llm: Any, model: str, image_b64: str, page: dict[str, Any], top: float, bottom: float,
                      scheme: list[ds.Entry], question_text: str, allow_hindi: bool,
-                     institute_id: Optional[str] = None, token_sink: Any = None) -> list[dict[str, Any]]:
+                     institute_id: Optional[str] = None, token_sink: Any = None,
+                     language: str = "") -> list[dict[str, Any]]:
     """Spot, verify and filter one band; the kept errors tied to rows."""
     rows = band_rows(page, top, bottom)
     if not rows:
         return []
     hindi = allow_hindi and any(_devanagari(str(r.get("text") or "")) for r in rows)
-    spot = await _ask(llm, model, spot_prompt(hindi, scheme, question_text), "The page section:",
+    spot = await _ask(llm, model, spot_prompt(hindi, scheme, question_text, language), "The page section:",
                       image_b64, 6000, institute_id, token_sink)
     cands = [c for c in _json(spot, "errors")[:MAX_ERRORS_PER_BAND]
              if isinstance(c, dict)
@@ -491,7 +514,7 @@ async def find_errors(llm: Any, layout_map: dict[str, Any], pdf_url: Optional[st
                       scheme: Optional[list[ds.Entry]] = None, question_text: str = "",
                       allow_hindi: bool = False, institute_id: Optional[str] = None, token_sink: Any = None,
                       cancellation_check: Optional[Callable[[], bool]] = None,
-                      images: Optional[dict[str, Any]] = None,
+                      images: Optional[dict[str, Any]] = None, language: str = "",
                       ) -> Optional[tuple[dict[str, list[dict[str, Any]]], set[str]]]:
     """(row id -> errors, ids of the pages every band of which was checked),
     or None when the page images cannot be had (the caller then runs the
@@ -527,7 +550,7 @@ async def find_errors(llm: Any, layout_map: dict[str, Any], pdf_url: Optional[st
             try:
                 b64 = await asyncio.get_running_loop().run_in_executor(None, _encode, crop)
                 return await check_band(llm, model, b64, page, top, bottom, scheme, question_text,
-                                        allow_hindi, institute_id, token_sink)
+                                        allow_hindi, institute_id, token_sink, language)
             except Exception:
                 logger.exception("Language check failed on %s band %.0f-%.0f%%", pid, top * 100, bottom * 100)
                 failed_pages.add(pid)

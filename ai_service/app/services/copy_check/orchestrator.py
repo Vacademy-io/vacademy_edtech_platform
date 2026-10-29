@@ -21,7 +21,7 @@ from ..ai_billing import UC, metering_api_key, metering_user, record_tool_billin
 from ..api_key_resolver import ApiKeyResolver
 from ..chat_llm_client import ChatLLMClient
 from ...repositories.copy_check_rubric_repository import CopyCheckRubricRepository
-from . import annotator, callbacks, cancellation, deduction_check, deduction_scheme, evaluation_table, language_check, language_feedback, language_vision, locate, math_reread, option_letter, orientation, typed_answers, vision_transcript
+from . import annotator, answer_language, callbacks, cancellation, deduction_check, deduction_scheme, evaluation_table, language_check, language_feedback, language_vision, locate, math_reread, option_letter, orientation, typed_answers, vision_transcript
 from .choice_groups import counted_awarded, counted_flags, resolve_paper_max
 from .failure import (
     COPY_UNREADABLE,
@@ -701,6 +701,17 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
             )
             return RUN_BILLED
 
+        # 0a. A copy declared in a language the copy check cannot read is
+        # refused before any model reads it (answer_language.py): grading a
+        # made-up transcript is worse than asking for a human. Not billed.
+        refused = answer_language.unsupported(req.get("exam_context"))
+        if refused is not None:
+            raise CopyCheckFailure(
+                LANGUAGE_NOT_SUPPORTED,
+                f"answers are declared in {refused.name}; handwriting in this language cannot be "
+                "read reliably yet - needs manual evaluation",
+            )
+
         # 0b. Turn sideways pages the right way up. Everything
         # below fetches the copy by URL, so swapping the URL is all it takes
         # for OCR, the vision read and the checked copy to see upright pages.
@@ -725,6 +736,33 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
             cancellation_check=lambda: cancellation.is_cancelled(job_id, process_id),
         )
 
+        # 1a. Which language is the copy written in? Nobody declares it on the
+        # dashboard: one look at a few pages (and the paper) tells, so a Hindi,
+        # Sanskrit or Urdu copy is read by the model that can read it. A copy
+        # mostly in a language the check cannot read is refused, not billed.
+        # Detection off, failed, or English: everything below runs as before.
+        page_images: Optional[dict[str, Any]] = None
+        reading_ctx = req.get("exam_context")
+        if not answer_language.of(reading_ctx) and answer_language.detection_enabled():
+            cancellation.check(job_id, process_id)
+            page_ids = [str(p.get("page_id")) for p in layout_map.get("pages") or []]
+            try:
+                samples = await answer_language.sample_images(pdf_url, page_ids)
+            except Exception:
+                logger.warning("Answer language: could not render sample pages; reading as before", exc_info=True)
+                samples = {}
+            detected = await answer_language.detect(
+                llm, language_vision.language_model(), samples, page_ids,
+                language_vision.paper_text(questions), institute_id=institute_id, token_sink=grader,
+            )
+            if detected.unsupported is not None:
+                raise CopyCheckFailure(
+                    LANGUAGE_NOT_SUPPORTED,
+                    f"answers are written in {detected.unsupported.name}; handwriting in this language "
+                    "cannot be read reliably yet - needs manual evaluation",
+                )
+            reading_ctx = answer_language.with_detected(reading_ctx, detected)
+
         # 1b. Re-read the handwriting with a vision model, and merge the OCR's
         # word-level boxes into real lines. render_worker runs PaddleOCR's
         # PRINTED-text recogniser on handwriting, which returns fragments like
@@ -739,7 +777,9 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
         try:
             layout_map = await vision_transcript.enrich_layout_with_vision(
                 pdf_url, layout_map, llm,
-                model=eval_model,
+                # Indian scripts and Arabic script are read with the stronger
+                # vision model; the grading model made up most of such a page.
+                model=answer_language.reading_model(reading_ctx, eval_model),
                 institute_id=institute_id,
                 token_sink=grader,
                 cancellation_check=lambda: cancellation.is_cancelled(job_id, process_id),
@@ -831,7 +871,6 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
         # Pages the vision pass checked in full; None = not known (text-only
         # pass), and then the scheme never overrides marks.
         language_checked_pages: Optional[set[str]] = None
-        page_images: Optional[dict[str, Any]] = None
         language_model = language_vision.language_model()
         if language_feedback.enabled(req.get("exam_context")):
             cancellation.check(job_id, process_id)
@@ -843,13 +882,13 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
             allow_hindi = language_feedback.allows_hindi(req.get("exam_context"))
             vision = None
             if language_vision.enabled():
-                page_images = await language_vision.page_images(pdf_url)
+                page_images = page_images or await language_vision.page_images(pdf_url)
                 vision = await language_vision.find_errors(
                     llm, layout_map, pdf_url, model=language_model, scheme=scheme,
                     question_text=language_vision.paper_text(questions), allow_hindi=allow_hindi,
                     institute_id=institute_id, token_sink=grader,
                     cancellation_check=lambda: cancellation.is_cancelled(job_id, process_id),
-                    images=page_images,
+                    images=page_images, language=answer_language.of(reading_ctx),
                 ) if page_images else None
             if vision is not None:
                 language_errors, language_checked_pages = vision
@@ -857,7 +896,7 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                 language_errors = await language_feedback.find_errors(
                     llm, layout_map, eval_model, institute_id=institute_id, token_sink=grader,
                     cancellation_check=lambda: cancellation.is_cancelled(job_id, process_id),
-                    allow_hindi=allow_hindi,
+                    allow_hindi=allow_hindi, language=answer_language.of(reading_ctx),
                 )
                 if scheme:
                     language_feedback.classify(language_errors, scheme)
