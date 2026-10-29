@@ -89,6 +89,14 @@
         "manualEnroll": {
             "label": "Generate invoice on manual / bulk enrollment",
             "hint": "When an admin enrolls learners manually or in bulk (no payment gateway), generate an invoice for them."
+        },
+        "receiptDate": {
+            "label": "Date receipts by the payment date",
+            "hint": "Off: a receipt is dated the day it is generated.",
+            "fieldLabel": "Payment date on the receipt",
+            "recorded": "Date entered while recording",
+            "missing": "{{key}} (no longer on any payment mode)",
+            "fieldHint": "Printed as the receipt's Payment Date (and Receipt Date when the switch above is on) when the payment has this field; otherwise the date entered while recording."
         }
     },
     "tax": {

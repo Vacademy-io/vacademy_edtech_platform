@@ -90,6 +90,14 @@
         "manualEnroll": {
             "label": "Générer une facture lors d'une inscription manuelle / groupée",
             "hint": "Lorsqu'un administrateur inscrit des apprenants manuellement ou en masse (sans passerelle de paiement), génère une facture pour eux."
+        },
+        "receiptDate": {
+            "label": "Dater les reçus à la date du paiement",
+            "hint": "Désactivé : le reçu porte la date de sa génération.",
+            "fieldLabel": "Date de paiement sur le reçu",
+            "recorded": "Date saisie lors de l'enregistrement",
+            "missing": "{{key}} (n'est plus sur aucun mode de paiement)",
+            "fieldHint": "Imprimée comme date de paiement du reçu (et date du reçu si l'option ci-dessus est activée) lorsque le paiement contient ce champ ; sinon la date saisie lors de l'enregistrement."
         }
     },
     "tax": {
