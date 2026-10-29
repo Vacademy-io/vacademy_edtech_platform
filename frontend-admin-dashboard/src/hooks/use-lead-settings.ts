@@ -193,6 +193,13 @@ export interface FollowUpFieldsConfig {
      * save. Changes the LEAD, not the follow-up — unlike {@link interestLevels}.
      */
     leadStatusAndTier: boolean;
+    /**
+     * The lead's tier (e.g. "Interest Level") from {@link leadStatusAndTier} must
+     * be picked before a follow-up is booked — "Keep current" no longer saves.
+     * Only where a follow-up is created; a note or call log stays optional. Needs
+     * leadStatusAndTier on.
+     */
+    leadTierRequired: boolean;
     /** "Mark complete" opens with "Schedule next follow-up" already ticked. */
     scheduleNextByDefault: boolean;
     /**
@@ -321,6 +328,7 @@ export const LEAD_SETTINGS_DEFAULTS: LeadSettingsConfig = {
         allowEditing: false,
         reportExports: false,
         leadStatusAndTier: false,
+        leadTierRequired: false,
         scheduleNextByDefault: false,
         closingNoteOptional: false,
         markDoneLeadStatusAndTier: false,
@@ -420,6 +428,7 @@ export function normaliseFollowUpFields(
         allowEditing: saved?.allowEditing === true,
         reportExports: saved?.reportExports === true,
         leadStatusAndTier: saved?.leadStatusAndTier === true,
+        leadTierRequired: saved?.leadTierRequired === true,
         scheduleNextByDefault: saved?.scheduleNextByDefault === true,
         closingNoteOptional: saved?.closingNoteOptional === true,
         markDoneLeadStatusAndTier: saved?.markDoneLeadStatusAndTier === true,

@@ -4,13 +4,18 @@ import type { ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const { flags, setStatus, setTier } = vi.hoisted(() => ({
-    flags: { enabled: true },
+    flags: { enabled: true, tierRequired: false },
     setStatus: vi.fn(),
     setTier: vi.fn(),
 }));
 
 vi.mock('@/hooks/use-lead-settings', () => ({
-    useLeadSettings: () => ({ followUpFields: { leadStatusAndTier: flags.enabled } }),
+    useLeadSettings: () => ({
+        followUpFields: {
+            leadStatusAndTier: flags.enabled,
+            leadTierRequired: flags.tierRequired,
+        },
+    }),
 }));
 vi.mock('@/hooks/use-lead-statuses', () => ({
     useLeadStatuses: () => ({
@@ -42,6 +47,7 @@ const render = (args: { userId?: string; audienceResponseId?: string }) =>
 describe('useLeadAttributeFields', () => {
     beforeEach(() => {
         flags.enabled = true;
+        flags.tierRequired = false;
         setStatus.mockReset().mockResolvedValue(undefined);
         setTier.mockReset().mockResolvedValue(undefined);
     });
@@ -85,6 +91,27 @@ describe('useLeadAttributeFields', () => {
         expect(setStatus).toHaveBeenCalledWith('r1', 's1', 'MANUAL');
         expect(setTier).toHaveBeenCalledTimes(1);
         expect(setTier).toHaveBeenCalledWith('u1', 'inst-1', 'HOT');
+    });
+
+    it('never reports the tier missing unless the institute requires it', () => {
+        const { result } = render({ userId: 'u1', audienceResponseId: 'r1' });
+        expect(result.current.tierRequired).toBe(false);
+        expect(result.current.tierMissing).toBe(false);
+    });
+
+    it('reports the tier missing until one is picked when the institute requires it', () => {
+        flags.tierRequired = true;
+        const { result } = render({ userId: 'u1', audienceResponseId: 'r1' });
+        expect(result.current.tierMissing).toBe(true);
+        act(() => result.current.setTierKey('HOT'));
+        expect(result.current.tierMissing).toBe(false);
+    });
+
+    it('does not require a tier while the dropdowns themselves are off', () => {
+        flags.enabled = false;
+        flags.tierRequired = true;
+        const { result } = render({ userId: 'u1', audienceResponseId: 'r1' });
+        expect(result.current.tierMissing).toBe(false);
     });
 
     it('hides the status without a lead response id, keeping the tier', () => {

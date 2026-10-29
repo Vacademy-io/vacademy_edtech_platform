@@ -807,7 +807,8 @@ function AddNoteForm({ userId, audienceResponseId }: AddNoteFormProps) {
         ? !!scheduleTime &&
           !!audienceResponseId &&
           !followUpNoteMissing &&
-          !followUpFields.missingRequired
+          !followUpFields.missingRequired &&
+          !leadAttributes.tierMissing
         : !isNoteEmpty || callMeta !== undefined;
 
     function resetForm() {
@@ -929,7 +930,12 @@ function AddNoteForm({ userId, audienceResponseId }: AddNoteFormProps) {
             {/* The lead's own status + tier — on every tab. portal={false}: this
                 form can render inside a Dialog (student-profile-overlay). */}
             {leadAttributes.visible && (
-                <LeadAttributeFields fields={leadAttributes} portal={false} className="mb-2" />
+                <LeadAttributeFields
+                    fields={leadAttributes}
+                    portal={false}
+                    followUp={isFollowUp}
+                    className="mb-2"
+                />
             )}
 
             {isFollowUp ? (
@@ -971,7 +977,7 @@ function AddNoteForm({ userId, audienceResponseId }: AddNoteFormProps) {
                     {followUpNoteMissing && (
                         <p className="text-caption text-danger-600">{t('addNote.noteRequired')}</p>
                     )}
-                    {followUpFields.missingRequired && (
+                    {(followUpFields.missingRequired || leadAttributes.tierMissing) && (
                         <p className="text-caption text-danger-600">
                             {t('addNote.fieldsRequired')}
                         </p>
