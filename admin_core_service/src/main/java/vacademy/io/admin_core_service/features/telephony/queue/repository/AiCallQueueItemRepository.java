@@ -559,6 +559,19 @@ public interface AiCallQueueItemRepository extends JpaRepository<AiCallQueueItem
             """, nativeQuery = true)
     List<Object[]> findUnreachedEngineCallbacks(@Param("since") Instant since);
 
+    /** Cancels every call still waiting for this lead (their words: do not call again). */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE ai_call_queue
+               SET status = 'CANCELLED', status_reason = :reason, updated_at = NOW()
+             WHERE institute_id = :instituteId AND status = 'QUEUED'
+               AND ((CAST(:responseId AS text) IS NOT NULL AND response_id = CAST(:responseId AS text))
+                 OR (CAST(:userId AS text) IS NOT NULL AND user_id = CAST(:userId AS text)))
+            """, nativeQuery = true)
+    int cancelPendingForLead(@Param("instituteId") String instituteId, @Param("responseId") String responseId,
+                             @Param("userId") String userId, @Param("reason") String reason);
+
     /** Marks a callback as alerted so the watch never tells anyone twice. */
     @Modifying
     @Transactional

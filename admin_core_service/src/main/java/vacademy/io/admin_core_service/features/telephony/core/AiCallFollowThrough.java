@@ -14,6 +14,9 @@ import vacademy.io.admin_core_service.features.audience.repository.LeadFollowupR
 import vacademy.io.admin_core_service.features.audience.service.LeadFollowupService;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementCoordinationDao;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementPointsOfContact;
+import vacademy.io.admin_core_service.features.engagement.service.EngagementSystemTemplates;
+import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
+import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallActionRule;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementWakeService;
 import vacademy.io.admin_core_service.features.timeline.enums.LeadJourneyActionType;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallRequestDTO;
@@ -56,6 +59,9 @@ public class AiCallFollowThrough {
     @Autowired @Lazy private LLMService llmService;
     @Autowired @Lazy private AiCallingSettingsService settingsService;
     @Autowired @Lazy private EngagementPointsOfContact pointsOfContact;
+    @Autowired @Lazy private AiCallActionService aiCallActionService;
+    @Autowired @Lazy private EngagementSystemTemplates systemTemplates;
+    @Autowired @Lazy private InstituteRepository instituteRepository;
     @Autowired @Lazy private LeadFollowupService leadFollowupService;
     @Autowired @Lazy private LeadFollowupRepository leadFollowupRepository;
     @Autowired @Lazy private EngagementCoordinationDao coordinationDao;
@@ -70,6 +76,11 @@ public class AiCallFollowThrough {
             writeSummary(r, responseId, userId);
         } catch (Exception e) {
             log.warn("ai-call: summary note failed for result {}: {}", r.getId(), e.getMessage());
+        }
+        try {
+            thankIfNotInterested(r, responseId, userId, instituteId);
+        } catch (Exception e) {
+            log.warn("ai-call: not-interested follow-through failed for result {}: {}", r.getId(), e.getMessage());
         }
         try {
             closeEarlierCallbackFollowups(r, responseId, userId, instituteId);
@@ -106,6 +117,68 @@ public class AiCallFollowThrough {
                 text.toString(), meta, userId);
     }
 
+    // ------------------------------------------------------------------ "not interested"
+
+    static boolean isNotInterested(AiCallResult r) {
+        String d = r.getDisposition() == null ? "" : r.getDisposition().replaceAll("[^A-Za-z]", "").toUpperCase(Locale.ROOT);
+        return d.equals("NOTINTERESTED");
+    }
+
+    /**
+     * A lead who said no gets a thank-you and is left alone: every AI call still waiting for them is
+     * cancelled and any callback the engine had set up is closed. The thank-you goes by email, and by
+     * WhatsApp once the institute's shared thank-you template is approved (found or created once for the
+     * institute, never per lead; until Meta approves it the email carries the thanks).
+     */
+    private void thankIfNotInterested(AiCallResult r, String responseId, String userId, String instituteId) {
+        if (!isNotInterested(r) || instituteId == null || (responseId == null && userId == null)) return;
+        int cancelled = queueService.cancelForLead(instituteId, responseId, userId, "The lead said they are not interested.");
+        closeCallbackFollowups(responseId, userId, instituteId, "The lead said they are not interested, so no callback is needed.");
+        String institute = instituteRepository.findById(instituteId)
+                .map(vacademy.io.common.institute.entity.Institute::getInstituteName)
+                .filter(n -> n != null && !n.isBlank()).orElse("our team");
+        String callKey = r.getCallLogId() != null && !r.getCallLogId().isBlank() ? r.getCallLogId() : r.getCorrelationId();
+
+        boolean emailed = false;
+        if (r.getCustomerEmail() != null && !r.getCustomerEmail().isBlank()) {
+            emailed = aiCallActionService.createBuiltIn(AiCallActionRule.builder()
+                    .id("builtin-not-interested-email").label("Thank-you after not interested").enabled(true)
+                    .timing("POST_CALL").artefact("not_interested_thanks").actionType("SEND_MESSAGE").channel("EMAIL")
+                    .to("email")
+                    .messageBody("Thank you for your time\n\nHi {{name}},\n\nThank you for speaking with us today and for your time. "
+                            + "We have noted that this is not the right time for you, and we will not call you again.\n\n"
+                            + "If you change your mind, just reply to this email and the " + institute + " team will be happy to help.\n\n"
+                            + "Warm regards,\n" + institute)
+                    .build(), instituteId, callKey, userId, responseId, r.getCustomerName(), r.getPhoneNumber(), r.getCustomerEmail());
+        }
+        EngagementSystemTemplates.State wa = systemTemplates.ensure(instituteId, EngagementSystemTemplates.Kind.NOT_INTERESTED_THANKS);
+        boolean whatsapped = false;
+        if (wa.usable() && r.getPhoneNumber() != null && !r.getPhoneNumber().isBlank()) {
+            whatsapped = aiCallActionService.createBuiltIn(AiCallActionRule.builder()
+                    .id("builtin-not-interested-whatsapp").label("Thank-you after not interested").enabled(true)
+                    .timing("POST_CALL").artefact("not_interested_thanks").actionType("SEND_MESSAGE").channel("WHATSAPP")
+                    .to("phone").template(wa.name()).templateLanguage(wa.language())
+                    .templateParams(List.of("{{name}}", institute))
+                    .build(), instituteId, callKey, userId, responseId, r.getCustomerName(), r.getPhoneNumber(), r.getCustomerEmail());
+        }
+        String done = "Said they are not interested. " + (cancelled > 0 ? cancelled + " waiting AI call(s) cancelled. " : "")
+                + "No further calls. Thank-you: "
+                + (emailed ? "email" : "no email on file")
+                + (whapsappText(whatsapped, wa)) + ".";
+        String type = userId != null ? "STUDENT" : "AUDIENCE_RESPONSE";
+        timelineEventService.logEvent(type, userId != null ? userId : responseId, "NOTE", "SYSTEM", null, "AI call",
+                "Not interested: left alone", done, Map.of("call_log_id", String.valueOf(r.getCallLogId())), userId);
+    }
+
+    private static String whapsappText(boolean sent, EngagementSystemTemplates.State wa) {
+        if (sent) return " and WhatsApp";
+        return switch (wa.status()) {
+            case PENDING -> "; the WhatsApp thank-you waits for Meta to approve the institute's template";
+            case UNAVAILABLE -> "; WhatsApp is not set up";
+            default -> "; no WhatsApp number on file";
+        };
+    }
+
     // ------------------------------------------------------------------ the callback
 
     static boolean wantsCallback(AiCallResult r) {
@@ -116,7 +189,7 @@ public class AiCallFollowThrough {
     }
 
     private void scheduleCallback(AiCallResult r, String responseId, String userId, String instituteId) {
-        if (!wantsCallback(r) || instituteId == null) return;
+        if (!wantsCallback(r) || instituteId == null || isNotInterested(r)) return;
         ZoneId zone = zoneOf(instituteId);
         Instant calledAt = r.getCallStart() != null ? r.getCallStart() : Instant.now();
         Instant at = r.getCallbackAt() != null ? r.getCallbackAt()
@@ -196,13 +269,18 @@ public class AiCallFollowThrough {
     /** A connected AI call settles the callback the engine scheduled: its follow-up is closed. */
     private void closeEarlierCallbackFollowups(AiCallResult r, String responseId, String userId, String instituteId) {
         if (responseId == null || !"completed".equalsIgnoreCase(r.getStatus())) return;
+        closeCallbackFollowups(responseId, userId, instituteId, "The AI call reached the lead, so this callback is done.");
+    }
+
+    private void closeCallbackFollowups(String responseId, String userId, String instituteId, String reason) {
+        if (responseId == null) return;
         List<String> ids = leadFollowupRepository.openIdsWithContentPrefix(responseId, FOLLOWUP_PREFIX);
         if (ids.isEmpty()) return;
         String owner = pointsOfContact.ownerFor(instituteId, userId);
         if (owner == null) return;
         for (String id : ids) {
             CloseLeadFollowupRequest req = new CloseLeadFollowupRequest();
-            req.setCloserReason("The AI call reached the lead, so this callback is done.");
+            req.setCloserReason(reason);
             try {
                 EngagementWakeService.withoutWakes(() -> leadFollowupService.close(id, req, principal(owner)));
             } catch (Exception e) {

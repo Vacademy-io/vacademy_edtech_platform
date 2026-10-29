@@ -165,6 +165,12 @@ public class AiCallQueueService {
         return describe(saved, true, "Queued for the next free line.");
     }
 
+    /** The lead said not to call again: every call still waiting for them is cancelled. */
+    public int cancelForLead(String instituteId, String responseId, String userId, String reason) {
+        return repository.cancelPendingForLead(instituteId, responseId, userId,
+                isBlank(reason) ? "The lead asked not to be called again." : reason);
+    }
+
     /** Source tag of the calls the engine schedules itself when a lead asks to be called back. */
     public static final String SOURCE_ENGINE_CALLBACK = "ENGINE_CALLBACK";
 
