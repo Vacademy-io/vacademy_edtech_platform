@@ -288,3 +288,14 @@ def test_a_hindi_answer_keeps_the_graders_mark_under_the_scheme():
                                 "obtained": 17.0, "max": 50.0, "percent": 34.0,
                                 "paragraph_wise": True, "remarks": "Para-wise"}
     assert "marked on the copy" in v["feedback"]
+
+
+def test_the_request_schema_keeps_the_scheme():
+    # The scheme reached the run only if the request model kept it: before the
+    # field existed, pydantic dropped it and copies were marked without it.
+    from app.schemas.copy_check import ExamContext
+    ctx = ExamContext.model_validate({"language_feedback": "HIGHLIGHT", "deduction_scheme": [
+        {"symbol": "X", "marks": 1, "covers": ["spelling mistake"]}, {"symbol": "#", "marks": 5, "scope": "sentence"}]})
+    dumped = ctx.model_dump()
+    assert ds.parse(dumped)[1].symbol == "#"
+    assert ExamContext.model_validate({}).model_dump()["deduction_scheme"] is None
