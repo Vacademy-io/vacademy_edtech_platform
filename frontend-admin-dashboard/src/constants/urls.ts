@@ -1177,6 +1177,8 @@ export const REFERRAL_API_BASE = `${BASE_URL}/admin-core-service/v1/referral-opt
 export const REFERRAL_UPDATE = (referralOptionId: string) =>
     `${BASE_URL}/admin-core-service/v1/referral-option/${referralOptionId}`;
 export const REFERRAL_DELETE = `${BASE_URL}/admin-core-service/v1/referral-option`;
+// One member's referral code, link and referrals (admin student profile)
+export const GET_MEMBER_REFERRAL = `${BASE_URL}/admin-core-service/v1/referral-link/member`;
 
 export const GET_INSITITUTE_SETTINGS = `${BASE_URL}/admin-core-service/institute/setting/v1/get`;
 export const SAVE_INSTITUTE_SETTING = `${BASE_URL}/admin-core-service/institute/setting/v1/save-setting`;
