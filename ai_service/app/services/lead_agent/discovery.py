@@ -13,12 +13,23 @@ rounds a day.
 
 cursor_json makes each round search something new:
   {"day": "2026-10-25", "rounds": 2, "org_key": "…", "org_idx": 8, "org_page": 1,
-   "maps_key": "…", "maps_idx": 3, "maps_page": 1}
+   "maps_key": "…", "maps_idx": 3, "maps_page": 1, "sig_turn": 17}
 The plan's organisation searches are taken QUERIES_PER_ROUND at a time; when the
 list wraps, the next pass asks Serper for the next results page (up to MAX_PAGE),
 so day after day the agent goes deeper instead of repeating itself. org_key and
 maps_key fingerprint the lists the positions belong to: a rebuilt plan (or other
 industries or places) starts its searches again from the first results page.
+sig_turn counts rounds without resetting at midnight: each round's buying-signal and
+keyword searches are the next ones from the list of every role, phrase and keyword
+(as many as before), and a whole-country market also walks its major cities, so
+rounds stop bringing back the same job posts.
+
+A job post already behind one of the agent's candidates is never read again, and a
+new organisation with the name of one the agent has in the same place is skipped
+(web and Maps lanes alike). At STANDARD and DEEP validation effort (effort.open_job_post)
+the job posts behind hiring signals are opened once a website is found (_PostReader):
+a post naming another employer or another place drops that signal, and the post is
+remembered (cursor_json["ruled_out_posts"]) so later rounds skip it like a used one.
 
 Routing: organisation searches and website lookups -> Serper (Google); buying-signal
 and keyword searches -> Parallel (falls back to Serper when Parallel has no key).
@@ -35,7 +46,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, Iterable, List, Optional, Set
 
 from . import db as ladb
-from . import engine_api, fetcher, llm, pacing, places as places_mod, planner, store
+from . import effort, engine_api, fetcher, llm, pacing, places as places_mod, planner, store
 from . import search as search_mod
 from .search import SearchCounter, SearchFailed, SearchUnavailable
 
@@ -49,6 +60,8 @@ MAPS_PER_ROUND = 3
 MAX_SIGNAL_QUERIES = 2          # per industry per round (Parallel)
 MAX_KEYWORD_QUERIES = 2
 MAX_CANDIDATES_PER_ROUND = 30
+POST_READS_PER_ROUND = 12      # job posts opened for the post check; the rest keep the search result's decision
+RULED_OUT_POSTS_KEPT = 300     # posts the check ruled out, remembered in cursor_json so no round reads them again
 SELECTION_MAX_TOKENS = 6000  # reasoning counts as output; see llm.REASONING_EFFORT
 
 ALL_BRIEF_SOURCES = ("organisation_search", "maps", "hiring", "keyword", "software_request", "new_centre")
@@ -113,7 +126,53 @@ def _fresh_cursor(cursor: Optional[dict], day: str) -> Dict[str, Any]:
     c.setdefault("org_page", 1)
     c.setdefault("maps_idx", 0)
     c.setdefault("maps_page", 1)
+    c.setdefault("sig_turn", 0)
     return c
+
+
+def signal_places(markets: List[dict], places: List[str], turn: int) -> List[str]:
+    """The places this round's buying-signal and keyword searches add: the plan's places, except that a
+    whole-country market walks the country and then its major cities (places.py), one step a round, so
+    no extra searches run. "school hiring admission counsellor India" brought back the same posts every
+    round (2026-10-29)."""
+    out = []
+    for place in places:
+        walk = list(dict.fromkeys([place, *places_mod.maps_places(markets, [place])]))
+        out.append(walk[turn % len(walk)])
+    return list(dict.fromkeys(out))
+
+
+# States and union territories: two organisations in one state are not in one place. Delhi, Chandigarh
+# and Puducherry are cities too, so they are not listed.
+_REGIONS = frozenset({
+    "andhra pradesh", "arunachal pradesh", "assam", "bihar", "chhattisgarh", "goa", "gujarat", "haryana",
+    "himachal pradesh", "jharkhand", "karnataka", "kerala", "madhya pradesh", "maharashtra", "manipur", "meghalaya",
+    "mizoram", "nagaland", "odisha", "orissa", "punjab", "rajasthan", "sikkim", "tamil nadu", "telangana", "tripura",
+    "uttar pradesh", "uttarakhand", "uttaranchal", "west bengal", "jammu and kashmir", "kashmir", "ladakh",
+    "lakshadweep", "andaman and nicobar islands", "dadra and nagar haveli", "daman and diu", "ncr", "delhi ncr",
+})
+
+
+def _here(*texts: Optional[str]) -> Set[str]:
+    """The cities and localities named in these texts (an org's city, a Maps address, a job's location),
+    one spelling each, states left out."""
+    out: Set[str] = set()
+    for t in texts:
+        if t:
+            out |= {p for p in engine_api.place_keys(t) if p not in _REGIONS}
+    return out
+
+
+def _remember(known: Dict[str, List[Set[str]]], name: str, here: Set[str]) -> None:
+    key = engine_api.org_key(name, here)
+    if key:
+        known.setdefault(key, []).append(set(here))
+
+
+def _same_org_known(known: Dict[str, List[Set[str]]], name: str, here: Set[str]) -> bool:
+    """The agent already has an organisation of this name that is not known to be elsewhere: the same
+    name (without its tail or place words) and a place in common, or no place known for one of them."""
+    return any(not here or not there or here & there for there in known.get(engine_api.org_key(name, here), []))
 
 
 class _Router:
@@ -152,6 +211,31 @@ class _Router:
         return search_mod.run_sync(self.loop, all_of(), timeout=300)
 
 
+class _PostReader:
+    """read_post for the engine thread (effort.open_job_post): a job post through the server fetcher
+    (fetcher.read_post: SSRF-safe, robots.txt honoured, a short timeout), each URL read once a round
+    and at most POST_READS_PER_ROUND of them. None = not read (a refusal, an error, over the cap):
+    the decision made from the search result then stands."""
+
+    def __init__(self, loop):
+        self.loop = loop
+        self.pages: Dict[str, Optional[str]] = {}
+        self.state: Dict[str, Any] = {}  # robots.txt rules and pauses per host, for this round
+
+    def __call__(self, url: str) -> Optional[str]:
+        if url in self.pages:
+            return self.pages[url]
+        html = None
+        if len(self.pages) < POST_READS_PER_ROUND:
+            try:
+                html = search_mod.run_sync(self.loop, fetcher.read_post(url, self.state),
+                                           timeout=fetcher.POST_TIMEOUT_S + fetcher.POST_ROBOTS_TIMEOUT_S + 15)
+            except Exception as exc:  # noqa: BLE001 - an unread post keeps the search result's decision
+                logger.info("lead agent: job post %s not read: %r", url[:120], exc)
+        self.pages[url] = html
+        return html
+
+
 async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> Dict[str, Any]:
     """One discovery round for `need` more candidates. Returns a summary."""
     brief = agent.get("brief_json") or {}
@@ -168,7 +252,7 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
     counter = SearchCounter(agent["id"], day)
     ctx = llm.CallContext(institute_id=agent["institute_id"], agent_id=agent["id"], day=day)
 
-    known, suppressed, known_names = await asyncio.to_thread(_known_and_suppressed, agent)
+    known, suppressed, known_orgs, used_posts = await asyncio.to_thread(_known_and_suppressed, agent)
     skip = known | suppressed
     guided = planner.guided_request(agent)
     exclude = plan.get("exclude") or engine_api.leave_out(guided)
@@ -178,6 +262,9 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
     notes: List[str] = []
 
     sources = engine_sources(brief)
+    offer = engine_api.resolve_offer(brief)
+    turn = int(cursor.get("sig_turn") or 0)
+    round_places = signal_places(markets, places, turn)
     org_all = list(plan.get("search_queries") or [])
     org_key = _fingerprint(org_all)
     if cursor.get("org_key") != org_key:
@@ -186,7 +273,7 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
         cursor.update(org_key=org_key, org_idx=0, org_page=1)
     org_slice =_slice(org_all, int(cursor["org_idx"]), QUERIES_PER_ROUND) if "organisation_search" in sources else []
     wrapped = bool(org_all) and int(cursor["org_idx"]) + len(org_slice) >= len(org_all)
-    signal_set = _signal_query_set(sources, industries, places, plan)
+    signal_set = _signal_query_set(sources, industries, round_places, plan, offer, turn)
 
     if org_slice or any(s != "organisation_search" for s in sources):
         loop = asyncio.get_running_loop()
@@ -197,6 +284,8 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
             return search_mod.run_sync(loop, llm.ask(system, user, output, purpose="discover", ctx=ctx,
                                                      max_tokens=SELECTION_MAX_TOKENS), timeout=240)
 
+        read_post = _PostReader(loop) if effort.of(agent).open_job_post else None
+
         def run() -> Any:
             with ThreadPoolExecutor(max_workers=2, thread_name_prefix="lead-discover") as pool:
                 return engine_api.discover(
@@ -204,24 +293,37 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
                     max_queries=len(org_slice), max_signal_queries=MAX_SIGNAL_QUERIES,
                     search=router.search, search_many=router.search_many, ask=ask,
                     use_signals=any(s != "organisation_search" for s in sources),
-                    background=pool.submit, industries=industries, place=places,
+                    background=pool.submit, industries=industries, place=round_places,
                     match_place=plan.get("match_places"), hiring_roles=plan.get("hiring_roles"),
                     keywords=plan.get("keywords"), max_keyword_queries=MAX_KEYWORD_QUERIES,
-                    exclude=exclude, skip_domains=set(skip), offer=engine_api.resolve_offer(brief),
+                    exclude=exclude, skip_domains=set(skip), signal_turn=turn,
+                    skip_signal_urls=used_posts | set(cursor.get("ruled_out_posts") or []),
+                    offer=offer, read_post=read_post,
                 )
 
         outcome = await asyncio.to_thread(run)
         notes.extend(getattr(outcome, "notes", []) or [])
+        ruled_out = [s.get("url") for c in outcome.candidates if not c.included
+                     for s in (c.detail or {}).get("signals_ruled_out") or [] if s.get("url")]
+        if ruled_out:
+            # Not behind any candidate, so known_signal_urls would not stop the next round reading
+            # the post, looking its organisation up and ruling it out again.
+            kept = [*(cursor.get("ruled_out_posts") or []), *ruled_out]
+            cursor["ruled_out_posts"] = list(dict.fromkeys(kept))[-RULED_OUT_POSTS_KEPT:]
         for c in outcome.included:
             if not c.domain or not c.website or c.domain in skip:
                 continue
-            key = engine_api.name_key(c.name or "")
-            if key and key in known_names:
-                # Same organisation under another domain: one job post resolved to three
-                # "Pathfinder School" sites over three rounds (2026-10-26).
-                continue
-            known_names.add(key)
             detail = dict(c.detail or {})
+            posts = [(s or {}).get("location") for s in detail.get("signals") or []]
+            here = _here(*posts) or _here(first.get("city"))  # where its posts are, else the market's city
+            if _same_org_known(known_orgs, c.name or "", here):
+                # The same organisation under another domain ("Pulse Academy" at pulseacademy.co.in and
+                # pulseacademy-indore.in). By name alone (2026-10-26) this kept the first guess and blocked
+                # the right one: The Pathfinder School's Haldwani site after a New Delhi Pathfinder. Since
+                # 2026-10-29 the job's place picks the site and a post is read once, so only a same-name
+                # organisation in the same place (or with no place known) counts as the same one.
+                continue
+            _remember(known_orgs, c.name or "", here)
             cid = await asyncio.to_thread(
                 _create, agent, domain=c.domain, name=c.name, website=c.website, source=candidate_source(c),
                 discovery={"query": detail.get("query"), "url": detail.get("url"), "title": detail.get("title"),
@@ -234,7 +336,7 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
 
     if "maps" in brief_sources(brief) and len(created) < need and industries and places:
         created += await _maps_lane(agent, cursor, industries, places_mod.maps_places(markets, places), gl,
-                                    counter, skip, exclude, first, need - len(created))
+                                    counter, skip, exclude, first, need - len(created), known_orgs)
 
     # advance the cursor
     if org_slice:
@@ -242,11 +344,14 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
         if wrapped:
             cursor["org_page"] = 1 if int(cursor["org_page"]) >= MAX_PAGE else int(cursor["org_page"]) + 1
     cursor["rounds"] = int(cursor.get("rounds") or 0) + 1
+    cursor["sig_turn"] = turn + 1
     await asyncio.to_thread(_finish_round, agent, cursor, day, len(created))
     return {"created": len(created), "queries": org_slice, "notes": notes[:5]}
 
 
-async def _maps_lane(agent, cursor, industries, places, gl, counter, skip, exclude, market, room) -> List[str]:
+async def _maps_lane(agent, cursor, industries, places, gl, counter, skip, exclude, market, room,
+                     known_orgs: Optional[Dict[str, List[Set[str]]]] = None) -> List[str]:
+    known_orgs = {} if known_orgs is None else known_orgs
     combos = maps_combos(industries, places)
     if not combos:
         return []
@@ -280,6 +385,13 @@ async def _maps_lane(agent, cursor, industries, places, gl, counter, skip, exclu
             name = (p.get("title") or domain)[:300]
             if engine_api.left_out(name, exclude):
                 continue
+            here = _here(p.get("address")) or _here(place)  # a search in one city also lists its neighbours
+            if _same_org_known(known_orgs, name, here):
+                # One organisation, two websites, both on Maps in one city: "Centurion Defence Academy" at
+                # centurionacademy.in and centuriondefenceacademy.com, "Quantum Coaching Institute" at two
+                # domains, both Lucknow (2026-10-29).
+                continue
+            _remember(known_orgs, name, here)
             skip.add(domain)
             cid = await asyncio.to_thread(
                 _create, agent, domain=domain, name=name, website=engine_api.homepage(website) or website,
@@ -293,29 +405,39 @@ async def _maps_lane(agent, cursor, industries, places, gl, counter, skip, exclu
     return out
 
 
-def _signal_query_set(sources, industries, places, plan) -> Set[str]:
-    """The exact buying-signal / keyword queries discover() will run, so they can be sent to Parallel."""
+def _signal_query_set(sources, industries, places, plan, offer=None, turn: int = 0) -> Set[str]:
+    """The exact buying-signal / keyword queries discover() will run, so they can be sent to Parallel:
+    the same places, turn and roles (the offer's own when the plan names none, as discover() does)."""
     out: Set[str] = set()
     try:
         sig = [s for s in sources if s not in ("organisation_search", "keyword_search")]
+        roles = list(plan.get("hiring_roles") or [])
+        if offer is not None:
+            roles = offer.run_hiring_roles(roles or None)
         if sig:
-            out |= {q for _k, q in engine_api.signal_queries(sig, industries, places, MAX_SIGNAL_QUERIES,
-                                                            list(plan.get("hiring_roles") or []))}
+            out |= {q for _k, q in engine_api.signal_queries(sig, industries, places, MAX_SIGNAL_QUERIES, roles, turn)}
         if "keyword_search" in sources and plan.get("keywords"):
             out |= {q for _c, q in engine_api.keyword_queries(list(plan["keywords"]), industries, places,
                                                              engine_api.default_keyword_channels(),
-                                                             MAX_KEYWORD_QUERIES * max(1, len(places)))}
+                                                             MAX_KEYWORD_QUERIES * max(1, len(places)), turn)}
     except Exception:  # noqa: BLE001 - routing falls back to Serper for everything
         logger.debug("lead agent: could not precompute signal queries", exc_info=True)
     return out
 
 
 def _known_and_suppressed(agent) -> tuple:
+    """(known domains, suppressed domains, known organisations {name key: [places]}, post URLs already
+    behind one of the agent's signals)."""
     with ladb.session() as db:
         known = store.known_domains(db, agent["id"])
-        names = {engine_api.name_key(n) for n in store.known_names(db, agent["id"])}
+        rows = store.known_org_places(db, agent["id"])
+        posts = store.known_signal_urls(db, agent["id"])
         supp = store.suppressed(db, agent["institute_id"]).get("DOMAIN", set())
-    return known, set(supp), names
+    orgs: Dict[str, List[Set[str]]] = {}
+    for row in rows:
+        _remember(orgs, row.get("name") or "", _here(row.get("city"), row.get("address"),
+                                                     *(row.get("signal_places") or [])))
+    return known, set(supp), orgs, posts
 
 
 def _create(agent, *, domain: str, name: str, website: str, source: str, discovery: dict,
@@ -352,4 +474,4 @@ def schedule_discovered(agent: Dict[str, Any]) -> int:
 
 
 __all__ = ["run_round", "round_limit", "maps_combos", "brief_sources", "engine_sources", "schedule_discovered",
-           "candidate_source"]
+           "candidate_source", "signal_places"]
