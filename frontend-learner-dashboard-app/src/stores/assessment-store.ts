@@ -19,6 +19,38 @@ const getAssessmentIdFromStorage = async (): Promise<string | null> => {
   return parsed?.assessment_id ?? null;
 };
 
+const isQuotaExceeded = (error: unknown): boolean =>
+  error instanceof DOMException &&
+  (error.name === "QuotaExceededError" ||
+    error.name === "NS_ERROR_DOM_QUOTA_REACHED" ||
+    error.code === 22);
+
+/**
+ * Removes every persisted live-test snapshot except `keepKey`. Each snapshot
+ * holds the whole assessment (all question HTML), so a learner who has taken
+ * many tests can fill the ~5MB localStorage quota with them.
+ */
+const purgeOtherAssessmentStates = async (keepKey: string) => {
+  const { keys } = await Storage.keys();
+  await Promise.all(
+    keys
+      .filter((key) => key.startsWith(LEGACY_STATE_KEY_PREFIX) && key !== keepKey)
+      .map((key) => Storage.remove({ key }))
+  );
+};
+
+// Logged once per page load; saveState runs every few seconds.
+let localSaveSkippedLogged = false;
+
+/** Drops an attempt's local snapshot (current and legacy key) once it is submitted. */
+export const removePersistedAssessmentState = async (attemptId: string) => {
+  const assessmentId = await getAssessmentIdFromStorage();
+  if (assessmentId) {
+    await Storage.remove({ key: buildStateKey(assessmentId, attemptId) });
+  }
+  await Storage.remove({ key: `${LEGACY_STATE_KEY_PREFIX}${attemptId}` });
+};
+
 /**
  * Whether a question actually holds an answer, derived from the answer maps.
  *
@@ -642,10 +674,26 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
         : null,
     };
 
-    await Storage.set({
-      key: buildStateKey(assessmentId, attemptId),
-      value: JSON.stringify(dataToSave),
-    });
+    const key = buildStateKey(assessmentId, attemptId);
+    const value = JSON.stringify(dataToSave);
+
+    try {
+      await Storage.set({ key, value });
+    } catch (error) {
+      if (!isQuotaExceeded(error)) throw error;
+      // Storage is full, usually with snapshots of earlier attempts. Clear
+      // them and retry once; the server copy stays the source of truth, so a
+      // skipped local snapshot must not break the test.
+      try {
+        await purgeOtherAssessmentStates(key);
+        await Storage.set({ key, value });
+      } catch (retryError) {
+        if (!localSaveSkippedLogged) {
+          localSaveSkippedLogged = true;
+          console.warn("saveState: storage full, local snapshot skipped", retryError);
+        }
+      }
+    }
   },
 
   loadState: async () => {
@@ -690,12 +738,9 @@ export const useAssessmentStore = create<AssessmentStore>((set, get) => ({
   clearPersistedState: async () => {
     const state = get();
     const attemptId = state?.assessment?.attempt_id;
-    const assessmentId = await getAssessmentIdFromStorage();
-    if (!attemptId || !assessmentId) return;
+    if (!attemptId) return;
 
-    await Storage.remove({ key: buildStateKey(assessmentId, attemptId) });
-    // Clean up the legacy key too, just in case it was migrated mid-session.
-    await Storage.remove({ key: `${LEGACY_STATE_KEY_PREFIX}${attemptId}` });
+    await removePersistedAssessmentState(attemptId);
   },
 
   setQuestionStartTime: (questionId: string, startTime: number) =>
