@@ -36,6 +36,7 @@ import { WeekNavigator, weekBoundsFor } from '../-components/week-navigator';
 import { CreateBookingDialog } from '../-components/create-booking-dialog';
 import { BookingPagesManagerDialog } from '../-components/booking-pages-manager-dialog';
 import { MyBookingLinksCard } from '../-components/my-booking-links-card';
+import { MyGoogleCard } from '../-components/my-google-card';
 import {
     ActiveFilterChip,
     MEETING_STATUS_KEY,
@@ -306,6 +307,7 @@ function MySchedulePage() {
                 </div>
 
                 <div className="flex min-w-0 flex-col gap-4">
+                    <MyGoogleCard />
                     <MyBookingLinksCard onManage={() => setManagerOpen(true)} />
                     {!error && (
                         <SideCard

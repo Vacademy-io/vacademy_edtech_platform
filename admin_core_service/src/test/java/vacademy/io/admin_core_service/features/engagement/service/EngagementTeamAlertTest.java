@@ -92,9 +92,15 @@ class EngagementTeamAlertTest {
 
         assertEquals("[\"staff\"]", m.invoke(service, List.of("staff"), "inst"));
         var e = assertThrows(java.lang.reflect.InvocationTargetException.class,
-                () -> m.invoke(service, List.of("staff", "learner", "stranger"), "inst"));
+                () -> m.invoke(service, List.of("learner"), "inst"));
         assertTrue(e.getCause() instanceof VacademyException);
         assertTrue(e.getCause().getMessage().contains("learner"));
-        assertTrue(e.getCause().getMessage().contains("stranger"));
+        var stranger = assertThrows(java.lang.reflect.InvocationTargetException.class,
+                () -> m.invoke(service, List.of("stranger"), "inst"));
+        assertTrue(stranger.getCause().getMessage().contains("stranger"));
+        // One contact only: they are alerted and their Google account books the engine's meetings.
+        var tooMany = assertThrows(java.lang.reflect.InvocationTargetException.class,
+                () -> m.invoke(service, List.of("staff", "learner"), "inst"));
+        assertTrue(tooMany.getCause().getMessage().contains("one team member"));
     }
 }

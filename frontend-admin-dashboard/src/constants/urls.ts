@@ -1493,6 +1493,8 @@ export const AUTOSUGGEST_USERS = `${BASE_URL}/auth-service/v1/user/autosuggest-u
 
 // CRM Meetings (booking pages + host calendars)
 export const MEETINGS_BASE = `${BASE_URL}/admin-core-service/v1/meetings`;
+export const MEETINGS_MY_GOOGLE = `${MEETINGS_BASE}/my-google`;
+export const MEETINGS_MY_GOOGLE_INITIATE = `${MEETINGS_BASE}/my-google/initiate`;
 export const MEETINGS_BOOKING_PAGE_CREATE = `${MEETINGS_BASE}/booking-page`;
 export const MEETINGS_BOOKING_PAGE_BY_ID = (id: string) => `${MEETINGS_BASE}/booking-page/${id}`;
 export const MEETINGS_BOOKING_PAGES_LIST = `${MEETINGS_BASE}/booking-pages`;

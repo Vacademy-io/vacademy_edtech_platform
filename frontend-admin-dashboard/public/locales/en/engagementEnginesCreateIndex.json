@@ -199,14 +199,15 @@
         "leave": "Leave"
     },
     "assetsStep": {
-        "lead": "Add material the agent can send on WhatsApp when a lead asks for it. You can skip this and add material later from the engine page."
+        "lead": "Add material the agent can send on WhatsApp when a lead asks for it. You can skip this and add material later from the engine page.",
+        "editLead": "Add, replace or remove material the agent can send on WhatsApp when a lead asks for it. Changes here are saved straight away, without saving the rest of the engine."
     },
     "team": {
-        "title": "Who to alert when a person is needed",
-        "hint": "When the agent can't handle a reply on its own, or someone asks for material it doesn't have, these people get a system alert and an email. The lead's own counsellor is always told as well.",
+        "title": "Who to alert and book meetings with",
+        "hint": "When the agent can't handle a reply on its own, or someone asks for material it doesn't have, this person gets a system alert and an email. Meetings the agent books use their Google account if they've connected one in My Schedule, otherwise the institute's default Google account. The lead's own counsellor is always told as well.",
         "searchPlaceholder": "Search team members",
         "empty": "No team members found",
-        "note": "Pick up to {{max}} people.",
+        "note": "Pick one person.",
         "loadFailed": "Couldn't load your team. Try again in a moment."
     }
 }

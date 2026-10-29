@@ -3,13 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { fetchEligibleOrgUsers } from '@/routes/manage-institute/teams/-services/institute-users-service';
 import { CheckList, type CheckOption } from './CheckList';
 
-/** Matches the backend cap (EngagementEngineService.MAX_NOTIFY_USERS). */
-export const MAX_TEAM_CONTACTS = 10;
-
 /**
- * Pick the team members an engine alerts (bell alert and email) whenever it needs a person: an
+ * Pick the ONE team member an engine alerts (bell alert and email) whenever it needs a person: an
  * escalated reply, or a request for an asset it does not hold. The lead's own counsellor is told
- * as well, so this list is for the extra people (a sales head, a back-office owner).
+ * as well. The meetings the engine books use this person's Google account when they have
+ * connected one in My Schedule, else the institute default.
  */
 export function TeamContactsPicker({
     instituteId,
@@ -43,11 +41,12 @@ export function TeamContactsPicker({
             <CheckList
                 options={options}
                 selected={selected}
-                onChange={(next) => onChange(next.slice(0, MAX_TEAM_CONTACTS))}
+                onChange={onChange}
+                single
                 searchPlaceholder={t('team.searchPlaceholder')}
                 emptyText={t('team.empty')}
                 loading={isLoading}
-                note={t('team.note', { max: MAX_TEAM_CONTACTS })}
+                note={t('team.note')}
             />
             {isError && (
                 <p className="text-caption text-danger-600" role="alert">

@@ -42,5 +42,21 @@
         "noLink": "No link yet",
         "more": "+{{count}} more",
         "show": "Show my booking links"
+    },
+    "googleCard": {
+        "title": "Your Google calendar",
+        "connected": "Connected",
+        "reconnect": "Reconnect needed",
+        "connectedDescription": "Meet links and calendar events for your meetings use this account.",
+        "disconnectedDescription": "Connect your own Google account so your meetings use your calendar and Meet links.",
+        "connect": "Connect Google account",
+        "reconnect_btn": "Reconnect",
+        "redirecting": "Redirecting…",
+        "disconnect": "Disconnect",
+        "connectError": "Couldn't start the Google connection. Please try again.",
+        "disconnectError": "Couldn't disconnect Google. Please try again.",
+        "justConnected": "Google account connected.",
+        "connectFailed": "Google connection failed. Please try again.",
+        "disconnected": "Google account disconnected."
     }
 }

@@ -28,6 +28,7 @@ export function CheckList({
     onSearchChange,
     note,
     labelFor,
+    single = false,
 }: {
     options: CheckOption[];
     selected: string[];
@@ -40,6 +41,8 @@ export function CheckList({
     note?: string;
     /** Label of a picked value that is not in `options` (filtered out by a server search). */
     labelFor?: (value: string) => string | undefined;
+    /** Pick exactly one: choosing a row replaces the current pick, and there is no select-all. */
+    single?: boolean;
 }) {
     const { t } = useTranslation('engagementEnginesCreateIndex');
     const listId = useId();
@@ -56,7 +59,13 @@ export function CheckList({
 
     const toggle = (value: string) =>
         onChange(
-            selectedSet.has(value) ? selected.filter((v) => v !== value) : [...selected, value]
+            single
+                ? selectedSet.has(value)
+                    ? []
+                    : [value]
+                : selectedSet.has(value)
+                  ? selected.filter((v) => v !== value)
+                  : [...selected, value]
         );
     const toggleAllShown = () =>
         allShownPicked
@@ -120,7 +129,7 @@ export function CheckList({
                             className="h-8 bg-white ps-8"
                         />
                     </div>
-                    {shown.length > 0 && (
+                    {!single && shown.length > 0 && (
                         <button
                             type="button"
                             onClick={toggleAllShown}

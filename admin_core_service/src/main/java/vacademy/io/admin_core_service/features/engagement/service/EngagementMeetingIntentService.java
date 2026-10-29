@@ -228,7 +228,8 @@ public class EngagementMeetingIntentService {
                     var dto = MeetingBookingRequestDTO.builder()
                             .instituteId(engine.getInstituteId()).bookingPageId(page.getId())
                             .startTime(wanted.toString()).audienceResponseId(responseId).inviteeUserId(userId)
-                            .inviteeName(name).inviteeEmail(email).inviteePhone(phone).build();
+                            .inviteeName(name).inviteeEmail(email).inviteePhone(phone)
+                            .googleAccountUserId(meetingOwnerOf(engine)).build();
                     var host = new vacademy.io.common.auth.dto.UserServiceDTO();
                     host.setUserId(page.getHostUserId());
                     host.setUsername("engagement-engine");
@@ -267,6 +268,20 @@ public class EngagementMeetingIntentService {
                 + ". The engine replied with free times and the booking link. Their message: " + text, null);
         sendFor(engine, memberId, channel, offer, "Re: your meeting", 65, "Offered the lead free times.");
         return true;
+    }
+
+    /**
+     * The engine's chosen team contact: their connected Google account (if any) is used for the
+     * meeting's Meet link and calendar event; none or unconnected → the institute default.
+     */
+    static String meetingOwnerOf(EngagementEngine engine) {
+        try {
+            JsonNode n = new ObjectMapper().readTree(engine.getNotifyUserIds() == null ? "[]" : engine.getNotifyUserIds());
+            String id = n.isArray() && n.size() > 0 ? n.get(0).asText("") : "";
+            return id.isBlank() ? null : id;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     static String bookingPageIdOf(EngagementEngine engine) {

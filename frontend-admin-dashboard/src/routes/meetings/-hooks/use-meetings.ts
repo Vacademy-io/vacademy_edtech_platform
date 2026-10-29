@@ -3,11 +3,13 @@ import {
     createBookingPage,
     createMeetingBooking,
     deleteBookingPage,
+    disconnectMyGoogle,
     fetchBookingPages,
     fetchBookingsByLead,
     fetchMeetingsScope,
     fetchMyCalendar,
     fetchTeamCalendar,
+    getMyGoogle,
     updateBookingPage,
 } from '../-services/meetings-services';
 import {
@@ -23,6 +25,7 @@ export const MEETINGS_KEYS = {
     scope: 'meetings-scope',
     bookingPages: 'meetings-booking-pages',
     byLead: 'meetings-by-lead',
+    myGoogle: 'meetings-my-google',
 } as const;
 
 export const useMyCalendar = (
@@ -147,5 +150,21 @@ export const useCreateMeetingBooking = () => {
             queryClient.invalidateQueries({ queryKey: [MEETINGS_KEYS.teamCalendar] });
             queryClient.invalidateQueries({ queryKey: [MEETINGS_KEYS.byLead] });
         },
+    });
+};
+
+export const useMyGoogle = (instituteId: string | undefined) =>
+    useQuery({
+        queryKey: [MEETINGS_KEYS.myGoogle, instituteId],
+        queryFn: () => getMyGoogle(instituteId as string),
+        enabled: !!instituteId,
+        staleTime: 30 * 1000,
+    });
+
+export const useDisconnectMyGoogle = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: (instituteId: string) => disconnectMyGoogle(instituteId),
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: [MEETINGS_KEYS.myGoogle] }),
     });
 };

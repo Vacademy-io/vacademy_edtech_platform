@@ -522,7 +522,8 @@ public class EngagementEngineService {
         return historyDesc.get(historyDesc.size() - 1).getBaseText(); // version 1 holds the immutable base
     }
 
-    static final int MAX_NOTIFY_USERS = 10;
+    /** One contact: they are alerted, and their Google account (if connected) books the engine's meetings. */
+    static final int MAX_NOTIFY_USERS = 1;
 
     /**
      * The alert contacts as stored JSON. Each must hold a staff role at THIS institute: the alert
@@ -532,7 +533,7 @@ public class EngagementEngineService {
     private String validNotifyUsersJson(List<String> ids, String instituteId) {
         List<String> clean = ids.stream().filter(i -> i != null && !i.isBlank()).map(String::trim).distinct().toList();
         if (clean.size() > MAX_NOTIFY_USERS) {
-            throw new VacademyException("Pick at most " + MAX_NOTIFY_USERS + " team members to alert");
+            throw new VacademyException("Pick one team member to alert");
         }
         if (!clean.isEmpty()) {
             if (authService == null) throw new VacademyException("Team members can't be verified right now");

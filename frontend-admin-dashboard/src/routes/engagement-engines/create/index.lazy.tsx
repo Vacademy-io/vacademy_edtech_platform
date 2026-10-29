@@ -108,8 +108,16 @@ export const Route = createLazyFileRoute('/engagement-engines/create/')({
     component: CreateEnginePage,
 });
 
-const STEP_KEYS_EDIT = ['basics', 'dataPoints', 'channels', 'audience', 'cadence', 'review'] as const;
-/** Creating adds the optional Assets step; a saved engine manages its assets on its own page. */
+const STEP_KEYS_EDIT = [
+    'basics',
+    'dataPoints',
+    'channels',
+    'assets',
+    'audience',
+    'cadence',
+    'review',
+] as const;
+/** The optional Assets step: held locally while creating, saved live on an existing engine. */
 const STEP_KEYS_CREATE = [
     'basics',
     'dataPoints',
@@ -417,7 +425,8 @@ function CreateEnginePage() {
         setFirstTouch(qh.firstTouch === 'SCHEDULED' ? 'SCHEDULED' : 'IMMEDIATE');
         setHoldoutPct(String(e.holdoutPct ?? 0));
         setFirstN(e.firstN != null ? String(e.firstN) : '');
-        setNotifyUserIds(safeParse<string[]>(e.notifyUserIds, []));
+        // One contact now; an older engine with several keeps its first.
+        setNotifyUserIds(safeParse<string[]>(e.notifyUserIds, []).slice(0, 1));
         setAdvancedOpen((e.holdoutPct ?? 0) > 0 || e.firstN != null);
         setBrief('');
         setPrefilledFor(e.id);
@@ -591,7 +600,7 @@ function CreateEnginePage() {
             holdoutPct: Math.max(0, Math.min(100, Number(holdoutPct) || 0)),
             firstN: firstN.trim() ? Math.max(0, Number(firstN)) : undefined,
             notifyUserIds,
-            // Create only: a saved engine's assets are managed through its own endpoints.
+            // Create only: on an existing engine the Assets step saves through its own endpoints.
             assets: isEdit || assets.length === 0 ? undefined : assets.map(toAssetRequest),
         };
     };
@@ -945,8 +954,12 @@ function CreateEnginePage() {
 
     const assetsStep = (
         <div className="flex flex-col gap-4">
-            <StepLead>{t('assetsStep.lead')}</StepLead>
-            <AssetsPanel items={assets} onItemsChange={setAssets} />
+            <StepLead>{isEdit ? t('assetsStep.editLead') : t('assetsStep.lead')}</StepLead>
+            {isEdit && editId ? (
+                <AssetsPanel engineId={editId} />
+            ) : (
+                <AssetsPanel items={assets} onItemsChange={setAssets} />
+            )}
         </div>
     );
 
