@@ -16,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Supplier;
 
 /**
@@ -30,6 +31,10 @@ import java.util.function.Supplier;
  *       (symbol, marks, what it covers); the copy is then marked in it and each written
  *       answer scores max minus its deductions. Validated by ai_service
  *       (copy_check/deduction_scheme.py); kept as sent, at most 8 entries.</li>
+ *   <li>{@code answer_language} - the language the copies are written in (en, hi, sa, mr, ur,
+ *       bn, ta, te, fr, es, de, ar, zh, pa, gu); decides which model reads the handwriting and
+ *       how its language is judged (ai_service copy_check/answer_language.py). Unset = as
+ *       before.</li>
  * </ul>
  * An assessment without its own instructions / language choice takes the institute's
  * ({@code ASSESSMENT_SETTING.aiCopyCheck}). Sent to ai_service as {@code exam_context};
@@ -63,14 +68,19 @@ public final class CopyCheckConfig {
         private String instructions;
         private String languageFeedback;
         private List<Map<String, Object>> deductionScheme;
+        private String answerLanguage;
 
         boolean isEmpty() {
             return subject == null && level == null && instructions == null && languageFeedback == null
-                    && deductionScheme == null;
+                    && deductionScheme == null && answerLanguage == null;
         }
     }
 
     static final int DEDUCTION_SCHEME_CAP = 8;
+
+    /** The answer languages the dashboard offers (ai_service answer_language.py). */
+    static final Set<String> ANSWER_LANGUAGES = Set.of(
+            "en", "hi", "sa", "mr", "ur", "bn", "ta", "te", "fr", "es", "de", "ar", "zh", "pa", "gu");
 
     /** Trimmed, capped, HIGHLIGHT/OFF only; blanks become null. Never null. */
     public static Settings normalize(Settings in) {
@@ -81,6 +91,7 @@ public final class CopyCheckConfig {
                 .instructions(text(in.getInstructions(), INSTRUCTIONS_CAP))
                 .languageFeedback(languageMode(in.getLanguageFeedback()))
                 .deductionScheme(deductionScheme(in.getDeductionScheme()))
+                .answerLanguage(answerLanguage(in.getAnswerLanguage()))
                 .build();
     }
 
@@ -94,6 +105,13 @@ public final class CopyCheckConfig {
             }
         }
         return out.isEmpty() ? null : out;
+    }
+
+    /** A listed language code, lower-case; null for blank or anything else. */
+    public static String answerLanguage(Object value) {
+        if (value == null) return null;
+        String v = value.toString().trim().toLowerCase();
+        return ANSWER_LANGUAGES.contains(v) ? v : null;
     }
 
     /** HIGHLIGHT / OFF, or null for anything else. */
@@ -161,6 +179,7 @@ public final class CopyCheckConfig {
         if (instructions != null) ctx.put("instructions", instructions);
         if (HIGHLIGHT.equals(language)) ctx.put("language_feedback", HIGHLIGHT);
         if (own.getDeductionScheme() != null) ctx.put("deduction_scheme", own.getDeductionScheme());
+        if (own.getAnswerLanguage() != null) ctx.put("answer_language", own.getAnswerLanguage());
         return ctx.isEmpty() ? null : ctx;
     }
 

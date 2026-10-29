@@ -341,18 +341,40 @@ _DEVA_SCALE = 1.18
 _DEVA_LINE = 1.25
 
 
-def _has_devanagari(text: str) -> bool:
-    return bool(_DEVANAGARI.search(text or ""))
+# The scripts a paper may be answered in besides Latin (answer_language.py):
+# Arabic and Urdu, the Indian scripts from Devanagari to Sinhala, CJK and
+# Hangul. Latin Extended, Greek and Cyrillic (maths symbols, transliterated
+# names on English copies) keep the Latin pen exactly as before. The pen's Latin paths would
+# write them as blanks; they are set whole like Devanagari, and MuPDF falls
+# back to its built-in Noto faces for every glyph Kalam lacks (Bengali, Tamil,
+# Telugu, Naskh Arabic, Droid Sans Fallback for CJK), right-to-left included.
+_SHAPED = re.compile("[\u0600-\u06FF\u0750-\u077F\u0900-\u0DFF\u3000-\u30FF\u3400-\u4DBF"
+                     "\u4E00-\u9FFF\uA8E0-\uA8FF\uAC00-\uD7AF\uFB50-\uFDFF\uFE70-\uFEFF"
+                     "\uFF00-\uFFEF]")
+
+
+def _is_rtl(text: Any) -> bool:
+    """Written right to left: most of its letters are Arabic-script or Hebrew."""
+    import unicodedata
+
+    letters = [ch for ch in str(text or "") if unicodedata.category(ch).startswith("L")]
+    rtl = sum(1 for ch in letters if unicodedata.bidirectional(ch) in ("R", "AL"))
+    return bool(letters) and rtl * 2 > len(letters)
+
+
+def _needs_shaping(text: str) -> bool:
+    """Text the Latin-1 pen cannot write: set whole through the shaper."""
+    return bool(_SHAPED.search(text or ""))
 
 
 def _script_safe(text: str) -> str:
-    """_latin1 for Latin text; text with Devanagari keeps its Devanagari (and
+    """_latin1 for Latin text; text in another script keeps that script (and
     the joiners conjuncts use) as well as its Latin-1."""
-    if not _has_devanagari(text):
+    if not _needs_shaping(text):
         return _latin1(text)
     for bad, good in _LATIN1_SUBSTITUTIONS.items():
         text = text.replace(bad, good)
-    return "".join(ch if ord(ch) < 256 or _DEVANAGARI.match(ch) or ch in "‌‍" else " "
+    return "".join(ch if ord(ch) < 256 or _SHAPED.match(ch) or ch in "\u200c\u200d" else " "
                    for ch in text)
 
 
@@ -374,7 +396,23 @@ def _deva_width(text: str, size: float, scale: float = _DEVA_SCALE) -> float:
         return 0.62 * size * scale * max(1, len(text))
     # Unshaped advances: a conjunct is a little narrower than its parts, so
     # this errs wide, which only costs a little blank paper.
-    return font.text_length(text, fontsize=size * scale) * 1.04
+    if all(font.has_glyph(ord(ch)) or ch.isspace() for ch in text):
+        return font.text_length(text, fontsize=size * scale) * 1.04
+    # Glyphs Kalam lacks come from MuPDF's fallback faces: a CJK character
+    # is a full em, a letter of the other scripts about 0.6 em (a combining
+    # vowel sign, none).
+    import unicodedata
+    width = 0.0
+    for ch in text:
+        if font.has_glyph(ord(ch)) or ch.isspace():
+            width += font.text_length(ch, fontsize=size * scale)
+        elif unicodedata.category(ch) in ("Mn", "Me", "Cf"):
+            continue
+        elif unicodedata.east_asian_width(ch) in ("W", "F"):
+            width += size * scale
+        else:
+            width += 0.6 * size * scale
+    return width * 1.04
 
 
 def _deva_write(page: Any, box: Any, lines: list[str], size: float, colour,
@@ -1286,7 +1324,7 @@ def _ink_words(imap: Optional[dict], rect: Any, a: float, b: float, words: Any,
 
 def _correction_metrics(text: str, size: float) -> tuple[float, float]:
     """(width, line step) in points of a correction written at `size`."""
-    if _has_devanagari(text):
+    if _needs_shaping(text):
         return _deva_width(text, size), size * _DEVA_SCALE * _DEVA_LINE
     return _pen_text_width(text, size), size * 1.15
 
@@ -1314,13 +1352,13 @@ def _write_correction(page: Any, box: Any, lines: list[str], size: float, rng) -
     import fitz
 
     colour = _STYLE_COLOR["language"]
-    if any(_has_devanagari(ln) for ln in lines) and _deva_write(page, box, lines, size, colour):
+    if any(_needs_shaping(ln) for ln in lines) and _deva_write(page, box, lines, size, colour):
         return
     step = _correction_metrics(" ".join(lines), size)[1]
     for i, line in enumerate(lines):
         # A Devanagari line the shaper refused is not given to the Latin pen,
         # which would write it as blanks; its Latin part still goes down.
-        line = _latin1(line).strip() if _has_devanagari(line) else line
+        line = _latin1(line).strip() if _needs_shaping(line) else line
         if not line:
             continue
         width = _correction_metrics(line, size)[0]
@@ -1359,6 +1397,16 @@ def _draw_language(page: Any, rect: Any, ann: dict[str, Any], line_h: float,
         return None
     f0 = max(0.0, min(1.0, f0))
     f1 = max(f0, min(1.0, f1))
+    words = ann.get("words")
+    if _is_rtl(ann.get("anchor_text")):
+        # Urdu / Arabic run right to left: the text's first word is the ink's
+        # rightmost, so the span and the word numbers are counted from the right.
+        f0, f1 = 1.0 - f1, 1.0 - f0
+        try:
+            i0, i1, n = (int(v) for v in list(words)[:3])
+            words = [n - 1 - i1, n - 1 - i0, n]
+        except (TypeError, ValueError):
+            words = None
     ink = _INK_SPAN[0]
     a = max(ink[0], rect.x0) if ink else rect.x0
     b = min(ink[1], rect.x1) if ink else rect.x1
@@ -1366,7 +1414,7 @@ def _draw_language(page: Any, rect: Any, ann: dict[str, Any], line_h: float,
         a, b = rect.x0, rect.x1
     x0 = a + (b - a) * f0
     x1 = a + (b - a) * f1
-    found = _ink_words(_INK_MAP[0], rect, a, b, ann.get("words"), line_h)
+    found = _ink_words(_INK_MAP[0], rect, a, b, words, line_h)
     if found is not None:
         x0, x1 = found
     if x1 - x0 < 10.0:
@@ -3588,8 +3636,8 @@ def _wrap_plain(text: str, fontname: str, size: float, width: float) -> list[str
     import fitz
 
     def length(s: str) -> float:
-        # A line with Hindi in it is set in the Devanagari face (_deva_write).
-        if _has_devanagari(s):
+        # A line in another script is set by the shaper (_deva_write).
+        if _needs_shaping(s):
             return _deva_width(s, size, scale=1.0)
         return fitz.get_text_length(s, fontname=fontname, fontsize=size)
 
@@ -3702,7 +3750,7 @@ def _draw_comment_panels(doc: Any, panels: dict[int, Any],
                 if y + body_size * 1.3 > bottom:
                     break
                 y += body_size * 1.3
-                if _has_devanagari(line) and _deva_write(
+                if _needs_shaping(line) and _deva_write(
                         page, fitz.Rect(x0, y - body_size * 1.05, x1, y + body_size * 0.35),
                         [line], body_size, _PANEL_TEXT, scale=1.0):
                     continue

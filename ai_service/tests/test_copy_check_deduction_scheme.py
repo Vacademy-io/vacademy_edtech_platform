@@ -33,7 +33,7 @@ def test_parse_reads_a_valid_scheme_and_refuses_a_broken_one():
 
 def test_a_scheme_turns_the_language_pass_on():
     assert lf.enabled({"deduction_scheme": SCHEME})
-    assert not lf.enabled({"deduction_scheme": SCHEME, "answer_language": "French"})
+    assert not lf.enabled({"deduction_scheme": SCHEME, "answer_language": "Kannada"})
 
 
 def test_entry_for_takes_the_models_symbol_else_the_kind():
