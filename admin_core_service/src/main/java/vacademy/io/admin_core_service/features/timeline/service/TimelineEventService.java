@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -46,6 +47,10 @@ public class TimelineEventService {
 
         @Autowired
         private ObjectMapper objectMapper;
+
+        /** Lazily resolved: the engagement engine's wake hook depends on services that log here. */
+        @Autowired
+        private ObjectProvider<TimelineEventHook> hooks;
 
         // ── Write: ACTIVITY events ────────────────────────────────────────────
 
@@ -153,6 +158,7 @@ public class TimelineEventService {
                                 .build();
 
                 TimelineEvent savedEvent = timelineEventRepository.save(event);
+                notifyHooks(savedEvent);
                 return mapToDTO(savedEvent);
         }
 
@@ -394,7 +400,20 @@ public class TimelineEventService {
                                 .build();
 
                 timelineEventRepository.save(event);
+                notifyHooks(event);
                 logger.debug("Logged {} event: {} on {}[{}]", category, actionType, type, typeId);
+        }
+
+        private void notifyHooks(TimelineEvent event) {
+                if (hooks == null) return;
+                hooks.orderedStream().forEach(hook -> {
+                        try {
+                                hook.onEventSaved(event);
+                        } catch (Exception e) {
+                                logger.warn("Timeline hook {} failed on {}[{}]: {}", hook.getClass().getSimpleName(),
+                                                event.getType(), event.getTypeId(), e.getMessage());
+                        }
+                });
         }
 
         private TimelineEventDTO mapToDTO(TimelineEvent event) {

@@ -183,7 +183,7 @@ public class EngagementDecisionService {
             return false;
         }
         if (verdict == PolicyGate.Verdict.SKIP_CAPPED) {
-            reschedule(member, engine, now, true);
+            rescheduleCapped(member, now);
             return false;
         }
 
@@ -209,19 +209,25 @@ public class EngagementDecisionService {
         }
 
         // 2. Deterministic wake gate — zero tokens for most members.
-        String fingerprint = quantizedFingerprint(bundle.payloadsFor(member.getId()));
+        Map<String, JsonNode> payloads = bundle.payloadsFor(member.getId());
+        String fingerprint = quantizedFingerprint(payloads);
+        if (legacyFingerprint(payloads).equals(member.getWakeFingerprint())) {
+            // Stored before the CRM bands were added: the same state, not a change. Without this the
+            // new formula would send every member to the LLM at its next look, all at once.
+            member.setWakeFingerprint(fingerprint);
+        }
         if (!shouldWake(member, engine, fingerprint, bundle, now)) {
             // A gate sleep is not a no-op decision, so it must not stretch the backoff. Counting
             // it (every cadence/4 re-check) doubled the required wait faster than time passed:
             // after one NO_OP at a 72h cadence the next LLM look came ~30 days later.
-            member.setWakeFingerprint(fingerprint);
-            reschedule(member, engine, now, false);
+            memberRepository.recordGateSleep(member.getId(), fingerprint, now,
+                    now.plus(Duration.ofHours(Math.max(engine.getCadenceHours() / 4, 6))));
             return false;
         }
 
         // 3. The LLM.
         EngagementBrainClient.Decision d = brain.decide(
-                engine, prompt.getCompiledText(), bundle.renderFor(member.getId()), now,
+                engine, prompt.getCompiledText(), withWhyNow(member, bundle.renderFor(member.getId())), now,
                 enabledChannels, whatsappTemplates);
 
         // 4. Persist the outcome — TASK (or SIMULATED for DRY_RUN) or NO_OP.
@@ -275,6 +281,7 @@ public class EngagementDecisionService {
             boolean draftReady = !"WHATSAPP".equals(chosenChannel) || action.getTemplateName() != null;
             boolean autoSend = !dryRun
                     && !everReplied(bundle, member)
+                    && !humanTouchedSinceLastDecision(member)
                     && chosenChannel != null
                     && !"AI_CALL".equals(chosenChannel)   // AI calls are task-only; never auto-send them
                     && channelAutoEnabled(engine, chosenChannel)
@@ -328,6 +335,16 @@ public class EngagementDecisionService {
             if (c != null && !c.isNull() && parseInstant(c.path("lastReplyAt").asText(null)) != null) return true;
         }
         return false;
+    }
+
+    /**
+     * A counsellor wrote a note, closed a follow-up or called the lead since the engine last decided:
+     * this decision drafts for the inbox and never auto-sends, so the family does not hear from the
+     * engine minutes after they spoke to a person.
+     */
+    static boolean humanTouchedSinceLastDecision(EngagementMember m) {
+        return m.getHumanTouchAt() != null
+                && (m.getLastDecidedAt() == null || m.getHumanTouchAt().isAfter(m.getLastDecidedAt()));
     }
 
     /** channels.maxTouches: the most messages one person gets from this engine; null = no limit. */
@@ -521,9 +538,48 @@ public class EngagementDecisionService {
     private boolean shouldWake(EngagementMember m, EngagementEngine engine, String fingerprint,
                                DataPointRegistry.CohortBundle bundle, Instant now) {
         if (m.getLastDecidedAt() == null) return true;                    // first look
+        if (wokenSinceLastDecision(m)) return true;                       // CRM activity asked for a look
         if (hasUnansweredReply(bundle, m)) return true;                   // always
         if (!fingerprint.equals(m.getWakeFingerprint())) return true;     // state moved (banded)
         return cadenceElapsed(m, engine, now);                            // THE CLOCK — never remove
+    }
+
+    /**
+     * When CRM activity woke this member, say so first, so the model answers what just happened
+     * (a re-enquiry is someone who came back) rather than treating it as a routine check.
+     */
+    static Map<String, String> withWhyNow(EngagementMember m, Map<String, String> blocks) {
+        if (!wokenSinceLastDecision(m) || m.getWakeReason() == null) return blocks;
+        Map<String, String> out = new java.util.LinkedHashMap<>();
+        out.put("why_now", "WHY NOW: " + whyNow(m.getWakeReason()) + " (at " + m.getWokenAt() + ")."
+                + (humanTouchedSinceLastDecision(m)
+                        ? " A counsellor was in touch since your last look: draft for them, do not repeat what they said."
+                        : ""));
+        out.putAll(blocks);
+        return out;
+    }
+
+    private static String whyNow(String reason) {
+        return switch (reason) {
+            case EngagementWakeService.NOTE -> "a counsellor added a note on this lead";
+            case EngagementWakeService.HUMAN_CALL -> "a counsellor called this lead";
+            case EngagementWakeService.AI_CALL -> "an AI call with this lead just ended";
+            case EngagementWakeService.CALL_ANALYZED -> "the analysis of a call with this lead is in";
+            case EngagementWakeService.FOLLOWUP -> "a counsellor scheduled or closed a follow-up";
+            case EngagementWakeService.FOLLOWUP_OVERDUE -> "a follow-up promised to this lead is overdue";
+            case EngagementWakeService.STATUS -> "the lead's status changed";
+            case EngagementWakeService.OWNER_CHANGED -> "the lead's counsellor changed";
+            case EngagementWakeService.RE_ENQUIRY -> "this person came back and enquired again";
+            case EngagementWakeService.LIST_CHANGED -> "the lead moved between lead lists";
+            case EngagementWakeService.PAYMENT -> "a payment was received from this lead";
+            default -> "CRM activity on this lead";
+        };
+    }
+
+    /** A note, call outcome, status change... (B4) landed after the last decision began. */
+    static boolean wokenSinceLastDecision(EngagementMember m) {
+        return m.getWokenAt() != null
+                && (m.getLastDecidedAt() == null || m.getWokenAt().isAfter(m.getLastDecidedAt()));
     }
 
     private boolean hasUnansweredReply(DataPointRegistry.CohortBundle bundle, EngagementMember m) {
@@ -551,11 +607,9 @@ public class EngagementDecisionService {
         return m.getLastDecidedAt().plus(Duration.ofHours(cappedHours)).isBefore(now);
     }
 
-    private void reschedule(EngagementMember m, EngagementEngine engine, Instant now, boolean capped) {
-        long hours = capped
-                ? Duration.ofDays(1).toHours()                 // capped: try tomorrow
-                : Math.max(engine.getCadenceHours() / 4, 6);   // gate said sleep: re-check fraction of cadence
-        m.setNextActionAt(now.plus(Duration.ofHours(hours)));
+    /** Contact cap reached: try tomorrow. (A gate sleep goes through recordGateSleep instead.) */
+    private void rescheduleCapped(EngagementMember m, Instant now) {
+        m.setNextActionAt(now.plus(Duration.ofDays(1)));
         memberRepository.save(m);
     }
 
@@ -565,7 +619,60 @@ public class EngagementDecisionService {
      * never skips where it matters: the saving would anti-correlate with the value.
      * NOTE: no prompt version in here — one admin edit must not re-decide every member at once.
      */
-    private String quantizedFingerprint(Map<String, JsonNode> payloads) {
+    String quantizedFingerprint(Map<String, JsonNode> payloads) {
+        StringBuilder sb = legacyFingerprintText(payloads);
+        crmBands(payloads, sb);
+        return sha256(sb.toString());
+    }
+
+    /** The fingerprint as computed before the CRM bands, so a stored one can be recognised. */
+    String legacyFingerprint(Map<String, JsonNode> payloads) {
+        return sha256(legacyFingerprintText(payloads).toString());
+    }
+
+    /**
+     * B4 safety net for a missed wake: what a person last did on the lead. These are event times,
+     * not "time since", so they only change when something new happens: the newest staff timeline
+     * entry, the open follow-ups (count, any overdue) and the last closed one, the newest call and
+     * whether its analysis is in. Only present when the engine reads those data points.
+     */
+    static void crmBands(Map<String, JsonNode> payloads, StringBuilder sb) {
+        JsonNode timeline = payloads.get("crm_timeline");
+        if (timeline != null) {
+            String newestStaff = "";
+            for (JsonNode e : timeline.path("events")) {
+                String at = e.path("at").asText("");
+                if ("STAFF".equals(e.path("by").asText()) && at.compareTo(newestStaff) > 0) newestStaff = at;
+            }
+            sb.append("|staff:").append(newestStaff);
+        }
+        JsonNode followups = payloads.get("crm_followups");
+        if (followups != null) {
+            int open = 0;
+            boolean overdue = false;
+            for (JsonNode o : followups.path("open")) {
+                open++;
+                overdue |= o.path("overdue").asBoolean(false);
+            }
+            sb.append("|fu:").append(countBand(open)).append(overdue ? "/late" : "")
+              .append("/closed:").append(followups.path("lastClosed").path("closedAt").asText(""));
+        }
+        JsonNode calls = payloads.get("ai_calls");
+        if (calls != null) {
+            String newestAt = "";
+            String analysis = "";
+            for (JsonNode c : calls.path("calls")) {
+                String at = c.path("at").asText("");
+                if (at.compareTo(newestAt) > 0) {
+                    newestAt = at;
+                    analysis = c.path("analysis").asText("");
+                }
+            }
+            sb.append("|call:").append(newestAt).append("/").append(analysis);
+        }
+    }
+
+    private StringBuilder legacyFingerprintText(Map<String, JsonNode> payloads) {
         StringBuilder sb = new StringBuilder();
         JsonNode ledger = payloads.get("ledger");
         if (ledger != null) {
@@ -599,7 +706,7 @@ public class EngagementDecisionService {
         if (crm != null) {
             sb.append("|lead:").append(crm.path("status").asText("")).append("/").append(crm.path("tier").asText(""));
         }
-        return sha256(sb.toString());
+        return sb;
     }
 
     /** Days-since bucketed 0/1/3/7/14/30+ — the quantization that keeps active users from thrashing the gate. */
