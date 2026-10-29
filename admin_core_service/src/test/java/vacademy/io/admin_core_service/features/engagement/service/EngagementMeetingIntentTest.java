@@ -329,6 +329,67 @@ class EngagementMeetingIntentTest {
     }
 
     @Nested
+    @DisplayName("a lead who asks for a person")
+    class Handoff {
+        @Test
+        @DisplayName("English and Hinglish asks are recognised; ordinary replies are not")
+        void patterns() {
+            for (String t : new String[]{"I want to talk to a counsellor", "can someone call me", "please connect me to your team",
+                    "mujhe counsellor se baat karni hai", "kisi se baat karwa do", "I would like to speak to a human"}) {
+                assertTrue(EngagementMeetingIntentService.WANTS_PERSON.matcher(t).find(), t);
+            }
+            for (String t : new String[]{"Thanks, I will check", "what is the fee", "ok see you friday"}) {
+                assertFalse(EngagementMeetingIntentService.WANTS_PERSON.matcher(t).find(), t);
+            }
+        }
+
+        @Test
+        @DisplayName("the team is alerted, a task waits, and the lead is told someone will be in touch")
+        void alertsAndAcknowledges() {
+            var svc = spy(new EngagementMeetingIntentService());
+            var actions = mock(EngagementActionRepository.class);
+            var poc = mock(EngagementPointsOfContact.class);
+            var dispatcher = mock(EngagementDispatcher.class);
+            var responses = mock(vacademy.io.admin_core_service.features.audience.repository.AudienceResponseRepository.class);
+            ReflectionTestUtils.setField(svc, "actionRepository", actions);
+            ReflectionTestUtils.setField(svc, "pointsOfContact", poc);
+            ReflectionTestUtils.setField(svc, "dispatcher", dispatcher);
+            ReflectionTestUtils.setField(svc, "audienceResponseRepository", responses);
+            ReflectionTestUtils.setField(svc, "memberRepository", mock(EngagementMemberRepository.class));
+            var lead = new vacademy.io.admin_core_service.features.audience.entity.AudienceResponse();
+            lead.setParentName("Priyanshu");
+            lead.setParentMobile("+919968858268");
+            when(responses.findById("r1")).thenReturn(Optional.of(lead));
+            when(actions.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            when(actions.claimForDispatch(any(), any(), any())).thenReturn(1);
+            when(dispatcher.dispatchClaimed(any(), any(), any(), eq(true))).thenAnswer(inv -> inv.getArgument(0));
+            EngagementEngine engine = new EngagementEngine();
+            engine.setId("e1");
+            engine.setInstituteId("i1");
+
+            assertTrue(svc.handoff(engine, "m1", "u1", "r1", "WHATSAPP", "mujhe counsellor se baat karni hai"));
+
+            verify(poc).alert(eq("i1"), eq("u1"), eq("Wants to talk to a person: Priyanshu"), contains("asked on WhatsApp"),
+                    eq("HANDOFF"), eq("m1"));
+            ArgumentCaptor<EngagementAction> saved = ArgumentCaptor.forClass(EngagementAction.class);
+            verify(actions, atLeastOnce()).save(saved.capture());
+            assertTrue(saved.getAllValues().stream().anyMatch(a -> "OPEN".equals(a.getStatus()) && a.getRationale() != null
+                    && a.getRationale().startsWith("Wants to talk to a person")), "a task waits in the inbox");
+            ArgumentCaptor<EngagementAction> sent = ArgumentCaptor.forClass(EngagementAction.class);
+            verify(dispatcher).dispatchClaimed(sent.capture(), isNull(), any(), eq(true));
+            assertEquals("WHATSAPP", sent.getValue().getChannel());
+            assertTrue(sent.getValue().getDraftBody().contains("in touch"), sent.getValue().getDraftBody());
+        }
+
+        @Test
+        @DisplayName("an ordinary reply is not a handoff")
+        void ordinary() {
+            var svc = new EngagementMeetingIntentService();
+            assertFalse(svc.handoff(new EngagementEngine(), "m1", "u1", "r1", "EMAIL", "Thanks, I will check and get back"));
+        }
+    }
+
+    @Nested
     @DisplayName("intake")
     class Intake {
         @Test
