@@ -46,6 +46,10 @@ public class EngagementEmailTemplateService implements EngagementEmailTemplateCa
     private final EngagementEmailTemplateAdvisor advisor;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /** Field-injected so the constructor the tests use is unchanged; absent = always generate. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.admin_core_service.features.engagement.service.EngagementTemplateReuseMatcher reuseMatcher;
+
     // ------------------------------------------------------------------ API-facing
 
     public record GenerateRequest(String purpose, Integer count, String language, String feedback,
@@ -60,7 +64,7 @@ public class EngagementEmailTemplateService implements EngagementEmailTemplateCa
                        String language, String subject, String preheader, String bodyHtml,
                        List<String> variableNames, List<String> sampleValues, Map<String, String> variableSources,
                        String status, String rationale, List<EmailTemplateRules.Issue> issues,
-                       Instant createdAt, Instant updatedAt, Instant approvedAt) {}
+                       Instant createdAt, Instant updatedAt, Instant approvedAt, String reusedFromId) {}
 
     public record Preview(String subject, String html, String text, List<String> missingVariables) {}
 
@@ -104,11 +108,21 @@ public class EngagementEmailTemplateService implements EngagementEmailTemplateCa
             feedback = "Write a clearly different version of the template above.";
         }
 
+        // Email templates the institute already has approved for another engine come first (no new
+        // review needed); the advisor writes only what they don't cover.
+        List<View> saved = new ArrayList<>();
+        int reusedCount = 0;
+        if ("NEW".equals(mode)) {
+            saved.addAll(reuseApproved(engine, brief, cold, purpose, language, count, actor));
+            reusedCount = saved.size();
+            count -= reusedCount;
+        }
+        if (count < 1) return saved;
+
         List<EngagementEmailTemplateAdvisor.Draft> drafts = advisor.propose(engine, brief, purpose, language, count,
                 cold, feedback, seed, repository.namesUsed(engineId));
 
         Set<String> taken = new HashSet<>(repository.namesUsed(engineId));
-        List<View> saved = new ArrayList<>();
         List<String> dropped = new ArrayList<>();
         for (EngagementEmailTemplateAdvisor.Draft d : drafts) {
             String body = EmailTemplateRules.sanitise(d.bodyHtml());
@@ -139,7 +153,8 @@ public class EngagementEmailTemplateService implements EngagementEmailTemplateCa
             t.setCreatedBy(actor);
             saved.add(view(repository.save(t), brief, cold));
         }
-        if (saved.isEmpty()) {
+        if (saved.size() == reusedCount) {
+            if (reusedCount > 0) return saved; // the taken-over ones are already there; the rest could not be written
             throw new VacademyException("The AI could not write a valid email template"
                     + (dropped.isEmpty() ? "" : " (" + String.join("; ", dropped) + ")")
                     + ". Try again or add the missing facts or links to the brief.");
@@ -187,6 +202,67 @@ public class EngagementEmailTemplateService implements EngagementEmailTemplateCa
         target.setWarnings(json(issues));
         target.setStatus(EngagementEmailTemplate.USER_REVIEW);
         return view(repository.save(target), brief, cold);
+    }
+
+    /**
+     * Takes over approved templates of the institute's other engines that fit this engine's brief as
+     * written: a copy for this engine, already approved, pointing at its source. Skipped: any that
+     * break the email rules against THIS brief (a link this brief does not contain, cold outreach
+     * without an unsubscribe line).
+     */
+    List<View> reuseApproved(EngagementEngine engine, String brief, boolean cold, String purpose, String language,
+                             int want, String actor) {
+        if (reuseMatcher == null) return List.of();
+        try {
+            List<EngagementEmailTemplate> pool = new ArrayList<>();
+            for (EngagementEmailTemplate c : repository.findReusableFromOtherEngines(
+                    engine.getInstituteId(), engine.getId(), language)) {
+                if (!EmailTemplateRules.hasBlocking(issues(c, brief, cold))) pool.add(c);
+            }
+            if (pool.isEmpty()) return List.of();
+            List<vacademy.io.admin_core_service.features.engagement.service.EngagementTemplateReuseMatcher.Candidate> cands = new ArrayList<>();
+            for (EngagementEmailTemplate c : pool) {
+                cands.add(new vacademy.io.admin_core_service.features.engagement.service.EngagementTemplateReuseMatcher.Candidate(
+                        c.getId(), c.getName(), c.getPurpose(), "SUBJECT: " + c.getSubject() + " BODY: "
+                        + EmailTemplateRules.render("", c.getBodyHtml(), List.of(), Map.of()).text()));
+            }
+            Map<String, String> picked = reuseMatcher.pick(engine.getInstituteId(), "email", brief, purpose, cands, want);
+            List<View> out = new ArrayList<>();
+            Instant now = Instant.now();
+            for (EngagementEmailTemplate src : pool) {
+                String why = picked.get(src.getId());
+                if (why == null) continue;
+                EngagementEmailTemplate t = new EngagementEmailTemplate();
+                t.setEngineId(engine.getId());
+                t.setInstituteId(engine.getInstituteId());
+                t.setName(src.getName());
+                t.setVersion(repository.maxVersion(engine.getId(), src.getName()) + 1);
+                t.setTitle(src.getTitle());
+                t.setPurpose(src.getPurpose());
+                t.setLanguage(src.getLanguage());
+                t.setSubject(src.getSubject());
+                t.setPreheader(src.getPreheader());
+                t.setBodyHtml(src.getBodyHtml());
+                t.setVariableNames(src.getVariableNames());
+                t.setSampleValues(src.getSampleValues());
+                t.setVariableSources(src.getVariableSources());
+                t.setWarnings(json(issues(src, brief, cold)));
+                t.setStatus(EngagementEmailTemplate.APPROVED);
+                t.setApprovedBy(src.getApprovedBy());
+                t.setApprovedAt(now);
+                t.setReusedFromId(src.getId());
+                t.setRationale(cap("Already approved for another engine." + (why.isBlank() ? "" : " " + why), 1000));
+                t.setCreatedBy(actor);
+                out.add(view(repository.save(t), brief, cold));
+            }
+            if (!out.isEmpty()) {
+                log.info("Engine {}: took over {} approved email template(s) from other engines", engine.getId(), out.size());
+            }
+            return out;
+        } catch (Exception e) {
+            log.warn("Engine {}: email template reuse skipped: {}", engine.getId(), e.getMessage());
+            return List.of();
+        }
     }
 
     @Transactional
@@ -325,7 +401,7 @@ public class EngagementEmailTemplateService implements EngagementEmailTemplateCa
         return new View(t.getId(), t.getEngineId(), t.getName(), t.getVersion(), t.getTitle(), t.getPurpose(),
                 t.getLanguage(), t.getSubject(), t.getPreheader(), t.getBodyHtml(), list(t.getVariableNames()),
                 list(t.getSampleValues()), map(t.getVariableSources()), t.getStatus(), t.getRationale(),
-                issues(t, brief, cold), t.getCreatedAt(), t.getUpdatedAt(), t.getApprovedAt());
+                issues(t, brief, cold), t.getCreatedAt(), t.getUpdatedAt(), t.getApprovedAt(), t.getReusedFromId());
     }
 
     private EngagementEngine requireEngine(String engineId, String instituteId) {

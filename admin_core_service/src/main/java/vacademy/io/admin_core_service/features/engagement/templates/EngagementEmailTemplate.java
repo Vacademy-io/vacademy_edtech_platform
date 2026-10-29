@@ -90,6 +90,10 @@ public class EngagementEmailTemplate {
     @Column(name = "created_by")
     private String createdBy;
 
+    /** Set when this engine took over an already-approved template of another engine. */
+    @Column(name = "reused_from_id")
+    private String reusedFromId;
+
     @Column(name = "approved_by")
     private String approvedBy;
 

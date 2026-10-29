@@ -249,6 +249,8 @@ export interface EngagementTemplateProposal {
     buttons?: string; // jsonb string: [{type,text,url?,phoneNumber?}]
     /** This proposal is the edited version of that approved one (it replaces it once Meta approves). */
     replacesId?: string;
+    /** Set when this engine took over an already-approved template of another engine. */
+    reusedFromId?: string | null;
     submittedAt?: string;
     /** Server warning when a UTILITY template reads as promotion. */
     categoryWarning?: string | null;

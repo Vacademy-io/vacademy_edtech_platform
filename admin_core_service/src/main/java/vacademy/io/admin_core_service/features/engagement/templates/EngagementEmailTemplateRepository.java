@@ -59,4 +59,23 @@ public interface EngagementEmailTemplateRepository extends JpaRepository<Engagem
             """, nativeQuery = true)
     int approve(@Param("id") String id, @Param("instituteId") String instituteId,
                 @Param("by") String by, @Param("now") Instant now);
+
+    /**
+     * Approved email templates of the institute's OTHER engines this engine could take over: same
+     * language, not from an archived or system engine, and no live template of that name here.
+     */
+    @Query(value = """
+            SELECT DISTINCT ON (t.name) t.* FROM engagement_email_template t
+              JOIN engagement_engine e ON e.id = t.engine_id
+             WHERE t.institute_id = :instituteId AND t.engine_id <> :engineId AND t.status = 'APPROVED'
+               AND t.language = :language
+               AND e.status <> 'ARCHIVED' AND COALESCE(e.created_by, '') <> 'SYSTEM_AI_CALL'
+               AND NOT EXISTS (SELECT 1 FROM engagement_email_template x
+                                WHERE x.engine_id = :engineId AND x.name = t.name
+                                  AND x.status IN ('AI_PROPOSED', 'USER_REVIEW', 'APPROVED'))
+             ORDER BY t.name, t.version DESC
+            """, nativeQuery = true)
+    List<EngagementEmailTemplate> findReusableFromOtherEngines(@Param("instituteId") String instituteId,
+                                                               @Param("engineId") String engineId,
+                                                               @Param("language") String language);
 }

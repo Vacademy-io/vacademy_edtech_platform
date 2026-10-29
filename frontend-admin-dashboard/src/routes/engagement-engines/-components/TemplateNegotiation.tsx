@@ -295,6 +295,9 @@ function ProposalCard({
                 {p.language && <Chip label={languageName(p.language)} />}
                 {p.purpose && <Chip label={p.purpose} />}
                 <ToneBadge label={meta.label} tone={meta.tone} />
+                {p.reusedFromId && (
+                    <Chip label={tTpl('reuse.chip')} className="bg-success-50 text-success-600" />
+                )}
                 <span className="ms-auto text-neutral-400">
                     <span className="text-caption">
                         {t('proposalCard.round', { value: p.round })} · {categoryLabel}

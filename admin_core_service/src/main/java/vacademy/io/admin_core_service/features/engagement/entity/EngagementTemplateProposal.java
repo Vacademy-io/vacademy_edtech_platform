@@ -122,6 +122,10 @@ public class EngagementTemplateProposal {
     @Column(name = "replaces_id")
     private String replacesId;
 
+    /** Set when this engine took over an already-approved template of another engine (no new Meta review). */
+    @Column(name = "reused_from_id")
+    private String reusedFromId;
+
     /** When it was sent to Meta (W10 rate limit). */
     @Column(name = "submitted_at")
     private Instant submittedAt;
