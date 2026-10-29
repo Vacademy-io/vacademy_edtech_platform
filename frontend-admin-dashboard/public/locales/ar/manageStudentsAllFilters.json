@@ -13,7 +13,7 @@
         "title": "حالة الدفع",
         "paid": "مدفوع",
         "failed": "فشل",
-        "paymentFailed": "فشل الدفع"
+        "pending": "معلق"
     },
     "approvalStatus": {
         "title": "حالة الموافقة",
@@ -22,7 +22,8 @@
     },
     "cartStatus": {
         "title": "حالة السلة",
-        "abandonedCart": "سلة مهجورة"
+        "abandonedCart": "سلة مهجورة",
+        "paymentFailed": "فشل الدفع"
     },
     "role": {
         "title": "الدور"

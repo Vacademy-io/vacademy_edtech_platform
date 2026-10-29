@@ -13,7 +13,7 @@
         "title": "Statut du paiement",
         "paid": "Payé",
         "failed": "Échoué",
-        "paymentFailed": "Paiement échoué"
+        "pending": "En attente"
     },
     "approvalStatus": {
         "title": "Statut d'approbation",
@@ -22,7 +22,8 @@
     },
     "cartStatus": {
         "title": "Statut du panier",
-        "abandonedCart": "Panier abandonné"
+        "abandonedCart": "Panier abandonné",
+        "paymentFailed": "Paiement échoué"
     },
     "role": {
         "title": "Rôle"

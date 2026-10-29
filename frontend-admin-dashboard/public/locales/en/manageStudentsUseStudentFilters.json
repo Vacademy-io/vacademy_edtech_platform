@@ -8,14 +8,15 @@
         "paymentStatus": {
             "paid": "Paid",
             "failed": "Failed",
-            "paymentFailed": "Payment Failed"
+            "pending": "Pending"
         },
         "approvalStatus": {
             "pending": "Pending for Approval",
             "invited": "Invited"
         },
         "learnerType": {
-            "abandonedCart": "Abandoned Cart"
+            "abandonedCart": "Abandoned Cart",
+            "paymentFailed": "Payment Failed"
         }
     }
 }

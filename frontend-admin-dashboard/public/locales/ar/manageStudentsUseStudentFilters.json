@@ -12,14 +12,15 @@
         "paymentStatus": {
             "paid": "مدفوع",
             "failed": "فشل",
-            "paymentFailed": "فشل الدفع"
+            "pending": "معلق"
         },
         "approvalStatus": {
             "pending": "بانتظار الموافقة",
             "invited": "مدعو"
         },
         "learnerType": {
-            "abandonedCart": "سلة متروكة"
+            "abandonedCart": "سلة متروكة",
+            "paymentFailed": "فشل الدفع"
         }
     }
 }

@@ -414,7 +414,16 @@ public class InstituteStudentRepositoryImpl implements InstituteStudentRepositor
         addListFilter(whereClause, parameters, "gender", "s.gender", gender);
         addListFilter(whereClause, parameters, "instituteIds", "ssigm.institute_id", instituteIds);
         addListFilter(whereClause, parameters, "groupIds", "ssigm.group_id", groupIds);
-        addListFilter(whereClause, parameters, "packageSessionIds", "ssigm.package_session_id", packageSessionIds);
+        if (paymentStatuses != null && !paymentStatuses.isEmpty()
+                && packageSessionIds != null && !packageSessionIds.isEmpty()) {
+            // Failed / pending checkouts sit in the INVITED session with the real batch in
+            // destination_package_session_id, so a payment-status filter matches either column.
+            whereClause.append("AND (ssigm.package_session_id IN (:packageSessionIds) ");
+            whereClause.append("OR ssigm.destination_package_session_id IN (:packageSessionIds)) ");
+            parameters.put("packageSessionIds", packageSessionIds);
+        } else {
+            addListFilter(whereClause, parameters, "packageSessionIds", "ssigm.package_session_id", packageSessionIds);
+        }
         addListFilter(whereClause, parameters, "paymentStatuses", "last_pl.payment_status", paymentStatuses);
         addListFilter(whereClause, parameters, "sources", "ssigm.source", sources);
         addListFilter(whereClause, parameters, "types", "ssigm.type", types);

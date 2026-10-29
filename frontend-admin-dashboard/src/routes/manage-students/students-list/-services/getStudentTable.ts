@@ -47,7 +47,7 @@ export const useStudentList = (
             session_expiry_days: filters.session_expiry_days?.sort((a, b) => a - b) || [],
             sub_org_user_types: filters.sub_org_user_types?.sort() || [],
             sub_org_ids: filters.sub_org_ids?.sort() || [],
-            type: filters.type || '',
+            types: filters.types?.sort() || [],
             enroll_invite_ids: filters.enroll_invite_ids?.sort() || [],
             audience_ids: filters.audience_ids?.sort() || [],
             // Dropdown custom-field filters — sort both the field-id keys and each
