@@ -11,7 +11,7 @@ import { useContentStore } from '../../-stores/chapter-sidebar-store';
 import { useRouter } from '@tanstack/react-router';
 import { SlideDripConditionDialog } from '@/routes/study-library/courses/course-details/-components/SlideDripConditionDialog';
 import { OfflineAvailabilityDialog } from '@/routes/study-library/courses/course-details/-components/OfflineAvailabilityDialog';
-import { getCourseSettings, saveCourseSettings } from '@/services/course-settings';
+import { getCourseSettings, saveDripConditionChanges } from '@/services/course-settings';
 import type { DripCondition } from '@/types/course-settings';
 import { toast } from 'sonner';
 import type { DropdownItem } from '@/components/design-system/utils/types/dropdown-types';
@@ -113,7 +113,8 @@ export const SlidesMenuOption = ({
     const loadDripConditions = async () => {
         try {
             setLoadingDripConditions(true);
-            const settings = await getCourseSettings();
+            // Fresh from the server — the cached copy can hide rules saved elsewhere.
+            const settings = await getCourseSettings(true);
             setDripConditions(settings.dripConditions.conditions || []);
         } catch (error) {
             console.error('Failed to load drip conditions:', error);
@@ -126,16 +127,7 @@ export const SlidesMenuOption = ({
 
     const handleSaveDripConditions = async (updatedConditions: DripCondition[]) => {
         try {
-            const settings = await getCourseSettings();
-            const updatedSettings = {
-                ...settings,
-                dripConditions: {
-                    ...settings.dripConditions,
-                    conditions: updatedConditions,
-                },
-            };
-            await saveCourseSettings(updatedSettings);
-            setDripConditions(updatedConditions);
+            setDripConditions(await saveDripConditionChanges(dripConditions, updatedConditions));
             toast.success(t('dripConditionsSaved'));
         } catch (error) {
             console.error('Failed to save drip conditions:', error);

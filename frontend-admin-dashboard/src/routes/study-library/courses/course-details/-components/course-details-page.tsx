@@ -87,7 +87,7 @@ import {
 import { AddCourseForm } from '@/components/common/study-library/add-course/add-course-form';
 import { PackageDripConditionsCard } from './PackageDripConditionsCard';
 import { DripCondition } from '@/types/course-settings';
-import { getCourseSettings, saveCourseSettings } from '@/services/course-settings';
+import { getCourseSettings, saveDripConditionChanges } from '@/services/course-settings';
 import { MyButton } from '@/components/design-system/button';
 import { getPublicUrl } from '@/services/upload_file';
 import InviteDetailsComponent from './invite-details-component';
@@ -853,7 +853,9 @@ export const CourseDetailsPage = () => {
     useEffect(() => {
         const loadDripSettings = async () => {
             try {
-                const settings = await getCourseSettings();
+                // Fresh from the server: the cached copy can be a day old and
+                // would hide rules saved from another tab or by another admin.
+                const settings = await getCourseSettings(true);
                 setDripConditionsEnabled(settings.dripConditions.enabled);
                 setDripConditions(settings.dripConditions.conditions);
                 setCourseFilterType(settings.permissions.courseFilterType);
@@ -864,48 +866,29 @@ export const CourseDetailsPage = () => {
         loadDripSettings();
     }, []);
 
-    // Drip conditions handlers
+    // Drip conditions handlers. Each one edits this page's copy and hands the
+    // before/after pair to saveDripConditionChanges, which applies only that
+    // change to the server's current list (other courses' rules live in it too).
     const handleAddDripCondition = async (condition: DripCondition) => {
         try {
-            const settings = await getCourseSettings();
-
             // Check if a condition with same level and level_id already exists
-            const existingConditionIndex = settings.dripConditions.conditions.findIndex(
+            const existingCondition = dripConditions.find(
                 (c) => c.level === condition.level && c.level_id === condition.level_id
             );
 
-            let updatedConditions: DripCondition[];
+            const updatedConditions: DripCondition[] = existingCondition
+                ? dripConditions.map((c) =>
+                      c === existingCondition
+                          ? {
+                                ...existingCondition,
+                                drip_condition: condition.drip_condition,
+                                updated_at: new Date().toISOString(),
+                            }
+                          : c
+                  )
+                : [...dripConditions, condition];
 
-            if (existingConditionIndex !== -1) {
-                // Merge drip_condition arrays if condition exists
-                const existingCondition =
-                    settings.dripConditions.conditions[existingConditionIndex];
-                const mergedCondition: DripCondition = {
-                    id: existingCondition?.id ?? '',
-                    level: existingCondition?.level ?? 'package',
-                    level_id: existingCondition?.level_id ?? '',
-                    enabled: existingCondition?.enabled ?? false,
-                    created_at: existingCondition?.created_at,
-                    drip_condition: condition.drip_condition,
-                    updated_at: new Date().toISOString(),
-                };
-
-                updatedConditions = settings.dripConditions.conditions.map((c, idx) =>
-                    idx === existingConditionIndex ? mergedCondition : c
-                );
-            } else {
-                // Add new condition if doesn't exist
-                updatedConditions = [...settings.dripConditions.conditions, condition];
-            }
-
-            await saveCourseSettings({
-                ...settings,
-                dripConditions: {
-                    ...settings.dripConditions,
-                    conditions: updatedConditions,
-                },
-            });
-            setDripConditions(updatedConditions);
+            setDripConditions(await saveDripConditionChanges(dripConditions, updatedConditions));
         } catch (error) {
             console.error('Error adding drip condition:', error);
             toast.error(t('courseDetails:dripCondition.saveFailed'));
@@ -914,18 +897,10 @@ export const CourseDetailsPage = () => {
 
     const handleUpdateDripCondition = async (condition: DripCondition) => {
         try {
-            const settings = await getCourseSettings();
-            const updatedConditions = settings.dripConditions.conditions.map((c) =>
+            const updatedConditions = dripConditions.map((c) =>
                 c.id === condition.id ? condition : c
             );
-            await saveCourseSettings({
-                ...settings,
-                dripConditions: {
-                    ...settings.dripConditions,
-                    conditions: updatedConditions,
-                },
-            });
-            setDripConditions(updatedConditions);
+            setDripConditions(await saveDripConditionChanges(dripConditions, updatedConditions));
         } catch (error) {
             console.error('Error updating drip condition:', error);
             toast.error(t('courseDetails:dripCondition.updateFailed'));
@@ -934,16 +909,8 @@ export const CourseDetailsPage = () => {
 
     const handleDeleteDripCondition = async (id: string) => {
         try {
-            const settings = await getCourseSettings();
-            const updatedConditions = settings.dripConditions.conditions.filter((c) => c.id !== id);
-            await saveCourseSettings({
-                ...settings,
-                dripConditions: {
-                    ...settings.dripConditions,
-                    conditions: updatedConditions,
-                },
-            });
-            setDripConditions(updatedConditions);
+            const updatedConditions = dripConditions.filter((c) => c.id !== id);
+            setDripConditions(await saveDripConditionChanges(dripConditions, updatedConditions));
         } catch (error) {
             console.error('Error deleting drip condition:', error);
             toast.error(t('courseDetails:dripCondition.deleteFailed'));
