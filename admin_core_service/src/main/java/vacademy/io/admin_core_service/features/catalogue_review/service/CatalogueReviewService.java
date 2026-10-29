@@ -77,6 +77,9 @@ public class CatalogueReviewService {
     @Autowired
     private ReviewSubmittedWorkflowNotifier workflowNotifier;
 
+    @Autowired
+    private ReviewAdminAlertService adminAlerts;
+
     private final ObjectMapper mapper = new ObjectMapper();
 
     /* ── public ────────────────────────────────────────────────────────── */
@@ -260,10 +263,11 @@ public class CatalogueReviewService {
     }
 
     /**
-     * REVIEW_SUBMITTED for the admin's workflows (email the team, WhatsApp a role,
-     * an in-app message ...), only once the review is really saved, and off the
-     * request thread, so a workflow can neither see a row that rolls back nor
-     * slow down or fail the visitor's submit.
+     * The admins hear about a new review: the built-in bell alert and default
+     * email (ReviewAdminAlertService) and REVIEW_SUBMITTED for their own
+     * workflows. Only once the review is really saved, and off the request
+     * thread, so nothing can see a row that rolls back or slow down or fail
+     * the visitor's submit.
      */
     private void fireSubmittedWorkflowAfterCommit(CatalogueReview saved) {
         List<ReviewAnswer> answers = readAnswers(saved.getAnswers());
@@ -271,12 +275,18 @@ public class CatalogueReviewService {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    workflowNotifier.fire(saved, answers);
+                    announce(saved, answers);
                 }
             });
         } else {
-            workflowNotifier.fire(saved, answers);
+            announce(saved, answers);
         }
+    }
+
+    /** The built-in admin alerts (bell + default email) and the admin's own workflows; both async. */
+    private void announce(CatalogueReview saved, List<ReviewAnswer> answers) {
+        adminAlerts.notifyAdmins(saved, answers);
+        workflowNotifier.fire(saved, answers);
     }
 
     /**

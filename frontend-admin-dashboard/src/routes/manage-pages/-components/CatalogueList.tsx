@@ -89,12 +89,21 @@ export const CatalogueList = () => {
     // `?blog=list` / `?blog=<postId>` — deep link into the blog manager (MCP
     // hands these out). Consumed once, then stripped so closing the dialog
     // doesn't reopen it on the next render.
-    const { blog: blogSearch } = useSearch({ strict: false }) as { blog?: string };
+    const { blog: blogSearch, reviews: reviewsSearch } = useSearch({ strict: false }) as {
+        blog?: string;
+        reviews?: string;
+    };
     useEffect(() => {
         if (!blogSearch) return;
         openBlog(blogSearch === 'list' ? null : blogSearch);
         navigate({ to: '/manage-pages', search: {}, replace: true });
     }, [blogSearch, openBlog, navigate]);
+    // `?reviews=list` — the new-review email's "Review and approve" button. Same consume-once rule.
+    useEffect(() => {
+        if (!reviewsSearch) return;
+        openReviews();
+        navigate({ to: '/manage-pages', search: {}, replace: true });
+    }, [reviewsSearch, openReviews, navigate]);
     const { toast } = useToast();
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [deletingTag, setDeletingTag] = useState<string | null>(null);

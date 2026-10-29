@@ -6,8 +6,10 @@ import { createFileRoute } from '@tanstack/react-router';
  * tools and the old /manage-pages/blog routes land here.
  */
 export const Route = createFileRoute('/manage-pages/')({
-    validateSearch: (search: Record<string, unknown>): { blog?: string } => ({
+    validateSearch: (search: Record<string, unknown>): { blog?: string; reviews?: string } => ({
         blog: typeof search.blog === 'string' && search.blog ? search.blog : undefined,
+        // `?reviews=list` opens the Reviews dialog (the new-review email links here).
+        reviews: typeof search.reviews === 'string' && search.reviews ? search.reviews : undefined,
     }),
     component: () => <div>Loading...</div>, // Will be overridden by lazy
 });
