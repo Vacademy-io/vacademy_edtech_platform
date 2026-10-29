@@ -472,4 +472,18 @@ public interface EngagementMemberRepository extends JpaRepository<EngagementMemb
     @Query(value = "SELECT DISTINCT m.audience_response_id FROM engagement_member m "
             + "WHERE m.audience_response_id IN (:responseIds)", nativeQuery = true)
     java.util.List<String> responsesWithMembership(@Param("responseIds") java.util.Collection<String> responseIds);
+
+    /**
+     * The person just wrote to us on WhatsApp, so Meta's 24 h reply window is open for them even when the
+     * member has left the engine (a booked meeting ends the membership, and the reply sweep only promotes
+     * live members). Extends the window only, never shortens it.
+     */
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @Query(value = """
+            UPDATE engagement_member
+               SET window_open_until = GREATEST(COALESCE(window_open_until, :until), :until), updated_at = :now
+             WHERE id = :id
+            """, nativeQuery = true)
+    int openReplyWindow(@Param("id") String id, @Param("until") java.time.Instant until, @Param("now") java.time.Instant now);
 }

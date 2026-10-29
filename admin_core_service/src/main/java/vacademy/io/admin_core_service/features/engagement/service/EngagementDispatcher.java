@@ -97,6 +97,16 @@ public class EngagementDispatcher {
     }
 
     public EngagementAction dispatchClaimed(EngagementAction action, String editedBody, String actorId) {
+        return dispatchClaimed(action, editedBody, actorId, false);
+    }
+
+    /**
+     * @param answeringTheirMessage true only for an answer to a message the person just sent us about a
+     *        meeting they hold: a member who EXITED because the goal was met (meeting booked) may still be
+     *        answered, but an opted-out one never. Everything else keeps the strict consent check.
+     */
+    public EngagementAction dispatchClaimed(EngagementAction action, String editedBody, String actorId,
+                                            boolean answeringTheirMessage) {
         String channel = action.getChannel() != null ? action.getChannel().toUpperCase() : "";
         try {
             if (EngagementActionTypes.isCrmAction(action.getActionType())) {
@@ -109,7 +119,8 @@ public class EngagementDispatcher {
                     .orElseThrow(() -> new IllegalStateException("member missing for action " + action.getId()));
             // Consent holds for every send, a human's send-on-behalf included: a task drafted before
             // the person opted out (or left the audience) must not reach them afterwards.
-            if ("OPTED_OUT".equals(member.getStatus()) || "EXITED".equals(member.getStatus())) {
+            if ("OPTED_OUT".equals(member.getStatus())
+                    || ("EXITED".equals(member.getStatus()) && !answeringTheirMessage)) {
                 throw new SendRejectedException("This person has opted out or left the audience, so nothing was sent.");
             }
             // The member row only learns of a CRM opt-out at the next decision, so a task drafted for
