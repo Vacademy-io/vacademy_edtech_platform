@@ -101,6 +101,7 @@ import { LanguageDropdown } from '@/components/common/localization/language-drop
 import { useLanguageStore } from '@/stores/localization/useLanguageStore';
 import { getEnabledLocales } from '@/services/language-settings';
 import { dueLabel, useDueFollowupReminders } from '@/components/shared/leads/followup-reminders';
+import { useFollowUpFeatures } from '@/components/shared/leads/follow-up-fields';
 import { Alarm } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 
@@ -196,6 +197,7 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
     // Due/overdue follow-ups (own only) — surfaced above the alerts and
     // counted in the bell badge so a due follow-up is impossible to miss.
     const { due: dueFollowups } = useDueFollowupReminders();
+    const { overdueByDate } = useFollowUpFeatures();
     const bellCount = unreadCount + dueFollowups.length;
 
     const markVisibleAlertsAsRead = async () => {
@@ -666,7 +668,7 @@ export function Navbar({ showMobileBackButton }: { showMobileBackButton?: boolea
                                 </div>
                                 <div className="max-h-40 overflow-y-auto p-2">
                                     {dueFollowups.slice(0, 4).map((f) => {
-                                        const due = dueLabel(f.schedule_time);
+                                        const due = dueLabel(f.schedule_time, overdueByDate);
                                         return (
                                             <button
                                                 key={f.id}

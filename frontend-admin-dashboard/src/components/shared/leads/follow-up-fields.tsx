@@ -122,6 +122,7 @@ export function useFollowUpFeatures(): {
     closingNoteOptional: boolean;
     markDoneLeadStatusAndTier: boolean;
     syncInterestToLead: boolean;
+    overdueByDate: boolean;
 } {
     const { followUpFields } = useLeadSettings();
     return {
@@ -133,6 +134,7 @@ export function useFollowUpFeatures(): {
         closingNoteOptional: followUpFields.closingNoteOptional,
         markDoneLeadStatusAndTier: followUpFields.markDoneLeadStatusAndTier,
         syncInterestToLead: followUpFields.syncInterestToLead,
+        overdueByDate: followUpFields.overdueByDate,
     };
 }
 

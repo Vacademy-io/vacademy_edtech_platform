@@ -91,6 +91,7 @@ describe('follow-up fields config', () => {
             closingNoteOptional: false,
             markDoneLeadStatusAndTier: false,
             syncInterestToLead: false,
+            overdueByDate: false,
         });
     });
 

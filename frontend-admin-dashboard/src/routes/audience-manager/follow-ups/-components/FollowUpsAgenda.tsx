@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { format, isToday, isTomorrow, startOfDay } from 'date-fns';
 import { useTranslation } from 'react-i18next';
+import { useFollowUpFeatures } from '@/components/shared/leads/follow-up-fields';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import type { LeadProfileSummary } from '@/hooks/use-lead-profiles';
@@ -35,6 +36,9 @@ export function FollowUpsAgenda({
     rowActions?: LeadTableExtraColumn[];
 }) {
     const { t } = useTranslation('crmPages');
+    // Lead settings → "Overdue by date, not time": only a past DATE is overdue, so the
+    // time-based SLA flags don't pull a row due later today into Overdue.
+    const { overdueByDate } = useFollowUpFeatures();
     const groups = useMemo(() => {
         const today = startOfDay(new Date()).getTime();
         const map = new Map<
@@ -55,7 +59,10 @@ export function FollowUpsAgenda({
             if (!row.at) {
                 key = 'none';
                 label = t('followUps.agenda.noDate');
-            } else if (row.at.getTime() < today || row.vm.followUpOverdue || row.vm.tatOverdue) {
+            } else if (
+                row.at.getTime() < today ||
+                (!overdueByDate && (row.vm.followUpOverdue || row.vm.tatOverdue))
+            ) {
                 key = 'overdue';
                 label = t('followUps.agenda.overdue');
                 tone = 'danger';
@@ -74,7 +81,7 @@ export function FollowUpsAgenda({
             map.get(key)!.items.push(row);
         }
         return [...map.values()];
-    }, [vms, t]);
+    }, [vms, t, overdueByDate]);
 
     if (vms.length === 0) return <LeadEmptyState />;
 
