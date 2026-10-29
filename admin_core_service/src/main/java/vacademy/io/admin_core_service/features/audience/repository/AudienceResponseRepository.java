@@ -3310,9 +3310,13 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
          * carts, pending approvals and deleted rows are not enrolments and are ignored,
          * or a lead with only an invite would read as a finished course.
          *
-         * Order: a live lead before a deleted one, an owned lead before an unowned one,
-         * then newest first. Newest alone let a deleted test entry or an ownerless repeat
-         * answer for a phone whose real lead belongs to someone else.
+         * A deleted lead (audience_status INACTIVE, the CRM's "Delete lead") is never the
+         * answer: the admin removed it, so Check Lead must say "No lead found" and let the
+         * counsellor add the person afresh. Restoring it brings it back here.
+         *
+         * Order: an owned lead before an unowned one, then newest first. Newest alone
+         * let an ownerless repeat answer for a phone whose real lead belongs to someone
+         * else.
          *
          * A duplicate enquiry is never the answer itself, but when it is the one that
          * matches (a repeat that came with a new phone or email) the lead it repeats is:
@@ -3411,6 +3415,7 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                             WHERE a.institute_id = :instituteId
                               AND ar.id = ANY(ARRAY(SELECT id FROM targets))
                               AND (ar.is_duplicate IS NULL OR ar.is_duplicate = false)
+                              AND (ar.audience_status IS NULL OR ar.audience_status <> 'INACTIVE')
                             ORDER BY (ar.id = ANY(ARRAY(SELECT id FROM direct))) DESC,
                                      (ar.audience_status = 'ACTIVE') DESC,
                                      (COALESCE(ulp.assigned_counselor_id, '') <> '') DESC,
@@ -3430,7 +3435,8 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
          * Every enquiry by the same person as {@link #lookupByPhoneOrEmail}, same
          * match rules (a matching duplicate also brings the lead it repeats), newest
          * first — Check Lead's follow-up history spans them all, so a repeat enquiry
-         * still shows the calls made on the earlier one. Enquiries
+         * still shows the calls made on the earlier one. Deleted enquiries are left
+         * out, like in the lookup itself. Enquiries
          * flagged as duplicates are skipped unless {@code includeDuplicates} — set when the
          * institute's repeat-lead handling flags reattempts, since counsellors log
          * follow-ups on those rows too.
@@ -3477,6 +3483,7 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                               AND ar.id = ANY(ARRAY(SELECT id FROM targets))
                               AND (COALESCE(:includeDuplicates, FALSE) = TRUE
                                    OR ar.is_duplicate IS NULL OR ar.is_duplicate = false)
+                              AND (ar.audience_status IS NULL OR ar.audience_status <> 'INACTIVE')
                             ORDER BY ar.submitted_at DESC NULLS LAST, ar.created_at DESC
                             LIMIT 50
                         """, nativeQuery = true)
