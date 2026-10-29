@@ -473,6 +473,95 @@ def known_names(db: Session, agent_id: str) -> List[str]:
     return [r[0] for r in rows]
 
 
+def lock_agent_dedupe(db: Session, agent_id: str) -> None:
+    """Serialise the after-research duplicate check + save of one agent's leads until the caller's
+    transaction ends (pg_advisory_xact_lock): two research workers saving two sites of one
+    organisation at the same moment would otherwise each miss the other (dedupe.py)."""
+    db.execute(text("SELECT pg_advisory_xact_lock(hashtext('lead_agent_dedupe'), hashtext(:a))"), {"a": agent_id})
+
+
+def same_org_candidates(db: Session, *, agent_id: str, candidate_id: str, statuses: Sequence[str],
+                        phones: Sequence[str], emails: Sequence[str], mail_domains: Sequence[str],
+                        domains: Sequence[str], city: str, limit: int = 200) -> List[Dict[str, Any]]:
+    """The agent's other candidates in `statuses` that could be the same organisation as a lead just
+    researched (dedupe.judge decides): a usable phone (last 10 digits) or email in common, an email on
+    one's domain shown by the other, a home page opening on the other's domain, or the same city (for
+    the name check). Rows {id, status, domain, site_domain, name, city, phones, emails}, oldest first;
+    phones / emails are the row's usable ones: not rated avoid, not a web agency's footer line
+    (`agency`: the same words as dedupe._AGENCY, in Postgres regex)."""
+    agency = ("(designed|developed|maintained|hosted|created|crafted|built)"
+              "([[:space:]]+(and|&)[[:space:]]+[[:alnum:]_]+)?[[:space:]]+by"
+              "|(design|development)[[:space:]]+by|powered[[:space:]]+by|website[[:space:]]+by")
+    return _rows(db.execute(text("""
+        SELECT c.id, c.status, o.domain,
+               c.lead_json->'organisation'->>'domain' AS site_domain,
+               c.lead_json->'organisation'->>'name' AS name,
+               c.lead_json->'organisation'->>'city' AS city,
+               k.phones, k.emails
+          FROM lead_candidate c
+          JOIN lead_org o ON o.id = c.org_id
+         CROSS JOIN LATERAL (
+               SELECT COALESCE(array_agg(DISTINCT right(regexp_replace(x->>'value', '[^0-9]', '', 'g'), 10))
+                          FILTER (WHERE x->>'kind' IN ('institute_phone', 'whatsapp')
+                                  AND length(regexp_replace(x->>'value', '[^0-9]', '', 'g')) >= 10),
+                          CAST('{}' AS TEXT[])) AS phones,
+                      COALESCE(array_agg(DISTINCT lower(trim(x->>'value')))
+                          FILTER (WHERE x->>'kind' = 'published_email'), CAST('{}' AS TEXT[])) AS emails
+                 FROM jsonb_array_elements(CASE WHEN jsonb_typeof(c.lead_json->'contacts') = 'array'
+                                                THEN c.lead_json->'contacts' ELSE CAST('[]' AS jsonb) END) AS x
+                WHERE COALESCE(x->>'quality', '') <> 'avoid'
+                  AND COALESCE(x->>'context', '') !~* CAST(:agency AS TEXT)
+         ) AS k
+         WHERE c.agent_id = :a AND c.id <> :id
+           AND c.status = ANY(CAST(:st AS VARCHAR[]))
+           AND (k.phones && CAST(:phones AS TEXT[])
+                OR k.emails && CAST(:emails AS TEXT[])
+                OR o.domain = ANY(CAST(:domains AS TEXT[]))
+                OR c.lead_json->'organisation'->>'domain' = ANY(CAST(:domains AS TEXT[]))
+                OR EXISTS (SELECT 1 FROM unnest(CAST(:mail AS TEXT[])) AS d
+                            WHERE d = o.domain OR right(d, length(o.domain) + 1) = '.' || o.domain)
+                OR EXISTS (SELECT 1 FROM unnest(k.emails) AS e, unnest(CAST(:domains AS TEXT[])) AS m
+                            WHERE split_part(e, '@', 2) = m OR right(split_part(e, '@', 2), length(m) + 1) = '.' || m)
+                OR (CAST(:city AS TEXT) <> ''
+                    AND lower(trim(split_part(c.lead_json->'organisation'->>'city', ',', 1))) = CAST(:city AS TEXT)))
+         ORDER BY c.created_at, c.id
+         LIMIT :n
+    """), {"a": agent_id, "id": candidate_id, "st": list(statuses), "phones": list(phones), "emails": list(emails),
+           "domains": list(domains), "mail": list(mail_domains), "city": city or "", "n": int(limit),
+           "agency": agency}).mappings())
+
+
+def known_signal_urls(db: Session, agent_id: str) -> Set[str]:
+    """Result URLs (job posts, LinkedIn posts...) behind the signals already on this agent's candidates,
+    any status: discovery never reads them again, so one post backs one organisation (2026-10-29: one
+    Glassdoor post for The Pathfinder School became three leads in three rounds)."""
+    rows = db.execute(text("""
+        SELECT DISTINCT s->>'url'
+          FROM lead_candidate c
+         CROSS JOIN LATERAL jsonb_array_elements(
+               CASE WHEN jsonb_typeof(c.discovery_json->'signals') = 'array'
+                    THEN c.discovery_json->'signals' ELSE CAST('[]' AS jsonb) END) AS s
+         WHERE c.agent_id = :a AND COALESCE(s->>'url', '') <> ''
+    """), {"a": agent_id}).fetchall()
+    return {r[0] for r in rows}
+
+
+def known_org_places(db: Session, agent_id: str) -> List[Dict[str, Any]]:
+    """The organisations already on this agent (any status) with what says where each one is, for
+    discovery's same-name-same-place check: rows {name, city, address (its Maps listing's),
+    signal_places (the locations its posts named)}."""
+    return _rows(db.execute(text("""
+        SELECT o.name, o.city, c.discovery_json->'maps'->>'address' AS address,
+               ARRAY(SELECT s->>'location'
+                       FROM jsonb_array_elements(
+                            CASE WHEN jsonb_typeof(c.discovery_json->'signals') = 'array'
+                                 THEN c.discovery_json->'signals' ELSE CAST('[]' AS jsonb) END) AS s
+                      WHERE COALESCE(s->>'location', '') <> '') AS signal_places
+          FROM lead_candidate c JOIN lead_org o ON o.id = c.org_id
+         WHERE c.agent_id = :a AND o.name IS NOT NULL
+    """), {"a": agent_id}).mappings())
+
+
 def backlog(db: Session, agent_id: str) -> int:
     return int(db.execute(text(
         "SELECT COUNT(*) FROM lead_candidate WHERE agent_id = :a AND status = ANY(CAST(:s AS VARCHAR[]))"
@@ -760,6 +849,29 @@ def claim_extension_tasks(db: Session, *, institute_id: str, n: int, worker_id: 
     """LOCAL and AUTO tasks of the worker's own institute."""
     return _claim_tasks(db, mode_sql="t.mode IN ('LOCAL', 'AUTO') AND t.institute_id = :inst",
                         params={"inst": institute_id}, n=n, owner=worker_id, lease_s=lease_s)
+
+
+# hand_task_to_extension's mark on a page the server got as a JavaScript shell.
+HANDED_SHELL_ERROR = "thin_page: server got a JavaScript shell"
+
+
+def claim_unrendered_shells(db: Session, n: int, owner: str, lease_s: int = 120,
+                            institutes: Optional[Sequence[str]] = None) -> List[Dict[str, Any]]:
+    """Shells the server handed to an AUTO agent's extension (hand_task_to_extension) that no
+    extension took within AUTO_REMOTE_AFTER_S: the server reads them again and keeps what their HTML
+    carries, so the candidate does not wait for an extension that went offline (2026-10-29). They go
+    back to AUTO (the pages they lead to too); last_error still says they were handed once."""
+    mode_sql = ("t.mode = 'LOCAL' AND a.mode = 'AUTO' AND t.last_error = :handed AND t.updated_at < now() - "
+                "(CAST(:auto_after AS integer) * interval '1 second')")
+    params: Dict[str, Any] = {"handed": HANDED_SHELL_ERROR, "auto_after": AUTO_REMOTE_AFTER_S}
+    if institutes is not None:
+        mode_sql += " AND t.institute_id = ANY(CAST(:ids AS VARCHAR[]))"
+        params["ids"] = list(institutes)
+    rows = _claim_tasks(db, mode_sql=mode_sql, params=params, n=n, owner=owner, lease_s=lease_s)
+    if rows:
+        db.execute(text("UPDATE lead_fetch_task SET mode = 'AUTO' WHERE id = ANY(CAST(:ids AS VARCHAR[]))"),
+                   {"ids": [r["id"] for r in rows]})
+    return [{**r, "mode": "AUTO"} for r in rows]
 
 
 def finish_task(db: Session, task_id: str, status: str, error: Optional[str] = None,

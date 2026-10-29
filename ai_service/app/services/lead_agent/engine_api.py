@@ -7,7 +7,7 @@ spec §3) swappable in one place, and lets tests replace any step with a fake
 
 Engine modules used: schemas, config, offer, planning, profiles, discovery.{pipeline,
 domains, exclusions, sources}, research.{extract, contacts, lead, contact_search,
-social}, pagefetch, fingerprint, scoring.
+maps_listing, social}, pagefetch, fingerprint, scoring.
 """
 from __future__ import annotations
 
@@ -109,12 +109,22 @@ def name_key(name: str) -> str:
     return _m("discovery.pipeline")._name_key(name)
 
 
-def signal_queries(sources, industries, places, per_industry, hiring_roles):
-    return _m("discovery.sources").signal_queries(sources, industries, places, per_industry, hiring_roles)
+def org_key(name: str, places=()) -> str:
+    """name_key without a ' - ' / ' | ' tail or the words of the organisation's own places."""
+    return _m("discovery.pipeline").org_key(name, places)
 
 
-def keyword_queries(keywords, industries, places, channels, limit):
-    return _m("discovery.sources").keyword_queries(keywords, industries, places, channels, limit)
+def place_keys(location: Optional[str]) -> set:
+    """The particular places in a location or address, one spelling each ('India', 'Remote' -> none)."""
+    return _m("discovery.pipeline").place_keys(location)
+
+
+def signal_queries(sources, industries, places, per_industry, hiring_roles, turn: int = 0):
+    return _m("discovery.sources").signal_queries(sources, industries, places, per_industry, hiring_roles, turn)
+
+
+def keyword_queries(keywords, industries, places, channels, limit, turn: int = 0):
+    return _m("discovery.sources").keyword_queries(keywords, industries, places, channels, limit, turn)
 
 
 def default_keyword_channels() -> List[str]:
@@ -179,6 +189,21 @@ def mail_domain_ok(domain: str, lookup=None):
     return _m("research.contacts").mail_domain_ok(domain, lookup)
 
 
+def is_mobile(contact: dict, region: Optional[str]) -> bool:
+    """A phone contact that is a mobile of the lead's own country (engine.research.contacts.is_mobile)."""
+    return _m("research.contacts").is_mobile(contact, region)
+
+
+def is_home_number(contact: dict, region: Optional[str]) -> bool:
+    """A phone contact that is a number of the lead's own country (engine.research.contacts)."""
+    return _m("research.contacts").is_home_number(contact, region)
+
+
+def reachable(contact: dict) -> bool:
+    """A rated contact outreach can use for this organisation (engine.research.contacts.reachable)."""
+    return _m("research.contacts").reachable(contact)
+
+
 def build_lead(**kwargs) -> dict:
     return _m("research.lead").build_lead(**kwargs)
 
@@ -201,6 +226,42 @@ def merge_lookup(lead: dict, found: dict) -> dict:
 
 def lookup_results() -> int:
     return int(getattr(_m("research.contact_search"), "LOOKUP_RESULTS", 8))
+
+
+def hunt_queries(organisation: str, city: Optional[str], social: bool = False) -> List[str]:
+    """The contact hunt's searches, one per round (engine.research.contact_search)."""
+    return _m("research.contact_search").hunt_queries(organisation, city, social)
+
+
+def hunt_contacts(results: list, *, organisation: str, site_domain: Optional[str], city: Optional[str],
+                  country: Optional[str]) -> List[dict]:
+    """The organisation's own phones / emails printed next to its name in one hunt search's results."""
+    return _m("research.contact_search").hunt_contacts(results, organisation=organisation, site_domain=site_domain,
+                                                       city=city, country=country)
+
+
+def hunt_found_by() -> str:
+    return _m("research.contact_search").HUNT_FOUND_BY
+
+
+# ---- Google Maps listings (research) ------------------------------------------
+def maps_query(organisation: str, city: Optional[str]) -> str:
+    return _m("research.maps_listing").maps_query(organisation, city)
+
+
+def pick_listing(places: List[dict], *, organisation: str, domain: Optional[str],
+                 city: Optional[str]) -> Optional[dict]:
+    """The listing of a Maps search that is this organisation's (engine.research.maps_listing)."""
+    return _m("research.maps_listing").pick_listing(places, organisation=organisation, domain=domain, city=city)
+
+
+def listing_city(address: Optional[str], known: Optional[str] = None) -> Optional[str]:
+    return _m("research.maps_listing").listing_city(address, known)
+
+
+def maps_kind(category: Optional[str], name: Optional[str], industries: Optional[List[dict]]) -> Optional[str]:
+    """The brief's industry a Maps listing's category or name shows (engine.scoring.maps_kind), or None."""
+    return _m("scoring").maps_kind(category, name, industries)
 
 
 def social_links(pages: List[dict]) -> dict:
@@ -227,6 +288,11 @@ def gate(scored: dict, lead: dict, gate_cfg: dict):
     return _m("scoring").gate(scored, lead, gate_cfg)
 
 
+def flag_words(flag: str) -> str:
+    """A score flag in plain words, as the gate's reasons show it."""
+    return _m("scoring").flag_words(flag)
+
+
 def invalid_output() -> type:
     try:
         return _m("errors").InvalidOutput
@@ -247,7 +313,7 @@ def available() -> Dict[str, Any]:
     """Which engine modules import (for the README's health check / tests)."""
     out: Dict[str, Any] = {}
     for name in ("schemas", "planning", "profiles", "discovery.pipeline", "research.lead", "research.contact_search",
-                 "pagefetch", "fingerprint", "scoring"):
+                 "research.maps_listing", "pagefetch", "fingerprint", "scoring"):
         try:
             _m(name)
             out[name] = True

@@ -8,20 +8,27 @@
 3. The general organisation search runs while that AI request is in flight, and its own AI
    request also runs in the background, so slow AI replies do not add up.
 4. Signal organisations get a website from results already collected, from organisations saved
-   in earlier runs, or (only then) one extra search.
+   in earlier runs, or (only then) one extra search. The website must carry the whole name and,
+   when the post names a place, mention it; one post backs one organisation, and job-board list
+   pages are never proof.
 5. General search results fill any remaining places. The model refers to results by id, so
    websites always come from real search results, never from the model.
 
-Only search results pages are read; job boards and LinkedIn themselves are never opened.
+6. With ``read_post`` (the agent's validation effort allows it), a hiring organisation's job posts are
+   read once its website is found: a post whose structured data names another employer or other places
+   drops that signal. Posts that cannot be read (job boards often refuse robots) keep the decision made
+   from the search result. Without ``read_post`` only search results pages are read.
 
-Platform port: search and the model are injected. ``search(query) -> list[SearchResult]`` (or
-``search_many(queries) -> list[list[SearchResult]]`` for providers that batch) and
-``ask(system, user, OutputModel) -> OutputModel``; no browser, no database.
+Platform port: search, the model and the post reader are injected. ``search(query) -> list[SearchResult]``
+(or ``search_many(queries) -> list[list[SearchResult]]`` for providers that batch),
+``ask(system, user, OutputModel) -> OutputModel`` and ``read_post(url) -> str | None``; no browser, no
+database.
 """
 
 from __future__ import annotations
 
 import re
+import unicodedata
 from urllib.parse import urlparse
 from collections.abc import Callable
 from concurrent.futures import Future
@@ -41,8 +48,8 @@ from .domains import homepage, is_excluded, is_portal_name, registered_domain
 from .exclusions import left_out
 from .search import SearchBlocked, SearchFailed, SearchResult
 from .sources import (
-    DEFAULT_KEYWORD_CHANNELS, KEYWORD_CHANNELS, KEYWORD_SEARCH, ORGANISATION_SEARCH, SIGNAL_SOURCES, as_places, keyword_queries,
-    keyword_words, mentions_signal,
+    DEFAULT_KEYWORD_CHANNELS, KEYWORD_CHANNELS, KEYWORD_SEARCH, ORGANISATION_SEARCH, SIGNAL_SOURCES, as_places, clean_roles,
+    is_job_list, keyword_queries, keyword_words, mentions_signal,
     phrase_words, signal_queries,
 )
 
@@ -62,6 +69,8 @@ RESULTS_PER_QUERY = 8  # each result is read by the model; eight keep the search
 # Up to 10 results cost the same per search (measured); more than 10 cost several times as much.
 MAX_SAME_PRICE_RESULTS = 10
 MAX_SIGNALS_PER_ORG = 3
+# How a website was found when the organisation's own site is one already taken (on the list).
+ALREADY_LISTED = "already on the list"
 # Words too common in organisation names to identify one.
 _GENERIC_NAME_WORDS = {
     "the", "and", "of", "for", "academy", "classes", "class", "institute", "institution", "coaching", "centre",
@@ -108,15 +117,164 @@ def _name_tokens(name: str) -> set[str]:
     return {w for w in words if len(w) >= 3 and w not in _GENERIC_NAME_WORDS}
 
 
-def _lead_token(name: str) -> str | None:
-    """The name's first distinctive word ('pathways' in 'Pathways World School Gurgaon')."""
-    return next((w for w in re.findall(r"[a-z0-9]+", name.lower()) if len(w) >= 3 and w not in _GENERIC_NAME_WORDS),
-                None)
-
-
 def _name_key(name: str) -> str:
     tokens = _name_tokens(name)
     return " ".join(sorted(tokens)) if tokens else " ".join(name.lower().split())
+
+
+def _fold(text: str) -> str:
+    """Lower case without accents ('Pānīpat' -> 'panipat')."""
+    return "".join(c for c in unicodedata.normalize("NFKD", text or "") if not unicodedata.combining(c)).lower()
+
+
+def _words(text: str) -> list[str]:
+    return re.findall(r"[^\W_]+", _fold(text))
+
+
+def _has_phrase(phrase: str, text: str) -> bool:
+    """`phrase` appears as whole words in `text` (both written as words joined by single spaces)."""
+    return bool(phrase) and f" {phrase} " in f" {text} "
+
+
+# Locations that name no particular place: a website cannot be checked against them.
+_NOT_A_PLACE = frozenset({
+    "remote", "work from home", "wfh", "hybrid", "anywhere", "online", "pan india", "all india", "across india",
+    "multiple locations", "various locations", "multiple cities", "worldwide", "global", "on site", "onsite",
+    "in office", "field", "nationwide", "abroad", "overseas", "location",
+})
+_COUNTRIES = frozenset({
+    "india", "bharat", "uae", "united arab emirates", "usa", "us", "united states", "united states of america", "uk",
+    "united kingdom", "england", "canada", "australia", "new zealand", "singapore", "malaysia", "nepal", "bangladesh",
+    "sri lanka", "pakistan", "bhutan", "saudi arabia", "ksa", "qatar", "oman", "kuwait", "bahrain", "kenya",
+    "nigeria", "south africa", "egypt", "germany", "france", "ireland",
+})
+# Words after a place that are not part of its name ("Karol Bagh Branch, Delhi").
+_PLACE_TAIL = frozenset({"branch", "campus", "centre", "center", "office", "area", "district", "city", "region"})
+
+
+def named_places(location: str | None) -> list[str]:
+    """The particular places in a location or address as written, most specific first:
+    "Kaladhungi, Uttarakhand" -> ["Kaladhungi", "Uttarakhand"]; "Delhi/NCR" -> ["Delhi", "NCR"];
+    "India", "Remote", "Work from home" or a country alone -> []."""
+    out: list[str] = []
+    for part in re.split(r"[,/|;()]|\s[-–—]\s|\s+&\s+", location or ""):
+        words = re.sub(r"\d+", " ", part).split()
+        while words and words[-1].lower() in _PLACE_TAIL:
+            words.pop()
+        key = " ".join(_words(" ".join(words)))
+        if len(key) >= 3 and key not in _NOT_A_PLACE and key not in _COUNTRIES:
+            out.append(" ".join(words))
+    return list(dict.fromkeys(out))
+
+
+# Indian cities known by an old and a new name: a job posted in "Gurgaon" is at a school whose site says
+# "Gurugram" (2026-10-29 replay). The first name of each group is the one place_keys uses.
+_PLACE_ALIASES = (
+    ("gurugram", "gurgaon"), ("bengaluru", "bangalore"), ("mumbai", "bombay"), ("kolkata", "calcutta"),
+    ("chennai", "madras"), ("pune", "poona"), ("vadodara", "baroda"), ("mysuru", "mysore"), ("kochi", "cochin"),
+    ("thiruvananthapuram", "trivandrum"), ("kozhikode", "calicut"), ("prayagraj", "allahabad"),
+    ("varanasi", "banaras", "benares"), ("puducherry", "pondicherry"), ("visakhapatnam", "vizag"),
+    ("mangaluru", "mangalore"), ("belagavi", "belgaum"), ("hubballi", "hubli"),
+)
+_PLACE_NAMES = {name: group for group in _PLACE_ALIASES for name in group}
+
+
+def place_names(key: str) -> tuple[str, ...]:
+    """Every name of a place written as words ('gurgaon' -> ('gurugram', 'gurgaon')); most places have one."""
+    return _PLACE_NAMES.get(key, (key,))
+
+
+def place_keys(location: str | None) -> set[str]:
+    """named_places(location) in one spelling for comparing ('Pānīpat' and 'Panipat', 'Gurgaon' and
+    'Gurugram' are one place)."""
+    return {place_names(" ".join(_words(p)))[0] for p in named_places(location)}
+
+
+def mentions_place(place: str, result: SearchResult) -> bool:
+    """The result names the place, or its other name ('Gurgaon' / 'Gurugram'), as whole words ('Karol
+    Bagh'), or its domain contains it ('vinayakjaipur.in')."""
+    key = " ".join(_words(place))
+    if not key:
+        return False
+    text = " ".join(_words(f"{result.title} {result.snippet} {result.url}"))
+    domain = registered_domain(result.url) or ""
+    return any(_has_phrase(name, text) or (len(name) >= 5 and name.replace(" ", "") in domain)
+               for name in place_names(key))
+
+
+# Words that say what kind of organisation it is or its legal form, not which one: "Vinayak Education
+# Society" runs vinayakps.in, whose title never says "society"; "Delhi Public School" is told apart only
+# by its whole name.
+_MATCH_FILLER = frozenset({
+    "society", "trust", "foundation", "samiti", "sanstha", "sansthan", "public", "senior", "secondary", "sr", "sec",
+    "higher", "convent", "vidyalaya", "residential", "boarding", "world", "national", "english", "medium", "model",
+    "modern", "girls", "boys", "kids", "branch", "campus",
+})
+_LEGAL_TAIL = frozenset({"pvt", "ltd", "private", "limited", "llp", "inc", "llc", "society", "trust", "foundation"})
+
+
+def _distinct_words(name: str) -> list[str]:
+    """The name's words that are not generic, in order (two letters or more)."""
+    return list(dict.fromkeys(w for w in _words(name) if len(w) >= 2 and w not in _GENERIC_NAME_WORDS))
+
+
+def _core_words(name: str, places: list[str]) -> list[str]:
+    """The words that tell this organisation apart: distinct words without kind, legal-form and place words
+    ('Narayana e-Techno School' -> ['narayana', 'techno'])."""
+    place_words = {w for p in places for w in _words(p)}
+    return [w for w in _distinct_words(name) if w not in _MATCH_FILLER and w not in place_words]
+
+
+def _weak(name: str, core: list[str]) -> bool:
+    """Only short words or acronyms tell the name apart ('ias' in 'THE STUDY IAS'), and a domain holds
+    those by chance (ekamiasacademy.com)."""
+    acronyms = {w.lower() for w in re.findall(r"\b[A-Z]{2,4}\b", name)}
+    return all(len(w) <= 3 or w in acronyms for w in core)
+
+
+def _phrase(name: str) -> list[str]:
+    """The name's words without a leading 'the' or a trailing legal form ('The Study IAS Pvt Ltd' -> study ias)."""
+    words = _words(name)
+    if words[:1] == ["the"]:
+        words = words[1:]
+    while words and words[-1] in _LEGAL_TAIL:
+        words.pop()
+    return words
+
+
+def _domain_label(url: str) -> str:
+    """The domain without its suffix ('pathfinderboarding' for pathfinderboarding.edu.in)."""
+    return (registered_domain(url) or "").split(".")[0]
+
+
+def names_match(name: str, result: SearchResult, places: list[str] | None = None) -> bool:
+    """The result's title or domain carries the whole name: every word that tells the organisation apart
+    (a whole word in the title, or inside the domain); the words of `places` are left to the place check.
+    A name told apart only by short words or acronyms, or only by kind and place words, needs its whole
+    phrase in the title or its words run together in the domain. The first distinctive word alone
+    credited "THE STUDY IAS" (Karol Bagh, Delhi) to ekamiasacademy.com in Hyderabad (2026-10-29), and
+    "world" took homeguruworld.com for Pathways World School."""
+    if not _distinct_words(name):
+        return False  # only generic words ("Coaching Academy"): nothing to recognise it by
+    title, label = " ".join(_words(result.title)), _domain_label(result.url)
+    core = _core_words(name, places or [])
+    if core and not _weak(name, core):
+        if all(_has_phrase(w, title) or (len(w) >= 3 and w in label) for w in core):
+            return True
+        joined = "".join(core)
+        return len(joined) >= 5 and joined in label  # 'Shri Om Academy' at shriomacademy.in
+    phrase = _phrase(name)
+    joined = "".join(phrase)
+    return _has_phrase(" ".join(phrase), title) or (len(joined) >= 5 and joined in label)
+
+
+def _domain_has_name(name: str, url: str, places: list[str]) -> bool:
+    label, joined = _domain_label(url), "".join(_phrase(name))
+    return any(len(w) >= 3 and w in label for w in _core_words(name, places)) or (len(joined) >= 5 and joined in label)
+
+
+def _near_list(near: str | list[str] | None) -> list[str]:
+    return [p.strip() for p in ([near] if isinstance(near, str) else near or []) if p and p.strip()]
 
 
 def _article_like(url: str) -> bool:
@@ -126,28 +284,107 @@ def _article_like(url: str) -> bool:
     return path.count("-") >= 4 or len(path) > 60
 
 
-def match_supplied_name(name: str, results: list[SearchResult], taken: set[str],
-                        near: str | list[str] | None = None) -> SearchResult | None:
-    """The first result on a usable domain whose title or domain has the name's first distinctive word
-    (a later one alone is too weak: "world" took homeguruworld.com for Pathways World School). With `near` (a city or state), the result must also mention that place, so a same-name organisation
-    elsewhere is not taken for the one in the job post."""
-    tokens = _name_tokens(name)
-    if not tokens:
-        return None
-    near_places = [p.strip().lower() for p in ([near] if isinstance(near, str) else near or []) if p and p.strip()]
+def _site_match(name: str, results: list[SearchResult], taken: set[str],
+                near: str | list[str] | None = None) -> tuple[SearchResult | None, bool]:
+    """(the organisation's own website among the results, whether its domain is already taken)."""
+    places = _near_list(near)
     for result in results:
         domain = registered_domain(result.url)
-        if is_excluded(domain) or domain in taken:
+        if is_excluded(domain) or not names_match(name, result, places):
             continue
-        haystack = f"{result.title.lower()} {domain}"
-        if _lead_token(name) not in haystack:
-            continue
-        if _article_like(result.url) and not any(token in (domain or "") for token in tokens):
+        if _article_like(result.url) and not _domain_has_name(name, result.url, places):
             continue  # a story about the organisation on someone else's site, not its own website
-        if near_places and not any(p in f"{result.title} {result.snippet} {result.url}".lower() for p in near_places):
-            continue
-        return result
+        if places and not any(mentions_place(p, result) for p in places):
+            continue  # a same-name organisation elsewhere
+        return result, domain in taken
+    return None, False
+
+
+# Signals whose proof is a job post: the post itself is read before they count (effort.open_job_post).
+JOB_POST_SIGNALS = frozenset({"hiring", "hiring_faculty"})
+# The employer's name before a place or branch tail: "Delhi Public School, Vadodara" -> "Delhi Public School".
+_EMPLOYER_TAIL = re.compile(r"\s+[|\-–—:]\s+|\s*[|,(]\s*")
+
+
+def post_rules_out(facts: dict[str, Any], site: SearchResult) -> str | None:
+    """Why a job post read in full (pagefetch.job_post_facts) rules out the website found for its
+    organisation, or None when nothing in it does: the post names an employer whose whole name the
+    website's result does not carry (names_match), or places none of which it mentions (the rule
+    _site_match applies to the place a search result gives). Real cases from the 2026-10-29 audit:
+    a "Narayana e-Techno School" post credited to narayanacoachingcenters.in, and The Pathfinder
+    School's post in Kaladhungi, Uttarakhand credited to pathfinderacademy.in in New Delhi."""
+    domain = registered_domain(site.url) or site.url
+    places = list(dict.fromkeys(p for location in facts.get("locations") or [] for p in named_places(location)))
+    employer = " ".join(str(facts.get("organisation") or "").split())
+    head = _EMPLOYER_TAIL.split(employer)[0].strip()
+    if head and _distinct_words(head) and not is_portal_name(head) and not names_match(head, site, places):
+        return f"The job post is by {employer}, whose name {domain} does not carry."
+    if places and not facts.get("remote") and not any(mentions_place(p, site) for p in places):
+        return f"The job post is in {'; '.join(facts['locations'])}, which {domain} does not mention."
     return None
+
+
+def check_posts(signals: list[dict], read_post: Callable[[str], str | None],
+                site: SearchResult) -> tuple[list[dict], list[dict]]:
+    """(signals kept, signals ruled out) once each job-post signal's post is read: read_post(url) gives
+    the page's HTML, or None when it cannot be read (job boards often refuse robots), and then the
+    decision made from the search result stands. A kept signal without a place takes the post's."""
+    from ..pagefetch import job_post_facts  # the engine's page parser (no network)
+
+    kept: list[dict] = []
+    ruled_out: list[dict] = []
+    for signal in signals:
+        url = signal.get("url")
+        if signal.get("key") not in JOB_POST_SIGNALS or not url:
+            kept.append(signal)
+            continue
+        try:
+            html = read_post(url)
+        except Exception:  # noqa: BLE001 - an unread post keeps the search result's decision
+            html = None
+        facts = job_post_facts(html) if html else {}
+        why = post_rules_out(facts, site) if facts else None
+        if why:
+            ruled_out.append({**signal, "ruled_out": why})
+            continue
+        if facts.get("locations") and not named_places(signal.get("location")):
+            signal = {**signal, "location": facts["locations"][0]}
+        kept.append({**signal, "post_read": True} if html else signal)
+    return kept, ruled_out
+
+
+def match_supplied_name(name: str, results: list[SearchResult], taken: set[str],
+                        near: str | list[str] | None = None) -> SearchResult | None:
+    """The organisation's own website: the first result on a usable domain whose title or domain carries
+    the whole name (names_match) and, with `near` (cities or states, e.g. the job's place), mentions one of
+    them, so a same-name organisation elsewhere is not taken for the one in the job post. A match on a
+    domain already taken ends the search with None: that is the organisation, already on the list, and
+    the next same-name site is another one (2026-10-29: one Glassdoor post for The Pathfinder School
+    became pathfinderacademy.in, then pathfinderglobalschool.com, then pathfinderboarding.edu.in, each
+    round taking the next Pathfinder)."""
+    result, already_taken = _site_match(name, results, taken, near)
+    return None if already_taken else result
+
+
+# Name and title separators: "Centurion Defence Academy - Lucknow", "Quantum Coaching | Best NDA Coaching".
+_NAME_TAIL = re.compile(r"\s+[|\-–—:]\s+|\s*\|\s*")
+
+
+def org_key(name: str, places: list[str] | set[str] | tuple[str, ...] = ()) -> str:
+    """_name_key of the name before any ' - ' or ' | ' tail, without the words of the organisation's own
+    places: "Centurion Defence Academy - Lucknow" in Lucknow keys as "Centurion Defence Academy" does."""
+    head = _NAME_TAIL.split(name or "")[0]
+    place_words = {w for p in places for w in _words(p)}
+    tokens = {w for w in _name_tokens(head) if w not in place_words}
+    return " ".join(sorted(tokens)) if tokens else _name_key(head)
+
+
+def signal_url_key(url: str) -> str:
+    """A post's URL without scheme, 'www.', fragment or trailing slash, so the same post is known however
+    it was linked (the query stays: it is the post's id on some boards, e.g. indeed /viewjob?jk=...)."""
+    parsed = urlparse((url or "").strip())
+    host = (parsed.hostname or "").removeprefix("www.")
+    return f"{host}{parsed.path.rstrip('/')}" + (f"?{parsed.query}" if parsed.query else "")
 
 
 def usable_results(results: list[SearchResult], taken: set[str]) -> list[SearchResult]:
@@ -350,9 +587,10 @@ def _signal_groups(selection: SignalSelection, results: list[tuple[str, SearchRe
                    offer: Offer | None = None) -> list[tuple[str, list[dict]]]:
     """Checked signals grouped by organisation, in the order the model ranked them. Hiring is kept
     only when the post's role is one of the run's hiring roles; a signal outside the offer's
-    catalogue is dropped."""
+    catalogue is dropped. One result backs one organisation: the first the model named for it."""
     signal_types = offer.signals if offer else SIGNALS
     groups: dict[str, tuple[str, list[dict]]] = {}
+    backs: dict[str, str] = {}  # result URL -> the organisation (name key) it is proof for
     for f in selection.findings:
         if not 1 <= f.result_id <= len(results) or not f.organisation_name.strip():
             continue  # unknown result, or no organisation named
@@ -378,6 +616,8 @@ def _signal_groups(selection: SignalSelection, results: list[tuple[str, SearchRe
         name = f.organisation_name.strip()
         if is_portal_name(name):
             continue  # the job portal itself, not the organisation hiring
+        if backs.setdefault(signal_url_key(result.url), _name_key(name)) != _name_key(name):
+            continue  # one post, one organisation (2026-10-29 audit: 9 job posts each backed 2+ organisations)
         _, signals = groups.setdefault(_name_key(name), (name, []))
         if len(signals) < MAX_SIGNALS_PER_ORG and all(s["key"] != key for s in signals):
             signals.append({
@@ -413,9 +653,12 @@ def discover(
     search_budget: int | None = None,
     exclude: list[str] | None = None,
     skip_domains: set[str] | None = None,
+    skip_signal_urls: set[str] | None = None,
+    signal_turn: int = 0,
     results_per_query: int = RESULTS_PER_QUERY,
     choose_by_rules: bool = False,
     offer: Offer | None = None,
+    read_post: Callable[[str], str | None] | None = None,
     progress: Callable[..., None] = lambda *_args: None,
     check_cancelled: Callable[[], None] = lambda: None,
 ) -> DiscoveryOutcome:
@@ -427,10 +670,21 @@ def discover(
     select_signals=None).
     industries: [{"name", "search_term", "hiring_phrases", "need_phrases"}] from a guided request;
     without them the plan's organisation type is used. max_signal_queries is per industry.
-    match_place (a city or state): websites looked up for organisations must mention it.
+    match_place (a city or state): websites looked up for organisations must mention it; a signal
+    whose post names a place (its "location") uses that place instead.
     exclude: kinds of organisations to leave out ("Schools & playschools"); names that fall under
     one are listed as left out and never researched.
-    offer (engine/offer.py): what is sold; defaults to the plan's target_products."""
+    skip_signal_urls: results already behind a signal of an earlier round, never read again: one
+    job post backs one organisation (2026-10-29: one Glassdoor post for The Pathfinder School
+    became three leads in three rounds).
+    signal_turn: the caller's round count; each round runs the next signal and keyword searches
+    from the list of every role, phrase and keyword (sources.signal_queries), as many as before.
+    offer (engine/offer.py): what is sold; defaults to the plan's target_products.
+    read_post(url) -> the job post page's HTML, or None when it cannot be read (effort.open_job_post;
+    None = posts are never opened): once a hiring organisation's website is found, each of its job
+    posts is read, and a post naming another organisation or another place drops that signal
+    (check_posts); an organisation left with no signal is not a candidate. An unread post keeps the
+    decision made from the search result."""
     offer = _offer(plan, offer)
     outcome = DiscoveryOutcome(candidates=[])
     taken: set[str] = set(skip_domains or ())  # e.g. found by an earlier round of the same run
@@ -455,15 +709,16 @@ def discover(
     places = as_places(place if place is not None else (plan.locations[0] if plan.locations else ""))
     place = places[0]  # lookups and labels use the first place
     industries = industries or [{"name": plan.segment, "search_term": plan.search_term or plan.segment}]
-    hiring_roles = offer.run_hiring_roles(hiring_roles or plan.hiring_roles)
+    hiring_roles = clean_roles(offer.run_hiring_roles(hiring_roles or plan.hiring_roles))
     signal_plan = signal_queries([s for s in sources if s in SIGNAL_SOURCES], industries, places, max_signal_queries,
-                                 hiring_roles)
+                                 hiring_roles, signal_turn)
     keywords = list(keywords or plan.keywords)
     keyword_plan = (
         keyword_queries(keywords, industries, places, list(keyword_channels or DEFAULT_KEYWORD_CHANNELS),
-                        max_keyword_queries * len(places))
+                        max_keyword_queries * len(places), signal_turn)
         if KEYWORD_SEARCH in sources and use_signals else []
     )
+    used_posts = {signal_url_key(u) for u in skip_signal_urls or ()}
     extra_words = phrase_words(industries)
     signals_on = bool(signal_plan and use_signals)
     use_org_search = ORGANISATION_SEARCH in sources and max_queries > 0 and bool(plan.search_queries)
@@ -480,18 +735,25 @@ def discover(
     def select_signals(system_prompt: str, user_prompt: str) -> SignalSelection:
         return ask(system_prompt, user_prompt, SignalSelection)  # type: ignore[return-value]
 
-    def resolve_websites(names: list[str]) -> list[tuple[str | None, str | None, str]]:
-        """(website, domain, how) per name: from results already seen, from earlier runs, or one
-        batch of lookup searches for the rest."""
-        resolved: list[tuple[str | None, str | None, str] | None] = []
+    def resolve_websites(names: list[str], job_places: list[list[str]] | None = None
+                         ) -> list[tuple[str | None, str | None, str, SearchResult | None]]:
+        """(website, domain, how, the search result it came from) per name: from results already
+        seen, from earlier runs (no result), or one batch of lookup searches for the rest.
+        job_places[i]: the places named in that organisation's posts; its website must mention one
+        (instead of match_place) and its lookup searches them (instead of the plan's first place,
+        "India" for a country-wide market). A website already on the list comes back as ALREADY_LISTED."""
+        posts = [list(job_places[i]) if job_places and job_places[i] else [] for i in range(len(names))]
+        nears = [posts[i] or match_place for i in range(len(names))]
+        resolved: list[tuple[str | None, str | None, str, SearchResult | None] | None] = []
         lookups: list[int] = []
         for index, name in enumerate(names):
-            hit = match_supplied_name(name, pool, taken, match_place)
+            hit, listed = _site_match(name, pool, taken, nears[index])
             known = None if hit else find_known(name)
             if hit:
-                resolved.append((homepage(hit.url), registered_domain(hit.url), "matched in search results"))
+                how = ALREADY_LISTED if listed else "matched in search results"
+                resolved.append((homepage(hit.url), registered_domain(hit.url), how, hit))
             elif known and known[0] not in taken:
-                resolved.append((known[1], known[0], "known from an earlier run"))
+                resolved.append((known[1], known[0], "known from an earlier run", None))
             else:
                 resolved.append(None)
                 lookups.append(index)
@@ -500,17 +762,18 @@ def discover(
             skipped, lookups = lookups[lookup_budget[0]:], lookups[: lookup_budget[0]]
             lookup_budget[0] -= len(lookups)
             for index in skipped:
-                resolved[index] = (None, None, "not looked up (search budget)")
+                resolved[index] = (None, None, "not looked up (search budget)", None)
         if lookups:
             check_cancelled()
             progress(f"Looking up the websites of {len(lookups)} organisation{'s' if len(lookups) != 1 else ''}.")
-            queries = [f"{names[i]} {place}".strip() for i in lookups]
+            queries = [" ".join([names[i], *(posts[i][:2] or [place])]).strip() for i in lookups]
             outcome.queries_run += len(queries)
             for index, results in zip(lookups, _search_many(search, search_many, queries, 5, progress)):
-                found = match_supplied_name(names[index], results, taken, match_place)
+                found, listed = _site_match(names[index], results, taken, nears[index])
                 resolved[index] = (
-                    (homepage(found.url), registered_domain(found.url), f"search: {found.query}") if found
-                    else (None, None, "not found")
+                    (homepage(found.url), registered_domain(found.url),
+                     ALREADY_LISTED if listed else f"search: {found.query}", found) if found
+                    else (None, None, "not found", None)
                 )
         return resolved  # type: ignore[return-value]
 
@@ -544,10 +807,16 @@ def discover(
 
         signal_results: list[tuple[str, SearchResult]] = []
         seen_urls: set[str] = set()
+
+        def readable(result: SearchResult) -> bool:
+            """Not read already, not behind an earlier round's signal, and not a job board's list page."""
+            return (result.url not in seen_urls and signal_url_key(result.url) not in used_posts
+                    and not is_job_list(result))
+
         for (source_key, _), results in zip(signal_batch, batch_results[: len(signal_batch)]):
             for result in results:
                 pool.append(result)
-                if result.url not in seen_urls and mentions_signal(result, source_key):
+                if readable(result) and mentions_signal(result, source_key):
                     seen_urls.add(result.url)
                     signal_results.append((source_key, result))
         org_results = [r for results in batch_results[len(signal_batch):] for r in results]
@@ -557,7 +826,7 @@ def discover(
         for (channel, _), results in zip(kw_batch, kw_results):
             for result in results:
                 pool.append(result)
-                if result.url not in seen_urls and mentions_signal(result, KEYWORD_SEARCH, kw_words + extra_words):
+                if readable(result) and mentions_signal(result, KEYWORD_SEARCH, kw_words + extra_words):
                     seen_urls.add(result.url)
                     signal_results.append((KEYWORD_SEARCH, result))
             if channel == "web":
@@ -589,8 +858,13 @@ def discover(
         # 3. Supplied names without a website.
         if name_only:
             names = [seed["name"].strip() for seed in name_only]
-            for seed, name, (website, domain, how) in zip(name_only, names, resolve_websites(names)):
-                if domain:
+            for seed, name, (website, domain, how, _site) in zip(name_only, names, resolve_websites(names)):
+                if how == ALREADY_LISTED:
+                    candidate = Candidate(
+                        name=name, website=website, domain=domain, source="supplied", detail={"supplied": seed},
+                        included=False, note="Already on the list under its website.",
+                    )
+                elif domain:
                     taken.add(domain)
                     by_domain[domain] = candidate = Candidate(
                         name=name, website=website, domain=domain, source="supplied",
@@ -620,12 +894,29 @@ def discover(
                                                         detail={}, included=False, note=f"Left out: {phrase}."))
             groups = [g for g in groups if not left_out(g[0], exclude)]
             groups = groups[: max(0, candidate_count - len(outcome.included))]
-            for (name, signals), (website, domain, how) in zip(
-                groups, resolve_websites([name for name, _ in groups])
+            post_places = [list(dict.fromkeys(p for s in signals for p in named_places(s.get("location"))))
+                           for _, signals in groups]
+            for (name, signals), (website, domain, how, site) in zip(
+                groups, resolve_websites([name for name, _ in groups], post_places)
             ):
+                if read_post is not None and site is not None and (domain in by_domain or how != ALREADY_LISTED):
+                    # The post itself, read once the website is known: "Narayana e-Techno School" is not
+                    # narayanacoachingcenters.in, and a post in Kaladhungi is not a New Delhi school's.
+                    # A website known from an earlier run has no search result to compare it with.
+                    check_cancelled()
+                    signals, ruled_out = check_posts(signals, read_post, site)
+                    if not signals:
+                        if domain not in by_domain:
+                            outcome.candidates.append(Candidate(
+                                name=name, website=website, domain=domain, source="signal", included=False,
+                                detail={"signals_ruled_out": ruled_out, "website_from": how},
+                                note=ruled_out[0]["ruled_out"]))
+                        continue
                 if domain and domain in by_domain:  # already on the list: add the evidence to it
                     by_domain[domain].detail.setdefault("signals", []).extend(signals)
                     continue
+                if how == ALREADY_LISTED:
+                    continue  # its website is on the list from an earlier round (or suppressed)
                 if domain:
                     taken.add(domain)
                 candidate = Candidate(

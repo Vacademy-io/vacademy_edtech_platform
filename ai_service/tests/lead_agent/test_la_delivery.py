@@ -110,13 +110,16 @@ def test_row_shape(la_db, monkeypatch, ledger):
     asyncio.run(delivery.deliver(agent))
     row = fake.rows[0]
     assert row["external_id"] == c["id"] and row["mobile"] == "+919876512345"
-    assert row["email"] == "aditya@winners.example.in" and row["full_name"] == "Aditya Patel"
+    # The phone sent is the desk mobile, so the lead is the organisation and asks for the founder,
+    # whose own email is sent (2026-10-29 replay: named after the email's owner, the call rang the desk).
+    assert row["email"] == "aditya@winners.example.in" and row["full_name"] == "WiNNERS Institute"
     cf = row["custom_fields"]
     assert cf["la_org_name"] == "WiNNERS Institute" and cf["la_score"] == "82"
-    assert cf["la_role"] == "Founder & Director" and cf["la_platforms"] == "Appx (lms)"
+    assert cf["la_role"] == "" and cf["la_platforms"] == "Appx (lms)"
+    assert cf["la_ask_for"] == "Aditya Patel (Founder & Director)"
     assert "Admissions open for 2027" in row["note"]
-    assert set(cf) == {"la_org_name", "la_website", "la_city", "la_role", "la_contact_quality", "la_other_contacts",
-                       "la_score", "la_why", "la_opening", "la_platforms", "la_source_url"}
+    assert set(cf) == {"la_org_name", "la_website", "la_city", "la_role", "la_ask_for", "la_contact_quality",
+                       "la_other_contacts", "la_score", "la_why", "la_opening", "la_platforms", "la_source_url"}
 
 
 def test_duplicate_existing_and_suppressed_are_skipped_free(la_db, monkeypatch, ledger):
@@ -333,3 +336,218 @@ def test_local_agents_and_own_extension_pages_bill_local():
     assert billing.tool_key_for({"fetch": {"extension_pages": 0}}, "LOCAL") == billing.TOOL_LOCAL
     assert billing.tool_key_for({"fetch": {"extension_pages": 1}}, "AUTO") == billing.TOOL_LOCAL
     assert billing.tool_key_for({"fetch": {"extension_pages": 0, "pages_used": 4}}, "AUTO") == billing.TOOL_REMOTE
+
+
+# Which phone, email and name a lead is delivered with (real cases from the 2026-10-29 audit of the
+# live agent "Leads for Vacademy"). Pure: no database.
+
+def _cand(lead_json, cid="c-1"):
+    return {"id": cid, "lead_json": lead_json, "score_json": {}, "score": 80}
+
+
+def _rated(name, domain, contacts, people=(), decision_maker=None):
+    """A lead whose contacts the engine rated, as research stores it."""
+    from app.services.lead_agent.engine.research.lead import rate_contacts
+
+    lead_json = {"organisation": {"name": name, "domain": domain, "website": f"https://{domain}/", "branches": []},
+                 "people": list(people), "phone_region": "IN", "decision_maker": decision_maker,
+                 "contacts": [{"url": f"https://{domain}/", "seen_on": 1, "note": "", **c} for c in contacts]}
+    lead_json["contacts"] = rate_contacts(lead_json, [])
+    return lead_json
+
+
+def _mail(value, context=""):
+    return {"kind": "published_email", "value": value, "context": context or value}
+
+
+@pytest.mark.parametrize("name, domain, emails, sent", [
+    ("Aadhar Institute", "aadharinstitute.com",
+     [_mail("iguruji.in@gmail.com"), _mail("aadharinstitute@gmail.com")], "aadharinstitute@gmail.com"),
+    ("Persona Educational Institute", "personaei.in",
+     [_mail("ja10106371@yahoo.com"), _mail("a1persona@yahoo.com")], "a1persona@yahoo.com"),
+    ("Bharadwaj Institute", "bharadwajinstitute.com",
+     [_mail("contact@mysite.com"), _mail("bharadwajinstitute@gmail.com")], "bharadwajinstitute@gmail.com"),
+    ("Indian Institute of Skill Development Training (IISDT)", "bkvps.in",
+     [_mail("royalindiasecuritaus@gmail.com"), _mail("info@iisdt.in")], "info@iisdt.in"),
+    ("Kristu Jayanti College", "kristujayanti.edu.in",
+     [_mail("navajyothistudyhouse@gmail.com"), _mail("admission@kristujayanti.com")], "admission@kristujayanti.com"),
+    ("Turning Point", "turningpointedu.org",
+     [_mail("tnchowdhary@hotmail.com", "You can mail your resume at tnchowdhary@hotmail.com"),
+      _mail("info@turningpointedu.org")], "info@turningpointedu.org"),
+    ("Samved School", "samvedschool.com",
+     [_mail("aves1967@gmail.com", "resume, kindly indicate the post applied for and send to aves1967@gmail.com"),
+      _mail("office@samvedschool.in")], "office@samvedschool.in"),
+    # A mailbox named after the organisation on another domain is its own (2026-10-29 replay).
+    ("Evolvv", "evolvv.in", [_mail("rk1980@gmail.com"), _mail("evolvv@techvito.in")], "evolvv@techvito.in"),
+    ("AICPE Educational Services Pvt. Ltd.", "aicpeindia.org", [_mail("aicpe@bizindia.org")], "aicpe@bizindia.org"),
+])
+def test_the_email_sent_is_the_one_the_organisation_owns(name, domain, emails, sent):
+    row = delivery.build_row(_cand(_rated(name, domain, emails)))
+    assert row["email"] == sent
+
+
+def test_an_unnamed_gmail_is_sent_only_when_nothing_better_is_on_the_lead():
+    row = delivery.build_row(_cand(_rated("Alpha Academy", "alpha-academy.in", [_mail("rk1980@gmail.com")])))
+    assert row["email"] == "rk1980@gmail.com"
+
+
+def test_leads_rated_before_owners_were_stored_still_prefer_their_own_domain():
+    lead_json = {"organisation": {"name": "WiNNERS Institute", "website": "https://www.winners.example.in/"},
+                 "phone_region": "IN", "contacts": [
+                     {"kind": "published_email", "value": "rk1980@gmail.com", "quality": "likely"},
+                     {"kind": "published_email", "value": "info@winners.example.in", "quality": "general"}]}
+    assert delivery.build_row(_cand(lead_json))["email"] == "info@winners.example.in"
+
+
+def _phone(value, quality, note, **extra):
+    return {"kind": "institute_phone", "value": value, "quality": quality, "note": note, **extra}
+
+
+def test_the_phone_sent_is_the_best_tier_then_a_mobile_then_one_google_maps_also_lists():
+    # The tier comes first since the 2026-10-29 replay: a likely mobile used to beat a decision maker's
+    # direct landline, and iimidr.ac.in was sent a student's mobile from its placements page ("Aarna
+    # Khera 9818457004") over the chairman's own line.
+    principal = {"name": "Dr. Asmita A. Vaidya", "role": "Principal"}
+    contacts = [
+        _phone("+91 22 2204 1707", "direct", "landline", person=principal),
+        _phone("+91 98450 12345", "likely", "mobile"),
+        _phone("+91 98290 55555", "likely", "mobile", maps_confirmed=True),
+        _phone("+91 99000 11111", "general", "mobile"),
+    ]
+    lead_json = {"organisation": {"name": "Alpha Academy"}, "phone_region": "IN", "contacts": contacts}
+    phone, _, others = delivery.best_contacts(lead_json)
+    assert phone["value"] == "+91 22 2204 1707"  # the principal's own landline beats a desk mobile
+    assert [c["value"] for c in others] == ["+91 98450 12345", "+91 98290 55555", "+91 99000 11111"]
+    phone, _, _ = delivery.best_contacts({**lead_json, "contacts": contacts[1:]})
+    assert phone["value"] == "+91 98290 55555"  # within a tier a mobile, and one Google Maps also lists
+    phone, _, _ = delivery.best_contacts({**lead_json, "contacts": contacts[1:2] + contacts[3:]})
+    assert phone["value"] == "+91 98450 12345"
+    general = [_phone("+91 80 4567 8901", "general", "landline"), _phone("+91 99000 11111", "general", "")]
+    phone, _, _ = delivery.best_contacts({**lead_json, "contacts": general})
+    assert phone["value"] == "+91 99000 11111"  # typed from the number itself when the note is missing
+    founder = {"name": "Meena Iyer", "role": "Founder"}
+    own_line = [_phone("+91 98290 55555", "likely", "mobile", maps_confirmed=True),
+                _phone("+91 98450 12345", "direct", "mobile", person=founder)]
+    phone, _, _ = delivery.best_contacts({**lead_json, "contacts": own_line})
+    assert phone["value"] == "+91 98450 12345"  # the founder's own mobile beats a desk mobile Maps lists
+
+
+def test_the_maps_listing_and_the_website_number_are_listed_once():
+    contacts = [_phone("+91 98290 55555", "likely", "mobile", maps_confirmed=True),
+                {"kind": "institute_phone", "value": "+91 98290 55555", "quality": "likely", "found_by": "google_maps"}]
+    phone, _, others = delivery.best_contacts({"organisation": {}, "phone_region": "IN", "contacts": contacts})
+    assert phone["value"] == "+91 98290 55555" and others == []
+
+
+def test_a_lead_on_a_front_desk_line_is_named_after_the_organisation_and_asks_for_the_decision_maker():
+    # glcmumbai.com was delivered as "Dr. Asmita A. Vaidya" on the college's general landline.
+    lead_json = {"organisation": {"name": "Government Law College, Mumbai", "website": "https://glcmumbai.com/"},
+                 "decision_maker": {"name": "Dr. Asmita A. Vaidya", "role": "Principal"}, "phone_region": "IN",
+                 "contacts": [_phone("+91 22 2204 1707", "general", "landline")]}
+    row = delivery.build_row(_cand(lead_json))
+    assert row["full_name"] == "Government Law College, Mumbai" and row["mobile"] == "+912222041707"
+    assert row["custom_fields"]["la_role"] == ""
+    assert row["custom_fields"]["la_ask_for"] == "Dr. Asmita A. Vaidya (Principal)"
+
+
+def test_a_lead_is_named_after_a_person_only_when_the_contact_sent_is_theirs():
+    founder = {"name": "Meena Iyer", "role": "Founder & Director"}
+    counsellor = {"name": "Priya Sharma", "role": "Admission Counsellor"}
+    base = {"organisation": {"name": "Alpha Academy", "domain": "alpha-academy.in"}, "phone_region": "IN",
+            "decision_maker": founder}
+    own = delivery.build_row(_cand({**base, "contacts": [_phone("+91 98450 12345", "direct", "mobile", person=founder)]}))
+    assert own["full_name"] == "Meena Iyer" and own["custom_fields"]["la_role"] == "Founder & Director"
+    desk = delivery.build_row(_cand({**base, "contacts": [_phone("+91 98450 12345", "general", "mobile", person=counsellor)]}))
+    assert desk["full_name"] == "Priya Sharma" and desk["custom_fields"]["la_role"] == "Admission Counsellor"
+    assert desk["custom_fields"]["la_ask_for"] == "Meena Iyer (Founder & Director)"
+    # The founder's own Gmail beats the organisation's inbox: it reaches the person who buys. The phone
+    # sent is the desk mobile, so the lead is named after the organisation and asks for her (until the
+    # 2026-10-29 replay it was named after her while the call rang the desk).
+    mixed = delivery.build_row(_cand({**base, "contacts": [
+        _phone("+91 98450 12345", "likely", "mobile"),
+        {"kind": "published_email", "value": "meenaiyer@gmail.com", "quality": "direct", "owner": "person",
+         "person": founder},
+        {"kind": "published_email", "value": "info@alpha-academy.in", "quality": "general", "owner": "own"}]}))
+    assert mixed["email"] == "meenaiyer@gmail.com" and mixed["full_name"] == "Alpha Academy"
+    assert mixed["custom_fields"]["la_role"] == "" and "info@alpha-academy.in (general)" in \
+        mixed["custom_fields"]["la_other_contacts"]
+    assert mixed["custom_fields"]["la_ask_for"] == "Meena Iyer (Founder & Director)"
+    # With no phone, the lead is named after the owner of the email sent, and nobody else is asked for.
+    email_only = delivery.build_row(_cand({**base, "contacts": [
+        {"kind": "published_email", "value": "meenaiyer@gmail.com", "quality": "direct", "owner": "person",
+         "person": founder}]}))
+    assert email_only["full_name"] == "Meena Iyer" and email_only["custom_fields"]["la_ask_for"] == ""
+    # Without her mailbox, the organisation's own inbox is sent and the lead is named after the organisation.
+    inbox = delivery.build_row(_cand({**base, "contacts": [
+        _phone("+91 98450 12345", "likely", "mobile"),
+        {"kind": "published_email", "value": "rk1980@gmail.com", "quality": "likely", "owner": "free"},
+        {"kind": "published_email", "value": "info@alpha-academy.in", "quality": "general", "owner": "own"}]}))
+    assert inbox["email"] == "info@alpha-academy.in" and inbox["full_name"] == "Alpha Academy"
+    assert inbox["custom_fields"]["la_role"] == ""
+
+
+def test_a_national_brands_group_leader_is_not_who_to_ask_for():
+    lead_json = {"organisation": {"name": "ALLEN Career Institute, Indore", "domain": "allen.ac.in"},
+                 "decision_maker": {"name": "Rajesh Maheshwari", "role": "Director", "scope": "group"},
+                 "phone_region": "IN", "contacts": [_phone("+91 731 400 1234", "general", "landline")]}
+    row = delivery.build_row(_cand(lead_json))
+    assert row["full_name"] == "ALLEN Career Institute, Indore" and row["custom_fields"]["la_ask_for"] == ""
+
+
+# Naming follows the phone sent (2026-10-29 replay: 30 leads were named after the email's owner while
+# the phone rang the desk, 9 of them asking for someone else: ymcacollege.ac.in, iitd.ac.in,
+# tomarchemistrytutorial.com).
+
+def test_a_desk_phone_names_the_organisation_and_asks_for_the_local_decision_maker():
+    hod = {"name": "Prof. Nilanjan Senroy", "role": "Head of Department"}
+    lead_json = {"organisation": {"name": "IIT Delhi", "domain": "iitd.ac.in"}, "phone_region": "IN",
+                 "decision_maker": {"name": "Prof. Rangan Banerjee", "role": "Director"},
+                 "contacts": [_phone("+91 11 2659 1999", "general", "landline"),
+                              {"kind": "published_email", "value": "hod@ee.iitd.ac.in", "quality": "general",
+                               "owner": "own", "person": hod}]}
+    row = delivery.build_row(_cand(lead_json))
+    assert row["full_name"] == "IIT Delhi" and row["custom_fields"]["la_role"] == ""
+    assert row["custom_fields"]["la_ask_for"] == "Prof. Rangan Banerjee (Director)"
+
+
+def test_with_no_local_decision_maker_a_desk_phone_asks_for_the_leader_whose_mailbox_is_sent():
+    principal = {"name": "Dr. George Abraham", "role": "Principal"}
+    base = {"organisation": {"name": "YMCA College", "domain": "ymcacollege.ac.in"}, "phone_region": "IN",
+            "decision_maker": None}
+    desk = [_phone("+91 93422 04126", "likely", "mobile")]
+    leader = {"kind": "published_email", "value": "principal.george@ymcacollege.ac.in", "quality": "direct",
+              "owner": "own", "person": principal}
+    row = delivery.build_row(_cand({**base, "contacts": desk + [leader]}))
+    assert row["full_name"] == "YMCA College" and row["custom_fields"]["la_ask_for"] == "Dr. George Abraham (Principal)"
+    # Not a leader (rated general): nobody to ask for.
+    staff = {**leader, "quality": "general", "person": {"name": "Mr. M. Jeya Nesa Kumar", "role": "Office"}}
+    assert delivery.build_row(_cand({**base, "contacts": desk + [staff]}))["custom_fields"]["la_ask_for"] == ""
+
+
+@pytest.mark.parametrize("on_phone, decision_maker", [
+    ("Mr. Anshudeep Tomar", "Anshudeep Tomar"),
+    ("Anshudeep Singh Tomar", "Anshudeep Tomar"),
+    ("MAJ ASHOK YADAV", "Major Ashok Yadav"),  # pathfinderglobalschool.com
+])
+def test_the_person_whose_phone_is_sent_is_not_asked_for_again_however_the_name_is_written(on_phone, decision_maker):
+    lead_json = {"organisation": {"name": "Alpha Academy"}, "phone_region": "IN",
+                 "decision_maker": {"name": decision_maker, "role": "Founder"},
+                 "contacts": [_phone("+91 97138 07075", "direct", "mobile", person={"name": on_phone, "role": "Founder"})]}
+    row = delivery.build_row(_cand(lead_json))
+    assert row["full_name"] == on_phone and row["custom_fields"]["la_ask_for"] == ""
+    other = {**lead_json, "decision_maker": {"name": "Meena Ashok Iyer", "role": "Director"}}
+    assert delivery.build_row(_cand(other))["custom_fields"]["la_ask_for"] == "Meena Ashok Iyer (Director)"
+
+
+def test_a_number_from_another_country_is_not_sent_as_the_mobile():
+    # talentresourze.com was sent "USA: +1 (347) 353-1469" over its Indian mobile.
+    contacts = [_phone("+1 347-353-1469", "general", "phone"), _phone("+91 90594 61732", "general", "mobile")]
+    phone, _, _ = delivery.best_contacts({"organisation": {}, "phone_region": "IN", "contacts": contacts})
+    assert phone["value"] == "+91 90594 61732"
+
+
+def test_a_number_of_the_leads_own_country_is_sent_before_a_foreign_one_of_the_same_tier():
+    # mygreatlearning.com was sent "+1 512-647-2647" over its Bengaluru landline, both "general" (2026-10-29 replay).
+    contacts = [_phone("+1 512-647-2647", "general", "phone"), _phone("+91 80 6947 4555", "general", "landline")]
+    phone, _, others = delivery.best_contacts({"organisation": {}, "phone_region": "IN", "contacts": contacts})
+    assert phone["value"] == "+91 80 6947 4555" and [c["value"] for c in others] == ["+1 512-647-2647"]

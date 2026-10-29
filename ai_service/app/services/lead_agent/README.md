@@ -26,6 +26,49 @@ build_lead; fingerprint + size; score; decision-maker lookup only at or above th
 -> APPROVED / REVIEW / REJECTED -> delivery inside the window while today's delivered < quota
 (today's slots reserved atomically in `lead_agent_day.delivered`; admin_core existing-contacts + bulk-intake, <= 10 rows per call, a failed call retried idempotently on `external_id`, 5 attempts then FAILED) -> one charge per delivered lead (`charged_at` marks it settled).
 
+## Validity: right organisation, right contact (2026-10-29)
+
+Outreach after delivery is fully automated, so a delivered lead must reach the organisation it names.
+Rules that cost nothing run at every level:
+
+* **Contacts** (`engine/research/contacts.py`, `lead.py`): an address is judged by the sentence around it
+  (resume/CV, security, grievance/complaint or conference addresses are avoided). Template leftovers are
+  avoided (`contact@mysite.com`, `filler@godaddy.com`, "(888) 456-7890" on an Indian site). An email on
+  another organisation's domain is avoided unless it carries the organisation's name, is a leader's mailbox
+  or belongs to a named person. Every email gets an owner (own / sister / org-named Gmail / person / unnamed).
+* **Google Maps phone** (`contact_hunt.py`): the Maps listing's number becomes a contact, and a website number
+  it also lists is `maps_confirmed`. A Maps listing overrides sentence-based blocks, but never helpline,
+  toll-free, fax or template numbers. A site whose home page can't be read but has a Maps phone is judged from
+  the listing (fit by category/name) and goes to REVIEW (`maps_only`), never AUTO.
+* **What delivery sends** (`delivery.py`): phone by tier, then home country, then mobile, then Maps-confirmed.
+  Email: a leader's own mailbox first, then by owner. The lead is named after the person the phone sent
+  belongs to (else the email's, when no phone), otherwise the organisation; the decision maker goes to
+  `la_ask_for` ("Ask for"). `la_contact_quality` describes the phone/email actually sent.
+  The dashboard shows the same choice: the candidates API's `send` (and `best_contact`) come from
+  `delivery.send_plan`, the helper `build_row` uses. SKIPPED leads list under the Rejected tab.
+* **Same organisation twice** (`dedupe.py`, after research, under a per-agent advisory lock): a shared usable
+  phone/email, or emails on the other's domain, means the later candidate is SKIPPED. Same name and city with
+  nothing shared is flagged `possible_duplicate` and goes to REVIEW. Discovery also skips a same-name
+  organisation in the same city (both lanes).
+* **Hiring proof** (`engine/discovery/pipeline.py`, `sources.py`): the website of a hiring organisation must
+  mention the job's place (Indian city renamings are aliases) and match its whole name. A taken site ends
+  the lookup. One job post backs one organisation (across rounds: `store.known_signal_urls`). Job-list pages
+  never count. Signal searches rotate per round (`cursor_json.sig_turn`).
+* **Unreadable home pages** (`fetcher.py`, `engine/pagefetch.py`): one targeted retry (www ↔ bare name,
+  meta refresh, http where allowed, browser headers). A JS-only page nobody renders is stored as the text its
+  HTML carries (title, description, JSON-LD, `tel:` links).
+
+**Validation effort** (`effort.py`, `gate_json.effort`, set per agent in the dashboard) buys extra checking
+for leads that would reach the review bar:
+
+| Level | Pages per site | Maps lookup (non-Maps leads) | Read the job post | Contact-hunt searches | Extra cost per lead searched |
+|---|---|---|---|---|---|
+| BASIC | 3 | no | no | 0 | none |
+| STANDARD (default) | 3 | yes | yes | 1 | up to ~$0.004 |
+| DEEP | 6 | yes | yes | 3 (incl. social-page results) | up to ~$0.006 |
+
+The price per delivered lead does not depend on the level yet (`ai_tool_pricing` rows unchanged).
+
 Page cache: pages our server read are shared by every institute (`fetched_institute_id = ''`); pages an
 institute's extension read are visible to that institute only.
 

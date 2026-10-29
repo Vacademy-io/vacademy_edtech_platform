@@ -20,8 +20,7 @@ from .discovery.exclusions import kept_industries
 from .discovery.pipeline import (  # noqa: F401 - re-exported for callers of the engine's planning module
     MAX_SAME_PRICE_RESULTS, RESULTS_PER_QUERY, SELECTION_MAX_TOKENS, DiscoveryOutcome,
 )
-from .discovery.sources import SIGNAL_SOURCES
-from .research.catalogue import role_from_phrase
+from .discovery.sources import SIGNAL_SOURCES, clean_roles
 from .offer import OFFER_KEY, as_offer
 from .research.lead import run_hiring_roles
 from .schemas import PRODUCT_NAMES, ResearchPlan
@@ -135,11 +134,13 @@ def is_worldwide(location: dict[str, str]) -> bool:
 
 
 def guided_hiring_roles(guided: dict[str, Any]) -> list[str]:
-    """Roles chosen in the form, or else those in the product analysis's job-post phrases (cleaned, at most 6)."""
-    chosen = [r for r in (guided.get("hiring_roles") or []) if isinstance(r, str)]
+    """Roles chosen in the form, or else those in the product analysis's job-post phrases (cleaned, at most 6).
+    Form roles are cleaned too: briefs store them as written, and "hiring admission counsellor" was searched
+    as "school hiring hiring admission counsellor India" (2026-10-29)."""
+    chosen = clean_roles([r for r in (guided.get("hiring_roles") or []) if isinstance(r, str)])
     if not chosen:
-        chosen = [role_from_phrase(p) for i in guided.get("industries") or [] for p in (i.get("hiring_phrases") or [])]
-    return list(dict.fromkeys(r.strip()[:60] for r in chosen if r and r.strip()))[:6]
+        chosen = clean_roles([p for i in guided.get("industries") or [] for p in (i.get("hiring_phrases") or [])])
+    return chosen[:6]
 
 
 def guided_locations(location: dict[str, str]) -> list[str]:
@@ -276,7 +277,7 @@ def finalise_plan(plan: ResearchPlan, cfg: EngineConfig = DEFAULT_CONFIG, guided
         if email_run(guided):
             count = email_site_count(lead_count, cfg)
             data["mode"] = EMAIL_MODE
-        data["hiring_roles"] = guided_hiring_roles(guided) or plan.hiring_roles or run_hiring_roles(
+        data["hiring_roles"] = guided_hiring_roles(guided) or clean_roles(plan.hiring_roles) or run_hiring_roles(
             as_offer(list(guided["products"])), None)
         data["keywords"] = clean_phrases(guided.get("keywords"), 10) or list(plan.keywords)
         if email_run(guided):
@@ -295,7 +296,7 @@ def finalise_plan(plan: ResearchPlan, cfg: EngineConfig = DEFAULT_CONFIG, guided
                          "or general inboxes: one web search each, about $0.0016.")
         queries = query_count(lead_count, cfg)
     else:
-        data["hiring_roles"] = plan.hiring_roles or run_hiring_roles(list(plan.target_products), None)
+        data["hiring_roles"] = clean_roles(plan.hiring_roles) or run_hiring_roles(list(plan.target_products), None)
         data["keywords"] = list(plan.keywords)
         requested = plan.candidate_count
         count = min(requested, cfg.max_candidates)

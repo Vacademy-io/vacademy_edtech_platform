@@ -15,6 +15,14 @@ robots.txt (cached per organisation in lead_org.robots_json for 7 days), goes
 through safe_http.safe_fetch (SSRF-safe, every redirect re-checked), 15 s per
 page, at most 1.5 MB, one request per site at a time (claims take one task per
 organisation) and a short pause between sites.
+
+A home page the server could not read is read once more, differently (retry_urls:
+browser headers, the www / bare twin, http, a meta refresh's target), under the
+same robots.txt rules and pause. A JavaScript shell goes to the institute's
+extension when one is online; one no browser renders in time (no extension, or an
+AUTO agent's extension that did not take it within 5 minutes) is kept as the text
+its server HTML carries (engine.pagefetch.read_shell). `read_post` reads a job post
+for discovery's check (effort.open_job_post).
 """
 from __future__ import annotations
 
@@ -22,13 +30,14 @@ import asyncio
 import logging
 import socket
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 from urllib import robotparser
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, urlunsplit
 
 from . import db as ladb
-from . import engine_api, pacing, store
+from . import effort, engine_api, pacing, store
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +50,20 @@ ROBOTS_MAX_BYTES = 256_000
 ROBOTS_TTL = timedelta(days=7)
 HOST_PAUSE_S = 0.7
 RETRY_DELAY_S = 120
-MORE_PAGES = 3
+# A second read of a failed home page asks as a desktop browser does: several of the sites behind the
+# 2026-10-29 "No readable page" rejects answer browsers and refuse other clients (nirmauni.ac.in).
+# The robots.txt rules are still the VacademyLeadAgent ones. Bump the Chrome version now and then.
+BROWSER_HEADERS = {
+    "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+                   "Chrome/142.0.0.0 Safari/537.36"),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-IN,en-GB;q=0.9,en;q=0.8",
+}
+MAX_RETRY_READS = 2
+RETRY_BUDGET_S = 45.0  # no second read once the first took this long (the claim's lease covers both)
+CLAIM_LEASE_S = int(PAGE_TIMEOUT_S * 8) + 60
+POST_TIMEOUT_S = 8.0
+POST_ROBOTS_TIMEOUT_S = 5.0
 OWNER = f"server:{socket.gethostname()[:40]}:{uuid.uuid4().hex[:8]}"
 
 
@@ -115,6 +137,17 @@ def _record_for(task: Dict[str, Any], html: Optional[str], status_code: Optional
     return record
 
 
+def _readable_shell(record: Dict[str, Any], html: str) -> Dict[str, Any]:
+    """A shell being stored (no browser rendered it): what its HTML carries, when that is worth reading."""
+    from .engine.pagefetch import read_shell
+
+    try:
+        return read_shell(record, html)
+    except Exception:  # noqa: BLE001 - the shell record stands
+        logger.warning("lead agent: reading a shell's HTML failed for %s", record.get("url"), exc_info=True)
+        return record
+
+
 def ingest_page_result(task: Dict[str, Any], html: Optional[str], status_code: Optional[int],
                        final_url: Optional[str], content_type: Optional[str], fetched_by: str,
                        *, record: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -125,6 +158,8 @@ def ingest_page_result(task: Dict[str, Any], html: Optional[str], status_code: O
     {"page": row, "enqueued": n, "ready": bool}."""
     if record is None:
         record = _record_for(task, html, status_code, final_url, content_type)
+    if record.get("access") == "js_shell" and html:
+        record = _readable_shell(record, html)
     with ladb.session() as db:
         done = store.finish_task(db, task["id"], "DONE", owner=task.get("lease_owner"))
         if done is None:
@@ -141,7 +176,7 @@ def ingest_page_result(task: Dict[str, Any], html: Optional[str], status_code: O
             if record.get("access") in ("ok", "js_shell"):
                 known = store.candidate_task_urls(db, task["candidate_id"]) | {task["url"]}
                 try:
-                    picks = engine_api.choose_pages(record, MORE_PAGES)
+                    picks = engine_api.choose_pages(record, effort.of(agent).pages_per_site)
                 except Exception:  # noqa: BLE001 - more pages are a bonus; the home page stands
                     logger.warning("lead agent: choose_pages failed for %s", task["url"], exc_info=True)
                     picks = []
@@ -183,10 +218,32 @@ def fail_attempt(task: Dict[str, Any], error: str, *, fetched_by: str, delay_s: 
 # ==========================================================================
 # the server fetcher
 # ==========================================================================
-async def _robots(org: Dict[str, Any], url: str) -> Optional[robotparser.RobotFileParser]:
-    """The site's robots.txt rules (cached on lead_org for 7 days); None = no rules."""
+async def _read_robots(url: str, timeout: float = 10.0) -> tuple:
+    """(HTTP status or None when robots.txt could not be fetched at all, its text) for url's host."""
     from ..safe_http import SafeFetchError, safe_fetch
 
+    parts = urlsplit(url)
+    robots_url = f"{parts.scheme or 'https'}://{parts.netloc}/robots.txt"
+    try:
+        res = await safe_fetch(robots_url, max_bytes=ROBOTS_MAX_BYTES, timeout=timeout, total_timeout=timeout + 5,
+                               allow_http=True, headers={"User-Agent": USER_AGENT})
+    except SafeFetchError:
+        return None, ""
+    except Exception:  # noqa: BLE001
+        return None, ""
+    return res.status_code, (res.content.decode("utf-8", errors="replace") if 200 <= res.status_code < 300 else "")
+
+
+def _rules(lines: str) -> Optional[robotparser.RobotFileParser]:
+    if not (lines or "").strip():
+        return None
+    parser = robotparser.RobotFileParser()
+    parser.parse(lines.splitlines())
+    return parser
+
+
+async def _robots(org: Dict[str, Any], url: str) -> Optional[robotparser.RobotFileParser]:
+    """The site's robots.txt rules (cached on lead_org for 7 days); None = no rules."""
     cached = org.get("robots_json") or None
     lines: Optional[str] = None
     if cached and cached.get("fetched_at"):
@@ -197,26 +254,11 @@ async def _robots(org: Dict[str, Any], url: str) -> Optional[robotparser.RobotFi
         except ValueError:
             lines = None
     if lines is None:
-        parts = urlsplit(url)
-        robots_url = f"{parts.scheme or 'https'}://{parts.netloc}/robots.txt"
-        status = None
-        try:
-            res = await safe_fetch(robots_url, max_bytes=ROBOTS_MAX_BYTES, timeout=10.0, total_timeout=15.0,
-                                   allow_http=True, headers={"User-Agent": USER_AGENT})
-            status = res.status_code
-            lines = res.content.decode("utf-8", errors="replace") if 200 <= res.status_code < 300 else ""
-        except SafeFetchError:
-            lines = ""
-        except Exception:  # noqa: BLE001
-            lines = ""
+        status, lines = await _read_robots(url)
         robots = {"fetched_at": pacing.now_utc().isoformat(), "status": status, "lines": lines[:50_000]}
         await asyncio.to_thread(_save_robots, org["id"], robots)
         org["robots_json"] = robots
-    if not lines.strip():
-        return None
-    parser = robotparser.RobotFileParser()
-    parser.parse(lines.splitlines())
-    return parser
+    return _rules(lines)
 
 
 def _save_robots(org_id: str, robots: dict) -> None:
@@ -240,10 +282,153 @@ def _decode(content: bytes, content_type: str) -> str:
     return content.decode("utf-8", errors="replace")
 
 
-async def fetch_task(task: Dict[str, Any]) -> str:
-    """Fetch one claimed task on the server. Returns a short outcome."""
+@dataclass
+class _Read:
+    """One attempt at a page: the response and its parsed record, or the fetch error."""
+    url: str
+    res: Any = None  # safe_http.FetchResult
+    html: Optional[str] = None
+    ctype: str = ""
+    record: Optional[Dict[str, Any]] = None
+    error: Any = None  # safe_http.SafeFetchError
+
+    @property
+    def rank(self) -> int:
+        """3 = text to read, 2 = a JavaScript shell, 1 = some other page (refused, error), 0 = nothing."""
+        if self.record is None:
+            return 0
+        access = self.record.get("access")
+        if access == "ok" and (self.record.get("text") or "").strip():
+            return 3
+        return 2 if access == "js_shell" else 1
+
+
+async def _get(url: str, headers: Dict[str, str]):
+    """GET one page through safe_fetch (SSRF-safe, every redirect re-checked)."""
     from ..safe_http import SafeFetchError, safe_fetch
 
+    try:
+        return await safe_fetch(url, max_bytes=MAX_PAGE_BYTES, timeout=PAGE_TIMEOUT_S,
+                                total_timeout=PAGE_TIMEOUT_S + 10, allow_http=True, max_redirects=5,
+                                headers=headers)
+    except SafeFetchError as exc:
+        if exc.code != "too_large":
+            raise
+    # Pages with inlined scripts and images run past 1.5 MB; their text is near the top.
+    # Read once more with a larger cap and keep the first 1.5 MB, as the extension does.
+    res = await safe_fetch(url, max_bytes=TOO_LARGE_RETRY_BYTES, timeout=PAGE_TIMEOUT_S,
+                           total_timeout=PAGE_TIMEOUT_S + 20, allow_http=True, max_redirects=5, headers=headers)
+    res.content = res.content[:MAX_PAGE_BYTES]
+    return res
+
+
+async def _read(task: Dict[str, Any], url: str, headers: Dict[str, str]) -> _Read:
+    from ..safe_http import SafeFetchError
+
+    try:
+        res = await _get(url, headers)
+    except SafeFetchError as exc:
+        return _Read(url, error=exc)
+    ctype = res.headers.get("content-type", "")
+    html = _decode(res.content, ctype)
+    record = await asyncio.to_thread(_record_for, task, html, res.status_code, res.url, ctype)  # parsing is CPU
+    return _Read(url, res=res, html=html, ctype=ctype, record=record)
+
+
+_RETRY_ERRORS = frozenset({"dns_failed", "fetch_failed", "timeout", "too_many_redirects"})
+
+
+def _worth_another_read(read: _Read) -> bool:
+    """A home page that failed in a way a second, different read can mend (see retry_urls)."""
+    if read.error is not None:
+        # blocked_host also refuses non-public names; only the https -> http redirect is worth a retry.
+        return read.error.code in _RETRY_ERRORS or (
+            read.error.code == "blocked_host" and "https to http" in (read.error.message or ""))
+    access = read.record.get("access")
+    return access in ("blocked", "error") or (access == "ok" and not (read.record.get("text") or "").strip())
+
+
+def _twin(url: str) -> Optional[str]:
+    """The address at the site's other name: www.<domain> <-> <domain> (not for other sub-domains)."""
+    parts = urlsplit(url)
+    host = (parts.hostname or "").lower()
+    site = engine_api.registered_domain(url)
+    if not site or not host or parts.port:
+        return None
+    other = f"www.{site}" if host == site else site if host == f"www.{site}" else None
+    return urlunsplit((parts.scheme, other, parts.path or "/", parts.query, "")) if other else None
+
+
+def _over_http(url: str) -> Optional[str]:
+    """An https address asked over http (safe_fetch allows starting there, never a redirect down to it)."""
+    parts = urlsplit(url)
+    return urlunsplit(("http", parts.netloc, parts.path or "/", parts.query, "")) if parts.scheme == "https" else None
+
+
+def retry_urls(url: str, read: _Read) -> List[str]:
+    """Where a home page that failed is read once more (at most MAX_RETRY_READS, browser headers on
+    each), aimed at what the 2026-10-29 probe of the 237 "No readable page" rejects of "Leads for
+    Vacademy" found: a refusal (403) -> the same address as a browser asks for it; https that redirects
+    down to http -> http directly (kit.ac.in, brillianttutorsacademy.com); a certificate for the other
+    name or broken https -> the www / bare twin, then http (kmit.in, pathshalaclasses.in, xpertfeed.com);
+    no DNS, a timeout or an error status at one name -> the twin (cgu-odisha.ac.in, smccjkanpur.org);
+    an empty page whose <meta refresh> moves on -> its target (sxcran.org -> sxcran.ac.in)."""
+    from .engine.pagefetch import refresh_url
+
+    kind = read.error.code if read.error is not None else read.record.get("access")
+    # only an empty page's refresh: a refusal page's may lead to a bot challenge
+    moved = refresh_url(read.html, read.res.url) if kind == "ok" and read.html and read.res is not None else None
+    if moved:
+        urls = [moved]
+    elif kind == "blocked":
+        urls = [url]
+    elif kind == "blocked_host":
+        urls = [_over_http(url), _twin(url)]
+    elif kind == "fetch_failed":
+        urls = [_twin(url), _over_http(url)]
+    else:
+        urls = [_twin(url)]
+    return list(dict.fromkeys(u for u in urls if u))[:MAX_RETRY_READS]
+
+
+async def _allowed(org: Dict[str, Any], rules, task_url: str, url: str) -> bool:
+    """robots.txt for a second read: the site's own rules cover its twin and http, once they could be
+    fetched; another site (a meta refresh to a new domain), or a site whose robots.txt could not be
+    fetched at all, is asked for its own (not cached)."""
+    same_host = (urlsplit(url).hostname or "").lower() == (urlsplit(task_url).hostname or "").lower()
+    same_site = engine_api.registered_domain(url) == engine_api.registered_domain(task_url)
+    robots_read = (org.get("robots_json") or {}).get("status") is not None
+    if same_host or (same_site and robots_read):
+        return rules is None or rules.can_fetch(ROBOTS_AGENT, url)
+    own = _rules((await _read_robots(url))[1])
+    return own is None or own.can_fetch(ROBOTS_AGENT, url)
+
+
+async def _read_again(task: Dict[str, Any], org: Dict[str, Any], rules, first: _Read, started: float) -> _Read:
+    """The home page read once more, differently (retry_urls). Only a readable page or a shell replaces
+    the first outcome: a twin's 404 must not end the attempts of a site that merely timed out."""
+    loop = asyncio.get_running_loop()
+    best = first
+    for url in retry_urls(task["url"], first):
+        if loop.time() - started > RETRY_BUDGET_S:
+            break  # the claim's lease must cover the whole attempt
+        await asyncio.sleep(HOST_PAUSE_S)  # the same site again: the usual pause first
+        try:
+            if not await _allowed(org, rules, task["url"], url):
+                continue
+            read = await _read(task, url, BROWSER_HEADERS)
+        except Exception:  # noqa: BLE001 - a second try must never lose the first outcome
+            logger.warning("lead agent: second read of %s via %s failed", task["url"], url, exc_info=True)
+            continue
+        if read.rank >= 2 and read.rank > best.rank:
+            best = read
+        if best.rank >= 3:
+            break
+    return best
+
+
+async def fetch_task(task: Dict[str, Any]) -> str:
+    """Fetch one claimed task on the server. Returns a short outcome."""
     org = await asyncio.to_thread(_get_org, task["org_id"]) or {"id": task["org_id"]}
     rules = await _robots(org, task["url"])
     if rules is not None and not rules.can_fetch(ROBOTS_AGENT, task["url"]):
@@ -251,22 +436,12 @@ async def fetch_task(task: Dict[str, Any]) -> str:
             ingest_page_result, task, None, None, task["url"], None, "SERVER",
             record={"access": "robots_disallowed", "text": None, "links": [], "final_url": task["url"]})
         return "robots_disallowed"
-    headers = {"User-Agent": USER_AGENT, "Accept": "text/html,application/xhtml+xml"}
-    try:
-        try:
-            res = await safe_fetch(task["url"], max_bytes=MAX_PAGE_BYTES, timeout=PAGE_TIMEOUT_S,
-                                   total_timeout=PAGE_TIMEOUT_S + 10, allow_http=True, max_redirects=5,
-                                   headers=headers)
-        except SafeFetchError as exc:
-            if exc.code != "too_large":
-                raise
-            # Pages with inlined scripts and images run past 1.5 MB; their text is near the top.
-            # Read once more with a larger cap and keep the first 1.5 MB, as the extension does.
-            res = await safe_fetch(task["url"], max_bytes=TOO_LARGE_RETRY_BYTES, timeout=PAGE_TIMEOUT_S,
-                                   total_timeout=PAGE_TIMEOUT_S + 20, allow_http=True, max_redirects=5,
-                                   headers=headers)
-            res.content = res.content[:MAX_PAGE_BYTES]
-    except SafeFetchError as exc:
+    started = asyncio.get_running_loop().time()
+    read = await _read(task, task["url"], {"User-Agent": USER_AGENT, "Accept": "text/html,application/xhtml+xml"})
+    if task["page_type"] == "home" and _worth_another_read(read):
+        read = await _read_again(task, org, rules, read, started)
+    if read.error is not None:
+        exc = read.error
         if exc.code in ("bad_url", "blocked_host", "blocked_address"):
             await asyncio.to_thread(
                 ingest_page_result, task, None, None, task["url"], None, "SERVER",
@@ -278,14 +453,46 @@ async def fetch_task(task: Dict[str, Any]) -> str:
                 record={"access": "error", "text": None, "links": [], "final_url": task["url"]})
             return "too_large"
         return await asyncio.to_thread(fail_attempt, task, f"{exc.code}: {exc.message}", fetched_by="SERVER")
-    ctype = res.headers.get("content-type", "")
-    html = _decode(res.content, ctype)
-    record = await asyncio.to_thread(_record_for, task, html, res.status_code, res.url, ctype)  # parsing is CPU
-    if record.get("access") == "js_shell" and await asyncio.to_thread(_hand_to_extension, task):
+    res, record = read.res, read.record
+    # A shell handed to the extension once that it never took (store.claim_unrendered_shells) is not
+    # handed again: what its HTML carries is kept (ingest_page_result).
+    handed_before = task.get("last_error") == store.HANDED_SHELL_ERROR
+    if record.get("access") == "js_shell" and not handed_before and await asyncio.to_thread(_hand_to_extension, task):
         return "js_shell: handed to the extension"
-    await asyncio.to_thread(ingest_page_result, task, html, res.status_code, res.url, ctype, "SERVER",
+    await asyncio.to_thread(ingest_page_result, task, read.html, res.status_code, res.url, read.ctype, "SERVER",
                             record=record)
-    return f"http {res.status_code}"
+    return f"http {res.status_code}" + (f" ({read.url})" if read.url != task["url"] else "")
+
+
+async def read_post(url: str, state: Optional[Dict[str, Any]] = None) -> Optional[str]:
+    """One job post page for discovery's check (effort.open_job_post): its HTML, or None when it cannot
+    be read (robots.txt says no, a refusal or error status, not HTML, too slow). Through safe_fetch with
+    browser headers, POST_TIMEOUT_S for the page; `state` keeps each host's robots.txt rules and last
+    request time for one round, so a job board is asked for robots.txt once and paused between posts."""
+    from ..safe_http import SafeFetchError, safe_fetch
+
+    state = {} if state is None else state
+    host = (urlsplit(url).hostname or "").lower()
+    robots = state.setdefault("robots", {})
+    if host not in robots:
+        robots[host] = _rules((await _read_robots(url, timeout=POST_ROBOTS_TIMEOUT_S))[1])
+    if robots[host] is not None and not robots[host].can_fetch(ROBOTS_AGENT, url):
+        return None
+    loop = asyncio.get_running_loop()
+    last = state.setdefault("last", {})
+    wait = HOST_PAUSE_S - (loop.time() - last.get(host, float("-inf")))
+    if wait > 0:
+        await asyncio.sleep(wait)
+    last[host] = loop.time()
+    try:
+        res = await safe_fetch(url, max_bytes=MAX_PAGE_BYTES, timeout=POST_TIMEOUT_S, total_timeout=POST_TIMEOUT_S,
+                               allow_http=True, max_redirects=5, headers=BROWSER_HEADERS)
+    except SafeFetchError:
+        return None
+    ctype = res.headers.get("content-type", "")
+    if not 200 <= res.status_code < 300 or (ctype and "html" not in ctype.lower()):
+        return None
+    return _decode(res.content, ctype)
 
 
 def _hand_to_extension(task: Dict[str, Any]) -> bool:
@@ -307,8 +514,13 @@ def _get_org(org_id: str) -> Optional[Dict[str, Any]]:
 
 
 def claim_server_batch(n: int, institutes: Optional[List[str]]) -> List[Dict[str, Any]]:
+    """REMOTE / AUTO tasks for the server, then AUTO agents' shells their extension never took."""
     with ladb.session() as db:
-        return store.claim_server_tasks(db, n, OWNER, lease_s=int(PAGE_TIMEOUT_S * 4) + 60, institutes=institutes)
+        tasks = store.claim_server_tasks(db, n, OWNER, lease_s=CLAIM_LEASE_S, institutes=institutes)
+        if len(tasks) < n:
+            tasks += store.claim_unrendered_shells(db, n - len(tasks), OWNER, lease_s=CLAIM_LEASE_S,
+                                                   institutes=institutes)
+        return tasks
 
 
 async def run_server_batch(n: int, institutes: Optional[List[str]]) -> int:
@@ -334,5 +546,5 @@ async def run_server_batch(n: int, institutes: Optional[List[str]]) -> int:
     return len(tasks)
 
 
-__all__ = ["USER_AGENT", "schedule_candidate", "maybe_ready", "finalize_fetching", "ingest_page_result",
-           "fail_attempt", "fetch_task", "run_server_batch"]
+__all__ = ["USER_AGENT", "BROWSER_HEADERS", "schedule_candidate", "maybe_ready", "finalize_fetching",
+           "ingest_page_result", "fail_attempt", "fetch_task", "read_post", "retry_urls", "run_server_batch"]
