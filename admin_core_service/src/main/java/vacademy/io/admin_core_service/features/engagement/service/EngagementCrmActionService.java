@@ -3,6 +3,8 @@ package vacademy.io.admin_core_service.features.engagement.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -126,6 +128,50 @@ public class EngagementCrmActionService {
         return out;
     }
 
+    // ── the admin's settings (B8) ───────────────────────────────────────────
+
+    /** One CRM action type as the engine page shows it: allowed, auto, and graduation progress. */
+    public record ActionSetting(String type, boolean allowed, boolean auto, long approved, int threshold,
+                                boolean graduated) {}
+
+    public List<ActionSetting> settings(EngagementEngine engine) {
+        List<String> allowed = allowedActions(engine);
+        List<String> auto = autoActions(engine);
+        int threshold = engine.getFirstN() != null ? engine.getFirstN() : defaultFirstN;
+        List<ActionSetting> out = new ArrayList<>();
+        for (String type : EngagementActionTypes.CRM_TYPES) {
+            if (!handlers().containsKey(type)) continue;
+            long approved = actionRepository.countApprovedCrmActions(engine.getId(), type);
+            out.add(new ActionSetting(type, allowed.contains(type), auto.contains(type), approved, threshold,
+                    threshold <= 0 || approved >= threshold));
+        }
+        return out;
+    }
+
+    /**
+     * Replace {@code channels.actions} with these settings, keeping every other channel setting.
+     * Unknown types are dropped; auto without allowed means not allowed.
+     */
+    public EngagementEngine saveSettings(EngagementEngine engine, List<ActionSetting> settings) {
+        try {
+            ObjectNode channels = engine.getChannels() == null
+                    || engine.getChannels().isBlank() ? objectMapper.createObjectNode()
+                    : (ObjectNode) objectMapper.readTree(engine.getChannels());
+            ArrayNode actions = channels.putArray("actions");
+            for (ActionSetting st : settings != null ? settings : List.<ActionSetting>of()) {
+                if (st == null || !EngagementActionTypes.isCrmAction(st.type()) || !st.allowed()) continue;
+                if (st.auto()) actions.addObject().put("type", st.type()).put("auto", true);
+                else actions.add(st.type());
+            }
+            engine.setChannels(objectMapper.writeValueAsString(channels));
+            return engineRepository.save(engine);
+        } catch (VacademyException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new VacademyException("The engine's channel settings could not be read: " + e.getMessage());
+        }
+    }
+
     // ── autonomy (B7) ───────────────────────────────────────────────────────
 
     /** Types that only reach the counsellor (the CRM), never the lead or the lead's record. */
@@ -218,11 +264,17 @@ public class EngagementCrmActionService {
         return new EngagementActionHandler.Approver(owner, "AI · Engagement Engine", new CustomUserDetails(dto));
     }
 
-    /** {@code channels.EMAIL.mode = "TEMPLATE"}: the brain picks an approved email template, never free text. */
+    /**
+     * The templates track's email modes (channels.EMAIL.mode, set in the engine wizard): FREE_WRITE
+     * (default), TEMPLATE_ONLY, TEMPLATE_PLUS_AI_LINE. Both template modes make the brain pick an
+     * approved template; in the second it also fills the template's personal-line variable.
+     */
+    static final Set<String> TEMPLATE_EMAIL_MODES = Set.of("TEMPLATE_ONLY", "TEMPLATE_PLUS_AI_LINE");
+
     public boolean emailTemplateMode(EngagementEngine engine) {
         try {
-            return "TEMPLATE".equalsIgnoreCase(objectMapper.readTree(engine.getChannels())
-                    .path("EMAIL").path("mode").asText(""));
+            return TEMPLATE_EMAIL_MODES.contains(objectMapper.readTree(engine.getChannels())
+                    .path("EMAIL").path("mode").asText("").toUpperCase());
         } catch (Exception e) {
             return false;
         }

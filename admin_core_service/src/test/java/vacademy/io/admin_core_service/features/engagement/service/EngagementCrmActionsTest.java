@@ -453,7 +453,7 @@ class EngagementCrmActionsTest {
             when(catalog.findApprovedEmailTemplates("e1", INST)).thenReturn(List.of(
                     new EngagementBrainClient.TemplateOption("fees", "SUBJECT: Fees\n\nHi {{first_name}}", List.of("first_name"), "en")));
             ReflectionTestUtils.setField(service, "emailCatalog", catalog);
-            EngagementEngine templated = engine("{\"actions\":[\"ADD_NOTE\"],\"EMAIL\":{\"enabled\":true,\"mode\":\"TEMPLATE\"}}");
+            EngagementEngine templated = engine("{\"actions\":[\"ADD_NOTE\"],\"EMAIL\":{\"enabled\":true,\"mode\":\"TEMPLATE_ONLY\"}}");
             EngagementBrainClient.ActionMenu menu = service.menu(templated);
             assertEquals(List.of(EngagementActionTypes.ADD_NOTE), menu.actions());
             assertEquals(1, menu.emailTemplates().size());

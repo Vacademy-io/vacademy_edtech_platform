@@ -286,4 +286,28 @@ class EngagementCrmAutonomyTest {
         verify(note).undo(any(), anyMap(), eq(Map.of("ref", "r-1")), any());
     }
 
+    @Test
+    @DisplayName("B8 settings: saving the panel rewrites only channels.actions; other channel settings survive")
+    void settingsSaveKeepsChannels() throws Exception {
+        engine.setChannels("{\"EMAIL\":{\"enabled\":true,\"auto\":true,\"mode\":\"TEMPLATE\"},\"actions\":[\"ESCALATE\"]}");
+        when(engines.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        service.saveSettings(engine, List.of(
+                new EngagementCrmActionService.ActionSetting("ADD_NOTE", true, true, 0, 5, false),
+                new EngagementCrmActionService.ActionSetting("UPDATE_STATUS", true, false, 0, 5, false),
+                new EngagementCrmActionService.ActionSetting("SCHEDULE_AI_CALL", false, true, 0, 5, false),
+                new EngagementCrmActionService.ActionSetting("NOT_A_TYPE", true, true, 0, 5, false)));
+        com.fasterxml.jackson.databind.JsonNode ch = new com.fasterxml.jackson.databind.ObjectMapper().readTree(engine.getChannels());
+        assertEquals("TEMPLATE", ch.path("EMAIL").path("mode").asText());
+        assertEquals(List.of("ADD_NOTE", "UPDATE_STATUS"), service.allowedActions(engine));
+        assertEquals(List.of("ADD_NOTE"), service.autoActions(engine));
+
+        when(actions.countApprovedCrmActions("e1", "ADD_NOTE")).thenReturn(5L);
+        when(actions.countApprovedCrmActions("e1", "UPDATE_STATUS")).thenReturn(2L);
+        List<EngagementCrmActionService.ActionSetting> shown = service.settings(engine);
+        EngagementCrmActionService.ActionSetting note = shown.stream().filter(x -> x.type().equals("ADD_NOTE")).findFirst().orElseThrow();
+        EngagementCrmActionService.ActionSetting status = shown.stream().filter(x -> x.type().equals("UPDATE_STATUS")).findFirst().orElseThrow();
+        assertTrue(note.graduated() && note.auto());
+        assertFalse(status.graduated());
+        assertEquals(2, status.approved());
+    }
 }

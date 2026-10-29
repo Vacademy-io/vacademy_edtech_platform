@@ -321,7 +321,8 @@ public class EngagementBrainClient {
         }
         if (menu.emailTemplates() != null) {
             sb.append("\nEMAIL IS TEMPLATE-ONLY for this engine. For EMAIL choose one approved template below by its exact ")
-              .append("name in templateName and fill EVERY {{variable}} in \"variables\"; draftBody is ignored.\n");
+              .append("name in templateName and fill EVERY {{variable}} in \"variables\"; draftBody is ignored. ")
+              .append("A variable meant for a personal line gets ONE short, true sentence about this person.\n");
             if (menu.emailTemplates().isEmpty()) {
                 sb.append("APPROVED EMAIL TEMPLATES: (none yet) — do NOT choose EMAIL this turn.\n");
             } else {

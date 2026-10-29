@@ -54,6 +54,7 @@ import {
 import { ToneBadge } from './-components/ToneBadge';
 import { TemplateNegotiation } from './-components/TemplateNegotiation';
 import { EmailTemplatesPanel } from './-components/EmailTemplatesPanel';
+import { CrmActionsPanel } from './-components/CrmActionsPanel';
 import { useDeleteEngine } from './-hooks/engine-edit';
 import { ChannelChip, Chip, IconTile, KeyValue, SubHeading } from './-components/engine-ui';
 import { buildChannelMeta } from './-constants';
@@ -603,6 +604,7 @@ function EngineDetailPage() {
                         emailMode={emailChannel?.mode}
                     />
                 )}
+                <CrmActionsPanel engineId={engine.id} killed={engine.autoSendKilled} />
             </div>
 
             {amendOpen && (
