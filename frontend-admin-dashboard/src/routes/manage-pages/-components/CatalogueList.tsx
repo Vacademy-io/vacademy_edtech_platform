@@ -44,6 +44,7 @@ import { useBlogManagerStore } from '../-stores/blog-manager-store';
 import { BlogManagerDialog } from './blog/BlogManagerDialog';
 import { ReviewsManagerDialog } from './reviews/ReviewsManagerDialog';
 import { useReviewManagerStore } from '../-stores/review-manager-store';
+import { formatBadgeCount, usePendingReviewCount } from '../-hooks/use-pending-review-count';
 import { FolderLibraryDialog } from './folders/FolderLibraryDialog';
 import { useFolderLibraryStore } from '../-stores/folder-library-store';
 import { Folders } from '@phosphor-icons/react';
@@ -83,6 +84,7 @@ export const CatalogueList = () => {
     const navigate = useNavigate();
     const openBlog = useBlogManagerStore((s) => s.open);
     const openReviews = useReviewManagerStore((s) => s.open);
+    const pendingReviews = usePendingReviewCount();
     const openFolders = useFolderLibraryStore((s) => s.open);
     // `?blog=list` / `?blog=<postId>` — deep link into the blog manager (MCP
     // hands these out). Consumed once, then stripped so closing the dialog
@@ -183,6 +185,14 @@ export const CatalogueList = () => {
                     >
                         <ChatCircleText className="size-4" />
                         Reviews
+                        {pendingReviews > 0 && (
+                            <span
+                                className="flex h-5 min-w-5 items-center justify-center rounded-full bg-danger-500 px-1.5 text-caption font-semibold leading-none text-white"
+                                aria-label={`${pendingReviews} waiting for approval`}
+                            >
+                                {formatBadgeCount(pendingReviews)}
+                            </span>
+                        )}
                     </Button>
                     <Button
                         variant="outline"

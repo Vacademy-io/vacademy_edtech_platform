@@ -38,6 +38,7 @@ import { FolderLibraryDialog } from './folders/FolderLibraryDialog';
 import { useFolderLibraryStore } from '../-stores/folder-library-store';
 import { useBlogManagerStore } from '../-stores/blog-manager-store';
 import { useReviewManagerStore } from '../-stores/review-manager-store';
+import { formatBadgeCount, usePendingReviewCount } from '../-hooks/use-pending-review-count';
 import { runPublishChecks, type PublishIssue } from '../-utils/publish-checks';
 import { Button } from '@/components/ui/button';
 import {
@@ -95,6 +96,7 @@ export const CatalogueEditorPage = () => {
     const { toast } = useToast();
     const openBlog = useBlogManagerStore((s) => s.open);
     const openReviews = useReviewManagerStore((s) => s.open);
+    const pendingReviews = usePendingReviewCount();
     const openFolders = useFolderLibraryStore((s) => s.open);
     const { canWrite } = useCataloguePermissions();
 
@@ -681,9 +683,23 @@ export const CatalogueEditorPage = () => {
                         variant="ghost"
                         size="sm"
                         onClick={() => openReviews()}
-                        title="Reviews — approve what visitors sent through the Reviews & feedback section"
+                        className="relative"
+                        title={
+                            pendingReviews > 0
+                                ? `Reviews — ${pendingReviews} waiting for approval`
+                                : 'Reviews — approve what visitors sent through the Reviews & feedback section'
+                        }
+                        aria-label={pendingReviews > 0 ? `Reviews, ${pendingReviews} waiting for approval` : 'Reviews'}
                     >
                         <ChatCircleText className="size-4" />
+                        {pendingReviews > 0 && (
+                            <span
+                                className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger-500 px-1 text-caption font-semibold leading-none text-white"
+                                aria-hidden="true"
+                            >
+                                {formatBadgeCount(pendingReviews)}
+                            </span>
+                        )}
                     </Button>
                     <Button
                         variant="ghost"
