@@ -91,6 +91,15 @@ describe('responseMinutes / daysOverdue', () => {
         expect(daysOverdue(new Date(Date.now() + 86_400_000).toISOString())).toBe(0);
         expect(daysOverdue(null)).toBe('');
     });
+
+    it('daysOverdue by date counts whole calendar days, not 24-hour spans', () => {
+        const now = new Date(2026, 9, 29, 9, 0, 0);
+        const yesterdayNight = new Date(2026, 9, 28, 23, 0, 0).toISOString();
+        const thisMorning = new Date(2026, 9, 29, 8, 0, 0).toISOString();
+        expect(daysOverdue(yesterdayNight, false, now)).toBe(0);
+        expect(daysOverdue(yesterdayNight, true, now)).toBe(1);
+        expect(daysOverdue(thisMorning, true, now)).toBe(0);
+    });
 });
 
 describe('slaStage', () => {

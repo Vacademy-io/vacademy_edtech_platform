@@ -43,6 +43,15 @@ public class LeadFollowupSettingService {
         return flag(instituteId, "syncInterestToLead");
     }
 
+    /**
+     * Is a follow-up overdue by DATE rather than time? On: one due today counts as Today
+     * all day and turns overdue only once its date has passed. Off: overdue the moment
+     * its time passes, as before.
+     */
+    public boolean overdueByDate(String instituteId) {
+        return flag(instituteId, "overdueByDate");
+    }
+
     private boolean flag(String instituteId, String name) {
         if (instituteId == null || instituteId.isBlank()) return false;
         try {

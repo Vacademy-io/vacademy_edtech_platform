@@ -91,9 +91,24 @@ export const slaStage = (t: TFunction, lead: RecentLeadDetail): string => {
     return SLA_STAGE_KEYS[stage] ? t(SLA_STAGE_KEYS[stage]) : stage;
 };
 
-export const daysOverdue = (dueAt: string | null | undefined): number | '' => {
+export const daysOverdue = (
+    dueAt: string | null | undefined,
+    byDate = false,
+    now: Date = new Date()
+): number | '' => {
     if (!dueAt) return '';
-    const ms = Date.now() - Date.parse(dueAt);
+    const due = Date.parse(dueAt);
+    if (byDate) {
+        // Lead settings → "Overdue by date, not time": whole calendar days since the due
+        // date — due yesterday 11 PM is 1 day overdue this morning, due today is 0.
+        if (!Number.isFinite(due)) return 0;
+        const today = new Date(now);
+        today.setHours(0, 0, 0, 0);
+        const dueDay = new Date(due);
+        dueDay.setHours(0, 0, 0, 0);
+        return Math.max(0, Math.round((today.getTime() - dueDay.getTime()) / 86_400_000));
+    }
+    const ms = now.getTime() - due;
     return Number.isFinite(ms) && ms > 0 ? Math.floor(ms / 86_400_000) : 0;
 };
 
@@ -107,7 +122,8 @@ function buildExport(
     kind: PerLeadExportKind,
     t: TFunction,
     props: ReportTabProps,
-    hideLost: boolean
+    hideLost: boolean,
+    overdueByDate = false
 ): ExportDef {
     // Report range is in the viewer's days; the leads query takes instants.
     const submittedRange = {
@@ -197,7 +213,12 @@ function buildExport(
         ],
         filter: {
             follow_up_pending: true,
-            follow_up_to: new Date().toISOString(),
+            // Overdue = due before now, or with "Overdue by date" before today.
+            follow_up_to: (() => {
+                const cutoff = new Date();
+                if (overdueByDate) cutoff.setHours(0, 0, 0, 0);
+                return cutoff.toISOString();
+            })(),
             conversion_status_filter: 'EXCLUDE_CONVERTED',
             // Same rule as the Follow-ups page: Lost leads are not pending work.
             lead_status_exclude_id: hideLost ? 'LOST' : undefined,
@@ -208,7 +229,7 @@ function buildExport(
             l.assigned_counselor_name ?? '',
             l.lead_status ?? '',
             dateTime(l.follow_up_due_at),
-            daysOverdue(l.follow_up_due_at),
+            daysOverdue(l.follow_up_due_at, overdueByDate),
             l.follow_up_interest_level ?? '',
             plainNote(l.follow_up_content),
             l.follow_up_student_response ?? '',
@@ -226,7 +247,13 @@ function PerLeadExportButton({ kind, props }: { kind: PerLeadExportKind; props: 
     const teamSelected = !!props.teamId;
 
     const run = () => {
-        const def = buildExport(kind, t, props, leadSettings.hideLostInFollowUps);
+        const def = buildExport(
+            kind,
+            t,
+            props,
+            leadSettings.hideLostInFollowUps,
+            leadSettings.followUpFields.overdueByDate
+        );
         const scope: Partial<RecentLeadsRequest> = {
             institute_id: props.instituteId,
             assigned_counselor_id: props.counsellorUserId || undefined,

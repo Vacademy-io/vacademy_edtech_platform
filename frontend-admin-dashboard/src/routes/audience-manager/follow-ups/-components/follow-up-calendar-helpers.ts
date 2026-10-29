@@ -41,10 +41,14 @@ export const groupByDay = (vms: LeadCardVM[]): Map<string, LeadCardVM[]> => {
 };
 
 /** Dominant bucket for a day: overdue > today > upcoming. Drives the cell's pill colour. */
-export const dominantBucket = (vms: LeadCardVM[], now: Date = new Date()): FollowUpBucket => {
+export const dominantBucket = (
+    vms: LeadCardVM[],
+    now: Date = new Date(),
+    byDate = false
+): FollowUpBucket => {
     let hasToday = false;
     for (const vm of vms) {
-        const b = classify(vm, now);
+        const b = classify(vm, now, byDate);
         if (b === 'overdue') return 'overdue';
         if (b === 'today') hasToday = true;
     }
@@ -87,7 +91,8 @@ export const bucketLabel = (bucket: FollowUpBucket): string => {
 /** Bucket counts for a single day's VMs (used in the selected-day panel header). */
 export const dayBucketCounts = (
     vms: LeadCardVM[],
-    now: Date = new Date()
+    now: Date = new Date(),
+    byDate = false
 ): Record<PendingFollowUpBucket, number> => {
     const counts: Record<PendingFollowUpBucket, number> = {
         overdue: 0,
@@ -96,7 +101,7 @@ export const dayBucketCounts = (
         all: vms.length,
     };
     for (const vm of vms) {
-        const b = classify(vm, now);
+        const b = classify(vm, now, byDate);
         if (b !== 'all') counts[b] += 1;
     }
     return counts;

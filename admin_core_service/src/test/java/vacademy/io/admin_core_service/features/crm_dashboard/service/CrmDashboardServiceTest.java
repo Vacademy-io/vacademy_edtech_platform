@@ -9,6 +9,7 @@ import vacademy.io.admin_core_service.features.audience.dto.LeadVisibility;
 import vacademy.io.admin_core_service.features.audience.service.AudienceService;
 import vacademy.io.admin_core_service.features.audience.service.LeadDeduplicationService;
 import vacademy.io.admin_core_service.features.audience.service.LeadFollowupService;
+import vacademy.io.admin_core_service.features.audience.service.LeadFollowupSettingService;
 import vacademy.io.admin_core_service.features.audience.service.LeadVisibilityResolver;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.counsellor_workbench.service.CounsellorScopeService;
@@ -40,6 +41,7 @@ class CrmDashboardServiceTest {
     private CounsellorScopeService scopeService;
     private AudienceService audienceService;
     private LeadDeduplicationService dedupService;
+    private LeadFollowupSettingService followupSettings;
     private CrmDashboardService service;
     private CustomUserDetails user;
 
@@ -50,8 +52,10 @@ class CrmDashboardServiceTest {
         scopeService = mock(CounsellorScopeService.class);
         audienceService = mock(AudienceService.class);
         dedupService = mock(LeadDeduplicationService.class);
+        followupSettings = mock(LeadFollowupSettingService.class);
         service = new CrmDashboardService(jdbc, mock(PlatformTransactionManager.class), resolver, scopeService,
-                audienceService, mock(LeadFollowupService.class), dedupService, mock(AuthService.class));
+                audienceService, mock(LeadFollowupService.class), dedupService, mock(AuthService.class),
+                followupSettings);
         user = mock(CustomUserDetails.class);
         when(user.getUserId()).thenReturn("u-1");
     }
@@ -205,5 +209,44 @@ class CrmDashboardServiceTest {
             assertTrue(sql.contains("COALESCE(ar.is_duplicate, FALSE) = FALSE"));
             assertFalse(sql.contains("%s"));
         }
+    }
+
+    // ── Lead settings → "Overdue by date, not time" ─────────────────────────────
+
+    @Test
+    @DisplayName("Overdue is split at now by default, as before")
+    void overdueSplitsAtNowByDefault() {
+        CrmDashboardService.Window w = service.resolveWindow(request(null, null));
+
+        assertEquals(w.now(), service.overdueBefore(INSTITUTE, w));
+    }
+
+    @Test
+    @DisplayName("With overdue-by-date on, Overdue ends (and Today starts) at the start of today")
+    void overdueByDateSplitsAtStartOfToday() {
+        when(followupSettings.overdueByDate(INSTITUTE)).thenReturn(true);
+        CrmDashboardRequestDTO req = request(null, null);
+        req.setTimezone("Asia/Kolkata");
+        CrmDashboardService.Window w = service.resolveWindow(req);
+
+        // 09:00Z on the 16th is 14:30 IST; IST midnight that day is 18:30Z on the 15th.
+        assertEquals(java.time.Instant.parse("2026-10-15T18:30:00Z"), service.overdueBefore(INSTITUTE, w));
+    }
+
+    @Test
+    @DisplayName("Every overdue count in the dashboard SQL uses the overdue split, none uses raw now")
+    void dashboardSqlUsesTheSplit() {
+        String sql = CrmDashboardSql.OVERDUE_BY_OWNER;
+        assertTrue(sql.contains("lf.schedule_time < :overdueBefore"));
+        assertFalse(sql.contains("lf.schedule_time < :now"));
+    }
+
+    @Test
+    @DisplayName("A settings read that fails counts overdue by time, as before")
+    void settingsFailureFallsBackToTime() {
+        when(followupSettings.overdueByDate(INSTITUTE)).thenThrow(new RuntimeException("db down"));
+        CrmDashboardService.Window w = service.resolveWindow(request(null, null));
+
+        assertEquals(w.now(), service.overdueBefore(INSTITUTE, w));
     }
 }

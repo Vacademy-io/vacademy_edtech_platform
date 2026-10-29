@@ -213,6 +213,13 @@ export interface FollowUpFieldsConfig {
      * follow-up has it edited. Matched to a tier by name; done by the backend.
      */
     syncInterestToLead: boolean;
+    /**
+     * A follow-up is overdue by DATE, not time: one due today stays "Today" all day
+     * and turns overdue only once that date has passed. Off = overdue the moment its
+     * time passes, as before. Applies to the Follow-ups page (tiles, list, calendar,
+     * export), the CRM dashboard counts, reminders, Check Lead and the Overdue export.
+     */
+    overdueByDate: boolean;
 }
 
 /**
@@ -318,6 +325,7 @@ export const LEAD_SETTINGS_DEFAULTS: LeadSettingsConfig = {
         closingNoteOptional: false,
         markDoneLeadStatusAndTier: false,
         syncInterestToLead: false,
+        overdueByDate: false,
     },
     leadLookup: {
         enabled: false,
@@ -416,6 +424,7 @@ export function normaliseFollowUpFields(
         closingNoteOptional: saved?.closingNoteOptional === true,
         markDoneLeadStatusAndTier: saved?.markDoneLeadStatusAndTier === true,
         syncInterestToLead: saved?.syncInterestToLead === true,
+        overdueByDate: saved?.overdueByDate === true,
     };
 }
 

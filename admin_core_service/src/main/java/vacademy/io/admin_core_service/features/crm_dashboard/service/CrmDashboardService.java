@@ -15,6 +15,7 @@ import vacademy.io.admin_core_service.features.audience.dto.LeadVisibility;
 import vacademy.io.admin_core_service.features.audience.service.AudienceService;
 import vacademy.io.admin_core_service.features.audience.service.LeadDeduplicationService;
 import vacademy.io.admin_core_service.features.audience.service.LeadFollowupService;
+import vacademy.io.admin_core_service.features.audience.service.LeadFollowupSettingService;
 import vacademy.io.admin_core_service.features.audience.service.LeadVisibilityResolver;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.counsellor_workbench.service.CounsellorScopeService;
@@ -89,6 +90,7 @@ public class CrmDashboardService {
     private final LeadFollowupService leadFollowupService;
     private final LeadDeduplicationService leadDeduplicationService;
     private final AuthService authService;
+    private final LeadFollowupSettingService leadFollowupSettingService;
 
     /** Resolved lead scope per institute + user + authorities, for {@link #SCOPE_TTL}. */
     private final Cache<String, LeadVisibility> scopeCache = Caffeine.newBuilder()
@@ -101,6 +103,15 @@ public class CrmDashboardService {
             .maximumSize(2_000)
             .build();
 
+    /**
+     * Lead settings → "Overdue by date, not time", per institute. Read once a minute at most:
+     * the setting lives in a large JSON blob and every dashboard block needs it.
+     */
+    private final Cache<String, Boolean> overdueByDateCache = Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofMinutes(1))
+            .maximumSize(5_000)
+            .build();
+
     public CrmDashboardService(NamedParameterJdbcTemplate jdbc,
                                PlatformTransactionManager transactionManager,
                                LeadVisibilityResolver leadVisibilityResolver,
@@ -108,7 +119,8 @@ public class CrmDashboardService {
                                AudienceService audienceService,
                                LeadFollowupService leadFollowupService,
                                LeadDeduplicationService leadDeduplicationService,
-                               AuthService authService) {
+                               AuthService authService,
+                               LeadFollowupSettingService leadFollowupSettingService) {
         this.jdbc = jdbc;
         this.readOnlyTx = new TransactionTemplate(transactionManager);
         this.readOnlyTx.setReadOnly(true);
@@ -118,6 +130,7 @@ public class CrmDashboardService {
         this.leadFollowupService = leadFollowupService;
         this.leadDeduplicationService = leadDeduplicationService;
         this.authService = authService;
+        this.leadFollowupSettingService = leadFollowupSettingService;
     }
 
     public CrmDashboardResponseDTO getDashboard(CrmDashboardRequestDTO req, CustomUserDetails user) {
@@ -253,9 +266,12 @@ public class CrmDashboardService {
     private Map<String, Object> followups(String instituteId, Scope scope, Window w, CustomUserDetails user) {
         Timestamp now = Timestamp.from(w.now());
         Timestamp todayEnd = Timestamp.from(w.todayEnd());
+        // Overdue ends, and Today starts, at the split: now, or the start of today when the
+        // institute counts overdue by date (a follow-up due this morning is still Today).
+        Timestamp split = Timestamp.from(overdueBefore(instituteId, w));
         Map<String, Object> out = new LinkedHashMap<>();
-        out.put("overdue", countLeads(instituteId, scope, user, null, now));
-        out.put("today", countLeads(instituteId, scope, user, now, todayEnd));
+        out.put("overdue", countLeads(instituteId, scope, user, null, split));
+        out.put("today", countLeads(instituteId, scope, user, split, todayEnd));
         out.put("upcoming", countLeads(instituteId, scope, user, todayEnd, null));
         // The completed endpoint narrows by one counsellor at most; a multi-person team
         // filter can't be expressed there, so the tile is left out rather than over-counted.
@@ -510,7 +526,25 @@ public class CrmDashboardService {
                 .addValue("to", w.to(), java.sql.Types.TIMESTAMP)
                 .addValue("seriesFrom", w.prevFrom(), java.sql.Types.TIMESTAMP)
                 .addValue("now", utc(w.now()), java.sql.Types.TIMESTAMP)
-                .addValue("todayStart", utc(w.todayStart()), java.sql.Types.TIMESTAMP);
+                .addValue("todayStart", utc(w.todayStart()), java.sql.Types.TIMESTAMP)
+                .addValue("overdueBefore", utc(overdueBefore(instituteId, w)), java.sql.Types.TIMESTAMP);
+    }
+
+    /** True when the institute counts a follow-up overdue by its date, not its time. */
+    boolean overdueByDate(String instituteId) {
+        if (instituteId == null || leadFollowupSettingService == null) return false;
+        return overdueByDateCache.get(instituteId, id -> {
+            try {
+                return leadFollowupSettingService.overdueByDate(id);
+            } catch (Exception e) {
+                return false;
+            }
+        });
+    }
+
+    /** A follow-up due before this instant is overdue: now, or the start of today by date. */
+    Instant overdueBefore(String instituteId, Window w) {
+        return overdueByDate(instituteId) ? w.todayStart() : w.now();
     }
 
     private List<Map<String, Object>> rows(String sql, MapSqlParameterSource p) {
@@ -562,7 +596,8 @@ public class CrmDashboardService {
     }
 
     private String cacheKey(String instituteId, Scope scope, String block, Window w) {
-        String base = instituteId + "|" + scope.cacheIdentity() + "|" + block + "|" + w.tz().getId();
+        String base = instituteId + "|" + scope.cacheIdentity() + "|" + block + "|" + w.tz().getId()
+                + (overdueByDate(instituteId) ? "|overdue-by-date" : "");
         return switch (block) {
             // "Now"-relative blocks share one entry per 5-minute bucket, so a page opened by
             // many people in the same scope is computed once (numbers at most 5 min old).

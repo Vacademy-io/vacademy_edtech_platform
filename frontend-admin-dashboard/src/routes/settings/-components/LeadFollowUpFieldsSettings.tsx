@@ -76,7 +76,8 @@ type BehaviourKey =
     | 'scheduleNextByDefault'
     | 'closingNoteOptional'
     | 'markDoneLeadStatusAndTier'
-    | 'syncInterestToLead';
+    | 'syncInterestToLead'
+    | 'overdueByDate';
 
 /** Label/hint can read the institute's own names for lead status and tier. */
 type Wording = string | ((terms: LeadTerminology) => string);
@@ -119,6 +120,11 @@ const BEHAVIOUR_SWITCHES: { key: BehaviourKey; label: Wording; hint: Wording }[]
         label: (terms) => `Follow-up interest level updates the lead's ${terms.tier}`,
         hint: (terms) =>
             `The interest level picked on a follow-up also becomes the lead's ${terms.tier}: when a follow-up is created with one, and when the lead's latest follow-up has it edited. Matched by name (e.g. "Very Hot" sets the Very Hot ${terms.tier}); a value with no matching ${terms.tier} leaves the lead as it is. Editing an older follow-up only fixes that follow-up.`,
+    },
+    {
+        key: 'overdueByDate',
+        label: 'Overdue by date, not time',
+        hint: 'A follow-up due today stays in Today for the whole day and becomes overdue only after that date has passed. Off = it becomes overdue as soon as its time passes. Applies to the Follow-ups page, dashboard counts, reminders, Check Lead and the Overdue export.',
     },
     {
         key: 'scheduleNextByDefault',
