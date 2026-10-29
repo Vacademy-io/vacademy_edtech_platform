@@ -133,6 +133,8 @@ public class MeetingBookingService {
         }
         OffsetDateTime end = start.plusMinutes(duration);
 
+        requireNoOtherMeetingThatDay(request, start, zone);
+
         BookingReminderConfigDTO reminderConfig = request.getReminderConfig() != null
                 ? request.getReminderConfig()
                 : (page != null ? bookingPageService.readReminderConfig(page) : null);
@@ -170,6 +172,44 @@ public class MeetingBookingService {
                 instance.getInviteeName(), title, formatWhen(instance, zone), false);
 
         return toDTO(instance, Map.of(), page != null ? page.getTitle() : null);
+    }
+
+    /**
+     * One meeting per person per day. The same lead was booked twice for one morning (11:30
+     * by hand, 10:00 from the call) and received two invites; a second meeting that day is
+     * refused so the existing one is rescheduled instead. A reschedule is not affected: it
+     * marks the old instance RESCHEDULED before creating the new one.
+     */
+    void requireNoOtherMeetingThatDay(MeetingBookingRequestDTO request, OffsetDateTime start, ZoneId zone) {
+        String responseId = blankToNull(request.getAudienceResponseId());
+        String userId = blankToNull(request.getInviteeUserId());
+        String phone10 = phone10(request.getInviteePhone());
+        String email = request.getInviteeEmail() == null || request.getInviteeEmail().isBlank()
+                ? null : request.getInviteeEmail().trim().toLowerCase();
+        if (responseId == null && userId == null && phone10 == null && email == null) return;
+        java.time.ZonedDateTime dayStart = start.atZoneSameInstant(zone).toLocalDate().atStartOfDay(zone);
+        List<BookingInstance> sameDay = bookingInstanceRepository.findLiveBookingsOfPersonBetween(
+                request.getInstituteId(), responseId, userId, phone10, email,
+                java.sql.Timestamp.from(dayStart.toInstant()),
+                java.sql.Timestamp.from(dayStart.plusDays(1).toInstant()));
+        if (sameDay.isEmpty()) return;
+        BookingInstance existing = sameDay.get(0);
+        String who = firstNonBlank(request.getInviteeName(), existing.getInviteeName(), "This person");
+        String when = existing.getScheduledStartUtc() == null ? "that day"
+                : java.time.format.DateTimeFormatter.ofPattern("EEE d MMM 'at' h:mm a", java.util.Locale.ENGLISH)
+                        .format(existing.getScheduledStartUtc().toInstant().atZone(zone));
+        throw new vacademy.io.common.exceptions.ConflictException(who + " already has a meeting on " + when
+                + ". Reschedule or cancel that one instead of booking a second meeting the same day.");
+    }
+
+    private static String blankToNull(String s) {
+        return s == null || s.isBlank() ? null : s.trim();
+    }
+
+    private static String phone10(String phone) {
+        if (phone == null) return null;
+        String digits = phone.replaceAll("[^0-9]", "");
+        return digits.length() >= 10 ? digits.substring(digits.length() - 10) : null;
     }
 
     private BookingInstance persistBooking(MeetingBookingRequestDTO request, CustomUserDetails user,
