@@ -291,6 +291,27 @@ public class EngagementReadDao {
      * Not interested ('LOST').
      * Oldest rows first, so the row kept for a phone stays the same across reconciles.
      */
+    /**
+     * Live lead rows submitted to these lists since {@code since}: {id, audience_id, institute_id,
+     * user_id}. Uses idx_audience_response_audience_submitted (audience_id, submitted_at).
+     */
+    @SuppressWarnings("unchecked")
+    public List<Object[]> leadsSubmittedSince(java.util.Collection<String> audienceIds, java.time.Instant since) {
+        if (audienceIds == null || audienceIds.isEmpty()) return List.of();
+        return em.createNativeQuery("""
+                SELECT ar.id, ar.audience_id, a.institute_id, ar.user_id
+                  FROM audience_response ar
+                  JOIN audience a ON a.id = ar.audience_id
+                 WHERE ar.audience_id IN (:audienceIds)
+                   AND ar.submitted_at >= :since
+                   AND COALESCE(ar.audience_status, 'ACTIVE') = 'ACTIVE'
+                 ORDER BY ar.submitted_at
+                """)
+                .setParameter("audienceIds", audienceIds)
+                .setParameter("since", java.sql.Timestamp.from(since))
+                .getResultList();
+    }
+
     public List<Object[]> leadsByAudience(String audienceId, String instituteId) {
         @SuppressWarnings("unchecked")
         List<Object[]> rows = em.createNativeQuery("""

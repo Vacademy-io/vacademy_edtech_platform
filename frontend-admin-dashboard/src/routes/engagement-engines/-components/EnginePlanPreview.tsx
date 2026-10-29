@@ -77,6 +77,7 @@ export function EnginePlanPreview({
     channelLabels,
     stopOnMeeting,
     autoReply,
+    bookingPageTitle,
     className,
 }: {
     cadenceHours: number;
@@ -85,6 +86,8 @@ export function EnginePlanPreview({
     stopOnMeeting: boolean;
     /** WhatsApp "Reply on its own" is on. */
     autoReply: boolean;
+    /** The engine books a meeting here when a lead asks for one; unset = it doesn't book. */
+    bookingPageTitle?: string;
     className?: string;
 }) {
     const { t } = useTranslation('engagementEnginesConstants');
@@ -187,6 +190,7 @@ export function EnginePlanPreview({
                     <span className="text-neutral-600">
                         <span className="text-caption">
                             {autoReply ? t('plan.replyAuto') : t('plan.replyInbox')}
+                            {bookingPageTitle ? ` ${t('plan.replyBooks', { page: bookingPageTitle })}` : ''}
                         </span>
                     </span>
                 </div>
