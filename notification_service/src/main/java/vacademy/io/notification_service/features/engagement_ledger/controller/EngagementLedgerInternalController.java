@@ -73,15 +73,17 @@ public class EngagementLedgerInternalController {
     /**
      * Recent inbound WhatsApp replies since a cursor — the engine's reply-ingestion sweep.
      * {@code since} is epoch millis (plain digits survive the caller's URL re-encoding; an ISO
-     * string would arrive double-encoded and fail to parse).
+     * string would arrive double-encoded and fail to parse). {@code includeEmail=true} adds inbound
+     * emails (channel=EMAIL rows); without it the response is WhatsApp only, as before.
      */
     @GetMapping("/inbound-since")
     public ResponseEntity<List<Map<String, Object>>> inboundSince(
             @RequestParam String instituteId,
-            @RequestParam(required = false) Long since) {
+            @RequestParam(required = false) Long since,
+            @RequestParam(defaultValue = "false") boolean includeEmail) {
         try {
             Instant cursor = since != null ? Instant.ofEpochMilli(since) : null;
-            return ResponseEntity.ok(engagementLedgerService.inboundSince(instituteId, cursor));
+            return ResponseEntity.ok(engagementLedgerService.inboundSince(instituteId, cursor, includeEmail));
         } catch (IllegalArgumentException e) {
             log.warn("inbound-since rejected: {}", e.getMessage());
             return ResponseEntity.badRequest().build();

@@ -65,6 +65,16 @@ public class EngagementLedgerService {
      * carry the old 100-char preview; the responder escalates those rather than auto-answering.
      */
     public List<Map<String, Object>> inboundSince(String instituteId, Instant since) {
+        return inboundSince(instituteId, since, false);
+    }
+
+    /**
+     * {@link #inboundSince(String, Instant)}, plus inbound emails when {@code includeEmail} is set.
+     * An email row carries channel=EMAIL, the sender's address, the subject and only the new part
+     * of the reply (the quoted thread below it is cut, so our own earlier text is never read as
+     * theirs). Its Message-ID goes in {@code wamid}, the key the engine dedups every reply on.
+     */
+    public List<Map<String, Object>> inboundSince(String instituteId, Instant since, boolean includeEmail) {
         if (instituteId == null || instituteId.isBlank()) {
             throw new IllegalArgumentException("instituteId is required");
         }
@@ -73,13 +83,40 @@ public class EngagementLedgerService {
         for (NotificationLogRepository.InboundReplyRow row :
                 notificationLogRepository.findInboundRepliesSince(instituteId, cursor)) {
             Map<String, Object> m = new java.util.HashMap<>();
+            m.put("channel", "WHATSAPP");
             m.put("phone", row.getChannelId());
             m.put("text", row.getBody());
             m.put("receivedAt", row.getReceivedAt() != null ? row.getReceivedAt().toInstant().toString() : null);
             m.put("wamid", row.getWamid());   // stable per-message id the auto-reply dedups on
             out.add(m);
         }
+        if (includeEmail) {
+            for (NotificationLogRepository.InboundEmailRow row :
+                    notificationLogRepository.findInboundEmailsSince(instituteId, cursor)) {
+                if (row.getMessageId() == null || row.getMessageId().isBlank() || row.getFromAddress() == null) {
+                    continue; // no stable id or no sender: nothing the engine could dedup or match
+                }
+                Map<String, Object> m = new java.util.HashMap<>();
+                m.put("channel", "EMAIL");
+                m.put("email", row.getFromAddress().trim().toLowerCase(java.util.Locale.ROOT));
+                m.put("subject", row.getSubject());
+                m.put("text", EmailReplyText.newPart(payloadBody(row.getPayload())));
+                m.put("receivedAt", row.getReceivedAt() != null ? row.getReceivedAt().toInstant().toString() : null);
+                m.put("wamid", row.getMessageId());
+                out.add(m);
+            }
+        }
         return out;
+    }
+
+    private String payloadBody(String payload) {
+        if (payload == null || payload.isBlank()) return null;
+        try {
+            JsonNode body = objectMapper.readTree(payload).path("body");
+            return body.isTextual() ? body.asText() : null;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public LedgerBatchResponse ledgerBatch(LedgerBatchRequest request) {
