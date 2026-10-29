@@ -11,7 +11,14 @@
         "memberCount_other": " · {{count}} members",
         "createNewOption": "+ Create new organisation",
         "skipOption": "Don’t link an organisation",
-        "emptyState": "No organisation is enrolled in this batch yet — create the first one."
+        "emptyState": "No organisation is enrolled in this batch yet — create the first one.",
+        "searchPlaceholder": "Search organisations…",
+        "noMatches": "No organisation matches.",
+        "inBatchHeading": "In this batch",
+        "otherOrgsHeading": "Other organisations (not in this batch yet)",
+        "searching": "Searching all organisations…",
+        "searchHint": "Type at least {{count}} letters to search all organisations.",
+        "notInBatchNotice": "This organisation has no member in this batch yet. The selected learners will be its first."
     },
     "skippedNotice": "Enrolled as an ordinary {{learnerTerm}} with no organisation link. Runs the standard enrollment automation, not the sub-org member one.",
     "adminInfo": {
