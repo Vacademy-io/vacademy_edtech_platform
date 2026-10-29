@@ -1,11 +1,19 @@
 """Looking up a qualified lead's decision maker and their own phone or email on the open web, when
-its website shows only desk numbers and general inboxes.
+its website shows only desk numbers and general inboxes; and the contact hunt, when a lead has no
+contact outreach can use at all.
 
-One web search per lead, then the run's model picks people at this organisation from the results.
-Nothing the model says is taken on trust: a person is kept only if their name is in the result,
-the result is about this organisation, and a phone or email only if that result prints it within a
-few words of the name. Directories that show masked or virtual numbers (JustDial, IndiaMART, ...)
-and job portals (HR numbers) are left out, and helpline numbers are rated "avoid" as on websites.
+Decision-maker lookup: one web search per lead, then the run's model picks people at this
+organisation from the results. Nothing the model says is taken on trust: a person is kept only if
+their name is in the result, the result is about this organisation, and a phone or email only if
+that result prints it within a few words of the name.
+
+Contact hunt (hunt_queries / hunt_contacts, no model): searches for the organisation's own number or
+email, read from the results' titles and snippets only (social pages are never opened). A number or
+email is taken only from a result about this organisation that prints it within a few words of the
+organisation's name.
+
+Both: directories that show masked or virtual numbers (JustDial, IndiaMART, ...) and job portals (HR
+numbers) are left out, and helpline numbers are rated "avoid" as on websites.
 """
 
 from __future__ import annotations
@@ -17,10 +25,13 @@ from ..discovery.domains import registered_domain
 from ..discovery.search import SearchResult
 from ..schemas import ContactLookup
 from ..errors import InvalidOutput
-from .contacts import EMAIL_RE, _name_pattern, _phone_matches, is_person_name, phone_region, site_desk_line
+from .contacts import (
+    _EMAIL_NOISE, EMAIL_RE, GENERIC_LOCAL_PARTS, ORG_OWNED, _leader_title, _name_pattern, _phone_matches, email_owner,
+    is_person_name, phone_region, site_desk_line,
+)
 from .evidence import quote_is_supported
 from .lead import role_rank
-from .social import names_organisation
+from .social import _GENERIC_ORG, _in_place, _tokens, names_organisation
 
 LOOKUP_RESULTS = 8
 LOOKUP_SNIPPET_CHARS = 1500
@@ -234,3 +245,96 @@ def merge_lookup(lead: dict[str, Any], found: dict[str, list[dict[str, Any]]]) -
         "people_found": len(found["people"]), "contacts_found": len(found["contacts"]),
     })
     return lead
+
+
+# ------------------------------------------------------------------------------------ contact hunt
+
+HUNT_FOUND_BY = "contact_hunt"
+# The organisation's own page on each network, found through one search and read from its result only.
+SOCIAL_SITES = ("facebook.com", "instagram.com", "linkedin.com/company")
+HUNT_RESULTS = 10
+
+
+def hunt_queries(organisation: str, city: str | None, social: bool = False) -> list[str]:
+    """The contact hunt's searches in the order they run, one per round: "<name> <city> contact number",
+    "<name> <city> email", and with social pages the organisation's Facebook, Instagram or LinkedIn
+    company page in one search ("<name> <city> site:facebook.com OR site:instagram.com OR
+    site:linkedin.com/company")."""
+    where = " ".join(f"{organisation} {(city or '').split(',')[0]}".split())
+    queries = [f"{where} contact number", f"{where} email"]
+    if social:
+        queries.append(f"{where} " + " OR ".join(f"site:{site}" for site in SOCIAL_SITES))
+    return queries
+
+
+def _core_words(organisation: str, city: str | None) -> list[str]:
+    """The words that tell the organisation apart: not "Academy" or "Institute", not its city's words."""
+    place = set(_tokens((city or "").split(",")[0]))
+    return [w for w in dict.fromkeys(_tokens(organisation)) if w not in _GENERIC_ORG and w not in place]
+
+
+def org_spans(text: str, organisation: str, city: str | None = None) -> list[tuple[int, int]]:
+    """Where the text prints the organisation's name: each distinctive word of it, as a whole word."""
+    spans = []
+    for word in _core_words(organisation, city):
+        spans += [(m.start(), m.end())
+                  for m in re.finditer(rf"(?<![a-z0-9]){re.escape(word)}(?![a-z0-9])", text, re.I)]
+    return sorted(spans)
+
+
+def hunt_result_about(result: SearchResult, organisation: str, site_domain: str | None, city: str | None) -> bool:
+    """A result the hunt may read numbers from: on the organisation's own website, or naming it
+    (about_organisation) with every distinctive word of its name and, when its city is known, the city.
+    Nobody checks a hunted number before outreach calls it, so one shared word is not enough: "Gyan
+    Classes Patna" is not "Gyan Coaching Centre" in Indore, and "Indore" alone is not "IMS Indore"."""
+    text = f"{result.title} {result.snippet}"
+    if site_domain and registered_domain(result.url) == site_domain:
+        return True
+    core = _core_words(organisation, city)
+    found = set(_tokens(text))
+    return (bool(core) and all(w in found for w in core)
+            and about_organisation(text, result.url, organisation, site_domain) and _in_place(text, city))
+
+
+def hunt_contacts(results: list[SearchResult], *, organisation: str, site_domain: str | None, city: str | None,
+                  country: str | None) -> list[dict[str, Any]]:
+    """The organisation's own phones and emails in one hunt search's results, as lead contacts
+    (found_by "contact_hunt", rated later with the normal rules): only from results about it
+    (hunt_result_about, no masked-number directory or job portal), and only a number or email printed
+    within a few words of its name (the decision-maker lookup's _near). An email is kept only when it
+    is the organisation's own mailbox (contacts.ORG_OWNED) or a leader's title (principal@): an unnamed
+    Gmail in someone's search result may be anyone's."""
+    region = phone_region(site_domain, country)
+    found: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for result in list(results)[:HUNT_RESULTS]:
+        if not _usable(result) or not hunt_result_about(result, organisation, site_domain, city):
+            continue
+        text = f"{result.title} {result.snippet}"
+        spans = org_spans(text, organisation, city)
+        if not spans:
+            continue
+        source = f"web search ({registered_domain(result.url) or result.url})"
+        for number, phone_type, start, end in _phone_matches(text, region):
+            if number not in seen and _near(spans, start, end):
+                seen.add(number)
+                found.append({"kind": "institute_phone", "value": number, "url": result.url, "note": phone_type,
+                              "context": _quote(text, spans, start, end), "seen_on": 0, "found_by": HUNT_FOUND_BY,
+                              "source": source})
+        for match in EMAIL_RE.finditer(text):
+            email = match.group(0).strip(".").lower()
+            local, _, domain = email.partition("@")
+            if email in seen or any(noise in email for noise in _EMAIL_NOISE) \
+                    or not _near(spans, match.start(), match.end()):
+                continue
+            if email_owner(email, site_domain=site_domain, organisation=organisation) not in ORG_OWNED \
+                    and not _leader_title(local):
+                continue
+            seen.add(email)
+            notes = ["generic inbox" if local in GENERIC_LOCAL_PARTS else "named inbox"]
+            if site_domain and (domain == site_domain or domain.endswith("." + site_domain)):
+                notes.append("on the organisation's own domain")
+            found.append({"kind": "published_email", "value": email, "url": result.url, "note": ", ".join(notes),
+                          "context": _quote(text, spans, match.start(), match.end()), "seen_on": 0,
+                          "found_by": HUNT_FOUND_BY, "source": source})
+    return found

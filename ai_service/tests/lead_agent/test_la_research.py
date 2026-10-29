@@ -1,7 +1,12 @@
 """Research of one candidate with the REAL engine (extraction prompt, build_lead,
 fingerprint, scoring, gate) and a scripted LLM / search: free rejects spend no
 LLM call; a researched lead is saved with lead_json / score_json / decision; an
-LLM outage puts the candidate back with a back-off."""
+LLM outage puts the candidate back with a back-off; the Google Maps listing's
+phone confirms a website number or becomes the contact; a site that cannot be
+read is judged from its Maps listing (REVIEW, never AUTO) or rejected; the same
+organisation found under a second domain is SKIPPED (or waits for REVIEW when
+only its name and city match); the validation effort's searches go through
+Serper and are counted into the agent's day."""
 from __future__ import annotations
 
 import asyncio
@@ -68,6 +73,10 @@ def scripted(monkeypatch):
             return [search_mod.SearchResult(query=query, rank=1, title="WiNNERS Institute Indore - team",
                                             url="https://winnersinstitute.in/team",
                                             snippet="WiNNERS Institute Indore: Aditya Patel, Founder & Director")]
+
+        async def maps(self, query, **kw):
+            calls.append("maps")
+            return []
     monkeypatch.setattr(search_mod, "parallel", lambda: NoSearch())
     monkeypatch.setattr(search_mod, "serper", lambda: NoSearch())
     monkeypatch.setattr("app.services.lead_agent.mx.mx_lookup", lambda d: True)
@@ -187,3 +196,231 @@ def test_a_suppressed_phone_is_dropped_before_scoring(la_db, scripted):
     asyncio.run(research.research_candidate(cand["id"]))
     lead = _row(la_db, cand["id"])["lead_json"]
     assert all("98765" not in (c.get("value") or "") for c in lead["contacts"])
+
+
+# ------------------------------------------------------------------------- Google Maps phone
+
+MAPS = {"phone": "098450 12345", "rating": 4.6, "reviews": 120, "address": "Vijay Nagar, Indore",
+        "type": "Coaching center"}
+# Only a support helpline and a support inbox: nothing outreach can use on the website itself.
+HELPLINE_HOME = (HOME.replace("Call our admissions team: +91 98765 12345", "Student support helpline: +91 98765 12345")
+                 .replace("info@winnersinstitute.in", "support@winnersinstitute.in"))
+
+
+def _maps_candidate(la_db, agent, domain="winnersinstitute.in", **maps):
+    return make_candidate(la_db, agent, domain, status="READY",
+                          discovery_json={"query": "coaching institute Indore", "maps": {**MAPS, **maps}})
+
+
+def _maps_contacts(la_db, cid):
+    return [c for c in _row(la_db, cid)["lead_json"]["contacts"] if c.get("found_by") == "google_maps"]
+
+
+def _gate(la_db, agent, auto=70, review=0):
+    with la_db() as db:
+        store.update_agent(db, agent["id"], INSTITUTE, {"gate_json": {"auto_score": auto, "review_score": review,
+                                                                      "min_contact": "likely",
+                                                                      "require_intent": False}})
+        db.commit()
+
+
+def test_a_site_showing_only_a_helpline_keeps_its_maps_phone_as_the_contact(la_db, scripted):
+    # Career Craft Patna, CMC Indore (2026-10-29): rejected for "no usable contact" while their
+    # Google Maps listing showed a number
+    agent = make_world(la_db, plan=PLAN)
+    cand = _maps_candidate(la_db, agent)
+    _page(la_db, cand, "https://winnersinstitute.in/", "home", HELPLINE_HOME, has_form=False)
+    _claimed(la_db, cand)
+    asyncio.run(research.research_candidate(cand["id"]))
+    row = _row(la_db, cand["id"])
+    assert scripted[0] == "extract"
+    maps = _maps_contacts(la_db, cand["id"])
+    assert len(maps) == 1 and maps[0]["kind"] == "institute_phone" and maps[0]["note"] == "mobile"
+    assert maps[0]["quality"] == "likely" and maps[0]["value"].replace(" ", "").endswith("9845012345")
+    assert "Career" not in maps[0]["context"] and maps[0]["url"].startswith("https://www.google.com/maps/")
+    assert row["lead_json"]["contact_quality"]["level"] == "likely"
+    assert "no_contact" not in row["score_json"]["flags"]
+    assert any(e["field"] == "Contact (Google Maps listing)" for e in row["lead_json"]["evidence"])
+
+
+def test_a_maps_phone_matching_a_website_number_confirms_it(la_db, scripted):
+    agent = make_world(la_db, plan=PLAN)
+    cand = _maps_candidate(la_db, agent, phone="098765 12345")
+    _page(la_db, cand, "https://winnersinstitute.in/", "home", HOME)
+    _claimed(la_db, cand)
+    asyncio.run(research.research_candidate(cand["id"]))
+    contacts = _row(la_db, cand["id"])["lead_json"]["contacts"]
+    phone = next(c for c in contacts if c["kind"] == "institute_phone")
+    assert phone["maps_confirmed"] is True and not phone.get("found_by")
+    assert _maps_contacts(la_db, cand["id"]) == []
+
+
+def test_a_site_with_no_contact_but_a_maps_phone_is_researched_not_rejected(la_db, scripted):
+    agent = make_world(la_db, plan=PLAN)
+    cand = _maps_candidate(la_db, agent, "quiet.in")
+    _page(la_db, cand, "https://quiet.in/", "home", "We teach maths. Visit us.", has_form=False)
+    _claimed(la_db, cand)
+    asyncio.run(research.research_candidate(cand["id"]))
+    row = _row(la_db, cand["id"])
+    assert scripted and scripted[0] == "extract"
+    assert not (row["reject_reason"] or "").startswith("No contact")
+    assert [c.get("found_by") for c in row["lead_json"]["contacts"]] == ["google_maps"]
+
+
+def test_a_maps_landline_is_a_general_contact(la_db, scripted):
+    agent = make_world(la_db, plan=PLAN)
+    cand = _maps_candidate(la_db, agent, phone="080 4567 8901")
+    _page(la_db, cand, "https://winnersinstitute.in/", "home", HELPLINE_HOME, has_form=False)
+    _claimed(la_db, cand)
+    asyncio.run(research.research_candidate(cand["id"]))
+    maps = _maps_contacts(la_db, cand["id"])
+    assert len(maps) == 1 and maps[0]["quality"] == "general"
+
+
+def test_a_suppressed_maps_phone_is_never_used(la_db, scripted):
+    agent = make_world(la_db, plan=PLAN)
+    cand = _maps_candidate(la_db, agent, "quiet.in")
+    _page(la_db, cand, "https://quiet.in/", "home", "We teach maths. Visit us.", has_form=False)
+    with la_db() as db:
+        store.insert_suppression(db, institute_id=INSTITUTE, kind="PHONE", value="9845012345", reason="OPTED_OUT",
+                                 note=None, created_by="u")
+        db.commit()
+    _claimed(la_db, cand)
+    assert asyncio.run(research.research_candidate(cand["id"])) == "REJECTED"
+    assert scripted == [] and _row(la_db, cand["id"])["reject_reason"].startswith("No contact")
+
+
+# ------------------------------------------------------------------ same organisation, two domains
+
+def test_a_lead_sharing_a_phone_with_a_delivered_lead_is_skipped(la_db, scripted):
+    agent = make_world(la_db, plan=PLAN)
+    _gate(la_db, agent)
+    other = make_candidate(la_db, agent, "winners-indore.in", status="DELIVERED", lead_json={
+        "organisation": {"name": "Winners Indore", "city": "Indore", "domain": "winners-indore.in"},
+        "contacts": [{"kind": "institute_phone", "value": "+91 98765 12345", "quality": "likely",
+                      "context": "Call us"}]})
+    cand = make_candidate(la_db, agent, "winnersinstitute.in", status="READY")
+    _page(la_db, cand, "https://winnersinstitute.in/", "home", HOME)
+    _claimed(la_db, cand)
+    assert asyncio.run(research.research_candidate(cand["id"])) == "SKIPPED"
+    with la_db() as db:
+        note = db.execute(text("SELECT delivery_note FROM lead_candidate WHERE id = :i"), {"i": cand["id"]}).scalar()
+        theirs = db.execute(text("SELECT status, lead_json FROM lead_candidate WHERE id = :i"),
+                            {"i": other["id"]}).mappings().first()
+        day = db.execute(text("SELECT researched, review, rejected, delivered FROM lead_agent_day")).first()
+    assert "winners-indore.in" in note and "9876512345" in note
+    assert theirs["status"] == "DELIVERED" and theirs["lead_json"]["organisation"]["name"] == "Winners Indore"
+    assert tuple(day) == (1, 0, 0, 0)
+
+
+def test_a_lead_with_the_same_name_and_city_as_a_live_lead_waits_for_review(la_db, scripted):
+    agent = make_world(la_db, plan=PLAN)
+    _gate(la_db, agent, auto=0)   # would otherwise go out on its own
+    make_candidate(la_db, agent, "winnersindore.com", status="APPROVED", lead_json={
+        "organisation": {"name": "WiNNERS Institute", "city": "Indore", "domain": "winnersindore.com"},
+        "contacts": [{"kind": "institute_phone", "value": "+91 98450 54321", "quality": "likely"}]})
+    cand = make_candidate(la_db, agent, "winnersinstitute.in", status="READY")
+    _page(la_db, cand, "https://winnersinstitute.in/", "home", HOME)
+    _claimed(la_db, cand)
+    assert asyncio.run(research.research_candidate(cand["id"])) == "REVIEW"
+    row = _row(la_db, cand["id"])
+    assert row["decision"] == "REVIEW" and "possible_duplicate:winnersindore.com" in row["score_json"]["flags"]
+
+
+# ------------------------------------------------------- website unreadable: judged from its Google Maps listing
+
+UNREADABLE_MAPS = {"address": "12, Vijay Nagar, Indore, Madhya Pradesh 452010"}
+
+
+def test_an_unreadable_site_with_a_maps_phone_is_judged_from_the_listing_and_waits_for_review(la_db, scripted):
+    # 2026-10-29 audit: 202 of 237 "No readable page" rejects on "Leads for Vacademy" had a listing with a phone.
+    agent = make_world(la_db, plan=PLAN)
+    _gate(la_db, agent, auto=0)  # would go out on its own if it were judged from a website
+    cand = _maps_candidate(la_db, agent, "dead.in", **UNREADABLE_MAPS)  # no page at all
+    _claimed(la_db, cand)
+    assert asyncio.run(research.research_candidate(cand["id"])) == "REVIEW"
+    row = _row(la_db, cand["id"])
+    assert scripted == []  # no model, no search
+    lead = row["lead_json"]
+    assert lead["maps_only"] is True and "maps_only" in row["score_json"]["flags"]
+    assert "Judged from its Google Maps listing: the website could not be read" in row["score_json"]["gate_reasons"]
+    assert lead["organisation"]["city"] == "Indore" and lead["organisation"]["is_target_segment"] is True
+    assert lead["maps_listing"]["matches"] == "Coaching institutes" and lead["maps_listing"]["reviews"] == 120
+    assert [(c["found_by"], c["quality"]) for c in lead["contacts"]] == [("google_maps", "likely")]
+    assert lead["fetch"]["pages_used"] == 0 and lead["fetch"]["maps_only"] is True
+
+
+def test_a_maps_only_lead_below_the_review_bar_still_waits_for_review(la_db, scripted):
+    agent = make_world(la_db, plan=PLAN)  # default bar 45: a listing alone scores below it
+    cand = _maps_candidate(la_db, agent, "dead.in", **UNREADABLE_MAPS)
+    _claimed(la_db, cand)
+    assert asyncio.run(research.research_candidate(cand["id"])) == "REVIEW"
+    row = _row(la_db, cand["id"])
+    assert row["score"] < 45 and row["score_json"]["gate_reasons"][0].startswith(f"Score {row['score']} counts only")
+
+
+@pytest.mark.parametrize("maps, reason", [
+    ({"type": "Business management consultant"}, research.MAPS_UNFIT),
+    ({"type": "CBSE school"}, "Left out: Schools & playschools"),  # the brief leaves schools out
+    ({"phone": None}, "No readable page (website could not be read)"),
+])
+def test_an_unreadable_site_is_rejected_when_its_listing_cannot_carry_it(la_db, scripted, maps, reason):
+    agent = make_world(la_db, plan=PLAN)
+    cand = _maps_candidate(la_db, agent, "dead.in", **{**UNREADABLE_MAPS, **maps})
+    _claimed(la_db, cand)
+    assert asyncio.run(research.research_candidate(cand["id"])) == "REJECTED"
+    assert scripted == [] and _row(la_db, cand["id"])["reject_reason"] == reason
+
+
+# ------------------------------------------------------------------- validation effort searches (wiring)
+
+def test_the_effort_searches_go_through_serper_counted_into_the_agents_day(la_db, scripted, monkeypatch):
+    seen = []
+
+    class Serper:
+        available = True
+
+        async def search(self, query, **kw):
+            seen.append(("web", query, kw))
+            return []
+
+        async def maps(self, query, **kw):
+            seen.append(("maps", query, kw))
+            return []
+    monkeypatch.setattr(search_mod, "serper", lambda: Serper())
+    agent = make_world(la_db, plan=PLAN)  # no effort chosen: STANDARD
+    cand = make_candidate(la_db, agent, "winnersinstitute.in", status="READY")
+    _page(la_db, cand, "https://winnersinstitute.in/", "home", HELPLINE_HOME, has_form=False)
+    _claimed(la_db, cand)
+    assert asyncio.run(research.research_candidate(cand["id"])) == "REJECTED"
+    assert [(kind, query) for kind, query, _ in seen] == [("maps", "WiNNERS Institute Indore"),
+                                                           ("web", "WiNNERS Institute Indore contact number")]
+    assert all(isinstance(kw["counter"], search_mod.SearchCounter) and kw["gl"] == "in" for _, _, kw in seen)
+    row = _row(la_db, cand["id"])
+    assert row["reject_reason"] == "No reachable contact after the website, Google Maps and 1 contact search"
+    assert row["lead_json"] is not None and row["lead_json"]["fetch"]["contact_hunt_searches"] == 1
+
+
+def test_a_basic_agent_spends_no_extra_search(la_db, scripted, monkeypatch):
+    seen = []
+
+    class Serper:
+        available = True
+
+        async def search(self, query, **kw):
+            seen.append(query)
+            return []
+
+        async def maps(self, query, **kw):
+            seen.append(query)
+            return []
+    monkeypatch.setattr(search_mod, "serper", lambda: Serper())
+    agent = make_world(la_db, plan=PLAN)
+    with la_db() as db:
+        store.update_agent(db, agent["id"], INSTITUTE, {"gate_json": {**research.DEFAULT_GATE, "effort": "BASIC"}})
+        db.commit()
+    cand = make_candidate(la_db, agent, "winnersinstitute.in", status="READY")
+    _page(la_db, cand, "https://winnersinstitute.in/", "home", HELPLINE_HOME, has_form=False)
+    _claimed(la_db, cand)
+    asyncio.run(research.research_candidate(cand["id"]))
+    assert seen == [] and _row(la_db, cand["id"])["reject_reason"].startswith("No usable contact")
