@@ -101,6 +101,7 @@
             "optOut": "Asks to stop"
         },
         "capNote": "No one gets more than 3 messages a week across all your engines.",
+        "adaptiveTime": "If someone has not replied to three messages sent at the same time of day, the next one goes at a different time.",
         "quiet": "Nothing is sent between {{from}} and {{to}}."
     }
 }

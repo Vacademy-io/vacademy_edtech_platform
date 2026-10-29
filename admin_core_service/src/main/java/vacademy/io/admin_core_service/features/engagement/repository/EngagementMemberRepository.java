@@ -250,6 +250,32 @@ public interface EngagementMemberRepository extends JpaRepository<EngagementMemb
                        @Param("heldLease") Instant heldLease, @Param("nextActionAt") Instant nextActionAt);
 
     /**
+     * Remember the time of day this person is messaged at (see EngagementAdaptiveSendTime). A
+     * targeted write into memory_json, like the enrol stamp, so nothing else in the row is touched.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_member
+               SET memory_json = jsonb_set(COALESCE(memory_json, cast('{}' as jsonb)),
+                                           '{sendPref}', CAST(:pref AS jsonb)),
+                   updated_at = :now
+             WHERE id = :id
+            """, nativeQuery = true)
+    int setSendPreference(@Param("id") String id, @Param("pref") String prefJson, @Param("now") Instant now);
+
+    /** Forget the remembered time of day: the engine's own schedule applies again. */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_member
+               SET memory_json = COALESCE(memory_json, cast('{}' as jsonb)) - 'sendPref',
+                   updated_at = :now
+             WHERE id = :id
+            """, nativeQuery = true)
+    int clearSendPreference(@Param("id") String id, @Param("now") Instant now);
+
+    /**
      * The wake gate said sleep: store the fingerprint and the re-check time, nothing else (a save()
      * of the copy read at the start would put back a reply window or tier changed since). A wake
      * that landed after the gate read the member is honoured with a look a lease from now.

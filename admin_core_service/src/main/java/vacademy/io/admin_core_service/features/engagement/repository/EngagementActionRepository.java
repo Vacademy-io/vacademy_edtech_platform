@@ -15,6 +15,18 @@ import java.util.List;
 public interface EngagementActionRepository extends JpaRepository<EngagementAction, String> {
 
     /**
+     * When the engine's messages to this member went out, newest first. Answers to the person's own
+     * messages (REPLY) are not outreach and do not count; callers pass PageRequest.of(0, n).
+     */
+    @Query("""
+            SELECT a.dispatchedAt FROM EngagementAction a
+             WHERE a.memberId = :memberId AND a.status = 'SENT' AND a.kind <> 'REPLY'
+               AND a.dispatchedAt IS NOT NULL
+             ORDER BY a.dispatchedAt DESC
+            """)
+    List<Instant> recentSendTimes(@Param("memberId") String memberId, Pageable pageable);
+
+    /**
      * The institute-wide task inbox: unassigned by design in Phase 1, ranked by priority.
      * The caller passes the status filter; SIMULATED (DRY_RUN) rows are surfaced only when
      * the caller explicitly asks for that status, never mixed into the default OPEN/ACKED view.

@@ -208,7 +208,7 @@ export function EnginePlanPreview({
             </div>
 
             <p className="text-neutral-500">
-                <span className="text-caption">{[t('plan.capNote'), quiet].filter(Boolean).join(' ')}</span>
+                <span className="text-caption">{[t('plan.capNote'), t('plan.adaptiveTime'), quiet].filter(Boolean).join(' ')}</span>
             </p>
         </section>
     );
