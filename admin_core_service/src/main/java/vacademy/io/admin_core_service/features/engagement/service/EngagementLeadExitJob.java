@@ -21,6 +21,9 @@ import java.util.concurrent.atomic.AtomicReference;
  * Reads only the conversions since the previous run (lead_status_history, indexed by institute
  * and status), with an overlap so a slow run or a clock skew misses nothing. Re-reading is safe:
  * members already out are not matched again.
+ *
+ * Engines whose goal is a meeting (channels.exitOnMeetingBooked) also let go of a lead once a
+ * meeting is booked with it (booking_instance), read the same way.
  */
 @Component
 @Slf4j
@@ -53,6 +56,9 @@ public class EngagementLeadExitJob {
             List<String> converted = crmDao.membersOfLeadsConvertedSince(institutes, since);
             int left = outcomeService.exitConverted(converted, now);
             if (left > 0) log.info("Lead exit sweep: {} member(s) of converted leads left their engines", left);
+            List<String> booked = crmDao.membersOfLeadsWithMeetingBookedSince(institutes, since);
+            int met = outcomeService.exitMeetingBooked(booked, now);
+            if (met > 0) log.info("Lead exit sweep: {} member(s) left their engines after booking a meeting", met);
             lastRunStart.set(now);
         } catch (Exception e) {
             // Keep the old cursor: the next run re-reads this window.

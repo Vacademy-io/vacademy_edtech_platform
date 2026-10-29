@@ -162,6 +162,7 @@ class EngagementLeadConsentTest {
             when(gate.optedOutUserIds(anyString(), anyList())).thenReturn(Set.of());
             when(gate.preDecision(any(), any())).thenReturn(PolicyGate.Verdict.PROCEED);
             when(gate.clampToAllowedWindow(any(), any())).thenAnswer(inv -> inv.getArgument(1));
+            when(gate.scheduleSend(any(), any(), any())).thenAnswer(inv -> inv.getArgument(1));
         }
 
         @Test
@@ -234,6 +235,7 @@ class EngagementLeadConsentTest {
             when(members.findById("m1")).thenReturn(Optional.of(lead()));
             when(gate.optedOutUserIds(anyString(), anyList())).thenReturn(Set.of());
             when(gate.clampToAllowedWindow(any(), any())).thenAnswer(inv -> inv.getArgument(1));
+            when(gate.scheduleSend(any(), any(), any())).thenAnswer(inv -> inv.getArgument(1));
         }
 
         @Test

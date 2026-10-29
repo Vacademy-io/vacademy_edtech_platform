@@ -77,6 +77,7 @@ class EngagementDispatchUsageLimitTest {
         when(members.findById("m1")).thenReturn(Optional.of(member));
         when(gate.optedOutUserIds(anyString(), anyList())).thenReturn(Set.of());
         when(gate.clampToAllowedWindow(any(), any())).thenAnswer(inv -> inv.getArgument(1));
+        when(gate.scheduleSend(any(), any(), any())).thenAnswer(inv -> inv.getArgument(1));
         when(credits.readBalance("i1")).thenReturn(Optional.of(100.0));
     }
 

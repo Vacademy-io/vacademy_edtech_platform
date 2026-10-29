@@ -142,8 +142,9 @@ public class EngagementDispatchJob {
             return false;
         }
 
-        // 1b. The clock: an engine resumed at night must not fire its past-due SENDs in quiet hours.
-        Instant allowedAt = policyGate.clampToAllowedWindow(engine, now);
+        // 1b. The clock: an engine resumed at night (or on a day it doesn't send) must not fire its
+        // past-due SENDs then. Not the send window: the decision already placed the send in it.
+        Instant allowedAt = policyGate.scheduleSend(engine, now, PolicyGate.SendTiming.ANYTIME);
         if (allowedAt.isAfter(now)) {
             actionRepository.rescheduleDueSend(action.getId(), allowedAt, now);
             return false;

@@ -72,9 +72,20 @@ import {
     cadenceText,
     formatDateTime,
     safeParse,
+    scheduleText,
+    sendDaysText,
+    sendWindowText,
     whatsappEnabled,
 } from './-utils';
-import type { AudienceSelector, ChannelsConfig, EngagementEngine, EngineDetail, QuietHours } from './-types';
+import { EnginePlanPreview } from './-components/EnginePlanPreview';
+import type {
+    AudienceSelector,
+    ChannelsConfig,
+    ChannelsExtras,
+    EngagementEngine,
+    EngineDetail,
+    QuietHours,
+} from './-types';
 import type { EngineStatus } from './-types';
 
 export const Route = createLazyFileRoute('/engagement-engines/$engineId')({
@@ -173,6 +184,8 @@ function EngineDetailPage() {
     const emailChannel = safeParse<ChannelsConfig>(engine.channels, {}).EMAIL;
     const hasEmail = !!emailChannel?.enabled && !engine.systemManaged;
     const quietHours = quietHoursText(engine);
+    const schedule = safeParse<QuietHours>(engine.quietHours, {});
+    const channelsJson = safeParse<ChannelsConfig & ChannelsExtras>(engine.channels, {});
     const dataPointKeys = safeParse<string[]>(engine.dataPoints, []);
     const dataPointLabel = (key: string) =>
         (catalog ?? []).find((d) => d.key === key)?.label ?? key;
@@ -228,7 +241,13 @@ function EngineDetailPage() {
             tint: 'info',
             label: t('kpi.cadence'),
             value: cadenceText(engine.cadenceHours, tConstants),
-            detail: quietHours ? t('kpi.quiet', { window: quietHours }) : undefined,
+            // The send window when the engine has one ("11:00–12:00 · Mon–Sat"), else the quiet hours.
+            detail:
+                schedule.sendHour != null
+                    ? `${sendWindowText(schedule, tConstants)} · ${sendDaysText(schedule.days, tConstants)}`
+                    : quietHours
+                      ? t('kpi.quiet', { window: quietHours })
+                      : undefined,
         },
         {
             key: 'next',
@@ -561,7 +580,7 @@ function EngineDetailPage() {
                             )?.label ?? engine.language}
                         </KeyValue>
                         <KeyValue label={t('config.cadenceLabel')}>
-                            {cadenceText(engine.cadenceHours, tConstants)}
+                            {scheduleText(engine.cadenceHours, schedule, tConstants)}
                         </KeyValue>
                         {quietHours && (
                             <KeyValue label={t('config.quietHours')}>{quietHours}</KeyValue>
@@ -594,6 +613,16 @@ function EngineDetailPage() {
                         />
                     )}
                 </div>
+
+                {!engine.systemManaged && (
+                    <EnginePlanPreview
+                        cadenceHours={engine.cadenceHours}
+                        schedule={schedule}
+                        channelLabels={channels.map((c) => channelMeta[c].label)}
+                        stopOnMeeting={channelsJson.exitOnMeetingBooked === true}
+                        autoReply={!!(channelsJson.WHATSAPP?.enabled && channelsJson.WHATSAPP?.autoReply)}
+                    />
+                )}
 
                 {hasWhatsApp && <TemplateNegotiation engineId={engine.id} language={engine.language} />}
                 {hasEmail && (

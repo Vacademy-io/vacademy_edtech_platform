@@ -54,5 +54,52 @@
         "days": "Every {{count}} days",
         "hours_one": "Every hour",
         "hours_other": "Every {{count}} hours"
+    },
+    "schedule": {
+        "anyTime": "Any time",
+        "everyDay": "Every day",
+        "day": {
+            "1": "Mon",
+            "2": "Tue",
+            "3": "Wed",
+            "4": "Thu",
+            "5": "Fri",
+            "6": "Sat",
+            "7": "Sun"
+        }
+    },
+    "readiness": {
+        "WHATSAPP": "WhatsApp is not set up for your institute yet. Connect WhatsApp in Settings to use this channel.",
+        "EMAIL": "Email is not set up for your institute yet. Add your sender address in Settings, so messages go out in your name.",
+        "AI_CALL": "AI calling is not set up for your institute yet. Add an AI agent in Settings to use this channel.",
+        "senderMissing": "The email sender this engine uses no longer exists. Pick another sender below.",
+        "setUp": "Set up",
+        "checkAgain": "Check again",
+        "checking": "Checking setup…",
+        "ready": "Ready"
+    },
+    "plan": {
+        "title": "How this engine reaches each person",
+        "subtitle": "A preview for someone who joins today. The AI writes every message from what it knows about the person, and skips a touch that would not help.",
+        "day": "Day {{n}}",
+        "firstTouch": "First touch",
+        "followUp": "Follow-up {{n}}",
+        "withinMinutes": "Within 15 min of joining",
+        "firstTouchText": "The AI picks the best of {{channels}} for this person and introduces the institute.",
+        "followUpText": "If they haven't replied or booked yet, the AI follows up with a new angle.",
+        "andSoOn": "And so on, {{cadence}}, until one of the goals below is met. When someone never responds, the engine slowly waits longer between touches (at most once a month).",
+        "noChannels": "the enabled channels",
+        "replyTitle": "When they reply",
+        "replyAuto": "The AI answers on WhatsApp right away (outside quiet hours). Money questions, anger, requests to stop and anything it is unsure about come to your inbox.",
+        "replyInbox": "The reply and a suggested answer land in your task inbox right away, so your team can respond.",
+        "stopTitle": "It stops when",
+        "stop": {
+            "meeting": "A meeting is booked",
+            "converted": "Marked Converted",
+            "notInterested": "Says not interested",
+            "optOut": "Asks to stop"
+        },
+        "capNote": "No one gets more than 3 messages a week across all your engines.",
+        "quiet": "Nothing is sent between {{from}} and {{to}}."
     }
 }
