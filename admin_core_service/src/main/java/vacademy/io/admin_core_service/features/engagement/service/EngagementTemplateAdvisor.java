@@ -23,7 +23,9 @@ import java.util.Map;
  * It is deliberately conservative about Meta's rules, because a bad proposal costs the INSTITUTE:
  * marketing mislabelled as utility is a policy violation (not just a rejection) that degrades the
  * phone number's quality rating and throttles every sender on it. The human still confirms the
- * category — the model's job is to propose an honest one and warn, never to game the caps.
+ * category. Because Meta also caps how many MARKETING templates a person receives (131049), the
+ * model writes utility-first: anchored on the lead's own action and moving that request forward,
+ * with no selling — and labels MARKETING whenever the honest wording promotes.
  */
 @Service
 @Slf4j
@@ -155,14 +157,30 @@ public class EngagementTemplateAdvisor {
             - body: <=1024 chars. Use placeholders {{1}}, {{2}} … numbered sequentially starting at 1,
               with no gaps and no repeats. Every placeholder MUST have a matching variableName and a
               realistic sampleValue at the same index.
-            - category: choose HONESTLY.
-                * UTILITY = a message about an existing transaction/relationship the person expects
-                  (payment receipt, class reminder, order update).
-                * MARKETING = anything promotional: offers, new batches, re-engagement, "come back",
-                  upsells. Most engagement reach-outs are MARKETING — label them so.
+            - category — WRITE UTILITY-FIRST, LABEL HONESTLY:
+                Meta limits how many MARKETING templates one person may receive (error 131049: "not
+                delivered to maintain healthy ecosystem engagement"), so a marketing template often never
+                reaches the lead at all. Whenever the purpose honestly allows it, write the template as a
+                UTILITY message:
+                * Anchor it on something the person did or asked for: their enquiry or form, a call with
+                  the team, a demo or details they asked about, a question they sent. Say so plainly
+                  ("You enquired about {{2}}", "Following up on your call with our team").
+                * Its job is to move THAT request forward: share the specific information they need,
+                  or ask the one thing needed next (which time suits them, whether to send the details,
+                  who to speak to). The call to action is a reply: "Reply with a time that suits you",
+                  "Reply YES and we will send the details".
+                * Neutral, factual, specific. No selling: no offers, discounts, "free", "limited",
+                  "don't miss", "book now", "join now", "special", superlatives or hype emoji; no
+                  persuasion about why the product is great beyond one factual line of what it is.
+                * UTILITY also covers reminders and updates about something already arranged
+                  (a booked demo or class, a payment, an application).
+                * MARKETING only when the purpose itself is promotional: an offer, a new batch, an
+                  upsell, or contacting someone with no prior action to anchor on.
                 * AUTHENTICATION = one-time passcodes only.
-              Mislabelling MARKETING as UTILITY to dodge sending caps is a policy violation that gets
-              the institute's number throttled. When unsure, choose MARKETING.
+                Never label promotional text UTILITY: Meta re-categorises it and a mislabel lowers the
+                number's quality rating for every sender on it. If the honest wording for a purpose is
+                promotional, label it MARKETING and say in the rationale that it may hit Meta's cap.
+                In rationale, say which action of the person the template is anchored on.
             - Do NOT invent facts, prices, dates, or links; put anything variable in a {{n}} placeholder.
             - The body must NOT start or end with a placeholder, two placeholders must never be next to
               each other, and there must be at least two words of text for every placeholder.
