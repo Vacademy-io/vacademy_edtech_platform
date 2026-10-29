@@ -128,7 +128,8 @@ export const AddLeadNoteDialog = ({
         ? !!scheduleTime &&
           !!audienceResponseId &&
           (!notesRequired || !isNoteEmpty) &&
-          !followUpFields.missingRequired
+          !followUpFields.missingRequired &&
+          !leadAttributes.tierMissing
         : !isNoteEmpty || callMeta !== undefined;
 
     const resetState = () => {
@@ -273,7 +274,11 @@ export const AddLeadNoteDialog = ({
                     {/* The lead's own status + tier — on every tab, since a note or a
                         call log moves the lead just as often as a follow-up does. */}
                     {leadAttributes.visible && (
-                        <LeadAttributeFields fields={leadAttributes} portal={false} />
+                        <LeadAttributeFields
+                            fields={leadAttributes}
+                            portal={false}
+                            followUp={isFollowUp}
+                        />
                     )}
 
                     {/* Schedule time — Follow Up tab only; required to create the
@@ -353,11 +358,12 @@ export const AddLeadNoteDialog = ({
                             minimalToolbar
                         />
                     </div>
-                    {isFollowUp && followUpFields.missingRequired && (
-                        <p className="text-xs text-danger-600">
-                            Answer every field marked * before scheduling this follow-up.
-                        </p>
-                    )}
+                    {isFollowUp &&
+                        (followUpFields.missingRequired || leadAttributes.tierMissing) && (
+                            <p className="text-xs text-danger-600">
+                                Answer every field marked * before scheduling this follow-up.
+                            </p>
+                        )}
                     {isFollowUp && notesRequired && isNoteEmpty && (
                         <p className="text-xs text-danger-600">
                             Your institute requires a note on every follow-up.

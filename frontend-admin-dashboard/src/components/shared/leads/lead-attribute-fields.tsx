@@ -51,6 +51,7 @@ export function useLeadAttributeFields({ userId, audienceResponseId }: UseLeadAt
     const activeStatuses = statuses.filter((s) => s.is_active !== false);
     const showStatus = enabled && !!audienceResponseId && activeStatuses.length > 0;
     const showTier = enabled && !!userId && tiers.length > 0;
+    const tierRequired = showTier && followUpFields.leadTierRequired;
 
     const reset = () => {
         setStatusId('');
@@ -85,6 +86,9 @@ export function useLeadAttributeFields({ userId, audienceResponseId }: UseLeadAt
         tierOptions: tiers.map((t) => ({ label: t.label, value: t.tier_key })),
         showStatus,
         showTier,
+        /** Institute requires a tier on follow-ups — callers apply it only there. */
+        tierRequired,
+        tierMissing: tierRequired && !tierKey,
         visible: showStatus || showTier,
         reset,
         apply,
@@ -109,6 +113,8 @@ interface LeadAttributeFieldsProps {
     only?: LeadAttributeKey[];
     /** Pass false inside a Dialog/Sheet — a portalled list can't be scrolled there. */
     portal?: boolean;
+    /** This form books a follow-up — mark the tier * when the institute requires it. */
+    followUp?: boolean;
     disabled?: boolean;
     className?: string;
 }
@@ -117,6 +123,7 @@ export function LeadAttributeFields({
     fields,
     only,
     portal = true,
+    followUp = false,
     disabled = false,
     className,
 }: LeadAttributeFieldsProps) {
@@ -127,6 +134,7 @@ export function LeadAttributeFields({
         value: string;
         options: { label: string; value: string }[];
         onChange: (v: string) => void;
+        required?: boolean;
     }[] = [];
     if (fields.showStatus && (!only || only.includes('status'))) {
         rows.push({
@@ -144,21 +152,25 @@ export function LeadAttributeFields({
             value: fields.tierKey,
             options: fields.tierOptions,
             onChange: fields.setTierKey,
+            required: followUp && fields.tierRequired,
         });
     }
     if (rows.length === 0) return null;
 
     return (
         <div className={cn('grid gap-3 sm:grid-cols-2', className)}>
-            {rows.map(({ key, label, value, options, onChange }) => (
+            {rows.map(({ key, label, value, options, onChange, required }) => (
                 <div key={key} className="min-w-0 space-y-1.5">
-                    <Label className="text-sm font-medium">{label}</Label>
+                    <Label className="text-sm font-medium">
+                        {label}
+                        {required && <span className="text-danger-500"> *</span>}
+                    </Label>
                     <SearchableSelect
                         options={options}
                         value={value}
                         // Picking the chosen option again goes back to "Keep current".
                         onChange={(v) => onChange(v === value ? '' : v)}
-                        placeholder="Keep current"
+                        placeholder={required ? `Select ${label}` : 'Keep current'}
                         searchPlaceholder="Search…"
                         portal={portal}
                         disabled={disabled}

@@ -287,7 +287,10 @@ export function CompleteFollowUpPopover({
         !reasonMissing &&
         (!needsInlineSchedule || !!nextTime) &&
         !nextNoteMissing &&
-        !(needsInlineSchedule && followUpFields.missingRequired);
+        !(needsInlineSchedule && followUpFields.missingRequired) &&
+        // The tier picked in Mark complete (or the inline block) also rides with
+        // the next follow-up, so it is required whenever one is booked here.
+        !(needsInlineSchedule && leadAttributes.visible && leadAttributes.tierMissing);
 
     const isResolving = !followupId && followupsQuery.isLoading;
     const hasNoneOpen = !followupId && !followupsQuery.isLoading && openFollowups.length === 0;
@@ -398,6 +401,7 @@ export function CompleteFollowUpPopover({
                             <LeadAttributeFields
                                 fields={leadAttributes}
                                 portal={false}
+                                followUp={needsInlineSchedule}
                                 // Popover is narrow — stack them.
                                 className="mt-2 sm:grid-cols-1"
                             />
@@ -440,7 +444,8 @@ export function CompleteFollowUpPopover({
                                         Your institute requires a note on every follow-up.
                                     </p>
                                 )}
-                                {followUpFields.missingRequired && (
+                                {(followUpFields.missingRequired ||
+                                    (leadAttributes.visible && leadAttributes.tierMissing)) && (
                                     <p className="text-caption text-danger-600">
                                         Answer every field marked * before scheduling this
                                         follow-up.
@@ -452,6 +457,7 @@ export function CompleteFollowUpPopover({
                                     <LeadAttributeFields
                                         fields={leadAttributes}
                                         portal={false}
+                                        followUp
                                         // Popover is narrow — stack them.
                                         className="sm:grid-cols-1"
                                     />

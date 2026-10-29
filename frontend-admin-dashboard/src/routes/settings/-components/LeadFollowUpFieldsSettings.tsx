@@ -73,6 +73,7 @@ type BehaviourKey =
     | 'allowEditing'
     | 'reportExports'
     | 'leadStatusAndTier'
+    | 'leadTierRequired'
     | 'scheduleNextByDefault'
     | 'closingNoteOptional'
     | 'markDoneLeadStatusAndTier'
@@ -108,6 +109,12 @@ const BEHAVIOUR_SWITCHES: { key: BehaviourKey; label: Wording; hint: Wording }[]
         label: (terms) => `${terms.leadStatus} and ${terms.tier} in the activity pop-up`,
         hint: (terms) =>
             `${terms.leadStatus} and ${terms.tier} dropdowns in the Add activity pop-up (Note, Call Log, Follow Up, Meeting), the Lead Profile, "Schedule next" and the post-call sheet. They change the lead itself, start on "Keep current", and are saved only when a counsellor picks something.`,
+    },
+    {
+        key: 'leadTierRequired',
+        label: (terms) => `${terms.tier} mandatory on follow-ups`,
+        hint: (terms) =>
+            `${terms.tier} gets a red * and a follow-up can't be booked until one is picked — "Keep current" is not accepted. Applies to the Follow Up tab of Add activity, the Lead Profile and "Schedule next"; a note, call log or meeting stays optional. Needs the switch above on.`,
     },
     {
         key: 'markDoneLeadStatusAndTier',
