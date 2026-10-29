@@ -8,7 +8,14 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.agent.dto.ConversationSession;
 import vacademy.io.admin_core_service.features.agent.service.LLMService;
+import vacademy.io.admin_core_service.features.audience.dto.CloseLeadFollowupRequest;
+import vacademy.io.admin_core_service.features.audience.dto.CreateLeadFollowupRequest;
+import vacademy.io.admin_core_service.features.audience.repository.LeadFollowupRepository;
+import vacademy.io.admin_core_service.features.audience.service.LeadFollowupService;
+import vacademy.io.admin_core_service.features.engagement.service.EngagementCoordinationDao;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementPointsOfContact;
+import vacademy.io.admin_core_service.features.engagement.service.EngagementWakeService;
+import vacademy.io.admin_core_service.features.timeline.enums.LeadJourneyActionType;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallRequestDTO;
 import vacademy.io.admin_core_service.features.telephony.persistence.entity.AiCallResult;
 import vacademy.io.admin_core_service.features.telephony.queue.AiCallQueueService;
@@ -29,8 +36,10 @@ import java.util.Map;
  * <ul>
  *   <li>the lead's activity timeline gets the call's summary (before this it only showed "Outbound call
  *       2m 38s · Connected", so a callback ask or a promise lived only on the call detail page);</li>
- *   <li>a lead who asked to be called back ("in two days", "tomorrow", "in a while") gets an AI call
- *       scheduled for that time, through the normal call queue (calling hours and line capacity apply);</li>
+ *   <li>a lead who asked to be called back ("in two days", "tomorrow", "in a while") gets, for that time,
+ *       a Lead Journey event, a CRM follow-up owned by the counsellor (the safety net and the reminder)
+ *       and an AI call through the normal queue (calling hours and line capacity apply). When a later
+ *       AI call connects, the follow-up is closed; when it does not, the follow-up is still due;</li>
  *   <li>a callback that could not be scheduled, or later was not placed or not answered, tells the
  *       admins and the counsellor ({@link AiCallbackWatchJob}).</li>
  * </ul>
@@ -47,6 +56,12 @@ public class AiCallFollowThrough {
     @Autowired @Lazy private LLMService llmService;
     @Autowired @Lazy private AiCallingSettingsService settingsService;
     @Autowired @Lazy private EngagementPointsOfContact pointsOfContact;
+    @Autowired @Lazy private LeadFollowupService leadFollowupService;
+    @Autowired @Lazy private LeadFollowupRepository leadFollowupRepository;
+    @Autowired @Lazy private EngagementCoordinationDao coordinationDao;
+
+    /** What every follow-up this class creates starts with, so the engine can find and close its own. */
+    static final String FOLLOWUP_PREFIX = "AI callback:";
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -55,6 +70,11 @@ public class AiCallFollowThrough {
             writeSummary(r, responseId, userId);
         } catch (Exception e) {
             log.warn("ai-call: summary note failed for result {}: {}", r.getId(), e.getMessage());
+        }
+        try {
+            closeEarlierCallbackFollowups(r, responseId, userId, instituteId);
+        } catch (Exception e) {
+            log.warn("ai-call: closing the callback follow-up failed for result {}: {}", r.getId(), e.getMessage());
         }
         try {
             scheduleCallback(r, responseId, userId, instituteId);
@@ -66,7 +86,7 @@ public class AiCallFollowThrough {
     // ------------------------------------------------------------------ the summary on the timeline
 
     private void writeSummary(AiCallResult r, String responseId, String userId) {
-        if (responseId == null || r.getAiSummary() == null || r.getAiSummary().isBlank()) return;
+        if ((responseId == null && userId == null) || r.getAiSummary() == null || r.getAiSummary().isBlank()) return;
         StringBuilder text = new StringBuilder(r.getAiSummary().trim());
         if (wantsCallback(r)) {
             text.append("\n\nAsked to be called back")
@@ -79,8 +99,11 @@ public class AiCallFollowThrough {
         meta.put("disposition", r.getDisposition());
         meta.put("callback_requested", wantsCallback(r));
         meta.put("callback_time_text", r.getCallbackTimeText());
-        timelineEventService.logEvent("AUDIENCE_RESPONSE", responseId, "AI_CALL_SUMMARY", "SYSTEM", null,
-                "AI call", "AI call summary", text.toString(), meta, userId);
+        // Activity & Notes reads the student's own events (type STUDENT, like a counsellor's note).
+        String type = userId != null ? "STUDENT" : "AUDIENCE_RESPONSE";
+        String typeId = userId != null ? userId : responseId;
+        timelineEventService.logEvent(type, typeId, "NOTE", "SYSTEM", null, "AI call", "AI call summary",
+                text.toString(), meta, userId);
     }
 
     // ------------------------------------------------------------------ the callback
@@ -100,17 +123,28 @@ public class AiCallFollowThrough {
                 : resolve(instituteId, r.getCallbackTimeText(), calledAt, zone);
         String who = r.getCustomerName() == null || r.getCustomerName().isBlank() ? "The lead" : r.getCustomerName();
         String phone = r.getPhoneNumber() == null ? "" : r.getPhoneNumber();
+        String said = r.getCallbackTimeText() == null || r.getCallbackTimeText().isBlank() ? null : r.getCallbackTimeText().trim();
 
         if (at == null) {
-            note(responseId, userId, "Callback requested, no time", who + " asked to be called back but gave no time"
-                    + (r.getCallbackTimeText() == null || r.getCallbackTimeText().isBlank() ? "" : " (\"" + r.getCallbackTimeText() + "\")")
-                    + ". Nobody has been scheduled to call: please pick a time.");
+            // Nothing to dial at: a human decides when. The follow-up (a day out) is the reminder.
+            Instant dueAt = Instant.now().plus(java.time.Duration.ofDays(1));
+            String followupId = createFollowup(r, responseId, userId, instituteId, dueAt,
+                    FOLLOWUP_PREFIX + " " + who + " asked to be called back" + (said == null ? " but gave no time" : " (\"" + said + "\")")
+                            + ". No AI call is scheduled: please call them or pick a time.");
+            journey(responseId, userId, "Asked to be called back (no time given)",
+                    who + " asked to be called back" + (said == null ? "" : ": \"" + said + "\"")
+                            + ". No time could be read, so no AI call is scheduled; a follow-up is due "
+                            + WHEN.format(dueAt.atZone(zone)) + ".", r, said, null, followupId);
             pointsOfContact.alert(instituteId, userId, "Callback needs a time: " + who,
                     "<p>" + EngagementPointsOfContact.esc(who) + " (" + EngagementPointsOfContact.esc(phone)
                             + ") asked the AI agent to call back but did not say when. Please call them or set a time.</p>",
                     "AI_CALLBACK", r.getId());
             return;
         }
+        String followupId = createFollowup(r, responseId, userId, instituteId, at,
+                FOLLOWUP_PREFIX + " " + who + " asked to be called back" + (said == null ? "" : " (\"" + said + "\")")
+                        + ". An AI call is scheduled for " + WHEN.format(at.atZone(zone)) + "; if it does not connect, please call them.");
+
         AiCallRequestDTO req = new AiCallRequestDTO();
         req.setInstituteId(instituteId);
         req.setResponseId(responseId);
@@ -121,24 +155,83 @@ public class AiCallFollowThrough {
         req.setCustomerEmail(r.getCustomerEmail());
         Map<String, Object> meta = new HashMap<>();
         meta.put("callbackOfResult", r.getId());
+        meta.put("followupId", followupId);
         req.setMetadata(meta);
         var result = queueService.enqueueAt(req, at, r.getId(), null);
-        if (result != null && result.isQueued()) {
-            note(responseId, userId, "Callback scheduled", "AI call scheduled for " + WHEN.format(at.atZone(zone))
-                    + " (" + zone.getId() + "), as the lead asked"
-                    + (r.getCallbackTimeText() == null || r.getCallbackTimeText().isBlank() ? "" : " (\"" + r.getCallbackTimeText() + "\")") + ".");
-        } else {
-            note(responseId, userId, "Callback already covered", "The lead asked to be called back, and an AI call is already waiting for them, so none was added.");
+        boolean queued = result != null && result.isQueued();
+        journey(responseId, userId, "Asked to be called back",
+                who + " asked to be called back" + (said == null ? "" : ": \"" + said + "\"") + ". "
+                        + (queued ? "An AI call is scheduled for " + WHEN.format(at.atZone(zone)) + " (" + zone.getId() + ")"
+                                : "An AI call is already waiting for them, so none was added; the follow-up is due "
+                                        + WHEN.format(at.atZone(zone)))
+                        + (followupId != null ? ", and a follow-up is set for the same time." : "."),
+                r, said, at, followupId);
+    }
+
+    /**
+     * The CRM follow-up for a callback: the reminder the counsellor sees and the safety net if the AI call
+     * does not connect. Owned by the lead's counsellor, else the first admin. Not created when the lead
+     * already has an open follow-up (one at a time, as everywhere in the engine). Null when none was made.
+     */
+    private String createFollowup(AiCallResult r, String responseId, String userId, String instituteId,
+                                  Instant dueAt, String content) {
+        if (responseId == null) return null;
+        try {
+            if (coordinationDao.openFollowups(instituteId, responseId) > 0) return null;
+            String owner = pointsOfContact.ownerFor(instituteId, userId);
+            if (owner == null) return null;
+            CreateLeadFollowupRequest req = new CreateLeadFollowupRequest();
+            req.setAudienceResponseId(responseId);
+            req.setInstituteId(instituteId);
+            req.setScheduleTime(java.sql.Timestamp.from(dueAt));
+            req.setContent(content);
+            // The engine's own CRM write: it must not wake the engine or hold it as a counsellor's touch.
+            return EngagementWakeService.withoutWakes(() -> leadFollowupService.create(req, principal(owner)).getId());
+        } catch (Exception e) {
+            log.warn("ai-call: callback follow-up failed for result {}: {}", r.getId(), e.getMessage());
+            return null;
         }
     }
 
-    private void note(String responseId, String userId, String title, String text) {
+    /** A connected AI call settles the callback the engine scheduled: its follow-up is closed. */
+    private void closeEarlierCallbackFollowups(AiCallResult r, String responseId, String userId, String instituteId) {
+        if (responseId == null || !"completed".equalsIgnoreCase(r.getStatus())) return;
+        List<String> ids = leadFollowupRepository.openIdsWithContentPrefix(responseId, FOLLOWUP_PREFIX);
+        if (ids.isEmpty()) return;
+        String owner = pointsOfContact.ownerFor(instituteId, userId);
+        if (owner == null) return;
+        for (String id : ids) {
+            CloseLeadFollowupRequest req = new CloseLeadFollowupRequest();
+            req.setCloserReason("The AI call reached the lead, so this callback is done.");
+            try {
+                EngagementWakeService.withoutWakes(() -> leadFollowupService.close(id, req, principal(owner)));
+            } catch (Exception e) {
+                log.warn("ai-call: could not close callback follow-up {}: {}", id, e.getMessage());
+            }
+        }
+    }
+
+    private static vacademy.io.common.auth.model.CustomUserDetails principal(String userId) {
+        var dto = new vacademy.io.common.auth.dto.UserServiceDTO();
+        dto.setUserId(userId);
+        dto.setUsername("AI callback");
+        return new vacademy.io.common.auth.model.CustomUserDetails(dto);
+    }
+
+    /** The callback on the Lead Journey (a fixed event type the journey view icons). */
+    private void journey(String responseId, String userId, String title, String text, AiCallResult r,
+                         String said, Instant dueAt, String followupId) {
         if (responseId == null) return;
         try {
-            timelineEventService.logEvent("AUDIENCE_RESPONSE", responseId, "AI_CALLBACK", "SYSTEM", null,
-                    "AI call", title, text, Map.of(), userId);
+            Map<String, Object> meta = new HashMap<>();
+            meta.put("call_log_id", r.getCallLogId());
+            meta.put("callback_time_text", said);
+            meta.put("due_at", dueAt == null ? null : dueAt.toString());
+            meta.put("followup_id", followupId);
+            timelineEventService.logJourneyEvent("AUDIENCE_RESPONSE", responseId, LeadJourneyActionType.CALLBACK_REQUESTED,
+                    "SYSTEM", null, "AI call", title, text, meta, userId);
         } catch (Exception e) {
-            log.warn("ai-call: timeline note '{}' failed: {}", title, e.getMessage());
+            log.warn("ai-call: journey event '{}' failed: {}", title, e.getMessage());
         }
     }
 

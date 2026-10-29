@@ -57,6 +57,17 @@ public class EngagementPointsOfContact {
     }
 
     /**
+     * Who owns a follow-up for this lead: the assigned counsellor, else the first admin. Null when the
+     * institute has neither (nothing can own it).
+     */
+    public String ownerFor(String instituteId, String leadUserId) {
+        String counsellor = assignedCounsellor(instituteId, leadUserId);
+        if (counsellor != null) return counsellor;
+        List<UserDTO> people = recipients(instituteId, null);
+        return people.isEmpty() ? null : people.get(0).getId();
+    }
+
+    /**
      * Emails and bell-alerts the points of contact. Best effort per recipient: a failure to reach one
      * person never stops the others, and never fails the caller.
      *

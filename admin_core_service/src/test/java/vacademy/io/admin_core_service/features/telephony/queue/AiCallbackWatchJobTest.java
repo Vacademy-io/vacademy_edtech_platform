@@ -24,8 +24,9 @@ class AiCallbackWatchJobTest {
         when(repo.markAlerted("q1")).thenReturn(1);
         new AiCallbackWatchJob(repo, poc, timeline).sweep();
         verify(repo).markAlerted("q1");
-        verify(timeline).logEvent(eq("AUDIENCE_RESPONSE"), eq("resp1"), eq("AI_CALLBACK"), any(), any(), any(),
-                eq("Callback call did not connect"), contains("Please call them"), any(), eq("user1"));
+        verify(timeline).logJourneyEvent(eq("AUDIENCE_RESPONSE"), eq("resp1"),
+                eq(vacademy.io.admin_core_service.features.timeline.enums.LeadJourneyActionType.CALLBACK_REQUESTED), any(), any(), any(),
+                eq("Callback call did not connect"), contains("please call them"), any(), eq("user1"));
         verify(poc).alert(eq("inst1"), eq("user1"), startsWith("Callback did not connect: Priyanshu"), contains("NO_ANSWER"),
                 eq("AI_CALLBACK"), eq("q1"));
     }

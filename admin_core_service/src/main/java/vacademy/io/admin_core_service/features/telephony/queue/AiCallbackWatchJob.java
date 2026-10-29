@@ -52,8 +52,11 @@ public class AiCallbackWatchJob {
         String who = name == null || name.isBlank() ? "A lead" : name;
         try {
             if (responseId != null) {
-                timelineEventService.logEvent("AUDIENCE_RESPONSE", responseId, "AI_CALLBACK", "SYSTEM", null, "AI call",
-                        "Callback call did not connect", why + " Please call them.", Map.of("queue_item_id", itemId), userId);
+                timelineEventService.logJourneyEvent("AUDIENCE_RESPONSE", responseId,
+                        vacademy.io.admin_core_service.features.timeline.enums.LeadJourneyActionType.CALLBACK_REQUESTED,
+                        "SYSTEM", null, "AI call", "Callback call did not connect",
+                        why + " The follow-up for this callback is still due: please call them.",
+                        Map.of("queue_item_id", itemId), userId);
             }
         } catch (Exception e) {
             log.warn("Callback watch: timeline note failed: {}", e.getMessage());
