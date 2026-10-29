@@ -137,6 +137,8 @@ class EngagementCrmActionsTest {
             coordination = mock(EngagementCoordinationDao.class);
             gate = mock(PolicyGate.class);
             when(gate.clampToAllowedWindow(any(), any())).thenAnswer(inv -> inv.getArgument(1));
+            // main's send schedule (PolicyGate.scheduleSend) times every send now.
+            when(gate.scheduleSend(any(), any(), any())).thenAnswer(inv -> inv.getArgument(1));
             when(timeline.logEngineNote(anyString(), anyString(), anyString(), anyMap(), any())).thenReturn("note-1");
         }
 
@@ -501,6 +503,8 @@ class EngagementCrmActionsTest {
             when(gate.optedOutUserIds(anyString(), anyList())).thenReturn(Set.of());
             when(gate.preDecision(any(), any())).thenReturn(PolicyGate.Verdict.PROCEED);
             when(gate.clampToAllowedWindow(any(), any())).thenAnswer(inv -> inv.getArgument(1));
+            // main's send schedule (PolicyGate.scheduleSend) times every send now.
+            when(gate.scheduleSend(any(), any(), any())).thenAnswer(inv -> inv.getArgument(1));
             when(crm.menu(any())).thenReturn(new EngagementBrainClient.ActionMenu(
                     List.of(EngagementActionTypes.UPDATE_STATUS), List.of(), null));
             when(crm.taskVariables(any())).thenReturn("{\"action\":{}}");

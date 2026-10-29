@@ -1,0 +1,28 @@
+{
+    "noReferrals": "لم ينضم أحد عبر رابط هذا العضو بعد.",
+    "unknownFriend": "غير معروف",
+    "fields": {
+        "code": "رمز الإحالة",
+        "link": "رابط الإحالة",
+        "opens": "يفتح الرابط"
+    },
+    "labels": {
+        "rewards": "المكافآت المكتسبة",
+        "referred": "المُحالون ({{count}})"
+    },
+    "rewards": {
+        "ready": "جاهزة للتجديد القادم",
+        "pending": "بانتظار دفع الصديق",
+        "used": "مستخدمة"
+    },
+    "status": {
+        "converted": "تم التحويل",
+        "pending": "قيد الانتظار",
+        "convertedHint": "أجرى أول دفعة",
+        "pendingHint": "في الفترة التجريبية أو لم يدفع بعد"
+    },
+    "toast": {
+        "copied": "تم نسخ {{field}}",
+        "copyFailed": "تعذّر نسخ {{field}}"
+    }
+}

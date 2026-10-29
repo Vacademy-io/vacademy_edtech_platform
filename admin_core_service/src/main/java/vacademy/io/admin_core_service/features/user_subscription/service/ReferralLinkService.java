@@ -4,14 +4,24 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.enroll_invite.entity.EnrollInvite;
 import vacademy.io.admin_core_service.features.enroll_invite.repository.EnrollInviteRepository;
 import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository;
 import vacademy.io.admin_core_service.features.learner.service.LearnerCouponService;
 import vacademy.io.admin_core_service.features.learner.service.LearnerInvitationLinkService;
+import vacademy.io.admin_core_service.features.shortlink.service.ShortLinkIntegrationService;
 import vacademy.io.admin_core_service.features.shortlink.service.ShortUrlManagementService;
+import vacademy.io.admin_core_service.features.user_subscription.dto.MemberReferralDTO;
 import vacademy.io.admin_core_service.features.user_subscription.entity.CouponCode;
+import vacademy.io.admin_core_service.features.user_subscription.entity.ReferralMapping;
+import vacademy.io.admin_core_service.features.user_subscription.entity.ReferralRewardCredit;
 import vacademy.io.admin_core_service.features.user_subscription.enums.CouponSourceType;
+import vacademy.io.admin_core_service.features.user_subscription.enums.ReferralBenefitLogsBeneficiary;
+import vacademy.io.admin_core_service.features.user_subscription.enums.ReferralStatusEnum;
+import vacademy.io.admin_core_service.features.user_subscription.repository.ReferralMappingRepository;
+import vacademy.io.admin_core_service.features.user_subscription.repository.ReferralRewardCreditRepository;
+import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.Collection;
@@ -19,6 +29,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Members' personal referral links, for sending them out in bulk (an announcement over
@@ -36,12 +48,23 @@ public class ReferralLinkService {
 
     private static final String SOURCE_USER = "USER";
 
+    /**
+     * Short-link source for the link shown on the admin student profile. Kept apart from
+     * REFERRAL_LINK, which announcements create one row per send for: get-or-create matches
+     * on (source, sourceId) and needs exactly one row to reuse.
+     */
+    private static final String SOURCE_PROFILE_LINK = "REFERRAL_PROFILE_LINK";
+
     private final StudentSessionInstituteGroupMappingRepository mappingRepository;
     private final LearnerCouponService learnerCouponService;
     private final CouponCodeService couponCodeService;
     private final LearnerInvitationLinkService learnerInvitationLinkService;
     private final ShortUrlManagementService shortUrlManagementService;
     private final EnrollInviteRepository enrollInviteRepository;
+    private final ShortLinkIntegrationService shortLinkIntegrationService;
+    private final ReferralMappingRepository referralMappingRepository;
+    private final ReferralRewardCreditRepository creditRepository;
+    private final AuthService authService;
 
     /**
      * Creates a referral code for up to {@code limit} ACTIVE members of the institute who
@@ -111,12 +134,7 @@ public class ReferralLinkService {
                 if (memberInvite.isEmpty()) {
                     continue;
                 }
-                Optional<CouponCode> coupon = couponCodeService.getCouponCodeBySource(userId, SOURCE_USER);
-                if (coupon.isEmpty()) {
-                    learnerCouponService.generateCouponCodeForLearner(userId, instituteId,
-                            memberInvite.get().getInviteCode());
-                    coupon = couponCodeService.getCouponCodeBySource(userId, SOURCE_USER);
-                }
+                Optional<CouponCode> coupon = codeFor(userId, instituteId, memberInvite.get());
                 if (coupon.isEmpty()) {
                     continue;
                 }
@@ -136,6 +154,101 @@ public class ReferralLinkService {
             }
         }
         return out;
+    }
+
+    /**
+     * One member's referral details for the admin student profile, available only when a
+     * course the member is actively enrolled in is sold through an invite with a referral
+     * programme ({@code NO_REFERRAL_COURSE} otherwise, and no code is created). The link opens
+     * {@code enrollInviteId} when it is one of those invites; otherwise the one the member
+     * enrolled through when it is, else the newest. A member with no code gets one here, as
+     * they would on the next announcement. Unlike {@link #linksFor}, the short link is reused
+     * across views instead of minted per call.
+     */
+    public MemberReferralDTO memberReferral(String instituteId, String userId, String enrollInviteId) {
+        MemberReferralDTO dto = new MemberReferralDTO();
+        List<EnrollInvite> referralInvites =
+                enrollInviteRepository.findReferralInvitesForLearnerCourses(instituteId, userId);
+        if (referralInvites.isEmpty()) {
+            dto.setUnavailableReason("NO_REFERRAL_COURSE");
+            return dto;
+        }
+        referralInvites.forEach(i -> dto.getInvites().add(new MemberReferralDTO.InviteOption(i.getId(), i.getName())));
+
+        Optional<EnrollInvite> requested = referralInvites.stream()
+                .filter(i -> i.getId().equals(enrollInviteId)).findFirst();
+        Optional<EnrollInvite> own = requested.isPresent() ? Optional.empty()
+                : enrollInviteRepository.findLatestActiveInviteForLearner(userId, instituteId)
+                        .filter(o -> referralInvites.stream().anyMatch(i -> i.getId().equals(o.getId())));
+        EnrollInvite chosen = requested.or(() -> own).orElse(referralInvites.get(0));
+
+        Optional<CouponCode> coupon = codeFor(userId, instituteId, chosen);
+        if (coupon.isPresent()) {
+            String longLink = learnerInvitationLinkService.generateLearnerInvitationResponseLink(
+                    instituteId, chosen, userId);
+            String shortLink = shortLinkIntegrationService.getOrCreateShortLink(
+                    SOURCE_PROFILE_LINK, userId + "_" + chosen.getId(), longLink, instituteId);
+            dto.setReferralCode(coupon.get().getCode());
+            dto.setReferralLink(longLink);
+            dto.setShortReferralLink(shortLink != null ? shortLink : longLink);
+            dto.setInviteId(chosen.getId());
+            dto.setInviteName(chosen.getName());
+        }
+
+        addReferrals(dto, userId, instituteId);
+        addRewards(dto, userId, instituteId);
+        return dto;
+    }
+
+    private void addReferrals(MemberReferralDTO dto, String userId, String instituteId) {
+        List<ReferralMapping> mappings = referralMappingRepository.findReferralsMadeAtSource(userId, instituteId,
+                List.of(ReferralStatusEnum.PENDING.name(), ReferralStatusEnum.ACTIVE.name()));
+        if (mappings.isEmpty()) {
+            return;
+        }
+        Map<String, UserDTO> friends = authService.getUsersFromAuthServiceByUserIds(
+                        mappings.stream().map(ReferralMapping::getRefereeUserId).distinct().toList())
+                .stream()
+                .collect(Collectors.toMap(UserDTO::getId, Function.identity(), (a, b) -> a));
+        for (ReferralMapping mapping : mappings) {
+            MemberReferralDTO.ReferredFriend friend = new MemberReferralDTO.ReferredFriend();
+            friend.setUserId(mapping.getRefereeUserId());
+            UserDTO user = friends.get(mapping.getRefereeUserId());
+            if (user != null) {
+                friend.setFullName(user.getFullName());
+                friend.setEmail(user.getEmail());
+                friend.setMobileNumber(user.getMobileNumber());
+            }
+            friend.setStatus(mapping.getStatus());
+            friend.setReferredAt(mapping.getCreatedAt());
+            dto.getReferrals().add(friend);
+        }
+    }
+
+    private void addRewards(MemberReferralDTO dto, String userId, String instituteId) {
+        for (ReferralRewardCredit credit : creditRepository.findByUserIdAndInstituteIdOrderByCreatedAtDesc(userId, instituteId)) {
+            if (credit.getStatus() == null
+                    || !ReferralBenefitLogsBeneficiary.REFERRER.name().equals(credit.getBeneficiary())) {
+                continue;
+            }
+            switch (credit.getStatus()) {
+                case ReferralRewardCredit.STATUS_PENDING -> dto.setRewardsPending(dto.getRewardsPending() + 1);
+                case ReferralRewardCredit.STATUS_AVAILABLE, ReferralRewardCredit.STATUS_RESERVED ->
+                        dto.setRewardsReady(dto.getRewardsReady() + 1);
+                case ReferralRewardCredit.STATUS_CONSUMED -> dto.setRewardsUsed(dto.getRewardsUsed() + 1);
+                default -> { }
+            }
+        }
+    }
+
+    /** The member's referral code, creating it (with a link to {@code invite}) when they have none. */
+    private Optional<CouponCode> codeFor(String userId, String instituteId, EnrollInvite invite) {
+        Optional<CouponCode> coupon = couponCodeService.getCouponCodeBySource(userId, SOURCE_USER);
+        if (coupon.isEmpty()) {
+            learnerCouponService.generateCouponCodeForLearner(userId, instituteId, invite.getInviteCode());
+            coupon = couponCodeService.getCouponCodeBySource(userId, SOURCE_USER);
+        }
+        return coupon;
     }
 
     /** The admin's chosen invite, else the one the member last enrolled through at the institute. */

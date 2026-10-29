@@ -6,6 +6,7 @@ import {
 } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import type {
+    ChannelReadinessMap,
     CreateEngineRequest,
     DataPointSpec,
     EngagementAction,
@@ -97,6 +98,16 @@ export const archiveEngine = async (engineId: string, instituteId: string): Prom
     await authenticatedAxiosInstance.delete(`${ENGAGEMENT_ENGINES_BASE}/${engineId}`, {
         params: { instituteId },
     });
+};
+
+export const getChannelReadiness = async (
+    instituteId: string,
+    emailType?: string
+): Promise<ChannelReadinessMap> => {
+    const res = await authenticatedAxiosInstance.get(`${ENGAGEMENT_ENGINES_BASE}/channel-readiness`, {
+        params: { instituteId, ...(emailType ? { emailType } : {}) },
+    });
+    return res.data;
 };
 
 export const getDataPointCatalog = async (): Promise<DataPointSpec[]> => {

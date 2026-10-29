@@ -206,6 +206,24 @@ public class EngagementLeadOutcomeService {
         return left;
     }
 
+    // ==================== Meeting booked ====================
+
+    /**
+     * Take members out of engines whose goal was a meeting (channels.exitOnMeetingBooked) once the
+     * meeting is booked: the engine's work is done. What is still pending for them is cancelled,
+     * except what an AI call promised (the person asked for it on the call).
+     *
+     * @return how many members left
+     */
+    public int exitMeetingBooked(List<String> memberIds, Instant now) {
+        if (memberIds == null || memberIds.isEmpty()) return 0;
+        List<String> ids = new ArrayList<>(new LinkedHashSet<>(memberIds));
+        int left = memberRepository.exitMembers(ids, now);
+        actionRepository.cancelOpenForMembers(ids,
+                "Cancelled: a meeting was booked with this lead, so the engine's goal is met.", now, true);
+        return left;
+    }
+
     // ==================== helpers ====================
 
     /** Members a lead outcome ends: no account, or an engine that reaches people only as leads. */

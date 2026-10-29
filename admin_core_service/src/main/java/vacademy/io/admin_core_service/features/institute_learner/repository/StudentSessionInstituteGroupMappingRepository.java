@@ -1130,6 +1130,51 @@ public interface StudentSessionInstituteGroupMappingRepository
       @Param("statuses") List<String> statuses);
 
   /**
+   * Sub-organizations anywhere in an institute whose name contains {@code namePattern}, for the
+   * search box of the enroll wizard sub-org picker. Unlike {@link #findSubOrgsByPackageSession}
+   * this is not limited to one package session, so an organization that has no member in the
+   * batch yet can still be picked.
+   *
+   * <p>Candidates come from the three places a sub-org is tied to its parent: the
+   * institute_suborg link, the sub-org stamp on mappings, and sub-org invites. Each is its own
+   * UNION branch rather than an OR across columns.
+   *
+   * <p>{@code namePattern} must already be an ILIKE pattern with wildcards escaped.
+   *
+   * <p>Returns: sub_org_id, name, email, mobile_number.
+   */
+  @Query(value = """
+      SELECT i.id            AS sub_org_id,
+             i.name          AS name,
+             i.email         AS email,
+             i.mobile_number AS mobile_number
+      FROM institutes i
+      WHERE i.id IN (
+          SELECT isub.suborg_id
+          FROM institute_suborg isub
+          WHERE isub.institute_id = :instituteId
+            AND isub.suborg_id IS NOT NULL
+          UNION
+          SELECT ssigm.sub_org_id
+          FROM student_session_institute_group_mapping ssigm
+          WHERE ssigm.institute_id = :instituteId
+            AND ssigm.sub_org_id IS NOT NULL
+          UNION
+          SELECT ei.sub_org_id
+          FROM enroll_invite ei
+          WHERE ei.institute_id = :instituteId
+            AND ei.sub_org_id IS NOT NULL
+      )
+        AND i.name ILIKE :namePattern
+      ORDER BY i.name
+      LIMIT :maxResults
+      """, nativeQuery = true)
+  List<Object[]> searchInstituteSubOrgsByName(
+      @Param("instituteId") String instituteId,
+      @Param("namePattern") String namePattern,
+      @Param("maxResults") int maxResults);
+
+  /**
    * Batched variant of {@link #findAdminsBySubOrg(String)} for several sub-orgs at once, enriched
    * with the admin's contact email. Used to fill the picker without fanning out one query per row.
    *

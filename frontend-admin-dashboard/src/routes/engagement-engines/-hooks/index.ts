@@ -13,6 +13,7 @@ import {
     editPrompt,
     editTemplate,
     enrollEngine,
+    getChannelReadiness,
     getDataPointCatalog,
     getEngine,
     getTaskPeople,
@@ -61,6 +62,19 @@ export const useEngine = (engineId: string | undefined) => {
         queryFn: () => getEngine(engineId as string, instituteId),
         enabled: !!instituteId && !!engineId,
         staleTime: 15 * 1000,
+    });
+};
+
+/** Which channels the institute has set up. Refetched on window focus, so coming back from
+ *  Settings after connecting WhatsApp updates the wizard without a reload. */
+export const useChannelReadiness = (emailType?: string) => {
+    const instituteId = getInstituteId() || '';
+    return useQuery({
+        queryKey: ['engagementChannelReadiness', instituteId, emailType ?? ''],
+        queryFn: () => getChannelReadiness(instituteId, emailType),
+        enabled: !!instituteId,
+        staleTime: 30 * 1000,
+        refetchOnWindowFocus: true,
     });
 };
 

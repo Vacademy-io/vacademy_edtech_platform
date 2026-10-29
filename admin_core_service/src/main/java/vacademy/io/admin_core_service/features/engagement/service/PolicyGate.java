@@ -158,6 +158,35 @@ public class PolicyGate {
         return Verdict.PROCEED;
     }
 
+    /** How a send's time is chosen; see {@link #scheduleSend}. */
+    public enum SendTiming {
+        /** Answering someone who wrote in: quiet hours only. */
+        REPLY,
+        /** Quiet hours and the engine's days (a new person's first touch, a resumed engine's due send). */
+        ANYTIME,
+        /** Planned outreach: the engine's send window, days and quiet hours. */
+        PLANNED
+    }
+
+    /**
+     * The time a send may go out at, at or after {@code proposed}. Quiet hours always apply (see
+     * {@link #clampToAllowedWindow}); the engine's days apply except to replies; planned outreach
+     * also waits for the engine's send window ({@link EngagementSendSchedule}).
+     */
+    public Instant scheduleSend(EngagementEngine engine, Instant proposed, SendTiming timing) {
+        if (timing == SendTiming.REPLY) return clampToAllowedWindow(engine, proposed);
+        EngagementSendSchedule schedule = EngagementSendSchedule.of(engine.getQuietHours(), objectMapper);
+        Instant t = proposed;
+        // Each pass moves forward by at least a day when it fails, so 8 passes cover a week.
+        for (int i = 0; i < 8; i++) {
+            if (timing == SendTiming.PLANNED) t = schedule.nextSendTime(t);
+            t = clampToAllowedWindow(engine, t);
+            if (schedule.allowsDay(t)) return t;
+            t = schedule.startOfNextAllowedDay(t);
+        }
+        return clampToAllowedWindow(engine, t);
+    }
+
     /**
      * Clamp a proposed action time out of quiet hours. Correctness matters here: an off-by-one
      * sends outreach at 2 AM. The institute floor (default 21:00→08:00, wrapping midnight) is

@@ -379,6 +379,8 @@ class EngagementCrmCoordinationTest {
             when(gate.optedOutUserIds(anyString(), anyList())).thenReturn(Set.of());
             when(gate.preDecision(any(), any())).thenReturn(PolicyGate.Verdict.PROCEED);
             when(gate.clampToAllowedWindow(any(), any())).thenAnswer(inv -> inv.getArgument(1));
+            // main's send schedule (PolicyGate.scheduleSend) times every send now.
+            when(gate.scheduleSend(any(), any(), any())).thenAnswer(inv -> inv.getArgument(1));
             when(actions.countApprovedSendsForChannel("e1", "EMAIL")).thenReturn(9L);
             when(brain.decide(any(), anyString(), any(), any(), any(), any())).thenReturn(
                     new EngagementBrainClient.Decision("ACT", "SEND_MESSAGE", "EMAIL", "Fee details attached", null, null,

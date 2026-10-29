@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.learner.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.learner.dto.*;
 import vacademy.io.admin_core_service.features.learner.service.SubOrgLearnerService;
 import vacademy.io.admin_core_service.features.suborg.service.SubOrgAccessScopeService;
@@ -19,6 +20,9 @@ public class SubOrgLearnerController {
      *  Root / true institute admins are unrestricted. */
     @Autowired
     private SubOrgAccessScopeService subOrgAccessScopeService;
+
+    @Autowired
+    private InstituteAccessValidator instituteAccessValidator;
 
 
     @GetMapping("/members")
@@ -86,6 +90,22 @@ public class SubOrgLearnerController {
             @RequestAttribute(value = "user", required = false) CustomUserDetails user) {
 
         return ResponseEntity.ok(subOrgLearnerService.getSubOrgsByPackageSession(packageSessionId));
+    }
+
+    /**
+     * Search box of the same picker: sub-orgs anywhere in the institute whose name contains
+     * {@code search} (at least 2 characters), so an organization with no member in the batch yet
+     * can still be picked. Limited to the sub-orgs the caller may see.
+     */
+    @GetMapping("/search")
+    public ResponseEntity<java.util.List<vacademy.io.admin_core_service.features.learner.dto.PackageSessionSubOrgDTO>> searchSubOrgs(
+            @RequestParam("instituteId") String instituteId,
+            @RequestParam("search") String search,
+            @RequestAttribute(value = "user", required = false) CustomUserDetails user) {
+
+        instituteAccessValidator.validateUserAccess(user, instituteId);
+        java.util.List<String> visible = subOrgAccessScopeService.resolveVisibleSubOrgIds(user, instituteId);
+        return ResponseEntity.ok(subOrgLearnerService.searchInstituteSubOrgs(instituteId, search, visible));
     }
 
     @GetMapping("/all-admins")

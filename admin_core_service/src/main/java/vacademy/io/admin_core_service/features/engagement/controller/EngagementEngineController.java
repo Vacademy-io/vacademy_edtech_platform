@@ -47,6 +47,7 @@ public class EngagementEngineController {
     private final vacademy.io.admin_core_service.features.engagement.repository.EngagementActionRepository actionRepository;
     private final DataPointRegistry dataPointRegistry;
     private final EngagementAccessGuard accessGuard;
+    private final vacademy.io.admin_core_service.features.engagement.service.EngagementChannelReadiness channelReadiness;
 
     @org.springframework.beans.factory.annotation.Value("${engagement.autonomy.first-n:5}")
     private int defaultFirstN;
@@ -166,6 +167,20 @@ public class EngagementEngineController {
         accessGuard.requireAdmin(user, instituteId);
         engineService.requireEngine(engineId, instituteId);
         return ResponseEntity.ok(promptRepository.findByEngineIdOrderByVersionDesc(engineId));
+    }
+
+    /**
+     * Which channels the institute has set up, so the wizard can say so before the engine is
+     * saved: {WHATSAPP:{ready,reason},EMAIL:{...},IN_APP:{...},AI_CALL:{...}}. reason is
+     * NOT_SET_UP, or SENDER_MISSING when the given email sender no longer exists.
+     */
+    @GetMapping("/channel-readiness")
+    public ResponseEntity<Map<String, vacademy.io.admin_core_service.features.engagement.service.EngagementChannelReadiness.Readiness>>
+            channelReadiness(@RequestParam String instituteId,
+                             @RequestParam(required = false) String emailType,
+                             @RequestAttribute("user") CustomUserDetails user) {
+        accessGuard.requireAdmin(user, instituteId);
+        return ResponseEntity.ok(channelReadiness.check(instituteId, emailType));
     }
 
     /** The wizard's data-point picker — served by the registry catalog (declare()). */
