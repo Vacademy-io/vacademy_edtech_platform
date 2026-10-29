@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { CheckCircle, X } from '@phosphor-icons/react';
@@ -13,13 +13,19 @@ import {
     useFollowUpNotesRequired,
 } from './follow-up-fields';
 import { invalidateLeadCaches } from '@/hooks/use-invalidate-lead-caches';
+import { LOST_STATUS_KEY } from '@/hooks/use-lead-settings';
+import {
+    LeadAttributeFields,
+    invalidateLeadAttributeCaches,
+    useLeadAttributeFields,
+} from './lead-attribute-fields';
 import { cn, parseHtmlToString } from '@/lib/utils';
 import { toast } from 'sonner';
 
 /**
  * CompleteFollowUpPopover — the single shared "Mark complete" close flow for a
- * lead follow-up (PUT /v1/lead-followup/{id}/close with a mandatory closing
- * note as the closer reason). Extracted from the manage-students FollowUpsWidget so the
+ * lead follow-up (PUT /v1/lead-followup/{id}/close with the closing note as the
+ * closer reason — mandatory unless the institute made it optional). Extracted from the manage-students FollowUpsWidget so the
  * Follow-ups page can close follow-ups inline from list rows.
  *
  * Two host modes:
@@ -96,17 +102,38 @@ export function CompleteFollowUpPopover({
 }: CompleteFollowUpPopoverProps) {
     const [open, setOpen] = useState(false);
     const [reason, setReason] = useState('');
-    const [scheduleNext, setScheduleNext] = useState(false);
+    // null = untouched, so the institute's default applies (settings can load
+    // after mount, which a plain useState initialiser would miss).
+    const [scheduleNextChoice, setScheduleNextChoice] = useState<boolean | null>(null);
     const [nextTime, setNextTime] = useState('');
     const [nextContent, setNextContent] = useState('');
     // Set once the inline next follow-up is saved, so retrying a failed close
     // does not book it a second time.
     const [nextScheduled, setNextScheduled] = useState(false);
     const followUpFields = useFollowUpFields();
+    // The lead's own status + tier (institute switch, off by default).
+    const leadAttributes = useLeadAttributeFields({ userId, audienceResponseId });
     const notesRequired = useFollowUpNotesRequired();
-    // Institute switch: pop-up closes only from X / Cancel. Off = closes on an
-    // outside click / Escape like before, and there is no X.
-    const { keepPopupsOpen } = useFollowUpFeatures();
+    // Institute switches, all off by default (off = the old behaviour):
+    //  - keepPopupsOpen: pop-up closes only from X / Cancel, not an outside click / Escape.
+    //  - scheduleNextByDefault: "Schedule next follow-up" starts ticked.
+    //  - closingNoteOptional: Done no longer needs a closing note.
+    //  - markDoneLeadStatusAndTier: status/tier dropdowns in the pop-up itself
+    //    (discard / change tier while closing). Off = only inside the inline
+    //    "Schedule next" block, as before.
+    const {
+        keepPopupsOpen,
+        scheduleNextByDefault,
+        closingNoteOptional,
+        markDoneLeadStatusAndTier,
+    } = useFollowUpFeatures();
+    const markDoneAttributes = markDoneLeadStatusAndTier && leadAttributes.visible;
+    // Discarding the lead (its LOST status) means there is nothing to follow up.
+    const discarding = markDoneAttributes && leadAttributes.statusKey === LOST_STATUS_KEY;
+    const scheduleNext = !discarding && (scheduleNextChoice ?? scheduleNextByDefault);
+    useEffect(() => {
+        if (discarding) setScheduleNextChoice(false);
+    }, [discarding]);
     // Only meaningful when followupId is unknown and several are open.
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const queryClient = useQueryClient();
@@ -131,11 +158,12 @@ export function CompleteFollowUpPopover({
     const resetAndClose = () => {
         setOpen(false);
         setReason('');
-        setScheduleNext(false);
+        setScheduleNextChoice(null);
         setNextTime('');
         setNextContent('');
         setNextScheduled(false);
         followUpFields.reset();
+        leadAttributes.reset();
         setSelectedId(null);
     };
 
@@ -149,13 +177,18 @@ export function CompleteFollowUpPopover({
     // two open ones, and "the earliest open one" must not be re-resolved.
     const createMutation = useMutation<unknown, unknown, { closeId: string; closerReason: string }>(
         {
-            mutationFn: () =>
-                authenticatedAxiosInstance.post(CREATE_LEAD_FOLLOWUP, {
+            mutationFn: async () => {
+                // Status/tier first, so a retry after a failed save doesn't post them twice.
+                if (await leadAttributes.apply()) {
+                    invalidateLeadAttributeCaches(queryClient, userId);
+                }
+                return authenticatedAxiosInstance.post(CREATE_LEAD_FOLLOWUP, {
                     audience_response_id: audienceResponseId,
                     schedule_time: new Date(nextTime).toISOString(),
                     content: nextContent || null,
                     ...followUpFields.payload,
-                }),
+                });
+            },
             onSuccess: (_data, { closeId, closerReason }) => {
                 setNextScheduled(true);
                 // Pin it for a retry too, should the close below fail.
@@ -174,12 +207,17 @@ export function CompleteFollowUpPopover({
     const closeMutation = useMutation<
         unknown,
         unknown,
-        { afterSchedule: boolean; id: string; closerReason: string }
+        { afterSchedule: boolean; id: string; closerReason: string; applyAttributes?: boolean }
     >({
-        mutationFn: ({ id, closerReason }) =>
-            authenticatedAxiosInstance.put(CLOSE_LEAD_FOLLOWUP(id), {
+        mutationFn: async ({ id, closerReason, applyAttributes }) => {
+            // Status/tier first; a retry after a failed close doesn't post them again.
+            if (applyAttributes && (await leadAttributes.apply())) {
+                invalidateLeadAttributeCaches(queryClient, userId);
+            }
+            return authenticatedAxiosInstance.put(CLOSE_LEAD_FOLLOWUP(id), {
                 closer_reason: closerReason,
-            }),
+            });
+        },
         onSuccess: (_data, { afterSchedule }) => {
             toast.success(
                 afterSchedule
@@ -199,6 +237,9 @@ export function CompleteFollowUpPopover({
 
     const isBusy = closeMutation.isPending || createMutation.isPending;
     const needsInlineSchedule = scheduleNext && !onScheduleNext;
+    // When "Schedule next" hands off to the host's dialog, that dialog carries
+    // the status/tier dropdowns itself — showing them here too would ask twice.
+    const showLeadAttributes = markDoneAttributes && (!onScheduleNext || !scheduleNext);
 
     // The current follow-up is closed only after the next one exists. Closing
     // first left it completed with nothing booked whenever scheduling failed or
@@ -230,13 +271,15 @@ export function CompleteFollowUpPopover({
                 afterSchedule: needsInlineSchedule && nextScheduled,
                 id,
                 closerReason,
+                applyAttributes: showLeadAttributes,
             });
         }
     };
 
-    // Closing always needs a note on what happened. The next follow-up's note is
-    // separate and only mandatory when the institute requires notes.
-    const reasonMissing = !reason.trim();
+    // Closing needs a note on what happened unless the institute made it
+    // optional. The next follow-up's note is separate and only mandatory when
+    // the institute requires notes.
+    const reasonMissing = !closingNoteOptional && !reason.trim();
     const nextNoteMissing = needsInlineSchedule && notesRequired && !nextContent.trim();
     const canSubmit =
         !isBusy &&
@@ -244,7 +287,10 @@ export function CompleteFollowUpPopover({
         !reasonMissing &&
         (!needsInlineSchedule || !!nextTime) &&
         !nextNoteMissing &&
-        !(needsInlineSchedule && followUpFields.missingRequired);
+        !(needsInlineSchedule && followUpFields.missingRequired) &&
+        // The tier picked in Mark complete (or the inline block) also rides with
+        // the next follow-up, so it is required whenever one is booked here.
+        !(needsInlineSchedule && leadAttributes.visible && leadAttributes.tierMissing);
 
     const isResolving = !followupId && followupsQuery.isLoading;
     const hasNoneOpen = !followupId && !followupsQuery.isLoading && openFollowups.length === 0;
@@ -340,17 +386,33 @@ export function CompleteFollowUpPopover({
                         <textarea
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
-                            placeholder="Closing note (required)…"
+                            placeholder={
+                                closingNoteOptional
+                                    ? 'Closing note (optional)…'
+                                    : 'Closing note (required)…'
+                            }
                             rows={2}
                             className="w-full resize-none rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-2 text-xs text-neutral-800 placeholder:text-neutral-400 focus:border-primary-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary-300"
                         />
+
+                        {/* The lead's status + tier — discard the lead or change its
+                            interest without leaving Mark complete. */}
+                        {showLeadAttributes && (
+                            <LeadAttributeFields
+                                fields={leadAttributes}
+                                portal={false}
+                                followUp={needsInlineSchedule}
+                                // Popover is narrow — stack them.
+                                className="mt-2 sm:grid-cols-1"
+                            />
+                        )}
 
                         <label className="mt-2.5 flex cursor-pointer items-center gap-2">
                             <input
                                 type="checkbox"
                                 checked={scheduleNext}
-                                disabled={nextScheduled}
-                                onChange={(e) => setScheduleNext(e.target.checked)}
+                                disabled={nextScheduled || discarding}
+                                onChange={(e) => setScheduleNextChoice(e.target.checked)}
                                 className="size-3.5 cursor-pointer accent-primary-600"
                             />
                             <span className="text-xs font-medium text-neutral-600">
@@ -382,11 +444,23 @@ export function CompleteFollowUpPopover({
                                         Your institute requires a note on every follow-up.
                                     </p>
                                 )}
-                                {followUpFields.missingRequired && (
+                                {(followUpFields.missingRequired ||
+                                    (leadAttributes.visible && leadAttributes.tierMissing)) && (
                                     <p className="text-caption text-danger-600">
                                         Answer every field marked * before scheduling this
                                         follow-up.
                                     </p>
+                                )}
+                                {/* Switch off: the dropdowns ride with the inline next
+                                    follow-up only, exactly as before. */}
+                                {!markDoneAttributes && leadAttributes.visible && (
+                                    <LeadAttributeFields
+                                        fields={leadAttributes}
+                                        portal={false}
+                                        followUp
+                                        // Popover is narrow — stack them.
+                                        className="sm:grid-cols-1"
+                                    />
                                 )}
                                 {followUpFields.visible && (
                                     <FollowUpFields

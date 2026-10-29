@@ -19,6 +19,11 @@ import {
     useFollowUpFields,
     useFollowUpNotesRequired,
 } from '@/components/shared/leads/follow-up-fields';
+import {
+    LeadAttributeFields,
+    invalidateLeadAttributeCaches,
+    useLeadAttributeFields,
+} from '@/components/shared/leads/lead-attribute-fields';
 import { cn } from '@/lib/utils';
 import { AssignCounselorToLeadDialog } from '@/components/shared/assign-counselor-to-lead-dialog';
 import { LeadCallHistory, LeadCallIntelligenceSummary } from '@/components/shared/leads';
@@ -779,6 +784,8 @@ function AddNoteForm({ userId, audienceResponseId }: AddNoteFormProps) {
     const [callActivity, setCallActivity] = useState<CallActivity | null>(null);
     const [scheduleTime, setScheduleTime] = useState('');
     const followUpFields = useFollowUpFields();
+    // The lead's own status + tier (institute switch, off by default) — on every tab.
+    const leadAttributes = useLeadAttributeFields({ userId, audienceResponseId });
     const notesRequired = useFollowUpNotesRequired();
     const queryClient = useQueryClient();
     const noteActionTypes = buildNoteActionTypes(t);
@@ -800,7 +807,8 @@ function AddNoteForm({ userId, audienceResponseId }: AddNoteFormProps) {
         ? !!scheduleTime &&
           !!audienceResponseId &&
           !followUpNoteMissing &&
-          !followUpFields.missingRequired
+          !followUpFields.missingRequired &&
+          !leadAttributes.tierMissing
         : !isNoteEmpty || callMeta !== undefined;
 
     function resetForm() {
@@ -808,17 +816,21 @@ function AddNoteForm({ userId, audienceResponseId }: AddNoteFormProps) {
         setCallActivity(null);
         setScheduleTime('');
         followUpFields.reset();
+        leadAttributes.reset();
         setIsExpanded(false);
     }
 
     const createFollowUpMutation = useMutation({
-        mutationFn: () =>
-            authenticatedAxiosInstance.post(CREATE_LEAD_FOLLOWUP, {
+        mutationFn: async () => {
+            // Status/tier first, so a retry after a failed save doesn't post them twice.
+            if (await leadAttributes.apply()) invalidateLeadAttributeCaches(queryClient, userId);
+            return authenticatedAxiosInstance.post(CREATE_LEAD_FOLLOWUP, {
                 audience_response_id: audienceResponseId,
                 schedule_time: scheduleTime ? new Date(scheduleTime).toISOString() : null,
                 content: noteText.trim() || null,
                 ...followUpFields.payload,
-            }),
+            });
+        },
         onSuccess: () => {
             toast.success(t('addNote.followUpScheduled'));
             resetForm();
@@ -834,7 +846,8 @@ function AddNoteForm({ userId, audienceResponseId }: AddNoteFormProps) {
     });
 
     const createNoteMutation = useMutation({
-        mutationFn: () => {
+        mutationFn: async () => {
+            if (await leadAttributes.apply()) invalidateLeadAttributeCaches(queryClient, userId);
             const label =
                 noteActionTypes.find((nt) => nt.value === actionType)?.label ||
                 t('noteActionTypes.note');
@@ -914,6 +927,17 @@ function AddNoteForm({ userId, audienceResponseId }: AddNoteFormProps) {
                 ))}
             </div>
 
+            {/* The lead's own status + tier — on every tab. portal={false}: this
+                form can render inside a Dialog (student-profile-overlay). */}
+            {leadAttributes.visible && (
+                <LeadAttributeFields
+                    fields={leadAttributes}
+                    portal={false}
+                    followUp={isFollowUp}
+                    className="mb-2"
+                />
+            )}
+
             {isFollowUp ? (
                 <div className="flex flex-col gap-2">
                     <div>
@@ -953,7 +977,7 @@ function AddNoteForm({ userId, audienceResponseId }: AddNoteFormProps) {
                     {followUpNoteMissing && (
                         <p className="text-caption text-danger-600">{t('addNote.noteRequired')}</p>
                     )}
-                    {followUpFields.missingRequired && (
+                    {(followUpFields.missingRequired || leadAttributes.tierMissing) && (
                         <p className="text-caption text-danger-600">
                             {t('addNote.fieldsRequired')}
                         </p>

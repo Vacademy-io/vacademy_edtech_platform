@@ -175,5 +175,12 @@
         "weak": "This brief is thin, so the AI will write generic messages. Answer what you can; your answers are added to the brief.",
         "addToBrief": "Add answers to the brief",
         "adding": "Adding…"
+    },
+    "confirm": {
+        "withdrawTitle": "Withdraw this template?",
+        "withdrawText": "The engine stops using it. You can ask the AI for new options any time.",
+        "archiveTitle": "Archive this email template?",
+        "archiveText": "The engine stops using it. You can generate new ones any time.",
+        "keep": "Keep it"
     }
 }

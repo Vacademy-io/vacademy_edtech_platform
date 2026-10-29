@@ -1,0 +1,232 @@
+{
+    "status": {
+        "PENDING": "قيد المراجعة",
+        "APPROVED": "معتمد",
+        "REJECTED": "مرفوض"
+    },
+    "tabs": {
+        "PENDING": "قيد المراجعة",
+        "APPROVED": "معتمدة",
+        "REJECTED": "مرفوضة",
+        "ALL": "الكل"
+    },
+    "list": {
+        "title": "التقييمات والملاحظات",
+        "description": "ما أرسله الزوار عبر قسم التقييمات والملاحظات في مواقعك. اعتمد تقييمًا ليظهر في أقسام الشهادات المضبوطة لعرض التقييمات.",
+        "search": "ابحث بالاسم أو التقييم أو الدورة أو المدينة",
+        "loadFailed": "تعذّر تحميل التقييمات.",
+        "retry": "حاول مرة أخرى",
+        "emptyFiltered": "لا توجد تقييمات تطابق هذا البحث",
+        "empty": {
+            "PENDING": "لا توجد تقييمات بانتظار الاعتماد",
+            "APPROVED": "لا توجد تقييمات معتمدة بعد",
+            "REJECTED": "لا توجد تقييمات مرفوضة",
+            "ALL": "لا توجد تقييمات بعد"
+        },
+        "emptyHint": "أضف قسم التقييمات والملاحظات إلى صفحة في موقعك لبدء جمع التقييمات.",
+        "noText": "نجوم فقط، بدون تقييم مكتوب",
+        "sentOn": "أُرسل في {{date}}",
+        "fromSite": "الموقع: {{site}}",
+        "approve": "اعتماد",
+        "reject": "رفض",
+        "hide": "إخفاء",
+        "moreActions": "إجراءات أخرى",
+        "edit": "تعديل",
+        "backToPending": "إعادة إلى قيد المراجعة",
+        "delete": "حذف",
+        "previous": "السابق",
+        "next": "التالي",
+        "pageOf": "الصفحة {{page}} من {{total}}",
+        "editTitle": "تعديل التقييم",
+        "fields": {
+            "rating": "التقييم",
+            "name": "الاسم",
+            "text": "التقييم المكتوب",
+            "course": "الدورة",
+            "city": "المدينة",
+            "designation": "المهنة / المسمى الوظيفي"
+        },
+        "starsA11y_zero": "{{count}} نجمة",
+        "starsA11y_one": "نجمة واحدة",
+        "starsA11y_two": "نجمتان",
+        "starsA11y_few": "{{count}} نجوم",
+        "starsA11y_many": "{{count}} نجمة",
+        "starsA11y_other": "{{count}} نجمة",
+        "cancel": "إلغاء",
+        "save": "حفظ",
+        "deleteTitle": "حذف هذا التقييم؟",
+        "deleteBody": "سيُحذف تقييم {{name}} نهائيًا. اختر الرفض إذا كنت قد تحتاجه لاحقًا.",
+        "noInstitute": "لم يتم اختيار مؤسسة",
+        "toast": {
+            "APPROVED": {
+                "title": "تم الاعتماد",
+                "description": "يظهر الآن في أقسام الشهادات المضبوطة لعرض التقييمات."
+            },
+            "REJECTED": {
+                "title": "تم الرفض"
+            },
+            "PENDING": {
+                "title": "أُعيد إلى قيد المراجعة"
+            },
+            "errorTitle": "خطأ",
+            "updateFailed": "تعذّر تحديث التقييم",
+            "deleteFailed": "تعذّر حذف التقييم",
+            "saved": "تم حفظ التقييم",
+            "deleted": "تم حذف التقييم"
+        }
+    },
+    "editor": {
+        "manageHint": "التقييمات التي يرسلها الزوار تنتظر اعتمادك. تظهر التقييمات المعتمدة في أقسام الشهادات المضبوطة لعرض التقييمات.",
+        "openReviews": "فتح التقييمات",
+        "sections": {
+            "template": "القالب",
+            "look": "المظهر",
+            "behaviour": "متى يفتح تلقائيًا",
+            "visibility": "الظهور",
+            "fields": "ما يُطلب",
+            "text": "النص"
+        },
+        "presets": {
+            "buttonAndPopup": {
+                "label": "زر + نافذة منبثقة",
+                "description": "زر عائم، ويفتح النموذج مرة واحدة بعد 5 ثوانٍ"
+            },
+            "floatingButton": {
+                "label": "زر عائم",
+                "description": "يفتح فقط عندما ينقر الزائر عليه"
+            },
+            "sideTab": {
+                "label": "لسان جانبي",
+                "description": "لسان على الحافة اليمنى للشاشة"
+            },
+            "popupAfterDelay": {
+                "label": "نافذة بعد 5 ثوانٍ",
+                "description": "تفتح تلقائيًا، مرة واحدة أسبوعيًا على الأكثر"
+            },
+            "popupFirstVisit": {
+                "label": "في الزيارة الأولى",
+                "description": "تفتح فور تحميل الموقع، مرة واحدة فقط"
+            },
+            "cornerCard": {
+                "label": "بطاقة في الزاوية",
+                "description": "تنزلق في الزاوية وتبقى الصفحة قابلة للاستخدام"
+            },
+            "inlineForm": {
+                "label": "نموذج في الصفحة",
+                "description": "يوضع في الصفحة مثل أي قسم"
+            }
+        },
+        "fields": {
+            "display": "طريقة الطلب",
+            "buttonStyle": "شكل الزر",
+            "buttonLabel": "نص الزر",
+            "position": "الموضع",
+            "popupStyle": "يفتح النموذج كـ",
+            "backgroundColor": "خلفية القسم",
+            "hideAfterSubmit": "إخفاء الزر بعد أن يرسل الزائر تقييمه",
+            "courseOptions": "خيارات الدورات (واحد في كل سطر)",
+            "labelFor": "عنوان {{field}}",
+            "heading": "العنوان",
+            "subheading": "العنوان الفرعي",
+            "nameLabel": "عنوان حقل الاسم",
+            "textPlaceholder": "نص إرشادي للتقييم",
+            "submitLabel": "زر الإرسال",
+            "successHeading": "عنوان الشكر",
+            "successMessage": "رسالة الشكر"
+        },
+        "display": {
+            "floatingPopup": "زر + نافذة",
+            "floating": "زر",
+            "popup": "نافذة منبثقة",
+            "inline": "في الصفحة"
+        },
+        "buttonStyle": {
+            "pill": "زر مستدير الطرفين",
+            "icon": "أيقونة دائرية",
+            "tab": "لسان جانبي"
+        },
+        "position": {
+            "bottom-right": "أسفل اليمين",
+            "bottom-left": "أسفل اليسار",
+            "middle-right": "الحافة اليمنى",
+            "middle-left": "الحافة اليسرى"
+        },
+        "popupStyle": {
+            "modal": "نافذة في الوسط",
+            "corner": "بطاقة في الزاوية"
+        },
+        "hints": {
+            "tabNeedsSide": "يظهر اللسان الجانبي على الحافة اليسرى أو اليمنى؛ في زاوية سفلية يظهر كزر عادي.",
+            "frequency": "لا يفتح تلقائيًا مرة أخرى بعد أن يرسل الزائر تقييمه.",
+            "alwaysAsked": "تقييم النجوم والاسم مطلوبان دائمًا.",
+            "courseOptionsPlaceholder": "SSC CGL\nRailway NTPC",
+            "courseOptions": "اتركه فارغًا ليكتب الزوار دورتهم بأنفسهم.",
+            "emptyUsesDefault": "اترك الحقل فارغًا لاستخدام النص الافتراضي بلغة الزائر."
+        },
+        "fieldNames": {
+            "reviewText": "التقييم المكتوب",
+            "course": "الدورة",
+            "city": "المدينة",
+            "designation": "المهنة / المسمى الوظيفي"
+        },
+        "fieldMode": {
+            "off": "متوقف",
+            "optional": "اختياري",
+            "required": "مطلوب"
+        },
+        "defaults": {
+            "buttonLabel": "قيّمنا",
+            "heading": "كيف كانت تجربتك؟",
+            "subheading": "تقييمك يساعد الطلاب الآخرين على الاختيار.",
+            "nameLabel": "اسمك",
+            "textLabel": "تقييمك المكتوب",
+            "textPlaceholder": "ما الذي أعجبك؟ وما الذي يمكن تحسينه؟",
+            "cityLabel": "المدينة",
+            "courseLabel": "الدورة",
+            "designationLabel": "المهنة / المسمى الوظيفي",
+            "submitLabel": "إرسال التقييم",
+            "successHeading": "شكرًا لك!",
+            "successMessage": "تم إرسال تقييمك. سيظهر على الموقع بعد الموافقة عليه."
+        },
+        "formFields": {
+            "title": "حقول النموذج",
+            "hint": "نموذج الزائر بهذا الترتيب.",
+            "add": "إضافة حقل",
+            "builtinGroup": "حقول أساسية",
+            "customGroup": "سؤالك الخاص",
+            "kinds": {
+                "rating": "تقييم بالنجوم",
+                "reviewerName": "الاسم",
+                "reviewText": "تقييم مكتوب",
+                "courseName": "الدورة",
+                "city": "المدينة",
+                "designation": "المهنة / المسمى الوظيفي",
+                "text": "إجابة قصيرة",
+                "textarea": "إجابة طويلة",
+                "select": "قائمة منسدلة",
+                "number": "رقم",
+                "email": "البريد الإلكتروني",
+                "phone": "الهاتف"
+            },
+            "label": "العنوان",
+            "placeholder": "نص إرشادي",
+            "options": "الخيارات (واحد في كل سطر)",
+            "optionsHint": "يختار الزائر واحدًا منها.",
+            "optionsCourseHint": "اتركه فارغًا ليكتب الزوار دورتهم.",
+            "required": "مطلوب",
+            "lockedHint": "التقييم بالنجوم والاسم موجودان دائمًا: يحتاج التقييم إليهما ليظهر كشهادة.",
+            "width": "العرض",
+            "widthFull": "كامل",
+            "widthHalf": "نصف",
+            "edit": "تعديل الحقل",
+            "moveUp": "تحريك لأعلى",
+            "moveDown": "تحريك لأسفل",
+            "delete": "حذف الحقل",
+            "maxCustom": "يمكنك إضافة حتى 10 أسئلة خاصة بك.",
+            "defaults": {
+                "rating": "تقييمك",
+                "custom": "إجابتك"
+            }
+        }
+    }
+}

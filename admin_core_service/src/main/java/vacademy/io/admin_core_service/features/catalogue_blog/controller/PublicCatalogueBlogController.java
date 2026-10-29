@@ -5,6 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vacademy.io.admin_core_service.config.cache.CacheScope;
 import vacademy.io.admin_core_service.config.cache.ClientCacheable;
+import vacademy.io.admin_core_service.features.catalogue_blog.dto.BlogLikeRequest;
+import vacademy.io.admin_core_service.features.catalogue_blog.dto.BlogLikeResponse;
 import vacademy.io.admin_core_service.features.catalogue_blog.dto.BlogPostPageResponse;
 import vacademy.io.admin_core_service.features.catalogue_blog.dto.BlogPostResponse;
 import vacademy.io.admin_core_service.features.catalogue_blog.service.CatalogueBlogService;
@@ -38,5 +40,15 @@ public class PublicCatalogueBlogController {
         return service.publicGet(instituteId, slug)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Like (liked = true) or unlike a post. Not cached; the response carries the
+     * fresh total so the button can show it straight away, while the cached
+     * lists catch up within their five minutes.
+     */
+    @PostMapping("/post/like")
+    public ResponseEntity<BlogLikeResponse> like(@RequestBody BlogLikeRequest request) {
+        return ResponseEntity.ok(service.publicSetLike(request));
     }
 }

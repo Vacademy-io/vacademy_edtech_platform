@@ -53,8 +53,6 @@ import vacademy.io.admin_core_service.features.institute_learner.repository.Stud
 import vacademy.io.admin_core_service.features.institute_learner.entity.StudentSessionInstituteGroupMapping;
 import vacademy.io.admin_core_service.features.institute_learner.enums.LearnerSessionStatusEnum;
 import vacademy.io.common.auth.dto.UserDTO;
-import vacademy.io.common.auth.entity.User;
-import vacademy.io.common.auth.repository.UserRoleRepository;
 
 @Slf4j
 @Service
@@ -84,7 +82,6 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
     private final vacademy.io.admin_core_service.features.live_session.repository.LiveSessionLogsRepository liveSessionLogsRepository;
     private final vacademy.io.admin_core_service.features.institute_learner.repository.InstituteStudentRepository instituteStudentRepository;
     private final vacademy.io.admin_core_service.features.institute.repository.InstituteRepository instituteRepository;
-    private final UserRoleRepository userRoleRepository;
     private final vacademy.io.admin_core_service.features.shortlink.service.ShortLinkIntegrationService shortLinkIntegrationService;
 
     @Override
@@ -2068,9 +2065,14 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
 
             // Aggregate across roles, dedupe by user.id, collect their role names.
             Map<String, Map<String, Object>> byUserId = new LinkedHashMap<>();
+            // Roles live in auth_service's DB — admin_core has no user_role table, so the
+            // old UserRoleRepository join threw "relation user_role does not exist" and,
+            // inside the caller's transaction, aborted it (every lead submit of an
+            // institute with this recipe then answered "Error in submitting the response").
+            // HMAC route, so it also works for open-form / webhook leads that carry no JWT.
             for (String roleName : roles) {
-                List<User> users = userRoleRepository.findUsersByInstituteIdAndRoleName(instituteId, roleName);
-                for (User u : users) {
+                List<UserDTO> users = authService.requireUsersByInstituteAndRoles(instituteId, List.of(roleName));
+                for (UserDTO u : users) {
                     if (u.getEmail() == null || u.getEmail().isBlank()) continue;
                     Map<String, Object> existing = byUserId.get(u.getId());
                     if (existing == null) {

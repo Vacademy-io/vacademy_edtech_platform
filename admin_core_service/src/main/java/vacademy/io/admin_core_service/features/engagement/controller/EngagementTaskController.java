@@ -13,14 +13,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestBody;
+import vacademy.io.admin_core_service.features.engagement.service.ContactResolver;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementAccessGuard;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementDispatcher;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementAction;
+import vacademy.io.admin_core_service.features.engagement.entity.EngagementMember;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementActionRepository;
+import vacademy.io.admin_core_service.features.engagement.repository.EngagementMemberRepository;
+import vacademy.io.admin_core_service.features.engagement.spi.Subject;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -41,6 +46,11 @@ public class EngagementTaskController {
     private final EngagementActionRepository actionRepository;
     private final EngagementAccessGuard accessGuard;
     private final EngagementDispatcher dispatcher;
+    private final EngagementMemberRepository memberRepository;
+    private final ContactResolver contactResolver;
+
+    /** Most ids one people lookup resolves: an inbox page is at most 200 tasks. */
+    private static final int MAX_PEOPLE_LOOKUP = 200;
 
     @GetMapping
     public ResponseEntity<Page<EngagementAction>> inbox(
@@ -53,6 +63,25 @@ public class EngagementTaskController {
         List<String> statusList = List.of(statuses.split(","));
         return ResponseEntity.ok(actionRepository.findInbox(
                 instituteId, statusList, PageRequest.of(page, Math.min(size, 200))));
+    }
+
+    /**
+     * Who each task is for: name, phone and email of the members behind an inbox page, so the
+     * admin sees the person, not just the engine. Members of another institute are left out.
+     */
+    @GetMapping("/people")
+    public ResponseEntity<List<Subject>> people(
+            @RequestParam String instituteId,
+            @RequestParam String memberIds,
+            @RequestAttribute("user") CustomUserDetails user) {
+        accessGuard.requireAdmin(user, instituteId);
+        List<String> ids = Arrays.stream(memberIds.split(","))
+                .map(String::trim).filter(s -> !s.isEmpty()).distinct().limit(MAX_PEOPLE_LOOKUP).toList();
+        if (ids.isEmpty()) return ResponseEntity.ok(List.of());
+        List<EngagementMember> members = memberRepository.findAllById(ids).stream()
+                .filter(m -> instituteId.equals(m.getInstituteId()))
+                .toList();
+        return ResponseEntity.ok(contactResolver.resolve(members));
     }
 
     @Auditable(
@@ -142,6 +171,23 @@ public class EngagementTaskController {
         Instant now = Instant.now();
         int updated = actionRepository.reopenFailed(taskId, instituteId, now, now.plus(java.time.Duration.ofHours(72)));
         if (updated == 0) throw new VacademyException("Task not found or not in a FAILED state");
+        return ResponseEntity.ok().build();
+    }
+
+    /** Undo Done / Dismiss: the task goes back to the inbox as OPEN. */
+    @Auditable(
+            entityType = "ENGAGEMENT_TASK",
+            action = "RESTORE",
+            entityIdExpr = "#taskId",
+            descriptionExpr = "'restored a handled engagement task'")
+    @PostMapping("/{taskId}/restore")
+    public ResponseEntity<Void> restore(@PathVariable String taskId,
+                                        @RequestParam String instituteId,
+                                        @RequestAttribute("user") CustomUserDetails user) {
+        accessGuard.requireAdmin(user, instituteId);
+        Instant now = Instant.now();
+        int updated = actionRepository.restoreHandled(taskId, instituteId, now, now.plus(java.time.Duration.ofHours(72)));
+        if (updated == 0) throw new VacademyException("Task not found or not marked done or dismissed");
         return ResponseEntity.ok().build();
     }
 

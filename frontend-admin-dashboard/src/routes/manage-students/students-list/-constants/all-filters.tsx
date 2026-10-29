@@ -126,7 +126,7 @@ export const GetFilterData = (
             filterList: [
                 { id: 'PAID', label: t('paymentStatus.paid') },
                 { id: 'FAILED', label: t('paymentStatus.failed') },
-                { id: 'PAYMENT_FAILED', label: t('paymentStatus.paymentFailed') },
+                { id: 'PAYMENT_PENDING', label: t('paymentStatus.pending') },
             ],
         },
         {
@@ -142,6 +142,7 @@ export const GetFilterData = (
             title: t('cartStatus.title'),
             filterList: [
                 { id: 'ABANDONED_CART', label: t('cartStatus.abandonedCart') },
+                { id: 'PAYMENT_FAILED', label: t('cartStatus.paymentFailed') },
             ],
         },
     ];

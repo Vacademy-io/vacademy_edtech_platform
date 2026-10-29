@@ -8,18 +8,24 @@ import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
+import vacademy.io.admin_core_service.features.live_session.entity.LiveSession;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.google.GoogleAccount;
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleAccessTokenService;
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleAccountStore;
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleConferenceService;
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleEventsSubscriptionService;
+import vacademy.io.admin_core_service.features.live_session.repository.LiveSessionRepository;
 import vacademy.io.admin_core_service.features.live_session.repository.SessionScheduleRepository;
+import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.meeting.dto.CreateMeetingRequestDTO;
 import vacademy.io.common.meeting.dto.CreateMeetingResponseDTO;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -47,6 +53,9 @@ class GoogleMeetCreateFallbackTest {
     private final GoogleAccessTokenService tokens = mock(GoogleAccessTokenService.class);
     private final Deque<ClientResponse> replies = new ArrayDeque<>();
     private final AtomicInteger calls = new AtomicInteger();
+    private final List<String> urls = new ArrayList<>();
+    private final LiveSessionRepository sessions = mock(LiveSessionRepository.class);
+    private final AuthService auth = mock(AuthService.class);
     private GoogleAccount account;
 
     private GoogleMeetManager manager(boolean recordingEnabled) {
@@ -56,10 +65,12 @@ class GoogleMeetCreateFallbackTest {
         when(tokens.getAccessToken(any())).thenReturn("token");
         WebClient.Builder web = WebClient.builder().exchangeFunction(req -> {
             calls.incrementAndGet();
+            urls.add(req.url().toString());
             return Mono.just(replies.removeFirst());
         });
         return new GoogleMeetManager(store, tokens, mock(GoogleConferenceService.class),
-                mock(GoogleEventsSubscriptionService.class), web, mock(SessionScheduleRepository.class));
+                mock(GoogleEventsSubscriptionService.class), web, mock(SessionScheduleRepository.class),
+                sessions, auth);
     }
 
     private void reply(HttpStatus status, String body) {
@@ -177,5 +188,48 @@ class GoogleMeetCreateFallbackTest {
         assertThrows(VacademyException.class, () -> m.createMeeting(request(null), "inst-1"));
         assertEquals(2, calls.get());
         assertTrue(account.isRecordingEnabled());
+    }
+
+    private void creator(String email) {
+        LiveSession session = new LiveSession();
+        session.setCreatedByUserId("creator-1");
+        when(sessions.findById("ses-1")).thenReturn(Optional.of(session));
+        UserDTO user = new UserDTO();
+        user.setEmail(email);
+        when(auth.getUsersFromAuthServiceByUserIds(List.of("creator-1"))).thenReturn(List.of(user));
+    }
+
+    private static CreateMeetingRequestDTO requestForSession() {
+        return CreateMeetingRequestDTO.builder().topic("Class").providerAccountId("acc-1").sessionId("ses-1").build();
+    }
+
+    @Test
+    @DisplayName("class creator is made co-host right after the space is created")
+    void creatorAddedAsCohost() {
+        GoogleMeetManager m = manager(false);
+        creator("teacher@gmail.com");
+        reply(HttpStatus.OK, OK);
+        reply(HttpStatus.OK, "{\"name\":\"spaces/abc/members/1\",\"role\":\"COHOST\"}");
+
+        CreateMeetingResponseDTO r = m.createMeeting(requestForSession(), "inst-1");
+
+        assertEquals("spaces/abc", r.getProviderMeetingId());
+        assertEquals(2, calls.get());
+        assertEquals("https://meet.googleapis.com/v2/spaces/abc/members", urls.get(1));
+    }
+
+    @Test
+    @DisplayName("co-host add refused or creator email unknown: the class still gets its link")
+    void creatorCohostFailureIgnored() {
+        GoogleMeetManager m = manager(false);
+        creator("teacher@gmail.com");
+        reply(HttpStatus.OK, OK);
+        reply(HttpStatus.FORBIDDEN, "{}");
+        assertEquals("spaces/abc", m.createMeeting(requestForSession(), "inst-1").getProviderMeetingId());
+
+        when(auth.getUsersFromAuthServiceByUserIds(any())).thenThrow(new RuntimeException("auth down"));
+        reply(HttpStatus.OK, OK);
+        assertEquals("spaces/abc", m.createMeeting(requestForSession(), "inst-1").getProviderMeetingId());
+        assertEquals(3, calls.get()); // no members call without an email
     }
 }

@@ -235,8 +235,14 @@ def apply_check(verdict: dict[str, Any], result: dict[str, Any]) -> bool:
     # Re-spread the breakdown so it sums to the new mark.
     items = verdict.get("criteria_breakdown") or []
     gap = new - old
+    # The breakdown stores a criterion's ceiling as "max" (attach_criteria_max);
+    # reading only "max_marks" found no ceiling on any of them, so the whole
+    # raise landed on the last criterion: "Vocabulary 17/15", "Paragraph 5 38/10".
+    def ceiling(item: dict[str, Any]) -> Any:
+        return item.get("max_marks", item.get("max"))
+
     for item in items:
-        cmax = item.get("max_marks")
+        cmax = ceiling(item)
         if gap <= 0 or cmax is None:
             continue
         room = float(cmax) - float(item.get("marks") or 0)
@@ -246,9 +252,19 @@ def apply_check(verdict: dict[str, Any], result: dict[str, Any]) -> bool:
             item["reason"] = "Re-checked against the handwriting: " + (misread[0].get("why") or "the cut came from a misreading.")
             gap -= give
     if gap > 1e-6 and items:
-        # Criteria without a stated maximum: put the rest on the last one so
-        # the breakdown still adds up to the mark the teacher sees.
-        items[-1]["marks"] = float(items[-1].get("marks") or 0) + gap
+        if all(ceiling(i) is not None for i in items):
+            # Every criterion is full: the raise cannot go past them.
+            new = round((new - gap) * 2) / 2
+            if new <= old:
+                verdict["marks_awarded"] = old
+                verdict.pop("deduction_check", None)
+                return False
+            verdict["marks_awarded"] = new
+            verdict["deduction_check"]["to"] = new
+        else:
+            # Criteria without a stated maximum: put the rest on the last one so
+            # the breakdown still adds up to the mark the teacher sees.
+            items[-1]["marks"] = float(items[-1].get("marks") or 0) + gap
     note = str(result.get("note") or "").strip()
     anns = []
     for a in verdict.get("annotations") or []:

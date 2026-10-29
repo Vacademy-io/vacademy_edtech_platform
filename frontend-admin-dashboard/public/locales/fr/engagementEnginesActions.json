@@ -1,0 +1,77 @@
+{
+    "types": {
+        "ADD_NOTE": {
+            "label": "Note",
+            "description": "Écrit une note sur le prospect pour le conseiller, marquée IA."
+        },
+        "CREATE_FOLLOWUP": {
+            "label": "Relance",
+            "description": "Planifie une relance pour le conseiller. Jamais une deuxième tant qu'une est ouverte."
+        },
+        "ESCALATE": {
+            "label": "Escalade",
+            "description": "Signale le prospect pour qu'un conseiller le regarde maintenant, avec la raison."
+        },
+        "UPDATE_STATUS": {
+            "label": "Changement de statut",
+            "description": "Change le statut CRM du prospect. Jamais vers Converti ; Perdu et Pas intéressé exigent une note qui explique pourquoi."
+        },
+        "SCHEDULE_AI_CALL": {
+            "label": "Appel IA",
+            "description": "Met en file un appel vocal IA aux heures d'appel, 3 par semaine au plus. Jamais après un mauvais numéro ou un ne-pas-déranger."
+        }
+    },
+    "panel": {
+        "title": "Actions CRM",
+        "subtitle": "{{count}} autorisées · chacune commence comme une tâche de la boîte",
+        "loadFailed": "Impossible de charger les actions CRM.",
+        "retry": "Réessayer",
+        "empty": "Aucune action CRM disponible.",
+        "allowed": "Autorisée",
+        "auto": "S'exécute seule",
+        "allowedFor": "Autoriser : {{action}}",
+        "autoFor": "Laisser {{action}} s'exécuter seule",
+        "progress": "{{approved}} sur {{threshold}} approuvées — elle s'exécute seule ensuite",
+        "graduated": "S'exécute seule maintenant",
+        "paused": "En pause (arrêt d'urgence)",
+        "footnote": "Une action ne s'exécute seule qu'après qu'une personne en a approuvé assez du même type. L'arrêt d'urgence les stoppe toutes, un prospect marqué Ne pas automatiser n'a que des brouillons, et le groupe témoin n'a rien.",
+        "saved": "Actions CRM enregistrées",
+        "saveFailed": "Impossible d'enregistrer les actions CRM",
+        "autoNeedsAllowed": "Autorisez d'abord cette action."
+    },
+    "inbox": {
+        "kindFilter": "Actions CRM",
+        "whatWillHappen": "Ce qui va se passer",
+        "whatHappened": "Ce qui s'est passé",
+        "noDescription": "Aucune description.",
+        "fields": {
+            "statusKey": "Nouveau statut",
+            "dueInHours": "Dans (heures)",
+            "note": "Note",
+            "reason": "Raison"
+        },
+        "doneAuto": "Fait automatiquement",
+        "approvedBy": "Approuvée {{name}}",
+        "undone": "Annulée",
+        "waitingUntil": "Approuvé — attend jusqu'à {{time}}",
+        "approve": "Approuver",
+        "undo": "Annuler",
+        "cancelCall": "Annuler l'appel",
+        "approvedToast": "Fait",
+        "scheduledToast": "Approuvé — s'exécutera à l'heure demandée",
+        "undoneToast": "Annulé",
+        "approveFailed": "Impossible d'effectuer cette action",
+        "undoFailed": "Impossible d'annuler cette action",
+        "approved": "Approuvée"
+    },
+    "lead": {
+        "title": "Ne pas automatiser",
+        "onHint": "Les moteurs d'engagement ne font que des brouillons pour ce prospect ; rien n'est envoyé ni fait seul.",
+        "offHint": "Les moteurs d'engagement peuvent contacter ce prospect et agir seuls là où c'est autorisé.",
+        "loadFailed": "Impossible de charger le réglage d'automatisation.",
+        "saveFailed": "Impossible d'enregistrer le réglage d'automatisation",
+        "onToast": "L'automatisation est désactivée pour ce prospect",
+        "offToast": "L'automatisation est réactivée pour ce prospect",
+        "retry": "Réessayer"
+    }
+}

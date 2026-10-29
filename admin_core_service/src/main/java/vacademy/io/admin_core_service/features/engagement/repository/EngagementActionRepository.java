@@ -271,6 +271,25 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
                      @Param("expiresAt") Instant expiresAt);
 
     /**
+     * Undo a human Done / Dismiss: DONE or DISMISSED back to OPEN, outcome cleared so the label the
+     * learning loop reads is not the one the admin took back. Expiry pushed out like reopenFailed.
+     * Only TASK / REPLY rows: an OPEN autonomous SEND would be picked up by the dispatch job and go
+     * out with no review.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET status = 'OPEN', outcome = NULL, completed_at = NULL, updated_at = :now,
+                   expires_at = CASE WHEN expires_at IS NULL OR expires_at < :expiresAt
+                                     THEN :expiresAt ELSE expires_at END
+             WHERE id = :id AND institute_id = :instituteId AND status IN ('DONE', 'DISMISSED')
+               AND kind IN ('TASK', 'REPLY')
+            """, nativeQuery = true)
+    int restoreHandled(@Param("id") String id, @Param("instituteId") String instituteId, @Param("now") Instant now,
+                       @Param("expiresAt") Instant expiresAt);
+
+    /**
      * Withdraw a due autonomous SEND that must not go out any more (the person opted out or left
      * the audience after the decision). EXPIRED, not a TASK: a human must not be invited to send it.
      */
@@ -353,4 +372,61 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
     List<Object[]> countAiCallActionsByStatus(@Param("instituteId") String instituteId);
 
     List<EngagementAction> findTop20ByMemberIdOrderByCreatedAtDesc(String memberId);
+
+    /**
+     * Cancel what is still pending for members who just left their engine: every OPEN or ACKED
+     * row (sends, drafts, tasks) becomes EXPIRED with the reason, so nothing goes out later and no
+     * one is asked to act on a lead that is done. With keepAiCallPromises, a row an AI voice call
+     * produced stays: the person asked for it on the call.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET status = 'EXPIRED', error_message = :reason, updated_at = :now
+             WHERE member_id IN (:memberIds) AND status IN ('OPEN', 'ACKED')
+               AND (:keepAiCallPromises = FALSE OR source IS NULL OR source <> 'AI_CALL')
+            """, nativeQuery = true)
+    int cancelOpenForMembers(@Param("memberIds") List<String> memberIds, @Param("reason") String reason,
+                             @Param("now") Instant now, @Param("keepAiCallPromises") boolean keepAiCallPromises);
+
+    /**
+     * B6: at-most-once claim of a CRM action task for approval (OPEN/ACKED TASK → DISPATCHING), so
+     * two admins clicking approve run it once. The handler then settles it to DONE, or back to OPEN
+     * with the reason when it could not run.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET status = 'DISPATCHING', updated_at = :now
+             WHERE id = :id AND institute_id = :instituteId AND kind = 'TASK'
+               AND status IN ('OPEN', 'ACKED') AND action_type IN (:types)
+            """, nativeQuery = true)
+    int claimCrmAction(@Param("id") String id, @Param("instituteId") String instituteId,
+                       @Param("types") List<String> types, @Param("now") Instant now);
+
+    /** B6/B7: claim a done CRM action for undo (DONE, approved or run on its own → DISPATCHING), once. */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET status = 'DISPATCHING', updated_at = :now
+             WHERE id = :id AND institute_id = :instituteId AND status = 'DONE'
+               AND outcome IN ('ACCEPTED', 'AUTO') AND action_type IN (:types)
+            """, nativeQuery = true)
+    int claimCrmUndo(@Param("id") String id, @Param("instituteId") String instituteId,
+                     @Param("types") List<String> types, @Param("now") Instant now);
+
+    /**
+     * B7 graduation per action type (S7): CRM actions of this type a PERSON approved and that ran
+     * (DONE + ACCEPTED). Ones the engine ran on its own (AUTO) or that were undone never count, and
+     * approvals of messages or of another type never unlock this one.
+     */
+    @Query(value = """
+            SELECT count(*) FROM engagement_action
+            WHERE engine_id = :engineId AND action_type = :actionType
+              AND status = 'DONE' AND outcome = 'ACCEPTED'
+            """, nativeQuery = true)
+    long countApprovedCrmActions(@Param("engineId") String engineId, @Param("actionType") String actionType);
 }

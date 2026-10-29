@@ -35,11 +35,35 @@ export interface AudienceSelector {
     label?: string;
 }
 
+/**
+ * Stored as the engine's quietHours JSON. Besides the quiet hours it carries the send schedule
+ * (backend EngagementSendSchedule): planned messages go out in a one-hour window starting at
+ * sendHour:sendMinute, on `days` (ISO, 1 = Monday). No sendHour = no fixed time.
+ */
 export interface QuietHours {
     startHour?: number;
     endHour?: number;
     timezone?: string;
+    sendHour?: number | null;
+    sendMinute?: number;
+    days?: number[];
+    /** IMMEDIATE: a person who just joined is reached right away; SCHEDULED: at the next send window. */
+    firstTouch?: 'IMMEDIATE' | 'SCHEDULED';
 }
+
+/** Root keys of the channels JSON that are not channels. */
+export interface ChannelsExtras {
+    /** Leave the engine once a meeting is booked with the lead (backend EngagementLeadExitJob). */
+    exitOnMeetingBooked?: boolean;
+}
+
+/** GET /engines/channel-readiness: whether the institute has set each channel up. */
+export interface ChannelReadiness {
+    ready: boolean;
+    /** NOT_SET_UP, or SENDER_MISSING when the engine's email sender no longer exists. */
+    reason?: 'NOT_SET_UP' | 'SENDER_MISSING' | null;
+}
+export type ChannelReadinessMap = Partial<Record<ChannelKey, ChannelReadiness>>;
 
 /** The engine entity as returned by GET /engines. */
 export interface EngagementEngine {
@@ -158,6 +182,16 @@ export interface EngagementAction {
     errorMessage?: string;
     createdAt?: string;
     updatedAt?: string;
+}
+
+/** Who a task is for (GET /tasks/people). userId is null for a lead with no account. */
+export interface TaskPerson {
+    memberId: string;
+    userId?: string | null;
+    audienceResponseId?: string | null;
+    name?: string | null;
+    phone?: string | null;
+    email?: string | null;
 }
 
 /** Spring Page<T> envelope. */

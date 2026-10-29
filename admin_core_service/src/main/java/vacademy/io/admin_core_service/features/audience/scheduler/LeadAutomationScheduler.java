@@ -16,6 +16,7 @@ import vacademy.io.admin_core_service.features.audience.repository.LeadSlaConfig
 import vacademy.io.admin_core_service.features.audience.service.LeadAssignmentNotifier;
 import vacademy.io.admin_core_service.features.audience.service.LeadSlaConfigService;
 import vacademy.io.admin_core_service.features.audience.service.LeadTriggerContextBuilder;
+import vacademy.io.admin_core_service.features.engagement.service.EngagementWakeService;
 import vacademy.io.admin_core_service.features.workflow.enums.WorkflowTriggerEvent;
 import vacademy.io.admin_core_service.features.workflow.service.WorkflowTriggerService;
 
@@ -77,6 +78,7 @@ public class LeadAutomationScheduler {
     private final WorkflowTriggerService workflowTriggerService;
     private final LeadTriggerContextBuilder ctxBuilder;
     private final LeadAssignmentNotifier leadAssignmentNotifier;
+    private final EngagementWakeService engagementWakeService;
 
     /**
      * Full SLA scan every 30 minutes: the follow-up SLA, plus TAT for every open lead (the
@@ -376,6 +378,9 @@ public class LeadAutomationScheduler {
         for (LeadFollowup fu : overdueCandidates) {
             if (closedLeadIds.contains(fu.getAudienceResponseId())) continue;
             if (leadFollowupRepository.claimOverdueTransition(fu.getId()) != 1) continue;
+            // The counsellor missed it: let the lead's engagement engine look within minutes (B4).
+            engagementWakeService.wakeLead(fu.getInstituteId(), fu.getAudienceResponseId(), null,
+                    EngagementWakeService.FOLLOWUP_OVERDUE, false);
             EmitOutcome outcome = emitFollowup(fu, WorkflowTriggerEvent.FOLLOW_UP_OVERDUE.name(),
                     LeadTriggerContextBuilder.STAGE_FOLLOW_UP_OVERDUE);
             if (outcome == EmitOutcome.EMITTED) {

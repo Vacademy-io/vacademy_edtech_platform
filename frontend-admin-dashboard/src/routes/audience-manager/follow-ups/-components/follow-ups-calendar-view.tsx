@@ -15,6 +15,7 @@ import {
 } from 'date-fns';
 import { CaretLeft, CaretRight, CalendarBlank } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
+import { useFollowUpFeatures } from '@/components/shared/leads/follow-up-fields';
 import type { TFunction } from 'i18next';
 import { cn } from '@/lib/utils';
 import { MyButton } from '@/components/design-system/button';
@@ -103,6 +104,8 @@ export function FollowUpsCalendarView({
     extraColumns,
 }: FollowUpsCalendarViewProps) {
     const { t } = useTranslation('audienceManagerFollowUpsCalendarView');
+    // Lead settings → "Overdue by date, not time": pills follow the page's buckets.
+    const { overdueByDate } = useFollowUpFeatures();
     const dayLabels = useMemo(() => buildDayLabels(t), [t]);
     const month = useMemo(() => safeParseMonth(monthStr), [monthStr]);
     const selectedDate = useMemo(() => safeParseDate(selectedDateStr), [selectedDateStr]);
@@ -119,7 +122,10 @@ export function FollowUpsCalendarView({
     // Stabilise the reference so the useMemo below doesn't re-run every render
     // when the key is missing (default `[]` would be a new array each time).
     const dayVms = useMemo(() => byDay.get(selectedKey) ?? [], [byDay, selectedKey]);
-    const dayCounts = useMemo(() => dayBucketCounts(dayVms), [dayVms]);
+    const dayCounts = useMemo(
+        () => dayBucketCounts(dayVms, undefined, overdueByDate),
+        [dayVms, overdueByDate]
+    );
 
     // Agenda fallback only needs days IN this month that have events.
     const visibleDaysWithEvents = useMemo(
@@ -247,7 +253,11 @@ export function FollowUpsCalendarView({
                                         </div>
                                         <div className="flex flex-col gap-1">
                                             {cellVms.slice(0, MAX_PILLS_PER_DAY).map((vm) => {
-                                                const bucket = classify(vm);
+                                                const bucket = classify(
+                                                    vm,
+                                                    undefined,
+                                                    overdueByDate
+                                                );
                                                 return (
                                                     <button
                                                         key={vm.key}
@@ -303,7 +313,7 @@ export function FollowUpsCalendarView({
                                 {visibleDaysWithEvents.map((day) => {
                                     const key = format(day, 'yyyy-MM-dd');
                                     const dayList = byDay.get(key) ?? [];
-                                    const dom = dominantBucket(dayList);
+                                    const dom = dominantBucket(dayList, undefined, overdueByDate);
                                     const isSelected = isSameDay(day, selectedDate);
                                     return (
                                         <button

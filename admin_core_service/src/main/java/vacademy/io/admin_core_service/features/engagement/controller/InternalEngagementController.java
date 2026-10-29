@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementLearnerService;
+import vacademy.io.admin_core_service.features.engagement.service.EngagementWakeService;
 import vacademy.io.admin_core_service.features.points_ledger.service.PointsLedgerService;
 import vacademy.io.admin_core_service.features.points_ledger.service.TutorQuizPointsService;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,6 +35,7 @@ public class InternalEngagementController {
     private final EngagementLearnerService learnerService;
     private final PointsLedgerService pointsLedgerService;
     private final TutorQuizPointsService tutorQuizPointsService;
+    private final EngagementWakeService engagementWakeService;
 
     @GetMapping("/learner-snapshot")
     public ResponseEntity<Map<String, Object>> learnerSnapshot(
@@ -66,5 +68,23 @@ public class InternalEngagementController {
         return ResponseEntity.ok(tutorQuizPointsService.award(
                 (String) body.get("user_id"), (String) body.get("institute_id"),
                 (String) body.get("quiz_id"), pct));
+    }
+
+    /**
+     * ai_service finished analysing a call (call intelligence writes the database directly, so
+     * admin_core is not otherwise told). Body: {@code {institute_id, call_log_id}}. Queues a wake
+     * for the call's lead in that institute's engines (B4) and returns at once; an unknown call or
+     * one from another institute wakes nobody.
+     */
+    @PostMapping("/call-analyzed")
+    public ResponseEntity<Map<String, Object>> callAnalyzed(@RequestBody Map<String, Object> body) {
+        Object instituteId = body.get("institute_id");
+        Object callLogId = body.get("call_log_id");
+        if (!(instituteId instanceof String inst) || inst.isBlank()
+                || !(callLogId instanceof String call) || call.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("queued", false));
+        }
+        engagementWakeService.callAnalyzed(inst, call);
+        return ResponseEntity.ok(Map.of("queued", true));
     }
 }

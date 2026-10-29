@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementAction;
@@ -17,6 +18,7 @@ import vacademy.io.admin_core_service.features.engagement.repository.EngagementT
 import vacademy.io.admin_core_service.features.engagement.spi.DataPointRegistry;
 import vacademy.io.admin_core_service.features.engagement.spi.FetchContext;
 import vacademy.io.admin_core_service.features.engagement.spi.Subject;
+import vacademy.io.admin_core_service.features.engagement.templates.EngagementEmailTemplateCatalog;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -54,6 +56,18 @@ public class EngagementDecisionService {
     private final EngagementPromptVersionRepository promptRepository;
     private final EngagementTemplateProposalRepository templateProposalRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /** B5 coordination with the rest of the CRM; field-injected so it stays optional in unit tests. */
+    @Autowired(required = false)
+    private EngagementCoordinationService coordination;
+
+    /** B6 CRM actions (allow-list, validation, inbox tasks); optional in unit tests. */
+    @Autowired(required = false)
+    private EngagementCrmActionService crmActions;
+
+    /** B6 template-only email: the templates track's catalog (A3); optional in unit tests. */
+    @Autowired(required = false)
+    private EngagementEmailTemplateCatalog emailCatalog;
 
     @Value("${engagement.recent-window-days:14}")
     private int recentWindowDays;
@@ -124,11 +138,18 @@ public class EngagementDecisionService {
         whatsappTemplates.forEach(t -> templatesByName.put(t.name(), t));
 
         boolean dryRun = "DRY_RUN".equalsIgnoreCase(engine.getStatus());
+        EngagementBrainClient.ActionMenu menu = crmActions != null ? crmActions.menu(engine)
+                : EngagementBrainClient.ActionMenu.NONE;
+        Map<String, EngagementCoordinationService.Verdict> coordinated = coordination != null
+                ? coordination.forCohort(engine.getInstituteId(), members, bundle, Instant.now())
+                : Map.of();
         int decisions = 0;
         for (EngagementMember member : members) {
             try {
                 decisions += decideOne(engine, prompt, member, bundle, optedOut, blockedLeads, dryRun,
-                        enabledChannels, whatsappTemplates, templatesByName) ? 1 : 0;
+                        enabledChannels, whatsappTemplates, templatesByName,
+                        EngagementCoordinationService.of(coordinated, member.getId()), menu,
+                        subjectByMember.get(member.getId())) ? 1 : 0;
             } catch (Exception e) {
                 // Decision failed AFTER we claimed a lease. Push it out with exponential backoff
                 // so an LLM/provider outage doesn't re-hammer every 15 min (the lease alone would
@@ -147,7 +168,9 @@ public class EngagementDecisionService {
                               boolean dryRun,
                               Set<String> enabledChannels,
                               List<EngagementBrainClient.TemplateOption> whatsappTemplates,
-                              Map<String, EngagementBrainClient.TemplateOption> templatesByName) {
+                              Map<String, EngagementBrainClient.TemplateOption> templatesByName,
+                              EngagementCoordinationService.Verdict coordinated,
+                              EngagementBrainClient.ActionMenu menu, Subject subject) {
         Instant now = Instant.now();
 
         // 0. Lease re-check: a serial cohort can outrun its 15-min lease; if another pod has
@@ -166,8 +189,11 @@ public class EngagementDecisionService {
         // 1. Consent — before anything else. The lead row first: an opted-out lead is OPTED_OUT
         // (it survives the reconcile), a lead the admin removed is EXITED (the reconcile revives
         // it if the row comes back).
-        PolicyGate.LeadBlock leadBlock = member.getAudienceResponseId() != null && blockedLeads != null
-                ? blockedLeads.get(member.getAudienceResponseId()) : null;
+        // A lead the CRM marked Converted leaves as EXITED, unless this engine also targets learners.
+        PolicyGate.LeadBlock leadBlock = PolicyGate.effectiveLeadBlock(
+                member.getAudienceResponseId() != null && blockedLeads != null
+                        ? blockedLeads.get(member.getAudienceResponseId()) : null,
+                engine, member);
         if (leadBlock != null) {
             member.setStatus(leadBlock == PolicyGate.LeadBlock.OPTED_OUT ? "OPTED_OUT" : "EXITED");
             memberRepository.save(member);
@@ -180,7 +206,7 @@ public class EngagementDecisionService {
             return false;
         }
         if (verdict == PolicyGate.Verdict.SKIP_CAPPED) {
-            reschedule(member, engine, now, true);
+            rescheduleCapped(member, now);
             return false;
         }
 
@@ -205,21 +231,82 @@ public class EngagementDecisionService {
             return false;
         }
 
+        // 1d. One contact limit across all systems (B5 / S1): the person already heard enough this
+        // week from the engine, workflows, announcements, the chatbot and AI calls together. No LLM;
+        // look again tomorrow, like the engine's own cap.
+        if (coordinated.contactLimitReached()) {
+            log.debug("Member {}: {} touches from all systems this window — not deciding", member.getId(),
+                    coordinated.touches());
+            rescheduleCapped(member, now);
+            return false;
+        }
+
         // 2. Deterministic wake gate — zero tokens for most members.
-        String fingerprint = quantizedFingerprint(bundle.payloadsFor(member.getId()));
+        Map<String, JsonNode> payloads = bundle.payloadsFor(member.getId());
+        String fingerprint = quantizedFingerprint(payloads);
+        if (legacyFingerprint(payloads).equals(member.getWakeFingerprint())) {
+            // Stored before the CRM bands were added: the same state, not a change. Without this the
+            // new formula would send every member to the LLM at its next look, all at once.
+            member.setWakeFingerprint(fingerprint);
+        }
         if (!shouldWake(member, engine, fingerprint, bundle, now)) {
             // A gate sleep is not a no-op decision, so it must not stretch the backoff. Counting
             // it (every cadence/4 re-check) doubled the required wait faster than time passed:
             // after one NO_OP at a 72h cadence the next LLM look came ~30 days later.
-            member.setWakeFingerprint(fingerprint);
-            reschedule(member, engine, now, false);
+            memberRepository.recordGateSleep(member.getId(), fingerprint, now,
+                    now.plus(Duration.ofHours(Math.max(engine.getCadenceHours() / 4, 6))));
             return false;
         }
 
         // 3. The LLM.
-        EngagementBrainClient.Decision d = brain.decide(
-                engine, prompt.getCompiledText(), bundle.renderFor(member.getId()), now,
-                enabledChannels, whatsappTemplates);
+        Map<String, String> blocks = withCoordination(coordinated, withWhyNow(member, bundle.renderFor(member.getId())));
+        // An engine that only messages keeps exactly today's call (and prompt).
+        EngagementBrainClient.Decision d = menu == null || menu.isEmpty()
+                ? brain.decide(engine, prompt.getCompiledText(), blocks, now, enabledChannels, whatsappTemplates)
+                : brain.decide(engine, prompt.getCompiledText(), blocks, now, enabledChannels, whatsappTemplates, menu);
+
+        // 3b. B6: a CRM action (follow-up, note, escalation, status, AI call) becomes an inbox task
+        // a person approves, after the server checks it (allow-list, the action's own rules). WAIT is
+        // a NO_OP. A proposal that fails the check is recorded as a NO_OP with the reason.
+        String crmType = d.actionType() != null ? d.actionType().trim().toUpperCase() : null;
+        if ("ACT".equalsIgnoreCase(d.decision()) && EngagementActionTypes.isCrmAction(crmType)) {
+            String phone = subject != null ? subject.getPhone() : null;
+            String rejected = crmActions == null ? "CRM actions are not available"
+                    : crmActions.validateProposal(engine, member, phone, crmType, d.actionParams());
+            EngagementAction action = new EngagementAction();
+            action.setEngineId(engine.getId());
+            action.setMemberId(member.getId());
+            action.setInstituteId(engine.getInstituteId());
+            action.setPromptVersionId(prompt.getId());
+            if (rejected == null) {
+                action.setKind("TASK");
+                action.setActionType(crmType);
+                action.setStatus(dryRun ? "SIMULATED" : "OPEN");
+                action.setDraftBody(cap(crmActions.describe(engine, member, phone, crmType, d.actionParams())));
+                action.setVariablesJson(crmActions.taskVariables(d.actionParams()));
+                action.setRationale(cap(d.rationale()));
+                double priority = EngagementActionTypes.ESCALATE.equals(crmType) ? Math.max(d.priority(), 80) : d.priority();
+                action.setPriority(BigDecimal.valueOf(Math.max(0, Math.min(100, priority))));
+                action.setScheduledFor(now);
+                action.setExpiresAt(now.plus(Duration.ofHours(taskExpireHours)));
+                member.setConsecutiveNoOps((short) 0);
+            } else {
+                log.info("Engine {}: {} proposed for member {} not drafted: {}", engine.getId(), crmType,
+                        member.getId(), rejected);
+                action.setKind("NO_OP");
+                action.setStatus("DONE");
+                action.setRationale(cap("Proposed " + crmType + ", not drafted: " + rejected + " " + nullToEmpty(d.rationale())));
+                member.setConsecutiveNoOps((short) Math.min(member.getConsecutiveNoOps() + 1, 10));
+            }
+            actionRepository.save(action);
+            if (rejected == null && !dryRun) {
+                // B7: an action type the admin set to run on its own, graduated (S7), with no kill
+                // switch (S6), hold or credit problem, runs now; otherwise it stays this inbox task.
+                crmActions.tryAutonomous(action, engine, member, phone, coordinated.hold(),
+                        humanTouchedSinceLastDecision(member), false);
+            }
+            return recordAndFinish(member, engine, d, fingerprint, heldLease, now);
+        }
 
         // 4. Persist the outcome — TASK (or SIMULATED for DRY_RUN) or NO_OP.
         // Enforce the channel enablement server-side, not just in the prompt: a model that ignores
@@ -239,7 +326,7 @@ public class EngagementDecisionService {
             int hoursOut = d.scheduleInHours() != null
                     ? Math.min(Math.max(d.scheduleInHours(), 0), maxScheduleHours) : 0;
             Instant proposed = now.plus(Duration.ofHours(hoursOut));
-            Instant scheduledFor = policyGate.clampToAllowedWindow(engine, proposed);
+            Instant scheduledFor = policyGate.scheduleSend(engine, proposed, sendTiming(engine, member, bundle));
 
             EngagementAction action = new EngagementAction();
             action.setEngineId(engine.getId());
@@ -260,7 +347,10 @@ public class EngagementDecisionService {
             if ("WHATSAPP".equals(action.getChannel())) {
                 attachWhatsAppTemplate(action, d, templatesByName);
             }
-            if ("EMAIL".equals(action.getChannel()) && d.subject() != null && !d.subject().isBlank()) {
+            boolean emailTemplateOnly = "EMAIL".equals(action.getChannel()) && menu != null && menu.emailTemplates() != null;
+            if (emailTemplateOnly) {
+                attachEmailTemplate(action, d, engine);
+            } else if ("EMAIL".equals(action.getChannel()) && d.subject() != null && !d.subject().isBlank()) {
                 action.setVariablesJson(writeJson(Map.of(EngagementDispatcher.VAR_SUBJECT,
                         oneLine(d.subject(), MAX_SUBJECT_CHARS))));
             }
@@ -269,9 +359,12 @@ public class EngagementDecisionService {
             // it has GRADUATED (>= first_n human-approved sends), the draft is actually sendable
             // (WhatsApp needs an attached approved template), and it's not a dry run. Otherwise it's a
             // copilot TASK exactly as before. A dry run is always SIMULATED (never sends, never caps).
-            boolean draftReady = !"WHATSAPP".equals(chosenChannel) || action.getTemplateName() != null;
+            boolean draftReady = (!"WHATSAPP".equals(chosenChannel) || action.getTemplateName() != null)
+                    && (!emailTemplateOnly || action.getTemplateName() != null);
             boolean autoSend = !dryRun
                     && !everReplied(bundle, member)
+                    && !humanTouchedSinceLastDecision(member)
+                    && coordinated.hold() == null      // B5: counsellor active, follow-up today, do-not-automate
                     && chosenChannel != null
                     && !"AI_CALL".equals(chosenChannel)   // AI calls are task-only; never auto-send them
                     && channelAutoEnabled(engine, chosenChannel)
@@ -297,6 +390,12 @@ public class EngagementDecisionService {
             member.setConsecutiveNoOps((short) Math.min(member.getConsecutiveNoOps() + 1, 10));
         }
 
+        return recordAndFinish(member, engine, d, fingerprint, heldLease, now);
+    }
+
+    /** The decision is made: stamp it and schedule the next look (shared by messages and CRM actions). */
+    private boolean recordAndFinish(EngagementMember member, EngagementEngine engine, EngagementBrainClient.Decision d,
+                                    String fingerprint, Instant heldLease, Instant now) {
         member.setLastDecidedAt(now);
         member.setWakeFingerprint(fingerprint);
         member.setConsecutiveFailures((short) 0); // reached a real decision — clear the failure backoff
@@ -325,6 +424,51 @@ public class EngagementDecisionService {
             if (c != null && !c.isNull() && parseInstant(c.path("lastReplyAt").asText(null)) != null) return true;
         }
         return false;
+    }
+
+    /**
+     * A counsellor wrote a note, closed a follow-up or called the lead since the engine last decided:
+     * this decision drafts for the inbox and never auto-sends, so the family does not hear from the
+     * engine minutes after they spoke to a person.
+     */
+    static boolean humanTouchedSinceLastDecision(EngagementMember m) {
+        return m.getHumanTouchAt() != null
+                && (m.getLastDecidedAt() == null || m.getHumanTouchAt().isAfter(m.getLastDecidedAt()));
+    }
+
+    private static String nullToEmpty(String s) {
+        return s == null ? "" : s;
+    }
+
+    /**
+     * B6 template-only email: attach the approved template the brain chose, rendered with its
+     * variables, so the inbox shows exactly what will be sent. Left unattached (a task a person must
+     * fix, never an auto-send) when the template is unknown, a variable is missing or it no longer
+     * fits the brief.
+     */
+    private void attachEmailTemplate(EngagementAction action, EngagementBrainClient.Decision d, EngagementEngine engine) {
+        String name = d.templateName();
+        if (name == null || name.isBlank() || emailCatalog == null) {
+            action.setErrorMessage("Template-only email: no approved template chosen.");
+            return;
+        }
+        Map<String, String> vars = d.variables() != null ? d.variables() : Map.of();
+        var rendered = emailCatalog.render(engine.getId(), engine.getInstituteId(), name, vars).orElse(null);
+        if (rendered == null) {
+            action.setErrorMessage("Template-only email: '" + oneLine(name, 80) + "' is not an approved template.");
+            return;
+        }
+        if (!rendered.sendable()) {
+            action.setErrorMessage("Template-only email not sendable: missing " + rendered.missingVariables()
+                    + (rendered.problems() != null && !rendered.problems().isEmpty() ? "; " + rendered.problems() : ""));
+            return;
+        }
+        Map<String, String> stored = new java.util.LinkedHashMap<>(vars);
+        stored.put(EngagementDispatcher.VAR_EMAIL_TEMPLATE, rendered.templateId());
+        stored.put(EngagementDispatcher.VAR_SUBJECT, oneLine(rendered.subject() != null ? rendered.subject() : "", MAX_SUBJECT_CHARS));
+        action.setTemplateName(rendered.templateName());
+        action.setVariablesJson(writeJson(stored));
+        action.setDraftBody(cap(rendered.text()));
     }
 
     /** channels.maxTouches: the most messages one person gets from this engine; null = no limit. */
@@ -518,9 +662,74 @@ public class EngagementDecisionService {
     private boolean shouldWake(EngagementMember m, EngagementEngine engine, String fingerprint,
                                DataPointRegistry.CohortBundle bundle, Instant now) {
         if (m.getLastDecidedAt() == null) return true;                    // first look
+        if (wokenSinceLastDecision(m)) return true;                       // CRM activity asked for a look
         if (hasUnansweredReply(bundle, m)) return true;                   // always
         if (!fingerprint.equals(m.getWakeFingerprint())) return true;     // state moved (banded)
         return cadenceElapsed(m, engine, now);                            // THE CLOCK — never remove
+    }
+
+    /**
+     * When CRM activity woke this member, say so first, so the model answers what just happened
+     * (a re-enquiry is someone who came back) rather than treating it as a routine check.
+     */
+    static Map<String, String> withWhyNow(EngagementMember m, Map<String, String> blocks) {
+        if (!wokenSinceLastDecision(m) || m.getWakeReason() == null) return blocks;
+        Map<String, String> out = new java.util.LinkedHashMap<>();
+        out.put("why_now", "WHY NOW: " + whyNow(m.getWakeReason()) + " (at " + m.getWokenAt() + ")."
+                + (humanTouchedSinceLastDecision(m)
+                        ? " A counsellor was in touch since your last look: draft for them, do not repeat what they said."
+                        : ""));
+        out.putAll(blocks);
+        return out;
+    }
+
+    private static String whyNow(String reason) {
+        return switch (reason) {
+            case EngagementWakeService.NOTE -> "a counsellor added a note on this lead";
+            case EngagementWakeService.HUMAN_CALL -> "a counsellor called this lead";
+            case EngagementWakeService.AI_CALL -> "an AI call with this lead just ended";
+            case EngagementWakeService.CALL_ANALYZED -> "the analysis of a call with this lead is in";
+            case EngagementWakeService.FOLLOWUP -> "a counsellor scheduled or closed a follow-up";
+            case EngagementWakeService.FOLLOWUP_OVERDUE -> "a follow-up promised to this lead is overdue";
+            case EngagementWakeService.STATUS -> "the lead's status changed";
+            case EngagementWakeService.OWNER_CHANGED -> "the lead's counsellor changed";
+            case EngagementWakeService.RE_ENQUIRY -> "this person came back and enquired again";
+            case EngagementWakeService.LIST_CHANGED -> "the lead moved between lead lists";
+            case EngagementWakeService.PAYMENT -> "a payment was received from this lead";
+            default -> "CRM activity on this lead";
+        };
+    }
+
+    /** B5: when the decision may only draft, say why, so the draft is written for the counsellor. */
+    static Map<String, String> withCoordination(EngagementCoordinationService.Verdict v, Map<String, String> blocks) {
+        String why = EngagementCoordinationService.explain(v.hold());
+        if (why == null) return blocks;
+        Map<String, String> out = new java.util.LinkedHashMap<>();
+        out.put("coordination", "HOLD: " + why + ". Anything you propose goes to the counsellor's inbox as a"
+                + " draft, not to the lead; prefer helping the counsellor over a new message.");
+        out.putAll(blocks);
+        return out;
+    }
+
+    /** A note, call outcome, status change... (B4) landed after the last decision began. */
+    static boolean wokenSinceLastDecision(EngagementMember m) {
+        return m.getWokenAt() != null
+                && (m.getLastDecidedAt() == null || m.getWokenAt().isAfter(m.getLastDecidedAt()));
+    }
+
+    /**
+     * How this decision's send is timed: an answer to someone who wrote in goes as soon as quiet
+     * hours allow; a new person's first touch goes right away (unless the engine waits for its send
+     * window); everything else is planned outreach and waits for the engine's send window.
+     */
+    private PolicyGate.SendTiming sendTiming(EngagementEngine engine, EngagementMember m,
+                                             DataPointRegistry.CohortBundle bundle) {
+        if (hasUnansweredReply(bundle, m)) return PolicyGate.SendTiming.REPLY;
+        if (m.getLastDecidedAt() == null
+                && EngagementSendSchedule.of(engine.getQuietHours(), objectMapper).firstTouchImmediate()) {
+            return PolicyGate.SendTiming.ANYTIME;
+        }
+        return PolicyGate.SendTiming.PLANNED;
     }
 
     private boolean hasUnansweredReply(DataPointRegistry.CohortBundle bundle, EngagementMember m) {
@@ -548,11 +757,9 @@ public class EngagementDecisionService {
         return m.getLastDecidedAt().plus(Duration.ofHours(cappedHours)).isBefore(now);
     }
 
-    private void reschedule(EngagementMember m, EngagementEngine engine, Instant now, boolean capped) {
-        long hours = capped
-                ? Duration.ofDays(1).toHours()                 // capped: try tomorrow
-                : Math.max(engine.getCadenceHours() / 4, 6);   // gate said sleep: re-check fraction of cadence
-        m.setNextActionAt(now.plus(Duration.ofHours(hours)));
+    /** Contact cap reached: try tomorrow. (A gate sleep goes through recordGateSleep instead.) */
+    private void rescheduleCapped(EngagementMember m, Instant now) {
+        m.setNextActionAt(now.plus(Duration.ofDays(1)));
         memberRepository.save(m);
     }
 
@@ -562,7 +769,60 @@ public class EngagementDecisionService {
      * never skips where it matters: the saving would anti-correlate with the value.
      * NOTE: no prompt version in here — one admin edit must not re-decide every member at once.
      */
-    private String quantizedFingerprint(Map<String, JsonNode> payloads) {
+    String quantizedFingerprint(Map<String, JsonNode> payloads) {
+        StringBuilder sb = legacyFingerprintText(payloads);
+        crmBands(payloads, sb);
+        return sha256(sb.toString());
+    }
+
+    /** The fingerprint as computed before the CRM bands, so a stored one can be recognised. */
+    String legacyFingerprint(Map<String, JsonNode> payloads) {
+        return sha256(legacyFingerprintText(payloads).toString());
+    }
+
+    /**
+     * B4 safety net for a missed wake: what a person last did on the lead. These are event times,
+     * not "time since", so they only change when something new happens: the newest staff timeline
+     * entry, the open follow-ups (count, any overdue) and the last closed one, the newest call and
+     * whether its analysis is in. Only present when the engine reads those data points.
+     */
+    static void crmBands(Map<String, JsonNode> payloads, StringBuilder sb) {
+        JsonNode timeline = payloads.get("crm_timeline");
+        if (timeline != null) {
+            String newestStaff = "";
+            for (JsonNode e : timeline.path("events")) {
+                String at = e.path("at").asText("");
+                if ("STAFF".equals(e.path("by").asText()) && at.compareTo(newestStaff) > 0) newestStaff = at;
+            }
+            sb.append("|staff:").append(newestStaff);
+        }
+        JsonNode followups = payloads.get("crm_followups");
+        if (followups != null) {
+            int open = 0;
+            boolean overdue = false;
+            for (JsonNode o : followups.path("open")) {
+                open++;
+                overdue |= o.path("overdue").asBoolean(false);
+            }
+            sb.append("|fu:").append(countBand(open)).append(overdue ? "/late" : "")
+              .append("/closed:").append(followups.path("lastClosed").path("closedAt").asText(""));
+        }
+        JsonNode calls = payloads.get("ai_calls");
+        if (calls != null) {
+            String newestAt = "";
+            String analysis = "";
+            for (JsonNode c : calls.path("calls")) {
+                String at = c.path("at").asText("");
+                if (at.compareTo(newestAt) > 0) {
+                    newestAt = at;
+                    analysis = c.path("analysis").asText("");
+                }
+            }
+            sb.append("|call:").append(newestAt).append("/").append(analysis);
+        }
+    }
+
+    private StringBuilder legacyFingerprintText(Map<String, JsonNode> payloads) {
         StringBuilder sb = new StringBuilder();
         JsonNode ledger = payloads.get("ledger");
         if (ledger != null) {
@@ -596,7 +856,7 @@ public class EngagementDecisionService {
         if (crm != null) {
             sb.append("|lead:").append(crm.path("status").asText("")).append("/").append(crm.path("tier").asText(""));
         }
-        return sha256(sb.toString());
+        return sb;
     }
 
     /** Days-since bucketed 0/1/3/7/14/30+ — the quantization that keeps active users from thrashing the gate. */

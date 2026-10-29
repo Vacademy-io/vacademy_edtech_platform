@@ -80,7 +80,30 @@ public class EngagementReplyResponder {
 
     /** Mentions stopping or disinterest without an explicit opt-out: a human reads it, never the bot. */
     static final Pattern STOP_MENTION = Pattern.compile(
-            "(?i)(?:^|[^\\p{L}])(stop|stopped|not interested|no interest|leave me|spam)(?:$|[^\\p{L}])");
+            "(?i)(?:^|[^\\p{L}])(stop|stopped|not interested|no interest|leave me|spam"
+            + "|interested nahi|interest nahi|nahi chahiye|call mat (?:karo|karna|kijiye)|disturb mat)(?:$|[^\\p{L}])");
+
+    /**
+     * The whole message is a plain "not interested" (en + Hinglish), with at most a greeting or a
+     * "sorry / thanks / sir" around it. This is the high-confidence case the design lets exit the
+     * lead; anything longer or qualified ("not interested in the morning batch", "abhi nahi")
+     * stays a STOP_MENTION for a human to read.
+     */
+    static final Pattern NOT_INTERESTED_CLEAR = Pattern.compile(
+            "(?i)^\\W*(?:(?:no|nope|nahi|nhi|sorry|thanks|thank you|thanku|ok|okay|sir|mam|ma'am|madam|ji|bhai)\\W+)*"
+            + "(?:i am |i'm |im |we are |we're )?"
+            + "(?:not interested|not intrested|no interest|interested nahi(?: hai| hu| hoon| hun| hain)?"
+            + "|interest nahi(?: hai| hain)?|nahi chahiye|mujhe nahi chahiye|zarurat nahi(?: hai)?)"
+            + "(?:\\W+(?:sorry|thanks|thank you|thanku|sir|mam|ma'am|madam|ji|bhai|bye))*\\W*$");
+
+    /**
+     * Asks to be called (back, later, at a time). A person answers it: an auto-reply would promise
+     * a call nobody schedules. en + Hinglish.
+     */
+    static final Pattern CALLBACK = Pattern.compile(
+            "(?i)(?:^|[^\\p{L}])(call (?:me )?back|callback|call (?:me )?(?:later|tomorrow)"
+            + "|(?:baad|bad) (?:mein|me|main) (?:call|phone|baat)|kal (?:call|phone|baat)"
+            + "|(?:call|phone) (?:karo|karna|kijiye|kar do|kar dena) (?:baad|kal|shaam|subah))(?:$|[^\\p{L}])");
 
     /**
      * Links in a drafted auto-answer: schemed URLs, www.-prefixed, AND bare domain/path tokens
@@ -109,6 +132,13 @@ public class EngagementReplyResponder {
      */
     @Autowired(required = false)
     private EngagementReplyMemberQueries replyMemberQueries;
+
+    /** CRM mirror and exits for opt-out / not interested. Optional so the constructor stays as it was. */
+    @Autowired(required = false)
+    private EngagementLeadOutcomeService outcomeService;
+
+    private static final com.fasterxml.jackson.databind.ObjectMapper JSON =
+            new com.fasterxml.jackson.databind.ObjectMapper();
 
     /** Handle one inbound reply. Returns true if it produced a reply action (answered or escalated). */
     public boolean handleReply(String instituteId, String phone, String replyText, String wamid) {
@@ -161,7 +191,9 @@ public class EngagementReplyResponder {
         // Before this, "please stop messaging me" could be auto-answered and the member stayed ACTIVE,
         // so the proactive templates kept coming (the WABA-quality risk in design §10).
         if (OPT_OUT.matcher(replyText).find()) {
+            List<EngagementReplyMemberQueries.LiveMember> reached = liveByPhone(instituteId, phone10);
             int stopped = memberRepository.optOutByPhone(instituteId, phone10, now);
+            if (outcomeService != null) outcomeService.mirrorOptOut(instituteId, reached, "WHATSAPP", replyText);
             EngagementAction note = new EngagementAction();
             note.setEngineId(engine.getId());
             note.setMemberId(cand.getMemberId());
@@ -179,6 +211,14 @@ public class EngagementReplyResponder {
             actionRepository.save(note);
             log.info("Opt-out reply for member {}: {} membership(s) opted out", cand.getMemberId(), stopped);
             return true;
+        }
+        // A plain "not interested": the lead leaves every engine it is in as a lead, and the CRM
+        // status follows. No AI answer. A learner engine keeps them: the escalation below handles it.
+        if (NOT_INTERESTED_CLEAR.matcher(replyText).find() && outcomeService != null) {
+            List<EngagementReplyMemberQueries.LiveMember> reached = liveByPhone(instituteId, phone10);
+            List<EngagementReplyMemberQueries.LiveMember> left =
+                    outcomeService.exitNotInterested(instituteId, reached, "WHATSAPP", replyText, now);
+            if (left.stream().anyMatch(m -> m.getMemberId().equals(cand.getMemberId()))) return true;
         }
         // Hold the member for the LLM window. The hold fails only if a proactive decision holds them
         // right now; answering as well would send two messages at once (the old lease claim was
@@ -293,14 +333,17 @@ public class EngagementReplyResponder {
      * A reply that no engine auto-answers. Only a request to stop is acted on here; every other
      * reply is surfaced by the sweep as before (the reply job already pulled the member due).
      * A clear opt-out opts the number out of every engine of the institute and leaves a note in the
-     * inbox. A softer mention ("not interested", "stop") becomes a human task, and the matching
-     * members are marked handled so the sweep does not draft a fresh proactive message meanwhile.
+     * inbox. A softer mention ("not interested", "stop") or a request to be called back becomes a
+     * human task, and the matching members are marked handled so the sweep does not draft a fresh
+     * proactive message meanwhile.
      */
     boolean handleStopWithoutAutoReply(String instituteId, String phone10, String replyText,
                                        String wamid, Instant now) {
         boolean optOut = OPT_OUT.matcher(replyText).find();
-        boolean stopMention = !optOut && STOP_MENTION.matcher(replyText).find();
-        if (!optOut && !stopMention) return false;
+        boolean stopMention = !optOut && (STOP_MENTION.matcher(replyText).find()
+                || NOT_INTERESTED_CLEAR.matcher(replyText).find());
+        boolean callback = !optOut && !stopMention && CALLBACK.matcher(replyText).find();
+        if (!optOut && !stopMention && !callback) return false;
         if (replyMemberQueries == null) return false;
 
         List<EngagementReplyMemberQueries.LiveMember> live =
@@ -323,6 +366,7 @@ public class EngagementReplyResponder {
 
         if (optOut) {
             int stopped = memberRepository.optOutByPhone(instituteId, phone10, now);
+            if (outcomeService != null) outcomeService.mirrorOptOut(instituteId, live, "WHATSAPP", replyText);
             note.setRationale(cap("Asked to stop messages — opted out of " + stopped
                     + " engine membership(s) for this number. No auto-reply was sent. Their message: " + replyText));
             actionRepository.save(note);
@@ -331,14 +375,142 @@ public class EngagementReplyResponder {
             return true;
         }
 
-        note.setRationale(cap("Escalated (stop-mention): they may be asking to stop or saying they are not "
-                + "interested. Read it before anyone messages them again. Their message: " + replyText));
+        // A plain "not interested" ends the lead's place in its engines. Whoever it does not end
+        // (a learner engine) still gets the human item below.
+        if (stopMention && NOT_INTERESTED_CLEAR.matcher(replyText).find() && outcomeService != null) {
+            List<EngagementReplyMemberQueries.LiveMember> left =
+                    outcomeService.exitNotInterested(instituteId, live, "WHATSAPP", replyText, now);
+            if (!left.isEmpty()) {
+                java.util.Set<String> gone = new java.util.HashSet<>();
+                left.forEach(m -> gone.add(m.getMemberId()));
+                live = live.stream().filter(m -> !gone.contains(m.getMemberId())).toList();
+                if (live.isEmpty()) return true;
+                target = live.get(0);
+                note.setEngineId(target.getEngineId());
+                note.setMemberId(target.getMemberId());
+            }
+        }
+
+        note.setRationale(cap(callback
+                ? "Escalated (callback): they asked to be called back. Schedule the call; the engine "
+                        + "drafts nothing new for them until its next check. Their message: " + replyText
+                : "Escalated (stop-mention): they may be asking to stop or saying they are not "
+                        + "interested. Read it before anyone messages them again. Their message: " + replyText));
         actionRepository.save(note);
         for (EngagementReplyMemberQueries.LiveMember m : live) {
             long cadence = m.getCadenceHours() != null ? Math.max(m.getCadenceHours(), 1) : 72;
             memberRepository.markReplyHandled(m.getMemberId(), now, now.plus(Duration.ofHours(cadence)));
         }
         return true;
+    }
+
+    /**
+     * One inbound email (design: email replies are read like WhatsApp ones). There is no email
+     * auto-reply, so a person always answers, except for the two clear cases:
+     *   - an opt-out (in the body or the subject) opts the person out of every engine reached at
+     *     this address, mirrors it into the CRM and leaves a note;
+     *   - a plain "not interested" exits the lead (see {@link EngagementLeadOutcomeService}).
+     * Anything else becomes an email REPLY task for a human, and the matching members are marked
+     * handled so the engine sends nothing new while the reply waits.
+     *
+     * @return true if the email produced an action (note, exit or task)
+     */
+    public boolean handleEmailReply(String instituteId, String email, String subject, String text,
+                                    String messageId) {
+        if (messageId == null || messageId.isBlank() || replyMemberQueries == null) return false;
+        String from = email != null ? email.trim().toLowerCase(Locale.ROOT) : "";
+        if (from.isEmpty() || !from.contains("@")) return false;
+        String topic = subject != null ? subject.replaceAll("(?i)^\\s*((re|fwd?|aw)\\s*:\\s*)+", "").trim() : "";
+        String body = text != null && !text.isBlank() ? text.trim() : topic;
+        if (body.isEmpty()) return false;
+
+        List<EngagementReplyMemberQueries.LiveMember> live = replyMemberQueries.findLiveMembersByEmail(instituteId, from);
+        if (live.isEmpty()) return false;
+        Instant now = Instant.now();
+        if (memberRepository.claimHandledReply(instituteId, replyKey(messageId), now) == 0) return false;
+
+        EngagementReplyMemberQueries.LiveMember target = live.get(0);
+        EngagementAction note = new EngagementAction();
+        note.setInstituteId(instituteId);
+        note.setKind("REPLY");
+        note.setActionType("SEND_MESSAGE");
+        note.setChannel("EMAIL");
+        note.setStatus("OPEN");
+        note.setScheduledFor(now);
+        note.setExpiresAt(now.plus(Duration.ofHours(taskExpireHours)));
+
+        if (OPT_OUT.matcher(body).find() || (!topic.isEmpty() && OPT_OUT.matcher(topic).find())) {
+            int stopped = memberRepository.optOutMembers(live.stream().map(m -> m.getMemberId()).toList(), now);
+            if (outcomeService != null) outcomeService.mirrorOptOut(instituteId, live, "EMAIL", body);
+            note.setEngineId(target.getEngineId());
+            note.setMemberId(target.getMemberId());
+            note.setPriority(BigDecimal.valueOf(85));
+            note.setRationale(cap("Asked by email to stop — opted out of " + stopped
+                    + " engine membership(s) for this address. Their message: " + body));
+            actionRepository.save(note);
+            log.info("Opt-out email for member {}: {} membership(s) opted out", target.getMemberId(), stopped);
+            return true;
+        }
+
+        if (NOT_INTERESTED_CLEAR.matcher(body).find() && outcomeService != null) {
+            List<EngagementReplyMemberQueries.LiveMember> left =
+                    outcomeService.exitNotInterested(instituteId, live, "EMAIL", body, now);
+            if (!left.isEmpty()) {
+                java.util.Set<String> gone = new java.util.HashSet<>();
+                left.forEach(m -> gone.add(m.getMemberId()));
+                live = live.stream().filter(m -> !gone.contains(m.getMemberId())).toList();
+                if (live.isEmpty()) return true;
+                target = live.get(0);
+            }
+        }
+
+        String label = STOP_MENTION.matcher(body).find() || NOT_INTERESTED_CLEAR.matcher(body).find() ? "stop-mention"
+                : CALLBACK.matcher(body).find() ? "callback"
+                : ESCALATE_TRIPWIRE.matcher(body).find() ? "money/complaint" : null;
+        note.setEngineId(target.getEngineId());
+        note.setMemberId(target.getMemberId());
+        note.setPriority(BigDecimal.valueOf(label != null ? 85 : 75));
+        note.setVariablesJson(subjectVariables(topic));
+        note.setRationale(cap("Replied by email" + (label != null ? " (" + label + ")" : "")
+                + ". Answer them by email; the engine sends nothing new until its next check. Their message: "
+                + body));
+        actionRepository.save(note);
+        for (EngagementReplyMemberQueries.LiveMember m : live) {
+            long cadence = m.getCadenceHours() != null ? Math.max(m.getCadenceHours(), 1) : 72;
+            memberRepository.markReplyHandled(m.getMemberId(), now, now.plus(Duration.ofHours(cadence)));
+        }
+        return true;
+    }
+
+    /** The handled-reply key of a message: Message-IDs can outgrow the 255-char key column. */
+    static String replyKey(String messageId) {
+        if (messageId.length() <= 255) return messageId;
+        try {
+            byte[] h = java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(messageId.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            return "sha256:" + java.util.HexFormat.of().formatHex(h);
+        } catch (java.security.NoSuchAlgorithmException e) {
+            return messageId.substring(0, 255);
+        }
+    }
+
+    private static String subjectVariables(String topic) {
+        try {
+            return JSON.writeValueAsString(java.util.Map.of(EngagementDispatcher.VAR_SUBJECT,
+                    topic.isEmpty() ? "Re: your message" : "Re: " + topic));
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private List<EngagementReplyMemberQueries.LiveMember> liveByPhone(String instituteId, String phone10) {
+        if (replyMemberQueries == null) return List.of();
+        try {
+            return replyMemberQueries.findLiveMembersByPhone(instituteId, phone10);
+        } catch (Exception e) {
+            log.warn("Live member lookup failed for a reply in institute {}: {}", instituteId, e.getMessage());
+            return List.of();
+        }
     }
 
     private void createEscalationTask(EngagementEngine engine,
@@ -368,8 +540,11 @@ public class EngagementReplyResponder {
         if (inbound.length() >= 100 && inbound.endsWith("...")) {
             return "Reply text appears truncated — a human should read the full message.";
         }
-        if (STOP_MENTION.matcher(inbound).find()) {
+        if (STOP_MENTION.matcher(inbound).find() || NOT_INTERESTED_CLEAR.matcher(inbound).find()) {
             return "Reply may be asking to stop or saying they are not interested — human review required.";
+        }
+        if (CALLBACK.matcher(inbound).find()) {
+            return "Reply asks for a call back — a person should schedule the call.";
         }
         if (ESCALATE_TRIPWIRE.matcher(inbound).find()) {
             return "Reply mentions money/anger/legal terms — human review required.";

@@ -146,11 +146,12 @@ const EMPTY_COUNTS: Record<FollowUpBucket, number> = {
 const toWindowParams = (
     b: FollowUpBucket,
     now: Date = new Date(),
-    due: { from?: string; to?: string } = {}
+    due: { from?: string; to?: string } = {},
+    byDate = false
 ) => {
     // Today is already one day, so the due-date filter has nothing to narrow there — and
     // it is hidden on that tile, so a range set elsewhere must not quietly empty it.
-    const w = intersectWindows(bucketWindow(b, now), b === 'today' ? {} : due);
+    const w = intersectWindows(bucketWindow(b, now, byDate), b === 'today' ? {} : due);
     return { follow_up_from: w.from, follow_up_to: w.to };
 };
 /** "All time" on the Completed range — completedWindow() reads it as no window. */
@@ -262,6 +263,9 @@ const FollowUpsContent = () => {
 
     const leadSettings = useLeadSettings();
     const showOps = !leadSettings.isLoading && leadSettings.enabled;
+    // Lead settings → "Overdue by date, not time": Overdue/Today split at the start of
+    // today instead of now — tiles, list and export all take the same windows.
+    const overdueByDate = leadSettings.followUpFields.overdueByDate;
     const showScore = showOps && leadSettings.showScoreInEnquiryTable;
     const { statuses: leadStatusCatalog } = useLeadStatuses();
 
@@ -527,6 +531,7 @@ const FollowUpsContent = () => {
             effectiveCounsellorId,
             completedParams,
             dueWindow,
+            overdueByDate,
         ],
         queryFn: async () => {
             const buckets: FollowUpBucket[] = ['overdue', 'today', 'upcoming', 'all'];
@@ -538,7 +543,7 @@ const FollowUpsContent = () => {
                     buckets.map((b) =>
                         fetchRecentLeads({
                             ...baseFilter,
-                            ...toWindowParams(b, now, dueWindow),
+                            ...toWindowParams(b, now, dueWindow, overdueByDate),
                             page: 0,
                             size: 1,
                         })
@@ -562,11 +567,11 @@ const FollowUpsContent = () => {
     });
 
     const { data, isLoading, error } = useQuery({
-        queryKey: ['follow-ups', 'list', baseFilter, bucket, page, view, dueWindow],
+        queryKey: ['follow-ups', 'list', baseFilter, bucket, page, view, dueWindow, overdueByDate],
         queryFn: () =>
             fetchRecentLeads({
                 ...baseFilter,
-                ...toWindowParams(bucket, undefined, dueWindow),
+                ...toWindowParams(bucket, undefined, dueWindow, overdueByDate),
                 page: view === 'calendar' ? 0 : page,
                 // The calendar lets the user jump to any day, so it needs the whole bucket
                 // rather than one page of it.
@@ -895,7 +900,7 @@ const FollowUpsContent = () => {
             return;
         }
 
-        const window = toWindowParams(bucket, undefined, dueWindow);
+        const window = toWindowParams(bucket, undefined, dueWindow, overdueByDate);
         startBackgroundExport({
             key: 'follow-ups',
             fileName,

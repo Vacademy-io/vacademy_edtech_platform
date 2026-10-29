@@ -13,14 +13,17 @@ import {
     editPrompt,
     editTemplate,
     enrollEngine,
+    getChannelReadiness,
     getDataPointCatalog,
     getEngine,
+    getTaskPeople,
     listEngines,
     listTasks,
     listTemplates,
     recommendTemplates,
     reopenTask,
     requestAlternatives,
+    restoreTask,
     sendTask,
     setAutonomy,
     submitTemplate,
@@ -59,6 +62,19 @@ export const useEngine = (engineId: string | undefined) => {
         queryFn: () => getEngine(engineId as string, instituteId),
         enabled: !!instituteId && !!engineId,
         staleTime: 15 * 1000,
+    });
+};
+
+/** Which channels the institute has set up. Refetched on window focus, so coming back from
+ *  Settings after connecting WhatsApp updates the wizard without a reload. */
+export const useChannelReadiness = (emailType?: string) => {
+    const instituteId = getInstituteId() || '';
+    return useQuery({
+        queryKey: ['engagementChannelReadiness', instituteId, emailType ?? ''],
+        queryFn: () => getChannelReadiness(instituteId, emailType),
+        enabled: !!instituteId,
+        staleTime: 30 * 1000,
+        refetchOnWindowFocus: true,
     });
 };
 
@@ -175,6 +191,23 @@ export const useTasks = (statuses: string, page: number, size: number) => {
     });
 };
 
+/** People behind the tasks on screen, as a memberId → person map. Missing = still loading or failed. */
+export const useTaskPeople = (memberIds: string[]) => {
+    const instituteId = getInstituteId() || '';
+    const ids = Array.from(new Set(memberIds)).sort();
+    return useQuery({
+        queryKey: ['engagementTaskPeople', instituteId, ids],
+        queryFn: async () => {
+            const people = await getTaskPeople(instituteId, ids);
+            return Object.fromEntries(people.map((p) => [p.memberId, p]));
+        },
+        enabled: !!instituteId && ids.length > 0,
+        staleTime: 5 * 60 * 1000,
+        // An older backend has no /people: the inbox simply keeps showing engine names.
+        retry: false,
+    });
+};
+
 export const useTaskAction = () => {
     const { t } = useTranslation('engagementEnginesHooks');
     const qc = useQueryClient();
@@ -186,7 +219,7 @@ export const useTaskAction = () => {
             editedBody,
         }: {
             taskId: string;
-            verb: 'ack' | 'done' | 'dismiss' | 'reopen' | 'send';
+            verb: 'ack' | 'done' | 'dismiss' | 'reopen' | 'restore' | 'send';
             editedBody?: string;
         }) => {
             switch (verb) {
@@ -198,6 +231,8 @@ export const useTaskAction = () => {
                     return dismissTask(taskId, instituteId);
                 case 'reopen':
                     return reopenTask(taskId, instituteId);
+                case 'restore':
+                    return restoreTask(taskId, instituteId);
                 case 'send':
                     return sendTask(taskId, instituteId, editedBody);
             }
@@ -219,8 +254,25 @@ export const useTaskAction = () => {
                 done: t('taskAction.done'),
                 dismiss: t('taskAction.dismiss'),
                 reopen: t('taskAction.reopen'),
+                restore: t('taskAction.restore'),
                 send: t('taskAction.send'),
             };
+            // Done and Dismiss take the task out of the inbox, so they offer an Undo.
+            if (vars.verb === 'done' || vars.verb === 'dismiss') {
+                toast.success(msg[vars.verb], {
+                    action: {
+                        label: t('taskAction.undo'),
+                        onClick: () =>
+                            restoreTask(vars.taskId, instituteId)
+                                .then(() => toast.success(t('taskAction.restore')))
+                                .catch((e) => toast.error(errMsg(e, t('toast.taskActionFailed'))))
+                                .finally(() =>
+                                    qc.invalidateQueries({ queryKey: ['engagementTasks'] })
+                                ),
+                    },
+                });
+                return;
+            }
             toast.success(msg[vars.verb] ?? t('taskAction.default'));
         },
         onError: (e) => {

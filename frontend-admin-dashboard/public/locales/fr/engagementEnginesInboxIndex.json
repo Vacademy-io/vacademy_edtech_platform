@@ -13,9 +13,7 @@
     "errors": {
         "loadFailed": "Impossible de charger les tâches."
     },
-    "emptyState": "Rien à afficher pour le moment.",
     "noDraft": "(aucun brouillon)",
-    "priority": "priorité {{value}}",
     "kind": {
         "reply": "Réponse",
         "autoSend": "Envoi auto",
@@ -23,11 +21,12 @@
     },
     "actions": {
         "reviewAndSend": "Vérifier et envoyer",
-        "acknowledge": "Accuser réception",
-        "handledElsewhere": "Traité ailleurs",
+        "acknowledge": "Je m'en occupe",
+        "handledElsewhere": "Marquer comme fait",
         "dismiss": "Ignorer",
         "reopen": "Rouvrir",
-        "cancel": "Annuler"
+        "cancel": "Annuler",
+        "restore": "Remettre dans la boîte"
     },
     "sendDialog": {
         "heading": "Vérifier et envoyer",
@@ -39,20 +38,19 @@
     },
     "needsTemplate": "WhatsApp ne peut envoyer qu’un modèle approuvé, et cette tâche n’en a pas. Traitez-la autrement ou ignorez-la.",
     "toolbar": {
-        "search": "Search drafts, reasons, engines or templates",
+        "search": "Rechercher des personnes, messages ou moteurs",
         "allEngines": "All engines",
         "allChannels": "All channels",
         "allKinds": "All kinds",
         "kindTask": "Tasks only",
         "kindReply": "Replies only",
-        "kindSend": "Auto-sends only",
+        "kindSend": "Envois auto échoués",
         "sortPriority": "Priority first",
         "sortOldest": "Oldest first",
         "sortNewest": "Newest first",
         "pageNote": "Search and filters apply to the tasks on this page."
     },
     "filteredEmpty": "No tasks on this page match these filters.",
-    "priorityShort": "P{{value}}",
     "age": {
         "minutes": "{{count}}m",
         "hours": "{{count}}h",
@@ -73,7 +71,39 @@
         "completedAt": "Completed",
         "outcome": "Outcome",
         "openEngine": "Open engine",
-        "draftedAgo": "Drafted {{age}} ago"
+        "draftedAgo": "Drafted {{age}} ago",
+        "variableN": "Valeur {{n}}",
+        "fromEngine": "De {{engine}}"
     },
-    "footnote": "A send whose delivery can’t be confirmed moves to Failed. Dry-run drafts stay in their own bucket and are never sent."
+    "footnote": "A send whose delivery can’t be confirmed moves to Failed. Dry-run drafts stay in their own bucket and are never sent.",
+    "retry": "Réessayer",
+    "priorityLevel": {
+        "high": "Haute",
+        "medium": "Moyenne",
+        "low": "Basse"
+    },
+    "priorityChip": "Priorité {{level}}",
+    "empty": {
+        "goToEngines": "Aller aux moteurs",
+        "needsAction": {
+            "title": "Tout est à jour",
+            "text": "Les nouveaux messages apparaissent ici quand un moteur actif fait le point sur quelqu'un."
+        },
+        "sent": {
+            "title": "Rien envoyé pour le moment",
+            "text": "Les messages envoyés par vous ou les moteurs apparaissent ici."
+        },
+        "failed": {
+            "title": "Aucun message en échec",
+            "text": "Les messages qui n'ont pas pu être remis apparaissent ici."
+        },
+        "handled": {
+            "title": "Rien de traité pour le moment",
+            "text": "Les tâches marquées comme faites ou ignorées apparaissent ici. Vous pouvez les remettre."
+        },
+        "dryRun": {
+            "title": "Aucun brouillon d'essai",
+            "text": "Lancez un essai à blanc sur un moteur pour voir ce qu'il enverrait, sans rien envoyer."
+        }
+    }
 }

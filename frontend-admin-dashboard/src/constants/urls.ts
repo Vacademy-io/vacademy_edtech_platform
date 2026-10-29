@@ -1177,6 +1177,8 @@ export const REFERRAL_API_BASE = `${BASE_URL}/admin-core-service/v1/referral-opt
 export const REFERRAL_UPDATE = (referralOptionId: string) =>
     `${BASE_URL}/admin-core-service/v1/referral-option/${referralOptionId}`;
 export const REFERRAL_DELETE = `${BASE_URL}/admin-core-service/v1/referral-option`;
+// One member's referral code, link and referrals (admin student profile)
+export const GET_MEMBER_REFERRAL = `${BASE_URL}/admin-core-service/v1/referral-link/member`;
 
 export const GET_INSITITUTE_SETTINGS = `${BASE_URL}/admin-core-service/institute/setting/v1/get`;
 export const SAVE_INSTITUTE_SETTING = `${BASE_URL}/admin-core-service/institute/setting/v1/save-setting`;
@@ -1298,6 +1300,7 @@ export const ADD_SUB_ORG_MEMBER = `${BASE_URL}/admin-core-service/sub-org/v1/add
 // Sub-orgs already present in one package session (+ their admins) — powers the sub-org
 // step of the Enroll Learner wizard for org-associated batches.
 export const GET_SUB_ORGS_BY_PACKAGE_SESSION = `${BASE_URL}/admin-core-service/sub-org/v1/by-package-session`;
+export const SEARCH_SUB_ORGS = `${BASE_URL}/admin-core-service/sub-org/v1/search`;
 // Sub-org team (custom-role) endpoints — server-scoped to caller's sub-org
 export const SUB_ORG_TEAM_LIST = `${BASE_URL}/admin-core-service/sub-org/v1/team/list`;
 export const SUB_ORG_TEAM_ADD = `${BASE_URL}/admin-core-service/sub-org/v1/team/add`;
@@ -1429,6 +1432,14 @@ export const CATALOGUE_BLOG_POST_UNPUBLISH = (instituteId: string, postId: strin
     `${CATALOGUE_BLOG_BASE_URL}/post/unpublish?instituteId=${instituteId}&postId=${postId}`;
 export const CATALOGUE_BLOG_POST_ARCHIVE = (instituteId: string, postId: string) =>
     `${CATALOGUE_BLOG_BASE_URL}/post/archive?instituteId=${instituteId}&postId=${postId}`;
+// Site reviews — what visitors send through a `reviewCollector` block; approved
+// ones can show in any testimonials section set to read them.
+export const CATALOGUE_REVIEW_BASE_URL = `${BASE_URL}/admin-core-service/v1/catalogue-review`;
+export const CATALOGUE_REVIEWS = (instituteId: string) => `${CATALOGUE_REVIEW_BASE_URL}/reviews?instituteId=${instituteId}`;
+export const CATALOGUE_REVIEW = (instituteId: string, reviewId: string) =>
+    `${CATALOGUE_REVIEW_BASE_URL}/review?instituteId=${instituteId}&reviewId=${reviewId}`;
+export const CATALOGUE_REVIEW_STATUS = (instituteId: string, reviewId: string, status: string) =>
+    `${CATALOGUE_REVIEW_BASE_URL}/review/status?instituteId=${instituteId}&reviewId=${reviewId}&status=${status}`;
 // Folder libraries — admin-curated folder trees (product pages as leaves),
 // read live by the `folderBrowser` section of any of the institute's sites.
 export const FOLDER_LIBRARY_BASE_URL = `${BASE_URL}/admin-core-service/v1/folder-library`;

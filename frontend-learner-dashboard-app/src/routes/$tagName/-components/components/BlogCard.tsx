@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { ArrowRight, CalendarBlank, Clock, UserCircle } from "@phosphor-icons/react";
 import { FitImage } from "@/components/common/fit-image/FitImage";
 import type { BlogPostSummary } from "../../-services/blog-service";
+import { BlogLikeButton } from "./BlogLikeButton";
 
 /** One post as a card — the blog list, and "Related posts" under a Magazine article. */
 
@@ -28,11 +29,13 @@ export interface BlogCardProps {
   showReadingTime: boolean;
   readMoreLabel: string;
   locale: string;
+  /** Set when the section allows likes: the heart shows next to the reading time. */
+  likes?: { instituteId: string; disabled: boolean };
 }
 
 export const BlogCard: React.FC<BlogCardProps> = ({
   post, horizontal, href, onOpen, showCoverImage, showExcerpt, showDate, showAuthor, showCategory,
-  showReadingTime, readMoreLabel, locale,
+  showReadingTime, readMoreLabel, locale, likes,
 }) => {
   const { t } = useTranslation("coursePlayerB");
   const excerpt = post.excerpt || "";
@@ -100,6 +103,15 @@ export const BlogCard: React.FC<BlogCardProps> = ({
                 <Clock size={14} aria-hidden="true" /> {t("blog.minRead", { minutes: post.reading_minutes })}
               </span>
             ) : null}
+            {likes && (
+              <BlogLikeButton
+                postId={post.id}
+                instituteId={likes.instituteId}
+                likeCount={post.like_count}
+                variant="compact"
+                disabled={likes.disabled}
+              />
+            )}
           </span>
           <a
             href={href}

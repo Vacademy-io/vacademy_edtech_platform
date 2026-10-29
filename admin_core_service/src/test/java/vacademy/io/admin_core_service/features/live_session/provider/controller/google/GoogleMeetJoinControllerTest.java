@@ -93,7 +93,7 @@ class GoogleMeetJoinControllerTest {
     void hostMadeCohost() {
         role(JoinRole.HOST);
         schedule("acc-1", "spaces/abc", LINK);
-        when(meet.ensureCohost(account, "spaces/abc", "teacher@gmail.com")).thenReturn(true);
+        when(meet.ensureCohost(account, "spaces/abc", "teacher@gmail.com")).thenReturn(GoogleMeetManager.CohostResult.ADDED);
 
         GoogleJoinPayloadResponse r = controller.join("sch-1", null, user("teacher@gmail.com")).getBody();
 
@@ -101,6 +101,7 @@ class GoogleMeetJoinControllerTest {
         assertEquals(LINK, r.getJoinUrl());
         assertEquals("team@org.in", r.getOrganizerEmail());
         assertEquals("teacher@gmail.com", r.getCohostEmail());
+        assertTrue(r.isCohostJustAdded());
         verify(attendance, never()).markPresent(any(), any(), any(), any(), any());
     }
 
@@ -109,13 +110,14 @@ class GoogleMeetJoinControllerTest {
     void hostCohostRefused() {
         role(JoinRole.HOST);
         schedule("acc-1", "spaces/abc", LINK);
-        when(meet.ensureCohost(any(), any(), any())).thenReturn(false);
+        when(meet.ensureCohost(any(), any(), any())).thenReturn(GoogleMeetManager.CohostResult.FAILED);
 
         GoogleJoinPayloadResponse r = controller.join("sch-1", null, user("teacher@gmail.com")).getBody();
 
         assertEquals(LINK, r.getJoinUrl());
         assertEquals("team@org.in", r.getOrganizerEmail());
         assertNull(r.getCohostEmail());
+        assertFalse(r.isCohostJustAdded());
     }
 
     @Test
@@ -126,11 +128,13 @@ class GoogleMeetJoinControllerTest {
         UserDTO dto = new UserDTO();
         dto.setEmail("db@gmail.com");
         when(auth.getUsersFromAuthServiceByUserIds(List.of("u-1"))).thenReturn(List.of(dto));
-        when(meet.ensureCohost(account, "spaces/abc", "db@gmail.com")).thenReturn(true);
+        when(meet.ensureCohost(account, "spaces/abc", "db@gmail.com")).thenReturn(GoogleMeetManager.CohostResult.ALREADY_COHOST);
 
         GoogleJoinPayloadResponse r = controller.join("sch-1", null, user(null)).getBody();
 
         assertEquals("db@gmail.com", r.getCohostEmail());
+        // Already a co-host (e.g. added when the class was created): Meet can open at once.
+        assertFalse(r.isCohostJustAdded());
     }
 
     @Test
@@ -139,6 +143,7 @@ class GoogleMeetJoinControllerTest {
         role(JoinRole.HOST);
         schedule("acc-1", "spaces/abc", LINK);
         when(auth.getUsersFromAuthServiceByUserIds(List.of("u-1"))).thenThrow(new RuntimeException("auth down"));
+        when(meet.ensureCohost(account, "spaces/abc", null)).thenReturn(GoogleMeetManager.CohostResult.SKIPPED);
 
         GoogleJoinPayloadResponse r = controller.join("sch-1", null, user(null)).getBody();
 
@@ -151,6 +156,7 @@ class GoogleMeetJoinControllerTest {
     void noAccount() {
         role(JoinRole.HOST);
         schedule(null, "spaces/abc", LINK);
+        when(meet.ensureCohost(null, "spaces/abc", "teacher@gmail.com")).thenReturn(GoogleMeetManager.CohostResult.SKIPPED);
 
         GoogleJoinPayloadResponse r = controller.join("sch-1", null, user("teacher@gmail.com")).getBody();
 

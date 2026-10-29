@@ -247,6 +247,11 @@ export const buildComponentTemplates = (t: TFunction): Record<string, Omit<Compo
             description: t('testimonialSection.description'),
             layout: 'grid-scroll',
             testimonials: [],
+            // New sections also show approved site reviews (Reviews & feedback
+            // block); sections saved before this keep 'manual' (key absent).
+            reviewSource: 'both',
+            reviewLimit: 9,
+            reviewMinRating: 4,
             backgroundColor: '#F9FAFB', // design-lint-ignore: page-builder template default color
             textColor: '#111827', // design-lint-ignore: page-builder template default color
             styles: {
@@ -374,6 +379,24 @@ export const buildComponentTemplates = (t: TFunction): Record<string, Omit<Compo
             coverImage: '',
             height: '70vh',
             showDownload: true,
+        },
+    },
+
+    scormViewer: {
+        type: 'scormViewer',
+        enabled: true,
+        props: {
+            heading: t('scormViewer.heading'),
+            subheading: t('scormViewer.subheading'),
+            // Player wrapper URL admin-core returns for an uploaded SCORM zip —
+            // set by ScormUploadField.
+            launchUrl: '',
+            title: '',
+            height: '75vh',
+            mobileHeight: '70vh',
+            showFullScreen: true,
+            // 'book' hides the player's own controls on the page background.
+            appearance: 'book',
         },
     },
 
@@ -552,6 +575,8 @@ export const buildComponentTemplates = (t: TFunction): Record<string, Omit<Compo
             showCategory: true,
             showReadingTime: true,
             showCategoryFilter: true,
+            // Heart + count on cards and articles; off until the admin turns it on.
+            allowLikes: false,
             readMoreLabel: t('blog.readMoreLabel'),
             backLabel: t('blog.backLabel'),
             emptyMessage: t('blog.emptyMessage'),
@@ -755,6 +780,43 @@ export const buildComponentTemplates = (t: TFunction): Record<string, Omit<Compo
             frequency: 'session',
             devices: 'all',
             closeOnBackdrop: true,
+        },
+    },
+    // Reviews & feedback: asks visitors for stars + a short review. Submissions
+    // wait in Website Builder → Reviews; approved ones show in testimonials
+    // sections that read reviews. Empty texts use the built-in wording in the
+    // visitor's site language. display floatingPopup | floating | popup | inline;
+    // buttonStyle pill | icon | tab; position bottom-right | bottom-left |
+    // middle-right | middle-left; popupStyle modal | corner. formFields is the
+    // form in order: built-ins rating | reviewerName (both always, required) |
+    // reviewText | courseName | city | designation, plus custom text | textarea |
+    // select | number | email | phone; each {id, kind, label, placeholder,
+    // required, options, width full|half}; label '' = default wording.
+    reviewCollector: {
+        type: 'reviewCollector',
+        enabled: true,
+        props: {
+            display: 'floatingPopup',
+            buttonStyle: 'pill',
+            position: 'bottom-right',
+            popupStyle: 'modal',
+            buttonLabel: '',
+            heading: '',
+            subheading: '',
+            trigger: 'delay',
+            delaySeconds: 5,
+            scrollPercent: 40,
+            frequency: 'once',
+            devices: 'all',
+            hideAfterSubmit: true,
+            formFields: [
+                { id: 'rating', kind: 'rating', label: '', required: true, width: 'full' },
+                { id: 'reviewText', kind: 'reviewText', label: '', placeholder: '', required: false, width: 'full' },
+                { id: 'reviewerName', kind: 'reviewerName', label: '', placeholder: '', required: true, width: 'full' },
+                { id: 'courseName', kind: 'courseName', label: '', placeholder: '', required: false, options: [], width: 'half' },
+                { id: 'city', kind: 'city', label: '', placeholder: '', required: false, width: 'half' },
+                { id: 'designation', kind: 'designation', label: '', placeholder: '', required: false, width: 'full' },
+            ],
         },
     },
     textBlock: {

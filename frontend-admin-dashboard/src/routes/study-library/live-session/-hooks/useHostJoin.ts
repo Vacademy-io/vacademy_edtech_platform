@@ -19,6 +19,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { BASE_URL } from '@/constants/urls';
+import { isNative } from '@/native/platform';
 import { StreamingPlatform } from '../-constants/enums';
 
 /** What the resolver needs to know about a session. Deliberately structural so
@@ -62,13 +63,37 @@ const isZoho = (linkType?: string | null) => {
     return v === StreamingPlatform.ZOHO || v === 'zoho_meeting';
 };
 
+const isHttpUrl = (url?: string | null): url is string => /^https?:\/\//i.test((url ?? '').trim());
+
 /** Only ever hand window.open an http(s) URL — a null/garbage host link must
  *  not open about:blank or, worse, a javascript: URL from stored data. */
 const openExternal = (url?: string | null): boolean => {
-    const trimmed = (url ?? '').trim();
-    if (!/^https?:\/\//i.test(trimmed)) return false;
-    window.open(trimmed, '_blank', 'noopener,noreferrer');
+    if (!isHttpUrl(url)) return false;
+    window.open(url.trim(), '_blank', 'noopener,noreferrer');
     return true;
+};
+
+/** Google needs a few seconds to apply a co-host it was just told about; a Meet tab opened
+ *  sooner treats the teacher as a participant and parks them in the lobby. */
+const COHOST_SETTLE_MS = 5000;
+
+const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** A blank tab opened inside the click. Navigating it later is not popup-blocked, whereas a
+ *  window.open after the API call plus the co-host wait would be. Web only: the native app's
+ *  WebView has no popup blocker, and a blank window.open there could replace the app screen. */
+const openPendingTab = (): Window | null => {
+    if (isNative()) return null;
+    const tab = window.open('', '_blank');
+    if (!tab) return null;
+    tab.opener = null;
+    try {
+        tab.document.title = 'Opening Google Meet…';
+        tab.document.body.textContent = 'Opening Google Meet…';
+    } catch {
+        /* cosmetic only */
+    }
+    return tab;
 };
 
 export function useHostJoin() {
@@ -132,23 +157,36 @@ export function useHostJoin() {
     /** Google Meet is a plain URL join; the organizer reminder matters because
      *  auto-recording only fires when the host is signed in as the organizer. */
     const startMeet = useCallback(async (scheduleId: string): Promise<void> => {
+        const pendingTab = openPendingTab();
         try {
             const response = await authenticatedAxiosInstance.get(
                 `${BASE_URL}/admin-core-service/live-sessions/provider/meeting/google-meet-join`,
                 { params: { scheduleId } }
             );
+            const joinUrl = response.data?.joinUrl;
             const organizerEmail = response.data?.organizerEmail;
             const cohostEmail = response.data?.cohostEmail;
-            if (openExternal(response.data?.joinUrl)) {
-                if (cohostEmail) {
-                    toast.info(`Open Meet signed in to ${cohostEmail} to get host controls.`);
-                } else if (organizerEmail) {
-                    toast.info(`Open Meet signed in to ${organizerEmail} so the session records.`);
-                }
-            } else {
+            if (!isHttpUrl(joinUrl)) {
+                pendingTab?.close();
                 toast.error('Failed to get the Google Meet link');
+                return;
+            }
+            if (response.data?.cohostJustAdded) {
+                toast.info('Setting up your host controls in Google Meet…');
+                await wait(COHOST_SETTLE_MS);
+            }
+            if (pendingTab && !pendingTab.closed) {
+                pendingTab.location.href = joinUrl.trim();
+            } else {
+                openExternal(joinUrl);
+            }
+            if (cohostEmail) {
+                toast.info(`Open Meet signed in to ${cohostEmail} to get host controls.`);
+            } else if (organizerEmail) {
+                toast.info(`Open Meet signed in to ${organizerEmail} so the session records.`);
             }
         } catch (err) {
+            pendingTab?.close();
             console.error('Failed to start Google Meet as host:', err);
             toast.error('Failed to start session. Please try again.');
         }

@@ -29,6 +29,7 @@ import { ContactCallButton } from '@/components/shared/telephony/contact-call-bu
 import { EditStudentDetails } from './EditStudentDetails';
 import { EditLeadDetails } from './EditLeadDetails';
 import { StudentAttribution } from '../student-attribution/student-attribution';
+import { StudentReferral } from '../student-referral/student-referral';
 import { OverviewRemarks } from './overview-remarks';
 import { OverviewOtherContacts } from './overview-other-contacts';
 
@@ -326,6 +327,17 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
                                     );
                                 })}
                             </dl>
+                            {/* Refer a friend: code, shareable link and who they referred.
+                                Members only (a lead or a form submission has no code), and
+                                it renders nothing unless one of their courses takes referrals. */}
+                            {studentDetail.headingKey === OverviewSectionKey.ReferralDetails &&
+                                !isSubmissionTab &&
+                                !leadResponseId && (
+                                    <StudentReferral
+                                        userId={selectedStudent?.user_id}
+                                        instituteId={instituteDetails?.id}
+                                    />
+                                )}
                         </ProfileSectionCard>
                     );
                 })

@@ -18,6 +18,8 @@ import java.util.List;
  * path (later sub-phase); this backstop guarantees a reply is never lost for days: every 2 minutes
  * it pulls recent inbound WhatsApp replies per live-engine institute and promotes matching members
  * to tier 0 (due now, 24h window open) so the copilot surfaces a reply-response task quickly.
+ * Inbound emails come in the same feed (channel=EMAIL); each one goes to
+ * {@link EngagementReplyResponder#handleEmailReply}, never to the WhatsApp promotion.
  *
  * Idempotent: promoting an already-tier-0 member is a no-op-ish UPDATE; overlapping windows just
  * re-stamp the same values. A slightly-overlapping lookback is deliberate (no missed replies at the
@@ -96,6 +98,15 @@ public class EngagementReplyJob {
                 // autoReply-enabled engines only (its candidate query filters them; a no-op otherwise).
                 for (JsonNode reply : replies) {
                     try {
+                        if ("EMAIL".equals(reply.path("channel").asText(""))) {
+                            // An email reply: no WhatsApp window, no auto-reply; read on its own.
+                            if (replyResponder.handleEmailReply(instituteId, reply.path("email").asText(null),
+                                    reply.path("subject").asText(null), reply.path("text").asText(null),
+                                    reply.path("wamid").asText(null))) {
+                                answered++;
+                            }
+                            continue;
+                        }
                         boolean acted = replyResponder.handleReply(instituteId,
                                 reply.path("phone").asText(null), reply.path("text").asText(null),
                                 reply.path("wamid").asText(null));

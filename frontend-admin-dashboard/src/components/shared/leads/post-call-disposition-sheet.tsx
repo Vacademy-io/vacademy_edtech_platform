@@ -52,6 +52,7 @@ import {
     useFollowUpFields,
     useFollowUpNotesRequired,
 } from './follow-up-fields';
+import { LeadAttributeFields, useLeadAttributeFields } from './lead-attribute-fields';
 import {
     fetchLeadStatuses,
     setLeadStatusForLead,
@@ -253,6 +254,10 @@ function PostCallDispositionSheet({
     const [note, setNote] = useState('');
     const [followUpAt, setFollowUpAt] = useState('');
     const followUpFields = useFollowUpFields();
+    // Tier only: this sheet already has its own status picker above. No
+    // audienceResponseId on purpose, so apply() can never post a status.
+    const leadAttributes = useLeadAttributeFields({ userId: payload.leadUserId });
+    const tierChanged = leadAttributes.showTier && !!leadAttributes.tierKey;
     const notesRequired = useFollowUpNotesRequired();
     const { keepPopupsOpen } = useFollowUpFeatures();
     const keepOpen = keepPopupsOpen ? (e: Event) => e.preventDefault() : undefined;
@@ -317,7 +322,7 @@ function PostCallDispositionSheet({
     // sets a status here is not logging a follow-up and must stay unblocked.
     const followUpNoteMissing = !!followUpAt && notesRequired && noteTrimmed.length === 0;
     const canSave =
-        (statusChanged || !!followUpAt || noteSavable) &&
+        (statusChanged || tierChanged || !!followUpAt || noteSavable) &&
         !followUpNoteMissing &&
         !(!!followUpAt && followUpFields.missingRequired);
 
@@ -331,6 +336,8 @@ function PostCallDispositionSheet({
                 await setLeadStatusForLead(payload.responseId, selectedStatusId, 'MANUAL');
                 doneRef.current.status = true;
             }
+            // Tracks its own done-state, so a retry doesn't post the tier twice.
+            await leadAttributes.apply();
             if (noteTrimmed && payload.leadUserId && !doneRef.current.note) {
                 // Same payload shape as AddLeadNoteDialog's CALL_LOG tab.
                 await authenticatedAxiosInstance.post(CREATE_TIMELINE_EVENT, {
@@ -490,6 +497,16 @@ function PostCallDispositionSheet({
                             </Popover>
                         )}
                     </div>
+
+                    {/* The lead's tier (institute switch, off by default). */}
+                    {leadAttributes.showTier && (
+                        <LeadAttributeFields
+                            fields={leadAttributes}
+                            only={['tier']}
+                            portal={false}
+                            className="sm:grid-cols-1"
+                        />
+                    )}
 
                     {/* Note — posts a CALL_LOG timeline event linked to this call. */}
                     <div className="space-y-1.5">

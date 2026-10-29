@@ -186,6 +186,47 @@ export interface FollowUpFieldsConfig {
     allowEditing: boolean;
     /** Per-lead TAT / SLA / Overdue CSV exports in the Reports Center. */
     reportExports: boolean;
+    /**
+     * The lead's own status and tier (whatever the institute calls them, e.g.
+     * "Action Label" / "Interest Level") as dropdowns in the Add-activity pop-up
+     * and wherever a follow-up is booked, so a counsellor updates them in the same
+     * save. Changes the LEAD, not the follow-up — unlike {@link interestLevels}.
+     */
+    leadStatusAndTier: boolean;
+    /**
+     * The lead's tier (e.g. "Interest Level") from {@link leadStatusAndTier} must
+     * be picked before a follow-up is booked — "Keep current" no longer saves.
+     * Only where a follow-up is created; a note or call log stays optional. Needs
+     * leadStatusAndTier on.
+     */
+    leadTierRequired: boolean;
+    /** "Mark complete" opens with "Schedule next follow-up" already ticked. */
+    scheduleNextByDefault: boolean;
+    /**
+     * "Mark complete" no longer insists on a closing note. Off = the note is
+     * required, as it has been since closing notes were made mandatory.
+     */
+    closingNoteOptional: boolean;
+    /**
+     * {@link leadStatusAndTier}'s dropdowns inside "Mark complete" itself, so a
+     * counsellor can discard the lead (its LOST status) or change its tier while
+     * closing. Needs leadStatusAndTier on. Off = they show only in the inline
+     * "Schedule next" block, as before.
+     */
+    markDoneLeadStatusAndTier: boolean;
+    /**
+     * A follow-up's {@link interestLevels} answer also sets the lead's own interest
+     * level (tier): when a follow-up is created with one, and when the lead's latest
+     * follow-up has it edited. Matched to a tier by name; done by the backend.
+     */
+    syncInterestToLead: boolean;
+    /**
+     * A follow-up is overdue by DATE, not time: one due today stays "Today" all day
+     * and turns overdue only once that date has passed. Off = overdue the moment its
+     * time passes, as before. Applies to the Follow-ups page (tiles, list, calendar,
+     * export), the CRM dashboard counts, reminders, Check Lead and the Overdue export.
+     */
+    overdueByDate: boolean;
 }
 
 /**
@@ -286,6 +327,13 @@ export const LEAD_SETTINGS_DEFAULTS: LeadSettingsConfig = {
         showHistory: false,
         allowEditing: false,
         reportExports: false,
+        leadStatusAndTier: false,
+        leadTierRequired: false,
+        scheduleNextByDefault: false,
+        closingNoteOptional: false,
+        markDoneLeadStatusAndTier: false,
+        syncInterestToLead: false,
+        overdueByDate: false,
     },
     leadLookup: {
         enabled: false,
@@ -379,6 +427,13 @@ export function normaliseFollowUpFields(
         showHistory: saved?.showHistory === true,
         allowEditing: saved?.allowEditing === true,
         reportExports: saved?.reportExports === true,
+        leadStatusAndTier: saved?.leadStatusAndTier === true,
+        leadTierRequired: saved?.leadTierRequired === true,
+        scheduleNextByDefault: saved?.scheduleNextByDefault === true,
+        closingNoteOptional: saved?.closingNoteOptional === true,
+        markDoneLeadStatusAndTier: saved?.markDoneLeadStatusAndTier === true,
+        syncInterestToLead: saved?.syncInterestToLead === true,
+        overdueByDate: saved?.overdueByDate === true,
     };
 }
 

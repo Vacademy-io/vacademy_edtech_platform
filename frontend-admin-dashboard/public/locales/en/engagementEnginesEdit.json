@@ -19,5 +19,6 @@
         "deleted": "Engine deleted.",
         "archived": "Engine archived.",
         "deleteFailed": "Could not delete the engine."
-    }
+    },
+    "subtitle": "Open any step on the left, change what you need, then press Save changes."
 }

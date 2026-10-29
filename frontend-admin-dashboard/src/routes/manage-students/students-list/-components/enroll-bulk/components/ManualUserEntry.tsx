@@ -20,6 +20,16 @@ import { getTerminology } from '@/components/common/layout-container/sidebar/uti
 import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { noAutofillProps } from '@/lib/no-autofill';
 import { AutofillDecoy } from '@/components/design-system/autofill-decoy';
+import { CustomFieldRenderer } from '@/components/common/custom-fields/CustomFieldRenderer';
+import { isOptionFieldType } from '@/routes/audience-manager/list/-utils/parseFieldOptions';
+
+// field_type is stored as dropdown / DROPDOWN / select / radio / multi_select depending on
+// where the field was created, so an exact 'dropdown' check left most choice fields as text.
+const choiceKindOf = (cf: CustomField): 'single' | 'multi' | null => {
+    if (!cf.options?.length || !isOptionFieldType(cf.type)) return null;
+    const type = (cf.type ?? '').toLowerCase().trim();
+    return type === 'multi_select' || type === 'multiselect' ? 'multi' : 'single';
+};
 
 interface Props {
     onAdd: (rows: NewUserRow[]) => void;
@@ -535,7 +545,17 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                                                     <span className="ml-1 text-danger-500">*</span>
                                                 )}
                                             </Label>
-                                            {cf.type === 'dropdown' && cf.options ? (
+                                            {choiceKindOf(cf) === 'multi' ? (
+                                                <CustomFieldRenderer
+                                                    type="multi_select"
+                                                    name={`${cf.id}-${idx}`}
+                                                    options={cf.options}
+                                                    value={row.custom_fields[cf.id] || ''}
+                                                    onChange={(value) =>
+                                                        updateCustomField(idx, cf.id, value)
+                                                    }
+                                                />
+                                            ) : choiceKindOf(cf) === 'single' && cf.options ? (
                                                 <select
                                                     className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 py-1 text-sm transition-colors focus:border-primary-500 focus:outline-none"
                                                     value={row.custom_fields[cf.id] || ''}

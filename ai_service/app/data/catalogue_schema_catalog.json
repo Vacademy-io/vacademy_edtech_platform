@@ -243,7 +243,8 @@
           "roundedEdges": true
         }
       },
-      "capabilities": "layout: grid | carousel | slider. media[]: {type: image|video, url, caption, heading, backgroundImage}. Use it for a swipeable row of photos or videos; it carries no per-item button, so for cards that need a CTA use featureGrid with per-feature image + link."
+      "capabilities": "layout: grid | carousel | slider. media[]: {type: image|video, url, caption, heading, backgroundImage}. Use it for a swipeable row of photos or videos; it carries no per-item button, so for cards that need a CTA use featureGrid with per-feature image + link.",
+      "usage": "Items sit in a 16:9 frame: portrait book pages are tiny on phones — use scormViewer for a book preview."
     },
     {
       "type": "courseShowcase",
@@ -290,6 +291,9 @@
         "description": "Real feedback from our learners.",
         "layout": "grid-scroll",
         "testimonials": [],
+        "reviewSource": "both",
+        "reviewLimit": 9,
+        "reviewMinRating": 4,
         "backgroundColor": "#F9FAFB",
         "textColor": "#111827",
         "styles": {
@@ -299,7 +303,7 @@
           "scrollEnabled": true
         }
       },
-      "capabilities": "layout: grid-scroll (default) | carousel (prev/next arrows + dots). testimonials[]: {name, role, quote (or text/feedback), avatar (the student photo — an image URL), rating (1-5), highlight}. Carousel only: cardsPerView 1-4 (cards in view on desktop; tablets show at most 2, phones 1; default 1 = one large quote at a time), autoplay (advance one card on a timer, pauses on hover), autoplayIntervalMs (default 5000). Use carousel + cardsPerView 3 for many short quotes in a row; carousel alone when the reference shows a single large quote."
+      "capabilities": "layout: grid-scroll (default) | carousel (prev/next arrows + dots). testimonials[]: {name, role, quote (or text/feedback), avatar (the student photo — an image URL), rating (1-5), highlight}. Carousel only: cardsPerView 1-4 (cards in view on desktop; tablets show at most 2, phones 1; default 1 = one large quote at a time), autoplay (advance one card on a timer, pauses on hover), autoplayIntervalMs (default 5000). Use carousel + cardsPerView 3 for many short quotes in a row; carousel alone when the reference shows a single large quote. reviewSource: manual (default — testimonials[] only) | both (testimonials[] then the institute's APPROVED site reviews from a reviewCollector, read live) | reviews (approved reviews only); reviewLimit, reviewMinRating 1-5, showAverageRating. Never invent reviews — use both/reviews when the site collects them."
     },
     {
       "type": "bookCatalogue",
@@ -446,6 +450,22 @@
       }
     },
     {
+      "type": "scormViewer",
+      "templateKey": "scormViewer",
+      "exampleProps": {
+        "heading": "Take a look inside",
+        "subheading": "Turn the pages of a short preview.",
+        "launchUrl": "",
+        "title": "",
+        "height": "75vh",
+        "mobileHeight": "70vh",
+        "showFullScreen": true,
+        "appearance": "book"
+      },
+      "capabilities": "launchUrl, appearance framed|book, title, height, mobileHeight.",
+      "usage": "Plays a SCORM package (a flip-book / comic preview) without login, like a course slide. launchUrl ONLY from website_edit(import_scorm). appearance book: no card, the player toolbar / page count / full screen hidden. Only a SAMPLE package: the full paid one stays inside the course."
+    },
+    {
       "type": "ctaBanner",
       "templateKey": "ctaBanner",
       "exampleProps": {
@@ -516,7 +536,7 @@
         "layout": "card",
         "align": "center"
       },
-      "dataBound": "Embeds an Audience campaign's LIVE registration form (fields defined in the CRM's Audience Manager) and submits leads into that campaign. Set ONLY title/subtitle/submitLabel/successMessage/layout/align — audienceId must be chosen by the admin from their existing campaigns, so leave it as an empty string and NEVER invent one. Use it for event registrations, demo bookings and enquiry sections; contactForm remains fine for a simple authored name/email/message form."
+      "dataBound": "Embeds an Audience campaign's LIVE registration form (fields defined in the CRM's Audience Manager) and submits leads into that campaign. Set ONLY title/subtitle/submitLabel/successMessage/layout/align, columns 1|2, choiceStyle dropdown|chips (pill buttons for a short choice list) and successDisplay inline|popup — audienceId must be chosen by the admin from their existing campaigns, so leave it as an empty string and NEVER invent one. Use it for event registrations, demo bookings and enquiry sections; contactForm remains fine for a simple authored name/email/message form."
     },
     {
       "type": "contactForm",
@@ -626,13 +646,14 @@
         "showCategory": true,
         "showReadingTime": true,
         "showCategoryFilter": true,
+        "allowLikes": false,
         "readMoreLabel": "Read more",
         "backLabel": "All posts",
         "emptyMessage": "No posts yet — check back soon.",
         "backgroundColor": "",
         "textColor": ""
       },
-      "dataBound": "Live blog: reads the institute's PUBLISHED posts (written in Manage Pages → Blog or by an AI app over the MCP `blog_edit` tool). Renders the post list on the page it sits on and one article at /<page>/<post-slug>, so put it on a DEDICATED page (route \"blog\"), never on the home page. Placement + look only: heading, subheading, layout grid|list, columns 2|3, pageSize, category (\"\" = all), show* toggles. Never invent posts — there are none in the page JSON."
+      "dataBound": "Live blog: reads the institute's PUBLISHED posts (written in Manage Pages → Blog or by an AI app over the MCP `blog_edit` tool). Renders the post list on the page it sits on and one article at /<page>/<post-slug>, so put it on a DEDICATED page (route \"blog\"), never on the home page. Placement + look only: heading, subheading, layout grid|list, columns 2|3, pageSize, category (\"\" = all), show* toggles, allowLikes (visitor likes on cards and articles; default false, keep it off on non-blog sections such as exam guides). Never invent posts — there are none in the page JSON."
     },
     {
       "type": "jobOpenings",
@@ -852,6 +873,76 @@
         "devices": "all",
         "closeOnBackdrop": true
       }
+    },
+    {
+      "type": "reviewCollector",
+      "templateKey": "reviewCollector",
+      "exampleProps": {
+        "display": "floatingPopup",
+        "buttonStyle": "pill",
+        "position": "bottom-right",
+        "popupStyle": "modal",
+        "buttonLabel": "",
+        "heading": "",
+        "subheading": "",
+        "trigger": "delay",
+        "delaySeconds": 5,
+        "scrollPercent": 40,
+        "frequency": "once",
+        "devices": "all",
+        "hideAfterSubmit": true,
+        "formFields": [
+          {
+            "id": "rating",
+            "kind": "rating",
+            "label": "",
+            "required": true,
+            "width": "full"
+          },
+          {
+            "id": "reviewText",
+            "kind": "reviewText",
+            "label": "",
+            "placeholder": "",
+            "required": false,
+            "width": "full"
+          },
+          {
+            "id": "reviewerName",
+            "kind": "reviewerName",
+            "label": "",
+            "placeholder": "",
+            "required": true,
+            "width": "full"
+          },
+          {
+            "id": "courseName",
+            "kind": "courseName",
+            "label": "",
+            "placeholder": "",
+            "required": false,
+            "options": [],
+            "width": "half"
+          },
+          {
+            "id": "city",
+            "kind": "city",
+            "label": "",
+            "placeholder": "",
+            "required": false,
+            "width": "half"
+          },
+          {
+            "id": "designation",
+            "kind": "designation",
+            "label": "",
+            "placeholder": "",
+            "required": false,
+            "width": "full"
+          }
+        ]
+      },
+      "dataBound": "Live reviews: asks site visitors for a 1-5 star rating, their name and (per `fields`) a written review, course, city and occupation/designation; submissions wait for the admin in Website Builder → Reviews and only approved ones become public. Placement + behaviour only: display floatingPopup|floating|popup|inline, buttonStyle pill|icon|tab, position bottom-right|bottom-left|middle-right|middle-left, popupStyle modal|corner, trigger delay|scroll|exit, delaySeconds, frequency, devices. formFields[] = the form in order: {id, kind, label, placeholder, required, options, width full|half}; kinds rating + reviewerName (always kept, required), reviewText, courseName, city, designation (each once) and custom text|textarea|select|number|email|phone (id \"f_<word>\", max 10; their answers are stored with the review). Leave text props empty (they default to the site language). One per site is enough — put it on the home page."
     },
     {
       "type": "textBlock",
@@ -1210,7 +1301,7 @@
         "css": "",
         "prompt": ""
       },
-      "escapeHatch": "ESCAPE HATCH for bespoke sections only. props {html, css, prompt}. Sanitized + rendered in a scoped sandbox: no scripts/iframes/svg/forms; style via the css prop with class selectors using the theme CSS variables (var(--primary-500), var(--catalogue-text-primary), var(--catalogue-heading-font)); must include @media rules; images only from provided URLs. Max 3 per page (one block may contain many repeated sub-blocks, so prefer one well-built block over several). Prefer typed components for ordinary marketing sections; for dense data tables this IS the right tool."
+      "escapeHatch": "ESCAPE HATCH for bespoke sections only. props {html, css, prompt}. Sanitized + rendered in a scoped sandbox: no scripts/iframes/svg/forms; style via the css prop with class selectors using the theme CSS variables (colours are H S% L% channels: hsl(var(--primary-500)), hsl(var(--catalogue-text-primary)), hsl(var(--palette-<name>)); font-family: var(--catalogue-heading-font)); must include @media rules; images only from provided URLs. Max 3 per page (one block may contain many repeated sub-blocks, so prefer one well-built block over several). Prefer typed components for ordinary marketing sections; for dense data tables this IS the right tool."
     }
   ],
   "styleSchema": {

@@ -22,6 +22,7 @@ import { useCourseTerms } from "../../-utils/catalogue-naming";
 import { LeadFormComponent } from "./LeadFormComponent";
 import { CourseShowcaseComponent } from "./CourseShowcaseComponent";
 import { BlogCard, formatDate } from "./BlogCard";
+import { BlogLikeButton } from "./BlogLikeButton";
 
 /**
  * One blog article, laid out by the post's own `template` (picked in the post
@@ -53,6 +54,10 @@ export interface BlogArticleProps {
   showAuthor: boolean;
   showCategory: boolean;
   showReadingTime: boolean;
+  /** The section's allowLikes: a Like button beside Copy link. */
+  allowLikes: boolean;
+  /** Page editor preview: the Like button shows but never writes. */
+  isPreviewMode: boolean;
   sectionStyle?: React.CSSProperties;
   locale: string;
   onBack: () => void;
@@ -147,7 +152,8 @@ const scrollToHeading = (id: string) => {
 
 export const BlogArticle: React.FC<BlogArticleProps> = ({
   slug, instituteId, tagName, globalSettings, listPath, postPath, onOpenPost, readMoreLabel, backLabel,
-  showDate, showAuthor, showCategory, showReadingTime, sectionStyle, locale, onBack, gateAudienceId, gateTitle,
+  showDate, showAuthor, showCategory, showReadingTime, allowLikes, isPreviewMode, sectionStyle, locale, onBack,
+  gateAudienceId, gateTitle,
 }) => {
   const { t } = useTranslation("coursePlayerB");
   const unlocked = useResourceUnlocked(gateAudienceId);
@@ -343,9 +349,20 @@ export const BlogArticle: React.FC<BlogArticleProps> = ({
   const footer = (
     <footer className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-catalogue-border pt-6">
       {back()}
-      <button type="button" onClick={copyLink} className="catalogue-btn catalogue-btn-secondary catalogue-btn-sm">
-        <LinkSimple size={14} aria-hidden="true" /> {copied ? t("blog.linkCopied") : t("blog.copyLink")}
-      </button>
+      <div className="flex flex-wrap items-center gap-2">
+        {allowLikes && (
+          <BlogLikeButton
+            postId={post.id}
+            instituteId={instituteId}
+            likeCount={post.like_count}
+            variant="button"
+            disabled={isPreviewMode}
+          />
+        )}
+        <button type="button" onClick={copyLink} className="catalogue-btn catalogue-btn-secondary catalogue-btn-sm">
+          <LinkSimple size={14} aria-hidden="true" /> {copied ? t("blog.linkCopied") : t("blog.copyLink")}
+        </button>
+      </div>
     </footer>
   );
 
@@ -423,6 +440,7 @@ export const BlogArticle: React.FC<BlogArticleProps> = ({
             onOpenPost={onOpenPost}
             readMoreLabel={readMoreLabel}
             locale={locale}
+            likes={allowLikes ? { instituteId, disabled: isPreviewMode } : undefined}
           />
         </div>
       </article>
@@ -666,7 +684,8 @@ const RelatedPosts: React.FC<{
   onOpenPost: (slug: string) => void;
   readMoreLabel: string;
   locale: string;
-}> = ({ current, instituteId, postPath, onOpenPost, readMoreLabel, locale }) => {
+  likes?: { instituteId: string; disabled: boolean };
+}> = ({ current, instituteId, postPath, onOpenPost, readMoreLabel, locale, likes }) => {
   const { t } = useTranslation("coursePlayerB");
   const [posts, setPosts] = useState<BlogPostSummary[]>([]);
 
@@ -717,6 +736,7 @@ const RelatedPosts: React.FC<{
             showReadingTime
             readMoreLabel={readMoreLabel}
             locale={locale}
+            likes={likes}
           />
         ))}
       </div>

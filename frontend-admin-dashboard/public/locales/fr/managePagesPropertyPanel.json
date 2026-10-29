@@ -252,6 +252,9 @@
     }
   },
   "options": {
+    "dropdown": "Liste",
+    "chips": "Puces",
+    "popup": "Fenêtre",
     "categoryTiles": "Tuiles de catégorie",
     "default": "Par défaut",
     "ocean": "Océan",
@@ -904,7 +907,19 @@
     "cardsPerViewHint": "Les tablettes en affichent 2 au maximum et les téléphones 1.",
     "autoplay": "Défilement automatique",
     "autoplaySeconds": "Secondes entre les diapositives",
-    "photo": "Photo"
+    "photo": "Photo",
+    "reviewSource": "Afficher les avis approuvés",
+    "reviewSourceManual": "Non, seulement les citations ci-dessous",
+    "reviewSourceBoth": "Oui, après les citations ci-dessous",
+    "reviewSourceReviews": "Oui, à la place des citations ci-dessous",
+    "reviewSourceHint": "Les avis envoyés via une section Avis et retours s'affichent ici une fois approuvés.",
+    "reviewLimit": "Nombre maximum d'avis",
+    "reviewMinRating": "Étoiles minimum",
+    "reviewMinRatingAll": "Toutes les notes",
+    "reviewMinRatingStars_one": "{{count}} étoile et plus",
+    "reviewMinRatingStars_other": "{{count}} étoiles et plus",
+    "showAverageRating": "Afficher la note moyenne sous le titre",
+    "manageReviews": "Approuver les avis"
   },
   "policy": {
     "defaults": {
@@ -1058,6 +1073,9 @@
     "leadsReceivedWithLast_many": "{{count}} leads reçus · dernier le {{date}}"
   },
   "leadForm": {
+    "columns": "Colonnes",
+    "choiceStyle": "Choix en",
+    "successDisplay": "Remerciement",
     "hint": "Affiche le formulaire d'inscription d'une campagne directement sur la page. Les champs, options et indicateurs obligatoires sont configurés sur la campagne dans Gestionnaire d'audience ; les envois arrivent dans cette campagne avec déduplication, notation et attribution au conseiller.",
     "campaignLabel": "Campagne (formulaire + destination)",
     "titlePlaceholder": "Inscrivez votre intérêt",
@@ -1365,6 +1383,28 @@
     "clear": "Effacer",
     "openFile": "Ouvrir"
   },
+  "scormViewer": {
+    "appearance": "Apparence",
+    "appearanceBook": "Livre (sans commandes)",
+    "appearanceFramed": "Lecteur encadré",
+    "appearanceHelp": "Le mode Livre masque la barre d’outils, le nombre de pages et le bouton plein écran du package : les pages se lisent comme un livre.",
+    "heading": "Package SCORM",
+    "package": "Package SCORM (.zip)",
+    "uploadZip": "Importer le zip SCORM",
+    "uploading": "Import et décompression…",
+    "clear": "Effacer",
+    "onlyZip": "Importez le package SCORM sous forme de fichier .zip.",
+    "tooLarge": "Le zip dépasse {{max}} Mo.",
+    "uploadFailed": "Le package n’a pas pu être importé. Vérifiez qu’il s’agit d’un zip SCORM avec un imsmanifest.xml.",
+    "uploadHelp": "Se lit sur la page sans connexion, comme une diapositive SCORM d’un cours. Rien n’est suivi ici.",
+    "packageReady": "Package importé",
+    "openPackage": "Ouvrir",
+    "barTitle": "Titre du cadre",
+    "barTitlePlaceholder": "ex. Aperçu – premières pages",
+    "frameHeight": "Hauteur du cadre (ordinateur)",
+    "mobileHeight": "Hauteur du cadre (téléphone)",
+    "showFullScreen": "Bouton plein écran"
+  },
   "blog": {
     "heading": "Paramètres du blog",
     "managePostsHint": "Les articles sont rédigés et publiés à part : un nouvel article n’oblige jamais à republier le site.",
@@ -1392,6 +1432,8 @@
     "showCategory": "Afficher la catégorie",
     "showReadingTime": "Afficher le temps de lecture",
     "showCategoryFilter": "Puces de filtre par catégorie",
+    "allowLikes": "Autoriser les j'aime",
+    "allowLikesHelp": "Les visiteurs peuvent aimer les articles : un cœur avec le total sur chaque carte et sous l'article. Laissez désactivé pour les sections qui ne sont pas un blog, comme les guides d'examen.",
     "readMoreLabel": "Libellé Lire la suite",
     "backLabel": "Libellé Retour à la liste",
     "emptyMessage": "Message quand il n’y a aucun article",

@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.audience;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import vacademy.io.admin_core_service.features.audience.dto.CreateLeadFollowupRequest;
 import vacademy.io.admin_core_service.features.audience.dto.LeadFollowupDto;
 import vacademy.io.admin_core_service.features.audience.dto.UpdateLeadFollowupRequest;
 import vacademy.io.admin_core_service.features.audience.entity.AudienceResponse;
@@ -11,6 +12,7 @@ import vacademy.io.admin_core_service.features.audience.repository.AudienceRespo
 import vacademy.io.admin_core_service.features.audience.repository.LeadFollowupRepository;
 import vacademy.io.admin_core_service.features.audience.repository.LeadStatusRepository;
 import vacademy.io.admin_core_service.features.audience.repository.UserLeadProfileRepository;
+import vacademy.io.admin_core_service.features.audience.service.FollowUpInterestTierSync;
 import vacademy.io.admin_core_service.features.audience.service.LeadFollowupService;
 import vacademy.io.admin_core_service.features.audience.service.LeadFollowupSettingService;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
@@ -32,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -56,6 +59,7 @@ class LeadFollowupServiceUpdateTest {
     private CounsellorScopeService scope;
     private WorkbenchLeadRepository workbench;
     private LeadFollowupSettingService settings;
+    private FollowUpInterestTierSync tierSync;
     private LeadFollowupService service;
 
     @BeforeEach
@@ -64,6 +68,7 @@ class LeadFollowupServiceUpdateTest {
         scope = mock(CounsellorScopeService.class);
         workbench = mock(WorkbenchLeadRepository.class);
         settings = mock(LeadFollowupSettingService.class);
+        tierSync = mock(FollowUpInterestTierSync.class);
         // The institute turned on "Allow editing past follow-ups" unless a test says otherwise.
         when(settings.allowEditing(INSTITUTE)).thenReturn(true);
         AudienceResponseRepository responses = mock(AudienceResponseRepository.class);
@@ -80,7 +85,7 @@ class LeadFollowupServiceUpdateTest {
                 mock(TimelineEventService.class), mock(AuthService.class), responses,
                 mock(AudienceRepository.class), scope, workbench, mock(UserLeadProfileRepository.class),
                 mock(LeadStatusRepository.class), mock(CustomFieldValuesRepository.class),
-                mock(CustomFieldRepository.class), settings,
+                mock(CustomFieldRepository.class), settings, tierSync,
                 mock(vacademy.io.admin_core_service.features.utm_attribution.service.UtmListFilterResolver.class));
     }
 
@@ -211,5 +216,103 @@ class LeadFollowupServiceUpdateTest {
         assertEquals("Cannot update a closed follow-up", e.getMessage());
         verify(followups, never()).save(any());
         verifyNoInteractions(scope, workbench);
+    }
+
+    // ── Follow-up interest level → the lead's interest level (tier) ──────────────
+    // The switch and the tier matching live in FollowUpInterestTierSync; here only
+    // WHEN it is asked to run.
+
+    /** f-1 (created at 5000) plus an older follow-up of the same lead. */
+    private LeadFollowup latestWithOlderSibling() {
+        LeadFollowup f = followup(false);
+        f.setCreatedAt(new Timestamp(5_000L));
+        f.setInterestLevel("Warm");
+        LeadFollowup older = LeadFollowup.builder().id("f-0").audienceResponseId(RESPONSE)
+                .instituteId(INSTITUTE).createdAt(new Timestamp(1_000L)).build();
+        when(followups.findByAudienceResponseIdOrderByScheduleTimeAsc(RESPONSE)).thenReturn(List.of(older, f));
+        return f;
+    }
+
+    @Test
+    void editingTheInterestOfTheLatestFollowUpUpdatesTheLead() {
+        latestWithOlderSibling();
+        UpdateLeadFollowupRequest req = new UpdateLeadFollowupRequest();
+        req.setInterestLevel("Very Hot");
+
+        service.update("f-1", req, user(CREATOR));
+
+        verify(tierSync).syncAfterCommit(eq(INSTITUTE), eq(LEAD_USER), eq("Very Hot"), any());
+    }
+
+    @Test
+    void editingTheInterestOfAnOlderFollowUpLeavesTheLeadAlone() {
+        LeadFollowup f = followup(false);
+        f.setCreatedAt(new Timestamp(1_000L));
+        LeadFollowup newer = LeadFollowup.builder().id("f-2").audienceResponseId(RESPONSE)
+                .instituteId(INSTITUTE).createdAt(new Timestamp(9_000L)).build();
+        when(followups.findByAudienceResponseIdOrderByScheduleTimeAsc(RESPONSE)).thenReturn(List.of(f, newer));
+        UpdateLeadFollowupRequest req = new UpdateLeadFollowupRequest();
+        req.setInterestLevel("Very Hot");
+
+        service.update("f-1", req, user(CREATOR));
+
+        verifyNoInteractions(tierSync);
+    }
+
+    @Test
+    void anUnchangedOrClearedInterestLeavesTheLeadAlone() {
+        latestWithOlderSibling();
+        UpdateLeadFollowupRequest same = new UpdateLeadFollowupRequest();
+        same.setInterestLevel("Warm");
+        service.update("f-1", same, user(CREATOR));
+
+        UpdateLeadFollowupRequest cleared = new UpdateLeadFollowupRequest();
+        cleared.setInterestLevel("");
+        service.update("f-1", cleared, user(CREATOR));
+
+        verifyNoInteractions(tierSync);
+    }
+
+    @Test
+    void aNoteOrSnoozeEditNeverTouchesTheLead() {
+        latestWithOlderSibling();
+        UpdateLeadFollowupRequest note = new UpdateLeadFollowupRequest();
+        note.setContent("new note");
+        service.update("f-1", note, user(CREATOR));
+        UpdateLeadFollowupRequest snooze = new UpdateLeadFollowupRequest();
+        snooze.setScheduleTime(new Timestamp(9_000L));
+        service.update("f-1", snooze, user(OTHER));
+
+        verifyNoInteractions(tierSync);
+    }
+
+    @Test
+    void aClosedEditThatIsRefusedNeverTouchesTheLead() {
+        LeadFollowup f = followup(true);
+        f.setCreatedAt(new Timestamp(5_000L));
+        when(settings.allowEditing(INSTITUTE)).thenReturn(false);
+        UpdateLeadFollowupRequest req = new UpdateLeadFollowupRequest();
+        req.setInterestLevel("Very Hot");
+
+        assertThrows(VacademyException.class, () -> service.update("f-1", req, user(CREATOR)));
+        verifyNoInteractions(tierSync);
+    }
+
+    @Test
+    void creatingAFollowUpHandsItsInterestToTheSync() {
+        when(followups.save(any(LeadFollowup.class))).thenAnswer(inv -> {
+            LeadFollowup saved = inv.getArgument(0);
+            saved.setId("f-new");
+            return saved;
+        });
+        CreateLeadFollowupRequest req = new CreateLeadFollowupRequest();
+        req.setAudienceResponseId(RESPONSE);
+        req.setInstituteId(INSTITUTE);
+        req.setScheduleTime(new Timestamp(9_000L));
+        req.setInterestLevel("Hot");
+
+        service.create(req, user(CREATOR));
+
+        verify(tierSync).syncAfterCommit(eq(INSTITUTE), eq(LEAD_USER), eq("Hot"), any());
     }
 }

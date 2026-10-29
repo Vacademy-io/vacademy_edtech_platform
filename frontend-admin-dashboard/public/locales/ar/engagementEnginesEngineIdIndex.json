@@ -10,8 +10,8 @@
         "activeMember_few": "أعضاء نشطون",
         "activeMember_many": "عضوًا نشطًا",
         "activeMember_other": "عضو نشط",
-        "resolveAudience": "تحديد الجمهور",
-        "resolving": "جارٍ التحديد…"
+        "resolveAudience": "إضافة الأشخاص الآن",
+        "resolving": "جارٍ إضافة الأشخاص…"
     },
     "statusActions": {
         "DRY_RUN": "بدء تجربة وهمية",
@@ -31,10 +31,11 @@
         "channels": "القنوات",
         "noChannels": "لا شيء",
         "language": "اللغة",
-        "cadenceLabel": "الوتيرة",
+        "cadenceLabel": "التواصل",
         "cadence": "كل {{hours}} ساعة",
         "quietHours": "Quiet hours",
-        "dataPoints": "Data points"
+        "dataPoints": "Data points",
+        "noDataPoints": "الأساسيات فقط"
     },
     "amendDialog": {
         "heading": "تعديل الموجز",
@@ -45,27 +46,27 @@
         "saving": "جارٍ الحفظ…"
     },
     "autonomy": {
-        "title": "الاستقلالية",
+        "title": "الإرسال التلقائي",
         "allowAutoSend": "السماح بالإرسال التلقائي",
-        "keepAsCopilot": "الإبقاء كمساعد فقط",
+        "keepAsCopilot": "إيقاف الإرسال التلقائي",
         "autoSendChannels": "قنوات الإرسال التلقائي",
-        "noAutoSend": "لا توجد قنوات إرسال تلقائي — يقوم هذا المحرك فقط بصياغة مهام لترسلها بنفسك.",
-        "holdout": "المجموعة المستبعدة",
-        "holdoutValue": "{{pct}}% (مسجَّلون، لم تُرسل إليهم رسائل قط)",
+        "noAutoSend": "لا توجد قناة ترسل تلقائيًا. كل رسالة تنتظرك في صندوق المهام.",
+        "holdout": "مجموعة اختبار",
+        "holdoutValue": "{{pct}}% (مضافون، لا يُراسلون أبدًا)",
         "badge": {
-            "off": "الاستقلالية متوقفة (مساعد فقط)",
-            "ramping": "قيد الارتقاء · {{approved}}/{{target}} معتمدة",
+            "off": "الإرسال التلقائي متوقف — تراجع كل رسالة",
+            "ramping": "قيد التجربة · {{approved}} من {{target}} موافق عليها",
             "sendingAutonomously": "يرسل بشكل مستقل",
             "dryRun": "تجربة وهمية (محاكاة)",
             "onEngineStatus": "الاستقلالية مفعّلة · حالة المحرك {{status}}"
         },
         "statusFor": "حالة {{channel}}",
-        "rampingHintChannel_zero": "ما زال في وضع المساعد على {{channel}}. أرسل {{count}} مسودة معتمدة إضافية على {{channel}} وستبدأ هذه القناة الإرسال بنفسها.",
-        "rampingHintChannel_one": "ما زال في وضع المساعد على {{channel}}. أرسل مسودة معتمدة واحدة إضافية على {{channel}} وستبدأ هذه القناة الإرسال بنفسها.",
-        "rampingHintChannel_two": "ما زال في وضع المساعد على {{channel}}. أرسل مسودتين معتمدتين إضافيتين على {{channel}} وستبدأ هذه القناة الإرسال بنفسها.",
-        "rampingHintChannel_few": "ما زال في وضع المساعد على {{channel}}. أرسل {{count}} مسودات معتمدة إضافية على {{channel}} وستبدأ هذه القناة الإرسال بنفسها.",
-        "rampingHintChannel_many": "ما زال في وضع المساعد على {{channel}}. أرسل {{count}} مسودة معتمدة إضافية على {{channel}} وستبدأ هذه القناة الإرسال بنفسها.",
-        "rampingHintChannel_other": "ما زال في وضع المساعد على {{channel}}. أرسل {{count}} مسودة معتمدة إضافية على {{channel}} وستبدأ هذه القناة الإرسال بنفسها."
+        "rampingHintChannel_zero": "حاليًا تراجع كل رسالة على {{channel}}. وافق على {{count}} أخرى وستبدأ {{channel}} الإرسال بنفسها.",
+        "rampingHintChannel_one": "حاليًا تراجع كل رسالة على {{channel}}. وافق على {{count}} أخرى وستبدأ {{channel}} الإرسال بنفسها.",
+        "rampingHintChannel_two": "حاليًا تراجع كل رسالة على {{channel}}. وافق على {{count}} أخرى وستبدأ {{channel}} الإرسال بنفسها.",
+        "rampingHintChannel_few": "حاليًا تراجع كل رسالة على {{channel}}. وافق على {{count}} أخرى وستبدأ {{channel}} الإرسال بنفسها.",
+        "rampingHintChannel_many": "حاليًا تراجع كل رسالة على {{channel}}. وافق على {{count}} أخرى وستبدأ {{channel}} الإرسال بنفسها.",
+        "rampingHintChannel_other": "حاليًا تراجع كل رسالة على {{channel}}. وافق على {{count}} أخرى وستبدأ {{channel}} الإرسال بنفسها."
     },
     "archiveDialog": {
         "title": "أرشفة هذا المحرك؟",
@@ -75,22 +76,36 @@
     },
     "kpi": {
         "members": "Active members",
-        "holdout": "{{pct}}% held out (never messaged)",
+        "holdout": "{{pct}}% في مجموعة الاختبار (لا يُراسلون أبدًا)",
         "noHoldout": "No holdout",
         "approved": "Approved sends",
-        "graduateAfter": "A channel auto-sends after {{n}} approved sends",
-        "cadence": "Check-in cadence",
+        "graduateAfter": "يبدأ الإرسال التلقائي بعد {{n}} موافقات",
+        "cadence": "التواصل",
         "quiet": "Quiet hours {{window}}",
         "nextRun": "Next check-in",
         "notScheduled": "Not scheduled",
-        "lastRun": "Last run {{when}}"
+        "lastRun": "آخر متابعة {{when}}"
     },
     "status": {
         "title": "Status & audience",
-        "sources": "Sources",
+        "sources": "مختار من",
         "people": "people",
         "change": "Change status",
         "noTransitions": "Archived engines can’t change status.",
-        "footnote": "Pause stops the engine deciding and sending. “Keep as copilot” only stops auto-sending."
+        "footnote": "الإيقاف المؤقت يوقف كل الرسائل. «إيقاف الإرسال التلقائي» يواصل كتابة الرسائل لتراجعها.",
+        "noSources": "لم يُختر شيء"
+    },
+    "retry": "إعادة المحاولة",
+    "noPeople": {
+        "title": "لا يوجد أحد في هذا المحرك بعد",
+        "text": "أضف الأشخاص من المجموعات والقوائم التي اخترتها. لا يُرسل شيء حتى تفعّل المحرك."
+    },
+    "activateDialog": {
+        "title": "تشغيل هذا المحرك لـ {{count}} شخص؟",
+        "descriptionAuto": "سيبدأ التواصل مع الأشخاص الآن. القنوات المضبوطة على الإرسال التلقائي سترسل دون سؤال بعد انتهاء تجربتها؛ وكل ما عدا ذلك ينتظرك في صندوق المهام.",
+        "descriptionCopilot": "سيبدأ كتابة الرسائل الآن. كل رسالة تنتظرك في صندوق المهام؛ لا يُرسل شيء دون موافقتك.",
+        "noPeople": "لم يُضف أحد بعد، فلا يوجد من يُتواصل معه. اضغط «إضافة الأشخاص الآن» أولًا.",
+        "cancel": "ليس الآن",
+        "confirm": "تشغيل المحرك"
     }
 }

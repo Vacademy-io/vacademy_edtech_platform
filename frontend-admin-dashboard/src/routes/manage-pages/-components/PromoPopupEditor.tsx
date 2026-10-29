@@ -109,7 +109,7 @@ const Thumb = ({ template }: { template: Template }) => {
 };
 
 /** Pill row used for every enum, same look as the neighbouring editors. */
-const Pills = <T extends string>({
+export const Pills = <T extends string>({
     value,
     options,
     onChange,
@@ -133,14 +133,14 @@ const Pills = <T extends string>({
     </div>
 );
 
-const Section = ({ title, children }: { title: string; children: ReactNode }) => (
+export const Section = ({ title, children }: { title: string; children: ReactNode }) => (
     <div className="space-y-3 rounded-lg border p-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-teal-600">{title}</p>
         {children}
     </div>
 );
 
-const Note = ({ tone, children }: { tone: 'info' | 'warn'; children: ReactNode }) => (
+export const Note = ({ tone, children }: { tone: 'info' | 'warn'; children: ReactNode }) => (
     // Plain string, not cn(): tailwind-merge reads text-caption as a colour and drops it.
     <p
         className={`flex items-start gap-1.5 rounded px-2 py-1.5 text-caption ${

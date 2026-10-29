@@ -981,6 +981,13 @@ public class InvoiceService {
         LocalDateTime paymentDate = firstPaymentLog.getDate() != null
                 ? toLocalDateTime(firstPaymentLog.getDate())
                 : LocalDateTime.now();
+        // INVOICE_SETTING.receiptDateField: key of a DATE field on the offline payment mode
+        // (e.g. "transaction_date"). When the payment carries it, that is the payment date the
+        // receipt prints. Unset, or the payment has no such value = the recorded date, as before.
+        LocalDateTime fieldDate = paymentDetailsDate(firstPaymentLog, invoiceSettings.get("receiptDateField"));
+        if (fieldDate != null) {
+            paymentDate = fieldDate;
+        }
         // INVOICE_SETTING.receiptDateFromPayment: date the receipt by that payment date, so a
         // payment recorded days later is not dated the day it was entered. Off = generation date.
         Object receiptDateFromPaymentRaw = invoiceSettings.get("receiptDateFromPayment");
@@ -7632,6 +7639,30 @@ public class InvoiceService {
         if (!StringUtils.hasText(paymentMethod)) return null;
         int sep = paymentMethod.indexOf(" · ");
         return sep > 0 ? paymentMethod.substring(0, sep) : paymentMethod;
+    }
+
+    /**
+     * The date an offline payment's mode field {@code fieldKey} holds (payment_details_json
+     * custom_fields, ISO yyyy-MM-dd), or null when the key is unset, absent or not a date.
+     */
+    static LocalDateTime paymentDetailsDate(PaymentLog paymentLog, Object fieldKey) {
+        if (paymentLog == null || !(fieldKey instanceof String key) || !StringUtils.hasText(key)
+                || !StringUtils.hasText(paymentLog.getPaymentDetailsJson())) {
+            return null;
+        }
+        try {
+            com.fasterxml.jackson.databind.JsonNode fields =
+                    new ObjectMapper().readTree(paymentLog.getPaymentDetailsJson()).path("custom_fields");
+            for (com.fasterxml.jackson.databind.JsonNode field : fields) {
+                if (key.equals(field.path("key").asText())) {
+                    String value = field.path("value").asText("").trim();
+                    return value.isEmpty() ? null : LocalDate.parse(value).atStartOfDay();
+                }
+            }
+        } catch (Exception ignored) {
+            // Not a date: keep the recorded date.
+        }
+        return null;
     }
 
     /** The admin's reference for an offline payment; the gateway's id otherwise. */

@@ -141,6 +141,11 @@
         "openDocument": "Ouvrir le document",
         "download": "Télécharger le PDF"
     },
+    "scormViewer": {
+        "title": "Package SCORM",
+        "noPackage": "Importez un zip SCORM dans le panneau",
+        "playsInPreview": "Le package se lit dans la vue Site"
+    },
     "blog": {
         "sampleCategory": "Conseils d’étude",
         "sampleTitle": "Article exemple {{n}}",

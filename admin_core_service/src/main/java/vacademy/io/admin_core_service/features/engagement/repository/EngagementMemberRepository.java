@@ -232,14 +232,64 @@ public interface EngagementMemberRepository extends JpaRepository<EngagementMemb
             UPDATE engagement_member
                SET last_decided_at = :decidedAt, wake_fingerprint = :fingerprint,
                    consecutive_no_ops = :noOps, consecutive_failures = 0,
-                   next_action_at = CASE WHEN next_action_at = :heldLease THEN :nextActionAt
-                                         ELSE LEAST(next_action_at, :nextActionAt) END,
+                   -- CRM activity that landed while the model was thinking (woken_at after the
+                   -- decision started) was not in what it read: look again a lease after the start.
+                   next_action_at = CASE
+                       WHEN woken_at > :decidedAt THEN LEAST(
+                           CASE WHEN next_action_at = :heldLease THEN :nextActionAt
+                                ELSE LEAST(next_action_at, :nextActionAt) END,
+                           CAST(:decidedAt AS timestamp) + INTERVAL '15 minutes')
+                       ELSE CASE WHEN next_action_at = :heldLease THEN :nextActionAt
+                                 ELSE LEAST(next_action_at, :nextActionAt) END
+                   END,
                    updated_at = :decidedAt
              WHERE id = :id
             """, nativeQuery = true)
     int recordDecision(@Param("id") String id, @Param("decidedAt") Instant decidedAt,
                        @Param("fingerprint") String fingerprint, @Param("noOps") short noOps,
                        @Param("heldLease") Instant heldLease, @Param("nextActionAt") Instant nextActionAt);
+
+    /**
+     * The wake gate said sleep: store the fingerprint and the re-check time, nothing else (a save()
+     * of the copy read at the start would put back a reply window or tier changed since). A wake
+     * that landed after the gate read the member is honoured with a look a lease from now.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_member
+               SET wake_fingerprint = :fingerprint,
+                   next_action_at = CASE WHEN woken_at > :checkedAt
+                                         THEN LEAST(:nextActionAt, CAST(:checkedAt AS timestamp) + INTERVAL '15 minutes')
+                                         ELSE :nextActionAt END,
+                   updated_at = :checkedAt
+             WHERE id = :id
+            """, nativeQuery = true)
+    int recordGateSleep(@Param("id") String id, @Param("fingerprint") String fingerprint,
+                        @Param("checkedAt") Instant checkedAt, @Param("nextActionAt") Instant nextActionAt);
+
+    /**
+     * B4: CRM activity asks for a look at these members. Stamps woken_at / wake_reason (and
+     * human_touch_at for a person's note or call) and pulls next_action_at to wakeAt if it was
+     * later. wakeAt is at least a lease out, so LEAST never shortens a lease or an auto-reply hold
+     * in progress (that would let a second pod decide alongside) — such a decision sees woken_at
+     * after its start and recordDecision schedules the follow-up look instead. Several events in
+     * a row keep the first wakeAt: one decision for a burst. Holdouts are never woken. hot puts the
+     * member first in its engine's due scan (tier 0), as a reply does: someone who came back.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_member
+               SET woken_at = :now, wake_reason = :reason,
+                   human_touch_at = CASE WHEN CAST(:human AS boolean) THEN :now ELSE human_touch_at END,
+                   next_action_at = LEAST(next_action_at, :wakeAt),
+                   tier = CASE WHEN CAST(:hot AS boolean) THEN 0 ELSE tier END,
+                   updated_at = :now
+             WHERE id IN (:ids) AND status = 'ACTIVE' AND is_holdout = false
+            """, nativeQuery = true)
+    int wake(@Param("ids") List<String> ids, @Param("now") Instant now, @Param("wakeAt") Instant wakeAt,
+             @Param("reason") String reason, @Param("human") boolean human, @Param("hot") boolean hot);
 
     /** Failure backoff after a decision threw: only the retry clock and the failure count. */
     @Modifying
@@ -377,4 +427,28 @@ public interface EngagementMemberRepository extends JpaRepository<EngagementMemb
 
     java.util.Optional<EngagementMember> findFirstByEngineIdAndAudienceResponseId(
             String engineId, String audienceResponseId);
+
+    /**
+     * Take these members out of their engines (a lead the CRM marked Converted, a clear "not
+     * interested"). EXITED, not OPTED_OUT: the person did not withdraw consent, and the reconcile
+     * may bring them back if their lead row changes again.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_member
+               SET status = 'EXITED', updated_at = :now
+             WHERE id IN (:ids) AND status IN ('ACTIVE', 'PAUSED')
+            """, nativeQuery = true)
+    int exitMembers(@Param("ids") List<String> ids, @Param("now") Instant now);
+
+    /** Opt these members out (an opt-out by email, where the phone-keyed update does not reach). */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_member
+               SET status = 'OPTED_OUT', updated_at = :now
+             WHERE id IN (:ids) AND status IN ('ACTIVE', 'PAUSED')
+            """, nativeQuery = true)
+    int optOutMembers(@Param("ids") List<String> ids, @Param("now") Instant now);
 }

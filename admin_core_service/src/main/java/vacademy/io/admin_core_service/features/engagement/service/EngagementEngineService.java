@@ -42,6 +42,10 @@ public class EngagementEngineService {
     @Autowired(required = false)
     private EngagementEngineDeletionDao deletionDao;
 
+    /** Field-injected for the same reason; absent in unit tests, where no channel is checked. */
+    @Autowired(required = false)
+    private EngagementChannelReadiness channelReadiness;
+
     @Transactional
     public EngagementEngine create(CreateEngineRequest req, String instituteId, String createdBy) {
         if (req.getName() == null || req.getName().isBlank()) {
@@ -62,7 +66,8 @@ public class EngagementEngineService {
         // here, not as an opaque jsonb INSERT error (or a silently-broken audience at sweep time).
         engine.setChannels(validObjectJson(req.getChannels(), "channels", "{}"));
         engine.setAudience(validAudienceJson(req.getAudience()));
-        engine.setQuietHours(validObjectJson(req.getQuietHours(), "quietHours", "{}"));
+        engine.setQuietHours(validQuietHoursJson(req.getQuietHours()));
+        if (channelReadiness != null) channelReadiness.requireReady(instituteId, engine.getChannels(), null);
         if (req.getCadenceHours() != null && req.getCadenceHours() > 0) {
             engine.setCadenceHours(req.getCadenceHours());
         }
@@ -147,9 +152,12 @@ public class EngagementEngineService {
     public EnrollmentResult enrollAndReconcile(String engineId, String instituteId) {
         EngagementEngine engine = requireEngine(engineId, instituteId);
 
-        record Target(String userId, String audienceResponseId) {}
+        record Target(String userId, String audienceResponseId, String phone10) {}
         List<Target> raw = new ArrayList<>();
         java.util.Set<String> userSelectorIds = new java.util.LinkedHashSet<>();
+        // A lead the CRM marked Converted is not enrolled where it would only be reached as a lead
+        // (PolicyGate.effectiveLeadBlock), so it leaves as EXITED instead of being revived nightly.
+        boolean targetsLearners = PolicyGate.targetsLearners(engine);
         try {
             JsonNode selectors = objectMapper.readTree(engine.getAudience());
             for (JsonNode sel : selectors) {
@@ -157,9 +165,14 @@ public class EngagementEngineService {
                 String id = sel.path("id").asText("");
                 switch (type) {
                     case "PACKAGE_SESSION" -> dao.userIdsByPackageSession(id, instituteId)
-                            .forEach(uid -> raw.add(new Target(uid, null)));
-                    case "AUDIENCE" -> dao.leadsByAudience(id, instituteId)
-                            .forEach(row -> raw.add(new Target((String) row[1], (String) row[0])));
+                            .forEach(uid -> raw.add(new Target(uid, null, null)));
+                    case "AUDIENCE" -> dao.leadsByAudience(id, instituteId).forEach(row -> {
+                        String userId = (String) row[1];
+                        // Converted or Lost / Not interested (L2): the lead's pipeline is over.
+                        boolean closed = row.length > 3 && ("CONVERTED".equals(row[3]) || "LOST".equals(row[3]));
+                        if (closed && (userId == null || !targetsLearners)) return;
+                        raw.add(new Target(userId, (String) row[0], row.length > 2 ? (String) row[2] : null));
+                    });
                     case "USER" -> userSelectorIds.add(id);   // validated below against the institute
                     default -> log.warn("Engine {}: unsupported audience selector type '{}' — skipped (ROLE/TAG/CUSTOM_FIELD_FILTER arrive in a later phase)",
                             engineId, type);
@@ -173,7 +186,7 @@ public class EngagementEngineService {
         // institute's user id and exfiltrate their PII through the engine's data-point reads).
         if (!userSelectorIds.isEmpty()) {
             java.util.Set<String> valid = dao.validInstituteUserIds(userSelectorIds, instituteId);
-            userSelectorIds.stream().filter(valid::contains).forEach(uid -> raw.add(new Target(uid, null)));
+            userSelectorIds.stream().filter(valid::contains).forEach(uid -> raw.add(new Target(uid, null, null)));
             userSelectorIds.stream().filter(uid -> !valid.contains(uid))
                     .forEach(uid -> log.warn("Engine {}: USER selector {} is not a member of institute {} — dropped",
                             engineId, uid, instituteId));
@@ -185,16 +198,22 @@ public class EngagementEngineService {
         // any occurrence carries one: a converted lead in an AUDIENCE keeps its respId, so the CRM
         // data points (lead status/tier/counsellor, form answers) can still hydrate. Dropping it
         // would blind exactly the lead-nurture use case an AUDIENCE engine exists for.
+        // A lead without an account is keyed by its phone, so two rows of one person (a re-enquiry,
+        // a second form) are one member; leadsByAudience lists oldest first, so the row kept is stable.
+        // Someone an engine of this institute already holds as opted out is not enrolled again.
+        OptOutMemory optedOut = OptOutMemory.of(dao.optedOutSubjects(instituteId));
         java.util.Map<String, Target> canonical = new java.util.LinkedHashMap<>();
         for (Target t : raw) {
-            String key = t.userId() != null ? "u:" + t.userId() : "l:" + t.audienceResponseId();
+            if (optedOut.covers(t.userId(), t.audienceResponseId(), t.phone10())) continue;
+            String key = t.userId() != null ? "u:" + t.userId()
+                    : t.phone10() != null ? "p:" + t.phone10() : "l:" + t.audienceResponseId();
             Target existing = canonical.get(key);
             if (existing == null) {
                 canonical.put(key, t);
             } else if (existing.audienceResponseId() == null && t.audienceResponseId() != null) {
                 // richer occurrence (has a lead row) wins — keep both ids
                 canonical.put(key, new Target(existing.userId() != null ? existing.userId() : t.userId(),
-                        t.audienceResponseId()));
+                        t.audienceResponseId(), t.phone10()));
             }
         }
 
@@ -209,7 +228,8 @@ public class EngagementEngineService {
             memberRepository.enrollOrStamp(
                     UUID.randomUUID().toString(), engine.getId(), instituteId,
                     t.userId(), t.audienceResponseId(),
-                    EngagementDecisionService.jitteredFirstWake(engine.getCadenceHours(), Instant.now()),
+                    EngagementSendSchedule.of(engine.getQuietHours(), objectMapper)
+                            .enrolWake(engine.getCadenceHours(), Instant.now()),
                     runId, holdoutPct);
         }
         // Exit anyone not stamped by this run — unconditional, so an emptied audience exits all.
@@ -238,17 +258,61 @@ public class EngagementEngineService {
     @Transactional
     public int enrollNewLead(String instituteId, String audienceId, String responseId, String userId) {
         int joined = 0;
+        // Looked up once, and only when some engine targets this list.
+        boolean looked = false;
+        String phone10 = null;
         for (EngagementEngine engine : engineRepository.findByInstituteIdOrderByCreatedAtDesc(instituteId)) {
             if (!"ACTIVE".equals(engine.getStatus()) && !"DRY_RUN".equals(engine.getStatus())) continue;
             if (engine.isSystemManaged() || !targetsAudience(engine, audienceId)) continue;
+            if (!looked) {
+                looked = true;
+                phone10 = dao.leadPhone10(responseId);
+                // Someone an engine already holds as opted out (same lead, account or phone) is not enrolled.
+                if (OptOutMemory.of(dao.optedOutSubjects(instituteId)).covers(userId, responseId, phone10)) {
+                    log.info("Intake lead {} not enrolled: this person opted out of the institute's engines", responseId);
+                    return 0;
+                }
+            }
+            // The same person already in this engine through another lead row: one member, not two.
+            if (dao.liveMembersForSamePerson(engine.getId(), responseId, userId, phone10) > 0) continue;
             int holdoutPct = engine.getHoldoutPct() != null ? Math.max(0, Math.min(100, engine.getHoldoutPct())) : 0;
-            Instant firstLook = Instant.now().plus(java.time.Duration.ofMinutes(
-                    java.util.concurrent.ThreadLocalRandom.current().nextLong(1, INTAKE_FIRST_LOOK_MAX_MINUTES + 1)));
+            // An engine that waits for its send window for a first touch looks at the lead then.
+            EngagementSendSchedule schedule = EngagementSendSchedule.of(engine.getQuietHours(), objectMapper);
+            Instant firstLook = schedule.firstTouchImmediate()
+                    ? Instant.now().plus(java.time.Duration.ofMinutes(
+                            java.util.concurrent.ThreadLocalRandom.current().nextLong(1, INTAKE_FIRST_LOOK_MAX_MINUTES + 1)))
+                    : schedule.firstWake(engine.getCadenceHours(), Instant.now());
             memberRepository.enrollOrStamp(UUID.randomUUID().toString(), engine.getId(), instituteId,
                     userId, responseId, firstLook, "intake:" + UUID.randomUUID(), holdoutPct);
             joined++;
         }
         return joined;
+    }
+
+    /**
+     * Who this institute's engines hold as opted out, from {@link EngagementReadDao#optedOutSubjects}:
+     * a person is covered by their account, their lead row or their phone.
+     */
+    record OptOutMemory(java.util.Set<String> userIds, java.util.Set<String> responseIds, java.util.Set<String> phones) {
+        static OptOutMemory of(List<Object[]> rows) {
+            java.util.Set<String> users = new java.util.HashSet<>();
+            java.util.Set<String> responses = new java.util.HashSet<>();
+            java.util.Set<String> phones = new java.util.HashSet<>();
+            if (rows != null) {
+                for (Object[] r : rows) {
+                    if (r.length > 0 && r[0] != null) users.add((String) r[0]);
+                    if (r.length > 1 && r[1] != null) responses.add((String) r[1]);
+                    if (r.length > 2 && r[2] != null) phones.add((String) r[2]);
+                }
+            }
+            return new OptOutMemory(users, responses, phones);
+        }
+
+        boolean covers(String userId, String responseId, String phone10) {
+            return (userId != null && userIds.contains(userId))
+                    || (responseId != null && responseIds.contains(responseId))
+                    || (phone10 != null && phones.contains(phone10));
+        }
     }
 
     /** True when the engine's audience has an AUDIENCE selector for this list. */
@@ -348,8 +412,12 @@ public class EngagementEngineService {
         if (req.getObjective() != null) engine.setObjective(req.getObjective().isBlank() ? null : req.getObjective().trim());
         if (req.getLanguage() != null) engine.setLanguage(validLanguage(req.getLanguage()));
         if (req.getDataPoints() != null) engine.setDataPoints(writeJson(req.getDataPoints()));
-        if (req.getChannels() != null) engine.setChannels(validObjectJson(req.getChannels(), "channels", "{}"));
-        if (req.getQuietHours() != null) engine.setQuietHours(validObjectJson(req.getQuietHours(), "quietHours", "{}"));
+        if (req.getChannels() != null) {
+            String channels = validObjectJson(req.getChannels(), "channels", "{}");
+            if (channelReadiness != null) channelReadiness.requireReady(instituteId, channels, engine.getChannels());
+            engine.setChannels(channels);
+        }
+        if (req.getQuietHours() != null) engine.setQuietHours(validQuietHoursJson(req.getQuietHours()));
         if (req.getCadenceHours() != null) {
             if (req.getCadenceHours() <= 0) throw new VacademyException("cadenceHours must be at least 1");
             engine.setCadenceHours(req.getCadenceHours());
@@ -469,6 +537,56 @@ public class EngagementEngineService {
         } catch (Exception e) {
             throw new VacademyException(field + " is not valid JSON: " + e.getMessage());
         }
+    }
+
+    /**
+     * Quiet hours plus the send schedule stored with them (see {@link EngagementSendSchedule}):
+     * a send time must be a real time outside the engine's own quiet hours, and days must name at
+     * least one day.
+     */
+    private String validQuietHoursJson(String raw) {
+        String json = validObjectJson(raw, "quietHours", "{}");
+        JsonNode qh;
+        try {
+            qh = objectMapper.readTree(json);
+        } catch (Exception e) {
+            return json; // validObjectJson already refused unparseable JSON
+        }
+        if (qh.hasNonNull("sendHour")) {
+            int h = qh.get("sendHour").asInt(-1);
+            int m = qh.path("sendMinute").asInt(0);
+            if (!qh.get("sendHour").canConvertToInt() || h < 0 || h > 23 || m < 0 || m > 59) {
+                throw new VacademyException("Pick a valid send time for the engine");
+            }
+            if (qh.hasNonNull("startHour") && qh.hasNonNull("endHour")) {
+                int qs = qh.get("startHour").asInt(), qe = qh.get("endHour").asInt();
+                int minute = h * 60 + m;
+                boolean quiet = qs != qe && (qs > qe
+                        ? minute >= qs * 60 || minute < qe * 60
+                        : minute >= qs * 60 && minute < qe * 60);
+                if (quiet) {
+                    throw new VacademyException(String.format(
+                            "The send time %02d:%02d is inside the quiet hours (%02d:00 to %02d:00). Pick a time outside them.",
+                            h, m, qs, qe));
+                }
+            }
+        }
+        JsonNode days = qh.get("days");
+        if (days != null && !days.isNull()) {
+            if (!days.isArray() || days.isEmpty()) {
+                throw new VacademyException("Pick at least one day for the engine to send on");
+            }
+            for (JsonNode d : days) {
+                if (!d.canConvertToInt() || d.asInt() < 1 || d.asInt() > 7) {
+                    throw new VacademyException("days must be ISO days of the week, 1 (Monday) to 7 (Sunday)");
+                }
+            }
+        }
+        String firstTouch = qh.path("firstTouch").asText("IMMEDIATE");
+        if (!"IMMEDIATE".equalsIgnoreCase(firstTouch) && !"SCHEDULED".equalsIgnoreCase(firstTouch)) {
+            throw new VacademyException("firstTouch must be IMMEDIATE or SCHEDULED");
+        }
+        return json;
     }
 
     private String validAudienceJson(String raw) {

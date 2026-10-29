@@ -16,20 +16,17 @@
 
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight, Warning } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { SearchableSelect } from '@/components/design-system/searchable-select';
+import { useLeadTerminology } from '@/hooks/use-lead-terminology';
 import { handleFetchCampaignsList } from '@/routes/audience-manager/list/-services/get-campaigns-list';
+import { buildDefaultCampaignTypeOptions } from '@/routes/audience-manager/list/-utils/campaign-types';
 import {
     migrateAudienceLeads,
     MIGRATE_SKIP_LABELS,
@@ -49,6 +46,33 @@ interface MigrateLeadsDialogProps {
     currentAudienceId?: string | null;
     /** Fired after a move that actually changed something (refetch + clear selection). */
     onSuccess?: (migrated: number) => void;
+}
+
+/** "Google Ads" and "GOOGLEADS" are the same type — compare without case or spaces. */
+const typeKey = (value: string) => value.replace(/\s+/g, '').toUpperCase();
+
+/**
+ * Picker options for the target list: each reads "name · source" and is found by either —
+ * two lists can share a name across sources, and a counsellor often knows the source but not
+ * the exact list name. A default type shows its translated label, anything else exactly as
+ * saved. The search list keys items by label, so a repeated label gets a "(2)" suffix rather
+ * than two lists behaving as one.
+ */
+export function buildTargetListOptions(
+    lists: { id: string; name: string; campaignType?: string | null }[],
+    defaultTypes: { value: string; label: string }[]
+): { value: string; label: string; keywords: string[] }[] {
+    const defaultLabels = new Map(defaultTypes.map((o) => [typeKey(o.value), o.label]));
+    const seen = new Map<string, number>();
+    return lists.map((list) => {
+        const raw = list.campaignType?.trim() ?? '';
+        const source = raw ? defaultLabels.get(typeKey(raw)) ?? raw : '';
+        let label = source ? `${list.name} · ${source}` : list.name;
+        const count = (seen.get(label) ?? 0) + 1;
+        seen.set(label, count);
+        if (count > 1) label = `${label} (${count})`;
+        return { value: list.id, label, keywords: source ? [list.name, source] : [list.name] };
+    });
 }
 
 const ANCHOR_OPTIONS: { value: LeadWorkflowAnchor; label: string; hint: string }[] = [
@@ -83,6 +107,9 @@ export const MigrateLeadsDialog = ({
     // responseIds.length: onSuccess clears the parent's selection, so by the time the dialog is
     // held open to show skips the prop is [] and the line read "328 of 0 leads moved".
     const [requestedCount, setRequestedCount] = useState(0);
+    // The institute's word for a list's campaign type (often "Source").
+    const terminology = useLeadTerminology();
+    const { t: tCampaignType } = useTranslation('audienceManagerCampaignTypeDropdown');
 
     // One page of lists, newest first. An institute with more lists than this would not see the
     // oldest ones in the picker — acceptable while the endpoint has no search, but it is the
@@ -103,9 +130,18 @@ export const MigrateLeadsDialog = ({
     const options = useMemo(
         () =>
             (campaigns?.content ?? [])
-                .map((c) => ({ id: c.id || c.audience_id || c.campaign_id || '', name: c.campaign_name }))
+                .map((c) => ({
+                    id: c.id || c.audience_id || c.campaign_id || '',
+                    name: c.campaign_name,
+                    campaignType: c.campaign_type,
+                }))
                 .filter((c) => c.id && c.id !== currentAudienceId),
         [campaigns, currentAudienceId]
+    );
+
+    const selectOptions = useMemo(
+        () => buildTargetListOptions(options, buildDefaultCampaignTypeOptions(tCampaignType)),
+        [options, tCampaignType]
     );
 
     const targetName = options.find((o) => o.id === targetAudienceId)?.name;
@@ -122,9 +158,7 @@ export const MigrateLeadsDialog = ({
         onSuccess: (res) => {
             setResult(res);
             if (res.migrated > 0) {
-                toast.success(
-                    res.migrated === 1 ? 'Lead moved' : `${res.migrated} leads moved`
-                );
+                toast.success(res.migrated === 1 ? 'Lead moved' : `${res.migrated} leads moved`);
                 onSuccess?.(res.migrated);
             }
             // Held open when anything was skipped: the skips are the point of the response, and
@@ -231,22 +265,17 @@ export const MigrateLeadsDialog = ({
                             <p className="text-caption font-medium uppercase tracking-wider text-neutral-500">
                                 Move to
                             </p>
-                            <Select value={targetAudienceId} onValueChange={setTargetAudienceId}>
-                                <SelectTrigger>
-                                    <SelectValue
-                                        placeholder={
-                                            isLoading ? 'Loading lists…' : 'Select a lead list'
-                                        }
-                                    />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {options.map((o) => (
-                                        <SelectItem key={o.id} value={o.id}>
-                                            {o.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <SearchableSelect
+                                options={selectOptions}
+                                value={targetAudienceId}
+                                onChange={setTargetAudienceId}
+                                placeholder={isLoading ? 'Loading lists…' : 'Select a lead list'}
+                                searchPlaceholder={`Search by list name or ${terminology.campaignType.toLowerCase()}…`}
+                                emptyText="No lead list matches"
+                                // Inside a dialog a portalled list can't be scrolled.
+                                portal={false}
+                                disabled={isLoading}
+                            />
                             <p className="text-caption text-neutral-500">
                                 Their history — status, follow-ups, calls and notes — moves with
                                 them.

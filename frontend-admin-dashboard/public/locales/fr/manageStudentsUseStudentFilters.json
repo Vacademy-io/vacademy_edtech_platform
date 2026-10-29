@@ -9,14 +9,15 @@
         "paymentStatus": {
             "paid": "Payé",
             "failed": "Échec",
-            "paymentFailed": "Échec du paiement"
+            "pending": "En attente"
         },
         "approvalStatus": {
             "pending": "En attente d'approbation",
             "invited": "Invité"
         },
         "learnerType": {
-            "abandonedCart": "Panier abandonné"
+            "abandonedCart": "Panier abandonné",
+            "paymentFailed": "Échec du paiement"
         }
     }
 }

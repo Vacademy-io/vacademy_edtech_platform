@@ -73,6 +73,9 @@ public class VoiceBotInternalController {
     @Autowired private vacademy.io.admin_core_service.features.telephony.publicapi.repository.AiCallApiCallRepository
             apiCallRepo;
 
+    @Autowired private vacademy.io.admin_core_service.features.telephony.persistence.repository
+            .AiAgentTestCallRepository testCallRepo;
+
     private final ObjectMapper mapper = new ObjectMapper();
 
     /** The public-API call behind this call-log row, or null for every other call. */
@@ -105,6 +108,19 @@ public class VoiceBotInternalController {
         }
     }
 
+    private String testCallName(TelephonyCallLog row) {
+        if (row.getSubjectId() == null) return null;
+        try {
+            return testCallRepo.findByIdAndInstituteId(row.getSubjectId(), row.getInstituteId())
+                    .map(vacademy.io.admin_core_service.features.telephony.persistence.entity
+                            .AiAgentTestCall::getContactName)
+                    .orElse(null);
+        } catch (RuntimeException e) {
+            log.warn("call-context: test call lookup failed for {}: {}", row.getSubjectId(), e.getMessage());
+            return null;
+        }
+    }
+
     @GetMapping("/call-context")
     public ResponseEntity<Map<String, Object>> callContext(
             @RequestParam("corr") String corr,
@@ -120,14 +136,19 @@ public class VoiceBotInternalController {
         // name and template variables with the request. Its user id is a pseudo id that
         // exists nowhere, so the auth-service lookups below would only find nothing.
         AiCallApiCall apiCall = apiCallFor(row);
+        // A test call from the agent editor (V615): the name the admin typed; its user id is
+        // a pseudo id too.
+        boolean agentTest = vacademy.io.admin_core_service.features.telephony.spi.dto.CallSubjectType
+                .AGENT_TEST.name().equals(row.getSubjectType());
         String leadName = apiCall != null ? apiCall.getContactName()
+                : agentTest ? testCallName(row)
                 : row.getUserId() == null || "UNKNOWN".equals(row.getUserId())
                 ? null
                 : userMobileResolver.findDisplayName(row.getUserId()).orElse(null);
         // Gender for how the bot addresses the lead (honorific + Hindi second-person):
         // the stored record gender wins; else a conservative name guess (null when
         // unknown, so the bot uses gender-neutral address instead of defaulting to "sir").
-        String leadGender = (apiCall != null || row.getUserId() == null || "UNKNOWN".equals(row.getUserId()))
+        String leadGender = (apiCall != null || agentTest || row.getUserId() == null || "UNKNOWN".equals(row.getUserId()))
                 ? vacademy.io.admin_core_service.features.telephony.core.NameGender.of(leadName)
                 : userMobileResolver.findGender(row.getUserId())
                         .orElseGet(() -> vacademy.io.admin_core_service.features.telephony.core
@@ -144,9 +165,10 @@ public class VoiceBotInternalController {
         Map<String, Object> agent = registryAgent
                 .map(a -> registryAgentMap(a, instituteName, settings))
                 .orElseGet(() -> defaultAgent(agentId, instituteName, settings));
-        if (apiCall != null) {
+        if (apiCall != null || agentTest) {
             // The contact belongs to the client's CRM, not ours: there is no lead to send a
             // WhatsApp/email to or to book against, so the agent must not offer either.
+            // A test call has no lead either.
             agent.keySet().removeAll(List.of("sendArtefacts", "sendArtefactsMidCall", "sendOffers", "sendConditions",
                     "bookingEnabled"));
         }
@@ -349,8 +371,11 @@ public class VoiceBotInternalController {
         if (a.getVoice() != null) base.put("voice", a.getVoice());
         if (a.getOpeningLine() != null) base.put("openingLine", a.getOpeningLine());
         // Authoritative content — never inherit the admissions template's prompt/questions.
-        base.put("systemPrompt", a.getSystemPrompt() != null && !a.getSystemPrompt().isBlank()
-                ? a.getSystemPrompt() : "You are a friendly, concise phone assistant.");
+        // V615: the agent's reference documents ride at the end of the same key, so the bot
+        // needs no change to use them; an agent without documents gets exactly the old prompt.
+        base.put("systemPrompt", (a.getSystemPrompt() != null && !a.getSystemPrompt().isBlank()
+                ? a.getSystemPrompt() : "You are a friendly, concise phone assistant.")
+                + aiAgentService.knowledgePromptSection(a));
         base.put("extractionQuestions", aiAgentService.parseList(a.getExtractionQuestions()));
         List<String> dispositions = aiAgentService.parseList(a.getDispositions());
         if (!dispositions.isEmpty()) base.put("dispositions", dispositions);

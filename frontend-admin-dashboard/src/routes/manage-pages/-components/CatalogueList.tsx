@@ -25,6 +25,7 @@ import {
     Clock,
     Newspaper,
 } from 'lucide-react';
+import { ChatCircleText } from '@phosphor-icons/react';
 import { useToast } from '@/hooks/use-toast';
 import { useCataloguePermissions } from '../-hooks/use-catalogue-permissions';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
@@ -41,6 +42,9 @@ import { UtmBuilderDialog } from '@/components/common/utm/utm-builder-dialog';
 import { useUtmBuilderEnabled } from '@/hooks/use-utm-builder-enabled';
 import { useBlogManagerStore } from '../-stores/blog-manager-store';
 import { BlogManagerDialog } from './blog/BlogManagerDialog';
+import { ReviewsManagerDialog } from './reviews/ReviewsManagerDialog';
+import { useReviewManagerStore } from '../-stores/review-manager-store';
+import { formatBadgeCount, usePendingReviewCount } from '../-hooks/use-pending-review-count';
 import { FolderLibraryDialog } from './folders/FolderLibraryDialog';
 import { useFolderLibraryStore } from '../-stores/folder-library-store';
 import { Folders } from '@phosphor-icons/react';
@@ -79,16 +83,27 @@ export const CatalogueList = () => {
     const instituteId = getCurrentInstituteId();
     const navigate = useNavigate();
     const openBlog = useBlogManagerStore((s) => s.open);
+    const openReviews = useReviewManagerStore((s) => s.open);
+    const pendingReviews = usePendingReviewCount();
     const openFolders = useFolderLibraryStore((s) => s.open);
     // `?blog=list` / `?blog=<postId>` — deep link into the blog manager (MCP
     // hands these out). Consumed once, then stripped so closing the dialog
     // doesn't reopen it on the next render.
-    const { blog: blogSearch } = useSearch({ strict: false }) as { blog?: string };
+    const { blog: blogSearch, reviews: reviewsSearch } = useSearch({ strict: false }) as {
+        blog?: string;
+        reviews?: string;
+    };
     useEffect(() => {
         if (!blogSearch) return;
         openBlog(blogSearch === 'list' ? null : blogSearch);
         navigate({ to: '/manage-pages', search: {}, replace: true });
     }, [blogSearch, openBlog, navigate]);
+    // `?reviews=list` — the new-review email's "Review and approve" button. Same consume-once rule.
+    useEffect(() => {
+        if (!reviewsSearch) return;
+        openReviews();
+        navigate({ to: '/manage-pages', search: {}, replace: true });
+    }, [reviewsSearch, openReviews, navigate]);
     const { toast } = useToast();
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [deletingTag, setDeletingTag] = useState<string | null>(null);
@@ -170,6 +185,23 @@ export const CatalogueList = () => {
                     >
                         <Newspaper className="size-4" />
                         Blog
+                    </Button>
+                    <Button
+                        variant="outline"
+                        onClick={() => openReviews()}
+                        className="gap-1.5"
+                        title="Approve reviews visitors sent through the Reviews & feedback section"
+                    >
+                        <ChatCircleText className="size-4" />
+                        Reviews
+                        {pendingReviews > 0 && (
+                            <span
+                                className="flex h-5 min-w-5 items-center justify-center rounded-full bg-danger-500 px-1.5 text-caption font-semibold leading-none text-white"
+                                aria-label={`${pendingReviews} waiting for approval`}
+                            >
+                                {formatBadgeCount(pendingReviews)}
+                            </span>
+                        )}
                     </Button>
                     <Button
                         variant="outline"
@@ -406,6 +438,7 @@ export const CatalogueList = () => {
             />
 
             <BlogManagerDialog />
+            <ReviewsManagerDialog />
             <FolderLibraryDialog />
             <CreateCatalogueDialog
                 open={isCreateDialogOpen}

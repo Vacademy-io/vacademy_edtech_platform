@@ -46,10 +46,17 @@ public class EngagementInternalClients {
 
     /** subjects: [{key(memberId), userId?, phone?, email?}] → LedgerBatchResponse JSON. */
     public JsonNode ledgerBatch(String instituteId, List<Map<String, String>> subjects, int recentWindowDays) {
-        Map<String, Object> body = Map.of(
+        return ledgerBatch(instituteId, subjects, recentWindowDays, null);
+    }
+
+    /** contactWindowDays (B5): also return each subject's cross-system contact count for that window. */
+    public JsonNode ledgerBatch(String instituteId, List<Map<String, String>> subjects, int recentWindowDays,
+                                Integer contactWindowDays) {
+        Map<String, Object> body = new java.util.HashMap<>(Map.of(
                 "instituteId", instituteId,
                 "recentWindowDays", recentWindowDays,
-                "subjects", subjects);
+                "subjects", subjects));
+        if (contactWindowDays != null) body.put("contactWindowDays", contactWindowDays);
         return post(notificationServerBaseUrl,
                 "/notification-service/internal/v1/engagement/ledger-batch", body, "ledger-batch");
     }
@@ -82,7 +89,10 @@ public class EngagementInternalClients {
         try {
             String route = "/notification-service/internal/v1/engagement/inbound-since"
                     + "?instituteId=" + instituteId
-                    + "&since=" + sinceEpochMillis;
+                    + "&since=" + sinceEpochMillis
+                    // Email replies too (channel=EMAIL rows). An older notification-service ignores
+                    // the flag and answers WhatsApp only, so the two can deploy in either order.
+                    + "&includeEmail=true";
             ResponseEntity<String> response = internalClientUtils.makeHmacRequest(
                     clientName, HttpMethod.GET.name(), notificationServerBaseUrl, route, null);
             if (response == null || !response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {

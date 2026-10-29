@@ -21,13 +21,19 @@ public interface ReferralMappingRepository extends JpaRepository<ReferralMapping
     Optional<ReferralMapping> findByUserPlanIdAndStatusIn(@Param("userPlanId") String userPlanId,
                                                           @Param("status") List<String> status);
 
-    /** Whether this person was already referred into the programme's institute (or other source). */
+    /**
+     * Whether this person was already referred into the programme source (an institute).
+     * A referral left on a checkout that was never paid does not count: a friend who closes
+     * the payment window or whose payment fails and then tries again must keep the referral
+     * on the new attempt, not lose it to the abandoned one.
+     */
     @Query("""
     SELECT COUNT(rm) > 0
     FROM ReferralMapping rm
     WHERE rm.refereeUserId = :refereeUserId
       AND rm.referralOption.sourceId = :sourceId
       AND rm.status IN :status
+      AND rm.userPlan.status NOT IN ('PENDING_FOR_PAYMENT', 'PAYMENT_FAILED')
 """)
     boolean existsRefereeAtSource(@Param("refereeUserId") String refereeUserId,
                                   @Param("sourceId") String sourceId,
@@ -49,5 +55,25 @@ public interface ReferralMappingRepository extends JpaRepository<ReferralMapping
             "AND r.status IN :statusList")
     long countByReferrerUserIdAndStatusList(@Param("referrerUserId") String referrerUserId,
                                             @Param("statusList") List<String> statusList);
+
+    /**
+     * The people this member referred into the programme source (an institute), newest first,
+     * with the plan and programme loaded. A referral left on a checkout that was never paid
+     * is not listed: the friend did not join on that attempt.
+     */
+    @Query("""
+    SELECT rm
+    FROM ReferralMapping rm
+    JOIN FETCH rm.userPlan up
+    JOIN FETCH rm.referralOption ro
+    WHERE rm.referrerUserId = :referrerUserId
+      AND ro.sourceId = :sourceId
+      AND rm.status IN :status
+      AND up.status NOT IN ('PENDING_FOR_PAYMENT', 'PAYMENT_FAILED')
+    ORDER BY rm.createdAt DESC
+""")
+    List<ReferralMapping> findReferralsMadeAtSource(@Param("referrerUserId") String referrerUserId,
+                                                    @Param("sourceId") String sourceId,
+                                                    @Param("status") List<String> status);
 
 }

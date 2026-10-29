@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { CourseSettingsForm } from './CourseSettingsForm';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Warning, CheckCircle, CircleNotch, Gear } from '@phosphor-icons/react';
-import { saveCourseSettings } from '@/services/course-settings';
+import { saveDripConditionChanges } from '@/services/course-settings';
 import { CourseSettingsData } from '@/types/course-settings';
 import { useCourseSettings } from '@/hooks/useCourseSettings';
 import UserIdentifierSettings from '../UserIdentifierSettings';
@@ -29,7 +29,13 @@ const CourseSettings = () => {
         try {
             setSaving(true);
             setError(null);
-            await saveCourseSettings(updatedSettings);
+            // Course pages save unlock rules into this same blob; writing the
+            // form's (possibly day-old) copy of them would delete theirs.
+            await saveDripConditionChanges(
+                settings.dripConditions.conditions ?? [],
+                updatedSettings.dripConditions.conditions ?? [],
+                updatedSettings
+            );
             // Refresh the context to update all components using course settings
             await refreshSettings();
             setSuccess(t('success.saved'));

@@ -37,6 +37,9 @@ logger = logging.getLogger(__name__)
 _REASONING_MODE: Dict[str, str] = {
     "z-ai/glm-5.3-flash": "on-low",
     "z-ai/glm-5.3-flash:batch": "on-low",
+    # Copy-check language pass (language_vision.py); probed 2026-10-28 with
+    # reasoning on/low: answers in 3-15 s per page band.
+    "z-ai/glm-5.3-flashx": "on-low",
     "z-ai/glm-5.3": "on-low",
     "z-ai/glm-4.6v": "on-low",
 }

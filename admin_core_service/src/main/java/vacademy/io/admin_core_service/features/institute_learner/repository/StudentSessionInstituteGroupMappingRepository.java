@@ -1130,6 +1130,51 @@ public interface StudentSessionInstituteGroupMappingRepository
       @Param("statuses") List<String> statuses);
 
   /**
+   * Sub-organizations anywhere in an institute whose name contains {@code namePattern}, for the
+   * search box of the enroll wizard sub-org picker. Unlike {@link #findSubOrgsByPackageSession}
+   * this is not limited to one package session, so an organization that has no member in the
+   * batch yet can still be picked.
+   *
+   * <p>Candidates come from the three places a sub-org is tied to its parent: the
+   * institute_suborg link, the sub-org stamp on mappings, and sub-org invites. Each is its own
+   * UNION branch rather than an OR across columns.
+   *
+   * <p>{@code namePattern} must already be an ILIKE pattern with wildcards escaped.
+   *
+   * <p>Returns: sub_org_id, name, email, mobile_number.
+   */
+  @Query(value = """
+      SELECT i.id            AS sub_org_id,
+             i.name          AS name,
+             i.email         AS email,
+             i.mobile_number AS mobile_number
+      FROM institutes i
+      WHERE i.id IN (
+          SELECT isub.suborg_id
+          FROM institute_suborg isub
+          WHERE isub.institute_id = :instituteId
+            AND isub.suborg_id IS NOT NULL
+          UNION
+          SELECT ssigm.sub_org_id
+          FROM student_session_institute_group_mapping ssigm
+          WHERE ssigm.institute_id = :instituteId
+            AND ssigm.sub_org_id IS NOT NULL
+          UNION
+          SELECT ei.sub_org_id
+          FROM enroll_invite ei
+          WHERE ei.institute_id = :instituteId
+            AND ei.sub_org_id IS NOT NULL
+      )
+        AND i.name ILIKE :namePattern
+      ORDER BY i.name
+      LIMIT :maxResults
+      """, nativeQuery = true)
+  List<Object[]> searchInstituteSubOrgsByName(
+      @Param("instituteId") String instituteId,
+      @Param("namePattern") String namePattern,
+      @Param("maxResults") int maxResults);
+
+  /**
    * Batched variant of {@link #findAdminsBySubOrg(String)} for several sub-orgs at once, enriched
    * with the admin's contact email. Used to fill the picker without fanning out one query per row.
    *
@@ -1148,5 +1193,70 @@ public interface StudentSessionInstituteGroupMappingRepository
         AND ssigm.comma_separated_org_roles LIKE '%ADMIN%'
       """, nativeQuery = true)
   List<Object[]> findAdminsBySubOrgIds(@Param("subOrgIds") List<String> subOrgIds);
+
+  /**
+   * Check Lead fallback: one of these people (ids of users whose own profile phone or
+   * email is the one searched) who is enrolled at the institute. Students admitted
+   * without an enquiry here (migrated admissions, direct enrolments) are on the Contacts
+   * page but have no lead row, so the lead lookup alone calls them "not in the system".
+   *
+   * <p>Only real enrolments count, the same set the lead lookup reads for its admission
+   * stage: invites, abandoned carts and pending approvals are not admissions. Prefers a
+   * person with a live enrolment, then the latest one. The course is the batch's course
+   * (an ACTIVE enrolment first), and the status label is the institute's own word for
+   * CONVERTED, so the card reads the way a converted lead's would.
+   */
+  @Query(value = """
+      SELECT m.user_id                                 AS "userId",
+             ulp.assigned_counselor_id                 AS "counsellorId",
+             ulp.assigned_counselor_name               AS "counsellorName",
+             COALESCE(lt.label, ulp.lead_tier)         AS "interestLevel",
+             (SELECT p.package_name
+                FROM student_session_institute_group_mapping m2
+                JOIN package_session ps ON ps.id = m2.package_session_id
+                JOIN package p ON p.id = ps.package_id
+               WHERE m2.user_id = m.user_id
+                 AND m2.institute_id = m.institute_id
+                 AND m2.status IN ('ACTIVE', 'INACTIVE', 'TERMINATED', 'EXPIRED')
+               ORDER BY (m2.status = 'ACTIVE') DESC, m2.created_at DESC
+               LIMIT 1)                                AS "courseValue",
+             (SELECT ls.label FROM lead_status ls
+               WHERE ls.institute_id = m.institute_id AND ls.status_key = 'CONVERTED'
+               LIMIT 1)                                AS "convertedLabel",
+             COUNT(*) FILTER (WHERE m.status = 'ACTIVE'
+                    AND (m.expiry_date IS NULL OR m.expiry_date > NOW())) AS "activeCount"
+      FROM student_session_institute_group_mapping m
+      LEFT JOIN user_lead_profile ulp
+             ON ulp.user_id = m.user_id AND ulp.institute_id = m.institute_id
+      LEFT JOIN lead_tier lt
+             ON lt.institute_id = m.institute_id AND lt.tier_key = ulp.lead_tier
+      WHERE m.institute_id = :instituteId
+        AND m.user_id = ANY(STRING_TO_ARRAY(CAST(:userIdsCsv AS text), ','))
+        AND m.status IN ('ACTIVE', 'INACTIVE', 'TERMINATED', 'EXPIRED')
+      GROUP BY m.user_id, m.institute_id, ulp.assigned_counselor_id, ulp.assigned_counselor_name,
+               lt.label, ulp.lead_tier
+      ORDER BY "activeCount" DESC, MAX(m.created_at) DESC
+      LIMIT 1
+      """, nativeQuery = true)
+  Optional<EnrolledStudentLookupRow> findEnrolledStudentForLookup(
+      @Param("instituteId") String instituteId,
+      @Param("userIdsCsv") String userIdsCsv);
+
+  /** Projection for {@link #findEnrolledStudentForLookup}. */
+  interface EnrolledStudentLookupRow {
+    String getUserId();
+
+    String getCounsellorId();
+
+    String getCounsellorName();
+
+    String getInterestLevel();
+
+    String getCourseValue();
+
+    String getConvertedLabel();
+
+    Long getActiveCount();
+  }
 
 }

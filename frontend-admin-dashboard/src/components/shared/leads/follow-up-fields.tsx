@@ -118,6 +118,11 @@ export function useFollowUpFeatures(): {
     showHistory: boolean;
     allowEditing: boolean;
     reportExports: boolean;
+    scheduleNextByDefault: boolean;
+    closingNoteOptional: boolean;
+    markDoneLeadStatusAndTier: boolean;
+    syncInterestToLead: boolean;
+    overdueByDate: boolean;
 } {
     const { followUpFields } = useLeadSettings();
     return {
@@ -125,6 +130,11 @@ export function useFollowUpFeatures(): {
         showHistory: followUpFields.showHistory,
         allowEditing: followUpFields.allowEditing,
         reportExports: followUpFields.reportExports,
+        scheduleNextByDefault: followUpFields.scheduleNextByDefault,
+        closingNoteOptional: followUpFields.closingNoteOptional,
+        markDoneLeadStatusAndTier: followUpFields.markDoneLeadStatusAndTier,
+        syncInterestToLead: followUpFields.syncInterestToLead,
+        overdueByDate: followUpFields.overdueByDate,
     };
 }
 

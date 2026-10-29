@@ -38,6 +38,7 @@ public class BlogPostResponse {
     private Integer readingMinutes;
     private String template;
     private List<String> recommendedCourseIds;
+    private Integer likeCount;
     private String createdBy;
     private String updatedBy;
     private String createdAt;

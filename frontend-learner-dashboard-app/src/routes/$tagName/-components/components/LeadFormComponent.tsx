@@ -1,7 +1,8 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { CheckCircle, PaperPlaneTilt } from "@phosphor-icons/react";
+import { CheckCircle, PaperPlaneTilt, X } from "@phosphor-icons/react";
 import { CustomFieldRenderer } from "@/components/common/custom-fields/CustomFieldRenderer";
 import { getFieldVerification } from "@/components/common/enroll-by-invite/-utils/custom-field-helpers";
 import { FieldVerification } from "@/routes/product-pages/$productPageCode/-components/FieldVerification";
@@ -9,6 +10,7 @@ import {
   FieldRenderType,
   dependentFieldKeys,
   getFieldRenderType,
+  parseDropdownOptions,
   resolveDependentField,
 } from "@/components/common/enroll-by-invite/-utils/custom-field-helpers";
 import {
@@ -60,6 +62,12 @@ interface LeadFormProps {
   successMessage?: string;
   /** 'card' wraps the fields in an elevated card; 'bare' for modal/column use. */
   layout?: "card" | "bare";
+  /** 2 = short fields side by side from tablet up; long ones (message, address) keep the full row. */
+  columns?: 1 | 2;
+  /** 'chips' shows a short single-choice list (≤ 8 options) as pill buttons instead of a dropdown. */
+  choiceStyle?: "dropdown" | "chips";
+  /** 'popup' thanks the visitor in a dialog over the form instead of replacing it. */
+  successDisplay?: "inline" | "popup";
   align?: "center" | "left";
   backgroundColor?: string;
   /** 'section' renders the full catalogue section; 'embedded' just the form. */
@@ -90,6 +98,9 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
   submitLabel,
   successMessage,
   layout = "card",
+  columns = 1,
+  choiceStyle = "dropdown",
+  successDisplay = "inline",
   align = "center",
   backgroundColor,
   variant = "section",
@@ -118,6 +129,29 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
   // number has to re-arm the gate. Same contract as the checkout form.
   const [verifiedValues, setVerifiedValues] = useState<Record<string, string>>({});
   const mountedAt = useRef(Date.now());
+  const twoCol = columns === 2;
+  const popupSuccess = successDisplay === "popup";
+  // The popup is `fixed`, so it portals out of any transformed ancestor onto
+  // the [data-catalogue-theme] wrapper that carries the catalogue tokens.
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [portalHost, setPortalHost] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    const node = rootRef.current;
+    if (node) setPortalHost((node.closest("[data-catalogue-theme]") as HTMLElement) || document.body);
+  }, [done]);
+  useEffect(() => {
+    if (!done || !popupSuccess) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setValues({});
+      setHoneypot("");
+      setRespondent({});
+      setError("");
+      setDone(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [done, popupSuccess]);
 
   const fields: FormFieldDef[] = useMemo(() => {
     const raw = campaign?.institute_custom_fields || [];
@@ -281,7 +315,15 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
     }
   };
 
-  if (done) {
+  const resetForm = () => {
+    setValues({});
+    setHoneypot("");
+    setRespondent({});
+    setError("");
+    setDone(false);
+  };
+
+  const successCard = done ? (() => {
     // Campaigns that never opened the Post Submit Configuration card keep the
     // exact block this section rendered before the feature existed — no
     // heading, catalogue check icon, original fallback copy. Imposing default
@@ -289,7 +331,7 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
     const untouched = isDefaultPostSubmitConfiguration(postSubmitConfig);
 
     if (untouched) {
-      return section(
+      return (
         <div
           className="catalogue-card-elevated flex flex-col items-center gap-stack p-8 text-center"
           role="status"
@@ -328,15 +370,7 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
       applyPostSubmitTokens(postSubmitConfig.anotherResponseText, postSubmitTokens) ||
       t("leadForm.defaultAnotherResponse");
 
-    const resetForm = () => {
-      setValues({});
-      setHoneypot("");
-      setRespondent({});
-      setError("");
-      setDone(false);
-    };
-
-    return section(
+    return (
       <div
         className="catalogue-card-elevated flex flex-col items-center gap-stack p-8 text-center"
         role="status"
@@ -397,10 +431,12 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
         )}
       </div>
     );
-  }
+  })() : null;
+
+  if (done && !popupSuccess) return section(successCard);
 
   const formBody = (
-    <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+    <form onSubmit={handleSubmit} className={twoCol ? "grid gap-4 sm:grid-cols-2" : "space-y-4"} noValidate>
       {fields.map((f) => {
         // A checkbox carries its own label beside the box, and the renderer
         // prints `name` there — pass the human label, not the field key, and
@@ -414,28 +450,62 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
           dependent.kind === "waiting"
             ? siteT(fields.find((p) => p.key === dependent.parentFieldKey)?.name || "")
             : "";
+        const setFieldValue = (v: string) =>
+          setValues((prev) => {
+            const next = { ...prev, [f.key]: v };
+            // A changed parent invalidates whatever its dependents held.
+            if (prev[f.key] !== v) dependentFieldKeys(f.key, fields).forEach((k) => delete next[k]);
+            return next;
+          });
+        const chipOptions =
+          choiceStyle === "chips" &&
+          dependent.kind !== "waiting" &&
+          (renderType === FieldRenderType.DROPDOWN || renderType === FieldRenderType.RADIO)
+            ? dependent.kind === "ready"
+              ? dependent.options
+              : parseDropdownOptions(f.config)
+            : null;
+        const asChips = !!chipOptions && chipOptions.length > 0 && chipOptions.length <= 8;
+        const fullRow =
+          asChips || isCheckbox || renderType === FieldRenderType.TEXTAREA;
         return (
-        <div key={f.id}>
+        <div key={f.id} className={twoCol && fullRow ? "sm:col-span-2" : undefined}>
           {!isCheckbox && (
             <label className="mb-1.5 block text-sm font-medium text-catalogue-text-secondary">
               {siteT(f.name)}
               {f.mandatory && <span className="ms-1 text-catalogue-brand-ink">*</span>}
             </label>
           )}
+          {asChips ? (
+            <div role="radiogroup" aria-label={siteT(f.name)} className="flex flex-wrap gap-2">
+              {chipOptions!.map((opt, idx) => {
+                const selected = (values[f.key] || "") === opt.value;
+                return (
+                  <button
+                    key={opt._id ?? idx}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => setFieldValue(opt.value)}
+                    className={`rounded-full border px-4 py-1.5 text-sm font-medium transition ${
+                      selected
+                        ? "border-primary-500 bg-primary-500 text-white"
+                        : "border-catalogue-border text-catalogue-text-primary hover:bg-catalogue-interactive-hover"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
           <CustomFieldRenderer
             type={renderType}
             // A checkbox prints `name` as its visible label; every other type
             // uses it as the field's id, so that one stays the stored key.
             name={isCheckbox ? siteT(f.name) : f.key}
             value={values[f.key] || ""}
-            onChange={(v: string) =>
-              setValues((prev) => {
-                const next = { ...prev, [f.key]: v };
-                // A changed parent invalidates whatever its dependents held.
-                if (prev[f.key] !== v) dependentFieldKeys(f.key, fields).forEach((k) => delete next[k]);
-                return next;
-              })
-            }
+            onChange={setFieldValue}
             config={f.config}
             options={dependent.kind === "ready" ? dependent.options : undefined}
             disabled={dependent.kind === "waiting"}
@@ -449,6 +519,7 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
                 : t("leadForm.placeholderPrefix", { name: siteT(f.name).toLowerCase() })
             }
           />
+          )}
           {/* Same gate the product-page checkout uses, driven by the same
               per-field config — so a form built here can ask a visitor to prove
               they own the number before the lead is accepted. */}
@@ -494,7 +565,7 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
       </div>
 
       {error && (
-        <p className="rounded-catalogue-md bg-warning-50 px-4 py-2.5 text-sm text-catalogue-text-secondary" role="alert">
+        <p className={`rounded-catalogue-md bg-warning-50 px-4 py-2.5 text-sm text-catalogue-text-secondary ${twoCol ? "sm:col-span-2" : ""}`} role="alert">
           {error}
         </p>
       )}
@@ -502,7 +573,7 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
       <button
         type="submit"
         disabled={submitting}
-        className="catalogue-btn catalogue-btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-60"
+        className={`catalogue-btn catalogue-btn-primary w-full justify-center disabled:cursor-not-allowed disabled:opacity-60 ${twoCol ? "sm:col-span-2" : ""}`}
       >
         {submitting ? t("leadForm.sending") : submitLabel || t("leadForm.submit")}
         {!submitting && <PaperPlaneTilt className="size-4" weight="bold" aria-hidden="true" />}
@@ -510,12 +581,41 @@ export const LeadFormComponent: React.FC<LeadFormProps> = ({
     </form>
   );
 
+  const successPopup =
+    done && popupSuccess && portalHost
+      ? createPortal(
+          <div
+            // z-70: above the z-60 basket bar and z-50 dialogs (as the document viewer).
+            className="fixed inset-0 z-70 flex items-center justify-center bg-black/50 p-4"
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.target === e.currentTarget && resetForm()}
+          >
+            <div className="relative w-full max-w-md">
+              <button
+                type="button"
+                onClick={resetForm}
+                className="absolute end-3 top-3 z-10 rounded-full p-1.5 text-catalogue-text-muted transition hover:bg-catalogue-interactive-hover"
+                aria-label={t("leadForm.close")}
+              >
+                <X className="size-5" aria-hidden="true" />
+              </button>
+              {successCard}
+            </div>
+          </div>,
+          portalHost
+        )
+      : null;
+
   return section(
-    layout === "card" ? (
-      <div className="catalogue-card-elevated relative p-6 sm:p-8">{formBody}</div>
-    ) : (
-      <div className="relative">{formBody}</div>
-    )
+    <div ref={rootRef}>
+      {layout === "card" ? (
+        <div className="catalogue-card-elevated relative p-6 sm:p-8">{formBody}</div>
+      ) : (
+        <div className="relative">{formBody}</div>
+      )}
+      {successPopup}
+    </div>
   );
 };
 

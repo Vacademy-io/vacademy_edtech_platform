@@ -4,11 +4,11 @@
         "createEngineFailed": "Failed to create engine",
         "engineUpdated": "Engine updated",
         "changeStatusFailed": "Could not change status",
-        "autonomyOff": "Auto-send off — copilot only",
+        "autonomyOff": "Auto-send off — you check every message",
         "autonomyOn": "Auto-send allowed",
         "autonomyFailed": "Could not change autonomy",
-        "enrollResult": "Audience resolved: {{added}} added, {{exited}} exited ({{total}} total)",
-        "enrollFailed": "Enrollment failed",
+        "enrollResult": "People updated: {{added}} added, {{exited}} removed ({{total}} in total)",
+        "enrollFailed": "Could not add people",
         "promptUpdated": "Amendment added to the brief",
         "promptUpdateFailed": "Could not update the brief",
         "engineArchived": "Engine archived",
@@ -32,12 +32,14 @@
         "templatesUpdated_other": "{{count}} templates updated"
     },
     "taskAction": {
-        "ack": "Task acknowledged",
+        "ack": "Marked as in progress",
         "done": "Marked done",
-        "dismiss": "Dismissed",
+        "dismiss": "Skipped",
         "reopen": "Reopened",
         "send": "Sent",
         "default": "Done",
-        "sendNotConfirmed": "Not confirmed as sent. The task is now under Failed. Check the message log before sending again."
+        "sendNotConfirmed": "Not confirmed as sent. The task is now under Failed. Check the message log before sending again.",
+        "undo": "Undo",
+        "restore": "Moved back to the inbox"
     }
 }

@@ -73,6 +73,7 @@ import { FolderBrowserComponent } from "./components/FolderBrowserComponent";
 import { AccessPassGridComponent } from "./components/AccessPassGridComponent";
 import { DetailBlocksComponent } from "./components/DetailBlocksComponent";
 import { BlogComponent } from "./components/BlogComponent";
+import { ReviewCollector } from "./components/review/ReviewCollector";
 import { JobOpeningsComponent } from "./components/JobOpeningsComponent";
 import { LeadFormComponent } from "./components/LeadFormComponent";
 import { submitWebsiteLead, isSpamSubmission } from "../-utils/website-lead";
@@ -99,6 +100,7 @@ import { BuyRentSectionComponent } from "./components/BuyRentSectionComponent";
 import { BookCatalogueComponent } from "./components/BookCatalogueComponent";
 import { BookDetailsComponent } from "./components/BookDetailsComponent";
 import { DocumentViewerComponent } from "./components/DocumentViewerComponent";
+import { ScormViewerComponent } from "./components/ScormViewerComponent";
 import { Policy } from "./components/Policy";
 import { RAIL_CLONE_PROPS, useAutoScrollRail, useRailArrows } from "../-utils/use-auto-scroll-rail";
 import { useCatalogueSearchParams } from "../-utils/catalogue-url-state";
@@ -354,7 +356,8 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
           />
         );
       case "testimonialSection":
-        return <TestimonialSectionComponent key={id} {...props} />;
+        // reviewSource "reviews" | "both" also reads the institute's approved site reviews.
+        return <TestimonialSectionComponent key={id} {...props} instituteId={instituteId} />;
       case "cartComponent":
         return <CartComponent key={id} {...props} instituteId={instituteId} globalSettings={globalSettings} isPreviewMode={isPreviewMode} />;
       case "buyRentSection":
@@ -368,6 +371,9 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
         return <VideoEmbedRenderer key={id} {...props} />;
       case "documentViewer":
         return <DocumentViewerComponent key={id} {...props} />;
+      case "scormViewer":
+        // A SCORM package (flip-book, interactive sample) in our player wrapper.
+        return <ScormViewerComponent key={id} {...props} />;
       case "ctaBanner":
         // variant "band" (opt-in): eyebrow, two styled buttons, phone mockup.
         return props?.variant === "band" ? <CtaBand key={id} {...props} /> : <CtaBannerRenderer key={id} {...props} />;
@@ -439,6 +445,24 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
             componentId={id}
             instituteId={instituteId}
             tagName={tagName}
+            isPreviewMode={isPreviewMode}
+            showPreviewStrip={previewChrome}
+            isSelected={id === selectedComponentId}
+          />
+        );
+
+      case "reviewCollector":
+        // Reviews & feedback: a launcher, a self-opening form or an inline
+        // form. Submissions wait for the admin; approved ones can show in a
+        // testimonials section. Portals like the promo popup.
+        return (
+          <ReviewCollector
+            key={id}
+            {...props}
+            componentId={id}
+            instituteId={instituteId}
+            tagName={tagName}
+            pageRoute={page.route || ""}
             isPreviewMode={isPreviewMode}
             showPreviewStrip={previewChrome}
             isSelected={id === selectedComponentId}
@@ -2335,7 +2359,9 @@ const FeatureGridRenderer: React.FC<any> = ({
               {(f.image || IconComp || f.icon) && (
               <div className="mb-4">
                 {f.image ? (
-                  <img src={f.image} alt={f.title || ''} className={`${isLeft ? '' : 'mx-auto'} w-full max-w-40 h-auto rounded-lg object-cover`} style={{ aspectRatio: '1/1' }} />
+                  // iconSize sizes a feature's own image too (a line icon at 160px read as
+                  // clip art); 'large', the default, keeps the original 160px.
+                  <img src={f.image} alt={f.title || ''} className={`${isLeft ? '' : 'mx-auto'} w-full ${iconSize === 'small' ? 'max-w-16' : iconSize === 'medium' ? 'max-w-24' : 'max-w-40'} h-auto rounded-lg object-cover`} style={{ aspectRatio: '1/1' }} />
                 ) : IconComp ? (
                   <span className={`inline-flex items-center justify-center rounded-2xl bg-gradient-to-br from-primary-50 to-primary-100 ring-1 ring-primary-100 text-primary-500 transition-transform duration-300 ease-out group-hover:scale-105 ${iconSize === 'small' ? 'size-11 p-2.5' : iconSize === 'medium' ? 'size-12 p-3' : 'size-14 p-3.5'} ${isLeft ? '' : 'mx-auto'}`}>
                     <IconComp size={iconSize === 'small' ? 20 : iconSize === 'medium' ? 26 : 30} weight="duotone" aria-hidden="true" />

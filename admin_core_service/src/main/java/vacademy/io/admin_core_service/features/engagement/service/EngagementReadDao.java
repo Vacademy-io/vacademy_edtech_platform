@@ -279,21 +279,37 @@ public class EngagementReadDao {
     }
 
     /**
-     * ACTIVE, non-opted-out lead rows of an audience: [audience_response_id, user_id?].
+     * ACTIVE, non-opted-out lead rows of an audience:
+     * [audience_response_id, user_id?, phone10?, 'CONVERTED' or null].
      * Unconverted leads (user_id NULL) are INCLUDED — the engine reaches raw leads, unlike the
      * announcements path (RecipientType.AUDIENCE filters to converted only). overall_status
      * OPTED_OUT is excluded here because unconverted leads have no user_id and therefore no
      * user-keyed opt-out path — this is their only consent gate at enrollment.
+     * phone10 is the last 10 digits of the lead's phone (null when it has fewer digits or is one
+     * digit repeated, a placeholder), so the reconcile can collapse two rows of the same person.
+     * The 4th column says the CRM marked the lead Converted (pipeline status or profile), or Lost /
+     * Not interested ('LOST').
+     * Oldest rows first, so the row kept for a phone stays the same across reconciles.
      */
     public List<Object[]> leadsByAudience(String audienceId, String instituteId) {
         @SuppressWarnings("unchecked")
         List<Object[]> rows = em.createNativeQuery("""
-                SELECT ar.id, ar.user_id
+                SELECT ar.id, ar.user_id,
+                       CASE WHEN length(d.digits) >= 10 AND d.digits !~ '^(.)\\1*$'
+                            THEN RIGHT(d.digits, 10) END AS phone10,
+                       CASE WHEN ls.status_key = 'CONVERTED' OR ulp.conversion_status = 'CONVERTED'
+                            THEN 'CONVERTED'
+                            WHEN ls.status_key IN ('LOST', 'NOT_INTERESTED')
+                            THEN 'LOST' END AS lead_stage
                 FROM audience_response ar
                 JOIN audience a ON a.id = ar.audience_id
+                CROSS JOIN LATERAL (SELECT regexp_replace(COALESCE(ar.parent_mobile, ''), '[^0-9]', '', 'g') AS digits) d
+                LEFT JOIN lead_status ls ON ls.id = ar.lead_status_id
+                LEFT JOIN user_lead_profile ulp ON ulp.user_id = ar.user_id AND ulp.institute_id = :instituteId
                 WHERE ar.audience_id = :audienceId AND a.institute_id = :instituteId
                   AND ar.audience_status = 'ACTIVE'
                   AND (ar.overall_status IS NULL OR ar.overall_status <> 'OPTED_OUT')
+                ORDER BY ar.created_at, ar.id
                 """)
                 .setParameter("audienceId", audienceId)
                 .setParameter("instituteId", instituteId)
@@ -341,18 +357,27 @@ public class EngagementReadDao {
     }
 
     /**
-     * The lead rows behind these members, as [id, overall_status, audience_status]. The opt-out
-     * list above is keyed by user_id, so an unconverted lead (no user_id) is invisible to it; the
-     * lead row itself carries its consent (overall_status) and whether the admin removed it
-     * (audience_status). A row missing from the result no longer exists in this institute.
+     * The lead rows behind these members, as [id, overall_status, audience_status, lead_stage].
+     * The opt-out list above is keyed by user_id, so an unconverted lead (no user_id) is invisible
+     * to it; the lead row itself carries its consent (overall_status) and whether the admin
+     * removed it (audience_status). lead_stage is 'CONVERTED' when the CRM marked the lead
+     * Converted (pipeline status or profile), 'LOST' when its pipeline status is Lost or Not
+     * interested (L2), else null. A row missing from the result no longer
+     * exists in this institute.
      */
     public List<Object[]> leadConsentRows(String instituteId, java.util.Collection<String> audienceResponseIds) {
         if (audienceResponseIds == null || audienceResponseIds.isEmpty()) return List.of();
         @SuppressWarnings("unchecked")
         List<Object[]> rows = em.createNativeQuery("""
-                SELECT ar.id, ar.overall_status, ar.audience_status
+                SELECT ar.id, ar.overall_status, ar.audience_status,
+                       CASE WHEN ls.status_key = 'CONVERTED' OR ulp.conversion_status = 'CONVERTED'
+                            THEN 'CONVERTED'
+                            WHEN ls.status_key IN ('LOST', 'NOT_INTERESTED')
+                            THEN 'LOST' END AS lead_stage
                 FROM audience_response ar
                 JOIN audience a ON a.id = ar.audience_id
+                LEFT JOIN lead_status ls ON ls.id = ar.lead_status_id
+                LEFT JOIN user_lead_profile ulp ON ulp.user_id = ar.user_id AND ulp.institute_id = :instituteId
                 WHERE a.institute_id = :instituteId
                   AND ar.id IN (:ids)
                 """)
@@ -360,5 +385,68 @@ public class EngagementReadDao {
                 .setParameter("ids", audienceResponseIds)
                 .getResultList();
         return rows;
+    }
+
+    /**
+     * Everyone this institute's engines hold as opted out, as [user_id?, audience_response_id?,
+     * phone10?]. An opt-out lives on the member rows it flipped, so an engine created later would
+     * otherwise enrol the same person again; enrolment checks this list. phone10 is the lead's
+     * phone, else the learner's, as in leadsByAudience. Read at enrolment only, never per sweep.
+     */
+    public List<Object[]> optedOutSubjects(String instituteId) {
+        @SuppressWarnings("unchecked")
+        List<Object[]> rows = em.createNativeQuery("""
+                SELECT om.user_id, om.audience_response_id,
+                       CASE WHEN length(d.digits) >= 10 AND d.digits !~ '^(.)\\1*$'
+                            THEN RIGHT(d.digits, 10) END AS phone10
+                FROM engagement_member om
+                LEFT JOIN audience_response oar ON oar.id = om.audience_response_id
+                CROSS JOIN LATERAL (SELECT regexp_replace(COALESCE(oar.parent_mobile,
+                        (SELECT s.mobile_number FROM student s WHERE s.user_id = om.user_id LIMIT 1), ''),
+                        '[^0-9]', '', 'g') AS digits) d
+                WHERE om.institute_id = :instituteId AND om.status = 'OPTED_OUT'
+                """)
+                .setParameter("instituteId", instituteId)
+                .getResultList();
+        return rows;
+    }
+
+    /** The last 10 digits of one lead row's phone, null when it has none (same rule as above). */
+    public String leadPhone10(String audienceResponseId) {
+        if (audienceResponseId == null) return null;
+        List<?> rows = em.createNativeQuery("""
+                SELECT CASE WHEN length(d.digits) >= 10 AND d.digits !~ '^(.)\\1*$'
+                            THEN RIGHT(d.digits, 10) END
+                FROM audience_response ar
+                CROSS JOIN LATERAL (SELECT regexp_replace(COALESCE(ar.parent_mobile, ''), '[^0-9]', '', 'g') AS digits) d
+                WHERE ar.id = :id
+                """)
+                .setParameter("id", audienceResponseId)
+                .getResultList();
+        return rows.isEmpty() ? null : (String) rows.get(0);
+    }
+
+    /**
+     * Live members of this engine that are the same person as a new lead row: the same user, or a
+     * lead row with the same phone. A second lead row for someone already in the engine must not
+     * become a second member (two members = two messages).
+     */
+    public long liveMembersForSamePerson(String engineId, String audienceResponseId, String userId, String phone10) {
+        if (userId == null && phone10 == null) return 0;
+        Object n = em.createNativeQuery("""
+                SELECT count(*) FROM engagement_member m
+                LEFT JOIN audience_response ar ON ar.id = m.audience_response_id
+                WHERE m.engine_id = :engineId AND m.status IN ('ACTIVE', 'PAUSED')
+                  AND COALESCE(m.audience_response_id, '') <> :responseId
+                  AND ((:userId <> '' AND m.user_id = :userId)
+                       OR (:phone10 <> ''
+                           AND RIGHT(regexp_replace(COALESCE(ar.parent_mobile, ''), '[^0-9]', '', 'g'), 10) = :phone10))
+                """)
+                .setParameter("engineId", engineId)
+                .setParameter("responseId", audienceResponseId != null ? audienceResponseId : "")
+                .setParameter("userId", userId != null ? userId : "")
+                .setParameter("phone10", phone10 != null ? phone10 : "")
+                .getSingleResult();
+        return n instanceof Number num ? num.longValue() : 0;
     }
 }

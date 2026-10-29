@@ -57,7 +57,7 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { getCourseSettings, saveCourseSettings } from '@/services/course-settings';
+import { getCourseSettings, saveDripConditionChanges } from '@/services/course-settings';
 import { MyButton } from '@/components/design-system/button';
 import AddTeachers from '@/routes/dashboard/-components/AddTeachers';
 import { AddSubjectButton } from '../subjects/-components/add-subject.tsx/add-subject-button';
@@ -1079,7 +1079,9 @@ export const CourseStructureDetails = ({
         const loadDripSettings = async () => {
             setLoadingDripConditions(true);
             try {
-                const settings = await getCourseSettings();
+                // Fresh from the server: the cached copy can be a day old and
+                // would hide rules saved from another tab or by another admin.
+                const settings = await getCourseSettings(true);
                 setDripConditionsEnabled(settings.dripConditions.enabled || false);
                 setDripConditions(settings.dripConditions.conditions || []);
                 setDripEnforcing(settings.dripConditions.applyConfiguredRules === true);
@@ -1110,16 +1112,8 @@ export const CourseStructureDetails = ({
 
     const handleSaveChapterDripConditions = async (updatedConditions: DripCondition[]) => {
         try {
-            const settings = await getCourseSettings();
-            const newSettings = {
-                ...settings,
-                dripConditions: {
-                    ...settings.dripConditions,
-                    conditions: updatedConditions,
-                },
-            };
-            await saveCourseSettings(newSettings);
-            setDripConditions(updatedConditions);
+            const merged = await saveDripConditionChanges(dripConditions, updatedConditions);
+            setDripConditions(merged);
         } catch (error) {
             console.error('Failed to save drip conditions:', error);
             alert(t('dripConditions.saveFailed'));

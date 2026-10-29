@@ -78,6 +78,10 @@ class ExamContext(BaseModel):
     # HIGHLIGHT = mark spelling/grammar errors with corrections, no marks
     # deducted (language_feedback.py). Absent or anything else = off.
     language_feedback: Optional[str] = None
+    # The mark-deduction scheme printed on the sheet: [{symbol, marks, label,
+    # covers, scope}], validated by copy_check/deduction_scheme.py. Without
+    # this field pydantic dropped it and the scheme never reached the run.
+    deduction_scheme: Optional[list[dict[str, Any]]] = None
 
 
 class RateSnapshot(BaseModel):
