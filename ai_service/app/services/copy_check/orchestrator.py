@@ -918,7 +918,15 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                 if option_letter.honour_option_letter(verdict, q):
                     logger.info("Q%s: the chosen option is the key's - full marks", qid)
                 elif checker is not None:
-                    await checker.check(verdict, q, rubric)
+                    if scheme and language_feedback.devanagari_share(verdict.get("answer_rows"), layout_map) > 0.5:
+                        # A Hindi answer on a scheme paper: the cut-check "found a
+                        # misreading" on every run and raised the paragraph-wise
+                        # mark by 12-23 of 50 - the same copy scored 38 and 47.
+                        # Devanagari handwriting is not read well enough for that
+                        # check to overrule the grader.
+                        logger.info("Q%s: Hindi answer under a deduction scheme - cut-check skipped", qid)
+                    else:
+                        await checker.check(verdict, q, rubric)
             except cancellation.Cancelled:
                 raise
             except Exception as e:
