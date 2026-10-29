@@ -137,6 +137,11 @@ public class EngagementReplyResponder {
     @Autowired(required = false)
     private EngagementLeadOutcomeService outcomeService;
 
+    /** A reply about a meeting the person already has (reschedule / cancel) — see that class. */
+    @Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    private EngagementMeetingIntentService meetingIntents;
+
     private static final com.fasterxml.jackson.databind.ObjectMapper JSON =
             new com.fasterxml.jackson.databind.ObjectMapper();
 
@@ -145,6 +150,8 @@ public class EngagementReplyResponder {
         if (wamid == null || wamid.isBlank()) return false; // no stable id → can't dedup → skip
         String phone10 = last10(phone);
         if (phone10 == null || replyText == null || replyText.isBlank()) return false;
+        // Before the member lookup: a booked meeting usually ended the person's membership.
+        if (handledAsMeetingReply(instituteId, "WHATSAPP", phone10, null, replyText, wamid)) return true;
 
         Instant now = Instant.now();
         List<EngagementMemberRepository.AutoReplyCandidate> candidates =
@@ -424,6 +431,9 @@ public class EngagementReplyResponder {
         String body = text != null && !text.isBlank() ? text.trim() : topic;
         if (body.isEmpty()) return false;
 
+        // Before the member lookup: a booked meeting usually ended the person's membership.
+        if (handledAsMeetingReply(instituteId, "EMAIL", null, from, body, replyKey(messageId))) return true;
+
         List<EngagementReplyMemberQueries.LiveMember> live = replyMemberQueries.findLiveMembersByEmail(instituteId, from);
         if (live.isEmpty()) return false;
         Instant now = Instant.now();
@@ -483,6 +493,20 @@ public class EngagementReplyResponder {
     }
 
     /** The handled-reply key of a message: Message-IDs can outgrow the 255-char key column. */
+    private boolean handledAsMeetingReply(String instituteId, String channel, String phone10, String email,
+                                          String text, String dedupKey) {
+        if (meetingIntents == null) return false;
+        // A request to stop wins over everything, a meeting included: the opt-out path handles it.
+        if (OPT_OUT.matcher(text).find()) return false;
+        try {
+            return meetingIntents.handle(instituteId, channel, phone10, email, text, dedupKey);
+        } catch (RuntimeException e) {
+            // Never lose the reply: the normal handling below still sees it.
+            log.warn("Meeting reply handling failed in institute {}: {}", instituteId, e.getMessage());
+            return false;
+        }
+    }
+
     static String replyKey(String messageId) {
         if (messageId.length() <= 255) return messageId;
         try {
