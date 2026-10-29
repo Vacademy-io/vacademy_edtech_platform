@@ -6,7 +6,10 @@ import { useState, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { HelpModal } from "@/components/modals/help-modals";
-import { useAssessmentStore } from "@/stores/assessment-store";
+import {
+  removePersistedAssessmentState,
+  useAssessmentStore,
+} from "@/stores/assessment-store";
 import { SubmitModal } from "@/components/modals/submit-modal";
 import { useNavigate } from "@tanstack/react-router";
 import {
@@ -372,8 +375,7 @@ export function Navbar({
             const attemptId = parsedData?.attempt_id;
 
             if (attemptId) {
-              const storageKey = `ASSESSMENT_STATE_${attemptId}`;
-              await Storage.remove({ key: storageKey });
+              await removePersistedAssessmentState(attemptId);
             } else {
               console.error("Attempt ID not found in Assessment_questions.");
             }
@@ -414,8 +416,7 @@ export function Navbar({
             const attemptId = parsedData?.attempt_id;
 
             if (attemptId) {
-              const storageKey = `ASSESSMENT_STATE_${attemptId}`;
-              await Storage.remove({ key: storageKey });
+              await removePersistedAssessmentState(attemptId);
             } else {
               console.error("Attempt ID not found in Assessment_questions.");
             }
@@ -583,9 +584,7 @@ export function Navbar({
             const parsedData = JSON.parse(value);
             const innerAttemptId = parsedData?.attempt_id;
             if (innerAttemptId) {
-              await Storage.remove({
-                key: `ASSESSMENT_STATE_${innerAttemptId}`,
-              });
+              await removePersistedAssessmentState(innerAttemptId);
             }
           }
         } catch (cleanupError) {
