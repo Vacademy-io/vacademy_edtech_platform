@@ -93,7 +93,8 @@
         "change": "Change status",
         "noTransitions": "Archived engines can’t change status.",
         "footnote": "الإيقاف المؤقت يوقف كل الرسائل. «إيقاف الإرسال التلقائي» يواصل كتابة الرسائل لتراجعها.",
-        "noSources": "لم يُختر شيء"
+        "noSources": "لم يُختر شيء",
+        "sourcesMore": "+{{count}} أخرى"
     },
     "retry": "إعادة المحاولة",
     "noPeople": {

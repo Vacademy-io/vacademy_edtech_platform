@@ -81,6 +81,7 @@ import {
     whatsappEnabled,
 } from './-utils';
 import { EnginePlanPreview } from './-components/EnginePlanPreview';
+import { EngineSources } from './-components/EngineSources';
 import type {
     AudienceSelector,
     ChannelsConfig,
@@ -201,18 +202,6 @@ function EngineDetailPage() {
         (data.approvedSendsByChannel
             ? Object.values(data.approvedSendsByChannel).reduce((a, n) => a + n, 0)
             : undefined);
-
-    const sourceParts = [
-        {
-            n: audience.filter((a) => a.type === 'PACKAGE_SESSION').length,
-            label: getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch),
-        },
-        {
-            n: audience.filter((a) => a.type === 'AUDIENCE').length,
-            label: getTerminologyPlural(OtherTerms.AudienceList, SystemTerms.AudienceList),
-        },
-        { n: audience.filter((a) => a.type === 'USER').length, label: t('status.people') },
-    ].filter((p) => p.n > 0);
 
     const kpis: StatItem[] = [
         {
@@ -364,9 +353,18 @@ function EngineDetailPage() {
                             </MyButton>
                         </div>
                         <KeyValue label={t('status.sources')}>
-                            {sourceParts.length
-                                ? sourceParts.map((p) => `${p.n} ${p.label}`).join(' · ')
-                                : t('status.noSources')}
+                            <EngineSources
+                                audience={audience}
+                                batchLabel={getTerminologyPlural(
+                                    ContentTerms.Batch,
+                                    SystemTerms.Batch
+                                )}
+                                listLabel={getTerminologyPlural(
+                                    OtherTerms.AudienceList,
+                                    SystemTerms.AudienceList
+                                )}
+                                peopleLabel={t('status.people')}
+                            />
                         </KeyValue>
 
                         <SubHeading>{t('status.change')}</SubHeading>
