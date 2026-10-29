@@ -18,6 +18,10 @@ interface CreateCampaignDialogProps {
     campaign?: CampaignItem | null;
     /** Wizard step to open on (0 = Basics). */
     initialStep?: number;
+    /** Create only: gets the new list's id, just before the dialog closes. */
+    onCreated?: (campaignId: string) => void;
+    /** Create only: the save request failed (already toasted). */
+    onSaveFailed?: () => void;
 }
 
 export const CreateCampaignDialog: React.FC<CreateCampaignDialogProps> = ({
@@ -25,6 +29,8 @@ export const CreateCampaignDialog: React.FC<CreateCampaignDialogProps> = ({
     onClose,
     campaign,
     initialStep,
+    onCreated,
+    onSaveFailed,
 }) => {
     const { t } = useTranslation('audienceManagerCreateCampaignDialog');
     const audienceListLabel = getTerminology(OtherTerms.AudienceList, SystemTerms.AudienceList);
@@ -43,7 +49,11 @@ export const CreateCampaignDialog: React.FC<CreateCampaignDialogProps> = ({
                 </DialogHeader>
                 <div className="min-w-0 overflow-hidden">
                     <CreateCampaignForm
-                        onSuccess={onClose}
+                        onSuccess={(id) => {
+                            if (id) onCreated?.(id);
+                            onClose();
+                        }}
+                        onSaveFailed={onSaveFailed}
                         campaign={campaign}
                         initialStep={initialStep}
                     />

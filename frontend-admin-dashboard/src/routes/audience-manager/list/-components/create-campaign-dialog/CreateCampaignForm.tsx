@@ -153,7 +153,10 @@ const buildInitialFormValues = (
 };
 
 interface CreateCampaignFormProps {
-    onSuccess?: () => void;
+    /** Gets the new campaign's id on create; called with no id on edit. */
+    onSuccess?: (campaignId?: string) => void;
+    /** Create only: the save request failed (the mutation hook already toasted). */
+    onSaveFailed?: () => void;
     campaign?: CampaignItem | null;
     /** Section to scroll to on open (0 = Basics) — used by the list detail tabs' Edit links. */
     initialStep?: number;
@@ -189,6 +192,7 @@ const SECTION_APPEARANCE = 3;
 
 export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({
     onSuccess,
+    onSaveFailed,
     campaign,
     initialStep,
 }) => {
@@ -1056,7 +1060,7 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({
                     setLatestCampaignId(createdCampaignId);
                 }
                 handleFormReset();
-                onSuccess?.();
+                onSuccess?.(createdCampaignId);
             }
         } catch (error) {
             console.error('Error saving campaign:', error);
@@ -1067,6 +1071,7 @@ export const CreateCampaignForm: React.FC<CreateCampaignFormProps> = ({
                 // are one fact ("the campaign we just saved"), and letting them
                 // drift is how a later change ends up shortening the wrong one.
                 setLatestCampaignId(null);
+                onSaveFailed?.();
             }
         }
     });
