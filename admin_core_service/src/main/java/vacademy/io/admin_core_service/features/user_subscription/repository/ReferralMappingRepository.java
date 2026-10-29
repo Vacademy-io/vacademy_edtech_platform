@@ -21,13 +21,19 @@ public interface ReferralMappingRepository extends JpaRepository<ReferralMapping
     Optional<ReferralMapping> findByUserPlanIdAndStatusIn(@Param("userPlanId") String userPlanId,
                                                           @Param("status") List<String> status);
 
-    /** Whether this person was already referred into the programme's institute (or other source). */
+    /**
+     * Whether this person was already referred into the programme source (an institute).
+     * A referral left on a checkout that was never paid does not count: a friend who closes
+     * the payment window or whose payment fails and then tries again must keep the referral
+     * on the new attempt, not lose it to the abandoned one.
+     */
     @Query("""
     SELECT COUNT(rm) > 0
     FROM ReferralMapping rm
     WHERE rm.refereeUserId = :refereeUserId
       AND rm.referralOption.sourceId = :sourceId
       AND rm.status IN :status
+      AND rm.userPlan.status NOT IN ('PENDING_FOR_PAYMENT', 'PAYMENT_FAILED')
 """)
     boolean existsRefereeAtSource(@Param("refereeUserId") String refereeUserId,
                                   @Param("sourceId") String sourceId,
