@@ -8,7 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem } from "@/components/ui/form";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { loginUser, SessionLimitError } from "@/components/common/auth/login/hooks/login-button";
+import { loginUser, PortalAccessError, SessionLimitError } from "@/components/common/auth/login/hooks/login-button";
 import { SessionLimitDialog } from "@/components/common/auth/login/components/SessionLimitDialog";
 import { TokenKey } from "@/constants/auth/tokens";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
@@ -104,6 +104,7 @@ export function UsernameLogin({
         values.username,
         values.password,
         domainRouting.convertUsernamePasswordToLowercase,
+        domainRouting.instituteId,
       ),
     onMutate: () => {
       setIsLoading(true);
@@ -265,6 +266,8 @@ export function UsernameLogin({
         setActiveSessions(error.activeSessions);
         setPendingLoginValues(form.getValues());
         setSessionLimitOpen(true);
+      } else if (error instanceof PortalAccessError) {
+        toast.error(error.message);
       } else {
         toast.error(i18n.t("auth:toasts.loginFailed"));
       }

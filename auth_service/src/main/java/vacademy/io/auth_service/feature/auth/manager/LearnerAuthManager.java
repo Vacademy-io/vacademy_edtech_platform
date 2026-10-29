@@ -17,6 +17,8 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import vacademy.io.auth_service.feature.auth.constants.AuthConstants;
+import vacademy.io.auth_service.feature.auth.repository.PortalUserLookupRepository;
+import vacademy.io.auth_service.feature.auth.service.LearnerPortalAccessGuard;
 import vacademy.io.auth_service.feature.auth.dto.ActiveSessionDTO;
 import vacademy.io.auth_service.feature.auth.dto.AuthRequestDto;
 import vacademy.io.auth_service.feature.auth.dto.JwtResponseDto;
@@ -124,6 +126,12 @@ public class LearnerAuthManager {
 
         @Autowired
         private InstituteSettingsService instituteSettingsService;
+
+        @Autowired
+        private LearnerPortalAccessGuard learnerPortalAccessGuard;
+
+        @Autowired
+        private PortalUserLookupRepository portalUserLookupRepository;
 
         public JwtResponseDto registerLearner(LearnerEnrollRequestDTO learnerEnrollRequestDTO) {
                 if (learnerEnrollRequestDTO == null) {
@@ -381,6 +389,11 @@ public class LearnerAuthManager {
                 User user = userRepository.findByUsername(userName)
                                 .orElseThrow(() -> new UsernameNotFoundException("Invalid user request!"));
 
+                // Checked before the old refresh tokens are wiped: a refused login must not log the
+                // real owner out.
+                learnerPortalAccessGuard.assertUserBelongsToPortal(authRequestDTO.getPortalInstituteId(),
+                                user.getId(), List.of(UserRoleStatus.ACTIVE.name()));
+
                 refreshTokenService.deleteAllRefreshToken(user);
 
                 List<UserRole> roles = userRoleRepository.findUserRolesByUserIdAndStatusesAndRoleNames(user.getId(),
@@ -483,6 +496,24 @@ public class LearnerAuthManager {
                 return "OTP sent to " + authRequestDTO.getEmail();
         }
 
+        /**
+         * An email can front several accounts, one per institute, and the lookups above take the
+         * newest of them across all institutes. On a white-label portal the learner's own account
+         * is the one in that institute, so prefer it; otherwise keep what the caller found.
+         */
+        private User preferPortalAccount(AuthRequestDto authRequestDTO, User found, String userIdentifier) {
+                String portalInstituteId = authRequestDTO.getPortalInstituteId();
+                if ("PHONE".equalsIgnoreCase(userIdentifier)
+                                || !learnerPortalAccessGuard.appliesTo(portalInstituteId)) {
+                        return found;
+                }
+                return portalUserLookupRepository
+                                .findMostRecentByEmailInInstitute(authRequestDTO.getEmail(), portalInstituteId,
+                                                List.of(UserRoleStatus.ACTIVE.name(), UserRoleStatus.INVITED.name()),
+                                                AuthConstants.VALID_ROLES_FOR_STUDENT_PORTAL)
+                                .orElse(found);
+        }
+
         public JwtResponseDto loginViaOtp(AuthRequestDto authRequestDTO) {
                 if (authRequestDTO.getOtp() == null)
                         throw new UsernameNotFoundException("Invalid OTP!");
@@ -512,6 +543,10 @@ public class LearnerAuthManager {
                                                         AuthConstants.VALID_ROLES_FOR_STUDENT_PORTAL)
                                         .orElseThrow(() -> new VacademyException("User not found!!!"));
                 }
+
+                user = preferPortalAccount(authRequestDTO, user, userIdentifier);
+                learnerPortalAccessGuard.assertUserBelongsToPortal(authRequestDTO.getPortalInstituteId(),
+                                user.getId(), List.of(UserRoleStatus.ACTIVE.name(), UserRoleStatus.INVITED.name()));
 
                 refreshTokenService.deleteAllRefreshToken(user);
 
@@ -626,6 +661,10 @@ public class LearnerAuthManager {
                                                         AuthConstants.VALID_ROLES_FOR_STUDENT_PORTAL)
                                         .orElseThrow(() -> new VacademyException("User not found!!!"));
                 }
+
+                user = preferPortalAccount(authRequestDTO, user, userIdentifier);
+                learnerPortalAccessGuard.assertUserBelongsToPortal(authRequestDTO.getPortalInstituteId(),
+                                user.getId(), List.of(UserRoleStatus.ACTIVE.name(), UserRoleStatus.INVITED.name()));
 
                 refreshTokenService.deleteAllRefreshToken(user);
 

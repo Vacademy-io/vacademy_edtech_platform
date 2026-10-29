@@ -206,7 +206,13 @@ export function EmailLogin({
 
   const verifyOtpMutation = useMutation({
     mutationFn: (data: { email: string; otp: string }) =>
-      axios.post(LOGIN_OTP, data),
+      axios.post(LOGIN_OTP, {
+        ...data,
+        // Lets the server keep a white-label portal to its own learners.
+        ...(domainRouting.instituteId && {
+          portal_institute_id: domainRouting.instituteId,
+        }),
+      }),
     onSuccess: async (response) => {
       try {
         // Check for session limit exceeded
