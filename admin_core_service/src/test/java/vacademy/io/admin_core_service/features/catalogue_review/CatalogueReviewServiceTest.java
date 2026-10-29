@@ -16,6 +16,7 @@ import vacademy.io.admin_core_service.features.catalogue_review.dto.ReviewUpdate
 import vacademy.io.admin_core_service.features.catalogue_review.entity.CatalogueReview;
 import vacademy.io.admin_core_service.features.catalogue_review.repository.CatalogueReviewRepository;
 import vacademy.io.admin_core_service.features.catalogue_review.service.CatalogueReviewService;
+import vacademy.io.admin_core_service.features.catalogue_review.service.ReviewAdminAlertService;
 import vacademy.io.admin_core_service.features.catalogue_review.service.ReviewSubmittedWorkflowNotifier;
 import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
 import vacademy.io.common.auth.dto.UserServiceDTO;
@@ -45,6 +46,7 @@ class CatalogueReviewServiceTest {
     private InstituteRepository instituteRepository;
     private InstituteAccessValidator accessValidator;
     private ReviewSubmittedWorkflowNotifier notifier;
+    private ReviewAdminAlertService adminAlerts;
     private CatalogueReviewService service;
 
     @BeforeEach
@@ -58,6 +60,8 @@ class CatalogueReviewServiceTest {
         ReflectionTestUtils.setField(service, "accessValidator", accessValidator);
         notifier = mock(ReviewSubmittedWorkflowNotifier.class);
         ReflectionTestUtils.setField(service, "workflowNotifier", notifier);
+        adminAlerts = mock(ReviewAdminAlertService.class);
+        ReflectionTestUtils.setField(service, "adminAlerts", adminAlerts);
         when(instituteRepository.existsById(INSTITUTE)).thenReturn(true);
         when(repository.save(any(CatalogueReview.class))).thenAnswer(inv -> {
             CatalogueReview r = inv.getArgument(0);
@@ -117,6 +121,8 @@ class CatalogueReviewServiceTest {
         service.submit(bot);
         assertThrows(VacademyException.class, () -> service.submit(request(9, "A")));
         verify(notifier, times(1)).fire(any(), any());
+        // The built-in admin alerts go out exactly once too, for the saved review only.
+        verify(adminAlerts, times(1)).notifyAdmins(any(), any());
     }
 
     @Test

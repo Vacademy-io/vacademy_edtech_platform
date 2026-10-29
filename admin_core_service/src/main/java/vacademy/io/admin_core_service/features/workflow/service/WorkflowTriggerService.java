@@ -395,6 +395,20 @@ public class WorkflowTriggerService {
         return workflowNodeMappingRepository.existsAdminEmailNodeInWorkflows(workflowIds);
     }
 
+    /**
+     * True when at least one ACTIVE trigger with an ACTIVE workflow would fire for this event
+     * (same precedence as {@link #handleTriggerEvents}). Lets a built-in default notification
+     * stand down once the institute has built its own workflow for the event, so the two do
+     * not both send.
+     */
+    @Transactional(readOnly = true)
+    public boolean hasActiveWorkflow(String eventName, String eventId, String instituteId) {
+        List<WorkflowTrigger> triggers = resolveTriggers(eventName, eventId, instituteId, null);
+        if (triggers == null) return false;
+        return triggers.stream().anyMatch(t -> t.getWorkflow() != null
+                && StatusEnum.ACTIVE.name().equalsIgnoreCase(t.getWorkflow().getStatus()));
+    }
+
     public Optional<WorkflowTrigger> findByInstituteIdEventNameAndEventId(String instituteId, String eventName,
             String eventId) {
         List<String> activeStatuses = List.of(StatusEnum.ACTIVE.name());
