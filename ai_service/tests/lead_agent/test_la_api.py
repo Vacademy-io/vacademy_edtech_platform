@@ -349,3 +349,23 @@ def test_extension_bodies_are_capped_before_parsing(client):
     assert r.status_code == 422                          # under the byte cap, over the field cap
     assert client.post(f"{BASE}/ext/result", headers={"X-Lead-Agent-Token": token},
                        json={"task_id": "t", "ok": True, "html": "<html></html>"}).json() == {"accepted": False}
+
+
+def test_a_suggestion_needs_credits_and_is_charged_to_the_user(client, monkeypatch):
+    from types import SimpleNamespace
+
+    from app.services.lead_agent import llm
+
+    calls = []
+
+    async def fake_ask(system, user, output, *, purpose, ctx=None, max_tokens=0):
+        calls.append(ctx)
+        return {"summary": "Rooftop solar for factories.", "industries": [], "description": "Solar for factories."}
+    monkeypatch.setattr(llm, "ask", fake_ask)
+    monkeypatch.setattr(la_router, "_suggest_credits", lambda db, i, u: SimpleNamespace(has_sufficient_credits=False))
+    r = client.post(f"{BASE}/brief/suggest", json={"name": "Rooftop solar"})
+    assert r.status_code == 402 and r.json()["detail"]["code"] == "no_credits" and calls == []   # nothing spent
+    monkeypatch.setattr(la_router, "_suggest_credits", lambda db, i, u: SimpleNamespace(has_sufficient_credits=True))
+    r = client.post(f"{BASE}/brief/suggest", json={"name": "Rooftop solar"})
+    assert r.status_code == 200 and r.json()["description"] == "Solar for factories."
+    assert (calls[0].charge, calls[0].institute_id, calls[0].user_id) == (True, INSTITUTE, "user-1")

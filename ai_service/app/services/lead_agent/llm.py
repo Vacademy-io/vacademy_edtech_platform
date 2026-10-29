@@ -10,15 +10,18 @@ AIService.structured. A second failure raises engine.errors.InvalidOutput, which
 the engine's discovery and contact lookup already know how to skip.
 
 Money:
-  * The institute is NOT charged per token: the customer pays per delivered lead
-    (billing.py). What a call costs us is added to lead_candidate.cost_usd and
+  * The agent's own work is NOT charged per token: the customer pays per delivered
+    lead (billing.py). What a call costs us is added to lead_candidate.cost_usd and
     lead_agent_day.cost_usd (margin per lead).
   * Metering: the platform does not require every LLM call to be charged, but
-    unbilled spend should be visible. Each call is written as a RECORD-ONLY usage
+    unbilled spend should be visible. Each such call is written as a RECORD-ONLY usage
     row (usage_record_only.record_usage_only: request_type 'agent', use case
     'lead_agent', credits never deducted, behind the existing platform switch
     billing.record_unbilled_usage) - the same path the KB embeddings and the
     learner-profile poller use for system work nobody is billed for per call.
+  * A call a staff member asks for (CallContext.charge, e.g. "Suggest with AI") is
+    no lead, so it is charged like any other AI feature: by tokens, request_type
+    'agent', from the institute's credits (ai_billing.record_llm_billing).
 """
 from __future__ import annotations
 
@@ -61,11 +64,14 @@ class LLMUnavailable(Exception):
 
 @dataclass
 class CallContext:
-    """Who a call is for: cost lands on this candidate / agent day."""
+    """Who a call is for: cost lands on this candidate / agent day. charge: a staff
+    member (user_id) asked for it, so the institute pays its tokens in credits."""
     institute_id: Optional[str] = None
     agent_id: Optional[str] = None
     day: Optional[date] = None
     candidate_id: Optional[str] = None
+    user_id: Optional[str] = None
+    charge: bool = False
 
 
 # ----------------------------------------------------------------------
@@ -110,7 +116,8 @@ def call_cost_usd(model: str, usage: Dict[str, Any]) -> float:
 
 
 def _account(ctx: Optional[CallContext], model: str, usage: Dict[str, Any], purpose: str) -> float:
-    """Cost onto the candidate + day, and a record-only usage row. Never raises."""
+    """Cost onto the candidate + day, and a usage row: charged in credits when
+    ctx.charge, else record-only. Never raises."""
     usd = call_cost_usd(model, usage or {})
     if ctx is not None:
         try:
@@ -126,6 +133,20 @@ def _account(ctx: Optional[CallContext], model: str, usage: Dict[str, Any], purp
         from ..ai_billing import provider_for_model
         from ..usage_record_only import record_usage_only
 
+        if ctx is not None and ctx.charge:
+            from ..ai_billing import metering_user, record_llm_billing
+
+            prompt, completion = int((usage or {}).get("prompt_tokens") or 0), int(
+                (usage or {}).get("completion_tokens") or 0)
+            record_llm_billing(
+                request_type=RequestType.AGENT, model=model, prompt_tokens=prompt, completion_tokens=completion,
+                total_tokens=int((usage or {}).get("total_tokens") or prompt + completion),
+                institute_id=ctx.institute_id, user_id=ctx.user_id,
+                metadata={"feature": "lead_agent", "purpose": purpose, "cost_usd": round(usd, 6)},
+                use_case=USE_CASE, metering=metering_user(ctx.user_id, surface="ADMIN_APP"),
+                usage_context={"feature": "lead_agent", "purpose": purpose},
+            )
+            return usd
         record_usage_only(
             api_provider=provider_for_model(model), request_type=RequestType.AGENT, model=model,
             prompt_tokens=int((usage or {}).get("prompt_tokens") or 0),
