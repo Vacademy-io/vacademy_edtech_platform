@@ -37,6 +37,8 @@
         "purposeAny": "Anything that fits the brief",
         "customPlaceholder": "e.g. invite to the Sunday demo class",
         "purposes": {
+            "enquiryFollowUp": "Follow up on their enquiry (utility)",
+            "scheduleDemo": "Schedule the demo or call they asked for (utility)",
             "firstTouch": "First message",
             "followUp": "Follow-up after no reply",
             "missedClass": "Missed a class",

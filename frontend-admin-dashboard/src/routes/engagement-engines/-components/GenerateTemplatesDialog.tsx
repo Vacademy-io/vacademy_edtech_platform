@@ -18,7 +18,11 @@ import {
 } from '@/components/ui/select';
 import type { GenerateMode, GenerateOptions, TemplateLanguage } from '../-types/templates';
 
+// enquiryFollowUp / scheduleDemo come first: they read as UTILITY, which Meta's per-person
+// marketing cap (error 131049) does not block.
 const PURPOSE_KEYS = [
+    'enquiryFollowUp',
+    'scheduleDemo',
     'firstTouch',
     'followUp',
     'missedClass',
