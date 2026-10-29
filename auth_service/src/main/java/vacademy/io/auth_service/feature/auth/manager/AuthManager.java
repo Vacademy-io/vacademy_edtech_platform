@@ -742,10 +742,11 @@ public class AuthManager {
             throw new VacademyException("No user found with phone number: " + authRequestDTO.getPhoneNumber());
         }
 
-        // Learner phone-login pages send their portal's institute; refuse accounts that are not in
-        // it. Staff/admin callers never send it, so they are untouched. Done before any token work.
-        learnerPortalAccessGuard.assertUserBelongsToPortal(authRequestDTO.getPortalInstituteId(),
-                userOptional.get().getId(),
+        // Learner phone-login pages send their portal's institute; refuse accounts that hold no role
+        // in it. Any role counts: this login never demanded a student role, and that stays true.
+        // Staff/admin callers never send it, so they are untouched. Done before any token work.
+        learnerPortalAccessGuard.assertUserHasAnyRoleInPortal(authRequestDTO.getPortalInstituteId(),
+                userOptional.get(),
                 List.of(UserRoleStatus.ACTIVE.name(), UserRoleStatus.INVITED.name()));
 
         return generateJwtResponse(authRequestDTO, userOptional.get());

@@ -115,4 +115,37 @@ class LearnerPortalAccessGuardTest {
                 "u1", SHIKSHA, List.of("STUDENT", "PARENT"), otp)).thenReturn(Optional.of(new UserRole()));
         assertDoesNotThrow(() -> guard.assertUserBelongsToPortal(SHIKSHA, "u1", otp));
     }
+
+    private static UserRole roleIn(String instituteId, String status) {
+        UserRole role = new UserRole();
+        role.setInstituteId(instituteId);
+        role.setStatus(status);
+        return role;
+    }
+
+    @Test
+    void anyRoleInThePortalInstituteCountsForWhatsAppLogin() {
+        vacademy.io.common.auth.entity.User user = new vacademy.io.common.auth.entity.User();
+        user.setId("u1");
+        when(userRoleRepository.findByUser(user)).thenReturn(List.of(roleIn(SHIKSHA, "ACTIVE")));
+        assertDoesNotThrow(() -> guard.assertUserHasAnyRoleInPortal(SHIKSHA, user, List.of("ACTIVE", "INVITED")));
+    }
+
+    @Test
+    void rolesOnlyInAnotherInstituteOrRevokedAreRefusedForWhatsAppLogin() {
+        vacademy.io.common.auth.entity.User user = new vacademy.io.common.auth.entity.User();
+        user.setId("u1");
+        when(userRoleRepository.findByUser(user))
+                .thenReturn(List.of(roleIn("ssdc", "ACTIVE"), roleIn(SHIKSHA, "DISABLED")));
+        assertThrows(VacademyException.class,
+                () -> guard.assertUserHasAnyRoleInPortal(SHIKSHA, user, List.of("ACTIVE", "INVITED")));
+    }
+
+    @Test
+    void whatsAppScopingSkipsSharedPortalAndMissingPortalId() {
+        vacademy.io.common.auth.entity.User user = new vacademy.io.common.auth.entity.User();
+        user.setId("u1");
+        assertDoesNotThrow(() -> guard.assertUserHasAnyRoleInPortal(SHARED, user, List.of("ACTIVE")));
+        assertDoesNotThrow(() -> guard.assertUserHasAnyRoleInPortal(null, user, List.of("ACTIVE")));
+    }
 }

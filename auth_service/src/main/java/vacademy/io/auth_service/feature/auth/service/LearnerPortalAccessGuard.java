@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import vacademy.io.auth_service.feature.auth.constants.AuthConstants;
+import vacademy.io.common.auth.entity.User;
 import vacademy.io.common.auth.repository.UserRoleRepository;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.institute.OriginInstituteResolver;
@@ -73,6 +74,24 @@ public class LearnerPortalAccessGuard {
         if (!member) {
             log.warn("Learner login refused: user {} holds no student-portal role in portal institute {}",
                     userId, portalInstituteId);
+            throw new VacademyException(NOT_A_MEMBER_MESSAGE);
+        }
+    }
+
+    /**
+     * Same as {@link #assertUserBelongsToPortal}, but any role in the institute counts (staff
+     * included). For logins that never required a student role to begin with, so scoping them to
+     * the portal institute does not also narrow who may use them there.
+     */
+    public void assertUserHasAnyRoleInPortal(String portalInstituteId, User user, List<String> statuses) {
+        if (!appliesTo(portalInstituteId) || user == null) {
+            return;
+        }
+        boolean member = userRoleRepository.findByUser(user).stream()
+                .anyMatch(ur -> portalInstituteId.equals(ur.getInstituteId())
+                        && statuses.contains(ur.getStatus()));
+        if (!member) {
+            log.warn("Login refused: user {} holds no role in portal institute {}", user.getId(), portalInstituteId);
             throw new VacademyException(NOT_A_MEMBER_MESSAGE);
         }
     }
