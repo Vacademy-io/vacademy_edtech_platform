@@ -35,7 +35,7 @@ public class EscalateActionHandler implements EngagementActionHandler {
     public Map<String, String> execute(Context ctx, Map<String, String> params, Approver approver) {
         String id = timelineEventService.logEngineNote(ctx.leadRowId(), "AI: needs a counsellor",
                 ActionText.text(params, "reason"),
-                Map.of("engagementActionId", ctx.actionId(), "approvedBy", String.valueOf(approver.userId())),
+                Map.of("engagementActionId", ctx.actionId(), "approvedBy", java.util.Objects.toString(approver.userId(), "ENGAGEMENT_ENGINE")),
                 ctx.member().getUserId());
         return Map.of("noteId", id);
     }

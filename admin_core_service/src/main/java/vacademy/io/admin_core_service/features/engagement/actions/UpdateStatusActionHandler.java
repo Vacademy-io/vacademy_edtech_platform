@@ -93,7 +93,7 @@ public class UpdateStatusActionHandler implements EngagementActionHandler {
         if (note != null) {
             result.put("noteId", timelineEventService.logEngineNote(ctx.leadRowId(),
                     "AI: status moved to " + target.getLabel(), note,
-                    Map.of("engagementActionId", ctx.actionId(), "approvedBy", String.valueOf(approver.userId())),
+                    Map.of("engagementActionId", ctx.actionId(), "approvedBy", java.util.Objects.toString(approver.userId(), "ENGAGEMENT_ENGINE")),
                     ctx.member().getUserId()));
         }
         return result;

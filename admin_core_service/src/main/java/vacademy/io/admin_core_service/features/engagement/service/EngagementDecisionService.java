@@ -299,6 +299,12 @@ public class EngagementDecisionService {
                 member.setConsecutiveNoOps((short) Math.min(member.getConsecutiveNoOps() + 1, 10));
             }
             actionRepository.save(action);
+            if (rejected == null && !dryRun) {
+                // B7: an action type the admin set to run on its own, graduated (S7), with no kill
+                // switch (S6), hold or credit problem, runs now; otherwise it stays this inbox task.
+                crmActions.tryAutonomous(action, engine, member, phone, coordinated.hold(),
+                        humanTouchedSinceLastDecision(member), false);
+            }
             return recordAndFinish(member, engine, d, fingerprint, heldLease, now);
         }
 

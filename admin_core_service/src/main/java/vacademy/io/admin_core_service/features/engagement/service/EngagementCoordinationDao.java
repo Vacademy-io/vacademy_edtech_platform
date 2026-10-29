@@ -115,6 +115,30 @@ public class EngagementCoordinationDao {
         return n instanceof Number num && num.longValue() > 0;
     }
 
+    /**
+     * The lead's counsellor: on the lead profile, else the one linked to the lead's enquiry (the
+     * CRM dashboard's rule). Null when nobody owns the lead.
+     */
+    public String leadOwnerUserId(String instituteId, String leadRowId) {
+        List<?> rows = em.createNativeQuery("""
+                SELECT COALESCE(ulp.assigned_counselor_id, lu.user_id)
+                FROM audience_response ar
+                JOIN audience a ON a.id = ar.audience_id AND a.institute_id = :instituteId
+                LEFT JOIN user_lead_profile ulp ON ulp.user_id = ar.user_id AND ulp.institute_id = :instituteId
+                LEFT JOIN LATERAL (
+                    SELECT lu.user_id FROM linked_users lu
+                    WHERE lu.source = 'ENQUIRY' AND lu.source_id = ar.enquiry_id
+                    ORDER BY lu.created_at DESC
+                    LIMIT 1
+                ) lu ON true
+                WHERE ar.id = :leadRowId
+                """)
+                .setParameter("instituteId", instituteId)
+                .setParameter("leadRowId", leadRowId)
+                .getResultList();
+        return rows.isEmpty() || rows.get(0) == null ? null : rows.get(0).toString();
+    }
+
     /** True when the lead row belongs to a list of this institute (the flag endpoint's scope check). */
     public boolean leadInInstitute(String instituteId, String leadRowId) {
         Object n = em.createNativeQuery("""

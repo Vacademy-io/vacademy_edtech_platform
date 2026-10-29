@@ -521,6 +521,9 @@ class EngagementCrmActionsTest {
             verify(actions).save(argThat(a -> "TASK".equals(a.getKind()) && "UPDATE_STATUS".equals(a.getActionType())
                     && "OPEN".equals(a.getStatus()) && a.getChannel() == null));
             verify(actions, never()).save(argThat(a -> "SEND".equals(a.getKind())));
+            // B7: the new task is offered to autonomy, which decides whether it may run alone.
+            verify(crm).tryAutonomous(argThat(a -> "UPDATE_STATUS".equals(a.getActionType())), eq(engine), any(),
+                    any(), any(), eq(false), eq(false));
         }
 
         @Test

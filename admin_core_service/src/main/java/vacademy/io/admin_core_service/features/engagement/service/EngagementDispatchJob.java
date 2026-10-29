@@ -133,6 +133,12 @@ public class EngagementDispatchJob {
             actionRepository.withdrawDueSend(action.getId(), notSendable, now);
             return false;
         }
+        // S10: the holdout group gets no automated action of any type. Nothing should be queued for
+        // them; this is the backstop if something ever is.
+        if (Boolean.TRUE.equals(member.getIsHoldout())) {
+            actionRepository.withdrawDueSend(action.getId(), "Not sent: this person is in the holdout group.", now);
+            return false;
+        }
         if (member.getUserId() != null
                 && policyGate.optedOutUserIds(instituteId, List.of(member.getUserId())).contains(member.getUserId())) {
             actionRepository.withdrawDueSend(action.getId(), "Not sent: this person opted out after the decision.", now);
