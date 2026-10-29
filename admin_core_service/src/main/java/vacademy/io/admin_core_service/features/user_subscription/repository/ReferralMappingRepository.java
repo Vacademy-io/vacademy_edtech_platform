@@ -56,4 +56,24 @@ public interface ReferralMappingRepository extends JpaRepository<ReferralMapping
     long countByReferrerUserIdAndStatusList(@Param("referrerUserId") String referrerUserId,
                                             @Param("statusList") List<String> statusList);
 
+    /**
+     * The people this member referred into the programme source (an institute), newest first,
+     * with the plan and programme loaded. A referral left on a checkout that was never paid
+     * is not listed: the friend did not join on that attempt.
+     */
+    @Query("""
+    SELECT rm
+    FROM ReferralMapping rm
+    JOIN FETCH rm.userPlan up
+    JOIN FETCH rm.referralOption ro
+    WHERE rm.referrerUserId = :referrerUserId
+      AND ro.sourceId = :sourceId
+      AND rm.status IN :status
+      AND up.status NOT IN ('PENDING_FOR_PAYMENT', 'PAYMENT_FAILED')
+    ORDER BY rm.createdAt DESC
+""")
+    List<ReferralMapping> findReferralsMadeAtSource(@Param("referrerUserId") String referrerUserId,
+                                                    @Param("sourceId") String sourceId,
+                                                    @Param("status") List<String> status);
+
 }

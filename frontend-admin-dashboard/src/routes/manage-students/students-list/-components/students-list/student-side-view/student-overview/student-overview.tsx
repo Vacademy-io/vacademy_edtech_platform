@@ -29,6 +29,7 @@ import { ContactCallButton } from '@/components/shared/telephony/contact-call-bu
 import { EditStudentDetails } from './EditStudentDetails';
 import { EditLeadDetails } from './EditLeadDetails';
 import { StudentAttribution } from '../student-attribution/student-attribution';
+import { StudentReferral } from '../student-referral/student-referral';
 import { OverviewRemarks } from './overview-remarks';
 import { OverviewOtherContacts } from './overview-other-contacts';
 
@@ -391,6 +392,15 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
                 email={selectedStudent?.email}
                 mobileNumber={selectedStudent?.mobile_number}
             />
+
+            {/* Refer a friend — this member's code, a shareable link and who they
+                referred. Members only: a lead or a form submission has no code. */}
+            {!isSubmissionTab && !leadResponseId && (
+                <StudentReferral
+                    userId={selectedStudent?.user_id}
+                    instituteId={instituteDetails?.id}
+                />
+            )}
 
             {/* Terms & Conditions — always shown so admins can see signing status
                 at a glance (Signed / Not Signed), with the signed date + PDF when
