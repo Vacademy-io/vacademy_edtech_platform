@@ -560,6 +560,7 @@ export async function suggestBrief(body: SuggestRequest): Promise<SuggestRespons
     }
     return {
         summary: str(d.summary) ?? '',
+        description: str(d.description) ?? '',
         keywords: strList(d.keywords),
         industries: rowsOf(d.industries)
             .map(normalizeSuggestedIndustry)
@@ -598,6 +599,10 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
     if (isObject(data)) {
         const detail = data.detail;
         if (typeof detail === 'string' && detail.trim()) return detail;
+        // The Lead Agent router's own errors: {detail: {code, message}}.
+        if (isObject(detail) && typeof detail.message === 'string' && detail.message.trim()) {
+            return detail.message;
+        }
         if (Array.isArray(detail) && isObject(detail[0]) && typeof detail[0].msg === 'string') {
             // FastAPI validation error: name the field ("brief → buyer roles: …").
             const loc = Array.isArray(detail[0].loc)

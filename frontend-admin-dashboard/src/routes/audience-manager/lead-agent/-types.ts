@@ -317,6 +317,8 @@ export interface SuggestedOffer {
 
 export interface SuggestResponse {
     summary: string;
+    /** The product description written for the agent; '' when the server sends none. */
+    description: string;
     keywords: string[];
     industries: SuggestedIndustry[];
     note?: string | null;
