@@ -75,6 +75,10 @@ public class TriggerContextKeyRegistry {
         AUDITED.put(WorkflowTriggerEvent.PAYMENT_FAILED.name(), Set.of(
                 "paymentLog", "userId", "userPlanId", "amount", "vendor", "enrollInviteId", "packageSessionIds",
                 "renewal", "user"));
+        // ReviewSubmittedWorkflowNotifier.context (catalogue_review). No `user`: visitors are anonymous.
+        AUDITED.put(WorkflowTriggerEvent.REVIEW_SUBMITTED.name(), Set.of(
+                "reviewId", "rating", "ratingStars", "reviewerName", "reviewText", "courseName", "city",
+                "designation", "siteTag", "pageRoute", "reviewStatus", "submittedAt", "answers", "answersText"));
         // PackageSessionScheduler ~L165. No `user`.
         AUDITED.put(WorkflowTriggerEvent.MEMBERSHIP_EXPIRY.name(), Set.of(
                 "userPlanId", "userId", "paymentPlanId", "enrollInviteId", "endDate", "daysToExpiry"));

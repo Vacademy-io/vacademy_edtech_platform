@@ -231,6 +231,8 @@ public class WorkflowCatalogController {
         eventMeta.put("COURSE_CREATED", new String[]{"Course Created", "Fires when a new course / package is published in the institute", "Course", "PACKAGE_SESSION"});
         eventMeta.put("DOUBT_RAISED", new String[]{"Doubt Raised", "Fires when a learner posts a new doubt", "Engagement", "PACKAGE_SESSION"});
         eventMeta.put("ASSIGNMENT_SUBMITTED", new String[]{"Assignment Submitted", "Fires when a learner submits an assignment slide for the first time", "Engagement", "PACKAGE_SESSION"});
+        // Website
+        eventMeta.put("REVIEW_SUBMITTED", new String[]{"Site Review Submitted", "Fires when a visitor sends a review through a website's Reviews & feedback section (it waits for approval)", "Website", "INSTITUTE"});
         // Invites
         eventMeta.put("INVITE_CREATE", new String[]{"Invite Created", "Fires when a new enroll invite is created", "Invites", "ENROLL_INVITE"});
         eventMeta.put("INVITE_FORM_FILL", new String[]{"Invite Form Filled", "Fires when a learner completes an invite enrollment form", "Invites", "ENROLL_INVITE"});
@@ -471,6 +473,23 @@ public class WorkflowCatalogController {
         assessmentPublished.add(ctxVar("publishedBy", "User ID of the admin who published it"));
 
         Map<String, List<Map<String, String>>> out = new LinkedHashMap<>();
+        // Website reviews: ReviewSubmittedWorkflowNotifier.context.
+        out.put(WorkflowTriggerEvent.REVIEW_SUBMITTED.name(), List.of(
+                ctxVar("instituteId", "Institute ID"),
+                ctxVar("reviewId", "Review ID"),
+                ctxVar("rating", "Stars given (1-5)"),
+                ctxVar("ratingStars", "Stars as text, e.g. ★★★★☆"),
+                ctxVar("reviewerName", "Reviewer name"),
+                ctxVar("reviewText", "Written review (may be empty)"),
+                ctxVar("courseName", "Course the reviewer named (may be empty)"),
+                ctxVar("city", "City (may be empty)"),
+                ctxVar("designation", "Occupation / designation (may be empty)"),
+                ctxVar("answersText", "Answers to the form's own questions, one 'Label: value' per line"),
+                ctxVar("answers", "Answers to the form's own questions, as a list of {key, label, value}"),
+                ctxVar("siteTag", "Website the review came from"),
+                ctxVar("pageRoute", "Page of that website"),
+                ctxVar("reviewStatus", "PENDING (reviews always wait for approval)"),
+                ctxVar("submittedAt", "When it was sent (ISO time)")));
         out.put(WorkflowTriggerEvent.LEAD_ASSIGNED_TO_COUNSELOR.name(), base);
         out.put(WorkflowTriggerEvent.LEAD_TAT_REMINDER_BEFORE.name(), sla);
         out.put(WorkflowTriggerEvent.LEAD_TAT_OVERDUE.name(), sla);

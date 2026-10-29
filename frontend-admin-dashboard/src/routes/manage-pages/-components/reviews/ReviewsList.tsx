@@ -7,6 +7,7 @@ import {
     DotsThreeVertical,
     MagnifyingGlass,
     PencilSimple,
+    Plus,
     Star,
     Trash,
     X,
@@ -78,7 +79,7 @@ const RowSkeleton = () => (
 
 /* ── edit ─────────────────────────────────────────────────────────────── */
 
-const EditReviewDialog = ({
+export const EditReviewDialog = ({
     review,
     saving,
     onCancel,
@@ -96,6 +97,14 @@ const EditReviewDialog = ({
     const [city, setCity] = useState(review.city || '');
     const [course, setCourse] = useState(review.course_name || '');
     const [designation, setDesignation] = useState(review.designation || '');
+    // Course / city / designation show only when the review has them: most forms do not
+    // ask for all three, so empty boxes would be noise. "+" brings one back to fill in.
+    const [extras, setExtras] = useState(() => ({
+        course: !!review.course_name,
+        city: !!review.city,
+        designation: !!review.designation,
+    }));
+    const hiddenExtras = (['course', 'city', 'designation'] as const).filter((k) => !extras[k]);
 
     return (
         <Dialog open onOpenChange={(o) => !o && onCancel()}>
@@ -130,20 +139,42 @@ const EditReviewDialog = ({
                         <Label className="text-xs">{t('list.fields.text')}</Label>
                         <Textarea className="mt-1" rows={4} value={text} maxLength={2000} onChange={(e) => setText(e.target.value)} />
                     </div>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div>
-                            <Label className="text-xs">{t('list.fields.course')}</Label>
-                            <Input className="mt-1" value={course} maxLength={255} onChange={(e) => setCourse(e.target.value)} />
+                    {(extras.course || extras.city) && (
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                            {extras.course && (
+                                <div className={extras.city ? undefined : 'sm:col-span-2'}>
+                                    <Label className="text-xs">{t('list.fields.course')}</Label>
+                                    <Input className="mt-1" value={course} maxLength={255} onChange={(e) => setCourse(e.target.value)} />
+                                </div>
+                            )}
+                            {extras.city && (
+                                <div className={extras.course ? undefined : 'sm:col-span-2'}>
+                                    <Label className="text-xs">{t('list.fields.city')}</Label>
+                                    <Input className="mt-1" value={city} maxLength={120} onChange={(e) => setCity(e.target.value)} />
+                                </div>
+                            )}
                         </div>
+                    )}
+                    {extras.designation && (
                         <div>
-                            <Label className="text-xs">{t('list.fields.city')}</Label>
-                            <Input className="mt-1" value={city} maxLength={120} onChange={(e) => setCity(e.target.value)} />
+                            <Label className="text-xs">{t('list.fields.designation')}</Label>
+                            <Input className="mt-1" value={designation} maxLength={255} onChange={(e) => setDesignation(e.target.value)} />
                         </div>
-                    </div>
-                    <div>
-                        <Label className="text-xs">{t('list.fields.designation')}</Label>
-                        <Input className="mt-1" value={designation} maxLength={255} onChange={(e) => setDesignation(e.target.value)} />
-                    </div>
+                    )}
+                    {hiddenExtras.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                            {hiddenExtras.map((k) => (
+                                <button
+                                    key={k}
+                                    type="button"
+                                    onClick={() => setExtras((e) => ({ ...e, [k]: true }))}
+                                    className="inline-flex items-center gap-1 rounded-md border border-dashed border-neutral-300 px-2 py-1 text-xs text-neutral-600 hover:border-primary-300 hover:text-primary-500"
+                                >
+                                    <Plus className="size-3" /> {t(`list.fields.${k}`)}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
                 <DialogFooter className="gap-2">
                     <MyButton buttonType="secondary" scale="medium" onClick={onCancel}>
@@ -158,9 +189,10 @@ const EditReviewDialog = ({
                                 rating,
                                 reviewer_name: name.trim(),
                                 review_text: text.trim(),
-                                city: city.trim(),
-                                course_name: course.trim(),
-                                designation: designation.trim(),
+                                // A field left hidden is not sent, so it stays as it is.
+                                city: extras.city ? city.trim() : undefined,
+                                course_name: extras.course ? course.trim() : undefined,
+                                designation: extras.designation ? designation.trim() : undefined,
                             })
                         }
                     >
