@@ -36,4 +36,8 @@ public class GoogleJoinPayloadResponse {
     /** Set when the host was made a co-host of the space — they get host controls when they open
      *  Meet signed into THIS account. */
     private String cohostEmail;
+
+    /** True when this join made them co-host just now. Google needs a few seconds to apply it, so
+     *  the launcher waits before opening Meet (opened at once, Meet puts them in the lobby). */
+    private boolean cohostJustAdded;
 }

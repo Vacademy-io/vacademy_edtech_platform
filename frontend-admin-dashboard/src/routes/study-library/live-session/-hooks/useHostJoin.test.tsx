@@ -25,6 +25,15 @@ const openSpy = vi.fn();
 const base = { sessionId: 'sess-1', scheduleId: 'sched-1' };
 const resolver = () => renderHook(() => useHostJoin()).result.current.resolveHostAction;
 
+/** The blank tab startMeet opens inside the click, then points at Meet. */
+const fakeTab = () => ({
+    opener: {} as unknown,
+    closed: false,
+    close: vi.fn(),
+    location: { href: '' },
+    document: { title: '', body: { textContent: '' } },
+});
+
 beforeEach(() => {
     vi.clearAllMocks();
     vi.stubGlobal('open', openSpy);
@@ -62,6 +71,53 @@ describe('useHostJoin — provider routing', () => {
         });
         expect(get).not.toHaveBeenCalled();
         expect(openSpy).not.toHaveBeenCalled();
+    });
+
+    it('opens Meet at once in the tab opened on click when already a co-host', async () => {
+        const tab = fakeTab();
+        openSpy.mockReturnValueOnce(tab);
+        get.mockResolvedValue({
+            data: { joinUrl: 'https://meet.google.com/abc-defg-hij', cohostEmail: 't@gmail.com' },
+        });
+
+        await resolver()({ ...base, linkType: 'google meet' })?.run();
+
+        expect(openSpy).toHaveBeenCalledTimes(1);
+        expect(openSpy).toHaveBeenCalledWith('', '_blank');
+        expect(tab.opener).toBeNull();
+        expect(tab.location.href).toBe('https://meet.google.com/abc-defg-hij');
+    });
+
+    it('waits before opening Meet when the co-host was only just added', async () => {
+        vi.useFakeTimers();
+        const tab = fakeTab();
+        openSpy.mockReturnValueOnce(tab);
+        get.mockResolvedValue({
+            data: {
+                joinUrl: 'https://meet.google.com/abc-defg-hij',
+                cohostEmail: 't@gmail.com',
+                cohostJustAdded: true,
+            },
+        });
+
+        const run = resolver()({ ...base, linkType: 'google meet' })?.run();
+        await vi.advanceTimersByTimeAsync(4000);
+        expect(tab.location.href).toBe('');
+        await vi.advanceTimersByTimeAsync(1000);
+        await run;
+        expect(tab.location.href).toBe('https://meet.google.com/abc-defg-hij');
+        vi.useRealTimers();
+    });
+
+    it('closes the pending Meet tab when the join call fails', async () => {
+        const tab = fakeTab();
+        openSpy.mockReturnValueOnce(tab);
+        get.mockRejectedValue(new Error('boom'));
+
+        await resolver()({ ...base, linkType: 'google meet' })?.run();
+
+        expect(tab.close).toHaveBeenCalled();
+        expect(toast.error).toHaveBeenCalled();
     });
 
     it('sends Google Meet to the meet-join endpoint', async () => {
