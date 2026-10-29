@@ -63,6 +63,20 @@ class EngagementMeetingIntentTest {
         private EngagementMemberRepository members;
         private EngagementActionRepository actions;
         private BookingInstance meeting;
+        private EngagementDispatcher dispatcher;
+        private vacademy.io.admin_core_service.features.agent.service.LLMService llm;
+
+        private void llmSays(String text) {
+            var resp = mock(vacademy.io.admin_core_service.features.agent.service.LLMService.LLMResponse.class);
+            when(resp.getContent()).thenReturn(text);
+            when(llm.generateChatCompletion(any())).thenReturn(resp);
+        }
+
+        private java.util.List<EngagementAction> saved() {
+            ArgumentCaptor<EngagementAction> c = ArgumentCaptor.forClass(EngagementAction.class);
+            verify(actions, atLeastOnce()).save(c.capture());
+            return c.getAllValues();
+        }
 
         @BeforeEach
         void setUp() {
@@ -77,6 +91,13 @@ class EngagementMeetingIntentTest {
             ReflectionTestUtils.setField(svc, "memberRepository", members);
             ReflectionTestUtils.setField(svc, "actionRepository", actions);
             ReflectionTestUtils.setField(svc, "bookingPageService", pages);
+            dispatcher = mock(EngagementDispatcher.class);
+            llm = mock(vacademy.io.admin_core_service.features.agent.service.LLMService.class);
+            ReflectionTestUtils.setField(svc, "dispatcher", dispatcher);
+            ReflectionTestUtils.setField(svc, "llmService", llm);
+            when(actions.claimForDispatch(any(), any(), any())).thenReturn(1);
+            when(actions.findById(any())).thenAnswer(inv -> Optional.empty());
+            when(dispatcher.dispatchClaimed(any(), any(), any(), eq(true))).thenAnswer(inv -> inv.getArgument(0));
 
             meeting = new BookingInstance();
             meeting.setId("b1");
@@ -119,12 +140,40 @@ class EngagementMeetingIntentTest {
             verify(publicBooking).reschedule(eq("tok-1"), req.capture());
             assertEquals(java.time.OffsetDateTime.parse(monday).toInstant(),
                     java.time.OffsetDateTime.parse(req.getValue().getStartTime()).toInstant());
-            ArgumentCaptor<EngagementAction> saved = ArgumentCaptor.forClass(EngagementAction.class);
-            verify(actions, atLeastOnce()).save(saved.capture());
-            EngagementAction last = saved.getValue();
-            assertEquals("RESCHEDULED", last.getOutcome());
-            assertEquals("e1", last.getEngineId());
-            assertEquals("DONE", last.getStatus());
+            EngagementAction done = saved().stream().filter(a -> "RESCHEDULED".equals(a.getOutcome())).findFirst().orElseThrow();
+            assertEquals("e1", done.getEngineId());
+            assertEquals("DONE", done.getStatus());
+            // and the lead is told, on the channel they wrote on, with the time
+            ArgumentCaptor<EngagementAction> sent = ArgumentCaptor.forClass(EngagementAction.class);
+            verify(dispatcher).dispatchClaimed(sent.capture(), isNull(), any(), eq(true));
+            assertEquals("EMAIL", sent.getValue().getChannel());
+            assertTrue(sent.getValue().getDraftBody().contains("Your meeting is now on"), sent.getValue().getDraftBody());
+        }
+
+        @Test
+        @DisplayName("the confirmation is written in the language the lead used, and never carries a link it was not given")
+        void confirmationInTheirLanguage() throws Exception {
+            String monday = Instant.now().plus(4, ChronoUnit.DAYS).atOffset(java.time.ZoneOffset.ofHoursMinutes(5, 30)).toString();
+            doReturn(new EngagementMeetingIntentService.MeetingRequest("RESCHEDULE", monday))
+                    .when(svc).readRequest(any(), any(), any(), any(), any());
+            PublicBookingDTOs.PublicBookingViewDTO moved = new PublicBookingDTOs.PublicBookingViewDTO();
+            moved.setStartTimeUtc(java.time.OffsetDateTime.parse(monday).toInstant().toString());
+            moved.setMeetLink("https://meet.google.com/abc-defg-hij");
+            when(publicBooking.reschedule(eq("tok-1"), any())).thenReturn(moved);
+            llmSays("Theek hai, aapki meeting move ho gayi. Link: https://meet.google.com/abc-defg-hij");
+            assertTrue(svc.handle("i1", "WHATSAPP", "9968858268", null, "bhai meeting ko monday kar do", "w9"));
+            ArgumentCaptor<EngagementAction> sent = ArgumentCaptor.forClass(EngagementAction.class);
+            verify(dispatcher).dispatchClaimed(sent.capture(), isNull(), any(), eq(true));
+            assertEquals("WHATSAPP", sent.getValue().getChannel());
+            assertTrue(sent.getValue().getDraftBody().startsWith("Theek hai"), sent.getValue().getDraftBody());
+
+            reset(dispatcher);
+            when(dispatcher.dispatchClaimed(any(), any(), any(), eq(true))).thenAnswer(inv -> inv.getArgument(0));
+            llmSays("Done! Join here: https://evil.example/phish");
+            when(members.claimHandledReply(any(), any(), any())).thenReturn(1);
+            assertTrue(svc.handle("i1", "WHATSAPP", "9968858268", null, "please move it to monday", "w10"));
+            verify(dispatcher).dispatchClaimed(sent.capture(), isNull(), any(), eq(true));
+            assertFalse(sent.getValue().getDraftBody().contains("evil.example"), sent.getValue().getDraftBody());
         }
 
         @Test
@@ -135,10 +184,24 @@ class EngagementMeetingIntentTest {
                     .when(svc).readRequest(any(), any(), any(), any(), any());
             when(publicBooking.reschedule(any(), any())).thenThrow(new VacademyException("This slot is no longer available."));
             assertTrue(svc.handle("i1", "EMAIL", null, "p@x.com", "can we reschedule to Monday 10 am", "email:y"));
-            ArgumentCaptor<EngagementAction> saved = ArgumentCaptor.forClass(EngagementAction.class);
-            verify(actions).save(saved.capture());
-            assertEquals("OPEN", saved.getValue().getStatus());
-            assertNotNull(saved.getValue().getDraftBody());
+            ArgumentCaptor<EngagementAction> sent = ArgumentCaptor.forClass(EngagementAction.class);
+            verify(dispatcher).dispatchClaimed(sent.capture(), isNull(), any(), eq(true));
+            assertNotNull(sent.getValue().getDraftBody());
+            assertTrue(saved().stream().anyMatch(a -> "DONE".equals(a.getStatus())), "the ask is recorded");
+        }
+
+        @Test
+        @DisplayName("no clear time: the engine asks when, in the language the lead used, instead of leaving a draft")
+        void asksWhen() throws Exception {
+            doReturn(new EngagementMeetingIntentService.MeetingRequest("RESCHEDULE", null))
+                    .when(svc).readRequest(any(), any(), any(), any(), any());
+            llmSays("Zaroor! Aapko meeting kab rakhni hai? Din aur time bata dijiye.");
+            assertTrue(svc.handle("i1", "WHATSAPP", "9968858268", null, "can we reschedule my meeting", "w11"));
+            ArgumentCaptor<EngagementAction> sent = ArgumentCaptor.forClass(EngagementAction.class);
+            verify(dispatcher).dispatchClaimed(sent.capture(), isNull(), any(), eq(true));
+            assertEquals("WHATSAPP", sent.getValue().getChannel());
+            assertTrue(sent.getValue().getDraftBody().startsWith("Zaroor!"), sent.getValue().getDraftBody());
+            verify(publicBooking, never()).reschedule(any(), any());
         }
 
         @Test
@@ -177,6 +240,7 @@ class EngagementMeetingIntentTest {
         private vacademy.io.admin_core_service.features.booking.service.MeetingBookingService meetings;
         private EngagementActionRepository actions;
         private EngagementEngine engine;
+        private EngagementDispatcher dispatcher;
 
         @BeforeEach
         void setUp() {
@@ -190,6 +254,10 @@ class EngagementMeetingIntentTest {
             ReflectionTestUtils.setField(svc, "bookingPageService", pages);
             ReflectionTestUtils.setField(svc, "audienceResponseRepository", responses);
             ReflectionTestUtils.setField(svc, "publicBookingService", mock(PublicBookingService.class));
+            dispatcher = mock(EngagementDispatcher.class);
+            ReflectionTestUtils.setField(svc, "dispatcher", dispatcher);
+            when(actions.claimForDispatch(any(), any(), any())).thenReturn(1);
+            when(dispatcher.dispatchClaimed(any(), any(), any(), eq(true))).thenAnswer(inv -> inv.getArgument(0));
             BookingPage page = new BookingPage();
             page.setId("p1");
             page.setInstituteId("i1");
@@ -225,7 +293,11 @@ class EngagementMeetingIntentTest {
             assertEquals("priyanshu@vidyayatan.com", req.getValue().getInviteeEmail());
             ArgumentCaptor<EngagementAction> saved = ArgumentCaptor.forClass(EngagementAction.class);
             verify(actions, atLeastOnce()).save(saved.capture());
-            assertEquals("BOOKED", saved.getValue().getOutcome());
+            assertTrue(saved.getAllValues().stream().anyMatch(a -> "BOOKED".equals(a.getOutcome())));
+            ArgumentCaptor<EngagementAction> sent = ArgumentCaptor.forClass(EngagementAction.class);
+            verify(dispatcher).dispatchClaimed(sent.capture(), isNull(), any(), eq(true));
+            assertEquals("EMAIL", sent.getValue().getChannel());
+            assertTrue(sent.getValue().getDraftBody().contains("booked"), sent.getValue().getDraftBody());
         }
 
         @Test
@@ -244,10 +316,9 @@ class EngagementMeetingIntentTest {
                     .when(svc).readBookingRequest(any(), any(), any(), any());
             when(meetings.createBooking(any(), any())).thenThrow(new vacademy.io.common.exceptions.ConflictException("already has a meeting"));
             assertTrue(svc.bookFromReply(engine, "m1", null, "r1", "EMAIL", "book the demo for Monday 11 am"));
-            ArgumentCaptor<EngagementAction> saved = ArgumentCaptor.forClass(EngagementAction.class);
-            verify(actions).save(saved.capture());
-            assertEquals("OPEN", saved.getValue().getStatus());
-            assertTrue(saved.getValue().getDraftBody().contains("booking-response?instituteId=i1&slug=demo"));
+            ArgumentCaptor<EngagementAction> sent = ArgumentCaptor.forClass(EngagementAction.class);
+            verify(dispatcher).dispatchClaimed(sent.capture(), isNull(), any(), eq(true));
+            assertTrue(sent.getValue().getDraftBody().contains("booking-response?instituteId=i1&slug=demo"));
         }
 
         @Test
