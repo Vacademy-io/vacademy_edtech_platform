@@ -119,9 +119,23 @@ public class EngagementWakeService {
     @Value("${engagement.wake.settle-ms:5000}")
     private long settleMs = 5000;
 
+    /** Set while the engine itself writes to the CRM (B6 actions): those writes must not wake it. */
+    private static final ThreadLocal<Boolean> SUPPRESSED = ThreadLocal.withInitial(() -> false);
+
+    /** Run a CRM write the engine makes (a follow-up, a status change) without waking the engine. */
+    public static <T> T withoutWakes(java.util.function.Supplier<T> work) {
+        boolean before = SUPPRESSED.get();
+        SUPPRESSED.set(true);
+        try {
+            return work.get();
+        } finally {
+            SUPPRESSED.set(before);
+        }
+    }
+
     /** Queue a wake; when called inside a transaction, only once it commits. Never throws. */
     public void request(WakeRequest r) {
-        if (!enabled || r == null || r.reason() == null) return;
+        if (!enabled || r == null || r.reason() == null || SUPPRESSED.get()) return;
         try {
             if (TransactionSynchronizationManager.isSynchronizationActive()) {
                 TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {

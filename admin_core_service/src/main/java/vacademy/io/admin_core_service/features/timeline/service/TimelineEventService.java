@@ -370,7 +370,41 @@ public class TimelineEventService {
                 return null;
         }
 
-        private void saveEvent(String type, String typeId, String actionType,
+        // ── Write: engagement engine notes (B6) ─────────────────────────────
+
+        /** Actor of every note the engagement engine writes; the hooks and readers key on it. */
+        public static final String ENGINE_ACTOR_TYPE = "ENGAGEMENT_ENGINE";
+        /** How the note's author reads in the timeline: a normal note, labelled AI. */
+        public static final String ENGINE_NOTE_AUTHOR = "AI · Engagement Engine";
+
+        /**
+         * A normal NOTE on a lead, written by the engagement engine (labelled AI by its author name
+         * and metadata.ai). Returns the event id, so the engine can undo it.
+         */
+        @Transactional
+        public String logEngineNote(String leadRowId, String title, String description,
+                        Map<String, Object> metadata, String studentUserId) {
+                Map<String, Object> meta = new HashMap<>(metadata != null ? metadata : Map.of());
+                meta.put("source", ENGINE_ACTOR_TYPE);
+                meta.put("ai", true);
+                return saveEvent("LEAD", leadRowId, "NOTE", ENGINE_ACTOR_TYPE, null, ENGINE_NOTE_AUTHOR,
+                                title, description, meta, studentUserId, TimelineCategory.ACTIVITY).getId();
+        }
+
+        /** Undo of {@link #logEngineNote}: removes only a note the engine wrote. */
+        @Transactional
+        public boolean deleteEngineNote(String eventId) {
+                if (eventId == null) return false;
+                return timelineEventRepository.findById(eventId)
+                                .filter(e -> ENGINE_ACTOR_TYPE.equals(e.getActorType()))
+                                .map(e -> {
+                                        timelineEventRepository.delete(e);
+                                        return true;
+                                })
+                                .orElse(false);
+        }
+
+        private TimelineEvent saveEvent(String type, String typeId, String actionType,
                         String actorType, String actorId, String actorName,
                         String title, String description, Object metadata,
                         String studentUserId, TimelineCategory category) {
@@ -399,9 +433,10 @@ public class TimelineEventService {
                                 .instituteId(resolveInstituteId(type, typeId))
                                 .build();
 
-                timelineEventRepository.save(event);
-                notifyHooks(event);
+                TimelineEvent saved = timelineEventRepository.save(event);
+                notifyHooks(saved);
                 logger.debug("Logged {} event: {} on {}[{}]", category, actionType, type, typeId);
+                return saved;
         }
 
         private void notifyHooks(TimelineEvent event) {

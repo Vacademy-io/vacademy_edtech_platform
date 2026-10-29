@@ -86,6 +86,35 @@ public class EngagementCoordinationDao {
         return out;
     }
 
+    /** Open (not closed, not completed) follow-ups on a lead row: F-4, never a second one. */
+    public long openFollowups(String instituteId, String leadRowId) {
+        Object n = em.createNativeQuery("""
+                SELECT count(*) FROM lead_followup f
+                WHERE f.institute_id = :instituteId AND f.audience_response_id = :leadRowId
+                  AND NOT (COALESCE(f.is_closed, false) OR f.status = 'COMPLETED')
+                """)
+                .setParameter("instituteId", instituteId)
+                .setParameter("leadRowId", leadRowId)
+                .getSingleResult();
+        return n instanceof Number num ? num.longValue() : 0;
+    }
+
+    /**
+     * A call to this lead ended as wrong number or do-not-disturb (C-2, C-3): no more AI calls.
+     * The disposition is what the counsellor or the AI agent recorded on the call.
+     */
+    public boolean doNotCall(String instituteId, String leadRowId) {
+        Object n = em.createNativeQuery("""
+                SELECT count(*) FROM telephony_call_log l
+                WHERE l.institute_id = :instituteId AND l.response_id = :leadRowId
+                  AND l.disposition_key IN ('WRONG_NUMBER', 'DND')
+                """)
+                .setParameter("instituteId", instituteId)
+                .setParameter("leadRowId", leadRowId)
+                .getSingleResult();
+        return n instanceof Number num && num.longValue() > 0;
+    }
+
     /** True when the lead row belongs to a list of this institute (the flag endpoint's scope check). */
     public boolean leadInInstitute(String instituteId, String leadRowId) {
         Object n = em.createNativeQuery("""

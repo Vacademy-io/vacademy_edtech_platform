@@ -18,6 +18,7 @@ import vacademy.io.admin_core_service.features.engagement.repository.EngagementT
 import vacademy.io.admin_core_service.features.engagement.spi.DataPointRegistry;
 import vacademy.io.admin_core_service.features.engagement.spi.FetchContext;
 import vacademy.io.admin_core_service.features.engagement.spi.Subject;
+import vacademy.io.admin_core_service.features.engagement.templates.EngagementEmailTemplateCatalog;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -59,6 +60,14 @@ public class EngagementDecisionService {
     /** B5 coordination with the rest of the CRM; field-injected so it stays optional in unit tests. */
     @Autowired(required = false)
     private EngagementCoordinationService coordination;
+
+    /** B6 CRM actions (allow-list, validation, inbox tasks); optional in unit tests. */
+    @Autowired(required = false)
+    private EngagementCrmActionService crmActions;
+
+    /** B6 template-only email: the templates track's catalog (A3); optional in unit tests. */
+    @Autowired(required = false)
+    private EngagementEmailTemplateCatalog emailCatalog;
 
     @Value("${engagement.recent-window-days:14}")
     private int recentWindowDays;
@@ -129,6 +138,8 @@ public class EngagementDecisionService {
         whatsappTemplates.forEach(t -> templatesByName.put(t.name(), t));
 
         boolean dryRun = "DRY_RUN".equalsIgnoreCase(engine.getStatus());
+        EngagementBrainClient.ActionMenu menu = crmActions != null ? crmActions.menu(engine)
+                : EngagementBrainClient.ActionMenu.NONE;
         Map<String, EngagementCoordinationService.Verdict> coordinated = coordination != null
                 ? coordination.forCohort(engine.getInstituteId(), members, bundle, Instant.now())
                 : Map.of();
@@ -137,7 +148,8 @@ public class EngagementDecisionService {
             try {
                 decisions += decideOne(engine, prompt, member, bundle, optedOut, blockedLeads, dryRun,
                         enabledChannels, whatsappTemplates, templatesByName,
-                        EngagementCoordinationService.of(coordinated, member.getId())) ? 1 : 0;
+                        EngagementCoordinationService.of(coordinated, member.getId()), menu,
+                        subjectByMember.get(member.getId())) ? 1 : 0;
             } catch (Exception e) {
                 // Decision failed AFTER we claimed a lease. Push it out with exponential backoff
                 // so an LLM/provider outage doesn't re-hammer every 15 min (the lease alone would
@@ -157,7 +169,8 @@ public class EngagementDecisionService {
                               Set<String> enabledChannels,
                               List<EngagementBrainClient.TemplateOption> whatsappTemplates,
                               Map<String, EngagementBrainClient.TemplateOption> templatesByName,
-                              EngagementCoordinationService.Verdict coordinated) {
+                              EngagementCoordinationService.Verdict coordinated,
+                              EngagementBrainClient.ActionMenu menu, Subject subject) {
         Instant now = Instant.now();
 
         // 0. Lease re-check: a serial cohort can outrun its 15-min lease; if another pod has
@@ -246,10 +259,48 @@ public class EngagementDecisionService {
         }
 
         // 3. The LLM.
-        EngagementBrainClient.Decision d = brain.decide(
-                engine, prompt.getCompiledText(),
-                withCoordination(coordinated, withWhyNow(member, bundle.renderFor(member.getId()))), now,
-                enabledChannels, whatsappTemplates);
+        Map<String, String> blocks = withCoordination(coordinated, withWhyNow(member, bundle.renderFor(member.getId())));
+        // An engine that only messages keeps exactly today's call (and prompt).
+        EngagementBrainClient.Decision d = menu == null || menu.isEmpty()
+                ? brain.decide(engine, prompt.getCompiledText(), blocks, now, enabledChannels, whatsappTemplates)
+                : brain.decide(engine, prompt.getCompiledText(), blocks, now, enabledChannels, whatsappTemplates, menu);
+
+        // 3b. B6: a CRM action (follow-up, note, escalation, status, AI call) becomes an inbox task
+        // a person approves, after the server checks it (allow-list, the action's own rules). WAIT is
+        // a NO_OP. A proposal that fails the check is recorded as a NO_OP with the reason.
+        String crmType = d.actionType() != null ? d.actionType().trim().toUpperCase() : null;
+        if ("ACT".equalsIgnoreCase(d.decision()) && EngagementActionTypes.isCrmAction(crmType)) {
+            String phone = subject != null ? subject.getPhone() : null;
+            String rejected = crmActions == null ? "CRM actions are not available"
+                    : crmActions.validateProposal(engine, member, phone, crmType, d.actionParams());
+            EngagementAction action = new EngagementAction();
+            action.setEngineId(engine.getId());
+            action.setMemberId(member.getId());
+            action.setInstituteId(engine.getInstituteId());
+            action.setPromptVersionId(prompt.getId());
+            if (rejected == null) {
+                action.setKind("TASK");
+                action.setActionType(crmType);
+                action.setStatus(dryRun ? "SIMULATED" : "OPEN");
+                action.setDraftBody(cap(crmActions.describe(engine, member, phone, crmType, d.actionParams())));
+                action.setVariablesJson(crmActions.taskVariables(d.actionParams()));
+                action.setRationale(cap(d.rationale()));
+                double priority = EngagementActionTypes.ESCALATE.equals(crmType) ? Math.max(d.priority(), 80) : d.priority();
+                action.setPriority(BigDecimal.valueOf(Math.max(0, Math.min(100, priority))));
+                action.setScheduledFor(now);
+                action.setExpiresAt(now.plus(Duration.ofHours(taskExpireHours)));
+                member.setConsecutiveNoOps((short) 0);
+            } else {
+                log.info("Engine {}: {} proposed for member {} not drafted: {}", engine.getId(), crmType,
+                        member.getId(), rejected);
+                action.setKind("NO_OP");
+                action.setStatus("DONE");
+                action.setRationale(cap("Proposed " + crmType + ", not drafted: " + rejected + " " + nullToEmpty(d.rationale())));
+                member.setConsecutiveNoOps((short) Math.min(member.getConsecutiveNoOps() + 1, 10));
+            }
+            actionRepository.save(action);
+            return recordAndFinish(member, engine, d, fingerprint, heldLease, now);
+        }
 
         // 4. Persist the outcome — TASK (or SIMULATED for DRY_RUN) or NO_OP.
         // Enforce the channel enablement server-side, not just in the prompt: a model that ignores
@@ -290,7 +341,10 @@ public class EngagementDecisionService {
             if ("WHATSAPP".equals(action.getChannel())) {
                 attachWhatsAppTemplate(action, d, templatesByName);
             }
-            if ("EMAIL".equals(action.getChannel()) && d.subject() != null && !d.subject().isBlank()) {
+            boolean emailTemplateOnly = "EMAIL".equals(action.getChannel()) && menu != null && menu.emailTemplates() != null;
+            if (emailTemplateOnly) {
+                attachEmailTemplate(action, d, engine);
+            } else if ("EMAIL".equals(action.getChannel()) && d.subject() != null && !d.subject().isBlank()) {
                 action.setVariablesJson(writeJson(Map.of(EngagementDispatcher.VAR_SUBJECT,
                         oneLine(d.subject(), MAX_SUBJECT_CHARS))));
             }
@@ -299,7 +353,8 @@ public class EngagementDecisionService {
             // it has GRADUATED (>= first_n human-approved sends), the draft is actually sendable
             // (WhatsApp needs an attached approved template), and it's not a dry run. Otherwise it's a
             // copilot TASK exactly as before. A dry run is always SIMULATED (never sends, never caps).
-            boolean draftReady = !"WHATSAPP".equals(chosenChannel) || action.getTemplateName() != null;
+            boolean draftReady = (!"WHATSAPP".equals(chosenChannel) || action.getTemplateName() != null)
+                    && (!emailTemplateOnly || action.getTemplateName() != null);
             boolean autoSend = !dryRun
                     && !everReplied(bundle, member)
                     && !humanTouchedSinceLastDecision(member)
@@ -329,6 +384,12 @@ public class EngagementDecisionService {
             member.setConsecutiveNoOps((short) Math.min(member.getConsecutiveNoOps() + 1, 10));
         }
 
+        return recordAndFinish(member, engine, d, fingerprint, heldLease, now);
+    }
+
+    /** The decision is made: stamp it and schedule the next look (shared by messages and CRM actions). */
+    private boolean recordAndFinish(EngagementMember member, EngagementEngine engine, EngagementBrainClient.Decision d,
+                                    String fingerprint, Instant heldLease, Instant now) {
         member.setLastDecidedAt(now);
         member.setWakeFingerprint(fingerprint);
         member.setConsecutiveFailures((short) 0); // reached a real decision — clear the failure backoff
@@ -367,6 +428,41 @@ public class EngagementDecisionService {
     static boolean humanTouchedSinceLastDecision(EngagementMember m) {
         return m.getHumanTouchAt() != null
                 && (m.getLastDecidedAt() == null || m.getHumanTouchAt().isAfter(m.getLastDecidedAt()));
+    }
+
+    private static String nullToEmpty(String s) {
+        return s == null ? "" : s;
+    }
+
+    /**
+     * B6 template-only email: attach the approved template the brain chose, rendered with its
+     * variables, so the inbox shows exactly what will be sent. Left unattached (a task a person must
+     * fix, never an auto-send) when the template is unknown, a variable is missing or it no longer
+     * fits the brief.
+     */
+    private void attachEmailTemplate(EngagementAction action, EngagementBrainClient.Decision d, EngagementEngine engine) {
+        String name = d.templateName();
+        if (name == null || name.isBlank() || emailCatalog == null) {
+            action.setErrorMessage("Template-only email: no approved template chosen.");
+            return;
+        }
+        Map<String, String> vars = d.variables() != null ? d.variables() : Map.of();
+        var rendered = emailCatalog.render(engine.getId(), engine.getInstituteId(), name, vars).orElse(null);
+        if (rendered == null) {
+            action.setErrorMessage("Template-only email: '" + oneLine(name, 80) + "' is not an approved template.");
+            return;
+        }
+        if (!rendered.sendable()) {
+            action.setErrorMessage("Template-only email not sendable: missing " + rendered.missingVariables()
+                    + (rendered.problems() != null && !rendered.problems().isEmpty() ? "; " + rendered.problems() : ""));
+            return;
+        }
+        Map<String, String> stored = new java.util.LinkedHashMap<>(vars);
+        stored.put(EngagementDispatcher.VAR_EMAIL_TEMPLATE, rendered.templateId());
+        stored.put(EngagementDispatcher.VAR_SUBJECT, oneLine(rendered.subject() != null ? rendered.subject() : "", MAX_SUBJECT_CHARS));
+        action.setTemplateName(rendered.templateName());
+        action.setVariablesJson(writeJson(stored));
+        action.setDraftBody(cap(rendered.text()));
     }
 
     /** channels.maxTouches: the most messages one person gets from this engine; null = no limit. */

@@ -73,6 +73,10 @@ public class EngagementDispatchJob {
     @Autowired(required = false)
     private EngagementCoordinationService coordination;
 
+    /** B6: approved CRM actions that waited for their time (an AI call back); optional in unit tests. */
+    @Autowired(required = false)
+    private EngagementCrmActionService crmActions;
+
     @Value("${engagement.dispatch.batch:100}")
     private int batch;
 
@@ -139,6 +143,12 @@ public class EngagementDispatchJob {
         if (leadGone != null) {
             actionRepository.withdrawDueSend(action.getId(), leadGone, now);
             return false;
+        }
+        // B6: an approved AI call that waited for the time the lead asked for (C-1). A person
+        // approved it, so channel autonomy does not apply; consent above does, and the action re-checks
+        // its own rules (a "don't call" since, the weekly limit) before the call is queued.
+        if (EngagementActionTypes.isCrmAction(action.getActionType())) {
+            return crmActions != null && crmActions.runScheduled(action, now);
         }
         if (Boolean.TRUE.equals(engine.getAutoSendKilled())
                 || !channelAutoEnabled(engine, action.getChannel())) {
