@@ -365,6 +365,23 @@ public class AiCallActionService {
     }
 
     /**
+     * A follow-up the engine owns itself (thank-you after "not interested"), as opposed to a rule an admin put
+     * on the agent: same action row, same dispatch, same once-per-call guard (callKey + rule id).
+     */
+    public boolean createBuiltIn(AiCallActionRule rule, String instituteId, String callKey, String userId,
+                                 String responseId, String leadName, String phone, String email) {
+        if (!actionsEnabled || rule == null || callKey == null) return false;
+        try {
+            Map<String, String> vars = variablesFor(responseId, leadName, phone, email, null);
+            return create(rule, instituteId, callKey, userId, responseId, leadName, vars, phone,
+                    "Sent by the engine after the AI call");
+        } catch (Exception e) {
+            log.warn("ai-call-actions: built-in rule {} failed for call {}: {}", rule.getId(), callKey, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
      * Mid-call: the bot emitted a SEND sentinel while still talking. Fires every MID_CALL
      * rule carrying that artefact key with NO predicate evaluation — the live conversation
      * IS the evidence, and there is no post-call analysis yet to evaluate against.

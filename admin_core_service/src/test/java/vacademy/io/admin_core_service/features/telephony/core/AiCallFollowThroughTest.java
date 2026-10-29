@@ -13,6 +13,9 @@ import vacademy.io.admin_core_service.features.audience.repository.LeadFollowupR
 import vacademy.io.admin_core_service.features.audience.service.LeadFollowupService;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementCoordinationDao;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementPointsOfContact;
+import vacademy.io.admin_core_service.features.engagement.service.EngagementSystemTemplates;
+import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
+import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallActionRule;
 import vacademy.io.admin_core_service.features.timeline.enums.LeadJourneyActionType;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallRequestDTO;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallingSettingsPojo;
@@ -40,6 +43,8 @@ class AiCallFollowThroughTest {
     private LeadFollowupService followups;
     private LeadFollowupRepository followupRepo;
     private EngagementCoordinationDao coordination;
+    private AiCallActionService actionService;
+    private EngagementSystemTemplates templates;
     private final Instant callAt = Instant.parse("2026-10-29T12:30:00Z");
 
     @BeforeEach
@@ -62,6 +67,17 @@ class AiCallFollowThroughTest {
         ReflectionTestUtils.setField(ft, "leadFollowupService", followups);
         ReflectionTestUtils.setField(ft, "leadFollowupRepository", followupRepo);
         ReflectionTestUtils.setField(ft, "coordinationDao", coordination);
+        actionService = mock(AiCallActionService.class);
+        templates = mock(EngagementSystemTemplates.class);
+        InstituteRepository institutes = mock(InstituteRepository.class);
+        var inst = new vacademy.io.common.institute.entity.Institute();
+        inst.setInstituteName("Tutezy");
+        when(institutes.findById("inst1")).thenReturn(java.util.Optional.of(inst));
+        ReflectionTestUtils.setField(ft, "aiCallActionService", actionService);
+        ReflectionTestUtils.setField(ft, "systemTemplates", templates);
+        ReflectionTestUtils.setField(ft, "instituteRepository", institutes);
+        when(actionService.createBuiltIn(any(), any(), any(), any(), any(), any(), any(), any())).thenReturn(true);
+        when(queue.cancelForLead(any(), any(), any(), any())).thenReturn(1);
         when(poc.ownerFor("inst1", "user1")).thenReturn("counsellor1");
         LeadFollowupDto made = mock(LeadFollowupDto.class);
         when(made.getId()).thenReturn("fu1");
@@ -220,5 +236,57 @@ class AiCallFollowThroughTest {
         r = new AiCallResult();
         r.setCallbackTimeText("kal");
         assertTrue(AiCallFollowThrough.wantsCallback(r));
+    }
+
+    private AiCallResult notInterested() {
+        AiCallResult r = result();
+        r.setDisposition("Not_Interested");
+        r.setCustomerEmail("p@example.com");
+        return r;
+    }
+
+    @Test
+    @DisplayName("not interested: waiting calls are cancelled, the callback closed, thank-you by email and WhatsApp")
+    void notInterestedThanks() {
+        when(templates.ensure("inst1", EngagementSystemTemplates.Kind.NOT_INTERESTED_THANKS)).thenReturn(
+                new EngagementSystemTemplates.State(EngagementSystemTemplates.Status.APPROVED, "thank_you_not_interested_ab12cd",
+                        "en", java.util.List.of("name", "institute"), "nt1"));
+        when(followupRepo.openIdsWithContentPrefix("resp1", "AI callback:")).thenReturn(java.util.List.of("fu1"));
+        ft.afterCall(notInterested(), "resp1", "user1", "inst1");
+        verify(queue).cancelForLead(eq("inst1"), eq("resp1"), eq("user1"), any());
+        verify(followups).close(eq("fu1"), any(), any());
+        var rules = ArgumentCaptor.forClass(AiCallActionRule.class);
+        verify(actionService, times(2)).createBuiltIn(rules.capture(), eq("inst1"), any(), eq("user1"), eq("resp1"), any(), any(), any());
+        var email = rules.getAllValues().stream().filter(x -> "EMAIL".equals(x.getChannel())).findFirst().orElseThrow();
+        assertTrue(email.getMessageBody().contains("{{name}}"), "personal, not hard-coded to one lead");
+        var wa = rules.getAllValues().stream().filter(x -> "WHATSAPP".equals(x.getChannel())).findFirst().orElseThrow();
+        assertEquals("thank_you_not_interested_ab12cd", wa.getTemplate());
+        assertEquals(java.util.List.of("{{name}}", "Tutezy"), wa.getTemplateParams());
+        // and no callback is scheduled for someone who said no
+        verify(queue, never()).enqueueAt(any(), any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("not interested while the WhatsApp template is still with Meta: email only, and the note says why")
+    void notInterestedTemplatePending() {
+        when(templates.ensure("inst1", EngagementSystemTemplates.Kind.NOT_INTERESTED_THANKS)).thenReturn(
+                new EngagementSystemTemplates.State(EngagementSystemTemplates.Status.PENDING, null, "en", java.util.List.of(), null));
+        ft.afterCall(notInterested(), "resp1", "user1", "inst1");
+        var rules = ArgumentCaptor.forClass(AiCallActionRule.class);
+        verify(actionService, times(1)).createBuiltIn(rules.capture(), any(), any(), any(), any(), any(), any(), any());
+        assertEquals("EMAIL", rules.getValue().getChannel());
+        verify(timeline).logEvent(eq("STUDENT"), eq("user1"), eq("NOTE"), any(), any(), any(), eq("Not interested: left alone"),
+                contains("waits for Meta"), any(), eq("user1"));
+    }
+
+    @Test
+    @DisplayName("an interested lead gets no thank-you and nothing is cancelled")
+    void interestedUntouched() {
+        AiCallResult r = result();
+        r.setDisposition("Interested");
+        ft.afterCall(r, "resp1", "user1", "inst1");
+        verify(queue, never()).cancelForLead(any(), any(), any(), any());
+        verify(actionService, never()).createBuiltIn(any(), any(), any(), any(), any(), any(), any(), any());
+        verifyNoInteractions(templates);
     }
 }

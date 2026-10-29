@@ -447,11 +447,84 @@ public class MeetingBookingService {
      * post-persist. Covers BOTH booking-page bookings and AI-call auto-bookings, since
      * both flow through createBooking with the page's reminder config.
      */
+    /**
+     * Set while the engine itself is answering a lead on WhatsApp about this meeting: it sends its own
+     * confirmation there (in the lead's language), so the template confirmation would be a second message.
+     */
+    private static final ThreadLocal<Boolean> ENGINE_CONFIRMS_ON_WHATSAPP = new ThreadLocal<>();
+
+    public static <T> T withEngineConfirmingOnWhatsapp(java.util.function.Supplier<T> work) {
+        ENGINE_CONFIRMS_ON_WHATSAPP.set(Boolean.TRUE);
+        try {
+            return work.get();
+        } finally {
+            ENGINE_CONFIRMS_ON_WHATSAPP.remove();
+        }
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    private vacademy.io.admin_core_service.features.engagement.service.EngagementSystemTemplates systemTemplates;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    @org.springframework.context.annotation.Lazy
+    private vacademy.io.admin_core_service.features.institute.repository.InstituteRepository instituteRepository;
+
+    /**
+     * A booking whose page has no WhatsApp template of its own is confirmed with the institute's shared
+     * meeting-confirmation template (the lead's name, the institute, when and where), found or made once
+     * for the institute. Only when WhatsApp is set up and the page did not turn confirmations off.
+     */
+    private void sendSharedWhatsappConfirmation(BookingInstance instance, String title, ZoneId zone) {
+        try {
+            String phone = instance.getInviteePhone();
+            if (phone == null || phone.isBlank()) return;
+            var state = systemTemplates.ensure(instance.getInstituteId(),
+                    vacademy.io.admin_core_service.features.engagement.service.EngagementSystemTemplates.Kind.MEETING_CONFIRMATION);
+            if (!state.usable()) {
+                log.info("Booking {}: the shared WhatsApp confirmation template is {}, so no WhatsApp confirmation yet",
+                        instance.getId(), state.status());
+                return;
+            }
+            String institute = instituteRepository.findById(instance.getInstituteId())
+                    .map(vacademy.io.common.institute.entity.Institute::getInstituteName).orElse("us");
+            java.util.Map<String, String> vars = new java.util.LinkedHashMap<>();
+            vars.put("name", firstNonBlank(instance.getInviteeName(), "there", null));
+            vars.put("institute", institute == null || institute.isBlank() ? "us" : institute);
+            vars.put("meeting_time", formatWhen(instance, zone));
+            vars.put("meeting_link", firstNonBlank(instance.getMeetLink(), "the link in your email", null));
+            UnifiedSendRequest.Recipient recipient = UnifiedSendRequest.Recipient.builder()
+                    .phone(PhoneCountryUtil.normalizePhone(phone, true))
+                    .userId(instance.getInviteeUserId())
+                    .name(vars.get("name"))
+                    .variables(vars)
+                    .build();
+            notificationService.sendUnified(UnifiedSendRequest.builder()
+                    .instituteId(instance.getInstituteId())
+                    .channel("WHATSAPP")
+                    .templateName(state.name())
+                    .languageCode(firstNonBlank(state.language(), "en", "en"))
+                    .recipients(List.of(recipient))
+                    .build());
+            log.info("Booking {} WHATSAPP confirmation sent via the shared template {}", instance.getId(), state.name());
+        } catch (Exception e) {
+            log.warn("Booking {} shared WhatsApp confirmation failed: {}", instance.getId(), e.getMessage());
+        }
+    }
+
     private void sendConfirmationWhatsapp(BookingInstance instance, String title, ZoneId zone,
                                           BookingReminderConfigDTO config) {
         boolean enabled = config == null || !Boolean.FALSE.equals(config.getOnBookingConfirmation());
         List<String> channels = config != null && config.getChannels() != null
                 ? config.getChannels() : List.of();
+        boolean ownTemplate = config != null && channels.contains("WHATSAPP")
+                && config.getWhatsappTemplateName() != null && !config.getWhatsappTemplateName().isBlank();
+        if (enabled && !ownTemplate) {
+            if (!Boolean.TRUE.equals(ENGINE_CONFIRMS_ON_WHATSAPP.get())) {
+                sendSharedWhatsappConfirmation(instance, title, zone);
+            }
+            return;
+        }
         if (!enabled || !channels.contains("WHATSAPP")) return;
         if (config == null || config.getWhatsappTemplateName() == null
                 || config.getWhatsappTemplateName().isBlank()) {

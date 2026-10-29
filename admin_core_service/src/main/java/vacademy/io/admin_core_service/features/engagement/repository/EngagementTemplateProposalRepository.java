@@ -233,4 +233,19 @@ public interface EngagementTemplateProposalRepository extends JpaRepository<Enga
     List<EngagementTemplateProposal> findReusableFromOtherEngines(@Param("instituteId") String instituteId,
                                                                   @Param("engineId") String engineId,
                                                                   @Param("language") String language);
+
+    /**
+     * The institute's templates carrying a system purpose tag (SYS:...) in any engine, newest first:
+     * approved ones to reuse, and ones still on their way to Meta so a second is never started.
+     */
+    @Query(value = """
+            SELECT * FROM engagement_template_proposal
+             WHERE institute_id = :instituteId AND purpose = :purpose
+               AND COALESCE(language, 'en') = :language
+               AND status NOT IN ('WITHDRAWN', 'SUPERSEDED', 'META_REJECTED', 'META_DISABLED')
+             ORDER BY CASE WHEN status IN ('META_APPROVED', 'META_RECATEGORISED') THEN 0 ELSE 1 END, updated_at DESC
+            """, nativeQuery = true)
+    List<EngagementTemplateProposal> findSystemTemplates(@Param("instituteId") String instituteId,
+                                                         @Param("purpose") String purpose,
+                                                         @Param("language") String language);
 }
