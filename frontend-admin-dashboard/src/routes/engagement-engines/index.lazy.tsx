@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { Icon } from '@phosphor-icons/react';
 import {
+    ArrowsClockwise,
     Clock,
     FileText,
     Flask,
@@ -52,7 +53,7 @@ import {
     buildLanguageOptions,
     CHANNEL_ORDER,
 } from './-constants';
-import { enabledChannels, formatDateTime } from './-utils';
+import { cadenceText, enabledChannels, formatDateTime } from './-utils';
 import type { ChannelKey, EngagementEngine, EngineStatus } from './-types';
 
 export const Route = createLazyFileRoute('/engagement-engines/')({
@@ -122,7 +123,7 @@ function EngineCard({ engine, stats }: { engine: EngagementEngine; stats?: Engin
                 ) : (
                     <Chip label={t('card.noChannels')} />
                 )}
-                <Chip icon={Repeat} label={t('card.cadence', { hours: engine.cadenceHours })} />
+                <Chip icon={Repeat} label={cadenceText(engine.cadenceHours, tConstants)} />
                 <Chip icon={Translate} label={language} />
             </div>
             {stats && (
@@ -196,7 +197,7 @@ function NewEngineCard({ description }: { description: string }) {
 function EngagementEnginesPage() {
     const navigate = useNavigate();
     const { setNavHeading } = useNavHeadingStore();
-    const { data: engines, isLoading, isError } = useEngines();
+    const { data: engines, isLoading, isError, refetch } = useEngines();
     const { t } = useTranslation('engagementEnginesIndex');
     const { t: tConstants } = useTranslation('engagementEnginesConstants');
 
@@ -320,7 +321,7 @@ function EngagementEnginesPage() {
             size: 100,
             cell: ({ row }) => (
                 <span className="text-caption">
-                    {t('card.cadence', { hours: row.original.cadenceHours })}
+                    {cadenceText(row.original.cadenceHours, tConstants)}
                 </span>
             ),
         },
@@ -481,7 +482,12 @@ function EngagementEnginesPage() {
                 )}
 
                 {isError && (
-                    <Card className="p-6 text-center text-body text-danger-600">{t('error')}</Card>
+                    <Card className="flex flex-col items-center gap-3 p-6 text-center">
+                        <span className="text-body text-danger-600">{t('error')}</span>
+                        <MyButton buttonType="secondary" scale="small" onClick={() => refetch()}>
+                            <ArrowsClockwise className="me-1 size-4" /> {t('retry')}
+                        </MyButton>
+                    </Card>
                 )}
 
                 {!isLoading && !isError && all.length === 0 && (

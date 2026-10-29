@@ -12,6 +12,20 @@ export function safeParse<T>(raw: string | undefined | null, fallback: T): T {
     }
 }
 
+/**
+ * How often an engine revisits a person, in words: "Daily", "Every 3 days", "Weekly", or
+ * "Every 36 hours". `t` must be bound to engagementEnginesConstants.
+ */
+export function cadenceText(hours: number | string | undefined, t: TFunction): string {
+    const h = Number(hours);
+    if (!Number.isFinite(h) || h <= 0) return '—';
+    if (h % 24 !== 0) return t('cadence.hours', { count: h });
+    const days = h / 24;
+    if (days === 1) return t('cadence.daily');
+    if (days === 7) return t('cadence.weekly');
+    return t('cadence.days', { count: days });
+}
+
 export function enabledChannels(engine: Pick<EngagementEngine, 'channels'>): ChannelKey[] {
     const cfg = safeParse<ChannelsConfig>(engine.channels, {});
     return CHANNEL_ORDER.filter((c) => cfg[c]?.enabled);

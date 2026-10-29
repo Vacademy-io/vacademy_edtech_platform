@@ -24,18 +24,15 @@ import {
     EmptyChart,
     SectionCard,
 } from '@/routes/study-library/live-session/-components/dashboard/dashboard-charts';
-import {
-    formatNumber,
-    formatPercent,
-    humanizeKey,
-    pctChange,
-} from '@/routes/dashboard/-utils/crm-dashboard';
+import { formatNumber, formatPercent, pctChange } from '@/routes/dashboard/-utils/crm-dashboard';
 import {
     useGroupDashboard,
     type EngagementSections,
     type GroupRangeDays,
 } from '@/services/group-dashboard';
 import { cn } from '@/lib/utils';
+import { buildEngineStatusMeta } from '../-constants';
+import type { EngineStatus } from '../-types';
 
 export const Route = createLazyFileRoute('/engagement-engines/dashboard/')({
     component: EngagementDashboardPage,
@@ -60,6 +57,7 @@ const STATUS_TONE: Record<string, string> = {
  */
 function EngagementDashboardPage() {
     const { t } = useTranslation('crmPages');
+    const { t: tConstants } = useTranslation('engagementEnginesConstants');
     const isAdmin = useIsInstituteAdmin();
     const [days, setDays] = useState<GroupRangeDays>(30);
     const q = useGroupDashboard<EngagementSections>('engagement', days, isAdmin);
@@ -101,7 +99,7 @@ function EngagementDashboardPage() {
                 tone: 'warning',
                 title: t('engageDash.insights.failed.title', { total: formatNumber(tot.failed) }),
                 text: t('engageDash.insights.failed.text'),
-                href: '/engagement-engines/inbox',
+                href: '/engagement-engines/inbox?filter=failed',
             });
         }
         if (tot.drafted > 0) {
@@ -139,7 +137,11 @@ function EngagementDashboardPage() {
                                     'bg-neutral-100 text-neutral-600'
                             )}
                         >
-                            <span className="text-caption">{humanizeKey(row.original.status)}</span>
+                            <span className="text-caption">
+                                {buildEngineStatusMeta(tConstants)[
+                                    row.original.status as EngineStatus
+                                ]?.label ?? row.original.status}
+                            </span>
                         </span>
                     </CrmLink>
                 ),
@@ -202,7 +204,7 @@ function EngagementDashboardPage() {
                 ),
             },
         ],
-        [t]
+        [t, tConstants]
     );
 
     return (

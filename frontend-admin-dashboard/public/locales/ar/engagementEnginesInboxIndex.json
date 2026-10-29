@@ -13,9 +13,7 @@
     "errors": {
         "loadFailed": "تعذر تحميل المهام."
     },
-    "emptyState": "لا يوجد شيء هنا الآن.",
     "noDraft": "(لا توجد مسودة)",
-    "priority": "الأولوية {{value}}",
     "kind": {
         "reply": "رد",
         "autoSend": "إرسال تلقائي",
@@ -23,11 +21,12 @@
     },
     "actions": {
         "reviewAndSend": "مراجعة وإرسال",
-        "acknowledge": "إقرار",
-        "handledElsewhere": "تمت معالجتها في مكان آخر",
-        "dismiss": "تجاهل",
+        "acknowledge": "أعمل عليها",
+        "handledElsewhere": "تم",
+        "dismiss": "تخطٍّ",
         "reopen": "إعادة الفتح",
-        "cancel": "إلغاء"
+        "cancel": "إلغاء",
+        "restore": "إعادة إلى الصندوق"
     },
     "sendDialog": {
         "heading": "مراجعة وإرسال",
@@ -39,20 +38,19 @@
     },
     "needsTemplate": "لا يمكن لواتساب إرسال إلا قالب معتمد، وهذه المهمة بلا قالب. تعامل معها بطريقة أخرى أو تجاهلها.",
     "toolbar": {
-        "search": "Search drafts, reasons, engines or templates",
+        "search": "ابحث عن أشخاص أو رسائل أو محركات",
         "allEngines": "All engines",
         "allChannels": "All channels",
         "allKinds": "All kinds",
         "kindTask": "Tasks only",
         "kindReply": "Replies only",
-        "kindSend": "Auto-sends only",
+        "kindSend": "إرسال تلقائي فاشل",
         "sortPriority": "Priority first",
         "sortOldest": "Oldest first",
         "sortNewest": "Newest first",
         "pageNote": "Search and filters apply to the tasks on this page."
     },
     "filteredEmpty": "No tasks on this page match these filters.",
-    "priorityShort": "P{{value}}",
     "age": {
         "minutes": "{{count}}m",
         "hours": "{{count}}h",
@@ -73,7 +71,39 @@
         "completedAt": "Completed",
         "outcome": "Outcome",
         "openEngine": "Open engine",
-        "draftedAgo": "Drafted {{age}} ago"
+        "draftedAgo": "Drafted {{age}} ago",
+        "variableN": "القيمة {{n}}",
+        "fromEngine": "من {{engine}}"
     },
-    "footnote": "A send whose delivery can’t be confirmed moves to Failed. Dry-run drafts stay in their own bucket and are never sent."
+    "footnote": "A send whose delivery can’t be confirmed moves to Failed. Dry-run drafts stay in their own bucket and are never sent.",
+    "retry": "إعادة المحاولة",
+    "priorityLevel": {
+        "high": "عالية",
+        "medium": "متوسطة",
+        "low": "منخفضة"
+    },
+    "priorityChip": "أولوية {{level}}",
+    "empty": {
+        "goToEngines": "الذهاب إلى المحركات",
+        "needsAction": {
+            "title": "لا شيء متبقٍ",
+            "text": "تظهر الرسائل الجديدة هنا عندما يتابع محرك نشط شخصًا ما."
+        },
+        "sent": {
+            "title": "لم يُرسل شيء بعد",
+            "text": "تظهر هنا الرسائل التي ترسلها أنت أو المحركات."
+        },
+        "failed": {
+            "title": "لا رسائل فاشلة",
+            "text": "تظهر هنا الرسائل التي تعذّر تسليمها."
+        },
+        "handled": {
+            "title": "لم يُعالج شيء بعد",
+            "text": "تظهر هنا المهام التي تحددها كمنجزة أو تتخطاها. يمكنك إعادتها."
+        },
+        "dryRun": {
+            "title": "لا مسودات تجريبية",
+            "text": "ابدأ تشغيلًا تجريبيًا على محرك لترى ما سيرسله، دون إرسال أي شيء."
+        }
+    }
 }

@@ -160,6 +160,16 @@ export interface EngagementAction {
     updatedAt?: string;
 }
 
+/** Who a task is for (GET /tasks/people). userId is null for a lead with no account. */
+export interface TaskPerson {
+    memberId: string;
+    userId?: string | null;
+    audienceResponseId?: string | null;
+    name?: string | null;
+    phone?: string | null;
+    email?: string | null;
+}
+
 /** Spring Page<T> envelope. */
 export interface PageResponse<T> {
     content: T[];

@@ -1,4 +1,4 @@
-import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
+import { createLazyFileRoute, useNavigate, useSearch } from '@tanstack/react-router';
 import { useQueries } from '@tanstack/react-query';
 import { getInstituteId } from '@/constants/helper';
 import { listTasks } from '../-services';
@@ -9,6 +9,7 @@ import type { TFunction } from 'i18next';
 import {
     ArrowCounterClockwise,
     ArrowLeft,
+    ArrowsClockwise,
     Check,
     CheckCircle,
     Info,
@@ -17,6 +18,7 @@ import {
     Robot,
     Sparkle,
     Tray,
+    User,
     Warning,
     X,
     XCircle,
@@ -49,10 +51,16 @@ import {
     KeyValue,
     SubHeading,
 } from '../-components/engine-ui';
-import { buildActionStatusMeta, buildChannelMeta, CHANNEL_ORDER } from '../-constants';
-import { useEngines, useTaskAction, useTasks } from '../-hooks';
+import {
+    buildActionStatusMeta,
+    buildChannelMeta,
+    CHANNEL_ORDER,
+    INBOX_FILTER_KEYS,
+    type InboxFilterKey,
+} from '../-constants';
+import { useEngines, useTaskAction, useTaskPeople, useTasks } from '../-hooks';
 import { formatDateTime, safeParse } from '../-utils';
-import type { EngagementAction } from '../-types';
+import type { EngagementAction, TaskPerson } from '../-types';
 
 export const Route = createLazyFileRoute('/engagement-engines/inbox/')({
     component: TaskInboxPage,
@@ -60,15 +68,46 @@ export const Route = createLazyFileRoute('/engagement-engines/inbox/')({
 
 function buildFilters(
     t: TFunction
-): { label: string; statuses: string; tone: QuickView['tone'] }[] {
+): { key: InboxFilterKey; label: string; statuses: string; tone: QuickView['tone'] }[] {
     return [
-        { label: t('filters.needsAction'), statuses: 'OPEN,ACKED', tone: 'warning' },
-        { label: t('filters.sent'), statuses: 'SENT', tone: 'success' },
-        { label: t('filters.failed'), statuses: 'FAILED', tone: 'danger' },
-        { label: t('filters.handled'), statuses: 'DONE,DISMISSED', tone: 'neutral' },
+        {
+            key: 'needsAction',
+            label: t('filters.needsAction'),
+            statuses: 'OPEN,ACKED',
+            tone: 'warning',
+        },
+        { key: 'sent', label: t('filters.sent'), statuses: 'SENT', tone: 'success' },
+        { key: 'failed', label: t('filters.failed'), statuses: 'FAILED', tone: 'danger' },
+        {
+            key: 'handled',
+            label: t('filters.handled'),
+            statuses: 'DONE,DISMISSED',
+            tone: 'neutral',
+        },
         // What a dry run would have sent: SIMULATED rows, never dispatched.
-        { label: t('filters.dryRun'), statuses: 'SIMULATED', tone: 'info' },
+        { key: 'dryRun', label: t('filters.dryRun'), statuses: 'SIMULATED', tone: 'info' },
     ];
+}
+
+/** "High" / "Medium" / "Low" for a 0–100 priority; the number alone meant nothing to admins. */
+function priorityLevel(p: number): 'high' | 'medium' | 'low' {
+    return p >= 80 ? 'high' : p >= 60 ? 'medium' : 'low';
+}
+
+/** "first_name" → "First name"; template slots "1", "2" → "Value 1", "Value 2". */
+function variableLabel(key: string, t: TFunction): string {
+    if (/^\d+$/.test(key)) return t('detail.variableN', { n: key });
+    const words = key
+        .replace(/[_-]+/g, ' ')
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .trim()
+        .toLowerCase();
+    return words ? words.charAt(0).toUpperCase() + words.slice(1) : key;
+}
+
+/** The person a task is for, as one line: name, else phone, else email. */
+function personTitle(p?: TaskPerson): string | undefined {
+    return p?.name?.trim() || p?.phone?.trim() || p?.email?.trim() || undefined;
 }
 
 const PAGE_SIZE = 20;
@@ -109,7 +148,10 @@ function TaskInboxPage() {
     const { t: tConstants } = useTranslation('engagementEnginesConstants');
     const navigate = useNavigate();
     const { setNavHeading } = useNavHeadingStore();
-    const [filterIdx, setFilterIdx] = useState(0);
+    const { filter: filterParam } = useSearch({ strict: false }) as { filter?: InboxFilterKey };
+    const [filterIdx, setFilterIdx] = useState(() =>
+        Math.max(0, INBOX_FILTER_KEYS.indexOf(filterParam ?? 'needsAction'))
+    );
     const [page, setPage] = useState(0);
     const [sending, setSending] = useState<EngagementAction | null>(null);
     const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -124,7 +166,7 @@ function TaskInboxPage() {
     // Labels come from t, so the list is built every render (not memoised).
     const FILTERS = buildFilters(t);
     const statuses = FILTERS[filterIdx]?.statuses ?? 'OPEN,ACKED';
-    const { data, isLoading, isError } = useTasks(statuses, page, PAGE_SIZE);
+    const { data, isLoading, isError, refetch } = useTasks(statuses, page, PAGE_SIZE);
     const { data: engines } = useEngines();
     const engineNames = useMemo(() => {
         const m: Record<string, string> = {};
@@ -146,6 +188,8 @@ function TaskInboxPage() {
 
     const action = useTaskAction();
     const tasks = data?.content ?? [];
+    const { data: people } = useTaskPeople(tasks.map((task) => task.memberId));
+    const personOf = (task: EngagementAction) => people?.[task.memberId];
 
     // Handling the last task on a later page leaves that page empty, and with one page left the
     // pager hides, so the inbox read "Nothing here" while tasks remained on page 1.
@@ -169,6 +213,9 @@ function TaskInboxPage() {
                         task.rationale,
                         task.templateName,
                         engineNames[task.engineId],
+                        personOf(task)?.name,
+                        personOf(task)?.phone,
+                        personOf(task)?.email,
                     ].some((v) => (v ?? '').toLowerCase().includes(q)))
         )
         .sort((a, b) =>
@@ -194,8 +241,11 @@ function TaskInboxPage() {
         },
     }));
 
-    const runAction = (task: EngagementAction, verb: 'ack' | 'done' | 'dismiss' | 'reopen') =>
-        action.mutate({ taskId: task.id, verb });
+    const runAction = (
+        task: EngagementAction,
+        verb: 'ack' | 'done' | 'dismiss' | 'reopen' | 'restore'
+    ) => action.mutate({ taskId: task.id, verb });
+    const activeKey = FILTERS[filterIdx]?.key ?? 'needsAction';
 
     return (
         <LayoutContainer>
@@ -305,14 +355,31 @@ function TaskInboxPage() {
                     </div>
                 )}
                 {isError && (
-                    <Card className="p-6 text-center text-body text-danger-600">
-                        {t('errors.loadFailed')}
+                    <Card className="flex flex-col items-center gap-3 p-6 text-center">
+                        <span className="text-body text-danger-600">{t('errors.loadFailed')}</span>
+                        <MyButton buttonType="secondary" scale="small" onClick={() => refetch()}>
+                            <ArrowsClockwise className="me-1 size-4" /> {t('retry')}
+                        </MyButton>
                     </Card>
                 )}
                 {!isLoading && !isError && tasks.length === 0 && (
                     <Card className="flex flex-col items-center gap-2 p-10 text-center">
                         <Tray className="size-10 text-neutral-300" />
-                        <p className="text-body text-neutral-500">{t('emptyState')}</p>
+                        <p className="text-subtitle font-medium text-neutral-700">
+                            {t(`empty.${activeKey}.title`)}
+                        </p>
+                        <p className="max-w-md text-body text-neutral-500">
+                            {t(`empty.${activeKey}.text`)}
+                        </p>
+                        {activeKey === 'needsAction' && (
+                            <MyButton
+                                buttonType="secondary"
+                                scale="small"
+                                onClick={() => navigate({ to: '/engagement-engines' })}
+                            >
+                                {t('empty.goToEngines')}
+                            </MyButton>
+                        )}
                     </Card>
                 )}
                 {!isLoading && !isError && tasks.length > 0 && visible.length === 0 && (
@@ -329,6 +396,7 @@ function TaskInboxPage() {
                                     <TaskRow
                                         key={task.id}
                                         task={task}
+                                        person={personOf(task)}
                                         engineName={engineNames[task.engineId]}
                                         active={current?.id === task.id}
                                         onSelect={() => setSelectedId(task.id)}
@@ -340,6 +408,7 @@ function TaskInboxPage() {
                             <TaskDetail
                                 key={current.id}
                                 task={current}
+                                person={personOf(current)}
                                 engineName={engineNames[current.engineId]}
                                 busy={action.isPending}
                                 onOpenEngine={() =>
@@ -352,6 +421,7 @@ function TaskInboxPage() {
                                 onDone={() => runAction(current, 'done')}
                                 onDismiss={() => runAction(current, 'dismiss')}
                                 onReopen={() => runAction(current, 'reopen')}
+                                onRestore={() => runAction(current, 'restore')}
                                 onSend={() => setSending(current)}
                             />
                         )}
@@ -400,11 +470,13 @@ function KindChip({ kind }: { kind: EngagementAction['kind'] }) {
 
 function TaskRow({
     task,
+    person,
     engineName,
     active,
     onSelect,
 }: {
     task: EngagementAction;
+    person?: TaskPerson;
     engineName?: string;
     active: boolean;
     onSelect: () => void;
@@ -416,7 +488,8 @@ function TaskRow({
         tone: 'neutral' as const,
     };
     const ChannelIcon = task.channel ? CHANNEL_ICON[task.channel] : Robot;
-    const high = typeof task.priority === 'number' && task.priority >= 80;
+    const level = typeof task.priority === 'number' ? priorityLevel(task.priority) : null;
+    const who = personTitle(person);
     return (
         <button
             type="button"
@@ -437,23 +510,26 @@ function TaskRow({
             <span className="flex min-w-0 flex-1 flex-col gap-1">
                 <span className="flex items-center gap-2">
                     <span className="min-w-0 flex-1 truncate font-semibold text-neutral-900">
-                        <span className="text-body">{engineName ?? t('kind.task')}</span>
+                        <span className="text-body">{who ?? engineName ?? t('kind.task')}</span>
                     </span>
-                    {typeof task.priority === 'number' && (
+                    {level && level !== 'low' && (
                         <span
                             className={cn(
-                                'shrink-0 rounded-full px-1.5 py-0.5 font-semibold tabular-nums',
-                                high
+                                'shrink-0 rounded-full px-1.5 py-0.5 font-semibold',
+                                level === 'high'
                                     ? 'bg-danger-50 text-danger-600'
-                                    : 'bg-neutral-100 text-neutral-600'
+                                    : 'bg-warning-50 text-warning-700'
                             )}
                         >
-                            <span className="text-caption">
-                                {t('priorityShort', { value: Math.round(task.priority) })}
-                            </span>
+                            <span className="text-caption">{t(`priorityLevel.${level}`)}</span>
                         </span>
                     )}
                 </span>
+                {who && engineName && (
+                    <span className="truncate text-neutral-500">
+                        <span className="text-caption">{engineName}</span>
+                    </span>
+                )}
                 <span className="flex flex-wrap items-center gap-1.5">
                     <KindChip kind={task.kind} />
                     <ToneBadge label={statusMeta.label} tone={statusMeta.tone} />
@@ -473,6 +549,7 @@ function TaskRow({
 
 function TaskDetail({
     task,
+    person,
     engineName,
     busy,
     onOpenEngine,
@@ -480,9 +557,11 @@ function TaskDetail({
     onDone,
     onDismiss,
     onReopen,
+    onRestore,
     onSend,
 }: {
     task: EngagementAction;
+    person?: TaskPerson;
     engineName?: string;
     busy: boolean;
     onOpenEngine: () => void;
@@ -490,6 +569,7 @@ function TaskDetail({
     onDone: () => void;
     onDismiss: () => void;
     onReopen: () => void;
+    onRestore: () => void;
     onSend: () => void;
 }) {
     const { t } = useTranslation('engagementEnginesInboxIndex');
@@ -503,6 +583,8 @@ function TaskDetail({
     const vars = safeParse<Record<string, string>>(task.variablesJson, {});
     const ChannelIcon = task.channel ? CHANNEL_ICON[task.channel] : Robot;
     const priority = typeof task.priority === 'number' ? Math.round(task.priority) : null;
+    const who = personTitle(person);
+    const contact = [person?.phone, person?.email].filter((v) => v && v !== who).join(' · ');
     const bodyHeading =
         task.status === 'SENT'
             ? t('detail.sentMessage')
@@ -525,13 +607,31 @@ function TaskDetail({
                     tint={task.channel ? CHANNEL_TINT[task.channel] : undefined}
                 />
                 <div className="min-w-0 flex-1">
+                    {who && (
+                        <p className="flex items-center gap-1.5 font-semibold text-neutral-900">
+                            <User className="size-4 shrink-0 text-neutral-500" />
+                            <span className="truncate text-subtitle">{who}</span>
+                        </p>
+                    )}
+                    {contact && (
+                        <p className="truncate text-neutral-600">
+                            <span className="text-caption">{contact}</span>
+                        </p>
+                    )}
                     <button
                         type="button"
                         onClick={onOpenEngine}
-                        className="truncate text-left font-semibold text-neutral-900 hover:text-primary-600"
+                        className={cn(
+                            'truncate text-left hover:text-primary-600',
+                            who ? 'text-neutral-500' : 'font-semibold text-neutral-900'
+                        )}
                     >
-                        <span className="text-subtitle">
-                            {engineName ?? t('detail.openEngine')}
+                        <span className={who ? 'text-caption' : 'text-subtitle'}>
+                            {who
+                                ? t('detail.fromEngine', {
+                                      engine: engineName ?? t('detail.openEngine'),
+                                  })
+                                : engineName ?? t('detail.openEngine')}
                         </span>
                     </button>
                     <p className="text-neutral-500">
@@ -553,7 +653,9 @@ function TaskDetail({
                 )}
                 {priority !== null && (
                     <Chip
-                        label={t('priority', { value: priority })}
+                        label={t('priorityChip', {
+                            level: t(`priorityLevel.${priorityLevel(priority)}`),
+                        })}
                         className={
                             priority >= 80
                                 ? 'bg-danger-50 text-danger-600'
@@ -626,7 +728,7 @@ function TaskDetail({
                 {Object.keys(vars).length > 0 && (
                     <div className="mt-2">
                         {Object.entries(vars).map(([k, v]) => (
-                            <KeyValue key={k} label={k}>
+                            <KeyValue key={k} label={variableLabel(k, t)}>
                                 {v}
                             </KeyValue>
                         ))}
@@ -661,6 +763,18 @@ function TaskDetail({
                         <ArrowCounterClockwise className="me-1 size-3.5" /> {t('actions.reopen')}
                     </MyButton>
                 )}
+                {(task.status === 'DONE' || task.status === 'DISMISSED') &&
+                    task.kind !== 'SEND' && (
+                        <MyButton
+                            buttonType="secondary"
+                            scale="small"
+                            disable={busy}
+                            onClick={onRestore}
+                        >
+                            <ArrowCounterClockwise className="me-1 size-3.5" />{' '}
+                            {t('actions.restore')}
+                        </MyButton>
+                    )}
             </div>
 
             {(timing.length > 0 || task.outcome) && (
@@ -721,7 +835,9 @@ function SendDialog({
                                 </p>
                                 {Object.entries(vars).map(([k, v]) => (
                                     <div key={k} className="flex justify-between text-caption text-neutral-600">
-                                        <span className="text-neutral-400">{k}</span>
+                                        <span className="text-neutral-400">
+                                            {variableLabel(k, t)}
+                                        </span>
                                         <span>{v}</span>
                                     </div>
                                 ))}

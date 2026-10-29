@@ -13,9 +13,7 @@
     "errors": {
         "loadFailed": "Could not load tasks."
     },
-    "emptyState": "Nothing here right now.",
     "noDraft": "(no draft)",
-    "priority": "priority {{value}}",
     "kind": {
         "reply": "Reply",
         "autoSend": "Auto-send",
@@ -23,11 +21,12 @@
     },
     "actions": {
         "reviewAndSend": "Review & send",
-        "acknowledge": "Acknowledge",
-        "handledElsewhere": "Handled elsewhere",
-        "dismiss": "Dismiss",
+        "acknowledge": "I am on it",
+        "handledElsewhere": "Mark done",
+        "dismiss": "Skip",
         "reopen": "Reopen",
-        "cancel": "Cancel"
+        "cancel": "Cancel",
+        "restore": "Move back to inbox"
     },
     "sendDialog": {
         "heading": "Review & send",
@@ -39,20 +38,19 @@
     },
     "needsTemplate": "WhatsApp can only send an approved template, and this task has none. Handle it another way, or dismiss it.",
     "toolbar": {
-        "search": "Search drafts, reasons, engines or templates",
+        "search": "Search people, messages or engines",
         "allEngines": "All engines",
         "allChannels": "All channels",
         "allKinds": "All kinds",
         "kindTask": "Tasks only",
         "kindReply": "Replies only",
-        "kindSend": "Auto-sends only",
+        "kindSend": "Failed auto-sends",
         "sortPriority": "Priority first",
         "sortOldest": "Oldest first",
         "sortNewest": "Newest first",
         "pageNote": "Search and filters apply to the tasks on this page."
     },
     "filteredEmpty": "No tasks on this page match these filters.",
-    "priorityShort": "P{{value}}",
     "age": {
         "minutes": "{{count}}m",
         "hours": "{{count}}h",
@@ -73,7 +71,39 @@
         "completedAt": "Completed",
         "outcome": "Outcome",
         "openEngine": "Open engine",
-        "draftedAgo": "Drafted {{age}} ago"
+        "draftedAgo": "Drafted {{age}} ago",
+        "variableN": "Value {{n}}",
+        "fromEngine": "From {{engine}}"
     },
-    "footnote": "A send whose delivery can’t be confirmed moves to Failed. Dry-run drafts stay in their own bucket and are never sent."
+    "footnote": "A send whose delivery can’t be confirmed moves to Failed. Dry-run drafts stay in their own bucket and are never sent.",
+    "retry": "Try again",
+    "priorityLevel": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+    },
+    "priorityChip": "{{level}} priority",
+    "empty": {
+        "goToEngines": "Go to engines",
+        "needsAction": {
+            "title": "All caught up",
+            "text": "New messages appear here when an active engine checks in on someone."
+        },
+        "sent": {
+            "title": "Nothing sent yet",
+            "text": "Messages you or the engines send show up here."
+        },
+        "failed": {
+            "title": "No failed messages",
+            "text": "Messages that could not be delivered show up here."
+        },
+        "handled": {
+            "title": "Nothing handled yet",
+            "text": "Tasks you mark done or skip show up here. You can move them back."
+        },
+        "dryRun": {
+            "title": "No dry-run drafts",
+            "text": "Start a dry run on an engine to see what it would send, without sending anything."
+        }
+    }
 }

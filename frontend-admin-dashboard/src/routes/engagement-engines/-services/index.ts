@@ -15,6 +15,7 @@ import type {
     EngineStatus,
     EnrollmentResult,
     PageResponse,
+    TaskPerson,
     TemplateEditRequest,
 } from '../-types';
 
@@ -128,6 +129,21 @@ export const dismissTask = (taskId: string, instituteId: string) =>
     taskAction(taskId, instituteId, 'dismiss');
 export const reopenTask = (taskId: string, instituteId: string) =>
     taskAction(taskId, instituteId, 'reopen');
+/** Undo Done / Dismiss: the task goes back to Needs action. */
+export const restoreTask = (taskId: string, instituteId: string) =>
+    taskAction(taskId, instituteId, 'restore');
+
+/** Name / phone / email of the people behind a page of tasks, keyed by member id. */
+export const getTaskPeople = async (
+    instituteId: string,
+    memberIds: string[]
+): Promise<TaskPerson[]> => {
+    if (!memberIds.length) return [];
+    const res = await authenticatedAxiosInstance.get(`${ENGAGEMENT_TASKS_BASE}/people`, {
+        params: { instituteId, memberIds: memberIds.join(',') },
+    });
+    return Array.isArray(res.data) ? res.data : [];
+};
 
 export const sendTask = async (
     taskId: string,

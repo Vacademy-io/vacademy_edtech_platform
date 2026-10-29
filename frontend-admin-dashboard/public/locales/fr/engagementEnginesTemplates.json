@@ -175,5 +175,12 @@
         "weak": "Ce brief est maigre : l'IA écrira des messages génériques. Répondez à ce que vous pouvez ; vos réponses sont ajoutées au brief.",
         "addToBrief": "Ajouter les réponses au brief",
         "adding": "Ajout…"
+    },
+    "confirm": {
+        "withdrawTitle": "Retirer ce modèle ?",
+        "withdrawText": "Le moteur cesse de l'utiliser. Vous pouvez demander de nouvelles options à l'IA à tout moment.",
+        "archiveTitle": "Archiver ce modèle d’e-mail ?",
+        "archiveText": "Le moteur cesse de l'utiliser. Vous pouvez en générer de nouveaux à tout moment.",
+        "keep": "Le garder"
     }
 }

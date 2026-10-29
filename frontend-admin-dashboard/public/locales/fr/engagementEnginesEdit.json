@@ -19,5 +19,6 @@
         "deleted": "Moteur supprimé.",
         "archived": "Moteur archivé.",
         "deleteFailed": "Impossible de supprimer le moteur."
-    }
+    },
+    "subtitle": "Ouvrez une étape à gauche, modifiez ce qu’il faut, puis cliquez sur Enregistrer."
 }

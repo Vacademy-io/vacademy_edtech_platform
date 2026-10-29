@@ -3,6 +3,7 @@ import { Helmet } from 'react-helmet';
 import { useEffect, useMemo, useState } from 'react';
 import type { Icon } from '@phosphor-icons/react';
 import {
+    CaretDown,
     Check,
     FilePlus,
     FileText,
@@ -13,6 +14,7 @@ import {
     Robot,
     ShieldCheck,
     UsersThree,
+    WarningCircle,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
@@ -21,12 +23,23 @@ import { getInstituteId } from '@/constants/helper';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
 import { SearchableSelect } from '@/components/design-system/searchable-select';
-import { MultiSelect } from '@/components/design-system/multi-select';
-import PackageSelector from '@/components/design-system/PackageSelector';
 import { Card } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import {
     Select,
     SelectContent,
@@ -43,9 +56,10 @@ import { getTerminologyPlural } from '@/components/common/layout-container/sideb
 import { ContentTerms, OtherTerms, RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { buildChannelMeta, CHANNEL_ORDER, buildLanguageOptions } from '../-constants';
 import { EmailChannelOptions } from '../-components/EmailChannelOptions';
+import { CheckList, type CheckOption } from '../-components/CheckList';
 import { useCreateEngine, useDataPointCatalog, useEditPrompt, useEngine } from '../-hooks';
 import { useUpdateEngine } from '../-hooks/engine-edit';
-import { safeParse } from '../-utils';
+import { cadenceText, safeParse } from '../-utils';
 import {
     CHANNEL_ICON,
     CHANNEL_TINT,
@@ -69,14 +83,39 @@ export const Route = createLazyFileRoute('/engagement-engines/create/')({
 
 const STEP_KEYS = ['basics', 'dataPoints', 'channels', 'audience', 'cadence', 'review'] as const;
 
+/** Lists fetched per search; more than this asks the admin to type a name. */
+const LIST_PAGE_SIZE = 100;
+
+/** How often the engine may revisit a person, as plain choices instead of a raw hour count. */
+const CADENCE_PRESETS = [24, 48, 72, 168] as const;
+
+const pad2 = (h: string | number) => String(h).padStart(2, '0');
+
+/** "SSC CGL · Tier 1 · 2026-27", leaving out the placeholder "default" level / session. */
+function batchOption(b: {
+    id: string;
+    package_dto?: { package_name?: string };
+    level?: { level_name?: string };
+    session?: { session_name?: string };
+}): CheckOption {
+    const real = (v?: string) => (v && v.trim().toLowerCase() !== 'default' ? v.trim() : '');
+    const sub = [real(b.level?.level_name), real(b.session?.session_name)]
+        .filter(Boolean)
+        .join(' · ');
+    return { value: b.id, label: b.package_dto?.package_name || b.id, sub: sub || undefined };
+}
+
 function StepRail({
     current,
     t,
     onGoTo,
+    freeJump,
 }: {
     current: number;
     t: TFunction;
     onGoTo: (step: number) => void;
+    /** Editing a saved engine: every step is already filled, so any step can be opened. */
+    freeJump: boolean;
 }) {
     return (
         <nav className="flex shrink-0 flex-row gap-1 overflow-x-auto border-b border-neutral-100 bg-neutral-50 p-3 lg:w-64 lg:flex-col lg:border-b-0 lg:border-e lg:p-4">
@@ -84,20 +123,21 @@ function StepRail({
                 const label = t(`steps.${key}`);
                 const done = i < current;
                 const active = i === current;
+                const reachable = (done || freeJump) && !active;
                 return (
                     <button
                         key={key}
                         type="button"
-                        // Only steps already passed can be revisited, so step validation still
-                        // gates every forward move.
-                        disabled={!done}
+                        // When creating, only steps already passed can be revisited, so step
+                        // validation still gates every forward move.
+                        disabled={!reachable}
                         onClick={() => onGoTo(i)}
                         aria-current={active ? 'step' : undefined}
                         className={cn(
                             'flex shrink-0 items-start gap-3 rounded-lg px-3 py-2 text-left transition-colors',
                             active && 'bg-white shadow-sm',
-                            done && 'hover:bg-white',
-                            !done && 'cursor-default'
+                            reachable && 'hover:bg-white',
+                            !reachable && 'cursor-default'
                         )}
                     >
                         <span
@@ -227,12 +267,22 @@ function CreateEnginePage() {
     const instituteId = getInstituteId() || '';
     const createEngine = useCreateEngine();
     const { data: catalog } = useDataPointCatalog();
-    const { data: campaignsPage } = useCampaignsList({
+    // Lists are searched on the server, so an institute with hundreds of lists can still find
+    // the one it wants (a fixed first page silently hid the rest).
+    const [listSearch, setListSearch] = useState('');
+    const [listQuery, setListQuery] = useState('');
+    useEffect(() => {
+        const id = setTimeout(() => setListQuery(listSearch.trim()), 300);
+        return () => clearTimeout(id);
+    }, [listSearch]);
+    const { data: campaignsPage, isLoading: campaignsLoading } = useCampaignsList({
         institute_id: instituteId,
+        campaign_name: listQuery || undefined,
         page: 0,
-        size: 100,
+        size: LIST_PAGE_SIZE,
     });
     const campaigns = campaignsPage?.content ?? [];
+    const { instituteDetails } = useInstituteDetailsStore();
 
     useEffect(
         () => setNavHeading(isEdit ? tEdit('heading') : t('heading')),
@@ -257,6 +307,8 @@ function CreateEnginePage() {
     const [timezone, setTimezone] = useState('Asia/Kolkata');
     const [holdoutPct, setHoldoutPct] = useState('0');
     const [firstN, setFirstN] = useState('');
+    // Advanced (auto-send limit, test group) stays folded unless a value differs from the default.
+    const [advancedOpen, setAdvancedOpen] = useState(false);
 
     // Prefill once per engine when editing. The brief field then holds an optional AMENDMENT:
     // a brief only grows (the backend keeps every version), it is never overwritten.
@@ -280,6 +332,7 @@ function CreateEnginePage() {
         if (qh.timezone) setTimezone(qh.timezone);
         setHoldoutPct(String(e.holdoutPct ?? 0));
         setFirstN(e.firstN != null ? String(e.firstN) : '');
+        setAdvancedOpen((e.holdoutPct ?? 0) > 0 || e.firstN != null);
         setBrief('');
         setPrefilledFor(e.id);
     }, [editData, prefilledFor]);
@@ -304,26 +357,70 @@ function CreateEnginePage() {
     // backend's leadsByAudience(ar.audience_id = :id) resolves against. The DTO's `campaign_id`
     // and `audience_id` fields are vestigial and always null, so filtering on audience_id
     // dropped every campaign and left this picker permanently empty for all institutes.
-    const campaignOptions = campaigns
+    const campaignOptions: CheckOption[] = campaigns
         .filter((c) => c.id)
         .map((c) => ({ label: c.campaign_name, value: c.id as string }));
+    // Names of every list seen so far, so a picked list keeps its name after a search hides it.
+    const [listNames, setListNames] = useState<Record<string, string>>({});
+    useEffect(() => {
+        if (!campaignOptions.length) return;
+        setListNames((prev) => {
+            const missing = campaignOptions.filter((o) => prev[o.value] !== o.label);
+            if (!missing.length) return prev;
+            const next = { ...prev };
+            missing.forEach((o) => (next[o.value] = o.label));
+            return next;
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [campaignsPage]);
+    const moreListsThanShown = (campaignsPage?.totalElements ?? 0) > campaignOptions.length;
 
-    const canProceed = (s: number): boolean => {
+    const batchOptions: CheckOption[] = useMemo(
+        () =>
+            (instituteDetails?.batches_for_sessions ?? [])
+                .filter((b) => b.status !== 'DELETED')
+                .map(batchOption)
+                .sort((a, b) =>
+                    `${a.label} ${a.sub ?? ''}`.localeCompare(`${b.label} ${b.sub ?? ''}`)
+                ),
+        [instituteDetails]
+    );
+    const batchName = (id: string) => {
+        const o = batchOptions.find((b) => b.value === id);
+        return o ? [o.label, o.sub].filter(Boolean).join(' · ') : undefined;
+    };
+
+    /** Why Continue is blocked on a step, in words; null when the step is complete. */
+    const blockReason = (s: number): string | null => {
         switch (s) {
             case 0:
-                return name.trim().length > 0 && (isEdit || brief.trim().length > 0);
+                if (!name.trim()) return t('blocked.name');
+                return isEdit || brief.trim() ? null : t('blocked.brief');
             case 1:
-                return !highSelected || consentHigh;
+                return !highSelected || consentHigh ? null : t('blocked.consent');
             case 2:
-                return enabledChannelKeys.length > 0;
+                return enabledChannelKeys.length > 0 ? null : t('blocked.channel');
             case 3:
-                return audienceCount > 0;
+                return audienceCount > 0
+                    ? null
+                    : t('blocked.audience', {
+                          batches: batchesLabel.toLowerCase(),
+                          audiences: audiencesLabel.toLowerCase(),
+                      });
             case 4:
-                return Number(cadenceHours) >= 1;
+                return Number(cadenceHours) >= 1 ? null : t('blocked.cadence');
             default:
-                return true;
+                return null;
         }
     };
+    const canProceed = (s: number): boolean => blockReason(s) === null;
+
+    // Leaving with unsaved changes asks first; an untouched form just closes.
+    const [confirmLeave, setConfirmLeave] = useState(false);
+    const leave = () =>
+        isEdit && editId
+            ? navigate({ to: '/engagement-engines/$engineId', params: { engineId: editId } })
+            : navigate({ to: '/engagement-engines' });
 
     const toggleChannel = (c: ChannelKey, patch: Partial<ChannelsConfig[ChannelKey]>) =>
         setChannels((prev) => ({
@@ -361,10 +458,23 @@ function CreateEnginePage() {
         };
     };
 
+    // The form as first shown (defaults, or the saved engine once loaded); anything else is unsaved.
+    const [baseline, setBaseline] = useState<string | null>(null);
+    // Taken once, after the render that shows the defaults or the loaded engine.
+    useEffect(() => {
+        if (baseline === null && (!isEdit || prefilledFor === editId)) {
+            setBaseline(JSON.stringify(buildPayload()));
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [baseline, isEdit, prefilledFor, editId]);
+    const dirty = baseline !== null && JSON.stringify(buildPayload()) !== baseline;
+
     const submit = () => {
-        if (!canProceed(0)) {
-            toast.error(t('errors.nameAndBrief'));
-            setStep(0);
+        // Editing can save from any step, so check every step, not just the current one.
+        const firstBlocked = STEP_KEYS.findIndex((_, i) => !canProceed(i));
+        if (firstBlocked >= 0) {
+            toast.error(blockReason(firstBlocked) ?? t('errors.nameAndBrief'));
+            setStep(firstBlocked);
             return;
         }
         if (isEdit && editId) {
@@ -482,6 +592,8 @@ function CreateEnginePage() {
         <div className="flex flex-col gap-4">
             <StepLead>{t('dataPoints.intro')}</StepLead>
             <div className="grid gap-3 md:grid-cols-2">
+                {!catalog &&
+                    [0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
                 {(catalog ?? []).map((d) => {
                     const alwaysOn = d.alwaysOn === true;
                     const selected = alwaysOn || dataPoints.includes(d.key);
@@ -531,9 +643,6 @@ function CreateEnginePage() {
                                             className={SENSITIVITY_TINT[d.sensitivity]}
                                         />
                                     )}
-                                    <code className="rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-neutral-500">
-                                        <span className="text-caption">{d.key}</span>
-                                    </code>
                                 </span>
                             </span>
                         </button>
@@ -636,53 +745,107 @@ function CreateEnginePage() {
                     audiences: audiencesLabel.toLowerCase(),
                 })}
             </StepLead>
-            <StepSection icon={GraduationCap} title={batchesLabel}>
-                <PackageSelector
-                    instituteId={instituteId}
-                    multiSelect
-                    initialPackageSessionIds={batchIds}
-                    onChange={({ packageSessionIds }) => setBatchIds(packageSessionIds ?? [])}
-                />
-            </StepSection>
-            <StepSection
-                icon={ListBullets}
-                title={audiencesLabel}
-                hint={t('audience.audiencesHint')}
-            >
-                <MultiSelect
-                    options={campaignOptions}
-                    selected={audienceIds}
-                    onChange={setAudienceIds}
-                    placeholder={t('audience.select', {
-                        audiences: audiencesLabel.toLowerCase(),
-                    })}
-                />
-            </StepSection>
-            <div className="flex items-center gap-3 rounded-xl border border-neutral-200 bg-neutral-50 p-4">
-                <span className="font-bold tabular-nums text-neutral-900">
-                    <span className="text-h3">{audienceCount}</span>
-                </span>
-                <span className="text-neutral-500">
-                    <span className="text-body">
-                        {t('audience.count', { count: audienceCount })}
+            <div className="grid gap-4 xl:grid-cols-2">
+                <StepSection
+                    icon={GraduationCap}
+                    title={batchesLabel}
+                    hint={t('audience.batchesHint', { learners: learnersLower })}
+                >
+                    <CheckList
+                        options={batchOptions}
+                        selected={batchIds}
+                        onChange={setBatchIds}
+                        labelFor={batchName}
+                        searchPlaceholder={t('audience.picker.searchBatches', {
+                            batches: batchesLabel.toLowerCase(),
+                        })}
+                        emptyText={t('audience.picker.noBatches', {
+                            batches: batchesLabel.toLowerCase(),
+                        })}
+                        loading={!instituteDetails}
+                    />
+                </StepSection>
+                <StepSection
+                    icon={ListBullets}
+                    title={audiencesLabel}
+                    hint={t('audience.audiencesHint')}
+                >
+                    <CheckList
+                        options={campaignOptions}
+                        selected={audienceIds}
+                        onChange={setAudienceIds}
+                        labelFor={(id) => listNames[id]}
+                        search={listSearch}
+                        onSearchChange={setListSearch}
+                        loading={campaignsLoading}
+                        searchPlaceholder={t('audience.picker.searchLists', {
+                            audiences: audiencesLabel.toLowerCase(),
+                        })}
+                        emptyText={t('audience.picker.noLists', {
+                            audiences: audiencesLabel.toLowerCase(),
+                        })}
+                        note={
+                            moreListsThanShown
+                                ? t('audience.picker.moreLists', {
+                                      shown: campaignOptions.length,
+                                      total: campaignsPage?.totalElements ?? 0,
+                                  })
+                                : undefined
+                        }
+                    />
+                </StepSection>
+            </div>
+            <div className="flex flex-wrap items-center gap-3 rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                <IconTile icon={UsersThree} size="sm" tint="bg-info-50 text-info-600" />
+                <span className="flex flex-col">
+                    <span className="font-semibold text-neutral-800">
+                        <span className="text-body">
+                            {audienceCount === 0
+                                ? t('audience.summaryNone')
+                                : t('audience.summary', {
+                                      batchCount: batchIds.length,
+                                      batches: batchesLabel,
+                                      listCount: audienceIds.length,
+                                      audiences: audiencesLabel,
+                                  })}
+                        </span>
+                    </span>
+                    <span className="text-neutral-500">
+                        <span className="text-caption">{t('audience.dedupNote')}</span>
                     </span>
                 </span>
             </div>
         </div>
     );
 
+    const cadenceIsPreset = (CADENCE_PRESETS as readonly number[]).includes(Number(cadenceHours));
     const cadenceStep = (
         <div className="flex flex-col gap-4">
             <div className="grid gap-4 md:grid-cols-2">
                 <div className="flex flex-col gap-1">
-                    <MyInput
-                        label={t('cadence.recheck')}
-                        required
-                        inputType="number"
-                        inputPlaceholder="72"
-                        input={cadenceHours}
-                        onChangeFunction={(e) => setCadenceHours(e.target.value)}
-                    />
+                    <label className="mb-1 block text-subtitle font-regular">
+                        {t('cadence.recheck')}
+                    </label>
+                    <Select
+                        value={cadenceIsPreset ? cadenceHours : 'custom'}
+                        onValueChange={(v) => v !== 'custom' && setCadenceHours(v)}
+                    >
+                        <SelectTrigger aria-label={t('cadence.recheck')}>
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {CADENCE_PRESETS.map((h) => (
+                                <SelectItem key={h} value={String(h)}>
+                                    {cadenceText(h, tConstants)}
+                                </SelectItem>
+                            ))}
+                            {!cadenceIsPreset && (
+                                <SelectItem value="custom">
+                                    {cadenceText(cadenceHours, tConstants)}
+                                </SelectItem>
+                            )}
+                        </SelectContent>
+                    </Select>
                     <p className="text-caption text-neutral-500">{t('cadence.recheckHint')}</p>
                 </div>
                 <div>
@@ -743,7 +906,29 @@ function CreateEnginePage() {
                 <p className="text-caption text-neutral-500">{t('cadence.quietHint')}</p>
             </div>
 
-            <StepSection icon={ShieldCheck} title={t('autonomy.title')} hint={t('autonomy.hint')}>
+            <Collapsible
+                open={advancedOpen}
+                onOpenChange={setAdvancedOpen}
+                className="rounded-xl border border-neutral-200"
+            >
+                <CollapsibleTrigger className="flex w-full items-center gap-3 p-4 text-left">
+                    <IconTile icon={ShieldCheck} size="sm" tint="bg-neutral-100 text-neutral-600" />
+                    <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="font-semibold text-neutral-800">
+                            <span className="text-subtitle">{t('autonomy.title')}</span>
+                        </span>
+                        <span className="text-neutral-500">
+                            <span className="text-caption">{t('autonomy.hint')}</span>
+                        </span>
+                    </span>
+                    <CaretDown
+                        className={cn(
+                            'size-4 shrink-0 text-neutral-500 transition-transform',
+                            advancedOpen && 'rotate-180'
+                        )}
+                    />
+                </CollapsibleTrigger>
+                <CollapsibleContent className="border-t border-neutral-100 p-4">
                 <div className="grid gap-4 md:grid-cols-2">
                     <div className="flex flex-col gap-1">
                         <MyInput
@@ -773,9 +958,19 @@ function CreateEnginePage() {
                         <p className="text-caption text-neutral-500">{t('autonomy.holdoutHint')}</p>
                     </div>
                 </div>
-            </StepSection>
+                </CollapsibleContent>
+            </Collapsible>
         </div>
     );
+
+    const audienceNames = [
+        ...batchIds.map((id) => batchName(id) ?? t('audience.picker.unknown')),
+        ...audienceIds.map((id) => listNames[id] ?? t('audience.picker.unknown')),
+    ];
+    const cadenceLabel = cadenceText(cadenceHours, tConstants);
+    const timezoneLabel =
+        TIMEZONE_OPTIONS.find((o: { label: string; value: string }) => o.value === timezone)
+            ?.label ?? timezone;
 
     const reviewStep = (
         <div className="flex flex-col gap-4">
@@ -811,20 +1006,35 @@ function CreateEnginePage() {
                             ))}
                         </span>
                     </KeyValue>
-                    <KeyValue label={t('review.audienceSources')}>{`${audienceCount}`}</KeyValue>
-                    <KeyValue label={t('review.cadence')}>
-                        {t('review.cadenceValue', { hours: cadenceHours })}
+                    <KeyValue label={t('review.audienceSources')}>
+                        <span className="flex flex-wrap gap-1.5">
+                            {audienceNames.slice(0, 6).map((n, i) => (
+                                <Chip key={`${n}-${i}`} label={n} />
+                            ))}
+                            {audienceNames.length > 6 && (
+                                <Chip
+                                    label={t('review.moreSources', {
+                                        count: audienceNames.length - 6,
+                                    })}
+                                />
+                            )}
+                        </span>
                     </KeyValue>
+                    <KeyValue label={t('review.cadence')}>{cadenceLabel}</KeyValue>
                     <KeyValue label={t('review.quietHours')}>
-                        {`${quietStart}:00–${quietEnd}:00 ${timezone}`}
+                        {`${pad2(quietStart)}:00–${pad2(quietEnd)}:00 · ${timezoneLabel}`}
                     </KeyValue>
                     <KeyValue label={t('review.autoSendChannels')}>
                         {autoSendKeys.map((c) => channelMeta[c].label).join(', ') ||
                             t('review.autoSendNone')}
                     </KeyValue>
-                    <KeyValue label={t('review.holdout')}>{`${holdoutValue}%`}</KeyValue>
+                    {holdoutValue > 0 && (
+                        <KeyValue label={t('review.holdout')}>
+                            {t('review.holdoutValue', { pct: holdoutValue })}
+                        </KeyValue>
+                    )}
                 </div>
-                <div className="lg:col-span-2">
+                <div className={cn('lg:col-span-2', isEdit && 'hidden')}>
                     <p className="mb-3 font-semibold uppercase tracking-wide text-neutral-500">
                         <span className="text-caption">{t('review.whatNext')}</span>
                     </p>
@@ -854,10 +1064,12 @@ function CreateEnginePage() {
                     </ol>
                 </div>
             </div>
-            <div className="flex items-start gap-2 rounded-xl border border-info-200 bg-info-50 p-3">
-                <Info className="mt-0.5 size-4 shrink-0 text-info-600" />
-                <p className="text-caption text-neutral-600">{t('review.draftNote')}</p>
-            </div>
+            {!isEdit && (
+                <div className="flex items-start gap-2 rounded-xl border border-info-200 bg-info-50 p-3">
+                    <Info className="mt-0.5 size-4 shrink-0 text-info-600" />
+                    <p className="text-caption text-neutral-600">{t('review.draftNote')}</p>
+                </div>
+            )}
         </div>
     );
 
@@ -873,45 +1085,55 @@ function CreateEnginePage() {
     return (
         <LayoutContainer>
             <Helmet>
-                <title>{t('pageTitle')}</title>
+                <title>{isEdit ? tEdit('heading') : t('pageTitle')}</title>
             </Helmet>
             <div className="flex flex-col gap-5 p-1">
                 <div className="flex items-start gap-3">
                     <IconTile icon={Robot} size="lg" />
                     <div>
                         <h1 className="font-semibold text-neutral-900">
-                            <span className="text-h2">{t('pageTitle')}</span>
+                            <span className="text-h2">
+                                {isEdit
+                                    ? editData?.engine.name || tEdit('heading')
+                                    : t('pageTitle')}
+                            </span>
                         </h1>
                         <p className="text-neutral-500">
-                            <span className="text-body">{t('subtitle')}</span>
+                            <span className="text-body">
+                                {isEdit ? tEdit('subtitle') : t('subtitle')}
+                            </span>
                         </p>
                     </div>
                 </div>
                 <Card className="flex flex-col overflow-hidden rounded-xl border-neutral-200 shadow-sm lg:flex-row">
-                    <StepRail current={step} t={t} onGoTo={setStep} />
+                    <StepRail current={step} t={t} onGoTo={setStep} freeJump={isEdit} />
                     <div className="flex min-w-0 flex-1 flex-col">
                         <div className="flex-1 p-5">{stepBodies[step]}</div>
                         <div className="flex flex-wrap items-center gap-2 border-t border-neutral-100 bg-neutral-50 px-5 py-3">
-                            <span className="me-auto text-neutral-500">
-                                <span className="text-caption">
-                                    {t('footer.step', {
-                                        n: step + 1,
-                                        total: STEP_KEYS.length,
-                                        label: t(`steps.${STEP_KEYS[step]}`),
-                                    })}
+                            <span className="me-auto flex min-w-0 flex-col">
+                                <span className="text-neutral-500">
+                                    <span className="text-caption">
+                                        {t('footer.step', {
+                                            n: step + 1,
+                                            total: STEP_KEYS.length,
+                                            label: t(`steps.${STEP_KEYS[step]}`),
+                                        })}
+                                    </span>
                                 </span>
+                                {blockReason(step) && (
+                                    <span
+                                        role="status"
+                                        className="flex items-center gap-1 text-warning-700"
+                                    >
+                                        <WarningCircle className="size-3.5 shrink-0" />
+                                        <span className="text-caption">{blockReason(step)}</span>
+                                    </span>
+                                )}
                             </span>
                             <MyButton
                                 buttonType="text"
                                 scale="medium"
-                                onClick={() =>
-                                    isEdit && editId
-                                        ? navigate({
-                                              to: '/engagement-engines/$engineId',
-                                              params: { engineId: editId },
-                                          })
-                                        : navigate({ to: '/engagement-engines' })
-                                }
+                                onClick={() => (dirty ? setConfirmLeave(true) : leave())}
                             >
                                 {t('actions.cancel')}
                             </MyButton>
@@ -923,16 +1145,18 @@ function CreateEnginePage() {
                             >
                                 {t('actions.back')}
                             </MyButton>
-                            {step < STEP_KEYS.length - 1 ? (
+                            {step < STEP_KEYS.length - 1 && (
                                 <MyButton
-                                    buttonType="primary"
+                                    buttonType={isEdit ? 'secondary' : 'primary'}
                                     scale="medium"
                                     disable={!canProceed(step)}
                                     onClick={() => setStep((s) => s + 1)}
                                 >
                                     {t('actions.continue')}
                                 </MyButton>
-                            ) : (
+                            )}
+                            {/* Editing: save from any step; creating: only from the review. */}
+                            {(isEdit || step === STEP_KEYS.length - 1) && (
                                 <MyButton
                                     buttonType="primary"
                                     scale="medium"
@@ -956,6 +1180,27 @@ function CreateEnginePage() {
                     </div>
                 </Card>
             </div>
+            <AlertDialog open={confirmLeave} onOpenChange={setConfirmLeave}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{t('leaveDialog.title')}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {isEdit
+                                ? t('leaveDialog.editDescription')
+                                : t('leaveDialog.description')}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>{t('leaveDialog.stay')}</AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-danger-600 hover:bg-danger-700"
+                            onClick={() => leave()}
+                        >
+                            {t('leaveDialog.leave')}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </LayoutContainer>
     );
 }

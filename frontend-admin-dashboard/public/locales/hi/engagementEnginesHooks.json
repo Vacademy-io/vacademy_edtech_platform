@@ -4,11 +4,11 @@
         "createEngineFailed": "इंजन बनाने में विफल",
         "engineUpdated": "इंजन अपडेट किया गया",
         "changeStatusFailed": "स्थिति बदली नहीं जा सकी",
-        "autonomyOff": "ऑटो-सेंड बंद — केवल कोपायलट",
+        "autonomyOff": "खुद भेजना बंद — हर मैसेज आप जाँचेंगे",
         "autonomyOn": "ऑटो-सेंड चालू",
         "autonomyFailed": "स्वायत्तता नहीं बदली जा सकी",
-        "enrollResult": "ऑडियंस अपडेट हुई: {{added}} जोड़े गए, {{exited}} हटे ({{total}} कुल)",
-        "enrollFailed": "नामांकन विफल रहा",
+        "enrollResult": "लोग अपडेट हुए: {{added}} जोड़े, {{exited}} हटाए (कुल {{total}})",
+        "enrollFailed": "लोग नहीं जोड़े जा सके",
         "promptUpdated": "ब्रीफ में संशोधन जोड़ा गया",
         "promptUpdateFailed": "ब्रीफ अपडेट नहीं हो सकी",
         "engineArchived": "इंजन संग्रहीत किया गया",
@@ -32,12 +32,14 @@
         "templatesUpdated_other": "{{count}} टेम्पलेट अपडेट किए गए"
     },
     "taskAction": {
-        "ack": "कार्य स्वीकृत किया गया",
+        "ack": "काम जारी के रूप में चिह्नित",
         "done": "पूर्ण के रूप में चिह्नित",
-        "dismiss": "खारिज किया गया",
+        "dismiss": "छोड़ा गया",
         "reopen": "फिर से खोला गया",
         "send": "भेजा गया",
         "default": "पूर्ण",
-        "sendNotConfirmed": "भेजे जाने की पुष्टि नहीं हुई। टास्क अब Failed में है। दोबारा भेजने से पहले मैसेज लॉग जाँच लें।"
+        "sendNotConfirmed": "भेजे जाने की पुष्टि नहीं हुई। टास्क अब Failed में है। दोबारा भेजने से पहले मैसेज लॉग जाँच लें।",
+        "undo": "वापस लें",
+        "restore": "इनबॉक्स में वापस भेजा गया"
     }
 }

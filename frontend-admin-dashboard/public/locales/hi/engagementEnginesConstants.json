@@ -9,12 +9,12 @@
     },
     "actionStatus": {
         "open": "खुला",
-        "acked": "स्वीकृत",
+        "acked": "काम जारी",
         "dispatching": "भेजा जा रहा है…",
         "sent": "भेजा गया",
         "failed": "विफल",
         "done": "पूर्ण",
-        "dismissed": "खारिज",
+        "dismissed": "छोड़ा गया",
         "expired": "समाप्त",
         "simulated": "सिम्युलेटेड"
     },
@@ -47,5 +47,11 @@
         "marketing": "मार्केटिंग",
         "utility": "उपयोगिता",
         "authentication": "प्रमाणीकरण"
+    },
+    "cadence": {
+        "daily": "रोज़",
+        "weekly": "हर हफ़्ते",
+        "days": "हर {{count}} दिन",
+        "hours": "हर {{count}} घंटे"
     }
 }

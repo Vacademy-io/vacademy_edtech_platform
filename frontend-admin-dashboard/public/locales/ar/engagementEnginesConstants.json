@@ -9,12 +9,12 @@
     },
     "actionStatus": {
         "open": "مفتوح",
-        "acked": "تم الإقرار",
+        "acked": "قيد العمل",
         "dispatching": "جارٍ الإرسال…",
         "sent": "تم الإرسال",
         "failed": "فشل",
         "done": "منجَز",
-        "dismissed": "مرفوض",
+        "dismissed": "تم التخطي",
         "expired": "منتهي الصلاحية",
         "simulated": "محاكاة"
     },
@@ -47,5 +47,11 @@
         "marketing": "تسويق",
         "utility": "خدمي",
         "authentication": "مصادقة"
+    },
+    "cadence": {
+        "daily": "يوميًا",
+        "weekly": "أسبوعيًا",
+        "days": "كل {{count}} أيام",
+        "hours": "كل {{count}} ساعات"
     }
 }
