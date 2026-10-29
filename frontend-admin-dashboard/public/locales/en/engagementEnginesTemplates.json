@@ -13,6 +13,8 @@
     },
     "toast": {
         "generated": "New templates are ready for review.",
+        "allReused": "{{count}} already-approved template(s) from your other engines reused. No new review is needed.",
+        "reusedAndGenerated": "{{reused}} already-approved template(s) reused, {{fresh}} new one(s) ready for review.",
         "regenerated": "Draft regenerated.",
         "generateFailed": "Could not generate templates.",
         "saved": "Template saved.",
@@ -21,6 +23,9 @@
         "approveFailed": "Could not approve the template.",
         "archived": "Template archived.",
         "archiveFailed": "Could not archive the template."
+    },
+    "reuse": {
+        "chip": "Reused · already approved"
     },
     "generate": {
         "headingWhatsapp": "Generate WhatsApp templates",

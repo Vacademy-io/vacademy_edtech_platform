@@ -45,6 +45,8 @@ export interface EmailTemplate {
     createdAt?: string;
     updatedAt?: string;
     approvedAt?: string;
+    /** Set when this engine took over an already-approved template of another engine. */
+    reusedFromId?: string | null;
 }
 
 export interface EmailTemplateGenerateRequest extends GenerateOptions {
