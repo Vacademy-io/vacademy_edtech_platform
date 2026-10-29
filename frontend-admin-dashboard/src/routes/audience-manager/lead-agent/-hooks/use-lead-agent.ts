@@ -197,8 +197,12 @@ export function useBulkDecide(agentId: string) {
 }
 
 export function useSuggestBrief() {
+    const qc = useQueryClient();
     return useMutation({
         mutationFn: (body: SuggestRequest) => suggestBrief(body),
+        // A suggestion is paid from the institute's AI credits (even one that fails after the
+        // model answered): refresh the balance in the top bar.
+        onSettled: () => void qc.invalidateQueries({ queryKey: ['GET_AI_CREDITS'] }),
         onError: (e) =>
             toast.error(
                 apiErrorMessage(e, 'Could not get suggestions. Try again, or fill them in.')
