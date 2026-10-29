@@ -1457,42 +1457,24 @@ public class SubOrgLearnerService {
      * session rather than the whole institute so the admin only sees organizations that actually
      * belong to the batch they are enrolling into.
      *
-     * <p>Includes INACTIVE/TERMINATED mappings when locating sub-orgs — an organization whose only
-     * members have lapsed still exists and must remain pickable — but only ACTIVE members count
-     * toward {@code memberCount}'s admin list.
+     * <p>Includes INACTIVE/TERMINATED/EXPIRED mappings when locating sub-orgs — an organization
+     * whose only members have lapsed still exists and must remain pickable — but only ACTIVE
+     * members count toward {@code memberCount}'s admin list.
      */
     @Transactional(readOnly = true)
     public List<PackageSessionSubOrgDTO> getSubOrgsByPackageSession(String packageSessionId) {
         List<String> statuses = List.of(
                 LearnerSessionStatusEnum.ACTIVE.name(),
                 LearnerSessionStatusEnum.INACTIVE.name(),
-                LearnerSessionStatusEnum.TERMINATED.name());
+                LearnerSessionStatusEnum.TERMINATED.name(),
+                LearnerSessionStatusEnum.EXPIRED.name());
 
         List<Object[]> rows = mappingRepository.findSubOrgsByPackageSession(packageSessionId, statuses);
         if (rows.isEmpty()) {
             return List.of();
         }
 
-        List<String> subOrgIds = rows.stream()
-                .map(r -> r[0] != null ? String.valueOf(r[0]) : null)
-                .filter(Objects::nonNull)
-                .distinct()
-                .collect(Collectors.toList());
-
-        Map<String, List<AdminDetailsDTO>> adminsBySubOrg = new HashMap<>();
-        for (Object[] admin : mappingRepository.findAdminsBySubOrgIds(subOrgIds)) {
-            if (admin[0] == null) {
-                continue;
-            }
-            adminsBySubOrg
-                    .computeIfAbsent(String.valueOf(admin[0]), k -> new ArrayList<>())
-                    .add(AdminDetailsDTO.builder()
-                            .userId(admin[1] != null ? String.valueOf(admin[1]) : null)
-                            .name(admin[2] != null ? String.valueOf(admin[2]) : null)
-                            .email(admin[3] != null ? String.valueOf(admin[3]) : null)
-                            .role(admin[4] != null ? String.valueOf(admin[4]) : null)
-                            .build());
-        }
+        Map<String, List<AdminDetailsDTO>> adminsBySubOrg = adminsBySubOrg(rows);
 
         return rows.stream()
                 .filter(r -> r[0] != null)
@@ -1508,5 +1490,84 @@ public class SubOrgLearnerService {
                             .build();
                 })
                 .collect(Collectors.toList());
+    }
+
+    private static final int SUB_ORG_SEARCH_MIN_CHARS = 2;
+    private static final int SUB_ORG_SEARCH_MAX_RESULTS = 50;
+
+    /**
+     * Sub-organizations anywhere in the institute whose name contains {@code search}, for the
+     * search box of the enroll wizard picker. {@link #getSubOrgsByPackageSession} only knows the
+     * organizations already in the batch, so a practice that is new to the batch (or lives under
+     * another product) could never be picked without this.
+     *
+     * <p>{@code visibleSubOrgIds} is the caller scope from
+     * {@code SubOrgAccessScopeService.resolveVisibleSubOrgIds}: null means unrestricted.
+     * {@code memberCount} is left null because it is per batch and the hit may not be in one.
+     */
+    @Transactional(readOnly = true)
+    public List<PackageSessionSubOrgDTO> searchInstituteSubOrgs(
+            String instituteId, String search, List<String> visibleSubOrgIds) {
+        String term = search == null ? "" : search.trim();
+        if (term.length() < SUB_ORG_SEARCH_MIN_CHARS) {
+            return List.of();
+        }
+        if (visibleSubOrgIds != null && visibleSubOrgIds.isEmpty()) {
+            return List.of();
+        }
+
+        String pattern = "%" + term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+        List<Object[]> rows = mappingRepository
+                .searchInstituteSubOrgsByName(instituteId, pattern, SUB_ORG_SEARCH_MAX_RESULTS)
+                .stream()
+                .filter(r -> r[0] != null)
+                .filter(r -> visibleSubOrgIds == null || visibleSubOrgIds.contains(String.valueOf(r[0])))
+                .collect(Collectors.toList());
+        if (rows.isEmpty()) {
+            return List.of();
+        }
+
+        Map<String, List<AdminDetailsDTO>> adminsBySubOrg = adminsBySubOrg(rows);
+
+        return rows.stream()
+                .map(r -> {
+                    String subOrgId = String.valueOf(r[0]);
+                    return PackageSessionSubOrgDTO.builder()
+                            .subOrgId(subOrgId)
+                            .name(r[1] != null ? String.valueOf(r[1]) : null)
+                            .email(r[2] != null ? String.valueOf(r[2]) : null)
+                            .mobileNumber(r[3] != null ? String.valueOf(r[3]) : null)
+                            .admins(adminsBySubOrg.getOrDefault(subOrgId, List.of()))
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    /** Active admins (name + email) of the sub-orgs in column 0 of {@code rows}, in one query. */
+    private Map<String, List<AdminDetailsDTO>> adminsBySubOrg(List<Object[]> rows) {
+        List<String> subOrgIds = rows.stream()
+                .map(r -> r[0] != null ? String.valueOf(r[0]) : null)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toList());
+
+        Map<String, List<AdminDetailsDTO>> adminsBySubOrg = new HashMap<>();
+        if (subOrgIds.isEmpty()) {
+            return adminsBySubOrg;
+        }
+        for (Object[] admin : mappingRepository.findAdminsBySubOrgIds(subOrgIds)) {
+            if (admin[0] == null) {
+                continue;
+            }
+            adminsBySubOrg
+                    .computeIfAbsent(String.valueOf(admin[0]), k -> new ArrayList<>())
+                    .add(AdminDetailsDTO.builder()
+                            .userId(admin[1] != null ? String.valueOf(admin[1]) : null)
+                            .name(admin[2] != null ? String.valueOf(admin[2]) : null)
+                            .email(admin[3] != null ? String.valueOf(admin[3]) : null)
+                            .role(admin[4] != null ? String.valueOf(admin[4]) : null)
+                            .build());
+        }
+        return adminsBySubOrg;
     }
 }

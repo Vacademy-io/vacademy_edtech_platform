@@ -1298,6 +1298,7 @@ export const ADD_SUB_ORG_MEMBER = `${BASE_URL}/admin-core-service/sub-org/v1/add
 // Sub-orgs already present in one package session (+ their admins) — powers the sub-org
 // step of the Enroll Learner wizard for org-associated batches.
 export const GET_SUB_ORGS_BY_PACKAGE_SESSION = `${BASE_URL}/admin-core-service/sub-org/v1/by-package-session`;
+export const SEARCH_SUB_ORGS = `${BASE_URL}/admin-core-service/sub-org/v1/search`;
 // Sub-org team (custom-role) endpoints — server-scoped to caller's sub-org
 export const SUB_ORG_TEAM_LIST = `${BASE_URL}/admin-core-service/sub-org/v1/team/list`;
 export const SUB_ORG_TEAM_ADD = `${BASE_URL}/admin-core-service/sub-org/v1/team/add`;
