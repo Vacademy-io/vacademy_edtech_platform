@@ -16,6 +16,7 @@ import vacademy.io.admin_core_service.features.catalogue_review.dto.ReviewUpdate
 import vacademy.io.admin_core_service.features.catalogue_review.entity.CatalogueReview;
 import vacademy.io.admin_core_service.features.catalogue_review.repository.CatalogueReviewRepository;
 import vacademy.io.admin_core_service.features.catalogue_review.service.CatalogueReviewService;
+import vacademy.io.admin_core_service.features.catalogue_review.service.ReviewSubmittedWorkflowNotifier;
 import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
 import vacademy.io.common.auth.dto.UserServiceDTO;
 import vacademy.io.common.auth.model.CustomUserDetails;
@@ -43,6 +44,7 @@ class CatalogueReviewServiceTest {
     private CatalogueReviewRepository repository;
     private InstituteRepository instituteRepository;
     private InstituteAccessValidator accessValidator;
+    private ReviewSubmittedWorkflowNotifier notifier;
     private CatalogueReviewService service;
 
     @BeforeEach
@@ -54,6 +56,8 @@ class CatalogueReviewServiceTest {
         ReflectionTestUtils.setField(service, "repository", repository);
         ReflectionTestUtils.setField(service, "instituteRepository", instituteRepository);
         ReflectionTestUtils.setField(service, "accessValidator", accessValidator);
+        notifier = mock(ReviewSubmittedWorkflowNotifier.class);
+        ReflectionTestUtils.setField(service, "workflowNotifier", notifier);
         when(instituteRepository.existsById(INSTITUTE)).thenReturn(true);
         when(repository.save(any(CatalogueReview.class))).thenAnswer(inv -> {
             CatalogueReview r = inv.getArgument(0);
@@ -93,6 +97,26 @@ class CatalogueReviewServiceTest {
         assertEquals("Asha", saved.getValue().getReviewerName());
         assertEquals("Clear teaching", saved.getValue().getReviewText());
         assertEquals(5, saved.getValue().getRating());
+    }
+
+    @Test
+    void submit_firesTheReviewSubmittedWorkflow_onlyForASavedReview() {
+        ReviewSubmitRequest req = request(4, "Asha");
+        req.setAnswers(List.of(new ReviewAnswer("f_exam", "Exam", "SSC")));
+        service.submit(req);
+        ArgumentCaptor<CatalogueReview> fired = ArgumentCaptor.forClass(CatalogueReview.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<ReviewAnswer>> answers = ArgumentCaptor.forClass(List.class);
+        verify(notifier).fire(fired.capture(), answers.capture());
+        assertEquals("r-new", fired.getValue().getId());
+        assertEquals("SSC", answers.getValue().get(0).getValue());
+
+        // Rejected input and the honeypot never reach a workflow.
+        ReviewSubmitRequest bot = request(5, "Bot");
+        bot.setWebsite("x");
+        service.submit(bot);
+        assertThrows(VacademyException.class, () -> service.submit(request(9, "A")));
+        verify(notifier, times(1)).fire(any(), any());
     }
 
     @Test

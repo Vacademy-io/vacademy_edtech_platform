@@ -45,6 +45,10 @@ public enum WorkflowTriggerEvent {
     DOUBT_RAISED,
     ASSIGNMENT_SUBMITTED,
 
+    // Website: a visitor sent a review through a Reviews & feedback block (it waits as
+    // PENDING for approval). Keyed by eventId = reviewId; triggers are institute-wide.
+    REVIEW_SUBMITTED,
+
     // Invites
     INVITE_CREATE,
     INVITE_FORM_FILL,

@@ -8,6 +8,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.catalogue_review.dto.ReviewAnswer;
 import vacademy.io.admin_core_service.features.catalogue_review.dto.ReviewPageResponse;
@@ -72,6 +74,9 @@ public class CatalogueReviewService {
     @Autowired
     private InstituteAccessValidator accessValidator;
 
+    @Autowired
+    private ReviewSubmittedWorkflowNotifier workflowNotifier;
+
     private final ObjectMapper mapper = new ObjectMapper();
 
     /* ── public ────────────────────────────────────────────────────────── */
@@ -127,6 +132,7 @@ public class CatalogueReviewService {
                 .visitorKey(visitorKey)
                 .answers(writeAnswers(req.getAnswers()))
                 .build());
+        fireSubmittedWorkflowAfterCommit(saved);
         return ReviewResponse.builder().id(saved.getId()).status(PENDING).build();
     }
 
@@ -251,6 +257,26 @@ public class CatalogueReviewService {
                     .answers(readAnswers(r.getAnswers()));
         }
         return b.build();
+    }
+
+    /**
+     * REVIEW_SUBMITTED for the admin's workflows (email the team, WhatsApp a role,
+     * an in-app message ...), only once the review is really saved, and off the
+     * request thread, so a workflow can neither see a row that rolls back nor
+     * slow down or fail the visitor's submit.
+     */
+    private void fireSubmittedWorkflowAfterCommit(CatalogueReview saved) {
+        List<ReviewAnswer> answers = readAnswers(saved.getAnswers());
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    workflowNotifier.fire(saved, answers);
+                }
+            });
+        } else {
+            workflowNotifier.fire(saved, answers);
+        }
     }
 
     /**
