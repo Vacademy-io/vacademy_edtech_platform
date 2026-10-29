@@ -25,6 +25,7 @@ import vacademy.io.admin_core_service.features.audience.entity.AudienceCommunica
 import vacademy.io.admin_core_service.features.audience.repository.AudienceCommunicationRepository;
 import vacademy.io.admin_core_service.features.audience.repository.LeadFollowupRepository;
 import vacademy.io.admin_core_service.features.audience.entity.LeadFollowup;
+import vacademy.io.admin_core_service.features.engagement.service.EngagementWakeService;
 import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendRequest;
 import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendResponse;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
@@ -209,6 +210,9 @@ public class AudienceService {
 
     @Autowired
     private LeadDeduplicationService leadDeduplicationService;
+
+    @Autowired
+    private EngagementWakeService engagementWakeService;
 
     @Autowired
     private vacademy.io.admin_core_service.features.timeline.service.TimelineEventService timelineEventService;
@@ -4756,6 +4760,8 @@ public class AudienceService {
             migrated++;
 
             logLeadListChangeEvent(response, actor, fromAudienceId, targetAudience, anchorMode, instituteId);
+            // After commit: leave the old list's engagement engines, join the new list's (L7).
+            if (engagementWakeService != null) engagementWakeService.leadMoved(instituteId, response.getId(), actor != null ? actor.getUserId() : null);
         }
         // These entities came from a repository query inside this transaction, so they are managed:
         // the field writes above are already dirty-checked and flushed at commit. saveAll() here is

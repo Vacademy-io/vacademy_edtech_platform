@@ -42,6 +42,9 @@ import {
 import { QuickViews, type QuickView } from '@/components/shared/crm-enhance';
 import { cn } from '@/lib/utils';
 import { ToneBadge } from '../-components/ToneBadge';
+import { CrmActionChip } from '../-components/crm-action-ui';
+import { CrmTaskSection } from '../-components/CrmTaskSection';
+import { isCrmAction } from '../-types/actions';
 import {
     CHANNEL_ICON,
     CHANNEL_TINT,
@@ -145,6 +148,7 @@ function taskRules(task: EngagementAction) {
 
 function TaskInboxPage() {
     const { t } = useTranslation('engagementEnginesInboxIndex');
+    const { t: tActions } = useTranslation('engagementEnginesActions');
     const { t: tConstants } = useTranslation('engagementEnginesConstants');
     const navigate = useNavigate();
     const { setNavHeading } = useNavHeadingStore();
@@ -205,7 +209,8 @@ function TaskInboxPage() {
             (task) =>
                 (engineFilter === 'all' || task.engineId === engineFilter) &&
                 (channelFilter === 'all' || task.channel === channelFilter) &&
-                (kindFilter === 'all' || task.kind === kindFilter) &&
+                (kindFilter === 'all' ||
+                    (kindFilter === 'CRM' ? isCrmAction(task.actionType) : task.kind === kindFilter)) &&
                 (!q ||
                     [
                         task.draftBody,
@@ -326,6 +331,7 @@ function TaskInboxPage() {
                                 <SelectItem value="TASK">{t('toolbar.kindTask')}</SelectItem>
                                 <SelectItem value="REPLY">{t('toolbar.kindReply')}</SelectItem>
                                 <SelectItem value="SEND">{t('toolbar.kindSend')}</SelectItem>
+                                <SelectItem value="CRM">{tActions('inbox.kindFilter')}</SelectItem>
                             </SelectContent>
                         </Select>
                         <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
@@ -531,7 +537,11 @@ function TaskRow({
                     </span>
                 )}
                 <span className="flex flex-wrap items-center gap-1.5">
-                    <KindChip kind={task.kind} />
+                    {isCrmAction(task.actionType) ? (
+                        <CrmActionChip type={task.actionType} />
+                    ) : (
+                        <KindChip kind={task.kind} />
+                    )}
                     <ToneBadge label={statusMeta.label} tone={statusMeta.tone} />
                     <span className="ms-auto text-neutral-400">
                         <span className="text-caption">{ageText(task.createdAt, t)}</span>
@@ -580,7 +590,9 @@ function TaskDetail({
     };
     const channelMeta = buildChannelMeta(tConstants);
     const { needsTemplate, canSend, canHandle } = taskRules(task);
-    const vars = safeParse<Record<string, string>>(task.variablesJson, {});
+    // B8: a CRM action (follow-up, note, status, AI call) is approved, not sent.
+    const crmType = isCrmAction(task.actionType) ? task.actionType : null;
+    const vars = crmType ? {} : safeParse<Record<string, string>>(task.variablesJson, {});
     const ChannelIcon = task.channel ? CHANNEL_ICON[task.channel] : Robot;
     const priority = typeof task.priority === 'number' ? Math.round(task.priority) : null;
     const who = personTitle(person);
@@ -644,7 +656,7 @@ function TaskDetail({
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5">
-                <KindChip kind={task.kind} />
+                {crmType ? <CrmActionChip type={crmType} /> : <KindChip kind={task.kind} />}
                 {task.channel && (
                     <ChannelChip
                         channel={task.channel}
@@ -711,6 +723,8 @@ function TaskDetail({
                 </p>
             )}
 
+            {crmType && <CrmTaskSection task={task} disabled={busy} />}
+            {!crmType && (
             <div>
                 <SubHeading>{bodyHeading}</SubHeading>
                 <p
@@ -735,6 +749,7 @@ function TaskDetail({
                     </div>
                 )}
             </div>
+            )}
 
             <div className="flex flex-wrap items-center gap-2">
                 {canSend && (
@@ -749,10 +764,12 @@ function TaskDetail({
                 )}
                 {canHandle && (
                     <>
-                        <MyButton buttonType="secondary" scale="small" disable={busy} onClick={onDone}>
-                            <CheckCircle className="me-1 size-3.5" />{' '}
-                            {t('actions.handledElsewhere')}
-                        </MyButton>
+                        {!crmType && (
+                            <MyButton buttonType="secondary" scale="small" disable={busy} onClick={onDone}>
+                                <CheckCircle className="me-1 size-3.5" />{' '}
+                                {t('actions.handledElsewhere')}
+                            </MyButton>
+                        )}
                         <MyButton buttonType="text" scale="small" disable={busy} onClick={onDismiss}>
                             <X className="me-1 size-3.5" /> {t('actions.dismiss')}
                         </MyButton>
@@ -764,7 +781,9 @@ function TaskDetail({
                     </MyButton>
                 )}
                 {(task.status === 'DONE' || task.status === 'DISMISSED') &&
-                    task.kind !== 'SEND' && (
+                    task.kind !== 'SEND' &&
+                    // A done CRM action is reversed with Undo, never re-run by restoring it.
+                    !(crmType && task.status === 'DONE') && (
                         <MyButton
                             buttonType="secondary"
                             scale="small"

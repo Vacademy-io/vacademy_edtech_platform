@@ -50,7 +50,7 @@ export function IconTile({
                 tint ?? (status ? STATUS_TILE[status] : 'bg-primary-50 text-primary-500')
             )}
         >
-            <I size={size === 'sm' ? 16 : 20} weight="duotone" />
+            <I size={size === 'sm' ? 16 : 20} weight="duotone" aria-hidden />
         </span>
     );
 }
@@ -72,7 +72,7 @@ export function Chip({
                 className
             )}
         >
-            {I && <I size={12} weight="bold" />}
+            {I && <I size={12} weight="bold" aria-hidden />}
             <span className="text-caption">{label}</span>
         </span>
     );

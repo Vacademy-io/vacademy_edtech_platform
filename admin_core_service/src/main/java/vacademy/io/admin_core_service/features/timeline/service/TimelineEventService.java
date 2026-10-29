@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -46,6 +47,10 @@ public class TimelineEventService {
 
         @Autowired
         private ObjectMapper objectMapper;
+
+        /** Lazily resolved: the engagement engine's wake hook depends on services that log here. */
+        @Autowired
+        private ObjectProvider<TimelineEventHook> hooks;
 
         // ── Write: ACTIVITY events ────────────────────────────────────────────
 
@@ -153,6 +158,7 @@ public class TimelineEventService {
                                 .build();
 
                 TimelineEvent savedEvent = timelineEventRepository.save(event);
+                notifyHooks(savedEvent);
                 return mapToDTO(savedEvent);
         }
 
@@ -364,7 +370,41 @@ public class TimelineEventService {
                 return null;
         }
 
-        private void saveEvent(String type, String typeId, String actionType,
+        // ── Write: engagement engine notes (B6) ─────────────────────────────
+
+        /** Actor of every note the engagement engine writes; the hooks and readers key on it. */
+        public static final String ENGINE_ACTOR_TYPE = "ENGAGEMENT_ENGINE";
+        /** How the note's author reads in the timeline: a normal note, labelled AI. */
+        public static final String ENGINE_NOTE_AUTHOR = "AI · Engagement Engine";
+
+        /**
+         * A normal NOTE on a lead, written by the engagement engine (labelled AI by its author name
+         * and metadata.ai). Returns the event id, so the engine can undo it.
+         */
+        @Transactional
+        public String logEngineNote(String leadRowId, String title, String description,
+                        Map<String, Object> metadata, String studentUserId) {
+                Map<String, Object> meta = new HashMap<>(metadata != null ? metadata : Map.of());
+                meta.put("source", ENGINE_ACTOR_TYPE);
+                meta.put("ai", true);
+                return saveEvent("LEAD", leadRowId, "NOTE", ENGINE_ACTOR_TYPE, null, ENGINE_NOTE_AUTHOR,
+                                title, description, meta, studentUserId, TimelineCategory.ACTIVITY).getId();
+        }
+
+        /** Undo of {@link #logEngineNote}: removes only a note the engine wrote. */
+        @Transactional
+        public boolean deleteEngineNote(String eventId) {
+                if (eventId == null) return false;
+                return timelineEventRepository.findById(eventId)
+                                .filter(e -> ENGINE_ACTOR_TYPE.equals(e.getActorType()))
+                                .map(e -> {
+                                        timelineEventRepository.delete(e);
+                                        return true;
+                                })
+                                .orElse(false);
+        }
+
+        private TimelineEvent saveEvent(String type, String typeId, String actionType,
                         String actorType, String actorId, String actorName,
                         String title, String description, Object metadata,
                         String studentUserId, TimelineCategory category) {
@@ -393,8 +433,22 @@ public class TimelineEventService {
                                 .instituteId(resolveInstituteId(type, typeId))
                                 .build();
 
-                timelineEventRepository.save(event);
+                TimelineEvent saved = timelineEventRepository.save(event);
+                notifyHooks(saved);
                 logger.debug("Logged {} event: {} on {}[{}]", category, actionType, type, typeId);
+                return saved;
+        }
+
+        private void notifyHooks(TimelineEvent event) {
+                if (hooks == null) return;
+                hooks.orderedStream().forEach(hook -> {
+                        try {
+                                hook.onEventSaved(event);
+                        } catch (Exception e) {
+                                logger.warn("Timeline hook {} failed on {}[{}]: {}", hook.getClass().getSimpleName(),
+                                                event.getType(), event.getTypeId(), e.getMessage());
+                        }
+                });
         }
 
         private TimelineEventDTO mapToDTO(TimelineEvent event) {

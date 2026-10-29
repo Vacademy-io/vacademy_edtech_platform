@@ -19,6 +19,7 @@ import vacademy.io.admin_core_service.features.audience.repository.UserLeadProfi
 import vacademy.io.admin_core_service.features.audience.service.LeadStatusService;
 import vacademy.io.admin_core_service.features.audience.service.UserLeadProfileService;
 import vacademy.io.admin_core_service.features.counselor_pool.service.CounselorAssignmentService;
+import vacademy.io.admin_core_service.features.engagement.service.EngagementWakeService;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallDecision;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallingSettingsPojo;
 import vacademy.io.admin_core_service.features.telephony.enums.CallDirection;
@@ -68,6 +69,7 @@ public class AiCallOutcomeProcessor {
     private static final String STATUS_RETRY_PENDING = "AI_RETRY_PENDING";
 
     private final AiCallResultRepository aiCallResultRepo;
+    private final EngagementWakeService engagementWakeService;
     private final TelephonyCallLogRepository callLogRepo;
     private final AudienceResponseRepository audienceResponseRepo;
     private final LeadStatusRepository leadStatusRepo;
@@ -477,6 +479,10 @@ public class AiCallOutcomeProcessor {
                 log.warn("ai-call: send rules failed for result {} (non-fatal): {}",
                         rRef.getId(), ex.getMessage());
             }
+            // The call's outcome is in: the lead's engagement engines look within minutes (B4)
+            // rather than at their next scheduled look, days away.
+            engagementWakeService.wakeLead(instRef, leadRef.responseId(), leadRef.userId(),
+                    EngagementWakeService.AI_CALL, false);
         };
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {

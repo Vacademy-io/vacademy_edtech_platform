@@ -389,4 +389,44 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
             """, nativeQuery = true)
     int cancelOpenForMembers(@Param("memberIds") List<String> memberIds, @Param("reason") String reason,
                              @Param("now") Instant now, @Param("keepAiCallPromises") boolean keepAiCallPromises);
+
+    /**
+     * B6: at-most-once claim of a CRM action task for approval (OPEN/ACKED TASK → DISPATCHING), so
+     * two admins clicking approve run it once. The handler then settles it to DONE, or back to OPEN
+     * with the reason when it could not run.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET status = 'DISPATCHING', updated_at = :now
+             WHERE id = :id AND institute_id = :instituteId AND kind = 'TASK'
+               AND status IN ('OPEN', 'ACKED') AND action_type IN (:types)
+            """, nativeQuery = true)
+    int claimCrmAction(@Param("id") String id, @Param("instituteId") String instituteId,
+                       @Param("types") List<String> types, @Param("now") Instant now);
+
+    /** B6/B7: claim a done CRM action for undo (DONE, approved or run on its own → DISPATCHING), once. */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET status = 'DISPATCHING', updated_at = :now
+             WHERE id = :id AND institute_id = :instituteId AND status = 'DONE'
+               AND outcome IN ('ACCEPTED', 'AUTO') AND action_type IN (:types)
+            """, nativeQuery = true)
+    int claimCrmUndo(@Param("id") String id, @Param("instituteId") String instituteId,
+                     @Param("types") List<String> types, @Param("now") Instant now);
+
+    /**
+     * B7 graduation per action type (S7): CRM actions of this type a PERSON approved and that ran
+     * (DONE + ACCEPTED). Ones the engine ran on its own (AUTO) or that were undone never count, and
+     * approvals of messages or of another type never unlock this one.
+     */
+    @Query(value = """
+            SELECT count(*) FROM engagement_action
+            WHERE engine_id = :engineId AND action_type = :actionType
+              AND status = 'DONE' AND outcome = 'ACCEPTED'
+            """, nativeQuery = true)
+    long countApprovedCrmActions(@Param("engineId") String engineId, @Param("actionType") String actionType);
 }

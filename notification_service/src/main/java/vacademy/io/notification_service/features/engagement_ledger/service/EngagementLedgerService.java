@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import vacademy.io.notification_service.constants.NotificationConstants;
 import vacademy.io.notification_service.features.engagement_ledger.dto.LedgerBatchRequest;
 import vacademy.io.notification_service.features.engagement_ledger.dto.LedgerBatchResponse;
+import vacademy.io.notification_service.features.engagement_ledger.repository.EngagementContactRepository;
 import vacademy.io.notification_service.features.notification_log.repository.NotificationLogRepository;
 import vacademy.io.notification_service.features.notification_log.repository.NotificationLogRepository.EmailLedgerRow;
 import vacademy.io.notification_service.features.notification_log.repository.NotificationLogRepository.LatestBodyRow;
@@ -52,6 +53,7 @@ public class EngagementLedgerService {
 
     private final NotificationLogRepository notificationLogRepository;
     private final InstituteInternalService instituteInternalService;
+    private final EngagementContactRepository contactRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${aws.inbound.email.enabled:false}")
@@ -181,6 +183,16 @@ public class EngagementLedgerService {
         // aggregates above cannot see. Report those signals as unobservable rather than letting
         // the brain read permanent silence as "never delivered / never read". Inbound replies
         // are typed (WHATSAPP_MESSAGE_INCOMING) on both pipelines, so reply stays observable.
+        Map<String, EngagementContactRepository.ContactRow> contactByChannel = new HashMap<>();
+        Integer contactDays = request.getContactWindowDays();
+        if (contactDays != null && contactDays > 0 && (!phones.isEmpty() || !emails.isEmpty())) {
+            List<String> channels = new ArrayList<>(phones);
+            channels.addAll(emails);
+            for (EngagementContactRepository.ContactRow row : contactRepository.contactsSince(
+                    instituteId, channels, Instant.now().minus(Duration.ofDays(contactDays)))) {
+                contactByChannel.put(row.getChannelId(), row);
+            }
+        }
         boolean statusObservable = !"WATI".equals(resolveWhatsAppProvider(instituteId));
 
         Map<String, LedgerBatchResponse.SubjectLedger> bySubject = new HashMap<>();
@@ -193,10 +205,27 @@ public class EngagementLedgerService {
                             waByPhone.get(phone), replyByPhone.get(phone), failureByPhone.get(phone),
                             statusObservable))
                     .email(email == null ? null : buildEmailLedger(emailByAddress.get(email)))
+                    .contact(contactDays != null && contactDays > 0
+                            ? contact(contactByChannel.get(phone), contactByChannel.get(email)) : null)
                     .build());
         }
 
         return LedgerBatchResponse.builder().bySubject(bySubject).build();
+    }
+
+    /** Phone and email together: the limit is per person, whichever way they were reached (L10). */
+    static LedgerBatchResponse.ContactLedger contact(EngagementContactRepository.ContactRow byPhone,
+                                                     EngagementContactRepository.ContactRow byEmail) {
+        long touches = 0;
+        Instant lastHuman = null;
+        for (EngagementContactRepository.ContactRow r : new EngagementContactRepository.ContactRow[]{byPhone, byEmail}) {
+            if (r == null) continue;
+            touches += r.getTouches() != null ? r.getTouches() : 0;
+            if (r.getLastHumanSentAt() != null && (lastHuman == null || r.getLastHumanSentAt().isAfter(lastHuman))) {
+                lastHuman = r.getLastHumanSentAt();
+            }
+        }
+        return LedgerBatchResponse.ContactLedger.builder().touches(touches).lastHumanSentAt(lastHuman).build();
     }
 
     private LedgerBatchResponse.ChannelLedger buildWhatsAppLedger(WhatsAppLedgerRow agg,
