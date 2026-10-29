@@ -466,6 +466,24 @@ export const StudentCourses = ({ isSubmissionTab, packageSessionId }: { isSubmis
 };
 
 /**
+ * When the learner was enrolled in this course, from ssigm.enrolled_date. Nothing is shown
+ * when the date is missing or unreadable, so older rows never print "Invalid Date".
+ */
+const EnrolledOnLabel = ({ enrolledDate }: { enrolledDate?: string | null }) => {
+    const { t, i18n } = useTranslation('manageStudentsCourses');
+
+    if (!enrolledDate) return null;
+    const enrolled = new Date(enrolledDate);
+    if (Number.isNaN(enrolled.getTime())) return null;
+
+    return (
+        <span className="text-xs text-neutral-500">
+            {t('enrolledOn', { date: enrolled.toLocaleDateString(i18n.language) })}
+        </span>
+    );
+};
+
+/**
  * How much course access is left, from ssigm.expiry_date. Absent expiry means the plan
  * granted unlimited access, which is a real state worth naming — a blank row would read
  * as "not loaded yet".
@@ -565,7 +583,10 @@ const InProgressSection = ({
                                         {t('course.sessionLabel', { term: sessionTermSingular, name: sessionName })}
                                     </span>
                                 )}
-                                <AccessWindowLabel expiryDate={course.expiry_date} />
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 empty:hidden">
+                                    <EnrolledOnLabel enrolledDate={course.enrolled_date} />
+                                    <AccessWindowLabel expiryDate={course.expiry_date} />
+                                </div>
                                 {/* Progress mini-bar */}
                                 <ProfileMiniBar value={pct} />
                             </button>
@@ -665,6 +686,9 @@ const CourseSection = ({
                                                 {t('course.sessionLabel', { term: sessionTermSingular, name: sessionName })}
                                             </p>
                                         )}
+                                        <div className="mt-0.5 empty:hidden">
+                                            <EnrolledOnLabel enrolledDate={course.enrolled_date} />
+                                        </div>
                                     </div>
                                     {renderBadge(course)}
                                 </div>

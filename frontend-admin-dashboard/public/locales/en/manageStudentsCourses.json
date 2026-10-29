@@ -33,6 +33,7 @@
         "unnamed": "Unnamed Course",
         "sessionLabel": "{{term}}: {{name}}"
     },
+    "enrolledOn": "Enrolled on {{date}}",
     "accessWindow": {
         "unlimited": "Access: unlimited",
         "expired": "Access expired {{date}}",
