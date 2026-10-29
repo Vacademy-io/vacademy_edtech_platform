@@ -163,8 +163,9 @@ public class EngagementEngineService {
                             .forEach(uid -> raw.add(new Target(uid, null, null)));
                     case "AUDIENCE" -> dao.leadsByAudience(id, instituteId).forEach(row -> {
                         String userId = (String) row[1];
-                        boolean converted = row.length > 3 && "CONVERTED".equals(row[3]);
-                        if (converted && (userId == null || !targetsLearners)) return;
+                        // Converted or Lost / Not interested (L2): the lead's pipeline is over.
+                        boolean closed = row.length > 3 && ("CONVERTED".equals(row[3]) || "LOST".equals(row[3]));
+                        if (closed && (userId == null || !targetsLearners)) return;
                         raw.add(new Target(userId, (String) row[0], row.length > 2 ? (String) row[2] : null));
                     });
                     case "USER" -> userSelectorIds.add(id);   // validated below against the institute

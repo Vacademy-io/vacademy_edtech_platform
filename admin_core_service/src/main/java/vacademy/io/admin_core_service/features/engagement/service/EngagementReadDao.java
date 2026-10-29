@@ -287,7 +287,8 @@ public class EngagementReadDao {
      * user-keyed opt-out path — this is their only consent gate at enrollment.
      * phone10 is the last 10 digits of the lead's phone (null when it has fewer digits or is one
      * digit repeated, a placeholder), so the reconcile can collapse two rows of the same person.
-     * The 4th column says the CRM marked the lead Converted (pipeline status or profile).
+     * The 4th column says the CRM marked the lead Converted (pipeline status or profile), or Lost /
+     * Not interested ('LOST').
      * Oldest rows first, so the row kept for a phone stays the same across reconciles.
      */
     public List<Object[]> leadsByAudience(String audienceId, String instituteId) {
@@ -297,7 +298,9 @@ public class EngagementReadDao {
                        CASE WHEN length(d.digits) >= 10 AND d.digits !~ '^(.)\\1*$'
                             THEN RIGHT(d.digits, 10) END AS phone10,
                        CASE WHEN ls.status_key = 'CONVERTED' OR ulp.conversion_status = 'CONVERTED'
-                            THEN 'CONVERTED' END AS lead_stage
+                            THEN 'CONVERTED'
+                            WHEN ls.status_key IN ('LOST', 'NOT_INTERESTED')
+                            THEN 'LOST' END AS lead_stage
                 FROM audience_response ar
                 JOIN audience a ON a.id = ar.audience_id
                 CROSS JOIN LATERAL (SELECT regexp_replace(COALESCE(ar.parent_mobile, ''), '[^0-9]', '', 'g') AS digits) d
@@ -358,7 +361,8 @@ public class EngagementReadDao {
      * The opt-out list above is keyed by user_id, so an unconverted lead (no user_id) is invisible
      * to it; the lead row itself carries its consent (overall_status) and whether the admin
      * removed it (audience_status). lead_stage is 'CONVERTED' when the CRM marked the lead
-     * Converted (pipeline status or profile), else null. A row missing from the result no longer
+     * Converted (pipeline status or profile), 'LOST' when its pipeline status is Lost or Not
+     * interested (L2), else null. A row missing from the result no longer
      * exists in this institute.
      */
     public List<Object[]> leadConsentRows(String instituteId, java.util.Collection<String> audienceResponseIds) {
@@ -367,7 +371,9 @@ public class EngagementReadDao {
         List<Object[]> rows = em.createNativeQuery("""
                 SELECT ar.id, ar.overall_status, ar.audience_status,
                        CASE WHEN ls.status_key = 'CONVERTED' OR ulp.conversion_status = 'CONVERTED'
-                            THEN 'CONVERTED' END AS lead_stage
+                            THEN 'CONVERTED'
+                            WHEN ls.status_key IN ('LOST', 'NOT_INTERESTED')
+                            THEN 'LOST' END AS lead_stage
                 FROM audience_response ar
                 JOIN audience a ON a.id = ar.audience_id
                 LEFT JOIN lead_status ls ON ls.id = ar.lead_status_id

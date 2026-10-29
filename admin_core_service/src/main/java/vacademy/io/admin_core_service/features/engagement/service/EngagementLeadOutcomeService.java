@@ -164,8 +164,8 @@ public class EngagementLeadOutcomeService {
     // ==================== Converted ====================
 
     /**
-     * Take members whose lead was just marked Converted out of their engines, within one exit
-     * sweep instead of at their next decision. The lead row is re-read first (the status may have
+     * Take members whose lead was just marked Converted, Lost or Not interested (L1, L2) out of
+     * their engines, within one exit sweep instead of at their next decision. The lead row is re-read first (the status may have
      * moved again), the learner-engine rule of {@link PolicyGate#effectiveLeadBlock} applies, and
      * AI-call promises still go out.
      *
@@ -179,22 +179,30 @@ public class EngagementLeadOutcomeService {
                 .filter(m -> m.getAudienceResponseId() != null)
                 .collect(Collectors.groupingBy(EngagementMember::getInstituteId));
         List<String> leaving = new ArrayList<>();
+        List<String> lost = new ArrayList<>();
         for (Map.Entry<String, List<EngagementMember>> inst : byInstitute.entrySet()) {
             Map<String, PolicyGate.LeadBlock> blocked = policyGate.blockedLeads(inst.getKey(),
                     inst.getValue().stream().map(EngagementMember::getAudienceResponseId).collect(Collectors.toSet()));
             for (EngagementMember m : inst.getValue()) {
                 if (!"ACTIVE".equals(m.getStatus()) && !"PAUSED".equals(m.getStatus())) continue;
                 PolicyGate.LeadBlock block = blocked.get(m.getAudienceResponseId());
-                if (block != PolicyGate.LeadBlock.CONVERTED) continue;
+                if (!PolicyGate.isLeadOutcome(block)) continue;
                 if (PolicyGate.effectiveLeadBlock(block, engines.get(m.getEngineId()), m) != null) {
-                    leaving.add(m.getId());
+                    (block == PolicyGate.LeadBlock.LOST ? lost : leaving).add(m.getId());
                 }
             }
         }
-        if (leaving.isEmpty()) return 0;
-        int left = memberRepository.exitMembers(leaving, now);
-        actionRepository.cancelOpenForMembers(leaving,
-                "Cancelled: this lead was marked Converted in the CRM.", now, true);
+        int left = 0;
+        if (!leaving.isEmpty()) {
+            left += memberRepository.exitMembers(leaving, now);
+            actionRepository.cancelOpenForMembers(leaving,
+                    "Cancelled: this lead was marked Converted in the CRM.", now, true);
+        }
+        if (!lost.isEmpty()) {
+            left += memberRepository.exitMembers(lost, now);
+            actionRepository.cancelOpenForMembers(lost,
+                    "Cancelled: this lead was marked Lost or Not interested in the CRM.", now, true);
+        }
         return left;
     }
 

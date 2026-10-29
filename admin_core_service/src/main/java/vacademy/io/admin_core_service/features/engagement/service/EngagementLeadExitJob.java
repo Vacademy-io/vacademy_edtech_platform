@@ -52,7 +52,7 @@ public class EngagementLeadExitJob {
             }
             List<String> converted = crmDao.membersOfLeadsConvertedSince(institutes, since);
             int left = outcomeService.exitConverted(converted, now);
-            if (left > 0) log.info("Lead exit sweep: {} member(s) of converted leads left their engines", left);
+            if (left > 0) log.info("Lead exit sweep: {} member(s) of converted or lost leads left their engines", left);
             lastRunStart.set(now);
         } catch (Exception e) {
             // Keep the old cursor: the next run re-reads this window.

@@ -61,6 +61,8 @@ public class EngagementWakeService {
     public static final String CALL_ANALYZED = "CALL_ANALYZED";
     /** Not a wake: a lead that just landed is enrolled into the engines targeting its list. */
     public static final String NEW_LEAD = "NEW_LEAD";
+    /** Not a wake (L7): a lead moved to another list leaves the old list's engines, joins the new one's. */
+    public static final String LEAD_MOVED = "LEAD_MOVED";
 
     /** One real thing that happened to one lead: never a bulk edit, so never capped. */
     static final Set<String> UNCAPPED = Set.of(AI_CALL, CALL_ANALYZED, FOLLOWUP_OVERDUE);
@@ -86,6 +88,7 @@ public class EngagementWakeService {
     private final EngagementWakeDao dao;
     private final EngagementMemberRepository memberRepository;
     private final EngagementEngineService engineService;
+    private final EngagementLeadMoveService moveService;
 
     private final ConcurrentLinkedQueue<Queued> queue = new ConcurrentLinkedQueue<>();
     private final AtomicInteger queued = new AtomicInteger();
@@ -141,6 +144,12 @@ public class EngagementWakeService {
                 "SYSTEM:" + reason));
     }
 
+    /** L7: the lead row now sits in another list (its audience_id was changed and is being saved). */
+    public void leadMoved(String instituteId, String leadRowId, String actorUserId) {
+        request(new WakeRequest(instituteId, leadRowId, null, null, null, null, LEAD_MOVED, false,
+                actorUserId != null ? "user:" + actorUserId : "SYSTEM:" + LEAD_MOVED));
+    }
+
     /** ai_service finished analysing a call (whether a person or an AI agent made it is read from the call). */
     public void callAnalyzed(String instituteId, String callLogId) {
         request(new WakeRequest(instituteId, null, null, null, null, callLogId, CALL_ANALYZED, true,
@@ -187,14 +196,17 @@ public class EngagementWakeService {
         int applied = 0;
         for (Map.Entry<String, Map<String, WakeRequest>> g : groups.entrySet()) {
             List<WakeRequest> leads = new ArrayList<>(g.getValue().values());
-            if (overBulkCap(g.getKey(), leads, nowMs)) {
+            boolean bulk = overBulkCap(g.getKey(), leads, nowMs);
+            if (bulk) {
                 log.info("Engagement wake: {} leads from one source ({}) within {} min — a bulk change, none woken; "
                         + "each sees it at its next scheduled look", leads.size(), g.getKey(), bulkWindowMinutes);
-                continue;
             }
             for (WakeRequest r : leads) {
+                // A bulk list move still takes the leads out of the old list's engines (no LLM, and it
+                // stops messages meant for the old list); only the joins wait for the reconcile.
+                if (bulk && !LEAD_MOVED.equals(r.reason())) continue;
                 try {
-                    applied += apply(r, now) ? 1 : 0;
+                    applied += apply(r, now, bulk) ? 1 : 0;
                 } catch (Exception e) {
                     log.warn("Engagement wake failed ({} on {}): {}", r.reason(), r.subjectKey(), e.getMessage());
                 }
@@ -236,9 +248,14 @@ public class EngagementWakeService {
         return false;
     }
 
-    /** Resolve one request to members and wake them (or enrol a new lead). True if anyone was. */
     boolean apply(WakeRequest r, Instant now) {
+        return apply(r, now, false);
+    }
+
+    /** Resolve one request to members and wake them (or enrol / move a lead). True if anyone was. */
+    boolean apply(WakeRequest r, Instant now, boolean bulk) {
         if (NEW_LEAD.equals(r.reason())) return enrollNewLead(r);
+        if (LEAD_MOVED.equals(r.reason())) return moveLead(r, now, !bulk);
 
         String instituteId = r.instituteId();
         String reason = r.reason();
@@ -298,6 +315,15 @@ public class EngagementWakeService {
         for (EngagementWakeDao.LeadRow row : dao.leadRows(r.leadRowId(), null)) {
             if (row.audienceId() == null || row.instituteId() == null) continue;
             any |= engineService.enrollNewLead(row.instituteId(), row.audienceId(), row.id(), row.userId()) > 0;
+        }
+        return any;
+    }
+
+    private boolean moveLead(WakeRequest r, Instant now, boolean enroll) {
+        boolean any = false;
+        for (EngagementWakeDao.LeadRow row : dao.leadRows(r.leadRowId(), null)) {
+            if (row.audienceId() == null || row.instituteId() == null) continue;
+            any |= moveService.leadMoved(row.instituteId(), row.id(), row.audienceId(), row.userId(), enroll, now) > 0;
         }
         return any;
     }

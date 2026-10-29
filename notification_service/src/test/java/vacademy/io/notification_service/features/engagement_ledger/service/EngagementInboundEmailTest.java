@@ -43,7 +43,7 @@ class EngagementInboundEmailTest {
     @DisplayName("inbound-since: email rows only with includeEmail, carrying sender, subject, new text and Message-ID")
     void inboundSinceAddsEmails() {
         NotificationLogRepository repo = mock(NotificationLogRepository.class);
-        EngagementLedgerService service = new EngagementLedgerService(repo, mock(InstituteInternalService.class));
+        EngagementLedgerService service = new EngagementLedgerService(repo, mock(InstituteInternalService.class), mock(vacademy.io.notification_service.features.engagement_ledger.repository.EngagementContactRepository.class));
         NotificationLogRepository.InboundEmailRow row = mock(NotificationLogRepository.InboundEmailRow.class);
         when(row.getFromAddress()).thenReturn(" Asha@Example.com ");
         when(row.getSubject()).thenReturn("Re: Course details");
@@ -72,7 +72,7 @@ class EngagementInboundEmailTest {
     @DisplayName("inbound-since: without the flag the response is WhatsApp only, as before")
     void defaultIsWhatsAppOnly() {
         NotificationLogRepository repo = mock(NotificationLogRepository.class);
-        EngagementLedgerService service = new EngagementLedgerService(repo, mock(InstituteInternalService.class));
+        EngagementLedgerService service = new EngagementLedgerService(repo, mock(InstituteInternalService.class), mock(vacademy.io.notification_service.features.engagement_ledger.repository.EngagementContactRepository.class));
         service.inboundSince("i1", Instant.now());
         verify(repo).findInboundRepliesSince(eq("i1"), any());
         verify(repo, never()).findInboundEmailsSince(any(), any());

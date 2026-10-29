@@ -65,9 +65,15 @@ public class PolicyGate {
      * (overall_status). EXITED: the admin removed the lead row (audience_status INACTIVE) or it
      * is gone; the nightly reconcile would exit it too, and revives it if the row comes back.
      * CONVERTED: the CRM marked the lead Converted; it stops only members the engine reaches as a
-     * lead (see {@link #effectiveLeadBlock}), and the member leaves as EXITED.
+     * lead (see {@link #effectiveLeadBlock}), and the member leaves as EXITED. LOST: the CRM marked
+     * the lead Lost or Not interested (L2); handled exactly like CONVERTED.
      */
-    public enum LeadBlock { OPTED_OUT, EXITED, CONVERTED }
+    public enum LeadBlock { OPTED_OUT, EXITED, CONVERTED, LOST }
+
+    /** The lead's pipeline ended (Converted or Lost): stops the engine's own sends, not a human's. */
+    public static boolean isLeadOutcome(LeadBlock block) {
+        return block == LeadBlock.CONVERTED || block == LeadBlock.LOST;
+    }
 
     private static final ObjectMapper AUDIENCE_READER = new ObjectMapper();
 
@@ -78,7 +84,7 @@ public class PolicyGate {
      * engine must not lose the learners it exists for.
      */
     public static LeadBlock effectiveLeadBlock(LeadBlock block, EngagementEngine engine, EngagementMember member) {
-        if (block != LeadBlock.CONVERTED) return block;
+        if (!isLeadOutcome(block)) return block;
         return member == null || stopsAsLead(engine, member.getUserId()) ? block : null;
     }
 
@@ -122,6 +128,8 @@ public class PolicyGate {
                 out.put(id, LeadBlock.EXITED);
             } else if (row.length > 3 && "CONVERTED".equals(row[3])) {
                 out.put(id, LeadBlock.CONVERTED);
+            } else if (row.length > 3 && "LOST".equals(row[3])) {
+                out.put(id, LeadBlock.LOST);
             }
         }
         for (String id : ids) {

@@ -115,6 +115,21 @@ public class EngagementWakeDao {
     /** Matches no id (ids are UUIDs) and no phone (the phone expression is digits only). */
     static final String NO_MATCH = "-";
 
+    /** Live members (ACTIVE or PAUSED) of this lead row in the institute's engines, any engine status. */
+    public List<String> liveMemberIdsOfLeadRow(String instituteId, String leadRowId) {
+        List<?> rows = em.createNativeQuery("""
+                SELECT m.id FROM engagement_member m
+                WHERE m.institute_id = :instituteId AND m.audience_response_id = :leadRowId
+                  AND m.status IN ('ACTIVE', 'PAUSED')
+                """)
+                .setParameter("instituteId", instituteId)
+                .setParameter("leadRowId", leadRowId)
+                .getResultList();
+        List<String> out = new ArrayList<>();
+        for (Object r : rows) out.add(r.toString());
+        return out;
+    }
+
     private static Collection<String> orNoMatch(Collection<String> c) {
         return c.isEmpty() ? List.of(NO_MATCH) : c;
     }

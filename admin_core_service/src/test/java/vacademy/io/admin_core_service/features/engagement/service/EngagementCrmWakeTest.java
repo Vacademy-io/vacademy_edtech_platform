@@ -383,7 +383,7 @@ class EngagementCrmWakeTest {
             dao = mock(EngagementWakeDao.class);
             members = mock(EngagementMemberRepository.class);
             engines = mock(EngagementEngineService.class);
-            service = new EngagementWakeService(dao, members, engines);
+            service = new EngagementWakeService(dao, members, engines, mock(EngagementLeadMoveService.class));
             t0 = System.currentTimeMillis();
             when(dao.leadRows(anyString(), any())).thenAnswer(inv -> List.of(new EngagementWakeDao.LeadRow(
                     inv.getArgument(0), INST, "list-1", null, null, "9876543210")));

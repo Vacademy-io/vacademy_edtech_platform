@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementAction;
@@ -54,6 +55,10 @@ public class EngagementDecisionService {
     private final EngagementPromptVersionRepository promptRepository;
     private final EngagementTemplateProposalRepository templateProposalRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /** B5 coordination with the rest of the CRM; field-injected so it stays optional in unit tests. */
+    @Autowired(required = false)
+    private EngagementCoordinationService coordination;
 
     @Value("${engagement.recent-window-days:14}")
     private int recentWindowDays;
@@ -124,11 +129,15 @@ public class EngagementDecisionService {
         whatsappTemplates.forEach(t -> templatesByName.put(t.name(), t));
 
         boolean dryRun = "DRY_RUN".equalsIgnoreCase(engine.getStatus());
+        Map<String, EngagementCoordinationService.Verdict> coordinated = coordination != null
+                ? coordination.forCohort(engine.getInstituteId(), members, bundle, Instant.now())
+                : Map.of();
         int decisions = 0;
         for (EngagementMember member : members) {
             try {
                 decisions += decideOne(engine, prompt, member, bundle, optedOut, blockedLeads, dryRun,
-                        enabledChannels, whatsappTemplates, templatesByName) ? 1 : 0;
+                        enabledChannels, whatsappTemplates, templatesByName,
+                        EngagementCoordinationService.of(coordinated, member.getId())) ? 1 : 0;
             } catch (Exception e) {
                 // Decision failed AFTER we claimed a lease. Push it out with exponential backoff
                 // so an LLM/provider outage doesn't re-hammer every 15 min (the lease alone would
@@ -147,7 +156,8 @@ public class EngagementDecisionService {
                               boolean dryRun,
                               Set<String> enabledChannels,
                               List<EngagementBrainClient.TemplateOption> whatsappTemplates,
-                              Map<String, EngagementBrainClient.TemplateOption> templatesByName) {
+                              Map<String, EngagementBrainClient.TemplateOption> templatesByName,
+                              EngagementCoordinationService.Verdict coordinated) {
         Instant now = Instant.now();
 
         // 0. Lease re-check: a serial cohort can outrun its 15-min lease; if another pod has
@@ -208,6 +218,16 @@ public class EngagementDecisionService {
             return false;
         }
 
+        // 1d. One contact limit across all systems (B5 / S1): the person already heard enough this
+        // week from the engine, workflows, announcements, the chatbot and AI calls together. No LLM;
+        // look again tomorrow, like the engine's own cap.
+        if (coordinated.contactLimitReached()) {
+            log.debug("Member {}: {} touches from all systems this window — not deciding", member.getId(),
+                    coordinated.touches());
+            rescheduleCapped(member, now);
+            return false;
+        }
+
         // 2. Deterministic wake gate — zero tokens for most members.
         Map<String, JsonNode> payloads = bundle.payloadsFor(member.getId());
         String fingerprint = quantizedFingerprint(payloads);
@@ -227,7 +247,8 @@ public class EngagementDecisionService {
 
         // 3. The LLM.
         EngagementBrainClient.Decision d = brain.decide(
-                engine, prompt.getCompiledText(), withWhyNow(member, bundle.renderFor(member.getId())), now,
+                engine, prompt.getCompiledText(),
+                withCoordination(coordinated, withWhyNow(member, bundle.renderFor(member.getId()))), now,
                 enabledChannels, whatsappTemplates);
 
         // 4. Persist the outcome — TASK (or SIMULATED for DRY_RUN) or NO_OP.
@@ -282,6 +303,7 @@ public class EngagementDecisionService {
             boolean autoSend = !dryRun
                     && !everReplied(bundle, member)
                     && !humanTouchedSinceLastDecision(member)
+                    && coordinated.hold() == null      // B5: counsellor active, follow-up today, do-not-automate
                     && chosenChannel != null
                     && !"AI_CALL".equals(chosenChannel)   // AI calls are task-only; never auto-send them
                     && channelAutoEnabled(engine, chosenChannel)
@@ -574,6 +596,17 @@ public class EngagementDecisionService {
             case EngagementWakeService.PAYMENT -> "a payment was received from this lead";
             default -> "CRM activity on this lead";
         };
+    }
+
+    /** B5: when the decision may only draft, say why, so the draft is written for the counsellor. */
+    static Map<String, String> withCoordination(EngagementCoordinationService.Verdict v, Map<String, String> blocks) {
+        String why = EngagementCoordinationService.explain(v.hold());
+        if (why == null) return blocks;
+        Map<String, String> out = new java.util.LinkedHashMap<>();
+        out.put("coordination", "HOLD: " + why + ". Anything you propose goes to the counsellor's inbox as a"
+                + " draft, not to the lead; prefer helping the counsellor over a new message.");
+        out.putAll(blocks);
+        return out;
     }
 
     /** A note, call outcome, status change... (B4) landed after the last decision began. */

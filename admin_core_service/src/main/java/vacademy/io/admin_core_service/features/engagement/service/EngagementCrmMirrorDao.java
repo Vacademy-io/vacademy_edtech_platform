@@ -63,7 +63,8 @@ public class EngagementCrmMirrorDao {
 
     /**
      * Members of live engines whose lead was marked Converted since the cursor: its lead row moved
-     * to the Converted status (status history, indexed on institute and target status), or the
+     * to the Converted status (status history, indexed on institute and target status), or to Lost
+     * / Not interested (L2: the pipeline ended the other way), or the
      * person's lead profile was converted (enrolment; indexed on institute and conversion status).
      * A run reads only the recent conversions, never every member. The AI-call engine is left out:
      * its members are held on purpose and a promise made on a call still goes out.
@@ -79,7 +80,8 @@ public class EngagementCrmMirrorDao {
                   JOIN engagement_engine e ON e.id = m.engine_id
                  WHERE h.institute_id IN (:institutes)
                    AND h.to_status_id IN (SELECT ls.id FROM lead_status ls
-                                           WHERE ls.institute_id IN (:institutes) AND ls.status_key = 'CONVERTED')
+                                           WHERE ls.institute_id IN (:institutes)
+                                             AND ls.status_key IN ('CONVERTED', 'LOST', 'NOT_INTERESTED'))
                    AND h.changed_at >= :since
                    AND m.status IN ('ACTIVE', 'PAUSED')
                    AND e.status IN ('ACTIVE', 'DRY_RUN')

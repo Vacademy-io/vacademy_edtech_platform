@@ -46,10 +46,17 @@ public class EngagementInternalClients {
 
     /** subjects: [{key(memberId), userId?, phone?, email?}] → LedgerBatchResponse JSON. */
     public JsonNode ledgerBatch(String instituteId, List<Map<String, String>> subjects, int recentWindowDays) {
-        Map<String, Object> body = Map.of(
+        return ledgerBatch(instituteId, subjects, recentWindowDays, null);
+    }
+
+    /** contactWindowDays (B5): also return each subject's cross-system contact count for that window. */
+    public JsonNode ledgerBatch(String instituteId, List<Map<String, String>> subjects, int recentWindowDays,
+                                Integer contactWindowDays) {
+        Map<String, Object> body = new java.util.HashMap<>(Map.of(
                 "instituteId", instituteId,
                 "recentWindowDays", recentWindowDays,
-                "subjects", subjects);
+                "subjects", subjects));
+        if (contactWindowDays != null) body.put("contactWindowDays", contactWindowDays);
         return post(notificationServerBaseUrl,
                 "/notification-service/internal/v1/engagement/ledger-batch", body, "ledger-batch");
     }

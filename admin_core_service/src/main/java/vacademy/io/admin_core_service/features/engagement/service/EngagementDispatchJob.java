@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.engagement.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -67,6 +68,10 @@ public class EngagementDispatchJob {
     private final EngagementDispatcher dispatcher;
     private final CreditClient creditClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /** B5: do-not-automate and the counsellor hold, re-checked at send time; optional in unit tests. */
+    @Autowired(required = false)
+    private EngagementCoordinationService coordination;
 
     @Value("${engagement.dispatch.batch:100}")
     private int batch;
@@ -139,6 +144,16 @@ public class EngagementDispatchJob {
                 || !channelAutoEnabled(engine, action.getChannel())) {
             actionRepository.demoteSendToTask(action.getId(),
                     "Autonomy off for this channel — sent to the inbox for review.", now);
+            return false;
+        }
+        // B5: flagged do-not-automate, or a counsellor got in touch, after this was decided. To the
+        // inbox, not withdrawn: the draft may still be right, a person decides. An AI-call promise
+        // goes as promised.
+        String hold = coordination != null && !EngagementAction.SOURCE_AI_CALL.equals(action.getSource())
+                ? coordination.sendHold(member, now) : null;
+        if (hold != null) {
+            actionRepository.demoteSendToTask(action.getId(),
+                    "Held for the counsellor: " + EngagementCoordinationService.explain(hold) + ".", now);
             return false;
         }
 
@@ -285,6 +300,9 @@ public class EngagementDispatchJob {
         }
         if (block == PolicyGate.LeadBlock.CONVERTED && !promise) {
             return "Not sent: this lead was marked Converted in the CRM after the decision.";
+        }
+        if (block == PolicyGate.LeadBlock.LOST && !promise) {
+            return "Not sent: this lead was marked Lost or Not interested in the CRM after the decision.";
         }
         return null;
     }

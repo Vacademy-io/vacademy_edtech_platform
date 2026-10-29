@@ -97,10 +97,10 @@ public class EngagementDispatcher {
             }
             // The member row only learns of a CRM opt-out at the next decision, so a task drafted for
             // a lead must re-read the lead row before a human sends it (F2 / L3). An AI-call promise
-            // stops only on an opt-out, as in the dispatch job. A lead marked Converted stops the
-            // engine's own sends, not a human who chooses to send this draft.
+            // stops only on an opt-out, as in the dispatch job. A lead marked Converted or Lost stops
+            // the engine's own sends, not a human who chooses to send this draft.
             PolicyGate.LeadBlock leadBlock = policyGate.leadBlock(action.getInstituteId(), member.getAudienceResponseId());
-            if (leadBlock != PolicyGate.LeadBlock.CONVERTED
+            if (!PolicyGate.isLeadOutcome(leadBlock)
                     && EngagementDispatchJob.leadNotSendableReason(leadBlock, action) != null) {
                 throw new SendRejectedException(
                         "This lead has opted out or was removed in the CRM, so nothing was sent.");
