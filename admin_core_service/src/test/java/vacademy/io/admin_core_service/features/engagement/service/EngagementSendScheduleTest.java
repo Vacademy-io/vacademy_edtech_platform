@@ -95,6 +95,28 @@ class EngagementSendScheduleTest {
         }
 
         @Test
+        @DisplayName("'reach them right away' looks at people added together within the hour")
+        void enrolNow() {
+            EngagementSendSchedule s = EngagementSendSchedule.of(MON_SAT_11.replace("}", ",\"firstTouch\":\"IMMEDIATE\"}"), OM);
+            Instant now = ist(2, 15, 0);
+            for (int i = 0; i < 50; i++) {
+                Instant wake = s.enrolWake(48, now);
+                assertTrue(wake.isAfter(now) && !wake.isAfter(now.plusSeconds(3600)), wake.toString());
+            }
+        }
+
+        @Test
+        @DisplayName("'wait for the send time' (and engines saved before the choice) keep the window/cadence spread")
+        void enrolWaitOrLegacy() {
+            EngagementSendSchedule wait = EngagementSendSchedule.of(MON_SAT_11.replace("}", ",\"firstTouch\":\"SCHEDULED\"}"), OM);
+            Instant w = wait.enrolWake(48, ist(2, 15, 0));
+            assertFalse(w.isBefore(ist(3, 11, 0)), w.toString());
+            EngagementSendSchedule legacy = EngagementSendSchedule.of(MON_SAT_11, OM);
+            Instant l = legacy.enrolWake(48, ist(2, 15, 0));
+            assertFalse(l.isBefore(ist(3, 11, 0)), "no firstTouch saved: window, not right away " + l);
+        }
+
+        @Test
         @DisplayName("firstTouch SCHEDULED is read")
         void firstTouchScheduled() {
             assertFalse(EngagementSendSchedule.of("{\"firstTouch\":\"SCHEDULED\"}", OM).firstTouchImmediate());

@@ -84,7 +84,7 @@
         "day": "Day {{n}}",
         "firstTouch": "First touch",
         "followUp": "Follow-up {{n}}",
-        "withinMinutes": "Within 15 min of joining",
+        "withinMinutes": "Right after joining",
         "firstTouchText": "The AI picks the best of {{channels}} for this person and introduces the institute.",
         "followUpText": "If they haven't replied or booked yet, the AI follows up with a new angle.",
         "andSoOn": "And so on, {{cadence}}, until one of the goals below is met. When someone never responds, the engine slowly waits longer between touches (at most once a month).",

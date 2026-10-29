@@ -25,7 +25,8 @@ import java.util.Set;
  * </ul>
  */
 public record EngagementSendSchedule(ZoneId zone, Integer sendHour, int sendMinute,
-                                     Set<DayOfWeek> days, boolean firstTouchImmediate) {
+                                     Set<DayOfWeek> days, boolean firstTouchImmediate,
+                                     boolean firstTouchChosen) {
 
     /** Same default as the institute quiet-hours floor (PolicyGate). */
     public static final ZoneId DEFAULT_ZONE = ZoneId.of("Asia/Kolkata");
@@ -34,7 +35,7 @@ public record EngagementSendSchedule(ZoneId zone, Integer sendHour, int sendMinu
     public static final Duration WINDOW = Duration.ofHours(1);
 
     public static final EngagementSendSchedule NONE =
-            new EngagementSendSchedule(DEFAULT_ZONE, null, 0, EnumSet.allOf(DayOfWeek.class), true);
+            new EngagementSendSchedule(DEFAULT_ZONE, null, 0, EnumSet.allOf(DayOfWeek.class), true, false);
 
     public static EngagementSendSchedule of(String quietHoursJson, ObjectMapper objectMapper) {
         if (quietHoursJson == null || quietHoursJson.isBlank()) return NONE;
@@ -72,7 +73,7 @@ public record EngagementSendSchedule(ZoneId zone, Integer sendHour, int sendMinu
         }
         if (days.isEmpty()) days = EnumSet.allOf(DayOfWeek.class);
         boolean immediate = !"SCHEDULED".equalsIgnoreCase(qh.path("firstTouch").asText("IMMEDIATE"));
-        return new EngagementSendSchedule(zone, hour, minute, days, immediate);
+        return new EngagementSendSchedule(zone, hour, minute, days, immediate, qh.hasNonNull("firstTouch"));
     }
 
     public boolean hasSendTime() {
@@ -112,6 +113,23 @@ public record EngagementSendSchedule(ZoneId zone, Integer sendHour, int sendMinu
             if (days.contains(next.getDayOfWeek())) return next.toInstant();
         }
         return day.plusDays(1).toInstant();
+    }
+
+    /** Spread of first looks for people added together to an engine that reaches them right away. */
+    public static final Duration ENROL_NOW_SPREAD = Duration.ofHours(1);
+
+    /**
+     * First look for someone added by an enrolment run ("Add people now", nightly reconcile).
+     * An engine whose admin chose "reach them right away" looks within the hour (spread, so a big
+     * list is not one burst); otherwise {@link #firstWake}. Engines saved before the choice
+     * existed keep the old spread across the cadence.
+     */
+    public Instant enrolWake(int cadenceHours, Instant now) {
+        if (firstTouchChosen && firstTouchImmediate) {
+            return now.plus(Duration.ofMinutes(
+                    java.util.concurrent.ThreadLocalRandom.current().nextLong(1, ENROL_NOW_SPREAD.toMinutes() + 1)));
+        }
+        return firstWake(cadenceHours, now);
     }
 
     /**

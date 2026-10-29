@@ -80,7 +80,7 @@
         "dayAria": "Send on {{day}}",
         "firstTouch": "When someone new joins",
         "firstTouchNow": "Reach them right away",
-        "firstTouchNowHint": "Within 15 minutes, inside the allowed hours and days. Best for new leads.",
+        "firstTouchNowHint": "A new lead within 15 minutes; a whole list you add within the hour. Always inside the allowed hours and days.",
         "firstTouchWait": "Wait for the send time",
         "firstTouchWaitHint": "Their first message goes out in the next send window.",
         "goalTitle": "Goal",

@@ -228,7 +228,7 @@ public class EngagementEngineService {
                     UUID.randomUUID().toString(), engine.getId(), instituteId,
                     t.userId(), t.audienceResponseId(),
                     EngagementSendSchedule.of(engine.getQuietHours(), objectMapper)
-                            .firstWake(engine.getCadenceHours(), Instant.now()),
+                            .enrolWake(engine.getCadenceHours(), Instant.now()),
                     runId, holdoutPct);
         }
         // Exit anyone not stamped by this run — unconditional, so an emptied audience exits all.
