@@ -171,6 +171,93 @@ class EngagementMeetingIntentTest {
     }
 
     @Nested
+    @DisplayName("booking from a reply")
+    class Booking {
+        private EngagementMeetingIntentService svc;
+        private vacademy.io.admin_core_service.features.booking.service.MeetingBookingService meetings;
+        private EngagementActionRepository actions;
+        private EngagementEngine engine;
+
+        @BeforeEach
+        void setUp() {
+            svc = spy(new EngagementMeetingIntentService());
+            meetings = mock(vacademy.io.admin_core_service.features.booking.service.MeetingBookingService.class);
+            actions = mock(EngagementActionRepository.class);
+            BookingPageService pages = mock(BookingPageService.class);
+            var responses = mock(vacademy.io.admin_core_service.features.audience.repository.AudienceResponseRepository.class);
+            ReflectionTestUtils.setField(svc, "meetingBookingService", meetings);
+            ReflectionTestUtils.setField(svc, "actionRepository", actions);
+            ReflectionTestUtils.setField(svc, "bookingPageService", pages);
+            ReflectionTestUtils.setField(svc, "audienceResponseRepository", responses);
+            ReflectionTestUtils.setField(svc, "publicBookingService", mock(PublicBookingService.class));
+            BookingPage page = new BookingPage();
+            page.setId("p1");
+            page.setInstituteId("i1");
+            page.setStatus("ACTIVE");
+            page.setSlug("demo");
+            page.setTitle("Demo");
+            page.setHostUserId("host");
+            page.setTimezone("Asia/Kolkata");
+            when(pages.getOrThrow("p1")).thenReturn(page);
+            var lead = new vacademy.io.admin_core_service.features.audience.entity.AudienceResponse();
+            lead.setParentName("Priyanshu Mishra");
+            lead.setParentEmail("priyanshu@vidyayatan.com");
+            when(responses.findById("r1")).thenReturn(Optional.of(lead));
+            when(actions.save(any())).thenAnswer(inv -> inv.getArgument(0));
+            engine = new EngagementEngine();
+            engine.setId("e1");
+            engine.setInstituteId("i1");
+            engine.setChannels("{\"EMAIL\":{\"enabled\":true},\"bookingPageId\":\"p1\"}");
+        }
+
+        @Test
+        @DisplayName("a clear free time: the engine books it on its page and records BOOKED")
+        void books() throws Exception {
+            String t = Instant.now().plus(4, ChronoUnit.DAYS).atOffset(java.time.ZoneOffset.ofHoursMinutes(5, 30))
+                    .withHour(11).withMinute(0).withSecond(0).withNano(0).toString();
+            doReturn(new EngagementMeetingIntentService.MeetingRequest("BOOK", t))
+                    .when(svc).readBookingRequest(any(), any(), any(), any());
+            assertTrue(svc.bookFromReply(engine, "m1", null, "r1", "EMAIL", "Please book the demo for Monday 11 am"));
+            var req = ArgumentCaptor.forClass(vacademy.io.admin_core_service.features.booking.dto.MeetingBookingRequestDTO.class);
+            verify(meetings).createBooking(req.capture(), any());
+            assertEquals("p1", req.getValue().getBookingPageId());
+            assertEquals("r1", req.getValue().getAudienceResponseId());
+            assertEquals("priyanshu@vidyayatan.com", req.getValue().getInviteeEmail());
+            ArgumentCaptor<EngagementAction> saved = ArgumentCaptor.forClass(EngagementAction.class);
+            verify(actions, atLeastOnce()).save(saved.capture());
+            assertEquals("BOOKED", saved.getValue().getOutcome());
+        }
+
+        @Test
+        @DisplayName("no booking page on the engine: not handled, the normal reply flow takes it")
+        void noPage() {
+            engine.setChannels("{\"EMAIL\":{\"enabled\":true}}");
+            assertFalse(svc.bookFromReply(engine, "m1", null, "r1", "EMAIL", "Please book the demo for Monday 11 am"));
+            verifyNoInteractions(meetings);
+        }
+
+        @Test
+        @DisplayName("not bookable (taken / a meeting that day): free slots and the link wait in the inbox")
+        void notBookable() throws Exception {
+            String t = Instant.now().plus(4, ChronoUnit.DAYS).atOffset(java.time.ZoneOffset.ofHoursMinutes(5, 30)).toString();
+            doReturn(new EngagementMeetingIntentService.MeetingRequest("BOOK", t))
+                    .when(svc).readBookingRequest(any(), any(), any(), any());
+            when(meetings.createBooking(any(), any())).thenThrow(new vacademy.io.common.exceptions.ConflictException("already has a meeting"));
+            assertTrue(svc.bookFromReply(engine, "m1", null, "r1", "EMAIL", "book the demo for Monday 11 am"));
+            ArgumentCaptor<EngagementAction> saved = ArgumentCaptor.forClass(EngagementAction.class);
+            verify(actions).save(saved.capture());
+            assertEquals("OPEN", saved.getValue().getStatus());
+            assertTrue(saved.getValue().getDraftBody().contains("booking-response?instituteId=i1&slug=demo"));
+        }
+
+        @Test
+        @DisplayName("an ordinary reply is not treated as a booking request")
+        void ordinary() {
+            assertFalse(svc.bookFromReply(engine, "m1", null, "r1", "EMAIL", "Thanks, I will check and get back"));
+        }
+    }
+
+    @Nested
     @DisplayName("intake")
     class Intake {
         @Test

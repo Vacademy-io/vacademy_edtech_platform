@@ -92,6 +92,7 @@
         "replyTitle": "When they reply",
         "replyAuto": "The AI answers on WhatsApp right away (outside quiet hours). Money questions, anger, requests to stop and anything it is unsure about come to your inbox.",
         "replyInbox": "The reply and a suggested answer land in your task inbox right away, so your team can respond.",
+        "replyBooks": "If they ask for a demo, the engine books it on \"{{page}}\".",
         "stopTitle": "It stops when",
         "stop": {
             "meeting": "A meeting is booked",

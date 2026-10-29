@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementAction;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementEngine;
+import vacademy.io.admin_core_service.features.engagement.entity.EngagementMember;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementPromptVersion;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementActionRepository;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementEngineRepository;
@@ -226,6 +227,14 @@ public class EngagementReplyResponder {
             List<EngagementReplyMemberQueries.LiveMember> left =
                     outcomeService.exitNotInterested(instituteId, reached, "WHATSAPP", replyText, now);
             if (left.stream().anyMatch(m -> m.getMemberId().equals(cand.getMemberId()))) return true;
+        }
+        // Asking for a meeting: the engine books it on its booking page (or offers free slots).
+        if (meetingIntents != null) {
+            EngagementMember asking = memberRepository.findById(cand.getMemberId()).orElse(null);
+            if (asking != null && bookedFromReply(engine, asking.getId(), asking.getUserId(),
+                    asking.getAudienceResponseId(), "WHATSAPP", replyText)) {
+                return true;
+            }
         }
         // Hold the member for the LLM window. The hold fails only if a proactive decision holds them
         // right now; answering as well would send two messages at once (the old lease claim was
@@ -474,6 +483,13 @@ public class EngagementReplyResponder {
             }
         }
 
+        // Asking for a meeting: the engine books it on its booking page (or offers free slots).
+        EngagementEngine askingEngine = meetingIntents == null ? null : engineRepository.findById(target.getEngineId()).orElse(null);
+        if (askingEngine != null && bookedFromReply(askingEngine, target.getMemberId(), target.getUserId(),
+                target.getAudienceResponseId(), "EMAIL", body)) {
+            return true;
+        }
+
         String label = STOP_MENTION.matcher(body).find() || NOT_INTERESTED_CLEAR.matcher(body).find() ? "stop-mention"
                 : CALLBACK.matcher(body).find() ? "callback"
                 : ESCALATE_TRIPWIRE.matcher(body).find() ? "money/complaint" : null;
@@ -503,6 +519,16 @@ public class EngagementReplyResponder {
         } catch (RuntimeException e) {
             // Never lose the reply: the normal handling below still sees it.
             log.warn("Meeting reply handling failed in institute {}: {}", instituteId, e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean bookedFromReply(EngagementEngine engine, String memberId, String userId, String responseId,
+                                    String channel, String text) {
+        try {
+            return meetingIntents.bookFromReply(engine, memberId, userId, responseId, channel, text);
+        } catch (RuntimeException e) {
+            log.warn("Booking from a {} reply failed for member {}: {}", channel, memberId, e.getMessage());
             return false;
         }
     }

@@ -55,6 +55,8 @@ export interface QuietHours {
 export interface ChannelsExtras {
     /** Leave the engine once a meeting is booked with the lead (backend EngagementLeadExitJob). */
     exitOnMeetingBooked?: boolean;
+    /** Booking page the engine books a meeting on when a lead asks for one in a reply. */
+    bookingPageId?: string;
 }
 
 /** GET /engines/channel-readiness: whether the institute has set each channel up. */
