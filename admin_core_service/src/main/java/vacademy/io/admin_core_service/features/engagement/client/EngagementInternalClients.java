@@ -82,7 +82,10 @@ public class EngagementInternalClients {
         try {
             String route = "/notification-service/internal/v1/engagement/inbound-since"
                     + "?instituteId=" + instituteId
-                    + "&since=" + sinceEpochMillis;
+                    + "&since=" + sinceEpochMillis
+                    // Email replies too (channel=EMAIL rows). An older notification-service ignores
+                    // the flag and answers WhatsApp only, so the two can deploy in either order.
+                    + "&includeEmail=true";
             ResponseEntity<String> response = internalClientUtils.makeHmacRequest(
                     clientName, HttpMethod.GET.name(), notificationServerBaseUrl, route, null);
             if (response == null || !response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {

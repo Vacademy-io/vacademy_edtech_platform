@@ -18,6 +18,9 @@ public interface EngagementReplyMemberQueries extends Repository<EngagementMembe
         String getMemberId();
         String getEngineId();
         Integer getCadenceHours();
+        String getUserId();
+        String getAudienceResponseId();
+        String getMemberStatus();
     }
 
     /**
@@ -28,7 +31,8 @@ public interface EngagementReplyMemberQueries extends Repository<EngagementMembe
      * recently engaged first, so a note lands on the engine the person most plausibly answered.
      */
     @Query(value = """
-            SELECT m.id AS memberId, m.engine_id AS engineId, e.cadence_hours AS cadenceHours
+            SELECT m.id AS memberId, m.engine_id AS engineId, e.cadence_hours AS cadenceHours,
+                   m.user_id AS userId, m.audience_response_id AS audienceResponseId, m.status AS memberStatus
             FROM engagement_member m
             JOIN engagement_engine e ON e.id = m.engine_id
             WHERE m.institute_id = :instituteId AND m.status IN ('ACTIVE', 'PAUSED')
@@ -46,6 +50,29 @@ public interface EngagementReplyMemberQueries extends Repository<EngagementMembe
             """, nativeQuery = true)
     List<LiveMember> findLiveMembersByPhone(@Param("instituteId") String instituteId,
                                             @Param("phone10") String phone10);
+
+    /**
+     * {@link #findLiveMembersByPhone} for an email reply: members whose learner or lead email is
+     * this address (callers pass it lowercased). Same order and the same disregard of auto-reply.
+     */
+    @Query(value = """
+            SELECT m.id AS memberId, m.engine_id AS engineId, e.cadence_hours AS cadenceHours,
+                   m.user_id AS userId, m.audience_response_id AS audienceResponseId, m.status AS memberStatus
+            FROM engagement_member m
+            JOIN engagement_engine e ON e.id = m.engine_id
+            WHERE m.institute_id = :instituteId AND m.status IN ('ACTIVE', 'PAUSED')
+              AND e.status IN ('ACTIVE', 'DRY_RUN')
+              AND (
+                   m.user_id IN (
+                       SELECT s.user_id FROM student s WHERE LOWER(TRIM(s.email)) = :email)
+                OR m.audience_response_id IN (
+                       SELECT ar.id FROM audience_response ar WHERE LOWER(TRIM(ar.parent_email)) = :email)
+              )
+            ORDER BY CASE WHEN e.created_by = 'SYSTEM_AI_CALL' THEN 1 ELSE 0 END,
+                     m.last_decided_at DESC NULLS LAST
+            """, nativeQuery = true)
+    List<LiveMember> findLiveMembersByEmail(@Param("instituteId") String instituteId,
+                                            @Param("email") String email);
 
     /** Of these inbound message ids, the ones a sweep already handled (engagement_handled_reply). */
     @Query(value = """

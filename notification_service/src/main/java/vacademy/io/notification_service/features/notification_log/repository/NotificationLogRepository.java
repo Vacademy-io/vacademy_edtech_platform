@@ -1290,6 +1290,33 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
     List<InboundReplyRow> findInboundRepliesSince(@Param("instituteId") String instituteId,
                                                   @Param("since") Instant since);
 
+    interface InboundEmailRow {
+        String getFromAddress();
+        String getSubject();
+        String getPayload();
+        java.sql.Timestamp getReceivedAt();
+        String getMessageId();
+    }
+
+    /**
+     * Recent inbound emails for an institute since a cursor, for the Engagement Engine's reply
+     * sweep. Every email, not only the latest per sender: unlike WhatsApp there is no 24h window to
+     * open, each email is read on its own. The full body is in message_payload (body holds the
+     * subject); source_id is the Message-ID the sweep dedups on.
+     */
+    @Query(value = """
+            SELECT channel_id AS "fromAddress", body AS "subject", message_payload AS "payload",
+                   notification_date AS "receivedAt", source_id AS "messageId"
+            FROM notification_log
+            WHERE institute_id = :instituteId
+              AND notification_type = 'INBOUND_EMAIL'
+              AND notification_date >= :since
+            ORDER BY notification_date
+            LIMIT 200
+            """, nativeQuery = true)
+    List<InboundEmailRow> findInboundEmailsSince(@Param("instituteId") String instituteId,
+                                                 @Param("since") Instant since);
+
     @Query(value = """
             SELECT LOWER(channel_id) AS "channelId",
                    MAX(notification_date) FILTER (WHERE notification_type = 'EMAIL') AS "lastSentAt",

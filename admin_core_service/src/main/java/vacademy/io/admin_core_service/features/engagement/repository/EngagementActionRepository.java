@@ -372,4 +372,21 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
     List<Object[]> countAiCallActionsByStatus(@Param("instituteId") String instituteId);
 
     List<EngagementAction> findTop20ByMemberIdOrderByCreatedAtDesc(String memberId);
+
+    /**
+     * Cancel what is still pending for members who just left their engine: every OPEN or ACKED
+     * row (sends, drafts, tasks) becomes EXPIRED with the reason, so nothing goes out later and no
+     * one is asked to act on a lead that is done. With keepAiCallPromises, a row an AI voice call
+     * produced stays: the person asked for it on the call.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET status = 'EXPIRED', error_message = :reason, updated_at = :now
+             WHERE member_id IN (:memberIds) AND status IN ('OPEN', 'ACKED')
+               AND (:keepAiCallPromises = FALSE OR source IS NULL OR source <> 'AI_CALL')
+            """, nativeQuery = true)
+    int cancelOpenForMembers(@Param("memberIds") List<String> memberIds, @Param("reason") String reason,
+                             @Param("now") Instant now, @Param("keepAiCallPromises") boolean keepAiCallPromises);
 }

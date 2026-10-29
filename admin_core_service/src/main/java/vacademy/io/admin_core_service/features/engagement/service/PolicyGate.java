@@ -79,8 +79,15 @@ public class PolicyGate {
      */
     public static LeadBlock effectiveLeadBlock(LeadBlock block, EngagementEngine engine, EngagementMember member) {
         if (block != LeadBlock.CONVERTED) return block;
-        boolean stops = member == null || member.getUserId() == null || !targetsLearners(engine);
-        return stops ? block : null;
+        return member == null || stopsAsLead(engine, member.getUserId()) ? block : null;
+    }
+
+    /**
+     * True when a lead outcome (Converted, a clear "not interested") ends this member's place in
+     * this engine: the member has no account, or the engine reaches people only as leads.
+     */
+    public static boolean stopsAsLead(EngagementEngine engine, String memberUserId) {
+        return memberUserId == null || !targetsLearners(engine);
     }
 
     /** True when the engine's audience has a PACKAGE_SESSION or USER selector (or can't be read). */

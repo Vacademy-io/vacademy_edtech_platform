@@ -377,4 +377,28 @@ public interface EngagementMemberRepository extends JpaRepository<EngagementMemb
 
     java.util.Optional<EngagementMember> findFirstByEngineIdAndAudienceResponseId(
             String engineId, String audienceResponseId);
+
+    /**
+     * Take these members out of their engines (a lead the CRM marked Converted, a clear "not
+     * interested"). EXITED, not OPTED_OUT: the person did not withdraw consent, and the reconcile
+     * may bring them back if their lead row changes again.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_member
+               SET status = 'EXITED', updated_at = :now
+             WHERE id IN (:ids) AND status IN ('ACTIVE', 'PAUSED')
+            """, nativeQuery = true)
+    int exitMembers(@Param("ids") List<String> ids, @Param("now") Instant now);
+
+    /** Opt these members out (an opt-out by email, where the phone-keyed update does not reach). */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_member
+               SET status = 'OPTED_OUT', updated_at = :now
+             WHERE id IN (:ids) AND status IN ('ACTIVE', 'PAUSED')
+            """, nativeQuery = true)
+    int optOutMembers(@Param("ids") List<String> ids, @Param("now") Instant now);
 }
