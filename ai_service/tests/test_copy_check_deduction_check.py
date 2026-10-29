@@ -193,3 +193,39 @@ if __name__ == "__main__":
             print("  -", f)
         sys.exit(1)
     print("all passed")
+
+
+def test_a_raise_respects_each_criterions_max_stored_as_max():
+    # attach_criteria_max stores the ceiling as "max": the whole raise used to
+    # land on the last criterion ("Vocabulary 17/15").
+    from app.services.copy_check.deduction_check import apply_check
+    verdict = {"marks_awarded": 89.0, "max_marks": 100.0, "criteria_breakdown": [
+        {"criteria_name": "Content", "marks": 26.0, "max": 30.0},
+        {"criteria_name": "Vocabulary", "marks": 13.0, "max": 15.0}]}
+    result = {"marks_awarded": 95, "cuts": [{"finding": "misread", "why": "read wrong"}]}
+    assert apply_check(verdict, result)
+    marks = [c["marks"] for c in verdict["criteria_breakdown"]]
+    assert marks == [30.0, 15.0]
+    assert verdict["marks_awarded"] == 95.0
+    assert all(c["marks"] <= c["max"] for c in verdict["criteria_breakdown"])
+
+
+def test_a_raise_past_every_criterions_max_is_cut_back():
+    from app.services.copy_check.deduction_check import apply_check
+    verdict = {"marks_awarded": 8.0, "max_marks": 50.0, "criteria_breakdown": [
+        {"criteria_name": "Paragraph 1", "marks": 4.0, "max": 10.0},
+        {"criteria_name": "Paragraph 2", "marks": 4.0, "max": 10.0}]}
+    result = {"marks_awarded": 40, "cuts": [{"finding": "misread", "why": "read wrong"}]}
+    assert apply_check(verdict, result)
+    assert verdict["marks_awarded"] == 20.0 and verdict["deduction_check"]["to"] == 20.0
+    assert [c["marks"] for c in verdict["criteria_breakdown"]] == [10.0, 10.0]
+
+
+def test_no_room_at_all_means_no_raise():
+    from app.services.copy_check.deduction_check import apply_check
+    verdict = {"marks_awarded": 20.0, "max_marks": 50.0, "criteria_breakdown": [
+        {"criteria_name": "Paragraph 1", "marks": 10.0, "max": 10.0},
+        {"criteria_name": "Paragraph 2", "marks": 10.0, "max": 10.0}]}
+    result = {"marks_awarded": 30, "cuts": [{"finding": "misread", "why": "read wrong"}]}
+    assert not apply_check(verdict, result)
+    assert verdict["marks_awarded"] == 20.0 and "deduction_check" not in verdict
