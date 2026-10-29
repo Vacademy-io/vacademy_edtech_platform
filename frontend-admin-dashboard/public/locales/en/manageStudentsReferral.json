@@ -1,7 +1,4 @@
 {
-    "heading": "Refer a friend",
-    "noInvite": "No referral link yet: this member has no active invite to link to, and no invite has a referral programme attached.",
-    "noProgram": "This invite has no referral programme, so the code won't be applied when a friend joins through it. Pick another invite, or attach a programme to this one.",
     "noReferrals": "No one has joined through this member's link yet.",
     "unknownFriend": "Unknown",
     "fields": {

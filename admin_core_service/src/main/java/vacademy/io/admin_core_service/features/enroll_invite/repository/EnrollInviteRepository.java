@@ -303,9 +303,10 @@ public interface EnrollInviteRepository extends JpaRepository<EnrollInvite, Stri
             @Param("instituteId") String instituteId);
 
     /**
-     * The live invites of the institute that have an active referral programme attached to
-     * at least one of their payment plans: the only invites where a referral link applies
-     * the code. Newest first.
+     * The live invites of the institute that sell a course (package session) this learner is
+     * actively enrolled in, with an active referral programme attached to the plan for it:
+     * where the learner can send friends with their referral code. Empty when none of their
+     * courses takes referrals. Newest first.
      */
     @Query(value = """
         SELECT ei.* FROM enroll_invite ei
@@ -320,8 +321,14 @@ public interface EnrollInviteRepository extends JpaRepository<EnrollInvite, Stri
               WHERE pslipo.enroll_invite_id = ei.id
                 AND pslipo.status = 'ACTIVE'
                 AND inro.status = 'ACTIVE'
-                AND ro.status = 'ACTIVE')
+                AND ro.status = 'ACTIVE'
+                AND pslipo.package_session_id IN (
+                    SELECT ssigm.package_session_id FROM student_session_institute_group_mapping ssigm
+                    WHERE ssigm.user_id = :userId
+                      AND ssigm.institute_id = :instituteId
+                      AND ssigm.status = 'ACTIVE'))
         ORDER BY ei.created_at DESC
     """, nativeQuery = true)
-    List<EnrollInvite> findActiveInvitesWithReferralProgram(@Param("instituteId") String instituteId);
+    List<EnrollInvite> findReferralInvitesForLearnerCourses(@Param("instituteId") String instituteId,
+                                                            @Param("userId") String userId);
 }

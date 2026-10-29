@@ -1,7 +1,4 @@
 {
-    "heading": "Parrainer un ami",
-    "noInvite": "Pas encore de lien de parrainage : ce membre n'a aucune invitation active, et aucune invitation n'a de programme de parrainage.",
-    "noProgram": "Cette invitation n'a pas de programme de parrainage : le code ne s'appliquera pas à un ami qui s'inscrit par elle. Choisissez une autre invitation ou associez-lui un programme.",
     "noReferrals": "Personne ne s'est encore inscrit avec le lien de ce membre.",
     "unknownFriend": "Inconnu",
     "fields": {

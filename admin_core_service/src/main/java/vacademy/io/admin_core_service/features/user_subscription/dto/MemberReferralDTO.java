@@ -16,7 +16,10 @@ import java.util.List;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class MemberReferralDTO {
 
-    /** Why there is no code or link: NOT_A_MEMBER or NO_INVITE. Null when there is one. */
+    /**
+     * NO_REFERRAL_COURSE when none of the member courses is sold through an invite with a
+     * referral programme: nothing else is filled and the profile hides the section.
+     */
     private String unavailableReason;
 
     private String referralCode;
@@ -26,10 +29,8 @@ public class MemberReferralDTO {
     /** The invite the link opens. */
     private String inviteId;
     private String inviteName;
-    /** False when that invite has no referral programme, so the code would not be applied. */
-    private boolean inviteHasReferralProgram;
 
-    /** Invites the link can be switched to: the ones with a referral programme attached. */
+    /** Invites the link can be switched to: those selling the member courses with a referral programme. */
     private List<InviteOption> invites = new ArrayList<>();
 
     private List<ReferredFriend> referrals = new ArrayList<>();

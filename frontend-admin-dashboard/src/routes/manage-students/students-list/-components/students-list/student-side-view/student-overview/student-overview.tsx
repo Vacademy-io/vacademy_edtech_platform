@@ -327,6 +327,17 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
                                     );
                                 })}
                             </dl>
+                            {/* Refer a friend: code, shareable link and who they referred.
+                                Members only (a lead or a form submission has no code), and
+                                it renders nothing unless one of their courses takes referrals. */}
+                            {studentDetail.headingKey === OverviewSectionKey.ReferralDetails &&
+                                !isSubmissionTab &&
+                                !leadResponseId && (
+                                    <StudentReferral
+                                        userId={selectedStudent?.user_id}
+                                        instituteId={instituteDetails?.id}
+                                    />
+                                )}
                         </ProfileSectionCard>
                     );
                 })
@@ -392,15 +403,6 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
                 email={selectedStudent?.email}
                 mobileNumber={selectedStudent?.mobile_number}
             />
-
-            {/* Refer a friend — this member's code, a shareable link and who they
-                referred. Members only: a lead or a form submission has no code. */}
-            {!isSubmissionTab && !leadResponseId && (
-                <StudentReferral
-                    userId={selectedStudent?.user_id}
-                    instituteId={instituteDetails?.id}
-                />
-            )}
 
             {/* Terms & Conditions — always shown so admins can see signing status
                 at a glance (Signed / Not Signed), with the signed date + PDF when

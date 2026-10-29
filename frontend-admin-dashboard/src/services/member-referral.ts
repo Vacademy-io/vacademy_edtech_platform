@@ -13,16 +13,17 @@ export interface ReferredFriend {
 }
 
 export interface MemberReferral {
-    /** Why there is no code or link. Null when there is one. */
-    unavailable_reason: 'NOT_A_MEMBER' | 'NO_INVITE' | null;
+    /**
+     * NO_REFERRAL_COURSE when none of the member's courses is sold through an invite with a
+     * referral programme: nothing else is filled and the profile shows nothing.
+     */
+    unavailable_reason: 'NO_REFERRAL_COURSE' | null;
     referral_code: string | null;
     short_referral_link: string | null;
     referral_link: string | null;
     invite_id: string | null;
     invite_name: string | null;
-    /** False when the chosen invite has no referral programme: the code would not apply there. */
-    invite_has_referral_program: boolean;
-    /** Invites the link can be switched to (those with a referral programme attached). */
+    /** Invites the link can be switched to: those selling the member's courses with a referral programme. */
     invites: { id: string; name: string }[];
     referrals: ReferredFriend[];
     rewards_pending: number;

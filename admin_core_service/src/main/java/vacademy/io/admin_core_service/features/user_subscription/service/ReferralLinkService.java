@@ -157,50 +157,42 @@ public class ReferralLinkService {
     }
 
     /**
-     * One member's referral details for the admin student profile. The link opens
-     * {@code enrollInviteId} when given; otherwise the invite the member enrolled through when
-     * it has a referral programme, else the newest invite that has one. A member with no code
-     * gets one here, as they would on the next announcement. Unlike {@link #linksFor}, the
-     * short link is reused across views instead of minted per call.
+     * One member's referral details for the admin student profile, available only when a
+     * course the member is actively enrolled in is sold through an invite with a referral
+     * programme ({@code NO_REFERRAL_COURSE} otherwise, and no code is created). The link opens
+     * {@code enrollInviteId} when it is one of those invites; otherwise the one the member
+     * enrolled through when it is, else the newest. A member with no code gets one here, as
+     * they would on the next announcement. Unlike {@link #linksFor}, the short link is reused
+     * across views instead of minted per call.
      */
     public MemberReferralDTO memberReferral(String instituteId, String userId, String enrollInviteId) {
         MemberReferralDTO dto = new MemberReferralDTO();
-        if (mappingRepository.findUserIdsInInstitute(instituteId, List.of(userId)).isEmpty()) {
-            dto.setUnavailableReason("NOT_A_MEMBER");
+        List<EnrollInvite> referralInvites =
+                enrollInviteRepository.findReferralInvitesForLearnerCourses(instituteId, userId);
+        if (referralInvites.isEmpty()) {
+            dto.setUnavailableReason("NO_REFERRAL_COURSE");
             return dto;
         }
-
-        List<EnrollInvite> referralInvites = enrollInviteRepository.findActiveInvitesWithReferralProgram(instituteId);
         referralInvites.forEach(i -> dto.getInvites().add(new MemberReferralDTO.InviteOption(i.getId(), i.getName())));
 
-        Optional<EnrollInvite> invite = resolveInvite(enrollInviteId, instituteId);
-        if (invite.isEmpty()) {
-            Optional<EnrollInvite> own = enrollInviteRepository.findLatestActiveInviteForLearner(userId, instituteId);
-            boolean ownHasProgram = own.isPresent()
-                    && referralInvites.stream().anyMatch(i -> i.getId().equals(own.get().getId()));
-            invite = ownHasProgram || referralInvites.isEmpty() ? own : Optional.of(referralInvites.get(0));
-        }
+        Optional<EnrollInvite> requested = referralInvites.stream()
+                .filter(i -> i.getId().equals(enrollInviteId)).findFirst();
+        Optional<EnrollInvite> own = requested.isPresent() ? Optional.empty()
+                : enrollInviteRepository.findLatestActiveInviteForLearner(userId, instituteId)
+                        .filter(o -> referralInvites.stream().anyMatch(i -> i.getId().equals(o.getId())));
+        EnrollInvite chosen = requested.or(() -> own).orElse(referralInvites.get(0));
 
-        if (invite.isEmpty()) {
-            dto.setUnavailableReason("NO_INVITE");
-        } else {
-            EnrollInvite chosen = invite.get();
-            Optional<CouponCode> coupon = codeFor(userId, instituteId, chosen);
-            if (coupon.isEmpty()) {
-                dto.setUnavailableReason("NO_INVITE");
-            } else {
-                String longLink = learnerInvitationLinkService.generateLearnerInvitationResponseLink(
-                        instituteId, chosen, userId);
-                String shortLink = shortLinkIntegrationService.getOrCreateShortLink(
-                        SOURCE_PROFILE_LINK, userId + "_" + chosen.getId(), longLink, instituteId);
-                dto.setReferralCode(coupon.get().getCode());
-                dto.setReferralLink(longLink);
-                dto.setShortReferralLink(shortLink != null ? shortLink : longLink);
-                dto.setInviteId(chosen.getId());
-                dto.setInviteName(chosen.getName());
-                dto.setInviteHasReferralProgram(
-                        referralInvites.stream().anyMatch(i -> i.getId().equals(chosen.getId())));
-            }
+        Optional<CouponCode> coupon = codeFor(userId, instituteId, chosen);
+        if (coupon.isPresent()) {
+            String longLink = learnerInvitationLinkService.generateLearnerInvitationResponseLink(
+                    instituteId, chosen, userId);
+            String shortLink = shortLinkIntegrationService.getOrCreateShortLink(
+                    SOURCE_PROFILE_LINK, userId + "_" + chosen.getId(), longLink, instituteId);
+            dto.setReferralCode(coupon.get().getCode());
+            dto.setReferralLink(longLink);
+            dto.setShortReferralLink(shortLink != null ? shortLink : longLink);
+            dto.setInviteId(chosen.getId());
+            dto.setInviteName(chosen.getName());
         }
 
         addReferrals(dto, userId, instituteId);
