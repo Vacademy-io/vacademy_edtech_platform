@@ -8,14 +8,15 @@
         "paymentStatus": {
             "paid": "भुगतान हो गया",
             "failed": "विफल",
-            "paymentFailed": "भुगतान विफल"
+            "pending": "लंबित"
         },
         "approvalStatus": {
             "pending": "स्वीकृति लंबित",
             "invited": "आमंत्रित"
         },
         "learnerType": {
-            "abandonedCart": "छोड़ी गई कार्ट"
+            "abandonedCart": "छोड़ी गई कार्ट",
+            "paymentFailed": "भुगतान विफल"
         }
     }
 }
