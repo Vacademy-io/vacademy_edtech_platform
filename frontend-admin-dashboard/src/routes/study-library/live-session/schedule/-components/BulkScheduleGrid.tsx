@@ -814,16 +814,19 @@ export function BulkScheduleGrid() {
         ) {
             form.setValue('sharedOptions.defaultPlatform', platformDefault);
         }
-        // Stamp the platform onto the initial row too, but only while it's the
-        // lone untouched starter row — never rewrite rows the admin has begun
-        // editing or added.
+        // Stamp the default onto the initial row too, but only while it's the
+        // lone starter row and the admin hasn't picked its platform. Use the
+        // control's current value so an admin who switched it to "Other"
+        // before settings loaded isn't flipped back to the institute default.
         const rows = form.getValues('rows');
+        const sharedPlatform =
+            form.getValues('sharedOptions.defaultPlatform') ?? platformDefault;
         if (
             rows.length === 1 &&
-            !form.getFieldState('rows.0.platform').isDirty &&
-            rows[0]?.platform !== platformDefault
+            !rows[0]?.platformPinned &&
+            rows[0]?.platform !== sharedPlatform
         ) {
-            form.setValue('rows.0.platform', platformDefault);
+            form.setValue('rows.0.platform', sharedPlatform);
         }
         // Vacademy Meet (BBB) recording & control defaults.
         const bbbRecordDefault = liveSessionSettings.defaultBbbRecordEnabled ?? true;
@@ -1011,7 +1014,8 @@ export function BulkScheduleGrid() {
                 startTime: cols[2] ?? '10:00',
                 durationHours: cols[3] ?? '1',
                 durationMinutes: cols[4] ?? '0',
-                platform: (cols[5] ?? 'other').toLowerCase(),
+                platform: (cols[5] || 'other').toLowerCase(),
+                platformPinned: Boolean(cols[5]),
                 link: cols[6] ?? '',
                 subject: '',
                 description: '',
@@ -1496,12 +1500,13 @@ export function BulkScheduleGrid() {
                                     value={field.value ?? 'other'}
                                     onValueChange={(v) => {
                                         field.onChange(v);
-                                        // Apply to existing empty / "other" rows so admins
-                                        // don't have to retype per row when they switch
-                                        // platforms after adding a few rows.
+                                        // Apply to every row whose platform the admin
+                                        // hasn't picked themselves. Rows start on the
+                                        // institute default (often BBB), so switching
+                                        // this to "Other" must move them too.
                                         const rows = form.getValues('rows') ?? [];
                                         rows.forEach((r, i) => {
-                                            if (!r.platform || r.platform === 'other') {
+                                            if (!r.platformPinned && r.platform !== v) {
                                                 form.setValue(
                                                     `rows.${i}.platform` as const,
                                                     v,
@@ -3846,11 +3851,13 @@ const RowEditor = memo(function RowEditor({
             <TableCell>
                 <Select
                     value={platform ?? 'other'}
-                    onValueChange={(v) =>
+                    onValueChange={(v) => {
                         form.setValue(`rows.${index}.platform` as const, v, {
                             shouldValidate: true,
-                        })
-                    }
+                            shouldDirty: true,
+                        });
+                        form.setValue(`rows.${index}.platformPinned` as const, true);
+                    }}
                 >
                     <SelectTrigger className="h-8">
                         <SelectValue />
