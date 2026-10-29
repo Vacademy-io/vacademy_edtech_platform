@@ -242,7 +242,7 @@ public class EngagementDecisionService {
             int hoursOut = d.scheduleInHours() != null
                     ? Math.min(Math.max(d.scheduleInHours(), 0), maxScheduleHours) : 0;
             Instant proposed = now.plus(Duration.ofHours(hoursOut));
-            Instant scheduledFor = policyGate.clampToAllowedWindow(engine, proposed);
+            Instant scheduledFor = policyGate.scheduleSend(engine, proposed, sendTiming(engine, member, bundle));
 
             EngagementAction action = new EngagementAction();
             action.setEngineId(engine.getId());
@@ -524,6 +524,21 @@ public class EngagementDecisionService {
         if (hasUnansweredReply(bundle, m)) return true;                   // always
         if (!fingerprint.equals(m.getWakeFingerprint())) return true;     // state moved (banded)
         return cadenceElapsed(m, engine, now);                            // THE CLOCK — never remove
+    }
+
+    /**
+     * How this decision's send is timed: an answer to someone who wrote in goes as soon as quiet
+     * hours allow; a new person's first touch goes right away (unless the engine waits for its send
+     * window); everything else is planned outreach and waits for the engine's send window.
+     */
+    private PolicyGate.SendTiming sendTiming(EngagementEngine engine, EngagementMember m,
+                                             DataPointRegistry.CohortBundle bundle) {
+        if (hasUnansweredReply(bundle, m)) return PolicyGate.SendTiming.REPLY;
+        if (m.getLastDecidedAt() == null
+                && EngagementSendSchedule.of(engine.getQuietHours(), objectMapper).firstTouchImmediate()) {
+            return PolicyGate.SendTiming.ANYTIME;
+        }
+        return PolicyGate.SendTiming.PLANNED;
     }
 
     private boolean hasUnansweredReply(DataPointRegistry.CohortBundle bundle, EngagementMember m) {

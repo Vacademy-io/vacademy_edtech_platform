@@ -42,6 +42,10 @@ public class EngagementEngineService {
     @Autowired(required = false)
     private EngagementEngineDeletionDao deletionDao;
 
+    /** Field-injected for the same reason; absent in unit tests, where no channel is checked. */
+    @Autowired(required = false)
+    private EngagementChannelReadiness channelReadiness;
+
     @Transactional
     public EngagementEngine create(CreateEngineRequest req, String instituteId, String createdBy) {
         if (req.getName() == null || req.getName().isBlank()) {
@@ -62,7 +66,8 @@ public class EngagementEngineService {
         // here, not as an opaque jsonb INSERT error (or a silently-broken audience at sweep time).
         engine.setChannels(validObjectJson(req.getChannels(), "channels", "{}"));
         engine.setAudience(validAudienceJson(req.getAudience()));
-        engine.setQuietHours(validObjectJson(req.getQuietHours(), "quietHours", "{}"));
+        engine.setQuietHours(validQuietHoursJson(req.getQuietHours()));
+        if (channelReadiness != null) channelReadiness.requireReady(instituteId, engine.getChannels(), null);
         if (req.getCadenceHours() != null && req.getCadenceHours() > 0) {
             engine.setCadenceHours(req.getCadenceHours());
         }
@@ -222,7 +227,8 @@ public class EngagementEngineService {
             memberRepository.enrollOrStamp(
                     UUID.randomUUID().toString(), engine.getId(), instituteId,
                     t.userId(), t.audienceResponseId(),
-                    EngagementDecisionService.jitteredFirstWake(engine.getCadenceHours(), Instant.now()),
+                    EngagementSendSchedule.of(engine.getQuietHours(), objectMapper)
+                            .enrolWake(engine.getCadenceHours(), Instant.now()),
                     runId, holdoutPct);
         }
         // Exit anyone not stamped by this run — unconditional, so an emptied audience exits all.
@@ -269,8 +275,12 @@ public class EngagementEngineService {
             // The same person already in this engine through another lead row: one member, not two.
             if (dao.liveMembersForSamePerson(engine.getId(), responseId, userId, phone10) > 0) continue;
             int holdoutPct = engine.getHoldoutPct() != null ? Math.max(0, Math.min(100, engine.getHoldoutPct())) : 0;
-            Instant firstLook = Instant.now().plus(java.time.Duration.ofMinutes(
-                    java.util.concurrent.ThreadLocalRandom.current().nextLong(1, INTAKE_FIRST_LOOK_MAX_MINUTES + 1)));
+            // An engine that waits for its send window for a first touch looks at the lead then.
+            EngagementSendSchedule schedule = EngagementSendSchedule.of(engine.getQuietHours(), objectMapper);
+            Instant firstLook = schedule.firstTouchImmediate()
+                    ? Instant.now().plus(java.time.Duration.ofMinutes(
+                            java.util.concurrent.ThreadLocalRandom.current().nextLong(1, INTAKE_FIRST_LOOK_MAX_MINUTES + 1)))
+                    : schedule.firstWake(engine.getCadenceHours(), Instant.now());
             memberRepository.enrollOrStamp(UUID.randomUUID().toString(), engine.getId(), instituteId,
                     userId, responseId, firstLook, "intake:" + UUID.randomUUID(), holdoutPct);
             joined++;
@@ -401,8 +411,12 @@ public class EngagementEngineService {
         if (req.getObjective() != null) engine.setObjective(req.getObjective().isBlank() ? null : req.getObjective().trim());
         if (req.getLanguage() != null) engine.setLanguage(validLanguage(req.getLanguage()));
         if (req.getDataPoints() != null) engine.setDataPoints(writeJson(req.getDataPoints()));
-        if (req.getChannels() != null) engine.setChannels(validObjectJson(req.getChannels(), "channels", "{}"));
-        if (req.getQuietHours() != null) engine.setQuietHours(validObjectJson(req.getQuietHours(), "quietHours", "{}"));
+        if (req.getChannels() != null) {
+            String channels = validObjectJson(req.getChannels(), "channels", "{}");
+            if (channelReadiness != null) channelReadiness.requireReady(instituteId, channels, engine.getChannels());
+            engine.setChannels(channels);
+        }
+        if (req.getQuietHours() != null) engine.setQuietHours(validQuietHoursJson(req.getQuietHours()));
         if (req.getCadenceHours() != null) {
             if (req.getCadenceHours() <= 0) throw new VacademyException("cadenceHours must be at least 1");
             engine.setCadenceHours(req.getCadenceHours());
@@ -522,6 +536,56 @@ public class EngagementEngineService {
         } catch (Exception e) {
             throw new VacademyException(field + " is not valid JSON: " + e.getMessage());
         }
+    }
+
+    /**
+     * Quiet hours plus the send schedule stored with them (see {@link EngagementSendSchedule}):
+     * a send time must be a real time outside the engine's own quiet hours, and days must name at
+     * least one day.
+     */
+    private String validQuietHoursJson(String raw) {
+        String json = validObjectJson(raw, "quietHours", "{}");
+        JsonNode qh;
+        try {
+            qh = objectMapper.readTree(json);
+        } catch (Exception e) {
+            return json; // validObjectJson already refused unparseable JSON
+        }
+        if (qh.hasNonNull("sendHour")) {
+            int h = qh.get("sendHour").asInt(-1);
+            int m = qh.path("sendMinute").asInt(0);
+            if (!qh.get("sendHour").canConvertToInt() || h < 0 || h > 23 || m < 0 || m > 59) {
+                throw new VacademyException("Pick a valid send time for the engine");
+            }
+            if (qh.hasNonNull("startHour") && qh.hasNonNull("endHour")) {
+                int qs = qh.get("startHour").asInt(), qe = qh.get("endHour").asInt();
+                int minute = h * 60 + m;
+                boolean quiet = qs != qe && (qs > qe
+                        ? minute >= qs * 60 || minute < qe * 60
+                        : minute >= qs * 60 && minute < qe * 60);
+                if (quiet) {
+                    throw new VacademyException(String.format(
+                            "The send time %02d:%02d is inside the quiet hours (%02d:00 to %02d:00). Pick a time outside them.",
+                            h, m, qs, qe));
+                }
+            }
+        }
+        JsonNode days = qh.get("days");
+        if (days != null && !days.isNull()) {
+            if (!days.isArray() || days.isEmpty()) {
+                throw new VacademyException("Pick at least one day for the engine to send on");
+            }
+            for (JsonNode d : days) {
+                if (!d.canConvertToInt() || d.asInt() < 1 || d.asInt() > 7) {
+                    throw new VacademyException("days must be ISO days of the week, 1 (Monday) to 7 (Sunday)");
+                }
+            }
+        }
+        String firstTouch = qh.path("firstTouch").asText("IMMEDIATE");
+        if (!"IMMEDIATE".equalsIgnoreCase(firstTouch) && !"SCHEDULED".equalsIgnoreCase(firstTouch)) {
+            throw new VacademyException("firstTouch must be IMMEDIATE or SCHEDULED");
+        }
+        return json;
     }
 
     private String validAudienceJson(String raw) {

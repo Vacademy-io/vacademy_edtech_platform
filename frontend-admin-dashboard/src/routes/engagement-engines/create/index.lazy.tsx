@@ -3,13 +3,19 @@ import { Helmet } from 'react-helmet';
 import { useEffect, useMemo, useState } from 'react';
 import type { Icon } from '@phosphor-icons/react';
 import {
+    ArrowSquareOut,
+    CalendarBlank,
     CaretDown,
     Check,
+    CheckCircle,
+    Clock,
+    FlagCheckered,
     FilePlus,
     FileText,
     Flask,
     GraduationCap,
     Info,
+    Lightning,
     ListBullets,
     Robot,
     ShieldCheck,
@@ -57,9 +63,22 @@ import { ContentTerms, OtherTerms, RoleTerms, SystemTerms } from '@/routes/setti
 import { buildChannelMeta, CHANNEL_ORDER, buildLanguageOptions } from '../-constants';
 import { EmailChannelOptions } from '../-components/EmailChannelOptions';
 import { CheckList, type CheckOption } from '../-components/CheckList';
-import { useCreateEngine, useDataPointCatalog, useEditPrompt, useEngine } from '../-hooks';
+import {
+    useChannelReadiness,
+    useCreateEngine,
+    useDataPointCatalog,
+    useEditPrompt,
+    useEngine,
+} from '../-hooks';
 import { useUpdateEngine } from '../-hooks/engine-edit';
-import { cadenceText, safeParse } from '../-utils';
+import {
+    cadenceText,
+    DEFAULT_SEND_DAYS,
+    DEFAULT_SEND_HOUR,
+    safeParse,
+    scheduleText,
+} from '../-utils';
+import { EnginePlanPreview } from '../-components/EnginePlanPreview';
 import {
     CHANNEL_ICON,
     CHANNEL_TINT,
@@ -72,9 +91,11 @@ import type {
     AudienceSelector,
     ChannelKey,
     ChannelsConfig,
+    ChannelsExtras,
     CreateEngineRequest,
     DataPointSpec,
     EngineLanguage,
+    QuietHours,
 } from '../-types';
 
 export const Route = createLazyFileRoute('/engagement-engines/create/')({
@@ -90,6 +111,23 @@ const LIST_PAGE_SIZE = 100;
 const CADENCE_PRESETS = [24, 48, 72, 168] as const;
 
 const pad2 = (h: string | number) => String(h).padStart(2, '0');
+
+/** Where each channel is set up (Settings tab), for the "Set up" button on a channel card. */
+const CHANNEL_SETUP_TAB: Partial<Record<ChannelKey, string>> = {
+    WHATSAPP: 'whatsapp',
+    EMAIL: 'notification',
+    AI_CALL: 'aiCalling',
+};
+
+/** Send-time choices, every 30 minutes; 'none' = no fixed time. */
+const SEND_TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
+    const h = Math.floor(i / 2);
+    const m = i % 2 ? 30 : 0;
+    return { value: `${h}:${m}`, hour: h, minute: m, label: `${pad2(h)}:${pad2(m)}` };
+});
+
+const ISO_DAYS = [1, 2, 3, 4, 5, 6, 7];
+
 
 /** "SSC CGL · Tier 1 · 2026-27", leaving out the placeholder "default" level / session. */
 function batchOption(b: {
@@ -305,6 +343,11 @@ function CreateEnginePage() {
     const [quietStart, setQuietStart] = useState<string>('21');
     const [quietEnd, setQuietEnd] = useState<string>('8');
     const [timezone, setTimezone] = useState('Asia/Kolkata');
+    // Send schedule (stored in quietHours): "h:m" or 'none' for no fixed time.
+    const [sendTime, setSendTime] = useState<string>(`${DEFAULT_SEND_HOUR}:0`);
+    const [sendDays, setSendDays] = useState<number[]>(DEFAULT_SEND_DAYS);
+    const [firstTouch, setFirstTouch] = useState<'IMMEDIATE' | 'SCHEDULED'>('IMMEDIATE');
+    const [stopOnMeeting, setStopOnMeeting] = useState(true);
     const [holdoutPct, setHoldoutPct] = useState('0');
     const [firstN, setFirstN] = useState('');
     // Advanced (auto-send limit, test group) stays folded unless a value differs from the default.
@@ -321,15 +364,24 @@ function CreateEnginePage() {
         setLanguage((e.language as EngineLanguage) ?? 'en');
         setDataPoints(safeParse<string[]>(e.dataPoints, []));
         setConsentHigh(true);
-        setChannels(safeParse<ChannelsConfig>(e.channels, {}));
+        const { exitOnMeetingBooked, ...savedChannels } = safeParse<ChannelsConfig & ChannelsExtras>(
+            e.channels,
+            {}
+        );
+        setChannels(savedChannels);
+        setStopOnMeeting(exitOnMeetingBooked === true);
         const sel = safeParse<AudienceSelector[]>(e.audience, []);
         setBatchIds(sel.filter((x) => x.type === 'PACKAGE_SESSION').map((x) => x.id));
         setAudienceIds(sel.filter((x) => x.type === 'AUDIENCE').map((x) => x.id));
         setCadenceHours(String(e.cadenceHours ?? 72));
-        const qh = safeParse<{ startHour?: number; endHour?: number; timezone?: string }>(e.quietHours, {});
+        const qh = safeParse<QuietHours>(e.quietHours, {});
         if (qh.startHour != null) setQuietStart(String(qh.startHour));
         if (qh.endHour != null) setQuietEnd(String(qh.endHour));
         if (qh.timezone) setTimezone(qh.timezone);
+        // An engine saved before send times existed has none: keep it that way until changed.
+        setSendTime(qh.sendHour != null ? `${qh.sendHour}:${qh.sendMinute ?? 0}` : 'none');
+        setSendDays(qh.days?.length ? qh.days : ISO_DAYS);
+        setFirstTouch(qh.firstTouch === 'SCHEDULED' ? 'SCHEDULED' : 'IMMEDIATE');
         setHoldoutPct(String(e.holdoutPct ?? 0));
         setFirstN(e.firstN != null ? String(e.firstN) : '');
         setAdvancedOpen((e.holdoutPct ?? 0) > 0 || e.firstN != null);
@@ -350,7 +402,45 @@ function CreateEnginePage() {
         [catalog, dataPoints]
     );
 
+    const channelMeta = buildChannelMeta(tConstants);
     const enabledChannelKeys = CHANNEL_ORDER.filter((c) => channels[c]?.enabled);
+
+    // Channel setup, checked while the engine is built rather than at its first failed send.
+    const {
+        data: readiness,
+        isFetching: readinessChecking,
+        refetch: recheckReadiness,
+    } = useChannelReadiness(channels.EMAIL?.emailType);
+    // Re-checked each time the Channels step opens: setup may have changed since the wizard loaded.
+    useEffect(() => {
+        if (step === 2) recheckReadiness();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [step]);
+    const notReady = (c: ChannelKey) => readiness?.[c]?.ready === false;
+    // A channel the saved engine already had is not blocked (the backend doesn't re-check it either).
+    const savedChannels = safeParse<ChannelsConfig>(editData?.engine?.channels, {});
+    const blockedChannels = enabledChannelKeys.filter((c) => notReady(c) && !savedChannels[c]?.enabled);
+
+    const schedule: QuietHours = useMemo(() => {
+        const opt = SEND_TIME_OPTIONS.find((o) => o.value === sendTime);
+        return {
+            startHour: Number(quietStart),
+            endHour: Number(quietEnd),
+            timezone,
+            sendHour: opt ? opt.hour : null,
+            sendMinute: opt ? opt.minute : 0,
+            days: sendDays,
+            firstTouch,
+        };
+    }, [sendTime, quietStart, quietEnd, timezone, sendDays, firstTouch]);
+    const sendTimeQuiet = (() => {
+        if (schedule.sendHour == null) return false;
+        const from = Number(quietStart) * 60;
+        const to = Number(quietEnd) * 60;
+        const m = schedule.sendHour * 60 + (schedule.sendMinute ?? 0);
+        if (from === to) return false;
+        return from < to ? m >= from && m < to : m >= from || m < to;
+    })();
     const audienceCount = batchIds.length + audienceIds.length;
 
     // Use the campaign's `id` (the audience row PK) — that IS the audience id the engagement
@@ -399,7 +489,12 @@ function CreateEnginePage() {
             case 1:
                 return !highSelected || consentHigh ? null : t('blocked.consent');
             case 2:
-                return enabledChannelKeys.length > 0 ? null : t('blocked.channel');
+                if (enabledChannelKeys.length === 0) return t('blocked.channel');
+                return blockedChannels.length
+                    ? t('blocked.channelNotReady', {
+                          channel: blockedChannels.map((c) => channelMeta[c].label).join(', '),
+                      })
+                    : null;
             case 3:
                 return audienceCount > 0
                     ? null
@@ -408,7 +503,9 @@ function CreateEnginePage() {
                           audiences: audiencesLabel.toLowerCase(),
                       });
             case 4:
-                return Number(cadenceHours) >= 1 ? null : t('blocked.cadence');
+                if (Number(cadenceHours) < 1) return t('blocked.cadence');
+                if (sendDays.length === 0) return t('blocked.days');
+                return sendTimeQuiet ? t('blocked.sendTimeQuiet') : null;
             default:
                 return null;
         }
@@ -442,16 +539,19 @@ function CreateEnginePage() {
         ];
         // Strip the display-only label the wizard tracks so the backend gets pure {type,id}.
         const audiencePayload = audience.map(({ type, id }) => ({ type, id }));
-        const quietHours = { startHour: Number(quietStart), endHour: Number(quietEnd), timezone };
+        const channelsPayload: ChannelsConfig & ChannelsExtras = {
+            ...channels,
+            exitOnMeetingBooked: stopOnMeeting,
+        };
         return {
             name: name.trim(),
             objective: objective.trim() || undefined,
             brief: brief.trim(),
             language,
             dataPoints,
-            channels: JSON.stringify(channels),
+            channels: JSON.stringify(channelsPayload),
             audience: JSON.stringify(audiencePayload),
-            quietHours: JSON.stringify(quietHours),
+            quietHours: JSON.stringify(schedule),
             cadenceHours: Number(cadenceHours),
             holdoutPct: Math.max(0, Math.min(100, Number(holdoutPct) || 0)),
             firstN: firstN.trim() ? Math.max(0, Number(firstN)) : undefined,
@@ -504,7 +604,6 @@ function CreateEnginePage() {
         });
     };
 
-    const channelMeta = buildChannelMeta(tConstants);
     const languageOptions = buildLanguageOptions(tConstants);
     const holdoutValue = Math.max(0, Math.min(100, Number(holdoutPct) || 0));
     const quietFrom = Number(quietStart);
@@ -670,27 +769,85 @@ function CreateEnginePage() {
                 {CHANNEL_ORDER.map((c) => {
                     const meta = channelMeta[c];
                     const cfg = channels[c] ?? {};
+                    const missing = notReady(c);
+                    const ready = readiness?.[c]?.ready === true && c !== 'IN_APP';
+                    const setupTab = CHANNEL_SETUP_TAB[c];
                     return (
                         <div
                             key={c}
                             className={cn(
                                 'flex flex-col gap-3 rounded-xl border p-4 transition-colors',
-                                cfg.enabled
-                                    ? 'border-primary-300 bg-primary-50'
-                                    : 'border-neutral-200'
+                                cfg.enabled && missing
+                                    ? 'border-danger-300 bg-danger-50'
+                                    : cfg.enabled
+                                      ? 'border-primary-300 bg-primary-50'
+                                      : 'border-neutral-200'
                             )}
                         >
                             <div className="flex items-center gap-3">
                                 <IconTile icon={CHANNEL_ICON[c]} size="sm" tint={CHANNEL_TINT[c]} />
-                                <span className="flex-1 font-semibold text-neutral-800">
+                                <span className="flex flex-1 flex-wrap items-center gap-2 font-semibold text-neutral-800">
                                     <span className="text-subtitle">{meta.label}</span>
+                                    {ready && (
+                                        <Chip
+                                            icon={CheckCircle}
+                                            label={tConstants('readiness.ready')}
+                                            className="bg-success-50 text-success-600"
+                                        />
+                                    )}
                                 </span>
                                 <Switch
                                     aria-label={t('channels.enableAria', { channel: meta.label })}
                                     checked={!!cfg.enabled}
+                                    // Not set up: it can't be turned on (one already on can be turned off).
+                                    disabled={missing && !cfg.enabled}
                                     onCheckedChange={(v) => toggleChannel(c, { enabled: v })}
                                 />
                             </div>
+                            {missing && (
+                                <div
+                                    role="alert"
+                                    className="flex flex-col gap-2 rounded-lg bg-danger-50 p-3 text-danger-700"
+                                >
+                                    <span className="flex items-start gap-2">
+                                        <WarningCircle size={16} className="mt-0.5 shrink-0" />
+                                        <span className="text-caption">
+                                            {readiness?.[c]?.reason === 'SENDER_MISSING'
+                                                ? tConstants('readiness.senderMissing')
+                                                : tConstants(`readiness.${c}`)}
+                                        </span>
+                                    </span>
+                                    <span className="flex flex-wrap gap-2">
+                                        {setupTab && (
+                                            <MyButton
+                                                buttonType="secondary"
+                                                scale="small"
+                                                // A new tab keeps this unsaved engine; the card re-checks on return.
+                                                onClick={() =>
+                                                    window.open(
+                                                        `/settings?selectedTab=${setupTab}`,
+                                                        '_blank',
+                                                        'noopener'
+                                                    )
+                                                }
+                                            >
+                                                {tConstants('readiness.setUp')}
+                                                <ArrowSquareOut size={14} />
+                                            </MyButton>
+                                        )}
+                                        <MyButton
+                                            buttonType="text"
+                                            scale="small"
+                                            disable={readinessChecking}
+                                            onClick={() => recheckReadiness()}
+                                        >
+                                            {readinessChecking
+                                                ? tConstants('readiness.checking')
+                                                : tConstants('readiness.checkAgain')}
+                                        </MyButton>
+                                    </span>
+                                </div>
+                            )}
                             {cfg.enabled && meta.supportsAuto && (
                                 <ChannelOption
                                     title={t('channels.autoTitle')}
@@ -819,36 +976,143 @@ function CreateEnginePage() {
     );
 
     const cadenceIsPreset = (CADENCE_PRESETS as readonly number[]).includes(Number(cadenceHours));
+    const sendStartMinute =
+        schedule.sendHour != null ? schedule.sendHour * 60 + (schedule.sendMinute ?? 0) : null;
+    /** The hour cell overlaps the one-hour send window (display only). */
+    const inSendWindow = (h: number) =>
+        sendStartMinute != null &&
+        [h * 60, h * 60 + 59].some((m) => {
+            const d = (m - sendStartMinute + 24 * 60) % (24 * 60);
+            return d < 60;
+        });
+    const toggleDay = (d: number) =>
+        setSendDays((prev) =>
+            prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort((a, b) => a - b)
+        );
+    const autoReplyOn = !!(channels.WHATSAPP?.enabled && channels.WHATSAPP?.autoReply);
+
     const cadenceStep = (
         <div className="flex flex-col gap-4">
-            <div className="grid gap-4 md:grid-cols-2">
-                <div className="flex flex-col gap-1">
-                    <label className="mb-1 block text-subtitle font-regular">
-                        {t('cadence.recheck')}
-                    </label>
-                    <Select
-                        value={cadenceIsPreset ? cadenceHours : 'custom'}
-                        onValueChange={(v) => v !== 'custom' && setCadenceHours(v)}
-                    >
-                        <SelectTrigger aria-label={t('cadence.recheck')}>
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {CADENCE_PRESETS.map((h) => (
-                                <SelectItem key={h} value={String(h)}>
-                                    {cadenceText(h, tConstants)}
-                                </SelectItem>
-                            ))}
-                            {!cadenceIsPreset && (
-                                <SelectItem value="custom">
-                                    {cadenceText(cadenceHours, tConstants)}
-                                </SelectItem>
-                            )}
-                        </SelectContent>
-                    </Select>
-                    <p className="text-caption text-neutral-500">{t('cadence.recheckHint')}</p>
+            <StepSection icon={Clock} title={t('cadence.rhythmTitle')} hint={t('cadence.rhythmHint')}>
+                <div className="grid gap-4 md:grid-cols-2">
+                    <div className="flex flex-col gap-1">
+                        <label className="mb-1 block text-subtitle font-regular">
+                            {t('cadence.recheck')}
+                        </label>
+                        <Select
+                            value={cadenceIsPreset ? cadenceHours : 'custom'}
+                            onValueChange={(v) => v !== 'custom' && setCadenceHours(v)}
+                        >
+                            <SelectTrigger aria-label={t('cadence.recheck')}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {CADENCE_PRESETS.map((h) => (
+                                    <SelectItem key={h} value={String(h)}>
+                                        {cadenceText(h, tConstants)}
+                                    </SelectItem>
+                                ))}
+                                {!cadenceIsPreset && (
+                                    <SelectItem value="custom">
+                                        {cadenceText(cadenceHours, tConstants)}
+                                    </SelectItem>
+                                )}
+                            </SelectContent>
+                        </Select>
+                        <p className="text-caption text-neutral-500">{t('cadence.recheckHint')}</p>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                        <label className="mb-1 block text-subtitle font-regular">
+                            {t('cadence.sendTime')}
+                        </label>
+                        <Select value={sendTime} onValueChange={setSendTime}>
+                            <SelectTrigger aria-label={t('cadence.sendTime')}>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">{t('cadence.anyTime')}</SelectItem>
+                                {SEND_TIME_OPTIONS.map((o) => (
+                                    <SelectItem key={o.value} value={o.value}>
+                                        {o.label}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        {/* Size on the inner span: cn() would drop text-caption next to a text colour. */}
+                        <p className={sendTimeQuiet ? 'text-danger-600' : 'text-neutral-500'}>
+                            <span className="text-caption">
+                                {sendTimeQuiet ? t('blocked.sendTimeQuiet') : t('cadence.sendTimeHint')}
+                            </span>
+                        </p>
+                    </div>
                 </div>
-                <div>
+                <div className="flex flex-col gap-2">
+                    <span className="text-subtitle font-regular">{t('cadence.days')}</span>
+                    <div className="flex flex-wrap gap-2">
+                        {ISO_DAYS.map((d) => {
+                            const on = sendDays.includes(d);
+                            const label = tConstants(`schedule.day.${d}`);
+                            return (
+                                <button
+                                    key={d}
+                                    type="button"
+                                    aria-pressed={on}
+                                    aria-label={t('cadence.dayAria', { day: label })}
+                                    onClick={() => toggleDay(d)}
+                                    className={cn(
+                                        'min-w-12 rounded-lg border px-3 py-1.5 font-medium transition-colors',
+                                        on
+                                            ? 'border-primary-400 bg-primary-50 text-primary-600'
+                                            : 'border-neutral-200 text-neutral-500 hover:bg-neutral-50'
+                                    )}
+                                >
+                                    <span className="text-caption">{label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+                    <p className={sendDays.length ? 'text-neutral-500' : 'text-danger-600'}>
+                        <span className="text-caption">
+                            {sendDays.length ? t('cadence.daysHint') : t('blocked.days')}
+                        </span>
+                    </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                    <span className="text-subtitle font-regular">{t('cadence.firstTouch')}</span>
+                    <div className="grid gap-2 md:grid-cols-2" role="radiogroup">
+                        {(
+                            [
+                                ['IMMEDIATE', Lightning, 'firstTouchNow'],
+                                ['SCHEDULED', CalendarBlank, 'firstTouchWait'],
+                            ] as const
+                        ).map(([value, I, key]) => (
+                            <button
+                                key={value}
+                                type="button"
+                                role="radio"
+                                aria-checked={firstTouch === value}
+                                onClick={() => setFirstTouch(value)}
+                                className={cn(
+                                    'flex items-start gap-3 rounded-lg border p-3 text-left transition-colors',
+                                    firstTouch === value
+                                        ? 'border-primary-400 bg-primary-50'
+                                        : 'border-neutral-200 hover:bg-neutral-50'
+                                )}
+                            >
+                                <I size={18} weight="duotone" className="mt-0.5 shrink-0 text-primary-500" />
+                                <span className="flex flex-col">
+                                    <span className="font-medium text-neutral-800">
+                                        <span className="text-body">{t(`cadence.${key}`)}</span>
+                                    </span>
+                                    <span className="text-neutral-500">
+                                        <span className="text-caption">{t(`cadence.${key}Hint`)}</span>
+                                    </span>
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+                <div className="md:w-1/2">
                     <label className="mb-1 block text-subtitle font-regular">
                         {t('cadence.timezone')}
                     </label>
@@ -861,7 +1125,7 @@ function CreateEnginePage() {
                         onChange={setTimezone}
                     />
                 </div>
-            </div>
+            </StepSection>
             <div className="flex flex-col gap-2">
                 <label className="text-subtitle font-regular">{t('cadence.quietHours')}</label>
                 <div className="flex flex-wrap items-end gap-3">
@@ -880,7 +1144,11 @@ function CreateEnginePage() {
                                 title={`${String(h).padStart(2, '0')}:00`}
                                 className={cn(
                                     'h-6 flex-1 rounded-sm',
-                                    isQuiet(h) ? 'bg-neutral-700' : 'bg-success-100'
+                                    isQuiet(h)
+                                        ? 'bg-neutral-700'
+                                        : inSendWindow(h)
+                                          ? 'bg-primary-400'
+                                          : 'bg-success-100'
                                 )}
                             />
                         ))}
@@ -901,10 +1169,42 @@ function CreateEnginePage() {
                             <span className="size-3 rounded-sm bg-success-100" />
                             <span className="text-caption">{t('cadence.legendOpen')}</span>
                         </span>
+                        {sendStartMinute != null && (
+                            <span className="flex items-center gap-1.5">
+                                <span className="size-3 rounded-sm bg-primary-400" />
+                                <span className="text-caption">{t('cadence.legendSend')}</span>
+                            </span>
+                        )}
                     </div>
                 </div>
                 <p className="text-caption text-neutral-500">{t('cadence.quietHint')}</p>
             </div>
+
+            <StepSection icon={FlagCheckered} title={t('cadence.goalTitle')}>
+                <label className="flex items-start justify-between gap-3">
+                    <span className="flex flex-col">
+                        <span className="font-medium text-neutral-700">
+                            <span className="text-body">{t('cadence.stopOnMeeting')}</span>
+                        </span>
+                        <span className="text-neutral-500">
+                            <span className="text-caption">{t('cadence.stopOnMeetingHint')}</span>
+                        </span>
+                    </span>
+                    <Switch
+                        aria-label={t('cadence.stopOnMeeting')}
+                        checked={stopOnMeeting}
+                        onCheckedChange={setStopOnMeeting}
+                    />
+                </label>
+            </StepSection>
+
+            <EnginePlanPreview
+                cadenceHours={Number(cadenceHours) || 72}
+                schedule={schedule}
+                channelLabels={enabledChannelKeys.map((c) => channelMeta[c].label)}
+                stopOnMeeting={stopOnMeeting}
+                autoReply={autoReplyOn}
+            />
 
             <Collapsible
                 open={advancedOpen}
@@ -967,7 +1267,6 @@ function CreateEnginePage() {
         ...batchIds.map((id) => batchName(id) ?? t('audience.picker.unknown')),
         ...audienceIds.map((id) => listNames[id] ?? t('audience.picker.unknown')),
     ];
-    const cadenceLabel = cadenceText(cadenceHours, tConstants);
     const timezoneLabel =
         TIMEZONE_OPTIONS.find((o: { label: string; value: string }) => o.value === timezone)
             ?.label ?? timezone;
@@ -1020,7 +1319,12 @@ function CreateEnginePage() {
                             )}
                         </span>
                     </KeyValue>
-                    <KeyValue label={t('review.cadence')}>{cadenceLabel}</KeyValue>
+                    <KeyValue label={t('review.cadence')}>
+                        {scheduleText(cadenceHours, schedule, tConstants)}
+                    </KeyValue>
+                    <KeyValue label={t('review.goal')}>
+                        {stopOnMeeting ? t('review.goalMeeting') : t('review.goalNone')}
+                    </KeyValue>
                     <KeyValue label={t('review.quietHours')}>
                         {`${pad2(quietStart)}:00–${pad2(quietEnd)}:00 · ${timezoneLabel}`}
                     </KeyValue>
