@@ -183,6 +183,46 @@
             "submitLabel": "Submit review",
             "successHeading": "Thank you!",
             "successMessage": "Your review has been sent. It will appear on the site once it is approved."
+        },
+        "formFields": {
+            "title": "Form fields",
+            "hint": "The visitor's form, in this order.",
+            "add": "Add field",
+            "builtinGroup": "Standard fields",
+            "customGroup": "Your own question",
+            "kinds": {
+                "rating": "Star rating",
+                "reviewerName": "Name",
+                "reviewText": "Written review",
+                "courseName": "Course",
+                "city": "City",
+                "designation": "Occupation / designation",
+                "text": "Short answer",
+                "textarea": "Long answer",
+                "select": "Dropdown",
+                "number": "Number",
+                "email": "Email",
+                "phone": "Phone"
+            },
+            "label": "Label",
+            "placeholder": "Placeholder",
+            "options": "Choices (one per line)",
+            "optionsHint": "Visitors pick one of these.",
+            "optionsCourseHint": "Leave empty to let visitors type their course.",
+            "required": "Required",
+            "lockedHint": "Star rating and name are always on the form: a review needs both to show as a testimonial.",
+            "width": "Width",
+            "widthFull": "Full",
+            "widthHalf": "Half",
+            "edit": "Edit field",
+            "moveUp": "Move up",
+            "moveDown": "Move down",
+            "delete": "Delete field",
+            "maxCustom": "You can add up to 10 questions of your own.",
+            "defaults": {
+                "rating": "Your rating",
+                "custom": "Your answer"
+            }
         }
     }
 }

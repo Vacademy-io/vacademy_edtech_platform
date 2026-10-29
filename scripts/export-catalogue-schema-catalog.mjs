@@ -307,7 +307,10 @@ const DATA_BOUND = {
         'course, city and occupation/designation; submissions wait for the admin in Website Builder → Reviews and ' +
         'only approved ones become public. Placement + behaviour only: display floatingPopup|floating|popup|inline, ' +
         'buttonStyle pill|icon|tab, position bottom-right|bottom-left|middle-right|middle-left, popupStyle modal|corner, ' +
-        'trigger delay|scroll|exit, delaySeconds, frequency, devices, fields.* off|optional|required, courseOptions. ' +
+        'trigger delay|scroll|exit, delaySeconds, frequency, devices. formFields[] = the form in order: {id, kind, label, ' +
+        'placeholder, required, options, width full|half}; kinds rating + reviewerName (always kept, required), reviewText, ' +
+        'courseName, city, designation (each once) and custom text|textarea|select|number|email|phone (id "f_<word>", ' +
+        'max 10; their answers are stored with the review). ' +
         'Leave text props empty (they default to the site language). One per site is enough — put it on the home page.',
     blog:
         'Live blog: reads the institute\'s PUBLISHED posts (written in Manage Pages → Blog or by an AI app over ' +

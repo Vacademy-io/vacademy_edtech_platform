@@ -17,9 +17,8 @@ import {
   hasSubmittedReview,
   markReviewSubmitted,
   normalizeButtonStyle,
-  normalizeCourseOptions,
   normalizeDisplay,
-  normalizeFields,
+  normalizeFormFields,
   normalizePopupStyle,
   normalizePosition,
   opensByItself,
@@ -74,8 +73,17 @@ export interface ReviewCollectorProps extends ReviewFormLabels {
   frequency?: string;
   devices?: string;
   hideAfterSubmit?: boolean;
+  /** The form's fields in order (see normalizeFormFields); absent on blocks saved before the builder. */
+  formFields?: unknown;
+  /* older blocks: per-field modes, labels and course choices */
   fields?: unknown;
   courseOptions?: unknown;
+  nameLabel?: string;
+  textLabel?: string;
+  textPlaceholder?: string;
+  cityLabel?: string;
+  courseLabel?: string;
+  designationLabel?: string;
   /** Inline only. */
   backgroundColor?: string;
 }
@@ -269,8 +277,7 @@ export const ReviewCollector: React.FC<ReviewCollectorProps> = (props) => {
   const devices = normalizeDevices(props.devices);
   const delayMs = clampNumber(props.delaySeconds, 0, 120, 5) * 1000;
   const scrollAt = clampNumber(props.scrollPercent, 5, 100, 40);
-  const fields = normalizeFields(props.fields);
-  const courseOptions = normalizeCourseOptions(props.courseOptions);
+  const fields = normalizeFormFields(props as unknown as Record<string, unknown>);
   const storageKey = promoStorageKey(instituteId, `review-${componentId}`);
   const titleId = useId();
 
@@ -344,7 +351,6 @@ export const ReviewCollector: React.FC<ReviewCollectorProps> = (props) => {
       tagName={tagName}
       pageRoute={pageRoute}
       fields={fields}
-      courseOptions={courseOptions}
       isPreviewMode={isPreviewMode}
       titleId={titleId}
       onSubmitted={onSubmitted}

@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { ColorPickerField } from './ColorPickerField';
 import { Note, Pills, Section } from './PromoPopupEditor';
 import { useReviewManagerStore } from '../-stores/review-manager-store';
+import { ReviewFormFieldsEditor } from './ReviewFormFieldsEditor';
 
 /**
  * Property panel for the "reviewCollector" block (learner:
@@ -21,7 +22,6 @@ import { useReviewManagerStore } from '../-stores/review-manager-store';
  */
 
 type Display = 'floatingPopup' | 'floating' | 'popup' | 'inline';
-type FieldMode = 'off' | 'optional' | 'required';
 
 interface Preset {
     key: string;
@@ -117,14 +117,6 @@ const matches = (props: Record<string, unknown>, preset: Preset) =>
         return String(current) === String(v);
     });
 
-const FIELD_KEYS = ['reviewText', 'course', 'city', 'designation'] as const;
-const LABEL_PROP: Record<(typeof FIELD_KEYS)[number], string> = {
-    reviewText: 'textLabel',
-    course: 'courseLabel',
-    city: 'cityLabel',
-    designation: 'designationLabel',
-};
-
 export const ReviewCollectorEditor = ({ component, pageId, updateComponent }: any) => {
     const { t } = useTranslation('managePagesReviews');
     const { t: tp } = useTranslation('managePagesPromoPopup');
@@ -134,8 +126,6 @@ export const ReviewCollectorEditor = ({ component, pageId, updateComponent }: an
     const hasLauncher = display === 'floating' || display === 'floatingPopup';
     const opensByItself = display === 'popup' || display === 'floatingPopup';
     const trigger = props.trigger || 'delay';
-    const fields: Record<string, FieldMode> = { reviewText: 'optional', city: 'optional', course: 'optional', designation: 'optional', ...(props.fields || {}) };
-    const courseOptions: string[] = Array.isArray(props.courseOptions) ? props.courseOptions : [];
 
     const update = (patch: Record<string, unknown>) =>
         updateComponent(pageId, component.id, { props: { ...props, ...patch } });
@@ -325,50 +315,8 @@ export const ReviewCollectorEditor = ({ component, pageId, updateComponent }: an
                 </Section>
             )}
 
-            {/* ── What it asks ─────────────────────────────────────── */}
-            <Section title={t('editor.sections.fields')}>
-                <p className="text-caption text-gray-500">{t('editor.hints.alwaysAsked')}</p>
-                {FIELD_KEYS.map((key) => (
-                    <div key={key} className="space-y-1.5">
-                        <Label className="text-xs">{t(`editor.fieldNames.${key}`)}</Label>
-                        <Pills
-                            value={fields[key] || 'optional'}
-                            onChange={(v) => updateProp('fields', { ...fields, [key]: v })}
-                            options={(['off', 'optional', 'required'] as const).map((m) => ({ value: m, label: t(`editor.fieldMode.${m}`) }))}
-                        />
-                        {fields[key] !== 'off' && (
-                            <Input
-                                value={props[LABEL_PROP[key]] || ''}
-                                placeholder={t(`editor.defaults.${LABEL_PROP[key]}`)}
-                                aria-label={t('editor.fields.labelFor', { field: t(`editor.fieldNames.${key}`) })}
-                                onChange={(e) => updateProp(LABEL_PROP[key], e.target.value)}
-                            />
-                        )}
-                        {key === 'course' && fields.course !== 'off' && (
-                            <div>
-                                <Label className="text-xs">{t('editor.fields.courseOptions')}</Label>
-                                <Textarea
-                                    className="mt-1"
-                                    rows={3}
-                                    value={courseOptions.join('\n')}
-                                    placeholder={t('editor.hints.courseOptionsPlaceholder')}
-                                    onChange={(e) => updateProp('courseOptions', e.target.value.split('\n'))}
-                                    onBlur={(e) =>
-                                        updateProp(
-                                            'courseOptions',
-                                            e.target.value
-                                                .split('\n')
-                                                .map((s) => s.trim())
-                                                .filter(Boolean)
-                                        )
-                                    }
-                                />
-                                <p className="mt-1 text-caption text-gray-500">{t('editor.hints.courseOptions')}</p>
-                            </div>
-                        )}
-                    </div>
-                ))}
-            </Section>
+            {/* ── Form fields: order, edit, delete, add ───────────── */}
+            <ReviewFormFieldsEditor props={props} update={(next) => updateComponent(pageId, component.id, { props: next })} />
 
             {/* ── Text ─────────────────────────────────────────────── */}
             <Section title={t('editor.sections.text')}>
@@ -377,8 +325,6 @@ export const ReviewCollectorEditor = ({ component, pageId, updateComponent }: an
                     [
                         ['heading', false],
                         ['subheading', true],
-                        ['nameLabel', false],
-                        ['textPlaceholder', false],
                         ['submitLabel', false],
                         ['successHeading', false],
                         ['successMessage', true],

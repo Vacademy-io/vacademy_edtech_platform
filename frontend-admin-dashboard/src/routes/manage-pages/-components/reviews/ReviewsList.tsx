@@ -339,6 +339,16 @@ export const ReviewsList = () => {
                                         ) : (
                                             <p className="mt-2 text-xs italic text-neutral-400">{t('list.noText')}</p>
                                         )}
+                                        {r.answers && r.answers.length > 0 && (
+                                            <dl className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 rounded-md bg-neutral-50 px-3 py-2 text-xs sm:grid-cols-2">
+                                                {r.answers.map((a) => (
+                                                    <div key={a.key} className="min-w-0">
+                                                        <dt className="truncate text-neutral-500">{a.label}</dt>
+                                                        <dd className="whitespace-pre-line break-words text-neutral-800">{a.value}</dd>
+                                                    </div>
+                                                ))}
+                                            </dl>
+                                        )}
                                         <p className="mt-2 text-caption text-neutral-400">
                                             {t('list.sentOn', { date: formatDate(r.created_at) })}
                                             {r.catalogue_tag ? ` · ${t('list.fromSite', { site: r.catalogue_tag })}` : ''}

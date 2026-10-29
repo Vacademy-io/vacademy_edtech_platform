@@ -6,6 +6,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * What a visitor sends from a `reviewCollector` block. `website` is a honeypot
  * field the form hides from people: a filled one marks a bot.
@@ -25,5 +27,7 @@ public class ReviewSubmitRequest {
     private String courseName;
     private String designation;
     private String visitorKey;
+    /** Answers to the form's custom fields, in form order. */
+    private List<ReviewAnswer> answers;
     private String website;
 }

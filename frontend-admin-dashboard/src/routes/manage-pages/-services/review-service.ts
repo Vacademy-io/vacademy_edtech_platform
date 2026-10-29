@@ -23,6 +23,8 @@ export interface SiteReview {
     page_route?: string | null;
     created_at?: string | null;
     reviewed_at?: string | null;
+    /** Answers to the form's custom fields, with the label the visitor saw. */
+    answers?: { key: string; label: string; value: string }[] | null;
 }
 
 export interface SiteReviewPage {

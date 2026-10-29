@@ -8,6 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.admin_core_service.features.catalogue_review.dto.ReviewAnswer;
 import vacademy.io.admin_core_service.features.catalogue_review.dto.ReviewPageResponse;
 import vacademy.io.admin_core_service.features.catalogue_review.dto.ReviewResponse;
 import vacademy.io.admin_core_service.features.catalogue_review.dto.ReviewSubmitRequest;
@@ -119,6 +120,39 @@ class CatalogueReviewServiceTest {
         VacademyException e = assertThrows(VacademyException.class, () -> service.submit(request(5, "Asha")));
         assertEquals(HttpStatus.TOO_MANY_REQUESTS, e.getStatus());
         verify(repository, never()).save(any());
+    }
+
+    @Test
+    void submit_storesCustomAnswers_dropsBlanks_capsCount() {
+        ReviewSubmitRequest req = request(5, "Asha");
+        java.util.List<ReviewAnswer> answers = new java.util.ArrayList<>();
+        answers.add(new ReviewAnswer("f_exam", "Exam you are preparing for", "  SSC CGL  "));
+        answers.add(new ReviewAnswer("f_blank", "Left empty", "   "));
+        for (int i = 0; i < 30; i++) answers.add(new ReviewAnswer("f_" + i, "Q" + i, "A" + i));
+        req.setAnswers(answers);
+        service.submit(req);
+        ArgumentCaptor<CatalogueReview> saved = ArgumentCaptor.forClass(CatalogueReview.class);
+        verify(repository).save(saved.capture());
+        String json = saved.getValue().getAnswers();
+        assertTrue(json.startsWith("[{\"key\":\"f_exam\",\"label\":\"Exam you are preparing for\",\"value\":\"SSC CGL\"}"), json);
+        assertFalse(json.contains("f_blank"));
+        assertEquals(20, json.split("\"key\"").length - 1);
+    }
+
+    @Test
+    void answers_showToAdmins_notOnThePublicList() {
+        CatalogueReview r = CatalogueReview.builder().id("r1").instituteId(INSTITUTE).rating(5).reviewerName("Asha")
+                .status("APPROVED").answers("[{\"key\":\"f_exam\",\"label\":\"Exam\",\"value\":\"SSC\"}]").build();
+        when(repository.findApproved(eq(INSTITUTE), anyInt(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(r)));
+        when(repository.approvedSummary(INSTITUTE)).thenReturn(List.<Object[]>of(new Object[]{5.0, 1L}));
+        assertNull(service.publicApproved(INSTITUTE, 1, 0, 9).getContent().get(0).getAnswers());
+
+        when(repository.searchForAdmin(eq(INSTITUTE), any(), any(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(r)));
+        when(repository.countByStatus(INSTITUTE)).thenReturn(List.of());
+        List<ReviewAnswer> got = service.list(admin(), INSTITUTE, "ALL", null, 0, 20).getContent().get(0).getAnswers();
+        assertEquals(1, got.size());
+        assertEquals("Exam", got.get(0).getLabel());
+        assertEquals("SSC", got.get(0).getValue());
     }
 
     // ── public list ──────────────────────────────────────────────────────

@@ -6,31 +6,23 @@ import { cn } from "@/lib/utils";
 import { ReviewService } from "../../../-services/review-service";
 import { siteVisitorId } from "../../../-utils/site-visitor";
 import {
-  EMPTY_REVIEW,
-  REVIEW_NAME_MAX,
-  REVIEW_TEXT_MAX,
-  reviewPayload,
-  validateReview,
-  type ReviewErrorKey,
-  type ReviewFields,
-  type ReviewValues,
+  buildReviewSubmission,
+  fieldMaxLength,
+  validateReviewForm,
+  type ReviewField,
+  type ReviewFieldError,
+  type ReviewFormValues,
 } from "../../../-utils/review-collector";
 
 /**
- * The review form itself — stars, name and whichever of text / city / course /
- * designation the block asks for. Used inside the popup, the launcher's panel
- * and the inline section alike.
+ * The review form itself: the block's fields in the admin's order — stars,
+ * name and review plus course / city / designation and any custom questions.
+ * Used inside the popup, the launcher's panel and the inline section alike.
  */
 
 export interface ReviewFormLabels {
   heading?: string;
   subheading?: string;
-  nameLabel?: string;
-  textLabel?: string;
-  textPlaceholder?: string;
-  cityLabel?: string;
-  courseLabel?: string;
-  designationLabel?: string;
   submitLabel?: string;
   successHeading?: string;
   successMessage?: string;
@@ -40,8 +32,7 @@ export interface ReviewFormProps extends ReviewFormLabels {
   instituteId: string;
   tagName?: string;
   pageRoute?: string;
-  fields: ReviewFields;
-  courseOptions: string[];
+  fields: ReviewField[];
   /** Editor preview: shows the success state without sending anything. */
   isPreviewMode?: boolean;
   titleId?: string;
@@ -55,84 +46,119 @@ const StarRatingInput: React.FC<{
   onChange: (v: number) => void;
   invalid: boolean;
   labelId: string;
-}> = ({ value, onChange, invalid, labelId }) => {
+  describedBy?: string;
+}> = ({ value, onChange, invalid, labelId, describedBy }) => {
   const { t } = useTranslation("coursePlayerB");
   const [hover, setHover] = useState(0);
   const shown = hover || value;
   const name = useId();
   return (
-    <div>
-      <div
-        role="radiogroup"
-        aria-labelledby={labelId}
-        aria-invalid={invalid || undefined}
-        className="flex items-center gap-1"
-        onMouseLeave={() => setHover(0)}
-      >
-        {[1, 2, 3, 4, 5].map((n) => (
-          <label
-            key={n}
-            className="cursor-pointer rounded-catalogue-sm p-0.5 transition-transform hover:scale-110 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary-300 motion-reduce:transition-none motion-reduce:hover:scale-100"
-            onMouseEnter={() => setHover(n)}
-          >
-            <input
-              type="radio"
-              name={name}
-              value={n}
-              checked={value === n}
-              onChange={() => onChange(n)}
-              className="sr-only"
-              aria-label={t("reviewCollector.starsA11y", { count: n })}
-            />
-            <Star
-              size={32}
-              weight={n <= shown ? "fill" : "regular"}
-              className={n <= shown ? "text-warning-500" : "text-catalogue-text-muted"}
-              aria-hidden="true"
-            />
-          </label>
-        ))}
-        <span className="ms-2 text-sm font-medium text-catalogue-text-secondary" aria-live="polite">
-          {shown ? t(`reviewCollector.ratingName.${shown}`) : ""}
-        </span>
-      </div>
+    <div
+      role="radiogroup"
+      aria-labelledby={labelId}
+      aria-invalid={invalid || undefined}
+      aria-describedby={describedBy}
+      className="flex items-center gap-1"
+      onMouseLeave={() => setHover(0)}
+    >
+      {[1, 2, 3, 4, 5].map((n) => (
+        <label
+          key={n}
+          className="cursor-pointer rounded-catalogue-sm p-0.5 transition-transform hover:scale-110 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary-300 motion-reduce:transition-none motion-reduce:hover:scale-100"
+          onMouseEnter={() => setHover(n)}
+        >
+          <input
+            type="radio"
+            name={name}
+            value={n}
+            checked={value === n}
+            onChange={() => onChange(n)}
+            className="sr-only"
+            aria-label={t("reviewCollector.starsA11y", { count: n })}
+          />
+          <Star
+            size={32}
+            weight={n <= shown ? "fill" : "regular"}
+            className={n <= shown ? "text-warning-500" : "text-catalogue-text-muted"}
+            aria-hidden="true"
+          />
+        </label>
+      ))}
+      <span className="ms-2 text-sm font-medium text-catalogue-text-secondary" aria-live="polite">
+        {shown ? t(`reviewCollector.ratingName.${shown}`) : ""}
+      </span>
     </div>
   );
 };
 
 /* ── form ────────────────────────────────────────────────────────────── */
 
+const AUTOCOMPLETE: Partial<Record<ReviewField["kind"], string>> = {
+  reviewerName: "name",
+  city: "address-level2",
+  designation: "organization-title",
+  email: "email",
+  phone: "tel",
+};
+
 export const ReviewForm: React.FC<ReviewFormProps> = ({
-  instituteId, tagName, pageRoute, fields, courseOptions, isPreviewMode = false, titleId, onSubmitted,
-  heading, subheading, nameLabel, textLabel, textPlaceholder, cityLabel, courseLabel, designationLabel,
-  submitLabel, successHeading, successMessage,
+  instituteId, tagName, pageRoute, fields, isPreviewMode = false, titleId, onSubmitted,
+  heading, subheading, submitLabel, successHeading, successMessage,
 }) => {
   const { t } = useTranslation("coursePlayerB");
-  const [values, setValues] = useState<ReviewValues>(EMPTY_REVIEW);
-  const [errors, setErrors] = useState<Partial<Record<ReviewErrorKey, string>>>({});
+  const [values, setValues] = useState<ReviewFormValues>({});
+  const [errors, setErrors] = useState<Record<string, ReviewFieldError>>({});
   const [honeypot, setHoneypot] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "done" | "failed" | "limited">("idle");
-  const ratingLabelId = useId();
   const formId = useId();
-  const errId = (key: ReviewErrorKey) => `${formId}-${key}-error`;
-  const ids = { name: useId(), text: useId(), city: useId(), course: useId(), designation: useId() };
+  const inputId = (f: ReviewField) => `${formId}-${f.id}`;
+  const errId = (f: ReviewField) => `${formId}-${f.id}-error`;
 
-  const set = (key: keyof ReviewValues, value: string | number) => {
-    setValues((v) => ({ ...v, [key]: value }));
-    if (errors[key as ReviewErrorKey]) setErrors((e) => ({ ...e, [key]: undefined }));
+  /** The label the visitor sees: the admin's, else the built-in wording. */
+  const labelOf = (f: ReviewField): string => {
+    if (f.label && f.label.trim()) return f.label.trim();
+    switch (f.kind) {
+      case "rating":
+        return t("reviewCollector.ratingLabel");
+      case "reviewerName":
+        return t("reviewCollector.nameLabel");
+      case "reviewText":
+        return t("reviewCollector.textLabel");
+      case "courseName":
+        return t("reviewCollector.courseLabel");
+      case "city":
+        return t("reviewCollector.cityLabel");
+      case "designation":
+        return t("reviewCollector.designationLabel");
+      default:
+        return t("reviewCollector.customFieldLabel");
+    }
+  };
+  const placeholderOf = (f: ReviewField): string | undefined =>
+    f.placeholder?.trim() || (f.kind === "reviewText" ? t("reviewCollector.textPlaceholder") : undefined);
+
+  const set = (id: string, value: string | number) => {
+    setValues((v) => ({ ...v, [id]: value }));
+    if (errors[id]) {
+      setErrors((e) => {
+        const next = { ...e };
+        delete next[id];
+        return next;
+      });
+    }
   };
 
-  const errorText = (key: ReviewErrorKey) => {
-    const code = errors[key];
+  const errorText = (f: ReviewField) => {
+    const code = errors[f.id];
     if (!code) return null;
     const msg =
-      key === "rating"
+      f.kind === "rating"
         ? t("reviewCollector.ratingRequired")
-        : code === "tooLong"
-          ? t("reviewCollector.tooLong")
-          : t("reviewCollector.fieldRequired");
+        : code === "required"
+          ? t("reviewCollector.fieldRequired")
+          : t(`reviewCollector.${code}`);
     return (
-      <p id={errId(key)} className="mt-1 text-xs text-danger-600">
+      <p id={errId(f)} className="mt-1 text-xs text-danger-600">
         {msg}
       </p>
     );
@@ -140,7 +166,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const found = validateReview(values, fields);
+    const found = validateReviewForm(fields, values);
     setErrors(found);
     if (Object.keys(found).length) return;
     if (isPreviewMode) {
@@ -155,7 +181,7 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
         pageRoute,
         visitorKey: siteVisitorId(),
         website: honeypot,
-        ...reviewPayload(values, fields),
+        ...buildReviewSubmission(fields, values, labelOf),
       });
       setStatus("done");
       onSubmitted?.();
@@ -179,12 +205,86 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
     );
   }
 
-  const label = (htmlFor: string, text: string, required: boolean) => (
-    <label htmlFor={htmlFor} className="mb-1.5 block text-sm font-medium text-catalogue-text-secondary">
-      {text}
-      {required && <span className="ms-1 text-catalogue-brand-ink">*</span>}
-    </label>
-  );
+  const control = (f: ReviewField) => {
+    const id = inputId(f);
+    const value = values[f.id];
+    const common = {
+      id,
+      value: value === undefined ? "" : String(value),
+      "aria-invalid": errors[f.id] ? true : undefined,
+      "aria-describedby": errors[f.id] ? errId(f) : undefined,
+    };
+    const label = (
+      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-catalogue-text-secondary">
+        {labelOf(f)}
+        {f.required && <span className="ms-1 text-catalogue-brand-ink">*</span>}
+      </label>
+    );
+
+    if (f.kind === "rating") {
+      const labelId = `${id}-label`;
+      return (
+        <>
+          <p id={labelId} className="mb-1.5 text-sm font-medium text-catalogue-text-secondary">
+            {labelOf(f)}
+            <span className="ms-1 text-catalogue-brand-ink">*</span>
+          </p>
+          <StarRatingInput
+            value={Number(value) || 0}
+            onChange={(n) => set(f.id, n)}
+            invalid={!!errors[f.id]}
+            labelId={labelId}
+            describedBy={errors[f.id] ? errId(f) : undefined}
+          />
+        </>
+      );
+    }
+    if (f.kind === "reviewText" || f.kind === "textarea") {
+      return (
+        <>
+          {label}
+          <textarea
+            {...common}
+            rows={f.kind === "reviewText" ? 4 : 3}
+            maxLength={fieldMaxLength(f.kind)}
+            placeholder={placeholderOf(f)}
+            onChange={(e) => set(f.id, e.target.value)}
+            className="catalogue-input w-full resize-y"
+          />
+        </>
+      );
+    }
+    if ((f.kind === "select" || f.kind === "courseName") && f.options && f.options.length > 0) {
+      return (
+        <>
+          {label}
+          <select {...common} onChange={(e) => set(f.id, e.target.value)} className="catalogue-input w-full">
+            <option value="">{f.placeholder?.trim() || t("reviewCollector.selectPlaceholder")}</option>
+            {f.options.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+          </select>
+        </>
+      );
+    }
+    return (
+      <>
+        {label}
+        <input
+          {...common}
+          type={f.kind === "email" ? "email" : f.kind === "phone" ? "tel" : f.kind === "number" ? "number" : "text"}
+          inputMode={f.kind === "number" ? "decimal" : undefined}
+          autoComplete={AUTOCOMPLETE[f.kind]}
+          maxLength={f.kind === "number" ? undefined : fieldMaxLength(f.kind)}
+          placeholder={placeholderOf(f)}
+          onChange={(e) => set(f.id, e.target.value)}
+          className="catalogue-input w-full"
+        />
+      </>
+    );
+  };
 
   return (
     <form onSubmit={submit} noValidate className="space-y-4">
@@ -195,118 +295,15 @@ export const ReviewForm: React.FC<ReviewFormProps> = ({
         <p className="mt-1 text-sm text-catalogue-text-secondary">{subheading || t("reviewCollector.subheading")}</p>
       </div>
 
-      <div>
-        <p id={ratingLabelId} className="mb-1.5 text-sm font-medium text-catalogue-text-secondary">
-          {t("reviewCollector.ratingLabel")}
-          <span className="ms-1 text-catalogue-brand-ink">*</span>
-        </p>
-        <StarRatingInput value={values.rating} onChange={(n) => set("rating", n)} invalid={!!errors.rating} labelId={ratingLabelId} />
-        {errorText("rating")}
+      {/* Half-width fields share a row on wider screens, in the admin's order. */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {fields.map((f) => (
+          <div key={f.id} className={cn(f.width !== "half" && "sm:col-span-2")} data-review-field={f.kind}>
+            {control(f)}
+            {errorText(f)}
+          </div>
+        ))}
       </div>
-
-      {fields.reviewText !== "off" && (
-        <div>
-          {label(ids.text, textLabel || t("reviewCollector.textLabel"), fields.reviewText === "required")}
-          <textarea
-            id={ids.text}
-            rows={4}
-            maxLength={REVIEW_TEXT_MAX}
-            value={values.reviewText}
-            onChange={(e) => set("reviewText", e.target.value)}
-            placeholder={textPlaceholder || t("reviewCollector.textPlaceholder")}
-            aria-invalid={!!errors.reviewText || undefined}
-            aria-describedby={errors.reviewText ? errId("reviewText") : undefined}
-            className="catalogue-input w-full resize-y"
-          />
-          {errorText("reviewText")}
-        </div>
-      )}
-
-      <div>
-        {label(ids.name, nameLabel || t("reviewCollector.nameLabel"), true)}
-        <input
-          id={ids.name}
-          type="text"
-          autoComplete="name"
-          maxLength={REVIEW_NAME_MAX}
-          value={values.reviewerName}
-          onChange={(e) => set("reviewerName", e.target.value)}
-          aria-invalid={!!errors.reviewerName || undefined}
-          aria-describedby={errors.reviewerName ? errId("reviewerName") : undefined}
-          className="catalogue-input w-full"
-        />
-        {errorText("reviewerName")}
-      </div>
-
-      {(fields.city !== "off" || fields.course !== "off") && (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {fields.course !== "off" && (
-            <div className={cn(fields.city === "off" && "sm:col-span-2")}>
-              {label(ids.course, courseLabel || t("reviewCollector.courseLabel"), fields.course === "required")}
-              {courseOptions.length > 0 ? (
-                <select
-                  id={ids.course}
-                  value={values.courseName}
-                  onChange={(e) => set("courseName", e.target.value)}
-                  aria-invalid={!!errors.courseName || undefined}
-                  className="catalogue-input w-full"
-                >
-                  <option value="">{t("reviewCollector.coursePlaceholder")}</option>
-                  {courseOptions.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  id={ids.course}
-                  type="text"
-                  maxLength={255}
-                  value={values.courseName}
-                  onChange={(e) => set("courseName", e.target.value)}
-                  aria-invalid={!!errors.courseName || undefined}
-                  className="catalogue-input w-full"
-                />
-              )}
-              {errorText("courseName")}
-            </div>
-          )}
-          {fields.city !== "off" && (
-            <div className={cn(fields.course === "off" && "sm:col-span-2")}>
-              {label(ids.city, cityLabel || t("reviewCollector.cityLabel"), fields.city === "required")}
-              <input
-                id={ids.city}
-                type="text"
-                autoComplete="address-level2"
-                maxLength={120}
-                value={values.city}
-                onChange={(e) => set("city", e.target.value)}
-                aria-invalid={!!errors.city || undefined}
-                className="catalogue-input w-full"
-              />
-              {errorText("city")}
-            </div>
-          )}
-        </div>
-      )}
-
-      {fields.designation !== "off" && (
-        <div>
-          {label(ids.designation, designationLabel || t("reviewCollector.designationLabel"), fields.designation === "required")}
-          <input
-            id={ids.designation}
-            type="text"
-            autoComplete="organization-title"
-            maxLength={255}
-            value={values.designation}
-            onChange={(e) => set("designation", e.target.value)}
-            aria-invalid={!!errors.designation || undefined}
-            className="catalogue-input w-full"
-          />
-          {errorText("designation")}
-        </div>
-      )}
 
       {/* Honeypot: off-screen and skipped by keyboard and autofill; people never fill it. */}
       <div className="sr-only" aria-hidden="true">
