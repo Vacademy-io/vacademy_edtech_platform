@@ -19,6 +19,9 @@ public class AuthRequestDto {
     private String password;
     private String clientName;
     private String instituteId;
+    // Learner login pages only: the institute their domain routes to. When present, the account
+    // must belong to it (see LearnerPortalAccessGuard). Absent = no portal scoping, as before.
+    private String portalInstituteId;
     private String email;
     private String otp;
     private String phoneNumber;

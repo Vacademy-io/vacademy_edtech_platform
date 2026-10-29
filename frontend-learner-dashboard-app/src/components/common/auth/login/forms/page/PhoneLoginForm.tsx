@@ -196,7 +196,7 @@ export function PhoneLoginForm({
 
     const verifyOtpMutation = useMutation({
         mutationFn: (data: { phone: string; otp: string }) =>
-            axios.post(VERIFY_WHATSAPP_OTP_LOGIN, { phone_number: data.phone, otp: data.otp, institute_id: domainRouting.instituteId }),
+            axios.post(VERIFY_WHATSAPP_OTP_LOGIN, { phone_number: data.phone, otp: data.otp, institute_id: domainRouting.instituteId, portal_institute_id: domainRouting.instituteId }),
         onSuccess: async (response) => {
             try {
                 // Check for session limit exceeded
