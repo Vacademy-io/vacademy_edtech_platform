@@ -6,21 +6,26 @@ import {
     Check,
     EnvelopeSimple,
     MapPin,
+    MapTrifold,
     Phone,
+    UserCircle,
     X,
+    type Icon,
 } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
+import { StatusChip } from '@/components/design-system/status-chips';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDateTime } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-import type { CandidateSummary, ScoreParts } from '../-types';
+import type { CandidateSummary, ScoreParts, SentPhone } from '../-types';
 import {
     CANDIDATE_STATUS_LABEL,
     CONTACT_QUALITY_LABEL,
     flagLabel,
     isRiskFlag,
+    skippedLabel,
 } from '../-utils/lead-agent-options';
 import { useCandidate } from '../-hooks/use-lead-agent';
 
@@ -74,6 +79,115 @@ const scoreTone = (score: number | null) =>
             ? 'border-warning-300 bg-warning-50 text-warning-700'
             : 'border-danger-200 bg-danger-50 text-danger-700';
 
+function QualityPill({ quality }: { quality: string }) {
+    if (!quality) return null;
+    return (
+        <span className="rounded-md bg-neutral-100 px-2 py-0.5 text-caption text-neutral-600">
+            {CONTACT_QUALITY_LABEL[quality] ?? quality}
+        </span>
+    );
+}
+
+/** The phone came from, or is also on, the organisation's Google Maps listing. */
+function MapsCue({ phone }: { phone: SentPhone }) {
+    if (!phone.maps_confirmed && !phone.from_maps) return null;
+    return (
+        <span
+            className={cn(
+                'inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-caption',
+                phone.maps_confirmed ? 'bg-success-50 text-success-700' : 'bg-info-50 text-info-700'
+            )}
+        >
+            <MapTrifold className="size-3" aria-hidden />
+            {phone.maps_confirmed ? 'Confirmed on Google Maps' : 'From Google Maps'}
+        </span>
+    );
+}
+
+function ContactLine({
+    icon: ContactIcon,
+    label,
+    value,
+    quality,
+    note,
+    children,
+}: {
+    icon: Icon;
+    label: string;
+    value: string;
+    quality: string;
+    note?: string | null;
+    children?: React.ReactNode;
+}) {
+    return (
+        <div className="flex flex-wrap items-center gap-2 text-neutral-700">
+            <ContactIcon className="size-4 text-neutral-500" aria-label={label} />
+            <span className="break-all font-semibold">{value}</span>
+            <QualityPill quality={quality} />
+            {children}
+            {note && <span className="text-caption text-neutral-500">{note}</span>}
+        </div>
+    );
+}
+
+/** The phone, email and name delivery will send (`send`); the older `best_contact` when there is none. */
+function WhatIsSent({ c }: { c: CandidateSummary }) {
+    const send = c.send;
+    if (send && (send.phone || send.email)) {
+        const namedAfter = send.name && send.name !== c.org.name ? send.name : null;
+        return (
+            <>
+                {send.phone && (
+                    <ContactLine
+                        icon={Phone}
+                        label="Phone sent"
+                        value={send.phone.value}
+                        quality={send.phone.quality}
+                        note={send.phone.quality_note}
+                    >
+                        <MapsCue phone={send.phone} />
+                    </ContactLine>
+                )}
+                {send.email && (
+                    <ContactLine
+                        icon={EnvelopeSimple}
+                        label="Email sent"
+                        value={send.email.value}
+                        quality={send.email.quality}
+                        note={send.email.quality_note}
+                    />
+                )}
+                {namedAfter && (
+                    <p className="text-caption text-neutral-600">
+                        Lead name: {namedAfter}
+                        {send.role ? ` (${send.role})` : ''}
+                    </p>
+                )}
+                {send.ask_for && (
+                    <p className="flex items-center gap-2 text-neutral-700">
+                        <UserCircle className="size-4 shrink-0 text-neutral-500" aria-hidden />
+                        <span>
+                            Ask for: <span className="font-semibold">{send.ask_for}</span>
+                        </span>
+                    </p>
+                )}
+            </>
+        );
+    }
+    const contact = c.best_contact;
+    if (!contact) return <span className="text-caption text-neutral-500">No contact found</span>;
+    const isEmail = contact.kind === 'published_email' || contact.kind === 'email';
+    return (
+        <ContactLine
+            icon={isEmail ? EnvelopeSimple : Phone}
+            label={isEmail ? 'Email' : 'Phone'}
+            value={contact.value}
+            quality={contact.quality}
+            note={contact.label}
+        />
+    );
+}
+
 function Details({ candidateId, fallbackParts }: { candidateId: string; fallbackParts: boolean }) {
     const q = useCandidate(candidateId, true);
     if (q.isLoading) return <Skeleton className="h-24 w-full" />;
@@ -116,8 +230,18 @@ function Details({ candidateId, fallbackParts }: { candidateId: string; fallback
             )}
             <div className="flex flex-col gap-2">
                 <span className="text-caption font-semibold text-neutral-700">Evidence</span>
+                {c.maps_only && (
+                    <p className="flex items-start gap-2 rounded-md border border-info-200 bg-info-50 p-2 text-caption text-info-700">
+                        <MapTrifold className="size-4 shrink-0" aria-hidden />
+                        Judged from its Google Maps listing — the website could not be read.
+                    </p>
+                )}
                 {c.evidence.length === 0 ? (
-                    <p className="text-caption text-neutral-500">No quotes saved for this lead.</p>
+                    !c.maps_only && (
+                        <p className="text-caption text-neutral-500">
+                            No quotes saved for this lead.
+                        </p>
+                    )
                 ) : (
                     <ul className="flex flex-col gap-2">
                         {c.evidence.map((e, i) => {
@@ -175,8 +299,10 @@ export function CandidateCard({
 }) {
     const [open, setOpen] = useState(false);
     const website = safeHref(c.org.website ?? c.org.domain);
-    const contact = c.best_contact;
-    const ContactIcon = contact?.kind === 'email' ? EnvelopeSimple : Phone;
+    const skipped = c.status === 'SKIPPED';
+    // A skip chip that already carries the note does not repeat it as the reason.
+    const showTopReason =
+        !!c.top_reason && !(skipped && !c.duplicate_of && c.top_reason === c.delivery_note);
 
     return (
         <article
@@ -216,7 +342,9 @@ export function CandidateCard({
                                 {c.org.city}
                             </span>
                         )}
-                        {c.status !== 'REVIEW' && <span>{CANDIDATE_STATUS_LABEL[c.status]}</span>}
+                        {c.status !== 'REVIEW' && !skipped && (
+                            <span>{CANDIDATE_STATUS_LABEL[c.status]}</span>
+                        )}
                     </div>
                 </div>
                 <div
@@ -230,6 +358,14 @@ export function CandidateCard({
                     <span className="text-caption">score</span>
                 </div>
             </div>
+
+            {skipped && (
+                <StatusChip
+                    text={skippedLabel(c.duplicate_of, c.delivery_note)}
+                    textSize="text-caption"
+                    status="INFO"
+                />
+            )}
 
             {c.parts && <ScoreBars parts={c.parts} />}
 
@@ -252,21 +388,8 @@ export function CandidateCard({
             )}
 
             <div className="flex flex-col gap-1 text-body">
-                {contact ? (
-                    <div className="flex flex-wrap items-center gap-2 text-neutral-700">
-                        <ContactIcon className="size-4 text-neutral-500" />
-                        <span className="font-semibold">{contact.value}</span>
-                        <span className="rounded-md bg-neutral-100 px-2 py-0.5 text-caption text-neutral-600">
-                            {CONTACT_QUALITY_LABEL[contact.quality] ?? contact.quality}
-                        </span>
-                        {contact.label && (
-                            <span className="text-caption text-neutral-500">{contact.label}</span>
-                        )}
-                    </div>
-                ) : (
-                    <span className="text-caption text-neutral-500">No contact found</span>
-                )}
-                {c.top_reason && <p className="text-neutral-600">{c.top_reason}</p>}
+                <WhatIsSent c={c} />
+                {showTopReason && <p className="text-neutral-600">{c.top_reason}</p>}
                 {c.status === 'REJECTED' && c.reject_reason && (
                     <p className="text-caption text-danger-700">Rejected: {c.reject_reason}</p>
                 )}

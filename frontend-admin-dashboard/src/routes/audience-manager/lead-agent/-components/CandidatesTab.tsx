@@ -6,7 +6,7 @@ import { MyPagination } from '@/components/design-system/pagination';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState, ErrorState } from '@/routes/manage-pages/site-assistant/-components/TabStates';
-import type { CandidateStatus, LeadAgent } from '../-types';
+import type { CandidateStatus, CandidateStatusFilter, LeadAgent } from '../-types';
 import { useBulkDecide, useCandidates, useDecideCandidate } from '../-hooks/use-lead-agent';
 import { apiErrorMessage } from '../-services/lead-agent-api';
 import { CandidateCard } from './CandidateCard';
@@ -24,20 +24,28 @@ const EMPTY: Partial<Record<CandidateStatus, { title: string; body: string }>> =
         body: 'Delivered leads appear here once the agent is on and inside its delivery window.',
     },
     REJECTED: {
-        title: 'No rejected leads',
-        body: 'Leads that score too low, or that you reject, are kept here. They are never delivered or charged.',
+        title: 'No rejected or skipped leads',
+        body: 'Leads that score too low, that you reject, or that are skipped (the same organisation as another lead, or already in your leads) are kept here. They are never delivered or charged.',
     },
 };
 
-/** A paged list of candidates in one status. The REVIEW list adds approve / reject and bulk actions. */
-export function CandidatesTab({ agent, status }: { agent: LeadAgent; status: CandidateStatus }) {
+/** A paged list of candidates in one status (or several; the first picks the empty state). The REVIEW
+ * list adds approve / reject and bulk actions. */
+export function CandidatesTab({
+    agent,
+    status,
+}: {
+    agent: LeadAgent;
+    status: CandidateStatusFilter;
+}) {
     const [page, setPage] = useState(0);
     const [selected, setSelected] = useState<Set<string>>(new Set());
     const [rejectIds, setRejectIds] = useState<string[] | null>(null);
     const query = useCandidates(agent.id, status, page, PAGE_SIZE);
     const decide = useDecideCandidate(agent.id);
     const bulk = useBulkDecide(agent.id);
-    const reviewing = status === 'REVIEW';
+    const primary = typeof status === 'string' ? status : status[0];
+    const reviewing = primary === 'REVIEW';
     const items = useMemo(() => query.data?.items ?? [], [query.data]);
     const total = query.data?.total ?? 0;
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -120,7 +128,7 @@ export function CandidatesTab({ agent, status }: { agent: LeadAgent; status: Can
         );
     }
     if (items.length === 0) {
-        const empty = EMPTY[status];
+        const empty = primary ? EMPTY[primary] : undefined;
         return (
             <EmptyState
                 icon={<Tray className="size-8 text-neutral-400" />}
