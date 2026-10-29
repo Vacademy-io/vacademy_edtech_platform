@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
+import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendRequest;
 import vacademy.io.admin_core_service.features.notification_service.service.NotificationService;
 import vacademy.io.common.auth.dto.UserDTO;
 
@@ -31,6 +32,7 @@ public class EngagementPointsOfContact {
 
     @Autowired @Lazy private AuthService authService;
     @Autowired @Lazy private NotificationService notificationService;
+    @Autowired @Lazy private EngagementSystemTemplates systemTemplates;
     @PersistenceContext private EntityManager em;
 
     /** Admins of the institute, plus the counsellor assigned to {@code leadUserId} when given. */
@@ -68,6 +70,95 @@ public class EngagementPointsOfContact {
     }
 
     /**
+     * As {@link #alert}, plus the people the event is about (a meeting's host) and a WhatsApp message to
+     * everyone with a mobile number when the institute's shared staff template is approved. The WhatsApp
+     * part only happens for an institute running a WhatsApp engine (see EngagementSystemTemplates).
+     *
+     * @param extraUserIds  told in addition to the admins and the counsellor (may be null)
+     * @param whatsappVars  lead_name, lead_phone and meeting_time for the staff template; null = no WhatsApp
+     */
+    public int alertAbout(String instituteId, String leadUserId, List<String> extraUserIds, String title, String htmlBody,
+                          String sourceKind, String sourceId, Map<String, String> whatsappVars) {
+        Map<String, UserDTO> people = new LinkedHashMap<>();
+        for (UserDTO u : recipients(instituteId, leadUserId)) people.put(u.getId(), u);
+        List<String> missing = new ArrayList<>();
+        if (extraUserIds != null) {
+            for (String id : extraUserIds) if (id != null && !people.containsKey(id)) missing.add(id);
+        }
+        if (!missing.isEmpty()) {
+            try {
+                for (UserDTO u : authService.getUsersFromAuthServiceByUserIds(missing)) {
+                    if (u != null && u.getId() != null) people.put(u.getId(), u);
+                }
+            } catch (Exception e) {
+                log.warn("Alert '{}': could not resolve {}: {}", title, missing, e.getMessage());
+            }
+        }
+        if (people.isEmpty()) {
+            log.warn("Alert '{}' for institute {}: nobody to tell", title, instituteId);
+            return 0;
+        }
+        int emailed = 0;
+        for (UserDTO u : people.values()) {
+            if (u.getEmail() == null || u.getEmail().isBlank()) continue;
+            try {
+                notificationService.sendHtmlEmailViaUnified(u.getEmail(), title, htmlBody, instituteId, null, null, EMAIL_TYPE);
+                emailed++;
+            } catch (Exception e) {
+                log.warn("Alert '{}': email to {} failed: {}", title, u.getEmail(), e.getMessage());
+            }
+        }
+        bell(instituteId, new ArrayList<>(people.values()), title, htmlBody, sourceKind, sourceId);
+        if (whatsappVars != null) whatsappStaff(instituteId, new ArrayList<>(people.values()), whatsappVars, title);
+        return emailed;
+    }
+
+    private void whatsappStaff(String instituteId, List<UserDTO> people, Map<String, String> vars, String title) {
+        try {
+            var state = systemTemplates.ensure(instituteId, EngagementSystemTemplates.Kind.STAFF_MEETING_ALERT);
+            if (!state.usable()) {
+                log.info("Alert '{}': the staff WhatsApp template is {}; email and bell only", title, state.status());
+                return;
+            }
+            for (UserDTO u : people) {
+                String phone = u.getMobileNumber();
+                if (phone == null || phone.isBlank()) continue;
+                Map<String, String> v = new LinkedHashMap<>(vars);
+                String first = u.getFullName() == null || u.getFullName().isBlank() ? "there" : u.getFullName().trim().split("\\s+")[0];
+                v.put("staff_name", first);
+                try {
+                    notificationService.sendUnified(UnifiedSendRequest.builder()
+                            .instituteId(instituteId).channel("WHATSAPP").templateName(state.name())
+                            .languageCode(state.language() == null ? "en" : state.language())
+                            .recipients(List.of(UnifiedSendRequest.Recipient.builder()
+                                    .phone(vacademy.io.admin_core_service.features.notification.util.PhoneCountryUtil.normalizePhone(phone, true))
+                                    .userId(u.getId()).name(first).variables(v).build()))
+                            .build());
+                } catch (Exception e) {
+                    log.warn("Alert '{}': WhatsApp to {} failed: {}", title, u.getId(), e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.warn("Alert '{}': staff WhatsApp skipped: {}", title, e.getMessage());
+        }
+    }
+
+    private void bell(String instituteId, List<UserDTO> people, String title, String htmlBody, String sourceKind, String sourceId) {
+        try {
+            Map<String, Object> settings = new HashMap<>();
+            settings.put("priority", 2);
+            settings.put("isDismissible", true);
+            settings.put("showBadge", true);
+            settings.put("isActive", true);
+            notificationService.createSystemAlertAnnouncement(instituteId,
+                    people.stream().map(UserDTO::getId).toList(), title, stripTags(htmlBody), "system",
+                    "Engagement engine", "ADMIN", settings, sourceKind, sourceId);
+        } catch (Exception e) {
+            log.warn("Alert '{}': bell alert failed: {}", title, e.getMessage());
+        }
+    }
+
+    /**
      * Emails and bell-alerts the points of contact. Best effort per recipient: a failure to reach one
      * person never stops the others, and never fails the caller.
      *
@@ -90,18 +181,7 @@ public class EngagementPointsOfContact {
                 log.warn("Alert '{}': email to {} failed: {}", title, u.getEmail(), e.getMessage());
             }
         }
-        try {
-            Map<String, Object> settings = new HashMap<>();
-            settings.put("priority", 2);
-            settings.put("isDismissible", true);
-            settings.put("showBadge", true);
-            settings.put("isActive", true);
-            notificationService.createSystemAlertAnnouncement(instituteId,
-                    people.stream().map(UserDTO::getId).toList(), title, stripTags(htmlBody), "system",
-                    "Engagement engine", "ADMIN", settings, sourceKind, sourceId);
-        } catch (Exception e) {
-            log.warn("Alert '{}': bell alert failed: {}", title, e.getMessage());
-        }
+        bell(instituteId, people, title, htmlBody, sourceKind, sourceId);
         return emailed;
     }
 
