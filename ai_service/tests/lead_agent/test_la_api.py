@@ -13,7 +13,7 @@ from conftest import AUDIENCE, BRIEF, INSTITUTE, make_candidate, make_world
 from app.core.security import get_pinned_principal
 from app.routers import lead_agent as la_router
 from app.schemas.auth import PinnedPrincipal
-from app.services.lead_agent import flags, store
+from app.services.lead_agent import delivery, flags, store
 
 BASE = "/lead-agent/v1"
 HOME_HTML = ("<html><body><h1>WiNNERS Institute</h1><p>JEE coaching in Indore since 2004, admissions open.</p>"
@@ -162,6 +162,54 @@ def test_candidates_and_decisions(client, la_db):
     assert stats == []
 
 
+def test_a_card_shows_what_delivery_will_send_and_skipped_duplicates_list_with_rejects(client, la_db):
+    agent = make_world(la_db)
+    # The first usable contact (a desk landline) is not what goes out: delivery sends the likely mobile
+    # from the Google Maps listing, the organisation's own inbox over an unnamed Gmail, and asks for the
+    # decision maker because the phone sent is nobody's own line.
+    lead = {"organisation": {"name": "Alpha Academy", "domain": "a.in", "city": "Indore"}, "phone_region": "IN",
+            "decision_maker": {"name": "Meena Iyer", "role": "Founder"},
+            "contact_quality": {"level": "likely", "label": "Best-rated contact"},
+            "contacts": [
+                {"kind": "institute_phone", "value": "+91 80 4567 8901", "quality": "general",
+                 "quality_note": "front desk landline"},
+                {"kind": "published_email", "value": "rk1980@gmail.com", "quality": "likely", "owner": "free"},
+                {"kind": "institute_phone", "value": "+91 98290 55555", "quality": "likely",
+                 "quality_note": "desk mobile on its Google Maps listing", "found_by": "google_maps"},
+                {"kind": "published_email", "value": "info@a.in", "quality": "general", "owner": "own",
+                 "quality_note": "the organisation's own inbox"}]}
+    sent = make_candidate(la_db, agent, "a.in", status="REVIEW", score=60, decision="REVIEW", lead_json=lead,
+                          score_json={"score": 60, "flags": [], "reasons": ["Fits"]})
+    item = client.get(f"{BASE}/agents/{agent['id']}/candidates", params={"status": "REVIEW"}).json()["items"][0]
+    assert item["best_contact"] == {"kind": "institute_phone", "value": "+91 98290 55555", "quality": "likely",
+                                    "label": "desk mobile on its Google Maps listing"}
+    assert item["send"] == {
+        "phone": {"value": "+91 98290 55555", "quality": "likely", "quality_note": "desk mobile on its Google Maps listing",
+                  "maps_confirmed": False, "from_maps": True},
+        "email": {"value": "info@a.in", "quality": "general", "quality_note": "the organisation's own inbox",
+                  "owner": "own"},
+        "name": "Alpha Academy", "role": None, "ask_for": "Meena Iyer (Founder)"}
+    assert item["maps_only"] is False and item["duplicate_of"] is None
+    row = delivery.build_row(sent)
+    assert (row["mobile"], row["email"], row["full_name"], row["custom_fields"]["la_ask_for"]) == (
+        "+919829055555", "info@a.in", "Alpha Academy", "Meena Iyer (Founder)")
+
+    # The same organisation under another domain is SKIPPED by research; it lists with the rejects.
+    note = "Same organisation as a.in: both show phone 9829055555"
+    dup = make_candidate(la_db, agent, "a-academy.in", status="SKIPPED", score=58, decision="REVIEW",
+                         delivery_note=note, lead_json={**lead, "maps_only": True},
+                         score_json={"score": 58, "flags": ["maps_only"], "reasons": [note],
+                                     "duplicate_of": {"candidate_id": sent["id"], "domain": "a.in", "shared": []}})
+    bare = make_candidate(la_db, agent, "b.in", status="REJECTED", reject_reason="No readable page")
+    page = client.get(f"{BASE}/agents/{agent['id']}/candidates", params={"status": "REJECTED,SKIPPED"}).json()
+    assert page["total"] == 2
+    by_id = {i["id"]: i for i in page["items"]}
+    assert by_id[dup["id"]]["status"] == "SKIPPED" and by_id[dup["id"]]["duplicate_of"] == "a.in"
+    assert by_id[dup["id"]]["delivery_note"] == note and by_id[dup["id"]]["maps_only"] is True
+    assert by_id[bare["id"]]["send"] is None and by_id[bare["id"]]["best_contact"] is None  # nothing to send
+    assert client.get(f"{BASE}/candidates/{dup['id']}").json()["send"]["phone"]["from_maps"] is True
+
+
 def test_a_new_gate_passes_the_waiting_leads_it_now_accepts(client, la_db):
     agent = make_world(la_db)
     lead = {"organisation": {"name": "A", "city": "Indore"},
@@ -182,8 +230,9 @@ def test_a_new_gate_passes_the_waiting_leads_it_now_accepts(client, la_db):
     assert r.status_code == 200 and r.json()["review_waiting"] == 2
     assert [status_of(c) for c in (plain, switcher, big)] == ["APPROVED", "REVIEW", "REVIEW"]
     r = client.put(f"{BASE}/agents/{agent['id']}", json={"gate": {"auto_competitor_users": True}})
+    # effort: the gate's validation effort level (effort.py), STANDARD when never set
     assert r.json()["gate"] == {"auto_score": 50, "review_score": 45, "min_contact": "likely",
-                                "require_intent": False, "auto_competitor_users": True}
+                                "require_intent": False, "auto_competitor_users": True, "effort": "STANDARD"}
     assert [status_of(c) for c in (switcher, big)] == ["APPROVED", "REVIEW"] and r.json()["review_waiting"] == 1
     with la_db() as db:
         row = store.get_candidate(db, switcher["id"])

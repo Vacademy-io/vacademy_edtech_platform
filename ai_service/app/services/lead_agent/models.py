@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional, Tuple
 from urllib.parse import urlparse
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from . import engine_api, pacing
+from . import delivery, engine_api, pacing
+from .contact_hunt import MAPS_FOUND_BY
 
 # Vacademy's own product keys: briefs made before offers (2026-10-26). New briefs carry an Offer.
 ProductKey = Literal["complete_vacademy", "crm", "lms", "ai_calling", "tutezy"]
@@ -18,6 +19,7 @@ FIT_KEYS = tuple(f"fit_{i}" for i in range(1, 9))  # engine.offer.CUSTOM_KEYS
 SourceKey = Literal["organisation_search", "maps", "hiring", "keyword", "software_request", "new_centre"]
 Mode = Literal["LOCAL", "REMOTE", "AUTO"]
 ContactLevel = Literal["direct", "likely", "general", "none"]
+EffortLevel = Literal["BASIC", "STANDARD", "DEEP"]  # effort.LEVELS
 
 
 def _clean_list(values: List[str], max_len: int) -> List[str]:
@@ -170,6 +172,7 @@ class Gate(BaseModel):
     min_contact: ContactLevel = "likely"
     require_intent: bool = False
     auto_competitor_users: bool = False
+    effort: EffortLevel = "STANDARD"  # how much extra checking each lead gets (effort.py)
 
     @model_validator(mode="after")
     def _order(self) -> "Gate":
@@ -328,13 +331,31 @@ def agent_out(row: Dict[str, Any], *, audience_name: Optional[str] = None, today
     return out
 
 
-def _best_contact(lead: dict) -> Optional[Dict[str, Any]]:
-    for c in lead.get("contacts") or []:
-        if c.get("kind") != "contact_form" and c.get("quality") != "avoid":
-            cq = lead.get("contact_quality") or {}
-            return {"kind": c.get("kind"), "value": c.get("value"), "quality": c.get("quality"),
-                    "label": cq.get("label")}
-    return None
+def _what_is_sent(row: Dict[str, Any]) -> Tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
+    """(best_contact, send) for the dashboard, from what delivery WILL send (delivery.send_plan): the
+    card must show the phone, email and name that go out, not the first usable contact on the lead.
+
+    best_contact (kept for older screens): the phone sent, else the email sent, {kind, value, quality,
+    label}. send: {phone: {value, quality, quality_note, maps_confirmed, from_maps} | None,
+    email: {value, quality, quality_note, owner} | None, name, role, ask_for} (name: who the lead is
+    delivered as; role and ask_for None when there are none). Both None when nothing can be sent."""
+    plan = delivery.send_plan(row)
+    if plan is None:
+        return None, None
+    phone, email = plan["phone"], plan["email"]
+    send = {
+        "phone": None if phone is None else {
+            "value": phone.get("value"), "quality": phone.get("quality"), "quality_note": phone.get("quality_note"),
+            "maps_confirmed": bool(phone.get("maps_confirmed")), "from_maps": phone.get("found_by") == MAPS_FOUND_BY},
+        "email": None if email is None else {
+            "value": email.get("value"), "quality": email.get("quality"), "quality_note": email.get("quality_note"),
+            "owner": email.get("owner")},
+        "name": plan["full_name"], "role": plan["role"] or None, "ask_for": plan["ask_for"] or None,
+    }
+    first = phone if phone is not None else email
+    label = first.get("quality_note") or ((row.get("lead_json") or {}).get("contact_quality") or {}).get("label")
+    best = {"kind": first.get("kind"), "value": first.get("value"), "quality": first.get("quality"), "label": label}
+    return best, send
 
 
 def candidate_summary(row: Dict[str, Any]) -> Dict[str, Any]:
@@ -342,15 +363,21 @@ def candidate_summary(row: Dict[str, Any]) -> Dict[str, Any]:
     score = row.get("score_json") or {}
     org = lead.get("organisation") or {}
     reasons = score.get("reasons") or score.get("gate_reasons") or []
+    flags = [str(f) for f in score.get("flags") or []]
+    best_contact, send = _what_is_sent(row)
     return {
         "id": row["id"], "status": row["status"], "decision": row.get("decision"), "score": row.get("score"),
         "stage": row.get("stage"), "source": row.get("source"),
         "org": {"name": org.get("name") or row.get("org_name"), "domain": row.get("org_domain"),
                 "website": org.get("website") or row.get("org_website"), "city": org.get("city") or row.get("org_city")},
         "top_reason": (reasons[0] if reasons else None) or row.get("reject_reason"),
-        "flags": [str(f) for f in score.get("flags") or []],
+        "flags": flags,
         "score_parts": {k: score.get(k) for k in ("fit", "intent", "reach", "risk")},
-        "best_contact": _best_contact(lead),
+        "best_contact": best_contact, "send": send,
+        # judged from its Google Maps listing: the website could not be read (research._judged_from_maps)
+        "maps_only": bool(lead.get("maps_only")) or "maps_only" in flags,
+        # SKIPPED as the same organisation as another lead (dedupe.apply): that lead's domain
+        "duplicate_of": (score.get("duplicate_of") or {}).get("domain") or None,
         "reject_reason": row.get("reject_reason"), "delivery_note": row.get("delivery_note"),
         "created_at": _plain(row.get("created_at")), "delivered_at": _plain(row.get("delivered_at")),
     }
