@@ -21,7 +21,7 @@ from ..ai_billing import UC, metering_api_key, metering_user, record_tool_billin
 from ..api_key_resolver import ApiKeyResolver
 from ..chat_llm_client import ChatLLMClient
 from ...repositories.copy_check_rubric_repository import CopyCheckRubricRepository
-from . import annotator, callbacks, cancellation, deduction_check, language_check, language_feedback, locate, math_reread, option_letter, orientation, typed_answers, vision_transcript
+from . import annotator, callbacks, cancellation, deduction_check, deduction_scheme, evaluation_table, language_check, language_feedback, language_vision, locate, math_reread, option_letter, orientation, typed_answers, vision_transcript
 from .choice_groups import counted_awarded, counted_flags, resolve_paper_max
 from .failure import (
     COPY_UNREADABLE,
@@ -442,6 +442,74 @@ def _rescore_annotations(annotations: list[Any], verdict: dict[str, Any]) -> lis
     return out
 
 
+def _fmt_marks(x: float) -> str:
+    return str(int(x)) if float(x).is_integer() else f"{x:g}"
+
+
+async def _apply_scheme(
+    verdicts: list[dict[str, Any]],
+    questions: list[dict[str, Any]],
+    scheme: list[Any],
+    language_found: dict[str, list[dict[str, Any]]],
+    checked_pages: set[str],
+    layout_map: dict[str, Any],
+    llm: Any,
+    model: str,
+    page_images: Optional[dict[str, Any]],
+    institute_id: Optional[str],
+    token_sink: Any,
+) -> Optional[dict[str, Any]]:
+    """Mark the written answers by the deduction scheme (in place) and return
+    what the evaluation table is filled with, or None when no answer was
+    marked by it. An answer on a page the language pass did not read in full
+    keeps the grader's mark: a missed page must never read as no mistakes."""
+    by_id = {str(q.get("question_id")): q for q in questions}
+    positions = language_feedback.row_positions(layout_map)
+    marked: list[tuple[tuple[int, int], Any]] = []
+    paragraph_wise: list[str] = []
+    for v in verdicts:
+        qid = str(v.get("question_id"))
+        q = by_id.get(qid) or {}
+        if (str(v.get("status") or "").upper() == "FAILED" or not language_feedback.applies_to_question(q)
+                or not v.get("counted", True)):
+            continue
+        pages = language_feedback.answer_pages(v.get("answer_rows"), layout_map)
+        if not pages or not pages <= checked_pages:
+            logger.info("deduction scheme: %s not marked by the scheme (pages %s not all read)", qid, sorted(pages))
+            continue
+        errors = language_found.get(qid, [])
+        if language_feedback.devanagari_share(v.get("answer_rows"), layout_map) > 0.5:
+            # Hindi handwriting is read too unreliably for its marks to be
+            # max - deductions (probe: a strict filter kept 5 of the ~40
+            # slips a teacher marked, i.e. 45/50 for a weak answer). The
+            # copy shows what was found, with its symbols; the mark stays the
+            # grader's paragraph-wise one and the table reports it.
+            tally = deduction_scheme.tally(scheme, errors, float(v.get("max_marks") or 0))
+            tally.deducted = round(tally.max_marks - float(v.get("marks_awarded") or 0), 2)
+            tally.paragraph_wise = True
+            paragraph_wise.append(qid)
+            line = (deduction_scheme.summary_text(scheme, tally).split(" = ")[0]
+                    + " marked on the copy; marks from the paragraph-wise check.")
+            v["feedback"] = f"{str(v.get('feedback') or '').rstrip()}\n\n{line}".strip()
+        else:
+            tally = deduction_scheme.apply(v, scheme, errors)
+        marked.append((positions.get(str((v.get("answer_rows") or [""])[0]), (0, 0)), tally))
+    if not marked:
+        return None
+    # The sheet's parts are lettered in the order they are written on it (a
+    # student may answer Q2 first), not in question order.
+    marked.sort(key=lambda m: m[0])
+    parts = [(deduction_scheme.part_label(i), t) for i, (_pos, t) in enumerate(marked)]
+    table = deduction_scheme.table_rows(scheme, parts)
+    table["paragraph_wise_questions"] = paragraph_wise
+    first = (layout_map.get("pages") or [{}])[0]
+    image = (page_images or {}).get(first.get("page_id"))
+    if image is not None:
+        table["located"] = await evaluation_table.locate(
+            llm, model, image, first, len(parts), institute_id=institute_id, token_sink=token_sink)
+    return table
+
+
 async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
     """The actual pipeline. Designed to never raise out of the BG task — any
     failure ends in a callbacks.failed() POST so Java can surface it.
@@ -754,19 +822,45 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
         # the student's English or Hindi, with its correction, found once for the whole
         # copy. Marks are never touched; each written answer's feedback lists
         # its errors and the copy shows them (step 4).
+        # A paper with a printed deduction scheme is marked in it: each error
+        # carries the scheme's symbol and a written answer scores max - its
+        # deductions (deduction_scheme.py).
         language_errors: dict[str, list[dict[str, Any]]] = {}
         row_positions: dict[str, tuple[int, int]] = {}
+        scheme = deduction_scheme.parse(req.get("exam_context"))
+        # Pages the vision pass checked in full; None = not known (text-only
+        # pass), and then the scheme never overrides marks.
+        language_checked_pages: Optional[set[str]] = None
+        page_images: Optional[dict[str, Any]] = None
+        language_model = language_vision.language_model()
         if language_feedback.enabled(req.get("exam_context")):
             cancellation.check(job_id, process_id)
             if hasattr(grader, "token_budget"):
-                grader.token_budget += TOKENS_PER_PAGE_ALLOWANCE * len(layout_map.get("pages") or [])
-            language_errors = await language_feedback.find_errors(
-                llm, layout_map, eval_model, institute_id=institute_id, token_sink=grader,
-                cancellation_check=lambda: cancellation.is_cancelled(job_id, process_id),
-                # A page written in Hindi is checked as Hindi unless the paper
-                # declares English answers (a partner exam's "en").
-                allow_hindi=language_feedback.allows_hindi(req.get("exam_context")),
-            )
+                grader.token_budget += (TOKENS_PER_PAGE_ALLOWANCE * len(layout_map.get("pages") or [])
+                                        * (1 + 2 * len(language_vision.BANDS)))
+            # A page written in Hindi is checked as Hindi unless the paper
+            # declares English answers (a partner exam's "en").
+            allow_hindi = language_feedback.allows_hindi(req.get("exam_context"))
+            vision = None
+            if language_vision.enabled():
+                page_images = await language_vision.page_images(pdf_url)
+                vision = await language_vision.find_errors(
+                    llm, layout_map, pdf_url, model=language_model, scheme=scheme,
+                    question_text=language_vision.paper_text(questions), allow_hindi=allow_hindi,
+                    institute_id=institute_id, token_sink=grader,
+                    cancellation_check=lambda: cancellation.is_cancelled(job_id, process_id),
+                    images=page_images,
+                ) if page_images else None
+            if vision is not None:
+                language_errors, language_checked_pages = vision
+            else:
+                language_errors = await language_feedback.find_errors(
+                    llm, layout_map, eval_model, institute_id=institute_id, token_sink=grader,
+                    cancellation_check=lambda: cancellation.is_cancelled(job_id, process_id),
+                    allow_hindi=allow_hindi,
+                )
+                if scheme:
+                    language_feedback.classify(language_errors, scheme)
             row_positions = language_feedback.row_positions(layout_map)
         # question id -> the language errors in its answer.
         language_found: dict[str, list[dict[str, Any]]] = {}
@@ -934,6 +1028,24 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
                 v["feedback"] = language_feedback.with_language_feedback(v.get("feedback"), errors)
                 v["annotations"] = (list(v.get("annotations") or [])
                                     + language_feedback.annotations(errors, v.get("question_id")))
+        # The paper's deduction scheme: each written answer the language pass
+        # read in full scores max - its deductions, and the evaluation table
+        # printed on the sheet is filled in.
+        table_data = None
+        if scheme and language_checked_pages is not None:
+            table_data = await _apply_scheme(
+                verdicts, questions, scheme, language_found, language_checked_pages, layout_map,
+                llm, language_model, page_images, institute_id, grader)
+            if table_data:
+                # Each correction carries what it cost, for the comments panel.
+                deduction_scheme.mark_deductions(verdicts, table_data.get("marks") or {},
+                                                 table_data.get("paragraph_wise_questions") or ())
+                total_line = next((a for a in (verdicts[0].get("annotations") or [])
+                                   if a.get("style") == "total"), None) if verdicts else None
+                if total_line is not None:
+                    mx_total = paper_max if paper_max is not None else sum(
+                        float(v.get("max_marks") or 0) for v in verdicts)
+                    total_line["text"] = f"{_fmt_marks(counted_awarded(verdicts))}/{_fmt_marks(mx_total)}"
         # Internal choice ("any 4 of 5"): an answer a choice group left out keeps
         # its own mark on the copy, so say beside it that it is not in the total.
         # Dashboard copies only; a partner's checked copy is drawn as before.
@@ -961,6 +1073,8 @@ async def run(req: dict[str, Any], job_id: str, db: Session) -> str:
         # rendered exactly as before.
         panel = ({"comment_placement": "OUTSIDE", "question_labels": _printed_labels(questions)}
                  if str(req.get("comment_placement") or "").strip().upper() == "OUTSIDE" else {})
+        if table_data:
+            panel["evaluation_table"] = table_data
         evaluated_file_id = await annotator.render_and_upload(
             pdf_url, layout_map, verdicts, req.get("attempt_id") or process_id, **panel,
         )

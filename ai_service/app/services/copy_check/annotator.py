@@ -32,6 +32,8 @@ from typing import Any, Optional
 
 import httpx
 
+from . import row_align
+
 logger = logging.getLogger(__name__)
 
 # A checked script has to read at a glance, so the mark must carry the verdict:
@@ -3611,7 +3613,8 @@ def _draw_comment_panels(doc: Any, panels: dict[int, Any],
                          notes: dict[tuple[int, int], list[str]],
                          verdicts: list[dict[str, Any]],
                          labels: dict[str, str],
-                         language: Optional[dict[tuple[int, int], list[str]]] = None) -> None:
+                         language: Optional[dict[tuple[int, int], list[str]]] = None,
+                         listed: Optional[set[tuple[int, int]]] = None) -> None:
     """Type each page's remarks into the panel beside it, level with the answer
     they are about: "Q4(iv): Partial" and the remark below it.
 
@@ -3640,7 +3643,9 @@ def _draw_comment_panels(doc: Any, panels: dict[int, Any],
             if first and not said and verdict.get("feedback"):
                 # The grader's own words; the language list is typed below.
                 said = [_short_feedback(str(verdict["feedback"]).split(_LANGUAGE_PARAGRAPH)[0])]
-            if fixes:
+            if fixes and (p, v_idx) in (listed or ()):
+                said = list(said) + ["Language:"] + [f"{i}. {f}" for i, f in enumerate(fixes, 1)]
+            elif fixes:
                 said = list(said) + ["Language: " + "; ".join(fixes)]
             label = _panel_label(verdict, labels)
             heading = f"{label}: {_panel_status(verdict)}" if first else f"{label} (contd.)"
@@ -4250,6 +4255,7 @@ def build_annotated_pdf(
     margin_ratio: float = 0.0,
     comment_placement: Optional[str] = None,
     question_labels: Optional[dict[str, str]] = None,
+    total_ring: bool = True,
 ) -> bytes:
     """Draw every verdict's annotations onto the student's copy.
 
@@ -4300,6 +4306,8 @@ def build_annotated_pdf(
     panel_notes: dict[tuple[int, int], list[str]] = {}
     # (page, verdict) -> its language corrections, "wrong -> right" (OUTSIDE only).
     panel_language: dict[tuple[int, int], list[str]] = {}
+    # Panels whose language fixes are listed one per line (scheme copies).
+    panel_listed: set[tuple[int, int]] = set()
     verdict_index = {id(v): i for i, v in enumerate(verdicts)}
     if outside:
         # The panel is plain white paper of its own, not a continuation of the
@@ -4348,6 +4356,8 @@ def build_annotated_pdf(
             content[i] = doc[i].rect
 
     targets = _target_index(layout_map)
+    layout_pages = {lp.get("page_id"): lp for lp in (layout_map.get("pages") or [])}
+    language_bands: dict[Any, dict[str, tuple[float, float]]] = {}
     rows_in_order = {
         lp.get("page_id"): sorted((r for r in (lp.get("lines") or [])
                                    if r.get("box") and len(r["box"]) == 4),
@@ -4555,7 +4565,8 @@ def build_annotated_pdf(
         # looks for on a returned script. Drawn FIRST, so every score and
         # comment placed after it keeps clear: drawn last, it went through
         # Q1's "1/1" in the margin, the one spot the placer had already used.
-        if not doc.page_count:
+        if not doc.page_count or not total_ring:
+            # total_ring=False: the paper's own evaluation table carries it.
             return
         for _v, _a in ordered:
             if (_a.get("style") or "").strip().lower() == "total" and _a.get("text"):
@@ -4627,18 +4638,28 @@ def build_annotated_pdf(
         # within a line or so of the guide's, take the one with the least
         # writing under it - the ring stays top-right either way.
         _INK_MAP[0] = ink_maps.get(first_id)
-        best_y, best_ink = by, None
-        for dy in (0.0, line_h * 0.5, line_h, -line_h * 0.5, line_h * 1.5):
-            y = by + dy
-            ring = fitz.Rect(bx - reach_l, y - reach_u, bx + reach_r, y + reach_d)
-            if ring.y0 < (sheet0.y0 if sheet0 is not None else 0.0) + 6.0:
+        # A printed header box can fill the top-right corner (a test sheet's
+        # mark-deduction legend): the ring then went across it at every
+        # height. Further left along the same band is tried before giving up.
+        left_edge = (sheet0.x0 if sheet0 is not None else content.get(0, first.rect).x0) + 6.0
+        best_x, best_y, best_ink = bx, by, None
+        for dx in (0.0, -sheet_w * 0.22, -sheet_w * 0.44):
+            x = bx + dx
+            if x - reach_l < left_edge:
                 continue
-            ink = _ink_under(_INK_MAP[0], ring)
-            if best_ink is None or ink < best_ink - 0.002:
-                best_y, best_ink = y, ink
-            if ink <= 0.005:
+            for dy in (0.0, line_h * 0.5, line_h, -line_h * 0.5, line_h * 1.5):
+                y = by + dy
+                ring = fitz.Rect(x - reach_l, y - reach_u, x + reach_r, y + reach_d)
+                if ring.y0 < (sheet0.y0 if sheet0 is not None else 0.0) + 6.0:
+                    continue
+                ink = _ink_under(_INK_MAP[0], ring)
+                if best_ink is None or ink < best_ink - 0.002:
+                    best_x, best_y, best_ink = x, y, ink
+                if ink <= 0.005:
+                    break
+            if best_ink is not None and best_ink <= 0.005:
                 break
-        ring = _draw_grand_total(first, fitz.Point(bx, best_y), total, out_of, line_h)
+        ring = _draw_grand_total(first, fitz.Point(best_x, best_y), total, out_of, line_h)
         if ring is not None and first_id is not None:
             occupied.setdefault(first_id + ":notes", []).append(ring)
         _CLIP[0] = None
@@ -4706,6 +4727,17 @@ def build_annotated_pdf(
                                  max(rect.y1, float(ink_bottom) * sy))
             style = (ann.get("style") or "margin_note").strip().lower()
             if style == "language":
+                # The row box can sit a line off the words on a dense page;
+                # the correction goes on the ink line the row's words are on.
+                if page_id not in language_bands:
+                    language_bands[page_id] = row_align.row_bands(
+                        ink_maps.get(page_id), layout_pages.get(page_id) or {}, sy)
+                band = language_bands[page_id].get(str(ann.get("target")))
+                if band is not None:
+                    rect = fitz.Rect(rect.x0, band[0], rect.x1, band[1])
+                    measured = _row_ink_span(_INK_MAP[0], rect)
+                    if measured is not None:
+                        _INK_SPAN[0] = measured
                 # A language correction: the wrong words underlined where they
                 # sit, the correction written beside them - or, on the
                 # comments-outside template, listed in the panel beside the
@@ -4720,6 +4752,10 @@ def build_annotated_pdf(
                     key = (page_no, verdict_index[id(verdict)])
                     panel_anchor[key] = min(panel_anchor.get(key, rect.y0), rect.y0)
                     fix = f"{ann['anchor_text']} \u2192 {ann['text']}"
+                    if ann.get("deduct") is not None:
+                        # A scheme copy: what each slip cost, one per line.
+                        fix += f"  (-{_fmt_marks(float(ann['deduct']))})"
+                        panel_listed.add(key)
                     said = panel_language.setdefault(key, [])
                     if fix not in said:
                         said.append(fix)
@@ -4930,7 +4966,7 @@ def build_annotated_pdf(
     _CLIP[0] = None
     if outside:
         _draw_comment_panels(doc, panels, panel_anchor, panel_notes, verdicts,
-                             question_labels or {}, panel_language)
+                             question_labels or {}, panel_language, panel_listed)
     _SCAN_W[0] = None
     if append_summary:
         _append_summary(doc, verdicts, overall)
@@ -5152,21 +5188,57 @@ _RENDER_POOL = ThreadPoolExecutor(max_workers=1, thread_name_prefix="copy-check-
 
 def _render_sync(pdf_bytes: bytes, layout_map: dict[str, Any], verdicts: list[dict[str, Any]],
                  comment_placement: Optional[str] = None,
-                 question_labels: Optional[dict[str, str]] = None) -> bytes:
-    annotated = None
-    if (comment_placement or "").strip().upper() == COMMENTS_OUTSIDE:
-        # The panel template must never cost a student the checked copy: if it
-        # fails, the usual copy is rendered instead. It works on a copy of the
-        # verdicts so that fallback starts from exactly what the grader sent.
+                 question_labels: Optional[dict[str, str]] = None,
+                 evaluation_table: Optional[dict[str, Any]] = None) -> bytes:
+    def render(total_ring: bool) -> bytes:
+        annotated = None
+        if (comment_placement or "").strip().upper() == COMMENTS_OUTSIDE:
+            # The panel template must never cost a student the checked copy: if it
+            # fails, the usual copy is rendered instead. It works on a copy of the
+            # verdicts so that fallback starts from exactly what the grader sent.
+            ring = {} if total_ring else {"total_ring": False}
+            try:
+                annotated = build_annotated_pdf(pdf_bytes, layout_map, copy.deepcopy(verdicts),
+                                                comment_placement=COMMENTS_OUTSIDE,
+                                                question_labels=question_labels, **ring)
+            except Exception:
+                logger.warning("copy-check annotator: comment-panel template failed; rendering the usual copy",
+                               exc_info=True)
+        if annotated is None:
+            annotated = (build_annotated_pdf(pdf_bytes, layout_map, verdicts) if total_ring else
+                         build_annotated_pdf(pdf_bytes, layout_map, copy.deepcopy(verdicts), total_ring=False))
+        return annotated
+
+    from . import evaluation_table as table_mod
+    # When the sheet's printed evaluation table is filled and it covers the
+    # whole paper, the total goes in its Final Remarks instead of a ring: on a
+    # test sheet the ring's top-right spot is the printed legend, and moved
+    # left it went over the student's name and date.
+    in_table = False
+    if evaluation_table and (evaluation_table.get("located") or {}).get("cells"):
+        tot = evaluation_table.get("total") or {}
+        paper_max = sum(float(v.get("max_marks") or 0) for v in verdicts)
+        in_table = bool(evaluation_table.get("rows")) and abs(float(tot.get("max") or 0) - paper_max) < 0.01
+    if in_table:
+        table = copy.deepcopy(evaluation_table)
+        first = table["rows"][0]
+        if not first.get("remarks"):
+            first["remarks"] = f"Total {table_mod._fmt(tot.get('obtained'))}/{table_mod._fmt(tot.get('max'))}"
         try:
-            annotated = build_annotated_pdf(pdf_bytes, layout_map, copy.deepcopy(verdicts),
-                                            comment_placement=COMMENTS_OUTSIDE,
-                                            question_labels=question_labels)
+            filled = table_mod.fill(render(False), layout_map, table, printed_only=True)
         except Exception:
-            logger.warning("copy-check annotator: comment-panel template failed; rendering the usual copy",
-                           exc_info=True)
-    if annotated is None:
-        annotated = build_annotated_pdf(pdf_bytes, layout_map, verdicts)
+            logger.warning("copy-check annotator: evaluation table not filled", exc_info=True)
+            filled = None
+        if filled is not None:
+            return shrink_scans(filled)
+    annotated = render(True)
+    if evaluation_table:
+        # The paper's own evaluation table (deduction scheme). Best effort: a
+        # copy without the table still carries every mark.
+        try:
+            annotated = table_mod.fill(annotated, layout_map, evaluation_table)
+        except Exception:
+            logger.warning("copy-check annotator: evaluation table not filled", exc_info=True)
     return shrink_scans(annotated)
 
 
@@ -5177,6 +5249,7 @@ async def render_and_upload(
     attempt_id: str,
     comment_placement: Optional[str] = None,
     question_labels: Optional[dict[str, str]] = None,
+    evaluation_table: Optional[dict[str, Any]] = None,
 ) -> Optional[str]:
     """Produce the checked copy and return its media-service fileId.
 
@@ -5188,7 +5261,7 @@ async def render_and_upload(
         pdf_bytes = await _fetch_pdf(pdf_url)
         annotated = await asyncio.get_running_loop().run_in_executor(
             _RENDER_POOL, _render_sync, pdf_bytes, layout_map, verdicts,
-            comment_placement, question_labels)
+            comment_placement, question_labels, evaluation_table)
         file_id = await _upload(annotated, f"evaluated-copy-{attempt_id}.pdf")
         if not file_id:
             logger.warning("copy-check annotator: media-service returned no id for attempt %s", attempt_id)

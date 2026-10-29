@@ -212,6 +212,10 @@ public class CopyIntakeService {
      * institute default applies again; no settings sent leaves them as they are.
      */
     private void rememberCopyCheckConfig(Assessment assessment, CopyCheckConfig.Settings requested) {
+        // The dialog does not edit the deduction scheme; one it does not send is kept.
+        if (requested != null && requested.getDeductionScheme() == null) {
+            requested.setDeductionScheme(CopyCheckConfig.on(assessment).getDeductionScheme());
+        }
         if (!CopyCheckConfig.differs(assessment, requested)) {
             return;
         }
