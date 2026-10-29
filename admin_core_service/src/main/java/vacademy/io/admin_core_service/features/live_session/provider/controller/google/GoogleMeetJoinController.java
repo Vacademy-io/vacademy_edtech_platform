@@ -84,15 +84,17 @@ public class GoogleMeetJoinController {
         // A teacher/admin on their own Google account is only a participant in Meet; making them a
         // co-host here gives them host controls, like a BBB moderator join.
         String cohostEmail = null;
+        GoogleMeetManager.CohostResult cohost = GoogleMeetManager.CohostResult.SKIPPED;
         if (host) {
             String email = resolveUserEmail(user);
-            if (googleMeetManager.ensureCohost(account, schedule.getProviderMeetingId(), email)) {
+            cohost = googleMeetManager.ensureCohost(account, schedule.getProviderMeetingId(), email);
+            if (cohost.isCohost()) {
                 cohostEmail = email;
             }
         }
 
         log.info("google.meet.join scheduleId={} userId={} host={} cohost={}",
-                scheduleId, user.getUserId(), host, cohostEmail != null);
+                scheduleId, user.getUserId(), host, cohost);
 
         return ResponseEntity.ok(GoogleJoinPayloadResponse.builder()
                 .joinUrl(schedule.getCustomMeetingLink())
@@ -101,6 +103,7 @@ public class GoogleMeetJoinController {
                 .host(host)
                 .organizerEmail(organizerEmail)
                 .cohostEmail(cohostEmail)
+                .cohostJustAdded(cohost == GoogleMeetManager.CohostResult.ADDED)
                 .build());
     }
 

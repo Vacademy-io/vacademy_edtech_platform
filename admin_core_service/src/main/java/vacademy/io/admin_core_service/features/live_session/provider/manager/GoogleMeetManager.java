@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
+import vacademy.io.admin_core_service.features.live_session.entity.LiveSession;
 import vacademy.io.admin_core_service.features.live_session.entity.SessionSchedule;
 import vacademy.io.admin_core_service.features.live_session.provider.LiveSessionProviderStrategy;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.ProviderConnectRequestDTO;
@@ -18,7 +20,9 @@ import vacademy.io.admin_core_service.features.live_session.provider.service.goo
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleEventsSubscriptionService;
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleMeetEndpoints;
 import vacademy.io.admin_core_service.features.live_session.provider.support.ScheduleConflicts;
+import vacademy.io.admin_core_service.features.live_session.repository.LiveSessionRepository;
 import vacademy.io.admin_core_service.features.live_session.repository.SessionScheduleRepository;
+import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.meeting.dto.*;
 import vacademy.io.common.meeting.enums.MeetingProvider;
@@ -64,6 +68,8 @@ public class GoogleMeetManager implements LiveSessionProviderStrategy {
     private final GoogleEventsSubscriptionService eventsSubscriptionService;
     private final WebClient.Builder webClientBuilder;
     private final SessionScheduleRepository scheduleRepository;
+    private final LiveSessionRepository sessionRepository;
+    private final AuthService authService;
 
     @Override
     public String getProviderName() {
@@ -162,6 +168,10 @@ public class GoogleMeetManager implements LiveSessionProviderStrategy {
 
         log.info("google.meet.create accountId={} space={} institute={}",
                 account.getId(), spaceName, instituteId);
+
+        // Make the class creator a co-host now, not at the first "Start as host". Google takes a
+        // few seconds to apply a new co-host, so one added right before Meet opens lands in the lobby.
+        addCreatorAsCohost(account, spaceName, request.getSessionId());
 
         return CreateMeetingResponseDTO.builder()
                 .providerMeetingId(spaceName)
@@ -481,10 +491,10 @@ public class GoogleMeetManager implements LiveSessionProviderStrategy {
      * meetings.space.created scope. 409 ALREADY_EXISTS means they already are one. Best-effort: never
      * throws, so a Google hiccup can't block the join.
      */
-    public boolean ensureCohost(GoogleAccount account, String spaceName, String email) {
+    public CohostResult ensureCohost(GoogleAccount account, String spaceName, String email) {
         if (account == null || spaceName == null || email == null || email.isBlank()
                 || email.equalsIgnoreCase(account.getOrganizerEmail())) {
-            return false;
+            return CohostResult.SKIPPED;
         }
         try {
             String token = accessTokenService.getAccessToken(account);
@@ -497,8 +507,11 @@ public class GoogleMeetManager implements LiveSessionProviderStrategy {
                     .exchangeToMono(resp -> resp.releaseBody().thenReturn(resp.statusCode().value()))
                     .timeout(java.time.Duration.ofSeconds(5)) // the host waits on this before Meet opens
                     .block();
-            if (status != null && (status == 200 || status == 409)) {
-                return true;
+            if (status != null && status == 200) {
+                return CohostResult.ADDED;
+            }
+            if (status != null && status == 409) {
+                return CohostResult.ALREADY_COHOST;
             }
             if (status != null && status == 401) {
                 accessTokenService.evict(account.getId());
@@ -509,7 +522,52 @@ public class GoogleMeetManager implements LiveSessionProviderStrategy {
             log.warn("google.meet.cohost.fail accountId={} space={} reason={}",
                     account.getId(), spaceName, e.getMessage());
         }
-        return false;
+        return CohostResult.FAILED;
+    }
+
+    /**
+     * Outcome of {@link #ensureCohost}. {@code ADDED} means Google has only just been told, so the
+     * role may not apply to a Meet tab opened in the next few seconds.
+     */
+    public enum CohostResult {
+        ADDED, ALREADY_COHOST, SKIPPED, FAILED;
+
+        public boolean isCohost() {
+            return this == ADDED || this == ALREADY_COHOST;
+        }
+    }
+
+    /** Best-effort: a missing creator email or a Google error never fails the class creation. */
+    private void addCreatorAsCohost(GoogleAccount account, String spaceName, String sessionId) {
+        if (sessionId == null) return;
+        try {
+            String creatorId = sessionRepository.findById(sessionId)
+                    .map(LiveSession::getCreatedByUserId)
+                    .orElse(null);
+            String email = lookupUserEmail(creatorId);
+            CohostResult result = ensureCohost(account, spaceName, email);
+            log.info("google.meet.create.cohost space={} creator={} result={}", spaceName, creatorId, result);
+        } catch (Exception e) {
+            log.warn("google.meet.create.cohost.fail space={} reason={}", spaceName, e.getMessage());
+        }
+    }
+
+    /**
+     * Login email from auth_service. Users live in the auth_service DB, not admin_core's, and the
+     * request token never carries the email.
+     */
+    private String lookupUserEmail(String userId) {
+        if (userId == null || userId.isBlank()) return null;
+        try {
+            return authService.getUsersFromAuthServiceByUserIds(List.of(userId)).stream()
+                    .map(UserDTO::getEmail)
+                    .filter(e -> e != null && !e.isBlank())
+                    .findFirst()
+                    .orElse(null);
+        } catch (Exception e) {
+            log.warn("google.meet email lookup failed userId={} reason={}", userId, e.getMessage());
+            return null;
+        }
     }
 
     private static String snippet(String body) {
