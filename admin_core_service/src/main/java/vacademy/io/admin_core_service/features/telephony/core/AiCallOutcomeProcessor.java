@@ -86,6 +86,11 @@ public class AiCallOutcomeProcessor {
     private final CallBillingService billingService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /** Field-injected like the other lazy collaborators: the summary note and the callback. */
+    @Autowired
+    @Lazy
+    private AiCallFollowThrough followThrough;
+
     /** See {@link #runOffThread}. Field-injected so the constructor used by tests is unchanged. */
     @Autowired(required = false)
     @org.springframework.beans.factory.annotation.Qualifier("aiCallPostCallExecutor")
@@ -477,6 +482,13 @@ public class AiCallOutcomeProcessor {
                 maybeRunSendRules(rRef, leadRef, instRef);
             } catch (Exception ex) {
                 log.warn("ai-call: send rules failed for result {} (non-fatal): {}",
+                        rRef.getId(), ex.getMessage());
+            }
+            // The call's summary on the lead's timeline, and a callback if they asked for one.
+            try {
+                followThrough.afterCall(rRef, leadRef.responseId(), leadRef.userId(), instRef);
+            } catch (Exception ex) {
+                log.warn("ai-call: follow-through failed for result {} (non-fatal): {}",
                         rRef.getId(), ex.getMessage());
             }
             // The call's outcome is in: the lead's engagement engines look within minutes (B4)
