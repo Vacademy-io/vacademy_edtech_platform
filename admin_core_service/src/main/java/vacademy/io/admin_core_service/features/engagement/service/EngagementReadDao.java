@@ -84,6 +84,26 @@ public class EngagementReadDao {
     }
 
     /**
+     * The Lead Agents of these lead lists: (audience_id, agent name, brief_json as text). One live
+     * agent per list; archived agents are left out.
+     */
+    public List<Object[]> leadAgentBriefsByAudienceIds(String instituteId, List<String> audienceIds) {
+        if (audienceIds == null || audienceIds.isEmpty()) return List.of();
+        List<?> rows = em.createNativeQuery("""
+                SELECT audience_id, name, CAST(brief_json AS text)
+                FROM lead_agent
+                WHERE institute_id = :instituteId AND audience_id IN (:ids) AND status <> 'ARCHIVED'
+                ORDER BY name
+                """)
+                .setParameter("instituteId", instituteId)
+                .setParameter("ids", audienceIds)
+                .getResultList();
+        List<Object[]> out = new java.util.ArrayList<>();
+        for (Object r : rows) out.add((Object[]) r);
+        return out;
+    }
+
+    /**
      * audienceResponseId → the Lead Agent's research on that organisation (lead_candidate.lead_json,
      * as text), for leads the agent delivered into this institute.
      */

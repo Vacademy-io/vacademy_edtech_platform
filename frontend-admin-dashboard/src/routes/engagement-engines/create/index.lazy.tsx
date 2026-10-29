@@ -22,6 +22,7 @@ import {
     ListBullets,
     Robot,
     ShieldCheck,
+    Sparkle,
     UsersThree,
     WarningCircle,
 } from '@phosphor-icons/react';
@@ -74,6 +75,7 @@ import {
     useEngine,
 } from '../-hooks';
 import { useUpdateEngine } from '../-hooks/engine-edit';
+import { useGenerateBrief, useLeadAgentBriefs } from '../-hooks/brief';
 import {
     cadenceText,
     DEFAULT_SEND_DAYS,
@@ -117,13 +119,17 @@ const STEP_KEYS_EDIT = [
     'cadence',
     'review',
 ] as const;
-/** The optional Assets step: held locally while creating, saved live on an existing engine. */
+/**
+ * The optional Assets step: held locally while creating, saved live on an existing engine.
+ * Creating starts with the audience: the Lead Agent behind a lead list describes what is sold, and
+ * that becomes the brief on the next step.
+ */
 const STEP_KEYS_CREATE = [
+    'audience',
     'basics',
     'dataPoints',
     'channels',
     'assets',
-    'audience',
     'cadence',
     'review',
 ] as const;
@@ -523,6 +529,56 @@ function CreateEnginePage() {
         return o ? [o.label, o.sub].filter(Boolean).join(' · ') : undefined;
     };
 
+    // ---- Brief help: the Lead Agent behind the picked lists, and "Generate with AI".
+    const [websiteUrl, setWebsiteUrl] = useState('');
+    const [productText, setProductText] = useState('');
+    const { data: leadAgentBriefs } = useLeadAgentBriefs(audienceIds, !isEdit);
+    const draftBrief = useGenerateBrief();
+    const agentBriefText = useMemo(
+        () =>
+            (leadAgentBriefs ?? [])
+                .map((a) => `${t('basics.agent.heading', { name: a.agentName })}\n${a.text}`)
+                .join('\n\n'),
+        [leadAgentBriefs, t]
+    );
+    // The brief starts from the Lead Agent's description while the admin has not written their own:
+    // an empty box, or exactly the text put there last. Anything the admin typed is never replaced.
+    const [autoBrief, setAutoBrief] = useState('');
+    useEffect(() => {
+        if (isEdit) return;
+        if (!agentBriefText) {
+            if (autoBrief && brief === autoBrief) setBrief('');
+            if (autoBrief) setAutoBrief('');
+            return;
+        }
+        if (brief.trim() === '' || brief === autoBrief) {
+            setBrief(agentBriefText);
+            setAutoBrief(agentBriefText);
+        }
+        // Only a new Lead Agent description should re-run this, not every keystroke in the brief.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [agentBriefText]);
+    const canDraftBrief = !!(
+        objective.trim() ||
+        productText.trim() ||
+        websiteUrl.trim() ||
+        agentBriefText
+    );
+    const runDraftBrief = () =>
+        draftBrief.mutate(
+            {
+                objective: objective.trim() || undefined,
+                websiteUrl: websiteUrl.trim() || undefined,
+                productDescription: productText.trim() || undefined,
+                language,
+                senderName: instituteDetails?.institute_name || undefined,
+                leadAgentBrief: agentBriefText || undefined,
+                // What the Lead Agent filled in is sent as its own input, not as the admin's draft.
+                currentBrief: brief.trim() && brief !== autoBrief ? brief : undefined,
+            },
+            { onSuccess: (text) => setBrief(text) }
+        );
+
     /** Why Continue is blocked on a step, in words; null when the step is complete. */
     const blockReason = (s: number): string | null => {
         switch (stepKeys[s]) {
@@ -720,7 +776,89 @@ function CreateEnginePage() {
                 <p className="text-caption text-neutral-500">
                     {isEdit ? tEdit('amendHint') : t('basics.briefHint')}
                 </p>
+                {!isEdit && !!leadAgentBriefs?.length && (
+                    <div className="flex flex-wrap items-center gap-2 text-neutral-600">
+                        <span className="text-caption">
+                            {t('basics.agent.filled', {
+                                names: leadAgentBriefs.map((a) => `“${a.agentName}”`).join(', '),
+                            })}
+                        </span>
+                        {brief !== agentBriefText && (
+                            <MyButton
+                                type="button"
+                                buttonType="secondary"
+                                scale="small"
+                                onClick={() => {
+                                    setBrief(agentBriefText);
+                                    setAutoBrief(agentBriefText);
+                                }}
+                            >
+                                {t('basics.agent.use')}
+                            </MyButton>
+                        )}
+                    </div>
+                )}
             </div>
+            {!isEdit && (
+                <div className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-neutral-50 p-4">
+                    <div className="flex items-start gap-3">
+                        <IconTile icon={Sparkle} size="sm" tint="bg-primary-50 text-primary-500" />
+                        <span className="flex flex-col">
+                            <span className="font-semibold text-neutral-800">
+                                <span className="text-body">{t('basics.ai.title')}</span>
+                            </span>
+                            <span className="text-neutral-500">
+                                <span className="text-caption">{t('basics.ai.hint')}</span>
+                            </span>
+                        </span>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <MyInput
+                            label={t('basics.ai.website')}
+                            inputType="text"
+                            inputPlaceholder={t('basics.ai.websitePlaceholder')}
+                            input={websiteUrl}
+                            onChangeFunction={(e) => setWebsiteUrl(e.target.value)}
+                        />
+                        <div className="flex flex-col gap-1">
+                            <label
+                                htmlFor="engine-product"
+                                className="text-subtitle font-regular"
+                            >
+                                {t('basics.ai.product')}
+                            </label>
+                            <Textarea
+                                id="engine-product"
+                                rows={3}
+                                value={productText}
+                                onChange={(e) => setProductText(e.target.value)}
+                                placeholder={t('basics.ai.productPlaceholder')}
+                            />
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3">
+                        <MyButton
+                            type="button"
+                            buttonType="primary"
+                            scale="medium"
+                            disable={!canDraftBrief || draftBrief.isPending}
+                            onClick={runDraftBrief}
+                        >
+                            <Sparkle className="me-1 size-4" />
+                            {draftBrief.isPending
+                                ? t('basics.ai.generating')
+                                : brief.trim() && brief !== autoBrief
+                                  ? t('basics.ai.improve')
+                                  : t('basics.ai.generate')}
+                        </MyButton>
+                        {!canDraftBrief && (
+                            <span className="text-neutral-500">
+                                <span className="text-caption">{t('basics.ai.needInput')}</span>
+                            </span>
+                        )}
+                    </div>
+                </div>
+            )}
             <div className="w-full sm:w-80">
                 <label className="mb-1 block text-subtitle font-regular">
                     {t('basics.language')}

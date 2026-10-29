@@ -18,7 +18,25 @@
         "brief": "The brief",
         "briefHint": "Describe the objective, tone, what to say and what to avoid, and any links. This becomes the AI's instructions, so the more specific, the better.",
         "briefPlaceholder": "You are re-engaging {{learners}} who stopped attending. Be warm and brief…",
-        "language": "Language"
+        "language": "Language",
+        "agent": {
+            "heading": "From the Lead Agent “{{name}}”:",
+            "filled": "Filled from the Lead Agent {{names}}. Edit it freely.",
+            "use": "Use the Lead Agent’s description as the brief"
+        },
+        "ai": {
+            "title": "Write it with AI",
+            "hint": "Give the product and the website, and the AI drafts the brief. It cannot open the website: it uses the address as the link to share and what you write about the product. Anything missing shows up as a TODO line for you to fill in.",
+            "website": "Website",
+            "websitePlaceholder": "https://example.com",
+            "product": "About the product or offer",
+            "productPlaceholder": "What it is, who it is for, what makes it useful…",
+            "generate": "Generate with AI",
+            "improve": "Improve with AI",
+            "generating": "Writing the brief…",
+            "needInput": "Add the objective, the product or the website first.",
+            "failed": "Could not write the brief"
+        }
     },
     "dataPoints": {
         "intro": "Choose what the AI may look at for each person, like attendance or fee dues. More information means better-timed messages.",
