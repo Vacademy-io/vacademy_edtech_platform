@@ -165,4 +165,12 @@ private String id;
 
     @Column(name = "regional_country", length = 2)
     private String regionalCountry;
+
+    /**
+     * Copies bought on this line (V633), e.g. 4 copies of one book. The payment plan's
+     * actual_price stays the UNIT price; the line total is unit price x quantity.
+     * Initialised to 1 so the NOT NULL column is never sent an explicit NULL on insert.
+     */
+    @Column(name = "quantity", nullable = false)
+    private Integer quantity = 1;
 }
