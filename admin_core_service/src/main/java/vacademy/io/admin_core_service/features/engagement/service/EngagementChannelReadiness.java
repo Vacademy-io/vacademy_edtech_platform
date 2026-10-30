@@ -23,7 +23,10 @@ import java.util.Objects;
  * <ul>
  *   <li>WHATSAPP: the active provider (WHATSAPP_SETTING.data.UTILITY_WHATSAPP) has its key.</li>
  *   <li>EMAIL: the institute has its own sender (EMAIL_SETTING.data). Without one, mail would
- *       leave as the platform's default support address, which is not outreach from the institute.</li>
+ *       leave as the platform's default support address, which is not outreach from the institute.
+ *       The engine's chosen sender (channels.EMAIL.emailType, UTILITY_EMAIL when unset) must exist
+ *       and not be marked unverified — notification_service sends an unverified sender's mail from
+ *       the support address too.</li>
  *   <li>AI_CALL: AI calling has an agent (AI_CALLING_SETTING campaigns or defaultCampaignId).</li>
  *   <li>IN_APP: always ready.</li>
  * </ul>
@@ -37,15 +40,51 @@ public class EngagementChannelReadiness {
 
     public static final String NOT_SET_UP = "NOT_SET_UP";
     public static final String SENDER_MISSING = "SENDER_MISSING";
+    public static final String SENDER_NOT_VERIFIED = "SENDER_NOT_VERIFIED";
 
     private final InstituteRepository instituteRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    /** reason is null when ready; NOT_SET_UP or SENDER_MISSING (the chosen email sender is gone). */
+    /**
+     * reason is null when ready; NOT_SET_UP, SENDER_MISSING (the chosen email sender is gone) or
+     * SENDER_NOT_VERIFIED (the chosen sender's SES verification isn't done).
+     */
     public record Readiness(boolean ready, String reason) {
         static Readiness ok() {
             return new Readiness(true, null);
         }
+    }
+
+    /**
+     * One of the institute's email senders (a node of EMAIL_SETTING.data), for the wizard's
+     * "From email" picker. verified is false only when the node says so; legacy nodes without the
+     * flag send from their own address, so they count as verified.
+     */
+    public record EmailSender(String type, String email, String name, boolean verified) {
+    }
+
+    /** The institute's own email senders; empty when it has none (the platform default isn't one). */
+    public List<EmailSender> emailSenders(String instituteId) {
+        JsonNode settings = settingsOf(instituteId);
+        if (settings == null) return List.of();
+        List<EmailSender> out = new ArrayList<>();
+        Iterator<Map.Entry<String, JsonNode>> it = settings.path("EMAIL_SETTING").path("data").fields();
+        while (it.hasNext()) {
+            Map.Entry<String, JsonNode> e = it.next();
+            if (!e.getValue().isObject()) continue;
+            String from = fromOf(e.getValue());
+            String email = from;
+            String name = null;
+            int lt = from.indexOf('<');
+            int gt = from.indexOf('>');
+            if (lt >= 0 && gt > lt) {
+                name = from.substring(0, lt).trim();
+                email = from.substring(lt + 1, gt).trim();
+            }
+            out.add(new EmailSender(e.getKey(), email, name == null || name.isBlank() ? null : name,
+                    !isUnverified(e.getValue())));
+        }
+        return out;
     }
 
     public Map<String, Readiness> check(String instituteId) {
@@ -72,7 +111,8 @@ public class EngagementChannelReadiness {
         JsonNode channels = readObject(channelsJson);
         if (channels == null) return;
         JsonNode previous = readObject(previousChannelsJson);
-        String emailType = channels.path("EMAIL").path("emailType").asText(null);
+        // The sender the dispatcher will use: no emailType means UTILITY_EMAIL.
+        String emailType = senderOf(channels);
         Map<String, Readiness> readiness = null;
         List<String> problems = new ArrayList<>();
         for (String channel : List.of("WHATSAPP", "EMAIL", "AI_CALL")) {
@@ -80,8 +120,7 @@ public class EngagementChannelReadiness {
             if (!on) continue;
             boolean wasOn = previous != null && previous.path(channel).path("enabled").asBoolean(false);
             boolean senderChanged = "EMAIL".equals(channel) && previous != null
-                    && !Objects.equals(blankToNull(emailType),
-                            blankToNull(previous.path("EMAIL").path("emailType").asText(null)));
+                    && !Objects.equals(emailType, senderOf(previous));
             if (wasOn && !senderChanged) continue;
             if (readiness == null) readiness = check(instituteId, emailType);
             Readiness r = readiness.get(channel);
@@ -94,7 +133,9 @@ public class EngagementChannelReadiness {
         return switch (channel) {
             case "WHATSAPP" -> "WhatsApp is not set up for your institute. Connect it in Settings → WhatsApp, or turn the WhatsApp channel off.";
             case "EMAIL" -> SENDER_MISSING.equals(reason)
-                    ? "The email sender this engine uses no longer exists. Pick another sender, or add it in Settings → Notification."
+                    ? "The email sender this engine uses doesn't exist. Pick another sender, or add it in Settings → Notification."
+                    : SENDER_NOT_VERIFIED.equals(reason)
+                    ? "The email sender this engine uses isn't verified yet, so its mail would go out from the platform's support address. Finish verifying it in Settings → Notification, or pick another sender."
                     : "Email is not set up for your institute. Add your sender address in Settings → Notification, or turn the Email channel off.";
             case "AI_CALL" -> "AI calling is not set up for your institute. Add an AI agent in Settings → AI Calling, or turn the AI call channel off.";
             default -> channel + " is not set up for your institute.";
@@ -123,10 +164,32 @@ public class EngagementChannelReadiness {
             }
         }
         if (!any) return new Readiness(false, NOT_SET_UP);
-        if (emailType != null && !emailType.isBlank() && !data.path(emailType.trim()).isObject()) {
-            return new Readiness(false, SENDER_MISSING);
-        }
+        if (emailType == null || emailType.isBlank()) return Readiness.ok();
+        JsonNode sender = data.path(emailType.trim());
+        if (!sender.isObject()) return new Readiness(false, SENDER_MISSING);
+        if (isUnverified(sender)) return new Readiness(false, SENDER_NOT_VERIFIED);
         return Readiness.ok();
+    }
+
+    /** Same test as notification_service EmailService: only a literal false falls back. */
+    private static boolean isUnverified(JsonNode sender) {
+        JsonNode verified = sender.path("verified");
+        return verified.isBoolean() && !verified.asBoolean();
+    }
+
+    /** The from-address keys notification_service reads, in its order. */
+    private static String fromOf(JsonNode sender) {
+        for (String key : List.of("from", "fromEmail", "fromAddress", "from_email", "from_email_address", "email")) {
+            String v = sender.path(key).asText("");
+            if (!v.isBlank()) return v.trim();
+        }
+        return "";
+    }
+
+    /** channels.EMAIL.emailType, or the dispatcher's default when unset. */
+    private static String senderOf(JsonNode channels) {
+        String type = blankToNull(channels.path("EMAIL").path("emailType").asText(null));
+        return type != null ? type : EngagementDispatcher.DEFAULT_EMAIL_TYPE;
     }
 
     private Readiness aiCall(JsonNode settings) {

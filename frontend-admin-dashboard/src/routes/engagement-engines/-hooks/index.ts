@@ -15,6 +15,7 @@ import {
     enrollEngine,
     getChannelReadiness,
     getDataPointCatalog,
+    getEmailSenders,
     getEngine,
     getTaskPeople,
     listEngines,
@@ -73,6 +74,19 @@ export const useChannelReadiness = (emailType?: string) => {
         queryKey: ['engagementChannelReadiness', instituteId, emailType ?? ''],
         queryFn: () => getChannelReadiness(instituteId, emailType),
         enabled: !!instituteId,
+        staleTime: 30 * 1000,
+        refetchOnWindowFocus: true,
+    });
+};
+
+/** The institute's email senders for the Email channel's "From email" picker. Refetched on
+ *  window focus, so a sender added or verified in Settings shows up without a reload. */
+export const useEmailSenders = (enabled = true) => {
+    const instituteId = getInstituteId() || '';
+    return useQuery({
+        queryKey: ['engagementEmailSenders', instituteId],
+        queryFn: () => getEmailSenders(instituteId),
+        enabled: enabled && !!instituteId,
         staleTime: 30 * 1000,
         refetchOnWindowFocus: true,
     });

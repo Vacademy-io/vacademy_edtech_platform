@@ -169,7 +169,14 @@
             "TEMPLATE_PLUS_AI_LINE": "Modèles + une phrase IA"
         },
         "coldTitle": "Prospection à froid",
-        "coldHint": "Activez si ces personnes ne vous ont jamais contacté (par ex. prospects trouvés par le Lead Agent). Chaque e-mail doit alors expliquer comment ne plus en recevoir."
+        "coldHint": "Activez si ces personnes ne vous ont jamais contacté (par ex. prospects trouvés par le Lead Agent). Chaque e-mail doit alors expliquer comment ne plus en recevoir.",
+        "senderTitle": "E-mail d'expédition",
+        "senderPlaceholder": "Choisir un expéditeur",
+        "senderHint": "Les e-mails de ce moteur partent de cette adresse. Ajoutez ou vérifiez des expéditeurs dans Paramètres → Notification.",
+        "senderNotVerified": "non vérifié",
+        "senderLoading": "Chargement de vos expéditeurs…",
+        "senderLoadFailed": "Impossible de charger vos expéditeurs. Rouvrez cette étape pour réessayer.",
+        "senderEmpty": "Votre institut n'a encore aucun expéditeur. Ajoutez-en un dans Paramètres → Notification."
     },
     "brief": {
         "weak": "Ce brief est maigre : l'IA écrira des messages génériques. Répondez à ce que vous pouvez ; vos réponses sont ajoutées au brief.",

@@ -9,6 +9,7 @@ import type {
     ChannelReadinessMap,
     CreateEngineRequest,
     DataPointSpec,
+    EmailSender,
     EngagementAction,
     EngagementEngine,
     EngagementTemplateProposal,
@@ -106,6 +107,13 @@ export const getChannelReadiness = async (
 ): Promise<ChannelReadinessMap> => {
     const res = await authenticatedAxiosInstance.get(`${ENGAGEMENT_ENGINES_BASE}/channel-readiness`, {
         params: { instituteId, ...(emailType ? { emailType } : {}) },
+    });
+    return res.data;
+};
+
+export const getEmailSenders = async (instituteId: string): Promise<EmailSender[]> => {
+    const res = await authenticatedAxiosInstance.get(`${ENGAGEMENT_ENGINES_BASE}/email-senders`, {
+        params: { instituteId },
     });
     return res.data;
 };

@@ -183,6 +183,15 @@ public class EngagementEngineController {
         return ResponseEntity.ok(channelReadiness.check(instituteId, emailType));
     }
 
+    /** The institute's email senders, for the wizard's "From email" picker on the Email channel. */
+    @GetMapping("/email-senders")
+    public ResponseEntity<List<vacademy.io.admin_core_service.features.engagement.service.EngagementChannelReadiness.EmailSender>>
+            emailSenders(@RequestParam String instituteId,
+                         @RequestAttribute("user") CustomUserDetails user) {
+        accessGuard.requireAdmin(user, instituteId);
+        return ResponseEntity.ok(channelReadiness.emailSenders(instituteId));
+    }
+
     /** The wizard's data-point picker — served by the registry catalog (declare()). */
     @GetMapping("/data-points")
     public ResponseEntity<List<DataPointSpec>> dataPointCatalog(

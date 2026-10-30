@@ -110,6 +110,7 @@ import type {
     EngineLanguage,
     QuietHours,
 } from '../-types';
+import { DEFAULT_EMAIL_TYPE } from '../-types';
 
 export const Route = createLazyFileRoute('/engagement-engines/create/')({
     component: CreateEnginePage,
@@ -476,7 +477,13 @@ function CreateEnginePage() {
     // AI call on with no agent to call with: the engine could never place a call.
     const aiCallNeedsPool =
         !!channels.AI_CALL?.enabled && (channels.AI_CALL?.agentPool?.length ?? 0) === 0;
-    const blockedChannels = enabledChannelKeys.filter((c) => notReady(c) && !savedChannels[c]?.enabled);
+    // Like the backend, a different email sender is checked again even on a channel already on.
+    const emailSenderChanged =
+        (channels.EMAIL?.emailType || DEFAULT_EMAIL_TYPE) !==
+        (savedChannels.EMAIL?.emailType || DEFAULT_EMAIL_TYPE);
+    const blockedChannels = enabledChannelKeys.filter(
+        (c) => notReady(c) && (!savedChannels[c]?.enabled || (c === 'EMAIL' && emailSenderChanged))
+    );
 
     const schedule: QuietHours = useMemo(() => {
         const opt = SEND_TIME_OPTIONS.find((o) => o.value === sendTime);
@@ -986,7 +993,10 @@ function CreateEnginePage() {
                                     aria-label={t('channels.enableAria', { channel: meta.label })}
                                     checked={!!cfg.enabled}
                                     // Not set up: it can't be turned on (one already on can be turned off).
-                                    disabled={missing && !cfg.enabled}
+                                    // A missing or unverified email sender can: another one is picked below.
+                                    disabled={
+                                        !cfg.enabled && readiness?.[c]?.reason === 'NOT_SET_UP'
+                                    }
                                     onCheckedChange={(v) => toggleChannel(c, { enabled: v })}
                                 />
                             </div>
@@ -1000,7 +1010,9 @@ function CreateEnginePage() {
                                         <span className="text-caption">
                                             {readiness?.[c]?.reason === 'SENDER_MISSING'
                                                 ? tConstants('readiness.senderMissing')
-                                                : tConstants(`readiness.${c}`)}
+                                                : readiness?.[c]?.reason === 'SENDER_NOT_VERIFIED'
+                                                  ? tConstants('readiness.senderNotVerified')
+                                                  : tConstants(`readiness.${c}`)}
                                         </span>
                                     </span>
                                     <span className="flex flex-wrap gap-2">
