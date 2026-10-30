@@ -1,5 +1,10 @@
 {
     "subtitle": "A daily report for each engine: what it did, what it cost and what came back.",
+    "viewSwitch": {
+        "label": "Dashboard view",
+        "daily": "Daily report",
+        "overview": "Overview"
+    },
     "noActivity": "No activity on this day",
     "notTracked": "Not tracked",
     "estimated": "Estimated",

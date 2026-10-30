@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { createLazyFileRoute, useNavigate, useSearch } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { Lightning, Tray } from '@phosphor-icons/react';
@@ -14,7 +14,9 @@ import {
     useEngagementDailyReport,
     type DailyReportEngineOption,
 } from '@/services/engagement-daily-report';
+import { DashboardViewSwitch, type DashboardView } from './-components/DashboardViewSwitch';
 import { DailyReport } from './-components/daily-report/DailyReport';
+import { EngagementOverview } from './-components/overview/EngagementOverview';
 import { ReportFilterBar, type ExportKind } from './-components/daily-report/ReportFilterBar';
 import { minDateIso, shiftDay, todayIso } from './-utils/report-format';
 import { engineDisplayName, useReportView } from './-utils/use-report-model';
@@ -27,14 +29,46 @@ const LINK_BTN =
     'inline-flex items-center gap-1.5 rounded-md border border-neutral-200 bg-white px-3 py-1.5 font-medium text-neutral-700 hover:border-primary-300 hover:text-primary-600';
 
 /**
- * Engagement Dashboard: a daily report card for one engine (or all of them). What it did,
- * what it cost and what came back, with charts for the summary, tables for the detail and
- * an Excel / PDF export. Whole-institute numbers, so admins only.
+ * Engagement Dashboard, two views behind a switch in the header: the daily report (default)
+ * and the 7/30/90-day overview. Only the active view mounts, so only its data is fetched.
+ */
+function EngagementDashboardPage() {
+    const navigate = useNavigate();
+    const search = useSearch({ strict: false }) as {
+        engine?: string;
+        date?: string;
+        view?: 'overview';
+    };
+    const view: DashboardView = search.view === 'overview' ? 'overview' : 'daily';
+    // The engine and day stay in the URL while on the overview, so switching back restores them.
+    const viewSwitch = (
+        <DashboardViewSwitch
+            value={view}
+            onChange={(next) =>
+                navigate({
+                    to: '/engagement-engines/dashboard',
+                    search: { ...search, view: next === 'overview' ? 'overview' : undefined },
+                    replace: true,
+                })
+            }
+        />
+    );
+    return view === 'overview' ? (
+        <EngagementOverview viewSwitch={viewSwitch} />
+    ) : (
+        <DailyReportView viewSwitch={viewSwitch} />
+    );
+}
+
+/**
+ * The daily report card for one engine (or all of them). What it did, what it cost and what
+ * came back, with charts for the summary, tables for the detail and an Excel / PDF export.
+ * Whole-institute numbers, so admins only.
  *
  * The engine and the day live in the URL (?engine=<id>&date=yyyy-MM-dd), so a report can be
  * shared; with no date the report is for today in the institute's time zone.
  */
-function EngagementDashboardPage() {
+function DailyReportView({ viewSwitch }: { viewSwitch: ReactNode }) {
     const { t: tCrm } = useTranslation('crmPages');
     const { t } = useTranslation('engagementDailyReport');
     const isAdmin = useIsInstituteAdmin();
@@ -111,6 +145,7 @@ function EngagementDashboardPage() {
             isError={false}
             actions={
                 <>
+                    {viewSwitch}
                     <CrmLink href="/engagement-engines/inbox" className={LINK_BTN}>
                         <Tray size={14} />
                         <span className="text-caption">{tCrm('engageDash.inbox')}</span>
