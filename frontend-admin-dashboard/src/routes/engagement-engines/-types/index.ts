@@ -23,6 +23,8 @@ export interface ChannelConfig {
     mode?: 'FREE_WRITE' | 'TEMPLATE_ONLY' | 'TEMPLATE_PLUS_AI_LINE';
     /** EMAIL only: the engine writes to people who never contacted us (unsubscribe line required). */
     coldOutreach?: boolean;
+    /** AI_CALL only: ids of the AI agents the engine calls with, in turn. */
+    agentPool?: string[];
 }
 
 export type ChannelsConfig = Partial<Record<ChannelKey, ChannelConfig>>;

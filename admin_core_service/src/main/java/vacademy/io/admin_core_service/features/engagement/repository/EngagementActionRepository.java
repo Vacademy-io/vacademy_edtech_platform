@@ -162,6 +162,9 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
             """, nativeQuery = true)
     long countApprovedSendsForChannel(@Param("engineId") String engineId, @Param("channel") String channel);
 
+    /** Every action the engine has made on a channel; the AI-call pool rotates on it. */
+    long countByEngineIdAndChannel(String engineId, String channel);
+
     /**
      * Autonomous sends that are DUE: a proactive SEND the decision service scheduled, now ready to
      * dispatch. Ordered by scheduled time so the oldest-due goes first; the dispatch job bounds the

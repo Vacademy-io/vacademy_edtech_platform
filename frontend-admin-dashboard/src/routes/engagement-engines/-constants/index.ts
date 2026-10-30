@@ -76,7 +76,7 @@ export const buildChannelMeta = (
     WHATSAPP: { label: t('channel.whatsapp'), supportsAuto: true, supportsAutoReply: true },
     EMAIL: { label: t('channel.email'), supportsAuto: true, supportsAutoReply: false },
     IN_APP: { label: t('channel.inApp'), supportsAuto: true, supportsAutoReply: false },
-    AI_CALL: { label: t('channel.aiCall'), supportsAuto: false, supportsAutoReply: false },
+    AI_CALL: { label: t('channel.aiCall'), supportsAuto: true, supportsAutoReply: false },
 });
 
 export const CHANNEL_ORDER: ChannelKey[] = ['WHATSAPP', 'EMAIL', 'IN_APP', 'AI_CALL'];

@@ -1,13 +1,13 @@
 {
     "heading": "Assets",
     "subtitle": "Brochures, videos, price sheets and links the agent can share on WhatsApp.",
-    "hint": "Add material the agent can send when a lead asks for it (up to {{max}} items). The description is what the agent reads to decide what an item is and when to send it.",
+    "hint": "Up to {{max}} items. The agent reads each description to decide when to send it.",
     "noDescriptionWarning": "Add a description so the agent knows when to send this.",
     "limitReached": "The assets list is full ({{max}} items). Remove one to add more.",
     "loadFailed": "Could not load the assets.",
     "empty": {
         "title": "No assets yet",
-        "text": "Add brochures, videos and links your agent can share. When a lead asks, it sends the right one; if nothing fits, it alerts the lead's counsellor instead."
+        "text": "Add brochures, videos or links. The agent sends the right one when asked, or alerts the counsellor if nothing fits."
     },
     "kind": {
         "document": "Documents",

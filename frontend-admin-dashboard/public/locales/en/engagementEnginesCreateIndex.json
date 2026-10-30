@@ -26,11 +26,11 @@
         },
         "ai": {
             "title": "Write it with AI",
-            "hint": "Give the product and the website, and the AI drafts the brief. It cannot open the website: it uses the address as the link to share and what you write about the product. Anything missing shows up as a TODO line for you to fill in.",
+            "hint": "The AI drafts the brief from your product details. It can't open the website; the address is used as the link to share. Gaps appear as TODO lines.",
             "website": "Website",
             "websitePlaceholder": "https://example.com",
             "product": "About the product or offer",
-            "productPlaceholder": "What it is, who it is for, what makes it useful…",
+            "productPlaceholder": "What it is, who it's for, why it helps…",
             "generate": "Generate with AI",
             "improve": "Improve with AI",
             "generating": "Writing the brief…",
@@ -50,18 +50,18 @@
         }
     },
     "channels": {
-        "intro": "Which channels can this engine use? At first you check every message before it goes out. WhatsApp needs Meta-approved templates (set up after creating).",
+        "intro": "Pick the channels to use. You approve every message at first. WhatsApp needs Meta-approved templates (set up after creating).",
         "enableAria": "Enable {{channel}}",
         "auto": "Auto-send proactively (after this channel graduates; until then you review and send each one)",
         "autoAria": "Auto-send proactively on {{channel}}",
         "autoReply": "Auto-answer replies (AI replies within 24h; money, anger, requests to stop and uncertainty always come to you)",
         "autoReplyAria": "Auto-answer replies for {{channel}}",
-        "autoTitle": "Send on its own after a trial",
-        "autoHint": "Once you have approved the first few messages on this channel, it sends without asking. Until then you check each one.",
-        "autoReplyTitle": "Reply on its own",
-        "autoReplyHint": "The AI answers replies within 24 hours. Anything about money, anger, requests to stop or doubt always comes to you.",
-        "callNote": "The engine proposes a call for your team. Calls are never placed from the task inbox.",
-        "whatsappNote": "Needs Meta-approved templates — the AI proposes them after you create the engine."
+        "autoTitle": "Auto-send after a trial",
+        "autoHint": "Sends without asking once you've approved the first few.",
+        "autoReplyTitle": "Auto-reply",
+        "autoReplyHint": "AI answers replies within 24h. Money, anger, stop requests or doubt come to you.",
+        "callNote": "Calls leads with an AI agent from the pool you pick.",
+        "whatsappNote": "Needs Meta-approved templates, proposed by the AI after you create the engine."
     },
     "audience": {
         "intro": "Pick who this engine should reach. Tick as many {{batches}} and {{audiences}} as you like.",
@@ -104,11 +104,11 @@
         "firstTouchWaitHint": "Their first message goes out in the next send window.",
         "goalTitle": "Goal",
         "stopOnMeeting": "Stop when a meeting is booked",
-        "stopOnMeetingHint": "When a demo or meeting is booked with a lead (booking page, AI call or your team), the engine stops for that lead and cancels anything still pending.",
+        "stopOnMeetingHint": "Ends outreach to that lead and cancels pending messages.",
         "legendSend": "Send window",
         "bookingPage": "Book meetings on",
-        "bookingPageNone": "Don't book (the team books)",
-        "bookingPageHint": "When a lead asks for a demo in a reply, the engine books it here at the time they ask for, or offers the free slots. Rescheduling requests are handled too.",
+        "bookingPageNone": "Don't book (team books)",
+        "bookingPageHint": "Books a demo at the time a lead asks, or offers free slots. Reschedules too.",
         "bookingPageEmpty": "No booking pages yet. Create one in Meetings to let the engine book demos.",
         "quietHours": "Quiet hours",
         "quietHint": "No messages between these hours, in the timezone below. The institute's own quiet-hours floor still applies on top of this.",
@@ -207,7 +207,8 @@
         "cadence": "Choose how often to check in.",
         "channelNotReady": "{{channel}} is not set up for your institute. Set it up, or turn the channel off to continue.",
         "days": "Pick at least one day to continue.",
-        "sendTimeQuiet": "The send time is inside the quiet hours. Pick a time outside them."
+        "sendTimeQuiet": "The send time is inside the quiet hours. Pick a time outside them.",
+        "aiCallPool": "Pick at least one AI agent for AI call, or turn it off to continue."
     },
     "leaveDialog": {
         "title": "Leave without saving?",
@@ -217,15 +218,23 @@
         "leave": "Leave"
     },
     "assetsStep": {
-        "lead": "Add material the agent can send on WhatsApp when a lead asks for it. You can skip this and add material later from the engine page.",
-        "editLead": "Add, replace or remove material the agent can send on WhatsApp when a lead asks for it. Changes here are saved straight away, without saving the rest of the engine."
+        "lead": "Optional. Material the agent can send on WhatsApp when a lead asks. Add more later from the engine page.",
+        "editLead": "Material the agent can send on WhatsApp when a lead asks. Changes save immediately."
     },
     "team": {
         "title": "Who to alert and book meetings with",
-        "hint": "When the agent can't handle a reply on its own, or someone asks for material it doesn't have, this person gets a system alert and an email. Meetings the agent books use their Google account if they've connected one in My Schedule, otherwise the institute's default Google account. The lead's own counsellor is always told as well.",
+        "hint": "Alerted (in-app and email) when the agent can't handle a reply or lacks requested material. Meetings use their Google account from My Schedule, else the institute default. The lead's counsellor is always told too.",
         "searchPlaceholder": "Search team members",
         "empty": "No team members found",
         "note": "Pick one person.",
         "loadFailed": "Couldn't load your team. Try again in a moment."
+    },
+    "aiCall": {
+        "poolTitle": "Agents to call with",
+        "search": "Search agents",
+        "empty": "No outbound AI agents yet.",
+        "create": "Create an AI agent",
+        "note": "Calls rotate through the agents you pick, one per call.",
+        "loadFailed": "Couldn't load your AI agents. Try again in a moment."
     }
 }

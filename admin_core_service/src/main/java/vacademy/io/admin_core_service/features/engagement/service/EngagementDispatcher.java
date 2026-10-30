@@ -77,6 +77,13 @@ public class EngagementDispatcher {
     private final PolicyGate policyGate;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /** AI-calling queue + the engine's agent pool; optional so a context without them still starts. */
+    @Autowired(required = false)
+    private vacademy.io.admin_core_service.features.telephony.queue.AiCallQueueService aiCallQueue;
+
+    @Autowired(required = false)
+    private EngagementAiCallPool aiCallPool;
+
     /** The engine's assets, for the attachments of a REPLY; optional so a context without it still starts. */
     @Autowired(required = false)
     private EngagementAssetService assetService;
@@ -165,8 +172,7 @@ public class EngagementDispatcher {
                 case "EMAIL" -> sendEmail(action, subject, body);
                 case "IN_APP" -> sendInApp(action, subject, body);
                 case "WHATSAPP" -> sendWhatsApp(action, subject, body);
-                case "AI_CALL" -> throw new SendRejectedException(
-                        "AI calls are task-only in this phase — mark this task Done after calling.");
+                case "AI_CALL" -> sendAiCall(action, member, subject);
                 default -> throw new SendRejectedException("Unsupported channel for send: " + channel);
             }
             action.setStatus("SENT");
@@ -190,6 +196,54 @@ public class EngagementDispatcher {
             action.setDispatchedAt(Instant.now());
         }
         return actionRepository.save(action);
+    }
+
+    /**
+     * Queue an AI voice call for the person with the next agent in the engine's pool. The call
+     * itself goes out through the AI-calling queue (calling hours, credits, daily cap and the
+     * already-assigned-lead guard all still apply), so SENT here means "handed to the queue"; what
+     * the call achieves comes back through the ai_calls data point.
+     */
+    private void sendAiCall(EngagementAction action, EngagementMember member, Subject subject) {
+        if (aiCallQueue == null || aiCallPool == null) {
+            throw new SendRejectedException("AI calling is unavailable right now.");
+        }
+        if (subject.getPhone() == null || subject.getPhone().isBlank()) {
+            throw new SendRejectedException("No phone number on file for this person");
+        }
+        EngagementEngine engine = engineRepository.findById(action.getEngineId())
+                .orElseThrow(() -> new SendRejectedException("The engine no longer exists."));
+        String agentId = aiCallPool.next(engine);
+        if (agentId == null) {
+            throw new SendRejectedException("This engine has no AI agent to call with. Add one to its AI call pool.");
+        }
+        var req = new vacademy.io.admin_core_service.features.telephony.core.dto.AiCallRequestDTO();
+        req.setInstituteId(action.getInstituteId());
+        req.setUserId(subject.getUserId());
+        req.setPhoneNumber(subject.getPhone());
+        req.setResponseId(member.getAudienceResponseId());
+        req.setCustomerName(subject.getName());
+        req.setCampaignId(agentId);   // an agent's id IS its campaign id in AI_CALLING_SETTING
+        req.setMetadata(Map.of("engagement_engine_id", action.getEngineId(),
+                "engagement_action_id", action.getId()));
+        var result = aiCallQueue.enqueue(req,
+                vacademy.io.admin_core_service.features.telephony.enums.CallTrigger.AUTOMATION,
+                "ENGAGEMENT_ENGINE", action.getId(), null);
+        if (result != null && !result.isQueued()) {
+            throw new SendRejectedException(result.getMessage() != null ? result.getMessage()
+                    : "The call could not be queued.");
+        }
+        action.setVariablesJson(mergeVariable(action.getVariablesJson(), "_agentId", agentId));
+    }
+
+    private String mergeVariable(String json, String key, String value) {
+        Map<String, String> vars = new java.util.LinkedHashMap<>(parseVariables(json));
+        vars.put(key, value);
+        try {
+            return objectMapper.writeValueAsString(vars);
+        } catch (Exception e) {
+            return json;
+        }
     }
 
     private void sendEmail(EngagementAction action, Subject subject, String body) {

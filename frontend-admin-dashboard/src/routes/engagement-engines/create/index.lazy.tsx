@@ -35,6 +35,7 @@ import { MyInput } from '@/components/design-system/input';
 import { SearchableSelect } from '@/components/design-system/searchable-select';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -86,6 +87,7 @@ import {
 } from '../-utils';
 import { AssetsPanel } from '../-components/AssetsPanel';
 import { TeamContactsPicker } from '../-components/TeamContactsPicker';
+import { AiCallAgentPool } from '../-components/AiCallAgentPool';
 import { toAssetRequest, type AssetDraftItem } from '../-types/assets';
 import { EnginePlanPreview } from '../-components/EnginePlanPreview';
 import {
@@ -465,6 +467,9 @@ function CreateEnginePage() {
     const notReady = (c: ChannelKey) => readiness?.[c]?.ready === false;
     // A channel the saved engine already had is not blocked (the backend doesn't re-check it either).
     const savedChannels = safeParse<ChannelsConfig>(editData?.engine?.channels, {});
+    // AI call on with no agent to call with: the engine could never place a call.
+    const aiCallNeedsPool =
+        !!channels.AI_CALL?.enabled && (channels.AI_CALL?.agentPool?.length ?? 0) === 0;
     const blockedChannels = enabledChannelKeys.filter((c) => notReady(c) && !savedChannels[c]?.enabled);
 
     const schedule: QuietHours = useMemo(() => {
@@ -586,6 +591,7 @@ function CreateEnginePage() {
                 return !highSelected || consentHigh ? null : t('blocked.consent');
             case 'channels':
                 if (enabledChannelKeys.length === 0) return t('blocked.channel');
+                if (aiCallNeedsPool) return t('blocked.aiCallPool');
                 return blockedChannels.length
                     ? t('blocked.channelNotReady', {
                           channel: blockedChannels.map((c) => channelMeta[c].label).join(', '),
@@ -706,19 +712,9 @@ function CreateEnginePage() {
 
     const languageOptions = buildLanguageOptions(tConstants);
     const holdoutValue = Math.max(0, Math.min(100, Number(holdoutPct) || 0));
-    const quietFrom = Number(quietStart);
-    const quietTo = Number(quietEnd);
-    // Display only: the window wraps past midnight when the end is before the start.
-    const isQuiet = (h: number) =>
-        quietFrom === quietTo
-            ? false
-            : quietFrom < quietTo
-              ? h >= quietFrom && h < quietTo
-              : h >= quietFrom || h < quietTo;
     const dataPointLabel = (key: string) =>
         (catalog ?? []).find((d) => d.key === key)?.label ?? key;
     const autoSendKeys = CHANNEL_ORDER.filter((c) => channels[c]?.enabled && channels[c]?.auto);
-    const hours = Array.from({ length: 24 }, (_, h) => h);
 
     const nextSteps: { icon: Icon; tint: string; key: string }[] = [
         { icon: FilePlus, tint: 'bg-neutral-100 text-neutral-600', key: 'draft' },
@@ -809,24 +805,25 @@ function CreateEnginePage() {
                             </span>
                         </span>
                     </div>
-                    <div className="grid gap-4 md:grid-cols-2">
-                        <MyInput
-                            label={t('basics.ai.website')}
-                            inputType="text"
-                            inputPlaceholder={t('basics.ai.websitePlaceholder')}
-                            input={websiteUrl}
-                            onChangeFunction={(e) => setWebsiteUrl(e.target.value)}
-                        />
+                    <div className="grid items-start gap-3 md:grid-cols-2">
                         <div className="flex flex-col gap-1">
-                            <label
-                                htmlFor="engine-product"
-                                className="text-subtitle font-regular"
-                            >
+                            <label htmlFor="engine-website" className="text-subtitle font-regular">
+                                {t('basics.ai.website')}
+                            </label>
+                            <Input
+                                id="engine-website"
+                                value={websiteUrl}
+                                onChange={(e) => setWebsiteUrl(e.target.value)}
+                                placeholder={t('basics.ai.websitePlaceholder')}
+                            />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <label htmlFor="engine-product" className="text-subtitle font-regular">
                                 {t('basics.ai.product')}
                             </label>
                             <Textarea
                                 id="engine-product"
-                                rows={3}
+                                rows={2}
                                 value={productText}
                                 onChange={(e) => setProductText(e.target.value)}
                                 placeholder={t('basics.ai.productPlaceholder')}
@@ -1050,7 +1047,14 @@ function CreateEnginePage() {
                                     onChange={(v) => toggleChannel(c, { autoReply: v })}
                                 />
                             )}
-                            {!meta.supportsAuto && (
+                            {c === 'AI_CALL' && cfg.enabled && (
+                                <AiCallAgentPool
+                                    instituteId={instituteId}
+                                    selected={cfg.agentPool ?? []}
+                                    onChange={(agentPool) => toggleChannel(c, { agentPool })}
+                                />
+                            )}
+                            {c === 'AI_CALL' && !cfg.enabled && (
                                 <p className="text-neutral-500">
                                     <span className="text-caption">{t('channels.callNote')}</span>
                                 </p>
@@ -1180,15 +1184,6 @@ function CreateEnginePage() {
     );
 
     const cadenceIsPreset = (CADENCE_PRESETS as readonly number[]).includes(Number(cadenceHours));
-    const sendStartMinute =
-        schedule.sendHour != null ? schedule.sendHour * 60 + (schedule.sendMinute ?? 0) : null;
-    /** The hour cell overlaps the one-hour send window (display only). */
-    const inSendWindow = (h: number) =>
-        sendStartMinute != null &&
-        [h * 60, h * 60 + 59].some((m) => {
-            const d = (m - sendStartMinute + 24 * 60) % (24 * 60);
-            return d < 60;
-        });
     const toggleDay = (d: number) =>
         setSendDays((prev) =>
             prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort((a, b) => a - b)
@@ -1330,60 +1325,6 @@ function CreateEnginePage() {
                     />
                 </div>
             </StepSection>
-            <div className="flex flex-col gap-2">
-                <label className="text-subtitle font-regular">{t('cadence.quietHours')}</label>
-                <div className="flex flex-wrap items-end gap-3">
-                    <HourSelect
-                        label={t('cadence.from')}
-                        value={quietStart}
-                        onChange={setQuietStart}
-                    />
-                    <HourSelect label={t('cadence.to')} value={quietEnd} onChange={setQuietEnd} />
-                </div>
-                <div className="flex flex-col gap-1" aria-hidden>
-                    <div className="flex gap-0.5">
-                        {hours.map((h) => (
-                            <span
-                                key={h}
-                                title={`${String(h).padStart(2, '0')}:00`}
-                                className={cn(
-                                    'h-6 flex-1 rounded-sm',
-                                    isQuiet(h)
-                                        ? 'bg-neutral-700'
-                                        : inSendWindow(h)
-                                          ? 'bg-primary-400'
-                                          : 'bg-success-100'
-                                )}
-                            />
-                        ))}
-                    </div>
-                    <div className="flex gap-0.5 text-neutral-400">
-                        {hours.map((h) => (
-                            <span key={h} className="flex-1">
-                                <span className="text-caption">{h % 3 === 0 ? h : ''}</span>
-                            </span>
-                        ))}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3 text-neutral-500">
-                        <span className="flex items-center gap-1.5">
-                            <span className="size-3 rounded-sm bg-neutral-700" />
-                            <span className="text-caption">{t('cadence.legendQuiet')}</span>
-                        </span>
-                        <span className="flex items-center gap-1.5">
-                            <span className="size-3 rounded-sm bg-success-100" />
-                            <span className="text-caption">{t('cadence.legendOpen')}</span>
-                        </span>
-                        {sendStartMinute != null && (
-                            <span className="flex items-center gap-1.5">
-                                <span className="size-3 rounded-sm bg-primary-400" />
-                                <span className="text-caption">{t('cadence.legendSend')}</span>
-                            </span>
-                        )}
-                    </div>
-                </div>
-                <p className="text-caption text-neutral-500">{t('cadence.quietHint')}</p>
-            </div>
-
             <StepSection icon={FlagCheckered} title={t('cadence.goalTitle')}>
                 <label className="flex items-start justify-between gap-3">
                     <span className="flex flex-col">
@@ -1500,10 +1441,6 @@ function CreateEnginePage() {
         ...batchIds.map((id) => batchName(id) ?? t('audience.picker.unknown')),
         ...audienceIds.map((id) => listNames[id] ?? t('audience.picker.unknown')),
     ];
-    const timezoneLabel =
-        TIMEZONE_OPTIONS.find((o: { label: string; value: string }) => o.value === timezone)
-            ?.label ?? timezone;
-
     const reviewStep = (
         <div className="flex flex-col gap-4">
             <div className="grid gap-6 lg:grid-cols-5">
@@ -1571,9 +1508,6 @@ function CreateEnginePage() {
                     </KeyValue>
                     <KeyValue label={t('review.goal')}>
                         {stopOnMeeting ? t('review.goalMeeting') : t('review.goalNone')}
-                    </KeyValue>
-                    <KeyValue label={t('review.quietHours')}>
-                        {`${pad2(quietStart)}:00–${pad2(quietEnd)}:00 · ${timezoneLabel}`}
                     </KeyValue>
                     <KeyValue label={t('review.autoSendChannels')}>
                         {autoSendKeys.map((c) => channelMeta[c].label).join(', ') ||
@@ -1755,33 +1689,5 @@ function CreateEnginePage() {
                 </AlertDialogContent>
             </AlertDialog>
         </LayoutContainer>
-    );
-}
-
-function HourSelect({
-    label,
-    value,
-    onChange,
-}: {
-    label: string;
-    value: string;
-    onChange: (v: string) => void;
-}) {
-    return (
-        <div className="w-28">
-            <label className="mb-1 block text-caption text-neutral-500">{label}</label>
-            <Select value={value} onValueChange={onChange}>
-                <SelectTrigger>
-                    <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                    {Array.from({ length: 24 }, (_, h) => (
-                        <SelectItem key={h} value={String(h)}>
-                            {String(h).padStart(2, '0')}:00
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-        </div>
     );
 }

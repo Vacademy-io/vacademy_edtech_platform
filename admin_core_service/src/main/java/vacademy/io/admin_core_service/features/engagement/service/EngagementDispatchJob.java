@@ -266,7 +266,8 @@ public class EngagementDispatchJob {
 
         // 4. Charge only an actually-SENT message (a FAILED send is never charged).
         if ("SENT".equals(result.getStatus())) {
-            charge(instituteId, action, now);
+            // An AI call is billed by AI calling when it is placed, so the engine adds no charge.
+            if (!"AI_CALL".equals(action.getChannel())) charge(instituteId, action, now);
             return true;
         }
         return false;

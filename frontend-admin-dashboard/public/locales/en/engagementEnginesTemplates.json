@@ -85,9 +85,9 @@
         "approvedCount_other": "{{count}} approved",
         "subheading": "Emails the engine can send, written by AI from the brief. Approve a template before the engine can use it; editing an approved one makes a new version.",
         "modes": {
-            "FREE_WRITE": "Email mode: the engine writes each email itself. Approved templates are kept for when you switch modes.",
-            "TEMPLATE_ONLY": "Email mode: the engine only sends approved templates, filling in each person's details.",
-            "TEMPLATE_PLUS_AI_LINE": "Email mode: approved templates, plus one short personal line the AI writes for each person."
+            "FREE_WRITE": "The engine writes each email itself.",
+            "TEMPLATE_ONLY": "Only approved templates, filled with each person's details.",
+            "TEMPLATE_PLUS_AI_LINE": "Approved templates plus one AI-written personal line."
         },
         "emptyState": "No email templates yet. Generate a few from this engine's brief.",
         "showOld": "Show archived and older versions",
@@ -176,7 +176,7 @@
             "TEMPLATE_PLUS_AI_LINE": "Templates + one AI line"
         },
         "coldTitle": "Cold outreach",
-        "coldHint": "Turn on if these people never contacted you (for example leads found by the Lead Agent). Every email must then tell people how to stop."
+        "coldHint": "Turn on if these people never contacted you (e.g. Lead Agent leads). Every email will then say how to stop."
     },
     "brief": {
         "weak": "This brief is thin, so the AI will write generic messages. Answer what you can; your answers are added to the brief.",

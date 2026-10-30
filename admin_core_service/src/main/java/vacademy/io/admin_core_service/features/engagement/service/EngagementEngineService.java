@@ -46,6 +46,10 @@ public class EngagementEngineService {
     @Autowired(required = false)
     private EngagementChannelReadiness channelReadiness;
 
+    /** Field-injected for the same reason; checks the AI-call agent pool. */
+    @Autowired(required = false)
+    private EngagementAiCallPool aiCallPool;
+
     /** Field-injected for the same reason; checks that alert contacts are staff of the institute. */
     @Autowired(required = false)
     private vacademy.io.admin_core_service.features.auth_service.service.AuthService authService;
@@ -77,6 +81,7 @@ public class EngagementEngineService {
         engine.setQuietHours(validQuietHoursJson(req.getQuietHours()));
         if (req.getNotifyUserIds() != null) engine.setNotifyUserIds(validNotifyUsersJson(req.getNotifyUserIds(), instituteId));
         if (channelReadiness != null) channelReadiness.requireReady(instituteId, engine.getChannels(), null);
+        if (aiCallPool != null) aiCallPool.requirePool(instituteId, engine.getChannels());
         if (req.getCadenceHours() != null && req.getCadenceHours() > 0) {
             engine.setCadenceHours(req.getCadenceHours());
         }
@@ -426,6 +431,7 @@ public class EngagementEngineService {
         if (req.getChannels() != null) {
             String channels = validObjectJson(req.getChannels(), "channels", "{}");
             if (channelReadiness != null) channelReadiness.requireReady(instituteId, channels, engine.getChannels());
+            if (aiCallPool != null) aiCallPool.requirePool(instituteId, channels);
             engine.setChannels(channels);
         }
         if (req.getQuietHours() != null) engine.setQuietHours(validQuietHoursJson(req.getQuietHours()));

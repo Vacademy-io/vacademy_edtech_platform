@@ -379,7 +379,6 @@ public class EngagementDecisionService {
                     && !humanTouchedSinceLastDecision(member)
                     && coordinated.hold() == null      // B5: counsellor active, follow-up today, do-not-automate
                     && chosenChannel != null
-                    && !"AI_CALL".equals(chosenChannel)   // AI calls are task-only; never auto-send them
                     && channelAutoEnabled(engine, chosenChannel)
                     && !Boolean.TRUE.equals(engine.getAutoSendKilled())
                     && draftReady

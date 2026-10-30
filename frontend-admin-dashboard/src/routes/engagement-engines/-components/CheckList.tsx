@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { MagnifyingGlass, X } from '@phosphor-icons/react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 
 export interface CheckOption {
@@ -143,6 +144,7 @@ export function CheckList({
                         </button>
                     )}
                 </div>
+                <ListWrap single={single} selected={selected} onChange={onChange}>
                 <ul id={listId} className="max-h-64 overflow-y-auto">
                     {loading && shown.length === 0 && (
                         <li className="p-4 text-center text-caption text-neutral-500">
@@ -164,11 +166,15 @@ export function CheckList({
                                         checked && 'bg-primary-50 hover:bg-primary-50'
                                     )}
                                 >
-                                    <Checkbox
-                                        checked={checked}
-                                        onCheckedChange={() => toggle(o.value)}
-                                        className="mt-0.5"
-                                    />
+                                    {single ? (
+                                        <RadioGroupItem value={o.value} className="mt-0.5 size-4" />
+                                    ) : (
+                                        <Checkbox
+                                            checked={checked}
+                                            onCheckedChange={() => toggle(o.value)}
+                                            className="mt-0.5"
+                                        />
+                                    )}
                                     <span className="flex min-w-0 flex-col">
                                         <span className="truncate text-body text-neutral-800">
                                             {o.label}
@@ -184,8 +190,33 @@ export function CheckList({
                         );
                     })}
                 </ul>
+                </ListWrap>
             </div>
             {note && <p className="text-caption text-neutral-500">{note}</p>}
         </div>
+    );
+}
+
+/** Single-pick lists sit in a radio group so rows show radios; multi-pick lists render as-is. */
+function ListWrap({
+    single,
+    selected,
+    onChange,
+    children,
+}: {
+    single: boolean;
+    selected: string[];
+    onChange: (next: string[]) => void;
+    children: React.ReactNode;
+}) {
+    if (!single) return <>{children}</>;
+    return (
+        <RadioGroup
+            value={selected[0] ?? ''}
+            onValueChange={(v) => onChange([v])}
+            className="gap-0"
+        >
+            {children}
+        </RadioGroup>
     );
 }
