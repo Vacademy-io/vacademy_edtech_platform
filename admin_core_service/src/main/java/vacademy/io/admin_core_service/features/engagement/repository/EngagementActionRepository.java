@@ -359,13 +359,23 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
                           @Param("now") Instant now);
 
     /**
-     * Everything the engine has done or proposed for one member (a no-op or a dry-run row is not a
-     * touch). Zero means the next thing it does is the member's first touch.
+     * A row of engagement_action that counts as a touch of its member: something the engine did or
+     * still proposes. Not a touch: a no-op, a dry-run row, a message or AI call of the engine that
+     * expired without going out, and a message draft a person dismissed (neither reached anyone).
+     * Everything else counts as before: a reply draft (the lead wrote in), the internal CRM tasks,
+     * and a dismissed AI call, so a call a person turned down is not proposed again. No table alias:
+     * used as is in countTouches and in a subquery on engagement_action (EngagementUpcomingCallsDao).
      */
-    @Query(value = """
-            SELECT count(*) FROM engagement_action
-             WHERE member_id = :memberId AND kind <> 'NO_OP' AND status <> 'SIMULATED'
-            """, nativeQuery = true)
+    String TOUCH_PREDICATE = "kind <> 'NO_OP' AND status <> 'SIMULATED'"
+            + " AND NOT (status = 'EXPIRED' AND kind IN ('TASK', 'SEND')"
+            + " AND COALESCE(action_type, '') NOT IN ('ADD_NOTE', 'CREATE_FOLLOWUP', 'ESCALATE', 'UPDATE_STATUS'))"
+            + " AND NOT (status = 'DISMISSED' AND kind = 'TASK'"
+            + " AND COALESCE(action_type, '') NOT IN ('ADD_NOTE', 'CREATE_FOLLOWUP', 'ESCALATE', 'UPDATE_STATUS',"
+            + " 'SCHEDULE_AI_CALL'))";
+
+    /** Touches of one member (TOUCH_PREDICATE). Zero means the next thing it does is the first touch. */
+    @Query(value = "SELECT count(*) FROM engagement_action WHERE member_id = :memberId AND " + TOUCH_PREDICATE,
+            nativeQuery = true)
     long countTouches(@Param("memberId") String memberId);
 
     /** Messages actually sent to one member — the touch count channels.maxTouches limits. */
