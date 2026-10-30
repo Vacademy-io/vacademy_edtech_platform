@@ -18,13 +18,15 @@ What is sold comes from the brief's `offer` (any business: signals, fit points, 
 education-only checks follow it, `engine/offer.py`); briefs from before 2026-10-26 with only Vacademy
 product keys keep the education catalogue.
 
-Flow: plan (`planner.py`, one LLM call, cached weekly in `plan_json`) -> discovery round (`discovery.py`:
-Serper web + Maps, Parallel for buying signals, LLM picks own-site results; dedup by registered domain;
-suppressed domains skipped) -> home-page fetch task in the agent's mode -> `choose_pages` adds <= 3
-pages (+ a course-portal "platform" page) -> READY -> research (free rejects first; LLM extraction;
-build_lead; fingerprint + size; score; decision-maker lookup only at or above the review bar; gate)
--> APPROVED / REVIEW / REJECTED -> delivery inside the window while today's delivered < quota
-(today's slots reserved atomically in `lead_agent_day.delivered`; admin_core existing-contacts + bulk-intake, <= 10 rows per call, a failed call retried idempotently on `external_id`, 5 attempts then FAILED) -> one charge per delivered lead (`charged_at` marks it settled).
+Flow: plan (`planner.py`, one LLM call, cached weekly in `plan_json`) -> discovery round while the pool of
+sendable leads (plus those on their way) is short of 2 days of the quota (`scheduler.pool_need`;
+`discovery.py`: Serper web + Maps, Parallel for buying signals, LLM picks own-site results; dedup by
+registered domain; suppressed domains skipped) -> home-page fetch task in the agent's mode -> `choose_pages`
+adds <= 3 pages (+ a course-portal "platform" page) -> READY -> research (free rejects first; LLM extraction;
+build_lead; fingerprint + size; score; decision-maker lookup only for a lead the gate would not reject
+once it has a contact, `contact_hunt.worth_searching`; gate: one bar, `send_score`) -> APPROVED / REVIEW /
+REJECTED -> delivery inside the window while today's delivered < quota, best score first (today's slots reserved atomically in `lead_agent_day.delivered`; admin_core existing-contacts + bulk-intake, <= 10 rows per call, a failed call retried idempotently on `external_id`, 5 attempts then FAILED) -> one charge per delivered lead (`charged_at` marks it settled).
+Each tick also judges the REVIEW queue again with the agent's current gate (no AI). See "Rank and fill" below.
 
 ## Validity: right organisation, right contact (2026-10-29)
 
@@ -39,7 +41,8 @@ Rules that cost nothing run at every level:
 * **Google Maps phone** (`contact_hunt.py`): the Maps listing's number becomes a contact, and a website number
   it also lists is `maps_confirmed`. A Maps listing overrides sentence-based blocks, but never helpline,
   toll-free, fax or template numbers. A site whose home page can't be read but has a Maps phone is judged from
-  the listing (fit by category/name) and goes to REVIEW (`maps_only`), never AUTO.
+  the listing (fit by category/name) and goes to REVIEW (`maps_only`), never AUTO; below the send bar it is
+  rejected (since 2026-10-30, see "Rank and fill").
 * **What delivery sends** (`delivery.py`): phone by tier, then home country, then mobile, then Maps-confirmed.
   Email: a leader's own mailbox first, then by owner. The lead is named after the person the phone sent
   belongs to (else the email's, when no phone), otherwise the organisation; the decision maker goes to
@@ -48,8 +51,8 @@ Rules that cost nothing run at every level:
   `delivery.send_plan`, the helper `build_row` uses. SKIPPED leads list under the Rejected tab.
 * **Same organisation twice** (`dedupe.py`, after research, under a per-agent advisory lock): a shared usable
   phone/email, or emails on the other's domain, means the later candidate is SKIPPED. Same name and city with
-  nothing shared is flagged `possible_duplicate` and goes to REVIEW. Discovery also skips a same-name
-  organisation in the same city (both lanes).
+  nothing shared is flagged `possible_duplicate` and goes to REVIEW (rejected below the send bar). Discovery
+  also skips a same-name organisation in the same city (both lanes).
 * **Hiring proof** (`engine/discovery/pipeline.py`, `sources.py`): the website of a hiring organisation must
   mention the job's place (Indian city renamings are aliases) and match its whole name. A taken site ends
   the lookup. One job post backs one organisation (across rounds: `store.known_signal_urls`). Job-list pages
@@ -59,7 +62,7 @@ Rules that cost nothing run at every level:
   HTML carries (title, description, JSON-LD, `tel:` links).
 
 **Validation effort** (`effort.py`, `gate_json.effort`, set per agent in the dashboard) buys extra checking
-for leads that would reach the review bar:
+for leads the gate would not reject once they have a contact (`contact_hunt.worth_searching`):
 
 | Level | Pages per site | Maps lookup (non-Maps leads) | Read the job post | Contact-hunt searches | Extra cost per lead searched |
 |---|---|---|---|---|---|
@@ -71,6 +74,95 @@ The price per delivered lead does not depend on the level yet (`ai_tool_pricing`
 
 Page cache: pages our server read are shared by every institute (`fetched_institute_id = ''`); pages an
 institute's extension read are visible to that institute only.
+
+## Rank and fill: one bar, a pool, best first (2026-10-30)
+
+Prod, 2026-10-30: agents asked for 100-200 leads a day, but a lead went out on its own only at score >=
+`auto_score` (70), which a lead without a buying signal can hardly reach (fit 35 + reach 35). Everything from
+45 to 69 went to REVIEW, and nobody works on it (the funnel after delivery is automated): about 820
+researched leads were parked (Voomsales: 14 delivered, 214 in REVIEW in 2 days), teams lowered `auto_score`
+by hand, and the scheduler kept discovering because `quota - delivered` stayed large.
+
+* **Gate** (`engine/scoring.py` `gate`, `gate_json`): one bar, `send_score` (default 50, also for an agent
+  saved before it), and `require_approval` (default off). In order: a hard-reject flag -> REJECT; `maps_only`
+  or `possible_duplicate` -> REVIEW at or above `send_score` (validity first: a person decides), REJECT below
+  it ("Judged from its Google Maps listing only: score X is below the send bar (Y)" for a Maps-only lead;
+  nobody reviews in this funnel, so REVIEW holds only leads worth a person's look); score (after the
+  risk penalty; `auto_competitor_users` drops the competitor's) below `send_score` -> REJECT, naming the risks;
+  best contact below `min_contact`, or `require_intent` without a buying signal -> REVIEW with
+  `require_approval`, else REJECT; otherwise REVIEW ("waiting for your approval") with `require_approval`,
+  else AUTO. A competitor's user or a very large organisation is no longer held back: its penalty ranks it
+  lower. `auto_score` / `review_score` are still accepted (old agents and dashboards send them) and ignored.
+  What research may search for a lead follows the same gate (`contact_hunt.worth_searching`).
+* **Delivery order** (`store.claim_approved`): APPROVED by score, best first (then oldest), up to the daily
+  quota, so each day sends the best of the pool.
+* **Pacing** (`scheduler.pool_need`): pool = APPROVED not delivered yet (+ REVIEW with `require_approval`),
+  in flight = DISCOVERED / FETCHING / READY / RESEARCHING, target = `POOL_DAYS` (2) x daily quota. Discovery
+  looks for `min(target - pool - in flight, MAX_CANDIDATES_PER_ROUND)` while that is above 0, also once
+  today's quota is sent (the pool feeds the next days). The daily round limit (`discovery.round_limit`), the
+  wallet check (the round's leads, at most one day's quota) and the monthly cap still apply.
+* **The REVIEW queue judged again** (`scheduler.rejudge_waiting`, every tick, agents without
+  `require_approval`): up to 200 REVIEW leads, best first, gated again from their stored `score_json` /
+  `lead_json` with the current gate, no AI: AUTO -> APPROVED, REJECT -> REJECTED (`reject_reason`,
+  `score_json.rejudged_at`). A Maps-only lead or a possible duplicate below the bar is REJECTED too; at or
+  above it, it stays for a person and is not read again. Never a lead a person decided, or a row missing a
+  field the gate reads (`store.GATE_INPUTS`); each move expects REVIEW, so a reviewer deciding at the same
+  moment wins. `lead_agent_day` counters keep what research decided that day. Saving a new gate runs the
+  same judging at once (the router), instead of waiting for the next tick.
+
+**Spend where it pays** (discovery and research). Prod, 2026-10-30, 5 agents, 2,548 researched leads: 24%
+sent, 33% parked in REVIEW, 38% rejected, 4% skipped; "Leads for Vacademy" went from ~22 new organisations
+per 10 searches to ~3 while its rounds kept running.
+
+* **Already in your leads, before the AI step** (`research.py`): the organisation's usable phones and emails
+  (website + Maps phone; helplines, toll-free, fax, template numbers and other organisations' contacts left
+  out) go through admin_core existing-contacts. A match is SKIPPED "Already in your leads (same phone or
+  email)" with no LLM call. On an error research carries on, and delivery checks again. 102 of the 118 prod
+  skips had been found only at delivery, after full research.
+* **Decision-maker lookup** (`contact_hunt.worth_a_lookup`): only for a lead whose own score reaches the bar
+  and which the gate would pass with a direct contact; never for another segment, a competitor or an excluded
+  kind.
+* **Lanes stop for the day** (`cursor_json.lane_done` / `lane_dry`): organisation search, Maps and signals each
+  stop after wrapping past MAX_PAGE or 2 rounds with nothing new, and come back the next day (new posts appear
+  daily) or when their list changes. A round with every lane done spends nothing.
+* **Signal budget**: once the organisation and Maps lanes are done for the day, signal and keyword searches
+  double (`SIGNAL_BOOST`). New-centre searches (35 found, 8% sent, 40% "not the kind") run every third round.
+* **Kind checks at discovery**: the web selection lists every industry of the brief (any one is enough, read
+  broadly, location never judged there); Maps listings whose category is clearly a kind the brief does not
+  target are skipped (`engine/discovery/kinds.py`; an unknown category or a broad brief keeps them). Link
+  shorteners, data sites, job boards, news portals and `.directory` domains are never an organisation's own
+  site (`engine/discovery/domains.py`; 24 prod candidates, most of them "not the kind" rejects that were
+  really another site).
+
+**Judging the kind of organisation (2026-10-30 audit)** (research's extraction). Prod, 5 agents: of 179 "Not the
+kind of organisation the brief targets" rejects, 42 were a kind the brief lists and 34 more were pages of another
+organisation; 16 of 38 "Sells what you sell" flags were false.
+
+* **Every industry** (`research.py`, `engine/research/extract.py` `kinds_block`): the prompt lists each of the
+  brief's industries (`plan.industries_detail`, else `brief.industries`), one per line: a match with any one is
+  enough, each read broadly. The plan's segment (the planner's rewording in at most 120 characters, which dropped
+  Voomsales' edtech and hospitals, Telleo's brokers, Evalezy's colleges and exam bodies) follows as a hint only.
+  A Maps-only lead is matched against the same list (`research.brief_industries`).
+* **What is sold is not who buys**: the prompt says the offer and its description name what we sell, not which
+  organisations may buy it ("LMS platform for institutes selling online courses": 50 of the 96 rejects of "Leads
+  for Vacademy" said "not an institute selling online courses", schools and colleges among them).
+* **The kind only** (`AccountExtraction.is_target_segment`): never where the organisation is (the score's location
+  part does that). Markets go one per line, from the agent's markets (`planning.market_names`): joined, "Rajasthan,
+  India, delhi" made the model call Delhi colleges "outside the requested Rajasthan location".
+* **Another country** (`engine/scoring.py` `outside_markets`): flag `outside_market`, a hard reject "Outside your
+  markets: its phones are +1 (United States)", only on positive evidence: every usable phone from a country no
+  market is in, or a country-code domain outside the markets (.uk; .in is India), with no phone from a market
+  country and no market-country domain. Never for a city or state inside a market country, a generic domain, an
+  unknown location, a market country the tables do not know, or an agent without markets.
+* **Pages of another organisation** (`pages_match_organisation`, true when a reply lacks it): false -> flag
+  `wrong_site`, a hard reject "The pages read belong to another organisation, not this one", instead of "not the
+  kind". The lead keeps the name it was found under; no kind, city or seller verdict is read from those pages.
+* **Sells what you sell** (`sells_the_offer`): only selling or reselling the offer, or a direct substitute, to other
+  organisations. Its own app, LMS or CRM for its own students or customers makes it a buyer, and selling courses is
+  not selling course software (Physics Wallah, Unacademy and BYJU'S were flagged for Vacademy). The brief's
+  competitors and competitor kinds are in the prompt as examples of sellers. The flag needs a quote found on the
+  page (`sells_the_offer_cite`), like any other claim: without one it counts as false.
+* The gate is unchanged: these flags still reject (nobody reviews in this funnel); the judging is what changed.
 
 ## Flags (platform settings; JSON values are STRINGS)
 
@@ -121,8 +213,8 @@ limit of 100 Actions secrets, so no new one can be added there. Without it, Para
   Idempotency key `lead_agent:{candidate_id}` (a UUID, unique ledger-wide); credits read back into
   `credits_charged`. LLM calls are recorded record-only (`usage_record_only`, behind
   `billing.record_unbilled_usage`), never charged.
-* Discovery is skipped when the wallet cannot cover the rest of today's quota at the agent's price, or
-  the monthly cap is reached; delivery stops at the cap.
+* Discovery is skipped when the wallet cannot cover the leads a round looks for (at most one day's quota)
+  at the agent's price, or the monthly cap is reached; delivery stops at the cap.
 
 ## Retention
 
