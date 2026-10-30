@@ -125,6 +125,14 @@
         "nextCheck": "At the next check",
         "noPhone": "No phone: another channel",
         "more_one": "and {{count}} more person",
-        "more_other": "and {{count}} more people"
+        "more_other": "and {{count}} more people",
+        "show": "Details",
+        "hide": "Hide",
+        "summary": {
+            "NEEDS_APPROVAL": "{{count}} to approve",
+            "SCHEDULED": "{{count}} scheduled",
+            "IN_QUEUE": "{{count}} in the queue",
+            "FIRST": "{{count}} to call first"
+        }
     }
 }

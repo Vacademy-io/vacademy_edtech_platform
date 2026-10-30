@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from '@tanstack/react-router';
-import { PhoneCall, Tray } from '@phosphor-icons/react';
+import { CaretDown, CaretUp, PhoneCall, Tray } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SectionCard } from '@/routes/study-library/live-session/-components/dashboard/dashboard-charts';
@@ -11,7 +12,8 @@ import { formatDateTime } from '../-utils';
 import type { TaskPerson } from '../-types';
 import type { UpcomingCall, UpcomingCallState, UpcomingCalls } from '../-types/actions';
 
-const SECTION_ORDER: UpcomingCallState[] = ['NEEDS_APPROVAL', 'SCHEDULED', 'IN_QUEUE', 'PLACED'];
+/** Calls already placed are not shown: this card is about what is still to come. */
+const SECTION_ORDER: UpcomingCallState[] = ['NEEDS_APPROVAL', 'SCHEDULED', 'IN_QUEUE'];
 
 const STATE_TINT: Record<UpcomingCallState, string> = {
     NEEDS_APPROVAL: 'bg-warning-50 text-warning-700',
@@ -33,23 +35,34 @@ const isPast = (iso?: string | null) => !!iso && new Date(iso).getTime() <= Date
 /**
  * The engine page's answer to "when will it call, and whom": whether calls still need approval
  * (and how many approvals until they go out on their own), every call waiting for approval, held
- * for a later time or in the dialer queue, the calls placed in the last day, and the people whose
- * first touch will be a call.
+ * for a later time or in the dialer queue, and the people whose first touch will be a call. It
+ * starts collapsed to a one-line summary; the arrow opens the lists.
  */
 export function UpcomingAiCallsCard({ engineId }: { engineId: string }) {
     const { t } = useTranslation('engagementEnginesActions');
     const navigate = useNavigate();
+    const [open, setOpen] = useState(false);
     const { data, isLoading, isError } = useUpcomingCalls(engineId);
-    const memberIds = [
-        ...(data?.calls ?? []).map((c) => c.memberId),
-        ...(data?.firstCalls ?? []).map((f) => f.memberId),
-    ];
+    const upcoming = (data?.calls ?? []).filter((c) => c.state !== 'PLACED');
+    // People are looked up only once the lists are opened.
+    const memberIds = !open
+        ? []
+        : [...upcoming.map((c) => c.memberId), ...(data?.firstCalls ?? []).map((f) => f.memberId)];
     const { data: people } = useTaskPeople(memberIds);
 
     // An older backend (no endpoint) or an engine without calls: nothing to show.
-    if (isError || (data && !data.callingOn && data.calls.length === 0)) return null;
+    if (isError || (data && !data.callingOn && upcoming.length === 0)) return null;
 
-    const needsApproval = data?.calls.filter((c) => c.state === 'NEEDS_APPROVAL').length ?? 0;
+    const needsApproval = upcoming.filter((c) => c.state === 'NEEDS_APPROVAL').length;
+    const summary = data
+        ? [
+              ...SECTION_ORDER.map((state) => ({
+                  state,
+                  count: upcoming.filter((c) => c.state === state).length,
+              })),
+              { state: 'FIRST', count: data.firstCallsTotal },
+          ].filter((x) => x.count > 0)
+        : [];
     const nameOf = (memberId: string) =>
         personTitle(people?.[memberId]) ?? t('upcomingCalls.someone');
 
@@ -59,39 +72,73 @@ export function UpcomingAiCallsCard({ engineId }: { engineId: string }) {
             subtitle={data ? modeLine(data, t) : undefined}
             icon={PhoneCall}
             right={
-                needsApproval > 0 ? (
+                <span className="flex items-center gap-2">
+                    {needsApproval > 0 && (
+                        <MyButton
+                            buttonType="primary"
+                            scale="small"
+                            onClick={() =>
+                                navigate({
+                                    to: '/engagement-engines/inbox',
+                                    search: { filter: 'approvals', engine: engineId },
+                                })
+                            }
+                        >
+                            <Tray className="me-1 size-4" />{' '}
+                            {t('upcomingCalls.review', { count: needsApproval })}
+                        </MyButton>
+                    )}
                     <MyButton
-                        buttonType="primary"
+                        buttonType="secondary"
                         scale="small"
-                        onClick={() =>
-                            navigate({
-                                to: '/engagement-engines/inbox',
-                                search: { filter: 'approvals', engine: engineId },
-                            })
-                        }
+                        onClick={() => setOpen((v) => !v)}
+                        aria-expanded={open}
                     >
-                        <Tray className="me-1 size-4" />{' '}
-                        {t('upcomingCalls.review', { count: needsApproval })}
+                        {open ? (
+                            <CaretUp className="me-1 size-4" />
+                        ) : (
+                            <CaretDown className="me-1 size-4" />
+                        )}
+                        {open ? t('upcomingCalls.hide') : t('upcomingCalls.show')}
                     </MyButton>
-                ) : undefined
+                </span>
             }
         >
-            {isLoading && (
+            {!open && data && (
+                <p className="flex flex-wrap items-center gap-2 text-neutral-600">
+                    {summary.length === 0 ? (
+                        <span className="text-caption">{t('upcomingCalls.empty')}</span>
+                    ) : (
+                        summary.map((x) => (
+                            <Chip
+                                key={x.state}
+                                label={t(`upcomingCalls.summary.${x.state}`, { count: x.count })}
+                                className={
+                                    x.state === 'FIRST'
+                                        ? 'bg-neutral-100 text-neutral-700'
+                                        : STATE_TINT[x.state as UpcomingCallState]
+                                }
+                            />
+                        ))
+                    )}
+                </p>
+            )}
+            {open && isLoading && (
                 <div className="flex flex-col gap-2">
                     {[0, 1].map((i) => (
                         <Skeleton key={i} className="h-12 w-full rounded-lg" />
                     ))}
                 </div>
             )}
-            {data && (
+            {open && data && (
                 <div className="flex flex-col">
-                    {data.calls.length === 0 && data.firstCallsTotal === 0 && (
+                    {upcoming.length === 0 && data.firstCallsTotal === 0 && (
                         <p className="text-neutral-500">
                             <span className="text-body">{t('upcomingCalls.empty')}</span>
                         </p>
                     )}
                     {SECTION_ORDER.map((state) => {
-                        const rows = data.calls.filter((c) => c.state === state);
+                        const rows = upcoming.filter((c) => c.state === state);
                         if (rows.length === 0) return null;
                         return (
                             <section key={state}>
@@ -198,8 +245,8 @@ function CallRow({ call, name }: { call: UpcomingCall; name: string }) {
                 return call.at && !isPast(call.at)
                     ? t('upcomingCalls.notBefore', { time: formatDateTime(call.at) })
                     : t('upcomingCalls.nextFreeLine');
-            case 'PLACED':
-                return t('upcomingCalls.placedAt', { time: formatDateTime(call.at ?? undefined) });
+            default:
+                return '';
         }
     })();
     const result =
