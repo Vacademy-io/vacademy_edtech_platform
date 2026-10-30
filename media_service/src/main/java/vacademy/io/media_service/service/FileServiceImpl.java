@@ -7,6 +7,8 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ListObjectsV2Result;
 import com.amazonaws.services.s3.model.S3ObjectSummary;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,6 +60,17 @@ public class FileServiceImpl implements FileService {
      * revalidating rather than re-fetching on every page load.
      */
     private static final String PUBLIC_ASSET_CACHE_CONTROL = "public, max-age=31536000, immutable";
+
+    /** SigV4 presigned URLs are valid for at most 7 days; the SDK throws beyond that. */
+    private static final long MAX_PRESIGN_MILLIS = 7L * 24 * 60 * 60 * 1000;
+
+    /**
+     * Keys known to be in the public bucket, so a permanent URL is only checked
+     * (and if needed published) once per pod. Keys embed a fresh UUID and public
+     * objects are never removed by this service, so an entry never goes stale; the
+     * cap only bounds memory.
+     */
+    private final Cache<String, Boolean> publishedKeys = Caffeine.newBuilder().maximumSize(200_000).build();
 
     @Autowired
     private FileMetadataRepository fileMetadataRepository;
@@ -212,7 +225,7 @@ public class FileServiceImpl implements FileService {
         // Create a request to generate the pre-signed URL
         GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName, key)
                 .withMethod(HttpMethod.GET)
-                .withExpiration(expiration);
+                .withExpiration(presignExpiry(expiration));
 
         // Generate the pre-signed URL
         URL url = s3Client.generatePresignedUrl(generatePresignedUrlRequest);
@@ -236,7 +249,7 @@ public class FileServiceImpl implements FileService {
             GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName,
                     fileMetadata.get().getKey())
                     .withMethod(HttpMethod.GET)
-                    .withExpiration(expiryDate);
+                    .withExpiration(presignExpiry(expiryDate));
 
             // Generate the pre-signed URL
             URL url = s3Client.generatePresignedUrl(generatePresignedUrlRequest);
@@ -253,7 +266,7 @@ public class FileServiceImpl implements FileService {
      * throws — a signing problem must degrade to presign, not break playback.
      */
     private String trySignedPrivateCdnUrl(String objectKey, Date expiresAt) {
-        if (!cloudFrontSignerService.isEnabled() || !StringUtils.hasText(objectKey)) {
+        if (!cloudFrontSignerService.canSign(objectKey)) {
             return null;
         }
         try {
@@ -281,7 +294,7 @@ public class FileServiceImpl implements FileService {
         if (fileMetadata.isEmpty())
             throw new FileDownloadException("File Not Found");
 
-        return cdnUrlService.publicUrl(fileMetadata.get().getKey());
+        return publishedPublicUrl(fileMetadata.get(), null);
     }
 
     @Override
@@ -339,7 +352,7 @@ public class FileServiceImpl implements FileService {
         GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName,
                 fileMetadata.get().getKey())
                 .withMethod(HttpMethod.GET)
-                .withExpiration(expiration);
+                .withExpiration(presignExpiry(expiration));
 
         // Generate the pre-signed URL
         URL url = s3Client.generatePresignedUrl(generatePresignedUrlRequest);
@@ -495,9 +508,57 @@ public class FileServiceImpl implements FileService {
         // CDN-disabled fallback stays on the main bucket's host — the exact URL
         // this endpoint always emitted — because presign-uploaded objects are
         // only guaranteed to exist there until the acknowledge flow copies them
-        // to the public bucket. With the CDN enabled, an origin-failover group
-        // (public bucket -> main bucket) covers both locations.
-        return cdnUrlService.publicUrl(fileMetadata.get().getKey(), bucketName);
+        // to the public bucket. With the CDN enabled the object is published to
+        // the public bucket first, since the CDN does not fall back to the main one.
+        return publishedPublicUrl(fileMetadata.get(), bucketName);
+    }
+
+    /**
+     * Permanent URL for a file that may so far exist only in the main (private) bucket.
+     *
+     * <p>The CDN serves the public bucket and never falls back to the main one, so before
+     * handing out a CDN URL the object is copied to the public bucket if it is not there
+     * yet: the same publish step acknowledge-get-details performs. Keys the CDN routes to
+     * the private bucket, and AI Evaluation API files (never public), are left where they
+     * are. If the object is in neither bucket yet (an upload still in flight) the URL is
+     * returned unpublished and the next call retries.
+     *
+     * @param fallbackBucket host for the CDN-disabled URL, or null for the public bucket
+     */
+    private String publishedPublicUrl(FileMetadata file, String fallbackBucket) {
+        String key = file.getKey();
+        if (cdnUrlService.isCdnEnabled() && StringUtils.hasText(key)
+                && !cdnUrlService.isRoutedToPrivateOrigin(key)
+                && !EvalApiFileService.isReservedSource(file.getSource())) {
+            publishIfOnlyPrivate(key.trim());
+        }
+        return fallbackBucket == null ? cdnUrlService.publicUrl(key) : cdnUrlService.publicUrl(key, fallbackBucket);
+    }
+
+    private void publishIfOnlyPrivate(String key) {
+        if (publishedKeys.getIfPresent(key) != null) {
+            return;
+        }
+        try {
+            if (!s3Client.doesObjectExist(publicBucket, key)) {
+                if (!s3Client.doesObjectExist(bucketName, key)) {
+                    return; // not uploaded yet; don't remember it
+                }
+                copyFileToPublicBucket(key);
+                log.info("Published {} to the public bucket for a permanent CDN URL", key);
+            }
+            publishedKeys.put(key, Boolean.TRUE);
+        } catch (Exception e) {
+            // Never fail the URL request over this: the caller gets the same URL either way,
+            // and the next request tries the publish again.
+            log.warn("Could not publish {} to the public bucket: {}", key, e.getMessage());
+        }
+    }
+
+    /** Caps a presign expiry at the SigV4 maximum, so a long-lived request gets a 7-day URL rather than an error. */
+    private static Date presignExpiry(Date requested) {
+        long max = System.currentTimeMillis() + MAX_PRESIGN_MILLIS - 60_000;
+        return requested == null || requested.getTime() > max ? new Date(max) : requested;
     }
 
     public void copyFileToPublicBucket(String objectKey) {
@@ -553,7 +614,7 @@ public class FileServiceImpl implements FileService {
         // signature is needed and the edge cache actually gets used. expiryDays is
         // ignored on this path.
         if (cdnUrlService.isCdnEnabled()) {
-            return cdnUrlService.publicUrl(key);
+            return publishedPublicUrl(fileMetadata.get(), null);
         }
 
         // No CDN (the vet deployment): the caller gets a raw S3 URL, and the "public"

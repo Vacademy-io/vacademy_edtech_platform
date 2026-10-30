@@ -303,10 +303,22 @@ class EvalApiFileServiceTest {
     }
 
     @Test
-    void signedUrlPrefersPrivateCdnForMainBucket() {
+    void signedUrlPresignsWhenTheCdnDoesNotRouteTheKeyToTheMainBucket() {
+        // eval-api/ has no private cache behavior: a signed CDN URL would hit the public bucket and 404.
         String key = "eval-api/" + INSTITUTE + "/u-a.pdf";
         when(repo.findById("file-1")).thenReturn(Optional.of(evalRow("AI_EVAL_API", key)));
         when(signer.isEnabled()).thenReturn(true);
+        when(signer.canSign(key)).thenReturn(false);
+
+        assertEquals("https://" + MAIN_BUCKET + ".s3.amazonaws.com/signed", service.signedUrl("file-1", 60).getUrl());
+        verify(signer, never()).signedUrl(anyString(), any(Date.class));
+    }
+
+    @Test
+    void signedUrlPrefersPrivateCdnForMainBucket() {
+        String key = "eval-api/" + INSTITUTE + "/u-a.pdf";
+        when(repo.findById("file-1")).thenReturn(Optional.of(evalRow("AI_EVAL_API", key)));
+        when(signer.canSign(key)).thenReturn(true);
         when(signer.signedUrl(eq(key), any(Date.class))).thenReturn("https://private.cdn/eval-api/x?Signature=s");
 
         EvalApiSignedUrlResponse res = service.signedUrl("file-1", null);
@@ -320,7 +332,7 @@ class EvalApiFileServiceTest {
     void signedUrlFallsBackToPresignWhenCdnSigningFails() {
         String key = "eval-api/" + INSTITUTE + "/u-a.pdf";
         when(repo.findById("file-1")).thenReturn(Optional.of(evalRow("AI_EVAL_API", key)));
-        when(signer.isEnabled()).thenReturn(true);
+        when(signer.canSign(key)).thenReturn(true);
         when(signer.signedUrl(anyString(), any(Date.class))).thenThrow(new IllegalStateException("bad key"));
 
         assertEquals("https://" + MAIN_BUCKET + ".s3.amazonaws.com/signed", service.signedUrl("file-1", 60).getUrl());
@@ -330,7 +342,7 @@ class EvalApiFileServiceTest {
     void signedUrlSkipsPrivateCdnForDedicatedBucket() {
         String key = "eval-api/" + INSTITUTE + "/u-a.pdf";
         when(repo.findById("file-1")).thenReturn(Optional.of(evalRow("AI_EVAL_API", key)));
-        when(signer.isEnabled()).thenReturn(true);
+        when(signer.canSign(key)).thenReturn(true);
 
         newService(s3, "eval-private").signedUrl("file-1", 3600);
         verify(signer, never()).signedUrl(anyString(), any(Date.class));
