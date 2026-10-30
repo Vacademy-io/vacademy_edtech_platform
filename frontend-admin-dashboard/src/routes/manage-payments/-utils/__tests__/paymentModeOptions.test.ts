@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import type { OfflinePaymentModes } from '@/services/offline-payment-modes';
-import { buildPaymentModeOptions } from '../paymentModeOptions';
+import {
+    buildPaymentModeGroups,
+    buildPaymentModeOptions,
+    paymentModeFilterTokens,
+} from '../paymentModeOptions';
 
 const settings: OfflinePaymentModes = {
     require_mode: false,
@@ -59,5 +63,48 @@ describe('buildPaymentModeOptions', () => {
                 { mode: 'CHEQUE', sub_mode: null, mode_label: 'Cheque', sub_mode_label: null },
             ])
         ).toEqual([{ value: 'CHEQUE', label: 'Cheque' }]);
+    });
+});
+
+describe('buildPaymentModeGroups', () => {
+    it('lists modes alone, each carrying its options and what Settings calls them', () => {
+        const groups = buildPaymentModeGroups(
+            {
+                require_mode: false,
+                modes: [
+                    {
+                        code: 'CASH',
+                        label: 'Cash',
+                        active: true,
+                        sub_mode_label: 'Account',
+                        sub_modes: [{ code: 'PUNE', label: 'Pune', active: true }],
+                    },
+                    { code: 'CHEQUE', label: 'Cheque', active: true },
+                ],
+            },
+            []
+        );
+        expect(groups).toEqual([
+            {
+                value: 'CASH',
+                label: 'Cash',
+                subLabel: 'Account',
+                subs: [{ value: 'CASH|PUNE', label: 'Pune' }],
+            },
+            { value: 'CHEQUE', label: 'Cheque', subLabel: null, subs: [] },
+        ]);
+    });
+});
+
+describe('paymentModeFilterTokens', () => {
+    it('sends a mode alone when none of its options is picked', () => {
+        expect(paymentModeFilterTokens(['CASH', 'CHEQUE'])).toEqual(['CASH', 'CHEQUE']);
+    });
+
+    it('drops a mode once one of its options is picked, so only that option matches', () => {
+        expect(paymentModeFilterTokens(['CASH', 'CHEQUE', 'CASH|PUNE'])).toEqual([
+            'CHEQUE',
+            'CASH|PUNE',
+        ]);
     });
 });
