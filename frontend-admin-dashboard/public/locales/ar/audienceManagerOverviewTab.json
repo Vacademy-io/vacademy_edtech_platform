@@ -15,7 +15,8 @@
             "sub_two": "استجاب {{count}} عميلين محتملين",
             "sub_few": "استجاب {{count}} عملاء محتملين",
             "sub_many": "استجاب {{count}} عميلاً محتملاً",
-            "sub_other": "استجاب {{count}} عميل محتمل"
+            "sub_other": "استجاب {{count}} عميل محتمل",
+            "median": "الوسيط {{value}}"
         },
         "tatMet": {
             "label": "الالتزام بوقت الاستجابة المتفق عليه",
@@ -26,12 +27,13 @@
     "status": {
         "title": "توزيع الحالات",
         "donutAriaLabel": "مخطط دائري لتوزيع الحالات",
-        "totalUnit": "عميل محتمل"
+        "totalUnit": "عميل محتمل",
+        "noStatus": "بلا حالة"
     },
     "trend": {
         "title": "الاتجاه اليومي",
         "submittedLegend": "مُرسَل",
-        "convertedLegend": "محوَّل",
+        "convertedLegend": "محوَّل (من هؤلاء العملاء)",
         "noData": "لا توجد بيانات",
         "ariaLabel": "العملاء المحتملون المُرسَلون والمحوَّلون يوميًا"
     },

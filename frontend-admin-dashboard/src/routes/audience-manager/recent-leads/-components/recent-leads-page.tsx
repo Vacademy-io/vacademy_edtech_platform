@@ -207,6 +207,9 @@ const toDuplicateFilter = (
 /** Sentinel for "no Duplicates filter" — the Select can't hold an empty value. */
 const DUPLICATE_VIEW_ALL = 'all';
 
+/** Tier filter value for leads with no tier and no score (the backend's tier fallback). */
+const UNCLASSIFIED_TIER = 'UNCLASSIFIED';
+
 const SEARCH_DEBOUNCE_MS = 500;
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
 
@@ -340,8 +343,12 @@ const RecentLeadsContent = ({
     const terminology = useLeadTerminology();
     const term = terminology.campaignType;
     const tierLabels: Record<string, string> = useMemo(
-        () => Object.fromEntries(tierCatalog.tiers.map((tier) => [tier.tier_key, tier.label])),
-        [tierCatalog.tiers]
+        () => ({
+            ...Object.fromEntries(tierCatalog.tiers.map((tier) => [tier.tier_key, tier.label])),
+            // Leads with no tier and no score — what the Reports tier breakdown calls them.
+            [UNCLASSIFIED_TIER]: t('chips.tierUnclassified'),
+        }),
+        [tierCatalog.tiers, t]
     );
     const { instituteDetails } = useInstituteDetailsStore();
     const instituteId = instituteDetails?.id;
@@ -2014,10 +2021,16 @@ const RecentLeadsContent = ({
                             <MultiSelectFilter
                                 label={terminology.tier}
                                 icon={<Flame className="size-4 shrink-0 text-neutral-400" />}
-                                options={tierCatalog.tiers.map((tier) => ({
-                                    value: tier.tier_key,
-                                    label: tier.label,
-                                }))}
+                                options={[
+                                    ...tierCatalog.tiers.map((tier) => ({
+                                        value: tier.tier_key,
+                                        label: tier.label,
+                                    })),
+                                    {
+                                        value: UNCLASSIFIED_TIER,
+                                        label: tierLabels[UNCLASSIFIED_TIER] ?? UNCLASSIFIED_TIER,
+                                    },
+                                ]}
                                 selected={tierFilters}
                                 onChange={setTier}
                                 locked={isLocked('tier')}

@@ -399,14 +399,15 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                               AND (:minLeadScore IS NULL OR COALESCE(ls.raw_score, 0) >= :minLeadScore)
                               AND (:maxLeadScore IS NULL OR COALESCE(ls.raw_score, 0) <= :maxLeadScore)
                               AND (COALESCE(:leadTier, '') = '' OR
-                                   (ulp.user_id IS NOT NULL AND COALESCE(NULLIF(ulp.lead_tier, ''),
+                                   COALESCE(NULLIF(ulp.lead_tier, ''),
                                        (SELECT lt.tier_key FROM lead_tier lt
                                          WHERE lt.institute_id = ulp.institute_id AND lt.is_active = TRUE
                                            AND lt.min_score IS NOT NULL AND ulp.best_score >= lt.min_score
                                          ORDER BY lt.min_score DESC, lt.display_order ASC LIMIT 1),
                                        CASE WHEN ulp.best_score >= 80 THEN 'HOT'
                                             WHEN ulp.best_score >= 50 THEN 'WARM'
-                                            ELSE 'COLD' END) = ANY(STRING_TO_ARRAY(:leadTier, ','))))
+                                            WHEN ulp.best_score IS NOT NULL THEN 'COLD'
+                                            ELSE 'UNCLASSIFIED' END) = ANY(STRING_TO_ARRAY(:leadTier, ',')))
                               AND (COALESCE(:assignedCounselorId, '') = ''
                                    OR lu.user_id = ANY(STRING_TO_ARRAY(:assignedCounselorId, ','))
                                    OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:assignedCounselorId, ',')))
@@ -784,14 +785,15 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                               AND (:minLeadScore IS NULL OR COALESCE(ls.raw_score, 0) >= :minLeadScore)
                               AND (:maxLeadScore IS NULL OR COALESCE(ls.raw_score, 0) <= :maxLeadScore)
                               AND (COALESCE(:leadTier, '') = '' OR
-                                   (ulp.user_id IS NOT NULL AND COALESCE(NULLIF(ulp.lead_tier, ''),
+                                   COALESCE(NULLIF(ulp.lead_tier, ''),
                                        (SELECT lt.tier_key FROM lead_tier lt
                                          WHERE lt.institute_id = ulp.institute_id AND lt.is_active = TRUE
                                            AND lt.min_score IS NOT NULL AND ulp.best_score >= lt.min_score
                                          ORDER BY lt.min_score DESC, lt.display_order ASC LIMIT 1),
                                        CASE WHEN ulp.best_score >= 80 THEN 'HOT'
                                             WHEN ulp.best_score >= 50 THEN 'WARM'
-                                            ELSE 'COLD' END) = ANY(STRING_TO_ARRAY(:leadTier, ','))))
+                                            WHEN ulp.best_score IS NOT NULL THEN 'COLD'
+                                            ELSE 'UNCLASSIFIED' END) = ANY(STRING_TO_ARRAY(:leadTier, ',')))
                               AND (COALESCE(:assignedCounselorId, '') = ''
                                    OR lu.user_id = ANY(STRING_TO_ARRAY(:assignedCounselorId, ','))
                                    OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:assignedCounselorId, ',')))
@@ -1179,14 +1181,15 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                                    (COALESCE(:searchUserIdsCsv, '') != ''
                                     AND ar.user_id = ANY(STRING_TO_ARRAY(:searchUserIdsCsv, ','))))
                               AND (COALESCE(:leadTier, '') = '' OR
-                                   (ulp.user_id IS NOT NULL AND COALESCE(NULLIF(ulp.lead_tier, ''),
+                                   COALESCE(NULLIF(ulp.lead_tier, ''),
                                        (SELECT lt.tier_key FROM lead_tier lt
                                          WHERE lt.institute_id = ulp.institute_id AND lt.is_active = TRUE
                                            AND lt.min_score IS NOT NULL AND ulp.best_score >= lt.min_score
                                          ORDER BY lt.min_score DESC, lt.display_order ASC LIMIT 1),
                                        CASE WHEN ulp.best_score >= 80 THEN 'HOT'
                                             WHEN ulp.best_score >= 50 THEN 'WARM'
-                                            ELSE 'COLD' END) = ANY(STRING_TO_ARRAY(:leadTier, ','))))
+                                            WHEN ulp.best_score IS NOT NULL THEN 'COLD'
+                                            ELSE 'UNCLASSIFIED' END) = ANY(STRING_TO_ARRAY(:leadTier, ',')))
                               AND (COALESCE(:assignedCounselorId, '') = ''
                                    OR lu.user_id = ANY(STRING_TO_ARRAY(:assignedCounselorId, ','))
                                    OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:assignedCounselorId, ',')))
@@ -1600,14 +1603,15 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                                    (COALESCE(:searchUserIdsCsv, '') != ''
                                     AND ar.user_id = ANY(STRING_TO_ARRAY(:searchUserIdsCsv, ','))))
                               AND (COALESCE(:leadTier, '') = '' OR
-                                   (ulp.user_id IS NOT NULL AND COALESCE(NULLIF(ulp.lead_tier, ''),
+                                   COALESCE(NULLIF(ulp.lead_tier, ''),
                                        (SELECT lt.tier_key FROM lead_tier lt
                                          WHERE lt.institute_id = ulp.institute_id AND lt.is_active = TRUE
                                            AND lt.min_score IS NOT NULL AND ulp.best_score >= lt.min_score
                                          ORDER BY lt.min_score DESC, lt.display_order ASC LIMIT 1),
                                        CASE WHEN ulp.best_score >= 80 THEN 'HOT'
                                             WHEN ulp.best_score >= 50 THEN 'WARM'
-                                            ELSE 'COLD' END) = ANY(STRING_TO_ARRAY(:leadTier, ','))))
+                                            WHEN ulp.best_score IS NOT NULL THEN 'COLD'
+                                            ELSE 'UNCLASSIFIED' END) = ANY(STRING_TO_ARRAY(:leadTier, ',')))
                               AND (COALESCE(:assignedCounselorId, '') = ''
                                    OR lu.user_id = ANY(STRING_TO_ARRAY(:assignedCounselorId, ','))
                                    OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:assignedCounselorId, ',')))
@@ -2949,12 +2953,12 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
         /** Single-row totals: total / converted / lost / active / currently-overdue counts. */
         @Query(value = """
                             SELECT COUNT(*)                                                                              AS totalLeads,
-                                   SUM(CASE WHEN ulp.conversion_status = 'CONVERTED' THEN 1 ELSE 0 END)                  AS convertedLeads,
-                                   SUM(CASE WHEN ulp.conversion_status = 'LOST'      THEN 1 ELSE 0 END)                  AS lostLeads,
-                                   SUM(CASE WHEN ulp.conversion_status IS NULL
-                                              OR ulp.conversion_status NOT IN ('CONVERTED','LOST') THEN 1 ELSE 0 END)    AS activeLeads,
+                                   SUM(CASE WHEN COALESCE(lst.status_key, ulp.conversion_status) = 'CONVERTED' THEN 1 ELSE 0 END)                  AS convertedLeads,
+                                   SUM(CASE WHEN COALESCE(lst.status_key, ulp.conversion_status) = 'LOST'      THEN 1 ELSE 0 END)                  AS lostLeads,
+                                   SUM(CASE WHEN COALESCE(lst.status_key, ulp.conversion_status) IS NULL
+                                              OR COALESCE(lst.status_key, ulp.conversion_status) NOT IN ('CONVERTED','LOST') THEN 1 ELSE 0 END)    AS activeLeads,
                                    SUM(CASE WHEN ar.tat_reminder_stage IN ('TAT_OVERDUE','FOLLOW_UP_OVERDUE')
-                                              AND (ulp.conversion_status IS NULL OR ulp.conversion_status NOT IN ('CONVERTED','LOST')) THEN 1 ELSE 0 END) AS overdueLeads
+                                              AND (COALESCE(lst.status_key, ulp.conversion_status) IS NULL OR COALESCE(lst.status_key, ulp.conversion_status) NOT IN ('CONVERTED','LOST')) THEN 1 ELSE 0 END) AS overdueLeads
                             FROM audience_response ar
                             JOIN audience a ON a.id = ar.audience_id
                             LEFT JOIN LATERAL (
@@ -2964,11 +2968,14 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                             ) lu ON true
                             LEFT JOIN user_lead_profile ulp
                                 ON ulp.user_id = ar.user_id AND ulp.institute_id = a.institute_id
+                            LEFT JOIN lead_status lst ON lst.id = ar.lead_status_id
                             WHERE a.institute_id = :instituteId
                               AND ar.submitted_at >= CAST(:fromTs AS timestamp)
                               AND ar.submitted_at <  CAST(:toTs   AS timestamp)
                               AND (ar.overall_status IS NULL OR ar.overall_status != 'OPTED_OUT')
-                              AND (:scopeUsersCsv IS NULL OR COALESCE(lu.user_id, ulp.assigned_counselor_id) = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
+                              AND ar.audience_status = 'ACTIVE'
+                              AND (:excludeDuplicates = false OR COALESCE(ar.is_duplicate, FALSE) = FALSE)
+                              AND (:scopeUsersCsv IS NULL OR lu.user_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')) OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
                               AND (:audienceId IS NULL OR ar.audience_id = :audienceId)
                               AND (:sourceType IS NULL OR ar.source_type = :sourceType)
                         """, nativeQuery = true)
@@ -2978,7 +2985,8 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("toTs") String toTs,
                         @Param("scopeUsersCsv") String scopeUsersCsv,
                         @Param("audienceId") String audienceId,
-                        @Param("sourceType") String sourceType);
+                        @Param("sourceType") String sourceType,
+                        @Param("excludeDuplicates") boolean excludeDuplicates);
 
         /**
          * Response stats aggregate. "first response" = MIN(response event) for the lead — the
@@ -2993,6 +3001,7 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                                        ar.tat_due_override_at AS tat_due_override_at,
                                        (SELECT MIN(te.created_at) FROM timeline_event te
                                           WHERE (te.category = 'ACTIVITY' OR te.action_type = 'REACHOUT' OR (te.action_type IN ('STATUS_CHANGED','LEAD_CONVERTED','LEAD_LOST','COUNSELOR_ASSIGNED','COUNSELOR_UNASSIGNED','MANUAL_SCORE_UPDATE') AND te.actor_id IS NOT NULL))
+                                            AND te.created_at >= ar.submitted_at
                                             AND ( (te.type='AUDIENCE_RESPONSE' AND te.type_id = ar.id)
                                                   OR (ar.user_id IS NOT NULL AND te.student_user_id = ar.user_id)
                                                   OR (ar.student_user_id IS NOT NULL AND te.student_user_id = ar.student_user_id) )
@@ -3006,16 +3015,20 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                                 ) lu ON true
                                 LEFT JOIN user_lead_profile ulp
                                     ON ulp.user_id = ar.user_id AND ulp.institute_id = a.institute_id
+                                LEFT JOIN lead_status lst ON lst.id = ar.lead_status_id
                                 WHERE a.institute_id = :instituteId
                                   AND ar.submitted_at >= CAST(:fromTs AS timestamp)
                                   AND ar.submitted_at <  CAST(:toTs   AS timestamp)
                                   AND (ar.overall_status IS NULL OR ar.overall_status != 'OPTED_OUT')
-                                  AND (:scopeUsersCsv IS NULL OR COALESCE(lu.user_id, ulp.assigned_counselor_id) = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
+                                  AND ar.audience_status = 'ACTIVE'
+                                  AND (:excludeDuplicates = false OR COALESCE(ar.is_duplicate, FALSE) = FALSE)
+                                  AND (:scopeUsersCsv IS NULL OR lu.user_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')) OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
                                   AND (:audienceId IS NULL OR ar.audience_id = :audienceId)
                                   AND (:sourceType IS NULL OR ar.source_type = :sourceType)
                             )
                             SELECT COUNT(first_action_at)                                                  AS respondedLeads,
                                    AVG(EXTRACT(EPOCH FROM (first_action_at - submitted_at)) / 60.0)        AS avgResponseMinutes,
+                                   PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY EXTRACT(EPOCH FROM (first_action_at - submitted_at)) / 60.0) AS medianResponseMinutes,
                                    SUM(CASE WHEN first_action_at IS NOT NULL
                                                  AND first_action_at <= COALESCE(tat_due_override_at, lead_sla_due_at(submitted_at, :tatMinutes, CAST(:tatRule AS jsonb)))
                                                 THEN 1 ELSE 0 END)                                         AS tatMetCount
@@ -3029,11 +3042,12 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("tatRule") String tatRule,
                         @Param("scopeUsersCsv") String scopeUsersCsv,
                         @Param("audienceId") String audienceId,
-                        @Param("sourceType") String sourceType);
+                        @Param("sourceType") String sourceType,
+                        @Param("excludeDuplicates") boolean excludeDuplicates);
 
         /** Status breakdown: rows of (status_key, count). */
         @Query(value = """
-                            SELECT COALESCE(ulp.conversion_status, 'LEAD') AS statusKey,
+                            SELECT COALESCE(lst.status_key, ulp.conversion_status, '__NO_STATUS__') AS statusKey,
                                    COUNT(*)                                AS leadCount
                             FROM audience_response ar
                             JOIN audience a ON a.id = ar.audience_id
@@ -3044,14 +3058,17 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                             ) lu ON true
                             LEFT JOIN user_lead_profile ulp
                                 ON ulp.user_id = ar.user_id AND ulp.institute_id = a.institute_id
+                            LEFT JOIN lead_status lst ON lst.id = ar.lead_status_id
                             WHERE a.institute_id = :instituteId
                               AND ar.submitted_at >= CAST(:fromTs AS timestamp)
                               AND ar.submitted_at <  CAST(:toTs   AS timestamp)
                               AND (ar.overall_status IS NULL OR ar.overall_status != 'OPTED_OUT')
-                              AND (:scopeUsersCsv IS NULL OR COALESCE(lu.user_id, ulp.assigned_counselor_id) = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
+                              AND ar.audience_status = 'ACTIVE'
+                              AND (:excludeDuplicates = false OR COALESCE(ar.is_duplicate, FALSE) = FALSE)
+                              AND (:scopeUsersCsv IS NULL OR lu.user_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')) OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
                               AND (:audienceId IS NULL OR ar.audience_id = :audienceId)
                               AND (:sourceType IS NULL OR ar.source_type = :sourceType)
-                            GROUP BY COALESCE(ulp.conversion_status, 'LEAD')
+                            GROUP BY COALESCE(lst.status_key, ulp.conversion_status, '__NO_STATUS__')
                         """, nativeQuery = true)
         List<LeadReportProjections.StatusCountProjection> findReportStatusBreakdown(
                         @Param("instituteId") String instituteId,
@@ -3059,13 +3076,14 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("toTs") String toTs,
                         @Param("scopeUsersCsv") String scopeUsersCsv,
                         @Param("audienceId") String audienceId,
-                        @Param("sourceType") String sourceType);
+                        @Param("sourceType") String sourceType,
+                        @Param("excludeDuplicates") boolean excludeDuplicates);
 
         /** Source breakdown: rows of (source_type, total, converted). */
         @Query(value = """
                             SELECT ar.source_type                                                       AS sourceType,
                                    COUNT(*)                                                             AS totalCount,
-                                   SUM(CASE WHEN ulp.conversion_status='CONVERTED' THEN 1 ELSE 0 END)   AS convertedCount
+                                   SUM(CASE WHEN COALESCE(lst.status_key, ulp.conversion_status)='CONVERTED' THEN 1 ELSE 0 END)   AS convertedCount
                             FROM audience_response ar
                             JOIN audience a ON a.id = ar.audience_id
                             LEFT JOIN LATERAL (
@@ -3075,11 +3093,14 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                             ) lu ON true
                             LEFT JOIN user_lead_profile ulp
                                 ON ulp.user_id = ar.user_id AND ulp.institute_id = a.institute_id
+                            LEFT JOIN lead_status lst ON lst.id = ar.lead_status_id
                             WHERE a.institute_id = :instituteId
                               AND ar.submitted_at >= CAST(:fromTs AS timestamp)
                               AND ar.submitted_at <  CAST(:toTs   AS timestamp)
                               AND (ar.overall_status IS NULL OR ar.overall_status != 'OPTED_OUT')
-                              AND (:scopeUsersCsv IS NULL OR COALESCE(lu.user_id, ulp.assigned_counselor_id) = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
+                              AND ar.audience_status = 'ACTIVE'
+                              AND (:excludeDuplicates = false OR COALESCE(ar.is_duplicate, FALSE) = FALSE)
+                              AND (:scopeUsersCsv IS NULL OR lu.user_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')) OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
                               AND (:audienceId IS NULL OR ar.audience_id = :audienceId)
                               AND (:sourceType IS NULL OR ar.source_type = :sourceType)
                             GROUP BY ar.source_type
@@ -3091,7 +3112,8 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("toTs") String toTs,
                         @Param("scopeUsersCsv") String scopeUsersCsv,
                         @Param("audienceId") String audienceId,
-                        @Param("sourceType") String sourceType);
+                        @Param("sourceType") String sourceType,
+                        @Param("excludeDuplicates") boolean excludeDuplicates);
 
         /** Tier breakdown: explicit lead_tier wins, else the institute catalog band, else the legacy bucket, else UNCLASSIFIED. */
         @Query(value = """
@@ -3114,11 +3136,14 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                             ) lu ON true
                             LEFT JOIN user_lead_profile ulp
                                 ON ulp.user_id = ar.user_id AND ulp.institute_id = a.institute_id
+                            LEFT JOIN lead_status lst ON lst.id = ar.lead_status_id
                             WHERE a.institute_id = :instituteId
                               AND ar.submitted_at >= CAST(:fromTs AS timestamp)
                               AND ar.submitted_at <  CAST(:toTs   AS timestamp)
                               AND (ar.overall_status IS NULL OR ar.overall_status != 'OPTED_OUT')
-                              AND (:scopeUsersCsv IS NULL OR COALESCE(lu.user_id, ulp.assigned_counselor_id) = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
+                              AND ar.audience_status = 'ACTIVE'
+                              AND (:excludeDuplicates = false OR COALESCE(ar.is_duplicate, FALSE) = FALSE)
+                              AND (:scopeUsersCsv IS NULL OR lu.user_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')) OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
                               AND (:audienceId IS NULL OR ar.audience_id = :audienceId)
                               AND (:sourceType IS NULL OR ar.source_type = :sourceType)
                             GROUP BY 1
@@ -3129,13 +3154,14 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("toTs") String toTs,
                         @Param("scopeUsersCsv") String scopeUsersCsv,
                         @Param("audienceId") String audienceId,
-                        @Param("sourceType") String sourceType);
+                        @Param("sourceType") String sourceType,
+                        @Param("excludeDuplicates") boolean excludeDuplicates);
 
         /** Daily trend: GROUP BY the submission day in the institute timezone (:zone). */
         @Query(value = """
                             SELECT DATE((ar.submitted_at AT TIME ZONE 'UTC') AT TIME ZONE :zone)    AS day,
                                    COUNT(*)                                                           AS submittedCount,
-                                   SUM(CASE WHEN ulp.conversion_status='CONVERTED' THEN 1 ELSE 0 END) AS convertedCount
+                                   SUM(CASE WHEN COALESCE(lst.status_key, ulp.conversion_status)='CONVERTED' THEN 1 ELSE 0 END) AS convertedCount
                             FROM audience_response ar
                             JOIN audience a ON a.id = ar.audience_id
                             LEFT JOIN LATERAL (
@@ -3145,11 +3171,14 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                             ) lu ON true
                             LEFT JOIN user_lead_profile ulp
                                 ON ulp.user_id = ar.user_id AND ulp.institute_id = a.institute_id
+                            LEFT JOIN lead_status lst ON lst.id = ar.lead_status_id
                             WHERE a.institute_id = :instituteId
                               AND ar.submitted_at >= CAST(:fromTs AS timestamp)
                               AND ar.submitted_at <  CAST(:toTs   AS timestamp)
                               AND (ar.overall_status IS NULL OR ar.overall_status != 'OPTED_OUT')
-                              AND (:scopeUsersCsv IS NULL OR COALESCE(lu.user_id, ulp.assigned_counselor_id) = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
+                              AND ar.audience_status = 'ACTIVE'
+                              AND (:excludeDuplicates = false OR COALESCE(ar.is_duplicate, FALSE) = FALSE)
+                              AND (:scopeUsersCsv IS NULL OR lu.user_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')) OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
                               AND (:audienceId IS NULL OR ar.audience_id = :audienceId)
                               AND (:sourceType IS NULL OR ar.source_type = :sourceType)
                             GROUP BY 1
@@ -3162,7 +3191,8 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("zone") String zone,
                         @Param("scopeUsersCsv") String scopeUsersCsv,
                         @Param("audienceId") String audienceId,
-                        @Param("sourceType") String sourceType);
+                        @Param("sourceType") String sourceType,
+                        @Param("excludeDuplicates") boolean excludeDuplicates);
 
         /**
          * Per-counsellor aggregate row. Counsellor resolution mirrors the leads list filter.
@@ -3175,9 +3205,10 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                                        ar.submitted_at  AS submitted_at,
                                        ar.tat_due_override_at AS tat_due_override_at,
                                        ar.tat_reminder_stage AS tat_reminder_stage,
-                                       ulp.conversion_status AS conversion_status,
+                                       COALESCE(lst.status_key, ulp.conversion_status) AS conversion_status,
                                        (SELECT MIN(te.created_at) FROM timeline_event te
                                           WHERE (te.category = 'ACTIVITY' OR te.action_type = 'REACHOUT' OR (te.action_type IN ('STATUS_CHANGED','LEAD_CONVERTED','LEAD_LOST','COUNSELOR_ASSIGNED','COUNSELOR_UNASSIGNED','MANUAL_SCORE_UPDATE') AND te.actor_id IS NOT NULL))
+                                            AND te.created_at >= ar.submitted_at
                                             AND ( (te.type='AUDIENCE_RESPONSE' AND te.type_id = ar.id)
                                                   OR (ar.user_id IS NOT NULL AND te.student_user_id = ar.user_id)
                                                   OR (ar.student_user_id IS NOT NULL AND te.student_user_id = ar.student_user_id) )
@@ -3192,10 +3223,13 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                                 ) lu ON true
                                 LEFT JOIN user_lead_profile ulp
                                     ON ulp.user_id = ar.user_id AND ulp.institute_id = a.institute_id
+                                LEFT JOIN lead_status lst ON lst.id = ar.lead_status_id
                                 WHERE a.institute_id = :instituteId
                                   AND ar.submitted_at >= CAST(:fromTs AS timestamp)
                                   AND ar.submitted_at <  CAST(:toTs   AS timestamp)
                                   AND (ar.overall_status IS NULL OR ar.overall_status != 'OPTED_OUT')
+                                  AND ar.audience_status = 'ACTIVE'
+                                  AND (:excludeDuplicates = false OR COALESCE(ar.is_duplicate, FALSE) = FALSE)
                                   AND (:scopeUsersCsv IS NULL OR COALESCE(lu.user_id, ulp.assigned_counselor_id) = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
                                   AND (:audienceId IS NULL OR ar.audience_id = :audienceId)
                                   AND (:sourceType IS NULL OR ar.source_type = :sourceType)
@@ -3225,7 +3259,8 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                         @Param("tatRule") String tatRule,
                         @Param("scopeUsersCsv") String scopeUsersCsv,
                         @Param("audienceId") String audienceId,
-                        @Param("sourceType") String sourceType);
+                        @Param("sourceType") String sourceType,
+                        @Param("excludeDuplicates") boolean excludeDuplicates);
 
         /**
          * Atomically claim a reminder stage for a lead. Returns 1 if this call won the claim (and the row

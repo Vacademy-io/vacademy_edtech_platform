@@ -85,6 +85,7 @@
         "summaryHide": "إخفاء الملخص"
     },
     "chips": {
+        "tierUnclassified": "غير مصنَّف",
         "search": "بحث: {{query}}",
         "audience": "الجمهور: {{names}}",
         "campaignType": "{{term}}: {{types}}",

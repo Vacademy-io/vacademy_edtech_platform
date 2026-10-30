@@ -23,6 +23,7 @@ public final class LeadReportProjections {
     public interface ResponseStatsProjection {
         Long getRespondedLeads();
         Double getAvgResponseMinutes();
+        Double getMedianResponseMinutes();
         Long getTatMetCount();      // null when tat_hours param is null (TAT disabled)
     }
 
