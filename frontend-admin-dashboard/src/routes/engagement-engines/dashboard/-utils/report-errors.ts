@@ -4,9 +4,10 @@ import { humanizeKey } from './report-format';
 /*
  * The server builds the report from independent queries and lists the ones that failed in
  * `errors`, by query name (lists, runs, outreach, calls, costs, whatsappCost, creditBalance,
- * statusChanges, conversions, demos, delivery, replies). One screen section can draw on several queries, so
- * this maps each section to the queries it needs. A name that matches a section directly
- * (a response field such as "funnel") also counts, in case the server starts using those.
+ * statusChanges, conversions, demos, delivery, replies, newTemplates). One screen section can
+ * draw on several queries, so this maps each section to the queries it needs. A name that
+ * matches a section directly (a response field such as "funnel") also counts, in case the
+ * server starts using those.
  */
 
 export type ReportPart =
@@ -20,6 +21,7 @@ export type ReportPart =
     | 'calls'
     | 'email'
     | 'templates'
+    | 'newTemplates'
     | 'outcomes'
     | 'statusChanges'
     | 'costs'
@@ -37,6 +39,8 @@ const PART_DEPS: Record<ReportPart, string[]> = {
     calls: ['calls'],
     email: ['outreach', 'delivery'],
     templates: ['outreach', 'delivery', 'replies'],
+    // Its own query: it fails by its own name, which `partFailed` checks first.
+    newTemplates: [],
     outcomes: ['demos', 'conversions'],
     statusChanges: ['statusChanges'],
     costs: ['costs', 'calls', 'lists', 'runs'],

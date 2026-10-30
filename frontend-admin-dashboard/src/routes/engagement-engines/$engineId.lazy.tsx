@@ -301,7 +301,7 @@ function EngineDetailPage() {
                         onClick={() =>
                             navigate({
                                 to: '/engagement-engines/inbox',
-                                search: { engineId: engine.id },
+                                search: { engine: engine.id },
                             })
                         }
                     >
@@ -835,7 +835,7 @@ function AutonomyPanel({
                             <Link
                                 key={channel}
                                 to="/engagement-engines/inbox"
-                                search={{ filter: 'sent', engineId: engine.id, channel }}
+                                search={{ filter: 'sent', engine: engine.id, channel }}
                                 className="flex flex-col gap-1.5 rounded-lg border border-neutral-100 p-2.5 transition-colors hover:border-primary-300 hover:bg-primary-50"
                             >
                                 <div className="flex flex-wrap items-center justify-between gap-2">

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.sql.Timestamp;
+import java.sql.Types;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -16,7 +17,7 @@ import java.util.Map;
  * Reads for the engagement daily report ({@link EngagementDailyReportSql}). Plain reads, no
  * transaction of their own: the service runs each section inside its read-only transaction with
  * a statement timeout. Rows come back as small records; all aggregation the service does on them
- * is per engine and per day.
+ * is per engine, per day and over the period.
  */
 @Repository
 public class EngagementDailyReportDao {
@@ -40,8 +41,8 @@ public class EngagementDailyReportDao {
     }
 
     /**
-     * Members added on D in distinct people: per engine and list (engineId set), per list across
-     * the engines (engineId null), and everyone.
+     * Members added in the period in distinct people: per engine and list (engineId set), per list
+     * across the engines (engineId null), and everyone.
      */
     record MembersAdded(List<MemberBucket> byEngine, List<MemberBucket> byList, long people, long newPeople) {
         static final MembersAdded NONE = new MembersAdded(List.of(), List.of(), 0, 0);
@@ -52,6 +53,13 @@ public class EngagementDailyReportDao {
 
     record AgentDay(String agentId, LocalDate day, long discovered, long researched, long delivered, long review,
                     long rejected, long searches, long pages, double costUsd, double credits) {
+
+        /** This day's counters plus another day's of the same agent (a period's total; day = the first). */
+        AgentDay plus(AgentDay o) {
+            return new AgentDay(agentId, day.isBefore(o.day) ? day : o.day, discovered + o.discovered,
+                    researched + o.researched, delivered + o.delivered, review + o.review, rejected + o.rejected,
+                    searches + o.searches, pages + o.pages, costUsd + o.costUsd, credits + o.credits);
+        }
     }
 
     record Run(String engineId, long decisions, long members, long send, long task, long noOp, long reply,
@@ -86,7 +94,12 @@ public class EngagementDailyReportDao {
     record Conversion(String engineId, String leadKey) {
     }
 
-    record Booking(String engineId, String bookingId, LocalDate bookedDay, boolean scheduledOnDay, String outcome) {
+    /** scheduledInPeriod: scheduled to start in the period (not cancelled or rescheduled). */
+    record Booking(String engineId, String bookingId, LocalDate bookedDay, boolean scheduledInPeriod, String outcome) {
+    }
+
+    /** The previous period's distinct-people totals (EngagementDailyReportSql.PREVIOUS). */
+    record PreviousTotals(long leadsAdded, long conversions) {
     }
 
     List<Engine> engines(String instituteId) {
@@ -156,8 +169,16 @@ public class EngagementDailyReportDao {
         return rows.isEmpty() ? null : ts(rows.get(0), "first_at");
     }
 
-    List<Send> sends(MapSqlParameterSource p) {
-        return rows(EngagementDailyReportSql.SENDS, p).stream()
+    /**
+     * Messages dispatched in [from, to), on a copy of {@code p}: the created_at scan starts
+     * {@link EngagementDailyReportService#SEND_SCAN_SLACK} before from.
+     */
+    List<Send> sends(MapSqlParameterSource p, LocalDateTime from, LocalDateTime to) {
+        MapSqlParameterSource q = new MapSqlParameterSource(p.getValues())
+                .addValue("sendsFrom", from, Types.TIMESTAMP)
+                .addValue("sendsTo", to, Types.TIMESTAMP)
+                .addValue("scanFrom", from.minus(EngagementDailyReportService.SEND_SCAN_SLACK), Types.TIMESTAMP);
+        return rows(EngagementDailyReportSql.SENDS, q).stream()
                 .map(r -> new Send(str(r, "id"), str(r, "engine_id"), str(r, "kind"), str(r, "channel"),
                         str(r, "status"), str(r, "template_name"), str(r, "subject"), str(r, "email_template_id"),
                         str(r, "email_template_name"), ts(r, "dispatched_at")))
@@ -186,6 +207,16 @@ public class EngagementDailyReportDao {
         return new Balance(dblOrNull(rows.get(0), "balance"), dbl(rows.get(0), "last7"));
     }
 
+    record NewTemplateRow(String proposedCategory, String status, String metaCategory, long n) {
+    }
+
+    List<NewTemplateRow> newTemplates(MapSqlParameterSource p) {
+        return rows(EngagementDailyReportSql.NEW_TEMPLATES, p).stream()
+                .map(r -> new NewTemplateRow(str(r, "proposed_category"), str(r, "status"), str(r, "meta_category"),
+                        lng(r, "n")))
+                .toList();
+    }
+
     List<StatusChangeRow> statusChanges(MapSqlParameterSource p) {
         return rows(EngagementDailyReportSql.STATUS_CHANGES, p).stream()
                 .map(r -> new StatusChangeRow(LocalDate.parse(str(r, "day")), str(r, "from_label"), str(r, "to_label"),
@@ -205,9 +236,15 @@ public class EngagementDailyReportDao {
                     String booked = str(r, "booked_day");
                     return new Booking(str(r, "engine_id"), str(r, "booking_id"),
                             booked == null ? null : LocalDate.parse(booked),
-                            Boolean.TRUE.equals(r.get("scheduled_on_day")), str(r, "outcome"));
+                            Boolean.TRUE.equals(r.get("scheduled_in_period")), str(r, "outcome"));
                 })
                 .toList();
+    }
+
+    PreviousTotals previous(MapSqlParameterSource p) {
+        List<Map<String, Object>> rows = rows(EngagementDailyReportSql.PREVIOUS, p);
+        if (rows.isEmpty()) return new PreviousTotals(0, 0);
+        return new PreviousTotals(lng(rows.get(0), "leads_added"), lng(rows.get(0), "conversions"));
     }
 
     // ── row helpers ──────────────────────────────────────────────────────────

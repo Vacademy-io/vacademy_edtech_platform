@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next';
 import type { EngagementDailyReport } from '@/services/engagement-daily-report';
 import { humanizeKey } from './report-format';
+import type { ReportLinks, ReportLinkTarget } from './report-links';
 
 /**
  * True when some of the messages sent come from a channel that gives no delivery receipts
@@ -25,13 +26,37 @@ export interface FunnelStep {
     untracked: boolean;
     /** Delivered, when only some channels report delivery: the count is a lower bound. */
     partial: boolean;
+    /** The items behind the step; none when the step is empty or not tracked. */
+    link: ReportLinkTarget | null;
 }
+
+/** Where each step leads: the day's sends narrowed to that outcome, or the people who got there. */
+const stepLink = (stage: string, links: ReportLinks): ReportLinkTarget | null => {
+    switch (stage) {
+        case 'CONTACTED':
+            return links.inbox({ filter: 'sent' });
+        case 'DELIVERED':
+            return links.inbox({ filter: 'sent', outcome: 'delivered' });
+        case 'REPLIED':
+            return links.inbox({ filter: 'sent', outcome: 'replied' });
+        case 'DEMO_BOOKED':
+            return links.outcomes('demos');
+        case 'CONVERTED':
+            return links.outcomes('conversions');
+        default:
+            return null;
+    }
+};
 
 /**
  * The funnel as shown on the page and in the PDF. Nothing is compared with the Delivered step
  * when it is partial or untracked: no drop-off into it and none out of it.
  */
-export const buildFunnelSteps = (data: EngagementDailyReport, t: TFunction): FunnelStep[] => {
+export const buildFunnelSteps = (
+    data: EngagementDailyReport,
+    t: TFunction,
+    links?: ReportLinks
+): FunnelStep[] => {
     const funnel = data.funnel;
     const incomplete = deliveryPartial(data);
     return funnel.map((s, i) => {
@@ -48,6 +73,7 @@ export const buildFunnelSteps = (data: EngagementDailyReport, t: TFunction): Fun
             dropOff,
             untracked: isDelivered && incomplete && s.count === 0,
             partial: isDelivered && incomplete && s.count > 0,
+            link: links && s.count > 0 ? stepLink(s.stage, links) : null,
         };
     });
 };

@@ -16,12 +16,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import vacademy.io.admin_core_service.features.engagement.service.ContactResolver;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementAccessGuard;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementDispatcher;
+import vacademy.io.admin_core_service.features.engagement.service.EngagementTaskQueryService;
+import vacademy.io.admin_core_service.features.engagement.service.EngagementTaskQueryService.TaskFilter;
+import vacademy.io.admin_core_service.features.engagement.report.EngagementActionOutcomeService.ActionOutcome;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementAction;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementMember;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementActionRepository;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementMemberRepository;
 import vacademy.io.admin_core_service.features.engagement.spi.Subject;
 import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.exceptions.ForbiddenException;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.time.Instant;
@@ -48,10 +52,21 @@ public class EngagementTaskController {
     private final EngagementDispatcher dispatcher;
     private final EngagementMemberRepository memberRepository;
     private final ContactResolver contactResolver;
+    private final EngagementTaskQueryService taskQueryService;
 
     /** Most ids one people lookup resolves: an inbox page is at most 200 tasks. */
     private static final int MAX_PEOPLE_LOOKUP = 200;
 
+    /**
+     * The inbox, and the daily report's drill-down into it. Without any of the optional filters
+     * this is the plain inbox (findInbox, ranked by priority). With them (EngagementTaskQueryService):
+     * engineId (404 when not this institute's), channel EMAIL|WHATSAPP|IN_APP|AI_CALL, kind
+     * TASK|REPLY|SEND|NO_OP|CRM (NO_OP rows only for kind=NO_OP; CRM = a TASK with a CRM action
+     * type), date YYYY-MM-DD in the institute's zone on COALESCE(dispatched_at, created_at), newest
+     * first, or from + to (a period, inclusive; wins over date; the report's rules: both or neither,
+     * from ≤ to, not in the future, from today − 89), template (WhatsApp template, email subject or
+     * email template), and outcome (needs date or from / to) as the report counts it.
+     */
     @GetMapping
     public ResponseEntity<Page<EngagementAction>> inbox(
             @RequestParam String instituteId,
@@ -61,18 +76,39 @@ public class EngagementTaskController {
             @RequestParam(required = false) String engineId,
             @RequestParam(required = false) String channel,
             @RequestParam(required = false) String kind,
+            @RequestParam(required = false) String date,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
+            @RequestParam(required = false) String template,
+            @RequestParam(required = false) String outcome,
             @RequestAttribute("user") CustomUserDetails user) {
         accessGuard.requireAdmin(user, instituteId);
         List<String> statusList = List.of(statuses.split(","));
-        // The institute id above already scopes the query, so an engine id from another institute
-        // matches nothing.
-        return ResponseEntity.ok(actionRepository.findInbox(
-                instituteId, statusList, blankToNull(engineId), blankToNull(channel), blankToNull(kind),
-                PageRequest.of(page, Math.min(size, 200))));
+        TaskFilter filter = new TaskFilter(engineId, channel, kind, date, from, to, template, outcome);
+        if (filter.isEmpty()) {
+            return ResponseEntity.ok(actionRepository.findInbox(
+                    instituteId, statusList, null, null, null, PageRequest.of(page, Math.min(size, 200))));
+        }
+        return ResponseEntity.ok(taskQueryService.inbox(instituteId, statusList, filter, page, Math.min(size, 200)));
     }
 
-    private static String blankToNull(String s) {
-        return s == null || s.isBlank() ? null : s;
+    /**
+     * What became of each task once it went out, for the inbox's outcome column: delivery, opens,
+     * bounces, the credited reply, an AI call's result. At most 200 ids; actions of another
+     * institute are left out. 503 when notification_service cannot say.
+     */
+    @GetMapping("/outcomes")
+    public ResponseEntity<List<ActionOutcome>> outcomes(
+            @RequestParam String instituteId,
+            @RequestParam String actionIds,
+            @RequestAttribute("user") CustomUserDetails user) {
+        try {
+            accessGuard.requireAdmin(user, instituteId);
+        } catch (VacademyException e) {
+            // The shared guard answers 510 for every refusal; this endpoint is new, so it says 403.
+            throw new ForbiddenException(e.getMessage());
+        }
+        return ResponseEntity.ok(taskQueryService.outcomes(instituteId, actionIds));
     }
 
     /**

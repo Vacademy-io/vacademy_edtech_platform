@@ -1,6 +1,7 @@
 import {
     ENGAGEMENT_DATA_POINTS,
     ENGAGEMENT_ENGINES_BASE,
+    ENGAGEMENT_TASK_OUTCOMES,
     ENGAGEMENT_TASKS_BASE,
     ENGAGEMENT_TEMPLATES_BASE,
 } from '@/constants/urls';
@@ -17,6 +18,8 @@ import type {
     EngineStatus,
     EnrollmentResult,
     PageResponse,
+    TaskListFilters,
+    TaskOutcome,
     TaskPerson,
     TemplateEditRequest,
 } from '../-types';
@@ -124,17 +127,30 @@ export const getDataPointCatalog = async (): Promise<DataPointSpec[]> => {
 };
 
 // ---- Task inbox ----
+/** A page of tasks. Each filter is a server-side query param and is left out when not set. */
 export const listTasks = async (
     instituteId: string,
     statuses: string,
     page: number,
     size: number,
-    engineId?: string,
-    channel?: string,
-    kind?: string
+    filters: TaskListFilters = {}
 ): Promise<PageResponse<EngagementAction>> => {
+    const { engineId, channel, kind, date, from, to, template, outcome } = filters;
     const res = await authenticatedAxiosInstance.get(ENGAGEMENT_TASKS_BASE, {
-        params: { instituteId, statuses, page, size, engineId, channel, kind },
+        params: {
+            instituteId,
+            statuses,
+            page,
+            size,
+            ...(engineId ? { engineId } : {}),
+            ...(channel ? { channel } : {}),
+            ...(kind ? { kind } : {}),
+            ...(date ? { date } : {}),
+            // The server reads a period only as a pair, and lets it win over `date`.
+            ...(from && to ? { from, to } : {}),
+            ...(template ? { template } : {}),
+            ...(outcome ? { outcome } : {}),
+        },
     });
     return res.data;
 };
@@ -163,6 +179,18 @@ export const getTaskPeople = async (
     if (!memberIds.length) return [];
     const res = await authenticatedAxiosInstance.get(`${ENGAGEMENT_TASKS_BASE}/people`, {
         params: { instituteId, memberIds: memberIds.join(',') },
+    });
+    return Array.isArray(res.data) ? res.data : [];
+};
+
+/** What came of each message or call: delivery, opens, replies, call result. Max 200 ids. */
+export const getTaskOutcomes = async (
+    instituteId: string,
+    actionIds: string[]
+): Promise<TaskOutcome[]> => {
+    if (!actionIds.length) return [];
+    const res = await authenticatedAxiosInstance.get(ENGAGEMENT_TASK_OUTCOMES, {
+        params: { instituteId, actionIds: actionIds.slice(0, 200).join(',') },
     });
     return Array.isArray(res.data) ? res.data : [];
 };
