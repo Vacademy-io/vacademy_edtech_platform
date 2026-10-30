@@ -476,6 +476,11 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
          *   <li>Cancelled / terminated / expired plans — access is gone, so is the obligation.</li>
          * </ul>
          *
+         * A plan priced from {@code pp.actual_price} is billed {@code actual_price x up.quantity}:
+         * the payment plan holds the price of ONE copy and {@code user_plan.quantity} the copies on
+         * that line (4 copies of a ₹320 book bill ₹1,280). Subscriptions always carry quantity 1,
+         * so their renewal figures are unchanged. The {@code actual_price > 0} test stays per copy.
+         *
          * Per-plan {@code paid} is what landed against that plan (CPO: the schedule's amount_paid;
          * one-time: PAID payment logs). It is informational — settlement is tracked by each source
          * itself (a paid instalment updates amount_paid, a settled renewal advances end_date, a paid
@@ -563,7 +568,7 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
                          (up.status = 'ACTIVE') AS is_live,
                          true AS is_plan,
                          CASE WHEN po.type = 'CPO' THEN COALESCE(cs.expected, 0)
-                              ELSE COALESCE(pp.actual_price, 0) END AS billed,
+                              ELSE COALESCE(pp.actual_price, 0) * COALESCE(up.quantity, 1) END AS billed,
                          CASE WHEN po.type = 'CPO' THEN COALESCE(cs.paid, 0)
                               WHEN po.type = 'SUBSCRIPTION' THEN 0
                               ELSE COALESCE(pd.amt, 0) END AS paid,
@@ -571,14 +576,15 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
                               WHEN po.type = 'CPO' THEN COALESCE(cs.overdue, 0)
                               WHEN po.type = 'SUBSCRIPTION'
                                    AND up.end_date IS NOT NULL
-                                   AND up.end_date < CURRENT_TIMESTAMP THEN COALESCE(pp.actual_price, 0)
+                                   AND up.end_date < CURRENT_TIMESTAMP
+                                   THEN COALESCE(pp.actual_price, 0) * COALESCE(up.quantity, 1)
                               ELSE 0 END AS overdue,
                          CASE WHEN up.status <> 'ACTIVE' THEN 0
                               WHEN po.type = 'CPO' THEN COALESCE(cs.upcoming, 0)
                               WHEN po.type = 'SUBSCRIPTION'
                                    AND up.end_date >= CURRENT_TIMESTAMP
                                    AND up.end_date < CURRENT_TIMESTAMP + (:upcomingDays * INTERVAL '1 day')
-                                   THEN COALESCE(pp.actual_price, 0)
+                                   THEN COALESCE(pp.actual_price, 0) * COALESCE(up.quantity, 1)
                               ELSE 0 END AS upcoming,
                          (up.status = 'ACTIVE'
                             AND COALESCE(po.type, 'ONE_TIME') NOT IN ('CPO', 'SUBSCRIPTION', 'FREE', 'DONATION')
@@ -595,7 +601,8 @@ public interface UserPlanRepository extends JpaRepository<UserPlan, String> {
                               WHEN po.type = 'CPO' THEN COALESCE(cs.outstanding, 0)
                               WHEN po.type = 'SUBSCRIPTION'
                                    AND up.end_date IS NOT NULL
-                                   AND up.end_date < CURRENT_TIMESTAMP THEN COALESCE(pp.actual_price, 0)
+                                   AND up.end_date < CURRENT_TIMESTAMP
+                                   THEN COALESCE(pp.actual_price, 0) * COALESCE(up.quantity, 1)
                               ELSE 0 END AS outstanding,
                          CASE WHEN up.status = 'ACTIVE' AND po.type = 'CPO' THEN cn.next_due_amount
                               ELSE NULL END AS next_due_amount

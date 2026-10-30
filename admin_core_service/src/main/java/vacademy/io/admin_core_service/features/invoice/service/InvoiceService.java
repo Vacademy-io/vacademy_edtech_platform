@@ -861,10 +861,12 @@ public class InvoiceService {
      * Whether each grouped log states what IT was charged, or merely repeats the
      * order total.
      *
-     * The legacy multi-package flow copies the whole order total onto every child
-     * (see MultiPackageLearnerEnrollService), so summing those amounts multiplies
-     * the invoice by the number of courses — hence that flow's lines are priced
-     * from the payment plan instead. A parent/child order allocates the real
+     * The legacy multi-package flow records the whole order total on its gateway
+     * log (see MultiPackageLearnerEnrollService), so summing those amounts
+     * over-counts the invoice — hence that flow's lines are priced from the payment
+     * plan x quantity instead. Orders placed since V633 record each line's own
+     * total, which is that same figure, so the rule holds for both shapes and
+     * stays keyed on the "MP" order id. A parent/child order allocates the real
      * total across its children, so there the log's own amount IS the truth, and
      * falling back to the plan's list price would re-inflate a discounted basket
      * back to full price.
@@ -878,6 +880,16 @@ public class InvoiceService {
         // each for its own course's share, so each carries its own amount. Only the legacy
         // "MP" order repeats the order total on every log.
         return orderId == null || isParentChildOrderId(orderId);
+    }
+
+    /**
+     * Copies bought on a plan's line (user_plan.quantity). The payment plan's price is per copy,
+     * so anything priced from the plan multiplies by this. Missing or non-positive reads as 1,
+     * which is every plan bought before quantities existed.
+     */
+    static int lineQuantity(UserPlan userPlan) {
+        Integer quantity = userPlan != null ? userPlan.getQuantity() : null;
+        return quantity != null && quantity > 0 ? quantity : 1;
     }
 
     /**
@@ -1012,15 +1024,21 @@ public class InvoiceService {
             // Get payment log line items (discounts, coupons, etc.)
             List<PaymentLogLineItem> paymentLogLineItems = paymentLogLineItemRepository.findByPaymentLog(paymentLog);
 
-            // Calculate plan price first (the locked regional price when the plan has one)
-            BigDecimal planPrice = BigDecimal.valueOf(RegionalPriceLock.listPrice(userPlan));
+            // Calculate plan price first (the locked regional price when the plan has one).
+            // actual_price is the price of ONE copy; the line is that times the copies bought
+            // (user_plan.quantity), e.g. 4 x 320 = 1,280 for four copies of one book.
+            BigDecimal unitPrice = BigDecimal.valueOf(RegionalPriceLock.listPrice(userPlan));
+            int quantity = lineQuantity(userPlan);
+            BigDecimal planPrice = unitPrice.multiply(BigDecimal.valueOf(quantity));
 
-            // For multi-package invoices, use the plan's actual_price (per-book price)
+            // For multi-package invoices, use the plan's actual_price (per-book price) x quantity
             // instead of paymentLog.getPaymentAmount() (which may contain the total gateway charge)
             BigDecimal paymentAmount;
             if (paymentLogs.size() > 1 && !perLogAmounts) {
-                // Legacy multi-package: every child log repeats the order total, so the
-                // line has to be priced from the plan or the invoice multiplies.
+                // Multi-package ("MP") order: the gateway log of an order placed before V633
+                // carries the whole order total, so the line has to be priced from the plan or
+                // the invoice multiplies. Newer orders record each line's own total, which is
+                // the same plan x quantity figure, so both shapes invoice alike.
                 paymentAmount = planPrice;
             } else if (paymentLog.getPaymentAmount() != null && paymentLog.getPaymentAmount() > 0) {
                 paymentAmount = BigDecimal.valueOf(paymentLog.getPaymentAmount());
@@ -1085,7 +1103,7 @@ public class InvoiceService {
 
             // Build line items for this payment log - use payment amount
             List<InvoiceLineItemData> lineItems = buildLineItemsForPlan(
-                    paymentPlan, paymentLogLineItems, paymentLog.getId(), paymentAmount, planPrice);
+                    paymentPlan, paymentLogLineItems, paymentLog.getId(), paymentAmount, unitPrice, quantity);
             allLineItems.addAll(lineItems);
         }
 
@@ -1249,12 +1267,17 @@ public class InvoiceService {
      * For multi-package enrollments, creates descriptive line items for each
      * package session
      */
-    /** @param grossPlanPrice the UserPlan's list price — base, or its locked regional price */
+    /**
+     * @param grossUnitPlanPrice the UserPlan's list price for ONE copy — base, or its locked
+     *                           regional price
+     * @param quantity           copies on this line (user_plan.quantity, at least 1)
+     */
     private List<InvoiceLineItemData> buildLineItemsForPlan(PaymentPlan paymentPlan,
             List<PaymentLogLineItem> paymentLogLineItems,
             String paymentLogId,
             BigDecimal paymentAmount,
-            BigDecimal grossPlanPrice) {
+            BigDecimal grossUnitPlanPrice,
+            int quantity) {
         List<InvoiceLineItemData> lineItems = new ArrayList<>();
 
         // CPO / fee-installment payments are allocated across specific StudentFeePayment
@@ -1281,16 +1304,19 @@ public class InvoiceService {
             // gateway-captured amount instead would render as
             // "Course ₹450, Coupon −₹50" which sums to ₹400 instead of the ₹450
             // actually charged. Falls back to paymentAmount when paymentPlan is
-            // unavailable so we don't blank the line.
-            BigDecimal grossUnitPrice = paymentPlan != null
-                    ? grossPlanPrice
+            // unavailable so we don't blank the line. Several copies print as
+            // Qty 4 x 320.00 = 1,280.00; the no-plan fallback stays a single line.
+            boolean pricedFromPlan = paymentPlan != null;
+            int copies = pricedFromPlan ? Math.max(1, quantity) : 1;
+            BigDecimal grossUnitPrice = pricedFromPlan
+                    ? grossUnitPlanPrice
                     : paymentAmount;
             InvoiceLineItemData planItem = InvoiceLineItemData.builder()
                     .itemType("PLAN")
                     .description(description.trim())
-                    .quantity(1)
+                    .quantity(copies)
                     .unitPrice(grossUnitPrice)
-                    .amount(grossUnitPrice)
+                    .amount(grossUnitPrice.multiply(BigDecimal.valueOf(copies)))
                     .sourceId(paymentLogId) // Store payment log ID as source
                     .build();
             lineItems.add(planItem);
@@ -7288,7 +7314,9 @@ public class InvoiceService {
         ReceiptFigures rf = new ReceiptFigures();
         PaymentPlan plan = invoiceData.getPaymentPlan();
         if (plan != null) {
-            rf.totalFees = BigDecimal.valueOf(plan.getActualPrice());
+            // Per-copy price x copies bought on this plan's line.
+            rf.totalFees = BigDecimal.valueOf(plan.getActualPrice())
+                    .multiply(BigDecimal.valueOf(lineQuantity(invoiceData.getUserPlan())));
             rf.courseName = plan.getName() != null ? plan.getName() : "";
             rf.courseCode = deriveCourseCode(plan.getName());
         }
@@ -7405,7 +7433,8 @@ public class InvoiceService {
             PaymentPlan plan = up.getPaymentPlan();
             if (plan != null) {
                 if (plan.getName() != null && !names.contains(plan.getName())) names.add(plan.getName());
-                listPrices = listPrices.add(BigDecimal.valueOf(plan.getActualPrice()));
+                listPrices = listPrices.add(BigDecimal.valueOf(plan.getActualPrice())
+                        .multiply(BigDecimal.valueOf(lineQuantity(up))));
             }
         }
         rf.courseName = String.join(" + ", names);
