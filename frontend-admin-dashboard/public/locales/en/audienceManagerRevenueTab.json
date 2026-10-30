@@ -1,6 +1,8 @@
 {
     "column": {
-        "revenue": "Revenue",
+        "revenue": "Collected",
+        "admissions": "Admissions",
+        "bookedRevenue": "Booked fee",
         "payingLeads": "Paying leads",
         "payments": "Payments",
         "avgDealValue": "Avg deal value",
@@ -8,7 +10,9 @@
         "counsellor": "Counsellor"
     },
     "kpi": {
-        "revenueSub": "Collected from converted leads"
+        "revenueSub": "Collected from converted leads",
+        "admissionsSub": "Converted leads enrolled in this range",
+        "bookedRevenueSub": "Full fee on those admissions, paid or not"
     },
     "dailyRevenue": {
         "title": "Daily revenue",
@@ -20,7 +24,8 @@
         "title": "Revenue by source"
     },
     "byCounsellor": {
-        "title": "Revenue by counsellor"
+        "title": "Revenue by counsellor",
+        "footnote": "Admissions and booked fee follow the enrolment date; Collected follows the payment date, so it also includes installments from earlier admissions."
     },
     "empty": {
         "noRevenue": "No revenue in this range.",
