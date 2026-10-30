@@ -13,7 +13,8 @@ rounds a day.
 
 cursor_json makes each round search something new:
   {"day": "2026-10-25", "rounds": 2, "org_key": "…", "org_idx": 8, "org_page": 1,
-   "maps_key": "…", "maps_idx": 3, "maps_page": 1, "sig_turn": 17}
+   "maps_key": "…", "maps_idx": 3, "maps_page": 1, "sig_turn": 17,
+   "lane_dry": {"org": 1, "maps": 0, "sig": 0}, "lane_done": {"maps": "wrapped"}}
 The plan's organisation searches are taken QUERIES_PER_ROUND at a time; when the
 list wraps, the next pass asks Serper for the next results page (up to MAX_PAGE),
 so day after day the agent goes deeper instead of repeating itself. org_key and
@@ -23,6 +24,24 @@ sig_turn counts rounds without resetting at midnight: each round's buying-signal
 keyword searches are the next ones from the list of every role, phrase and keyword
 (as many as before), and a whole-country market also walks its major cities, so
 rounds stop bringing back the same job posts.
+
+Spend where it pays (2026-10-30). Three lanes: organisation search ("org"), Maps ("maps") and buying
+signals with keywords ("sig"). A lane is done for the day (lane_done) when it wraps past MAX_PAGE
+("wrapped": every query or place has been searched to the last page, so page 1 is not searched again
+the same day) or brings back no new organisation in DRY_ROUNDS rounds in a row ("dry", counted in
+lane_dry; a round that already found all it was asked for counts for no lane). lane_dry and lane_done
+reset when the day changes (new posts and listings appear daily) and for a lane whose list changes (a
+rebuilt plan, other industries or places). A round with every lane done spends nothing: no search and
+no AI selection. Once the organisation and Maps lanes are done, a round's buying-signal and keyword
+searches are doubled (SIGNAL_BOOST), about what the two lanes cost (4 web searches and an AI
+selection, up to 3 Maps searches at 3 credits each). The new-centre searches, the weakest source (prod:
+8% of 35 sent, 40% rejected as not the kind), run every NEW_CENTRE_EVERY-th round; the other signal
+sources take their places. "Leads for Vacademy" went from ~22 new organisations per 10 searches in its
+first days to ~3, while its rounds kept running to the daily limit.
+
+A Maps listing whose category shows a kind the brief does not target at all is skipped before it is
+fetched (engine discovery/kinds.py, conservative: an unknown category, or one the listing's name or the
+brief's industries could cover, is kept), as is one whose name or category the brief leaves out.
 
 A job post already behind one of the agent's candidates is never read again, and a
 new organisation with the name of one the agent has in the same place is skipped
@@ -60,6 +79,10 @@ MAPS_PER_ROUND = 3
 MAX_SIGNAL_QUERIES = 2          # per industry per round (Parallel)
 MAX_KEYWORD_QUERIES = 2
 MAX_CANDIDATES_PER_ROUND = 30
+DRY_ROUNDS = 2                 # rounds in a row with no new organisation: the lane is done for the day
+SIGNAL_BOOST = 2               # signal and keyword searches per round once the org and Maps lanes are done
+NEW_CENTRE_EVERY = 3           # the new-centre searches run every third round
+LANES = ("org", "maps", "sig")
 POST_READS_PER_ROUND = 12      # job posts opened for the post check; the rest keep the search result's decision
 RULED_OUT_POSTS_KEPT = 300     # posts the check ruled out, remembered in cursor_json so no round reads them again
 SELECTION_MAX_TOKENS = 6000  # reasoning counts as output; see llm.REASONING_EFFORT
@@ -122,6 +145,9 @@ def _fresh_cursor(cursor: Optional[dict], day: str) -> Dict[str, Any]:
     c = dict(cursor or {})
     if c.get("day") != day:
         c["day"], c["rounds"] = day, 0
+        c["lane_dry"], c["lane_done"] = {}, {}  # every lane searches again on a new day
+    c["lane_dry"] = dict(c.get("lane_dry") or {})
+    c["lane_done"] = dict(c.get("lane_done") or {})
     c.setdefault("org_idx", 0)
     c.setdefault("org_page", 1)
     c.setdefault("maps_idx", 0)
@@ -236,6 +262,19 @@ class _PostReader:
         return html
 
 
+def _lane_reset(cursor: Dict[str, Any], lane: str) -> None:
+    """A lane whose list changed (a rebuilt plan, other industries or places) searches again today."""
+    cursor["lane_dry"].pop(lane, None)
+    cursor["lane_done"].pop(lane, None)
+
+
+def round_sources(sources: List[str], turn: int) -> List[str]:
+    """The engine sources this round runs: the new-centre searches only every NEW_CENTRE_EVERY-th round
+    (sig_turn), the weakest source on prod (2026-10-30: 35 found, 8% sent, 40% rejected as not the kind,
+    mostly news sites reporting a new branch)."""
+    return [s for s in sources if s != "new_centres" or turn % NEW_CENTRE_EVERY == 0]
+
+
 async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> Dict[str, Any]:
     """One discovery round for `need` more candidates. Returns a summary."""
     brief = agent.get("brief_json") or {}
@@ -247,6 +286,35 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
     need = max(1, min(int(need), MAX_CANDIDATES_PER_ROUND))
     markets = [m for m in (agent.get("markets_json") or []) if isinstance(m, dict)]
     first = markets[0] if markets else {}
+    guided = planner.guided_request(agent)
+    exclude = plan.get("exclude") or engine_api.leave_out(guided)
+    industries = plan.get("industries_detail") or engine_api.guided_industries(guided)
+    places = plan.get("places") or engine_api.search_places(guided)
+
+    sources = engine_sources(brief)
+    turn = int(cursor.get("sig_turn") or 0)
+    org_all = list(plan.get("search_queries") or [])
+    org_key = _fingerprint(org_all)
+    if cursor.get("org_key") != org_key:
+        # Another plan: its searches start at the first results page. The plan rebuilt on
+        # 2026-10-27 searched its new queries from page 5, where the old list had got to.
+        cursor.update(org_key=org_key, org_idx=0, org_page=1)
+        _lane_reset(cursor, "org")
+    combos = (maps_combos(industries, places_mod.maps_places(markets, places))
+              if "maps" in brief_sources(brief) and industries and places else [])
+    if combos:
+        maps_key = _fingerprint(f"{term}|{place}" for term, place in combos)
+        if cursor.get("maps_key") != maps_key:
+            cursor.update(maps_key=maps_key, maps_idx=0, maps_page=1)
+            _lane_reset(cursor, "maps")
+    chosen = {"org": "organisation_search" in sources and bool(org_all), "maps": bool(combos),
+              "sig": any(s != "organisation_search" for s in sources)}
+    done: Dict[str, str] = cursor["lane_done"]
+    alive = {lane for lane in LANES if chosen[lane] and lane not in done}
+    if not alive:
+        # Every lane has run out of new organisations today: no search, no AI selection.
+        return {"skipped": "every search lane is used up for today", "lanes_done": dict(done)}
+
     gl = search_mod.country_code(first.get("country"))
     location = search_mod.market_location(first) if len(markets) == 1 and first.get("city") else None
     counter = SearchCounter(agent["id"], day)
@@ -254,28 +322,27 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
 
     known, suppressed, known_orgs, used_posts = await asyncio.to_thread(_known_and_suppressed, agent)
     skip = known | suppressed
-    guided = planner.guided_request(agent)
-    exclude = plan.get("exclude") or engine_api.leave_out(guided)
-    industries = plan.get("industries_detail") or engine_api.guided_industries(guided)
-    places = plan.get("places") or engine_api.search_places(guided)
     created: List[str] = []
+    made = {lane: 0 for lane in LANES}   # new organisations per lane this round
+    ran = {lane: False for lane in LANES}
     notes: List[str] = []
 
-    sources = engine_sources(brief)
     offer = engine_api.resolve_offer(brief)
-    turn = int(cursor.get("sig_turn") or 0)
+    this_round = round_sources(sources, turn)
+    sig_on = "sig" in alive and any(s != "organisation_search" for s in this_round)
+    # The org and Maps lanes are done for the day: their share of the round goes to buying signals.
+    boost = sig_on and any(chosen[lane] for lane in ("org", "maps")) and all(
+        not chosen[lane] or lane in done for lane in ("org", "maps"))
+    sig_queries = MAX_SIGNAL_QUERIES * (SIGNAL_BOOST if boost else 1)
+    kw_queries = MAX_KEYWORD_QUERIES * (SIGNAL_BOOST if boost else 1)
     round_places = signal_places(markets, places, turn)
-    org_all = list(plan.get("search_queries") or [])
-    org_key = _fingerprint(org_all)
-    if cursor.get("org_key") != org_key:
-        # Another plan: its searches start at the first results page. The plan rebuilt on
-        # 2026-10-27 searched its new queries from page 5, where the old list had got to.
-        cursor.update(org_key=org_key, org_idx=0, org_page=1)
-    org_slice =_slice(org_all, int(cursor["org_idx"]), QUERIES_PER_ROUND) if "organisation_search" in sources else []
+    org_slice = _slice(org_all, int(cursor["org_idx"]), QUERIES_PER_ROUND) if "org" in alive else []
     wrapped = bool(org_all) and int(cursor["org_idx"]) + len(org_slice) >= len(org_all)
-    signal_set = _signal_query_set(sources, industries, round_places, plan, offer, turn)
+    signal_set = (_signal_query_set(this_round, industries, round_places, plan, offer, turn, sig_queries, kw_queries)
+                  if sig_on else set())
 
-    if org_slice or any(s != "organisation_search" for s in sources):
+    if org_slice or sig_on:
+        ran["org"], ran["sig"] = bool(org_slice), sig_on
         loop = asyncio.get_running_loop()
         router = _Router(loop, org_queries=set(org_slice), signal_queries=signal_set, gl=gl, location=location,
                          page=int(cursor["org_page"]), counter=counter, country=gl)
@@ -289,13 +356,13 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
         def run() -> Any:
             with ThreadPoolExecutor(max_workers=2, thread_name_prefix="lead-discover") as pool:
                 return engine_api.discover(
-                    plan=planner.research_plan(plan, org_slice), candidate_count=need, seeds=[], sources=sources,
-                    max_queries=len(org_slice), max_signal_queries=MAX_SIGNAL_QUERIES,
+                    plan=planner.research_plan(plan, org_slice), candidate_count=need, seeds=[], sources=this_round,
+                    max_queries=len(org_slice), max_signal_queries=sig_queries,
                     search=router.search, search_many=router.search_many, ask=ask,
-                    use_signals=any(s != "organisation_search" for s in sources),
+                    use_signals=sig_on,
                     background=pool.submit, industries=industries, place=round_places,
                     match_place=plan.get("match_places"), hiring_roles=plan.get("hiring_roles"),
-                    keywords=plan.get("keywords"), max_keyword_queries=MAX_KEYWORD_QUERIES,
+                    keywords=plan.get("keywords"), max_keyword_queries=kw_queries,
                     exclude=exclude, skip_domains=set(skip), signal_turn=turn,
                     skip_signal_urls=used_posts | set(cursor.get("ruled_out_posts") or []),
                     offer=offer, read_post=read_post,
@@ -311,7 +378,7 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
             kept = [*(cursor.get("ruled_out_posts") or []), *ruled_out]
             cursor["ruled_out_posts"] = list(dict.fromkeys(kept))[-RULED_OUT_POSTS_KEPT:]
         for c in outcome.included:
-            if not c.domain or not c.website or c.domain in skip:
+            if not c.domain or not c.website or c.domain in skip or engine_api.is_excluded(c.domain):
                 continue
             detail = dict(c.detail or {})
             posts = [(s or {}).get("location") for s in detail.get("signals") or []]
@@ -324,8 +391,9 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
                 # organisation in the same place (or with no place known) counts as the same one.
                 continue
             _remember(known_orgs, c.name or "", here)
+            source = candidate_source(c)
             cid = await asyncio.to_thread(
-                _create, agent, domain=c.domain, name=c.name, website=c.website, source=candidate_source(c),
+                _create, agent, domain=c.domain, name=c.name, website=c.website, source=source,
                 discovery={"query": detail.get("query"), "url": detail.get("url"), "title": detail.get("title"),
                            "snippet": detail.get("snippet"), "reason": detail.get("reason"),
                            "signals": detail.get("signals") or [], "website_from": detail.get("website_from")},
@@ -333,32 +401,65 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
             skip.add(c.domain)
             if cid:
                 created.append(cid)
+                # A keyword result on the open web is chosen like a search result: the signal lane's when
+                # the organisation lane did not search this round.
+                made["org" if source == "organisation_search" and org_slice else "sig"] += 1
 
-    if "maps" in brief_sources(brief) and len(created) < need and industries and places:
-        created += await _maps_lane(agent, cursor, industries, places_mod.maps_places(markets, places), gl,
-                                    counter, skip, exclude, first, need - len(created), known_orgs)
+    unfit = 0
+    if "maps" in alive and len(created) < need:
+        ids, searched, unfit = await _maps_lane(agent, cursor, combos, gl, counter, skip, exclude, industries,
+                                                first, need - len(created), known_orgs)
+        created += ids
+        made["maps"], ran["maps"] = len(ids), searched > 0
 
     # advance the cursor
     if org_slice:
         cursor["org_idx"] = (int(cursor["org_idx"]) + len(org_slice)) % max(1, len(org_all))
         if wrapped:
-            cursor["org_page"] = 1 if int(cursor["org_page"]) >= MAX_PAGE else int(cursor["org_page"]) + 1
+            if int(cursor["org_page"]) >= MAX_PAGE:
+                # Every query searched to the last page: page 1 again tomorrow, not in the next round.
+                cursor["org_page"] = 1
+                done["org"] = "wrapped"
+            else:
+                cursor["org_page"] = int(cursor["org_page"]) + 1
+    _count_dry(cursor, ran, made, filled=len(created) >= need)
     cursor["rounds"] = int(cursor.get("rounds") or 0) + 1
     cursor["sig_turn"] = turn + 1
     await asyncio.to_thread(_finish_round, agent, cursor, day, len(created))
-    return {"created": len(created), "queries": org_slice, "notes": notes[:5]}
+    out = {"created": len(created), "queries": org_slice, "notes": notes[:5], "lanes": made}
+    if cursor["lane_done"]:
+        out["lanes_done"] = dict(cursor["lane_done"])
+    if boost:
+        out["signal_boost"] = SIGNAL_BOOST
+    if unfit:
+        out["maps_other_kind"] = unfit
+    return out
 
 
-async def _maps_lane(agent, cursor, industries, places, gl, counter, skip, exclude, market, room,
-                     known_orgs: Optional[Dict[str, List[Set[str]]]] = None) -> List[str]:
+def _count_dry(cursor: Dict[str, Any], ran: Dict[str, bool], made: Dict[str, int], *, filled: bool) -> None:
+    """A lane that ran and found a new organisation starts counting again; one that found none counts a
+    dry round, and after DRY_ROUNDS in a row is done for the day. A round that found all it was asked for
+    counts for no lane: a lane may have found nothing only because another filled the round first."""
+    dry, done = cursor["lane_dry"], cursor["lane_done"]
+    for lane in LANES:
+        if not ran[lane]:
+            continue
+        if made[lane]:
+            dry[lane] = 0
+        elif not filled:
+            dry[lane] = int(dry.get(lane) or 0) + 1
+            if dry[lane] >= DRY_ROUNDS:
+                done.setdefault(lane, "dry")
+
+
+async def _maps_lane(agent, cursor, combos, gl, counter, skip, exclude, industries, market, room,
+                     known_orgs: Optional[Dict[str, List[Set[str]]]] = None) -> tuple:
+    """Up to MAPS_PER_ROUND Maps searches, (term, place) pairs in turn and page by page. Returns (the new
+    candidates' ids, searches made, listings skipped as another kind). Wrapping past MAX_PAGE ends the
+    lane for the day (cursor lane_done): page 1 is searched again tomorrow, not in the next round."""
     known_orgs = {} if known_orgs is None else known_orgs
-    combos = maps_combos(industries, places)
-    if not combos:
-        return []
-    maps_key = _fingerprint(f"{term}|{place}" for term, place in combos)
-    if cursor.get("maps_key") != maps_key:
-        cursor.update(maps_key=maps_key, maps_idx=0, maps_page=1)
     out: List[str] = []
+    searched = unfit = 0
     for _ in range(MAPS_PER_ROUND):
         if len(out) >= room:
             break
@@ -366,13 +467,18 @@ async def _maps_lane(agent, cursor, industries, places, gl, counter, skip, exclu
         term, place = combos[idx % len(combos)]
         page = int(cursor.get("maps_page") or 1)
         cursor["maps_idx"] = (idx + 1) % len(combos)
+        used_up = False
         if cursor["maps_idx"] == 0:
-            cursor["maps_page"] = 1 if page >= MAX_PAGE else page + 1
+            used_up = page >= MAX_PAGE
+            cursor["maps_page"] = 1 if used_up else page + 1
+        if used_up:
+            cursor["lane_done"]["maps"] = "wrapped"
         try:
             places_found = await search_mod.serper().maps(f"{term} {place}", gl=gl, page=page, counter=counter)
         except SearchFailed as exc:
             logger.warning("lead agent: maps search failed: %s", exc)
             break
+        searched += 1
         for p in places_found:
             if len(out) >= room:
                 break
@@ -383,7 +489,15 @@ async def _maps_lane(agent, cursor, industries, places, gl, counter, skip, exclu
             if not domain or domain in skip or engine_api.is_excluded(domain):
                 continue
             name = (p.get("title") or domain)[:300]
-            if engine_api.left_out(name, exclude):
+            category = str(p.get("type") or "").strip()
+            if engine_api.left_out(f"{name} {category}".strip(), exclude):
+                continue
+            if engine_api.maps_kind(category, name, industries) is None \
+                    and engine_api.maps_other_kind(category, name, industries):
+                # "Furniture store" for a garment brief: rejected as "not the kind" after a page fetch and
+                # an AI extraction (prod 2026-10-30). Only a kind no industry of the brief covers.
+                unfit += 1
+                skip.add(domain)  # listed again by the round's next search: judged once
                 continue
             here = _here(p.get("address")) or _here(place)  # a search in one city also lists its neighbours
             if _same_org_known(known_orgs, name, here):
@@ -402,12 +516,16 @@ async def _maps_lane(agent, cursor, industries, places, gl, counter, skip, exclu
                 market={**(market or {}), "city": place if place != (market or {}).get("country") else None})
             if cid:
                 out.append(cid)
-    return out
+        if used_up:
+            break
+    return out, searched, unfit
 
 
-def _signal_query_set(sources, industries, places, plan, offer=None, turn: int = 0) -> Set[str]:
+def _signal_query_set(sources, industries, places, plan, offer=None, turn: int = 0,
+                      per_industry: int = MAX_SIGNAL_QUERIES, keyword_limit: int = MAX_KEYWORD_QUERIES) -> Set[str]:
     """The exact buying-signal / keyword queries discover() will run, so they can be sent to Parallel:
-    the same places, turn and roles (the offer's own when the plan names none, as discover() does)."""
+    the same sources, places, turn, limits and roles (the offer's own when the plan names none, as
+    discover() does)."""
     out: Set[str] = set()
     try:
         sig = [s for s in sources if s not in ("organisation_search", "keyword_search")]
@@ -415,11 +533,11 @@ def _signal_query_set(sources, industries, places, plan, offer=None, turn: int =
         if offer is not None:
             roles = offer.run_hiring_roles(roles or None)
         if sig:
-            out |= {q for _k, q in engine_api.signal_queries(sig, industries, places, MAX_SIGNAL_QUERIES, roles, turn)}
+            out |= {q for _k, q in engine_api.signal_queries(sig, industries, places, per_industry, roles, turn)}
         if "keyword_search" in sources and plan.get("keywords"):
             out |= {q for _c, q in engine_api.keyword_queries(list(plan["keywords"]), industries, places,
                                                              engine_api.default_keyword_channels(),
-                                                             MAX_KEYWORD_QUERIES * max(1, len(places)), turn)}
+                                                             keyword_limit * max(1, len(places)), turn)}
     except Exception:  # noqa: BLE001 - routing falls back to Serper for everything
         logger.debug("lead agent: could not precompute signal queries", exc_info=True)
     return out
@@ -474,4 +592,4 @@ def schedule_discovered(agent: Dict[str, Any]) -> int:
 
 
 __all__ = ["run_round", "round_limit", "maps_combos", "brief_sources", "engine_sources", "schedule_discovered",
-           "candidate_source", "signal_places"]
+           "candidate_source", "signal_places", "round_sources"]
