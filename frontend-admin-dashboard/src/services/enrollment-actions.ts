@@ -1,5 +1,5 @@
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
-import { ENROLL_LEARNER_V2, CANCEL_USER_PLAN, PACKAGE_AUTOCOMPLETE_URL, GET_STUDENTS } from '@/constants/urls';
+import { ENROLL_LEARNER_V2_ADMIN, CANCEL_USER_PLAN, PACKAGE_AUTOCOMPLETE_URL, GET_STUDENTS } from '@/constants/urls';
 
 export interface EnrollmentItem {
     package_session_id: string;
@@ -50,7 +50,7 @@ export const fetchPackageSessionDetails = async (packageSessionIds: string[], in
  * Enroll a learner into a book/membership (Rent/Buy/Purchase)
  */
 export const enrollLearnerV2 = async (payload: EnrollRequestV2) => {
-    const response = await authenticatedAxiosInstance.post(ENROLL_LEARNER_V2, payload);
+    const response = await authenticatedAxiosInstance.post(ENROLL_LEARNER_V2_ADMIN, payload);
     return response.data;
 };
 
