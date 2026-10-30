@@ -137,6 +137,7 @@ public class LeadReportService {
         List<LeadReportSummaryDTO.SourceBreakdown> sourceBreakdown = sourceRows.stream()
                 .map(r -> LeadReportSummaryDTO.SourceBreakdown.builder()
                         .sourceType(r.getSourceType())
+                        .campaignType(Boolean.TRUE.equals(r.getFromCampaignType()) ? r.getSourceType() : null)
                         .total(nz(r.getTotalCount()))
                         .converted(nz(r.getConvertedCount()))
                         .build())

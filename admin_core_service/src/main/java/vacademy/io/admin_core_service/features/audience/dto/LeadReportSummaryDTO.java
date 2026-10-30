@@ -74,6 +74,7 @@ public class LeadReportSummaryDTO {
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class SourceBreakdown {
         private String sourceType;  // WEBSITE, GOOGLE_ADS, etc.
+        private String campaignType; // set when sourceType is the lead's campaign type (see ReportSourceSql)
         private long total;
         private long converted;
     }

@@ -33,6 +33,8 @@ export interface StatusBreakdown {
 
 export interface SourceBreakdown {
     source_type: string;
+    /** Set when source_type is the leads' campaign type. */
+    campaign_type?: string | null;
     total: number;
     converted: number;
 }

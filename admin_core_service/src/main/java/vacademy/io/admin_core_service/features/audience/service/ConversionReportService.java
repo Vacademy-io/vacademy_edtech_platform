@@ -83,13 +83,15 @@ public class ConversionReportService {
                        m.status     AS enrolment_status,
                        ps.package_id,
                        ar.audience_id,
-                       COALESCE(ulp.best_source_type, ar.source_type, 'UNKNOWN') AS source_type,
+                       """ + ReportSourceSql.effective("COALESCE(ulp.best_source_type, ar.source_type)", "sa.campaign_type") + """
+                           AS source_type,
                        COALESCE(lu.user_id, ulp.assigned_counselor_id)           AS counsellor_id
                 FROM student_session_institute_group_mapping m
                 JOIN package_session ps ON ps.id = m.package_session_id
                 JOIN user_lead_profile ulp
                     ON ulp.user_id = m.user_id AND ulp.institute_id = m.institute_id
                 LEFT JOIN audience_response ar ON ar.id = ulp.best_score_response_id
+                LEFT JOIN audience sa ON sa.id = ar.audience_id
                 LEFT JOIN LATERAL (
                     SELECT lu2.user_id FROM linked_users lu2
                     WHERE lu2.source = 'ENQUIRY' AND lu2.source_id = ar.enquiry_id

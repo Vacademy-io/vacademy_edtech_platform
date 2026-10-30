@@ -60,9 +60,19 @@ public class CustomReportService {
     private record Dim(String label, String expr) {
     }
 
+    /** The lead's source as every report names it (its campaign's type, else its channel). */
+    private static final String SOURCE_EXPR =
+            ReportSourceSql.effective("COALESCE(ulp.best_source_type, sar.source_type)", "sa.campaign_type");
+
+    /** The lead's best-scoring enquiry and its campaign, for SOURCE_EXPR. */
+    private static final String SOURCE_JOINS = """
+            LEFT JOIN audience_response sar ON sar.id = ulp.best_score_response_id
+            LEFT JOIN audience sa ON sa.id = sar.audience_id
+            """;
+
     private static final Map<String, Dim> DIMENSIONS = new LinkedHashMap<>();
     static {
-        DIMENSIONS.put("source_type", new Dim("Source", "COALESCE(ulp.best_source_type, 'UNKNOWN')"));
+        DIMENSIONS.put("source_type", new Dim("Source", SOURCE_EXPR));
         DIMENSIONS.put("lead_tier", new Dim("Tier", "COALESCE(ulp.lead_tier, 'UNCLASSIFIED')"));
         // conversion_status holds the lead's CURRENT status_key — the bidirectional
         // list↔side-view mirror keeps it in sync with audience_response.lead_status_id,
@@ -100,7 +110,7 @@ public class CustomReportService {
 
     private static final Map<String, Filt> FILTERS = new LinkedHashMap<>();
     static {
-        FILTERS.put("source_type", new Filt("Source", "COALESCE(ulp.best_source_type, 'UNKNOWN')"));
+        FILTERS.put("source_type", new Filt("Source", SOURCE_EXPR));
         FILTERS.put("lead_tier", new Filt("Tier", "COALESCE(ulp.lead_tier, 'UNCLASSIFIED')"));
         FILTERS.put(STATUS_KEY, new Filt("Current status", "ulp.conversion_status"));
         FILTERS.put(COUNSELLOR_KEY, new Filt("Counsellor", "ulp.assigned_counselor_id"));
@@ -114,6 +124,7 @@ public class CustomReportService {
                 WHERE pl.payment_status = 'PAID' AND pl.payment_amount IS NOT NULL
                 GROUP BY pl.user_id
             ) rev ON rev.user_id = ulp.user_id
+            """ + SOURCE_JOINS + """
             WHERE ulp.institute_id = :instituteId
               AND COALESCE(ulp.created_at, ulp.last_calculated_at) >= :fromTs
               AND COALESCE(ulp.created_at, ulp.last_calculated_at) <  :toTs
@@ -282,8 +293,8 @@ public class CustomReportService {
     private List<CustomReportCatalogDTO.Option> distinctSourceOptions(String instituteId) {
         try {
             List<String> values = jdbc.queryForList(
-                    "SELECT DISTINCT COALESCE(best_source_type, 'UNKNOWN') AS s FROM user_lead_profile "
-                            + "WHERE institute_id = :instituteId ORDER BY s",
+                    "SELECT DISTINCT " + SOURCE_EXPR + " AS s FROM user_lead_profile ulp " + SOURCE_JOINS
+                            + " WHERE ulp.institute_id = :instituteId ORDER BY s",
                     new MapSqlParameterSource("instituteId", instituteId), String.class);
             return values.stream().map(v -> CustomReportCatalogDTO.Option.builder().value(v).label(v).build())
                     .collect(Collectors.toList());

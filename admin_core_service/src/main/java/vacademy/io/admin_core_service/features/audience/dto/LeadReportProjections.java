@@ -36,6 +36,7 @@ public final class LeadReportProjections {
     /** GROUP BY source_type, with converted sub-count. */
     public interface SourceCountProjection {
         String getSourceType();
+        Boolean getFromCampaignType();
         Long getTotalCount();
         Long getConvertedCount();
     }
