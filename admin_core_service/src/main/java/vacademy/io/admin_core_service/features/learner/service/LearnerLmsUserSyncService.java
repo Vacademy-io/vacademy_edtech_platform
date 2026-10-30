@@ -40,8 +40,20 @@ public class LearnerLmsUserSyncService {
 
     @Async
     public void syncProfileUpdate(String userId, String oldEmail, String newEmail, String newFullName) {
+        syncProfileUpdate(userId, oldEmail, newEmail, newFullName, null);
+    }
+
+    /**
+     * Same as the four-argument form, plus an optional new password carried in the SAME
+     * edit-user call. Used when one admin action changes both the email and the password:
+     * two separate async pushes would race, and the password one, matching on the new
+     * email, could reach the LMS before the rename and miss the user.
+     */
+    @Async
+    public void syncProfileUpdate(String userId, String oldEmail, String newEmail, String newFullName,
+            String newPassword) {
         try {
-            doSync(userId, oldEmail, newEmail, newFullName);
+            doSync(userId, oldEmail, newEmail, newFullName, newPassword);
         } catch (Exception e) {
             log.warn("LMS profile sync failed for user {}: {}", userId, e.getMessage());
         }
@@ -62,7 +74,7 @@ public class LearnerLmsUserSyncService {
         }
     }
 
-    private void doSync(String userId, String oldEmail, String newEmail, String newFullName) {
+    private void doSync(String userId, String oldEmail, String newEmail, String newFullName, String newPassword) {
         if (!StringUtils.hasText(oldEmail)) {
             log.debug("LMS profile sync skipped for user {}: no existing email to match on", userId);
             return;
@@ -75,6 +87,9 @@ public class LearnerLmsUserSyncService {
         }
 
         ObjectNode payload = buildEditUserPayload(oldEmail, newEmail, newFullName);
+        if (StringUtils.hasText(newPassword)) {
+            payload.put("password", newPassword);
+        }
         for (JsonNode conn : connections.values()) {
             pushEditUser(conn, payload, userId);
         }
