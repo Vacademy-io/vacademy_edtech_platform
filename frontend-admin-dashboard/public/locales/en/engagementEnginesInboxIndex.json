@@ -7,17 +7,20 @@
         "needsAction": "Needs action",
         "sent": "Sent",
         "failed": "Failed",
+        "waited": "Waited",
         "handled": "Handled",
         "dryRun": "Dry run"
     },
     "errors": {
-        "loadFailed": "Could not load tasks."
+        "loadFailed": "Could not load tasks.",
+        "badFilters": "These filters can't be applied. Clear them to see everything again."
     },
     "noDraft": "(no draft)",
     "kind": {
         "reply": "Reply",
         "autoSend": "Auto-send",
-        "task": "Task"
+        "task": "Task",
+        "waited": "Waited"
     },
     "actions": {
         "reviewAndSend": "Review & send",
@@ -46,13 +49,17 @@
         "allKinds": "All kinds",
         "kindTask": "Tasks only",
         "kindReply": "Replies only",
-        "kindSend": "Failed auto-sends",
+        "kindSend": "Auto-sends only",
         "sortPriority": "Priority first",
         "sortOldest": "Oldest first",
         "sortNewest": "Newest first",
-        "pageNote": "Search and filters apply to the tasks on this page."
+        "pageNote": "Search and sorting apply to the tasks on this page.",
+        "selectedEngine": "Selected engine",
+        "day": "Day",
+        "anyDay": "Any day",
+        "clearDay": "Clear the day filter"
     },
-    "filteredEmpty": "No tasks on this page match these filters.",
+    "filteredEmpty": "No tasks on this page match your search.",
     "age": {
         "minutes": "{{count}}m",
         "hours": "{{count}}h",
@@ -75,7 +82,11 @@
         "openEngine": "Open engine",
         "draftedAgo": "Drafted {{age}} ago",
         "variableN": "Value {{n}}",
-        "fromEngine": "From {{engine}}"
+        "fromEngine": "From {{engine}}",
+        "whyWaited": "Why the engine waited",
+        "noReason": "The engine did not record a reason.",
+        "decidedAgo": "Decided {{age}} ago",
+        "decided": "Decided"
     },
     "footnote": "A send whose delivery can’t be confirmed moves to Failed. Dry-run drafts stay in their own bucket and are never sent.",
     "retry": "Try again",
@@ -99,6 +110,10 @@
             "title": "No failed messages",
             "text": "Messages that could not be delivered show up here."
         },
+        "waited": {
+            "title": "No waiting decisions",
+            "text": "When an engine decides to hold off on someone, its reason shows up here so you can tune how it behaves."
+        },
         "handled": {
             "title": "Nothing handled yet",
             "text": "Tasks you mark done or skip show up here. You can move them back."
@@ -106,6 +121,77 @@
         "dryRun": {
             "title": "No dry-run drafts",
             "text": "Start a dry run on an engine to see what it would send, without sending anything."
+        },
+        "filtered": {
+            "title": "Nothing matches these filters",
+            "text": "Try another day, channel or engine, or clear the filters to see everything."
+        }
+    },
+    "chips": {
+        "outcome": "Outcome: {{value}}",
+        "template": "Template: {{name}}",
+        "removeOutcome": "Remove the outcome filter",
+        "removeTemplate": "Remove the template filter",
+        "clear": "Clear filters"
+    },
+    "outcomeFilter": {
+        "delivered": "Delivered",
+        "not_delivered": "Not delivered",
+        "opened": "Opened",
+        "clicked": "Clicked",
+        "bounced": "Bounced",
+        "complained": "Marked as spam",
+        "read": "Read",
+        "replied": "Replied",
+        "failed": "Failed to send",
+        "connected": "Call connected",
+        "no_answer": "Call not answered",
+        "busy": "Line busy",
+        "call_failed": "Call failed"
+    },
+    "outcome": {
+        "heading": "Delivery and response",
+        "yes": "Yes",
+        "no": "No",
+        "notTrackedText": "No delivery signal is available for this message. In-app messages, and some email and WhatsApp providers, don't report one.",
+        "badge": {
+            "sent": "Sent",
+            "delivered": "Delivered",
+            "opened": "Opened",
+            "clicked": "Clicked",
+            "bounced": "Bounced",
+            "spam": "Spam",
+            "read": "Read",
+            "failed": "Failed",
+            "replied": "Replied",
+            "connected": "Connected",
+            "noAnswer": "No answer",
+            "busy": "Busy",
+            "callFailed": "Call failed",
+            "callQueued": "Call queued",
+            "notConnected": "Not connected",
+            "notDialled": "Not dialled",
+            "notTracked": "Not tracked"
+        },
+        "delivery": {
+            "SENT": "Sent",
+            "DELIVERED": "Delivered",
+            "READ": "Read",
+            "FAILED": "Failed"
+        },
+        "fact": {
+            "delivered": "Delivered",
+            "opened": "Opened",
+            "clicked": "Clicked a link",
+            "bounced": "Bounced",
+            "spam": "Marked as spam",
+            "delivery": "Delivery",
+            "callStatus": "Call result",
+            "callLength": "Call length",
+            "dialStatus": "Dial status",
+            "errorCode": "Error code",
+            "category": "Message category",
+            "repliedAt": "Replied"
         }
     }
 }

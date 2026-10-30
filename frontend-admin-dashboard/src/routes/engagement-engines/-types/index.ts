@@ -205,6 +205,51 @@ export interface TaskPerson {
     email?: string | null;
 }
 
+/** What GET /tasks can be narrowed by; every field is optional and sent as a query param. */
+export interface TaskListFilters {
+    engineId?: string;
+    channel?: ChannelKey;
+    /** TASK | REPLY | SEND | NO_OP | CRM (CRM = a CRM action such as a follow-up or note). */
+    kind?: string;
+    /** YYYY-MM-DD, a day in the institute time zone. */
+    date?: string;
+    /** Template name, or an email subject. */
+    template?: string;
+    /** Needs `date`. One of INBOX_OUTCOME_KEYS. */
+    outcome?: string;
+}
+
+/** The call behind an AI_CALL action (GET /tasks/outcomes). */
+export interface TaskCallOutcome {
+    status: 'COMPLETED' | 'NO_ANSWER' | 'BUSY' | 'FAILED' | 'QUEUED' | 'INITIATED' | 'NOT_DIALLED';
+    connected: boolean;
+    durationSeconds?: number | null;
+    callLogId?: string | null;
+    queueStatus?: string | null;
+}
+
+/**
+ * What happened after one action went out (GET /tasks/outcomes). `tracked` is false when
+ * there is no signal at all (in-app, an SMTP provider without tracking, WATI).
+ */
+export interface TaskOutcome {
+    actionId: string;
+    channel: ChannelKey;
+    tracked: boolean;
+    deliveryStatus?: 'SENT' | 'DELIVERED' | 'READ' | 'FAILED' | null;
+    delivered: boolean;
+    opened: boolean;
+    clicked: boolean;
+    bounced: boolean;
+    complained: boolean;
+    /** The reply attributed to this message (WhatsApp; email when inbound email is on). */
+    repliedAt?: string | null;
+    errorCode?: string | null;
+    pricingCategory?: string | null;
+    /** Only on AI_CALL actions. */
+    call?: TaskCallOutcome | null;
+}
+
 /** Spring Page<T> envelope. */
 export interface PageResponse<T> {
     content: T[];

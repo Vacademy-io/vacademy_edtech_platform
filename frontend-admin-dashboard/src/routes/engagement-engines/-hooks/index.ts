@@ -2,7 +2,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { getInstituteId } from '@/constants/helper';
-import type { CreateEngineRequest, EngineStatus, TemplateEditRequest } from '../-types';
+import type {
+    CreateEngineRequest,
+    EngineStatus,
+    TaskListFilters,
+    TemplateEditRequest,
+} from '../-types';
 import {
     ackTask,
     approveTemplate,
@@ -16,6 +21,7 @@ import {
     getChannelReadiness,
     getDataPointCatalog,
     getEngine,
+    getTaskOutcomes,
     getTaskPeople,
     listEngines,
     listTasks,
@@ -181,13 +187,40 @@ export const useArchiveEngine = () => {
 };
 
 // ---- Tasks ----
-export const useTasks = (statuses: string, page: number, size: number) => {
+export const useTasks = (
+    statuses: string,
+    page: number,
+    size: number,
+    filters: TaskListFilters = {}
+) => {
     const instituteId = getInstituteId() || '';
     return useQuery({
-        queryKey: ['engagementTasks', instituteId, statuses, page, size],
-        queryFn: () => listTasks(instituteId, statuses, page, size),
+        queryKey: ['engagementTasks', instituteId, statuses, page, size, filters],
+        queryFn: () => listTasks(instituteId, statuses, page, size, filters),
         enabled: !!instituteId,
         staleTime: 10 * 1000,
+        // A filter the server refuses (unknown engine, outcome without a day) will not pass on a retry.
+        retry: (count, error) => {
+            const status = (error as { response?: { status?: number } })?.response?.status;
+            return count < 3 && !(status && status >= 400 && status < 500);
+        },
+    });
+};
+
+/** What came of the messages and calls on screen, as an actionId → outcome map. */
+export const useTaskOutcomes = (actionIds: string[]) => {
+    const instituteId = getInstituteId() || '';
+    const ids = Array.from(new Set(actionIds)).sort();
+    return useQuery({
+        queryKey: ['engagementTaskOutcomes', instituteId, ids],
+        queryFn: async () => {
+            const outcomes = await getTaskOutcomes(instituteId, ids);
+            return Object.fromEntries(outcomes.map((o) => [o.actionId, o]));
+        },
+        enabled: !!instituteId && ids.length > 0,
+        staleTime: 60 * 1000,
+        // An older backend has no /tasks/outcomes: rows simply show no outcome.
+        retry: false,
     });
 };
 

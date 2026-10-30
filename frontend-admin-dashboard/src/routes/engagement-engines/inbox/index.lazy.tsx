@@ -43,6 +43,10 @@ import {
 import { QuickViews, type QuickView } from '@/components/shared/crm-enhance';
 import { cn } from '@/lib/utils';
 import { ToneBadge } from '../-components/ToneBadge';
+import { ActiveFilters, InboxFilterControls } from './-components/InboxFilters';
+import { TaskOutcomeBadges, TaskOutcomeDetail } from './-components/TaskOutcome';
+import { hasBeenDispatched } from './-utils/outcome';
+import { hasInboxFilters, normalizeInboxSearch, type InboxSearch } from './-utils/search';
 import { CrmActionChip } from '../-components/crm-action-ui';
 import { CrmTaskSection } from '../-components/CrmTaskSection';
 import { isCrmAction } from '../-types/actions';
@@ -55,17 +59,11 @@ import {
     KeyValue,
     SubHeading,
 } from '../-components/engine-ui';
-import {
-    buildActionStatusMeta,
-    buildChannelMeta,
-    CHANNEL_ORDER,
-    INBOX_FILTER_KEYS,
-    type InboxFilterKey,
-} from '../-constants';
-import { useEngines, useTaskAction, useTaskPeople, useTasks } from '../-hooks';
+import { buildActionStatusMeta, buildChannelMeta, type InboxFilterKey } from '../-constants';
+import { useEngines, useTaskAction, useTaskOutcomes, useTaskPeople, useTasks } from '../-hooks';
 import { useAssets } from '../-hooks/assets';
 import { formatDateTime, safeParse } from '../-utils';
-import type { EngagementAction, TaskPerson } from '../-types';
+import type { EngagementAction, TaskListFilters, TaskOutcome, TaskPerson } from '../-types';
 
 export const Route = createLazyFileRoute('/engagement-engines/inbox/')({
     component: TaskInboxPage,
@@ -83,6 +81,9 @@ function buildFilters(
         },
         { key: 'sent', label: t('filters.sent'), statuses: 'SENT', tone: 'success' },
         { key: 'failed', label: t('filters.failed'), statuses: 'FAILED', tone: 'danger' },
+        // The engine's "decided to wait" decisions: DONE rows of kind NO_OP (the kind is added
+        // wherever the tab's list or count is requested).
+        { key: 'waited', label: t('filters.waited'), statuses: 'DONE', tone: 'neutral' },
         {
             key: 'handled',
             label: t('filters.handled'),
@@ -150,29 +151,65 @@ function taskRules(task: EngagementAction) {
 
 function TaskInboxPage() {
     const { t } = useTranslation('engagementEnginesInboxIndex');
-    const { t: tActions } = useTranslation('engagementEnginesActions');
-    const { t: tConstants } = useTranslation('engagementEnginesConstants');
     const navigate = useNavigate();
     const { setNavHeading } = useNavHeadingStore();
-    const { filter: filterParam } = useSearch({ strict: false }) as { filter?: InboxFilterKey };
-    const [filterIdx, setFilterIdx] = useState(() =>
-        Math.max(0, INBOX_FILTER_KEYS.indexOf(filterParam ?? 'needsAction'))
-    );
-    const [page, setPage] = useState(0);
+    // The tab and every server-side filter live in the URL (see index.tsx), so a link from the
+    // daily report opens exactly the items behind a number.
+    const filters = useSearch({ strict: false }) as InboxSearch;
+    const activeKey: InboxFilterKey = filters.filter ?? 'needsAction';
+    const filtersActive = hasInboxFilters(filters);
+    const updateFilters = (patch: Partial<InboxSearch>) =>
+        navigate({
+            to: '/engagement-engines/inbox',
+            search: normalizeInboxSearch({ ...filters, ...patch }),
+            replace: true,
+        });
+    const clearFilters = () =>
+        navigate({
+            to: '/engagement-engines/inbox',
+            search: normalizeInboxSearch({ filter: filters.filter }),
+            replace: true,
+        });
+    // The page number belongs to one tab + filter set: any change starts again at page 1, also
+    // when it comes from the browser's back button.
+    const pageKey = [
+        activeKey,
+        filters.engine,
+        filters.channel,
+        filters.kind,
+        filters.date,
+        filters.template,
+        filters.outcome,
+    ].join('|');
+    const [pageState, setPageState] = useState({ page: 0, key: pageKey });
+    const page = pageState.key === pageKey ? pageState.page : 0;
+    const setPage = (next: number) => setPageState({ page: next, key: pageKey });
     const [sending, setSending] = useState<EngagementAction | null>(null);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [search, setSearch] = useState('');
-    const [engineFilter, setEngineFilter] = useState('all');
-    const [channelFilter, setChannelFilter] = useState('all');
-    const [kindFilter, setKindFilter] = useState('all');
-    const [sort, setSort] = useState<SortKey>('priority');
+    const [sort, setSort] = useState<SortKey | null>(null);
 
     useEffect(() => setNavHeading(t('heading')), [setNavHeading, t]);
 
     // Labels come from t, so the list is built every render (not memoised).
     const FILTERS = buildFilters(t);
-    const statuses = FILTERS[filterIdx]?.statuses ?? 'OPEN,ACKED';
-    const { data, isLoading, isError, refetch } = useTasks(statuses, page, PAGE_SIZE);
+    const statuses = FILTERS.find((f) => f.key === activeKey)?.statuses ?? 'OPEN,ACKED';
+    // What the server is asked for. Waited is NO_OP by definition; the rest of the tabs take the
+    // kind from the select.
+    const serverFilters = (tab: InboxFilterKey, withOutcome: boolean): TaskListFilters => ({
+        engineId: filters.engine,
+        channel: filters.channel,
+        kind: tab === 'waited' ? 'NO_OP' : filters.kind,
+        date: filters.date,
+        template: filters.template,
+        outcome: withOutcome ? filters.outcome : undefined,
+    });
+    const { data, error, isLoading, isError, refetch } = useTasks(
+        statuses,
+        page,
+        PAGE_SIZE,
+        serverFilters(activeKey, true)
+    );
     const { data: engines } = useEngines();
     const engineNames = useMemo(() => {
         const m: Record<string, string> = {};
@@ -180,71 +217,83 @@ function TaskInboxPage() {
         return m;
     }, [engines]);
 
-    // A count on each filter chip — the same task list request
-    // with one row, only when switched on.
+    // A count on each tab: the same list request with one row and the same engine / channel /
+    // kind / day / template filters. The outcome filter is left out: it costs a delivery lookup
+    // per request, so with one set only the open tab shows a count (from its own list below).
     const instituteId = getInstituteId() || '';
     const counts = useQueries({
-        queries: FILTERS.map((f) => ({
-            queryKey: ['engagementTasks', instituteId, f.statuses, 0, 1],
-            queryFn: () => listTasks(instituteId, f.statuses, 0, 1),
-            enabled: !!instituteId,
-            staleTime: 60 * 1000,
-        })),
+        queries: FILTERS.map((f) => {
+            const tabFilters = serverFilters(f.key, false);
+            return {
+                queryKey: ['engagementTasks', instituteId, f.statuses, 0, 1, tabFilters],
+                queryFn: () => listTasks(instituteId, f.statuses, 0, 1, tabFilters),
+                enabled: !!instituteId && !filters.outcome,
+                staleTime: 60 * 1000,
+            };
+        }),
     });
 
     const action = useTaskAction();
     const tasks = data?.content ?? [];
     const { data: people } = useTaskPeople(tasks.map((task) => task.memberId));
     const personOf = (task: EngagementAction) => people?.[task.memberId];
+    // What came of the messages and calls that actually went out (delivery, opens, replies, the
+    // call result). Unsent tasks and waited decisions have none, so they are not asked about.
+    const { data: outcomes, isLoading: outcomesLoading } = useTaskOutcomes(
+        tasks.filter(hasBeenDispatched).map((task) => task.id)
+    );
+    const outcomeOf = (task: EngagementAction): TaskOutcome | undefined => outcomes?.[task.id];
 
     // Handling the last task on a later page leaves that page empty, and with one page left the
     // pager hides, so the inbox read "Nothing here" while tasks remained on page 1.
     const totalPages = data?.totalPages ?? 0;
     useEffect(() => {
-        if (page > 0 && data && page >= totalPages) setPage(Math.max(0, totalPages - 1));
-    }, [data, page, totalPages]);
+        if (page > 0 && data && page >= totalPages)
+            setPageState({ page: Math.max(0, totalPages - 1), key: pageKey });
+    }, [data, page, pageKey, totalPages]);
 
-    // Search and filters run over the page already loaded — no extra requests.
+    // Engine, channel, kind and day are asked of the server; only the search box runs over the
+    // page already loaded. With a day the server orders by when each item went out, and that
+    // order is kept; otherwise the order is the sort select (waited defaults to newest first).
     const q = search.trim().toLowerCase();
-    const visible = tasks
-        .filter(
-            (task) =>
-                (engineFilter === 'all' || task.engineId === engineFilter) &&
-                (channelFilter === 'all' || task.channel === channelFilter) &&
-                (kindFilter === 'all' ||
-                    (kindFilter === 'CRM' ? isCrmAction(task.actionType) : task.kind === kindFilter)) &&
-                (!q ||
-                    [
-                        task.draftBody,
-                        task.sentBody,
-                        task.rationale,
-                        task.templateName,
-                        engineNames[task.engineId],
-                        personOf(task)?.name,
-                        personOf(task)?.phone,
-                        personOf(task)?.email,
-                    ].some((v) => (v ?? '').toLowerCase().includes(q)))
-        )
-        .sort((a, b) =>
-            sort === 'oldest'
-                ? time(a.createdAt) - time(b.createdAt)
-                : sort === 'newest'
-                  ? time(b.createdAt) - time(a.createdAt)
-                  : (b.priority ?? 0) - (a.priority ?? 0)
-        );
+    const sortKey: SortKey | null = filters.date
+        ? null
+        : sort ?? (activeKey === 'waited' ? 'newest' : 'priority');
+    const matching = tasks.filter(
+        (task) =>
+            !q ||
+            [
+                task.draftBody,
+                task.sentBody,
+                task.rationale,
+                task.templateName,
+                engineNames[task.engineId],
+                personOf(task)?.name,
+                personOf(task)?.phone,
+                personOf(task)?.email,
+            ].some((v) => (v ?? '').toLowerCase().includes(q))
+    );
+    const visible = sortKey
+        ? matching.sort((a, b) =>
+              sortKey === 'oldest'
+                  ? time(a.createdAt) - time(b.createdAt)
+                  : sortKey === 'newest'
+                    ? time(b.createdAt) - time(a.createdAt)
+                    : (b.priority ?? 0) - (a.priority ?? 0)
+          )
+        : matching;
     const current = visible.find((task) => task.id === selectedId) ?? visible[0];
-    const channelMeta = buildChannelMeta(tConstants);
 
     const views: QuickView[] = FILTERS.map((f, i) => ({
-        key: f.statuses,
+        key: f.key,
         label: f.label,
-        count: counts[i]?.data ? counts[i]?.data?.totalElements ?? 0 : undefined,
+        // The open tab counts its own list (every filter, outcome included); the others ask.
+        count: f.key === activeKey && data ? data.totalElements : counts[i]?.data?.totalElements,
         tone: f.tone,
-        active: i === filterIdx,
+        active: f.key === activeKey,
         onSelect: () => {
-            setFilterIdx(i);
-            setPage(0);
             setSelectedId(null);
+            updateFilters({ filter: f.key === 'needsAction' ? undefined : f.key });
         },
     }));
 
@@ -252,7 +301,9 @@ function TaskInboxPage() {
         task: EngagementAction,
         verb: 'ack' | 'done' | 'dismiss' | 'reopen' | 'restore'
     ) => action.mutate({ taskId: task.id, verb });
-    const activeKey = FILTERS[filterIdx]?.key ?? 'needsAction';
+    // A filter the server refuses (an engine that is not this institute's, a malformed day).
+    const errorStatus = (error as { response?: { status?: number } } | null)?.response?.status;
+    const badFilters = isError && filtersActive && (errorStatus === 400 || errorStatus === 404);
 
     return (
         <LayoutContainer>
@@ -298,57 +349,39 @@ function TaskInboxPage() {
                                 className="ps-9"
                             />
                         </div>
-                        <Select value={engineFilter} onValueChange={setEngineFilter}>
-                            <SelectTrigger className="w-44" aria-label={t('toolbar.allEngines')}>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">{t('toolbar.allEngines')}</SelectItem>
-                                {(engines ?? []).map((e) => (
-                                    <SelectItem key={e.id} value={e.id}>
-                                        {e.name}
+                        <InboxFilterControls
+                            search={filters}
+                            engines={engines ?? []}
+                            enginesLoaded={!!engines}
+                            onChange={updateFilters}
+                        />
+                        {sortKey && (
+                            <Select value={sortKey} onValueChange={(v) => setSort(v as SortKey)}>
+                                <SelectTrigger
+                                    className="w-36"
+                                    aria-label={t('toolbar.sortPriority')}
+                                >
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="priority">
+                                        {t('toolbar.sortPriority')}
                                     </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Select value={channelFilter} onValueChange={setChannelFilter}>
-                            <SelectTrigger className="w-36" aria-label={t('toolbar.allChannels')}>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">{t('toolbar.allChannels')}</SelectItem>
-                                {CHANNEL_ORDER.map((c) => (
-                                    <SelectItem key={c} value={c}>
-                                        {channelMeta[c].label}
+                                    <SelectItem value="oldest">
+                                        {t('toolbar.sortOldest')}
                                     </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                        <Select value={kindFilter} onValueChange={setKindFilter}>
-                            <SelectTrigger className="w-40" aria-label={t('toolbar.allKinds')}>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">{t('toolbar.allKinds')}</SelectItem>
-                                <SelectItem value="TASK">{t('toolbar.kindTask')}</SelectItem>
-                                <SelectItem value="REPLY">{t('toolbar.kindReply')}</SelectItem>
-                                <SelectItem value="SEND">{t('toolbar.kindSend')}</SelectItem>
-                                <SelectItem value="CRM">{tActions('inbox.kindFilter')}</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <Select value={sort} onValueChange={(v) => setSort(v as SortKey)}>
-                            <SelectTrigger className="w-36" aria-label={t('toolbar.sortPriority')}>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="priority">
-                                    {t('toolbar.sortPriority')}
-                                </SelectItem>
-                                <SelectItem value="oldest">{t('toolbar.sortOldest')}</SelectItem>
-                                <SelectItem value="newest">{t('toolbar.sortNewest')}</SelectItem>
-                            </SelectContent>
-                        </Select>
+                                    <SelectItem value="newest">
+                                        {t('toolbar.sortNewest')}
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        )}
                     </div>
+                    <ActiveFilters
+                        search={filters}
+                        onChange={updateFilters}
+                        onClear={clearFilters}
+                    />
                     {(data?.totalPages ?? 0) > 1 && (
                         <p className="text-neutral-500">
                             <span className="text-caption">{t('toolbar.pageNote')}</span>
@@ -364,22 +397,43 @@ function TaskInboxPage() {
                 )}
                 {isError && (
                     <Card className="flex flex-col items-center gap-3 p-6 text-center">
-                        <span className="text-body text-danger-600">{t('errors.loadFailed')}</span>
-                        <MyButton buttonType="secondary" scale="small" onClick={() => refetch()}>
-                            <ArrowsClockwise className="me-1 size-4" /> {t('retry')}
-                        </MyButton>
+                        <span className="text-body text-danger-600">
+                            {badFilters ? t('errors.badFilters') : t('errors.loadFailed')}
+                        </span>
+                        {badFilters ? (
+                            <MyButton buttonType="secondary" scale="small" onClick={clearFilters}>
+                                {t('chips.clear')}
+                            </MyButton>
+                        ) : (
+                            <MyButton
+                                buttonType="secondary"
+                                scale="small"
+                                onClick={() => refetch()}
+                            >
+                                <ArrowsClockwise className="me-1 size-4" /> {t('retry')}
+                            </MyButton>
+                        )}
                     </Card>
                 )}
                 {!isLoading && !isError && tasks.length === 0 && (
                     <Card className="flex flex-col items-center gap-2 p-10 text-center">
                         <Tray className="size-10 text-neutral-300" />
                         <p className="text-subtitle font-medium text-neutral-700">
-                            {t(`empty.${activeKey}.title`)}
+                            {filtersActive
+                                ? t('empty.filtered.title')
+                                : t(`empty.${activeKey}.title`)}
                         </p>
                         <p className="max-w-md text-body text-neutral-500">
-                            {t(`empty.${activeKey}.text`)}
+                            {filtersActive
+                                ? t('empty.filtered.text')
+                                : t(`empty.${activeKey}.text`)}
                         </p>
-                        {activeKey === 'needsAction' && (
+                        {filtersActive && (
+                            <MyButton buttonType="secondary" scale="small" onClick={clearFilters}>
+                                {t('chips.clear')}
+                            </MyButton>
+                        )}
+                        {!filtersActive && activeKey === 'needsAction' && (
                             <MyButton
                                 buttonType="secondary"
                                 scale="small"
@@ -406,6 +460,8 @@ function TaskInboxPage() {
                                         task={task}
                                         person={personOf(task)}
                                         engineName={engineNames[task.engineId]}
+                                        outcome={outcomeOf(task)}
+                                        outcomeLoading={outcomesLoading}
                                         active={current?.id === task.id}
                                         onSelect={() => setSelectedId(task.id)}
                                     />
@@ -418,6 +474,8 @@ function TaskInboxPage() {
                                 task={current}
                                 person={personOf(current)}
                                 engineName={engineNames[current.engineId]}
+                                outcome={outcomeOf(current)}
+                                outcomeLoading={outcomesLoading}
                                 busy={action.isPending}
                                 onOpenEngine={() =>
                                     navigate({
@@ -473,6 +531,7 @@ function KindChip({ kind }: { kind: EngagementAction['kind'] }) {
         return <Chip label={t('kind.reply')} className="bg-info-50 text-info-700" />;
     if (kind === 'SEND')
         return <Chip label={t('kind.autoSend')} className="bg-warning-50 text-warning-700" />;
+    if (kind === 'NO_OP') return <Chip label={t('kind.waited')} />;
     return <Chip label={t('kind.task')} />;
 }
 
@@ -480,12 +539,16 @@ function TaskRow({
     task,
     person,
     engineName,
+    outcome,
+    outcomeLoading,
     active,
     onSelect,
 }: {
     task: EngagementAction;
     person?: TaskPerson;
     engineName?: string;
+    outcome?: TaskOutcome;
+    outcomeLoading: boolean;
     active: boolean;
     onSelect: () => void;
 }) {
@@ -496,7 +559,9 @@ function TaskRow({
         tone: 'neutral' as const,
     };
     const ChannelIcon = task.channel ? CHANNEL_ICON[task.channel] : Robot;
-    const level = typeof task.priority === 'number' ? priorityLevel(task.priority) : null;
+    const waited = task.kind === 'NO_OP';
+    const level =
+        !waited && typeof task.priority === 'number' ? priorityLevel(task.priority) : null;
     const who = personTitle(person);
     return (
         <button
@@ -544,15 +609,26 @@ function TaskRow({
                     ) : (
                         <KindChip kind={task.kind} />
                     )}
-                    <ToneBadge label={statusMeta.label} tone={statusMeta.tone} />
+                    {/* A waited decision is "Done" only in the database; it is not a status to show. */}
+                    {!waited && <ToneBadge label={statusMeta.label} tone={statusMeta.tone} />}
                     <span className="ms-auto text-neutral-400">
                         <span className="text-caption">{ageText(task.createdAt, t)}</span>
                     </span>
                 </span>
-                {(task.rationale || task.draftBody) && (
-                    <span className="line-clamp-2 text-neutral-500">
-                        <span className="text-caption">{task.rationale || task.draftBody}</span>
+                {waited ? (
+                    // Why the engine held off is what this tab is for, so it gets the room.
+                    <span className="line-clamp-4 text-neutral-800">
+                        <span className="text-body">{task.rationale || t('detail.noReason')}</span>
                     </span>
+                ) : (
+                    (task.rationale || task.draftBody) && (
+                        <span className="line-clamp-2 text-neutral-500">
+                            <span className="text-caption">{task.rationale || task.draftBody}</span>
+                        </span>
+                    )
+                )}
+                {hasBeenDispatched(task) && (
+                    <TaskOutcomeBadges task={task} outcome={outcome} loading={outcomeLoading} />
                 )}
             </span>
         </button>
@@ -563,6 +639,8 @@ function TaskDetail({
     task,
     person,
     engineName,
+    outcome,
+    outcomeLoading,
     busy,
     onOpenEngine,
     onAck,
@@ -575,6 +653,8 @@ function TaskDetail({
     task: EngagementAction;
     person?: TaskPerson;
     engineName?: string;
+    outcome?: TaskOutcome;
+    outcomeLoading: boolean;
     busy: boolean;
     onOpenEngine: () => void;
     onAck: () => void;
@@ -592,11 +672,14 @@ function TaskDetail({
     };
     const channelMeta = buildChannelMeta(tConstants);
     const { needsTemplate, canSend, canHandle } = taskRules(task);
+    // The engine looked at this person and decided to wait: nothing was drafted or sent.
+    const waited = task.kind === 'NO_OP';
     // B8: a CRM action (follow-up, note, status, AI call) is approved, not sent.
     const crmType = isCrmAction(task.actionType) ? task.actionType : null;
     const vars = crmType ? {} : safeParse<Record<string, string>>(task.variablesJson, {});
     const ChannelIcon = task.channel ? CHANNEL_ICON[task.channel] : Robot;
-    const priority = typeof task.priority === 'number' ? Math.round(task.priority) : null;
+    const priority =
+        !waited && typeof task.priority === 'number' ? Math.round(task.priority) : null;
     const who = personTitle(person);
     const contact = [person?.phone, person?.email].filter((v) => v && v !== who).join(' · ');
     const bodyHeading =
@@ -650,11 +733,13 @@ function TaskDetail({
                     </button>
                     <p className="text-neutral-500">
                         <span className="text-caption">
-                            {t('detail.draftedAgo', { age: ageText(task.createdAt, t) })}
+                            {t(waited ? 'detail.decidedAgo' : 'detail.draftedAgo', {
+                                age: ageText(task.createdAt, t),
+                            })}
                         </span>
                     </p>
                 </div>
-                <ToneBadge label={statusMeta.label} tone={statusMeta.tone} />
+                {!waited && <ToneBadge label={statusMeta.label} tone={statusMeta.tone} />}
             </div>
 
             <div className="flex flex-wrap items-center gap-1.5">
@@ -687,7 +772,7 @@ function TaskDetail({
                 )}
             </div>
 
-            {task.rationale && (
+            {(task.rationale || waited) && (
                 <div className="flex items-start gap-3 rounded-xl border border-primary-100 bg-primary-50 p-3">
                     <Sparkle
                         size={18}
@@ -696,10 +781,19 @@ function TaskDetail({
                     />
                     <div className="min-w-0">
                         <p className="font-semibold text-neutral-800">
-                            <span className="text-body">{t('detail.why')}</span>
+                            <span className="text-body">
+                                {waited ? t('detail.whyWaited') : t('detail.why')}
+                            </span>
                         </p>
-                        <p className="text-neutral-600">
-                            <span className="text-caption">{task.rationale}</span>
+                        {/* The engine's own reasoning is the point of a waited decision: full size. */}
+                        <p
+                            className={
+                                waited ? 'whitespace-pre-wrap text-neutral-800' : 'text-neutral-600'
+                            }
+                        >
+                            <span className={waited ? 'text-body' : 'text-caption'}>
+                                {task.rationale || t('detail.noReason')}
+                            </span>
                         </p>
                     </div>
                 </div>
@@ -726,31 +820,35 @@ function TaskDetail({
             )}
 
             {crmType && <CrmTaskSection task={task} disabled={busy} />}
-            {!crmType && (
-            <div>
-                <SubHeading>{bodyHeading}</SubHeading>
-                <p
-                    className={cn(
-                        'whitespace-pre-wrap rounded-lg border p-3 text-neutral-800',
-                        task.channel === 'WHATSAPP'
-                            ? 'border-success-100 bg-success-50'
-                            : 'border-neutral-100 bg-neutral-50'
+            {!crmType && !waited && (
+                <div>
+                    <SubHeading>{bodyHeading}</SubHeading>
+                    <p
+                        className={cn(
+                            'whitespace-pre-wrap rounded-lg border p-3 text-neutral-800',
+                            task.channel === 'WHATSAPP'
+                                ? 'border-success-100 bg-success-50'
+                                : 'border-neutral-100 bg-neutral-50'
+                        )}
+                    >
+                        <span className="text-body">
+                            {task.sentBody || task.draftBody || t('noDraft')}
+                        </span>
+                    </p>
+                    {Object.keys(vars).length > 0 && (
+                        <div className="mt-2">
+                            {Object.entries(vars).map(([k, v]) => (
+                                <KeyValue key={k} label={variableLabel(k, t)}>
+                                    {v}
+                                </KeyValue>
+                            ))}
+                        </div>
                     )}
-                >
-                    <span className="text-body">
-                        {task.sentBody || task.draftBody || t('noDraft')}
-                    </span>
-                </p>
-                {Object.keys(vars).length > 0 && (
-                    <div className="mt-2">
-                        {Object.entries(vars).map(([k, v]) => (
-                            <KeyValue key={k} label={variableLabel(k, t)}>
-                                {v}
-                            </KeyValue>
-                        ))}
-                    </div>
-                )}
-            </div>
+                </div>
+            )}
+
+            {!waited && hasBeenDispatched(task) && (
+                <TaskOutcomeDetail task={task} outcome={outcome} loading={outcomeLoading} />
             )}
 
             <div className="flex flex-wrap items-center gap-2">
@@ -767,23 +865,39 @@ function TaskDetail({
                 {canHandle && (
                     <>
                         {!crmType && (
-                            <MyButton buttonType="secondary" scale="small" disable={busy} onClick={onDone}>
+                            <MyButton
+                                buttonType="secondary"
+                                scale="small"
+                                disable={busy}
+                                onClick={onDone}
+                            >
                                 <CheckCircle className="me-1 size-3.5" />{' '}
                                 {t('actions.handledElsewhere')}
                             </MyButton>
                         )}
-                        <MyButton buttonType="text" scale="small" disable={busy} onClick={onDismiss}>
+                        <MyButton
+                            buttonType="text"
+                            scale="small"
+                            disable={busy}
+                            onClick={onDismiss}
+                        >
                             <X className="me-1 size-3.5" /> {t('actions.dismiss')}
                         </MyButton>
                     </>
                 )}
                 {task.status === 'FAILED' && (
-                    <MyButton buttonType="secondary" scale="small" disable={busy} onClick={onReopen}>
+                    <MyButton
+                        buttonType="secondary"
+                        scale="small"
+                        disable={busy}
+                        onClick={onReopen}
+                    >
                         <ArrowCounterClockwise className="me-1 size-3.5" /> {t('actions.reopen')}
                     </MyButton>
                 )}
                 {(task.status === 'DONE' || task.status === 'DISMISSED') &&
                     task.kind !== 'SEND' &&
+                    !waited &&
                     // A done CRM action is reversed with Undo, never re-run by restoring it.
                     !(crmType && task.status === 'DONE') && (
                         <MyButton
@@ -802,7 +916,14 @@ function TaskDetail({
                 <div>
                     <SubHeading>{t('detail.timing')}</SubHeading>
                     {timing.map((x) => (
-                        <KeyValue key={x.k} label={t(`detail.${x.k}`)}>
+                        <KeyValue
+                            key={x.k}
+                            label={
+                                x.k === 'created' && waited
+                                    ? t('detail.decided')
+                                    : t(`detail.${x.k}`)
+                            }
+                        >
                             {formatDateTime(x.v)}
                         </KeyValue>
                     ))}
@@ -829,7 +950,8 @@ function SendDialog({
     const { t } = useTranslation('engagementEnginesInboxIndex');
     // A proactive WhatsApp template's text is FIXED (Meta-approved) — it can't be edited; only its
     // variables vary. A WhatsApp REPLY and email/in-app are free-form and editable.
-    const isFixedTemplate = task.channel === 'WHATSAPP' && task.kind !== 'REPLY' && !!task.templateName;
+    const isFixedTemplate =
+        task.channel === 'WHATSAPP' && task.kind !== 'REPLY' && !!task.templateName;
     const vars = safeParse<Record<string, string>>(task.variablesJson, {});
     const [body, setBody] = useState(task.draftBody ?? '');
     // Files the engine chose from its assets for this reply; they go out with the text.
@@ -862,7 +984,10 @@ function SendDialog({
                                     {t('sendDialog.variables')}
                                 </p>
                                 {Object.entries(vars).map(([k, v]) => (
-                                    <div key={k} className="flex justify-between text-caption text-neutral-600">
+                                    <div
+                                        key={k}
+                                        className="flex justify-between text-caption text-neutral-600"
+                                    >
                                         <span className="text-neutral-400">
                                             {variableLabel(k, t)}
                                         </span>
@@ -874,7 +999,9 @@ function SendDialog({
                     </>
                 ) : (
                     <>
-                        <p className="text-caption text-neutral-500">{t('sendDialog.editableNotice')}</p>
+                        <p className="text-caption text-neutral-500">
+                            {t('sendDialog.editableNotice')}
+                        </p>
                         <Textarea rows={6} value={body} onChange={(e) => setBody(e.target.value)} />
                     </>
                 )}
