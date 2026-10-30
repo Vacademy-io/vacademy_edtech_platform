@@ -2,6 +2,7 @@ package vacademy.io.assessment_service.features.learner_assessment.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
@@ -22,6 +23,10 @@ public class AssessmentLLMAnalyticsService {
 
     private final AdminCoreServiceClient adminCoreServiceClient;
     private final AssessmentDataEnrichmentService enrichmentService;
+
+    /** Off = no submission is sent for AI analysis (see application.properties). */
+    @Value("${assessment.llm-analytics.enabled:true}")
+    private boolean enabled;
 
     /**
      * Send assessment submission data to admin core service for LLM analysis.
@@ -46,6 +51,10 @@ public class AssessmentLLMAnalyticsService {
             String assessmentType,
             Integer durationMinutes,
             Integer totalMarks) {
+
+        if (!enabled) {
+            return;
+        }
 
         try {
             // Derive instituteId from registration

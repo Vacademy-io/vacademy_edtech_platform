@@ -122,10 +122,26 @@ public class EngagementCrmActionService {
                     }
                 }
             }
+            // An engine that has the AI call channel on means to place AI calls: the action is allowed
+            // with it. "Runs on its own" stays a separate, earned setting.
+            if (!autoOnly && aiCallChannelOn(engine)
+                    && handlers().containsKey(EngagementActionTypes.SCHEDULE_AI_CALL)
+                    && !out.contains(EngagementActionTypes.SCHEDULE_AI_CALL)) {
+                out.add(EngagementActionTypes.SCHEDULE_AI_CALL);
+            }
         } catch (Exception e) {
             // unreadable channels: no CRM actions (never guess a permission)
         }
         return out;
+    }
+
+    /** True when the engine's AI_CALL channel is enabled. */
+    public boolean aiCallChannelOn(EngagementEngine engine) {
+        try {
+            return objectMapper.readTree(engine.getChannels()).path("AI_CALL").path("enabled").asBoolean(false);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     // ── the admin's settings (B8) ───────────────────────────────────────────
@@ -305,6 +321,73 @@ public class EngagementCrmActionService {
             }
         }
         return new EngagementBrainClient.ActionMenu(actions, statuses, emailTemplates);
+    }
+
+    // ── a lead asked to be called back ───────────────────────────────────────
+
+    private static final java.util.regex.Pattern IN_HOURS = java.util.regex.Pattern.compile(
+            "(?i)\\bin\\s+(\\d{1,2})\\s*(?:hours?|hrs?|ghante)\\b");
+    private static final java.util.regex.Pattern TOMORROW = java.util.regex.Pattern.compile(
+            "(?i)(?:^|[^\\p{L}])(tomorrow|kal)(?:$|[^\\p{L}])");
+    private static final java.util.regex.Pattern LATER = java.util.regex.Pattern.compile(
+            "(?i)(?:^|[^\\p{L}])(later|baad|bad)(?:$|[^\\p{L}])");
+
+    /**
+     * Hours until the call the lead asked for: "in 3 hours", "tomorrow"/"kal" (24), "later"/"baad" (2),
+     * else 0 (the next calling slot). A clock time ("at 4pm") is not parsed; the approver reads it in
+     * the note. The AI call handler adds the institute's calling hours on top of this.
+     */
+    static int callbackDelayHours(String text) {
+        if (text == null) return 0;
+        java.util.regex.Matcher m = IN_HOURS.matcher(text);
+        if (m.find()) return Math.min(Integer.parseInt(m.group(1)), 72);
+        if (TOMORROW.matcher(text).find()) return 24;
+        if (LATER.matcher(text).find()) return 2;
+        return 0;
+    }
+
+    /**
+     * A lead replied asking to be called back: propose an AI call as an inbox task, then run it on its
+     * own when {@link #autonomyBlock} allows. Null when the engine does not allow AI calls, the lead
+     * cannot be called (no phone, wrong number, weekly limit), or it cannot be saved. The caller
+     * keeps its own escalation and team alert either way.
+     */
+    public EngagementAction proposeCallback(EngagementEngine engine, EngagementMember member, String replyText,
+                                            String hold) {
+        try {
+            if (!allowedActions(engine).contains(EngagementActionTypes.SCHEDULE_AI_CALL)) return null;
+            List<Subject> subject = contactResolver.resolve(List.of(member));
+            String phone = subject.isEmpty() ? null : subject.get(0).getPhone();
+            Map<String, String> params = new LinkedHashMap<>();
+            params.put("dueInHours", String.valueOf(callbackDelayHours(replyText)));
+            String said = replyText == null ? "" : replyText.trim();
+            params.put("note", "Lead asked for a callback on WhatsApp: "
+                    + (said.length() > 200 ? said.substring(0, 200) + "…" : said));
+            String rejected = validateProposal(engine, member, phone, EngagementActionTypes.SCHEDULE_AI_CALL, params);
+            if (rejected != null) {
+                log.info("Callback from member {} not turned into an AI call: {}", member.getId(), rejected);
+                return null;
+            }
+            Instant now = Instant.now();
+            EngagementAction task = new EngagementAction();
+            task.setEngineId(engine.getId());
+            task.setMemberId(member.getId());
+            task.setInstituteId(engine.getInstituteId());
+            task.setKind("TASK");
+            task.setActionType(EngagementActionTypes.SCHEDULE_AI_CALL);
+            task.setStatus("OPEN");
+            task.setDraftBody(describe(engine, member, phone, EngagementActionTypes.SCHEDULE_AI_CALL, params));
+            task.setVariablesJson(taskVariables(params));
+            task.setRationale("The lead asked to be called back, so a call was proposed.");
+            task.setPriority(java.math.BigDecimal.valueOf(90));
+            task.setScheduledFor(now);
+            task.setExpiresAt(now.plus(Duration.ofHours(72)));
+            task = actionRepository.save(task);
+            return tryAutonomous(task, engine, member, phone, hold, false, false);
+        } catch (Exception e) {
+            log.warn("Callback from member {} could not be proposed as an AI call: {}", member.getId(), e.getMessage());
+            return null;
+        }
     }
 
     // ── decision time ───────────────────────────────────────────────────────

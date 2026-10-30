@@ -49,6 +49,10 @@ const SUBMIT_RATIO = Number(__ENV.SUBMIT_RATIO || 1.0);
 // USER_COUNT = how many learners were actually seeded; refuses to run past it
 // so VUs don't all fail login and read as a false server-side collapse.
 const USER_COUNT = Number(__ENV.USER_COUNT || 1000);
+// USER_OFFSET splits one run across several load machines: machine 2 of a
+// 10k run passes USER_OFFSET=3400 so its VU 1 logs in as loadtest3401 and no
+// two machines share a learner.
+const USER_OFFSET = Number(__ENV.USER_OFFSET || 0);
 
 const attemptTemplate = open('./attempt-template.json');
 
@@ -121,13 +125,13 @@ function buildAttemptData(elapsedSecs) {
 }
 
 export function setup() {
-    if (VUS > USER_COUNT) {
-        throw new Error(`VUS=${VUS} exceeds USER_COUNT=${USER_COUNT} seeded learners — seed more users or lower VUS`);
+    if (USER_OFFSET + VUS > USER_COUNT) {
+        throw new Error(`USER_OFFSET+VUS=${USER_OFFSET + VUS} exceeds USER_COUNT=${USER_COUNT} seeded learners — seed more users or lower VUS`);
     }
 }
 
 export default function () {
-    const username = `${USER_PREFIX}${String(__VU).padStart(4, '0')}`;
+    const username = `${USER_PREFIX}${String(USER_OFFSET + __VU).padStart(4, '0')}`;
 
     // --- Phase 1: login, jittered across the login window ---
     sleep(Math.random() * LOGIN_WINDOW);

@@ -1,4 +1,5 @@
-import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
+import { EngineContactsCard } from './-components/EngineContactsCard';
+import { createLazyFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { Helmet } from 'react-helmet';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -203,9 +204,17 @@ function EngineDetailPage() {
             ? Object.values(data.approvedSendsByChannel).reduce((a, n) => a + n, 0)
             : undefined);
 
+    // Leads of the engine's first lead list, when it has one (a learner-only engine has none).
+    const leadListId = audience.find((a) => a.type === 'AUDIENCE')?.id;
+    const inboxHref = (filter?: string) =>
+        `/engagement-engines/inbox?engineId=${engine.id}${filter ? `&filter=${filter}` : ''}`;
+
     const kpis: StatItem[] = [
         {
             key: 'members',
+            href: leadListId
+                ? `/audience-manager/list/campaign-users?campaignId=${leadListId}`
+                : undefined,
             icon: UsersThree,
             label: t('kpi.members'),
             value: activeMembers,
@@ -218,6 +227,7 @@ function EngineDetailPage() {
             ? [
                   {
                       key: 'approved',
+                      href: inboxHref('sent'),
                       icon: CheckCircle,
                       tint: 'success' as const,
                       label: t('kpi.approved'),
@@ -288,7 +298,12 @@ function EngineDetailPage() {
                     <MyButton
                         buttonType="secondary"
                         scale="medium"
-                        onClick={() => navigate({ to: '/engagement-engines/inbox' })}
+                        onClick={() =>
+                            navigate({
+                                to: '/engagement-engines/inbox',
+                                search: { engine: engine.id },
+                            })
+                        }
                     >
                         <Tray className="me-1 size-4" /> {t('viewTaskInbox')}
                     </MyButton>
@@ -324,7 +339,23 @@ function EngineDetailPage() {
                     </div>
                 )}
 
-                <StatStrip items={kpis} />
+                <StatStrip items={kpis} compact />
+
+                {!engine.systemManaged && (
+                    <EngineContactsCard
+                        engine={engine}
+                        instituteId={engine.instituteId}
+                        onEdit={
+                            canChange
+                                ? () =>
+                                      navigate({
+                                          to: '/engagement-engines/create',
+                                          search: { edit: engine.id },
+                                      })
+                                : undefined
+                        }
+                    />
+                )}
 
                 <div className="grid gap-5 lg:grid-cols-5">
                     {/* Status + audience controls */}
@@ -412,17 +443,21 @@ function EngineDetailPage() {
                                             })
                                         }
                                     >
-                                        <PencilSimple className="me-1 size-4" /> {tEdit('editSettings')}
+                                        <PencilSimple className="me-1 size-4" />{' '}
+                                        {tEdit('editSettings')}
                                     </MyButton>
                                 )}
-                                {['DRAFT', 'TEMPLATES_PENDING', 'ARCHIVED'].includes(engine.status) && (
+                                {['DRAFT', 'TEMPLATES_PENDING', 'ARCHIVED'].includes(
+                                    engine.status
+                                ) && (
                                     <MyButton
                                         buttonType="secondary"
                                         scale="small"
                                         disable={deleteEngine.isPending}
                                         onClick={() => setConfirmDelete(true)}
                                     >
-                                        <Trash className="me-1 size-4" /> {tEdit('deletePermanently')}
+                                        <Trash className="me-1 size-4" />{' '}
+                                        {tEdit('deletePermanently')}
                                     </MyButton>
                                 )}
                             </div>
@@ -532,7 +567,9 @@ function EngineDetailPage() {
                     <AlertDialogContent>
                         <AlertDialogHeader>
                             <AlertDialogTitle>{tEdit('deleteDialog.title')}</AlertDialogTitle>
-                            <AlertDialogDescription>{tEdit('deleteDialog.description')}</AlertDialogDescription>
+                            <AlertDialogDescription>
+                                {tEdit('deleteDialog.description')}
+                            </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel disabled={deleteEngine.isPending}>
@@ -546,7 +583,8 @@ function EngineDetailPage() {
                                     deleteEngine.mutate(
                                         { engineId: engine.id, permanent: true },
                                         {
-                                            onSuccess: () => navigate({ to: '/engagement-engines' }),
+                                            onSuccess: () =>
+                                                navigate({ to: '/engagement-engines' }),
                                             onSettled: () => setConfirmDelete(false),
                                         }
                                     );
@@ -622,11 +660,15 @@ function EngineDetailPage() {
                         schedule={schedule}
                         channelLabels={channels.map((c) => channelMeta[c].label)}
                         stopOnMeeting={channelsJson.exitOnMeetingBooked === true}
-                        autoReply={!!(channelsJson.WHATSAPP?.enabled && channelsJson.WHATSAPP?.autoReply)}
+                        autoReply={
+                            !!(channelsJson.WHATSAPP?.enabled && channelsJson.WHATSAPP?.autoReply)
+                        }
                     />
                 )}
 
-                {hasWhatsApp && <TemplateNegotiation engineId={engine.id} language={engine.language} />}
+                {hasWhatsApp && (
+                    <TemplateNegotiation engineId={engine.id} language={engine.language} />
+                )}
                 {hasEmail && (
                     <EmailTemplatesPanel
                         engineId={engine.id}
@@ -641,7 +683,11 @@ function EngineDetailPage() {
                 >
                     <AssetsPanel engineId={engine.id} />
                 </SectionCard>
-                <CrmActionsPanel engineId={engine.id} killed={engine.autoSendKilled} />
+                <CrmActionsPanel
+                    engineId={engine.id}
+                    killed={engine.autoSendKilled}
+                    aiCallChannelOn={!!channelsJson.AI_CALL?.enabled}
+                />
             </div>
 
             {amendOpen && (
@@ -652,7 +698,9 @@ function EngineDetailPage() {
                     dialogWidth="max-w-lg"
                 >
                     <div className="flex flex-col gap-3 p-1">
-                        <p className="text-caption text-neutral-500">{t('amendDialog.description')}</p>
+                        <p className="text-caption text-neutral-500">
+                            {t('amendDialog.description')}
+                        </p>
                         <Textarea
                             rows={5}
                             value={delta}
@@ -660,7 +708,11 @@ function EngineDetailPage() {
                             placeholder={t('amendDialog.placeholder')}
                         />
                         <div className="flex justify-end gap-2">
-                            <MyButton buttonType="secondary" scale="small" onClick={() => setAmendOpen(false)}>
+                            <MyButton
+                                buttonType="secondary"
+                                scale="small"
+                                onClick={() => setAmendOpen(false)}
+                            >
                                 {t('amendDialog.cancel')}
                             </MyButton>
                             <MyButton
@@ -674,7 +726,9 @@ function EngineDetailPage() {
                                     )
                                 }
                             >
-                                {editPrompt.isPending ? t('amendDialog.saving') : t('amendDialog.submit')}
+                                {editPrompt.isPending
+                                    ? t('amendDialog.saving')
+                                    : t('amendDialog.submit')}
                             </MyButton>
                         </div>
                     </div>
@@ -702,10 +756,7 @@ function AutonomyStatusBadge({
     if (killed) return <ToneBadge label={t('autonomy.badge.off')} tone="neutral" />;
     if (!graduated)
         return (
-            <ToneBadge
-                label={t('autonomy.badge.ramping', { approved, target })}
-                tone="warning"
-            />
+            <ToneBadge label={t('autonomy.badge.ramping', { approved, target })} tone="warning" />
         );
     // Graduated + auto-on, but the badge must not claim live sending unless the engine is ACTIVE —
     // a PAUSED/DRAFT engine sends nothing, and DRY_RUN only simulates.
@@ -781,9 +832,11 @@ function AutonomyPanel({
                         const pct =
                             target > 0 ? Math.min(100, Math.round((approved / target) * 100)) : 100;
                         return (
-                            <div
+                            <Link
                                 key={channel}
-                                className="flex flex-col gap-2 rounded-lg border border-neutral-100 p-3"
+                                to="/engagement-engines/inbox"
+                                search={{ filter: 'sent', engine: engine.id, channel }}
+                                className="flex flex-col gap-1.5 rounded-lg border border-neutral-100 p-2.5 transition-colors hover:border-primary-300 hover:bg-primary-50"
                             >
                                 <div className="flex flex-wrap items-center justify-between gap-2">
                                     <span className="flex items-center gap-2">
@@ -791,13 +844,6 @@ function AutonomyPanel({
                                             channel={channel}
                                             label={channelMeta[channel].label}
                                         />
-                                        <span className="text-neutral-500">
-                                            <span className="text-caption">
-                                                {t('autonomy.statusFor', {
-                                                    channel: channelMeta[channel].label,
-                                                })}
-                                            </span>
-                                        </span>
                                     </span>
                                     <AutonomyStatusBadge
                                         killed={killed}
@@ -817,14 +863,15 @@ function AutonomyPanel({
                                     />
                                 )}
                                 {!killed && !graduated && (
-                                    <p className="text-caption text-neutral-500">
-                                        {t('autonomy.rampingHintChannel', {
-                                            channel: channelMeta[channel].label,
-                                            count: Math.max(0, target - approved),
-                                        })}
+                                    <p className="text-neutral-500">
+                                        <span className="text-caption">
+                                            {t('autonomy.rampingHintShort', {
+                                                count: Math.max(0, target - approved),
+                                            })}
+                                        </span>
                                     </p>
                                 )}
-                            </div>
+                            </Link>
                         );
                     })}
                 </div>

@@ -275,10 +275,22 @@ public class EngagementDecisionService {
         // a person approves, after the server checks it (allow-list, the action's own rules). WAIT is
         // a NO_OP. A proposal that fails the check is recorded as a NO_OP with the reason.
         String crmType = d.actionType() != null ? d.actionType().trim().toUpperCase() : null;
+        Map<String, String> params = d.actionParams();
+        // AI_CALL is not a message channel: a model that answers "call them" with channel AI_CALL and
+        // a draft would only get a text task nobody can dial. Treat it as the call action it means.
+        if ("ACT".equalsIgnoreCase(d.decision()) && !EngagementActionTypes.isCrmAction(crmType)
+                && "AI_CALL".equalsIgnoreCase(d.channel()) && crmActions != null
+                && crmActions.allowedActions(engine).contains(EngagementActionTypes.SCHEDULE_AI_CALL)) {
+            crmType = EngagementActionTypes.SCHEDULE_AI_CALL;
+            Map<String, String> callParams = new java.util.LinkedHashMap<>();
+            callParams.put("dueInHours", String.valueOf(d.scheduleInHours() != null ? Math.max(d.scheduleInHours(), 0) : 0));
+            if (d.rationale() != null && !d.rationale().isBlank()) callParams.put("note", cap(d.rationale()));
+            params = callParams;
+        }
         if ("ACT".equalsIgnoreCase(d.decision()) && EngagementActionTypes.isCrmAction(crmType)) {
             String phone = subject != null ? subject.getPhone() : null;
             String rejected = crmActions == null ? "CRM actions are not available"
-                    : crmActions.validateProposal(engine, member, phone, crmType, d.actionParams());
+                    : crmActions.validateProposal(engine, member, phone, crmType, params);
             EngagementAction action = new EngagementAction();
             action.setEngineId(engine.getId());
             action.setMemberId(member.getId());
@@ -288,8 +300,8 @@ public class EngagementDecisionService {
                 action.setKind("TASK");
                 action.setActionType(crmType);
                 action.setStatus(dryRun ? "SIMULATED" : "OPEN");
-                action.setDraftBody(cap(crmActions.describe(engine, member, phone, crmType, d.actionParams())));
-                action.setVariablesJson(crmActions.taskVariables(d.actionParams()));
+                action.setDraftBody(cap(crmActions.describe(engine, member, phone, crmType, params)));
+                action.setVariablesJson(crmActions.taskVariables(params));
                 action.setRationale(cap(d.rationale()));
                 double priority = EngagementActionTypes.ESCALATE.equals(crmType) ? Math.max(d.priority(), 80) : d.priority();
                 action.setPriority(BigDecimal.valueOf(Math.max(0, Math.min(100, priority))));
@@ -557,25 +569,39 @@ public class EngagementDecisionService {
      */
     private void attachWhatsAppTemplate(EngagementAction action, EngagementBrainClient.Decision d,
                                         Map<String, EngagementBrainClient.TemplateOption> byName) {
-        String tn = d.templateName();
-        if (tn == null || tn.isBlank()) {
-            log.warn("Engine {}: brain chose WHATSAPP without a template — task left unattached", action.getEngineId());
-            return;
+        String tn = d.templateName() != null ? d.templateName().trim() : null;
+        EngagementBrainClient.TemplateOption t = tn == null || tn.isEmpty() ? null : byName.get(tn);
+        if (t == null && tn != null && !tn.isEmpty()) {
+            // The model sometimes changes the case or spacing of an exact name: still its pick.
+            for (Map.Entry<String, EngagementBrainClient.TemplateOption> e : byName.entrySet()) {
+                if (e.getKey().trim().equalsIgnoreCase(tn)) { t = e.getValue(); break; }
+            }
         }
-        EngagementBrainClient.TemplateOption t = byName.get(tn);
+        // With one approved template there is nothing to choose between: a missing name is not a pick.
+        if (t == null && (tn == null || tn.isEmpty()) && byName.size() == 1) t = byName.values().iterator().next();
         if (t == null) {
-            log.warn("Engine {}: brain chose unapproved WhatsApp template '{}' — unattached", action.getEngineId(), tn);
+            unattached(action, tn == null || tn.isEmpty()
+                    ? "the AI did not choose an approved template"
+                    : "the AI chose '" + tn + "', which is not an approved template");
             return;
         }
         Map<String, String> supplied = d.variables() != null ? d.variables() : Map.of();
         // Serialize ONLY the template's declared variables (drop any extras the model invented),
-        // and require every one to be present and non-blank.
+        // and require every one to be present and non-blank. The model may key a value by a
+        // different case or by its position ("1", "2"): both name the same variable.
         Map<String, String> vars = new java.util.LinkedHashMap<>();
-        for (String name : t.variableNames()) {
+        List<String> names = t.variableNames();
+        for (int i = 0; i < names.size(); i++) {
+            String name = names.get(i);
             String v = supplied.get(name);
             if (v == null || v.isBlank()) {
-                log.warn("Engine {}: brain omitted variable '{}' for template '{}' — unattached",
-                        action.getEngineId(), name, tn);
+                for (Map.Entry<String, String> e : supplied.entrySet()) {
+                    String k = e.getKey() == null ? "" : e.getKey().replaceAll("[{}\\s]", "");
+                    if (k.equalsIgnoreCase(name) || k.equals(String.valueOf(i + 1))) { v = e.getValue(); break; }
+                }
+            }
+            if (v == null || v.isBlank()) {
+                unattached(action, "the AI left out the value for '" + name + "' in template '" + t.name() + "'");
                 return;
             }
             vars.put(name, v);
@@ -590,6 +616,15 @@ public class EngagementDecisionService {
         // real message and sent_body records the truth (the model's paraphrase could silently diverge).
         String rendered = renderTemplate(t.body(), t.variableNames(), vars);
         if (rendered != null && !rendered.isBlank()) action.setDraftBody(cap(rendered));
+    }
+
+    /**
+     * A WhatsApp task the model could not turn into a sendable template stays in the inbox for a
+     * person; saying why replaces a silent log line nobody sees.
+     */
+    private void unattached(EngagementAction action, String why) {
+        log.warn("Engine {}: WhatsApp task left without a template: {}", action.getEngineId(), why);
+        action.setErrorMessage(cap("Can't be sent as is: " + why + "."));
     }
 
     private static final Pattern TEMPLATE_PLACEHOLDER = Pattern.compile("\\{\\{(\\d+)}}");

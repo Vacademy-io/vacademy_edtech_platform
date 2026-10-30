@@ -142,6 +142,14 @@ public class EngagementReplyResponder {
     @Autowired(required = false)
     private EngagementTeamAlertService teamAlertService;
 
+    /** A callback request becomes an AI call proposal; both optional like the rest. */
+    @Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    private EngagementCrmActionService crmActions;
+
+    @Autowired(required = false)
+    private EngagementCoordinationService coordination;
+
     /** Most files one reply may carry; the model is told 3, this is the server-side cap. */
     private static final int MAX_ATTACHMENTS = 3;
 
@@ -326,6 +334,9 @@ public class EngagementReplyResponder {
         action.setExpiresAt(now.plus(Duration.ofHours(taskExpireHours)));
         EngagementLlmUsage.applyTo(decision.usage(), action);
         action = actionRepository.save(action);
+        if (!decision.isAnswer() && CALLBACK.matcher(replyText).find()) {
+            proposeCallbackCall(engine, cand.getMemberId(), replyText, now);
+        }
 
         boolean settled = false; // true = answered (SENT) or a human-visible task exists for this reply
         if (decision.isAnswer()) {
@@ -464,11 +475,31 @@ public class EngagementReplyResponder {
                 : "Escalated (stop-mention): they may be asking to stop or saying they are not "
                         + "interested. Read it before anyone messages them again. Their message: " + replyText));
         actionRepository.save(note);
+        if (callback) {
+            proposeCallbackCall(engineRepository.findById(target.getEngineId()).orElse(null),
+                    target.getMemberId(), replyText, now);
+        }
         for (EngagementReplyMemberQueries.LiveMember m : live) {
             long cadence = m.getCadenceHours() != null ? Math.max(m.getCadenceHours(), 1) : 72;
             memberRepository.markReplyHandled(m.getMemberId(), now, now.plus(Duration.ofHours(cadence)));
         }
         return true;
+    }
+
+    /**
+     * A callback request also proposes an AI call (an inbox task, or run on its own when the engine
+     * allows it). The escalation and team alert stay; this never fails the reply.
+     */
+    private void proposeCallbackCall(EngagementEngine engine, String memberId, String replyText, Instant now) {
+        if (crmActions == null || engine == null) return;
+        try {
+            EngagementMember member = memberRepository.findById(memberId).orElse(null);
+            if (member == null) return;
+            String hold = coordination != null ? coordination.sendHold(member, now) : null;
+            crmActions.proposeCallback(engine, member, replyText, hold);
+        } catch (Exception e) {
+            log.warn("Callback from member {}: AI call not proposed: {}", memberId, e.getMessage());
+        }
     }
 
     /**

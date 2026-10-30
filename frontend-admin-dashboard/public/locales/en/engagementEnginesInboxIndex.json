@@ -53,7 +53,7 @@
         "sortPriority": "Priority first",
         "sortOldest": "Oldest first",
         "sortNewest": "Newest first",
-        "pageNote": "Search and sorting apply to the tasks on this page.",
+        "pageNote": "Filters cover every page. Search and sorting look only at the tasks on this page.",
         "selectedEngine": "Selected engine",
         "day": "Day",
         "anyDay": "Any day",

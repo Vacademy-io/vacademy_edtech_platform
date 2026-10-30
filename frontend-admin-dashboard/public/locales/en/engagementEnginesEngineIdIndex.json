@@ -58,7 +58,8 @@
         },
         "statusFor": "{{channel}} status",
         "rampingHintChannel_one": "You check every {{channel}} message for now. Approve {{count}} more and {{channel}} starts sending on its own.",
-        "rampingHintChannel_other": "You check every {{channel}} message for now. Approve {{count}} more and {{channel}} starts sending on its own."
+        "rampingHintChannel_other": "You check every {{channel}} message for now. Approve {{count}} more and {{channel}} starts sending on its own.",
+        "rampingHintShort": "Approve {{count}} more to send on its own."
     },
     "archiveDialog": {
         "title": "Archive this engine?",
@@ -101,5 +102,13 @@
         "noPeople": "No one has been added yet, so there is nobody to contact. Press “Add people now” first.",
         "cancel": "Not yet",
         "confirm": "Start engine"
+    },
+    "contacts": {
+        "title": "Alert contacts",
+        "subtitle": "Who is told when this engine needs a person",
+        "change": "Change",
+        "fallback": "Nobody is picked. The engine's creator is told.",
+        "fallbackCreator": "Nobody is picked, so {{name}} (who created this engine) is told.",
+        "counsellorNote": "Each lead's own counsellor is told as well. Alerts go as a bell alert and an email."
     }
 }

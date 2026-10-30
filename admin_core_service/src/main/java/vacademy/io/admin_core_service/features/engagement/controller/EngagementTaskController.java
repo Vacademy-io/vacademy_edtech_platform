@@ -87,7 +87,7 @@ public class EngagementTaskController {
         TaskFilter filter = new TaskFilter(engineId, channel, kind, date, from, to, template, outcome);
         if (filter.isEmpty()) {
             return ResponseEntity.ok(actionRepository.findInbox(
-                    instituteId, statusList, PageRequest.of(page, Math.min(size, 200))));
+                    instituteId, statusList, null, null, null, PageRequest.of(page, Math.min(size, 200))));
         }
         return ResponseEntity.ok(taskQueryService.inbox(instituteId, statusList, filter, page, Math.min(size, 200)));
     }

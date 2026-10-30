@@ -49,6 +49,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -143,13 +144,13 @@ class EngagementTaskInboxFiltersTest {
         @DisplayName("no filter: exactly the old findInbox call")
         void noFilterKeepsTheOldQuery() {
             Page<EngagementAction> old = new PageImpl<>(List.of());
-            when(actions.findInbox(eq(INST), eq(List.of("OPEN", "ACKED")), any(Pageable.class))).thenReturn(old);
+            when(actions.findInbox(eq(INST), eq(List.of("OPEN", "ACKED")), isNull(), isNull(), isNull(), any(Pageable.class))).thenReturn(old);
 
             Page<EngagementAction> out = controller.inbox(INST, "OPEN,ACKED", 0, 500,
                     null, " ", "", null, null, " ", null, null, user).getBody();
 
             assertSame(old, out);
-            verify(actions).findInbox(INST, List.of("OPEN", "ACKED"), PageRequest.of(0, 200));
+            verify(actions).findInbox(INST, List.of("OPEN", "ACKED"), null, null, null, PageRequest.of(0, 200));
             verifyNoInteractions(query);
         }
 
@@ -159,7 +160,7 @@ class EngagementTaskInboxFiltersTest {
             controller.inbox(INST, "SENT", 1, 999, "e1", null, null, null, null, null, null, null, user);
 
             verify(query).inbox(INST, List.of("SENT"), filter("e1", null, null, null, null, null), 1, 200);
-            verify(actions, never()).findInbox(anyString(), anyList(), any(Pageable.class));
+            verify(actions, never()).findInbox(anyString(), anyList(), any(), any(), any(), any(Pageable.class));
         }
 
         @Test
@@ -170,7 +171,7 @@ class EngagementTaskInboxFiltersTest {
 
             verify(query).inbox(INST, List.of("SENT"),
                     new TaskFilter(null, null, null, null, "2026-10-27", "2026-10-29", null, null), 0, 50);
-            verify(actions, never()).findInbox(anyString(), anyList(), any(Pageable.class));
+            verify(actions, never()).findInbox(anyString(), anyList(), any(), any(), any(), any(Pageable.class));
         }
 
         @Test

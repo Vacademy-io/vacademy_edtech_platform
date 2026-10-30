@@ -60,7 +60,11 @@ export interface ChannelsExtras {
     exitOnMeetingBooked?: boolean;
     /** Booking page the engine books a meeting on when a lead asks for one in a reply. */
     bookingPageId?: string;
+    /** CRM actions the engine may propose: a type, or {type, auto} once set to run on its own. */
+    actions?: CrmActionEntry[];
 }
+
+export type CrmActionEntry = string | { type: string; auto?: boolean };
 
 /** GET /engines/channel-readiness: whether the institute has set each channel up. */
 export interface ChannelReadiness {
