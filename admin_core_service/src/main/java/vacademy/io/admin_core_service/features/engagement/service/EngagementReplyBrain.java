@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.agent.dto.ConversationSession;
@@ -40,17 +41,28 @@ public class EngagementReplyBrain {
     @Value("${engagement.brain.model:}")
     private String brainModel;
 
+    /** Prices the brain's tokens for the daily report. Optional so plain-constructed tests need no DB. */
+    @Autowired(required = false)
+    private EngagementLlmPricing pricing;
+
     /**
      * action = ANSWER | ESCALATE; reply is the drafted text (a suggestion when escalated).
      * assetIds: assets to send along with the reply (unvalidated — the caller resolves them
      * against the engine's own assets). requestedMaterial: what the person asked for when
-     * escalationType is "missing_material".
+     * escalationType is "missing_material". usage = tokens + price of the call(s) behind it;
+     * null when no model was called.
      */
     public record ReplyDecision(String action, String reply, String reason, String escalationType,
-                                List<String> assetIds, String requestedMaterial) {
+                                List<String> assetIds, String requestedMaterial, EngagementLlmUsage usage) {
         public ReplyDecision(String action, String reply, String reason, String escalationType) {
-            this(action, reply, reason, escalationType, List.of(), null);
+            this(action, reply, reason, escalationType, List.of(), null, null);
         }
+
+        public ReplyDecision(String action, String reply, String reason, String escalationType,
+                             List<String> assetIds, String requestedMaterial) {
+            this(action, reply, reason, escalationType, assetIds, requestedMaterial, null);
+        }
+
         public boolean isAnswer() { return "ANSWER".equalsIgnoreCase(action); }
         public boolean isMissingMaterial() { return "missing_material".equalsIgnoreCase(escalationType); }
     }
@@ -73,6 +85,7 @@ public class EngagementReplyBrain {
         history.add(ConversationSession.ChatMessage.system(system));
         history.add(ConversationSession.ChatMessage.user(user));
 
+        EngagementLlmUsage usage = EngagementLlmUsage.NONE;
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             ConversationSession session = ConversationSession.builder()
                     .instituteId(engine.getInstituteId())
@@ -83,6 +96,7 @@ public class EngagementReplyBrain {
             // Auto-replies are free by product decision (EngagementReplyResponder): never token-charged.
             session.getContext().put(LLMService.CTX_BILLED_BY_CALLER, Boolean.TRUE);
             LLMService.LLMResponse resp = llmService.generateChatCompletion(session);
+            usage = usage.plus(resp, pricing);
             String raw = resp != null ? resp.getContent() : null;
             if (raw == null || raw.isBlank()) {
                 throw new IllegalStateException("Reply brain returned an empty response");
@@ -102,7 +116,8 @@ public class EngagementReplyBrain {
                 return new ReplyDecision(action, reply, n.path("reason").asText(""),
                         n.hasNonNull("escalationType") ? n.get("escalationType").asText() : null,
                         assetIds,
-                        n.hasNonNull("requestedMaterial") ? n.get("requestedMaterial").asText() : null);
+                        n.hasNonNull("requestedMaterial") ? n.get("requestedMaterial").asText() : null,
+                        usage);
             } catch (Exception parseError) {
                 if (attempt == MAX_ATTEMPTS) {
                     throw new IllegalStateException("Reply brain emitted unparseable JSON twice", parseError);
