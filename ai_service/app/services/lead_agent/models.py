@@ -256,6 +256,11 @@ class BulkDecisionIn(DecisionIn):
     ids: List[str] = Field(min_length=1, max_length=200)
 
 
+class DeliverNowIn(BaseModel):
+    """Sync now: these APPROVED leads only; none = the best-scored ones, up to today's quota."""
+    ids: Optional[List[str]] = Field(default=None, max_length=200)
+
+
 class SuggestIn(BaseModel):
     products: List[ProductKey] = Field(default_factory=list, max_length=5)  # legacy; the form sends name
     name: Optional[str] = Field(default=None, max_length=80)

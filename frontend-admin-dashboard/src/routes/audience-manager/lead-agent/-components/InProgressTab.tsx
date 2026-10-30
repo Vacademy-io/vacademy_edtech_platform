@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { ArrowsClockwise } from '@phosphor-icons/react';
+import { MyButton } from '@/components/design-system/button';
 import { cn } from '@/lib/utils';
 import type { CandidateStatus, LeadAgent } from '../-types';
 import { CANDIDATE_STATUS_LABEL, IN_PROGRESS_STATUSES } from '../-utils/lead-agent-options';
-import { useCandidates } from '../-hooks/use-lead-agent';
+import { useApprovedWaiting, useCandidates, useDeliverNow } from '../-hooks/use-lead-agent';
 import { CandidatesTab } from './CandidatesTab';
 
 function CountTile({
@@ -38,6 +40,33 @@ function CountTile({
     );
 }
 
+/** Approved leads go out on the agent's own runs; Sync now delivers them straight away. */
+function SyncApprovedBar({ agent }: { agent: LeadAgent }) {
+    const waiting = useApprovedWaiting(agent.id).data ?? 0;
+    const sync = useDeliverNow(agent.id);
+    return (
+        <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 bg-neutral-50 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-caption text-neutral-600">
+                {agent.status === 'PAUSED'
+                    ? 'The agent is paused, so approved leads are not delivered on their own. '
+                    : 'Approved leads are delivered on the agent’s runs, inside the delivery window. '}
+                Sync now sends them all to the lead list straight away, up to today’s daily limit;
+                to send only some, tick them below and press Deliver.
+            </p>
+            <MyButton
+                type="button"
+                buttonType="secondary"
+                disable={sync.isPending || waiting === 0 || agent.status === 'ARCHIVED'}
+                onClick={() => sync.mutate()}
+                className="shrink-0"
+            >
+                <ArrowsClockwise className={cn('size-4', sync.isPending && 'animate-spin')} />{' '}
+                {sync.isPending ? 'Syncing…' : 'Sync now'}
+            </MyButton>
+        </div>
+    );
+}
+
 /** Where the pipeline is: counts per working status, and the list for the one picked. */
 export function InProgressTab({
     agent,
@@ -60,6 +89,7 @@ export function InProgressTab({
                     />
                 ))}
             </div>
+            {status === 'APPROVED' && <SyncApprovedBar agent={agent} />}
             <CandidatesTab key={status} agent={agent} status={status} />
         </div>
     );
