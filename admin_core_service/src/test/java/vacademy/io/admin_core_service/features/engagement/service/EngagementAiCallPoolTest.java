@@ -69,6 +69,17 @@ class EngagementAiCallPoolTest {
     }
 
     @Test
+    void approvedInboxCallsAlsoAdvanceTheRotation() {
+        EngagementEngine e = engine("{\"AI_CALL\":{\"enabled\":true,\"agentPool\":[\"a\",\"b\"]}}");
+        when(actions.countByEngineIdAndChannel("eng-1", "AI_CALL")).thenReturn(0L);
+        when(actions.countByEngineIdAndActionTypeAndStatus("eng-1", "SCHEDULE_AI_CALL", "DONE")).thenReturn(0L, 1L);
+        assertEquals("a", pool.next(e));
+        assertEquals("b", pool.next(e));
+        assertTrue(pool.hasPool(e));
+        assertFalse(pool.hasPool(engine("{\"AI_CALL\":{\"enabled\":true,\"agent\":\"x\"}}")));
+    }
+
+    @Test
     void nextIsNullWithoutAPool() {
         assertNull(pool.next(engine("{\"AI_CALL\":{\"enabled\":true}}")));
     }
