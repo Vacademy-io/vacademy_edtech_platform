@@ -70,14 +70,19 @@ export function ScoreBars({ parts }: { parts: ScoreParts }) {
     );
 }
 
-const scoreTone = (score: number | null) =>
+/** The pill is read against the agent's minimum score to send: at or above is good, below is weak. */
+const scoreTone = (score: number | null, sendScore: number) =>
     score === null
         ? 'border-neutral-200 bg-neutral-50 text-neutral-600'
-        : score >= 70
+        : score >= sendScore
           ? 'border-success-300 bg-success-50 text-success-700'
-          : score >= 45
-            ? 'border-warning-300 bg-warning-50 text-warning-700'
-            : 'border-danger-200 bg-danger-50 text-danger-700';
+          : 'border-warning-300 bg-warning-50 text-warning-700';
+
+/** Colour is not the only cue: the screen-reader label says which side of the bar the score is on. */
+const scoreLabel = (score: number | null, sendScore: number) =>
+    score === null
+        ? 'Not scored yet'
+        : `Score ${score}, ${score >= sendScore ? 'at or above' : 'below'} the minimum score to send (${sendScore})`;
 
 function QualityPill({ quality }: { quality: string }) {
     if (!quality) return null;
@@ -287,8 +292,11 @@ export function CandidateCard({
     onReject,
     busy,
     listLink,
+    sendScore,
 }: {
     candidate: CandidateSummary;
+    /** The agent's minimum score to send; the score pill is coloured against it. */
+    sendScore: number;
     selectable?: boolean;
     selected?: boolean;
     onSelectedChange?: (on: boolean) => void;
@@ -350,9 +358,9 @@ export function CandidateCard({
                 <div
                     className={cn(
                         'flex shrink-0 flex-col items-center rounded-md border px-3 py-1',
-                        scoreTone(c.score)
+                        scoreTone(c.score, sendScore)
                     )}
-                    aria-label={`Score ${c.score ?? 'not scored'}`}
+                    aria-label={scoreLabel(c.score, sendScore)}
                 >
                     <span className="text-title font-semibold">{c.score ?? '—'}</span>
                     <span className="text-caption">score</span>

@@ -14,10 +14,12 @@ import { RejectDialog } from './RejectDialog';
 
 export const PAGE_SIZE = 25;
 
-const EMPTY: Partial<Record<CandidateStatus, { title: string; body: string }>> = {
-    REVIEW: {
-        title: 'Nothing to review',
-        body: 'Leads that score between your review and auto-deliver scores wait here for one click.',
+type EmptyCopy = { title: string; body: string };
+
+const EMPTY: Partial<Record<CandidateStatus, EmptyCopy>> = {
+    APPROVED: {
+        title: 'No leads ready to send',
+        body: 'Leads that score at least your minimum score wait here until the agent sends them, best first, up to your daily quota.',
     },
     DELIVERED: {
         title: 'No leads delivered yet',
@@ -25,9 +27,19 @@ const EMPTY: Partial<Record<CandidateStatus, { title: string; body: string }>> =
     },
     REJECTED: {
         title: 'No rejected or skipped leads',
-        body: 'Leads that score too low, that you reject, or that are skipped (the same organisation as another lead, or already in your leads) are kept here. They are never delivered or charged.',
+        body: 'Leads that score below your minimum score to send, that lack a buying signal you require, that you reject, or that are skipped (the same organisation as another lead, or already in your leads) are kept here. They are never delivered or charged.',
     },
 };
+
+/** The approval queue only ever holds leads at or above the minimum score (lower ones are rejected):
+ * every one of them when approval is on, otherwise just those that need a person (possible
+ * duplicates, leads judged only from Google Maps). */
+const approvalEmpty = (requireApproval: boolean): EmptyCopy => ({
+    title: 'Nothing waiting for approval',
+    body: requireApproval
+        ? 'Leads that score at least your minimum score wait here for one click before they are sent. Approved leads are sent best first, up to your daily quota.'
+        : 'Leads that score at least your minimum score are sent automatically. Only the ones that need a person wait here: possible duplicates and leads judged only from Google Maps. To approve every lead first, turn on “Approve leads before they’re sent” in Settings.',
+});
 
 /** A paged list of candidates in one status (or several; the first picks the empty state). The REVIEW
  * list adds approve / reject and bulk actions. */
@@ -128,7 +140,12 @@ export function CandidatesTab({
         );
     }
     if (items.length === 0) {
-        const empty = primary ? EMPTY[primary] : undefined;
+        const empty =
+            primary === 'REVIEW'
+                ? approvalEmpty(agent.gate.require_approval)
+                : primary
+                  ? EMPTY[primary]
+                  : undefined;
         return (
             <EmptyState
                 icon={<Tray className="size-8 text-neutral-400" />}
@@ -198,6 +215,7 @@ export function CandidatesTab({
                         onReject={reviewing ? () => setRejectIds([c.id]) : undefined}
                         busy={busy}
                         listLink={listLink}
+                        sendScore={agent.gate.send_score}
                     />
                 ))}
             </div>

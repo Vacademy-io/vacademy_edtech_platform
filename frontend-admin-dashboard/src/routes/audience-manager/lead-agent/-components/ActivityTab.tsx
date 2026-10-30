@@ -22,7 +22,7 @@ const DAYS = 14;
 // Recharts paints SVG, so it needs colour strings: the design tokens' CSS variables.
 const SERIES = [
     { key: 'delivered', label: 'Delivered', color: 'hsl(var(--success-500))' },
-    { key: 'review', label: 'To review', color: 'hsl(var(--warning-500))' },
+    { key: 'review', label: 'To approve', color: 'hsl(var(--warning-500))' },
     { key: 'rejected', label: 'Rejected', color: 'hsl(var(--danger-400))' },
 ] as const;
 
@@ -30,7 +30,7 @@ const COLUMNS: { key: keyof AgentStatsDay; label: string }[] = [
     { key: 'discovered', label: 'Found' },
     { key: 'researched', label: 'Researched' },
     { key: 'delivered', label: 'Delivered' },
-    { key: 'review', label: 'To review' },
+    { key: 'review', label: 'To approve' },
     { key: 'rejected', label: 'Rejected' },
     { key: 'searches', label: 'Searches' },
     { key: 'pages', label: 'Pages read' },

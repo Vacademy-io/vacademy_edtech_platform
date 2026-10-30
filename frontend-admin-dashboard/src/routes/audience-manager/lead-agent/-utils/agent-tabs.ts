@@ -10,7 +10,7 @@ export const AGENT_TABS = [
 export type AgentTab = (typeof AGENT_TABS)[number];
 
 export const AGENT_TAB_LABELS: Record<AgentTab, string> = {
-    review: 'Review queue',
+    review: 'Approval queue',
     delivered: 'Delivered',
     rejected: 'Rejected',
     progress: 'In progress',

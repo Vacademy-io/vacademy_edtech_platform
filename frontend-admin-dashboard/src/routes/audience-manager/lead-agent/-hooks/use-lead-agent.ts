@@ -165,7 +165,7 @@ export function useDecideCandidate(agentId: string) {
             reason?: string;
         }) => decideCandidate(candidateId, action, reason),
         onSuccess: (_c, { action }) => {
-            toast.success(action === 'APPROVE' ? 'Approved. It will be delivered.' : 'Rejected');
+            toast.success(action === 'APPROVE' ? 'Approved. It is ready to send.' : 'Rejected');
             void qc.invalidateQueries({ queryKey: leadAgentKeys.candidatesOf(agentId) });
             void qc.invalidateQueries({ queryKey: leadAgentKeys.agents() });
         },
