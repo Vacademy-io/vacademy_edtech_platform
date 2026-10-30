@@ -140,9 +140,15 @@ public class SalesDashboardService {
     // ────────────────────────────────────────────────────────────────
 
     /**
-     * Where conversions are coming from. Per source_type (the audience_response
-     * tag — META / GOOGLE / ORGANIC / etc.) we count both inbound lead volume
-     * and the converted subset, so the UI can render a conversion-rate %.
+     * Where leads (and conversions) are coming from. Per source_type (the audience_response
+     * tag — WALK_IN / AUDIENCE_CAMPAIGN / SELF_SIGNUP / META_LEAD_ADS / etc.) we count both
+     * inbound lead volume and the converted subset, so the UI can render a conversion-rate %.
+     *
+     * Each lead lands in exactly ONE source, resolved like the rest of the report suite:
+     * best_source_type, then the representative response's source_type, then the earliest
+     * response by user_id within this institute, else 'unknown'. Joining every response by
+     * user_id used to count a lead under each source it had touched, so the rows summed to
+     * more than the lead count.
      *
      * Scoped via the same caller/team rules as the funnel — see {@link #scopedUsers}.
      */
@@ -159,15 +165,24 @@ public class SalesDashboardService {
         String userClause = userScopeClause(users, "ulp.assigned_counselor_id");
         String dateClause = andDateRange("ulp.created_at", from, to);
 
-        String sql = "SELECT COALESCE(ar.source_type, 'unknown') AS source, " +
-                "       COUNT(DISTINCT ulp.id) AS leads, " +
-                "       COUNT(DISTINCT CASE WHEN ulp.conversion_status = 'CONVERTED' THEN ulp.id END) AS conversions " +
-                "FROM user_lead_profile ulp " +
-                "LEFT JOIN audience_response ar ON ar.user_id = ulp.user_id " +
-                "WHERE ulp.institute_id = ? " +
+        // Resolved in an inner query, grouped in the outer one: Postgres rejects GROUP BY on a
+        // correlated subquery expression repeated from the select list.
+        String sql = "SELECT t.source, " +
+                "       COUNT(*) AS leads, " +
+                "       COUNT(CASE WHEN t.conversion_status = 'CONVERTED' THEN 1 END) AS conversions " +
+                "FROM (" +
+                "  SELECT COALESCE(ulp.best_source_type, ar.source_type, " +
+                "           (SELECT ar2.source_type FROM audience_response ar2 " +
+                "             JOIN audience a2 ON a2.id = ar2.audience_id AND a2.institute_id = ulp.institute_id " +
+                "             WHERE ar2.user_id = ulp.user_id ORDER BY ar2.created_at LIMIT 1), 'unknown') AS source, " +
+                "         ulp.conversion_status " +
+                "  FROM user_lead_profile ulp " +
+                "  LEFT JOIN audience_response ar ON ar.id = ulp.best_score_response_id " +
+                "  WHERE ulp.institute_id = ? " +
                 dateClause +
                 userClause +
-                "GROUP BY COALESCE(ar.source_type, 'unknown') " +
+                ") t " +
+                "GROUP BY t.source " +
                 "ORDER BY leads DESC";
 
         List<Object> args = new ArrayList<>();
