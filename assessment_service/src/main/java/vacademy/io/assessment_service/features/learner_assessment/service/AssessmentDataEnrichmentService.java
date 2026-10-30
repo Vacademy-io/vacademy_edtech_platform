@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vacademy.io.assessment_service.features.assessment.entity.Section;
 import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
@@ -36,6 +37,14 @@ public class AssessmentDataEnrichmentService {
     private final QuestionWiseMarksRepository questionWiseMarksRepository;
     private final LearnerReportService learnerReportService;
     private final ObjectMapper objectMapper;
+
+    /**
+     * Off = the payload carries no class context. Each comparison scans every attempt of the
+     * assessment, once per submission, so a big exam's submit wave saturates the database
+     * (see application.properties).
+     */
+    @Value("${assessment.llm-analytics.class-context-enabled:true}")
+    private boolean classContextEnabled;
 
     /**
      * Build enriched assessment data with full text content for LLM analysis
@@ -99,7 +108,9 @@ public class AssessmentDataEnrichmentService {
             enrichedData.put("summary", summary);
 
             // Comparison context (rank, percentile, class avg) — for AI comparative insights
-            addComparisonContext(enrichedData, studentAttempt, assessmentId, instituteId);
+            if (classContextEnabled) {
+                addComparisonContext(enrichedData, studentAttempt, assessmentId, instituteId);
+            }
 
             // Question-wise marks (status per question — CORRECT/INCORRECT/PARTIAL_CORRECT)
             Map<String, QuestionWiseMarks> qwmMap = buildQuestionWiseMarksMap(assessmentId, studentAttempt.getId());
