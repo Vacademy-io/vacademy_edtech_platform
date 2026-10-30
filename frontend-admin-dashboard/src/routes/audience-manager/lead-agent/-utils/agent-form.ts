@@ -77,8 +77,16 @@ export const agentFormSchema = z
         industries: z
             .array(
                 z.object({
-                    name: z.string().trim().min(1, 'Name the industry'),
-                    search_term: z.string().trim().min(1, 'Add a search term'),
+                    name: z
+                        .string()
+                        .trim()
+                        .min(1, 'Name the industry')
+                        .max(80, 'Keep it under 80 characters'),
+                    search_term: z
+                        .string()
+                        .trim()
+                        .min(1, 'Add a search term')
+                        .max(60, 'Keep it under 60 characters, e.g. "coaching institute"'),
                 })
             )
             .min(1, 'Add at least one industry')

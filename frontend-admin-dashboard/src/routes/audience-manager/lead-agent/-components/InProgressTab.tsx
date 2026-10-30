@@ -39,8 +39,14 @@ function CountTile({
 }
 
 /** Where the pipeline is: counts per working status, and the list for the one picked. */
-export function InProgressTab({ agent }: { agent: LeadAgent }) {
-    const [status, setStatus] = useState<CandidateStatus>('RESEARCHING');
+export function InProgressTab({
+    agent,
+    initialStatus = 'RESEARCHING',
+}: {
+    agent: LeadAgent;
+    initialStatus?: CandidateStatus;
+}) {
+    const [status, setStatus] = useState<CandidateStatus>(initialStatus);
     return (
         <div className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
