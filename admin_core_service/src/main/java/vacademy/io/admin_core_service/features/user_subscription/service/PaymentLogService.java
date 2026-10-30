@@ -1554,6 +1554,7 @@ public class PaymentLogService {
             List<String> searchUserIdsBound, boolean searchNumeric, String searchString,
             String searchPhoneDigits,
             List<String> paymentPlanNamesBound, boolean noPaymentPlanFilter,
+            List<String> paymentModesBound, boolean noPaymentModeFilter,
             boolean noBucketFilter, boolean bucketPaid, boolean bucketPending,
             boolean bucketAbandoned, boolean bucketFailed) {
     }
@@ -1633,6 +1634,12 @@ public class PaymentLogService {
 
         List<String> paymentPlanNames = safeList(filterDTO.getPaymentPlanNames());
         boolean noPaymentPlanFilter = paymentPlanNames.isEmpty();
+        List<String> paymentModes = safeList(filterDTO.getPaymentModes()).stream()
+                .filter(StringUtils::hasText)
+                .map(m -> m.trim().toUpperCase(Locale.ROOT))
+                .distinct()
+                .collect(Collectors.toList());
+        boolean noPaymentModeFilter = paymentModes.isEmpty();
 
         String searchString = StringUtils.hasText(filterDTO.getSearchString())
                 ? filterDTO.getSearchString().trim()
@@ -1665,6 +1672,7 @@ public class PaymentLogService {
                 searchUserIdsBound, searchNumeric, searchString,
                 phoneSearchDigits(searchString),
                 noPaymentPlanFilter ? List.of("") : paymentPlanNames, noPaymentPlanFilter,
+                noPaymentModeFilter ? SENTINEL : paymentModes, noPaymentModeFilter,
                 noBucketFilter, "paid".equals(statusBucket), "pending".equals(statusBucket),
                 "abandoned".equals(statusBucket), "failed".equals(statusBucket));
     }
@@ -1689,7 +1697,8 @@ public class PaymentLogService {
                 f.typeEnrollInvite(), f.typeUserInvoice(),
                 f.noSearchFilter(), f.noSearchUserIds(),
                 f.searchUserIdsBound(), f.searchNumeric(), f.searchString(), f.searchPhoneDigits(),
-                f.paymentPlanNamesBound(), f.noPaymentPlanFilter(), abandonedAfterHours);
+                f.paymentPlanNamesBound(), f.noPaymentPlanFilter(),
+                f.paymentModesBound(), f.noPaymentModeFilter(), abandonedAfterHours);
 
         List<PaymentLogSummaryResponseDTO.StatusTotal> totals = rows.stream()
                 .map(r -> PaymentLogSummaryResponseDTO.StatusTotal.builder()
@@ -1711,7 +1720,32 @@ public class PaymentLogService {
                 // The plan picker lists every plan the institute has, not just the plans surviving
                 // the current filters — otherwise selecting one plan would empty the dropdown.
                 .paymentPlanNames(paymentLogRepository.findDistinctPaymentPlanNames(f.instituteId()))
+                .usedPaymentModes(findUsedPaymentModes(f.instituteId()))
                 .build();
+    }
+
+    /**
+     * The offline modes this institute's payments were recorded with, labelled the way they were
+     * shown at the time (from the stored details), so the mode filter can offer a mode even after
+     * it was removed from Settings.
+     */
+    @SuppressWarnings("unchecked")
+    private List<PaymentLogSummaryResponseDTO.UsedPaymentMode> findUsedPaymentModes(String instituteId) {
+        return paymentLogRepository.findUsedPaymentModes(instituteId).stream()
+                .map(r -> {
+                    Map<String, Object> details = StringUtils.hasText(r.getDetailsJson())
+                            ? JsonUtil.fromJson(r.getDetailsJson(), Map.class)
+                            : null;
+                    Object modeLabel = details == null ? null : details.get("mode_label");
+                    Object subModeLabel = details == null ? null : details.get("sub_mode_label");
+                    return PaymentLogSummaryResponseDTO.UsedPaymentMode.builder()
+                            .mode(r.getMode())
+                            .subMode(StringUtils.hasText(r.getSubMode()) ? r.getSubMode() : null)
+                            .modeLabel(modeLabel instanceof String s ? s : null)
+                            .subModeLabel(subModeLabel instanceof String s ? s : null)
+                            .build();
+                })
+                .collect(Collectors.toList());
     }
 
     public Page<PaymentLogWithUserPlanDTO> getPaymentLogsForInstitute(
@@ -1737,7 +1771,8 @@ public class PaymentLogService {
                 f.typeEnrollInvite(), f.typeUserInvoice(),
                 f.noSearchFilter(), f.noSearchUserIds(),
                 f.searchUserIdsBound(), f.searchNumeric(), f.searchString(), f.searchPhoneDigits(),
-                f.paymentPlanNamesBound(), f.noPaymentPlanFilter(), abandonedAfterHours,
+                f.paymentPlanNamesBound(), f.noPaymentPlanFilter(),
+                f.paymentModesBound(), f.noPaymentModeFilter(), abandonedAfterHours,
                 f.noBucketFilter(), f.bucketPaid(), f.bucketPending(),
                 f.bucketAbandoned(), f.bucketFailed(),
                 pageable);
