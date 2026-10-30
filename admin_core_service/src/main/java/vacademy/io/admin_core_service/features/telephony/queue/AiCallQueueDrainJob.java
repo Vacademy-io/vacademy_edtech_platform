@@ -122,6 +122,11 @@ public class AiCallQueueDrainJob {
     @Lazy
     private AiCallService aiCallService;
 
+    /** Tells the engagement engine a call it asked for did not happen (no call log will say so). */
+    @Autowired
+    @Lazy
+    private vacademy.io.admin_core_service.features.engagement.service.EngagementWakeService engagementWake;
+
     @Scheduled(fixedDelayString = "${telephony.ai.queue.drain-delay-ms:2000}")
     @SchedulerLock(name = "AiCallQueueDrain", lockAtMostFor = "PT5M", lockAtLeastFor = "PT1S")
     public void drain() {
@@ -138,7 +143,13 @@ public class AiCallQueueDrainJob {
     private void drainOnce() {
         Instant now = Instant.now();
 
+        java.util.List<String> engineDue = repository.engineItemIdsDueToExpire(now);
         int expired = repository.expireOverdue(now);
+        if (!engineDue.isEmpty()) {
+            for (AiCallQueueItem it : repository.findAllById(engineDue)) {
+                if (AiCallQueueStatus.EXPIRED.name().equals(it.getStatus())) wakeEngine(it);
+            }
+        }
         if (expired > 0) {
             log.info("ai-call queue: expired {} item(s) that waited past their time limit", expired);
         }
@@ -500,6 +511,22 @@ public class AiCallQueueDrainJob {
         item.setStatus(status.name());
         item.setStatusReason(truncate(reason));
         repository.save(item);
+        if (status == AiCallQueueStatus.FAILED || status == AiCallQueueStatus.CANCELLED) wakeEngine(item);
+    }
+
+    /**
+     * An AI call the Engagement Engine asked for ended without a call: refused, cancelled, failed
+     * or expired. No call log exists, so nothing else wakes the engine for that lead; wake it now so
+     * it reaches the person another way. Best effort, never fails the queue.
+     */
+    private void wakeEngine(AiCallQueueItem item) {
+        if (engagementWake == null || !"ENGAGEMENT_ENGINE".equals(item.getSource())) return;
+        try {
+            engagementWake.wakeLead(item.getInstituteId(), item.getResponseId(), item.getUserId(),
+                    vacademy.io.admin_core_service.features.engagement.service.EngagementWakeService.AI_CALL, false);
+        } catch (Exception e) {
+            log.warn("ai-call queue: could not wake the engine for item {}: {}", item.getId(), e.getMessage());
+        }
     }
 
     private AiCallRequestDTO toRequest(AiCallQueueItem item) {

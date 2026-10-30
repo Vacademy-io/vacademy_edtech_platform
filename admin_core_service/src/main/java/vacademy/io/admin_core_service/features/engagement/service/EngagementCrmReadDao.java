@@ -149,6 +149,33 @@ public class EngagementCrmReadDao {
     }
 
     /**
+     * AI calls the engine asked for that never became a call (refused, cancelled, failed, expired):
+     * [response_id, status, status_reason, at], newest first, last 7 days. They have no call log, so
+     * without this the engine would not know a call it asked for did not happen.
+     */
+    public Map<String, List<Object[]>> unplacedCallsByLeadIds(String instituteId, Collection<String> leadIds) {
+        Map<String, List<Object[]>> out = new HashMap<>();
+        if (leadIds == null || leadIds.isEmpty()) return out;
+        List<?> rows = em.createNativeQuery("""
+                SELECT q.response_id, q.status, q.status_reason, q.updated_at
+                  FROM ai_call_queue q
+                 WHERE q.institute_id = :instituteId AND q.source = 'ENGAGEMENT_ENGINE'
+                   AND q.response_id IN (:ids) AND q.status IN ('FAILED', 'EXPIRED', 'CANCELLED')
+                   AND q.updated_at > now() - interval '7 days'
+                 ORDER BY q.updated_at DESC
+                """)
+                .setParameter("instituteId", instituteId)
+                .setParameter("ids", leadIds)
+                .getResultList();
+        for (Object r : rows) {
+            Object[] c = (Object[]) r;
+            List<Object[]> l = out.computeIfAbsent((String) c[0], k -> new ArrayList<>());
+            if (l.size() < 3) l.add(c);
+        }
+        return out;
+    }
+
+    /**
      * Call log id → the latest AI voice-bot result: [call_log_id, ai_summary, follow_up, follow_up_gist,
      * callback_at, callback_time_text, interest_level, disposition]. ai_call_result has no call_log_id
      * index, so the read rides idx_acr_institute (institute_id, received_at) from {@code since}, a time

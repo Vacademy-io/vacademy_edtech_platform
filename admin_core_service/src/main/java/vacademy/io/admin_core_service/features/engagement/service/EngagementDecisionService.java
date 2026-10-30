@@ -1071,10 +1071,23 @@ public class EngagementDecisionService {
         }
     }
 
+    /**
+     * An engine that places AI calls must see how its calls went, or a call nobody picked up is
+     * invisible and the next decision repeats it or waits. The calls data point is added to whatever
+     * the admin chose; the ledger (messages) is always on.
+     */
+    private List<String> withCallHistory(EngagementEngine engine, List<String> chosen) {
+        if (crmActions == null || !crmActions.aiCallChannelOn(engine) || chosen.contains("ai_calls")) return chosen;
+        List<String> out = new ArrayList<>(chosen);
+        out.add("ai_calls");
+        return out;
+    }
+
     private List<String> parseDataPoints(EngagementEngine engine) {
         try {
-            return objectMapper.readValue(engine.getDataPoints(),
+            List<String> chosen = objectMapper.readValue(engine.getDataPoints(),
                     objectMapper.getTypeFactory().constructCollectionType(List.class, String.class));
+            return withCallHistory(engine, chosen);
         } catch (Exception e) {
             log.warn("Engine {} has unparseable data_points — using always-on only", engine.getId());
             return List.of();

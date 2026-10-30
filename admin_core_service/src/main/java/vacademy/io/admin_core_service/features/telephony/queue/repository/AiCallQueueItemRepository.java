@@ -153,6 +153,18 @@ public interface AiCallQueueItemRepository extends JpaRepository<AiCallQueueItem
     int expireOverdue(@Param("now") Instant now);
 
     /**
+     * Engine-sourced items that expire in the sweep: the engine is woken for them, since an expired
+     * call never reaches a call log and so never tells the engine it did not happen. Read before
+     * {@link #expireOverdue}; the caller keeps only the ones that really expired.
+     */
+    @Query(value = """
+            SELECT q.id FROM ai_call_queue q
+             WHERE q.source = 'ENGAGEMENT_ENGINE' AND q.status = 'QUEUED'
+               AND q.expires_at IS NOT NULL AND q.expires_at <= :now
+            """, nativeQuery = true)
+    java.util.List<String> engineItemIdsDueToExpire(@Param("now") Instant now);
+
+    /**
      * Push a paused institute's expiries forward by however long it was held, so the
      * pause does not eat into the TTL the calls had left when they were frozen.
      * Called once on resume, before the lane is un-paused.

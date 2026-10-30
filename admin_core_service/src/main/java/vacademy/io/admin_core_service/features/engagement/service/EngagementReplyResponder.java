@@ -99,13 +99,31 @@ public class EngagementReplyResponder {
             + "(?:\\W+(?:sorry|thanks|thank you|thanku|sir|mam|ma'am|madam|ji|bhai|bye))*\\W*$");
 
     /**
-     * Asks to be called (back, later, at a time). A person answers it: an auto-reply would promise
-     * a call nobody schedules. en + Hinglish.
+     * Asks for a call: "call me back", "please call me", "I am waiting for a call", "can I talk on
+     * call", "call karo". A person (or the engine's AI call) answers it: an auto-reply would promise a
+     * call nobody schedules. en + Hinglish. Use {@link #isCallRequest}, which also rules out "don't
+     * call me".
      */
     static final Pattern CALLBACK = Pattern.compile(
-            "(?i)(?:^|[^\\p{L}])(call (?:me )?back|callback|call (?:me )?(?:later|tomorrow)"
-            + "|(?:baad|bad) (?:mein|me|main) (?:call|phone|baat)|kal (?:call|phone|baat)"
-            + "|(?:call|phone) (?:karo|karna|kijiye|kar do|kar dena) (?:baad|kal|shaam|subah))(?:$|[^\\p{L}])");
+            "(?i)(?:^|[^\\p{L}])(call (?:me|us)|please call|call back|callback"
+            + "|(?:give|gimme) (?:me )?a call"
+            + "|(?:can|could|would|will) (?:you|someone|somebody|anyone) (?:please )?(?:call|phone|ring)"
+            + "|(?:phone|ring) me"
+            + "|waiting for (?:a |your |the )?(?:phone )?call"
+            + "|(?:talk|speak|chat) (?:on|over|via|through) (?:a |the )?(?:call|phone)"
+            + "|(?:want|need|prefer|like) (?:a |to )?(?:call|talk on call|speak on call)"
+            + "|(?:call|phone) (?:karo|karna|kijiye|kar do|kar dena|kr do)"
+            + "|(?:baad|bad) (?:mein|me|main) (?:call|phone|baat)|kal (?:call|phone|baat))(?:$|[^\\p{L}])");
+
+    /** "don't call", "never phone", "no call", "do not ring": a refusal, whatever else the text says. */
+    private static final Pattern NO_CALL = Pattern.compile(
+            "(?i)(?:^|[^\\p{L}])(?:don'?t|dont|do not|never|no|not|stop|mat|nahi|na)\\W+(?:\\w+\\W+){0,2}(?:call|phone|ring)");
+
+    /** True when the message asks to be called (and does not refuse calls or ask to stop). */
+    static boolean isCallRequest(String text) {
+        return text != null && CALLBACK.matcher(text).find() && !NO_CALL.matcher(text).find()
+                && !OPT_OUT.matcher(text).find() && !STOP_MENTION.matcher(text).find();
+    }
 
     /**
      * Links in a drafted auto-answer: schemed URLs, www.-prefixed, AND bare domain/path tokens
@@ -334,7 +352,7 @@ public class EngagementReplyResponder {
         action.setExpiresAt(now.plus(Duration.ofHours(taskExpireHours)));
         EngagementLlmUsage.applyTo(decision.usage(), action);
         action = actionRepository.save(action);
-        if (!decision.isAnswer() && CALLBACK.matcher(replyText).find()) {
+        if (!decision.isAnswer() && isCallRequest(replyText)) {
             proposeCallbackCall(engine, cand.getMemberId(), replyText, now);
         }
 
@@ -420,7 +438,7 @@ public class EngagementReplyResponder {
         boolean optOut = OPT_OUT.matcher(replyText).find();
         boolean stopMention = !optOut && (STOP_MENTION.matcher(replyText).find()
                 || NOT_INTERESTED_CLEAR.matcher(replyText).find());
-        boolean callback = !optOut && !stopMention && CALLBACK.matcher(replyText).find();
+        boolean callback = !optOut && !stopMention && isCallRequest(replyText);
         if (!optOut && !stopMention && !callback) return false;
         if (replyMemberQueries == null) return false;
 
@@ -573,7 +591,7 @@ public class EngagementReplyResponder {
         }
 
         String label = STOP_MENTION.matcher(body).find() || NOT_INTERESTED_CLEAR.matcher(body).find() ? "stop-mention"
-                : CALLBACK.matcher(body).find() ? "callback"
+                : isCallRequest(body) ? "callback"
                 : ESCALATE_TRIPWIRE.matcher(body).find() ? "money/complaint" : null;
         note.setEngineId(target.getEngineId());
         note.setMemberId(target.getMemberId());
@@ -679,7 +697,7 @@ public class EngagementReplyResponder {
         if (STOP_MENTION.matcher(inbound).find() || NOT_INTERESTED_CLEAR.matcher(inbound).find()) {
             return "Reply may be asking to stop or saying they are not interested — human review required.";
         }
-        if (CALLBACK.matcher(inbound).find()) {
+        if (isCallRequest(inbound)) {
             return "Reply asks for a call back — a person should schedule the call.";
         }
         if (ESCALATE_TRIPWIRE.matcher(inbound).find()) {

@@ -276,6 +276,11 @@ public class EngagementBrainClient {
             sb.append("\nAI_CALL IS NOT A MESSAGE. To call the person (including a first touch, when the brief says \n")
               .append("to call), choose actionType SCHEDULE_AI_CALL from the CRM ACTIONS below and fill its \"action\"; \n")
               .append("leave channel, draftBody and templateName null. Never answer with channel AI_CALL and a draft.\n");
+            sb.append("WHEN A CALL DID NOT CONNECT (the CALLS block shows no answer, busy, voicemail, failed or a very short \n")
+              .append("call with no conversation): do not simply call again. Reach the person on another enabled channel \n")
+              .append("that fits (an approved WhatsApp template, or an email) and offer a time to talk; never mention that the \n")
+              .append("call was missed or tracked. Call again only after at least a day, or at the time they asked, and not \n")
+              .append("after two unanswered calls in a row. A wrong number or a request not to be called means no call at all.\n");
         }
 
         boolean waEnabled = enabledChannels == null || enabledChannels.isEmpty()

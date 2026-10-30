@@ -68,6 +68,30 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
                                      Pageable pageable);
 
     /**
+     * Graduation reached on a channel: the drafts already waiting in the inbox as copilot tasks become
+     * autonomous sends, due now (the dispatch job re-checks quiet hours, consent, holds and credits
+     * before each one goes). Only untouched message drafts: an acknowledged task has a person on it, a
+     * reply or CRM action is not a proactive send, and a WhatsApp draft needs its approved template
+     * (an email in template-only mode too). Returns how many were promoted.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET kind = 'SEND', scheduled_for = :now, expires_at = :expiresAt, updated_at = :now
+             WHERE engine_id = :engineId AND channel = :channel
+               AND kind = 'TASK' AND status = 'OPEN'
+               AND (action_type IS NULL OR action_type IN ('SEND_MESSAGE', 'SHARE_LINK'))
+               AND (expires_at IS NULL OR expires_at > :now)
+               AND (channel <> 'WHATSAPP' OR template_name IS NOT NULL)
+               AND (channel <> 'EMAIL' OR :emailNeedsTemplate = FALSE OR template_name IS NOT NULL)
+               AND (draft_body IS NOT NULL OR template_name IS NOT NULL)
+            """, nativeQuery = true)
+    int promoteTasksToAutoSends(@Param("engineId") String engineId, @Param("channel") String channel,
+                                @Param("emailNeedsTemplate") boolean emailNeedsTemplate,
+                                @Param("now") Instant now, @Param("expiresAt") Instant expiresAt);
+
+    /**
      * Institute-wide CROSS-ENGINE per-member action count in a window — the only cadence
      * safety mechanism (the prompt decides cadence, so this cap must be hard and checked
      * BEFORE the LLM call). Counts by subject (user or lead), not by member row, so three

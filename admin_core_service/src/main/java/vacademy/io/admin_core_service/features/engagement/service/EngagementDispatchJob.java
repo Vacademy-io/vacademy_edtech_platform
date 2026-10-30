@@ -21,6 +21,7 @@ import vacademy.io.common.exceptions.VacademyException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
@@ -80,6 +81,13 @@ public class EngagementDispatchJob {
     @Value("${engagement.dispatch.batch:100}")
     private int batch;
 
+    /** Approvals on a channel before the engine sends on it by itself (the engine's own first_n wins). */
+    @Value("${engagement.autonomy.first-n:5}")
+    private int defaultFirstN;
+
+    @Value("${engagement.task.expire-hours:72}")
+    private int taskExpireHours;
+
     @Value("${engagement.credits.per-message:1.0}")
     private BigDecimal perMessageCredits;
 
@@ -93,6 +101,11 @@ public class EngagementDispatchJob {
     @SchedulerLock(name = "EngagementAutoDispatch", lockAtMostFor = "PT15M", lockAtLeastFor = "PT10S")
     public void dispatch() {
         Instant now = Instant.now();
+        try {
+            promoteGraduatedTasks(now);
+        } catch (Exception e) {
+            log.error("Promoting graduated tasks failed: {}", e.getMessage());
+        }
         List<EngagementAction> due = actionRepository.findDueAutoSends(now, batch);
         int sent = 0;
         for (EngagementAction action : due) {
@@ -106,6 +119,43 @@ public class EngagementDispatchJob {
         if (sent > 0 || reconciled > 0) {
             log.info("Auto-dispatch: {} sent, {} unbilled sends reconciled", sent, reconciled);
         }
+    }
+
+    /**
+     * Graduation applies to the drafts already in the inbox, not only to future ones: once a person
+     * has approved first_n sends on a channel the admin set to auto, the rest of that channel's waiting
+     * drafts go out on the next run (20 drafts, 5 approved: the other 15 send). A killed engine, a
+     * channel not set to auto, or one still on trial promotes nothing. The send-time checks in
+     * {@link #dispatchOne} still apply to each promoted draft.
+     */
+    int promoteGraduatedTasks(Instant now) {
+        int promoted = 0;
+        for (EngagementEngine engine : engineRepository.findByStatus("ACTIVE")) {
+            if (Boolean.TRUE.equals(engine.getAutoSendKilled())) continue;
+            int threshold = engine.getFirstN() != null ? engine.getFirstN() : defaultFirstN;
+            JsonNode channels;
+            try {
+                channels = objectMapper.readTree(engine.getChannels());
+            } catch (Exception e) {
+                continue;
+            }
+            for (String channel : List.of("WHATSAPP", "EMAIL", "IN_APP")) {
+                JsonNode cfg = channels.path(channel);
+                if (!cfg.path("enabled").asBoolean(false) || !cfg.path("auto").asBoolean(false)) continue;
+                boolean graduated = threshold <= 0
+                        || actionRepository.countApprovedSendsForChannel(engine.getId(), channel) >= threshold;
+                if (!graduated) continue;
+                boolean emailNeedsTemplate = "EMAIL".equals(channel) && crmActions != null
+                        && crmActions.emailTemplateMode(engine);
+                int n = actionRepository.promoteTasksToAutoSends(engine.getId(), channel, emailNeedsTemplate,
+                        now, now.plus(Duration.ofHours(taskExpireHours)));
+                if (n > 0) {
+                    log.info("Engine {}: {} waiting {} draft(s) became auto-sends (graduated)", engine.getId(), n, channel);
+                    promoted += n;
+                }
+            }
+        }
+        return promoted;
     }
 
     private boolean dispatchOne(EngagementAction action, Instant now) {

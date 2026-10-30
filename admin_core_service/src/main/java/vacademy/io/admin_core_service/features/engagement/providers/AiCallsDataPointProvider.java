@@ -59,7 +59,8 @@ public class AiCallsDataPointProvider implements DataPointProvider {
         List<String> leadIds = subjects.stream()
                 .map(Subject::getAudienceResponseId).filter(Objects::nonNull).distinct().toList();
         Map<String, List<Object[]>> callsByLead = dao.callsByLeadIds(instituteId, leadIds, CALLS_PER_LEAD);
-        if (callsByLead.isEmpty()) return new HashMap<>();
+        Map<String, List<Object[]>> unplaced = dao.unplacedCallsByLeadIds(instituteId, leadIds);
+        if (callsByLead.isEmpty() && unplaced.isEmpty()) return new HashMap<>();
 
         List<String> callIds = new ArrayList<>();
         Instant oldest = null;
@@ -78,11 +79,23 @@ public class AiCallsDataPointProvider implements DataPointProvider {
         Map<String, JsonNode> out = new HashMap<>();
         for (Subject s : subjects) {
             List<Object[]> calls = s.getAudienceResponseId() != null ? callsByLead.get(s.getAudienceResponseId()) : null;
-            if (calls == null || calls.isEmpty()) continue;
+            List<Object[]> missed = s.getAudienceResponseId() != null ? unplaced.get(s.getAudienceResponseId()) : null;
+            if ((calls == null || calls.isEmpty()) && (missed == null || missed.isEmpty())) continue;
             ObjectNode n = mapper.createObjectNode();
             ArrayNode arr = n.putArray("calls");
-            for (Object[] c : calls) {
-                arr.add(call(c, botByCall.get((String) c[1]), promisesByCall.get((String) c[1])));
+            if (calls != null) {
+                for (Object[] c : calls) {
+                    arr.add(call(c, botByCall.get((String) c[1]), promisesByCall.get((String) c[1])));
+                }
+            }
+            if (missed != null && !missed.isEmpty()) {
+                ArrayNode ma = n.putArray("notPlaced");
+                for (Object[] m : missed) {
+                    ObjectNode mo = ma.addObject();
+                    CrmText.putTime(mo, "at", m[3]);
+                    CrmText.put(mo, "status", CrmText.clean(m[1], 16));
+                    CrmText.put(mo, "reason", CrmText.cleanNote(m[2], 160));
+                }
             }
             out.put(s.getMemberId(), n);
         }
@@ -139,9 +152,21 @@ public class AiCallsDataPointProvider implements DataPointProvider {
     @Override
     public String render(JsonNode p) {
         JsonNode calls = p == null ? null : p.get("calls");
-        if (calls == null || calls.isEmpty()) return "CALLS: none on record.";
+        JsonNode notPlaced = p == null ? null : p.get("notPlaced");
+        boolean noCalls = calls == null || calls.isEmpty();
+        if (noCalls && (notPlaced == null || notPlaced.isEmpty())) return "CALLS: none on record.";
         Instant now = Instant.now();
-        StringBuilder sb = new StringBuilder("CALLS (newest first; summaries and notes are internal, never quote them):");
+        StringBuilder sb = new StringBuilder(noCalls ? "CALLS: none connected."
+                : "CALLS (newest first; summaries and notes are internal, never quote them):");
+        if (notPlaced != null) {
+            for (JsonNode m : notPlaced) {
+                sb.append("\n  ").append(CrmText.relative(m.get("at"), now))
+                        .append(" AI call asked for but NEVER CONNECTED (").append(m.path("status").asText("?"))
+                        .append(m.hasNonNull("reason") ? ": " + m.get("reason").asText() : "")
+                        .append("): the person was not reached by phone");
+            }
+        }
+        if (noCalls) return sb.toString();
         for (JsonNode c : calls) {
             sb.append("\n  ").append(CrmText.relative(c.get("at"), now)).append(" ")
                     .append(c.path("by").asText()).append(" ").append(c.path("direction").asText("?").toLowerCase())
