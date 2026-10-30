@@ -75,6 +75,7 @@ import {
 } from '../-hooks';
 import { useUpdateEngine } from '../-hooks/engine-edit';
 import {
+    batchNameParts,
     cadenceText,
     DEFAULT_SEND_DAYS,
     DEFAULT_SEND_HOUR,
@@ -161,11 +162,7 @@ function batchOption(b: {
     level?: { level_name?: string };
     session?: { session_name?: string };
 }): CheckOption {
-    const real = (v?: string) => (v && v.trim().toLowerCase() !== 'default' ? v.trim() : '');
-    const sub = [real(b.level?.level_name), real(b.session?.session_name)]
-        .filter(Boolean)
-        .join(' · ');
-    return { value: b.id, label: b.package_dto?.package_name || b.id, sub: sub || undefined };
+    return { value: b.id, ...batchNameParts(b) };
 }
 
 function StepRail({

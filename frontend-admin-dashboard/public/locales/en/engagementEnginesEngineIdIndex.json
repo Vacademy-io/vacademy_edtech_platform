@@ -85,7 +85,8 @@
         "change": "Change status",
         "noTransitions": "Archived engines can’t change status.",
         "footnote": "Pause stops all messages. “Stop auto-send” keeps drafting messages for you to check.",
-        "noSources": "Nothing picked"
+        "noSources": "Nothing picked",
+        "sourcesMore": "+{{count}} more"
     },
     "retry": "Try again",
     "noPeople": {

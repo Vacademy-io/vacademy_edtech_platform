@@ -12,6 +12,20 @@ export function safeParse<T>(raw: string | undefined | null, fallback: T): T {
     }
 }
 
+/** "SSC CGL", "Tier 1", "2026-27" parts of a batch, leaving out the placeholder "default" level / session. */
+export function batchNameParts(b: {
+    id: string;
+    package_dto?: { package_name?: string };
+    level?: { level_name?: string };
+    session?: { session_name?: string };
+}): { label: string; sub?: string } {
+    const real = (v?: string) => (v && v.trim().toLowerCase() !== 'default' ? v.trim() : '');
+    const sub = [real(b.level?.level_name), real(b.session?.session_name)]
+        .filter(Boolean)
+        .join(' · ');
+    return { label: b.package_dto?.package_name || b.id, sub: sub || undefined };
+}
+
 /**
  * How often an engine revisits a person, in words: "Daily", "Every 3 days", "Weekly", or
  * "Every 36 hours". `t` must be bound to engagementEnginesConstants.

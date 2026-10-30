@@ -87,7 +87,8 @@
         "change": "Change status",
         "noTransitions": "Archived engines can’t change status.",
         "footnote": "Pause arrête tous les messages. « Arrêter l'envoi auto » continue de rédiger des messages pour que vous les vérifiiez.",
-        "noSources": "Rien de choisi"
+        "noSources": "Rien de choisi",
+        "sourcesMore": "+{{count}} de plus"
     },
     "retry": "Réessayer",
     "noPeople": {
