@@ -302,13 +302,20 @@ public class AdminAssessmentGetManager {
         Sort sortingObject = ListService.createSortObject(filter.getSortColumns());
         Pageable pageable = PageRequest.of(pageNo, pageSize, sortingObject);
 
+        // batch_ids sent -> only tests of the learner batches (plus registered/attempted ones).
+        // An empty IN list is not valid SQL, so a no-match placeholder stands in for "no batches".
+        boolean scopeToBatches = filter.getBatchIds() != null;
+        List<String> batchIds = scopeToBatches && !filter.getBatchIds().isEmpty()
+                ? filter.getBatchIds()
+                : List.of("");
+
         Page<StudentReportDto> studentReportDtoPage = null;
         if (StringUtils.hasText(filter.getName())) {
-            studentReportDtoPage = studentAttemptRepository.findAssessmentForUserWithFilterAndSearch(false, filter.getName(), studentId, instituteId, filter.getStatus(), filter.getReleaseResultStatus() != null ? filter.getReleaseResultStatus() : new ArrayList<>(),filter.getAssessmentType()!=null ? filter.getAssessmentType() : new ArrayList<>(), pageable);
+            studentReportDtoPage = studentAttemptRepository.findAssessmentForUserWithFilterAndSearch(false, filter.getName(), studentId, instituteId, filter.getStatus(), filter.getReleaseResultStatus() != null ? filter.getReleaseResultStatus() : new ArrayList<>(),filter.getAssessmentType()!=null ? filter.getAssessmentType() : new ArrayList<>(), scopeToBatches, batchIds, pageable);
 
         }
         if (Objects.isNull(studentReportDtoPage)) {
-            studentReportDtoPage = studentAttemptRepository.findAssessmentForUserWithFilter(false, studentId, instituteId, filter.getStatus(), filter.getReleaseResultStatus() != null ? filter.getReleaseResultStatus() : new ArrayList<>(),filter.getAssessmentType()!=null ? filter.getAssessmentType() : new ArrayList<>(), pageable);
+            studentReportDtoPage = studentAttemptRepository.findAssessmentForUserWithFilter(false, studentId, instituteId, filter.getStatus(), filter.getReleaseResultStatus() != null ? filter.getReleaseResultStatus() : new ArrayList<>(),filter.getAssessmentType()!=null ? filter.getAssessmentType() : new ArrayList<>(), scopeToBatches, batchIds, pageable);
         }
 
         return ResponseEntity.ok(createReportResponse(studentReportDtoPage));
