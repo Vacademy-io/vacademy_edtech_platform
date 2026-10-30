@@ -1425,6 +1425,10 @@ const EnrollByInvite = ({
               currency: orderDetails.currency || currency,
               contact: "",
               email: enrolled.email,
+              // Closing Checkout releases the stock held for this order.
+              paymentLogId:
+                paymentResponse?.payment_response?.order_id ||
+                paymentResponse?.order_id,
             });
           }
           setLoading(false);
@@ -2067,6 +2071,8 @@ const EnrollByInvite = ({
             // drives Checkout into UPI-Autopay / card-mandate mode.
             recurring: orderDetails.recurring,
             customerId: orderDetails.customerId,
+            // Closing Checkout releases the stock held for this order.
+            paymentLogId: paymentResponse?.payment_response?.order_id,
           });
         } else {
           throw new Error(t("errors.razorpayComponentNotReady"));
