@@ -9,6 +9,7 @@ import {
     Robot,
     Target,
     UsersThree,
+    WhatsappLogo,
     Gauge,
     ChartBar,
 } from '@phosphor-icons/react';
@@ -21,6 +22,7 @@ import type {
 import { partFailed, type ReportPart } from '../../-utils/report-errors';
 import { formatNumber } from '../../-utils/report-format';
 import type { ReportView } from '../../-utils/use-report-model';
+import { NewTemplatesBlock } from './NewTemplatesBlock';
 import { ReportSection, SectionError } from './ReportSection';
 import { ReportTable } from './ReportTable';
 import { StatsGrid } from './StatsGrid';
@@ -249,6 +251,18 @@ export function ReportSections({ data, view, onRetry }: ReportSectionsProps) {
                 model.email && <StatsGrid stats={model.email.stats} note={model.email.note} />,
                 t('empty.email')
             )}
+
+            {/* Older servers send no figures for this; a failed one still shows its error. */}
+            {(model.newTemplates || failed('newTemplates')) &&
+                section(
+                    WhatsappLogo,
+                    t('newTemplates.title'),
+                    t('newTemplates.subtitle'),
+                    'newTemplates',
+                    !data.newTemplates || data.newTemplates.created === 0,
+                    model.newTemplates && <NewTemplatesBlock model={model.newTemplates} />,
+                    t('empty.newTemplates')
+                )}
 
             <GroupHeading title={t('groups.back.title')} subtitle={t('groups.back.subtitle')} />
 

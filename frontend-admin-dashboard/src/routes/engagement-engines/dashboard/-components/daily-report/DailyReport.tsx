@@ -34,6 +34,8 @@ const isQuietDay = (data: EngagementDailyReport): boolean => {
         s.statusChanges,
         s.optOuts,
         s.creditsSpent,
+        // Templates the engine drafted are activity too, even on a day nothing went out.
+        data.newTemplates?.created,
     ].every((n) => !n);
 };
 
@@ -178,12 +180,12 @@ export function DailyReport({
                     </>
                 ) : (
                     <>
+                        <TrendCard {...chartProps} />
                         <div className="grid gap-4 lg:grid-cols-2">
-                            <FunnelCard {...chartProps} />
-                            <TrendCard {...chartProps} />
+                            <FunnelCard {...chartProps} ctx={view?.ctx} />
                             <ChannelsCard {...chartProps} ctx={view?.ctx} />
-                            <CostBreakdownCard {...chartProps} />
                         </div>
+                        <CostBreakdownCard {...chartProps} />
                         <ReportSections data={data} view={view} onRetry={onRetry} />
                     </>
                 )}

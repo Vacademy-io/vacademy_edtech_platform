@@ -29,6 +29,8 @@ const ALL_ENGINES = 'all';
 
 export type ExportKind = 'xlsx' | 'pdf';
 
+const ALL_EXPORT_KINDS: ExportKind[] = ['xlsx', 'pdf'];
+
 interface ReportFilterBarProps {
     engines: DailyReportEngineOption[];
     /** null = all engines. */
@@ -44,6 +46,8 @@ interface ReportFilterBarProps {
     onExport: (kind: ExportKind) => void;
     exporting: boolean;
     exportDisabled: boolean;
+    /** The formats on offer. With one, Export is a plain button; with two, a menu (the default). */
+    exportKinds?: ExportKind[];
 }
 
 /** Engine picker, date picker with previous/next day, and the Export menu. */
@@ -60,6 +64,7 @@ export function ReportFilterBar({
     onExport,
     exporting,
     exportDisabled,
+    exportKinds = ALL_EXPORT_KINDS,
 }: ReportFilterBarProps) {
     const { t } = useTranslation('engagementDailyReport');
     const { t: tConstants } = useTranslation('engagementEnginesConstants');
@@ -82,6 +87,9 @@ export function ReportFilterBar({
         }
         return list;
     }, [engines, engineId, t, tConstants]);
+
+    // With a single format there is no menu to choose from: Export is that format.
+    const onlyKind = exportKinds.length === 1 ? exportKinds[0] : undefined;
 
     return (
         <div className="flex flex-wrap items-center gap-3">
@@ -128,30 +136,47 @@ export function ReportFilterBar({
                 </MyButton>
             </div>
             <div className="sm:ms-auto">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <MyButton
-                            buttonType="secondary"
-                            scale="medium"
-                            className="gap-2"
-                            disable={exportDisabled || exporting}
-                        >
-                            <DownloadSimple size={16} />
-                            {exporting ? t('filter.exporting') : t('filter.export')}
-                            <CaretDown size={14} />
-                        </MyButton>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem className="gap-2" onSelect={() => onExport('xlsx')}>
-                            <FileXls size={16} />
-                            {t('filter.exportExcel')}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="gap-2" onSelect={() => onExport('pdf')}>
-                            <FilePdf size={16} />
-                            {t('filter.exportPdf')}
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                {onlyKind ? (
+                    <MyButton
+                        buttonType="secondary"
+                        scale="medium"
+                        className="gap-2"
+                        disable={exportDisabled || exporting}
+                        onClick={() => onExport(onlyKind)}
+                    >
+                        <DownloadSimple size={16} />
+                        {exporting
+                            ? t('filter.exporting')
+                            : onlyKind === 'pdf'
+                              ? t('filter.exportPdf')
+                              : t('filter.exportExcel')}
+                    </MyButton>
+                ) : (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <MyButton
+                                buttonType="secondary"
+                                scale="medium"
+                                className="gap-2"
+                                disable={exportDisabled || exporting}
+                            >
+                                <DownloadSimple size={16} />
+                                {exporting ? t('filter.exporting') : t('filter.export')}
+                                <CaretDown size={14} />
+                            </MyButton>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem className="gap-2" onSelect={() => onExport('xlsx')}>
+                                <FileXls size={16} />
+                                {t('filter.exportExcel')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2" onSelect={() => onExport('pdf')}>
+                                <FilePdf size={16} />
+                                {t('filter.exportPdf')}
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
             </div>
         </div>
     );

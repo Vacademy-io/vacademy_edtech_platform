@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next';
 import type { EngagementDailyReport } from '@/services/engagement-daily-report';
 import { kpiFailed, partFailed } from './report-errors';
+import type { ReportLinks, ReportLinkTarget } from './report-links';
 import {
     DASH,
     deltaAgainst,
@@ -32,6 +33,8 @@ export interface ReportKpi {
     delta: number | null;
     /** For cost figures, where a rise is bad news. */
     lowerIsBetter?: boolean;
+    /** The items behind the number; none for a figure that is not a list of things (credits). */
+    link?: ReportLinkTarget | null;
 }
 
 const has = (n: number | null | undefined): n is number =>
@@ -49,7 +52,8 @@ const join = (parts: Array<string | false | null | undefined>) =>
 export const buildKpis = (
     data: EngagementDailyReport,
     t: TFunction,
-    channelLabel: (channel: string) => string
+    channelLabel: (channel: string) => string,
+    links: ReportLinks
 ): ReportKpi[] => {
     const s = data.summary;
     if (!s) return [];
@@ -108,6 +112,7 @@ export const buildKpis = (
                     : undefined,
             hint: t('kpi.peopleAdded.hint'),
             delta: null,
+            link: s.leadsAdded > 0 ? links.outcomes('leads') : null,
         },
         {
             key: 'messagesSent',
@@ -116,6 +121,7 @@ export const buildKpis = (
             detail: channelSplit || t('kpi.messagesSent.none'),
             hint: t('kpi.messagesSent.hint'),
             delta: prev ? deltaAgainst(messages, prev.sent) : null,
+            link: messages > 0 ? links.inbox({ filter: 'sent' }) : null,
         },
         {
             key: 'replies',
@@ -124,6 +130,7 @@ export const buildKpis = (
             detail: emailRepliesOff ? t('kpi.replies.emailNotTracked') : undefined,
             hint: t('kpi.replies.hint'),
             delta: prev ? deltaAgainst(s.replies, prev.replies) : null,
+            link: s.replies > 0 ? links.inbox({ filter: 'sent', outcome: 'replied' }) : null,
         },
         {
             key: 'callsConnected',
@@ -131,10 +138,17 @@ export const buildKpis = (
             value: formatNumber(s.callsConnected),
             detail:
                 s.callsPlaced > 0
-                    ? t('kpi.callsConnected.detail', { placed: formatNumber(s.callsPlaced) })
+                    ? t('kpi.callsConnected.detail', {
+                          count: s.callsPlaced,
+                          placed: formatNumber(s.callsPlaced),
+                      })
                     : t('kpi.callsConnected.none'),
             hint: t('kpi.callsConnected.hint'),
             delta: null,
+            link:
+                s.callsConnected > 0
+                    ? links.inbox({ filter: 'sent', channel: 'AI_CALL', outcome: 'connected' })
+                    : null,
         },
         {
             key: 'demosBooked',
@@ -146,6 +160,7 @@ export const buildKpis = (
                     : undefined,
             hint: t('kpi.demosBooked.hint'),
             delta: prev ? deltaAgainst(s.demosBooked, prev.demosBooked) : null,
+            link: s.demosBooked > 0 ? links.outcomes('demos') : null,
         },
         {
             key: 'conversions',
@@ -157,6 +172,7 @@ export const buildKpis = (
                     : undefined,
             hint: t('kpi.conversions.hint'),
             delta: null,
+            link: s.conversions > 0 ? links.outcomes('conversions') : null,
         },
         {
             key: 'creditsSpent',
@@ -187,7 +203,7 @@ export const buildKpis = (
     // A card whose query failed shows a dash and says so, instead of a 0 that looks real.
     return kpis.map((k) =>
         kpiFailed(data.errors, k.key)
-            ? { ...k, value: DASH, detail: t('kpi.unavailable'), delta: null }
+            ? { ...k, value: DASH, detail: t('kpi.unavailable'), delta: null, link: null }
             : k
     );
 };

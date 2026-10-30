@@ -1,13 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { ChartBar, ChartDonut, ChartLineUp, Funnel } from '@phosphor-icons/react';
+import { useNavigate } from '@tanstack/react-router';
 import {
     Bar,
     BarChart,
     CartesianGrid,
     Cell,
-    ComposedChart,
     LabelList,
     Line,
+    LineChart,
     Pie,
     PieChart,
     ResponsiveContainer,
@@ -33,14 +34,18 @@ import {
     emailRepliesUntracked,
 } from '../../-utils/report-funnel';
 import type { ReportCtx } from '../../-utils/report-tables';
+import { ReportLink } from './ReportLink';
 import { ReportSection } from './ReportSection';
 
 // Recharts takes SVG paint values, so tokens go in as hsl(var(--token)).
 const PRIMARY = 'hsl(var(--primary-500))';
 const PRIMARY_SOFT = 'hsl(var(--primary-200))';
 const INFO = 'hsl(var(--info-500))';
+const INFO_SOFT = 'hsl(var(--info-200))';
 const SUCCESS = 'hsl(var(--success-500))';
+const SUCCESS_SOFT = 'hsl(var(--success-200))';
 const WARNING = 'hsl(var(--warning-500))';
+const WARNING_SOFT = 'hsl(var(--warning-200))';
 const INK = 'hsl(var(--foreground))';
 const MUTED = 'hsl(var(--muted-foreground))';
 const GRID = 'hsl(var(--border))';
@@ -68,11 +73,18 @@ const dayLabel = (iso: string) => {
 
 // ─── Funnel ─────────────────────────────────────────────────────────────────
 
-export function FunnelCard({ data, isLoading, onRetry }: ChartCardProps) {
+export function FunnelCard({
+    data,
+    ctx,
+    isLoading,
+    onRetry,
+}: ChartCardProps & { ctx: ReportCtx | undefined }) {
     const { t } = useTranslation('engagementDailyReport');
+    const navigate = useNavigate();
+    const links = ctx?.links;
     const stages = useMemo(
         () =>
-            (data ? buildFunnelSteps(data, t) : []).map((s) => {
+            (data ? buildFunnelSteps(data, t, links) : []).map((s) => {
                 const drop = s.dropOff;
                 const sign = drop === null || drop === 0 ? '' : drop > 0 ? '−' : '+';
                 // Delivered cannot be compared when some channels give no receipts, so it
@@ -86,8 +98,9 @@ export function FunnelCard({ data, isLoading, onRetry }: ChartCardProps) {
                         : `${formatNumber(s.count)} · ${sign}${Math.abs(drop)}%`;
                 return { ...s, caption };
             }),
-        [data, t]
+        [data, t, links]
     );
+    const linked = stages.filter((s) => s.link);
     const deliveredPartial = !!data && deliveryPartial(data);
     const emailRepliesOff = !!data && emailRepliesUntracked(data);
 
@@ -156,10 +169,22 @@ export function FunnelCard({ data, isLoading, onRetry }: ChartCardProps) {
                             radius={[0, 4, 4, 0]}
                             barSize={24}
                             isAnimationActive={false}
+                            // Clicking a bar is a shortcut; the links under the chart are the
+                            // keyboard and screen-reader way to the same places.
+                            onClick={(entry: { payload?: (typeof stages)[number] }) => {
+                                const link = entry.payload?.link;
+                                if (link) {
+                                    navigate({
+                                        to: link.to as never,
+                                        search: link.search as never,
+                                    });
+                                }
+                            }}
                         >
                             {stages.map((s) => (
                                 <Cell
                                     key={s.stage}
+                                    cursor={s.link ? 'pointer' : 'default'}
                                     fill={
                                         s.stage === 'CONVERTED'
                                             ? SUCCESS
@@ -179,6 +204,37 @@ export function FunnelCard({ data, isLoading, onRetry }: ChartCardProps) {
                     </BarChart>
                 </ResponsiveContainer>
             </div>
+            {linked.length > 0 && (
+                <nav
+                    aria-label={t('funnel.linksLabel')}
+                    className="mt-3 flex flex-wrap items-center gap-2"
+                >
+                    <span className="text-neutral-500">
+                        <span className="text-caption">{t('funnel.linksLabel')}</span>
+                    </span>
+                    {linked.map(
+                        (s) =>
+                            s.link && (
+                                <ReportLink
+                                    key={s.stage}
+                                    target={s.link}
+                                    label={t('links.open', {
+                                        value: formatNumber(s.count),
+                                        what: s.label,
+                                    })}
+                                    className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-3 py-1 text-neutral-700 no-underline hover:border-primary-300"
+                                >
+                                    <span className="text-caption">{s.label}</span>
+                                    <span className="font-semibold tabular-nums text-neutral-900">
+                                        <span className="text-caption">
+                                            {formatNumber(s.count)}
+                                        </span>
+                                    </span>
+                                </ReportLink>
+                            )
+                    )}
+                </nav>
+            )}
             <div className="mt-2 flex flex-col gap-1 text-neutral-500">
                 <p className="text-caption">{t('funnel.note')}</p>
                 {deliveredPartial && <p className="text-caption">{t('funnel.deliveredNote')}</p>}
@@ -192,59 +248,177 @@ export function FunnelCard({ data, isLoading, onRetry }: ChartCardProps) {
 
 type TrendKey = 'sent' | 'replies' | 'demosBooked' | 'credits';
 
-const TREND_SERIES: Array<{ key: TrendKey; color: string; dot: string }> = [
-    { key: 'sent', color: PRIMARY_SOFT, dot: 'bg-primary-200' },
-    { key: 'replies', color: INFO, dot: 'bg-info-500' },
-    { key: 'demosBooked', color: SUCCESS, dot: 'bg-success-500' },
-    { key: 'credits', color: WARNING, dot: 'bg-warning-500' },
+interface TrendSeries {
+    key: TrendKey;
+    /** The selected day, and the six before it. */
+    solid: string;
+    soft: string;
+    /** Counts are bars; credits, which are fractional and a running spend, are a line. */
+    kind: 'bar' | 'line';
+}
+
+const TREND_SERIES: TrendSeries[] = [
+    { key: 'sent', solid: PRIMARY, soft: PRIMARY_SOFT, kind: 'bar' },
+    { key: 'replies', solid: INFO, soft: INFO_SOFT, kind: 'bar' },
+    { key: 'demosBooked', solid: SUCCESS, soft: SUCCESS_SOFT, kind: 'bar' },
+    { key: 'credits', solid: WARNING, soft: WARNING_SOFT, kind: 'line' },
 ];
 
-export function TrendCard({ data, isLoading, onRetry }: ChartCardProps) {
+interface TrendDay {
+    date: string;
+    label: string;
+    value: number;
+    selected: boolean;
+}
+
+/** 1200 is "1.2K": the small charts have little room for axis numbers. */
+const compact = (n: number) =>
+    new Intl.NumberFormat('en-IN', { notation: 'compact', maximumFractionDigits: 1 }).format(n);
+
+/** The scale starts at zero and is never flat, even when every day was zero. */
+const scaleTop = (max: number) => (max > 0 ? max : 1);
+
+function MiniTrend({ series, days }: { series: TrendSeries; days: TrendDay[] }) {
     const { t } = useTranslation('engagementDailyReport');
-    const [hidden, setHidden] = useState<ReadonlySet<TrendKey>>(new Set());
+    const show = series.key === 'credits' ? formatCredits : formatNumber;
+    const name = t(`trend.series.${series.key}`);
+    const today = days.find((d) => d.selected) ?? days[days.length - 1];
+    const total = days.reduce((sum, d) => sum + d.value, 0);
+    // Only the first and last day are named under the bars: seven labels do not fit.
+    const first = days[0];
+    const last = days[days.length - 1];
+    const edgeTicks = first && last && first !== last ? [first.label, last.label] : undefined;
 
-    const points = useMemo(
-        () =>
-            (data?.trend ?? []).map((p) => ({
-                date: p.date,
-                label: dayLabel(p.date),
-                sent: p.sent,
-                replies: p.replies,
-                demosBooked: p.demosBooked,
-                credits: p.credits,
-            })),
-        [data]
-    );
-
-    const toggle = (key: TrendKey) =>
-        setHidden((prev) => {
-            const next = new Set(prev);
-            if (next.has(key)) next.delete(key);
-            else next.add(key);
-            return next;
-        });
-
-    const renderTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
-        if (!active || !payload?.length) return null;
+    const renderTooltip = ({ active, payload }: TooltipProps<number, string>) => {
+        const day = payload?.[0]?.payload as TrendDay | undefined;
+        if (!active || !day) return null;
         return (
             <TooltipBox>
-                <p className="mb-1 text-caption font-semibold text-neutral-800">{label}</p>
-                <div className="flex flex-col gap-0.5 text-caption text-neutral-600">
-                    {payload.map((p) => {
-                        const key = String(p.dataKey) as TrendKey;
-                        const series = TREND_SERIES.find((s) => s.key === key);
-                        return (
-                            <span key={key} className="flex items-center gap-2">
-                                <span className={cn('size-2 rounded-full', series?.dot)} />
-                                {t(`trend.series.${key}`)}:{' '}
-                                {key === 'credits' ? formatCredits(p.value) : formatNumber(p.value)}
-                            </span>
-                        );
-                    })}
-                </div>
+                <p className="text-caption font-semibold text-neutral-800">{day.label}</p>
+                <p className="text-caption text-neutral-600">
+                    {name}: {show(day.value)}
+                </p>
             </TooltipBox>
         );
     };
+
+    const axes = (
+        <>
+            <CartesianGrid stroke={GRID} strokeDasharray="4 4" vertical={false} />
+            <XAxis
+                dataKey="label"
+                ticks={edgeTicks}
+                interval={0}
+                tick={AXIS_TICK}
+                tickLine={false}
+                axisLine={false}
+                tickMargin={6}
+            />
+            <YAxis
+                tick={AXIS_TICK}
+                tickLine={false}
+                axisLine={false}
+                width={32}
+                tickCount={3}
+                allowDecimals={series.key === 'credits'}
+                tickFormatter={compact}
+                domain={[0, scaleTop]}
+            />
+            <Tooltip cursor={{ fill: CURSOR }} content={renderTooltip} />
+        </>
+    );
+
+    return (
+        <div className="flex min-w-0 flex-col gap-2 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+            <div className="flex flex-col">
+                <span className="truncate text-neutral-600">
+                    <span className="text-caption">{name}</span>
+                </span>
+                <span className="font-bold tabular-nums text-neutral-900">
+                    <span className="text-h2">{show(today?.value ?? 0)}</span>
+                </span>
+                <span className="truncate text-neutral-500">
+                    <span className="text-caption">
+                        {t('trend.weekTotal', { value: show(total) })}
+                    </span>
+                </span>
+            </div>
+            <div
+                role="img"
+                aria-label={t('trend.miniAria', {
+                    name,
+                    days: days.map((d) => `${d.label} ${show(d.value)}`).join(', '),
+                })}
+                className="h-28 w-full"
+            >
+                <ResponsiveContainer width="100%" height="100%">
+                    {series.kind === 'bar' ? (
+                        <BarChart data={days} margin={{ top: 4, right: 20, left: 0, bottom: 0 }}>
+                            {axes}
+                            <Bar dataKey="value" radius={[3, 3, 0, 0]} isAnimationActive={false}>
+                                {days.map((d) => (
+                                    <Cell
+                                        key={d.date}
+                                        fill={d.selected ? series.solid : series.soft}
+                                    />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    ) : (
+                        <LineChart data={days} margin={{ top: 4, right: 20, left: 0, bottom: 0 }}>
+                            {axes}
+                            <Line
+                                type="monotone"
+                                dataKey="value"
+                                stroke={series.soft}
+                                strokeWidth={2}
+                                isAnimationActive={false}
+                                dot={({ cx, cy, payload }) => (
+                                    <circle
+                                        key={(payload as TrendDay).date}
+                                        cx={cx}
+                                        cy={cy}
+                                        r={(payload as TrendDay).selected ? 5 : 3}
+                                        fill={
+                                            (payload as TrendDay).selected
+                                                ? series.solid
+                                                : series.soft
+                                        }
+                                    />
+                                )}
+                            />
+                        </LineChart>
+                    )}
+                </ResponsiveContainer>
+            </div>
+        </div>
+    );
+}
+
+/**
+ * The last 7 days as four small charts, each on its own scale: a single chart for messages
+ * (tens or hundreds) and credits (fractions) made one of them unreadable. The selected day is
+ * the big number and the solid bar or dot; the six days before it are the soft ones.
+ */
+export function TrendCard({ data, isLoading, onRetry }: ChartCardProps) {
+    const { t } = useTranslation('engagementDailyReport');
+
+    const points = useMemo(() => data?.trend ?? [], [data]);
+    const seriesDays = useMemo(
+        () =>
+            TREND_SERIES.map((series) => ({
+                series,
+                days: points.map(
+                    (p): TrendDay => ({
+                        date: p.date,
+                        label: dayLabel(p.date),
+                        value: p[series.key],
+                        selected: p.date === data?.date,
+                    })
+                ),
+            })),
+        [points, data?.date]
+    );
 
     const isEmpty = points.every((p) => p.sent + p.replies + p.demosBooked + p.credits === 0);
     return (
@@ -258,104 +432,10 @@ export function TrendCard({ data, isLoading, onRetry }: ChartCardProps) {
             emptyText={t('trend.empty')}
             onRetry={onRetry}
         >
-            <div className="mb-3 flex flex-wrap gap-2">
-                {TREND_SERIES.map((s) => {
-                    const on = !hidden.has(s.key);
-                    return (
-                        <button
-                            key={s.key}
-                            type="button"
-                            aria-pressed={on}
-                            onClick={() => toggle(s.key)}
-                            className={cn(
-                                'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                                on
-                                    ? 'border-neutral-300 bg-white text-neutral-800'
-                                    : 'border-neutral-200 bg-neutral-50 text-neutral-400'
-                            )}
-                        >
-                            <span className={cn('size-2 rounded-full', s.dot)} />
-                            <span className="text-caption">
-                                {s.key === 'credits'
-                                    ? t('trend.seriesRight', { name: t(`trend.series.${s.key}`) })
-                                    : t(`trend.series.${s.key}`)}
-                            </span>
-                        </button>
-                    );
-                })}
-            </div>
-            <div role="img" aria-label={t('trend.aria')} className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                    <ComposedChart data={points} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                        <CartesianGrid stroke={GRID} strokeDasharray="4 4" vertical={false} />
-                        <XAxis
-                            dataKey="label"
-                            tick={AXIS_TICK}
-                            tickLine={false}
-                            axisLine={false}
-                            minTickGap={16}
-                            dy={6}
-                        />
-                        <YAxis
-                            yAxisId="left"
-                            tick={AXIS_TICK}
-                            tickLine={false}
-                            axisLine={false}
-                            width={40}
-                            allowDecimals={false}
-                        />
-                        <YAxis
-                            yAxisId="right"
-                            orientation="right"
-                            hide={hidden.has('credits')}
-                            tick={AXIS_TICK}
-                            tickLine={false}
-                            axisLine={false}
-                            width={44}
-                        />
-                        <Tooltip cursor={{ fill: CURSOR }} content={renderTooltip} />
-                        <Bar
-                            yAxisId="left"
-                            dataKey="sent"
-                            fill={PRIMARY_SOFT}
-                            radius={[4, 4, 0, 0]}
-                            maxBarSize={28}
-                            hide={hidden.has('sent')}
-                            isAnimationActive={false}
-                        />
-                        <Line
-                            yAxisId="left"
-                            type="monotone"
-                            dataKey="replies"
-                            stroke={INFO}
-                            strokeWidth={2}
-                            dot={{ r: 3 }}
-                            hide={hidden.has('replies')}
-                            isAnimationActive={false}
-                        />
-                        <Line
-                            yAxisId="left"
-                            type="monotone"
-                            dataKey="demosBooked"
-                            stroke={SUCCESS}
-                            strokeWidth={2}
-                            dot={{ r: 3 }}
-                            hide={hidden.has('demosBooked')}
-                            isAnimationActive={false}
-                        />
-                        <Line
-                            yAxisId="right"
-                            type="monotone"
-                            dataKey="credits"
-                            stroke={WARNING}
-                            strokeWidth={2}
-                            strokeDasharray="5 4"
-                            dot={{ r: 3 }}
-                            hide={hidden.has('credits')}
-                            isAnimationActive={false}
-                        />
-                    </ComposedChart>
-                </ResponsiveContainer>
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+                {seriesDays.map(({ series, days }) => (
+                    <MiniTrend key={series.key} series={series} days={days} />
+                ))}
             </div>
         </ReportSection>
     );

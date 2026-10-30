@@ -5,6 +5,7 @@ import type {
     DailyReportChannelRow,
     DailyReportEngineRow,
     DailyReportListRow,
+    DailyReportNewTemplates,
     DailyReportTemplateRow,
     DailyReportWhatsappCategory,
     EngagementDailyReport,
@@ -22,7 +23,10 @@ import {
     humanizeKey,
 } from './report-format';
 import { partFailed, type ReportPart } from './report-errors';
+import type { ReportLinks, ReportLinkTarget } from './report-links';
+import { listFilter, TEMPLATE_MOVED_FILTER } from './outcomes-params';
 import type { ReportTerms } from './report-terms';
+import { BUCKET_TONE, TEMPLATE_BUCKETS, type TemplateBucket } from './template-status';
 
 /*
  * One description of every table and stat block on the page. The screen renders it
@@ -50,6 +54,8 @@ export interface ReportColumn<R> {
     sort?: (row: R) => number | string | null;
     tone?: (row: R) => CellTone | undefined;
     render?: (row: R) => ReactNode;
+    /** Present = the cell is a link to the items behind it (null = this cell has none). */
+    link?: (row: R) => ReportLinkTarget | null;
 }
 
 export interface ReportTableSpec<R> {
@@ -70,11 +76,15 @@ export interface ReportTableSpec<R> {
 export interface ReportStat {
     key: string;
     label: string;
+    /** The label in the Excel and PDF exports, where the figure has no group around it. */
+    exportLabel?: string;
     text: string;
     value?: number | string | null;
     tone?: CellTone;
     hint?: string;
     badge?: string;
+    /** Present = the figure is a link to the items behind it. */
+    link?: ReportLinkTarget | null;
 }
 
 export interface ReportStatsSpec {
@@ -93,6 +103,8 @@ export interface ReportCtx {
     t: TFunction;
     channelLabel: (channel: string) => string;
     terms: ReportTerms;
+    /** Where the numbers lead (the inbox and the Leads & outcomes page), for this engine and day. */
+    links: ReportLinks;
 }
 
 // ─── column helpers ─────────────────────────────────────────────────────────
@@ -114,6 +126,8 @@ interface NumberColumnOptions<R> {
     /** The figure does not apply to this row. */
     notApplicable?: (row: R) => boolean;
     tone?: (row: R) => CellTone | undefined;
+    /** Where the figure leads. Only a figure above zero is a link, and never an untracked one. */
+    link?: (row: R) => ReportLinkTarget | null;
 }
 
 const numberColumn = <R,>(
@@ -141,6 +155,10 @@ const numberColumn = <R,>(
             ? (row) => (off(row) || na(row) ? null : get(row) ?? null)
             : undefined,
         tone: (row) => (off(row) ? 'muted' : na(row) ? undefined : options.tone?.(row)),
+        link: options.link
+            ? (row) =>
+                  off(row) || na(row) || !(get(row) ?? 0) ? null : options.link?.(row) ?? null
+            : undefined,
     };
 };
 
@@ -153,6 +171,7 @@ const textColumn = <R,>(
         wrap?: boolean;
         sortable?: boolean;
         render?: (row: R) => ReactNode;
+        link?: (row: R) => ReportLinkTarget | null;
     } = {}
 ): ReportColumn<R> => ({
     id,
@@ -162,6 +181,7 @@ const textColumn = <R,>(
     text,
     render: options.render,
     sort: options.sortable ? text : undefined,
+    link: options.link,
 });
 
 const stat = (
@@ -176,7 +196,13 @@ const countStat = (
     key: string,
     label: string,
     n: number | null | undefined,
-    extra: { untracked?: boolean; tone?: CellTone; hint?: string } = {}
+    extra: {
+        untracked?: boolean;
+        tone?: CellTone;
+        hint?: string;
+        /** Where the figure leads; only used for a figure above zero. */
+        link?: ReportLinkTarget | null;
+    } = {}
 ): ReportStat =>
     extra.untracked
         ? stat(key, label, ctx.t('notTracked'), {
@@ -188,6 +214,7 @@ const countStat = (
               value: n ?? null,
               tone: extra.tone,
               hint: extra.hint,
+              link: n && n > 0 ? extra.link ?? null : null,
           });
 
 // ─── the sections ───────────────────────────────────────────────────────────
@@ -196,8 +223,13 @@ const buildPerEngine = (
     data: EngagementDailyReport,
     ctx: ReportCtx
 ): ReportTableSpec<DailyReportEngineRow> => {
-    const { t } = ctx;
+    const { t, links } = ctx;
     const nameOf = (r: DailyReportEngineRow) => (r.system ? t('filter.systemEngine') : r.name);
+    // Each row opens the lists for its own engine, whichever engine the report covers.
+    const inbox = (r: DailyReportEngineRow, outcome?: 'replied') =>
+        links.inbox({ filter: 'sent', outcome, engineId: r.engineId });
+    const outcomes = (r: DailyReportEngineRow, tab: 'leads' | 'demos' | 'conversions') =>
+        links.outcomes(tab, undefined, r.engineId);
     return {
         key: 'perEngine',
         title: t('perEngine.title'),
@@ -224,14 +256,19 @@ const buildPerEngine = (
             }),
             numberColumn(ctx, 'leadsAdded', t('perEngine.col.added'), (r) => r.leadsAdded, {
                 sortable: true,
+                link: (r) => outcomes(r, 'leads'),
             }),
             numberColumn(ctx, 'sent', t('perEngine.col.sent'), (r) => r.sent, {
                 sortable: true,
                 size: 80,
+                link: (r) => inbox(r),
             }),
+            // Replies received on the day answer messages sent on earlier days too, so the list
+            // behind the figure is the replied messages among the day's sends.
             numberColumn(ctx, 'replies', t('perEngine.col.replies'), (r) => r.replies, {
                 sortable: true,
                 size: 88,
+                link: (r) => inbox(r, 'replied'),
             }),
             numberColumn(ctx, 'replyRate', t('perEngine.col.replyRate'), (r) => r.replyRate, {
                 format: formatRate,
@@ -241,10 +278,12 @@ const buildPerEngine = (
             numberColumn(ctx, 'demos', t('perEngine.col.demos'), (r) => r.demosBooked, {
                 sortable: true,
                 size: 88,
+                link: (r) => outcomes(r, 'demos'),
             }),
             numberColumn(ctx, 'conversions', t('perEngine.col.conversions'), (r) => r.conversions, {
                 sortable: true,
                 size: 120,
+                link: (r) => outcomes(r, 'conversions'),
             }),
             numberColumn(ctx, 'credits', t('perEngine.col.credits'), (r) => r.credits, {
                 format: formatCredits,
@@ -267,7 +306,7 @@ const buildLists = (
     data: EngagementDailyReport,
     ctx: ReportCtx
 ): ReportTableSpec<DailyReportListRow> => {
-    const { t, terms } = ctx;
+    const { t, terms, links } = ctx;
     // Batch and individual groups come from the server with English names, so they are
     // renamed here with the institute's own words.
     // A list that was deleted after people joined it has no name any more.
@@ -278,6 +317,8 @@ const buildLists = (
               ? t('lists.individuals')
               : r.name?.trim() || t('lists.deleted', { list: terms.list.toLowerCase() });
     const agent = (r: DailyReportListRow) => r.leadAgent;
+    const peopleOf = (r: DailyReportListRow) =>
+        r.listId ? links.outcomes('leads', listFilter(r.listId)) : null;
     const exportOnly = <R,>(column: ReportColumn<R>): ReportColumn<R> => ({
         ...column,
         exportOnly: true,
@@ -305,9 +346,11 @@ const buildLists = (
                 size: 260,
                 wrap: true,
                 sortable: true,
+                link: (r) => (r.leadsAdded > 0 ? peopleOf(r) : null),
             }),
             numberColumn(ctx, 'leadsAdded', t('lists.col.added'), (r) => r.leadsAdded, {
                 sortable: true,
+                link: peopleOf,
             }),
             numberColumn(ctx, 'newLeads', t('lists.col.new'), (r) => r.newLeads),
             numberColumn(ctx, 'existingLeads', t('lists.col.existing'), (r) => r.existingLeads),
@@ -352,7 +395,7 @@ interface ErrorRow {
 }
 
 const buildRuns = (data: EngagementDailyReport, ctx: ReportCtx) => {
-    const { t } = ctx;
+    const { t, links } = ctx;
     const runs = data.runs;
     if (!runs) return { stats: null, byKind: null, errors: null };
     const byKind = runs.byKind ?? {};
@@ -376,6 +419,7 @@ const buildRuns = (data: EngagementDailyReport, ctx: ReportCtx) => {
             countStat(ctx, 'evaluated', t('runs.evaluated'), runs.membersEvaluated),
             countStat(ctx, 'failed', t('runs.failed'), runs.failed, {
                 tone: runs.failed > 0 ? 'danger' : undefined,
+                link: links.inbox({ filter: 'failed' }),
             }),
             countStat(ctx, 'expired', t('runs.expired'), runs.expired, {
                 tone: runs.expired > 0 ? 'warning' : undefined,
@@ -395,7 +439,10 @@ const buildRuns = (data: EngagementDailyReport, ctx: ReportCtx) => {
                 (r) => t(`runs.kind.${r.kind}`, { defaultValue: humanizeKey(r.kind) }),
                 { size: 220 }
             ),
-            numberColumn(ctx, 'count', t('runs.col.count'), (r) => r.count),
+            // Only the decisions to wait have a list of their own in the inbox.
+            numberColumn(ctx, 'count', t('runs.col.count'), (r) => r.count, {
+                link: (r) => (r.kind === 'NO_OP' ? links.inbox({ filter: 'waited' }) : null),
+            }),
             numberColumn(ctx, 'share', t('runs.col.share'), (r) => r.share, { format: formatRate }),
         ],
     };
@@ -416,7 +463,7 @@ const buildChannels = (
     data: EngagementDailyReport,
     ctx: ReportCtx
 ): ReportTableSpec<DailyReportChannelRow> => {
-    const { t, channelLabel } = ctx;
+    const { t, channelLabel, links } = ctx;
     // Which figures this channel can report at all. Anything it cannot is "Not tracked",
     // never a 0 that would read as "nothing happened".
     const noDelivery = (r: DailyReportChannelRow) =>
@@ -437,17 +484,38 @@ const buildChannels = (
             textColumn('channel', t('channels.col.channel'), (r) => channelLabel(r.channel), {
                 size: 160,
             }),
-            numberColumn(ctx, 'sent', t('channels.col.sent'), (r) => r.sent),
+            numberColumn(ctx, 'sent', t('channels.col.sent'), (r) => r.sent, {
+                link: (r) => links.inbox({ filter: 'sent', channel: r.channel }),
+            }),
+            // For calls, "delivered" is the calls that were picked up. In-app messages have no
+            // receipts to filter by.
             numberColumn(ctx, 'delivered', t('channels.col.delivered'), (r) => r.delivered, {
                 untracked: noDelivery,
+                link: (r) =>
+                    r.channel === 'IN_APP'
+                        ? null
+                        : links.inbox({
+                              filter: 'sent',
+                              channel: r.channel,
+                              outcome: r.channel === 'AI_CALL' ? 'connected' : 'delivered',
+                          }),
             }),
+            // Read is "opened" for email.
             numberColumn(ctx, 'read', t('channels.col.read'), (r) => r.read, {
                 untracked: noDelivery,
                 notApplicable: (r) => r.channel === 'AI_CALL' || r.channel === 'IN_APP',
+                link: (r) =>
+                    links.inbox({
+                        filter: 'sent',
+                        channel: r.channel,
+                        outcome: r.channel === 'EMAIL' ? 'opened' : 'read',
+                    }),
             }),
             numberColumn(ctx, 'replied', t('channels.col.replied'), (r) => r.replied, {
                 untracked: noReplies,
                 notApplicable: noReplyFigure,
+                link: (r) =>
+                    links.inbox({ filter: 'sent', channel: r.channel, outcome: 'replied' }),
             }),
             numberColumn(ctx, 'replyRate', t('channels.col.replyRate'), (r) => r.replyRate, {
                 format: formatRate,
@@ -457,6 +525,7 @@ const buildChannels = (
             // Failures known at send time are always counted, even when delivery receipts are not.
             numberColumn(ctx, 'failed', t('channels.col.failed'), (r) => r.failed, {
                 tone: (r) => (r.failed > 0 ? 'danger' : undefined),
+                link: (r) => links.inbox({ filter: 'failed', channel: r.channel }),
             }),
             numberColumn(ctx, 'credits', t('channels.col.credits'), (r) => r.credits, {
                 format: formatCredits,
@@ -467,27 +536,37 @@ const buildChannels = (
 };
 
 const buildCalls = (data: EngagementDailyReport, ctx: ReportCtx): ReportStatsSpec | null => {
-    const { t } = ctx;
+    const { t, links } = ctx;
     const c = data.calls;
     if (!c) return null;
+    const calls = (outcome?: 'connected' | 'no_answer' | 'busy' | 'call_failed') =>
+        links.inbox({ filter: 'sent', channel: 'AI_CALL', outcome });
     return {
         key: 'calls',
         title: t('calls.title'),
         subtitle: t('calls.subtitle'),
         sheetName: t('sheet.calls'),
         stats: [
-            countStat(ctx, 'placed', t('calls.placed'), c.placed),
+            countStat(ctx, 'placed', t('calls.placed'), c.placed, { link: calls() }),
             countStat(ctx, 'notDialled', t('calls.notDialled'), c.notDialled, {
                 hint: t('calls.notDialledHint'),
+                link: links.inbox({ filter: 'failed', channel: 'AI_CALL' }),
             }),
             countStat(ctx, 'connected', t('calls.connected'), c.connected, {
                 tone: c.connected > 0 ? 'success' : undefined,
                 hint: t('calls.connectedHint'),
+                link: calls('connected'),
             }),
-            countStat(ctx, 'noAnswer', t('calls.noAnswer'), c.noAnswer),
-            countStat(ctx, 'busy', t('calls.busy'), c.busy, { hint: t('calls.busyHint') }),
+            countStat(ctx, 'noAnswer', t('calls.noAnswer'), c.noAnswer, {
+                link: calls('no_answer'),
+            }),
+            countStat(ctx, 'busy', t('calls.busy'), c.busy, {
+                hint: t('calls.busyHint'),
+                link: calls('busy'),
+            }),
             countStat(ctx, 'failed', t('calls.failed'), c.failed, {
                 tone: c.failed > 0 ? 'danger' : undefined,
+                link: calls('call_failed'),
             }),
             countStat(ctx, 'inProgress', t('calls.inProgress'), c.inProgress),
             stat('talkTime', t('calls.talkTime'), formatMinutes(c.totalMinutes), {
@@ -505,10 +584,12 @@ const buildCalls = (data: EngagementDailyReport, ctx: ReportCtx): ReportStatsSpe
 };
 
 const buildEmail = (data: EngagementDailyReport, ctx: ReportCtx): ReportStatsSpec | null => {
-    const { t } = ctx;
+    const { t, links } = ctx;
     const e = data.email;
     if (!e) return null;
     const off = !e.tracked;
+    const emails = (outcome?: 'delivered' | 'opened' | 'clicked' | 'bounced' | 'complained') =>
+        links.inbox({ filter: 'sent', channel: 'EMAIL', outcome });
     const rateTone: CellTone | undefined =
         e.bounceRate !== null && e.bounceRate >= 0.1
             ? 'danger'
@@ -526,22 +607,31 @@ const buildEmail = (data: EngagementDailyReport, ctx: ReportCtx): ReportStatsSpe
               : undefined,
         sheetName: t('sheet.email'),
         stats: [
-            countStat(ctx, 'sent', t('email.sent'), e.sent),
-            countStat(ctx, 'delivered', t('email.delivered'), e.delivered, { untracked: off }),
+            countStat(ctx, 'sent', t('email.sent'), e.sent, { link: emails() }),
+            countStat(ctx, 'delivered', t('email.delivered'), e.delivered, {
+                untracked: off,
+                link: emails('delivered'),
+            }),
             countStat(ctx, 'opened', t('email.opened'), e.opened, {
                 untracked: off,
                 hint: t('email.openedHint'),
+                link: emails('opened'),
             }),
-            countStat(ctx, 'clicked', t('email.clicked'), e.clicked, { untracked: off }),
+            countStat(ctx, 'clicked', t('email.clicked'), e.clicked, {
+                untracked: off,
+                link: emails('clicked'),
+            }),
             countStat(ctx, 'bounced', t('email.bounced'), e.bounced, {
                 untracked: off,
                 tone: e.bounced > 0 ? 'warning' : undefined,
                 hint: t('email.bouncedHint'),
+                link: emails('bounced'),
             }),
             countStat(ctx, 'complained', t('email.complained'), e.complained, {
                 untracked: off,
                 tone: e.complained > 0 ? 'danger' : undefined,
                 hint: t('email.complainedHint'),
+                link: emails('complained'),
             }),
             off
                 ? stat('bounceRate', t('email.bounceRate'), t('notTracked'), {
@@ -562,14 +652,25 @@ const TEMPLATES_CAP = 200;
 
 /** What the server calls the rows it could not list one by one. */
 const OTHER_ROW = '(other)';
+/** The names it gives messages that have no template name or subject, or are the rest. */
+const UNNAMED_ROWS = new Set<string | undefined>([OTHER_ROW, '(no template)', '(no subject)']);
 
 const buildTemplates = (
     data: EngagementDailyReport,
     ctx: ReportCtx
 ): ReportTableSpec<DailyReportTemplateRow> => {
-    const { t, channelLabel } = ctx;
+    const { t, channelLabel, links } = ctx;
     const isEmail = (r: DailyReportTemplateRow) => r.channel === 'EMAIL';
     const isOther = (r: DailyReportTemplateRow) => r.name?.trim().toLowerCase() === OTHER_ROW;
+    // The inbox finds a row's messages by the template name or subject the server gave it.
+    // The stand-ins for "no name" and "everything else" match nothing there.
+    const messages = (
+        r: DailyReportTemplateRow,
+        outcome?: 'delivered' | 'read' | 'opened' | 'replied' | 'bounced'
+    ) =>
+        UNNAMED_ROWS.has(r.name?.trim().toLowerCase()) || !r.name?.trim()
+            ? null
+            : links.inbox({ filter: 'sent', channel: r.channel, template: r.name, outcome });
     // The server fills these in when a message has no template name or no subject.
     const nameOf = (r: DailyReportTemplateRow) => {
         const key = r.name?.trim().toLowerCase();
@@ -604,23 +705,32 @@ const buildTemplates = (
             textColumn('channel', t('templates.col.channel'), (r) => channelLabel(r.channel), {
                 size: 104,
             }),
-            textColumn('name', t('templates.col.name'), nameOf, { size: 240, wrap: true }),
+            textColumn('name', t('templates.col.name'), nameOf, {
+                size: 240,
+                wrap: true,
+                link: (r) => (r.sent > 0 ? messages(r) : null),
+            }),
             numberColumn(ctx, 'sent', t('templates.col.sent'), (r) => r.sent, {
                 sortable: true,
                 size: 80,
+                link: (r) => messages(r),
             }),
             numberColumn(ctx, 'delivered', t('templates.col.delivered'), (r) => r.delivered, {
                 untracked: noDelivery,
                 size: 104,
+                link: (r) => messages(r, 'delivered'),
             }),
+            // Read is "opened" for an email.
             numberColumn(ctx, 'read', t('templates.col.read'), (r) => r.read, {
                 untracked: noDelivery,
                 size: 80,
+                link: (r) => messages(r, isEmail(r) ? 'opened' : 'read'),
             }),
             numberColumn(ctx, 'replied', t('templates.col.replied'), (r) => r.replied, {
                 untracked: noReplies,
                 sortable: true,
                 size: 96,
+                link: (r) => messages(r, 'replied'),
             }),
             numberColumn(ctx, 'replyRate', t('templates.col.replyRate'), (r) => r.replyRate, {
                 format: formatRate,
@@ -632,6 +742,7 @@ const buildTemplates = (
                 untracked: (r) => isEmail(r) && data.email?.tracked === false,
                 notApplicable: (r) => !isEmail(r),
                 sortable: true,
+                link: (r) => messages(r, 'bounced'),
             }),
             {
                 id: 'cost',
@@ -641,6 +752,90 @@ const buildTemplates = (
                 text: (r) => (isEmail(r) ? DASH : formatMoney(r.cost, r.currency)),
             },
         ],
+    };
+};
+
+/** What the "New WhatsApp templates" block shows on screen, and what the exports flatten. */
+export interface NewTemplatesModel {
+    /** Every figure, for the Excel and PDF exports. */
+    spec: ReportStatsSpec;
+    /** The total, then the split by the category the engine proposed. */
+    categories: ReportStat[];
+    /** Where the templates stand: the six review buckets. */
+    statuses: ReportStat[];
+    /** Utility templates Meta made marketing (they cost more per message); null when none. */
+    moved: { count: number; link: ReportLinkTarget | null } | null;
+}
+
+const STATUS_FIGURE: Record<TemplateBucket, keyof DailyReportNewTemplates> = {
+    in_review: 'inReview',
+    approved_by_you: 'approvedByYou',
+    with_meta: 'withMeta',
+    live: 'live',
+    rejected: 'rejected',
+    withdrawn: 'withdrawn',
+};
+
+const buildNewTemplates = (
+    data: EngagementDailyReport,
+    ctx: ReportCtx
+): NewTemplatesModel | null => {
+    const { t, links } = ctx;
+    const n = data.newTemplates;
+    if (!n) return null;
+    // Every figure leads to the Templates list for the same engine and day.
+    const open = (filter?: string) => links.outcomes('templates', filter);
+    const proposed = (category: string) =>
+        n.byCategory
+            .filter((c) => c.category?.trim().toUpperCase() === category)
+            .reduce((sum, c) => sum + (c.count || 0), 0);
+
+    const created: ReportStat = {
+        ...countStat(ctx, 'created', t('newTemplates.created'), n.created, { link: open() }),
+        exportLabel: t('newTemplates.created'),
+    };
+    const categories: ReportStat[] = [
+        created,
+        ...(['marketing', 'utility', 'authentication'] as const).map((key): ReportStat => {
+            const label = t(`whatsappCategory.${key}`);
+            return {
+                ...countStat(ctx, key, label, proposed(key.toUpperCase()), { link: open(key) }),
+                exportLabel: t('newTemplates.export.category', { name: label }),
+            };
+        }),
+    ];
+    const statuses: ReportStat[] = TEMPLATE_BUCKETS.map((bucket): ReportStat => {
+        const label = t(`templateStatus.${bucket}`);
+        const figure = n[STATUS_FIGURE[bucket]] as number;
+        const tone = BUCKET_TONE[bucket];
+        return {
+            ...countStat(ctx, bucket, label, figure, {
+                tone: figure > 0 && tone !== 'neutral' ? tone : undefined,
+                hint: t(`newTemplates.hint.${bucket}`),
+                link: open(bucket),
+            }),
+            exportLabel: t('newTemplates.export.status', { name: label }),
+        };
+    });
+    const moved: ReportStat = {
+        ...countStat(ctx, 'movedToMarketing', t('newTemplates.moved'), n.movedToMarketing, {
+            tone: n.movedToMarketing > 0 ? 'warning' : undefined,
+            link: open(TEMPLATE_MOVED_FILTER),
+        }),
+        exportLabel: t('newTemplates.moved'),
+    };
+    return {
+        spec: {
+            key: 'newTemplates',
+            title: t('newTemplates.title'),
+            subtitle: t('newTemplates.subtitle'),
+            sheetName: t('sheet.newTemplates'),
+            stats: [...categories, ...statuses, moved],
+        },
+        categories,
+        statuses,
+        moved:
+            n.movedToMarketing > 0 ? { count: n.movedToMarketing, link: moved.link ?? null } : null,
     };
 };
 
@@ -654,9 +849,10 @@ interface StatusRow {
 }
 
 const buildOutcomes = (data: EngagementDailyReport, ctx: ReportCtx) => {
-    const { t } = ctx;
+    const { t, links } = ctx;
     const o = data.outcomes;
     if (!o) return { stats: null, statusChanges: null };
+    const demos = (filter?: string) => links.outcomes('demos', filter);
     const stats: ReportStatsSpec = {
         key: 'outcomes',
         title: t('outcomes.title'),
@@ -665,20 +861,27 @@ const buildOutcomes = (data: EngagementDailyReport, ctx: ReportCtx) => {
         stats: [
             countStat(ctx, 'demosBooked', t('outcomes.demosBooked'), o.demosBooked, {
                 hint: t('outcomes.demosBookedHint'),
+                link: demos(),
             }),
             countStat(ctx, 'demosScheduled', t('outcomes.demosScheduled'), o.demosScheduled, {
                 hint: t('outcomes.demosScheduledHint'),
+                link: demos('scheduled'),
             }),
-            countStat(ctx, 'demosDone', t('outcomes.demosDone'), o.demosDone),
+            countStat(ctx, 'demosDone', t('outcomes.demosDone'), o.demosDone, {
+                link: demos('done'),
+            }),
             countStat(ctx, 'demosNoShow', t('outcomes.demosNoShow'), o.demosNoShow, {
                 tone: o.demosNoShow > 0 ? 'warning' : undefined,
+                link: demos('no_show'),
             }),
             countStat(ctx, 'demosNotMarked', t('outcomes.demosNotMarked'), o.demosNotMarked, {
                 hint: t('outcomes.demosNotMarkedHint'),
+                link: demos('not_marked'),
             }),
             countStat(ctx, 'conversions', t('outcomes.conversions'), o.conversions, {
                 tone: o.conversions > 0 ? 'success' : undefined,
                 hint: t('outcomes.conversionsHint'),
+                link: links.outcomes('conversions'),
             }),
         ],
     };
@@ -706,8 +909,14 @@ const buildOutcomes = (data: EngagementDailyReport, ctx: ReportCtx) => {
                 wrap: true,
             }),
             textColumn('to', t('statusChanges.col.to'), (r) => r.to, { size: 200, wrap: true }),
-            numberColumn(ctx, 'byEngine', t('statusChanges.col.byEngine'), (r) => r.byEngine),
-            numberColumn(ctx, 'byTeam', t('statusChanges.col.byTeam'), (r) => r.byTeam),
+            // The page behind a figure lists every change made that way on the day, not only
+            // this from-to pair; its From and To columns show which is which.
+            numberColumn(ctx, 'byEngine', t('statusChanges.col.byEngine'), (r) => r.byEngine, {
+                link: () => links.outcomes('status', 'engine'),
+            }),
+            numberColumn(ctx, 'byTeam', t('statusChanges.col.byTeam'), (r) => r.byTeam, {
+                link: () => links.outcomes('status', 'team'),
+            }),
             ...(hasAutomation
                 ? [
                       numberColumn<StatusRow>(
@@ -715,11 +924,13 @@ const buildOutcomes = (data: EngagementDailyReport, ctx: ReportCtx) => {
                           'byAutomation',
                           t('statusChanges.col.byAutomation'),
                           (r) => r.byAutomation,
-                          { size: 112 }
+                          { size: 112, link: () => links.outcomes('status', 'automation') }
                       ),
                   ]
                 : []),
-            numberColumn(ctx, 'total', t('statusChanges.col.total'), (r) => r.total),
+            numberColumn(ctx, 'total', t('statusChanges.col.total'), (r) => r.total, {
+                link: () => links.outcomes('status'),
+            }),
         ],
     };
     return { stats, statusChanges };
@@ -912,6 +1123,7 @@ export interface ReportModel {
     calls: ReportStatsSpec | null;
     email: ReportStatsSpec | null;
     templates: ReportTableSpec<DailyReportTemplateRow>;
+    newTemplates: NewTemplatesModel | null;
     outcomes: ReportStatsSpec | null;
     statusChanges: ReportTableSpec<StatusRow> | null;
     costCredits: ReportTableSpec<CreditRow> | null;
@@ -935,6 +1147,7 @@ export const buildReportModel = (data: EngagementDailyReport, ctx: ReportCtx): R
         calls: buildCalls(data, ctx),
         email: buildEmail(data, ctx),
         templates: buildTemplates(data, ctx),
+        newTemplates: buildNewTemplates(data, ctx),
         outcomes: outcomes.stats,
         statusChanges: outcomes.statusChanges,
         costCredits: costs.credits,
@@ -980,8 +1193,11 @@ export const statsToExport = (spec: ReportStatsSpec, t: TFunction): ExportTable 
     sheetName: spec.sheetName,
     head: [t('export.metric'), t('export.value')],
     numeric: [false, true],
-    body: spec.stats.map((s) => [s.label, s.value ?? s.text]),
-    display: spec.stats.map((s) => [s.label, s.badge ? `${s.text} (${s.badge})` : s.text]),
+    body: spec.stats.map((s) => [s.exportLabel ?? s.label, s.value ?? s.text]),
+    display: spec.stats.map((s) => [
+        s.exportLabel ?? s.label,
+        s.badge ? `${s.text} (${s.badge})` : s.text,
+    ]),
 });
 
 /** Every non-empty table and stat block, in page order, skipping sections that failed. */
@@ -1008,6 +1224,7 @@ export const buildExportTables = (
     addTable(model.channels);
     addStats(model.calls);
     addStats(model.email);
+    addStats(model.newTemplates?.spec ?? null);
     addTable(model.templates);
     addStats(model.outcomes);
     addTable(model.statusChanges);

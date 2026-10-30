@@ -79,6 +79,73 @@ export const formatTimeInZone = (iso: string, timeZone?: string | null): string 
     }
 };
 
+/** A timestamp from the server (ISO, UTC) as a Date; null when it is empty or unreadable. */
+const instantOf = (iso: string | null | undefined): Date | null => {
+    if (!iso) return null;
+    const instant = new Date(iso);
+    return Number.isNaN(instant.getTime()) ? null : instant;
+};
+
+const inZone = (
+    instant: Date,
+    options: Intl.DateTimeFormatOptions,
+    locale: string,
+    zone?: string | null
+) => {
+    try {
+        return new Intl.DateTimeFormat(locale, { ...options, timeZone: zone || undefined }).format(
+            instant
+        );
+    } catch {
+        // Not a valid IANA zone: fall back to the browser's.
+        return new Intl.DateTimeFormat(locale, options).format(instant);
+    }
+};
+
+/** "30 Oct 2026, 14:05" in one time zone; a dash when there is no (readable) time. */
+export const formatDateTimeInZone = (
+    iso: string | null | undefined,
+    timeZone?: string | null
+): string => {
+    const instant = instantOf(iso);
+    if (!instant) return DASH;
+    return inZone(
+        instant,
+        {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        },
+        'en-GB',
+        timeZone
+    );
+};
+
+/** "2026-10-30 14:05" in one time zone, the way a spreadsheet sorts it; empty when unreadable. */
+export const formatStampInZone = (
+    iso: string | null | undefined,
+    timeZone?: string | null
+): string => {
+    const instant = instantOf(iso);
+    if (!instant) return '';
+    return inZone(
+        instant,
+        {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        },
+        'sv-SE',
+        timeZone
+    );
+};
+
 /** Money in its own currency; small amounts keep up to four decimals. */
 export const formatMoney = (amount: number | null | undefined, currency: string | null): string => {
     if (!isNum(amount)) return DASH;

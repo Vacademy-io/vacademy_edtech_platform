@@ -41,6 +41,7 @@
     "empty": {
         "calls": "No calls were placed on this day",
         "email": "No emails were sent on this day",
+        "newTemplates": "No new WhatsApp templates were created on this day",
         "templates": "No templates or subjects were sent on this day",
         "costs": "No spend on this day"
     },
@@ -158,7 +159,8 @@
         },
         "callsConnected": {
             "label": "Calls connected",
-            "detail": "{{placed}} calls placed",
+            "detail_one": "{{placed}} call placed",
+            "detail_other": "{{placed}} calls placed",
             "none": "No calls placed",
             "hint": "Calls that were picked up, as defined by your call settings."
         },
@@ -190,6 +192,10 @@
         },
         "unavailable": "Couldn’t load"
     },
+    "links": {
+        "open": "{{value}} {{what}}. View the list.",
+        "openKpi": "{{label}}: {{value}}. View the list."
+    },
     "funnel": {
         "title": "Funnel",
         "subtitle": "How many people made it through each step on this day.",
@@ -206,14 +212,15 @@
         },
         "partialCaption": "{{value}} · partial",
         "partialTooltip": "Only channels that report delivery are counted here, so this is a lower bound and is not compared with the steps around it.",
-        "deliveredNote": "Delivery isn’t reported for every channel that was used, so Delivered is partial and no drop-off is shown for it."
+        "deliveredNote": "Delivery isn’t reported for every channel that was used, so Delivered is partial and no drop-off is shown for it.",
+        "linksLabel": "Open the list behind each step:"
     },
     "trend": {
         "title": "Last 7 days",
-        "subtitle": "Messages sent, replies and demos on the left axis; credits on the right.",
+        "subtitle": "The selected day and the six days before it. Each chart has its own scale.",
         "empty": "Nothing sent in the last 7 days",
-        "aria": "Chart of the last seven days: messages sent, replies, demos booked and credits spent",
-        "seriesRight": "{{name}} (right axis)",
+        "weekTotal": "{{value}} over 7 days",
+        "miniAria": "{{name}}, last 7 days: {{days}}",
         "series": {
             "sent": "Messages sent",
             "replies": "Replies",
@@ -369,6 +376,36 @@
         "noSubject": "No subject",
         "other": "Other messages"
     },
+    "templateStatus": {
+        "in_review": "In review",
+        "approved_by_you": "Approved by you",
+        "with_meta": "With Meta",
+        "live": "Live",
+        "rejected": "Rejected",
+        "withdrawn": "Withdrawn"
+    },
+    "newTemplates": {
+        "title": "New WhatsApp templates",
+        "subtitle": "Templates the engine drafted on this day, and where each one stands with your team and with Meta.",
+        "created": "Created",
+        "categoryHeading": "Created on this day, by the category the engine proposed",
+        "statusHeading": "Where they stand",
+        "hint": {
+            "in_review": "Waiting for you to review them.",
+            "approved_by_you": "You approved them; they haven’t been sent to Meta yet.",
+            "with_meta": "Sent to Meta and waiting for its decision.",
+            "live": "Approved by Meta and ready to use.",
+            "rejected": "Turned down or disabled by Meta.",
+            "withdrawn": "Withdrawn, or replaced by a newer version."
+        },
+        "moved": "Moved from utility to marketing",
+        "movedNote_one": "Meta moved <open>{{count}} template</open> from utility to marketing — it costs more per message.",
+        "movedNote_other": "Meta moved <open>{{count}} templates</open> from utility to marketing — those cost more per message.",
+        "export": {
+            "category": "Created as {{name}}",
+            "status": "Status: {{name}}"
+        }
+    },
     "outcomes": {
         "title": "Outcomes",
         "subtitle": "What the messages led to.",
@@ -499,6 +536,7 @@
         "channels": "Channels",
         "calls": "Calls",
         "email": "Email",
+        "newTemplates": "New templates",
         "templates": "Templates",
         "outcomes": "Outcomes",
         "statusChanges": "Status changes",
@@ -520,9 +558,123 @@
         "demos": "demos",
         "delivery": "delivery details",
         "replies": "replies",
-        "whatsappCost": "WhatsApp charges"
+        "whatsappCost": "WhatsApp charges",
+        "newTemplates": "new WhatsApp templates"
     },
     "atLeast": "at least {{value}}",
     "retrying": "Trying again…",
-    "refreshFailed": "We couldn’t refresh this report, so the numbers below may be out of date."
+    "refreshFailed": "We couldn’t refresh this report, so the numbers below may be out of date.",
+    "outcomesPage": {
+        "title": "Leads & outcomes",
+        "subtitle": "The people and templates behind the report: who was added, booked a demo, changed status or converted, and which WhatsApp templates were created on this day.",
+        "back": "Back to the daily report",
+        "tabsLabel": "Lists",
+        "tab": {
+            "leads": "Leads added",
+            "demos": "Demos",
+            "status": "Status changes",
+            "conversions": "Conversions",
+            "templates": "Templates"
+        },
+        "search": {
+            "placeholder": "Search by name, email or phone",
+            "label": "Search this list"
+        },
+        "results_one": "{{total}} result",
+        "results_other": "{{total}} results",
+        "filterLabel": "Filter",
+        "filter": {
+            "all": "All",
+            "new": "New",
+            "existing": "Already in the CRM",
+            "allLists": "All {{lists}}",
+            "byList": "By {{list}}",
+            "searchLists": "Search {{lists}}…",
+            "noLists": "No {{lists}} found.",
+            "selectedList": "Selected {{list}}",
+            "booked": "Booked on this day",
+            "scheduled": "Scheduled for this day",
+            "allScheduled": "All scheduled",
+            "done": "Done",
+            "no_show": "No-shows",
+            "not_marked": "Not marked",
+            "engine": "By engine",
+            "team": "By your team",
+            "automation": "By automation",
+            "demosMode": "Which demos",
+            "demosOutcome": "What happened",
+            "moved_to_marketing": "Moved to marketing",
+            "templatesCategory": "Template category",
+            "templatesStatus": "Template status"
+        },
+        "col": {
+            "lead": "Lead",
+            "email": "Email",
+            "phone": "Phone",
+            "list": "{{list}}",
+            "type": "Type",
+            "added": "Added at",
+            "scheduledFor": "Scheduled for",
+            "bookedAt": "Booked at",
+            "host": "Host",
+            "bookingStatus": "Booking",
+            "demoOutcome": "What happened",
+            "from": "From",
+            "to": "To",
+            "changedBy": "Changed by",
+            "source": "Source",
+            "when": "When",
+            "engine": "Engine",
+            "templateName": "Template",
+            "proposedCategory": "Proposed category",
+            "metaCategory": "Meta category",
+            "status": "Status",
+            "createdAt": "Created at",
+            "submittedAt": "Submitted at",
+            "language": "Language",
+            "statusDetail": "Status in detail",
+            "rejectionReason": "Rejection reason"
+        },
+        "value": {
+            "new": "New",
+            "existing": "Already in the CRM",
+            "unknownLead": "Unknown lead",
+            "noValue": "—",
+            "actor": {
+                "ENGINE": "Engine",
+                "TEAM": "Your team",
+                "AUTOMATION": "Automation"
+            },
+            "demoOutcome": {
+                "COMPLETED": "Done",
+                "NO_SHOW": "No-show",
+                "NOT_MARKED": "Not marked"
+            },
+            "bookingStatus": {
+                "CONFIRMED": "Confirmed",
+                "COMPLETED": "Completed",
+                "CANCELLED": "Cancelled",
+                "PENDING": "Pending",
+                "RESCHEDULED": "Rescheduled"
+            },
+            "categoryChanged": "changed by Meta"
+        },
+        "openProfile": "Open the profile of {{name}}",
+        "empty": {
+            "title": "Nothing to show",
+            "leads": "No leads were added on this day.",
+            "demos": "No demos match on this day.",
+            "status": "No status changes on this day.",
+            "conversions": "Nobody converted on this day.",
+            "templates": "No new templates were created on this day.",
+            "filtered": "Nothing matches these filters.",
+            "searched": "Nothing matches “{{query}}”.",
+            "clear": "Clear search and filters"
+        },
+        "export": {
+            "done": "List downloaded",
+            "capped": "Downloaded the first {{shown}} of {{total}} rows."
+        },
+        "openFailed": "Couldn’t open this lead’s profile."
+    }
 }

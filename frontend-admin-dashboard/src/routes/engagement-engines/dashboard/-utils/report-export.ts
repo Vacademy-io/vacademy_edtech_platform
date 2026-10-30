@@ -14,7 +14,7 @@ export interface ReportExportInput {
     t: TFunction;
 }
 
-type Cell = string | number | null;
+export type Cell = string | number | null;
 
 /** Excel sheet names: 31 characters at most, none of  \ / ? * [ ] :  and no repeats. */
 const sheetNamer = () => {
@@ -43,7 +43,8 @@ const columnWidths = (rows: Cell[][]) => {
     }));
 };
 
-const sheet = (rows: Cell[][]) => {
+/** One worksheet from rows of cells, its columns as wide as their longest value. */
+export const sheet = (rows: Cell[][]) => {
     const ws = XLSX.utils.aoa_to_sheet(rows);
     ws['!cols'] = columnWidths(rows);
     return ws;

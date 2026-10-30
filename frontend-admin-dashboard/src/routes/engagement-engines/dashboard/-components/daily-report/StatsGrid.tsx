@@ -1,7 +1,9 @@
 import { Info } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { CellTone, ReportStat } from '../../-utils/report-tables';
+import { ReportLink } from './ReportLink';
 
 const VALUE_TONE: Record<CellTone | 'default', string> = {
     default: 'text-neutral-900',
@@ -45,6 +47,7 @@ export function StatsGrid({
     /** For half-width cards: two figures across instead of up to five. */
     compact?: boolean;
 }) {
+    const { t } = useTranslation('engagementDailyReport');
     return (
         <div className="flex flex-col gap-3">
             <dl
@@ -70,7 +73,19 @@ export function StatsGrid({
                                 )}
                             >
                                 <span className={s.tone === 'muted' ? 'text-body' : 'text-title'}>
-                                    {s.text}
+                                    {s.link ? (
+                                        <ReportLink
+                                            target={s.link}
+                                            label={t('links.open', {
+                                                value: s.text,
+                                                what: s.label,
+                                            })}
+                                        >
+                                            {s.text}
+                                        </ReportLink>
+                                    ) : (
+                                        s.text
+                                    )}
                                 </span>
                             </span>
                             {s.badge && (
