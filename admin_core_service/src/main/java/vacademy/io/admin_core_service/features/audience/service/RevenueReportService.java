@@ -74,10 +74,12 @@ public class RevenueReportService {
     private static final String CONV_CTE = """
             conv AS (
                 SELECT ulp.user_id,
-                       COALESCE(ulp.best_source_type, ar.source_type, 'UNKNOWN') AS source_type,
+                       """ + ReportSourceSql.effective("COALESCE(ulp.best_source_type, ar.source_type)", "sa.campaign_type") + """
+                           AS source_type,
                        COALESCE(lu.user_id, ulp.assigned_counselor_id)           AS counsellor_id
                 FROM user_lead_profile ulp
                 LEFT JOIN audience_response ar ON ar.id = ulp.best_score_response_id
+                LEFT JOIN audience sa ON sa.id = ar.audience_id
                 LEFT JOIN LATERAL (
                     SELECT lu2.user_id FROM linked_users lu2
                     WHERE lu2.source = 'ENQUIRY' AND lu2.source_id = ar.enquiry_id

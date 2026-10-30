@@ -8,6 +8,11 @@
  *                                a "connected" call (connect-rate etc.)
  *   3. Interested statuses     → which lead-status keys count as "interested"
  *                                in source/funnel reports
+ *   4. Course group order      → course tags in priority order; the Admissions
+ *                                report counts a multi-course student once,
+ *                                under the group that comes first
+ *   5. Admissions field        → custom field (e.g. Branch) the Admissions
+ *                                report breaks admissions down by
  *
  * Persisted at LEAD_SETTING.data.reports (snake_case subtree). The save path
  * READ-MODIFY-WRITES the whole LEAD_SETTING data object — fetch current, merge
@@ -38,6 +43,7 @@ import { DEFAULT_CUSTOM_LEAD_STATUSES } from '@/hooks/use-lead-settings';
 import {
     LEAD_REPORT_SETTINGS_QUERY_KEY,
     TELEPHONY_CALL_STATUSES,
+    fetchAdmissionReportOptions,
     fetchLeadReportSettings,
     fetchLeadSettingRawData,
     humanizeCallStatus,
@@ -101,6 +107,9 @@ export const REPORT_TIMEZONES = [
     'UTC',
 ] as const;
 
+/** Select value for "no field" (Radix Select items cannot use an empty value). */
+const NO_FIELD = '__none__';
+
 const CALL_STATUS_OPTIONS: OptionType[] = TELEPHONY_CALL_STATUSES.map((s) => ({
     value: s,
     label: humanizeCallStatus(s),
@@ -115,6 +124,8 @@ async function saveReportSettings(next: LeadReportSettingsValues): Promise<void>
         timezone: next.timezone,
         connected_call_statuses: next.connectedCallStatuses,
         interested_status_keys: next.interestedStatusKeys,
+        course_group_order: next.courseGroupOrder,
+        admission_field_id: next.admissionFieldId,
     };
     const merged = { ...current, reports };
     await authenticatedAxiosInstance.post(
@@ -147,6 +158,18 @@ export default function LeadReportSettings() {
     const [timezone, setTimezone] = useState<string>('Asia/Kolkata');
     const [connectedStatuses, setConnectedStatuses] = useState<string[]>(['COMPLETED']);
     const [interestedKeys, setInterestedKeys] = useState<string[]>(['INTERESTED']);
+    const [courseGroupOrder, setCourseGroupOrder] = useState<string[]>([]);
+    const [admissionFieldId, setAdmissionFieldId] = useState<string | null>(null);
+
+    // The institute's course tags and custom fields, for the Admissions report knobs.
+    const { data: admissionOptions, isLoading: optionsLoading } = useQuery({
+        queryKey: ['admission-report-options'],
+        queryFn: fetchAdmissionReportOptions,
+        staleTime: 5 * 60 * 1000,
+    });
+    const courseTagOptions: OptionType[] = Array.from(
+        new Set([...courseGroupOrder, ...(admissionOptions?.course_tags ?? [])])
+    ).map((tag) => ({ value: tag, label: tag }));
     const [hasChanges, setHasChanges] = useState(false);
 
     useEffect(() => {
@@ -154,6 +177,8 @@ export default function LeadReportSettings() {
             setTimezone(saved.timezone);
             setConnectedStatuses(saved.connectedCallStatuses);
             setInterestedKeys(saved.interestedStatusKeys);
+            setCourseGroupOrder(saved.courseGroupOrder);
+            setAdmissionFieldId(saved.admissionFieldId);
             setHasChanges(false);
         }
     }, [saved]);
@@ -186,6 +211,8 @@ export default function LeadReportSettings() {
             timezone,
             connectedCallStatuses: connectedStatuses,
             interestedStatusKeys: interestedKeys,
+            courseGroupOrder,
+            admissionFieldId,
         });
     };
 
@@ -270,6 +297,67 @@ export default function LeadReportSettings() {
                                 disabled={statusesLoading}
                                 className="max-w-sm"
                             />
+                        </div>
+
+                        {/* Course group order (Admissions report) */}
+                        <div className="flex flex-col gap-1.5">
+                            <Label>{t('courseGroupOrder.label')}</Label>
+                            <p className="text-xs text-muted-foreground">
+                                {t('courseGroupOrder.hint')}
+                            </p>
+                            <MultiSelect
+                                options={courseTagOptions}
+                                selected={courseGroupOrder}
+                                onChange={(v) => {
+                                    setCourseGroupOrder(v);
+                                    setHasChanges(true);
+                                }}
+                                placeholder={t('courseGroupOrder.placeholder')}
+                                disabled={optionsLoading}
+                                className="max-w-sm"
+                            />
+                            {courseGroupOrder.length > 1 && (
+                                <p className="text-xs text-muted-foreground">
+                                    {t('courseGroupOrder.current', {
+                                        order: courseGroupOrder.join(' → '),
+                                    })}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Admissions breakdown field */}
+                        <div className="flex flex-col gap-1.5">
+                            <Label htmlFor="report-admission-field">
+                                {t('admissionField.label')}
+                            </Label>
+                            <p className="text-xs text-muted-foreground">
+                                {t('admissionField.hint')}
+                            </p>
+                            <Select
+                                value={admissionFieldId ?? NO_FIELD}
+                                onValueChange={(v) => {
+                                    setAdmissionFieldId(v === NO_FIELD ? null : v);
+                                    setHasChanges(true);
+                                }}
+                                disabled={optionsLoading}
+                            >
+                                <SelectTrigger
+                                    id="report-admission-field"
+                                    className="w-full max-w-sm"
+                                >
+                                    <SelectValue placeholder={t('admissionField.none')} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value={NO_FIELD}>
+                                        {t('admissionField.none')}
+                                    </SelectItem>
+                                    {(admissionOptions?.fields ?? []).map((f) => (
+                                        <SelectItem key={f.id} value={f.id}>
+                                            {f.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div className="flex items-center justify-end">

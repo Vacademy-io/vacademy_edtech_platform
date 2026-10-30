@@ -3081,7 +3081,8 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
 
         /** Source breakdown: rows of (source_type, total, converted). */
         @Query(value = """
-                            SELECT ar.source_type                                                       AS sourceType,
+                            SELECT (CASE WHEN NULLIF(TRIM(a.campaign_type), '') IS NOT NULL THEN TRIM(a.campaign_type) ELSE COALESCE(ar.source_type, 'UNKNOWN') END) AS sourceType,
+                                   BOOL_OR(NULLIF(TRIM(a.campaign_type), '') IS NOT NULL) AS fromCampaignType,
                                    COUNT(*)                                                             AS totalCount,
                                    SUM(CASE WHEN COALESCE(lst.status_key, ulp.conversion_status)='CONVERTED' THEN 1 ELSE 0 END)   AS convertedCount
                             FROM audience_response ar
@@ -3103,7 +3104,7 @@ public interface AudienceResponseRepository extends JpaRepository<AudienceRespon
                               AND (:scopeUsersCsv IS NULL OR lu.user_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')) OR ulp.assigned_counselor_id = ANY(STRING_TO_ARRAY(:scopeUsersCsv, ',')))
                               AND (:audienceId IS NULL OR ar.audience_id = :audienceId)
                               AND (:sourceType IS NULL OR ar.source_type = :sourceType)
-                            GROUP BY ar.source_type
+                            GROUP BY 1
                             ORDER BY totalCount DESC
                         """, nativeQuery = true)
         List<LeadReportProjections.SourceCountProjection> findReportSourceBreakdown(

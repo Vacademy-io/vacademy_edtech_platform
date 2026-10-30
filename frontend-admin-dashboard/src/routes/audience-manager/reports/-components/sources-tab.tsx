@@ -30,6 +30,7 @@ import {
     fmtCurrency,
     fmtNumber,
     fmtPct,
+    sourceDrillSearch,
     type ReportTabProps,
 } from './report-shared';
 
@@ -214,7 +215,7 @@ export function SourcesTab({
                                         onClick={() =>
                                             navigate({
                                                 to: RECENT_LEADS_ROUTE,
-                                                search: { source: r.source_type ?? undefined },
+                                                search: sourceDrillSearch(r),
                                             })
                                         }
                                     >

@@ -99,7 +99,10 @@ public class PipelineReportService {
             WITH base AS (
                 SELECT ar.id,
                        ar.user_id,
-                       COALESCE(ar.source_type, 'UNKNOWN') AS source_type,
+                       """ + ReportSourceSql.effective("ar.source_type", "a.campaign_type") + """
+                           AS source_type,
+                       """ + ReportSourceSql.fromCampaignType("ar.source_type", "a.campaign_type") + """
+                           AS from_campaign_type,
                        ulp.conversion_status,
                        ulp.converted_at,
                        -- ≥1 call with a "connected" status (institute-configurable set).
@@ -128,6 +131,7 @@ public class PipelineReportService {
                 """ + LEAD_SCOPE_PREDICATES + """
             )
             SELECT b.source_type,
+                   BOOL_OR(b.from_campaign_type)         AS from_campaign_type,
                    COUNT(*)                              AS leads,
                    COUNT(*) FILTER (WHERE b.connected)   AS connected_leads,
                    COUNT(*) FILTER (WHERE b.interested)  AS interested,
@@ -147,12 +151,14 @@ public class PipelineReportService {
      * it to this institute's converted leads.
      */
     private static final String SOURCE_REVENUE_SQL = """
-            SELECT COALESCE(ulp.best_source_type, ar.source_type, 'UNKNOWN') AS source_type,
+            SELECT """ + ReportSourceSql.effective("COALESCE(ulp.best_source_type, ar.source_type)", "sa.campaign_type") + """
+                       AS source_type,
                    COALESCE(SUM(pl.payment_amount), 0)                        AS revenue
             FROM payment_log pl
             JOIN user_lead_profile ulp
                 ON ulp.user_id = pl.user_id AND ulp.institute_id = :instituteId
             LEFT JOIN audience_response ar ON ar.id = ulp.best_score_response_id
+            LEFT JOIN audience sa ON sa.id = ar.audience_id
             LEFT JOIN LATERAL (
                 SELECT lu2.user_id FROM linked_users lu2
                 WHERE lu2.source = 'ENQUIRY' AND lu2.source_id = ar.enquiry_id
@@ -191,6 +197,7 @@ public class PipelineReportService {
             String sourceType = rs.getString("source_type");
             return SourcePerformanceReportDTO.Row.builder()
                     .sourceType(sourceType)
+                    .campaignType(rs.getBoolean("from_campaign_type") ? sourceType : null)
                     .leads(leads)
                     .connectedLeads(rs.getLong("connected_leads"))
                     .interested(rs.getLong("interested"))

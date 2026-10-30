@@ -40,6 +40,7 @@ import {
     fmtMinutes,
     fmtNumber,
     fmtPct,
+    sourceDrillSearch,
     tierBgClass,
     type ReportTabProps,
 } from './report-shared';
@@ -106,7 +107,12 @@ export function OverviewTab({
      * report is scoped to, and every status unless the drill picks one — so the list holds
      * exactly the leads the clicked number counted.
      */
-    const drillSearch = (extra: { status?: string; source?: string; tier?: string }) => ({
+    const drillSearch = (extra: {
+        status?: string;
+        source?: string;
+        campaignType?: string;
+        tier?: string;
+    }) => ({
         status: ALL_STATUSES_VALUE,
         range: CUSTOM_DATE_VALUE,
         // Empty inputs would fail the route's yyyy-MM-dd schema — omit them instead.
@@ -292,7 +298,7 @@ export function OverviewTab({
                                 onClick={() =>
                                     navigate({
                                         to: RECENT_LEADS_ROUTE,
-                                        search: drillSearch({ source: b.source_type }),
+                                        search: drillSearch(sourceDrillSearch(b)),
                                     })
                                 }
                             />
