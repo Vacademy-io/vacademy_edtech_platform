@@ -558,13 +558,13 @@ const InProgressSection = ({
                                 onClick={() => onCourseClick(course)}
                                 className="flex w-full flex-col gap-2 rounded-lg border border-neutral-200 bg-white p-3 text-left transition-shadow hover:border-primary-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
                             >
-                                {/* Single-line summary per handoff: name (flex-1)
-                                    + level badge + percentage chip. Per-row
+                                {/* Summary per handoff: name (flex-1, wraps so a long name
+                                    is never cut off) + level badge + percentage chip. Per-row
                                     Trash removed — Remove from {course} lives
                                     in the top action bar. */}
-                                <div className="flex min-w-0 items-center gap-2">
+                                <div className="flex min-w-0 items-start gap-2">
                                     <p
-                                        className="min-w-0 flex-1 truncate text-sm font-semibold text-neutral-800"
+                                        className="min-w-0 flex-1 break-words text-sm font-semibold text-neutral-800"
                                         title={course.package_name || t('course.unnamed')}
                                     >
                                         {course.package_name || t('course.unnamed')}
@@ -676,7 +676,7 @@ const CourseSection = ({
                                 <div className="flex min-w-0 items-start justify-between gap-2">
                                     <div className="min-w-0">
                                         <p
-                                            className="truncate text-sm font-semibold text-neutral-800"
+                                            className="break-words text-sm font-semibold text-neutral-800"
                                             title={course.package_name || t('course.unnamed')}
                                         >
                                             {course.package_name || t('course.unnamed')}
