@@ -70,6 +70,7 @@ export const SETTINGS_TAB_FEATURES: Readonly<Record<SettingsTabs, readonly strin
     [SettingsTabs.Appearance]: null,
     [SettingsTabs.WhiteLabel]: null,
     [SettingsTabs.AppStatus]: null,
+    [SettingsTabs.StorageUsage]: null,
     [SettingsTabs.Naming]: null,
     [SettingsTabs.RoleDisplay]: null,
     [SettingsTabs.Tnc]: null,

@@ -16,6 +16,7 @@ import ScheduledReportsSettings from '../-components/ScheduledReportsSettings';
 import SchoolSettings from '../-components/School/SchoolSettings';
 import WhiteLabelSettings from '../-components/WhiteLabelSettings';
 import AppStatusSettings from '../-components/AppStatusSettings';
+import StorageUsageSettings from '../-components/StorageUsageSettings';
 import AssessmentSettings from '../-components/AssessmentSettings';
 import WhatsAppSettings from '../-components/WhatsAppSettings/WhatsAppSettings';
 import LeadSettings from '../-components/LeadSettings';
@@ -202,6 +203,13 @@ export const getAvailableSettingsTabs = (): SettingsTabEntry[] => {
             tab: SettingsTabs.McpServer,
             value: 'MCP Server',
             component: MCPServerSettings,
+            domain: 'General',
+            group: 'Platform Configuration',
+        },
+        {
+            tab: SettingsTabs.StorageUsage,
+            value: 'Storage & Bandwidth',
+            component: StorageUsageSettings,
             domain: 'General',
             group: 'Platform Configuration',
         },
