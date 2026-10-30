@@ -160,7 +160,7 @@ def test_an_unusable_lookup_reply_keeps_the_website_contacts():
         "people": [], "contacts": []}
 
 
-def test_winners_runs_on_appx_is_enterprise_sized_and_goes_to_review():
+def test_winners_runs_on_appx_is_enterprise_sized_and_ranked_down():
     home, contact, about = _pages()
     chosen = choose_pages(home)
     assert chosen == [(SITE + "contact", "contact"), (SITE + "about-winners-institute", "about"),
@@ -183,6 +183,8 @@ def test_winners_runs_on_appx_is_enterprise_sized_and_goes_to_review():
              "must_have": ["offers online courses"]}
     scored = score_lead(lead, brief, platforms, size, today=date(2026, 10, 25))
     assert "competitor_platform:appx" in scored["flags"] and "enterprise" in scored["flags"]
-    decision, reasons = gate(scored, lead, {"auto_score": 70, "review_score": 45, "min_contact": "likely"})
-    assert decision == "REVIEW"
+    # Rank and fill (2026-10-30): the competitor and size risks lower the score; they no longer send the
+    # lead to a person, and a reject names them.
+    decision, reasons = gate(scored, lead, {"send_score": 50, "min_contact": "likely"})
+    assert decision == "REJECT" and reasons[0] == f"Score {scored['score']} is below the send bar (50)"
     assert any("Appx" in r or "appx" in r for r in reasons) and any("large" in r.lower() for r in reasons)

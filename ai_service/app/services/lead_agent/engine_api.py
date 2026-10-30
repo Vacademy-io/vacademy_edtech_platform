@@ -89,6 +89,11 @@ def leave_out(guided: dict) -> List[str]:
     return _m("planning").leave_out(guided)
 
 
+def market_names(markets: Optional[List[dict]]) -> List[str]:
+    """One name per market ("Rajasthan, India", "Delhi, India"), never the parts of all of them in one list."""
+    return _m("planning").market_names(markets)
+
+
 def build_profile_prompt(products: List[str], brief: Optional[str], page_text: Optional[str],
                          name: Optional[str] = None, seller: Optional[str] = None):
     return _m("profiles").build_profile_prompt(products, brief, page_text, name, seller)
@@ -177,6 +182,11 @@ def build_extraction_prompt(**kwargs):
     return _m("research.extract").build_extraction_prompt(**kwargs)
 
 
+def left_out_after_extraction(extraction, name: str, exclude: Optional[List[str]]) -> Optional[str]:
+    """A left-out kind seen once the website is read (engine.research.extract.left_out_after_extraction)."""
+    return _m("research.extract").left_out_after_extraction(extraction, name, exclude)
+
+
 def extract_contacts(pages: List[dict], site_domain: Optional[str], country: Optional[str]):
     return _m("research.contacts").extract_contacts(pages, site_domain, country)
 
@@ -202,6 +212,20 @@ def is_home_number(contact: dict, region: Optional[str]) -> bool:
 def reachable(contact: dict) -> bool:
     """A rated contact outreach can use for this organisation (engine.research.contacts.reachable)."""
     return _m("research.contacts").reachable(contact)
+
+
+def rate_contact(contact: dict, *, site_domain: Optional[str], organisation: str,
+                 region: Optional[str]) -> tuple:
+    """(tier, reason) for one contact with only what is known before the AI step: no people, not a
+    chain (engine.research.contacts.rate_contact). "avoid" = helpline, toll-free, fax, template, support
+    or careers line, another organisation's email, a web agency's credit."""
+    return _m("research.contacts").rate_contact(contact, site_domain=site_domain, organisation=organisation,
+                                                leaders=set(), large_chain=False, region=region)
+
+
+def phone_region(site_domain: Optional[str], country: Optional[str] = None) -> str:
+    """The country code numbers on this site are read in (engine.research.contacts.phone_region)."""
+    return _m("research.contacts").phone_region(site_domain, country)
 
 
 def build_lead(**kwargs) -> dict:
@@ -264,6 +288,12 @@ def maps_kind(category: Optional[str], name: Optional[str], industries: Optional
     return _m("scoring").maps_kind(category, name, industries)
 
 
+def maps_other_kind(category: Optional[str], name: Optional[str], industries: Optional[List[dict]]) -> Optional[str]:
+    """The kind a Google Maps listing clearly is when the brief targets nothing of that kind
+    (engine.discovery.kinds.other_kind), or None: keep the listing."""
+    return _m("discovery.kinds").other_kind(category, name, industries)
+
+
 def social_links(pages: List[dict]) -> dict:
     return _m("research.social").social_links(pages)
 
@@ -286,6 +316,17 @@ def score_lead(lead: dict, brief: dict, platforms: List[dict], size: dict) -> di
 
 def gate(scored: dict, lead: dict, gate_cfg: dict):
     return _m("scoring").gate(scored, lead, gate_cfg)
+
+
+def always_review_flags() -> tuple:
+    """Score flags the gate sends to a person when the score reaches the send bar (maps_only,
+    possible_duplicate)."""
+    return tuple(_m("scoring").ALWAYS_REVIEW_FLAGS)
+
+
+def send_bar(gate_cfg: Optional[dict]) -> int:
+    """The agent's send_score as the gate reads it (50 for an agent saved before it had one)."""
+    return _m("scoring").send_bar(gate_cfg)
 
 
 def flag_words(flag: str) -> str:

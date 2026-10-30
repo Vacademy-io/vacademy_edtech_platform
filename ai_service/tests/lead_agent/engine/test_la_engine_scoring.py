@@ -13,7 +13,7 @@ from app.services.lead_agent.engine.research.contacts import Contact
 from app.services.lead_agent.engine.research.extract import PageText
 from app.services.lead_agent.engine.research.lead import build_lead
 from app.services.lead_agent.engine.schemas import AccountExtraction
-from app.services.lead_agent.engine.scoring import DEFAULT_GATE, gate, score_lead, signal_age_days
+from app.services.lead_agent.engine.scoring import DEFAULT_GATE, gate, score_lead, send_bar, signal_age_days
 
 TODAY = date(2026, 10, 25)
 SITE = "https://www.alpha-academy.in/"
@@ -57,10 +57,10 @@ def test_a_typical_coaching_site_with_only_a_landline_is_not_auto_delivered():
     assert lead["contact_quality"]["level"] == "general"
     scored = score_lead(lead, BRIEF, [], {"tier": None}, today=TODAY)
     decision, reasons = gate(scored, lead, DEFAULT_GATE)
-    # ... but with no buying signal and only a reception line it is never delivered on its own.
-    assert decision != "AUTO" and scored["score"] < DEFAULT_GATE["auto_score"]
+    # ... but with no buying signal and only a reception line it is never sent.
+    assert decision == "REJECT" and scored["score"] < DEFAULT_GATE["send_score"]
     assert not scored["has_intent"] and scored["intent"] == 0
-    assert decision == "REJECT" and "below the review bar" in reasons[0]
+    assert reasons == [f"Score {scored['score']} is below the send bar (50)"]
 
 
 def test_a_small_institute_hiring_telecallers_now_with_a_desk_mobile_and_its_founder_is_auto():
@@ -87,18 +87,22 @@ def test_a_small_institute_hiring_telecallers_now_with_a_desk_mobile_and_its_fou
     scored = score_lead(lead, BRIEF, [], {"tier": "small"}, today=TODAY)
     assert scored["has_intent"] and scored["intent"] >= 80  # dated within 60 days: boosted
     assert scored["reach"] == 70 and scored["flags"] == []
-    decision, reasons = gate(scored, lead, {"auto_score": 70, "review_score": 45, "min_contact": "likely",
-                                            "require_intent": False})
+    decision, reasons = gate(scored, lead, {"send_score": 50, "min_contact": "likely", "require_intent": False})
     assert decision == "AUTO", (scored, reasons)
+    assert reasons == [f"Score {scored['score']} meets the send bar (50) with a likely contact"]
     assert scored["products"][0]["key"] == "complete_vacademy" and scored["products"][0]["score"] >= 50
-    # A stricter list waits for a person instead.
-    assert gate(scored, lead, {"min_contact": "direct"})[0] == "REVIEW"
+    # A stricter list does not send it; one that approves every lead shows it to a person instead.
+    assert gate(scored, lead, {"min_contact": "direct"}) == (
+        "REJECT", ["Best contact is likely; this list needs at least direct"])
+    assert gate(scored, lead, {"min_contact": "direct", "require_approval": True})[0] == "REVIEW"
     # The same post a year old counts for much less and is not a buying signal any more.
     stale = {**lead, "signals": [{**s, "event_date": "14 months ago"} if s["key"] == "hiring" else s
                                  for s in lead["signals"]]}
     old = score_lead(stale, BRIEF, [], {"tier": "small"}, today=TODAY)
     assert old["intent"] < scored["intent"] / 2 and not old["has_intent"]
-    assert gate(old, stale, {"require_intent": True})[0] == "REVIEW"
+    assert gate(old, stale, {"require_intent": True, "send_score": 0}) == (
+        "REJECT", ["No buying signal, and this list requires one"])
+    assert gate(old, stale, {"require_intent": True, "send_score": 0, "require_approval": True})[0] == "REVIEW"
 
 
 def test_no_usable_contact_is_rejected_whatever_the_score():
@@ -145,8 +149,11 @@ def test_competitor_enterprise_and_micro_carry_risk():
     flagged = score_lead(lead, BRIEF, classplus, {"tier": "micro", "micro_hint": "home tuition"}, today=TODAY)
     assert flagged["risk"] == 40 + 25 and abs(flagged["score"] - (plain["score"] - 0.5 * 65)) <= 1
     assert flagged["flags"] == ["competitor_platform:classplus", "micro"]
-    _, reasons = gate({**flagged, "score": 80}, lead, DEFAULT_GATE)
-    assert any("Classplus" in r for r in reasons)  # flagged leads are never AUTO
+    # The risk ranks the lead lower and the reject says why; it no longer holds a lead back (2026-10-30).
+    decision, reasons = gate(flagged, lead, DEFAULT_GATE)
+    assert decision == "REJECT" and reasons[0] == f"Score {flagged['score']} is below the send bar (50)"
+    assert any("Classplus" in r for r in reasons) and "Single tutor or home tuition" in reasons
+    assert gate({**flagged, "score": 80}, lead, DEFAULT_GATE)[0] == "AUTO"
 
 
 def test_a_list_can_take_competitor_users_without_review():
@@ -155,16 +162,112 @@ def test_a_list_can_take_competitor_users_without_review():
     classplus = [{"key": "classplus", "name": "Classplus", "kind": "lms", "competitor": True, "evidence": "x", "url": SITE}]
     flagged = score_lead(lead, BRIEF, classplus, {}, today=TODAY)
     assert flagged["flags"] == ["competitor_platform:classplus"] and flagged["risk"] == 40
-    bars = {"auto_score": flagged["base_score"], "review_score": 0, "min_contact": "likely"}
-    assert gate(flagged, lead, bars)[0] == "REVIEW"            # by default a person decides on the switch pitch
+    bars = {"send_score": flagged["base_score"], "min_contact": "likely"}
+    decision, reasons = gate(flagged, lead, bars)              # by default the competitor's penalty counts
+    assert decision == "REJECT" and any("Classplus" in r for r in reasons)
     decision, reasons = gate(flagged, lead, {**bars, "auto_competitor_users": True})
     assert decision == "AUTO", reasons                          # judged without the competitor penalty
     assert reasons[0].startswith(f"Score {flagged['base_score']} ") and "competitor" in reasons[1]
-    # the other risks still count, and a very large organisation still waits for a person
+    # the other risks still count: a single tutor or a very large organisation scores below the same bar
     micro = score_lead(lead, BRIEF, classplus, {"tier": "micro", "micro_hint": "home tuition"}, today=TODAY)
-    assert gate(micro, lead, {**bars, "auto_competitor_users": True})[0] == "REVIEW"
+    decision, reasons = gate(micro, lead, {**bars, "auto_competitor_users": True})
+    assert decision == "REJECT" and reasons[1:] == ["Single tutor or home tuition"]  # Classplus is not held against it
     big = score_lead(lead, BRIEF, classplus, {"tier": "enterprise"}, today=TODAY)
-    assert gate(big, lead, {"auto_score": 0, "review_score": 0, "auto_competitor_users": True})[0] == "REVIEW"
+    assert gate(big, lead, {**bars, "auto_competitor_users": True})[0] == "REJECT"
+    assert gate(big, lead, {"send_score": 0, "auto_competitor_users": True})[0] == "AUTO"  # ranked, never held
+
+
+# ------------------------------------------------------------------ rank and fill: one send bar (2026-10-30)
+# Prod 2026-10-30: quotas of 100-200 a day, but a lead without a buying signal could hardly pass the auto
+# bar (70); everything from 45 to 69 waited in REVIEW, which nobody works on (about 820 leads; Voomsales
+# 14 delivered, 214 in REVIEW in two days). Now one bar: at or above it a lead is sent, best first.
+
+LIKELY = {"contact_quality": {"level": "likely"}}
+GENERAL = {"contact_quality": {"level": "general"}}
+
+
+def _scored(score, flags=(), *, base=None, risk=0, has_intent=False, level="likely"):
+    return {"score": score, "base_score": score if base is None else base, "risk": risk, "flags": list(flags),
+            "has_intent": has_intent, "reach_level": level}
+
+
+def test_one_send_bar_sends_at_or_above_it_and_rejects_below():
+    assert gate(_scored(50), LIKELY, {"send_score": 50}) == (
+        "AUTO", ["Score 50 meets the send bar (50) with a likely contact"])
+    assert gate(_scored(49), LIKELY, {"send_score": 50}) == ("REJECT", ["Score 49 is below the send bar (50)"])
+    assert gate(_scored(62), LIKELY, DEFAULT_GATE)[0] == "AUTO"  # the old gate parked 45-69 in REVIEW
+    assert gate(_scored(0), LIKELY, {"send_score": 0})[0] == "AUTO"
+
+
+def test_an_agent_saved_before_send_score_gets_the_default_bar_and_its_old_bars_are_ignored():
+    old_agent = {"auto_score": 70, "review_score": 45, "min_contact": "likely", "require_intent": False,
+                 "auto_competitor_users": False}
+    assert gate(_scored(55), LIKELY, old_agent)[0] == "AUTO"  # was REVIEW: below the auto bar
+    assert gate(_scored(47), LIKELY, old_agent) == ("REJECT", ["Score 47 is below the send bar (50)"])
+    assert gate(_scored(55), LIKELY, {"send_score": None})[0] == "AUTO"
+    assert gate(_scored(55), LIKELY, None)[0] == "AUTO"
+    assert send_bar({}) == send_bar(None) == send_bar({"send_score": "high"}) == 50
+    assert send_bar({"send_score": 130}) == 100 and send_bar({"send_score": "35"}) == 35
+
+
+def test_a_hard_reject_comes_before_everything_else():
+    decision, reasons = gate(_scored(95, ["no_contact", "maps_only"]), LIKELY, {"require_approval": True})
+    assert decision == "REJECT" and reasons == [
+        "No usable contact (only helplines, support inboxes or an enquiry form)"]
+
+
+@pytest.mark.parametrize("flag, words", [
+    ("maps_only", "Judged from its Google Maps listing: the website could not be read"),
+    ("possible_duplicate:quantumcoaching.in", "Possibly the same organisation as quantumcoaching.in"),
+])
+@pytest.mark.parametrize("score", [50, 95])
+def test_validity_flags_at_or_above_the_bar_wait_for_a_person(flag, words, score):
+    decision, reasons = gate(_scored(score, [flag]), LIKELY, {"send_score": 50})
+    assert decision == "REVIEW" and words in reasons[-1], reasons
+    assert gate(_scored(score, [flag]), GENERAL, {"send_score": 50, "require_intent": True})[0] == "REVIEW"
+
+
+@pytest.mark.parametrize("score", [5, 49])
+def test_validity_flags_below_the_bar_are_rejected_since_nobody_reviews(score):
+    assert gate(_scored(score, ["maps_only"]), LIKELY, {"send_score": 50}) == (
+        "REJECT", [f"Judged from its Google Maps listing only: score {score} is below the send bar (50)"])
+    assert gate(_scored(score, ["possible_duplicate:quantumcoaching.in"]), LIKELY, {"send_score": 50}) == (
+        "REJECT", [f"Score {score} is below the send bar (50)"])
+    # a lead that says it was judged from its listing is held like the flag, wherever it is stored
+    assert gate(_scored(score), {**LIKELY, "maps_only": True}, {"send_score": 50})[1][0].startswith(
+        "Judged from its Google Maps listing only")
+    assert gate(_scored(60), {**LIKELY, "maps_only": True}, {"send_score": 50})[0] == "REVIEW"
+
+
+def test_the_risk_penalty_ranks_a_lead_lower_and_no_longer_holds_it_back():
+    competitor = _scored(45, ["competitor_platform:classplus"], base=65, risk=40)
+    decision, reasons = gate(competitor, LIKELY, DEFAULT_GATE)
+    assert decision == "REJECT" and reasons[0] == "Score 45 is below the send bar (50)"  # was REVIEW (base >= 45)
+    assert "Classplus" in reasons[1]
+    assert gate({**competitor, "score": 55}, LIKELY, DEFAULT_GATE)[0] == "AUTO"  # was REVIEW at any score
+    big = _scored(60, ["enterprise"], base=75, risk=30)
+    assert gate(big, LIKELY, DEFAULT_GATE)[0] == "AUTO"
+    assert gate({**big, "score": 40}, LIKELY, DEFAULT_GATE) == (
+        "REJECT", ["Score 40 is below the send bar (50)", "Very large organisation: not a self-serve buyer"])
+
+
+def test_contact_and_intent_requirements_reject_unless_the_list_approves_every_lead():
+    assert gate(_scored(80, level="general"), GENERAL, DEFAULT_GATE) == (
+        "REJECT", ["Best contact is general; this list needs at least likely"])
+    assert gate(_scored(80), LIKELY, {"require_intent": True}) == (
+        "REJECT", ["No buying signal, and this list requires one"])
+    assert gate(_scored(80, has_intent=True), LIKELY, {"require_intent": True})[0] == "AUTO"
+    assert gate(_scored(80, level="general"), GENERAL, {"require_approval": True}) == (
+        "REVIEW", ["Best contact is general; this list needs at least likely"])
+    assert gate(_scored(30, level="general"), GENERAL, {"require_approval": True})[0] == "REJECT"  # the bar first
+
+
+def test_require_approval_holds_every_sendable_lead_for_a_person():
+    assert gate(_scored(90), LIKELY, {"require_approval": True}) == (
+        "REVIEW", ["Waiting for your approval: this list sends no lead without it",
+                   "Score 90 meets the send bar (50) with a likely contact"])
+    assert gate(_scored(49), LIKELY, {"require_approval": True}) == (
+        "REJECT", ["Score 49 is below the send bar (50)"])
 
 
 @pytest.mark.parametrize("written, days", [

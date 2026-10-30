@@ -33,12 +33,15 @@ WORKER_DAILY_PAGES = 300
 ONLINE_SECONDS = 90
 
 AGENT_STATUSES = ("ACTIVE", "PAUSED", "ARCHIVED")
-# The V612 column defaults (bound as parameters: a ':' inside SQL text would read as a bind).
-DEFAULT_GATE_JSON = {"auto_score": 70, "review_score": 45, "min_contact": "likely", "require_intent": False,
-                     "auto_competitor_users": False}
+# What a new agent gets when the request has none (bound as parameters: a ':' inside SQL text would read
+# as a bind). The V612 column defaults, plus send_score / require_approval (rank and fill, 2026-10-30;
+# the gate reads an agent without them as send_score 50, no approval).
+DEFAULT_GATE_JSON = {"send_score": 50, "require_approval": False, "auto_score": 70, "review_score": 45,
+                     "min_contact": "likely", "require_intent": False, "auto_competitor_users": False}
 DEFAULT_WINDOW_JSON = {"tz": "Asia/Kolkata", "start": "09:30", "end": "19:00", "days": [1, 2, 3, 4, 5, 6]}
 MODES = ("LOCAL", "REMOTE", "AUTO")
-OPEN_STATUSES = ("DISCOVERED", "FETCHING", "READY", "RESEARCHING", "APPROVED")
+# Candidates on their way to a decision (scheduler pacing counts them toward the pool they will feed).
+IN_FLIGHT_STATUSES = ("DISCOVERED", "FETCHING", "READY", "RESEARCHING")
 
 
 def _j(value: Any) -> str:
@@ -562,10 +565,56 @@ def known_org_places(db: Session, agent_id: str) -> List[Dict[str, Any]]:
     """), {"a": agent_id}).mappings())
 
 
-def backlog(db: Session, agent_id: str) -> int:
-    return int(db.execute(text(
-        "SELECT COUNT(*) FROM lead_candidate WHERE agent_id = :a AND status = ANY(CAST(:s AS VARCHAR[]))"
-    ), {"a": agent_id, "s": list(OPEN_STATUSES)}).scalar() or 0)
+def pool_counts(db: Session, agent_id: str) -> Dict[str, int]:
+    """The agent's leads waiting to be sent and on their way, for the scheduler's pacing:
+    {"approved": APPROVED (not delivered yet, held by a delivery or not), "review": REVIEW,
+    "in_flight": DISCOVERED / FETCHING / READY / RESEARCHING}."""
+    row = db.execute(text("""
+        SELECT COUNT(*) FILTER (WHERE status = 'APPROVED') AS approved,
+               COUNT(*) FILTER (WHERE status = 'REVIEW') AS review,
+               COUNT(*) FILTER (WHERE status = ANY(CAST(:flight AS VARCHAR[]))) AS in_flight
+          FROM lead_candidate
+         WHERE agent_id = :a AND status = ANY(CAST(:all AS VARCHAR[]))
+    """), {"a": agent_id, "flight": list(IN_FLIGHT_STATUSES),
+           "all": ["APPROVED", "REVIEW", *IN_FLIGHT_STATUSES]}).mappings().first()
+    return {k: int((row or {}).get(k) or 0) for k in ("approved", "review", "in_flight")}
+
+
+# What the gate reads from a stored score_json (engine scoring.score_lead's output), with its JSON type.
+# All of them have been stored since the first lead (2026-10-26); a row without one is left alone.
+GATE_INPUTS = {"score": "number", "base_score": "number", "risk": "number", "flags": "array",
+               "has_intent": "boolean", "reach_level": "string"}
+
+
+def review_to_rejudge(db: Session, agent_id: str, *, limit: int, held_flags: Sequence[str],
+                      send_score: int) -> List[Dict[str, Any]]:
+    """Up to `limit` of the agent's REVIEW candidates the gate may judge again from what is stored
+    (scheduler.rejudge_waiting), best score first: never one a person decided (reviewed_at), only rows
+    whose score_json carries every GATE_INPUTS field, and a lead the gate holds for a person (a flag in
+    held_flags: maps_only, possible_duplicate; or lead_json.maps_only) only while its stored score is
+    below send_score: the gate rejects it, while one at or above the bar stays in REVIEW and is not read
+    again. So every row returned leaves REVIEW when the agent needs no approval and the next batch starts
+    on new rows (one exception: a held competitor's user on a list that takes them, whose score without
+    that penalty reaches the bar, stays and is read again).
+    Rows {id, score, score_json, lead_json}."""
+    typed = " AND ".join(f"jsonb_typeof(c.score_json->'{k}') = '{t}'" for k, t in GATE_INPUTS.items())
+    return _rows(db.execute(text(f"""
+        SELECT c.id, c.score, c.score_json, c.lead_json
+          FROM lead_candidate c
+         WHERE c.agent_id = :a AND c.status = 'REVIEW' AND c.reviewed_at IS NULL
+           AND jsonb_typeof(c.score_json) = 'object' AND jsonb_typeof(c.lead_json) = 'object'
+           AND {typed}
+           AND (NOT (COALESCE(c.lead_json->>'maps_only', '') = 'true'
+                     OR EXISTS (
+                         SELECT 1 FROM jsonb_array_elements_text(
+                             CASE WHEN jsonb_typeof(c.score_json->'flags') = 'array'
+                                  THEN c.score_json->'flags' ELSE CAST('[]' AS jsonb) END) AS f
+                          WHERE split_part(f, ':', 1) = ANY(CAST(:held AS TEXT[]))))
+                OR (CASE WHEN jsonb_typeof(c.score_json->'score') = 'number'
+                         THEN CAST(c.score_json->>'score' AS numeric) END) < CAST(:bar AS numeric))
+         ORDER BY c.score DESC NULLS LAST, c.created_at, c.id
+         LIMIT :n
+    """), {"a": agent_id, "held": list(held_flags), "bar": int(send_score), "n": max(1, int(limit))}).mappings())
 
 
 def get_candidate(db: Session, candidate_id: str, institute_id: Optional[str] = None) -> Optional[Dict[str, Any]]:

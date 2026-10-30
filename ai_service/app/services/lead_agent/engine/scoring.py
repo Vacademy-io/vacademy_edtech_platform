@@ -14,12 +14,14 @@ A lead that passes the gate is called and messaged automatically, so the score a
 
   score = clamp(0.35 * fit + 0.30 * intent + 0.35 * reach - 0.5 * risk)
 
-Hard rejects (no usable contact, site not readable, not the target segment, selling the offer itself,
-an excluded kind or a deal-breaker) are flagged and always REJECT. Fitting the brief is not enough to be delivered
-automatically: without a buying signal a lead reaches the auto bar only with a full fit and a direct
-contact. A lead judged from its Google Maps listing alone (its website could not be read: flag
-"maps_only", research.py) always goes to a person, whatever its score: the listing shows too little
-to score it like a read website.
+Hard rejects (no usable contact, site not readable, not the target segment, pages of another
+organisation, a country outside the markets, selling the offer itself, an excluded kind or a
+deal-breaker) are flagged and always REJECT. Rank and fill (2026-10-30): one bar, the agent's
+send_score. A lead at or above it is sent (best score first, up to the daily quota), one below it is
+rejected; the risk penalty ranks a competitor's user or a very large organisation lower
+instead of holding it back. Only validity goes to a person, and only at or above the bar: a lead judged
+from its Google Maps listing alone (its website could not be read: flag "maps_only", research.py) and a
+possible duplicate of another lead. An agent with require_approval sends nothing a person has not approved.
 
 The engine's catalogue product scores are kept as ``products`` (research/catalogue.py).
 """
@@ -30,11 +32,13 @@ import re
 from datetime import date, datetime
 from typing import Any
 
+import phonenumbers
+
 from .discovery.exclusions import _SCHOOL, _TRAINING_SCHOOL, _pattern, left_out
 from .fingerprint import VENDORS_BY_KEY
 from .offer import LEGACY_FIT_POINTS, as_offer
 from .research.catalogue import SIGNALS
-from .research.contacts import phone_region
+from .research.contacts import country_region, domain_region, number_region, phone_region, region_name
 from .research.lead import is_national_brand
 
 # ------------------------------------------------------------------------------------ constants
@@ -67,22 +71,25 @@ RISK_COMPETITOR = 40  # already runs on a platform that competes with the offer 
 RISK_ENTERPRISE = 30  # national-scale brand: not a self-serve buyer
 RISK_MICRO = 25  # a single tutor or home tuition
 
-# Flags that send a lead to a person (never AUTO), and flags that always reject it.
+# Flags that send a lead to a person when its score reaches the send bar (below it: rejected, since nobody
+# reviews in this funnel), and flags that always reject it. Validity first: outreach after delivery is
+# automated, so a lead that may name the wrong organisation waits for a person instead of going out.
+# maps_only: judged from its Google Maps listing because the website could not be read (2026-10-29 audit:
+# 202 of 237 "No readable page" rejects on "Leads for Vacademy" had a listing with a phone); a listing
+# alone cannot show the signals and fit points a website would, so its score is a floor, not a verdict.
 # possible_duplicate: same name and city as another of the agent's live leads with nothing shared, added
 # after research (lead_agent/dedupe.py; quantumcoaching.in and quantumcoachinginstitute.in, 2026-10-29).
-# maps_only: judged from its Google Maps listing because the website could not be read (2026-10-29 audit:
-# 202 of 237 "No readable page" rejects on "Leads for Vacademy" had a listing with a phone).
-REVIEW_FLAGS = ("competitor_platform", "enterprise", "possible_duplicate", "maps_only")
-# Review flags without a risk penalty: they hold a lead back from AUTO but never lift a score that
-# is below the review bar into REVIEW.
-UNPENALISED_REVIEW_FLAGS = ("possible_duplicate",)
-# Review flags that send a lead to REVIEW whatever its score (unless a hard reject applies): a listing
-# alone cannot show the signals and fit points a website would, so its score is a floor, not a verdict.
-ALWAYS_REVIEW_FLAGS = ("maps_only",)
+# competitor_platform and enterprise held a lead back until 2026-10-30; their risk penalty ranks it now.
+ALWAYS_REVIEW_FLAGS = ("maps_only", "possible_duplicate")
 HARD_REJECT_FLAGS = ("no_contact", "site_unreadable", "not_target_segment", "excluded_kind", "deal_breaker",
-                     "sells_the_offer")
+                     "sells_the_offer", "wrong_site", "outside_market")
+# Flags that carry a risk penalty: named after a reject so the reason says why the score is low.
+RISK_FLAGS = ("competitor_platform", "enterprise", "micro")
 
-DEFAULT_GATE = {"auto_score": 70, "review_score": 45, "min_contact": "likely", "require_intent": False,
+# send_score: the lowest score a lead is sent with (rank and fill, 2026-10-30). An agent saved before it
+# has none and gets this default. auto_score / review_score (the two bars before it) may still be in an
+# agent's gate_json; the gate ignores them.
+DEFAULT_GATE = {"send_score": 50, "require_approval": False, "min_contact": "likely", "require_intent": False,
                 "auto_competitor_users": False}
 
 
@@ -271,6 +278,42 @@ def _location_match(lead: dict[str, Any], markets: list[dict[str, Any]]) -> str 
     return None
 
 
+_PHONE_KINDS = ("institute_phone", "whatsapp")
+
+
+def outside_markets(lead: dict[str, Any], markets: list[dict[str, Any]] | None) -> str | None:
+    """Positive evidence that the organisation is in a COUNTRY none of the agent's markets is in, in words
+    ("its phones are +1 (United States)"), or None. Since 2026-10-30 is_target_segment is the kind only, and
+    _location_match only adds points for a market it sees, so nothing else keeps a US lead of an India-only
+    agent from being sent and charged.
+
+    Conservative on purpose: it fires only when every usable phone is from another country, or the domain
+    has a country code outside the markets (.uk, .com.au), and no phone at all (usable or not) is from a
+    market country and the domain is not a market country's (.in is India). Never for an agent without
+    markets, a market whose country the tables do not know (or "Worldwide"), an unknown location (a phone
+    without a country code, a generic domain: .com, .org, .io) or a city or state inside a market country
+    (prod audit 2026-10-30: Delhi colleges on a Rajasthan + Delhi agent were real leads)."""
+    homes = [country_region(m.get("country")) for m in markets or [] if isinstance(m, dict)]
+    if not homes or None in homes:
+        return None
+    home = set(homes)
+    domain = (lead.get("organisation") or {}).get("domain") or ""
+    tld = domain_region(domain)
+    if tld in home:  # a market country's domain (.in for India) is evidence for the market, whatever the phones
+        return None
+    phones = [c for c in lead.get("contacts") or [] if c.get("kind") in _PHONE_KINDS]
+    if any(number_region(c.get("value")) in home for c in phones):
+        return None
+    usable = [number_region(c.get("value")) for c in phones if c.get("quality") != "avoid"]
+    if usable and all(usable):
+        where = ", ".join(f"+{phonenumbers.country_code_for_region(r)} ({region_name(r)})"
+                          for r in dict.fromkeys(usable))
+        return f"its phone{'s are' if len(usable) > 1 else ' is'} {where}"
+    if tld:  # a country-code domain outside the markets, and no phone from a market country
+        return f"its website is on .{domain.rsplit('.', 1)[-1].lower()} ({region_name(tld)})"
+    return None
+
+
 def _fmt(n: int) -> str:
     return f"{n:,}"
 
@@ -283,7 +326,7 @@ def score_lead(lead: dict, brief: dict, platforms: list[dict], size: dict, *, to
     brief: lead_agent.brief_json (spec §2.1), optionally with "markets": [{country, state?, city?}];
     its offer (or product keys) says which signals fit and which platforms compete.
     platforms: fingerprint.detect_platforms; size: fingerprint.size_signals.
-    base_score is the score before the risk penalty (gate uses it for flagged leads)."""
+    base_score is the score before the risk penalty (gate uses it for a list that takes competitors' users)."""
     brief = brief or {}
     offer = as_offer(brief)
     org = lead.get("organisation") or {}
@@ -374,15 +417,30 @@ def score_lead(lead: dict, brief: dict, platforms: list[dict], size: dict, *, to
     elif lead.get("site_readable") is False or not any(p.get("type") != "job_post" for p in pages):
         flags.append("site_unreadable")
         reasons.append("The organisation's website could not be read")
-    if not in_segment:
+    # Pages of another organisation (pages_match_organisation false: a link shortener, a portal, a directory
+    # page) are their own reject, not "not the kind": 34 of 179 "not the kind" rejects in the 2026-10-30 prod
+    # audit were that. The kind and a seller verdict read from those pages say nothing about this organisation.
+    # The kind is the kind only: a city or state counts in fit (FIT_LOCATION); another country is outside_market.
+    wrong_site = org.get("pages_match_organisation") is False
+    if wrong_site:
+        flags.append("wrong_site")
+        reasons.append(_FLAG_WORDS["wrong_site"])
+    elif not in_segment:
         flags.append("not_target_segment")
-        reasons.append("Not the kind of organisation (or place) the brief targets")
-    if org.get("sells_the_offer"):
+        reasons.append(_FLAG_WORDS["not_target_segment"])
+    if org.get("sells_the_offer") and not wrong_site:
         flags.append("sells_the_offer")
         reasons.append(f"Sells what is being sold ({offer.name}): a competitor or reseller, not a buyer")
+    # Another country, shown by its phones or its country-code domain (outside_markets); never a city or state.
+    elsewhere = None if wrong_site else outside_markets(lead, list(brief.get("markets") or []))
+    if elsewhere:
+        flags.append(f"outside_market:{elsewhere}")
+        reasons.append(_flag_words(f"outside_market:{elsewhere}"))
     name, description = org.get("name") or org.get("listed_name") or "", f"{org.get('what_they_do') or ''} {lead.get('summary') or ''}"
+    if wrong_site:  # the description is the other organisation's
+        description = ""
     phrase = left_out(name, brief.get("exclude")) or (
-        left_out(org.get("what_they_do") or "", brief.get("exclude")) if not in_segment else None)
+        left_out(org.get("what_they_do") or "", brief.get("exclude")) if not in_segment and not wrong_site else None)
     if phrase:
         flags.append(f"excluded_kind:{phrase}")
         reasons.append(f"Left out by the brief: {phrase}")
@@ -416,19 +474,35 @@ def _flag_kind(flag: str) -> str:
     return flag.split(":", 1)[0]
 
 
-def gate(scored: dict, lead: dict, gate_cfg: dict) -> tuple[str, list[str]]:
-    """("AUTO" | "REVIEW" | "REJECT", reasons in plain words).
+def send_bar(gate_cfg: dict | None) -> int:
+    """The agent's send_score (0-100); DEFAULT_GATE's for an agent saved before it had one."""
+    try:
+        value = int((gate_cfg or {}).get("send_score"))
+    except (TypeError, ValueError):
+        return int(DEFAULT_GATE["send_score"])
+    return max(0, min(100, value))
 
-    REJECT: a hard-reject flag, or a score below review_score. A lead flagged for a person
-    (competitor platform, enterprise) whose score is below the bar only because of that flag's risk
-    penalty goes to REVIEW instead, so a salesperson decides on the switch pitch; a lead judged from
-    its Google Maps listing alone (maps_only) goes to REVIEW whatever its score.
-    AUTO: score >= auto_score, the best contact at least min_contact, a buying signal when
-    require_intent, and no review flag. Otherwise REVIEW.
-    auto_competitor_users: a list that takes organisations on a competitor's platform like any
-    other; they are judged on their score without that penalty and the flag holds nothing back."""
+
+def gate(scored: dict, lead: dict, gate_cfg: dict) -> tuple[str, list[str]]:
+    """("AUTO" | "REVIEW" | "REJECT", reasons in plain words). Rank and fill (2026-10-30), in order:
+
+      1. a hard-reject flag -> REJECT;
+      2. maps_only or possible_duplicate at or above send_score -> REVIEW (validity first: a person
+         decides); below it -> REJECT ("Judged from its Google Maps listing only: score X is below the
+         send bar (Y)" for a Maps-only lead): nobody reviews in this funnel, so REVIEW holds only leads
+         worth a person's look;
+      3. score below send_score -> REJECT (the score after the risk penalty: a competitor's user or a very
+         large organisation is ranked lower, never held back);
+      4. at or above it, but the best contact is below min_contact, or require_intent and no buying
+         signal -> REVIEW when require_approval, else REJECT;
+      5. otherwise REVIEW ("waiting for your approval") when require_approval, else AUTO.
+
+    auto_competitor_users: a list that takes organisations on a competitor's platform like any other;
+    they are judged on their score without that penalty (the other risks still count).
+    auto_score / review_score, the bars before rank and fill, are ignored when an old agent still has them."""
     cfg = {**DEFAULT_GATE, **{k: v for k, v in (gate_cfg or {}).items() if v is not None}}
-    auto_bar, review_bar = int(cfg["auto_score"]), int(cfg["review_score"])
+    bar = send_bar(cfg)
+    approval = bool(cfg.get("require_approval"))
     min_contact = cfg["min_contact"] if cfg["min_contact"] in CONTACT_ORDER else DEFAULT_GATE["min_contact"]
     flags = list(scored.get("flags") or [])
     score = int(scored.get("score") or 0)
@@ -442,40 +516,45 @@ def gate(scored: dict, lead: dict, gate_cfg: dict) -> tuple[str, list[str]]:
     if hard:
         return "REJECT", [_flag_words(f) for f in hard]
 
-    review_flags = [f for f in flags if _flag_kind(f) in REVIEW_FLAGS
-                    and not (switch_ok and _flag_kind(f) == "competitor_platform")]
-    flag_words = [_flag_words(f) for f in review_flags]
-    if score < review_bar and any(_flag_kind(f) in ALWAYS_REVIEW_FLAGS for f in review_flags):
-        return "REVIEW", [f"Score {score} counts only what is known without the website: a person should decide",
-                          *flag_words]
-    if score < review_bar:
-        penalised = [f for f in review_flags if _flag_kind(f) not in UNPENALISED_REVIEW_FLAGS]
-        if penalised and int(scored.get("base_score") or 0) >= review_bar:
-            return "REVIEW", [f"Score {score} after the risk penalty (before it {scored.get('base_score')}): "
-                              "a person should decide", *flag_words]
-        return "REJECT", [f"Score {score} is below the review bar ({review_bar})"]
+    if lead.get("maps_only") and "maps_only" not in flags:  # the lead says so even if a flag list lost it
+        flags.append("maps_only")
+    held = [f for f in flags if _flag_kind(f) in ALWAYS_REVIEW_FLAGS]
+    maps_only = any(_flag_kind(f) == "maps_only" for f in held)
+    if held and score >= bar:
+        reasons = [_flag_words(f) for f in held]
+        if maps_only:
+            reasons.insert(0, f"Score {score} counts only what is known without the website: a person should decide")
+        return "REVIEW", reasons
+
+    if score < bar:
+        risks = [_flag_words(f) for f in flags if _flag_kind(f) in RISK_FLAGS
+                 and not (switch_ok and _flag_kind(f) == "competitor_platform")]
+        first = (f"Judged from its Google Maps listing only: score {score} is below the send bar ({bar})" if maps_only
+                 else f"Score {score} is below the send bar ({bar})")
+        return "REJECT", [first, *risks]
 
     level = (lead.get("contact_quality") or {}).get("level") or scored.get("reach_level") or "none"
     blockers: list[str] = []
-    if score < auto_bar:
-        blockers.append(f"Score {score} is below the auto-deliver bar ({auto_bar})")
     if CONTACT_ORDER.get(level, 0) < CONTACT_ORDER[min_contact]:
         blockers.append(f"Best contact is {level}; this list needs at least {min_contact}")
     if cfg.get("require_intent") and not scored.get("has_intent"):
         blockers.append("No buying signal, and this list requires one")
-    blockers += flag_words
-    if not blockers:
-        met = [f"Score {score} meets the auto-deliver bar ({auto_bar}) with a {level} contact"]
-        if switch_ok:
-            met.append("Already uses a competitor's platform: this list takes them without review")
-        return "AUTO", met
-    return "REVIEW", blockers
+    if blockers:
+        return ("REVIEW" if approval else "REJECT"), blockers
+    met = [f"Score {score} meets the send bar ({bar}) with a {level} contact"]
+    if switch_ok:
+        met.append("Already uses a competitor's platform: this list takes them without review")
+    if approval:
+        return "REVIEW", ["Waiting for your approval: this list sends no lead without it", *met]
+    return "AUTO", met
 
 
 _FLAG_WORDS = {
     "no_contact": "No usable contact (only helplines, support inboxes or an enquiry form)",
     "site_unreadable": "The organisation's website could not be read",
     "not_target_segment": "Not the kind of organisation the brief targets",
+    "wrong_site": "The pages read belong to another organisation, not this one",
+    "outside_market": "Outside your markets: {detail}",
     "sells_the_offer": "Sells what you sell: a competitor or reseller, not a buyer",
     "excluded_kind": "Left out by the brief: {detail}",
     "deal_breaker": "Deal-breaker in the brief: {detail}",
