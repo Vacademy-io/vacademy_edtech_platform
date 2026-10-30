@@ -1,7 +1,18 @@
 # Media CDN: drop the origin failover, then move to the flat-rate Pro plan
 
-**Status:** code on branch `feat/cdn-public-bucket-only`, not deployed. Cut over
-after the 31 Oct – 2 Nov exams.
+**Status:** steps 1–4 DONE on 30 Oct 2026. Watching (step 5) until ~4 Nov, then Pro.
+- Code: merged to main in 3d2b850170 and deployed 16:37 UTC. It includes 2da3997172,
+  which checks a batch's files in parallel (the catalogue API gives a batch 5 s).
+- Access logs before the cut-over: 74% of default-behavior requests (17.0k of 22.9k,
+  1,585 keys) were served by the failover. 403 baseline: 1.25%.
+- Backfill: 56,612 objects (490 GB) copied, 0 failed; a second pass found 0 missing.
+- CloudFront: origin group removed at 16:47 UTC, deployed at 16:57 UTC, on
+  pay-as-you-go. WAF still attached.
+- On the Mac in `~/cdn-cutover-backup/`: the configs before the change
+  (`cf-precutover-20261030-1637.json` is the rollback),
+  `analyze_cdn_logs.py` (step 1) and `backfill_public.py` (step 3).
+- CloudFront access logs: on since 30 Oct, writing to
+  `s3://vacademy-cloudfront-logs/E2R7SGQ1KNIW31/` (kept 60 days).
 
 ## Why
 
@@ -45,14 +56,12 @@ as before.
    the one running.
 3. **Backfill.** This is a server-side copy, with no transfer charge and no
    downtime.
-
-   ```bash
-   aws s3 sync s3://vacademy-media-storage s3://vacademy-media-storage-public \
-     --exclude "BBB_RECORDING/*" --exclude "PRIVATE_UPLOAD/*" --exclude "ADMIN_UPLOAD/*" \
-     --exclude "AI_CALL_RECORDING/*" --exclude "eval-api/*"
-   ```
-
-   Run it a second time right before step 4, to pick up late uploads.
+   - Use `~/cdn-cutover-backup/backfill_public.py`, not `aws s3 sync`.
+   - The script copies only keys missing from the public bucket.
+   - `aws s3 sync` also overwrites a public object when the private copy is newer
+     or a different size, which could replace a newer public file with a stale one.
+   - It skips the same prefixes: the routed ones and `eval-api/`.
+   - Run it a second time right before step 4, to pick up late uploads.
 4. **CloudFront, still on pay-as-you-go:**
    - Save the distribution config, for rollback.
    - Point the default behavior at the public-bucket origin.
