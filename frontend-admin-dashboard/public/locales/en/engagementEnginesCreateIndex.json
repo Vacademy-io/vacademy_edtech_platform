@@ -173,7 +173,9 @@
         "teamContacts": "Alerts go to",
         "teamContactsCount_one": "{{count}} team member (and the lead's counsellor)",
         "teamContactsCount_other": "{{count}} team members (and the lead's counsellor)",
-        "teamContactsNone": "The lead's counsellor"
+        "teamContactsNone": "The lead's counsellor",
+        "crmActions": "CRM actions",
+        "crmActionsNone": "None (messages only)"
     },
     "actions": {
         "back": "Back",
@@ -236,5 +238,9 @@
         "create": "Create an AI agent",
         "note": "Calls rotate through the agents you pick, one per call.",
         "loadFailed": "Couldn't load your AI agents. Try again in a moment."
+    },
+    "crmActions": {
+        "title": "CRM actions",
+        "hint": "What else the AI may do on a lead. Each one starts as an inbox task you approve."
     }
 }

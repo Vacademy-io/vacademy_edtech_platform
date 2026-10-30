@@ -88,6 +88,7 @@ import {
 import { AssetsPanel } from '../-components/AssetsPanel';
 import { TeamContactsPicker } from '../-components/TeamContactsPicker';
 import { AiCallAgentPool } from '../-components/AiCallAgentPool';
+import { CrmActionsPicker } from '../-components/CrmActionsPicker';
 import { toAssetRequest, type AssetDraftItem } from '../-types/assets';
 import { EnginePlanPreview } from '../-components/EnginePlanPreview';
 import {
@@ -103,6 +104,7 @@ import type {
     ChannelKey,
     ChannelsConfig,
     ChannelsExtras,
+    CrmActionEntry,
     CreateEngineRequest,
     DataPointSpec,
     EngineLanguage,
@@ -326,6 +328,7 @@ function CreateEnginePage() {
     const { t: tConstants } = useTranslation('engagementEnginesConstants');
     const { t } = useTranslation('engagementEnginesCreateIndex');
     const { t: tEdit } = useTranslation('engagementEnginesEdit');
+    const { t: tActions } = useTranslation('engagementEnginesActions');
     // Edit mode: the same wizard, prefilled from an existing engine; Save sends PUT, not create.
     const { edit: editId } = useSearch({ strict: false }) as { edit?: string };
     const isEdit = !!editId;
@@ -385,6 +388,7 @@ function CreateEnginePage() {
     const [stopOnMeeting, setStopOnMeeting] = useState(true);
     // Booking page the engine books on when a lead asks for a meeting; '' = the engine doesn't book.
     const [bookingPageId, setBookingPageId] = useState('');
+    const [crmActions, setCrmActions] = useState<CrmActionEntry[]>([]);
     const { data: bookingPages } = useQuery({
         queryKey: ['engagementBookingPages', getInstituteId()],
         queryFn: () => fetchBookingPages({ instituteId: getInstituteId() || '' }),
@@ -411,11 +415,13 @@ function CreateEnginePage() {
         const {
             exitOnMeetingBooked,
             bookingPageId: savedPage,
+            actions: savedActions,
             ...savedChannels
         } = safeParse<ChannelsConfig & ChannelsExtras>(e.channels, {});
         setChannels(savedChannels);
         setStopOnMeeting(exitOnMeetingBooked === true);
         setBookingPageId(savedPage ?? '');
+        setCrmActions(savedActions ?? []);
         const sel = safeParse<AudienceSelector[]>(e.audience, []);
         setBatchIds(sel.filter((x) => x.type === 'PACKAGE_SESSION').map((x) => x.id));
         setAudienceIds(sel.filter((x) => x.type === 'AUDIENCE').map((x) => x.id));
@@ -645,6 +651,7 @@ function CreateEnginePage() {
             ...channels,
             exitOnMeetingBooked: stopOnMeeting,
             ...(bookingPageId ? { bookingPageId } : {}),
+            actions: crmActions,
         };
         return {
             name: name.trim(),
@@ -1078,6 +1085,13 @@ function CreateEnginePage() {
                 })}
             </div>
             <StepSection
+                icon={Lightning}
+                title={t('crmActions.title')}
+                hint={t('crmActions.hint')}
+            >
+                <CrmActionsPicker value={crmActions} onChange={setCrmActions} />
+            </StepSection>
+            <StepSection
                 icon={BellRinging}
                 title={t('team.title')}
                 hint={t('team.hint')}
@@ -1484,6 +1498,13 @@ function CreateEnginePage() {
                                 : t('review.assetsNone')}
                         </KeyValue>
                     )}
+                    <KeyValue label={t('review.crmActions')}>
+                        {crmActions.length
+                            ? crmActions
+                                  .map((a) => tActions(`types.${typeof a === 'string' ? a : a.type}.label`))
+                                  .join(', ')
+                            : t('review.crmActionsNone')}
+                    </KeyValue>
                     <KeyValue label={t('review.teamContacts')}>
                         {notifyUserIds.length
                             ? t('review.teamContactsCount', { count: notifyUserIds.length })
