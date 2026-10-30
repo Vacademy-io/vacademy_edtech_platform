@@ -72,7 +72,7 @@ export function hasInboxPeriod(s: Pick<InboxSearch, 'date' | 'from' | 'to'>): bo
 
 /**
  * Turns whatever is in the URL into a valid InboxSearch: unknown values are dropped, the
- * `waited` tab and `kind=NO_OP` mean the same thing, a period with a bad or reversed end is
+ * `waited` tab and `kind=NO_OP` mean the same thing, the `approvals` tab takes no kind, a period with a bad or reversed end is
  * dropped whole (and wins over `date` when valid), and an outcome without a day or period is
  * dropped (the server needs one to look the outcomes up).
  */
@@ -83,13 +83,15 @@ export function normalizeInboxSearch(raw: Record<string, unknown>): InboxSearch 
     const plainKind = kind === 'NO_OP' ? undefined : kind;
     const waited = raw.filter === 'waited' || kind === 'NO_OP';
     const filter = waited ? 'waited' : oneOf(INBOX_FILTER_KEYS, raw.filter);
+    // The approvals tab is CRM actions by definition, like waited is NO_OP.
+    const fixedKind = waited || filter === 'approvals';
     const template = text(raw.template)?.slice(0, MAX_TEMPLATE_LENGTH);
     return {
         filter,
         engine: text(raw.engine),
         channel: oneOf(CHANNEL_ORDER, raw.channel),
-        // Waited rows are NO_OP by definition, so a kind next to it adds nothing.
-        kind: waited ? undefined : plainKind,
+        // Waited rows are NO_OP and approvals are CRM by definition, so a kind adds nothing.
+        kind: fixedKind ? undefined : plainKind,
         date,
         from: period?.from,
         to: period?.to,

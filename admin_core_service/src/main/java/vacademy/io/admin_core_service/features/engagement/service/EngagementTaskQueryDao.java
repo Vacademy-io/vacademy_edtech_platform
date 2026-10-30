@@ -27,6 +27,18 @@ public class EngagementTaskQueryDao {
     static final String CALL_ROW =
             "(a.channel = 'AI_CALL' OR a.action_type = '" + EngagementActionTypes.SCHEDULE_AI_CALL + "')";
 
+    /**
+     * What waits on a person first, as in findInbox: a lead's reply and an AI call to approve, then
+     * the other CRM actions, then the rest. Drafts must not push them off the first page.
+     */
+    static final String APPROVALS_FIRST = "CASE"
+            + " WHEN a.status NOT IN ('OPEN', 'ACKED') THEN 2"
+            + " WHEN a.kind = 'REPLY' THEN 0"
+            + " WHEN a.kind <> 'TASK' THEN 2"
+            + " WHEN a.action_type = '" + EngagementActionTypes.SCHEDULE_AI_CALL + "' THEN 0"
+            + " WHEN a.action_type IN ('ADD_NOTE', 'CREATE_FOLLOWUP', 'ESCALATE', 'UPDATE_STATUS') THEN 1"
+            + " ELSE 2 END";
+
     private final NamedParameterJdbcTemplate jdbc;
 
     public EngagementTaskQueryDao(NamedParameterJdbcTemplate jdbc) {
@@ -180,7 +192,8 @@ public class EngagementTaskQueryDao {
     static String orderBy(Query q) {
         return q.dated()
                 ? " ORDER BY COALESCE(a.dispatched_at, a.created_at) DESC, a.id"
-                : " ORDER BY a.priority DESC NULLS LAST, a.scheduled_for ASC NULLS LAST, a.created_at DESC, a.id";
+                : " ORDER BY " + APPROVALS_FIRST
+                        + ", a.priority DESC NULLS LAST, a.scheduled_for ASC NULLS LAST, a.created_at DESC, a.id";
     }
 
     private static MapSqlParameterSource params(Query q) {

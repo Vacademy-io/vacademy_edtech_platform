@@ -5,6 +5,7 @@
     "allEngines": "Tous les moteurs",
     "filters": {
         "needsAction": "Action requise",
+        "approvals": "À approuver",
         "sent": "Envoyé",
         "failed": "Échoué",
         "handled": "Traité",
@@ -87,6 +88,10 @@
     "priorityChip": "Priorité {{level}}",
     "empty": {
         "goToEngines": "Aller aux moteurs",
+        "approvals": {
+            "title": "Rien à approuver",
+            "text": "Les appels IA et les autres actions que les moteurs veulent lancer attendent ici votre accord."
+        },
         "needsAction": {
             "title": "Tout est à jour",
             "text": "Les nouveaux messages apparaissent ici quand un moteur actif fait le point sur quelqu'un."

@@ -111,6 +111,16 @@ describe('inbox search params', () => {
         expect(normalizeInboxSearch({ filter: 'sent', kind: 'REPLY' }).kind).toBe('REPLY');
     });
 
+    it('opens the approvals tab from a link and takes no kind on it (it is CRM actions)', () => {
+        expect(
+            normalizeInboxSearch({ filter: 'approvals', engine: 'e1', kind: 'REPLY' })
+        ).toMatchObject({
+            filter: 'approvals',
+            engine: 'e1',
+            kind: undefined,
+        });
+    });
+
     it('reads a numeric template name as text', () => {
         expect(normalizeInboxSearch({ template: 2024 }).template).toBe('2024');
         expect(normalizeInboxSearch({ template: '   ' }).template).toBeUndefined();

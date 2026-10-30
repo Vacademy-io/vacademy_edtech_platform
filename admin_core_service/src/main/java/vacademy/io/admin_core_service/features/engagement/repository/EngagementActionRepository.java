@@ -35,6 +35,9 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
     // reconcile/reopen it, SENT so the Sent tab shows what the engine sent on its own. The default
     // view asks for OPEN/ACKED only, so a successful auto-send never clutters "needs action"; a
     // pending (OPEN, scheduled) auto-send stays the dispatch job's business.
+    // What waits on a person comes first: a lead's reply and an AI call to approve (by priority),
+    // then the other CRM actions, then the drafts. A CRM action waits for a person and nothing
+    // else, and 77 email drafts used to push an AI call to page 4, where nobody saw it.
     @Query(value = """
             SELECT * FROM engagement_action
             WHERE institute_id = :instituteId
@@ -46,7 +49,15 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
                    OR (CAST(:kind AS text) = 'CRM' AND action_type IN
                        ('ADD_NOTE', 'CREATE_FOLLOWUP', 'ESCALATE', 'UPDATE_STATUS', 'SCHEDULE_AI_CALL'))
                    OR (CAST(:kind AS text) <> 'CRM' AND kind = CAST(:kind AS text)))
-            ORDER BY priority DESC NULLS LAST, scheduled_for ASC NULLS LAST, created_at DESC
+            ORDER BY CASE
+                       WHEN status NOT IN ('OPEN', 'ACKED') THEN 2
+                       WHEN kind = 'REPLY' THEN 0
+                       WHEN kind <> 'TASK' THEN 2
+                       WHEN action_type = 'SCHEDULE_AI_CALL' THEN 0
+                       WHEN action_type IN ('ADD_NOTE', 'CREATE_FOLLOWUP', 'ESCALATE', 'UPDATE_STATUS') THEN 1
+                       ELSE 2
+                     END,
+                     priority DESC NULLS LAST, scheduled_for ASC NULLS LAST, created_at DESC
             """,
             countQuery = """
             SELECT count(*) FROM engagement_action

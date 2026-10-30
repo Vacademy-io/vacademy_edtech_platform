@@ -103,11 +103,13 @@ export const NEXT_STATUSES: Partial<Record<EngineStatus, EngineStatus[]>> = {
 };
 
 /**
- * Task inbox tabs, also accepted as ?filter= so a link can open the right one. `waited` lists
- * the engine's "decided to wait" decisions (statuses DONE, kind NO_OP).
+ * Task inbox tabs, also accepted as ?filter= so a link can open the right one. `approvals` lists
+ * the AI calls and other CRM actions waiting for a person (kind CRM); `waited` lists the engine's
+ * "decided to wait" decisions (statuses DONE, kind NO_OP).
  */
 export const INBOX_FILTER_KEYS = [
     'needsAction',
+    'approvals',
     'sent',
     'failed',
     'waited',
