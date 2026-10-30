@@ -368,26 +368,62 @@ public class EngagementCrmActionService {
                 log.info("Callback from member {} not turned into an AI call: {}", member.getId(), rejected);
                 return null;
             }
-            Instant now = Instant.now();
-            EngagementAction task = new EngagementAction();
-            task.setEngineId(engine.getId());
-            task.setMemberId(member.getId());
-            task.setInstituteId(engine.getInstituteId());
-            task.setKind("TASK");
-            task.setActionType(EngagementActionTypes.SCHEDULE_AI_CALL);
-            task.setStatus("OPEN");
-            task.setDraftBody(describe(engine, member, phone, EngagementActionTypes.SCHEDULE_AI_CALL, params));
-            task.setVariablesJson(taskVariables(params));
-            task.setRationale("The lead asked to be called back, so a call was proposed.");
-            task.setPriority(java.math.BigDecimal.valueOf(90));
-            task.setScheduledFor(now);
-            task.setExpiresAt(now.plus(Duration.ofHours(72)));
-            task = actionRepository.save(task);
-            return tryAutonomous(task, engine, member, phone, hold, false, false);
+            return createCallTask(engine, member, phone, params,
+                    "The lead asked to be called back, so a call was proposed.", hold, false);
         } catch (Exception e) {
             log.warn("Callback from member {} could not be proposed as an AI call: {}", member.getId(), e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * HARD RULE: an engine with the AI call channel on reaches a person for the first time with an AI
+     * call. Proposes it now as an inbox task (or runs it on its own when allowed). Null when the call
+     * cannot be placed (AI calls not allowed, no phone, wrong number, weekly limit): the caller then
+     * decides as usual, since a person who cannot be called can only be reached another way.
+     */
+    public EngagementAction proposeFirstTouchCall(EngagementEngine engine, EngagementMember member, String phone,
+                                                  String hold, boolean dryRun) {
+        try {
+            if (!aiCallChannelOn(engine) || !allowedActions(engine).contains(EngagementActionTypes.SCHEDULE_AI_CALL)) {
+                return null;
+            }
+            Map<String, String> params = new LinkedHashMap<>();
+            params.put("dueInHours", "0");
+            String objective = engine.getObjective() == null ? "" : engine.getObjective().trim();
+            params.put("note", "First touch: " + (objective.length() > 200 ? objective.substring(0, 200) + "…" : objective));
+            String rejected = validateProposal(engine, member, phone, EngagementActionTypes.SCHEDULE_AI_CALL, params);
+            if (rejected != null) {
+                log.info("First-touch call for member {} not placed: {}", member.getId(), rejected);
+                return null;
+            }
+            return createCallTask(engine, member, phone, params,
+                    "First touch: this engine reaches people by AI call first.", hold, dryRun);
+        } catch (Exception e) {
+            log.warn("First-touch call for member {} could not be proposed: {}", member.getId(), e.getMessage());
+            return null;
+        }
+    }
+
+    private EngagementAction createCallTask(EngagementEngine engine, EngagementMember member, String phone,
+                                            Map<String, String> params, String rationale, String hold,
+                                            boolean dryRun) {
+        Instant now = Instant.now();
+        EngagementAction task = new EngagementAction();
+        task.setEngineId(engine.getId());
+        task.setMemberId(member.getId());
+        task.setInstituteId(engine.getInstituteId());
+        task.setKind("TASK");
+        task.setActionType(EngagementActionTypes.SCHEDULE_AI_CALL);
+        task.setStatus(dryRun ? "SIMULATED" : "OPEN");
+        task.setDraftBody(describe(engine, member, phone, EngagementActionTypes.SCHEDULE_AI_CALL, params));
+        task.setVariablesJson(taskVariables(params));
+        task.setRationale(rationale);
+        task.setPriority(java.math.BigDecimal.valueOf(90));
+        task.setScheduledFor(now);
+        task.setExpiresAt(now.plus(Duration.ofHours(72)));
+        task = actionRepository.save(task);
+        return dryRun ? task : tryAutonomous(task, engine, member, phone, hold, false, false);
     }
 
     // ── decision time ───────────────────────────────────────────────────────

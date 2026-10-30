@@ -135,7 +135,7 @@ function EngineDetailPage() {
     const { data, isLoading, isError, refetch } = useEngine(engineId);
     // AI calls and other CRM actions of this engine waiting for a person; approval happens only
     // in the inbox, so the engine page points there instead of leaving the admin to find them.
-    const { data: approvals } = useTasks('OPEN,ACKED', 0, 50, engineId, undefined, 'CRM');
+    const { data: approvals } = useTasks('OPEN,ACKED', 0, 50, { engineId, kind: 'CRM' });
     const { data: catalog } = useDataPointCatalog();
     const transition = useTransitionEngine();
     const enroll = useEnrollEngine();
@@ -216,7 +216,7 @@ function EngineDetailPage() {
         (a) => a.kind === 'TASK' && a.actionType === 'SCHEDULE_AI_CALL'
     ).length;
     const inboxHref = (filter?: string) =>
-        `/engagement-engines/inbox?engineId=${engine.id}${filter ? `&filter=${filter}` : ''}`;
+        `/engagement-engines/inbox?engine=${engine.id}${filter ? `&filter=${filter}` : ''}`;
 
     const kpis: StatItem[] = [
         {
@@ -310,7 +310,7 @@ function EngineDetailPage() {
                         onClick={() =>
                             navigate({
                                 to: '/engagement-engines/inbox',
-                                search: { engineId: engine.id },
+                                search: { engine: engine.id },
                             })
                         }
                     >
@@ -371,7 +371,7 @@ function EngineDetailPage() {
                             onClick={() =>
                                 navigate({
                                     to: '/engagement-engines/inbox',
-                                    search: { engineId: engine.id, filter: 'approvals' },
+                                    search: { engine: engine.id, filter: 'approvals' },
                                 })
                             }
                         >
@@ -876,7 +876,7 @@ function AutonomyPanel({
                             <Link
                                 key={channel}
                                 to="/engagement-engines/inbox"
-                                search={{ filter: 'sent', engineId: engine.id, channel }}
+                                search={{ filter: 'sent', engine: engine.id, channel }}
                                 className="flex flex-col gap-1.5 rounded-lg border border-neutral-100 p-2.5 transition-colors hover:border-primary-300 hover:bg-primary-50"
                             >
                                 <div className="flex flex-wrap items-center justify-between gap-2">

@@ -257,7 +257,21 @@ class EngagementCrmActionsTest {
 
         private ScheduleAiCallActionHandler callHandler(AiCallQueueService queue) {
             when(coordination.aiCallCounts(anyString(), any(), any())).thenReturn(Map.of());
-            return new ScheduleAiCallActionHandler(queue, coordination);
+            EngagementAiCallPool pool = new EngagementAiCallPool(
+                    mock(vacademy.io.admin_core_service.features.telephony.core.AiAgentService.class),
+                    mock(EngagementActionRepository.class));
+            return new ScheduleAiCallActionHandler(queue, coordination, pool);
+        }
+
+        @Test
+        @DisplayName("noAgentNoCall: an engine with no AI call pool never falls back to the institute's default agent")
+        void noAgentNoCall() {
+            AiCallQueueService queue = mock(AiCallQueueService.class);
+            ScheduleAiCallActionHandler h = callHandler(queue);
+            EngagementEngine noPool = engine("{\"AI_CALL\":{\"enabled\":true,\"agent\":\"Admissions caller\"}}");
+            assertTrue(h.validate(ctx(noPool, "9876543210"), Map.of()).contains("no AI agent"));
+            assertThrows(VacademyException.class, () -> h.execute(ctx(noPool, "9876543210"), Map.of(), approver()));
+            verify(queue, never()).enqueue(any(), any(), any(), any(), any());
         }
 
         @Test
@@ -284,9 +298,10 @@ class EngagementCrmActionsTest {
             ScheduleAiCallActionHandler h = callHandler(queue);
             when(queue.enqueue(any(), eq(CallTrigger.AUTOMATION), eq("ENGAGEMENT_ENGINE"), eq("a1"), eq("admin-1")))
                     .thenReturn(AiCallQueueDTOs.EnqueueResult.builder().queued(true).queueItemId("q-1").build());
-            EngagementEngine withAgent = engine("{\"AI_CALL\":{\"agent\":\"Admissions caller\"}}");
+            EngagementEngine withAgent = engine("{\"AI_CALL\":{\"enabled\":true,\"agentPool\":[\"agent-7\"]}}");
+            assertNull(h.validate(ctx(withAgent, "9876543210"), Map.of()));
             Map<String, String> result = h.execute(ctx(withAgent, "9876543210"), Map.of(), approver());
-            verify(queue).enqueue(argThat(r -> "Admissions caller".equals(r.getCampaignName())
+            verify(queue).enqueue(argThat(r -> "agent-7".equals(r.getCampaignId()) && r.getCampaignName() == null
                     && "ar1".equals(r.getResponseId()) && "9876543210".equals(r.getPhoneNumber())),
                     any(), any(), any(), any());
             when(queue.cancelOne(INST, "q-1", "Undone in the engagement inbox")).thenReturn(true);

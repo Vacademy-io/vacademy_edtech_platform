@@ -247,6 +247,22 @@ public class EngagementDecisionService {
             return false;
         }
 
+        // 1e. HARD RULE: with the AI call channel on, the first thing done for a person is an AI call,
+        // decided here and not left to the model. A person with no phone, a wrong number or no call
+        // left this week falls through to the usual decision (another channel).
+        if (crmActions != null && !hasUnansweredReply(bundle, member)
+                && actionRepository.countTouches(member.getId()) == 0) {
+            String phone = subject != null ? subject.getPhone() : null;
+            EngagementAction call = crmActions.proposeFirstTouchCall(engine, member, phone, coordinated.hold(), dryRun);
+            if (call != null) {
+                member.setConsecutiveNoOps((short) 0);
+                memberRepository.recordDecision(member.getId(), now,
+                        quantizedFingerprint(bundle.payloadsFor(member.getId())), (short) 0, heldLease,
+                        now.plus(Duration.ofHours(Math.max(engine.getCadenceHours(), 1))));
+                return true;
+            }
+        }
+
         // 2. Deterministic wake gate — zero tokens for most members.
         Map<String, JsonNode> payloads = bundle.payloadsFor(member.getId());
         String fingerprint = quantizedFingerprint(payloads);

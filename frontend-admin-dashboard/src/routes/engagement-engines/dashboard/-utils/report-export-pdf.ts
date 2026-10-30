@@ -19,8 +19,10 @@ import {
 import { failedSectionNames, partFailed } from './report-errors';
 import { buildFunnelSteps, deliveryPartial, emailRepliesUntracked } from './report-funnel';
 import { DASH, exportFileName, formatCredits, formatDay, formatNumber } from './report-format';
+import { formatPeriodDates } from './report-period';
+import { rangeT } from './report-range-t';
 import { buildExportTables } from './report-tables';
-import type { ReportExportInput } from './report-export';
+import { exportPeriod, type ReportExportInput } from './report-export';
 
 const CARDS_PER_ROW = 4;
 // A portrait page fits about this many readable table columns.
@@ -45,11 +47,14 @@ const clip = (text: string, max: number) =>
 const pdfText = (text: string) => text.replace(/₹\s*/g, 'INR ');
 
 /**
- * Branded PDF of the report: header and info band, the eight headline cards, warnings, the
- * funnel and 7-day trend as small tables, then every table and stat block. Charts are left
- * out; the tables carry the same figures.
+ * Branded PDF of the report: header and info band (with the period), the eight headline
+ * cards, warnings, the funnel and the day-by-day trend as small tables, then every table and
+ * stat block. Charts are left out; the tables carry the same figures.
  */
-export async function exportReportPdf({ data, view, engineName, t }: ReportExportInput) {
+export async function exportReportPdf({ data, view, engineName, t: plainT }: ReportExportInput) {
+    const t = rangeT(plainT, data.days > 1);
+    const period = exportPeriod(data);
+    const periodText = formatPeriodDates(period);
     const doc = createReportDoc();
     const theme = resolveTheme();
     const pageW = doc.internal.pageSize.getWidth();
@@ -64,9 +69,15 @@ export async function exportReportPdf({ data, view, engineName, t }: ReportExpor
     );
     const logo = await loadLogo(logoUrl);
 
-    let y = drawTitleAndInfo(doc, pdfText(t('export.pdfTitle')), [
+    let y = drawTitleAndInfo(doc, pdfText(t('export.titleWithPeriod', { period: periodText })), [
         { label: pdfText(t('export.engine')), value: pdfText(engineName) },
-        { label: pdfText(t('export.date')), value: formatDay(data.date) },
+        {
+            // The info band is narrow: the day count goes in the label, the dates in the value.
+            label: pdfText(
+                data.days > 1 ? t('export.periodDays', { count: data.days }) : t('export.date')
+            ),
+            value: periodText,
+        },
         { label: pdfText(t('export.timezone')), value: data.timezone || DASH },
     ]);
 
@@ -222,8 +233,8 @@ export async function exportReportPdf({ data, view, engineName, t }: ReportExpor
         details?.institute_name || NO_BRAND,
         logo,
         theme,
-        pdfText(`${engineName} · ${formatDay(data.date)}`),
+        pdfText(`${engineName} · ${periodText}`),
         pdfText(t('export.cornerLabel'))
     );
-    doc.save(exportFileName(engineName, data.date, 'pdf', data.engineId));
+    doc.save(exportFileName(engineName, period, 'pdf', data.engineId));
 }

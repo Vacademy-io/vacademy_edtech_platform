@@ -1,17 +1,20 @@
 {
     "subtitle": "A daily report for each engine: what it did, what it cost and what came back.",
+    "subtitle_range": "A report for each engine: what it did, what it cost and what came back in this period.",
     "viewSwitch": {
         "label": "Dashboard view",
         "daily": "Daily report",
         "overview": "Overview"
     },
     "noActivity": "No activity on this day",
+    "noActivity_range": "No activity in this period",
     "notTracked": "Not tracked",
     "estimated": "Estimated",
     "estimatedSuffix": " (estimated)",
     "retry": "Try again",
     "sectionError": "We couldn’t load this section. The rest of the report is not affected.",
     "partialNote": "Couldn’t load: {{sections}}. Parts that depend on them are marked below; the numbers elsewhere are not affected.",
+    "tooManyNote": "This period has too many messages to load delivery and replies for them. Pick a shorter period to see those figures.",
     "recentNote": "Replies can arrive up to 72 hours after a message, so the last few days will keep changing.",
     "error": {
         "generic": {
@@ -20,7 +23,8 @@
         },
         "badDate": {
             "title": "That date isn’t available",
-            "text": "Pick a day from the last 90 days, up to today."
+            "text": "Pick a day from the last 90 days, up to today.",
+            "text_range": "Pick days from the last 90 days, up to today."
         },
         "noEngine": {
             "title": "That engine wasn’t found",
@@ -35,14 +39,23 @@
     },
     "emptyDay": {
         "title": "No activity on this day",
+        "title_range": "No activity in this period",
         "text": "Nothing was added, sent, called or spent. Try another day, or check that the engine was active.",
-        "previous": "Go to the previous day"
+        "text_range": "Nothing was added, sent, called or spent. Try another period, or check that the engine was active.",
+        "previous": "Go to the previous day",
+        "previous_range": "Go to the previous period"
     },
     "empty": {
         "calls": "No calls were placed on this day",
+        "calls_range": "No calls were placed in this period",
         "email": "No emails were sent on this day",
+        "email_range": "No emails were sent in this period",
+        "newTemplates": "No new WhatsApp templates were created on this day",
+        "newTemplates_range": "No new WhatsApp templates were created in this period",
         "templates": "No templates or subjects were sent on this day",
-        "costs": "No spend on this day"
+        "templates_range": "No templates or subjects were sent in this period",
+        "costs": "No spend on this day",
+        "costs_range": "No spend in this period"
     },
     "foot": {
         "withTime": "Days follow {{timezone}} time. Updated at {{time}}.",
@@ -60,15 +73,37 @@
         "selectedEngine": "Selected engine",
         "searchEngines": "Search engines…",
         "noEngines": "No engines found.",
-        "date": "Date",
-        "previousDay": "Previous day",
-        "nextDay": "Next day",
         "export": "Export",
         "exporting": "Preparing…",
         "exportExcel": "Excel (.xlsx)",
         "exportPdf": "PDF",
         "exportDone": "Report downloaded",
         "exportFailed": "Couldn’t create the report file. Please try again."
+    },
+    "period": {
+        "change": "Change period: {{label}}",
+        "previous_one": "Previous day",
+        "previous_other": "Previous {{count}} days",
+        "next_one": "Next day",
+        "next_other": "Next {{count}} days",
+        "presetsLabel": "Quick picks",
+        "preset": {
+            "today": "Today",
+            "yesterday": "Yesterday",
+            "last_one": "Last {{count}} day",
+            "last_other": "Last {{count}} days"
+        },
+        "modeLabel": "Kind of period",
+        "mode": {
+            "day": "Single day",
+            "range": "Custom range"
+        },
+        "pickStart": "Click the first day, then the last day.",
+        "pickEnd": "Now click the last day, or apply to use just this day.",
+        "days_one": "{{count}} day",
+        "days_other": "{{count}} days",
+        "apply": "Apply",
+        "limit": "Reports cover the last {{count}} days, up to today."
     },
     "groups": {
         "did": {
@@ -81,7 +116,7 @@
         },
         "cost": {
             "title": "What it cost",
-            "subtitle": "Credits, WhatsApp charges and AI usage."
+            "subtitle": "Credits and WhatsApp charges."
         }
     },
     "health": {
@@ -140,25 +175,35 @@
         "about_other": "about {{count}} days"
     },
     "kpi": {
-        "deltaTitle": "Compared with the previous day",
+        "delta": {
+            "label_one": "vs previous day",
+            "label_other": "vs previous {{count}} days",
+            "title_one": "Compared with the previous day ({{range}})",
+            "title_other": "Compared with the previous {{count}} days ({{range}})"
+        },
         "peopleAdded": {
             "label": "Leads added",
             "detail": "{{created}} new · {{existing}} already in the system",
-            "hint": "Leads who joined the engine on this day. “New” means the lead was created that same day; the rest were already in your CRM."
+            "hint": "Leads who joined the engine on this day. “New” means the lead was created that same day; the rest were already in your CRM.",
+            "hint_range": "Leads who joined the engine in this period. “New” means the lead was created within the period; the rest were already in your CRM."
         },
         "messagesSent": {
             "label": "Messages sent",
             "none": "Nothing was sent on this day",
-            "hint": "Emails, WhatsApp and in-app messages sent on this day, both automatic ones and ones your team approved. Calls are counted separately."
+            "none_range": "Nothing was sent in this period",
+            "hint": "Emails, WhatsApp and in-app messages sent on this day, both automatic ones and ones your team approved. Calls are counted separately.",
+            "hint_range": "Emails, WhatsApp and in-app messages sent in this period, both automatic ones and ones your team approved. Calls are counted separately."
         },
         "replies": {
             "label": "Replies",
             "emailNotTracked": "Email replies aren’t tracked, so this counts WhatsApp replies only.",
-            "hint": "Replies received on this day. The reply columns in the tables below count replies to the messages sent on this day, so the two can differ."
+            "hint": "Replies received on this day. The reply columns in the tables below count replies to the messages sent on this day, so the two can differ.",
+            "hint_range": "Replies received in this period. The reply columns in the tables below count replies to the messages sent in this period, so the two can differ."
         },
         "callsConnected": {
             "label": "Calls connected",
-            "detail": "{{placed}} calls placed",
+            "detail_one": "{{placed}} call placed",
+            "detail_other": "{{placed}} calls placed",
             "none": "No calls placed",
             "hint": "Calls that were picked up, as defined by your call settings."
         },
@@ -166,13 +211,17 @@
             "label": "Demos booked",
             "scheduled_one": "{{count}} scheduled for this day",
             "scheduled_other": "{{count}} scheduled for this day",
-            "hint": "Demos booked on this day. Cancelled and rescheduled bookings are not counted."
+            "scheduled_range_one": "{{count}} scheduled for this period",
+            "scheduled_range_other": "{{count}} scheduled for this period",
+            "hint": "Demos booked on this day. Cancelled and rescheduled bookings are not counted.",
+            "hint_range": "Demos booked in this period. Cancelled and rescheduled bookings are not counted."
         },
         "conversions": {
             "label": "Conversions",
             "statusChanges_one": "{{count}} status change",
             "statusChanges_other": "{{count}} status changes",
-            "hint": "People who moved to a converted status on this day."
+            "hint": "People who moved to a converted status on this day.",
+            "hint_range": "People who moved to a converted status in this period."
         },
         "creditsSpent": {
             "label": "Credits spent",
@@ -190,10 +239,16 @@
         },
         "unavailable": "Couldn’t load"
     },
+    "links": {
+        "open": "{{value}} {{what}}. View the list.",
+        "openKpi": "{{label}}: {{value}}. View the list."
+    },
     "funnel": {
         "title": "Funnel",
         "subtitle": "How many people made it through each step on this day.",
+        "subtitle_range": "How many people made it through each step in this period.",
         "note": "Every step follows the messages sent on this day. Contacted includes calls placed; Replied counts replies to those messages, which can keep arriving for 72 hours.",
+        "note_range": "Every step follows the messages sent in this period. Contacted includes calls placed; Replied counts replies to those messages, which can keep arriving for 72 hours.",
         "aria": "Funnel: {{summary}}",
         "dropOff": "{{value}}% drop from the previous step",
         "rise": "{{value}}% more than the previous step",
@@ -206,14 +261,20 @@
         },
         "partialCaption": "{{value}} · partial",
         "partialTooltip": "Only channels that report delivery are counted here, so this is a lower bound and is not compared with the steps around it.",
-        "deliveredNote": "Delivery isn’t reported for every channel that was used, so Delivered is partial and no drop-off is shown for it."
+        "deliveredNote": "Delivery isn’t reported for every channel that was used, so Delivered is partial and no drop-off is shown for it.",
+        "linksLabel": "Open the list behind each step:"
     },
     "trend": {
         "title": "Last 7 days",
-        "subtitle": "Messages sent, replies and demos on the left axis; credits on the right.",
+        "title_range": "Day by day",
+        "subtitle": "The selected day and the six days before it. Each chart has its own scale.",
+        "subtitle_range": "One bar per day. Days in this period are solid; any earlier days shown for context are lighter. Each chart has its own scale.",
         "empty": "Nothing sent in the last 7 days",
-        "aria": "Chart of the last seven days: messages sent, replies, demos booked and credits spent",
-        "seriesRight": "{{name}} (right axis)",
+        "empty_range": "Nothing sent in this period",
+        "weekTotal": "{{value}} over 7 days",
+        "dailyAverage": "{{value}} a day on average",
+        "miniAria": "{{name}}, last 7 days: {{days}}",
+        "miniAria_range": "{{name}}: {{total}} over {{numDays}} days, {{average}} a day on average",
         "series": {
             "sent": "Messages sent",
             "replies": "Replies",
@@ -224,6 +285,7 @@
     "channelsChart": {
         "title": "Sent vs replied",
         "subtitle": "Per channel. Replied counts replies to the messages sent on this day.",
+        "subtitle_range": "Per channel. Replied counts replies to the messages sent in this period.",
         "sent": "Sent",
         "replied": "Replied",
         "aria": "Bar chart comparing messages sent and replies for each channel",
@@ -235,12 +297,14 @@
         "subtitle": "Messages, calls and the Lead Agent.",
         "centerLabel": "credits",
         "empty": "No credits or WhatsApp charges on this day",
+        "empty_range": "No credits or WhatsApp charges in this period",
         "aria": "Donut chart of {{total}} credits spent",
         "whatsapp": "WhatsApp: {{amount}}{{estimated}}. Charged in a different currency, so it isn’t included in the credits above."
     },
     "perEngine": {
         "title": "How each engine did",
         "subtitle": "Compare engines side by side for this day. Replies are those received on this day; reply rate is replies to the messages sent on this day.",
+        "subtitle_range": "Compare engines side by side for this period. Replies are those received in this period; reply rate is replies to the messages sent in this period.",
         "col": {
             "engine": "Engine",
             "added": "Leads added",
@@ -256,6 +320,7 @@
     "lists": {
         "title": "Leads added, by {{list}}",
         "subtitle": "Who joined the engine on this day. Under each row, what the Lead Agent found for that {{list}}.",
+        "subtitle_range": "Who joined the engine in this period. Under each row, what the Lead Agent found for that {{list}}.",
         "batchMembers": "{{batch}} members",
         "individuals": "Individual people",
         "agentLine": "Lead Agent: {{name}}",
@@ -280,6 +345,7 @@
     "runs": {
         "title": "Engine runs",
         "subtitle": "What the engine decided on this day.",
+        "subtitle_range": "What the engine decided in this period.",
         "decisions": "Decisions",
         "decisionsHint": "Each decision is one look at one person: send a message, create a task, wait or reply.",
         "evaluated": "People looked at",
@@ -289,6 +355,7 @@
         "byKindTitle": "Decisions by type",
         "errorsTitle": "Top errors",
         "noErrors": "No failures on this day.",
+        "noErrors_range": "No failures in this period.",
         "col": {
             "kind": "Type",
             "count": "Decisions",
@@ -305,6 +372,7 @@
     "channels": {
         "title": "By channel",
         "subtitle": "Delivered, read and failed come from each channel’s own receipts. Replied and reply rate count replies to the messages sent on this day and keep growing for 72 hours, so they can differ from the Replies figure above.",
+        "subtitle_range": "Delivered, read and failed come from each channel’s own receipts. Replied and reply rate count replies to the messages sent in this period and keep growing for 72 hours, so they can differ from the Replies figure above.",
         "col": {
             "channel": "Channel",
             "sent": "Sent",
@@ -319,6 +387,7 @@
     "calls": {
         "title": "Calls",
         "subtitle": "AI calls placed by the engine on this day.",
+        "subtitle_range": "AI calls placed by the engine in this period.",
         "placed": "Placed",
         "notDialled": "Not dialled",
         "notDialledHint": "Cancelled, expired or failed before the call was dialled.",
@@ -336,6 +405,7 @@
     "email": {
         "title": "Email",
         "subtitle": "Delivery and engagement for emails sent on this day. Figures are matched to emails by recipient and time, so they can be slightly off.",
+        "subtitle_range": "Delivery and engagement for emails sent in this period. Figures are matched to emails by recipient and time, so they can be slightly off.",
         "sent": "Sent",
         "delivered": "Delivered",
         "opened": "Opened",
@@ -369,23 +439,60 @@
         "noSubject": "No subject",
         "other": "Other messages"
     },
+    "templateStatus": {
+        "in_review": "In review",
+        "approved_by_you": "Approved by you",
+        "with_meta": "With Meta",
+        "live": "Live",
+        "rejected": "Rejected",
+        "withdrawn": "Withdrawn"
+    },
+    "newTemplates": {
+        "title": "New WhatsApp templates",
+        "subtitle": "Templates the engine drafted on this day, and where each one stands with your team and with Meta.",
+        "subtitle_range": "Templates the engine drafted in this period, and where each one stands with your team and with Meta.",
+        "created": "Created",
+        "categoryHeading": "Created on this day, by the category the engine proposed",
+        "categoryHeading_range": "Created in this period, by the category the engine proposed",
+        "statusHeading": "Where they stand",
+        "hint": {
+            "in_review": "Waiting for you to review them.",
+            "approved_by_you": "You approved them; they haven’t been sent to Meta yet.",
+            "with_meta": "Sent to Meta and waiting for its decision.",
+            "live": "Approved by Meta and ready to use.",
+            "rejected": "Turned down or disabled by Meta.",
+            "withdrawn": "Withdrawn, or replaced by a newer version."
+        },
+        "moved": "Moved from utility to marketing",
+        "movedNote_one": "Meta moved <open>{{count}} template</open> from utility to marketing — it costs more per message.",
+        "movedNote_other": "Meta moved <open>{{count}} templates</open> from utility to marketing — those cost more per message.",
+        "export": {
+            "category": "Created as {{name}}",
+            "status": "Status: {{name}}"
+        }
+    },
     "outcomes": {
         "title": "Outcomes",
         "subtitle": "What the messages led to.",
         "demosBooked": "Demos booked",
         "demosBookedHint": "Booked on this day. Cancelled and rescheduled bookings are not counted.",
+        "demosBookedHint_range": "Booked in this period. Cancelled and rescheduled bookings are not counted.",
         "demosScheduled": "Demos scheduled for this day",
+        "demosScheduled_range": "Demos scheduled for this period",
         "demosScheduledHint": "Demos taking place on this day, whenever they were booked.",
+        "demosScheduledHint_range": "Demos taking place in this period, whenever they were booked.",
         "demosDone": "Done",
         "demosNoShow": "No-shows",
         "demosNotMarked": "Not marked",
         "demosNotMarkedHint": "Scheduled demos where nobody has recorded whether they happened.",
         "conversions": "Conversions",
-        "conversionsHint": "People who moved to a converted status on this day."
+        "conversionsHint": "People who moved to a converted status on this day.",
+        "conversionsHint_range": "People who moved to a converted status in this period."
     },
     "statusChanges": {
         "title": "Status changes",
         "subtitle": "Moves between pipeline stages on this day: by the engine, by your team, and by other automations such as AI calls and workflows.",
+        "subtitle_range": "Moves between pipeline stages in this period: by the engine, by your team, and by other automations such as AI calls and workflows.",
         "col": {
             "from": "From",
             "to": "To",
@@ -399,6 +506,7 @@
     "costs": {
         "title": "Costs",
         "subtitle": "Everything the engine spent on this day.",
+        "subtitle_range": "Everything the engine spent in this period.",
         "credits": {
             "title": "Credits",
             "subtitle": "Spent on AI-written messages, AI calls and the Lead Agent.",
@@ -433,18 +541,6 @@
                 "basis": "Basis"
             },
             "partialHint": "Some billable messages have no rate set, so this is a minimum and the real charge is higher."
-        },
-        "ai": {
-            "title": "AI usage",
-            "subtitle": "Tokens used by the engine to write its decisions and replies.",
-            "tokensIn": "Tokens in",
-            "tokensInHint": "Text sent to the AI model: the instructions and the person’s details.",
-            "tokensOut": "Tokens out",
-            "tokensOutHint": "Text the AI model wrote back.",
-            "decisions": "Decisions with usage",
-            "trackedSince": "Token counts are tracked from {{date}}. Earlier days show nothing.",
-            "noUsage": "No AI token usage recorded for this day.",
-            "trackingStartedHint": "Token tracking started with this release, so earlier days have no counts."
         }
     },
     "whatsappCategory": {
@@ -459,17 +555,22 @@
         "subtitle": "What the AI providers and the Lead Agent’s searches actually cost. Visible only to platform operators.",
         "ai": "AI usage",
         "aiHint": "What the AI models cost for this day’s decisions and replies.",
+        "aiHint_range": "What the AI models cost for this period’s decisions and replies.",
         "leadAgent": "Lead Agent",
         "leadAgentHint": "Search and AI spend of the Lead Agent for this day.",
+        "leadAgentHint_range": "Search and AI spend of the Lead Agent for this period.",
         "calls": "Calls",
         "callsHint": "Call costs aren’t recorded yet.",
         "total": "Total",
         "notRecorded": "Not recorded"
     },
     "export": {
-        "pdfTitle": "Engagement report",
+        "titleWithPeriod": "Engagement report · {{period}}",
         "engine": "Engine",
         "date": "Date",
+        "period": "Period",
+        "periodDays_one": "Period · {{count}} day",
+        "periodDays_other": "Period · {{count}} days",
         "timezone": "Time zone",
         "generatedAt": "Generated at",
         "metric": "Metric",
@@ -491,6 +592,7 @@
     },
     "sheet": {
         "summary": "Summary",
+        "trend": "Trend",
         "engines": "Engines",
         "lists": "{{lists}}",
         "runs": "Runs",
@@ -499,13 +601,13 @@
         "channels": "Channels",
         "calls": "Calls",
         "email": "Email",
+        "newTemplates": "New templates",
         "templates": "Templates",
         "outcomes": "Outcomes",
         "statusChanges": "Status changes",
         "costCredits": "Costs - credits",
         "costWhatsapp": "Costs - WhatsApp",
         "costWhatsappCategories": "WhatsApp by category",
-        "costAi": "Costs - AI usage",
         "realCost": "Real cost (USD)"
     },
     "errorSection": {
@@ -520,9 +622,131 @@
         "demos": "demos",
         "delivery": "delivery details",
         "replies": "replies",
-        "whatsappCost": "WhatsApp charges"
+        "whatsappCost": "WhatsApp charges",
+        "newTemplates": "new WhatsApp templates"
     },
     "atLeast": "at least {{value}}",
     "retrying": "Trying again…",
-    "refreshFailed": "We couldn’t refresh this report, so the numbers below may be out of date."
+    "refreshFailed": "We couldn’t refresh this report, so the numbers below may be out of date.",
+    "outcomesPage": {
+        "title": "Leads & outcomes",
+        "subtitle": "The people and templates behind the report: who was added, booked a demo, changed status or converted, and which WhatsApp templates were created on this day.",
+        "subtitle_range": "The people and templates behind the report: who was added, booked a demo, changed status or converted, and which WhatsApp templates were created in this period.",
+        "back": "Back to the daily report",
+        "tabsLabel": "Lists",
+        "tab": {
+            "leads": "Leads added",
+            "demos": "Demos",
+            "status": "Status changes",
+            "conversions": "Conversions",
+            "templates": "Templates"
+        },
+        "search": {
+            "placeholder": "Search by name, email or phone",
+            "label": "Search this list"
+        },
+        "results_one": "{{total}} result",
+        "results_other": "{{total}} results",
+        "filterLabel": "Filter",
+        "filter": {
+            "all": "All",
+            "new": "New",
+            "existing": "Already in the CRM",
+            "allLists": "All {{lists}}",
+            "byList": "By {{list}}",
+            "searchLists": "Search {{lists}}…",
+            "noLists": "No {{lists}} found.",
+            "selectedList": "Selected {{list}}",
+            "booked": "Booked on this day",
+            "booked_range": "Booked in this period",
+            "scheduled": "Scheduled for this day",
+            "scheduled_range": "Scheduled for this period",
+            "allScheduled": "All scheduled",
+            "done": "Done",
+            "no_show": "No-shows",
+            "not_marked": "Not marked",
+            "engine": "By engine",
+            "team": "By your team",
+            "automation": "By automation",
+            "demosMode": "Which demos",
+            "demosOutcome": "What happened",
+            "moved_to_marketing": "Moved to marketing",
+            "templatesCategory": "Template category",
+            "templatesStatus": "Template status"
+        },
+        "col": {
+            "lead": "Lead",
+            "email": "Email",
+            "phone": "Phone",
+            "list": "{{list}}",
+            "type": "Type",
+            "added": "Added at",
+            "scheduledFor": "Scheduled for",
+            "bookedAt": "Booked at",
+            "host": "Host",
+            "bookingStatus": "Booking",
+            "demoOutcome": "What happened",
+            "from": "From",
+            "to": "To",
+            "changedBy": "Changed by",
+            "source": "Source",
+            "when": "When",
+            "engine": "Engine",
+            "templateName": "Template",
+            "proposedCategory": "Proposed category",
+            "metaCategory": "Meta category",
+            "status": "Status",
+            "createdAt": "Created at",
+            "submittedAt": "Submitted at",
+            "language": "Language",
+            "statusDetail": "Status in detail",
+            "rejectionReason": "Rejection reason"
+        },
+        "value": {
+            "new": "New",
+            "existing": "Already in the CRM",
+            "unknownLead": "Unknown lead",
+            "noValue": "—",
+            "actor": {
+                "ENGINE": "Engine",
+                "TEAM": "Your team",
+                "AUTOMATION": "Automation"
+            },
+            "demoOutcome": {
+                "COMPLETED": "Done",
+                "NO_SHOW": "No-show",
+                "NOT_MARKED": "Not marked"
+            },
+            "bookingStatus": {
+                "CONFIRMED": "Confirmed",
+                "COMPLETED": "Completed",
+                "CANCELLED": "Cancelled",
+                "PENDING": "Pending",
+                "RESCHEDULED": "Rescheduled"
+            },
+            "categoryChanged": "changed by Meta"
+        },
+        "openProfile": "Open the profile of {{name}}",
+        "empty": {
+            "title": "Nothing to show",
+            "leads": "No leads were added on this day.",
+            "leads_range": "No leads were added in this period.",
+            "demos": "No demos match on this day.",
+            "demos_range": "No demos match in this period.",
+            "status": "No status changes on this day.",
+            "status_range": "No status changes in this period.",
+            "conversions": "Nobody converted on this day.",
+            "conversions_range": "Nobody converted in this period.",
+            "templates": "No new templates were created on this day.",
+            "templates_range": "No new templates were created in this period.",
+            "filtered": "Nothing matches these filters.",
+            "searched": "Nothing matches “{{query}}”.",
+            "clear": "Clear search and filters"
+        },
+        "export": {
+            "done": "List downloaded",
+            "capped": "Downloaded the first {{shown}} of {{total}} rows."
+        },
+        "openFailed": "Couldn’t open this lead’s profile."
+    }
 }

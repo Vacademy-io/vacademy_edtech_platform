@@ -35,9 +35,9 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
     // reconcile/reopen it, SENT so the Sent tab shows what the engine sent on its own. The default
     // view asks for OPEN/ACKED only, so a successful auto-send never clutters "needs action"; a
     // pending (OPEN, scheduled) auto-send stays the dispatch job's business.
-    // Open approvals (an AI call first, then the other CRM actions) come before the drafts: a CRM
-    // action waits for a person and nothing else, and 77 email drafts used to push an AI call to
-    // page 4, where nobody saw it.
+    // What waits on a person comes first: a lead's reply and an AI call to approve (by priority),
+    // then the other CRM actions, then the drafts. A CRM action waits for a person and nothing
+    // else, and 77 email drafts used to push an AI call to page 4, where nobody saw it.
     @Query(value = """
             SELECT * FROM engagement_action
             WHERE institute_id = :instituteId
@@ -50,7 +50,9 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
                        ('ADD_NOTE', 'CREATE_FOLLOWUP', 'ESCALATE', 'UPDATE_STATUS', 'SCHEDULE_AI_CALL'))
                    OR (CAST(:kind AS text) <> 'CRM' AND kind = CAST(:kind AS text)))
             ORDER BY CASE
-                       WHEN kind <> 'TASK' OR status NOT IN ('OPEN', 'ACKED') THEN 2
+                       WHEN status NOT IN ('OPEN', 'ACKED') THEN 2
+                       WHEN kind = 'REPLY' THEN 0
+                       WHEN kind <> 'TASK' THEN 2
                        WHEN action_type = 'SCHEDULE_AI_CALL' THEN 0
                        WHEN action_type IN ('ADD_NOTE', 'CREATE_FOLLOWUP', 'ESCALATE', 'UPDATE_STATUS') THEN 1
                        ELSE 2
@@ -188,6 +190,9 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
 
     /** Every action the engine has made on a channel; the AI-call pool rotates on it. */
     long countByEngineIdAndChannel(String engineId, String channel);
+
+    /** Actions of one type in one status, e.g. the AI calls a person approved in the inbox. */
+    long countByEngineIdAndActionTypeAndStatus(String engineId, String actionType, String status);
 
     /**
      * Autonomous sends that are DUE: a proactive SEND the decision service scheduled, now ready to
@@ -352,6 +357,16 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
             """, nativeQuery = true)
     int rescheduleDueSend(@Param("id") String id, @Param("scheduledFor") Instant scheduledFor,
                           @Param("now") Instant now);
+
+    /**
+     * Everything the engine has done or proposed for one member (a no-op or a dry-run row is not a
+     * touch). Zero means the next thing it does is the member's first touch.
+     */
+    @Query(value = """
+            SELECT count(*) FROM engagement_action
+             WHERE member_id = :memberId AND kind <> 'NO_OP' AND status <> 'SIMULATED'
+            """, nativeQuery = true)
+    long countTouches(@Param("memberId") String memberId);
 
     /** Messages actually sent to one member — the touch count channels.maxTouches limits. */
     long countByMemberIdAndStatus(String memberId, String status);

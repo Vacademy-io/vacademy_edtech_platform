@@ -47,7 +47,7 @@ class EngagementTaskInboxPeopleRestoreTest {
         resolver = mock(ContactResolver.class);
         guard = mock(EngagementAccessGuard.class);
         controller = new EngagementTaskController(actions, guard, mock(EngagementDispatcher.class),
-                members, resolver);
+                members, resolver, mock(EngagementTaskQueryService.class));
     }
 
     private static EngagementMember member(String id, String institute) {

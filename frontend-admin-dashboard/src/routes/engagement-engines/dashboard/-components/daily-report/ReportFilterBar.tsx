@@ -1,19 +1,11 @@
 import { useMemo } from 'react';
-import {
-    CaretDown,
-    CaretLeft,
-    CaretRight,
-    DownloadSimple,
-    FilePdf,
-    FileXls,
-} from '@phosphor-icons/react';
+import { CaretDown, DownloadSimple, FilePdf, FileXls } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import {
     SearchableSelect,
     type SearchableSelectOption,
 } from '@/components/design-system/searchable-select';
-import { DatePickerButton } from '@/components/shared/crm-enhance/date-picker-button';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -23,43 +15,47 @@ import {
 import type { DailyReportEngineOption } from '@/services/engagement-daily-report';
 import { buildEngineStatusMeta } from '../../../-constants';
 import type { EngineStatus } from '../../../-types';
+import type { ReportPeriod } from '../../-utils/report-period';
+import { PeriodPicker } from '../period/PeriodPicker';
 
 /** Value of the "All engines" option (the picker has no empty value). */
 const ALL_ENGINES = 'all';
 
 export type ExportKind = 'xlsx' | 'pdf';
 
+const ALL_EXPORT_KINDS: ExportKind[] = ['xlsx', 'pdf'];
+
 interface ReportFilterBarProps {
     engines: DailyReportEngineOption[];
     /** null = all engines. */
     engineId: string | null;
     onEngineChange: (engineId: string | null) => void;
-    /** yyyy-MM-dd */
-    date: string;
+    /** The day or range of days shown. */
+    period: ReportPeriod;
+    /** Earliest and latest day that can be picked, yyyy-MM-dd (the institute's window). */
     minDate: string;
     maxDate: string;
-    onDateChange: (date: string) => void;
-    onPreviousDay: () => void;
-    onNextDay: () => void;
+    onPeriodChange: (period: ReportPeriod) => void;
     onExport: (kind: ExportKind) => void;
     exporting: boolean;
     exportDisabled: boolean;
+    /** The formats on offer. With one, Export is a plain button; with two, a menu (the default). */
+    exportKinds?: ExportKind[];
 }
 
-/** Engine picker, date picker with previous/next day, and the Export menu. */
+/** Engine picker, period picker (a day or a range, with previous/next arrows), and the Export menu. */
 export function ReportFilterBar({
     engines,
     engineId,
     onEngineChange,
-    date,
+    period,
     minDate,
     maxDate,
-    onDateChange,
-    onPreviousDay,
-    onNextDay,
+    onPeriodChange,
     onExport,
     exporting,
     exportDisabled,
+    exportKinds = ALL_EXPORT_KINDS,
 }: ReportFilterBarProps) {
     const { t } = useTranslation('engagementDailyReport');
     const { t: tConstants } = useTranslation('engagementEnginesConstants');
@@ -83,6 +79,9 @@ export function ReportFilterBar({
         return list;
     }, [engines, engineId, t, tConstants]);
 
+    // With a single format there is no menu to choose from: Export is that format.
+    const onlyKind = exportKinds.length === 1 ? exportKinds[0] : undefined;
+
     return (
         <div className="flex flex-wrap items-center gap-3">
             <div className="w-full sm:w-72">
@@ -96,62 +95,49 @@ export function ReportFilterBar({
                     triggerClassName="h-9"
                 />
             </div>
-            <div className="flex items-center gap-1">
-                <MyButton
-                    buttonType="secondary"
-                    layoutVariant="icon"
-                    scale="medium"
-                    aria-label={t('filter.previousDay')}
-                    title={t('filter.previousDay')}
-                    disable={date <= minDate}
-                    onClick={onPreviousDay}
-                >
-                    <CaretLeft size={16} />
-                </MyButton>
-                <DatePickerButton
-                    label={t('filter.date')}
-                    value={date}
-                    onChange={onDateChange}
-                    min={minDate}
-                    max={maxDate}
-                />
-                <MyButton
-                    buttonType="secondary"
-                    layoutVariant="icon"
-                    scale="medium"
-                    aria-label={t('filter.nextDay')}
-                    title={t('filter.nextDay')}
-                    disable={date >= maxDate}
-                    onClick={onNextDay}
-                >
-                    <CaretRight size={16} />
-                </MyButton>
-            </div>
+            <PeriodPicker value={period} onChange={onPeriodChange} min={minDate} max={maxDate} />
             <div className="sm:ms-auto">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <MyButton
-                            buttonType="secondary"
-                            scale="medium"
-                            className="gap-2"
-                            disable={exportDisabled || exporting}
-                        >
-                            <DownloadSimple size={16} />
-                            {exporting ? t('filter.exporting') : t('filter.export')}
-                            <CaretDown size={14} />
-                        </MyButton>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuItem className="gap-2" onSelect={() => onExport('xlsx')}>
-                            <FileXls size={16} />
-                            {t('filter.exportExcel')}
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="gap-2" onSelect={() => onExport('pdf')}>
-                            <FilePdf size={16} />
-                            {t('filter.exportPdf')}
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                {onlyKind ? (
+                    <MyButton
+                        buttonType="secondary"
+                        scale="medium"
+                        className="gap-2"
+                        disable={exportDisabled || exporting}
+                        onClick={() => onExport(onlyKind)}
+                    >
+                        <DownloadSimple size={16} />
+                        {exporting
+                            ? t('filter.exporting')
+                            : onlyKind === 'pdf'
+                              ? t('filter.exportPdf')
+                              : t('filter.exportExcel')}
+                    </MyButton>
+                ) : (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <MyButton
+                                buttonType="secondary"
+                                scale="medium"
+                                className="gap-2"
+                                disable={exportDisabled || exporting}
+                            >
+                                <DownloadSimple size={16} />
+                                {exporting ? t('filter.exporting') : t('filter.export')}
+                                <CaretDown size={14} />
+                            </MyButton>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem className="gap-2" onSelect={() => onExport('xlsx')}>
+                                <FileXls size={16} />
+                                {t('filter.exportExcel')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="gap-2" onSelect={() => onExport('pdf')}>
+                                <FilePdf size={16} />
+                                {t('filter.exportPdf')}
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
             </div>
         </div>
     );

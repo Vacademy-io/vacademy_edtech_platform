@@ -133,4 +133,34 @@ class EngagementDailyReportRulesTest {
             assertFalse(rates.isEmpty());
         }
     }
+
+    /** New WhatsApp templates: by proposed category, bucketed by where they stand now. */
+    @Nested
+    class NewTemplateCounts {
+
+        @Test
+        void bucketsByStatusAndFlagsUtilityMovedToMarketing() {
+            EngagementDailyReport.NewTemplates t = EngagementDailyReportService.newTemplates(List.of(
+                    new EngagementDailyReportDao.NewTemplateRow("MARKETING", "AI_PROPOSED", null, 2),
+                    new EngagementDailyReportDao.NewTemplateRow("UTILITY", "META_RECATEGORISED", "MARKETING", 1),
+                    new EngagementDailyReportDao.NewTemplateRow("UTILITY", "META_APPROVED", "UTILITY", 3),
+                    new EngagementDailyReportDao.NewTemplateRow("MARKETING", "META_REJECTED", "MARKETING", 1),
+                    new EngagementDailyReportDao.NewTemplateRow("UTILITY", "SUPERSEDED", null, 1)));
+
+            assertEquals(8, t.created());
+            assertEquals(List.of(new EngagementDailyReport.CategoryCount("UTILITY", 5),
+                    new EngagementDailyReport.CategoryCount("MARKETING", 3)), t.byCategory());
+            assertEquals(2, t.inReview());
+            assertEquals(4, t.live());
+            assertEquals(1, t.rejected());
+            assertEquals(1, t.withdrawn());
+            assertEquals(1, t.movedToMarketing());
+        }
+
+        @Test
+        void aFailedSectionIsNullNotZero() {
+            assertNull(EngagementDailyReportService.newTemplates(null));
+            assertEquals(0, EngagementDailyReportService.newTemplates(List.of()).created());
+        }
+    }
 }

@@ -43,11 +43,21 @@ public class EngagementAiCallPool {
         }
     }
 
-    /** The agent for the engine's next call, or null when the pool is empty. */
+    /** True when the engine has at least one agent to call with. */
+    public boolean hasPool(EngagementEngine engine) {
+        return !poolOf(channelNode(engine.getChannels())).isEmpty();
+    }
+
+    /**
+     * The agent for the engine's next call, or null when the pool is empty. Both ways the engine
+     * places a call count: an AI_CALL send, and an AI call action approved in the inbox.
+     */
     public String next(EngagementEngine engine) {
         List<String> ids = poolOf(channelNode(engine.getChannels()));
         if (ids.isEmpty()) return null;
-        long placed = actionRepository.countByEngineIdAndChannel(engine.getId(), "AI_CALL");
+        long placed = actionRepository.countByEngineIdAndChannel(engine.getId(), "AI_CALL")
+                + actionRepository.countByEngineIdAndActionTypeAndStatus(
+                        engine.getId(), EngagementActionTypes.SCHEDULE_AI_CALL, "DONE");
         return ids.get((int) (placed % ids.size()));
     }
 

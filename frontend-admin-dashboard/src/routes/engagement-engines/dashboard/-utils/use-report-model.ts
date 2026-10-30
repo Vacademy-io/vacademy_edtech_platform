@@ -11,7 +11,9 @@ import type { ChannelKey } from '../../-types';
 import { humanizeKey } from './report-format';
 import { buildHealthBanners, type HealthBanner } from './report-health';
 import { buildKpis, type ReportKpi } from './report-kpis';
+import { makeReportLinks } from './report-links';
 import { buildReportModel, type ReportCtx, type ReportModel } from './report-tables';
+import { rangeT } from './report-range-t';
 import { reportTerms } from './report-terms';
 
 export interface ReportView {
@@ -47,11 +49,14 @@ export function useReportView(data: EngagementDailyReport | undefined): ReportVi
         const channels = buildChannelMeta(tConstants);
         const channelLabel = (channel: string) =>
             channels[channel as ChannelKey]?.label ?? humanizeKey(channel);
-        const ctx: ReportCtx = { t, channelLabel, terms };
+        const links = makeReportLinks(data.engineId, { from: data.from, to: data.to });
+        // One day reads "on this day"; a range reads "in this period".
+        const tr = rangeT(t, data.days > 1);
+        const ctx: ReportCtx = { t: tr, channelLabel, terms, links };
         return {
             ctx,
             model: buildReportModel(data, ctx),
-            kpis: buildKpis(data, t, channelLabel),
+            kpis: buildKpis(data, tr, channelLabel, links),
             banners: buildHealthBanners(data, t),
         };
     }, [data, t, tConstants, terms]);

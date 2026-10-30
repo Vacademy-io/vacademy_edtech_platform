@@ -92,6 +92,12 @@ public class LearnerService {
      */
     private void syncProfileToLms(String userId, String previousEmail, String previousFullName,
             String newEmail, String newFullName) {
+        syncProfileToLms(userId, previousEmail, previousFullName, newEmail, newFullName, null);
+    }
+
+    /** As above, with an optional new password carried in the same LMS call. */
+    private void syncProfileToLms(String userId, String previousEmail, String previousFullName,
+            String newEmail, String newFullName, String newPassword) {
         String effectiveEmail = StringUtils.hasText(newEmail) ? newEmail : previousEmail;
         String effectiveFullName = StringUtils.hasText(newFullName) ? newFullName : previousFullName;
         boolean emailChanged = StringUtils.hasText(previousEmail)
@@ -100,7 +106,8 @@ public class LearnerService {
                 previousFullName != null ? previousFullName.trim() : null,
                 effectiveFullName != null ? effectiveFullName.trim() : null);
         if (emailChanged || nameChanged) {
-            learnerLmsUserSyncService.syncProfileUpdate(userId, previousEmail, effectiveEmail, effectiveFullName);
+            learnerLmsUserSyncService.syncProfileUpdate(userId, previousEmail, effectiveEmail, effectiveFullName,
+                    newPassword);
         }
     }
 
@@ -186,6 +193,11 @@ public class LearnerService {
         Student student = instituteStudentRepository.findTopByUserId(userDTO.getId())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
+        // Captured before mutation, as in the other edit paths: the LMS sync below
+        // matches the WordPress user on their previous email.
+        String previousEmail = student.getEmail();
+        String previousFullName = student.getFullName();
+
         if (StringUtils.hasText(userDTO.getUsername())) {
             student.setUsername(userDTO.getUsername());
         }
@@ -220,6 +232,12 @@ public class LearnerService {
             student.setFaceFileId(userDTO.getProfilePicFileId());
         }
         instituteStudentRepository.save(student);
+
+        // auth_service reaches this from the learner profile update and from Portal Access
+        // when a username change also moves the email. Portal Access sends the password here
+        // too, so the rename and the password land on the LMS in one edit-user call.
+        syncProfileToLms(userDTO.getId(), previousEmail, previousFullName,
+                userDTO.getEmail(), userDTO.getFullName(), userDTO.getPassword());
         return "done";
     }
 
