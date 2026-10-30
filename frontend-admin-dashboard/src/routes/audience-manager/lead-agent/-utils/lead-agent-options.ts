@@ -14,6 +14,7 @@ import type {
     FitWeight,
     MinContact,
     SourceKey,
+    ValidationEffort,
 } from '../-types';
 
 export const COMPETITOR_KIND_OPTIONS: { value: CompetitorKind; label: string }[] = [
@@ -119,6 +120,27 @@ export const MIN_CONTACT_OPTIONS: { value: MinContact; label: string; hint: stri
     { value: 'general', label: 'General', hint: 'Any public number or email.' },
 ];
 
+export const EFFORT_OPTIONS: { value: ValidationEffort; label: string; note: string }[] = [
+    {
+        value: 'BASIC',
+        label: 'Basic',
+        note: 'Reads the organisation’s website and uses the phone on its Google Maps listing. No extra searches.',
+    },
+    {
+        value: 'STANDARD',
+        label: 'Standard (recommended)',
+        note: 'Also looks the organisation up on Google Maps, opens job posts to confirm who is hiring, and runs one extra search for a phone or email when none can be confirmed.',
+    },
+    {
+        value: 'DEEP',
+        label: 'Deep',
+        note: 'Reads more pages of each website, checks the organisation’s social pages, and runs up to three extra searches for contact details.',
+    },
+];
+
+export const isValidationEffort = (v: string | null): v is ValidationEffort =>
+    EFFORT_OPTIONS.some((o) => o.value === v);
+
 export const CONTACT_QUALITY_LABEL: Record<string, string> = {
     direct: 'Direct',
     likely: 'Likely',
@@ -143,6 +165,7 @@ export const DEFAULT_GATE: AgentGate = {
     min_contact: 'likely',
     require_intent: false,
     auto_competitor_users: false,
+    effort: 'STANDARD',
 };
 
 /** The spec default window (09:30–19:00, Mon–Sat), in the admin's own time zone. */
@@ -198,6 +221,18 @@ export const IN_PROGRESS_STATUSES: CandidateStatus[] = [
     'APPROVED',
 ];
 
+/** The Rejected tab also lists SKIPPED leads (the same organisation as another lead, already in your
+ * leads, nothing to send): none of them is delivered or charged. */
+export const REJECTED_TAB_STATUSES: readonly CandidateStatus[] = ['REJECTED', 'SKIPPED'];
+
+/** "Skipped — duplicate of a.in", else "Skipped — <the note>". */
+export const skippedLabel = (duplicateOf: string | null, note: string | null | undefined) =>
+    duplicateOf
+        ? `Skipped — duplicate of ${duplicateOf}`
+        : note
+          ? `Skipped — ${note}`
+          : CANDIDATE_STATUS_LABEL.SKIPPED;
+
 export const CANDIDATE_STATUS_LABEL: Record<CandidateStatus, string> = {
     DISCOVERED: 'Found',
     FETCHING: 'Reading website',
@@ -251,6 +286,11 @@ export function flagLabel(flag: string): string {
     if (key === 'dead_site' || key === 'parked') return 'Site looks dead';
     if (key === 'outside_market') return 'Outside your markets';
     if (key === 'known_lead' || key === 'existing_lead') return 'Already in your leads';
+    // The website could not be read, so research judged the lead from its Google Maps listing.
+    if (key === 'maps_only') return 'Judged from Google Maps';
+    // Same name and city as another lead, but no shared phone or email: a person decides.
+    if (key === 'possible_duplicate')
+        return rest ? `Possible duplicate of ${rest}` : 'Possible duplicate';
     return humanize(flag);
 }
 

@@ -41,9 +41,19 @@ export const effectiveDueMs = (vm: LeadCardVM): number => {
 /** True when the lead has any pending SLA — first-touch or follow-up. */
 export const isPendingFollowUp = (vm: LeadCardVM): boolean => !!vm.tatDueAt || !!vm.followUpDueAt;
 
-/** Classify a lead into a bucket based on its effective due time and the SLA flags. */
-export const classify = (vm: LeadCardVM, now: Date = new Date()): PendingFollowUpBucket => {
-    if (vm.tatOverdue || vm.followUpOverdue) return 'overdue';
+/**
+ * Classify a lead into a bucket based on its effective due time and the SLA flags.
+ *
+ * `byDate` (Lead settings → "Overdue by date, not time"): the due DATE alone decides,
+ * so the SLA flags — which are time-based — are not consulted. That keeps a row in the
+ * same bucket the server counted it in ({@link bucketWindow} with `byDate`).
+ */
+export const classify = (
+    vm: LeadCardVM,
+    now: Date = new Date(),
+    byDate = false
+): PendingFollowUpBucket => {
+    if (!byDate && (vm.tatOverdue || vm.followUpOverdue)) return 'overdue';
     const dueMs = effectiveDueMs(vm);
     if (!Number.isFinite(dueMs)) return 'upcoming';
     const startOfToday = new Date(now);
@@ -58,7 +68,8 @@ export const classify = (vm: LeadCardVM, now: Date = new Date()): PendingFollowU
 /** Counts per bucket across an array of VMs (current page only). `all` = vms.length. */
 export const bucketCounts = (
     vms: LeadCardVM[],
-    now: Date = new Date()
+    now: Date = new Date(),
+    byDate = false
 ): Record<PendingFollowUpBucket, number> => {
     const counts: Record<PendingFollowUpBucket, number> = {
         overdue: 0,
@@ -67,7 +78,7 @@ export const bucketCounts = (
         all: vms.length,
     };
     for (const vm of vms) {
-        const b = classify(vm, now);
+        const b = classify(vm, now, byDate);
         if (b !== 'all') counts[b] += 1;
     }
     return counts;
@@ -77,18 +88,26 @@ export const bucketCounts = (
  * The schedule_time window a bucket stands for, in the USER's clock. Sent to the server so
  * counts and paging are over the whole institute rather than whatever happened to be on the
  * first fetched page — and so an Asia/Kolkata counsellor's "today" is their today.
+ *
+ * `byDate` (Lead settings → "Overdue by date, not time"): Overdue ends, and Today starts,
+ * at the start of today instead of this minute — a follow-up due this morning is still
+ * Today, not Overdue. Off = split at `now`, as before.
  */
 export const bucketWindow = (
     bucket: FollowUpBucket,
-    now: Date = new Date()
+    now: Date = new Date(),
+    byDate = false
 ): { from?: string; to?: string } => {
     const endOfToday = new Date(now);
     endOfToday.setHours(23, 59, 59, 999);
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+    const split = byDate ? startOfToday : now;
     switch (bucket) {
         case 'overdue':
-            return { to: now.toISOString() };
+            return { to: split.toISOString() };
         case 'today':
-            return { from: now.toISOString(), to: endOfToday.toISOString() };
+            return { from: split.toISOString(), to: endOfToday.toISOString() };
         case 'upcoming':
             return { from: endOfToday.toISOString() };
         // 'completed' never reaches the leads query, and 'all' means no window.
@@ -115,5 +134,7 @@ export const intersectWindows = (
 export const filterToBucket = (
     vms: LeadCardVM[],
     bucket: FollowUpBucket,
-    now: Date = new Date()
-): LeadCardVM[] => (bucket === 'all' ? vms : vms.filter((vm) => classify(vm, now) === bucket));
+    now: Date = new Date(),
+    byDate = false
+): LeadCardVM[] =>
+    bucket === 'all' ? vms : vms.filter((vm) => classify(vm, now, byDate) === bucket);

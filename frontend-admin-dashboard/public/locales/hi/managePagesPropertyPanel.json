@@ -252,6 +252,9 @@
     }
   },
   "options": {
+    "dropdown": "ड्रॉपडाउन",
+    "chips": "चिप्स",
+    "popup": "पॉपअप",
     "categoryTiles": "कैटेगरी टाइल",
     "default": "डिफ़ॉल्ट",
     "ocean": "ओशन",
@@ -903,7 +906,19 @@
     "cardsPerViewHint": "टैबलेट पर अधिकतम 2 और फ़ोन पर 1 कार्ड दिखेगा।",
     "autoplay": "अपने आप स्लाइड करें",
     "autoplaySeconds": "हर स्लाइड के बीच सेकंड",
-    "photo": "फ़ोटो"
+    "photo": "फ़ोटो",
+    "reviewSource": "स्वीकृत रिव्यू दिखाएँ",
+    "reviewSourceManual": "नहीं, सिर्फ़ नीचे वाले कोट",
+    "reviewSourceBoth": "हाँ, नीचे वाले कोट के बाद",
+    "reviewSourceReviews": "हाँ, नीचे वाले कोट की जगह",
+    "reviewSourceHint": "रिव्यू और फ़ीडबैक सेक्शन से विज़िटर के भेजे रिव्यू आपकी स्वीकृति के बाद यहाँ दिखेंगे।",
+    "reviewLimit": "ज़्यादा से ज़्यादा रिव्यू",
+    "reviewMinRating": "कम से कम स्टार",
+    "reviewMinRatingAll": "कोई भी रेटिंग",
+    "reviewMinRatingStars_one": "{{count}} स्टार और ऊपर",
+    "reviewMinRatingStars_other": "{{count}} स्टार और ऊपर",
+    "showAverageRating": "शीर्षक के नीचे औसत रेटिंग दिखाएँ",
+    "manageReviews": "रिव्यू स्वीकृत करें"
   },
   "policy": {
     "defaults": {
@@ -1055,6 +1070,9 @@
     "sendTestLead": "टेस्ट लीड भेजें"
   },
   "leadForm": {
+    "columns": "कॉलम",
+    "choiceStyle": "विकल्प ऐसे दिखें",
+    "successDisplay": "धन्यवाद संदेश",
     "hint": "किसी कैंपेन का रजिस्ट्रेशन फॉर्म सीधे पेज पर दिखाता है। फ़ील्ड्स, ऑप्शन्स और अनिवार्य फ़्लैग्स Audience Manager में कैंपेन पर कॉन्फ़िगर होते हैं; सबमिशन उस कैंपेन में dedup, स्कोरिंग और काउंसलर असाइनमेंट के साथ आते हैं।",
     "campaignLabel": "कैंपेन (फॉर्म + डेस्टिनेशन)",
     "titlePlaceholder": "अपनी रुचि रजिस्टर करें",
@@ -1358,6 +1376,28 @@
     "clear": "हटाएँ",
     "openFile": "खोलें"
   },
+  "scormViewer": {
+    "appearance": "रूप",
+    "appearanceBook": "किताब (प्लेयर कंट्रोल नहीं)",
+    "appearanceFramed": "फ़्रेम वाला प्लेयर",
+    "appearanceHelp": "किताब वाले रूप में पैकेज का टूलबार, पेज गिनती और फ़ुल-स्क्रीन बटन छिप जाते हैं, ताकि पन्ने पेज पर किताब की तरह दिखें।",
+    "heading": "SCORM पैकेज",
+    "package": "SCORM पैकेज (.zip)",
+    "uploadZip": "SCORM zip अपलोड करें",
+    "uploading": "अपलोड और अनपैक हो रहा है…",
+    "clear": "हटाएँ",
+    "onlyZip": "SCORM पैकेज .zip फ़ाइल के रूप में अपलोड करें।",
+    "tooLarge": "zip {{max}} MB से बड़ी है।",
+    "uploadFailed": "पैकेज अपलोड नहीं हो सका। जाँचें कि यह imsmanifest.xml वाला SCORM zip है।",
+    "uploadHelp": "कोर्स की SCORM स्लाइड की तरह पेज पर बिना लॉगिन चलता है। यहाँ कुछ ट्रैक नहीं होता।",
+    "packageReady": "पैकेज अपलोड हो गया",
+    "openPackage": "खोलें",
+    "barTitle": "फ़्रेम का शीर्षक",
+    "barTitlePlaceholder": "जैसे: प्रीव्यू – शुरुआती पेज",
+    "frameHeight": "फ़्रेम की ऊँचाई (डेस्कटॉप)",
+    "mobileHeight": "फ़्रेम की ऊँचाई (फ़ोन)",
+    "showFullScreen": "फ़ुल-स्क्रीन बटन"
+  },
   "blog": {
     "heading": "ब्लॉग सेटिंग्स",
     "managePostsHint": "पोस्ट अलग से लिखी और प्रकाशित होती हैं, इसलिए नए लेख के लिए साइट दोबारा प्रकाशित नहीं करनी पड़ती।",
@@ -1385,6 +1425,8 @@
     "showCategory": "श्रेणी दिखाएँ",
     "showReadingTime": "पढ़ने का समय दिखाएँ",
     "showCategoryFilter": "श्रेणी फ़िल्टर चिप्स",
+    "allowLikes": "लाइक की अनुमति दें",
+    "allowLikesHelp": "विज़िटर पोस्ट को लाइक कर सकेंगे: हर कार्ड पर और लेख के नीचे दिल का निशान और गिनती। जो सेक्शन ब्लॉग नहीं हैं (जैसे परीक्षा गाइड), उनमें इसे बंद रखें।",
     "readMoreLabel": "और पढ़ें लेबल",
     "backLabel": "सूची पर वापस लेबल",
     "emptyMessage": "पोस्ट न होने पर संदेश",

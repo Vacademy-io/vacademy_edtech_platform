@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.agent.dto.ConversationSession;
@@ -42,6 +43,10 @@ public class EngagementBrainClient {
     @Value("${engagement.brain.model:}")
     private String brainModel;
 
+    /** Prices the brain's tokens for the daily report. Optional so plain-constructed tests need no DB. */
+    @Autowired(required = false)
+    private EngagementLlmPricing pricing;
+
     /** Structured decision for one member. Nulls where the model chose NO_OP. */
     public record Decision(
             String decision,        // ACT | NO_OP
@@ -56,16 +61,50 @@ public class EngagementBrainClient {
             Integer nextCheckHours,
             Integer tokensIn,
             Integer tokensOut,
-            String subject          // EMAIL only: the subject line (null → derived from the draft)
+            String subject,         // EMAIL only: the subject line (null → derived from the draft)
+            Map<String, String> actionParams, // B6 CRM actions: dueInHours, statusKey, note, reason
+            EngagementLlmUsage usage // tokens + price of the call(s) behind this decision; null in tests
     ) {
+        public Decision(String decision, String actionType, String channel, String draftBody,
+                        String templateName, Map<String, String> variables, String rationale,
+                        double priority, Integer scheduleInHours, Integer nextCheckHours,
+                        Integer tokensIn, Integer tokensOut, String subject, Map<String, String> actionParams) {
+            this(decision, actionType, channel, draftBody, templateName, variables, rationale, priority,
+                    scheduleInHours, nextCheckHours, tokensIn, tokensOut, subject, actionParams, null);
+        }
+
         public Decision(String decision, String actionType, String channel, String draftBody,
                         String templateName, Map<String, String> variables, String rationale,
                         double priority, Integer scheduleInHours, Integer nextCheckHours,
                         Integer tokensIn, Integer tokensOut) {
             this(decision, actionType, channel, draftBody, templateName, variables, rationale, priority,
-                    scheduleInHours, nextCheckHours, tokensIn, tokensOut, null);
+                    scheduleInHours, nextCheckHours, tokensIn, tokensOut, null, null);
+        }
+
+        public Decision(String decision, String actionType, String channel, String draftBody,
+                        String templateName, Map<String, String> variables, String rationale,
+                        double priority, Integer scheduleInHours, Integer nextCheckHours,
+                        Integer tokensIn, Integer tokensOut, String subject) {
+            this(decision, actionType, channel, draftBody, templateName, variables, rationale, priority,
+                    scheduleInHours, nextCheckHours, tokensIn, tokensOut, subject, null);
         }
     }
+
+    /**
+     * B6: what this engine may do besides messaging, for the prompt. {@code actions}: the CRM action
+     * types the engine allows; {@code statuses}: the lead statuses it may set (never Converted);
+     * {@code emailTemplates}: set when the engine's email is template-only (approved templates
+     * from the templates track's catalog).
+     */
+    public record ActionMenu(List<String> actions, List<StatusOption> statuses, List<TemplateOption> emailTemplates) {
+        public static final ActionMenu NONE = new ActionMenu(List.of(), List.of(), null);
+
+        public boolean isEmpty() {
+            return (actions == null || actions.isEmpty()) && emailTemplates == null;
+        }
+    }
+
+    public record StatusOption(String key, String label) {}
 
     /** An approved WhatsApp template the model may choose from (never invent one). */
     public record TemplateOption(String name, String body, List<String> variableNames, String language) {}
@@ -73,13 +112,23 @@ public class EngagementBrainClient {
     public Decision decide(EngagementEngine engine, String compiledPrompt,
                            Map<String, String> dataBlocks, Instant now,
                            Set<String> enabledChannels, List<TemplateOption> whatsappTemplates) {
-        String system = systemPrompt(engine, compiledPrompt, enabledChannels, whatsappTemplates);
+        return decide(engine, compiledPrompt, dataBlocks, now, enabledChannels, whatsappTemplates, ActionMenu.NONE);
+    }
+
+    /** As above, with the CRM actions (and template-only email) this engine allows (B6). */
+    public Decision decide(EngagementEngine engine, String compiledPrompt,
+                           Map<String, String> dataBlocks, Instant now,
+                           Set<String> enabledChannels, List<TemplateOption> whatsappTemplates,
+                           ActionMenu menu) {
+        String system = systemPrompt(engine, compiledPrompt, enabledChannels, whatsappTemplates)
+                + actionSection(menu != null ? menu : ActionMenu.NONE);
         String user = userPrompt(dataBlocks, now);
 
         List<ConversationSession.ChatMessage> history = new ArrayList<>();
         history.add(ConversationSession.ChatMessage.system(system));
         history.add(ConversationSession.ChatMessage.user(user));
 
+        EngagementLlmUsage usage = EngagementLlmUsage.NONE;
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             ConversationSession session = ConversationSession.builder()
                     .instituteId(engine.getInstituteId())
@@ -90,6 +139,8 @@ public class EngagementBrainClient {
             // Engagement is billed per dispatched message (EngagementDispatchJob.charge), not per brain token.
             session.getContext().put(LLMService.CTX_BILLED_BY_CALLER, Boolean.TRUE);
             LLMService.LLMResponse resp = llmService.generateChatCompletion(session);
+            // Summed across attempts: an unparseable first answer was still paid for.
+            usage = usage.plus(resp, pricing);
             String raw = resp != null ? resp.getContent() : null;
             if (raw == null || raw.isBlank()) {
                 throw new IllegalStateException("Engagement brain returned an empty response");
@@ -107,8 +158,10 @@ public class EngagementBrainClient {
                         n.path("priority").asDouble(50),
                         n.hasNonNull("scheduleInHours") ? n.get("scheduleInHours").asInt() : null,
                         n.hasNonNull("nextCheckHours") ? n.get("nextCheckHours").asInt() : null,
-                        null, null,
-                        n.hasNonNull("subject") ? n.get("subject").asText() : null);
+                        usage.tokensIn(), usage.tokensOut(),
+                        n.hasNonNull("subject") ? n.get("subject").asText() : null,
+                        readStringMap(n.get("action")),
+                        usage);
             } catch (Exception parseError) {
                 if (attempt == MAX_ATTEMPTS) {
                     throw new IllegalStateException("Engagement brain emitted unparseable JSON twice", parseError);
@@ -162,7 +215,7 @@ public class EngagementBrainClient {
             {
               "decision": "ACT" | "NO_OP",
               "subject": "<EMAIL only: the subject line>" | null,
-              "actionType": "SEND_MESSAGE" | "SHARE_LINK" | "CALL" | null,
+              "actionType": "SEND_MESSAGE" | "SHARE_LINK" | "CALL" | <a CRM action listed below, if any> | null,
               "channel": "WHATSAPP" | "EMAIL" | "IN_APP" | "AI_CALL" | null,
               "draftBody": "<the exact message a human could send as-is; for WHATSAPP put the \
             chosen template with every {{n}} replaced by your variable values (the exact message \
@@ -175,7 +228,8 @@ public class EngagementBrainClient {
               "rationale": "<one or two sentences: why this, why now — shown to the human>",
               "priority": <0-100, how much this matters vs other tasks today>,
               "scheduleInHours": <int, when to act; 0 = now> | null,
-              "nextCheckHours": <int, when you want to look at this person again>
+              "nextCheckHours": <int, when you want to look at this person again>,
+              "action": { "<field>": "<value>" } "// only for a CRM action listed below" | null
             }
             """.formatted(reviewStatement(engine, enabledChannels), compiledPrompt,
                     languageName(engine.getLanguage()), channelSection(enabledChannels, whatsappTemplates));
@@ -237,6 +291,65 @@ public class EngagementBrainClient {
                 }
                 sb.append("If none of these fit the situation, use another enabled channel or NO_OP — "
                         + "never force a template that doesn't fit.\n");
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * B6 prompt section: the CRM actions this engine allows and how to fill them, the statuses it
+     * may set, and the approved email templates when email is template-only. Empty when the engine
+     * allows none of it, so the prompt of an engine that only messages is unchanged.
+     */
+    static String actionSection(ActionMenu menu) {
+        if (menu == null || menu.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder("\n");
+        List<String> actions = menu.actions() != null ? menu.actions() : List.of();
+        if (!actions.isEmpty()) {
+            sb.append("CRM ACTIONS. Besides a message you may choose ONE of these as actionType (only these; ")
+              .append("a person approves each one in the inbox before it happens). Put its fields in \"action\"; ")
+              .append("leave channel, draftBody and templateName null:\n");
+            for (String a : actions) {
+                switch (a) {
+                    case EngagementActionTypes.ADD_NOTE -> sb.append("- ADD_NOTE: write a note on the lead for the counsellor. ")
+                            .append("action: {\"note\": \"<what you noticed and why it matters, 1-3 sentences>\"}\n");
+                    case EngagementActionTypes.CREATE_FOLLOWUP -> sb.append("- CREATE_FOLLOWUP: ask the counsellor to follow up. ")
+                            .append("action: {\"dueInHours\": <int>, \"note\": \"<what to discuss>\"}. ")
+                            .append("Not when a follow-up is already open.\n");
+                    case EngagementActionTypes.ESCALATE -> sb.append("- ESCALATE: a person must look at this lead now. ")
+                            .append("action: {\"reason\": \"<why>\"}\n");
+                    case EngagementActionTypes.SCHEDULE_AI_CALL -> sb.append("- SCHEDULE_AI_CALL: an AI voice call to the lead. ")
+                            .append("action: {\"dueInHours\": <int, 0 = next calling slot; use the time they asked for ")
+                            .append("a call back>, \"note\": \"<what the call is for>\"}. Never when they asked not to be ")
+                            .append("called or the number was wrong.\n");
+                    case EngagementActionTypes.UPDATE_STATUS -> {
+                        sb.append("- UPDATE_STATUS: move the lead's CRM status. action: {\"statusKey\": \"<one key below>\", ")
+                          .append("\"note\": \"<why>\"}. Never Converted (a person confirms that). LOST and ")
+                          .append("NOT_INTERESTED need a note that says what the lead said or did.\n");
+                        if (menu.statuses() != null && !menu.statuses().isEmpty()) {
+                            sb.append("  Status keys: ");
+                            menu.statuses().forEach(st -> sb.append(st.key()).append(" (").append(st.label()).append(") "));
+                            sb.append("\n");
+                        }
+                    }
+                    default -> { }
+                }
+            }
+            sb.append("- WAIT: nothing to do now (same as NO_OP; set nextCheckHours).\n");
+        }
+        if (menu.emailTemplates() != null) {
+            sb.append("\nEMAIL IS TEMPLATE-ONLY for this engine. For EMAIL choose one approved template below by its exact ")
+              .append("name in templateName and fill EVERY {{variable}} in \"variables\"; draftBody is ignored. ")
+              .append("A variable meant for a personal line gets ONE short, true sentence about this person.\n");
+            if (menu.emailTemplates().isEmpty()) {
+                sb.append("APPROVED EMAIL TEMPLATES: (none yet) — do NOT choose EMAIL this turn.\n");
+            } else {
+                sb.append("APPROVED EMAIL TEMPLATES:\n");
+                for (TemplateOption t : menu.emailTemplates()) {
+                    sb.append("- name: ").append(t.name()).append("\n  ")
+                      .append(t.body() == null ? "" : t.body().replace("\n", " ")).append("\n  variables (fill ALL): ")
+                      .append(t.variableNames() == null ? "" : String.join(", ", t.variableNames())).append("\n");
+                }
             }
         }
         return sb.toString();

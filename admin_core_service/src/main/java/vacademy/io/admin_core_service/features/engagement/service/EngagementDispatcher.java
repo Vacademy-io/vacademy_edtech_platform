@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.engagement.client.EngagementInternalClients;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementAction;
@@ -12,6 +13,7 @@ import vacademy.io.admin_core_service.features.engagement.entity.EngagementEngin
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementActionRepository;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementEngineRepository;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementMemberRepository;
+import vacademy.io.admin_core_service.features.engagement.templates.EngagementEmailTemplateCatalog;
 import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendRequest;
 import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendResponse;
 import vacademy.io.admin_core_service.features.notification_service.service.NotificationService;
@@ -57,6 +59,10 @@ public class EngagementDispatcher {
 
     /** variables_json key for an EMAIL action's subject line (the brain writes it). */
     public static final String VAR_SUBJECT = "_subject";
+    /** variables_json key on a REPLY: comma-separated assets asset ids to send with the text. */
+    public static final String VAR_ASSET_IDS = "_assetIds";
+    /** B6: the approved email template version a template-only email was drafted on (A3 catalog). */
+    public static final String VAR_EMAIL_TEMPLATE = "_emailTemplateId";
 
     /** The sender every engine email used before channels.EMAIL.emailType existed. */
     static final String DEFAULT_EMAIL_TYPE = "UTILITY_EMAIL";
@@ -68,7 +74,16 @@ public class EngagementDispatcher {
     private final ContactResolver contactResolver;
     private final EngagementInternalClients clients;
     private final EngagementEngineRepository engineRepository;
+    private final PolicyGate policyGate;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /** The engine's assets, for the attachments of a REPLY; optional so a context without it still starts. */
+    @Autowired(required = false)
+    private EngagementAssetService assetService;
+
+    /** The templates track's renderer (A3); optional so a context without it still starts. */
+    @Autowired(required = false)
+    private EngagementEmailTemplateCatalog emailCatalog;
 
     /**
      * Dispatch an action that has ALREADY been claimed (status DISPATCHING). {@code editedBody}
@@ -82,8 +97,21 @@ public class EngagementDispatcher {
     }
 
     public EngagementAction dispatchClaimed(EngagementAction action, String editedBody, String actorId) {
+        return dispatchClaimed(action, editedBody, actorId, false);
+    }
+
+    /**
+     * @param answeringTheirMessage true only for an answer to a message the person just sent us about a
+     *        meeting they hold: a member who EXITED because the goal was met (meeting booked) may still be
+     *        answered, but an opted-out one never. Everything else keeps the strict consent check.
+     */
+    public EngagementAction dispatchClaimed(EngagementAction action, String editedBody, String actorId,
+                                            boolean answeringTheirMessage) {
         String channel = action.getChannel() != null ? action.getChannel().toUpperCase() : "";
         try {
+            if (EngagementActionTypes.isCrmAction(action.getActionType())) {
+                throw new SendRejectedException("This is a CRM action, not a message: approve it instead of sending it.");
+            }
             // Resolve INSIDE the try: a DB blip here would otherwise leave the row stuck in
             // DISPATCHING forever (no reaper reaches it) — the worst failure class. On failure
             // it now settles to FAILED, which is visible and reopenable.
@@ -91,8 +119,19 @@ public class EngagementDispatcher {
                     .orElseThrow(() -> new IllegalStateException("member missing for action " + action.getId()));
             // Consent holds for every send, a human's send-on-behalf included: a task drafted before
             // the person opted out (or left the audience) must not reach them afterwards.
-            if ("OPTED_OUT".equals(member.getStatus()) || "EXITED".equals(member.getStatus())) {
+            if ("OPTED_OUT".equals(member.getStatus())
+                    || ("EXITED".equals(member.getStatus()) && !answeringTheirMessage)) {
                 throw new SendRejectedException("This person has opted out or left the audience, so nothing was sent.");
+            }
+            // The member row only learns of a CRM opt-out at the next decision, so a task drafted for
+            // a lead must re-read the lead row before a human sends it (F2 / L3). An AI-call promise
+            // stops only on an opt-out, as in the dispatch job. A lead marked Converted or Lost stops
+            // the engine's own sends, not a human who chooses to send this draft.
+            PolicyGate.LeadBlock leadBlock = policyGate.leadBlock(action.getInstituteId(), member.getAudienceResponseId());
+            if (!PolicyGate.isLeadOutcome(leadBlock)
+                    && EngagementDispatchJob.leadNotSendableReason(leadBlock, action) != null) {
+                throw new SendRejectedException(
+                        "This lead has opted out or was removed in the CRM, so nothing was sent.");
             }
             Subject subject = contactResolver.resolve(List.of(member)).get(0);
 
@@ -101,12 +140,14 @@ public class EngagementDispatcher {
             // Meta sends, so a body edit is REJECTED rather than silently dropped (which would falsify
             // sent_body/outcome). A WhatsApp REPLY (kind=REPLY) is a free-form session message, so its
             // body IS editable — like EMAIL/IN_APP, the human's edit is the sent content.
-            boolean fixedTemplate = "WHATSAPP".equals(channel) && !"REPLY".equalsIgnoreCase(action.getKind());
+            boolean fixedTemplate = ("WHATSAPP".equals(channel) && !"REPLY".equalsIgnoreCase(action.getKind()))
+                    || ("EMAIL".equals(channel) && parseVariables(action.getVariablesJson()).containsKey(VAR_EMAIL_TEMPLATE));
             String body;
             if (fixedTemplate) {
                 if (editedBody != null && !editedBody.isBlank() && !editedBody.equals(action.getDraftBody())) {
-                    throw new SendRejectedException(
-                            "WhatsApp uses a fixed Meta-approved template — its text can't be edited; "
+                    throw new SendRejectedException("EMAIL".equals(channel)
+                            ? "This email uses an approved template — its text can't be edited here."
+                            : "WhatsApp uses a fixed Meta-approved template — its text can't be edited; "
                             + "change the variables instead.");
                 }
                 body = action.getDraftBody();
@@ -155,7 +196,26 @@ public class EngagementDispatcher {
         if (subject.getEmail() == null || subject.getEmail().isBlank()) {
             throw new SendRejectedException("No email address on file for this person");
         }
-        String subjectLine = parseVariables(action.getVariablesJson()).get(VAR_SUBJECT);
+        Map<String, String> vars = parseVariables(action.getVariablesJson());
+        String subjectLine = vars.get(VAR_SUBJECT);
+        String html = toHtml(body);
+        String templateId = vars.get(VAR_EMAIL_TEMPLATE);
+        if (templateId != null) {
+            // Template-only email (B6): render the exact approved version it was drafted on, and
+            // refuse to send when a variable is missing or the template now breaks the brief (E2, E7).
+            if (emailCatalog == null) throw new SendRejectedException("Email templates are unavailable right now.");
+            Map<String, String> templateVars = new java.util.HashMap<>(vars);
+            templateVars.remove(VAR_SUBJECT);
+            templateVars.remove(VAR_EMAIL_TEMPLATE);
+            var rendered = emailCatalog.renderById(templateId, action.getInstituteId(), templateVars)
+                    .orElseThrow(() -> new SendRejectedException("The email template is no longer approved."));
+            if (!rendered.sendable()) {
+                throw new SendRejectedException("The email template can't be sent: "
+                        + String.join("; ", concat(rendered.missingVariables(), rendered.problems())));
+            }
+            subjectLine = rendered.subject();
+            html = rendered.html();
+        }
         UnifiedSendRequest req = UnifiedSendRequest.builder()
                 .instituteId(action.getInstituteId())
                 .channel("EMAIL")
@@ -166,7 +226,7 @@ public class EngagementDispatcher {
                         .build()))
                 .options(UnifiedSendRequest.SendOptions.builder()
                         .emailSubject(subjectLine != null && !subjectLine.isBlank() ? subjectLine : deriveSubject(body))
-                        .emailBody(toHtml(body))  // the draft is plain text; EmailService renders HTML
+                        .emailBody(html)  // the draft is plain text (or the template's own HTML)
                         .emailType(emailTypeFor(action))
                         .source(SOURCE)          // → notification_log.source
                         .sourceId(action.getId()) // → correlation_id (Phase 0)
@@ -267,10 +327,18 @@ public class EngagementDispatcher {
         if (body == null || body.isBlank()) {
             throw new SendRejectedException("Empty reply — nothing to send");
         }
+        // Assets: a link rides inside the text, a file goes out as its own attachment after it.
+        java.util.List<vacademy.io.admin_core_service.features.engagement.entity.EngagementAsset> assets =
+                assetsFor(action);
+        StringBuilder text = new StringBuilder(body);
+        for (var a : assets) {
+            if ("link".equals(a.getMediaType())) text.append("\n\n").append(a.getTitle()).append(": ").append(a.getUrl());
+        }
+        String message = text.toString();
         // Pre-send local validation mirroring notification_service's 400 guard: reject HERE so the
         // task returns to OPEN (fixable) instead of the remote 400 collapsing into a generic error
         // → FAILED (which hides a never-sent, human-editable reply from the default inbox).
-        if (body.length() > 4096) {
+        if (message.length() > 4096) {
             throw new SendRejectedException(
                     "WhatsApp messages are capped at 4096 characters — shorten the reply and send again.");
         }
@@ -285,10 +353,42 @@ public class EngagementDispatcher {
         // POST may have landed), never OPEN — same at-most-once discipline as the template path.
         // Success = the explicit accepted flag, NOT a non-blank wamid: WATI's session API returns no
         // per-message id after a real delivery, and keying on wamid would fail every WATI reply.
-        JsonNode resp = clients.sendWhatsAppReply(action.getInstituteId(), subject.getPhone(), body, action.getId());
+        JsonNode resp = clients.sendWhatsAppReply(action.getInstituteId(), subject.getPhone(), message, action.getId());
         if (resp == null || !resp.path("accepted").asBoolean(false)) {
             throw new IllegalStateException("whatsapp-reply was not accepted by notification service");
         }
+        if (!message.equals(body)) action.setSentBody(message);
+
+        // The text is out. An attachment that fails now must not turn the action into FAILED (the
+        // person already has the reply), but it must not vanish either: the failure is written on
+        // the action so the counsellor sees what was promised and not delivered.
+        java.util.List<String> undelivered = new java.util.ArrayList<>();
+        for (var a : assets) {
+            if ("link".equals(a.getMediaType())) continue;
+            try {
+                JsonNode r = clients.sendWhatsAppMedia(action.getInstituteId(), subject.getPhone(), a.getMediaType(),
+                        a.getUrl(), a.getTitle(), a.getFilename(), action.getId());
+                if (r == null || !r.path("accepted").asBoolean(false)) undelivered.add(a.getTitle());
+            } catch (Exception e) {
+                log.warn("Asset attachment {} not delivered for action {}: {}", a.getId(), action.getId(), e.getMessage());
+                undelivered.add(a.getTitle());
+            }
+        }
+        if (!undelivered.isEmpty()) {
+            String note = "Attachment not delivered: " + String.join(", ", undelivered)
+                    + " — send it to this person by hand.";
+            action.setErrorMessage(note);
+            action.setRationale(truncate((action.getRationale() == null ? "" : action.getRationale() + " · ") + note, 4000));
+        }
+    }
+
+    /** The assets a REPLY carries (ids in variables_json), restricted to this engine's own assets. */
+    private java.util.List<vacademy.io.admin_core_service.features.engagement.entity.EngagementAsset>
+            assetsFor(EngagementAction action) {
+        String ids = parseVariables(action.getVariablesJson()).get(VAR_ASSET_IDS);
+        if (assetService == null || ids == null || ids.isBlank() || action.getEngineId() == null) return java.util.List.of();
+        return assetService.resolve(action.getEngineId(), java.util.Arrays.stream(ids.split(","))
+                .map(String::trim).filter(x -> !x.isEmpty()).toList());
     }
 
     private void writeReachoutTimeline(EngagementAction action, EngagementMember member,
@@ -357,6 +457,13 @@ public class EngagementDispatcher {
         String firstLine = body != null ? body.strip().split("\n", 2)[0] : "A message for you";
         if (firstLine.isBlank()) firstLine = "A message for you";
         return firstLine.length() > 120 ? firstLine.substring(0, 117) + "..." : firstLine;
+    }
+
+    private static List<String> concat(List<String> a, List<String> b) {
+        List<String> out = new java.util.ArrayList<>();
+        if (a != null) a.forEach(m -> out.add("missing " + m));
+        if (b != null) out.addAll(b);
+        return out;
     }
 
     private Map<String, String> parseVariables(String json) {

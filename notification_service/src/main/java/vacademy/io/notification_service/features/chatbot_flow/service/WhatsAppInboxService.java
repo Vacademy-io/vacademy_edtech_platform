@@ -599,6 +599,63 @@ public class WhatsAppInboxService {
         return providerMessageId;
     }
 
+    /**
+     * A vault attachment (brochure, demo video…) on behalf of the Engagement Engine, as a native
+     * WhatsApp session media message. Same rules as {@link #sendEngagementReply}: legal only inside
+     * the 24h window (the engine checks), logged as source=ENGAGEMENT_ENGINE with the action id as
+     * correlation so the ledger attributes it. {@code mediaType} is image|video|document|audio.
+     */
+    public String sendEngagementMedia(String phone, String mediaType, String mediaUrl, String caption,
+                                      String filename, String instituteId, String correlationId) {
+        List<ChannelToInstituteMapping> mappings = channelMappingRepository.findAllByInstituteId(instituteId);
+        if (mappings.isEmpty()) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "No WhatsApp channel configured for this institute");
+        }
+        if (mediaUrl == null || !mediaUrl.regionMatches(true, 0, "https://", 0, 8)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "A public https media URL is required");
+        }
+        if (mediaType == null || !java.util.Set.of("image", "video", "document", "audio").contains(mediaType)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Unsupported media type");
+        }
+        // WhatsApp caps captions at 1024 characters.
+        String safeCaption = caption != null && caption.length() > 1024 ? caption.substring(0, 1024) : caption;
+
+        Channel channel = resolveChannel(mappings);
+        String businessChannelId = channel.businessChannelId();
+
+        String providerMessageId;
+        try {
+            providerMessageId = channel.provider().sendMedia(phone, mediaType, mediaUrl, safeCaption,
+                    filename, instituteId, businessChannelId);
+        } catch (Exception e) {
+            sendFailureService.logFailure(instituteId, phone, businessChannelId, null,
+                    mediaType, mediaUrl, "ENGAGEMENT_ENGINE", e.getMessage());
+            throw e;
+        }
+
+        NotificationLog outLog = new NotificationLog();
+        outLog.setNotificationType("WHATSAPP_MESSAGE_OUTGOING");
+        outLog.setChannelId(phone);
+        outLog.setBody(safeCaption != null && !safeCaption.isBlank() ? safeCaption : "[" + mediaType + "] " + mediaUrl);
+        outLog.setSource("ENGAGEMENT_ENGINE");
+        outLog.setSourceId(providerMessageId);
+        outLog.setCorrelationId(correlationId);
+        outLog.setSenderBusinessChannelId(businessChannelId);
+        outLog.setInstituteId(instituteId);
+        outLog.setNotificationDate(Instant.now());
+        try {
+            notificationLogRepository
+                    .findTopByChannelIdAndNotificationTypeOrderByNotificationDateDesc(phone, "WHATSAPP_MESSAGE_OUTGOING")
+                    .ifPresent(prev -> outLog.setUserId(prev.getUserId()));
+        } catch (Exception ignored) {}
+        notificationLogRepository.save(outLog);
+        return providerMessageId;
+    }
+
     // ==================== Media replies (free-form, 24h window) ====================
 
     /**

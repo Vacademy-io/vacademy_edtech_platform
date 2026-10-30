@@ -105,7 +105,8 @@ const ESCAPE_HATCH_NOTES = {
     htmlBlock:
         'ESCAPE HATCH for bespoke sections only. props {html, css, prompt}. Sanitized + rendered in a scoped sandbox: ' +
         'no scripts/iframes/svg/forms; style via the css prop with class selectors using the theme CSS variables ' +
-        '(var(--primary-500), var(--catalogue-text-primary), var(--catalogue-heading-font)); must include @media rules; ' +
+        '(colours are H S% L% channels: hsl(var(--primary-500)), hsl(var(--catalogue-text-primary)), hsl(var(--palette-<name>)); ' +
+        'font-family: var(--catalogue-heading-font)); must include @media rules; ' +
         'images only from provided URLs. Max 3 per page (one block may contain many repeated sub-blocks, so prefer one ' +
         'well-built block over several). Prefer typed components for ordinary marketing sections; for dense data tables this IS the right tool.',
 };
@@ -121,6 +122,12 @@ const USAGE = {
         'of sectionHeading+featureGrid whenever the job is to DOCUMENT offerings rather than sell them: one ' +
         'block per offering, keeping every real name — never merge or summarise a list of offerings into a few ' +
         'generic buckets. It has no price/image/enrol fields by design, so it is safe on informational pages.',
+    mediaShowcase:
+        'Items sit in a 16:9 frame: portrait book pages are tiny on phones — use scormViewer for a book preview.',
+    scormViewer:
+        'Plays a SCORM package (a flip-book / comic preview) without login, like a course slide. launchUrl ONLY ' +
+        'from website_edit(import_scorm). appearance book: no card, the player toolbar / page count / full screen ' +
+        'hidden. Only a SAMPLE package: the full paid one stays inside the course.',
     jobOpenings:
         'For a CAREERS page (route "careers"): a card per job, each job on its own page /<page>/<slug> with an ' +
         'external Apply link. Only jobs the admin gave; never invent roles, pay or form links.',
@@ -168,7 +175,10 @@ const CAPABILITIES = {
         'testimonials[]: {name, role, quote (or text/feedback), avatar (the student photo — an image URL), rating (1-5), highlight}. ' +
         'Carousel only: cardsPerView 1-4 (cards in view on desktop; tablets show at most 2, phones 1; default 1 = one ' +
         'large quote at a time), autoplay (advance one card on a timer, pauses on hover), autoplayIntervalMs (default 5000). ' +
-        'Use carousel + cardsPerView 3 for many short quotes in a row; carousel alone when the reference shows a single large quote.',
+        'Use carousel + cardsPerView 3 for many short quotes in a row; carousel alone when the reference shows a single large quote. ' +
+        'reviewSource: manual (default — testimonials[] only) | both (testimonials[] then the institute\'s APPROVED site reviews from a ' +
+        'reviewCollector, read live) | reviews (approved reviews only); reviewLimit, reviewMinRating 1-5, showAverageRating. ' +
+        'Never invent reviews — use both/reviews when the site collects them.',
     stepsProcess:
         'variant: timeline-cards | alternating | cards (plain numbered steps look dated). nodeStyle: icon|dot. ' +
         'connectorStyle: line|dashed|dots|none. steps[]: {number, title, description, icon/iconName, chips[], meta, state}. ' +
@@ -194,6 +204,7 @@ const CAPABILITIES = {
         'variant: boxed | split. items[]: {title, content (HTML), icon, meta, slot}. The FAQ and ' +
         '"what you get" workhorse.',
     imageGallery: 'columns: 2|3|4. gap. showCaptions. images[]: {src, alt, caption}.',
+    scormViewer: 'launchUrl, appearance framed|book, title, height, mobileHeight.',
     ctaBanner:
         'layout: centered | split. {heading, subheading, button {enabled,text,action,target,style: white|primary|outline}}. ' +
         'The renderer reads exactly these keys — headerText/buttonText are ignored and produce an empty band. ' +
@@ -246,7 +257,8 @@ const DATA_BOUND = {
     leadForm:
         "Embeds an Audience campaign's LIVE registration form (fields defined in the CRM's Audience " +
         "Manager) and submits leads into that campaign. Set ONLY title/subtitle/submitLabel/" +
-        "successMessage/layout/align — audienceId must be chosen by the admin from their existing " +
+        "successMessage/layout/align, columns 1|2, choiceStyle dropdown|chips (pill buttons for a short " +
+        "choice list) and successDisplay inline|popup — audienceId must be chosen by the admin from their existing " +
         "campaigns, so leave it as an empty string and NEVER invent one. Use it for event " +
         "registrations, demo bookings and enquiry sections; contactForm remains fine for a simple " +
         "authored name/email/message form.",
@@ -290,11 +302,22 @@ const DATA_BOUND = {
     bookDetails: 'Live single-book detail context.',
     buyRentSection: 'Live buy/rent controls.',
     policyRenderer: 'Renders stored policy documents. Placement only.',
+    reviewCollector:
+        'Live reviews: asks site visitors for a 1-5 star rating, their name and (per `fields`) a written review, ' +
+        'course, city and occupation/designation; submissions wait for the admin in Website Builder → Reviews and ' +
+        'only approved ones become public. Placement + behaviour only: display floatingPopup|floating|popup|inline, ' +
+        'buttonStyle pill|icon|tab, position bottom-right|bottom-left|middle-right|middle-left, popupStyle modal|corner, ' +
+        'trigger delay|scroll|exit, delaySeconds, frequency, devices. formFields[] = the form in order: {id, kind, label, ' +
+        'placeholder, required, options, width full|half}; kinds rating + reviewerName (always kept, required), reviewText, ' +
+        'courseName, city, designation (each once) and custom text|textarea|select|number|email|phone (id "f_<word>", ' +
+        'max 10; their answers are stored with the review). ' +
+        'Leave text props empty (they default to the site language). One per site is enough — put it on the home page.',
     blog:
         'Live blog: reads the institute\'s PUBLISHED posts (written in Manage Pages → Blog or by an AI app over ' +
         'the MCP `blog_edit` tool). Renders the post list on the page it sits on and one article at ' +
         '/<page>/<post-slug>, so put it on a DEDICATED page (route "blog"), never on the home page. Placement + ' +
-        'look only: heading, subheading, layout grid|list, columns 2|3, pageSize, category ("" = all), show* toggles. ' +
+        'look only: heading, subheading, layout grid|list, columns 2|3, pageSize, category ("" = all), show* toggles, ' +
+        'allowLikes (visitor likes on cards and articles; default false, keep it off on non-blog sections such as exam guides). ' +
         'Never invent posts — there are none in the page JSON.',
 };
 

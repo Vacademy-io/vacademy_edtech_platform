@@ -33,6 +33,7 @@ import {
     normaliseFollowUpFields,
     type FollowUpFieldsConfig,
 } from '@/hooks/use-lead-settings';
+import { useLeadTerminology, type LeadTerminology } from '@/hooks/use-lead-terminology';
 
 const SETTING_KEY = 'LEAD_SETTING';
 const SAVE_URL = GET_INSITITUTE_SETTINGS.replace('/get', '/save-setting');
@@ -66,9 +67,23 @@ const LISTS: { key: ListKey; title: string; hint: string }[] = [
     },
 ];
 
-type BehaviourKey = 'keepPopupsOpen' | 'showHistory' | 'allowEditing' | 'reportExports';
+type BehaviourKey =
+    | 'keepPopupsOpen'
+    | 'showHistory'
+    | 'allowEditing'
+    | 'reportExports'
+    | 'leadStatusAndTier'
+    | 'leadTierRequired'
+    | 'scheduleNextByDefault'
+    | 'closingNoteOptional'
+    | 'markDoneLeadStatusAndTier'
+    | 'syncInterestToLead'
+    | 'overdueByDate';
 
-const BEHAVIOUR_SWITCHES: { key: BehaviourKey; label: string; hint: string }[] = [
+/** Label/hint can read the institute's own names for lead status and tier. */
+type Wording = string | ((terms: LeadTerminology) => string);
+
+const BEHAVIOUR_SWITCHES: { key: BehaviourKey; label: Wording; hint: Wording }[] = [
     {
         key: 'keepPopupsOpen',
         label: 'Close follow-up pop-ups only with ✕',
@@ -89,7 +104,48 @@ const BEHAVIOUR_SWITCHES: { key: BehaviourKey; label: string; hint: string }[] =
         label: 'Per-lead report exports',
         hint: 'Reports gets per-lead CSV exports: TAT (response time and met / breached per enquiry), SLA (where each lead sits on the SLA clock) and Overdue follow-ups.',
     },
+    {
+        key: 'leadStatusAndTier',
+        label: (terms) => `${terms.leadStatus} and ${terms.tier} in the activity pop-up`,
+        hint: (terms) =>
+            `${terms.leadStatus} and ${terms.tier} dropdowns in the Add activity pop-up (Note, Call Log, Follow Up, Meeting), the Lead Profile, "Schedule next" and the post-call sheet. They change the lead itself, start on "Keep current", and are saved only when a counsellor picks something.`,
+    },
+    {
+        key: 'leadTierRequired',
+        label: (terms) => `${terms.tier} mandatory on follow-ups`,
+        hint: (terms) =>
+            `${terms.tier} gets a red * and a follow-up can't be booked until one is picked — "Keep current" is not accepted. Applies to the Follow Up tab of Add activity, the Lead Profile and "Schedule next"; a note, call log or meeting stays optional. Needs the switch above on.`,
+    },
+    {
+        key: 'markDoneLeadStatusAndTier',
+        label: (terms) => `${terms.leadStatus} and ${terms.tier} in "Mark complete"`,
+        hint: (terms) =>
+            `The same ${terms.leadStatus} and ${terms.tier} dropdowns inside "Mark complete" itself, so a counsellor can discard the lead or change its ${terms.tier} while closing. Picking the Lost status unticks "Schedule next follow-up". Needs the switch above on.`,
+    },
+    {
+        key: 'syncInterestToLead',
+        label: (terms) => `Follow-up interest level updates the lead's ${terms.tier}`,
+        hint: (terms) =>
+            `The interest level picked on a follow-up also becomes the lead's ${terms.tier}: when a follow-up is created with one, and when the lead's latest follow-up has it edited. Matched by name (e.g. "Very Hot" sets the Very Hot ${terms.tier}); a value with no matching ${terms.tier} leaves the lead as it is. Editing an older follow-up only fixes that follow-up.`,
+    },
+    {
+        key: 'overdueByDate',
+        label: 'Overdue by date, not time',
+        hint: 'A follow-up due today stays in Today for the whole day and becomes overdue only after that date has passed. Off = it becomes overdue as soon as its time passes. Applies to the Follow-ups page, dashboard counts, reminders, Check Lead and the Overdue export.',
+    },
+    {
+        key: 'scheduleNextByDefault',
+        label: '"Schedule next follow-up" ticked by default',
+        hint: '"Mark complete" opens with "Schedule next follow-up" already ticked. Counsellors can still untick it to just close the follow-up.',
+    },
+    {
+        key: 'closingNoteOptional',
+        label: 'Closing note optional',
+        hint: 'A follow-up can be marked complete without a closing note. Off = the closing note is required.',
+    },
 ];
+
+const wording = (w: Wording, terms: LeadTerminology) => (typeof w === 'string' ? w : w(terms));
 
 async function fetchFollowUpFields(): Promise<FollowUpFieldsConfig> {
     try {
@@ -279,6 +335,7 @@ function OptionListEditor({
 
 export default function LeadFollowUpFieldsSettings() {
     const queryClient = useQueryClient();
+    const terminology = useLeadTerminology();
     const { data, isLoading } = useQuery({
         queryKey: QUERY_KEY,
         queryFn: fetchFollowUpFields,
@@ -369,10 +426,12 @@ export default function LeadFollowUpFieldsSettings() {
                                         onCheckedChange={(v) => update({ [key]: v })}
                                     />
                                     <Label htmlFor={`followup-${key}`} className="cursor-pointer">
-                                        {label}
+                                        {wording(label, terminology)}
                                     </Label>
                                 </div>
-                                <p className="text-xs text-muted-foreground">{hint}</p>
+                                <p className="text-xs text-muted-foreground">
+                                    {wording(hint, terminology)}
+                                </p>
                             </div>
                         ))}
 

@@ -21,6 +21,7 @@ import type {
     Candidate,
     CandidatePage,
     CandidateStatus,
+    CandidateStatusFilter,
     CandidateSummary,
     Competitor,
     DecisionAction,
@@ -33,6 +34,7 @@ import type {
     PairResponse,
     ScoreBreakdown,
     ScoreParts,
+    SendPlan,
     SuggestRequest,
     SuggestResponse,
     SuggestedIndustry,
@@ -43,6 +45,7 @@ import {
     DEFAULT_WINDOW,
     emptyBrief,
     isCompetitorKind,
+    isValidationEffort,
     MAX_COMPETITORS,
     MAX_FIT_SIGNALS,
 } from '../-utils/lead-agent-options';
@@ -181,6 +184,7 @@ export const normalizeBrief = (raw: unknown): AgentBrief => {
 const normalizeGate = (raw: unknown): AgentGate => {
     const g = asObject(raw);
     const minContact = str(g.min_contact);
+    const effort = str(g.effort)?.toUpperCase() ?? null;
     return {
         auto_score: num(g.auto_score) ?? DEFAULT_GATE.auto_score,
         review_score: num(g.review_score) ?? DEFAULT_GATE.review_score,
@@ -190,6 +194,8 @@ const normalizeGate = (raw: unknown): AgentGate => {
                 : DEFAULT_GATE.min_contact,
         require_intent: g.require_intent === true,
         auto_competitor_users: g.auto_competitor_users === true,
+        // Agents saved before this setting existed have none: they ran as STANDARD.
+        effort: isValidationEffort(effort) ? effort : DEFAULT_GATE.effort,
     };
 };
 
@@ -253,10 +259,42 @@ export const normalizeAgent = (raw: unknown): LeadAgent => {
     };
 };
 
+/** `send`: what delivery will send. Null when the server sends none (older servers, nothing to send). */
+const normalizeSend = (raw: unknown): SendPlan | null => {
+    if (!isObject(raw)) return null;
+    const phone = asObject(raw.phone);
+    const email = asObject(raw.email);
+    const phoneValue = str(phone.value);
+    const emailValue = str(email.value);
+    return {
+        phone: phoneValue
+            ? {
+                  value: phoneValue,
+                  quality: str(phone.quality) ?? '',
+                  quality_note: str(phone.quality_note),
+                  maps_confirmed: phone.maps_confirmed === true,
+                  from_maps: phone.from_maps === true,
+              }
+            : null,
+        email: emailValue
+            ? {
+                  value: emailValue,
+                  quality: str(email.quality) ?? '',
+                  quality_note: str(email.quality_note),
+                  owner: str(email.owner),
+              }
+            : null,
+        name: str(raw.name),
+        role: str(raw.role),
+        ask_for: str(raw.ask_for),
+    };
+};
+
 const normalizeSummary = (raw: Raw): CandidateSummary => {
     const org = asObject(raw.org);
     const contact = asObject(raw.best_contact);
     const contactValue = str(contact.value);
+    const flags = strList(raw.flags);
     return {
         id: str(raw.id) ?? '',
         status: (str(raw.status)?.toUpperCase() ?? 'DISCOVERED') as CandidateStatus,
@@ -270,7 +308,7 @@ const normalizeSummary = (raw: Raw): CandidateSummary => {
             city: str(org.city),
         },
         top_reason: str(raw.top_reason),
-        flags: strList(raw.flags),
+        flags,
         best_contact: contactValue
             ? {
                   kind: str(contact.kind) ?? '',
@@ -279,9 +317,16 @@ const normalizeSummary = (raw: Raw): CandidateSummary => {
                   label: str(contact.label) ?? '',
               }
             : null,
+        send: normalizeSend(raw.send),
+        maps_only:
+            raw.maps_only === true ||
+            flags.includes('maps_only') ||
+            asObject(pick(raw, 'lead_json', 'lead')).maps_only === true,
+        duplicate_of: str(raw.duplicate_of),
         created_at: str(raw.created_at),
         delivered_at: str(raw.delivered_at),
         reject_reason: str(raw.reject_reason),
+        delivery_note: str(raw.delivery_note),
         parts: partsOf(raw),
     };
 };
@@ -289,7 +334,11 @@ const normalizeSummary = (raw: Raw): CandidateSummary => {
 /** fit / intent / reach / risk from `score_parts` (the list summary), `score_json` (the detail) or the
  * row itself; null when none is sent. */
 const partsOf = (raw: Raw): ScoreParts | null => {
-    const s = isObject(raw.score_parts) ? raw.score_parts : isObject(raw.score_json) ? raw.score_json : raw;
+    const s = isObject(raw.score_parts)
+        ? raw.score_parts
+        : isObject(raw.score_json)
+          ? raw.score_json
+          : raw;
     const fit = num(s.fit);
     const intent = num(s.intent);
     const reach = num(s.reach);
@@ -438,13 +487,17 @@ export async function getAgentStats(agentId: string, days = 14): Promise<AgentSt
 
 // ─── Candidates ──────────────────────────────────────────────────────────────
 
+/** The `status` query value: several statuses go comma-separated. */
+export const statusParam = (status: CandidateStatusFilter): string =>
+    typeof status === 'string' ? status : status.join(',');
+
 export async function listCandidates(
     agentId: string,
-    params: { status: CandidateStatus; page: number; size: number }
+    params: { status: CandidateStatusFilter; page: number; size: number }
 ): Promise<CandidatePage> {
     const res = await authenticatedAxiosInstance.get(
         `${LEAD_AGENT_BASE}/agents/${encodeURIComponent(agentId)}/candidates`,
-        { params }
+        { params: { ...params, status: statusParam(params.status) } }
     );
     const items = rowsOf(res.data, 'items').map(normalizeSummary);
     const total = num(asObject(res.data).total) ?? items.length;
@@ -507,6 +560,7 @@ export async function suggestBrief(body: SuggestRequest): Promise<SuggestRespons
     }
     return {
         summary: str(d.summary) ?? '',
+        description: str(d.description) ?? '',
         keywords: strList(d.keywords),
         industries: rowsOf(d.industries)
             .map(normalizeSuggestedIndustry)
@@ -545,6 +599,10 @@ export function apiErrorMessage(error: unknown, fallback: string): string {
     if (isObject(data)) {
         const detail = data.detail;
         if (typeof detail === 'string' && detail.trim()) return detail;
+        // The Lead Agent router's own errors: {detail: {code, message}}.
+        if (isObject(detail) && typeof detail.message === 'string' && detail.message.trim()) {
+            return detail.message;
+        }
         if (Array.isArray(detail) && isObject(detail[0]) && typeof detail[0].msg === 'string') {
             // FastAPI validation error: name the field ("brief → buyer roles: …").
             const loc = Array.isArray(detail[0].loc)

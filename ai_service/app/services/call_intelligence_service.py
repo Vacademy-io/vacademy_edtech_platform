@@ -515,6 +515,26 @@ def _columns_from_analysis(data: Dict[str, Any], model_used: str,
 # Orchestration: process a single claimed row end-to-end (never raises)
 # ---------------------------------------------------------------------------
 
+async def _notify_engagement(institute_id: str, call_log_id: str) -> None:
+    """Tell admin_core the analysis is in, so the lead's engagement engines look at it within
+    minutes rather than at their next scheduled look, days away. admin_core does not otherwise
+    know: this service writes call_intelligence directly. Best effort: a failure only delays that
+    one lead to its next scheduled look, and never touches the COMPLETED row written above.
+    """
+    url = (f"{get_settings().admin_core_service_base_url}"
+           "/admin-core-service/internal/engagement/v1/call-analyzed")
+    try:
+        from .internal_auth import internal_auth_headers
+        headers = await internal_auth_headers()
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(url, json={"institute_id": institute_id, "call_log_id": call_log_id},
+                                     headers=headers)
+        if resp.status_code != 200:
+            logger.warning("call-intel: engagement notify for %s returned %s", call_log_id, resp.status_code)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("call-intel: engagement notify for %s failed: %s", call_log_id, exc)
+
+
 async def process_one(claimed: Dict[str, Any]) -> None:
     row_id = claimed["id"]
     call_log_id = claimed["call_log_id"]
@@ -623,6 +643,7 @@ async def process_one(claimed: Dict[str, Any]) -> None:
         )
         logger.info("call-intel: COMPLETED %s (institute %s, model %s, stt %s, free=%s)",
                     call_log_id, institute_id, model_used, stt_usage.get("model"), free)
+        await _notify_engagement(institute_id, call_log_id)
 
     except Exception as exc:  # noqa: BLE001
         logger.warning("call-intel: FAILED %s: %s", call_log_id, exc, exc_info=True)

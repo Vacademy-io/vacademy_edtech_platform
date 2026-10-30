@@ -9,12 +9,12 @@
     },
     "actionStatus": {
         "open": "Ouvert",
-        "acked": "Accusé réception",
+        "acked": "En cours",
         "dispatching": "Envoi en cours…",
         "sent": "Envoyé",
         "failed": "Échoué",
         "done": "Terminé",
-        "dismissed": "Rejeté",
+        "dismissed": "Ignoré",
         "expired": "Expiré",
         "simulated": "Simulé"
     },
@@ -28,7 +28,9 @@
         "metaRejected": "Rejeté par Meta",
         "metaRecategorised": "Recatégorisé",
         "superseded": "Remplacé",
-        "withdrawn": "Retiré"
+        "withdrawn": "Retiré",
+        "metaDisabled": "Désactivé par Meta",
+        "queued": "En file pour Meta"
     },
     "language": {
         "english": "Anglais",
@@ -45,5 +47,11 @@
         "marketing": "Marketing",
         "utility": "Utilitaire",
         "authentication": "Authentification"
+    },
+    "cadence": {
+        "daily": "Chaque jour",
+        "weekly": "Chaque semaine",
+        "days": "Tous les {{count}} jours",
+        "hours": "Toutes les {{count}} heures"
     }
 }

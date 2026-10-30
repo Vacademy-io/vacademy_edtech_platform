@@ -466,6 +466,24 @@ export const StudentCourses = ({ isSubmissionTab, packageSessionId }: { isSubmis
 };
 
 /**
+ * When the learner was enrolled in this course, from ssigm.enrolled_date. Nothing is shown
+ * when the date is missing or unreadable, so older rows never print "Invalid Date".
+ */
+const EnrolledOnLabel = ({ enrolledDate }: { enrolledDate?: string | null }) => {
+    const { t, i18n } = useTranslation('manageStudentsCourses');
+
+    if (!enrolledDate) return null;
+    const enrolled = new Date(enrolledDate);
+    if (Number.isNaN(enrolled.getTime())) return null;
+
+    return (
+        <span className="text-xs text-neutral-500">
+            {t('enrolledOn', { date: enrolled.toLocaleDateString(i18n.language) })}
+        </span>
+    );
+};
+
+/**
  * How much course access is left, from ssigm.expiry_date. Absent expiry means the plan
  * granted unlimited access, which is a real state worth naming — a blank row would read
  * as "not loaded yet".
@@ -540,13 +558,13 @@ const InProgressSection = ({
                                 onClick={() => onCourseClick(course)}
                                 className="flex w-full flex-col gap-2 rounded-lg border border-neutral-200 bg-white p-3 text-left transition-shadow hover:border-primary-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
                             >
-                                {/* Single-line summary per handoff: name (flex-1)
-                                    + level badge + percentage chip. Per-row
+                                {/* Summary per handoff: name (flex-1, wraps so a long name
+                                    is never cut off) + level badge + percentage chip. Per-row
                                     Trash removed — Remove from {course} lives
                                     in the top action bar. */}
-                                <div className="flex min-w-0 items-center gap-2">
+                                <div className="flex min-w-0 items-start gap-2">
                                     <p
-                                        className="min-w-0 flex-1 truncate text-sm font-semibold text-neutral-800"
+                                        className="min-w-0 flex-1 break-words text-sm font-semibold text-neutral-800"
                                         title={course.package_name || t('course.unnamed')}
                                     >
                                         {course.package_name || t('course.unnamed')}
@@ -565,7 +583,10 @@ const InProgressSection = ({
                                         {t('course.sessionLabel', { term: sessionTermSingular, name: sessionName })}
                                     </span>
                                 )}
-                                <AccessWindowLabel expiryDate={course.expiry_date} />
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 empty:hidden">
+                                    <EnrolledOnLabel enrolledDate={course.enrolled_date} />
+                                    <AccessWindowLabel expiryDate={course.expiry_date} />
+                                </div>
                                 {/* Progress mini-bar */}
                                 <ProfileMiniBar value={pct} />
                             </button>
@@ -655,7 +676,7 @@ const CourseSection = ({
                                 <div className="flex min-w-0 items-start justify-between gap-2">
                                     <div className="min-w-0">
                                         <p
-                                            className="truncate text-sm font-semibold text-neutral-800"
+                                            className="break-words text-sm font-semibold text-neutral-800"
                                             title={course.package_name || t('course.unnamed')}
                                         >
                                             {course.package_name || t('course.unnamed')}
@@ -665,6 +686,9 @@ const CourseSection = ({
                                                 {t('course.sessionLabel', { term: sessionTermSingular, name: sessionName })}
                                             </p>
                                         )}
+                                        <div className="mt-0.5 empty:hidden">
+                                            <EnrolledOnLabel enrolledDate={course.enrolled_date} />
+                                        </div>
                                     </div>
                                     {renderBadge(course)}
                                 </div>

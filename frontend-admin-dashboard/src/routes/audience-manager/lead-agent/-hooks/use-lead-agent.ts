@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 import type {
     AgentPayload,
     AgentStatus,
-    CandidateStatus,
+    CandidateStatusFilter,
     DecisionAction,
     SuggestRequest,
 } from '../-types';
@@ -26,6 +26,7 @@ import {
     revokeWorker,
     runAgentNow,
     setAgentStatus,
+    statusParam,
     suggestBrief,
     updateAgent,
 } from '../-services/lead-agent-api';
@@ -34,8 +35,8 @@ export const LEAD_AGENT_KEY = 'LEAD_AGENT';
 export const leadAgentKeys = {
     agents: () => [LEAD_AGENT_KEY, 'agents'] as const,
     agent: (id: string) => [LEAD_AGENT_KEY, 'agent', id] as const,
-    candidates: (id: string, status: CandidateStatus, page: number, size: number) =>
-        [LEAD_AGENT_KEY, 'candidates', id, status, page, size] as const,
+    candidates: (id: string, status: CandidateStatusFilter, page: number, size: number) =>
+        [LEAD_AGENT_KEY, 'candidates', id, statusParam(status), page, size] as const,
     candidatesOf: (id: string) => [LEAD_AGENT_KEY, 'candidates', id] as const,
     candidate: (id: string) => [LEAD_AGENT_KEY, 'candidate', id] as const,
     stats: (id: string, days: number) => [LEAD_AGENT_KEY, 'stats', id, days] as const,
@@ -66,7 +67,7 @@ export const useLeadAgent = (agentId: string) =>
 
 export const useCandidates = (
     agentId: string,
-    status: CandidateStatus,
+    status: CandidateStatusFilter,
     page: number,
     size: number,
     enabled = true
@@ -211,8 +212,12 @@ export function useBulkDecide(agentId: string) {
 }
 
 export function useSuggestBrief() {
+    const qc = useQueryClient();
     return useMutation({
         mutationFn: (body: SuggestRequest) => suggestBrief(body),
+        // A suggestion is paid from the institute's AI credits (even one that fails after the
+        // model answered): refresh the balance in the top bar.
+        onSettled: () => void qc.invalidateQueries({ queryKey: ['GET_AI_CREDITS'] }),
         onError: (e) =>
             toast.error(
                 apiErrorMessage(e, 'Could not get suggestions. Try again, or fill them in.')

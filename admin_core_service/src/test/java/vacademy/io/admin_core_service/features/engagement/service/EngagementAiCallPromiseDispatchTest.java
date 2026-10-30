@@ -107,6 +107,7 @@ class EngagementAiCallPromiseDispatchTest {
             when(members.findById("m1")).thenReturn(Optional.of(member));
             when(gate.optedOutUserIds(anyString(), anyList())).thenReturn(Set.of());
             when(gate.clampToAllowedWindow(any(), any())).thenAnswer(inv -> inv.getArgument(1));
+            when(gate.scheduleSend(any(), any(), any())).thenAnswer(inv -> inv.getArgument(1));
             when(credits.readBalance("i1")).thenReturn(Optional.of(50.0));
             when(credits.deductPrecomputed(any(), any(), any(), any(), any(), any())).thenReturn(true);
             EngagementAction sent = new EngagementAction();
@@ -236,7 +237,7 @@ class EngagementAiCallPromiseDispatchTest {
             contacts = mock(ContactResolver.class);
             dispatcher = new EngagementDispatcher(notifications, actions, members,
                     mock(TimelineEventService.class), contacts, mock(EngagementInternalClients.class),
-                    mock(EngagementEngineRepository.class));
+                    mock(EngagementEngineRepository.class), mock(PolicyGate.class));
             member = new EngagementMember();
             member.setId("m1");
             member.setUserId("u1");

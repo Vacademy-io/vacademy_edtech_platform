@@ -86,6 +86,19 @@ public class EngagementMember {
     @Column(name = "is_holdout", nullable = false)
     private Boolean isHoldout = false;
 
+    /**
+     * B4 wake stamps — read-only here: only the targeted UPDATEs in EngagementMemberRepository
+     * write them, so a save() of a member read before a wake landed cannot undo the wake.
+     */
+    @Column(name = "woken_at", insertable = false, updatable = false)
+    private Instant wokenAt;
+
+    @Column(name = "wake_reason", length = 40, insertable = false, updatable = false)
+    private String wakeReason;
+
+    @Column(name = "human_touch_at", insertable = false, updatable = false)
+    private Instant humanTouchAt;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "memory_json", columnDefinition = "jsonb", nullable = false)
     private String memoryJson = "{}";

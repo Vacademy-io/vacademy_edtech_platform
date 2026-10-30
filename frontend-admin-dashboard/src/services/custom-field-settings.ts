@@ -6,6 +6,7 @@ import {
     UPDATE_CUSTOM_FIELD_SETTINGS,
 } from '@/constants/urls';
 import { resolveSystemFieldAccessor } from '@/components/design-system/utils/constants/system-field-columns';
+import { parseFieldOptions } from '@/routes/audience-manager/list/-utils/parseFieldOptions';
 
 const CUSTOM_FIELD_SETTINGS_KEY = 'CUSTOM_FIELD_SETTING';
 const LOCALSTORAGE_KEY = 'custom-field-settings-cache';
@@ -372,9 +373,10 @@ export const optionsToConfigJson = (options?: string[]): string | undefined => {
 
 /**
  * Convert config JSON string (API format) to options array (UI format)
- * Handles two legacy formats:
+ * Handles every stored shape (see parseFieldOptions):
  *   1. Bare array: [{id, value, label}] — the original dropdown-options-only format
  *   2. Object with `options`: {options: [...], defaultValue, ...} — new richer format
+ *   3. Legacy {coommaSepartedOptions: "A,B"} and bare "A,B" strings
  * @param configJson - JSON string from API
  * @returns Array of option strings for the UI, or undefined
  */
@@ -383,19 +385,10 @@ export const configJsonToOptions = (configJson?: string): string[] | undefined =
         return undefined;
     }
 
-    try {
-        const parsed = JSON.parse(configJson);
-        if (Array.isArray(parsed)) {
-            return (parsed as DropdownOptionConfig[]).map((item) => item.value);
-        }
-        if (parsed && typeof parsed === 'object' && Array.isArray(parsed.options)) {
-            return (parsed.options as DropdownOptionConfig[]).map((item) => item.value);
-        }
-        return undefined;
-    } catch (error) {
-        console.error('❌ [DEBUG] Error parsing config JSON:', error);
-        return undefined;
-    }
+    // parseFieldOptions also reads the legacy {"coommaSepartedOptions":"A,B"} and bare
+    // "A,B" shapes, which used to come back undefined and render the field as plain text.
+    const options = parseFieldOptions(configJson);
+    return options.length > 0 ? options : undefined;
 };
 
 /**

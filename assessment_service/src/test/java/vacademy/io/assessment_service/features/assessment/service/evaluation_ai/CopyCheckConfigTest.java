@@ -147,4 +147,35 @@ class CopyCheckConfigTest {
         String json = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(r);
         assertThat(json).doesNotContain("copy_check").doesNotContain("copyCheck").doesNotContain("exam_context");
     }
+
+    @Test
+    void deduction_scheme_is_kept_and_sent_and_unknown_keys_do_not_lose_the_rest() {
+        String json = "{\"instructions\":\"Mark strictly.\",\"language_feedback\":\"HIGHLIGHT\","
+                + "\"deduction_scheme\":[{\"symbol\":\"X\",\"marks\":1},{\"symbol\":\"#\",\"marks\":5,"
+                + "\"scope\":\"sentence\"}],\"some_future_key\":true}";
+        CopyCheckConfig.Settings s = CopyCheckConfig.read(json);
+        assertThat(s.getInstructions()).isEqualTo("Mark strictly.");
+        assertThat(s.getDeductionScheme()).hasSize(2);
+        assertThat(CopyCheckConfig.write(s)).contains("\"deduction_scheme\"").doesNotContain("some_future_key");
+        Map<String, Object> ctx = CopyCheckConfig.examContext(s, Map::of);
+        assertThat(ctx).containsEntry("language_feedback", "HIGHLIGHT").containsKey("deduction_scheme");
+        assertThat(CopyCheckConfig.examContext(CopyCheckConfig.read("{\"subject\":\"Law\"}"), Map::of))
+                .doesNotContainKey("deduction_scheme");
+    }
+
+    @Test
+    void answer_language_is_kept_as_a_listed_code_and_sent() {
+        CopyCheckConfig.Settings s = CopyCheckConfig.read("{\"answer_language\":\" SA \",\"language_feedback\":\"HIGHLIGHT\"}");
+        assertThat(s.getAnswerLanguage()).isEqualTo("sa");
+        assertThat(CopyCheckConfig.write(s)).contains("\"answer_language\":\"sa\"");
+        assertThat(CopyCheckConfig.examContext(s, Map::of)).containsEntry("answer_language", "sa");
+        // Not a language the copy check knows: dropped, nothing else lost.
+        CopyCheckConfig.Settings unknown = CopyCheckConfig.read("{\"answer_language\":\"klingon\",\"subject\":\"Law\"}");
+        assertThat(unknown.getAnswerLanguage()).isNull();
+        assertThat(unknown.getSubject()).isEqualTo("Law");
+        assertThat(CopyCheckConfig.examContext(unknown, Map::of)).doesNotContainKey("answer_language");
+        // On its own it is a setting (the config is not empty).
+        assertThat(CopyCheckConfig.write(CopyCheckConfig.Settings.builder().answerLanguage("ur").build()))
+                .isEqualTo("{\"answer_language\":\"ur\"}");
+    }
 }

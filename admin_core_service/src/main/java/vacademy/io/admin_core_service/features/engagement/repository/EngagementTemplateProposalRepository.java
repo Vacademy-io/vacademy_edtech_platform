@@ -33,6 +33,24 @@ public interface EngagementTemplateProposalRepository extends JpaRepository<Enga
             """, nativeQuery = true)
     List<String> institutesWithPendingProposals();
 
+    /** Institutes with templates Meta approved (or later disabled) — the hourly W12 re-check. */
+    @Query(value = """
+            SELECT DISTINCT institute_id FROM engagement_template_proposal
+             WHERE status IN ('META_APPROVED', 'META_RECATEGORISED', 'META_DISABLED')
+            """, nativeQuery = true)
+    List<String> institutesWithApprovedProposals();
+
+    /** W12 CAS: an approved template disabled by Meta (or re-approved). Never touches review states. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_template_proposal
+               SET status = :toStatus, rejection_reason = :reason, updated_at = :now
+             WHERE id = :id AND status IN ('META_APPROVED', 'META_RECATEGORISED', 'META_DISABLED')
+            """, nativeQuery = true)
+    int reconcileApprovedFromMeta(@Param("id") String id, @Param("toStatus") String toStatus,
+                                  @Param("reason") String reason, @Param("now") Instant now);
+
     /** Approved-and-usable templates for an engine (for the sender/brain to reference by name). */
     @Query(value = """
             SELECT * FROM engagement_template_proposal
@@ -70,10 +88,64 @@ public interface EngagementTemplateProposalRepository extends JpaRepository<Enga
     @Transactional
     @Query(value = """
             UPDATE engagement_template_proposal
-               SET status = 'SUBMITTED', updated_at = :now
+               SET status = 'SUBMITTED', submitted_at = :now, updated_at = :now
              WHERE id = :id AND institute_id = :instituteId AND status = 'USER_APPROVED'
             """, nativeQuery = true)
     int claimForSubmit(@Param("id") String id, @Param("instituteId") String instituteId, @Param("now") Instant now);
+
+    /** W10 — templates sent to Meta by this institute since a time (Meta limits creations per hour). */
+    @Query(value = """
+            SELECT count(*) FROM engagement_template_proposal
+             WHERE institute_id = :instituteId AND submitted_at IS NOT NULL AND submitted_at >= :since
+            """, nativeQuery = true)
+    long countSubmittedSince(@Param("instituteId") String instituteId, @Param("since") Instant since);
+
+    /** W10 — park an approved proposal until the institute is under Meta's hourly limit again. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_template_proposal
+               SET status = 'QUEUED', updated_at = :now
+             WHERE id = :id AND institute_id = :instituteId AND status = 'USER_APPROVED'
+            """, nativeQuery = true)
+    int queueForMeta(@Param("id") String id, @Param("instituteId") String instituteId, @Param("now") Instant now);
+
+    /** W10 — take a queued proposal back to USER_APPROVED so it can be submitted now. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_template_proposal
+               SET status = 'USER_APPROVED', updated_at = :now
+             WHERE id = :id AND status = 'QUEUED'
+            """, nativeQuery = true)
+    int unqueue(@Param("id") String id, @Param("now") Instant now);
+
+    /** Queued proposals of an institute, oldest first. */
+    @Query(value = """
+            SELECT * FROM engagement_template_proposal
+             WHERE institute_id = :instituteId AND status = 'QUEUED'
+             ORDER BY updated_at ASC
+            """, nativeQuery = true)
+    List<EngagementTemplateProposal> findQueued(@Param("instituteId") String instituteId);
+
+    /** Institutes with templates waiting for Meta capacity. */
+    @Query(value = """
+            SELECT DISTINCT institute_id FROM engagement_template_proposal WHERE status = 'QUEUED'
+            """, nativeQuery = true)
+    List<String> institutesWithQueuedProposals();
+
+    /** W15 — the newest edited version of an approved template (any state), if one exists. */
+    Optional<EngagementTemplateProposal> findFirstByReplacesIdOrderByCreatedAtDesc(String replacesId);
+
+    /** W15 — retire the approved template an edited version replaces, once the new one is approved. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_template_proposal
+               SET status = 'SUPERSEDED', updated_at = :now
+             WHERE id = :id AND status IN ('META_APPROVED', 'META_RECATEGORISED', 'META_DISABLED')
+            """, nativeQuery = true)
+    int supersedeReplaced(@Param("id") String id, @Param("now") Instant now);
 
     /**
      * Stamp the notification_template FK on a row this submit claimed. Targeted on purpose: a full
@@ -132,7 +204,7 @@ public interface EngagementTemplateProposalRepository extends JpaRepository<Enga
             UPDATE engagement_template_proposal
                SET status = 'WITHDRAWN', updated_at = :now
              WHERE id = :id AND institute_id = :instituteId
-               AND status IN ('AI_PROPOSED', 'USER_REVIEW', 'USER_APPROVED', 'META_REJECTED', 'META_RECATEGORISED')
+               AND status IN ('AI_PROPOSED', 'USER_REVIEW', 'USER_APPROVED', 'QUEUED', 'META_REJECTED', 'META_RECATEGORISED')
             """, nativeQuery = true)
     int withdraw(@Param("id") String id, @Param("instituteId") String instituteId, @Param("now") Instant now);
 
@@ -140,4 +212,25 @@ public interface EngagementTemplateProposalRepository extends JpaRepository<Enga
     @Query(value = "SELECT COALESCE(MAX(round), 0) FROM engagement_template_proposal WHERE engine_id = :engineId",
             nativeQuery = true)
     int maxRound(@Param("engineId") String engineId);
+
+    /**
+     * Approved WhatsApp templates of the institute's OTHER engines that this engine could take over:
+     * same language, not from an archived or system engine, and not already present on this engine.
+     * One row per template name (the most recently updated).
+     */
+    @Query(value = """
+            SELECT DISTINCT ON (p.name) p.* FROM engagement_template_proposal p
+              JOIN engagement_engine e ON e.id = p.engine_id
+             WHERE p.institute_id = :instituteId AND p.engine_id <> :engineId
+               AND p.status IN ('META_APPROVED', 'META_RECATEGORISED')
+               AND COALESCE(p.language, e.language) = :language
+               AND e.status <> 'ARCHIVED' AND COALESCE(e.created_by, '') <> 'SYSTEM_AI_CALL'
+               AND NOT EXISTS (SELECT 1 FROM engagement_template_proposal x
+                                WHERE x.engine_id = :engineId AND x.name = p.name
+                                  AND x.status NOT IN ('WITHDRAWN', 'SUPERSEDED', 'META_REJECTED'))
+             ORDER BY p.name, p.updated_at DESC
+            """, nativeQuery = true)
+    List<EngagementTemplateProposal> findReusableFromOtherEngines(@Param("instituteId") String instituteId,
+                                                                  @Param("engineId") String engineId,
+                                                                  @Param("language") String language);
 }

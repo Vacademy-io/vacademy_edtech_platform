@@ -165,6 +165,45 @@ public class AiCallQueueService {
         return describe(saved, true, "Queued for the next free line.");
     }
 
+    /** Source tag of the calls the engine schedules itself when a lead asks to be called back. */
+    public static final String SOURCE_ENGINE_CALLBACK = "ENGINE_CALLBACK";
+
+    /**
+     * Queues an AI call for a time the lead asked for ("call me in two days"). It is not picked up
+     * before {@code at}, and if that is outside the institute's calling hours it waits for the next
+     * shift. A lead that already has an undialled call keeps it: that call will reach them anyway.
+     */
+    public EnqueueResult enqueueAt(AiCallRequestDTO req, Instant at, String sourceRef, String actorUserId) {
+        if (req == null || isBlank(req.getInstituteId())) {
+            throw new VacademyException("instituteId is required to queue an AI call.");
+        }
+        AiCallingSettingsPojo settings = settingsService.get(req.getInstituteId());
+        String provider = resolveProvider(req, settings);
+        String dedupeKey = dedupeKey(req.getInstituteId(), provider, subjectKey(req));
+        Optional<AiCallQueueItem> pending = repository.findPendingByDedupeKey(dedupeKey);
+        if (pending.isPresent()) {
+            return describe(pending.get(), false, "This lead already has an AI call waiting for a line.");
+        }
+        AiCallQueueItem item = buildItem(req, settings, provider, CallTrigger.AUTOMATION, SOURCE_ENGINE_CALLBACK,
+                sourceRef, actorUserId, dedupeKey);
+        Instant start = at == null || at.isBefore(Instant.now()) ? Instant.now() : at;
+        ZoneId tz = CallingWindowUtil.resolveZone(settings.getTimezone());
+        if (!CallingWindowUtil.withinAnyShift(start, settings.getCallingShifts(), tz)) {
+            start = CallingWindowUtil.nextShiftOpen(start, settings.getCallingShifts(), tz);
+        }
+        item.setNotBefore(start);
+        item.setStatusReason("Scheduled for the time the lead asked to be called back.");
+        item.setExpiresAt(start.plus(Duration.ofHours(capacityService.queueTtlHours())));
+        AiCallQueueItem saved = txOps.insertOne(item);
+        if (saved == null) {
+            return repository.findPendingByDedupeKey(dedupeKey)
+                    .map(existing -> describe(existing, false, "This lead already has an AI call waiting for a line."))
+                    .orElseGet(() -> EnqueueResult.builder().queued(false)
+                            .message("This lead already has an AI call waiting for a line.").build());
+        }
+        return describe(saved, true, "Scheduled.");
+    }
+
     /**
      * Queue many AI calls at once (a bulk campaign).
      *

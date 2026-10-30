@@ -1,5 +1,6 @@
 package vacademy.io.assessment_service.features.assessment.service.evaluation_ai;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -10,9 +11,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import vacademy.io.assessment_service.features.assessment.entity.Assessment;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Supplier;
 
 /**
@@ -23,6 +27,14 @@ import java.util.function.Supplier;
  *   <li>{@code instructions} - the institute's marking instructions for the grader;</li>
  *   <li>{@code language_feedback} - HIGHLIGHT marks spelling and grammar errors with a
  *       correction and deducts nothing; OFF (or unset) leaves them alone.</li>
+ *   <li>{@code deduction_scheme} - the mark-deduction scheme printed on the answer sheet
+ *       (symbol, marks, what it covers); the copy is then marked in it and each written
+ *       answer scores max minus its deductions. Validated by ai_service
+ *       (copy_check/deduction_scheme.py); kept as sent, at most 8 entries.</li>
+ *   <li>{@code answer_language} - the language the copies are written in (en, hi, sa, mr, ur,
+ *       bn, ta, te, fr, es, de, ar, zh, pa, gu); decides which model reads the handwriting and
+ *       how its language is judged (ai_service copy_check/answer_language.py). Unset = as
+ *       before.</li>
  * </ul>
  * An assessment without its own instructions / language choice takes the institute's
  * ({@code ASSESSMENT_SETTING.aiCopyCheck}). Sent to ai_service as {@code exam_context};
@@ -47,16 +59,28 @@ public final class CopyCheckConfig {
     @AllArgsConstructor
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    // A key this class does not know must not make the whole stored config
+    // unreadable (and so silently drop the instructions with it).
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Settings {
         private String subject;
         private String level;
         private String instructions;
         private String languageFeedback;
+        private List<Map<String, Object>> deductionScheme;
+        private String answerLanguage;
 
         boolean isEmpty() {
-            return subject == null && level == null && instructions == null && languageFeedback == null;
+            return subject == null && level == null && instructions == null && languageFeedback == null
+                    && deductionScheme == null && answerLanguage == null;
         }
     }
+
+    static final int DEDUCTION_SCHEME_CAP = 8;
+
+    /** The answer languages the dashboard offers (ai_service answer_language.py). */
+    static final Set<String> ANSWER_LANGUAGES = Set.of(
+            "en", "hi", "sa", "mr", "ur", "bn", "ta", "te", "fr", "es", "de", "ar", "zh", "pa", "gu");
 
     /** Trimmed, capped, HIGHLIGHT/OFF only; blanks become null. Never null. */
     public static Settings normalize(Settings in) {
@@ -66,7 +90,28 @@ public final class CopyCheckConfig {
                 .level(line(in.getLevel(), LEVEL_CAP))
                 .instructions(text(in.getInstructions(), INSTRUCTIONS_CAP))
                 .languageFeedback(languageMode(in.getLanguageFeedback()))
+                .deductionScheme(deductionScheme(in.getDeductionScheme()))
+                .answerLanguage(answerLanguage(in.getAnswerLanguage()))
                 .build();
+    }
+
+    /** The scheme's entries (objects only, at most DEDUCTION_SCHEME_CAP); null when none. */
+    static List<Map<String, Object>> deductionScheme(List<Map<String, Object>> in) {
+        if (in == null) return null;
+        List<Map<String, Object>> out = new ArrayList<>();
+        for (Map<String, Object> entry : in) {
+            if (entry != null && !entry.isEmpty() && out.size() < DEDUCTION_SCHEME_CAP) {
+                out.add(new LinkedHashMap<>(entry));
+            }
+        }
+        return out.isEmpty() ? null : out;
+    }
+
+    /** A listed language code, lower-case; null for blank or anything else. */
+    public static String answerLanguage(Object value) {
+        if (value == null) return null;
+        String v = value.toString().trim().toLowerCase();
+        return ANSWER_LANGUAGES.contains(v) ? v : null;
     }
 
     /** HIGHLIGHT / OFF, or null for anything else. */
@@ -133,6 +178,8 @@ public final class CopyCheckConfig {
         if (own.getSubject() != null) ctx.put("subject", own.getSubject());
         if (instructions != null) ctx.put("instructions", instructions);
         if (HIGHLIGHT.equals(language)) ctx.put("language_feedback", HIGHLIGHT);
+        if (own.getDeductionScheme() != null) ctx.put("deduction_scheme", own.getDeductionScheme());
+        if (own.getAnswerLanguage() != null) ctx.put("answer_language", own.getAnswerLanguage());
         return ctx.isEmpty() ? null : ctx;
     }
 

@@ -47,6 +47,7 @@ public class EngagementEngineController {
     private final vacademy.io.admin_core_service.features.engagement.repository.EngagementActionRepository actionRepository;
     private final DataPointRegistry dataPointRegistry;
     private final EngagementAccessGuard accessGuard;
+    private final vacademy.io.admin_core_service.features.engagement.service.EngagementChannelReadiness channelReadiness;
 
     @org.springframework.beans.factory.annotation.Value("${engagement.autonomy.first-n:5}")
     private int defaultFirstN;
@@ -168,6 +169,20 @@ public class EngagementEngineController {
         return ResponseEntity.ok(promptRepository.findByEngineIdOrderByVersionDesc(engineId));
     }
 
+    /**
+     * Which channels the institute has set up, so the wizard can say so before the engine is
+     * saved: {WHATSAPP:{ready,reason},EMAIL:{...},IN_APP:{...},AI_CALL:{...}}. reason is
+     * NOT_SET_UP, or SENDER_MISSING when the given email sender no longer exists.
+     */
+    @GetMapping("/channel-readiness")
+    public ResponseEntity<Map<String, vacademy.io.admin_core_service.features.engagement.service.EngagementChannelReadiness.Readiness>>
+            channelReadiness(@RequestParam String instituteId,
+                             @RequestParam(required = false) String emailType,
+                             @RequestAttribute("user") CustomUserDetails user) {
+        accessGuard.requireAdmin(user, instituteId);
+        return ResponseEntity.ok(channelReadiness.check(instituteId, emailType));
+    }
+
     /** The wizard's data-point picker — served by the registry catalog (declare()). */
     @GetMapping("/data-points")
     public ResponseEntity<List<DataPointSpec>> dataPointCatalog(
@@ -182,17 +197,44 @@ public class EngagementEngineController {
                 }).toList());
     }
 
+    /** Edit an engine's settings (name, channels, audience, cadence, quiet hours, autonomy numbers). */
+    @PutMapping("/{engineId}")
+    @Auditable(
+            entityType = "ENGAGEMENT_ENGINE",
+            action = "UPDATE",
+            entityIdExpr = "#engineId",
+            captureBefore = "@engagementEngineService.requireEngine(#engineId, #instituteId)",
+            descriptionExpr = "'edited engagement engine ' + (#result?.body?.name ?: #engineId)")
+    public ResponseEntity<EngagementEngine> update(@PathVariable String engineId,
+                                                   @RequestParam String instituteId,
+                                                   @RequestBody CreateEngineRequest request,
+                                                   @RequestAttribute("user") CustomUserDetails user) {
+        accessGuard.requireAdmin(user, instituteId);
+        return ResponseEntity.ok(engineService.update(engineId, instituteId, request, user.getUserId()));
+    }
+
+    /**
+     * Archive (default) from any state, or with permanent=true delete an engine that never reached
+     * anyone (no message sent, no WhatsApp template at Meta).
+     */
     @DeleteMapping("/{engineId}")
     @Auditable(
             entityType = "ENGAGEMENT_ENGINE",
-            action = "DELETE",
+            actionExpr = "#permanent == true ? 'DELETE' : 'ARCHIVE'",
+            action = "ARCHIVE",
             entityIdExpr = "#engineId",
-            descriptionExpr = "'archived an engagement engine'")
+            captureBefore = "@engagementEngineService.requireEngine(#engineId, #instituteId)",
+            descriptionExpr = "(#permanent == true ? 'permanently deleted' : 'archived') + ' an engagement engine'")
     public ResponseEntity<Void> archive(@PathVariable String engineId,
                                         @RequestParam String instituteId,
+                                        @RequestParam(required = false, defaultValue = "false") boolean permanent,
                                         @RequestAttribute("user") CustomUserDetails user) {
         accessGuard.requireAdmin(user, instituteId);
-        engineService.transition(engineId, instituteId, "ARCHIVED");
+        if (permanent) {
+            engineService.deletePermanently(engineId, instituteId);
+        } else {
+            engineService.archive(engineId, instituteId);
+        }
         return ResponseEntity.noContent().build();
     }
 }

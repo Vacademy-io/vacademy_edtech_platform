@@ -597,7 +597,8 @@ async def test_schema_is_compact_by_default_and_detailed_on_request():
     assert "ocean" in out["theme_choices"]["presets"]
     # 40k before the design-pattern registry (~42.5k after): it added the header/footer contract, the
     # site-settings contract, the pattern-id index and the components' dataBound/usage/escapeHatch notes.
-    assert len(json.dumps(out)) < 45_000
+    # ~45.6k with scormViewer (a SCORM preview block + its import_scorm pointer).
+    assert len(json.dumps(out)) < 46_000
 
     out = json.loads(await website_mod.execute_website({"action": "schema", "page_type": "courses", "section_types": ["heroSection", "nope"]}, ctx()))
     assert list(out["examples"]) == ["heroSection"] and "title" in out["examples"]["heroSection"]["left"]

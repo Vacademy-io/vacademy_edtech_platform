@@ -7,11 +7,16 @@ which read pages in a Playwright browser (innerText, links, forms, block-page de
 are kept: text like innerText, block pages and bot refusals marked "blocked", at most 60,000
 characters of text.
 
+Also: what a JavaScript shell's HTML still carries when no browser renders it (read_shell), where an
+empty page's meta refresh points (refresh_url), and a job post's employer and places from its
+structured data (job_post_facts).
+
 No network here: robots.txt, SSRF checks (research/url_guard.py) and politeness are the fetcher's.
 """
 
 from __future__ import annotations
 
+import json
 import re
 from collections import Counter
 from typing import Any
@@ -137,10 +142,11 @@ def _is_hidden(tag: Tag) -> bool:
     return tag.has_attr("hidden") or bool(_HIDDEN_STYLE.search(tag.get("style") or ""))
 
 
-def _visible_text(soup: BeautifulSoup) -> str:
+def _visible_text(soup: BeautifulSoup, keep_hidden: bool = False) -> str:
     """Text as a browser's innerText gives it: a new line at block elements, spaces collapsed, blank
-    lines dropped, scripts, styles and hidden elements left out. One pass over the tree, which is
-    not modified (inserting markers into BeautifulSoup is quadratic on long sibling lists)."""
+    lines dropped, scripts, styles and hidden elements left out (hidden ones kept with keep_hidden).
+    One pass over the tree, which is not modified (inserting markers into BeautifulSoup is quadratic
+    on long sibling lists)."""
     root = soup.body or soup
     out: list[str] = []
     stack: list[tuple[Any, str | None]] = [(root, None)]
@@ -153,7 +159,7 @@ def _visible_text(soup: BeautifulSoup) -> str:
             if not isinstance(node, _SKIPPED_STRINGS):
                 out.append(str(node))
             continue
-        if not isinstance(node, Tag) or node.name in _DROP_TAGS or _is_hidden(node):
+        if not isinstance(node, Tag) or node.name in _DROP_TAGS or (not keep_hidden and _is_hidden(node)):
             continue
         if node.name == "br":
             out.append(_LINE)
@@ -249,6 +255,182 @@ def parse_page(url: str, final_url: str, html: str, status_code: int | None) -> 
         return record
     record.update(text=text, links=links, has_form=has_form, platform_hints=hints)
     return record
+
+
+# ----------------------------------------------------------------------- what a shell still carries
+
+# A JavaScript shell no browser will render (no extension online in time, or the extension's tab
+# gave a shell too) is still read for what its server HTML carries. Of the 237 "No readable page"
+# rejects of "Leads for Vacademy", 71 home pages were shells (2026-10-29 probe): most still had a
+# title and description, many an organisation's JSON-LD with a telephone, a <noscript> text, a tel:
+# link, or the whole page hidden until its scripts run (raycoaching.in, oneaim.co.in).
+SHELL_MIN_CHARS = 80  # text besides the title before a shell counts as readable
+_LD_JSON = re.compile(r"ld\+json", re.I)
+_META_TEXT = ("description", "og:title", "og:description", "og:site_name", "twitter:description")
+# "You need to enable JavaScript to run this app.": a framework's notice, not the organisation's words.
+_NO_JS_NOTICE = re.compile(r"\b(?:enable|turn on|allow)\s+javascript\b|\bjavascript\s+(?:is\s+)?(?:disabled|required)\b",
+                           re.I)
+_LD_CONTACT_KEYS = ("telephone", "email", "address", "contactPoint")
+_LD_NOT_ORG = frozenset({"person", "jobposting", "contactpoint", "postaladdress", "place", "geocoordinates"})
+
+
+def _ld_objects(soup: BeautifulSoup) -> list[dict[str, Any]]:
+    """Every object in the page's JSON-LD blocks, nested ones included (@graph, lists, values)."""
+    found: list[dict[str, Any]] = []
+
+    def walk(value: Any, depth: int) -> None:
+        if depth > 6 or len(found) >= 300:
+            return
+        if isinstance(value, dict):
+            found.append(value)
+            for item in value.values():
+                walk(item, depth + 1)
+        elif isinstance(value, list):
+            for item in value:
+                walk(item, depth + 1)
+
+    for tag in soup.find_all("script", type=_LD_JSON):
+        raw = (tag.string or tag.get_text() or "").strip()
+        raw = raw.removeprefix("<!--").removesuffix("-->").replace("<![CDATA[", "").replace("]]>", "").strip()
+        try:
+            walk(json.loads(raw), 0)
+        except (ValueError, RecursionError):
+            continue  # one broken block (trailing commas are common) does not hide the others
+    return found
+
+
+def _ld_types(obj: dict[str, Any]) -> set[str]:
+    kinds = obj.get("@type")
+    return {str(k).lower() for k in (kinds if isinstance(kinds, list) else [kinds]) if k}
+
+
+def _ld_text(value: Any) -> str:
+    """A JSON-LD value as plain text: a string, a {"name": ...} object, or a PostalAddress."""
+    if isinstance(value, str):
+        return " ".join(value.split())
+    if isinstance(value, list):
+        return ", ".join(t for t in (_ld_text(v) for v in value) if t)
+    if isinstance(value, dict):
+        if value.get("name") and not any(k.startswith("address") for k in value):
+            return _ld_text(value["name"])
+        parts = (value.get(k) for k in ("streetAddress", "addressLocality", "addressRegion", "postalCode",
+                                        "addressCountry"))
+        return ", ".join(t for t in (_ld_text(p) for p in parts) if t)
+    return ""
+
+
+def _ld_contact_lines(soup: BeautifulSoup) -> list[str]:
+    """The organisation's name, telephone, email and address from its JSON-LD (Organization,
+    LocalBusiness, School, ...: any object carrying contact details that is not a person or a job)."""
+    lines: list[str] = []
+    for obj in _ld_objects(soup):
+        kinds = _ld_types(obj)
+        if kinds & _LD_NOT_ORG or not any(obj.get(k) for k in _LD_CONTACT_KEYS):
+            continue
+        if name := _ld_text(obj.get("name")):
+            lines.append(name)
+        points = obj.get("contactPoint")
+        for holder in [obj, *(points if isinstance(points, list) else [points])]:
+            if not isinstance(holder, dict):
+                continue
+            for key, label in (("telephone", "Telephone"), ("email", "Email"), ("address", "Address")):
+                if value := _ld_text(holder.get(key)):
+                    lines.append(f"{label}: {value.removeprefix('mailto:')}")
+    return lines
+
+
+def shell_text(html: str) -> str:
+    """What a JavaScript shell's server HTML carries for a reader without a browser, one item a line:
+    its title, description and og: tags, the organisation's JSON-LD (name, telephone, email, address),
+    <noscript> text other than a "please enable JavaScript" notice, and the text of the page as
+    served, hidden parts included (some pages show their content only once their scripts run)."""
+    if not isinstance(html, str) or not html.strip():
+        return ""
+    soup = BeautifulSoup(html, "html.parser")
+    lines: list[str] = []
+    if soup.title:
+        lines.append(soup.title.get_text(" ", strip=True))
+    for meta in soup.find_all("meta"):
+        key = (meta.get("name") or meta.get("property") or "").lower()
+        if key in _META_TEXT:
+            lines.append(meta.get("content") or "")
+    lines.extend(_ld_contact_lines(soup))
+    for tag in soup.find_all("noscript"):
+        words = " ".join(tag.get_text(" ", strip=True).split())
+        if words and not (len(words) < 200 and _NO_JS_NOTICE.search(words)):
+            lines.append(words)
+    kept = dict.fromkeys(" ".join(line.split()) for line in lines)
+    kept[_visible_text(soup, keep_hidden=True)] = None
+    return "\n".join(line for line in kept if line)[:MAX_TEXT_CHARS]
+
+
+def read_shell(record: dict[str, Any], html: str) -> dict[str, Any]:
+    """A js_shell record no browser will render, made readable from shell_text: access "ok" with that
+    text when it says more than the title (SHELL_MIN_CHARS) or the shell links to a phone or email;
+    otherwise the record as it was."""
+    if record.get("access") != "js_shell":
+        return record
+    text = shell_text(html)
+    beyond_title = len(text) - len(record.get("title") or "")
+    calls = any(str(href).lower().startswith(("tel:", "mailto:")) for href, _ in record.get("links") or [])
+    if beyond_title < SHELL_MIN_CHARS and not calls:
+        return record
+    return {**record, "access": "ok", "text": text, "error": None}
+
+
+_REFRESH = re.compile(r"^\s*(\d+(?:\.\d+)?)?\s*[;,]?\s*(?:url\s*=\s*)?['\"]?([^'\"]*)", re.I)
+
+
+def refresh_url(html: str, base_url: str) -> str | None:
+    """Where an almost empty page's <meta http-equiv="refresh"> sends the browser within 10 seconds
+    (sxcran.org -> sxcran.ac.in, 2026-10-29), as an absolute http(s) URL; None when it has none."""
+    if not isinstance(html, str) or "refresh" not in html[:20_000].lower():
+        return None
+    soup = BeautifulSoup(html[:20_000], "html.parser")
+    meta = soup.find("meta", attrs={"http-equiv": re.compile(r"^\s*refresh\s*$", re.I)})
+    match = _REFRESH.match(str(meta.get("content") or "")) if isinstance(meta, Tag) else None
+    if not match or not match.group(2).strip() or float(match.group(1) or 0) > 10:
+        return None
+    target = urljoin(base_url, match.group(2).strip())
+    return target if urlparse(target).scheme in ("http", "https") and urldefrag(target)[0] != urldefrag(base_url)[0] else None
+
+
+# ------------------------------------------------------------------------------- job post pages
+
+_UNNAMED_EMPLOYERS = re.compile(r"^(?:confidential|company confidential|undisclosed|not disclosed|hidden|private|"
+                                r"anonymous|n/?a|-)$", re.I)
+
+
+def job_post_facts(html: str) -> dict[str, Any]:
+    """The hiring organisation and the job's places from a job post page's JobPosting structured data
+    (JSON-LD, which job boards publish for search engines): {"organisation": "Narayana e-Techno School",
+    "locations": ["Kaladhungi, Uttarakhand"], "remote": False}. Nothing is guessed from the wording:
+    a page without that data gives None and [] (it names nobody for certain)."""
+    facts: dict[str, Any] = {"organisation": None, "locations": [], "remote": False}
+    if not isinstance(html, str) or not html.strip():
+        return facts
+    soup = BeautifulSoup(html, "html.parser")
+    post = next((o for o in _ld_objects(soup) if "jobposting" in _ld_types(o)), None)
+    if post is None:
+        return facts  # the first JobPosting is the page's own post; later ones are "similar jobs"
+    employer = post.get("hiringOrganization")
+    name = _ld_text(employer.get("name") if isinstance(employer, dict) else employer)
+    if name and not _UNNAMED_EMPLOYERS.match(name):
+        facts["organisation"] = name[:200]
+    places = post.get("jobLocation")
+    locations: list[str] = []
+    for place in places if isinstance(places, list) else [places]:
+        address = place.get("address") if isinstance(place, dict) else place
+        if isinstance(address, dict):
+            parts = [_ld_text(address.get(k)) for k in ("addressLocality", "addressRegion")]
+            text = ", ".join(p for p in parts if p)
+        else:
+            text = _ld_text(address)
+        if text:
+            locations.append(text)
+    facts["locations"] = list(dict.fromkeys(locations))
+    facts["remote"] = "telecommute" in str(post.get("jobLocationType") or "").lower()
+    return facts
 
 
 # ------------------------------------------------------------------------------ choosing pages

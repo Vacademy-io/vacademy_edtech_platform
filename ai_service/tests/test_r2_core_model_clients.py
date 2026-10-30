@@ -653,3 +653,43 @@ def test_transient_failure_falls_back_without_parking(monkeypatch):
     out = asyncio.run(client.chat_completion([{"role": "user", "content": "hi"}]))
     assert out["content"] == "ok" and out["fallback_from"] == "z-ai/glm-5.3-flash"
     assert not mod.is_model_broken("z-ai/glm-5.3-flash")
+
+
+def test_call_intel_tells_admin_core_the_analysis_is_in(monkeypatch):
+    """B4: a finished analysis wakes the lead's engagement engines; a failure never raises."""
+    from ai_service.app.services import call_intelligence_service as cis
+    from ai_service.app.services import internal_auth
+
+    sent = []
+
+    class _Client:
+        def __init__(self, *a, **k):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *a):
+            return False
+
+        async def post(self, url, json=None, headers=None):
+            sent.append((url, json, headers))
+            return SimpleNamespace(status_code=200)
+
+    async def headers():
+        return {"clientName": "ai_service", "Signature": "sig"}
+
+    monkeypatch.setattr(cis, "get_settings", lambda: SimpleNamespace(admin_core_service_base_url="http://ac:8072"))
+    monkeypatch.setattr(internal_auth, "internal_auth_headers", headers)
+    monkeypatch.setattr(cis.httpx, "AsyncClient", _Client)
+    asyncio.run(cis._notify_engagement("inst-1", "cl-1"))
+    assert sent == [("http://ac:8072/admin-core-service/internal/engagement/v1/call-analyzed",
+                     {"institute_id": "inst-1", "call_log_id": "cl-1"},
+                     {"clientName": "ai_service", "Signature": "sig"})]
+
+    class _Down(_Client):
+        async def post(self, *a, **k):
+            raise httpx.ConnectError("admin_core down")
+
+    monkeypatch.setattr(cis.httpx, "AsyncClient", _Down)
+    asyncio.run(cis._notify_engagement("inst-1", "cl-1"))  # must not raise

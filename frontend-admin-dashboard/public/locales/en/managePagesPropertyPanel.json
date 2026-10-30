@@ -252,6 +252,9 @@
     }
   },
   "options": {
+    "dropdown": "Dropdown",
+    "chips": "Chips",
+    "popup": "Popup",
     "categoryTiles": "Category tiles",
     "default": "Default",
     "ocean": "Ocean",
@@ -907,7 +910,19 @@
     "cardsPerViewHint": "Tablets show up to 2 and phones show 1.",
     "autoplay": "Auto-slide",
     "autoplaySeconds": "Seconds between slides",
-    "photo": "Photo"
+    "photo": "Photo",
+    "reviewSource": "Show approved reviews",
+    "reviewSourceManual": "No, only the quotes below",
+    "reviewSourceBoth": "Yes, after the quotes below",
+    "reviewSourceReviews": "Yes, instead of the quotes below",
+    "reviewSourceHint": "Reviews visitors send through a Reviews & feedback section show here once you approve them.",
+    "reviewLimit": "Most reviews",
+    "reviewMinRating": "Minimum stars",
+    "reviewMinRatingAll": "Any rating",
+    "reviewMinRatingStars_one": "{{count}} star and up",
+    "reviewMinRatingStars_other": "{{count}} stars and up",
+    "showAverageRating": "Show the average rating under the heading",
+    "manageReviews": "Approve reviews"
   },
   "policy": {
     "defaults": {
@@ -1059,6 +1074,9 @@
     "sendTestLead": "Send test lead"
   },
   "leadForm": {
+    "columns": "Columns",
+    "choiceStyle": "Choices as",
+    "successDisplay": "Thank-you",
     "hint": "Renders a campaign's registration form right on the page. Fields, options and mandatory flags are configured on the campaign in Audience Manager; submissions land in that campaign with dedup, scoring and counsellor assignment.",
     "campaignLabel": "Campaign (form + destination)",
     "titlePlaceholder": "Register your interest",
@@ -1362,6 +1380,28 @@
     "clear": "Clear",
     "openFile": "Open"
   },
+  "scormViewer": {
+    "appearance": "Look",
+    "appearanceBook": "Book (no player controls)",
+    "appearanceFramed": "Framed player",
+    "appearanceHelp": "Book hides the package's own toolbar, page count and full-screen button so the pages read like a book on the page.",
+    "heading": "SCORM package",
+    "package": "SCORM package (.zip)",
+    "uploadZip": "Upload SCORM zip",
+    "uploading": "Uploading and unpacking…",
+    "clear": "Clear",
+    "onlyZip": "Upload the SCORM package as a .zip file.",
+    "tooLarge": "The zip is larger than {{max}} MB.",
+    "uploadFailed": "The package could not be uploaded. Check that it is a SCORM zip with an imsmanifest.xml.",
+    "uploadHelp": "Plays on the page without login, like a SCORM slide in a course. Nothing is tracked here.",
+    "packageReady": "Package uploaded",
+    "openPackage": "Open",
+    "barTitle": "Frame title",
+    "barTitlePlaceholder": "e.g. Preview – first pages",
+    "frameHeight": "Frame height (desktop)",
+    "mobileHeight": "Frame height (phone)",
+    "showFullScreen": "Full-screen button"
+  },
   "blog": {
     "heading": "Blog Settings",
     "managePostsHint": "Posts are written and published separately, so a new article never needs the site republished.",
@@ -1389,6 +1429,8 @@
     "showCategory": "Show category",
     "showReadingTime": "Show reading time",
     "showCategoryFilter": "Category filter chips",
+    "allowLikes": "Allow likes",
+    "allowLikesHelp": "Visitors can like posts: a heart with the count on each card and under the article. Leave off for sections that are not a blog, such as exam guides.",
     "readMoreLabel": "Read more label",
     "backLabel": "Back to list label",
     "emptyMessage": "Message when there are no posts",

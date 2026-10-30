@@ -70,6 +70,22 @@ export interface AiAgent {
      * this on save keeps whatever is stored — only an explicit array replaces it.
      */
     sendRules?: AiCallActionRule[];
+    /**
+     * Text of documents the admin uploaded, appended to the prompt at call time. Like
+     * sendRules, omitting it on save keeps what is stored; an empty array removes all.
+     */
+    knowledgeDocuments?: AiAgentKnowledgeDocument[];
+}
+
+/** One reference document of an agent — mirrors backend AiAgentKnowledgeDocument. */
+export interface AiAgentKnowledgeDocument {
+    id?: string;
+    name: string;
+    /** PDF | DOCX | TXT. */
+    kind?: string;
+    text: string;
+    chars?: number;
+    addedAt?: string;
 }
 
 /** One "when X, do Y" rule — mirrors backend AiCallActionRule. */

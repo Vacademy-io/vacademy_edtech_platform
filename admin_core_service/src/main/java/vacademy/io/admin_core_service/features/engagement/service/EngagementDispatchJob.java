@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.engagement.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -68,6 +69,14 @@ public class EngagementDispatchJob {
     private final CreditClient creditClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /** B5: do-not-automate and the counsellor hold, re-checked at send time; optional in unit tests. */
+    @Autowired(required = false)
+    private EngagementCoordinationService coordination;
+
+    /** B6: approved CRM actions that waited for their time (an AI call back); optional in unit tests. */
+    @Autowired(required = false)
+    private EngagementCrmActionService crmActions;
+
     @Value("${engagement.dispatch.batch:100}")
     private int batch;
 
@@ -124,10 +133,28 @@ public class EngagementDispatchJob {
             actionRepository.withdrawDueSend(action.getId(), notSendable, now);
             return false;
         }
+        // S10: the holdout group gets no automated action of any type. Nothing should be queued for
+        // them; this is the backstop if something ever is.
+        if (Boolean.TRUE.equals(member.getIsHoldout())) {
+            actionRepository.withdrawDueSend(action.getId(), "Not sent: this person is in the holdout group.", now);
+            return false;
+        }
         if (member.getUserId() != null
                 && policyGate.optedOutUserIds(instituteId, List.of(member.getUserId())).contains(member.getUserId())) {
             actionRepository.withdrawDueSend(action.getId(), "Not sent: this person opted out after the decision.", now);
             return false;
+        }
+        String leadGone = leadNotSendableReason(PolicyGate.effectiveLeadBlock(
+                policyGate.leadBlock(instituteId, member.getAudienceResponseId()), engine, member), action);
+        if (leadGone != null) {
+            actionRepository.withdrawDueSend(action.getId(), leadGone, now);
+            return false;
+        }
+        // B6: an approved AI call that waited for the time the lead asked for (C-1). A person
+        // approved it, so channel autonomy does not apply; consent above does, and the action re-checks
+        // its own rules (a "don't call" since, the weekly limit) before the call is queued.
+        if (EngagementActionTypes.isCrmAction(action.getActionType())) {
+            return crmActions != null && crmActions.runScheduled(action, now);
         }
         if (Boolean.TRUE.equals(engine.getAutoSendKilled())
                 || !channelAutoEnabled(engine, action.getChannel())) {
@@ -135,9 +162,20 @@ public class EngagementDispatchJob {
                     "Autonomy off for this channel — sent to the inbox for review.", now);
             return false;
         }
+        // B5: flagged do-not-automate, or a counsellor got in touch, after this was decided. To the
+        // inbox, not withdrawn: the draft may still be right, a person decides. An AI-call promise
+        // goes as promised.
+        String hold = coordination != null && !EngagementAction.SOURCE_AI_CALL.equals(action.getSource())
+                ? coordination.sendHold(member, now) : null;
+        if (hold != null) {
+            actionRepository.demoteSendToTask(action.getId(),
+                    "Held for the counsellor: " + EngagementCoordinationService.explain(hold) + ".", now);
+            return false;
+        }
 
-        // 1b. The clock: an engine resumed at night must not fire its past-due SENDs in quiet hours.
-        Instant allowedAt = policyGate.clampToAllowedWindow(engine, now);
+        // 1b. The clock: an engine resumed at night (or on a day it doesn't send) must not fire its
+        // past-due SENDs then. Not the send window: the decision already placed the send in it.
+        Instant allowedAt = policyGate.scheduleSend(engine, now, PolicyGate.SendTiming.ANYTIME);
         if (allowedAt.isAfter(now)) {
             actionRepository.rescheduleDueSend(action.getId(), allowedAt, now);
             return false;
@@ -261,6 +299,29 @@ public class EngagementDispatchJob {
             case "PAUSED" -> "Not sent: this person is paused in the engine.";
             default -> "Not sent: this person is no longer active in the engine (" + status + ").";
         };
+    }
+
+    /**
+     * The lead row, re-checked at send time (F2 / L3): the consent store is keyed by user_id, so
+     * without this an unconverted lead who opted out in the CRM was still sent to. An AI-call
+     * promise is withdrawn only on an opt-out: the person asked for it on the call, and a lead
+     * row the admin tidied away (or marked Converted) since is no reason to break that promise.
+     */
+    static String leadNotSendableReason(PolicyGate.LeadBlock block, EngagementAction action) {
+        if (block == PolicyGate.LeadBlock.OPTED_OUT) {
+            return "Not sent: this lead opted out in the CRM after the decision.";
+        }
+        boolean promise = EngagementAction.SOURCE_AI_CALL.equals(action.getSource());
+        if (block == PolicyGate.LeadBlock.EXITED && !promise) {
+            return "Not sent: this lead was removed from the CRM after the decision.";
+        }
+        if (block == PolicyGate.LeadBlock.CONVERTED && !promise) {
+            return "Not sent: this lead was marked Converted in the CRM after the decision.";
+        }
+        if (block == PolicyGate.LeadBlock.LOST && !promise) {
+            return "Not sent: this lead was marked Lost or Not interested in the CRM after the decision.";
+        }
+        return null;
     }
 
     /** Charge one credit for a sent message; stamp billed on success. Idempotency key = action id. */

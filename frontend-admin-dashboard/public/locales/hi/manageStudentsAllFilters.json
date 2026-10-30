@@ -13,7 +13,7 @@
         "title": "भुगतान स्थिति",
         "paid": "भुगतान किया गया",
         "failed": "विफल",
-        "paymentFailed": "भुगतान विफल"
+        "pending": "लंबित"
     },
     "approvalStatus": {
         "title": "अनुमोदन स्थिति",
@@ -22,7 +22,8 @@
     },
     "cartStatus": {
         "title": "कार्ट स्थिति",
-        "abandonedCart": "छोड़ा गया कार्ट"
+        "abandonedCart": "छोड़ा गया कार्ट",
+        "paymentFailed": "भुगतान विफल"
     },
     "role": {
         "title": "भूमिका"

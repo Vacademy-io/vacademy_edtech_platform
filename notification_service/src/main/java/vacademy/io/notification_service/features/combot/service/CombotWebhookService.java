@@ -30,6 +30,7 @@ import vacademy.io.notification_service.features.combot.repository.ChannelFlowCo
 import vacademy.io.notification_service.features.combot.repository.ChannelToInstituteMappingRepository;
 import vacademy.io.notification_service.features.notification_log.entity.NotificationLog;
 import vacademy.io.notification_service.features.notification_log.repository.NotificationLogRepository;
+import vacademy.io.notification_service.features.notification_log.service.WhatsAppPricingRecorder;
 
 import java.time.Instant;
 import java.util.*;
@@ -75,6 +76,11 @@ public class CombotWebhookService {
     @Autowired
     @Lazy
     private ChatbotFlowEngine chatbotFlowEngine;
+
+    // Field-injected, not a constructor argument, so the hand-built test fixtures keep compiling;
+    // it is null there, hence the null check at the call site.
+    @Autowired
+    private WhatsAppPricingRecorder whatsAppPricingRecorder;
 
     // ========================================================================
     // 1️⃣ OUTGOING MESSAGE LOGGING
@@ -202,6 +208,11 @@ public class CombotWebhookService {
             // guard and lose them.
             if (!"failed".equalsIgnoreCase(statusValue)) {
                 reconcileOutboundDeliveryStatus(messageId, deliveryStatusFor(statusValue), null, null);
+            }
+            // Meta's pricing (category, billable, free tier) rides on the sent and delivered/read
+            // statuses; the engagement report prices WhatsApp spend from it. Never throws.
+            if (whatsAppPricingRecorder != null) {
+                whatsAppPricingRecorder.record(messageId, status.get("pricing"));
             }
             log.info("Stored WhatsApp status {} for message {}", statusValue, messageId);
 

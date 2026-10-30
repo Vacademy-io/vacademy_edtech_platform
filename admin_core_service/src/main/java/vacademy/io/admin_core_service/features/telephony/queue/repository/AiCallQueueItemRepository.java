@@ -539,4 +539,33 @@ public interface AiCallQueueItemRepository extends JpaRepository<AiCallQueueItem
     List<Object[]> countBySourceRefGroupedByStatus(@Param("instituteId") String instituteId,
                                                    @Param("source") String source,
                                                    @Param("sourceRef") String sourceRef);
+
+    /**
+     * Callbacks the engine scheduled that did not end in a call (the line never freed up, the item
+     * expired or was cancelled) or that rang without being answered, and that nobody was told about yet.
+     * One row each: id, response id, phone, why.
+     */
+    @Query(value = """
+            SELECT q.id, q.institute_id, q.response_id, q.user_id, q.phone_number, q.customer_name,
+                   CASE WHEN q.status = 'DIALED' THEN 'The call was placed but not answered (' || l.status || ').'
+                        ELSE 'The scheduled call was not placed (' || q.status || COALESCE(': ' || q.last_error, '') || ').' END
+              FROM ai_call_queue q
+              LEFT JOIN telephony_call_log l ON l.id = q.call_log_id
+             WHERE q.source = 'ENGINE_CALLBACK'
+               AND q.updated_at >= :since
+               AND COALESCE(q.metadata, '') NOT LIKE '%"alerted"%'
+               AND (q.status IN ('FAILED', 'EXPIRED', 'CANCELLED')
+                    OR (q.status = 'DIALED' AND l.status IN ('NO_ANSWER', 'BUSY', 'FAILED', 'CANCELLED')))
+            """, nativeQuery = true)
+    List<Object[]> findUnreachedEngineCallbacks(@Param("since") Instant since);
+
+    /** Marks a callback as alerted so the watch never tells anyone twice. */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE ai_call_queue
+               SET metadata = (COALESCE(NULLIF(metadata, '')::jsonb, '{}'::jsonb) || '{"alerted": true}'::jsonb)::text
+             WHERE id = :id
+            """, nativeQuery = true)
+    int markAlerted(@Param("id") String id);
 }

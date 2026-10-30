@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.telephony.core.AiAgentAssistService;
+import vacademy.io.admin_core_service.features.telephony.core.AiAgentService;
+import vacademy.io.admin_core_service.features.telephony.core.dto.AiAgentKnowledgeDocument;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
 import java.util.List;
@@ -61,6 +63,11 @@ public class AiAgentAssistController {
         private String feedback;
         /** feedback: agent id — pulls that agent's recent real calls as grounding. */
         private String agentId;
+        /**
+         * All operations, optional (V615): the agent's reference documents as in the editor,
+         * unsaved edits included. Facts in the script are then taken from them.
+         */
+        private List<AiAgentKnowledgeDocument> documents;
     }
 
     @PostMapping("/draft")
@@ -128,6 +135,23 @@ public class AiAgentAssistController {
     private static AiAgentAssistService.AgentContext ctx(AssistRequest req) {
         return new AiAgentAssistService.AgentContext(
                 req.getAgentName(), req.getLanguage(), req.getOpeningLine(), req.getUseCase(),
-                req.getExtractionQuestions(), req.getDispositions());
+                req.getExtractionQuestions(), req.getDispositions(), documentsText(req.getDocuments()));
+    }
+
+    /** The documents as one text, capped like the agent's own documents; null when none. */
+    static String documentsText(List<AiAgentKnowledgeDocument> docs) {
+        if (docs == null || docs.isEmpty()) return null;
+        StringBuilder sb = new StringBuilder();
+        for (AiAgentKnowledgeDocument d : docs) {
+            if (d == null) continue;
+            String text = AiAgentService.cleanKnowledgeText(d.getText());
+            if (text.isEmpty()) continue;
+            sb.append("### ").append(d.getName() == null || d.getName().isBlank() ? "Document" : d.getName().trim())
+                    .append('\n').append(text).append("\n\n");
+        }
+        String all = sb.toString().trim();
+        if (all.isEmpty()) return null;
+        return all.length() > AiAgentService.MAX_KNOWLEDGE_CHARS
+                ? all.substring(0, AiAgentService.MAX_KNOWLEDGE_CHARS) : all;
     }
 }

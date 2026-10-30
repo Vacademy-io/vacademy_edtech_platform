@@ -9,8 +9,9 @@ from la_engine_fixtures import make_config
 
 from app.services.lead_agent.engine.discovery.pipeline import Candidate, DiscoveryOutcome
 from app.services.lead_agent.engine.planning import (
-    PlanningError, build_plan_prompt, engine_sources, finalise_plan, guided_from_brief, is_worldwide, match_places,
-    query_count, request_text_from_brief, research_count, search_budget, search_places, summarise_discovery,
+    PlanningError, build_plan_prompt, engine_sources, finalise_plan, guided_from_brief, guided_hiring_roles,
+    is_worldwide, match_places, query_count, request_text_from_brief, research_count, search_budget, search_places,
+    summarise_discovery,
 )
 from app.services.lead_agent.engine.schemas import ResearchPlan
 
@@ -197,3 +198,15 @@ def test_a_lead_agent_brief_becomes_the_engines_guided_request():
     assert engine_sources(None)[0] == "organisation_search" and "keyword_search" in engine_sources(None)
     text = request_text_from_brief(BRIEF)
     assert "LMS + CRM" in text and "Must have: offers online courses" in text
+
+
+def test_roles_written_like_job_posts_are_cleaned():
+    """Brief roles were stored as "hiring admission counsellor", and searches then read "school hiring hiring
+    admission counsellor India" (2026-10-29)."""
+    brief = {**BRIEF, "hiring_roles": ["hiring admission counsellor", "Admission Counsellor", "Telecaller required"]}
+    guided = guided_from_brief(brief, [{"country": "India"}], 10)
+    assert guided_hiring_roles(guided) == ["admission counsellor", "Telecaller"]
+    assert finalise_plan(plan(), make_config(max_candidates=150), guided)["hiring_roles"] == [
+        "admission counsellor", "Telecaller"]
+    # A planner that wrote job-post phrases is cleaned the same way.
+    assert finalise_plan(plan(hiring_roles=["hiring telecaller"]), make_config())["hiring_roles"] == ["telecaller"]

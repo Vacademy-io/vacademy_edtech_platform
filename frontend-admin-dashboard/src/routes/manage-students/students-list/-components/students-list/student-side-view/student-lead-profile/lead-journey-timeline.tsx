@@ -136,6 +136,12 @@ function buildActionConfig(t: TFunction): Record<string, ActionConfig> {
             iconColor: 'text-info-500',
             label: t('actionConfig.followup'),
         },
+        CALLBACK_REQUESTED: {
+            Icon: Phone,
+            dotBg: 'bg-info-50 ring-info-200',
+            iconColor: 'text-info-500',
+            label: t('actionConfig.callbackRequested'),
+        },
         REACHOUT: {
             Icon: ChatCircle,
             dotBg: 'bg-primary-50 ring-primary-200',

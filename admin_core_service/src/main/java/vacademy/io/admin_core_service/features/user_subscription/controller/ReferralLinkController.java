@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.admin_core_service.features.user_subscription.dto.MemberReferralDTO;
 import vacademy.io.admin_core_service.features.user_subscription.service.ReferralLinkService;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
@@ -29,5 +30,19 @@ public class ReferralLinkController {
                                                          @RequestAttribute("user") CustomUserDetails user) {
         instituteAccessValidator.requireInstituteAdmin(user, instituteId);
         return ResponseEntity.ok(referralLinkService.backfill(instituteId, enrollInviteId, limit));
+    }
+
+    /**
+     * One member's referral code, a shareable link and who they referred, for the admin
+     * student profile. {@code enrollInviteId} picks the invite the link opens; without it the
+     * member's own invite (when it has a referral programme) or the newest one that does.
+     */
+    @GetMapping("/member")
+    public ResponseEntity<MemberReferralDTO> member(@RequestParam String instituteId,
+                                                    @RequestParam String userId,
+                                                    @RequestParam(required = false) String enrollInviteId,
+                                                    @RequestAttribute("user") CustomUserDetails user) {
+        instituteAccessValidator.validateUserAccess(user, instituteId);
+        return ResponseEntity.ok(referralLinkService.memberReferral(instituteId, userId, enrollInviteId));
     }
 }

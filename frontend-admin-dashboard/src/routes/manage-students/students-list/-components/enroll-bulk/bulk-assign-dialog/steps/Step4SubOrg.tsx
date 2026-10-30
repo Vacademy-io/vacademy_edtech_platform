@@ -8,14 +8,41 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Buildings, BookOpen, Envelope, Warning, UserCircle } from '@phosphor-icons/react';
+import { Button } from '@/components/ui/button';
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+    CommandSeparator,
+} from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+    Buildings,
+    BookOpen,
+    CaretUpDown,
+    Check,
+    CircleNotch,
+    Envelope,
+    Warning,
+    UserCircle,
+} from '@phosphor-icons/react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
+import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import {
     PackageSessionSubOrg,
     SelectedPackageSession,
     SubOrgRoleChoice,
 } from '../../../../-types/bulk-assign-types';
-import { useSubOrgsForPackageSession } from '../../../../-hooks/useSubOrgsForPackageSession';
+import {
+    SUB_ORG_SEARCH_MIN_CHARS,
+    useSubOrgSearch,
+    useSubOrgsForPackageSession,
+} from '../../../../-hooks/useSubOrgsForPackageSession';
 import {
     getTerminology,
     getTerminologyPlural,
@@ -79,6 +106,156 @@ const AdminList = ({ subOrg }: { subOrg: PackageSessionSubOrg }) => {
     );
 };
 
+interface SubOrgPickerProps {
+    value: string;
+    selectedLabel: string | null;
+    batchSubOrgs: PackageSessionSubOrg[];
+    onPick: (value: string, picked?: PackageSessionSubOrg) => void;
+}
+
+/**
+ * Searchable organisation picker. With an empty search box it lists the organisations already
+ * in this batch. Typing filters that list and also searches every organisation in the
+ * institute, so one with no member in the batch yet (new, or used under another course) can
+ * still be picked.
+ */
+const SubOrgPicker = ({ value, selectedLabel, batchSubOrgs, onPick }: SubOrgPickerProps) => {
+    const { t } = useTranslation('manageStudentsStep4SubOrg');
+    const [open, setOpen] = useState(false);
+    const [searchInput, setSearchInput] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(searchInput.trim()), 300);
+        return () => clearTimeout(timer);
+    }, [searchInput]);
+
+    const instituteId = getCurrentInstituteId() ?? '';
+    const isSearching = debouncedSearch.length >= SUB_ORG_SEARCH_MIN_CHARS;
+    const { data: searchHits = [], isFetching: isSearchLoading } = useSubOrgSearch({
+        instituteId,
+        search: isSearching ? debouncedSearch : '',
+    });
+
+    const needle = searchInput.trim().toLowerCase();
+    const batchMatches = needle
+        ? batchSubOrgs.filter((s) => (s.name ?? '').toLowerCase().includes(needle))
+        : batchSubOrgs;
+    const batchIds = new Set(batchSubOrgs.map((s) => s.sub_org_id));
+    const otherMatches = searchHits.filter((s) => !batchIds.has(s.sub_org_id));
+
+    const pick = (next: string, picked?: PackageSessionSubOrg) => {
+        onPick(next, picked);
+        setOpen(false);
+        setSearchInput('');
+        setDebouncedSearch('');
+    };
+
+    const triggerLabel =
+        value === SKIP
+            ? t('picker.skipOption')
+            : value === CREATE_NEW
+              ? t('picker.createNewOption')
+              : value
+                ? selectedLabel || value
+                : '';
+
+    const renderItem = (subOrg: PackageSessionSubOrg) => (
+        <CommandItem
+            key={subOrg.sub_org_id}
+            value={subOrg.sub_org_id}
+            onSelect={() => pick(subOrg.sub_org_id, subOrg)}
+        >
+            <Check
+                className={cn(
+                    'mr-2 size-4 shrink-0',
+                    value === subOrg.sub_org_id ? 'opacity-100' : 'opacity-0'
+                )}
+            />
+            <span className="truncate">
+                {subOrg.name || subOrg.sub_org_id}
+                {subOrg.member_count
+                    ? t('picker.memberCount', { count: subOrg.member_count })
+                    : ''}
+            </span>
+        </CommandItem>
+    );
+
+    return (
+        <Popover
+            open={open}
+            onOpenChange={(next) => {
+                setOpen(next);
+                if (!next) {
+                    setSearchInput('');
+                    setDebouncedSearch('');
+                }
+            }}
+        >
+            <PopoverTrigger asChild>
+                <Button
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className="w-full justify-between font-normal"
+                >
+                    <span className={cn('truncate', !triggerLabel && 'text-neutral-400')}>
+                        {triggerLabel || t('picker.placeholder')}
+                    </span>
+                    <CaretUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent
+                className="z-popover-above-modal w-[--radix-popover-trigger-width] p-0"
+                align="start"
+            >
+                <Command shouldFilter={false}>
+                    <CommandInput
+                        placeholder={t('picker.searchPlaceholder')}
+                        value={searchInput}
+                        onValueChange={setSearchInput}
+                    />
+                    <CommandList>
+                        <CommandEmpty>{t('picker.noMatches')}</CommandEmpty>
+                        {batchMatches.length > 0 && (
+                            <CommandGroup heading={t('picker.inBatchHeading')}>
+                                {batchMatches.map(renderItem)}
+                            </CommandGroup>
+                        )}
+                        {isSearching && (isSearchLoading || otherMatches.length > 0) && (
+                            <CommandGroup heading={t('picker.otherOrgsHeading')}>
+                                {isSearchLoading ? (
+                                    <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-neutral-400">
+                                        <CircleNotch className="size-3 animate-spin" />
+                                        {t('picker.searching')}
+                                    </div>
+                                ) : (
+                                    otherMatches.map(renderItem)
+                                )}
+                            </CommandGroup>
+                        )}
+                        {!isSearching && needle.length > 0 && (
+                            <p className="px-3 py-1.5 text-xs text-neutral-400">
+                                {t('picker.searchHint', { count: SUB_ORG_SEARCH_MIN_CHARS })}
+                            </p>
+                        )}
+                        <CommandSeparator />
+                        <CommandGroup>
+                            <CommandItem value={CREATE_NEW} onSelect={() => pick(CREATE_NEW)}>
+                                {t('picker.createNewOption')}
+                            </CommandItem>
+                            <CommandItem value={SKIP} onSelect={() => pick(SKIP)}>
+                                {t('picker.skipOption')}
+                            </CommandItem>
+                        </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    );
+};
+
 const SubOrgConfigRow = ({ ps, onUpdate }: RowProps) => {
     const { t } = useTranslation('manageStudentsStep4SubOrg');
     const learnerTerm = getTerminology(RoleTerms.Learner, SystemTerms.Learner);
@@ -86,14 +263,19 @@ const SubOrgConfigRow = ({ ps, onUpdate }: RowProps) => {
     const { data: subOrgs = [], isLoading } = useSubOrgsForPackageSession({
         packageSessionId: ps.packageSessionId,
     });
+    // An organisation picked from the institute-wide search is not in `subOrgs`; keep it so its
+    // admins still show below the picker.
+    const [searchedPick, setSearchedPick] = useState<PackageSessionSubOrg | null>(null);
 
     const isSkipped = !!ps.subOrgSkipped;
     const isCreatingNew = !isSkipped && !ps.subOrgId && !!ps.newSubOrg;
     const pickerValue = isSkipped ? SKIP : (ps.subOrgId ?? (isCreatingNew ? CREATE_NEW : ''));
-    const selectedSubOrg = subOrgs.find((s) => s.sub_org_id === ps.subOrgId);
+    const selectedSubOrg =
+        subOrgs.find((s) => s.sub_org_id === ps.subOrgId) ??
+        (searchedPick?.sub_org_id === ps.subOrgId ? searchedPick : undefined);
     const role: SubOrgRoleChoice = ps.subOrgRole ?? 'STAFF';
 
-    const handlePick = (value: string) => {
+    const handlePick = (value: string, picked?: PackageSessionSubOrg) => {
         if (value === SKIP) {
             onUpdate({
                 subOrgSkipped: true,
@@ -112,11 +294,12 @@ const SubOrgConfigRow = ({ ps, onUpdate }: RowProps) => {
             });
             return;
         }
-        const picked = subOrgs.find((s) => s.sub_org_id === value);
+        const match = picked ?? subOrgs.find((s) => s.sub_org_id === value);
+        setSearchedPick(match ?? null);
         onUpdate({
             subOrgSkipped: false,
             subOrgId: value,
-            subOrgName: picked?.name ?? null,
+            subOrgName: match?.name ?? null,
             newSubOrg: undefined,
         });
     };
@@ -137,31 +320,21 @@ const SubOrgConfigRow = ({ ps, onUpdate }: RowProps) => {
                     {isLoading ? (
                         <Skeleton className="h-9 w-full" />
                     ) : (
-                        <Select value={pickerValue} onValueChange={handlePick}>
-                            <SelectTrigger>
-                                <SelectValue placeholder={t('picker.placeholder')} />
-                            </SelectTrigger>
-                            <SelectContent className="z-popover-above-modal">
-                                {subOrgs.map((subOrg) => (
-                                    <SelectItem key={subOrg.sub_org_id} value={subOrg.sub_org_id}>
-                                        {subOrg.name || subOrg.sub_org_id}
-                                        {subOrg.member_count
-                                            ? t('picker.memberCount', {
-                                                  count: subOrg.member_count,
-                                              })
-                                            : ''}
-                                    </SelectItem>
-                                ))}
-                                <SelectItem value={CREATE_NEW}>
-                                    {t('picker.createNewOption')}
-                                </SelectItem>
-                                <SelectItem value={SKIP}>{t('picker.skipOption')}</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <SubOrgPicker
+                            value={pickerValue}
+                            selectedLabel={ps.subOrgName ?? selectedSubOrg?.name ?? null}
+                            batchSubOrgs={subOrgs}
+                            onPick={handlePick}
+                        />
                     )}
                     {!isLoading && subOrgs.length === 0 && (
                         <p className="mt-1 text-xs text-neutral-400">
                             {t('picker.emptyState')}
+                        </p>
+                    )}
+                    {selectedSubOrg && !subOrgs.some((s) => s.sub_org_id === ps.subOrgId) && (
+                        <p className="mt-1 text-xs text-amber-700">
+                            {t('picker.notInBatchNotice')}
                         </p>
                     )}
                 </div>

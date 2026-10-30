@@ -159,14 +159,35 @@ export function useDueFollowupReminders(): DueFollowupReminders {
 
 // ── Time helpers ───────────────────────────────────────────────────────
 
-/** "Overdue by 2h" / "Due now" / "Due in 10m" for a schedule time. */
-export function dueLabel(scheduleTime: string | null): {
+/**
+ * "Overdue by 2h" / "Due now" / "Due in 10m" for a schedule time.
+ *
+ * `byDate` (Lead settings → "Overdue by date, not time"): only a past DATE is overdue —
+ * a follow-up whose time passed earlier today reads "Due today", and an older one
+ * "Overdue by Nd" in calendar days. Off = by the minute, as before.
+ */
+export function dueLabel(
+    scheduleTime: string | null,
+    byDate = false
+): {
     text: string;
     tone: 'overdue' | 'now' | 'soon';
 } {
     const ts = scheduleTime ? Date.parse(scheduleTime) : NaN;
     if (Number.isNaN(ts)) return { text: 'Due', tone: 'now' };
     const diffMin = Math.round((ts - Date.now()) / 60000);
+    if (byDate && diffMin < -1) {
+        const startOfToday = new Date();
+        startOfToday.setHours(0, 0, 0, 0);
+        if (ts >= startOfToday.getTime()) return { text: 'Due today', tone: 'now' };
+        const dueDay = new Date(ts);
+        dueDay.setHours(0, 0, 0, 0);
+        const days = Math.max(
+            1,
+            Math.round((startOfToday.getTime() - dueDay.getTime()) / 86_400_000)
+        );
+        return { text: `Overdue by ${days}d`, tone: 'overdue' };
+    }
     if (diffMin <= -60 * 24) return { text: `Overdue by ${Math.floor(-diffMin / 1440)}d`, tone: 'overdue' };
     if (diffMin <= -60) return { text: `Overdue by ${Math.floor(-diffMin / 60)}h`, tone: 'overdue' };
     if (diffMin < -1) return { text: `Overdue by ${-diffMin}m`, tone: 'overdue' };
@@ -209,6 +230,7 @@ export function FollowUpReminderDialog() {
     const [open, setOpen] = useState(false);
     // Bump to re-read localStorage snoozes after we write them.
     const [, setSnoozeVersion] = useState(0);
+    const { overdueByDate } = useFollowUpFeatures();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
 
@@ -278,7 +300,7 @@ export function FollowUpReminderDialog() {
 
                 <div className="flex max-h-96 flex-col gap-2 overflow-y-auto px-5 py-4">
                     {shown.map((f) => {
-                        const due = dueLabel(f.schedule_time);
+                        const due = dueLabel(f.schedule_time, overdueByDate);
                         const preview = contentPreview(f);
                         return (
                             <div

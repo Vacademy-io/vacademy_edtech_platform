@@ -6,6 +6,7 @@
         "scoreUpdated": "Score Updated",
         "manualScoreUpdate": "Manual Score",
         "followup": "Follow-up",
+        "callbackRequested": "Callback requested",
         "reachout": "Reachout",
         "leadConverted": "Converted",
         "leadLost": "Lead Lost",

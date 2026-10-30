@@ -13,7 +13,7 @@
         "title": "Payment Status",
         "paid": "Paid",
         "failed": "Failed",
-        "paymentFailed": "Payment Failed"
+        "pending": "Pending"
     },
     "approvalStatus": {
         "title": "Approval Status",
@@ -22,7 +22,8 @@
     },
     "cartStatus": {
         "title": "Cart Status",
-        "abandonedCart": "Abandoned Cart"
+        "abandonedCart": "Abandoned Cart",
+        "paymentFailed": "Payment Failed"
     },
     "role": {
         "title": "Role"

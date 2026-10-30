@@ -227,6 +227,14 @@
       "openInNewTab": "Open in a new tab",
       "noDocument": "No document configured yet"
     },
+    "scormViewer": {
+      "swipeHint": "Swipe to turn the pages",
+      "defaultTitle": "Interactive preview",
+      "fullScreen": "Full screen",
+      "openInNewTab": "Open in a new tab",
+      "loading": "Loading preview…",
+      "noPackage": "No SCORM package configured yet"
+    },
     "hiddenForUrl": "Hidden for this URL"
   },
   "whatsAppFloatingButton": {

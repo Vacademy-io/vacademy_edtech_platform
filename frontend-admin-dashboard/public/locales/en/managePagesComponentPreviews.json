@@ -135,6 +135,11 @@
         "openDocument": "Open document",
         "download": "Download PDF"
     },
+    "scormViewer": {
+        "title": "SCORM package",
+        "noPackage": "Upload a SCORM zip in the panel",
+        "playsInPreview": "The package plays in the Website view"
+    },
     "blog": {
         "sampleCategory": "Study tips",
         "sampleTitle": "Sample post {{n}}",

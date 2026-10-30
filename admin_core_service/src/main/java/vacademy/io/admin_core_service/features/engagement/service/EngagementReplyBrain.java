@@ -4,11 +4,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.agent.dto.ConversationSession;
 import vacademy.io.admin_core_service.features.agent.service.LLMService;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementEngine;
+import vacademy.io.admin_core_service.features.engagement.entity.EngagementAsset;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,13 +41,39 @@ public class EngagementReplyBrain {
     @Value("${engagement.brain.model:}")
     private String brainModel;
 
-    /** action = ANSWER | ESCALATE; reply is the drafted text (a suggestion when escalated). */
-    public record ReplyDecision(String action, String reply, String reason, String escalationType) {
+    /** Prices the brain's tokens for the daily report. Optional so plain-constructed tests need no DB. */
+    @Autowired(required = false)
+    private EngagementLlmPricing pricing;
+
+    /**
+     * action = ANSWER | ESCALATE; reply is the drafted text (a suggestion when escalated).
+     * assetIds: assets to send along with the reply (unvalidated — the caller resolves them
+     * against the engine's own assets). requestedMaterial: what the person asked for when
+     * escalationType is "missing_material". usage = tokens + price of the call(s) behind it;
+     * null when no model was called.
+     */
+    public record ReplyDecision(String action, String reply, String reason, String escalationType,
+                                List<String> assetIds, String requestedMaterial, EngagementLlmUsage usage) {
+        public ReplyDecision(String action, String reply, String reason, String escalationType) {
+            this(action, reply, reason, escalationType, List.of(), null, null);
+        }
+
+        public ReplyDecision(String action, String reply, String reason, String escalationType,
+                             List<String> assetIds, String requestedMaterial) {
+            this(action, reply, reason, escalationType, assetIds, requestedMaterial, null);
+        }
+
         public boolean isAnswer() { return "ANSWER".equalsIgnoreCase(action); }
+        public boolean isMissingMaterial() { return "missing_material".equalsIgnoreCase(escalationType); }
     }
 
     public ReplyDecision decide(EngagementEngine engine, String compiledPrompt, String replyText) {
-        String system = systemPrompt(engine, compiledPrompt);
+        return decide(engine, compiledPrompt, replyText, List.of());
+    }
+
+    public ReplyDecision decide(EngagementEngine engine, String compiledPrompt, String replyText,
+                                List<EngagementAsset> assets) {
+        String system = systemPrompt(engine, compiledPrompt, assets);
         // Neutralize delimiter-like runs in the untrusted text so a crafted reply can't visually
         // mimic our own "=== END REPLY ===" framing inside the block (defense-in-depth; the block is
         // a single user-role message either way).
@@ -57,6 +85,7 @@ public class EngagementReplyBrain {
         history.add(ConversationSession.ChatMessage.system(system));
         history.add(ConversationSession.ChatMessage.user(user));
 
+        EngagementLlmUsage usage = EngagementLlmUsage.NONE;
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             ConversationSession session = ConversationSession.builder()
                     .instituteId(engine.getInstituteId())
@@ -67,6 +96,7 @@ public class EngagementReplyBrain {
             // Auto-replies are free by product decision (EngagementReplyResponder): never token-charged.
             session.getContext().put(LLMService.CTX_BILLED_BY_CALLER, Boolean.TRUE);
             LLMService.LLMResponse resp = llmService.generateChatCompletion(session);
+            usage = usage.plus(resp, pricing);
             String raw = resp != null ? resp.getContent() : null;
             if (raw == null || raw.isBlank()) {
                 throw new IllegalStateException("Reply brain returned an empty response");
@@ -79,8 +109,15 @@ public class EngagementReplyBrain {
                 if ("ANSWER".equalsIgnoreCase(action) && (reply == null || reply.isBlank())) {
                     action = "ESCALATE";
                 }
+                List<String> assetIds = new ArrayList<>();
+                if (n.path("assetIds").isArray()) {
+                    n.get("assetIds").forEach(id -> { if (id.isTextual()) assetIds.add(id.asText()); });
+                }
                 return new ReplyDecision(action, reply, n.path("reason").asText(""),
-                        n.hasNonNull("escalationType") ? n.get("escalationType").asText() : null);
+                        n.hasNonNull("escalationType") ? n.get("escalationType").asText() : null,
+                        assetIds,
+                        n.hasNonNull("requestedMaterial") ? n.get("requestedMaterial").asText() : null,
+                        usage);
             } catch (Exception parseError) {
                 if (attempt == MAX_ATTEMPTS) {
                     throw new IllegalStateException("Reply brain emitted unparseable JSON twice", parseError);
@@ -94,7 +131,22 @@ public class EngagementReplyBrain {
         throw new IllegalStateException("unreachable");
     }
 
-    private String systemPrompt(EngagementEngine engine, String compiledPrompt) {
+    /** The assets as the model sees it: id, kind, title and when to send it — never the URL. */
+    static String assetCatalogue(List<EngagementAsset> assets) {
+        if (assets == null || assets.isEmpty()) return "(no assets yet)";
+        StringBuilder sb = new StringBuilder();
+        for (EngagementAsset a : assets) {
+            sb.append("- id=").append(a.getId()).append(" | ").append(a.getMediaType())
+              .append(" | ").append(a.getTitle().replace('\n', ' '));
+            if (a.getDescription() != null && !a.getDescription().isBlank()) {
+                sb.append(" — ").append(a.getDescription().replace('\n', ' '));
+            }
+            sb.append('\n');
+        }
+        return sb.toString().stripTrailing();
+    }
+
+    private String systemPrompt(EngagementEngine engine, String compiledPrompt, List<EngagementAsset> assets) {
         return """
             You handle replies for an education institute's Engagement Engine. A person replied to a
             message this engine sent them, on WhatsApp, within the 24-hour window where a free-form
@@ -105,6 +157,18 @@ public class EngagementReplyBrain {
             ---
             %s
             ---
+
+            THE ASSETS (material you may send as an attachment — brochures, videos, price sheets):
+            ---
+            %s
+            ---
+            When the person asks for material (a brochure, demo or walkthrough video, syllabus, sample,
+            schedule, photos…): if a asset clearly fits, ANSWER with a short sentence introducing
+            it and put its id in "assetIds" (at most 3, copied exactly from the list above — never
+            invent an id, never paste a link yourself, the file is attached for you). If NOTHING in
+            the assets fits, do not pretend: ESCALATE with escalationType "missing_material", set
+            "requestedMaterial" to what they asked for, and draft a brief holding reply saying a
+            team member will share it shortly.
 
             ESCALATE (do NOT auto-answer) whenever ANY of these hold — this is mandatory:
             - UNCERTAINTY: the answer isn't clearly in the brief, or you'd have to guess a fact, price,
@@ -125,9 +189,11 @@ public class EngagementReplyBrain {
               "action": "ANSWER" | "ESCALATE",
               "reply": "<the message to send (ANSWER) or a suggested draft for the human (ESCALATE)>",
               "reason": "<one line: why you answered, or why you escalated — shown to staff>",
-              "escalationType": "uncertainty" | "anger" | "money" | "other" | null
+              "escalationType": "uncertainty" | "anger" | "money" | "missing_material" | "other" | null,
+              "assetIds": ["<assets ids to attach>"] | [],
+              "requestedMaterial": "<what they asked for, only when escalationType is missing_material>" | null
             }
-            """.formatted(compiledPrompt, languageName(engine.getLanguage()));
+            """.formatted(compiledPrompt, assetCatalogue(assets), languageName(engine.getLanguage()));
     }
 
     private static String languageName(String code) {

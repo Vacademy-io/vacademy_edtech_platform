@@ -21,7 +21,6 @@ import vacademy.io.admin_core_service.features.live_session.enums.NotificationTy
 import vacademy.io.admin_core_service.features.live_session.provider.dto.ProviderMeetingCreateRequestDTO;
 import vacademy.io.admin_core_service.features.live_session.provider.service.ProviderMeetingBatchService;
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleCalendarService;
-import vacademy.io.admin_core_service.features.mentorship.repository.MentorRepository;
 import vacademy.io.admin_core_service.features.live_session.repository.SessionScheduleRepository;
 import vacademy.io.admin_core_service.features.live_session.service.Step1Service;
 import vacademy.io.admin_core_service.features.live_session.service.Step2Service;
@@ -78,7 +77,7 @@ public class MeetingBookingService {
     private final SessionScheduleRepository sessionScheduleRepository;
     private final ProviderMeetingBatchService providerMeetingBatchService;
     private final GoogleCalendarService googleCalendarService;
-    private final MentorRepository mentorRepository;
+    private final UserGoogleAccountService userGoogleAccountService;
     private final AuthService authService;
     private final NotificationService notificationService;
     private final MentorshipNotificationService mentorshipNotificationService;
@@ -230,6 +229,7 @@ public class MeetingBookingService {
                 .liveSessionId(session.getId())
                 .scheduleId(scheduleId)
                 .hostUserId(hostUserId)
+                .googleAccountId(chooseGoogleAccount(request, hostUserId))
                 .inviteeUserId(request.getInviteeUserId())
                 .audienceResponseId(request.getAudienceResponseId())
                 .inviteeName(request.getInviteeName())
@@ -278,7 +278,7 @@ public class MeetingBookingService {
                     .timezone(timezone)
                     // Per-mentor Google: mint the Meet under the mentor's own account when
                     // connected; null → institute default (unchanged behavior).
-                    .providerAccountId(hostGoogleAccountId(instance.getInstituteId(), instance.getHostUserId()))
+                    .providerAccountId(googleAccountOf(instance))
                     .build());
             String meetLink = sessionScheduleRepository.findBySessionId(instance.getLiveSessionId()).stream()
                     .map(SessionSchedule::getCustomMeetingLink)
@@ -327,7 +327,7 @@ public class MeetingBookingService {
             String description = "Booking with " + firstNonBlank(instance.getInviteeName(), "invitee", "");
             Optional<String> eventId = googleCalendarService.createEvent(
                     instance.getInstituteId(),
-                    hostGoogleAccountId(instance.getInstituteId(), instance.getHostUserId()),
+                    googleAccountOf(instance),
                     title, description,
                     instance.getScheduledStartUtc().toInstant(), instance.getScheduledEndUtc().toInstant(),
                     timezone, attendees, instance.getMeetLink());
@@ -341,18 +341,22 @@ public class MeetingBookingService {
         return instance;
     }
 
-    /** The Google account the booking's host mentor connected (null → institute default). */
-    private String hostGoogleAccountId(String instituteId, String hostUserId) {
-        if (instituteId == null || hostUserId == null) return null;
-        try {
-            return mentorRepository
-                    .findByInstituteIdAndUserIdAndStatusNot(instituteId, hostUserId, "DELETED")
-                    .map(vacademy.io.admin_core_service.features.mentorship.entity.Mentor::getGoogleAccountId)
-                    .filter(id -> id != null && !id.isBlank())
-                    .orElse(null);
-        } catch (Exception e) {
-            return null;
-        }
+    /**
+     * Which Google account a new booking uses, stored on the instance as an id ("" = institute
+     * default): an explicit account, else the requested user's connection (engagement engine —
+     * unconnected falls back to the institute default), else the host's own connection.
+     */
+    private String chooseGoogleAccount(MeetingBookingRequestDTO request, String hostUserId) {
+        if (request.getGoogleAccountId() != null) return request.getGoogleAccountId();
+        String owner = request.getGoogleAccountUserId() != null && !request.getGoogleAccountUserId().isBlank()
+                ? request.getGoogleAccountUserId() : hostUserId;
+        return userGoogleAccountService.resolveAccountId(request.getInstituteId(), owner).orElse("");
+    }
+
+    /** The account recorded on the booking; null → institute default. */
+    private String googleAccountOf(BookingInstance instance) {
+        String id = instance.getGoogleAccountId();
+        return id == null || id.isBlank() ? null : id;
     }
 
     /** Direct on-booking confirmation to the invitee's email + the host, best effort. */

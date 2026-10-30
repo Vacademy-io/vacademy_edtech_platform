@@ -254,6 +254,10 @@
         "subheading": "Feuilletez chaque page directement ici.",
         "buttonText": "Ouvrir le catalogue"
     },
+    "scormViewer": {
+        "heading": "Jetez un œil à l’intérieur",
+        "subheading": "Feuilletez un court aperçu."
+    },
     "blog": {
         "heading": "Sur le blog",
         "subheading": "Conseils d’étude, actualités des examens et histoires de nos classes.",

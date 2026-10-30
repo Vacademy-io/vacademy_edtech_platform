@@ -1290,6 +1290,33 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
     List<InboundReplyRow> findInboundRepliesSince(@Param("instituteId") String instituteId,
                                                   @Param("since") Instant since);
 
+    interface InboundEmailRow {
+        String getFromAddress();
+        String getSubject();
+        String getPayload();
+        java.sql.Timestamp getReceivedAt();
+        String getMessageId();
+    }
+
+    /**
+     * Recent inbound emails for an institute since a cursor, for the Engagement Engine's reply
+     * sweep. Every email, not only the latest per sender: unlike WhatsApp there is no 24h window to
+     * open, each email is read on its own. The full body is in message_payload (body holds the
+     * subject); source_id is the Message-ID the sweep dedups on.
+     */
+    @Query(value = """
+            SELECT channel_id AS "fromAddress", body AS "subject", message_payload AS "payload",
+                   notification_date AS "receivedAt", source_id AS "messageId"
+            FROM notification_log
+            WHERE institute_id = :instituteId
+              AND notification_type = 'INBOUND_EMAIL'
+              AND notification_date >= :since
+            ORDER BY notification_date
+            LIMIT 200
+            """, nativeQuery = true)
+    List<InboundEmailRow> findInboundEmailsSince(@Param("instituteId") String instituteId,
+                                                 @Param("since") Instant since);
+
     @Query(value = """
             SELECT LOWER(channel_id) AS "channelId",
                    MAX(notification_date) FILTER (WHERE notification_type = 'EMAIL') AS "lastSentAt",
@@ -1449,4 +1476,33 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
             @Param("errorCode") String errorCode,
             @Param("errorMessage") String errorMessage,
             @Param("reportedAt") Instant reportedAt);
+
+    /** One failed delivery of a message the engine sent: its action id (correlation) and Meta's reason. */
+    interface DeliveryFailureRow {
+        String getCorrelationId();
+        String getErrorCode();
+        String getErrorMessage();
+    }
+
+    /**
+     * WhatsApp messages sent with a correlation id (the engine's action id) that Meta later reported
+     * as failed, e.g. error 131049 (per-user marketing cap). The send API accepts such a message,
+     * so the engine marks it SENT; this is how it finds out. Looks only at the failure rows
+     * (WHATSAPP_MESSAGE_FAILED) created since the cursor.
+     */
+    @Query(value = """
+            SELECT DISTINCT ON (nl.correlation_id)
+                   nl.correlation_id AS correlationId,
+                   nl.delivery_error_code AS errorCode,
+                   nl.delivery_error_message AS errorMessage
+              FROM notification_log nl
+             WHERE nl.institute_id = :instituteId
+               AND nl.notification_type = 'WHATSAPP_MESSAGE_FAILED'
+               AND nl.correlation_id IS NOT NULL
+               AND nl.delivery_error_message IS NOT NULL
+               AND nl.created_at >= :since
+             ORDER BY nl.correlation_id, nl.created_at DESC
+            """, nativeQuery = true)
+    java.util.List<DeliveryFailureRow> findWhatsAppDeliveryFailuresSince(@Param("instituteId") String instituteId,
+                                                                          @Param("since") java.time.Instant since);
 }

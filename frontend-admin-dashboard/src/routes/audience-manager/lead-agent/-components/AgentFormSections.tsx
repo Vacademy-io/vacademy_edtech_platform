@@ -4,6 +4,7 @@
  */
 import { useMemo, useState } from 'react';
 import { useFieldArray, type UseFormReturn } from 'react-hook-form';
+import { toast } from 'sonner';
 import {
     CaretDown,
     CaretUp,
@@ -44,6 +45,7 @@ import type { SuggestResponse } from '../-types';
 import { dedupe, formatCompetitor, type AgentFormValues } from '../-utils/agent-form';
 import {
     COMPETITOR_KIND_OPTIONS,
+    EFFORT_OPTIONS,
     EXCLUDE_PRESETS,
     FIT_WEIGHT_OPTIONS,
     LIST_LIMITS,
@@ -94,13 +96,16 @@ export function BasicsSection({
     form,
     leadLists,
     leadListsLoading,
+    onCreateList,
 }: {
     form: Form;
     leadLists: LeadListOption[];
     leadListsLoading: boolean;
+    /** Shows a "New list" button beside the list picker (the create dialog only). */
+    onCreateList?: () => void;
 }) {
     const suggest = useSuggestBrief();
-    const [summary, setSummary] = useState<string | null>(null);
+    const [result, setResult] = useState<{ summary: string; note: string | null } | null>(null);
     const listOptions: SearchableSelectOption[] = leadLists.map((l) => ({
         label: l.name,
         value: l.id,
@@ -177,10 +182,27 @@ export function BasicsSection({
                 form.setValue('discovery_question', o.discovery_question.slice(0, 200), opts);
             }
         }
-        setSummary(
-            res.summary ||
-                `Suggested ${res.industries.length} industries. Check them in the next step.`
-        );
+        // Unlike the fields above, the description is replaced: writing it is what the button
+        // is for, and what the admin had typed went into the suggestion. Undo brings it back.
+        const description = res.description.slice(0, 3000);
+        if (description) {
+            const previous = v.description;
+            form.setValue('description', description, { shouldDirty: true, shouldValidate: true });
+            if (previous.trim()) {
+                toast('Description rewritten by AI', {
+                    action: {
+                        label: 'Undo',
+                        onClick: () => form.setValue('description', previous, opts),
+                    },
+                });
+            }
+        }
+        setResult({
+            summary: `${description ? 'Wrote the description and suggested' : 'Suggested'} ${
+                res.industries.length
+            } industries. Check them in the next step.`,
+            note: res.note ?? null,
+        });
     };
 
     const runSuggest = async () => {
@@ -215,9 +237,23 @@ export function BasicsSection({
                 name="audience_id"
                 render={({ field }) => (
                     <FormItem>
-                        <FormLabel>
-                            Lead list <span className="text-danger-600">*</span>
-                        </FormLabel>
+                        <div className="flex items-center justify-between gap-3">
+                            <FormLabel>
+                                Lead list <span className="text-danger-600">*</span>
+                            </FormLabel>
+                            {onCreateList && (
+                                <MyButton
+                                    type="button"
+                                    buttonType="text"
+                                    scale="small"
+                                    onClick={onCreateList}
+                                    className="shrink-0"
+                                >
+                                    <Plus className="size-4" />
+                                    New list
+                                </MyButton>
+                            )}
+                        </div>
                         <FormControl>
                             <SearchableSelect
                                 options={listOptions}
@@ -227,7 +263,11 @@ export function BasicsSection({
                                     leadListsLoading ? 'Loading lists…' : 'Pick a lead list'
                                 }
                                 searchPlaceholder="Search lists"
-                                emptyText="No lead list without an agent. Create a list first."
+                                emptyText={
+                                    onCreateList
+                                        ? 'No lead list without an agent. Use “New list” to make one.'
+                                        : 'No lead list without an agent. Create a list first.'
+                                }
                                 portal={false}
                                 disabled={leadListsLoading}
                                 className="w-full"
@@ -305,25 +345,6 @@ export function BasicsSection({
             </div>
             <FormField
                 control={form.control}
-                name="description"
-                render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>
-                            Product description <span className="text-danger-600">*</span>
-                        </FormLabel>
-                        <FormControl>
-                            <Textarea
-                                {...field}
-                                rows={4}
-                                placeholder="What you sell and to whom. e.g. Rooftop solar installation for factories and warehouses that want to cut power bills."
-                            />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                )}
-            />
-            <FormField
-                control={form.control}
                 name="website"
                 render={({ field }) => (
                     <FormItem>
@@ -345,39 +366,53 @@ export function BasicsSection({
                     </FormItem>
                 )}
             />
-            <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 bg-neutral-50 p-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-body text-neutral-600">
-                        Let AI suggest industries, buyer roles, keywords and what a good fit looks
-                        like from what you sell, your description or your website.
-                    </p>
-                    <MyButton
-                        type="button"
-                        buttonType="secondary"
-                        scale="medium"
-                        disable={suggest.isPending}
-                        onClick={() => void runSuggest()}
-                        className="shrink-0"
-                    >
-                        {suggest.isPending ? (
-                            <CircleNotch className="size-4 animate-spin" />
-                        ) : (
-                            <Sparkle className="size-4 text-primary-500" weight="fill" />
+            <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                    <FormItem>
+                        <div className="flex items-center justify-between gap-3">
+                            <FormLabel>
+                                Product description <span className="text-danger-600">*</span>
+                            </FormLabel>
+                            <MyButton
+                                type="button"
+                                buttonType="secondary"
+                                scale="medium"
+                                disable={suggest.isPending}
+                                onClick={() => void runSuggest()}
+                                className="shrink-0"
+                            >
+                                {suggest.isPending ? (
+                                    <CircleNotch className="size-4 animate-spin" />
+                                ) : (
+                                    <Sparkle className="size-4 text-primary-500" weight="fill" />
+                                )}
+                                {suggest.isPending ? 'Researching…' : 'Suggest with AI'}
+                            </MyButton>
+                        </div>
+                        <FormControl>
+                            <Textarea
+                                {...field}
+                                rows={6}
+                                placeholder="What you sell and to whom. e.g. Rooftop solar installation for factories and warehouses that want to cut power bills."
+                            />
+                        </FormControl>
+                        <FormDescription aria-live="polite">
+                            {suggest.isPending
+                                ? 'Reading your website and writing the description. This can take up to a minute.'
+                                : 'Suggest with AI reads your website and the fields above, writes this description and fills in who to find in the next step.'}
+                        </FormDescription>
+                        {!suggest.isPending && result && (
+                            <p className="text-caption text-success-700">{result.summary}</p>
                         )}
-                        {suggest.isPending ? 'Thinking…' : 'Suggest with AI'}
-                    </MyButton>
-                </div>
-                {suggest.isPending && (
-                    <p className="text-caption text-neutral-500" aria-live="polite">
-                        Reading your product. This can take up to a minute.
-                    </p>
+                        {!suggest.isPending && result?.note && (
+                            <p className="text-caption text-warning-700">{result.note}</p>
+                        )}
+                        <FormMessage />
+                    </FormItem>
                 )}
-                {!suggest.isPending && summary && (
-                    <p className="text-caption text-success-700" aria-live="polite">
-                        {summary}
-                    </p>
-                )}
-            </div>
+            />
         </div>
     );
 }
@@ -1352,6 +1387,58 @@ export function PacingSection({ form }: { form: Form }) {
                     </CollapsibleContent>
                 </Collapsible>
             </div>
+
+            <FormField
+                control={form.control}
+                name="effort"
+                render={({ field }) => (
+                    <FormItem className="flex flex-col gap-2">
+                        <SectionHeading
+                            title="Validation effort"
+                            hint="Higher effort finds and confirms more contacts, but costs more per lead."
+                        />
+                        <FormControl>
+                            <RadioGroup
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                className="grid grid-cols-1 gap-2"
+                                aria-label="Validation effort"
+                            >
+                                {EFFORT_OPTIONS.map((o) => {
+                                    const id = `la-effort-${o.value}`;
+                                    return (
+                                        <label
+                                            key={o.value}
+                                            htmlFor={id}
+                                            className={cn(
+                                                'flex cursor-pointer items-start gap-3 rounded-md border p-3',
+                                                field.value === o.value
+                                                    ? 'border-primary-300 bg-primary-50'
+                                                    : 'border-neutral-200'
+                                            )}
+                                        >
+                                            <RadioGroupItem
+                                                id={id}
+                                                value={o.value}
+                                                className="mt-0.5"
+                                            />
+                                            <span className="flex flex-col gap-1">
+                                                <span className="text-body font-semibold text-neutral-800">
+                                                    {o.label}
+                                                </span>
+                                                <span className="text-caption text-neutral-500">
+                                                    {o.note}
+                                                </span>
+                                            </span>
+                                        </label>
+                                    );
+                                })}
+                            </RadioGroup>
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
         </div>
     );
 }

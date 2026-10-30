@@ -127,6 +127,13 @@ interface IndividualSendDialogProps {
     instituteId: string;
 }
 
+// First word / rest of the full name — the same split the notification service uses when it
+// derives {{first_name}} / {{last_name}} for workflow sends.
+function splitFullName(fullName: string | null | undefined): { first: string; last: string } {
+    const parts = (fullName || '').trim().split(/\s+/);
+    return { first: parts[0] || '', last: parts.slice(1).join(' ') };
+}
+
 // System fields the user can map a variable to. Resolved against the StudentTable, plus the
 // learner's portal credentials for username/password (fetched only when one of them is mapped).
 // Both come from auth-service only — the login checks against that row, so no other field is
@@ -139,6 +146,16 @@ const buildSystemFields = (
     resolve: (s: StudentTable, creds?: StudentCredentialsType | null) => string;
 }> => [
     { value: 'system:full_name', label: t('systemFields.fullName'), resolve: (s) => s.full_name || '' },
+    {
+        value: 'system:first_name',
+        label: t('systemFields.firstName'),
+        resolve: (s) => splitFullName(s.full_name).first,
+    },
+    {
+        value: 'system:last_name',
+        label: t('systemFields.lastName'),
+        resolve: (s) => splitFullName(s.full_name).last,
+    },
     { value: 'system:email', label: t('systemFields.email'), resolve: (s) => s.email || '' },
     {
         value: 'system:mobile_number',
@@ -200,6 +217,22 @@ function autoMapVariable(varKey: string): string | undefined {
     const k = varKey.toLowerCase();
     if (k === 'name' || k === 'full_name' || k === 'student_name' || k === 'fullname') {
         return 'system:full_name';
+    }
+    if (
+        k === 'first_name' ||
+        k === 'firstname' ||
+        k === 'user_first_name' ||
+        k === 'student_first_name'
+    ) {
+        return 'system:first_name';
+    }
+    if (
+        k === 'last_name' ||
+        k === 'lastname' ||
+        k === 'user_last_name' ||
+        k === 'student_last_name'
+    ) {
+        return 'system:last_name';
     }
     if (k === 'email' || k === 'email_id') return 'system:email';
     if (k === 'mobile' || k === 'mobile_number' || k === 'phone' || k === 'phone_number') {

@@ -33,6 +33,7 @@
         "unnamed": "دورة بدون اسم",
         "sessionLabel": "{{term}}: {{name}}"
     },
+    "enrolledOn": "تاريخ التسجيل: {{date}}",
     "accessWindow": {
         "unlimited": "الوصول: غير محدود",
         "expired": "انتهى الوصول في {{date}}",

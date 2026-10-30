@@ -887,7 +887,10 @@ public interface InstituteStudentRepository extends CrudRepository<Student, Stri
         AND (:#{#gender == null || #gender.isEmpty()} = true OR s.gender IN (:gender))
         AND (:#{#instituteIds == null || #instituteIds.isEmpty()} = true OR ssigm.institute_id IN (:instituteIds))
         AND (:#{#groupIds == null || #groupIds.isEmpty()} = true OR ssigm.group_id IN (:groupIds))
-        AND (:#{#packageSessionIds == null || #packageSessionIds.isEmpty()} = true OR ssigm.package_session_id IN (:packageSessionIds))
+        AND (:#{#packageSessionIds == null || #packageSessionIds.isEmpty()} = true
+             OR ssigm.package_session_id IN (:packageSessionIds)
+             OR (:#{#paymentStatuses == null || #paymentStatuses.isEmpty()} = false
+                 AND ssigm.destination_package_session_id IN (:packageSessionIds)))
         AND (:#{#paymentStatuses == null || #paymentStatuses.isEmpty()} = true OR last_pl.payment_status IN (:paymentStatuses))
         AND (:#{#sources == null || #sources.isEmpty()} = true OR ssigm.source IN (:sources))
         AND (:#{#types == null || #types.isEmpty()} = true OR ssigm.type IN (:types))
@@ -948,7 +951,10 @@ public interface InstituteStudentRepository extends CrudRepository<Student, Stri
         AND (:#{#gender == null || #gender.isEmpty()} = true OR s.gender IN (:gender))
         AND (:#{#instituteIds == null || #instituteIds.isEmpty()} = true OR ssigm.institute_id IN (:instituteIds))
         AND (:#{#groupIds == null || #groupIds.isEmpty()} = true OR ssigm.group_id IN (:groupIds))
-        AND (:#{#packageSessionIds == null || #packageSessionIds.isEmpty()} = true OR ssigm.package_session_id IN (:packageSessionIds))
+        AND (:#{#packageSessionIds == null || #packageSessionIds.isEmpty()} = true
+             OR ssigm.package_session_id IN (:packageSessionIds)
+             OR (:#{#paymentStatuses == null || #paymentStatuses.isEmpty()} = false
+                 AND ssigm.destination_package_session_id IN (:packageSessionIds)))
         AND (:#{#paymentStatuses == null || #paymentStatuses.isEmpty()} = true OR last_pl.payment_status IN (:paymentStatuses))
         AND (:#{#sources == null || #sources.isEmpty()} = true OR ssigm.source IN (:sources))
         AND (:#{#types == null || #types.isEmpty()} = true OR ssigm.type IN (:types))
@@ -976,6 +982,8 @@ public interface InstituteStudentRepository extends CrudRepository<Student, Stri
           )
         )
       """)
+  // With a payment-status filter, packageSessionIds also matches destination_package_session_id:
+  // failed / pending checkouts (ABANDONED_CART, PAYMENT_FAILED rows) live in the INVITED session.
   Page<StudentListV2Projection> getAllStudentV2WithFilterRaw(
       @Param("statuses") List<String> statuses,
       @Param("gender") List<String> gender,

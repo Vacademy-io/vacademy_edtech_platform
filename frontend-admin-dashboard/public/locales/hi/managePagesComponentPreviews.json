@@ -135,6 +135,11 @@
         "openDocument": "दस्तावेज़ खोलें",
         "download": "PDF डाउनलोड करें"
     },
+    "scormViewer": {
+        "title": "SCORM पैकेज",
+        "noPackage": "पैनल में SCORM zip अपलोड करें",
+        "playsInPreview": "पैकेज वेबसाइट व्यू में चलता है"
+    },
     "blog": {
         "sampleCategory": "पढ़ाई के टिप्स",
         "sampleTitle": "नमूना पोस्ट {{n}}",

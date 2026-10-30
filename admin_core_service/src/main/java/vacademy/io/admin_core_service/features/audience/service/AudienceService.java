@@ -25,6 +25,7 @@ import vacademy.io.admin_core_service.features.audience.entity.AudienceCommunica
 import vacademy.io.admin_core_service.features.audience.repository.AudienceCommunicationRepository;
 import vacademy.io.admin_core_service.features.audience.repository.LeadFollowupRepository;
 import vacademy.io.admin_core_service.features.audience.entity.LeadFollowup;
+import vacademy.io.admin_core_service.features.engagement.service.EngagementWakeService;
 import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendRequest;
 import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendResponse;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
@@ -209,6 +210,9 @@ public class AudienceService {
 
     @Autowired
     private LeadDeduplicationService leadDeduplicationService;
+
+    @Autowired
+    private EngagementWakeService engagementWakeService;
 
     @Autowired
     private vacademy.io.admin_core_service.features.timeline.service.TimelineEventService timelineEventService;
@@ -1739,11 +1743,21 @@ public class AudienceService {
                     }
                     contextData.put("adminEmailRequests", adminEmailRequests);
 
-                    workflowTriggerService.handleTriggerEvents(
-                            WorkflowTriggerEvent.AUDIENCE_LEAD_SUBMISSION.name(),
-                            requestDTO.getAudienceId(),
-                            instituteId,
-                            contextData);
+                    // The lead is already saved. handleTriggerEvents runs in its own
+                    // (REQUIRES_NEW) transaction, so a broken workflow node only rolls that
+                    // back — it must not turn this response into the error sentinel (the
+                    // admin then sees "Error in submitting the response" and re-adds a
+                    // lead that exists). Same guard as submitLeadFromFormWebhook.
+                    try {
+                        workflowTriggerService.handleTriggerEvents(
+                                WorkflowTriggerEvent.AUDIENCE_LEAD_SUBMISSION.name(),
+                                requestDTO.getAudienceId(),
+                                instituteId,
+                                contextData);
+                    } catch (Exception e) {
+                        logger.error("Workflow trigger failed for audience {} (lead {} already saved)",
+                                requestDTO.getAudienceId(), savedResponse.getId(), e);
+                    }
 
                     // The workflow context carries adminEmailRequests, but a workflow that only
                     // emails the respondent has no consumer for it — the to_notify admin alert
@@ -2708,14 +2722,19 @@ public class AudienceService {
                         audience.getSendRespondentEmail() == null || audience.getSendRespondentEmail(),
                         adminEmails.size());
 
-                // 9. Trigger the workflow
-                workflowTriggerService.handleTriggerEvents(
-                        WorkflowTriggerEvent.AUDIENCE_LEAD_SUBMISSION.name(),
-                        requestDTO.getAudienceId(), // eventId (audience campaign ID)
-                        instituteId,
-                        contextData);
-
-                logger.info("[V2] Workflow triggered successfully for audience: {}", requestDTO.getAudienceId());
+                // 9. Trigger the workflow — lead is already saved, so a failing workflow
+                // (own REQUIRES_NEW transaction) must not flip the response to an error.
+                try {
+                    workflowTriggerService.handleTriggerEvents(
+                            WorkflowTriggerEvent.AUDIENCE_LEAD_SUBMISSION.name(),
+                            requestDTO.getAudienceId(), // eventId (audience campaign ID)
+                            instituteId,
+                            contextData);
+                    logger.info("[V2] Workflow triggered successfully for audience: {}", requestDTO.getAudienceId());
+                } catch (Exception e) {
+                    logger.error("[V2] Workflow trigger failed for audience {} (lead {} already saved)",
+                            requestDTO.getAudienceId(), savedResponse.getId(), e);
+                }
 
                 // Send the to_notify admin alert directly unless the workflow already has an
                 // admin-notify node (otherwise adminEmailRequests has no consumer and the alert
@@ -4741,6 +4760,8 @@ public class AudienceService {
             migrated++;
 
             logLeadListChangeEvent(response, actor, fromAudienceId, targetAudience, anchorMode, instituteId);
+            // After commit: leave the old list's engagement engines, join the new list's (L7).
+            if (engagementWakeService != null) engagementWakeService.leadMoved(instituteId, response.getId(), actor != null ? actor.getUserId() : null);
         }
         // These entities came from a repository query inside this transaction, so they are managed:
         // the field writes above are already dirty-checked and flushed at commit. saveAll() here is

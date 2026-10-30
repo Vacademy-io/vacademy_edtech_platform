@@ -254,6 +254,10 @@
         "subheading": "Flip through every page right here.",
         "buttonText": "Open the catalogue"
     },
+    "scormViewer": {
+        "heading": "Take a look inside",
+        "subheading": "Turn the pages of a short preview."
+    },
     "blog": {
         "heading": "From the blog",
         "subheading": "Study tips, exam updates and stories from our classrooms.",

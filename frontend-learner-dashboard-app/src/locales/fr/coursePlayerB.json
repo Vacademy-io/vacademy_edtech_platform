@@ -241,6 +241,7 @@
         "goToTestimonial": "Aller au témoignage {{number}}"
     },
     "leadForm": {
+        "close": "Fermer",
         "emptyConfig": "Choisissez une campagne d'audience dans le panneau des propriétés — ses champs de formulaire s'afficheront ici.",
         "errorLoad": "Impossible de charger cette campagne. Vérifiez qu'elle est active et appartient à cet établissement.",
         "emptyFields": "Cette campagne n'a pas encore de champs de formulaire — ajoutez-en dans le gestionnaire d'audience.",
@@ -468,6 +469,10 @@
         "older": "Plus anciens",
         "pageOf": "Page {{page}} sur {{total}}",
         "minRead": "{{minutes}} min de lecture",
+        "like": "J'aime",
+        "unlike": "Je n'aime plus",
+        "likeCount_one": "{{count}} j'aime",
+        "likeCount_other": "{{count}} j'aime",
         "notFoundTitle": "Article introuvable",
         "notFoundBody": "Cet article a peut-être été dépublié ou déplacé.",
         "tags": "Étiquettes",
@@ -504,5 +509,53 @@
         "launchingOnHint": "Lancement le {{date}}. Laissez vos coordonnées, nous vous préviendrons dès l'ouverture.",
         "notifyHint": "Laissez vos coordonnées, nous vous préviendrons dès l'ouverture.",
         "notifyTitle": "Être prévenu du lancement de {{title}}"
+    },
+    "reviewCollector": {
+        "buttonLabel": "Donnez votre avis",
+        "heading": "Comment s'est passée votre expérience ?",
+        "subheading": "Votre avis aide d'autres élèves à choisir.",
+        "ratingLabel": "Votre note",
+        "ratingName": {
+            "1": "Mauvais",
+            "2": "Passable",
+            "3": "Bien",
+            "4": "Très bien",
+            "5": "Excellent"
+        },
+        "starsA11y_one": "{{count}} étoile",
+        "starsA11y_other": "{{count}} étoiles",
+        "nameLabel": "Votre nom",
+        "textLabel": "Votre avis",
+        "textPlaceholder": "Qu'avez-vous aimé ? Qu'est-ce qui pourrait être mieux ?",
+        "cityLabel": "Ville",
+        "courseLabel": "Formation",
+        "coursePlaceholder": "Choisissez votre formation",
+        "designationLabel": "Profession / poste",
+        "submit": "Envoyer l'avis",
+        "sending": "Envoi…",
+        "successHeading": "Merci !",
+        "successMessage": "Votre avis a été envoyé. Il apparaîtra sur le site une fois approuvé.",
+        "previewNoSave": "Aperçu : rien n'a été enregistré.",
+        "ratingRequired": "Veuillez choisir une note.",
+        "fieldRequired": "Ce champ est obligatoire.",
+        "customFieldLabel": "Votre réponse",
+        "selectPlaceholder": "Choisir",
+        "invalidEmail": "Saisissez une adresse e-mail valide.",
+        "invalidNumber": "Saisissez un nombre.",
+        "invalidPhone": "Saisissez un numéro de téléphone valide.",
+        "tooLong": "C'est trop long.",
+        "failed": "Impossible d'envoyer votre avis. Veuillez réessayer.",
+        "tooMany": "Vous avez déjà envoyé plusieurs avis aujourd'hui. Réessayez demain.",
+        "close": "Fermer",
+        "previewTitle": "Avis et retours",
+        "previewHint": "Sélectionnez ce bloc pour ouvrir le formulaire",
+        "display": {
+            "floatingPopup": "bouton + ouverture automatique",
+            "floating": "bouton",
+            "popup": "ouverture automatique",
+            "inline": "formulaire dans la page"
+        },
+        "averageRating_one": "{{average}} sur 5 · {{count}} avis",
+        "averageRating_other": "{{average}} sur 5 · {{count}} avis"
     }
 }

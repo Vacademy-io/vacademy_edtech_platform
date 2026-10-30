@@ -13,6 +13,8 @@ export type SourceKey =
 export type AgentStatus = 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
 export type AgentMode = 'LOCAL' | 'REMOTE' | 'AUTO';
 export type MinContact = 'direct' | 'likely' | 'general';
+/** How much extra checking (and spend) goes into confirming each lead's phone and email. */
+export type ValidationEffort = 'BASIC' | 'STANDARD' | 'DEEP';
 
 export type CandidateStatus =
     | 'DISCOVERED'
@@ -95,6 +97,8 @@ export interface AgentGate {
     require_intent: boolean;
     /** Leads already on a competitor's product are judged like any other (no review hold). */
     auto_competitor_users: boolean;
+    /** Older agents have none; the API layer reads a missing value as STANDARD. */
+    effort: ValidationEffort;
 }
 
 export interface AgentWindow {
@@ -153,11 +157,46 @@ export interface AgentPayload {
     window: AgentWindow;
 }
 
+/** One status, or several (the API takes them comma-separated). */
+export type CandidateStatusFilter = CandidateStatus | readonly CandidateStatus[];
+
+/** The phone or email delivery sends when there is no `send` (older servers). */
 export interface BestContact {
     kind: string;
     value: string;
     quality: string;
     label: string;
+}
+
+/** The phone delivery will send. */
+export interface SentPhone {
+    value: string;
+    quality: string;
+    quality_note: string | null;
+    /** A website number that the organisation's Google Maps listing also shows. */
+    maps_confirmed: boolean;
+    /** Taken from the organisation's Google Maps listing. */
+    from_maps: boolean;
+}
+
+/** The email delivery will send. */
+export interface SentEmail {
+    value: string;
+    quality: string;
+    quality_note: string | null;
+    /** Whose mailbox it is (own, sister, person, free…); null on older leads. */
+    owner: string | null;
+}
+
+/** What delivery will send for a lead (the API's `send`). */
+export interface SendPlan {
+    phone: SentPhone | null;
+    email: SentEmail | null;
+    /** The name the lead is delivered under: the phone's owner, else the organisation. */
+    name: string | null;
+    role: string | null;
+    /** "Name (Role)" of the person outreach asks for. */
+    ask_for: string | null;
 }
 
 export interface CandidateOrg {
@@ -177,10 +216,18 @@ export interface CandidateSummary {
     top_reason: string | null;
     flags: string[];
     best_contact: BestContact | null;
+    /** Null for older servers and for leads with nothing to send. */
+    send: SendPlan | null;
+    /** Judged from its Google Maps listing: the website could not be read. */
+    maps_only: boolean;
+    /** SKIPPED as the same organisation as another lead: that lead's domain. */
+    duplicate_of: string | null;
     created_at: string | null;
     delivered_at: string | null;
     /** Not in the §4 summary; shown when the server includes it. */
     reject_reason?: string | null;
+    /** Why a lead was SKIPPED (or a delivery problem). */
+    delivery_note?: string | null;
     /** Score parts. Not in the §4 summary; read from `score_json` or top-level fit/intent/reach/risk when sent. */
     parts?: ScoreParts | null;
 }
@@ -270,6 +317,8 @@ export interface SuggestedOffer {
 
 export interface SuggestResponse {
     summary: string;
+    /** The product description written for the agent; '' when the server sends none. */
+    description: string;
     keywords: string[];
     industries: SuggestedIndustry[];
     note?: string | null;

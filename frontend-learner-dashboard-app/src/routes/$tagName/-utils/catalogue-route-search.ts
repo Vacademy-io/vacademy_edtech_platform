@@ -99,6 +99,18 @@ const namesSchemeOrHost = (target: string): boolean => {
 };
 
 /**
+ * A full address — an invite / payment link, mailto:, tel: — is not a site
+ * route: handed to the router it went nowhere, so typed hero / CTA / header
+ * buttons pointing off-site did nothing. Returns the address to open, "" for a
+ * scheme that is never followed (javascript:, data:…), or null for a site route.
+ */
+export const externalHref = (target: string): string | null => {
+  if (!namesSchemeOrHost(target)) return null;
+  const bare = withoutIgnoredChars(target);
+  return /^(?:https?:|mailto:|tel:|[\\/]{2})/i.test(bare) ? bare : "";
+};
+
+/**
  * How to navigate to a site address that may carry its own query string or
  * #hash ("/courses?stream=x", "/about#team"):
  *
@@ -138,6 +150,11 @@ export const useSiteNavigate = () => {
   const router = useRouter();
   return useCallback(
     (target: string, options?: { replace?: boolean }): Promise<void> => {
+      const external = externalHref(target);
+      if (external !== null) {
+        if (external) window.location.assign(external);
+        return Promise.resolve();
+      }
       const nav = siteNavigateOptions(target, router.latestLocation?.search);
       return "href" in nav ? navigate({ href: nav.href, ...options }) : navigate({ to: nav.to, ...options });
     },

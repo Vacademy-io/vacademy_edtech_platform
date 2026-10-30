@@ -18,6 +18,16 @@ public interface LeadFollowupRepository extends JpaRepository<LeadFollowup, Stri
 
     List<LeadFollowup> findByAudienceResponseIdOrderByScheduleTimeAsc(String audienceResponseId);
 
+    /** Open follow-ups of a lead whose text starts with {@code prefix} (the ones the engine itself created). */
+    @org.springframework.data.jpa.repository.Query(value = """
+            SELECT f.id FROM lead_followup f
+             WHERE f.audience_response_id = :responseId
+               AND NOT (COALESCE(f.is_closed, false) OR f.status = 'COMPLETED')
+               AND f.content LIKE CONCAT(:prefix, '%')
+            """, nativeQuery = true)
+    List<String> openIdsWithContentPrefix(@org.springframework.data.repository.query.Param("responseId") String responseId,
+                                          @org.springframework.data.repository.query.Param("prefix") String prefix);
+
     /** True when the lead already has an open priority follow-up (one per reattempt burst). */
     boolean existsByAudienceResponseIdAndIsClosedFalseAndIsPriorityTrue(String audienceResponseId);
 

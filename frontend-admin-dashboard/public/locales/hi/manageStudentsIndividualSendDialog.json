@@ -20,6 +20,8 @@
     },
     "systemFields": {
         "fullName": "पूरा नाम",
+        "firstName": "पहला नाम",
+        "lastName": "उपनाम",
         "email": "ईमेल",
         "mobileNumber": "मोबाइल नंबर",
         "city": "शहर",

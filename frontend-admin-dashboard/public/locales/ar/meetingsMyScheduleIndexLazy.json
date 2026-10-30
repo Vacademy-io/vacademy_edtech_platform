@@ -42,5 +42,21 @@
         "noLink": "No link yet",
         "more": "+{{count}} more",
         "show": "Show my booking links"
+    },
+    "googleCard": {
+        "title": "تقويم Google الخاص بك",
+        "connected": "متصل",
+        "reconnect": "مطلوب إعادة الاتصال",
+        "connectedDescription": "روابط Meet وأحداث التقويم لاجتماعاتك تستخدم هذا الحساب.",
+        "disconnectedDescription": "اربط حساب Google الخاص بك لتستخدم اجتماعاتك تقويمك وروابط Meet.",
+        "connect": "ربط حساب Google",
+        "reconnect_btn": "إعادة الاتصال",
+        "redirecting": "جارٍ إعادة التوجيه…",
+        "disconnect": "قطع الاتصال",
+        "connectError": "تعذّر بدء اتصال Google. يرجى المحاولة مرة أخرى.",
+        "disconnectError": "تعذّر قطع اتصال Google. يرجى المحاولة مرة أخرى.",
+        "justConnected": "تم ربط حساب Google.",
+        "connectFailed": "فشل اتصال Google. يرجى المحاولة مرة أخرى.",
+        "disconnected": "تم قطع اتصال حساب Google."
     }
 }

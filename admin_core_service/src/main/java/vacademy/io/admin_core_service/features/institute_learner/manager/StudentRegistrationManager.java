@@ -890,9 +890,7 @@ public class StudentRegistrationManager {
             activePackageSession.setCommaSeparatedOrgRoles(invitedPackageSession.getCommaSeparatedOrgRoles());
         }
         Date previousExpiry = activePackageSession.getExpiryDate();
-        Date baseDate = previousExpiry != null ? previousExpiry : new Date();
-        activePackageSession
-                .setExpiryDate(calculateNewExpiryDate(baseDate, effectiveUserPlanId, null));
+        activePackageSession.setExpiryDate(resolveMappingExpiry(previousExpiry, effectiveUserPlanId));
         return new MappingWithPriorAccess(activePackageSession, previousExpiry);
     }
 
@@ -990,6 +988,62 @@ public class StudentRegistrationManager {
      * @param legacyAccessDays The V1 access days string.
      * @return A new Date, or null if access is unlimited.
      */
+    /**
+     * How long this mapping grants access: the PLAN'S OWN {@code end_date} whenever the
+     * mapping references a user plan, falling back to the validity arithmetic only when
+     * there is no plan to read (legacy / access-days enrolments).
+     *
+     * <p>Two bugs lived in the arithmetic this replaces, and both came from the mapping
+     * computing its own answer instead of reading the one the plan already holds.
+     *
+     * <p><b>1. A trial inherited the PAID window.</b> {@code calculateNewExpiryDate} resolves
+     * {@code paymentPlan.getValidityInDays()} and never looks at {@code is_trial}, so signing
+     * up for a 15-day trial on an "Annual" plan stamped the mapping with 360 days while
+     * {@code user_plan.end_date} correctly held the trial end. Nothing noticed, because a
+     * successful conversion overwrites the mapping expiry anyway
+     * ({@code RenewalPaymentService.handleSuccessfulRenewal}) and a failed one deactivates the
+     * mapping ({@code expirePlan}). Only a trial that CANCELLED — neither converted nor
+     * dunned — kept the wrong value, and it kept it silently: the class-reminder audience
+     * filters on {@code ssigm.expiry_date} and never consults {@code user_plan.status}, so a
+     * cancelled learner went on receiving daily class links.
+     *
+     * <p><b>2. A repeated enrolment STACKED it.</b> The old base date was
+     * {@code previousExpiry != null ? previousExpiry : new Date()}, so each pass added another
+     * full validity on top of whatever the row already had. An INVITED mapping already carries
+     * an expiry, and a learner who submits twice re-enters this path: one SuchBliss trial
+     * signed up twice seven minutes apart and came out with {@code enrolled + 720} days —
+     * exactly 2 x her 360-day plan — expiring in September 2028 off a 15-day trial.
+     *
+     * <p>{@code end_date} is computed once, by the code that owns the plan's window, and is
+     * the value every other site already writes here —
+     * {@code LearnerBatchEnrollService}, {@code AccessPassEntitlementService} and both arms of
+     * {@code handleSuccessfulRenewal}. Reading it makes trial-vs-paid and single-vs-repeated
+     * enrolment all resolve to the same answer, and makes stacking structurally impossible:
+     * extending access now means extending the plan, which is where it belongs.
+     *
+     * <p>Access is never SHORTENED by this: {@code previousExpiry} wins when it is already
+     * later than the plan's end, so a learner who genuinely holds a longer entitlement (a
+     * stacked term, an admin extension) keeps it.
+     */
+    private Date resolveMappingExpiry(Date previousExpiry, String userPlanId) {
+        Date planEnd = null;
+        if (StringUtils.hasText(userPlanId)) {
+            UserPlan userPlan = userPlanService.findById(userPlanId);
+            planEnd = userPlan != null ? userPlan.getEndDate() : null;
+        }
+        if (planEnd == null) {
+            // No plan to read -- keep the legacy arithmetic for access-days enrolments.
+            Date baseDate = previousExpiry != null ? previousExpiry : new Date();
+            return calculateNewExpiryDate(baseDate, userPlanId, null);
+        }
+        if (previousExpiry != null && previousExpiry.after(planEnd)) {
+            log.info("Mapping already grants access to {} which is beyond plan {} end {} -- keeping it",
+                    previousExpiry, userPlanId, planEnd);
+            return previousExpiry;
+        }
+        return planEnd;
+    }
+
     private Date calculateNewExpiryDate(Date baseDate, String userPlanId, String legacyAccessDays) {
         Integer validityDays = getValidityDaysFromUserPlan(userPlanId);
 

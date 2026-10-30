@@ -4,11 +4,11 @@
         "createEngineFailed": "Échec de la création du moteur",
         "engineUpdated": "Moteur mis à jour",
         "changeStatusFailed": "Impossible de changer le statut",
-        "autonomyOff": "Envoi automatique désactivé — copilote uniquement",
+        "autonomyOff": "Envoi auto désactivé — vous vérifiez chaque message",
         "autonomyOn": "Envoi automatique autorisé",
         "autonomyFailed": "Impossible de modifier l'autonomie",
-        "enrollResult": "Audience mise à jour : {{added}} ajouté(s), {{exited}} sorti(s) ({{total}} au total)",
-        "enrollFailed": "Échec de l'inscription",
+        "enrollResult": "Personnes mises à jour : {{added}} ajoutées, {{exited}} retirées ({{total}} au total)",
+        "enrollFailed": "Impossible d'ajouter les personnes",
         "promptUpdated": "Amendement ajouté au brief",
         "promptUpdateFailed": "Impossible de mettre à jour le brief",
         "engineArchived": "Moteur archivé",
@@ -33,12 +33,14 @@
         "templatesUpdated_other": "{{count}} modèles mis à jour"
     },
     "taskAction": {
-        "ack": "Tâche accusée réception",
+        "ack": "Marqué comme en cours",
         "done": "Marqué comme terminé",
-        "dismiss": "Rejeté",
+        "dismiss": "Ignoré",
         "reopen": "Rouvert",
         "send": "Envoyé",
         "default": "Terminé",
-        "sendNotConfirmed": "Envoi non confirmé. La tâche est maintenant dans Échec. Vérifiez le journal des messages avant de renvoyer."
+        "sendNotConfirmed": "Envoi non confirmé. La tâche est maintenant dans Échec. Vérifiez le journal des messages avant de renvoyer.",
+        "undo": "Annuler",
+        "restore": "Remis dans la boîte"
     }
 }

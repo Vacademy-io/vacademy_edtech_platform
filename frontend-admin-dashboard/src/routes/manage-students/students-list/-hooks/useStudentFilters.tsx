@@ -22,6 +22,11 @@ import { readUtmSelection, toUtmFiltersPayload } from '@/components/shared/leads
 
 export const ALL_SESSIONS_ID = '__ALL__';
 export const TERMINATED_STATUS = 'TERMINATED';
+// payment_log.payment_status values the Payment Status filter can match.
+export const PAYMENT_STATUS_IDS = ['PAID', 'FAILED', 'PAYMENT_PENDING'];
+// ssigm.type values for checkouts that never completed. These rows sit in the INVITED
+// session with the real batch in destination_package_session_id.
+export const CART_TYPE_IDS = ['ABANDONED_CART', 'PAYMENT_FAILED'];
 
 export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) => {
     const { allowAllSessions = false } = options;
@@ -338,15 +343,18 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
 
         // Payment Status filter from URL
         if (searchParams.paymentStatus) {
-            const statuses = Array.isArray(searchParams.paymentStatus) ? searchParams.paymentStatus : [searchParams.paymentStatus];
-            const options = statuses.map((status: string) => ({
+            // Values are payment_log.payment_status: PAID / FAILED / PAYMENT_PENDING.
+            const statuses = toList(searchParams.paymentStatus).filter((status) =>
+                PAYMENT_STATUS_IDS.includes(status)
+            );
+            const options = statuses.map((status) => ({
                 id: status,
                 label:
                     status === 'PAID'
                         ? t('filterOptions.paymentStatus.paid')
-                        : status === 'failed'
+                        : status === 'FAILED'
                           ? t('filterOptions.paymentStatus.failed')
-                          : t('filterOptions.paymentStatus.paymentFailed'),
+                          : t('filterOptions.paymentStatus.pending'),
             }));
             if (options.length > 0) {
                 initialFilters.push({ id: 'payment_statuses', value: options });
@@ -368,16 +376,18 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
             }
         }
 
-        // Learner Type filter from URL (e.g., ABANDONED_CART)
-        if (searchParams.learnerType) {
-            const learnerType = searchParams.learnerType;
-            const options = [{
-                id: learnerType,
+        // Cart Status filter from URL (ABANDONED_CART / PAYMENT_FAILED enrollment rows)
+        const learnerTypesFromUrl = toList(searchParams.learnerType).filter((type) =>
+            CART_TYPE_IDS.includes(type)
+        );
+        if (learnerTypesFromUrl.length > 0) {
+            const options = learnerTypesFromUrl.map((type) => ({
+                id: type,
                 label:
-                    learnerType === 'ABANDONED_CART'
+                    type === 'ABANDONED_CART'
                         ? t('filterOptions.learnerType.abandonedCart')
-                        : learnerType,
-            }];
+                        : t('filterOptions.learnerType.paymentFailed'),
+            }));
             initialFilters.push({ id: 'learner_type', value: options });
         }
 
@@ -496,19 +506,19 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
             // Special handling for Invited/Pending statuses:
             // These students might not be assigned to a batch yet, so we must clear the batch filter
             // to allow global search across the institute for these statuses.
-            // Handle learner type filter (e.g., ABANDONED_CART) - need this early for package_session_ids logic
+            // Cart Status filter (ABANDONED_CART / PAYMENT_FAILED) - need this early for package_session_ids logic
             const learnerTypeFilter = initialFilters.find((filter) => filter.id === 'learner_type');
-            const learnerTypeToApply = learnerTypeFilter?.value[0]?.id || undefined;
+            const learnerTypesToApply = learnerTypeFilter?.value.map((option) => option.id) || [];
 
-            // If ABANDONED_CART is selected, package_session_ids should be empty
-            const isAbandonedCart = learnerTypeToApply === 'ABANDONED_CART';
+            // Cart rows sit in the INVITED session, so package_session_ids must be empty
+            const isCartFilter = learnerTypesToApply.length > 0;
 
             // Store original pksids for destination_package_session_ids before clearing
             const originalPksids = [...pksids];
 
-            // For ABANDONED_CART, calculate destination_package_session_ids
+            // For cart rows, match the real batch via destination_package_session_ids
             let destinationPksids: string[] = [];
-            if (isAbandonedCart) {
+            if (isCartFilter) {
                 // If user selected specific batches, use those; otherwise use all batches for current session
                 const batchFilter = initialFilters.find((filter) => filter.id === 'batch');
                 const selectedBatchIds = batchFilter?.value.map((option) => option.id);
@@ -517,7 +527,7 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
                     : originalPksids;
             }
 
-            if (finalStatusesToApply.some(s => ['INVITED', 'PENDING_FOR_APPROVAL'].includes(s)) || isAbandonedCart) {
+            if (finalStatusesToApply.some(s => ['INVITED', 'PENDING_FOR_APPROVAL'].includes(s)) || isCartFilter) {
                 pksids = [];
             }
 
@@ -571,13 +581,13 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
                 // Use URL value directly — searchFilter state hasn't flushed yet within this effect.
                 name: (searchParams.name as string) || searchFilter || '',
                 package_session_ids: pksids,
-                destination_package_session_ids: isAbandonedCart ? destinationPksids : [],
+                destination_package_session_ids: isCartFilter ? destinationPksids : [],
                 gender: gendersToApply,
                 statuses: finalStatusesToApply,
                 session_expiry_days: sessionExpiryDays,
                 sub_org_user_types: rolesToApply,
                 payment_statuses: paymentStatusesToApply,
-                type: learnerTypeToApply,
+                types: learnerTypesToApply,
                 // approval_statuses is removed, merged into statuses
                 ...(Object.keys(legacyCfFilters).length > 0
                     ? { custom_field_filters: legacyCfFilters }
@@ -701,20 +711,20 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
             ['INVITED', 'PENDING_FOR_APPROVAL', 'Invited', 'Pending for Approval'].includes(s)
         );
 
-        // Get Learner Type filter (e.g., ABANDONED_CART) - need this early for package_session_ids logic
+        // Cart Status filter (ABANDONED_CART / PAYMENT_FAILED) - need this early for package_session_ids logic
         const learnerTypeFilter = columnFilters.find((filter) => filter.id === 'learner_type');
-        const learnerType = learnerTypeFilter?.value[0]?.id || undefined;
+        const learnerTypes = learnerTypeFilter?.value.map((option) => option.id) || [];
 
-        // If ABANDONED_CART is selected, package_session_ids should be empty
-        const isAbandonedCart = learnerType === 'ABANDONED_CART';
+        // Cart rows sit in the INVITED session, so package_session_ids must be empty
+        const isCartFilter = learnerTypes.length > 0;
 
         // Get selected batch IDs from filter
         const selectedBatchIds = columnFilters.find((filter) => filter.id === 'batch')?.value.map((option) => option.id);
 
-        if (hasSpecialStatus || isAbandonedCart) {
+        if (hasSpecialStatus || isCartFilter) {
             finalPackageSessionIds = [];
-            // For ABANDONED_CART, set destination_package_session_ids
-            if (isAbandonedCart) {
+            // For cart rows, match the real batch via destination_package_session_ids
+            if (isCartFilter) {
                 // If user selected specific batches, use those; otherwise use all batches
                 destinationPackageSessionIds = selectedBatchIds && selectedBatchIds.length > 0 
                     ? selectedBatchIds 
@@ -788,7 +798,7 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
         const newFilters: StudentFilterRequest = {
             name: searchFilter,
             package_session_ids: finalPackageSessionIds,
-            destination_package_session_ids: isAbandonedCart ? destinationPackageSessionIds : [],
+            destination_package_session_ids: isCartFilter ? destinationPackageSessionIds : [],
             gender: gendersToApply,
             statuses: finalStatusesToApply,
             session_expiry_days: sessionExpiryDays || [],
@@ -797,7 +807,7 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
             group_ids: [],
             sort_columns: {},
             payment_statuses: paymentStatuses,
-            type: learnerType,
+            types: learnerTypes,
             ...(membershipTypes.length > 0 ? { membership_types: membershipTypes } : {}),
             ...joinedRange,
             ...(enrollInviteIds.length > 0 ? { enroll_invite_ids: enrollInviteIds } : {}),
@@ -893,8 +903,8 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
             [...new Set(approvalStatusesToApply)].forEach(status => currentParams.append('approvalStatus', status));
         }
 
-        if (learnerType) {
-            currentParams.set('learnerType', learnerType);
+        if (learnerTypes.length > 0) {
+            [...new Set(learnerTypes)].forEach((type) => currentParams.append('learnerType', type));
         }
 
         if (audienceIds.length > 0) {
@@ -1007,7 +1017,7 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
             group_ids: [],
             sort_columns: {},
             payment_statuses: [],
-            type: undefined,
+            types: [],
         };
 
         setAppliedFilters(newFilters);

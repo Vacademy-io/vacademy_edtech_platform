@@ -23,6 +23,7 @@ import vacademy.io.admin_core_service.features.user_subscription.repository.User
 import vacademy.io.admin_core_service.features.workflow.enums.WorkflowTriggerEvent;
 import vacademy.io.admin_core_service.features.workflow.service.WorkflowTriggerService;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.payment.dto.EwayRequestDTO;
 import vacademy.io.common.payment.dto.PaymentInitiationRequestDTO;
 import vacademy.io.common.payment.enums.PaymentGateway;
 import vacademy.io.common.payment.enums.PaymentStatusEnum;
@@ -425,10 +426,15 @@ public class SubscriptionService {
      * and a HOSTED gateway (eWay) returns {@code paymentStatus: REDIRECT} with the
      * {@code redirectUrl} of the gateway's own card page. Nothing is charged either
      * way; the hosted leg finishes in {@link #completeHostedRenewal}.
+     *
+     * <p>On eWay, a {@code card} (the eCrypt payload from the same card form the invite and
+     * invoice pages use) charges that card in this request instead, and the response is
+     * already {@code PAID} or {@code FAILED} -- see {@link #chargeEnteredCardRenewal}.
      */
     public vacademy.io.common.payment.dto.PaymentResponseDTO initiateRenewalPayment(
             vacademy.io.common.auth.model.CustomUserDetails userDetails,
-            String instituteId, String userPlanId, boolean withAutopay, String mandateMethod) {
+            String instituteId, String userPlanId, boolean withAutopay, String mandateMethod,
+            EwayRequestDTO card) {
         UserPlan plan = userPlanRepository.findById(userPlanId)
                 .orElseThrow(() -> new VacademyException("Subscription not found: " + userPlanId));
         if (!userDetails.getUserId().equals(plan.getUserId())) {
@@ -540,6 +546,11 @@ public class SubscriptionService {
         // the request carried only a RazorpayRequestDTO, so EwayPaymentManager dereferenced a
         // null ewayRequest and every "Pay to continue" on eWay threw an NPE.
         if (isStoredTokenGateway(vendor)) {
+            if (card != null && StringUtils.hasText(card.getCardNumber())) {
+                return withDiscountLine(chargeEnteredCardRenewal(plan, instituteId, request, user, armAutopay, card),
+                        request, renewalDiscount, payableAmount, plan);
+            }
+            // No card in the body: an older client, so keep sending it to eWay's hosted page.
             return withDiscountLine(startHostedCheckoutRenewal(plan, instituteId, request, user, armAutopay),
                     request, renewalDiscount, payableAmount, plan);
         }
@@ -692,6 +703,115 @@ public class SubscriptionService {
 
         log.info("Hosted checkout opened for plan {} (order {}, accessCode {})",
                 plan.getId(), orderId, shared.AccessCode);
+        return response;
+    }
+
+    /**
+     * "Pay to continue" on eWay with the card the learner just typed into our card form (the
+     * one the invite, invoice and course checkouts use). The number and CVN arrive eCrypt-
+     * encrypted in the browser, so they are opaque to us, and only the card entered NOW is
+     * charged -- never a token on file, which is what made the old one-tap renewal spendable
+     * from a hijacked session.
+     *
+     * <p>The card is charged directly through {@link vacademy.io.admin_core_service.features.payments.manager.EwayPaymentManager#initiatePayment},
+     * which leaves the payment_log alone (so the confirmation below wins its PAID claim) and
+     * saves an eWay webhook row. eWay answers synchronously, so the renewal is confirmed
+     * here; if that confirmation fails, or the answer is not final, the eWay poller replays
+     * the same confirmation from that row. The claim is idempotent, so the two never extend
+     * twice.
+     */
+    private vacademy.io.common.payment.dto.PaymentResponseDTO chargeEnteredCardRenewal(
+            UserPlan plan, String instituteId,
+            PaymentInitiationRequestDTO request,
+            vacademy.io.common.auth.dto.UserDTO user,
+            boolean withAutopay,
+            EwayRequestDTO card) {
+
+        long recentAttempts = paymentLogRepository.countRecentUnfailedForPlan(
+                plan.getId(),
+                java.time.LocalDateTime.now().minusSeconds(DUPLICATE_RENEWAL_WINDOW_SECONDS),
+                PaymentStatusEnum.FAILED.name());
+        if (recentAttempts > 0) {
+            throw new VacademyException("A payment for this membership was just submitted. "
+                    + "Please refresh the page before trying again.");
+        }
+
+        // Only the card fields are copied. A customerId in the body is dropped: with one set,
+        // EwayPaymentManager charges that stored token instead of the entered card.
+        EwayRequestDTO enteredCard = new EwayRequestDTO();
+        enteredCard.setCardName(card.getCardName());
+        enteredCard.setCardNumber(card.getCardNumber());
+        enteredCard.setExpiryMonth(card.getExpiryMonth());
+        enteredCard.setExpiryYear(card.getExpiryYear());
+        enteredCard.setCvn(card.getCvn());
+        enteredCard.setCountryCode(card.getCountryCode());
+        request.setEwayRequest(enteredCard);
+
+        String orderId = paymentLogService.createPaymentLog(
+                user.getId(), request.getAmount(), request.getVendor(), request.getVendorId(),
+                request.getCurrency(), plan, null);
+        request.setOrderId(orderId);
+
+        Map<String, Object> gatewayData = institutePaymentGatewayMappingService
+                .findInstitutePaymentGatewaySpecifData(request.getVendor(), instituteId);
+
+        vacademy.io.common.payment.dto.PaymentResponseDTO response;
+        try {
+            response = ewayPaymentManager.initiatePayment(user, request, gatewayData);
+        } catch (Exception e) {
+            paymentLogService.updatePaymentLog(orderId, PaymentLogStatusEnum.FAILED.name(),
+                    PaymentStatusEnum.FAILED.name(), JsonUtil.toJson(Map.of("error", String.valueOf(e.getMessage()))));
+            log.error("Card renewal for plan {} (order {}) did not reach eWay: {}",
+                    plan.getId(), orderId, e.getMessage());
+            throw new VacademyException("The payment could not be completed. Please check the card and try again.");
+        }
+
+        Map<String, Object> data = new HashMap<>(
+                response.getResponseData() == null ? Map.of() : response.getResponseData());
+        String status = String.valueOf(data.get("paymentStatus"));
+        Object transactionId = data.get("transactionId");
+        data.put("orderId", orderId);
+        data.put("amount", request.getAmount());
+        data.put("currency", request.getCurrency());
+        response.setOrderId(orderId);
+        response.setResponseData(data);
+
+        if (PaymentStatusEnum.PAID.name().equals(status)) {
+            // Same rule as the hosted page: autopay only once the money has landed.
+            if (withAutopay && !Boolean.TRUE.equals(plan.getAutoRenewalEnabled())
+                    && isAutopayAvailable(plan)) {
+                plan.setAutoRenewalEnabled(true);
+                userPlanRepository.save(plan);
+            }
+            try {
+                renewalPaymentService.handleRenewalPaymentConfirmation(
+                        orderId, instituteId, PaymentStatusEnum.PAID, response);
+            } catch (Exception e) {
+                // The money HAS been taken, and the poller will replay this confirmation from
+                // the webhook row. Never report it as a failure -- that invites a second payment.
+                log.error("Card renewal CHARGED but not yet confirmed - plan {} order {}; the eWay "
+                        + "poller will retry", plan.getId(), orderId, e);
+                data.put("paymentStatus", PaymentStatusEnum.PAYMENT_PENDING.name());
+                return response;
+            }
+            log.info("Card renewal charged and confirmed for plan {} (order {})", plan.getId(), orderId);
+            return response;
+        }
+
+        if (transactionId == null || PaymentStatusEnum.FAILED.name().equals(status)) {
+            // Declined, or rejected before a transaction existed (bad card details). Marked
+            // FAILED now so the double-submit guard lets the learner try another card at once.
+            paymentLogService.updatePaymentLog(orderId, PaymentLogStatusEnum.FAILED.name(),
+                    PaymentStatusEnum.FAILED.name(), JsonUtil.toJson(data));
+            data.put("paymentStatus", PaymentStatusEnum.FAILED.name());
+            log.warn("Card renewal declined for plan {} (order {}): {}", plan.getId(), orderId,
+                    data.get("responseMessage"));
+            return response;
+        }
+
+        // A transaction exists but eWay has not given a final answer. The poller settles it.
+        log.info("Card renewal for plan {} (order {}) pending at eWay; the poller will confirm it",
+                plan.getId(), orderId);
         return response;
     }
 

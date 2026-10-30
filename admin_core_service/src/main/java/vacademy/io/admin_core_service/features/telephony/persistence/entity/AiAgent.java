@@ -122,6 +122,13 @@ public class AiAgent {
     @Column(name = "send_rules", columnDefinition = "TEXT")
     private String sendRules;
 
+    /**
+     * JSON array of AiAgentKnowledgeDocument: text extracted from documents the admin
+     * uploaded, appended to the system prompt at call time (V615). NULL = none.
+     */
+    @Column(name = "knowledge_documents", columnDefinition = "TEXT")
+    private String knowledgeDocuments;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private Timestamp createdAt;
 

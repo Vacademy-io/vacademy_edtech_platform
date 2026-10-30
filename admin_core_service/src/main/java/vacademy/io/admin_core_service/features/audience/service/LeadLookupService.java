@@ -9,6 +9,7 @@ import vacademy.io.admin_core_service.features.audience.repository.AudienceRespo
 import vacademy.io.admin_core_service.features.audience.repository.LeadFollowupRepository;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.counsellor_workbench.service.CounsellorScopeService;
+import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
@@ -56,6 +57,7 @@ public class LeadLookupService {
     private final LeadFollowupRepository leadFollowupRepository;
     private final AuthService authService;
     private final LeadDedupSettingService leadDedupSettingService;
+    private final StudentSessionInstituteGroupMappingRepository enrolmentRepository;
 
     /** Auth hits checked for an exact profile match; a full phone or email has a handful. */
     private static final int PROFILE_MATCH_LIMIT = 50;
@@ -101,7 +103,7 @@ public class LeadLookupService {
                         settings.courseFieldId(), settings.branchFieldId(), profileUserIds);
 
         if (match.isEmpty()) {
-            return LeadLookupResultDto.builder().found(false).build();
+            return enrolledStudentResult(instituteId, profileUserIds, fields, isAdmin, caller);
         }
 
         AudienceResponseRepository.LeadLookupRow row = match.get();
@@ -173,6 +175,66 @@ public class LeadLookupService {
         return responseIds.isEmpty()
                 ? List.of()
                 : leadFollowupRepository.findByAudienceResponseIdInOrderByScheduleTimeDesc(responseIds);
+    }
+
+    /**
+     * No enquiry matched. A person enrolled here whose own profile phone or email is the
+     * one searched is still in the system - the Contacts page lists them - even though
+     * they were admitted without an enquiry (migrated admissions, direct enrolments), so
+     * they must not read as "not in the system, add a new lead". They have no lead row, so
+     * there is no source, campaign, branch, enquirer or follow-up history to show; the
+     * card carries what the enrolment knows. Same masking and own-lead rule as a lead.
+     * Searching by name never reaches here with profile ids, so it stays leads-only.
+     */
+    private LeadLookupResultDto enrolledStudentResult(String instituteId, String profileUserIds,
+                                                      LeadLookupSettingService.Fields fields,
+                                                      boolean isAdmin, CustomUserDetails caller) {
+        LeadLookupResultDto notFound = LeadLookupResultDto.builder().found(false).build();
+        if (profileUserIds == null) return notFound;
+        Optional<StudentSessionInstituteGroupMappingRepository.EnrolledStudentLookupRow> enrolled;
+        try {
+            enrolled = enrolmentRepository.findEnrolledStudentForLookup(instituteId, profileUserIds);
+        } catch (Exception e) {
+            log.warn("[leadLookup] enrolled-student lookup failed: {}", e.getMessage());
+            return notFound;
+        }
+        if (enrolled.isEmpty()) return notFound;
+
+        StudentSessionInstituteGroupMappingRepository.EnrolledStudentLookupRow row = enrolled.get();
+        boolean ownLead = !isAdmin && isOwnLead(instituteId, row.getCounsellorId(), caller);
+        if (ownLead) fields = LeadLookupSettingService.Fields.ALL;
+        boolean followUpsVisible = isAdmin || ownLead;
+
+        UserDTO student = null;
+        if (fields.name() || fields.email() || fields.phone()) {
+            try {
+                student = authService.getUsersFromAuthServiceByUserIds(List.of(row.getUserId())).stream()
+                        .filter(Objects::nonNull)
+                        .findFirst()
+                        .orElse(null);
+            } catch (Exception e) {
+                log.warn("[leadLookup] student name lookup failed: {}", e.getMessage());
+            }
+        }
+        boolean ongoing = row.getActiveCount() != null && row.getActiveCount() > 0;
+
+        LeadLookupResultDto.LeadLookupResultDtoBuilder result = LeadLookupResultDto.builder()
+                .found(true)
+                .leadName(fields.name() && student != null ? blankToNull(student.getFullName()) : null)
+                .leadEmail(fields.email() && student != null ? blankToNull(student.getEmail()) : null)
+                .leadMobile(fields.phone() && student != null ? blankToNull(student.getMobileNumber()) : null)
+                .counsellorName(fields.counsellor() ? blankToNull(row.getCounsellorName()) : null)
+                .status(fields.status() ? blankToNull(row.getConvertedLabel()) : null)
+                .stage(fields.status() ? (ongoing ? "ADMISSION_ONGOING" : "ADMISSION_COMPLETED") : null)
+                .course(fields.course() ? blankToNull(row.getCourseValue()) : null)
+                .optedOut(false)
+                .followUpsVisible(followUpsVisible);
+        if (followUpsVisible) {
+            // No enquiry, so no lead-created date and no follow-up history.
+            result.interestLevel(blankToNull(row.getInterestLevel()))
+                    .followUps(List.of());
+        }
+        return result.build();
     }
 
     /** The institute's repeat-lead handling flags reattempts as duplicates (Lead Settings). */

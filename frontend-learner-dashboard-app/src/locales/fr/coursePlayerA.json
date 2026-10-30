@@ -227,6 +227,14 @@
       "loadFailed": "Le document n’a pas pu être affiché ici.",
       "openInNewTab": "Ouvrir dans un nouvel onglet",
       "noDocument": "Aucun document configuré pour le moment"
+    },
+    "scormViewer": {
+      "swipeHint": "Balayez pour tourner les pages",
+      "defaultTitle": "Aperçu interactif",
+      "fullScreen": "Plein écran",
+      "openInNewTab": "Ouvrir dans un nouvel onglet",
+      "loading": "Chargement de l’aperçu…",
+      "noPackage": "Aucun package SCORM configuré pour le moment"
     }
   },
   "whatsAppFloatingButton": {

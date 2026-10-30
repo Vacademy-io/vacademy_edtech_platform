@@ -16,6 +16,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -36,6 +37,7 @@ public class GoogleAccountStore {
 
     private final LiveSessionProviderConfigRepository repository;
     private final ObjectMapper objectMapper;
+    private final vacademy.io.admin_core_service.features.booking.repository.UserGoogleAccountRepository userGoogleAccountRepository;
 
     // ── Reads ────────────────────────────────────────────────────────────────
 
@@ -63,8 +65,15 @@ public class GoogleAccountStore {
     public Optional<GoogleAccount> findDefault(String instituteId) {
         List<GoogleAccount> all = listByInstitute(instituteId);
         return all.stream().filter(GoogleAccount::isDefault).findFirst()
-                // Single-organizer is the common case — fall back to the only/first account.
-                .or(() -> all.stream().findFirst());
+                // Single-organizer is the common case — fall back to the only/first account, but
+                // never to a user's personal connection (My Schedule): that must not become the
+                // institute-wide default just because no account is flagged default.
+                .or(() -> {
+                    Set<String> personal = userGoogleAccountRepository.findByInstituteId(instituteId).stream()
+                            .map(u -> u.getGoogleAccountId())
+                            .collect(Collectors.toSet());
+                    return all.stream().filter(a -> !personal.contains(a.getId())).findFirst();
+                });
     }
 
     public Optional<GoogleAccount> findByInstituteAndEmail(String instituteId, String organizerEmail) {

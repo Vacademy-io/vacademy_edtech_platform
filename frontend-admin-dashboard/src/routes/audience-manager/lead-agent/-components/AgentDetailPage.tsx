@@ -7,7 +7,7 @@ import { formatRelative } from '@/lib/formatters';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { EmptyState, ErrorState } from '@/routes/manage-pages/site-assistant/-components/TabStates';
 import { AGENT_TABS, AGENT_TAB_LABELS, type AgentTab } from '../-utils/agent-tabs';
-import { MODE_LABEL } from '../-utils/lead-agent-options';
+import { MODE_LABEL, REJECTED_TAB_STATUSES } from '../-utils/lead-agent-options';
 import { useApprovedWaiting, useLeadAgent, useLeadAgents } from '../-hooks/use-lead-agent';
 import { apiErrorMessage, apiErrorStatus } from '../-services/lead-agent-api';
 import { ActivityTab } from './ActivityTab';
@@ -166,7 +166,7 @@ export function AgentDetailPage({ agentId, tab }: { agentId: string; tab: AgentT
                         <CandidatesTab agent={agent} status="DELIVERED" />
                     </TabsContent>
                     <TabsContent value="rejected">
-                        <CandidatesTab agent={agent} status="REJECTED" />
+                        <CandidatesTab agent={agent} status={REJECTED_TAB_STATUSES} />
                     </TabsContent>
                     <TabsContent value="progress">
                         <InProgressTab

@@ -251,3 +251,237 @@ def test_server_js_shell_without_an_extension_is_stored_as_unreadable(la_db, mon
     assert _get(la_db, "SELECT access FROM lead_org_page")[0][0] == "js_shell"
     # its links still lead to the (often server-rendered) contact page
     assert _get(la_db, "SELECT count(*) FROM lead_fetch_task WHERE page_type = 'contact'")[0][0] == 1
+
+
+# ------------------------------------------------- a failed home page is read once more (2026-10-29)
+# Probe of the 237 "No readable page" rejects of "Leads for Vacademy": refusals of non-browser
+# clients, https that redirects down to http, certificates and DNS for one of www / bare only, empty
+# pages whose <meta refresh> moved on, and shells no extension rendered.
+
+class _Web:
+    """safe_fetch over canned answers: {url: (status, body, ctype) | SafeFetchError | fn(headers) -> either};
+    a URL not listed fails to connect. Records (url, headers) of every request."""
+
+    def __init__(self, pages):
+        self.pages, self.calls = pages, []
+
+    async def __call__(self, url, **kwargs):
+        from app.services.safe_http import SafeFetchError
+
+        headers = kwargs.get("headers") or {}
+        self.calls.append((url, headers))
+        answer = self.pages.get(url, SafeFetchError("fetch_failed", "The download failed (ConnectError)."))
+        if callable(answer):
+            answer = answer(headers)
+        if isinstance(answer, Exception):
+            raise answer
+        status, body, ctype = answer
+        return SimpleNamespace(url=url, status_code=status, headers=httpx.Headers({"content-type": ctype}),
+                               content=body.encode())
+
+    def urls(self):
+        return [u for u, _ in self.calls if not u.endswith("/robots.txt")]
+
+
+def _err(code, message="x"):
+    from app.services.safe_http import SafeFetchError
+    return SafeFetchError(code, message)
+
+
+NO_ROBOTS = (404, "", "text/plain")
+HTML = "text/html; charset=utf-8"
+
+
+def _site(la_db, monkeypatch, domain, pages, mode="REMOTE"):
+    import app.services.safe_http as safe_http
+
+    monkeypatch.setattr(fetcher, "HOST_PAUSE_S", 0)
+    web = _Web(pages)
+    monkeypatch.setattr(safe_http, "safe_fetch", web)
+    agent = make_world(la_db, mode=mode)
+    cand = make_candidate(la_db, agent, domain=domain)
+    with la_db() as db:
+        fetcher.schedule_candidate(db, store.get_candidate(db, cand["id"]), agent)
+        db.commit()
+    return web
+
+
+def _home(la_db):
+    rows = _get(la_db, "SELECT access, final_url, length(coalesce(text, '')) FROM lead_org_page WHERE page_type = 'home'")
+    return rows[0] if rows else None
+
+
+def test_a_refused_home_page_is_read_again_as_a_browser_asks(la_db, monkeypatch):
+    """nirmauni.ac.in answered 403 to the fetcher's own headers and 200 to a browser's."""
+    def browser_only(headers):
+        return (200, HOME_HTML, HTML) if "Chrome/" in headers.get("User-Agent", "") else (403, "Forbidden", "text/html")
+    web = _site(la_db, monkeypatch, "nirmauni.ac.in", {"https://nirmauni.ac.in/robots.txt": NO_ROBOTS,
+                                                       "https://nirmauni.ac.in/": browser_only})
+    [home] = _claim(la_db)
+    assert asyncio.run(fetcher.fetch_task(home)) == "http 200"
+    assert _home(la_db)[0] == "ok"
+    (_, first), (_, second) = [c for c in web.calls if not c[0].endswith("robots.txt")]
+    assert first["User-Agent"] == fetcher.USER_AGENT
+    assert second == fetcher.BROWSER_HEADERS and "Accept-Language" in second
+
+
+def test_https_that_redirects_down_to_http_is_read_over_http(la_db, monkeypatch):
+    """brillianttutorsacademy.com: https:// redirects to http://, which safe_fetch refuses to follow."""
+    web = _site(la_db, monkeypatch, "brillianttutors.in", {
+        "https://brillianttutors.in/robots.txt": NO_ROBOTS,
+        "https://brillianttutors.in/": _err("blocked_host", "Refusing a redirect from https to http."),
+        "http://brillianttutors.in/": (200, HOME_HTML, HTML)})
+    [home] = _claim(la_db)
+    assert asyncio.run(fetcher.fetch_task(home)) == "http 200 (http://brillianttutors.in/)"
+    assert _home(la_db)[:2] == ("ok", "http://brillianttutors.in/")
+    assert web.urls() == ["https://brillianttutors.in/", "http://brillianttutors.in/"]
+
+
+def test_a_name_that_is_not_public_is_still_not_read_again(la_db, monkeypatch):
+    web = _site(la_db, monkeypatch, "brillianttutors.in", {
+        "https://brillianttutors.in/robots.txt": NO_ROBOTS,
+        "https://brillianttutors.in/": _err("blocked_host", "That address is not a public website.")})
+    [home] = _claim(la_db)
+    assert asyncio.run(fetcher.fetch_task(home)) == "unsafe_url"
+    assert web.urls() == ["https://brillianttutors.in/"]
+
+
+def test_a_name_without_dns_or_certificate_is_read_at_its_www_twin(la_db, monkeypatch):
+    """cgu-odisha.ac.in: no DNS for www; kmit.in: a certificate for the other name only."""
+    web = _site(la_db, monkeypatch, "cguodisha.ac.in", {
+        "https://cguodisha.ac.in/robots.txt": _err("dns_failed"),
+        "https://cguodisha.ac.in/": _err("dns_failed"),
+        "https://www.cguodisha.ac.in/robots.txt": NO_ROBOTS,  # the site's robots.txt was never read: the twin's is
+        "https://www.cguodisha.ac.in/": (200, HOME_HTML, HTML)})
+    [home] = _claim(la_db)
+    asyncio.run(fetcher.fetch_task(home))
+    assert _home(la_db)[:2] == ("ok", "https://www.cguodisha.ac.in/")
+    assert "https://www.cguodisha.ac.in/robots.txt" in [u for u, _ in web.calls]
+    # the pages it leads to are on the name that answered
+    urls = {r[0] for r in _get(la_db, "SELECT url FROM lead_fetch_task WHERE page_type <> 'home'")}
+    assert urls and all(u.startswith("https://www.cguodisha.ac.in/") for u in urls)
+
+
+def test_the_twins_robots_txt_is_honoured(la_db, monkeypatch):
+    web = _site(la_db, monkeypatch, "cguodisha.ac.in", {
+        "https://cguodisha.ac.in/robots.txt": _err("dns_failed"),
+        "https://cguodisha.ac.in/": _err("dns_failed"),
+        "https://www.cguodisha.ac.in/robots.txt": (200, "User-agent: *\nDisallow: /\n", "text/plain"),
+        "https://www.cguodisha.ac.in/": (200, HOME_HTML, HTML)})
+    [home] = _claim(la_db)
+    assert asyncio.run(fetcher.fetch_task(home)) == "PENDING"  # the first failure stands: tried again later
+    assert web.urls() == ["https://cguodisha.ac.in/"]
+    assert _get(la_db, "SELECT status, last_error LIKE 'dns_failed%' FROM lead_fetch_task")[0] == ("PENDING", True)
+
+
+def test_a_twins_error_page_does_not_end_the_attempts_of_a_site_that_timed_out(la_db, monkeypatch):
+    web = _site(la_db, monkeypatch, "dynamictutorial.in", {
+        "https://dynamictutorial.in/robots.txt": NO_ROBOTS,
+        "https://dynamictutorial.in/": _err("timeout", "The download timed out."),
+        "https://www.dynamictutorial.in/": (404, "Not found", "text/html")})
+    [home] = _claim(la_db)
+    assert asyncio.run(fetcher.fetch_task(home)) == "PENDING"
+    assert web.urls() == ["https://dynamictutorial.in/", "https://www.dynamictutorial.in/"]
+    assert _home(la_db) is None
+
+
+def test_an_empty_page_that_moved_is_read_where_its_meta_refresh_points(la_db, monkeypatch):
+    """sxcran.org: an empty page whose <meta refresh> sends browsers to sxcran.ac.in."""
+    moved = ('<html><head><meta http-equiv="refresh" content="0;url=https://sxcran.ac.in/" />'
+             "<title>Welcome to St. Xavier's College, Ranchi</title></head><body></body></html>")
+    web = _site(la_db, monkeypatch, "sxcran.org", {
+        "https://sxcran.org/robots.txt": NO_ROBOTS, "https://sxcran.org/": (200, moved, HTML),
+        "https://sxcran.ac.in/robots.txt": NO_ROBOTS, "https://sxcran.ac.in/": (200, HOME_HTML, HTML)})
+    [home] = _claim(la_db)
+    asyncio.run(fetcher.fetch_task(home))
+    assert _home(la_db)[:2] == ("ok", "https://sxcran.ac.in/")
+    assert "https://sxcran.ac.in/robots.txt" in [u for u, _ in web.calls]  # another site: its own rules
+
+
+TAKSH_SHELL = ('<html><head><title>Taksh Academy Vadodara</title>'
+               '<meta name="description" content="Coaching for Class 8, 9 and 10 in Manjalpur and Tarsali, Vadodara.">'
+               '<script type="application/ld+json">{"@type": "EducationalOrganization", "name": "Taksh Academy", '
+               '"telephone": "+91 98250 12345"}</script><script src="/static/js/main.js"></script></head>'
+               '<body><div id="root"></div></body></html>')
+
+
+def test_a_shell_no_browser_renders_is_kept_as_the_text_its_html_carries(la_db, monkeypatch):
+    _site(la_db, monkeypatch, "takshacademy.in", {"https://takshacademy.in/robots.txt": NO_ROBOTS,
+                                                  "https://takshacademy.in/": (200, TAKSH_SHELL, HTML)})
+    [home] = _claim(la_db)
+    asyncio.run(fetcher.fetch_task(home))
+    page = _get(la_db, "SELECT access, text FROM lead_org_page WHERE page_type = 'home'")[0]
+    assert page[0] == "ok" and "Telephone: +91 98250 12345" in page[1] and "Manjalpur" in page[1]
+
+
+def test_a_shell_the_extension_never_took_comes_back_to_the_server(la_db, monkeypatch):
+    """An AUTO agent's shell handed to an extension that then went offline waited for ever."""
+    _site(la_db, monkeypatch, "takshacademy.in", {"https://takshacademy.in/robots.txt": NO_ROBOTS,
+                                                  "https://takshacademy.in/": (200, TAKSH_SHELL, HTML)}, mode="AUTO")
+    _online_extension(la_db)
+    [home] = _claim(la_db)
+    assert asyncio.run(fetcher.fetch_task(home)).startswith("js_shell")
+    assert fetcher.claim_server_batch(4, None) == []  # the extension still has its 5 minutes
+    with la_db() as db:
+        db.execute(text("UPDATE lead_fetch_task SET updated_at = now() - interval '6 minutes'"))
+        db.commit()
+    [back] = fetcher.claim_server_batch(4, None)
+    assert back["mode"] == "AUTO" and back["last_error"] == store.HANDED_SHELL_ERROR  # back to AUTO
+    assert _get(la_db, "SELECT mode FROM lead_fetch_task")[0][0] == "AUTO"
+    asyncio.run(fetcher.fetch_task(back))  # the extension is "online" but is not asked twice
+    assert _get(la_db, "SELECT access FROM lead_org_page WHERE page_type = 'home'")[0][0] == "ok"
+    assert _get(la_db, "SELECT status FROM lead_fetch_task WHERE page_type = 'home'")[0][0] == "DONE"
+
+
+def test_a_shell_the_extension_asked_to_render_in_a_tab_is_still_handed_to_it(la_db, monkeypatch):
+    # Only the server's own hand-off mark stops a second hand-off; the extension's "render in a tab" retry
+    # of an AUTO task the server then claims still goes to an online extension, as before.
+    _site(la_db, monkeypatch, "takshacademy.in", {"https://takshacademy.in/robots.txt": NO_ROBOTS,
+                                                  "https://takshacademy.in/": (200, TAKSH_SHELL, HTML)}, mode="AUTO")
+    _online_extension(la_db)
+    [home] = _claim(la_db)
+    home["last_error"] = "thin_page: render in a tab"
+    assert asyncio.run(fetcher.fetch_task(home)).startswith("js_shell")
+    assert _get(la_db, "SELECT mode, last_error FROM lead_fetch_task")[0] == ("LOCAL", store.HANDED_SHELL_ERROR)
+
+
+def test_shells_handed_to_a_local_agents_extension_stay_with_it(la_db, monkeypatch):
+    _site(la_db, monkeypatch, "takshacademy.in", {}, mode="AUTO")
+    with la_db() as db:
+        db.execute(text("UPDATE lead_fetch_task SET mode = 'LOCAL', last_error = :e, "
+                        "updated_at = now() - interval '6 minutes'"), {"e": store.HANDED_SHELL_ERROR})
+        db.execute(text("UPDATE lead_agent SET mode = 'LOCAL'"))
+        db.commit()
+    assert fetcher.claim_server_batch(4, None) == []
+
+
+def test_a_job_post_is_read_under_its_boards_robots_txt(monkeypatch):
+    import app.services.safe_http as safe_http
+
+    monkeypatch.setattr(fetcher, "HOST_PAUSE_S", 0)
+    post = "https://www.naukri.com/job-listings-counsellor-narayana-e-techno-school-hyderabad-1"
+    web = _Web({
+        "https://www.glassdoor.co.in/robots.txt": (200, "User-agent: *\nDisallow: /job-listing/\n", "text/plain"),
+        "https://www.glassdoor.co.in/job-listing/x.htm": (200, "<html>post</html>", HTML),
+        "https://www.naukri.com/robots.txt": NO_ROBOTS,
+        post: (200, "<html><title>Counsellor</title></html>", HTML),
+        "https://www.naukri.com/job-listings-gone": (404, "gone", HTML),
+        "https://www.naukri.com/job-listings-pdf": (200, "%PDF", "application/pdf"),
+        "https://in.indeed.com/robots.txt": NO_ROBOTS,
+        "https://in.indeed.com/viewjob?jk=1": _err("timeout"),
+    })
+    monkeypatch.setattr(safe_http, "safe_fetch", web)
+    state = {}
+
+    def read(url):
+        return asyncio.run(fetcher.read_post(url, state))
+
+    assert read("https://www.glassdoor.co.in/job-listing/x.htm") is None  # robots.txt says no: never requested
+    assert read(post) == "<html><title>Counsellor</title></html>"
+    assert read("https://www.naukri.com/job-listings-gone") is None
+    assert read("https://www.naukri.com/job-listings-pdf") is None
+    assert read("https://in.indeed.com/viewjob?jk=1") is None
+    assert web.urls() == [post, "https://www.naukri.com/job-listings-gone", "https://www.naukri.com/job-listings-pdf",
+                          "https://in.indeed.com/viewjob?jk=1"]
+    assert [u for u, _ in web.calls].count("https://www.naukri.com/robots.txt") == 1  # once per board a round
+    assert all(h == fetcher.BROWSER_HEADERS for u, h in web.calls if not u.endswith("robots.txt"))

@@ -60,6 +60,14 @@ def test_the_reply_becomes_the_suggested_industries():
     assert set(first) == {"name", "search_term", "fit", "why", "products", "buyer_roles", "hiring_phrases", "need_phrases"}
 
 
+def test_the_description_is_passed_through_and_an_older_reply_gets_none():
+    assert parse_profile(PROFILE)["description"] == ""
+    data = parse_profile({**PROFILE, "description": "AI Calling phones every new enquiry.\n\n  For sales teams."})
+    assert data["description"] == "AI Calling phones every new enquiry. For sales teams."
+    assert list(ProductProfile.model_fields)[-1] == "description"  # written after everything else
+    assert "Keep every other text field short." in build_profile_prompt([], None, None, name="CRM")[0]
+
+
 def test_products_are_limited_to_those_chosen_and_a_note_is_kept():
     data = parse_profile(PROFILE, products=["ai_calling"], note="The product page could not be read; ...")
     assert all(i["products"] == ["ai_calling"] for i in data["industries"])

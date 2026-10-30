@@ -20,7 +20,13 @@ public enum CallSubjectType {
      * is assigned, re-statused or pushed into a workflow (the non-LEAD branch of
      * AiCallOutcomeProcessor). subjectId = the public call id (ai_call_api_call.id).
      */
-    API_CONTACT;
+    API_CONTACT,
+    /**
+     * A test call an admin placed from the AI agent editor to their own number. No lead,
+     * no workflow: the non-LEAD branch of AiCallOutcomeProcessor stores and bills it and
+     * does nothing else. subjectId = ai_agent_test_call.id (V615).
+     */
+    AGENT_TEST;
 
     /** Lenient parse; null / blank / unknown ⇒ {@link #LEAD} (backward compatible). */
     public static CallSubjectType fromString(String s) {

@@ -171,7 +171,7 @@ final class CrmDashboardSql {
             SELECT v.owner_id, COUNT(DISTINCT v.id) AS n
             FROM vis v
             JOIN lead_followup lf ON lf.audience_response_id = v.id
-            WHERE lf.is_closed = FALSE AND lf.schedule_time IS NOT NULL AND lf.schedule_time < :now
+            WHERE lf.is_closed = FALSE AND lf.schedule_time IS NOT NULL AND lf.schedule_time < :overdueBefore
               AND (v.conversion_status IS NULL OR v.conversion_status != 'CONVERTED')
               AND v.owner_id IS NOT NULL
             GROUP BY v.owner_id
@@ -190,7 +190,7 @@ final class CrmDashboardSql {
                    COUNT(*) FILTER (WHERE (v.conversion_status IS NULL OR v.conversion_status != 'CONVERTED')
                                      AND EXISTS (SELECT 1 FROM lead_followup lf
                                                   WHERE lf.audience_response_id = v.id AND lf.is_closed = FALSE
-                                                    AND lf.schedule_time IS NOT NULL AND lf.schedule_time < :now)) AS overdue
+                                                    AND lf.schedule_time IS NOT NULL AND lf.schedule_time < :overdueBefore)) AS overdue
             FROM vis v
             GROUP BY v.audience_id
             ORDER BY leads DESC
@@ -221,7 +221,7 @@ final class CrmDashboardSql {
                    COUNT(*) FILTER (WHERE (v.conversion_status IS NULL OR v.conversion_status != 'CONVERTED')
                                      AND EXISTS (SELECT 1 FROM lead_followup lf
                                                   WHERE lf.audience_response_id = v.id AND lf.is_closed = FALSE
-                                                    AND lf.schedule_time IS NOT NULL AND lf.schedule_time < :now)) AS followup_overdue
+                                                    AND lf.schedule_time IS NOT NULL AND lf.schedule_time < :overdueBefore)) AS followup_overdue
             FROM vis v
             """;
 

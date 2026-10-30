@@ -227,6 +227,14 @@
       "openInNewTab": "नए टैब में खोलें",
       "noDocument": "अभी तक कोई दस्तावेज़ सेट नहीं किया गया"
     },
+    "scormViewer": {
+      "swipeHint": "पन्ने पलटने के लिए स्वाइप करें",
+      "defaultTitle": "इंटरैक्टिव प्रीव्यू",
+      "fullScreen": "फ़ुल स्क्रीन",
+      "openInNewTab": "नए टैब में खोलें",
+      "loading": "प्रीव्यू लोड हो रहा है…",
+      "noPackage": "अभी कोई SCORM पैकेज नहीं जोड़ा गया है"
+    },
     "hiddenForUrl": "इस URL के लिए छिपा हुआ"
   },
   "whatsAppFloatingButton": {

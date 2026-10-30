@@ -67,6 +67,11 @@ public class EngagementEngine {
     @Column(name = "quiet_hours", columnDefinition = "jsonb", nullable = false)
     private String quietHours = "{}";
 
+    /** JSON array of staff user ids alerted (bell + email) when the engine needs a human. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "notify_user_ids", columnDefinition = "jsonb", nullable = false)
+    private String notifyUserIds = "[]";
+
     @Column(name = "cadence_hours", nullable = false)
     private Integer cadenceHours = 72;
 

@@ -60,6 +60,24 @@ public class EngagementLedgerInternalController {
         }
     }
 
+    /**
+     * Send a vault attachment as a native WhatsApp session media message. Body {instituteId, phone,
+     * mediaType(image|video|document|audio), mediaUrl, caption?, filename?, correlationId}. Same
+     * window guarantee and internal posture as /whatsapp-reply.
+     */
+    @PostMapping("/whatsapp-media")
+    public ResponseEntity<Map<String, Object>> whatsAppMedia(@RequestBody Map<String, String> body) {
+        try {
+            String wamid = whatsAppInboxService.sendEngagementMedia(
+                    body.get("phone"), body.get("mediaType"), body.get("mediaUrl"), body.get("caption"),
+                    body.get("filename"), body.get("instituteId"), body.get("correlationId"));
+            return ResponseEntity.ok(Map.of("accepted", true, "wamid", wamid != null ? wamid : ""));
+        } catch (org.springframework.web.server.ResponseStatusException e) {
+            log.warn("whatsapp-media rejected: {}", e.getReason());
+            return ResponseEntity.status(e.getStatusCode()).build();
+        }
+    }
+
     @PostMapping("/ledger-batch")
     public ResponseEntity<LedgerBatchResponse> ledgerBatch(@RequestBody LedgerBatchRequest request) {
         try {
@@ -73,17 +91,33 @@ public class EngagementLedgerInternalController {
     /**
      * Recent inbound WhatsApp replies since a cursor — the engine's reply-ingestion sweep.
      * {@code since} is epoch millis (plain digits survive the caller's URL re-encoding; an ISO
-     * string would arrive double-encoded and fail to parse).
+     * string would arrive double-encoded and fail to parse). {@code includeEmail=true} adds inbound
+     * emails (channel=EMAIL rows); without it the response is WhatsApp only, as before.
      */
     @GetMapping("/inbound-since")
     public ResponseEntity<List<Map<String, Object>>> inboundSince(
             @RequestParam String instituteId,
+            @RequestParam(required = false) Long since,
+            @RequestParam(defaultValue = "false") boolean includeEmail) {
+        try {
+            Instant cursor = since != null ? Instant.ofEpochMilli(since) : null;
+            return ResponseEntity.ok(engagementLedgerService.inboundSince(instituteId, cursor, includeEmail));
+        } catch (IllegalArgumentException e) {
+            log.warn("inbound-since rejected: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    /** WhatsApp sends Meta reported as failed since a cursor (epoch millis) — the engine's delivery check. */
+    @GetMapping("/delivery-failures-since")
+    public ResponseEntity<List<Map<String, Object>>> deliveryFailuresSince(
+            @RequestParam String instituteId,
             @RequestParam(required = false) Long since) {
         try {
             Instant cursor = since != null ? Instant.ofEpochMilli(since) : null;
-            return ResponseEntity.ok(engagementLedgerService.inboundSince(instituteId, cursor));
+            return ResponseEntity.ok(engagementLedgerService.deliveryFailuresSince(instituteId, cursor));
         } catch (IllegalArgumentException e) {
-            log.warn("inbound-since rejected: {}", e.getMessage());
+            log.warn("delivery-failures-since rejected: {}", e.getMessage());
             return ResponseEntity.badRequest().build();
         }
     }

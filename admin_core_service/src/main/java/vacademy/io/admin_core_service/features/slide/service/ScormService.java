@@ -221,12 +221,47 @@ public class ScormService {
                             } catch(e) { /* cross-origin, ignore */ }
                         }
 
+                        // Optional embed look, set by a website's scormViewer through the
+                        // hash (#vchrome=none&vbg=FFFDF8): hide the package player's own
+                        // controls (iSpring Flip toolbar, page count, thumbnails, full
+                        // screen) so the content reads like the page around it. Course
+                        // slides never pass it, so they keep the player as authored.
+                        var embedOpts = {};
+                        (location.hash || '').replace(/^#/, '').split('&').forEach(function(kv) {
+                            var p = kv.split('=');
+                            if (p[0]) embedOpts[decodeURIComponent(p[0])] = decodeURIComponent(p[1] || '');
+                        });
+                        var embedBg = /^[0-9a-fA-F]{6}$/.test(embedOpts.vbg || '') ? '#' + embedOpts.vbg : '';
+                        if (embedBg) {
+                            document.documentElement.style.background = embedBg;
+                            document.body.style.background = embedBg;
+                        }
+                        var PLAYER_CHROME_CSS =
+                            '.mainContainer>.toolbar,.mainContainer>.thumbnailWrapper,' +
+                            '.mainContainer>.top-toolbar,.mainContainer>.bottom-toolbar{display:none!important}';
+                        function applyEmbedLook() {
+                            if (embedOpts.vchrome !== 'none') return;
+                            try {
+                                var frame = document.getElementById('scormContent');
+                                var doc = frame.contentDocument;
+                                if (!doc || doc.getElementById('vacademy-embed-look')) return;
+                                var st = doc.createElement('style');
+                                st.id = 'vacademy-embed-look';
+                                st.textContent = PLAYER_CHROME_CSS + (embedBg
+                                    ? 'html,body,.mainContainer,.viewerContainer,.viewer{background:' + embedBg + '!important}'
+                                    : '');
+                                (doc.head || doc.documentElement).appendChild(st);
+                                frame.contentWindow.dispatchEvent(new Event('resize'));
+                            } catch(e) { /* a package on another origin keeps its own look */ }
+                        }
+
                         // Content waits for the learner's data; see generatePlayerWrapper
                         var contentStarted = false;
                         function startContent() {
                             if (contentStarted) return;
                             contentStarted = true;
                             var frame = document.getElementById('scormContent');
+                            frame.addEventListener('load', applyEmbedLook);
                             frame.src = frame.getAttribute('data-src');
                         }
 

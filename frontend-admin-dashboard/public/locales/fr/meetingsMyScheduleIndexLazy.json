@@ -42,5 +42,21 @@
         "noLink": "No link yet",
         "more": "+{{count}} more",
         "show": "Show my booking links"
+    },
+    "googleCard": {
+        "title": "Votre agenda Google",
+        "connected": "Connecté",
+        "reconnect": "Reconnexion requise",
+        "connectedDescription": "Les liens Meet et les événements de vos réunions utilisent ce compte.",
+        "disconnectedDescription": "Connectez votre propre compte Google pour que vos réunions utilisent votre agenda et vos liens Meet.",
+        "connect": "Connecter le compte Google",
+        "reconnect_btn": "Reconnecter",
+        "redirecting": "Redirection…",
+        "disconnect": "Déconnecter",
+        "connectError": "Impossible de lancer la connexion Google. Veuillez réessayer.",
+        "disconnectError": "Impossible de déconnecter Google. Veuillez réessayer.",
+        "justConnected": "Compte Google connecté.",
+        "connectFailed": "Échec de la connexion Google. Veuillez réessayer.",
+        "disconnected": "Compte Google déconnecté."
     }
 }

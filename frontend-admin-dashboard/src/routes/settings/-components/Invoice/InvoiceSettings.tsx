@@ -59,6 +59,7 @@ import { InvoiceTemplatesSection } from './InvoiceTemplatesSection';
 import { InvoiceNumberingSection } from './InvoiceNumberingSection';
 import { InvoiceSeriesSection, seriesErrors, seriesValueOf } from './InvoiceSeriesSection';
 import { InvoiceNumberingChangeDialog } from './InvoiceNumberingChangeDialog';
+import { InvoiceReceiptDateSection } from './InvoiceReceiptDateSection';
 
 function getInjectablePlaceholders(
     t: TFunction
@@ -735,6 +736,12 @@ export default function InvoiceSettings() {
                             onCheckedChange={(v) => update({ generateInvoiceOnManualEnroll: v })}
                         />
                     </div>
+
+                    <InvoiceReceiptDateSection
+                        fromPayment={!!settings.receiptDateFromPayment}
+                        field={settings.receiptDateField}
+                        onChange={update}
+                    />
                 </CardContent>
             </Card>
             </section>

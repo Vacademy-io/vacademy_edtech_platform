@@ -61,9 +61,34 @@ export function LeadLookupFollowUps({ result }: { result: LeadLookupResult }) {
     );
 }
 
+/**
+ * The stored status flips to OVERDUE 30 minutes after the scheduled time. With Lead
+ * settings → "Overdue by date, not time" on, a follow-up due today is not overdue yet,
+ * so it reads as Ongoing until its date has passed.
+ */
+export function displayStatus(
+    status: string | null | undefined,
+    scheduleTime: string | null | undefined,
+    byDate: boolean,
+    now: Date = new Date()
+): string {
+    const raw = status ?? '';
+    if (!byDate || raw !== 'OVERDUE' || !scheduleTime) return raw;
+    // Timestamps can come without a zone marker; they are UTC (same rule as the
+    // Follow-ups page's effectiveDueMs).
+    const hasZone = /Z$|[+-]\d{2}:?\d{2}$/i.test(scheduleTime);
+    const due = Date.parse(hasZone ? scheduleTime : `${scheduleTime.replace(' ', 'T')}Z`);
+    if (Number.isNaN(due)) return raw;
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+    return due >= startOfToday.getTime() ? 'ONGOING' : raw;
+}
+
 function FollowUpItem({ followUp }: { followUp: LeadLookupFollowUp }) {
-    const { showHistory } = useFollowUpFeatures();
-    const status = FOLLOW_UP_STATUS[followUp.status ?? ''] ?? FOLLOW_UP_STATUS.PENDING!;
+    const { showHistory, overdueByDate } = useFollowUpFeatures();
+    const status =
+        FOLLOW_UP_STATUS[displayStatus(followUp.status, followUp.schedule_time, overdueByDate)] ??
+        FOLLOW_UP_STATUS.PENDING!;
     const comments = followUp.comments ? toPlainText(followUp.comments) : '';
     const details: [string, string | undefined][] = [
         [

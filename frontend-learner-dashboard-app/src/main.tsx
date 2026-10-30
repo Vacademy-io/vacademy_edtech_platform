@@ -160,8 +160,14 @@ if (import.meta.env.VITE_ENABLE_SENTRY === "true") {
 
 // Lazy load analytics initialization (deferred to after first paint)
 const initAnalytics = async () => {
-  const { initializeAnalytics, identifyUser } = await import("./lib/analytics");
-  const { getDecodedAccessTokenFromStorage } = await import("@/lib/auth/sessionUtility");
+  // When a chunk fails to load, chunk-reload.ts cancels Vite's preloadError
+  // to reload the page — and Vite then resolves the import with undefined
+  // instead of throwing. Bail quietly; the reload is already on its way.
+  const analytics = await import("./lib/analytics");
+  const session = await import("@/lib/auth/sessionUtility");
+  if (!analytics || !session) return;
+  const { initializeAnalytics, identifyUser } = analytics;
+  const { getDecodedAccessTokenFromStorage } = session;
 
   initializeAnalytics();
 

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -12,14 +13,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestBody;
+import vacademy.io.admin_core_service.features.engagement.service.ContactResolver;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementAccessGuard;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementDispatcher;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementAction;
+import vacademy.io.admin_core_service.features.engagement.entity.EngagementMember;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementActionRepository;
+import vacademy.io.admin_core_service.features.engagement.repository.EngagementMemberRepository;
+import vacademy.io.admin_core_service.features.engagement.spi.Subject;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -40,6 +46,11 @@ public class EngagementTaskController {
     private final EngagementActionRepository actionRepository;
     private final EngagementAccessGuard accessGuard;
     private final EngagementDispatcher dispatcher;
+    private final EngagementMemberRepository memberRepository;
+    private final ContactResolver contactResolver;
+
+    /** Most ids one people lookup resolves: an inbox page is at most 200 tasks. */
+    private static final int MAX_PEOPLE_LOOKUP = 200;
 
     @GetMapping
     public ResponseEntity<Page<EngagementAction>> inbox(
@@ -54,6 +65,30 @@ public class EngagementTaskController {
                 instituteId, statusList, PageRequest.of(page, Math.min(size, 200))));
     }
 
+    /**
+     * Who each task is for: name, phone and email of the members behind an inbox page, so the
+     * admin sees the person, not just the engine. Members of another institute are left out.
+     */
+    @GetMapping("/people")
+    public ResponseEntity<List<Subject>> people(
+            @RequestParam String instituteId,
+            @RequestParam String memberIds,
+            @RequestAttribute("user") CustomUserDetails user) {
+        accessGuard.requireAdmin(user, instituteId);
+        List<String> ids = Arrays.stream(memberIds.split(","))
+                .map(String::trim).filter(s -> !s.isEmpty()).distinct().limit(MAX_PEOPLE_LOOKUP).toList();
+        if (ids.isEmpty()) return ResponseEntity.ok(List.of());
+        List<EngagementMember> members = memberRepository.findAllById(ids).stream()
+                .filter(m -> instituteId.equals(m.getInstituteId()))
+                .toList();
+        return ResponseEntity.ok(contactResolver.resolve(members));
+    }
+
+    @Auditable(
+            entityType = "ENGAGEMENT_TASK",
+            action = "ACK",
+            entityIdExpr = "#taskId",
+            descriptionExpr = "'acknowledged an engagement task'")
     @PostMapping("/{taskId}/ack")
     public ResponseEntity<Void> ack(@PathVariable String taskId,
                                     @RequestParam String instituteId,
@@ -64,6 +99,11 @@ public class EngagementTaskController {
     }
 
     /** Handled outside the system (called them, spoke in person, sent manually). */
+    @Auditable(
+            entityType = "ENGAGEMENT_TASK",
+            action = "DONE",
+            entityIdExpr = "#taskId",
+            descriptionExpr = "'marked an engagement task done'")
     @PostMapping("/{taskId}/done")
     public ResponseEntity<Void> done(@PathVariable String taskId,
                                      @RequestParam String instituteId,
@@ -73,6 +113,11 @@ public class EngagementTaskController {
         return ResponseEntity.ok().build();
     }
 
+    @Auditable(
+            entityType = "ENGAGEMENT_TASK",
+            action = "DISMISS",
+            entityIdExpr = "#taskId",
+            descriptionExpr = "'dismissed an engagement task'")
     @PostMapping("/{taskId}/dismiss")
     public ResponseEntity<Void> dismiss(@PathVariable String taskId,
                                         @RequestParam String instituteId,
@@ -87,6 +132,11 @@ public class EngagementTaskController {
      * (OPEN/ACKED → DISPATCHING) is atomic so two admins can't double-send; then the dispatcher
      * settles to SENT/FAILED. Body {"editedBody": "..."} is optional; absent = send the draft as-is.
      */
+    @Auditable(
+            entityType = "ENGAGEMENT_TASK",
+            action = "SEND",
+            entityIdExpr = "#taskId",
+            descriptionExpr = "'sent an engagement message (' + (#result?.body?.channel ?: '?') + ', ' + (#result?.body?.status ?: '?') + ')'")
     @PostMapping("/{taskId}/send")
     public ResponseEntity<EngagementAction> send(@PathVariable String taskId,
                                                  @RequestParam String instituteId,
@@ -108,6 +158,11 @@ public class EngagementTaskController {
      * have succeeded with a lost response — check the ledger by correlation_id before reopening).
      * FAILED → OPEN so it re-enters the inbox and can be re-sent.
      */
+    @Auditable(
+            entityType = "ENGAGEMENT_TASK",
+            action = "REOPEN",
+            entityIdExpr = "#taskId",
+            descriptionExpr = "'reopened a failed engagement task'")
     @PostMapping("/{taskId}/reopen")
     public ResponseEntity<Void> reopen(@PathVariable String taskId,
                                        @RequestParam String instituteId,
@@ -116,6 +171,23 @@ public class EngagementTaskController {
         Instant now = Instant.now();
         int updated = actionRepository.reopenFailed(taskId, instituteId, now, now.plus(java.time.Duration.ofHours(72)));
         if (updated == 0) throw new VacademyException("Task not found or not in a FAILED state");
+        return ResponseEntity.ok().build();
+    }
+
+    /** Undo Done / Dismiss: the task goes back to the inbox as OPEN. */
+    @Auditable(
+            entityType = "ENGAGEMENT_TASK",
+            action = "RESTORE",
+            entityIdExpr = "#taskId",
+            descriptionExpr = "'restored a handled engagement task'")
+    @PostMapping("/{taskId}/restore")
+    public ResponseEntity<Void> restore(@PathVariable String taskId,
+                                        @RequestParam String instituteId,
+                                        @RequestAttribute("user") CustomUserDetails user) {
+        accessGuard.requireAdmin(user, instituteId);
+        Instant now = Instant.now();
+        int updated = actionRepository.restoreHandled(taskId, instituteId, now, now.plus(java.time.Duration.ofHours(72)));
+        if (updated == 0) throw new VacademyException("Task not found or not marked done or dismissed");
         return ResponseEntity.ok().build();
     }
 

@@ -25,6 +25,7 @@ import vacademy.io.admin_core_service.features.workflow.dto.execution_log.EmailE
 import vacademy.io.common.logging.SentryLogger;
 
 import vacademy.io.admin_core_service.features.workflow.service.NotificationRateLimitService;
+import vacademy.io.admin_core_service.features.engagement.service.EngagementWorkflowSuppression;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -45,6 +46,10 @@ public class SendEmailNodeHandler implements NodeHandler {
     private final TemplateRepository templateRepository;
     private final WorkflowExecutionLogger executionLogger;
     private final NotificationRateLimitService rateLimitService;
+
+    /** Holds lead nurture back from leads an engagement engine is working. Optional: absent = no hold. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private EngagementWorkflowSuppression engagementSuppression;
     private final Map<String, Template> templateCache = new java.util.concurrent.ConcurrentHashMap<>();
 
     // Throttling defaults — workflows that fan out to many recipients (e.g., a batch
@@ -272,6 +277,12 @@ public class SendEmailNodeHandler implements NodeHandler {
                 Set<String> sentLog = new HashSet<>();
                 List<String> emailResults = new ArrayList<>();
 
+                // Leads an engagement engine is working right now: the engine owns their outreach, so
+                // a nurture workflow skips them (transactional and learner sends are never held).
+                Set<String> engagedEmails = engagementSuppression != null
+                        && EngagementWorkflowSuppression.appliesTo(context)
+                        ? engagementSuppression.engagedLeadEmails(finalInstituteId) : Set.of();
+
                 // Map to store original items for failure tracking
                 Map<String, Object> recipientToItemMap = new HashMap<>();
 
@@ -288,6 +299,21 @@ public class SendEmailNodeHandler implements NodeHandler {
                                 .recipientEmail(recipient)
                                 .errorMessage("Recipient is null or blank")
                                 .errorType("VALIDATION_ERROR")
+                                .failureReason("SKIPPED")
+                                .itemData(originalItem)
+                                .build());
+                        continue;
+                    }
+
+                    if (!engagedEmails.isEmpty()
+                            && engagedEmails.contains(EngagementWorkflowSuppression.emailKey(recipient))) {
+                        log.info("Skipping email to {}: lead is inside an engagement engine, which owns its outreach.",
+                                recipient);
+                        skippedCount++;
+                        failedEmails.add(EmailExecutionDetails.FailedEmail.builder()
+                                .recipientEmail(recipient)
+                                .errorMessage("Lead is inside an engagement engine; the engine owns its outreach")
+                                .errorType("ENGAGEMENT_ENGINE")
                                 .failureReason("SKIPPED")
                                 .itemData(originalItem)
                                 .build());

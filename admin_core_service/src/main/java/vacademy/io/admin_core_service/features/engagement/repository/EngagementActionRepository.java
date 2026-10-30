@@ -15,25 +15,38 @@ import java.util.List;
 public interface EngagementActionRepository extends JpaRepository<EngagementAction, String> {
 
     /**
+     * When the engine's messages to this member went out, newest first. Answers to the person's own
+     * messages (REPLY) are not outreach and do not count; callers pass PageRequest.of(0, n).
+     */
+    @Query("""
+            SELECT a.dispatchedAt FROM EngagementAction a
+             WHERE a.memberId = :memberId AND a.status = 'SENT' AND a.kind <> 'REPLY'
+               AND a.dispatchedAt IS NOT NULL
+             ORDER BY a.dispatchedAt DESC
+            """)
+    List<Instant> recentSendTimes(@Param("memberId") String memberId, Pageable pageable);
+
+    /**
      * The institute-wide task inbox: unassigned by design in Phase 1, ranked by priority.
      * The caller passes the status filter; SIMULATED (DRY_RUN) rows are surfaced only when
      * the caller explicitly asks for that status, never mixed into the default OPEN/ACKED view.
      */
-    // A FAILED autonomous SEND (kind=SEND) IS surfaced so a human can reconcile/reopen it — but a
-    // pending (OPEN, scheduled) or successful (SENT) auto-send never clutters the human inbox; those
-    // are the dispatch job's business, not a task needing action.
+    // An autonomous SEND (kind=SEND) is surfaced once it has settled: FAILED so a human can
+    // reconcile/reopen it, SENT so the Sent tab shows what the engine sent on its own. The default
+    // view asks for OPEN/ACKED only, so a successful auto-send never clutters "needs action"; a
+    // pending (OPEN, scheduled) auto-send stays the dispatch job's business.
     @Query(value = """
             SELECT * FROM engagement_action
             WHERE institute_id = :instituteId
               AND status IN (:statuses)
-              AND (kind IN ('TASK', 'REPLY') OR (kind = 'SEND' AND status = 'FAILED'))
+              AND (kind IN ('TASK', 'REPLY') OR (kind = 'SEND' AND status IN ('FAILED', 'SENT')))
             ORDER BY priority DESC NULLS LAST, scheduled_for ASC NULLS LAST, created_at DESC
             """,
             countQuery = """
             SELECT count(*) FROM engagement_action
             WHERE institute_id = :instituteId
               AND status IN (:statuses)
-              AND (kind IN ('TASK', 'REPLY') OR (kind = 'SEND' AND status = 'FAILED'))
+              AND (kind IN ('TASK', 'REPLY') OR (kind = 'SEND' AND status IN ('FAILED', 'SENT')))
             """, nativeQuery = true)
     Page<EngagementAction> findInbox(@Param("instituteId") String instituteId,
                                      @Param("statuses") List<String> statuses,
@@ -45,18 +58,25 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
      * BEFORE the LLM call). Counts by subject (user or lead), not by member row, so three
      * engines sharing a learner share the cap.
      */
-    // SIMULATED excluded: a DRY_RUN never consumes the real cadence cap. FAILED counts: it is the
-    // unknown-outcome status (the message may have landed), so leaving it out let a delivered
-    // message go uncounted and the person get more than the cap. NULL subject params
-    // are CAST so Postgres can infer the type (an un-cast null bind → "could not determine
+    // Counts what reached (or is about to reach) the person, never an unsent draft (F4 / S8):
+    // OPEN or ACKED copilot TASKs and REPLY escalations are drafts, and an unattended inbox used
+    // to block new decisions for up to 7 days. Counted: SENT; DISPATCHING (in flight); FAILED (the
+    // unknown-outcome status, the message may have landed); DONE (a human marked it handled, e.g.
+    // called or messaged the person themselves); and an OPEN kind=SEND, which goes out
+    // with no human step, so leaving it out would let the brain queue past the cap. SIMULATED is
+    // never counted (a DRY_RUN never consumes the real cap). A row counts while either its draft or
+    // its send time is in the window, so a draft sent days after it was written still counts for a
+    // full window after it went out. NULL subject
+    // params are CAST so Postgres can infer the type (an un-cast null bind → "could not determine
     // data type of parameter" at runtime — a compile-clean, run-fatal trap on this hot path).
     @Query(value = """
             SELECT count(*) FROM engagement_action a
             JOIN engagement_member m ON m.id = a.member_id
             WHERE a.institute_id = :instituteId
               AND a.kind IN ('TASK', 'SEND', 'REPLY')
-              AND a.status NOT IN ('DISMISSED', 'EXPIRED', 'SIMULATED')
-              AND a.created_at >= :since
+              AND (a.status IN ('SENT', 'DISPATCHING', 'FAILED', 'DONE')
+                   OR (a.kind = 'SEND' AND a.status = 'OPEN'))
+              AND (a.created_at >= :since OR a.dispatched_at >= :since)
               AND ((CAST(:userId AS varchar) IS NOT NULL AND m.user_id = CAST(:userId AS varchar))
                    OR (CAST(:audienceResponseId AS varchar) IS NOT NULL
                        AND m.audience_response_id = CAST(:audienceResponseId AS varchar)))
@@ -264,6 +284,25 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
                      @Param("expiresAt") Instant expiresAt);
 
     /**
+     * Undo a human Done / Dismiss: DONE or DISMISSED back to OPEN, outcome cleared so the label the
+     * learning loop reads is not the one the admin took back. Expiry pushed out like reopenFailed.
+     * Only TASK / REPLY rows: an OPEN autonomous SEND would be picked up by the dispatch job and go
+     * out with no review.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET status = 'OPEN', outcome = NULL, completed_at = NULL, updated_at = :now,
+                   expires_at = CASE WHEN expires_at IS NULL OR expires_at < :expiresAt
+                                     THEN :expiresAt ELSE expires_at END
+             WHERE id = :id AND institute_id = :instituteId AND status IN ('DONE', 'DISMISSED')
+               AND kind IN ('TASK', 'REPLY')
+            """, nativeQuery = true)
+    int restoreHandled(@Param("id") String id, @Param("instituteId") String instituteId, @Param("now") Instant now,
+                       @Param("expiresAt") Instant expiresAt);
+
+    /**
      * Withdraw a due autonomous SEND that must not go out any more (the person opted out or left
      * the audience after the decision). EXPIRED, not a TASK: a human must not be invited to send it.
      */
@@ -346,4 +385,83 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
     List<Object[]> countAiCallActionsByStatus(@Param("instituteId") String instituteId);
 
     List<EngagementAction> findTop20ByMemberIdOrderByCreatedAtDesc(String memberId);
+
+    /**
+     * Cancel what is still pending for members who just left their engine: every OPEN or ACKED
+     * row (sends, drafts, tasks) becomes EXPIRED with the reason, so nothing goes out later and no
+     * one is asked to act on a lead that is done. With keepAiCallPromises, a row an AI voice call
+     * produced stays: the person asked for it on the call.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET status = 'EXPIRED', error_message = :reason, updated_at = :now
+             WHERE member_id IN (:memberIds) AND status IN ('OPEN', 'ACKED')
+               AND (:keepAiCallPromises = FALSE OR source IS NULL OR source <> 'AI_CALL')
+            """, nativeQuery = true)
+    int cancelOpenForMembers(@Param("memberIds") List<String> memberIds, @Param("reason") String reason,
+                             @Param("now") Instant now, @Param("keepAiCallPromises") boolean keepAiCallPromises);
+
+    /**
+     * B6: at-most-once claim of a CRM action task for approval (OPEN/ACKED TASK → DISPATCHING), so
+     * two admins clicking approve run it once. The handler then settles it to DONE, or back to OPEN
+     * with the reason when it could not run.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET status = 'DISPATCHING', updated_at = :now
+             WHERE id = :id AND institute_id = :instituteId AND kind = 'TASK'
+               AND status IN ('OPEN', 'ACKED') AND action_type IN (:types)
+            """, nativeQuery = true)
+    int claimCrmAction(@Param("id") String id, @Param("instituteId") String instituteId,
+                       @Param("types") List<String> types, @Param("now") Instant now);
+
+    /** B6/B7: claim a done CRM action for undo (DONE, approved or run on its own → DISPATCHING), once. */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET status = 'DISPATCHING', updated_at = :now
+             WHERE id = :id AND institute_id = :instituteId AND status = 'DONE'
+               AND outcome IN ('ACCEPTED', 'AUTO') AND action_type IN (:types)
+            """, nativeQuery = true)
+    int claimCrmUndo(@Param("id") String id, @Param("instituteId") String instituteId,
+                     @Param("types") List<String> types, @Param("now") Instant now);
+
+    /**
+     * B7 graduation per action type (S7): CRM actions of this type a PERSON approved and that ran
+     * (DONE + ACCEPTED). Ones the engine ran on its own (AUTO) or that were undone never count, and
+     * approvals of messages or of another type never unlock this one.
+     */
+    @Query(value = """
+            SELECT count(*) FROM engagement_action
+            WHERE engine_id = :engineId AND action_type = :actionType
+              AND status = 'DONE' AND outcome = 'ACCEPTED'
+            """, nativeQuery = true)
+    long countApprovedCrmActions(@Param("engineId") String engineId, @Param("actionType") String actionType);
+
+    /**
+     * Meta accepted the send, then reported it undeliverable (e.g. 131049, the per-user marketing
+     * cap). Moves a SENT row to FAILED with Meta's reason so the inbox, the cap and the brain stop
+     * treating it as delivered. Only SENT rows move; a row a human already handled is left alone.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE engagement_action
+               SET status = 'FAILED', error_message = :reason, updated_at = :now
+             WHERE id = :id AND status = 'SENT'
+            """, nativeQuery = true)
+    int markDeliveryFailed(@Param("id") String id, @Param("reason") String reason, @Param("now") Instant now);
+
+    /** SENT WhatsApp rows of this institute dispatched since the cursor: the ones a failure report can hit. */
+    @Query(value = """
+            SELECT id FROM engagement_action
+             WHERE institute_id = :instituteId AND status = 'SENT' AND channel = 'WHATSAPP'
+               AND dispatched_at >= :since
+            """, nativeQuery = true)
+    List<String> sentWhatsAppSince(@Param("instituteId") String instituteId, @Param("since") Instant since);
 }

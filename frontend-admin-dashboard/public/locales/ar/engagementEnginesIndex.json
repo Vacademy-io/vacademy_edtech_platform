@@ -1,6 +1,6 @@
 {
     "title": "محركات التفاعل",
-    "subtitle": "طيّارون مساعدون بالذكاء الاصطناعي، لكل هدف، يقررون لمن يُرسَل ومتى وبأي محتوى.",
+    "subtitle": "مساعدون بالذكاء الاصطناعي، كلٌّ يعمل على هدف واحد. يقررون من يُتواصل معه ومتى وماذا يُقال؛ وأنت توافق على الرسائل.",
     "actions": {
         "taskInbox": "صندوق المهام",
         "newEngine": "محرك جديد",
@@ -24,7 +24,7 @@
         "hint": {
             "templatesPending": "Approve a WhatsApp template to go live",
             "dryRun": "Dry run: drafts are simulated, nothing is sent",
-            "draft": "Resolve the audience, then start a dry run or activate"
+            "draft": "أضف الأشخاص، ثم ابدأ تشغيلًا تجريبيًا أو فعّل"
         }
     },
     "toolbar": {
@@ -49,5 +49,6 @@
         "drafted": "Drafted · 30d",
         "completed": "Completed · 30d",
         "lastRun": "Last check-in"
-    }
+    },
+    "retry": "إعادة المحاولة"
 }

@@ -30,6 +30,22 @@ public class IdempotencyService {
     private final WorkflowScheduleRepository workflowScheduleRepository;
     private final WorkflowTriggerRepository workflowTriggerRepository;
 
+    /**
+     * Insert a new execution row NOW rather than at the next flush.
+     *
+     * <p>Node logs reference the execution only by a plain {@code workflow_execution_id} column,
+     * so Hibernate (order_inserts=true) does not know a log depends on its execution. It groups
+     * pending inserts by entity in first-seen order, so when a log from an earlier run in the same
+     * transaction is still pending (handleTriggerEvents runs every trigger in one transaction),
+     * ALL pending logs are inserted before this execution → FK violation on
+     * fk_workflow_execution_log_execution and the whole trigger batch rolls back. Flushing here
+     * guarantees the row exists before any log for it is written, and makes a duplicate
+     * idempotency key fail inside the try below instead of at some later flush.</p>
+     */
+    private WorkflowExecution insertExecution(WorkflowExecution execution) {
+        return workflowExecutionRepository.saveAndFlush(execution);
+    }
+
     @Transactional
     public WorkflowExecution markAsProcessing(String idempotencyKey, String workflowId, String scheduleId) {
         try {
@@ -50,7 +66,7 @@ public class IdempotencyService {
                     .startedAt(Instant.now())
                     .build();
 
-            WorkflowExecution saved = workflowExecutionRepository.save(execution);
+            WorkflowExecution saved = insertExecution(execution);
             log.debug("Created new SCHEDULED execution record with status PROCESSING: {}", idempotencyKey);
             return saved;
 
@@ -92,7 +108,7 @@ public class IdempotencyService {
                     .startedAt(Instant.now())
                     .build();
 
-            WorkflowExecution saved = workflowExecutionRepository.save(execution);
+            WorkflowExecution saved = insertExecution(execution);
             log.debug("Created new EVENT_DRIVEN execution record with status PROCESSING: {}", idempotencyKey);
             return saved;
 
@@ -156,7 +172,7 @@ public class IdempotencyService {
                 .retriedByUserId(retriedByUserId)
                 .build();
 
-        WorkflowExecution saved = workflowExecutionRepository.save(retry);
+        WorkflowExecution saved = insertExecution(retry);
         log.info("Created RETRY execution {} for original execution {} (by user {})",
                 saved.getId(), original.getId(), retriedByUserId);
         return saved;

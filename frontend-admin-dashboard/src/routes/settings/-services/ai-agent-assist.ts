@@ -48,6 +48,8 @@ export interface AssistAgentFields {
     openingLine?: string;
     extractionQuestions?: string[];
     dispositions?: string[];
+    /** The agent's reference documents (unsaved edits included); facts come from them. */
+    documents?: { name: string; text: string }[];
 }
 
 export type AssistOperation = 'draft' | 'analyze' | 'improve' | 'feedback' | 'regenerate';

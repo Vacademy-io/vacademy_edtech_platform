@@ -19,6 +19,7 @@ import vacademy.io.notification_service.features.combot.repository.ChannelFlowCo
 import vacademy.io.notification_service.features.combot.repository.ChannelToInstituteMappingRepository;
 import vacademy.io.notification_service.features.notification_log.entity.NotificationLog;
 import vacademy.io.notification_service.features.notification_log.repository.NotificationLogRepository;
+import vacademy.io.notification_service.features.notification_log.service.WhatsAppPricingRecorder;
 import vacademy.io.notification_service.features.webhook.dto.UnifiedWebhookEvent;
 
 import java.time.Instant;
@@ -49,6 +50,11 @@ public class WebhookEventProcessor {
     @Lazy
     @Autowired
     private CombotWebhookService combotWebhookService;
+
+    // Field-injected, not a constructor argument, so the hand-built test fixtures keep compiling;
+    // it is null there, hence the null check at the call site.
+    @Autowired
+    private WhatsAppPricingRecorder whatsAppPricingRecorder;
 
     // Notification types for webhook events
     private static final String WHATSAPP_STATUS_EVENT = "WHATSAPP_STATUS_EVENT";
@@ -295,6 +301,11 @@ public class WebhookEventProcessor {
         } catch (Exception e) {
             log.warn("Could not stamp delivery status {} on outbound row for messageId={}: {}",
                     status, providerMessageId, e.getMessage());
+        }
+        // Meta's pricing rides on the same status (statuses[0] of the raw payload); WATI payloads
+        // carry none and record nothing. Never throws.
+        if (whatsAppPricingRecorder != null) {
+            whatsAppPricingRecorder.recordFromMetaPayload(providerMessageId, event.getRawPayload());
         }
     }
 

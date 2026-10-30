@@ -10,20 +10,21 @@ import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.google.GoogleAccount;
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleAccessTokenService;
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleAccountStore;
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleConferenceService;
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleEventsSubscriptionService;
+import vacademy.io.admin_core_service.features.live_session.repository.LiveSessionRepository;
 import vacademy.io.admin_core_service.features.live_session.repository.SessionScheduleRepository;
+import vacademy.io.admin_core_service.features.live_session.provider.manager.GoogleMeetManager.CohostResult;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -48,7 +49,8 @@ class GoogleMeetCohostTest {
             return google.apply(req);
         });
         return new GoogleMeetManager(mock(GoogleAccountStore.class), tokens, mock(GoogleConferenceService.class),
-                mock(GoogleEventsSubscriptionService.class), web, mock(SessionScheduleRepository.class));
+                mock(GoogleEventsSubscriptionService.class), web, mock(SessionScheduleRepository.class),
+                mock(LiveSessionRepository.class), mock(AuthService.class));
     }
 
     private static Mono<ClientResponse> reply(HttpStatus status, String body) {
@@ -63,7 +65,7 @@ class GoogleMeetCohostTest {
         GoogleMeetManager m = manager(req -> reply(HttpStatus.OK,
                 "{\"name\":\"spaces/abc/members/1\",\"email\":\"teacher@gmail.com\",\"role\":\"COHOST\"}"));
 
-        assertTrue(m.ensureCohost(account, "spaces/abc", "teacher@gmail.com"));
+        assertEquals(CohostResult.ADDED, m.ensureCohost(account, "spaces/abc", "teacher@gmail.com"));
         assertEquals(1, requests.size());
         assertEquals(HttpMethod.POST, requests.get(0).method());
         assertEquals("https://meet.googleapis.com/v2/spaces/abc/members", requests.get(0).url().toString());
@@ -76,39 +78,39 @@ class GoogleMeetCohostTest {
         GoogleMeetManager m = manager(req -> reply(HttpStatus.CONFLICT,
                 "{\"error\":{\"code\":409,\"status\":\"ALREADY_EXISTS\"}}"));
 
-        assertTrue(m.ensureCohost(account, "spaces/abc", "teacher@gmail.com"));
+        assertEquals(CohostResult.ALREADY_COHOST, m.ensureCohost(account, "spaces/abc", "teacher@gmail.com"));
     }
 
     @Test
-    @DisplayName("403 refused: false, no exception, token kept")
+    @DisplayName("403 refused: FAILED, no exception, token kept")
     void refused() {
         GoogleMeetManager m = manager(req -> reply(HttpStatus.FORBIDDEN,
                 "{\"error\":{\"code\":403,\"status\":\"PERMISSION_DENIED\"}}"));
 
-        assertFalse(m.ensureCohost(account, "spaces/abc", "teacher@gmail.com"));
+        assertEquals(CohostResult.FAILED, m.ensureCohost(account, "spaces/abc", "teacher@gmail.com"));
         verify(tokens, never()).evict(any());
     }
 
     @Test
-    @DisplayName("401: false and the cached token is evicted")
+    @DisplayName("401: FAILED and the cached token is evicted")
     void unauthorized() {
         GoogleMeetManager m = manager(req -> reply(HttpStatus.UNAUTHORIZED, "{}"));
 
-        assertFalse(m.ensureCohost(account, "spaces/abc", "teacher@gmail.com"));
+        assertEquals(CohostResult.FAILED, m.ensureCohost(account, "spaces/abc", "teacher@gmail.com"));
         verify(tokens).evict("acc-1");
     }
 
     @Test
-    @DisplayName("Google 500 / network error / token failure: false, no exception")
+    @DisplayName("Google 500 / network error / token failure: FAILED, no exception")
     void failuresSwallowed() {
-        assertFalse(manager(req -> reply(HttpStatus.INTERNAL_SERVER_ERROR, "{}"))
+        assertEquals(CohostResult.FAILED, manager(req -> reply(HttpStatus.INTERNAL_SERVER_ERROR, "{}"))
                 .ensureCohost(account, "spaces/abc", "teacher@gmail.com"));
-        assertFalse(manager(req -> Mono.error(new RuntimeException("connection reset")))
+        assertEquals(CohostResult.FAILED, manager(req -> Mono.error(new RuntimeException("connection reset")))
                 .ensureCohost(account, "spaces/abc", "teacher@gmail.com"));
 
         GoogleMeetManager m = manager(req -> reply(HttpStatus.OK, "{}"));
         when(tokens.getAccessToken(any())).thenThrow(new RuntimeException("refresh revoked"));
-        assertFalse(m.ensureCohost(account, "spaces/abc", "teacher@gmail.com"));
+        assertEquals(CohostResult.FAILED, m.ensureCohost(account, "spaces/abc", "teacher@gmail.com"));
     }
 
     @Test
@@ -116,11 +118,11 @@ class GoogleMeetCohostTest {
     void skipped() {
         GoogleMeetManager m = manager(req -> reply(HttpStatus.OK, "{}"));
 
-        assertFalse(m.ensureCohost(account, "spaces/abc", "TEAM@org.in"));
-        assertFalse(m.ensureCohost(account, "spaces/abc", " "));
-        assertFalse(m.ensureCohost(account, "spaces/abc", null));
-        assertFalse(m.ensureCohost(null, "spaces/abc", "teacher@gmail.com"));
-        assertFalse(m.ensureCohost(account, null, "teacher@gmail.com"));
+        assertEquals(CohostResult.SKIPPED, m.ensureCohost(account, "spaces/abc", "TEAM@org.in"));
+        assertEquals(CohostResult.SKIPPED, m.ensureCohost(account, "spaces/abc", " "));
+        assertEquals(CohostResult.SKIPPED, m.ensureCohost(account, "spaces/abc", null));
+        assertEquals(CohostResult.SKIPPED, m.ensureCohost(null, "spaces/abc", "teacher@gmail.com"));
+        assertEquals(CohostResult.SKIPPED, m.ensureCohost(account, null, "teacher@gmail.com"));
         assertEquals(0, requests.size());
     }
 }

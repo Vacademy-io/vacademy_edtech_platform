@@ -34,6 +34,11 @@ export const bulkSessionRowSchema = z
         durationHours: z.string().default('0'),
         durationMinutes: z.string().default('30'),
         platform: z.string().default('other'),
+        /**
+         * True once the admin picked this row's platform themselves (row cell,
+         * CSV or paste). Unpinned rows follow the "Default platform" control.
+         */
+        platformPinned: z.boolean().optional(),
         link: z.string().optional().or(z.literal('')),
         description: z.string().optional(),
         /**

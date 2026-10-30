@@ -58,6 +58,8 @@ export const buildProposalStatusMeta = (
     META_RECATEGORISED: { label: t('proposalStatus.metaRecategorised'), tone: 'warning' },
     SUPERSEDED: { label: t('proposalStatus.superseded'), tone: 'neutral' },
     WITHDRAWN: { label: t('proposalStatus.withdrawn'), tone: 'neutral' },
+    META_DISABLED: { label: t('proposalStatus.metaDisabled'), tone: 'danger' },
+    QUEUED: { label: t('proposalStatus.queued'), tone: 'warning' },
 });
 
 export const buildLanguageOptions = (
@@ -99,3 +101,7 @@ export const NEXT_STATUSES: Partial<Record<EngineStatus, EngineStatus[]>> = {
     ACTIVE: ['PAUSED'],
     PAUSED: ['ACTIVE', 'ARCHIVED'],
 };
+
+/** Task inbox tabs, also accepted as ?filter= so a link can open the right one. */
+export const INBOX_FILTER_KEYS = ['needsAction', 'sent', 'failed', 'handled', 'dryRun'] as const;
+export type InboxFilterKey = (typeof INBOX_FILTER_KEYS)[number];

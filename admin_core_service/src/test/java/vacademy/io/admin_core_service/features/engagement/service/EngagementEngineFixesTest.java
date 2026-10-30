@@ -113,6 +113,7 @@ class EngagementEngineFixesTest {
             when(gate.optedOutUserIds(anyString(), anyList())).thenReturn(Set.of());
             when(gate.preDecision(any(), any())).thenReturn(PolicyGate.Verdict.PROCEED);
             when(gate.clampToAllowedWindow(any(), any())).thenAnswer(inv -> inv.getArgument(1));
+            when(gate.scheduleSend(any(), any(), any())).thenAnswer(inv -> inv.getArgument(1));
             when(brain.decide(any(), anyString(), any(), any(), any(), any())).thenReturn(
                     new EngagementBrainClient.Decision("NO_OP", null, null, null, null, null,
                             "wait", 0, null, null, null, null));
@@ -320,6 +321,7 @@ class EngagementEngineFixesTest {
             when(members.findById("m1")).thenReturn(Optional.of(member));
             when(gate.optedOutUserIds(anyString(), anyList())).thenReturn(Set.of());
             when(gate.clampToAllowedWindow(any(), any())).thenAnswer(inv -> inv.getArgument(1));
+            when(gate.scheduleSend(any(), any(), any())).thenAnswer(inv -> inv.getArgument(1));
         }
 
         @Test
@@ -345,7 +347,7 @@ class EngagementEngineFixesTest {
         @DisplayName("due inside quiet hours (engine resumed at night): moved to the next allowed time")
         void quietHoursRescheduled() {
             Instant morning = Instant.now().plus(Duration.ofHours(8));
-            when(gate.clampToAllowedWindow(any(), any())).thenReturn(morning);
+            when(gate.scheduleSend(any(), any(), eq(PolicyGate.SendTiming.ANYTIME))).thenReturn(morning);
             job.dispatch();
             verify(actions).rescheduleDueSend(eq("a1"), eq(morning), any());
             verify(actions, never()).claimForDispatch(anyString(), anyString(), any());

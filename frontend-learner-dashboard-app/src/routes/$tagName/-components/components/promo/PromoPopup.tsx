@@ -120,7 +120,7 @@ const otherDialogOpen = (): boolean => !!document.querySelector('[aria-modal="tr
 const isTouchOnly = (): boolean =>
   typeof window.matchMedia === "function" && window.matchMedia("(hover: none)").matches;
 
-const isDesktopWidth = (): boolean =>
+export const isDesktopWidth = (): boolean =>
   typeof window.matchMedia === "function" ? window.matchMedia("(min-width: 768px)").matches : true;
 
 /** Exit intent cannot happen on a phone; it waits this long there instead. */
@@ -132,7 +132,7 @@ const SHORT_PAGE_FALLBACK_MS = 5000;
  * Fires once when the visitor shows the configured intent. Never fires while
  * another dialog is open — it waits for that one to close rather than stack.
  */
-const usePromoTrigger = (
+export const usePromoTrigger = (
   armed: boolean,
   trigger: ReturnType<typeof normalizeTrigger>,
   delayMs: number,
@@ -190,7 +190,7 @@ const usePromoTrigger = (
 };
 
 /** Height of the phone action bar pinned to the bottom, so edge popups sit above it. */
-const useMobileBarOffset = (active: boolean): number => {
+export const useMobileBarOffset = (active: boolean): number => {
   const [offset, setOffset] = useState(0);
   useEffect(() => {
     if (!active) return;
@@ -993,7 +993,7 @@ const VIEWS: Record<PromoTemplate, React.FC<ViewProps>> = {
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /** Focusable elements in document order, reaching into the custom template's shadow root. */
-const focusablesIn = (root: ParentNode): HTMLElement[] =>
+export const focusablesIn = (root: ParentNode): HTMLElement[] =>
   Array.from(root.querySelectorAll<HTMLElement>(`${FOCUSABLE}, .catalogue-html-section`)).flatMap((el) =>
     el.shadowRoot ? focusablesIn(el.shadowRoot) : el.matches(FOCUSABLE) ? [el] : [],
   );

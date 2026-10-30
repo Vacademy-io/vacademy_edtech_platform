@@ -19,6 +19,7 @@ import vacademy.io.admin_core_service.features.audience.repository.UserLeadProfi
 import vacademy.io.admin_core_service.features.audience.service.LeadStatusService;
 import vacademy.io.admin_core_service.features.audience.service.UserLeadProfileService;
 import vacademy.io.admin_core_service.features.counselor_pool.service.CounselorAssignmentService;
+import vacademy.io.admin_core_service.features.engagement.service.EngagementWakeService;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallDecision;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallingSettingsPojo;
 import vacademy.io.admin_core_service.features.telephony.enums.CallDirection;
@@ -68,6 +69,7 @@ public class AiCallOutcomeProcessor {
     private static final String STATUS_RETRY_PENDING = "AI_RETRY_PENDING";
 
     private final AiCallResultRepository aiCallResultRepo;
+    private final EngagementWakeService engagementWakeService;
     private final TelephonyCallLogRepository callLogRepo;
     private final AudienceResponseRepository audienceResponseRepo;
     private final LeadStatusRepository leadStatusRepo;
@@ -83,6 +85,16 @@ public class AiCallOutcomeProcessor {
     private final AiCallingConfigService configService;
     private final CallBillingService billingService;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    /** Field-injected like the other lazy collaborators: the summary note and the callback. */
+    @Autowired
+    @Lazy
+    private AiCallFollowThrough followThrough;
+
+    /** See {@link #runOffThread}. Field-injected so the constructor used by tests is unchanged. */
+    @Autowired(required = false)
+    @org.springframework.beans.factory.annotation.Qualifier("aiCallPostCallExecutor")
+    private java.util.concurrent.Executor postCallExecutor;
 
     // @Lazy + field injection (NOT constructor): WorkflowTriggerService transitively
     // reaches the workflow engine, so a final constructor dependency here would form an
@@ -472,12 +484,23 @@ public class AiCallOutcomeProcessor {
                 log.warn("ai-call: send rules failed for result {} (non-fatal): {}",
                         rRef.getId(), ex.getMessage());
             }
+            // The call's summary on the lead's timeline, and a callback if they asked for one.
+            try {
+                followThrough.afterCall(rRef, leadRef.responseId(), leadRef.userId(), instRef);
+            } catch (Exception ex) {
+                log.warn("ai-call: follow-through failed for result {} (non-fatal): {}",
+                        rRef.getId(), ex.getMessage());
+            }
+            // The call's outcome is in: the lead's engagement engines look within minutes (B4)
+            // rather than at their next scheduled look, days away.
+            engagementWakeService.wakeLead(instRef, leadRef.responseId(), leadRef.userId(),
+                    EngagementWakeService.AI_CALL, false);
         };
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    bookTask.run();
+                    runOffThread(bookTask, rRef.getId());
                 }
             });
         } else {
@@ -486,6 +509,27 @@ public class AiCallOutcomeProcessor {
 
         r.setProcessingStatus("PROCESSED");
         aiCallResultRepo.save(r);
+    }
+
+    /**
+     * Runs post-commit work on another thread. Inside afterCommit() the committed
+     * transaction is still bound to this thread, so a PROPAGATION_REQUIRED call made here
+     * joins it instead of starting its own: createBooking failed with "no transaction is in
+     * progress" and send-rule actions were never written (since 17 Oct no AI-call action
+     * reached engagement_action). A thread with nothing bound starts its own transactions.
+     */
+    void runOffThread(Runnable task, String resultId) {
+        if (postCallExecutor != null) {
+            try {
+                postCallExecutor.execute(task);
+                return;
+            } catch (java.util.concurrent.RejectedExecutionException ex) {
+                log.warn("ai-call: post-call pool full for result {} — using a one-off thread", resultId);
+            }
+        }
+        Thread t = new Thread(task, "ai-call-postcall-" + resultId);
+        t.setDaemon(true);
+        t.start();
     }
 
     // ── lead resolution ─────────────────────────────────────────────────────────

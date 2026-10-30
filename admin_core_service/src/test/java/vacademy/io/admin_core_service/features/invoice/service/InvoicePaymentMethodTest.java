@@ -4,7 +4,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentLog;
 
+import java.time.LocalDate;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class InvoicePaymentMethodTest {
 
@@ -35,5 +38,30 @@ class InvoicePaymentMethodTest {
         codesOnly.setVendor("MANUAL");
         codesOnly.setPaymentMode("CHEQUE");
         assertEquals("CHEQUE", InvoiceService.invoicePaymentMethod(codesOnly));
+    }
+
+    @Test
+    @DisplayName("receiptDateField reads that mode field's date; anything else keeps the recorded date")
+    void paymentDetailsDate() {
+        PaymentLog log = new PaymentLog();
+        log.setPaymentDetailsJson("{\"mode_label\":\"PhonePe\",\"custom_fields\":["
+                + "{\"key\":\"transaction_date\",\"label\":\"Transaction Date\",\"value\":\"2026-10-28\"}]}");
+        assertEquals(LocalDate.of(2026, 10, 28).atStartOfDay(),
+                InvoiceService.paymentDetailsDate(log, "transaction_date"));
+
+        assertNull(InvoiceService.paymentDetailsDate(log, null));
+        assertNull(InvoiceService.paymentDetailsDate(log, ""));
+        assertNull(InvoiceService.paymentDetailsDate(log, "cheque_dd_date"));
+
+        PaymentLog blank = new PaymentLog();
+        blank.setPaymentDetailsJson("{\"custom_fields\":[{\"key\":\"transaction_date\",\"value\":\"\"}]}");
+        assertNull(InvoiceService.paymentDetailsDate(blank, "transaction_date"));
+
+        PaymentLog notDate = new PaymentLog();
+        notDate.setPaymentDetailsJson("{\"custom_fields\":[{\"key\":\"transaction_date\",\"value\":\"yesterday\"}]}");
+        assertNull(InvoiceService.paymentDetailsDate(notDate, "transaction_date"));
+
+        assertNull(InvoiceService.paymentDetailsDate(new PaymentLog(), "transaction_date"));
+        assertNull(InvoiceService.paymentDetailsDate(null, "transaction_date"));
     }
 }

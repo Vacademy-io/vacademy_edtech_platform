@@ -7,6 +7,7 @@ import {
     CourseSettingsResponse,
     DEFAULT_COURSE_SETTINGS,
     DEFAULT_DRIP_SCHEDULE,
+    DripCondition,
 } from '@/types/course-settings';
 
 const COURSE_SETTINGS_KEY = 'COURSE_SETTING';
@@ -266,6 +267,76 @@ export const saveCourseSettings = async (
         console.error('Error saving course settings:', error);
         throw error;
     }
+};
+
+/**
+ * Fetch COURSE_SETTING straight from the server, throwing on any failure.
+ * Unlike fetchCourseSettingsFromAPI this never falls back to defaults — a
+ * read-modify-write built on defaults would wipe every saved setting.
+ */
+const fetchCourseSettingsStrict = async (): Promise<CourseSettingsData> => {
+    const instituteId = getInstituteId();
+    if (!instituteId) {
+        throw new Error('Institute ID not found. Please log in again.');
+    }
+    const response = await authenticatedAxiosInstance.get<CourseSettingsResponse>(
+        `${BASE_URL}/admin-core-service/institute/setting/v1/get`,
+        { params: { instituteId, settingKey: COURSE_SETTINGS_KEY } }
+    );
+    const data = response.data?.data;
+    return data && Object.keys(data).length > 0 ? mergeWithDefaults(data) : DEFAULT_COURSE_SETTINGS;
+};
+
+const dripConditionKey = (c: DripCondition) => c.id || `${c.level}:${c.level_id}`;
+
+/**
+ * Save drip condition edits without clobbering anyone else's.
+ *
+ * Every course's unlock rules live in ONE institute-wide array. Saving the
+ * caller's whole copy of it (loaded from a cache that can be a day old, or
+ * from another tab) silently deleted rules saved since. Instead, diff
+ * `before` → `after` and apply only that change to the server's current list.
+ *
+ * Pass `base` to save a whole settings form: every other field comes from
+ * `base`, only the conditions list is merged.
+ *
+ * Returns the merged list so the caller can refresh its state.
+ */
+export const saveDripConditionChanges = async (
+    before: DripCondition[],
+    after: DripCondition[],
+    base?: CourseSettingsData
+): Promise<DripCondition[]> => {
+    const beforeByKey = new Map(before.map((c) => [dripConditionKey(c), c]));
+    const afterKeys = new Set(after.map(dripConditionKey));
+    const removed = new Set(before.map(dripConditionKey).filter((key) => !afterKeys.has(key)));
+    const upserts = new Map(
+        after
+            .filter((c) => {
+                const prev = beforeByKey.get(dripConditionKey(c));
+                return !prev || JSON.stringify(prev) !== JSON.stringify(c);
+            })
+            .map((c) => [dripConditionKey(c), c])
+    );
+
+    const server = await fetchCourseSettingsStrict();
+    const current = server.dripConditions.conditions || [];
+    const merged = current
+        .filter((c) => !removed.has(dripConditionKey(c)))
+        .map((c) => {
+            const key = dripConditionKey(c);
+            const next = upserts.get(key);
+            if (next) upserts.delete(key);
+            return next ?? c;
+        });
+    merged.push(...upserts.values());
+
+    const target = base ?? server;
+    await saveCourseSettings({
+        ...target,
+        dripConditions: { ...target.dripConditions, conditions: merged },
+    });
+    return merged;
 };
 
 /**

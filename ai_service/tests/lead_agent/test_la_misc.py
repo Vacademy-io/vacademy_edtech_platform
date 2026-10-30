@@ -170,6 +170,22 @@ def test_llm_asks_afresh_when_a_reply_runs_to_the_token_cap(monkeypatch):
     assert seen == [("t", 2), ("t.retry", 2)]  # the run-on text is not sent back
 
 
+def test_a_call_a_user_asked_for_is_charged_in_credits_and_agent_work_is_not(la_db, monkeypatch):
+    from app.services import ai_billing, usage_record_only
+
+    billed, recorded = [], []
+    monkeypatch.setattr(ai_billing, "record_llm_billing", lambda **k: billed.append(k))
+    monkeypatch.setattr(usage_record_only, "record_usage_only", lambda **k: recorded.append(k))
+    usage = {"prompt_tokens": 4000, "completion_tokens": 1500, "cost": 0.002}
+    llm._account(llm.CallContext(institute_id=INSTITUTE, user_id="user-1", charge=True), "m", usage, "profile")
+    assert recorded == [] and len(billed) == 1
+    b = billed[0]
+    assert (b["institute_id"], b["user_id"], b["prompt_tokens"], b["completion_tokens"], b["total_tokens"]) == (
+        INSTITUTE, "user-1", 4000, 1500, 5500)
+    assert b["request_type"].value == "agent" and b["use_case"] == "lead_agent"
+    llm._account(llm.CallContext(institute_id=INSTITUTE), "m", usage, "discover")   # the agent's own work
+    assert len(billed) == 1 and len(recorded) == 1                                   # record-only: paid per lead
+
 def test_tick_plans_discovers_and_delivers(la_db, monkeypatch):
     from app.services.lead_agent import delivery, discovery, planner
 

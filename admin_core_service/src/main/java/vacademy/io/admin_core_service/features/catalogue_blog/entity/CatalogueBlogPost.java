@@ -98,6 +98,15 @@ public class CatalogueBlogPost {
     @Column(name = "recommended_course_ids", columnDefinition = "TEXT")
     private String recommendedCourseIds;
 
+    /**
+     * Likes from site visitors. Written only by the like/unlike statements in
+     * the repository (never through save), so a like does not move updatedAt
+     * and reorder the admin list.
+     */
+    @Column(name = "like_count", nullable = false, insertable = false, updatable = false)
+    @Builder.Default
+    private Integer likeCount = 0;
+
     @Column(name = "created_by", length = 36)
     private String createdBy;
 

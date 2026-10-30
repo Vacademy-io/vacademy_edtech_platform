@@ -77,7 +77,8 @@ router = APIRouter(prefix="/lead-agent/v1", tags=["lead-agent"], route_class=_Ex
 MANAGE_ROLES: FrozenSet[str] = frozenset({"ADMIN", "ADMIN_NON_ROOT", "SUPER_ADMIN", "OWNER"})
 MAX_HTML = 1_500_000
 SUGGEST_TIMEOUT_S = 60.0
-SUGGEST_MAX_TOKENS = 4000  # a profile is ~1,000 tokens + ~1,000 reasoning (counted as output); more only feeds a run-on
+SUGGEST_MAX_TOKENS = 5000  # a profile is ~1,300-2,450 tokens (~300 the description, last) + ~1,000 reasoning (counted as output); more only feeds a run-on
+SUGGEST_EST_TOKENS = 8000  # the credit check's estimate: ~4,500 in (prompt + 15,000-char page) + the reply
 THIN_TEXT_CHARS = 200
 POLL_INTERVAL_S = 30
 MAX_PARALLEL = 2
@@ -352,10 +353,23 @@ async def _page_text(url: str) -> Optional[str]:
     return (record or {}).get("text") if (record or {}).get("access") == "ok" else None
 
 
+def _suggest_credits(db, institute_id: str, user_id: Optional[str]):
+    """Can the institute pay for one suggestion (it is charged by tokens, like any AI feature)?"""
+    from ..schemas.credits import CreditCheckRequest
+    from ..services.credit_service import CreditService
+
+    return CreditService(db).check_credits(CreditCheckRequest(
+        institute_id=institute_id, request_type="agent", estimated_tokens=SUGGEST_EST_TOKENS, user_id=user_id))
+
+
 @router.post("/brief/suggest")
 async def suggest_brief(body: models.SuggestIn, s: Staff = Depends(admin)):
     if not flags.platform_enabled():
         raise _err(status.HTTP_409_CONFLICT, "disabled", "The Lead Agent is switched off on the platform.")
+    credits = await run(_suggest_credits, s.institute_id, s.user_id)
+    if not credits.has_sufficient_credits:
+        raise _err(status.HTTP_402_PAYMENT_REQUIRED, "no_credits",
+                   "Not enough AI credits for a suggestion. Add credits and try again.")
     page_text, note = None, None
     if body.url:
         page_text = await _page_text(body.url)
@@ -369,7 +383,8 @@ async def suggest_brief(body: models.SuggestIn, s: Staff = Depends(admin)):
     try:
         profile = await asyncio.wait_for(
             llm.ask(system, user, engine_api.schema("ProductProfile"), purpose="profile",
-                    ctx=llm.CallContext(institute_id=s.institute_id), max_tokens=SUGGEST_MAX_TOKENS),
+                    ctx=llm.CallContext(institute_id=s.institute_id, user_id=s.user_id, charge=True),
+                    max_tokens=SUGGEST_MAX_TOKENS),
             timeout=SUGGEST_TIMEOUT_S)
     except asyncio.TimeoutError:
         raise _err(status.HTTP_504_GATEWAY_TIMEOUT, "timeout", "The suggestion took too long; try again.") from None

@@ -113,6 +113,8 @@ final class GroupDashboardSql {
             """;
 
     // ── Engagement ───────────────────────────────────────────────────────────
+    // A NO_OP is the engine deciding to wait (status DONE): not a drafted or completed action.
+    // Counting it made "drafted" and "completed" look busy on days the engine only waited.
 
     static final String ENG_ENGINES = """
             SELECT e.id AS engine_id, e.name, e.status,
@@ -123,7 +125,7 @@ final class GroupDashboardSql {
                    COUNT(a.id) FILTER (WHERE a.status = 'FAILED') AS failed
             FROM engagement_engine e
             LEFT JOIN engagement_action a
-                   ON a.engine_id = e.id AND a.created_at >= :from AND a.created_at < :to
+                   ON a.engine_id = e.id AND a.created_at >= :from AND a.created_at < :to AND a.kind <> 'NO_OP'
             WHERE e.institute_id = :instituteId AND e.status <> 'DELETED'
             GROUP BY e.id, e.name, e.status
             ORDER BY drafted DESC, e.name
@@ -143,6 +145,7 @@ final class GroupDashboardSql {
                     AND o.created_at < :dayAgo) AS open_over_day
             FROM engagement_action a
             WHERE a.institute_id = :instituteId AND a.created_at >= :prevFrom AND a.created_at < :to
+              AND a.kind <> 'NO_OP'
             """;
 
     static final String ENG_DAILY = """
@@ -154,6 +157,7 @@ final class GroupDashboardSql {
                        COUNT(*) FILTER (WHERE a.status IN ('SENT', 'DONE')) AS completed
                 FROM engagement_action a
                 WHERE a.institute_id = :instituteId AND a.created_at >= :from AND a.created_at < :to
+                  AND a.kind <> 'NO_OP'
                 GROUP BY 1
             ) x ON x.day = d.day::date
             ORDER BY d.day

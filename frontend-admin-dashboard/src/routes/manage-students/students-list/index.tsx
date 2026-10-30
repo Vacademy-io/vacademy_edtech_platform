@@ -9,6 +9,8 @@ interface StudentListSearchParams {
     gender?: string | string[];
     status?: string | string[];
     sessionExpiry?: number | number[];
+    paymentStatus?: string | string[];
+    learnerType?: string | string[];
     name?: string;
     action?: string;
 }
@@ -24,6 +26,8 @@ export const Route = createFileRoute('/manage-students/students-list/')({
         gender: search.gender as string | string[] | undefined,
         status: search.status as string | string[] | undefined,
         sessionExpiry: search.sessionExpiry as number | number[] | undefined,
+        paymentStatus: search.paymentStatus as string | string[] | undefined,
+        learnerType: search.learnerType as string | string[] | undefined,
         // The router JSON-parses search values, so ?name=7348816962 (a phone
         // search) arrives as a number and crashed the list on .trim().
         name: search.name == null ? undefined : String(search.name),

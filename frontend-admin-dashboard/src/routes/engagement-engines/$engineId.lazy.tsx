@@ -11,11 +11,13 @@ import {
     CheckCircle,
     Clock,
     FileText,
+    FolderOpen,
     Flask,
     GearSix,
     Lightning,
     Pause,
     PencilSimple,
+    Trash,
     Play,
     Prohibit,
     Repeat,
@@ -52,10 +54,15 @@ import {
 } from '@/routes/settings/-components/NamingSettings';
 import { ToneBadge } from './-components/ToneBadge';
 import { TemplateNegotiation } from './-components/TemplateNegotiation';
+import { EmailTemplatesPanel } from './-components/EmailTemplatesPanel';
+import { AssetsPanel } from './-components/AssetsPanel';
+import { CrmActionsPanel } from './-components/CrmActionsPanel';
+import { useDeleteEngine } from './-hooks/engine-edit';
 import { ChannelChip, Chip, IconTile, KeyValue, SubHeading } from './-components/engine-ui';
 import { buildChannelMeta } from './-constants';
 import { buildEngineStatusMeta, buildLanguageOptions, NEXT_STATUSES } from './-constants';
 import {
+    useDataPointCatalog,
     useEditPrompt,
     useEngine,
     useEnrollEngine,
@@ -65,11 +72,24 @@ import {
 import {
     autoSendChannels,
     enabledChannels,
+    cadenceText,
     formatDateTime,
     safeParse,
+    scheduleText,
+    sendDaysText,
+    sendWindowText,
     whatsappEnabled,
 } from './-utils';
-import type { AudienceSelector, EngagementEngine, EngineDetail, QuietHours } from './-types';
+import { EnginePlanPreview } from './-components/EnginePlanPreview';
+import { EngineSources } from './-components/EngineSources';
+import type {
+    AudienceSelector,
+    ChannelsConfig,
+    ChannelsExtras,
+    EngagementEngine,
+    EngineDetail,
+    QuietHours,
+} from './-types';
 import type { EngineStatus } from './-types';
 
 export const Route = createLazyFileRoute('/engagement-engines/$engineId')({
@@ -109,13 +129,19 @@ function EngineDetailPage() {
     const { engineId } = Route.useParams();
     const navigate = useNavigate();
     const { setNavHeading } = useNavHeadingStore();
-    const { data, isLoading, isError } = useEngine(engineId);
+    const { data, isLoading, isError, refetch } = useEngine(engineId);
+    const { data: catalog } = useDataPointCatalog();
     const transition = useTransitionEngine();
     const enroll = useEnrollEngine();
     const editPrompt = useEditPrompt();
     const setAutonomy = useSetAutonomy();
     const [amendOpen, setAmendOpen] = useState(false);
     const [confirmArchive, setConfirmArchive] = useState(false);
+    const [confirmDelete, setConfirmDelete] = useState(false);
+    const [confirmActivate, setConfirmActivate] = useState(false);
+    const deleteEngine = useDeleteEngine();
+    const { t: tEdit } = useTranslation('engagementEnginesEdit');
+    const { t: tAssets } = useTranslation('engagementEnginesAssets');
     const [delta, setDelta] = useState('');
     const { t } = useTranslation('engagementEnginesEngineIdIndex');
     const { t: tConstants } = useTranslation('engagementEnginesConstants');
@@ -141,8 +167,11 @@ function EngineDetailPage() {
     if (isError || !data) {
         return (
             <LayoutContainer>
-                <Card className="m-1 p-6 text-center text-body text-danger-600">
-                    {t('loadError')}
+                <Card className="m-1 flex flex-col items-center gap-3 p-6 text-center">
+                    <span className="text-body text-danger-600">{t('loadError')}</span>
+                    <MyButton buttonType="secondary" scale="small" onClick={() => refetch()}>
+                        <ArrowsClockwise className="me-1 size-4" /> {t('retry')}
+                    </MyButton>
                 </Card>
             </LayoutContainer>
         );
@@ -157,8 +186,15 @@ function EngineDetailPage() {
     const channelMeta = buildChannelMeta(tConstants);
     const channels = enabledChannels(engine);
     const hasWhatsApp = whatsappEnabled(engine);
+    const emailChannel = safeParse<ChannelsConfig>(engine.channels, {}).EMAIL;
+    const hasEmail = !!emailChannel?.enabled && !engine.systemManaged;
     const quietHours = quietHoursText(engine);
+    const schedule = safeParse<QuietHours>(engine.quietHours, {});
+    const channelsJson = safeParse<ChannelsConfig & ChannelsExtras>(engine.channels, {});
     const dataPointKeys = safeParse<string[]>(engine.dataPoints, []);
+    const dataPointLabel = (key: string) =>
+        (catalog ?? []).find((d) => d.key === key)?.label ?? key;
+    const canChange = engine.status !== 'ARCHIVED';
     const audience = safeParse<AudienceSelector[]>(engine.audience, []);
     const showAutonomy = hasAutonomyPanel(engine);
     const approvedTotal =
@@ -166,18 +202,6 @@ function EngineDetailPage() {
         (data.approvedSendsByChannel
             ? Object.values(data.approvedSendsByChannel).reduce((a, n) => a + n, 0)
             : undefined);
-
-    const sourceParts = [
-        {
-            n: audience.filter((a) => a.type === 'PACKAGE_SESSION').length,
-            label: getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch),
-        },
-        {
-            n: audience.filter((a) => a.type === 'AUDIENCE').length,
-            label: getTerminologyPlural(OtherTerms.AudienceList, SystemTerms.AudienceList),
-        },
-        { n: audience.filter((a) => a.type === 'USER').length, label: t('status.people') },
-    ].filter((p) => p.n > 0);
 
     const kpis: StatItem[] = [
         {
@@ -188,7 +212,7 @@ function EngineDetailPage() {
             detail:
                 engine.holdoutPct && engine.holdoutPct > 0
                     ? t('kpi.holdout', { pct: engine.holdoutPct })
-                    : t('kpi.noHoldout'),
+                    : undefined,
         },
         ...(approvedTotal !== undefined
             ? [
@@ -209,8 +233,14 @@ function EngineDetailPage() {
             icon: Repeat,
             tint: 'info',
             label: t('kpi.cadence'),
-            value: t('config.cadence', { hours: engine.cadenceHours }),
-            detail: quietHours ? t('kpi.quiet', { window: quietHours }) : undefined,
+            value: cadenceText(engine.cadenceHours, tConstants),
+            // The send window when the engine has one ("11:00–12:00 · Mon–Sat"), else the quiet hours.
+            detail:
+                schedule.sendHour != null
+                    ? `${sendWindowText(schedule, tConstants)} · ${sendDaysText(schedule.days, tConstants)}`
+                    : quietHours
+                      ? t('kpi.quiet', { window: quietHours })
+                      : undefined,
         },
         {
             key: 'next',
@@ -264,6 +294,29 @@ function EngineDetailPage() {
                     </MyButton>
                 </div>
 
+                {canChange && activeMembers === 0 && (
+                    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-info-200 bg-info-50 p-3">
+                        <UsersThree size={20} className="shrink-0 text-info-600" />
+                        <span className="flex min-w-0 flex-1 flex-col">
+                            <span className="font-semibold text-neutral-800">
+                                <span className="text-body">{t('noPeople.title')}</span>
+                            </span>
+                            <span className="text-neutral-600">
+                                <span className="text-caption">{t('noPeople.text')}</span>
+                            </span>
+                        </span>
+                        <MyButton
+                            buttonType="primary"
+                            scale="small"
+                            disable={enroll.isPending}
+                            onClick={() => enroll.mutate(engine.id)}
+                        >
+                            <ArrowsClockwise className="me-1 size-4" />
+                            {enroll.isPending ? t('detail.resolving') : t('detail.resolveAudience')}
+                        </MyButton>
+                    </div>
+                )}
+
                 {engine.status === 'TEMPLATES_PENDING' && hasWhatsApp && (
                     <div className="flex items-start gap-2 rounded-xl border border-warning-200 bg-warning-50 p-3 text-warning-700">
                         <Warning size={18} className="mt-0.5 shrink-0" />
@@ -300,9 +353,18 @@ function EngineDetailPage() {
                             </MyButton>
                         </div>
                         <KeyValue label={t('status.sources')}>
-                            {sourceParts.length
-                                ? sourceParts.map((p) => `${p.n} ${p.label}`).join(' · ')
-                                : t('config.noChannels')}
+                            <EngineSources
+                                audience={audience}
+                                batchLabel={getTerminologyPlural(
+                                    ContentTerms.Batch,
+                                    SystemTerms.Batch
+                                )}
+                                listLabel={getTerminologyPlural(
+                                    OtherTerms.AudienceList,
+                                    SystemTerms.AudienceList
+                                )}
+                                peopleLabel={t('status.people')}
+                            />
                         </KeyValue>
 
                         <SubHeading>{t('status.change')}</SubHeading>
@@ -323,10 +385,12 @@ function EngineDetailPage() {
                                         onClick={() =>
                                             s === 'ARCHIVED'
                                                 ? setConfirmArchive(true)
-                                                : transition.mutate({
-                                                      engineId: engine.id,
-                                                      toStatus: s,
-                                                  })
+                                                : s === 'ACTIVE'
+                                                  ? setConfirmActivate(true)
+                                                  : transition.mutate({
+                                                        engineId: engine.id,
+                                                        toStatus: s,
+                                                    })
                                         }
                                     >
                                         {ActionIcon && <ActionIcon className="me-1 size-4" />}
@@ -335,6 +399,34 @@ function EngineDetailPage() {
                                 );
                             })}
                         </div>
+                        {!engine.systemManaged && (
+                            <div className="mt-3 flex flex-wrap items-center gap-2">
+                                {engine.status !== 'ARCHIVED' && (
+                                    <MyButton
+                                        buttonType="secondary"
+                                        scale="small"
+                                        onClick={() =>
+                                            navigate({
+                                                to: '/engagement-engines/create',
+                                                search: { edit: engine.id },
+                                            })
+                                        }
+                                    >
+                                        <PencilSimple className="me-1 size-4" /> {tEdit('editSettings')}
+                                    </MyButton>
+                                )}
+                                {['DRAFT', 'TEMPLATES_PENDING', 'ARCHIVED'].includes(engine.status) && (
+                                    <MyButton
+                                        buttonType="secondary"
+                                        scale="small"
+                                        disable={deleteEngine.isPending}
+                                        onClick={() => setConfirmDelete(true)}
+                                    >
+                                        <Trash className="me-1 size-4" /> {tEdit('deletePermanently')}
+                                    </MyButton>
+                                )}
+                            </div>
+                        )}
                         <p className="mt-4 border-t border-neutral-100 pt-3 text-neutral-500">
                             <span className="text-caption">{t('status.footnote')}</span>
                         </p>
@@ -398,6 +490,74 @@ function EngineDetailPage() {
                     </AlertDialogContent>
                 </AlertDialog>
 
+                <AlertDialog open={confirmActivate} onOpenChange={setConfirmActivate}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>
+                                {t('activateDialog.title', { count: activeMembers })}
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                                {autoSendChannels(engine).length > 0 && !engine.autoSendKilled
+                                    ? t('activateDialog.descriptionAuto')
+                                    : t('activateDialog.descriptionCopilot')}
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        {activeMembers === 0 && (
+                            <p className="flex items-start gap-2 rounded-lg bg-warning-50 p-2 text-warning-700">
+                                <Warning size={16} className="mt-0.5 shrink-0" />
+                                <span className="text-caption">{t('activateDialog.noPeople')}</span>
+                            </p>
+                        )}
+                        <AlertDialogFooter>
+                            <AlertDialogCancel disabled={transition.isPending}>
+                                {t('activateDialog.cancel')}
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                                disabled={transition.isPending}
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    transition.mutate(
+                                        { engineId: engine.id, toStatus: 'ACTIVE' },
+                                        { onSettled: () => setConfirmActivate(false) }
+                                    );
+                                }}
+                            >
+                                {t('activateDialog.confirm')}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+
+                <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>{tEdit('deleteDialog.title')}</AlertDialogTitle>
+                            <AlertDialogDescription>{tEdit('deleteDialog.description')}</AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel disabled={deleteEngine.isPending}>
+                                {tEdit('deleteDialog.cancel')}
+                            </AlertDialogCancel>
+                            <AlertDialogAction
+                                disabled={deleteEngine.isPending}
+                                className="bg-danger-600 hover:bg-danger-700"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    deleteEngine.mutate(
+                                        { engineId: engine.id, permanent: true },
+                                        {
+                                            onSuccess: () => navigate({ to: '/engagement-engines' }),
+                                            onSettled: () => setConfirmDelete(false),
+                                        }
+                                    );
+                                }}
+                            >
+                                {tEdit('deleteDialog.confirm')}
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+
                 <div className={showAutonomy ? 'grid gap-5 lg:grid-cols-2' : 'grid gap-5'}>
                     {/* Config summary */}
                     <SectionCard title={t('config.title')} icon={GearSix}>
@@ -422,7 +582,7 @@ function EngineDetailPage() {
                             )?.label ?? engine.language}
                         </KeyValue>
                         <KeyValue label={t('config.cadenceLabel')}>
-                            {t('config.cadence', { hours: engine.cadenceHours })}
+                            {scheduleText(engine.cadenceHours, schedule, tConstants)}
                         </KeyValue>
                         {quietHours && (
                             <KeyValue label={t('config.quietHours')}>{quietHours}</KeyValue>
@@ -431,16 +591,18 @@ function EngineDetailPage() {
                             {dataPointKeys.length ? (
                                 <span className="flex flex-wrap gap-1.5">
                                     {dataPointKeys.map((k) => (
-                                        <Chip key={k} label={k} className="font-mono" />
+                                        <Chip key={k} label={dataPointLabel(k)} />
                                     ))}
                                 </span>
                             ) : (
-                                t('config.noChannels')
+                                t('config.noDataPoints')
                             )}
                         </KeyValue>
-                        <KeyValue label={t('autonomy.holdout')}>
-                            {`${engine.holdoutPct ?? 0}%`}
-                        </KeyValue>
+                        {!showAutonomy && (engine.holdoutPct ?? 0) > 0 && (
+                            <KeyValue label={t('autonomy.holdout')}>
+                                {t('autonomy.holdoutValue', { pct: engine.holdoutPct })}
+                            </KeyValue>
+                        )}
                     </SectionCard>
 
                     {showAutonomy && (
@@ -454,7 +616,32 @@ function EngineDetailPage() {
                     )}
                 </div>
 
-                {hasWhatsApp && <TemplateNegotiation engineId={engine.id} />}
+                {!engine.systemManaged && (
+                    <EnginePlanPreview
+                        cadenceHours={engine.cadenceHours}
+                        schedule={schedule}
+                        channelLabels={channels.map((c) => channelMeta[c].label)}
+                        stopOnMeeting={channelsJson.exitOnMeetingBooked === true}
+                        autoReply={!!(channelsJson.WHATSAPP?.enabled && channelsJson.WHATSAPP?.autoReply)}
+                    />
+                )}
+
+                {hasWhatsApp && <TemplateNegotiation engineId={engine.id} language={engine.language} />}
+                {hasEmail && (
+                    <EmailTemplatesPanel
+                        engineId={engine.id}
+                        language={engine.language}
+                        emailMode={emailChannel?.mode}
+                    />
+                )}
+                <SectionCard
+                    title={tAssets('heading')}
+                    subtitle={tAssets('subtitle')}
+                    icon={FolderOpen}
+                >
+                    <AssetsPanel engineId={engine.id} />
+                </SectionCard>
+                <CrmActionsPanel engineId={engine.id} killed={engine.autoSendKilled} />
             </div>
 
             {amendOpen && (

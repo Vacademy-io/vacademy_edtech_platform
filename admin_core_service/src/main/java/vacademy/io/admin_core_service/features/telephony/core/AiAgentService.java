@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.features.institute.setting_history.InstituteSettingWriter;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiAgentDTO;
+import vacademy.io.admin_core_service.features.telephony.core.dto.AiAgentKnowledgeDocument;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallActionRule;
 import vacademy.io.admin_core_service.features.telephony.enums.ProviderType;
 import vacademy.io.admin_core_service.features.telephony.persistence.entity.AiAgent;
@@ -16,8 +17,11 @@ import vacademy.io.admin_core_service.features.telephony.persistence.repository.
 import vacademy.io.admin_core_service.features.telephony.queue.repository.AiCallQueueItemRepository;
 import vacademy.io.common.exceptions.VacademyException;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * CRUD for the AI-agent registry + the settings bridge: every save/delete
@@ -131,6 +135,10 @@ public class AiAgentService {
         // empty list still clears them, because that is a deliberate act.
         if (dto.getSendRules() != null) {
             agent.setSendRules(writeRules(dto.getSendRules()));
+        }
+        // Same rule as sendRules: the public API and older clients omit the field.
+        if (dto.getKnowledgeDocuments() != null) {
+            agent.setKnowledgeDocuments(writeKnowledge(dto.getKnowledgeDocuments()));
         }
         AiAgent saved = repo.save(agent);
 
@@ -386,7 +394,98 @@ public class AiAgentService {
                         ? "OFF" : a.getSpeechCacheMode())
                 .bookingPageId(a.getBookingPageId())
                 .sendRules(readRules(a.getSendRules()))
+                .knowledgeDocuments(readKnowledge(a.getKnowledgeDocuments()))
                 .build();
+    }
+
+    /** At most this many reference documents per agent. */
+    public static final int MAX_KNOWLEDGE_DOCUMENTS = 10;
+    /**
+     * Characters of reference text per agent, all documents together (~5k tokens). The
+     * whole text rides in the system prompt of every turn of the call, so more of it costs
+     * reply latency on every turn, not just credits.
+     */
+    public static final int MAX_KNOWLEDGE_CHARS = 20_000;
+
+    /** Total: a corrupt blob reads as no documents rather than failing the whole agent list. */
+    public List<AiAgentKnowledgeDocument> readKnowledge(String json) {
+        if (json == null || json.isBlank()) return List.of();
+        try {
+            List<AiAgentKnowledgeDocument> l = mapper.readValue(json,
+                    new TypeReference<List<AiAgentKnowledgeDocument>>() {});
+            return l == null ? List.of() : l;
+        } catch (Exception e) {
+            log.warn("ai-agent: unreadable knowledge_documents — returning none: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    private String writeKnowledge(List<AiAgentKnowledgeDocument> docs) {
+        List<AiAgentKnowledgeDocument> cleaned = new ArrayList<>();
+        int total = 0;
+        for (AiAgentKnowledgeDocument d : docs) {
+            if (d == null) continue;
+            String text = cleanKnowledgeText(d.getText());
+            if (text.isEmpty()) continue;
+            String name = blankToNull(d.getName());
+            if (name == null) name = "Document " + (cleaned.size() + 1);
+            if (name.length() > 120) name = name.substring(0, 120);
+            total += text.length();
+            if (cleaned.size() >= MAX_KNOWLEDGE_DOCUMENTS) {
+                throw new VacademyException("Up to " + MAX_KNOWLEDGE_DOCUMENTS + " documents per agent.");
+            }
+            if (total > MAX_KNOWLEDGE_CHARS) {
+                throw new VacademyException("The documents hold more than " + MAX_KNOWLEDGE_CHARS
+                        + " characters together. Remove one or shorten the text to what callers ask about.");
+            }
+            cleaned.add(AiAgentKnowledgeDocument.builder()
+                    .id(blankToNull(d.getId()) != null ? d.getId().trim() : UUID.randomUUID().toString())
+                    .name(name)
+                    .kind(blankToNull(d.getKind()) == null ? "TXT" : d.getKind().trim().toUpperCase())
+                    .text(text)
+                    .chars(text.length())
+                    .addedAt(blankToNull(d.getAddedAt()) != null ? d.getAddedAt().trim() : Instant.now().toString())
+                    .build());
+        }
+        if (cleaned.isEmpty()) return null;
+        try {
+            return mapper.writeValueAsString(cleaned);
+        } catch (Exception e) {
+            throw new VacademyException("Could not save the documents: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Normalised reference text: the bot replaces {{placeholders}} in the prompt before the
+     * model sees it, so braces from a document must not read as one.
+     */
+    public static String cleanKnowledgeText(String raw) {
+        if (raw == null) return "";
+        String t = raw.replace("\r\n", "\n").replace('\r', '\n')
+                .replace("{{", "{ {").replace("}}", "} }")
+                .replaceAll("[ \\t\\x0B\\f]+", " ")
+                .replaceAll(" *\n *", "\n")
+                .replaceAll("\n{3,}", "\n\n");
+        return t.trim();
+    }
+
+    /**
+     * The agent's documents as a prompt section, or "" when it has none. Appended after the
+     * authored prompt so the admin's own rules come first and keep priority.
+     */
+    public String knowledgePromptSection(AiAgent a) {
+        List<AiAgentKnowledgeDocument> docs = readKnowledge(a.getKnowledgeDocuments());
+        if (docs.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder("\n\n## Reference documents\n")
+                .append("Use these only to answer the caller's questions accurately. Do not read them out")
+                .append(" or list everything in them. If the answer is not here or in your instructions,")
+                .append(" do not guess: say the team will confirm it.\n");
+        for (AiAgentKnowledgeDocument d : docs) {
+            if (d.getText() == null || d.getText().isBlank()) continue;
+            sb.append("\n### ").append(d.getName() == null ? "Document" : d.getName()).append('\n')
+                    .append(d.getText().trim()).append('\n');
+        }
+        return sb.toString();
     }
 
     /**
