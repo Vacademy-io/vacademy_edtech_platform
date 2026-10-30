@@ -69,10 +69,25 @@ export type CrmActionEntry = string | { type: string; auto?: boolean };
 /** GET /engines/channel-readiness: whether the institute has set each channel up. */
 export interface ChannelReadiness {
     ready: boolean;
-    /** NOT_SET_UP, or SENDER_MISSING when the engine's email sender no longer exists. */
-    reason?: 'NOT_SET_UP' | 'SENDER_MISSING' | null;
+    /**
+     * NOT_SET_UP; SENDER_MISSING when the engine's email sender doesn't exist; SENDER_NOT_VERIFIED
+     * when it isn't SES-verified yet (its mail would leave from the platform's support address).
+     */
+    reason?: 'NOT_SET_UP' | 'SENDER_MISSING' | 'SENDER_NOT_VERIFIED' | null;
 }
 export type ChannelReadinessMap = Partial<Record<ChannelKey, ChannelReadiness>>;
+
+/** GET /engines/email-senders: one of the institute's senders (a key of EMAIL_SETTING.data). */
+export interface EmailSender {
+    /** The sender's key, saved as channels.EMAIL.emailType. */
+    type: string;
+    email: string;
+    name?: string | null;
+    verified: boolean;
+}
+
+/** The sender an engine uses when channels.EMAIL.emailType is unset (backend EngagementDispatcher). */
+export const DEFAULT_EMAIL_TYPE = 'UTILITY_EMAIL';
 
 /** The engine entity as returned by GET /engines. */
 export interface EngagementEngine {

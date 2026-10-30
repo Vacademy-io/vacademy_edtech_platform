@@ -228,6 +228,72 @@ class EngagementSendScheduleTest {
         }
 
         @Test
+        @DisplayName("email senders: every EMAIL_SETTING node, name parsed from \"Name <email>\", unverified flagged")
+        void emailSenders() {
+            settings("""
+                    {"setting":{"EMAIL_SETTING":{"data":{
+                      "UTILITY_EMAIL":{"from":"Acme Academy <hello@acme.in>","verified":true},
+                      "OUTREACH_EMAIL":{"from":"sales@acme.in","verified":false},
+                      "LEGACY_EMAIL":{"email":"old@acme.in"}}}}}
+                    """);
+            var senders = readiness.emailSenders("i1");
+            assertEquals(3, senders.size());
+            assertEquals(new EngagementChannelReadiness.EmailSender("UTILITY_EMAIL", "hello@acme.in", "Acme Academy", true),
+                    senders.get(0));
+            assertEquals(new EngagementChannelReadiness.EmailSender("OUTREACH_EMAIL", "sales@acme.in", null, false),
+                    senders.get(1));
+            // No verified flag (legacy): notification_service sends from it, so it counts as verified.
+            assertTrue(senders.get(2).verified());
+        }
+
+        @Test
+        @DisplayName("no senders, or unreadable settings: empty list (the platform default is not offered)")
+        void emailSendersEmpty() {
+            settings("{\"setting\":{}}");
+            assertTrue(readiness.emailSenders("i1").isEmpty());
+            settings("{not json");
+            assertTrue(readiness.emailSenders("i1").isEmpty());
+        }
+
+        @Test
+        @DisplayName("an unverified chosen sender is SENDER_NOT_VERIFIED and refused on save")
+        void unverifiedSenderRefused() {
+            settings("""
+                    {"setting":{"EMAIL_SETTING":{"data":{
+                      "UTILITY_EMAIL":{"from":"hello@acme.in","verified":true},
+                      "OUTREACH_EMAIL":{"from":"sales@acme.in","verified":false}}}}}
+                    """);
+            assertEquals(EngagementChannelReadiness.SENDER_NOT_VERIFIED,
+                    readiness.check("i1", "OUTREACH_EMAIL").get("EMAIL").reason());
+            assertTrue(readiness.check("i1", "UTILITY_EMAIL").get("EMAIL").ready());
+            VacademyException ex = assertThrows(VacademyException.class, () -> readiness.requireReady("i1",
+                    "{\"EMAIL\":{\"enabled\":true,\"emailType\":\"OUTREACH_EMAIL\"}}", null));
+            assertTrue(ex.getMessage().contains("isn't verified"), ex.getMessage());
+            assertDoesNotThrow(() -> readiness.requireReady("i1",
+                    "{\"EMAIL\":{\"enabled\":true,\"emailType\":\"UTILITY_EMAIL\"}}", null));
+        }
+
+        @Test
+        @DisplayName("no emailType = UTILITY_EMAIL: refused when the institute has only another sender")
+        void unsetSenderMeansUtility() {
+            settings("{\"setting\":{\"EMAIL_SETTING\":{\"data\":{\"OUTREACH_EMAIL\":{\"from\":\"sales@acme.in\"}}}}}");
+            VacademyException ex = assertThrows(VacademyException.class,
+                    () -> readiness.requireReady("i1", "{\"EMAIL\":{\"enabled\":true}}", null));
+            assertTrue(ex.getMessage().contains("doesn't exist"), ex.getMessage());
+            assertDoesNotThrow(() -> readiness.requireReady("i1",
+                    "{\"EMAIL\":{\"enabled\":true,\"emailType\":\"OUTREACH_EMAIL\"}}", null));
+        }
+
+        @Test
+        @DisplayName("an old engine with no emailType picking UTILITY_EMAIL explicitly is not a sender change")
+        void explicitUtilityIsNoChange() {
+            settings("{\"setting\":{\"EMAIL_SETTING\":{\"data\":{\"UTILITY_EMAIL\":{\"from\":\"a@b.c\",\"verified\":false}}}}}");
+            assertDoesNotThrow(() -> readiness.requireReady("i1",
+                    "{\"EMAIL\":{\"enabled\":true,\"emailType\":\"UTILITY_EMAIL\"}}",
+                    "{\"EMAIL\":{\"enabled\":true}}"));
+        }
+
+        @Test
         @DisplayName("unreadable settings never block")
         void unreadableNeverBlocks() {
             settings("{not json");
