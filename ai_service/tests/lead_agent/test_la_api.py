@@ -53,6 +53,7 @@ def test_agent_crud_and_shape(client):
     assert a["status"] == "PAUSED" and a["audience_name"] == "Coaching leads"
     assert a["brief"]["industries"][0]["search_term"] == "coaching institute"
     assert a["gate"]["auto_score"] == 70 and a["window"]["tz"] == "Asia/Kolkata"
+    assert a["gate"]["send_score"] == 50 and a["gate"]["require_approval"] is False
     assert "brief_json" not in a and "plan_json" not in a
     assert a["today"] == {"delivered": 0, "review": 0, "rejected": 0} and a["workers_online"] == 0
     assert client.post(f"{BASE}/agents", json=body()).status_code == 409          # one live agent per list
@@ -71,6 +72,7 @@ def test_agent_crud_and_shape(client):
     {"brief": {**BRIEF, "industries": [{"name": f"I{i}", "search_term": f"t{i}"} for i in range(7)]}},
     {"brief": {**BRIEF, "industries": []}},
     {"gate": {"auto_score": 40, "review_score": 60}}, {"gate": {"auto_score": 101}},
+    {"gate": {"send_score": 101}}, {"gate": {"send_score": -1}}, {"gate": {"require_approval": "maybe"}},
     {"window": {"tz": "Mars/Base", "start": "09:00", "end": "18:00", "days": [1]}},
     {"window": {"tz": "Asia/Kolkata", "start": "9am", "end": "18:00", "days": [1]}},
     {"window": {"tz": "Asia/Kolkata", "start": "09:00", "end": "18:00", "days": [8]}},
@@ -215,36 +217,62 @@ def test_a_new_gate_passes_the_waiting_leads_it_now_accepts(client, la_db):
     lead = {"organisation": {"name": "A", "city": "Indore"},
             "contacts": [{"kind": "institute_phone", "value": "+91 98765 12345", "quality": "likely"}],
             "contact_quality": {"level": "likely", "label": "Desk mobile"}}
+    scored = {"risk": 0, "flags": [], "has_intent": False, "reach_level": "likely"}
     plain = make_candidate(la_db, agent, "a.in", status="REVIEW", score=55, decision="REVIEW", lead_json=lead,
-                           score_json={"score": 55, "base_score": 55, "risk": 0, "flags": []})
+                           score_json={**scored, "score": 55, "base_score": 55})
     switcher = make_candidate(la_db, agent, "b.in", status="REVIEW", score=40, decision="REVIEW", lead_json=lead,
-                              score_json={"score": 40, "base_score": 60, "risk": 40,
+                              score_json={**scored, "score": 40, "base_score": 60, "risk": 40,
                                           "flags": ["competitor_platform:appx"]})
     big = make_candidate(la_db, agent, "c.in", status="REVIEW", score=50, decision="REVIEW", lead_json=lead,
-                         score_json={"score": 50, "base_score": 65, "risk": 30, "flags": ["enterprise"]})
+                         score_json={**scored, "score": 50, "base_score": 65, "risk": 30, "flags": ["enterprise"]})
 
     def status_of(c):
         return client.get(f"{BASE}/candidates/{c['id']}").json()["status"]
 
-    r = client.put(f"{BASE}/agents/{agent['id']}", json={"gate": {"auto_score": 50, "review_score": 45}})
-    assert r.status_code == 200 and r.json()["review_waiting"] == 2
-    assert [status_of(c) for c in (plain, switcher, big)] == ["APPROVED", "REVIEW", "REVIEW"]
-    r = client.put(f"{BASE}/agents/{agent['id']}", json={"gate": {"auto_competitor_users": True}})
-    # effort: the gate's validation effort level (effort.py), STANDARD when never set
-    assert r.json()["gate"] == {"auto_score": 50, "review_score": 45, "min_contact": "likely",
-                                "require_intent": False, "auto_competitor_users": True, "effort": "STANDARD"}
-    assert [status_of(c) for c in (switcher, big)] == ["APPROVED", "REVIEW"] and r.json()["review_waiting"] == 1
+    r = client.put(f"{BASE}/agents/{agent['id']}", json={"gate": {"send_score": 55, "require_approval": True}})
+    # with approval on nothing moves: every waiting lead waits for a person
+    assert r.status_code == 200 and r.json()["review_waiting"] == 3
+    r = client.put(f"{BASE}/agents/{agent['id']}",
+                   json={"gate": {"require_approval": False, "auto_competitor_users": True}})
+    # effort: the gate's validation effort level (effort.py), STANDARD when never set; auto_score and
+    # review_score (the bars before rank and fill, 2026-10-30) are kept as saved and decide nothing
+    assert r.json()["gate"] == {"send_score": 55, "require_approval": False, "auto_score": 70, "review_score": 45,
+                                "min_contact": "likely", "require_intent": False, "auto_competitor_users": True,
+                                "effort": "STANDARD"}
+    # saving the gate judges the waiting leads at once (scheduler.rejudge_waiting): the plain lead and the
+    # competitor's user (judged without that penalty now) clear the bar, the very large one (50 after its
+    # penalty) is rejected
+    assert [status_of(c) for c in (plain, switcher, big)] == ["APPROVED", "APPROVED", "REJECTED"]
+    assert r.json()["review_waiting"] == 0
     with la_db() as db:
         row = store.get_candidate(db, switcher["id"])
+        gone = store.get_candidate(db, big["id"])
     assert row["decision"] == "AUTO" and row["reviewed_by"] is None
     assert "competitor" in row["score_json"]["gate_reasons"][1]
-    # saving the bars from a screen that does not know the new setting keeps it
+    assert "below the send bar (55)" in gone["reject_reason"]
+    # saving the old bars from a screen that does not know the new settings keeps them
     r = client.put(f"{BASE}/agents/{agent['id']}", json={"gate": {"auto_score": 60, "review_score": 45,
                                                                    "min_contact": "likely", "require_intent": False}})
-    assert r.json()["gate"]["auto_competitor_users"] is True and r.json()["gate"]["auto_score"] == 60
-    # a merge that breaks the bars' order is refused, not saved
+    gate = r.json()["gate"]
+    assert gate["auto_competitor_users"] is True and gate["auto_score"] == 60 and gate["send_score"] == 55
+    # a merge that breaks the old bars' order is still refused, not saved
     r = client.put(f"{BASE}/agents/{agent['id']}", json={"gate": {"review_score": 65}})
     assert r.status_code == 422 and client.get(f"{BASE}/agents/{agent['id']}").json()["gate"]["review_score"] == 45
+    r = client.put(f"{BASE}/agents/{agent['id']}", json={"gate": {"require_approval": True}})
+    assert r.json()["gate"]["require_approval"] is True and r.json()["gate"]["send_score"] == 55
+
+
+def test_an_agent_saved_before_rank_and_fill_shows_the_default_send_bar(client, la_db):
+    agent = make_world(la_db)
+    with la_db() as db:  # the gate as V612 stored it, before send_score / require_approval (2026-10-30)
+        store.update_agent(db, agent["id"], INSTITUTE, {"gate_json": {
+            "auto_score": 70, "review_score": 45, "min_contact": "likely", "require_intent": False,
+            "auto_competitor_users": False}})
+        db.commit()
+    gate = client.get(f"{BASE}/agents/{agent['id']}").json()["gate"]
+    assert gate == {"send_score": 50, "require_approval": False, "auto_score": 70, "review_score": 45,
+                    "min_contact": "likely", "require_intent": False, "auto_competitor_users": False,
+                    "effort": "STANDARD"}
 
 
 def test_suppressions_normalise(client):
