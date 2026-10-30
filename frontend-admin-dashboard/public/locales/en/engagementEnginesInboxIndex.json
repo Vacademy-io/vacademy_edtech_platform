@@ -5,6 +5,7 @@
     "allEngines": "All engines",
     "filters": {
         "needsAction": "Needs action",
+        "approvals": "Approvals",
         "sent": "Sent",
         "failed": "Failed",
         "handled": "Handled",
@@ -87,6 +88,10 @@
     "priorityChip": "{{level}} priority",
     "empty": {
         "goToEngines": "Go to engines",
+        "approvals": {
+            "title": "Nothing to approve",
+            "text": "AI calls and other actions the engines want to run wait here for your approval."
+        },
         "needsAction": {
             "title": "All caught up",
             "text": "New messages appear here when an active engine checks in on someone."

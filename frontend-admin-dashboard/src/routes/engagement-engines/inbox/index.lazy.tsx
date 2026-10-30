@@ -71,15 +71,28 @@ export const Route = createLazyFileRoute('/engagement-engines/inbox/')({
     component: TaskInboxPage,
 });
 
-function buildFilters(
-    t: TFunction
-): { key: InboxFilterKey; label: string; statuses: string; tone: QuickView['tone'] }[] {
+/** In the same order as INBOX_FILTER_KEYS (the ?filter= param picks a tab by index). */
+function buildFilters(t: TFunction): {
+    key: InboxFilterKey;
+    label: string;
+    statuses: string;
+    kind?: string;
+    tone: QuickView['tone'];
+}[] {
     return [
         {
             key: 'needsAction',
             label: t('filters.needsAction'),
             statuses: 'OPEN,ACKED',
             tone: 'warning',
+        },
+        // AI calls and other CRM actions waiting for a person to approve them.
+        {
+            key: 'approvals',
+            label: t('filters.approvals'),
+            statuses: 'OPEN,ACKED',
+            kind: 'CRM',
+            tone: 'danger',
         },
         { key: 'sent', label: t('filters.sent'), statuses: 'SENT', tone: 'success' },
         { key: 'failed', label: t('filters.failed'), statuses: 'FAILED', tone: 'danger' },
@@ -120,6 +133,16 @@ const PAGE_SIZE = 20;
 type SortKey = 'priority' | 'oldest' | 'newest';
 
 const time = (iso?: string) => (iso ? new Date(iso).getTime() || 0 : 0);
+
+/**
+ * Open approvals first, as the server orders them: an AI call, then the other CRM actions, then
+ * everything else. They wait for a person and nothing else, so they must not sink under drafts.
+ */
+function approvalRank(task: EngagementAction): number {
+    const open = task.kind === 'TASK' && (task.status === 'OPEN' || task.status === 'ACKED');
+    if (!open || !isCrmAction(task.actionType)) return 2;
+    return task.actionType === 'SCHEDULE_AI_CALL' ? 0 : 1;
+}
 
 /** "5m" / "3h" / "2d" since a timestamp; empty when there is none. */
 function ageText(iso: string | undefined, t: TFunction): string {
@@ -183,7 +206,10 @@ function TaskInboxPage() {
     // Engine and channel narrow the request itself, so pages and the chip counts match the filter.
     const engineArg = engineFilter === 'all' ? undefined : engineFilter;
     const channelArg = channelFilter === 'all' ? undefined : channelFilter;
-    const kindArg = kindFilter === 'all' ? undefined : kindFilter;
+    // A tab with its own kind (Approvals) wins over the kind picker, which is locked on that tab.
+    const tabKind = FILTERS[filterIdx]?.kind;
+    const pickedKind = kindFilter === 'all' ? undefined : kindFilter;
+    const kindArg = tabKind ?? pickedKind;
     const { data, isLoading, isError, refetch } = useTasks(
         statuses,
         page,
@@ -203,12 +229,25 @@ function TaskInboxPage() {
     // with one row, only when switched on.
     const instituteId = getInstituteId() || '';
     const counts = useQueries({
-        queries: FILTERS.map((f) => ({
-            queryKey: ['engagementTasks', instituteId, f.statuses, 0, 1, engineArg, channelArg, kindArg],
-            queryFn: () => listTasks(instituteId, f.statuses, 0, 1, engineArg, channelArg, kindArg),
-            enabled: !!instituteId,
-            staleTime: 60 * 1000,
-        })),
+        queries: FILTERS.map((f) => {
+            const kind = f.kind ?? pickedKind;
+            return {
+                queryKey: [
+                    'engagementTasks',
+                    instituteId,
+                    f.statuses,
+                    0,
+                    1,
+                    engineArg,
+                    channelArg,
+                    kind,
+                ],
+                queryFn: () =>
+                    listTasks(instituteId, f.statuses, 0, 1, engineArg, channelArg, kind),
+                enabled: !!instituteId,
+                staleTime: 60 * 1000,
+            };
+        }),
     });
 
     const action = useTaskAction();
@@ -230,8 +269,8 @@ function TaskInboxPage() {
             (task) =>
                 (engineFilter === 'all' || task.engineId === engineFilter) &&
                 (channelFilter === 'all' || task.channel === channelFilter) &&
-                (kindFilter === 'all' ||
-                    (kindFilter === 'CRM' ? isCrmAction(task.actionType) : task.kind === kindFilter)) &&
+                (!kindArg ||
+                    (kindArg === 'CRM' ? isCrmAction(task.actionType) : task.kind === kindArg)) &&
                 (!q ||
                     [
                         task.draftBody,
@@ -249,13 +288,13 @@ function TaskInboxPage() {
                 ? time(a.createdAt) - time(b.createdAt)
                 : sort === 'newest'
                   ? time(b.createdAt) - time(a.createdAt)
-                  : (b.priority ?? 0) - (a.priority ?? 0)
+                  : approvalRank(a) - approvalRank(b) || (b.priority ?? 0) - (a.priority ?? 0)
         );
     const current = visible.find((task) => task.id === selectedId) ?? visible[0];
     const channelMeta = buildChannelMeta(tConstants);
 
     const views: QuickView[] = FILTERS.map((f, i) => ({
-        key: f.statuses,
+        key: f.key,
         label: f.label,
         count: counts[i]?.data ? counts[i]?.data?.totalElements ?? 0 : undefined,
         tone: f.tone,
@@ -356,7 +395,8 @@ function TaskInboxPage() {
                             </SelectContent>
                         </Select>
                         <Select
-                            value={kindFilter}
+                            value={tabKind ?? kindFilter}
+                            disabled={!!tabKind}
                             onValueChange={(v) => {
                                 setKindFilter(v);
                                 setPage(0);

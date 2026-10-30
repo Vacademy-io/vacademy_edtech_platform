@@ -103,5 +103,12 @@ export const NEXT_STATUSES: Partial<Record<EngineStatus, EngineStatus[]>> = {
 };
 
 /** Task inbox tabs, also accepted as ?filter= so a link can open the right one. */
-export const INBOX_FILTER_KEYS = ['needsAction', 'sent', 'failed', 'handled', 'dryRun'] as const;
+export const INBOX_FILTER_KEYS = [
+    'needsAction',
+    'approvals',
+    'sent',
+    'failed',
+    'handled',
+    'dryRun',
+] as const;
 export type InboxFilterKey = (typeof INBOX_FILTER_KEYS)[number];
