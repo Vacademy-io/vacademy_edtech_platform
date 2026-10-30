@@ -8,7 +8,7 @@ import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore
 import { EmptyState, ErrorState } from '@/routes/manage-pages/site-assistant/-components/TabStates';
 import { AGENT_TABS, AGENT_TAB_LABELS, type AgentTab } from '../-utils/agent-tabs';
 import { MODE_LABEL, REJECTED_TAB_STATUSES } from '../-utils/lead-agent-options';
-import { useLeadAgent, useLeadAgents } from '../-hooks/use-lead-agent';
+import { useApprovedWaiting, useLeadAgent, useLeadAgents } from '../-hooks/use-lead-agent';
 import { apiErrorMessage, apiErrorStatus } from '../-services/lead-agent-api';
 import { ActivityTab } from './ActivityTab';
 import { AgentStatusSwitch, WorkersOnline } from './AgentStatusControls';
@@ -24,6 +24,7 @@ export function AgentDetailPage({ agentId, tab }: { agentId: string; tab: AgentT
     const query = useLeadAgent(agentId);
     // GET /agents carries today's counters and workers online; GET /agents/{id} may not.
     const listRow = useLeadAgents().data?.find((a) => a.id === agentId);
+    const approvedWaiting = useApprovedWaiting(agentId).data ?? 0;
     // Memoised: SettingsTab resets its form when this object changes.
     const agent = useMemo(
         () =>
@@ -145,6 +146,14 @@ export function AgentDetailPage({ agentId, tab }: { agentId: string; tab: AgentT
                                 {t === 'review' && agent.review_waiting
                                     ? ` (${agent.review_waiting})`
                                     : ''}
+                                {t === 'progress' && approvedWaiting > 0 && (
+                                    <span
+                                        className="ml-1.5 rounded-full border border-warning-300 bg-warning-50 px-1.5 text-caption font-semibold text-warning-700"
+                                        title={`${approvedWaiting} approved, waiting to be delivered`}
+                                    >
+                                        {approvedWaiting} approved
+                                    </span>
+                                )}
                             </TabsTrigger>
                         ))}
                     </TabsList>
@@ -160,7 +169,10 @@ export function AgentDetailPage({ agentId, tab }: { agentId: string; tab: AgentT
                         <CandidatesTab agent={agent} status={REJECTED_TAB_STATUSES} />
                     </TabsContent>
                     <TabsContent value="progress">
-                        <InProgressTab agent={agent} />
+                        <InProgressTab
+                            agent={agent}
+                            initialStatus={approvedWaiting > 0 ? 'APPROVED' : undefined}
+                        />
                     </TabsContent>
                     <TabsContent value="activity">
                         <ActivityTab agentId={agent.id} />
