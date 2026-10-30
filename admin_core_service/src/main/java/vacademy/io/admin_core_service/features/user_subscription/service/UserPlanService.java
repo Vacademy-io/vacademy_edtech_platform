@@ -156,6 +156,15 @@ public class UserPlanService {
     @Autowired
     private UserInstitutePaymentGatewayMappingService mandateService;
 
+    // @Lazy like the other cross-feature services above: keeps this bean out of any startup cycle.
+    @Autowired
+    @Lazy
+    private vacademy.io.admin_core_service.features.stock_hold.service.StockHoldService stockHoldService;
+
+    @Autowired
+    @Lazy
+    private vacademy.io.admin_core_service.features.stock_hold.service.RepeatPurchasePolicyService repeatPurchasePolicyService;
+
     public UserPlan createUserPlan(String userId,
             PaymentPlan paymentPlan,
             AppliedCouponDiscount appliedCouponDiscount,
@@ -357,11 +366,36 @@ public class UserPlanService {
             String subOrgId,
             Date startDate,
             RegionalQuote regionalQuote) {
-        logger.info("Creating UserPlan for userId={}, status={}, source={}, subOrgId={}",
-                userId, status, source, subOrgId);
+        return createUserPlan(userId, paymentPlan, appliedCouponDiscount, enrollInvite, paymentOption,
+                paymentInitiationRequestDTO, status, source, subOrgId, startDate, regionalQuote, 1);
+    }
+
+    /**
+     * @param regionalQuote the viewer's regional price, resolved by a learner checkout
+     *                      (RegionalPriceResolver). When present it is locked onto the UserPlan
+     *                      so this and every later charge use it. Admin-side callers pass null.
+     * @param quantity      copies bought on this line (V633); below 1 is stored as 1. The plan's
+     *                      price stays the UNIT price — the line total is unit price x quantity.
+     */
+    @Transactional
+    public UserPlan createUserPlan(String userId,
+            PaymentPlan paymentPlan,
+            AppliedCouponDiscount appliedCouponDiscount,
+            EnrollInvite enrollInvite,
+            PaymentOption paymentOption,
+            PaymentInitiationRequestDTO paymentInitiationRequestDTO,
+            String status,
+            String source,
+            String subOrgId,
+            Date startDate,
+            RegionalQuote regionalQuote,
+            int quantity) {
+        logger.info("Creating UserPlan for userId={}, status={}, source={}, subOrgId={}, quantity={}",
+                userId, status, source, subOrgId, quantity);
 
         UserPlan userPlan = new UserPlan();
         userPlan.setStatus(status);
+        userPlan.setQuantity(Math.max(1, quantity));
         RegionalPriceLock.apply(userPlan, regionalQuote);
 
         // ALWAYS set userId - this is preserved for both USER and SUB_ORG sources
@@ -424,6 +458,18 @@ public class UserPlanService {
             existingPlan = Optional.empty();
         }
 
+        Integer validityDays = null;
+        if (paymentPlan != null && paymentPlan.getValidityInDays() != null) {
+            validityDays = paymentPlan.getValidityInDays();
+        } else if (enrollInvite != null && enrollInvite.getLearnerAccessDays() != null) {
+            validityDays = enrollInvite.getLearnerAccessDays();
+        }
+
+        if (existingPlan.isPresent()
+                && !stacksOnExistingPlan(enrollInvite, validityDays == null, existingPlan.get())) {
+            existingPlan = Optional.empty();
+        }
+
         Date effectiveStartDate;
         if (existingPlan.isPresent()) {
             // Stack the new plan after the existing one
@@ -456,13 +502,6 @@ public class UserPlanService {
 
         long startTimeMillis = effectiveStartDate.getTime();
         userPlan.setStartDate(new Timestamp(startTimeMillis));
-
-        Integer validityDays = null;
-        if (paymentPlan != null && paymentPlan.getValidityInDays() != null) {
-            validityDays = paymentPlan.getValidityInDays();
-        } else if (enrollInvite != null && enrollInvite.getLearnerAccessDays() != null) {
-            validityDays = enrollInvite.getLearnerAccessDays();
-        }
 
         if (validityDays != null) {
             // Add days to milliseconds: days * 24 * 60 * 60 * 1000
@@ -509,9 +548,12 @@ public class UserPlanService {
             // Regional lock: accrue in the currency and list price the learner was quoted.
             // Unlocked (every plan unless regional pricing is on): the plan's own price, as before.
             boolean regionallyPriced = RegionalPriceLock.isLocked(saved);
-            double planListPrice = regionallyPriced
+            double unitListPrice = regionallyPriced
                     ? saved.getRegionalPrice().doubleValue()
                     : paymentPlan.getActualPrice();
+            // The plan price is per copy; this line bought `quantity` copies (V633). The
+            // payment-initiation amount, when present, is already the line total.
+            double planListPrice = unitListPrice * Math.max(1, saved.getQuantity() != null ? saved.getQuantity() : 1);
             double accrualAmount = planListPrice;
             if (paymentInitiationRequestDTO != null && paymentInitiationRequestDTO.getAmount() != null
                     && paymentInitiationRequestDTO.getAmount() >= 0) {
@@ -617,6 +659,39 @@ public class UserPlanService {
 
         // All entries are ABANDONED_CART or PAYMENT_FAILED
         return false;
+    }
+
+    /**
+     * Whether a new plan on this invite queues (PENDING) behind the learner's ACTIVE/PENDING
+     * one. Stacking is for time-boxed plans: a renewal starts when the current period ends. It
+     * is wrong for:
+     * <ul>
+     *   <li>charge items (shipping, security deposit): every order carries one, so every second
+     *       order was queued behind the first order's charge, which never ends;</li>
+     *   <li>a repeat purchase of a lifetime item (neither plan has an end date) where the course
+     *       allows buying again ({@code COURSE_SETTING.data.commerce.allowRepeatPurchase}): the
+     *       queued plan waited forever, paid but never active, and its stock never moved.</li>
+     * </ul>
+     * Used by both createUserPlan and applyOperationsOnFirstPayment so they agree. The policy
+     * calls never throw; on any doubt they answer false, which keeps today's stacking.
+     */
+    private boolean stacksOnExistingPlan(EnrollInvite enrollInvite, boolean newPlanHasNoEndDate,
+            UserPlan existingPlan) {
+        if (enrollInvite == null || existingPlan == null) {
+            return true;
+        }
+        if (repeatPurchasePolicyService.isChargeItem(enrollInvite)) {
+            logger.info("Not stacking on plan {}: invite {} is a charge item (shipping / deposit)",
+                    existingPlan.getId(), enrollInvite.getId());
+            return false;
+        }
+        if (newPlanHasNoEndDate && existingPlan.getEndDate() == null
+                && repeatPurchasePolicyService.allowsRepeatPurchase(enrollInvite)) {
+            logger.info("Not stacking on plan {}: lifetime repeat purchase allowed on invite {}",
+                    existingPlan.getId(), enrollInvite.getId());
+            return false;
+        }
+        return true;
     }
 
     private void setPaymentPlan(UserPlan userPlan, PaymentPlan plan) {
@@ -799,6 +874,13 @@ public class UserPlanService {
                                 UserPlanStatusEnum.PENDING.name()),
                         List.of(userPlan.getId()));
 
+        // Same exceptions to stacking as createUserPlan: charge items and allowed lifetime
+        // repeat purchases activate now instead of queueing forever.
+        if (existingPlan.isPresent() && !existingPlan.get().getId().equals(userPlan.getId())
+                && !stacksOnExistingPlan(enrollInvite, userPlan.getEndDate() == null, existingPlan.get())) {
+            existingPlan = Optional.empty();
+        }
+
         List<String> packageSessionIds = packageSessionEnrollInviteToPaymentOptionService
                 .findPackageSessionsOfEnrollInvite(enrollInvite);
         // If we found a plan, and it's NOT the current plan (sanity check)
@@ -808,7 +890,14 @@ public class UserPlanService {
             userPlanRepository.save(userPlan);
             logger.info("UserPlan stacked as PENDING after payment. ID={}. Existing plan ID={}", userPlan.getId(),
                     existingPlan.get().getId());
-            // Do NOT shift learner to active package sessions yet
+            // Do NOT shift learner to active package sessions yet. Stacking has never moved
+            // stock (nor does the later promotion), so hand back what checkout held for it;
+            // rent picks on it were paid for and settle as SOLD. Never throws.
+            try {
+                stockHoldService.onPlanStacked(userPlan);
+            } catch (Exception e) {
+                logger.warn("Could not settle stock holds of stacked plan {}: {}", userPlan.getId(), e.getMessage());
+            }
         } else {
             // Activate normally
 
@@ -840,10 +929,10 @@ public class UserPlanService {
                         packageSessionIds, userPlan.getUserId(), userPlan);
             }
 
-            // Decrement inventory (available slots) for each package session THIS payment
-            // activated. The invite's full mapping list is wrong here: gap validation can
-            // drop sessions at checkout, and a bundle invite may map sessions the learner
-            // never bought, so decrementing all of them over-counted seats.
+            // Stock for each package session THIS payment activated. The invite's full mapping
+            // list is wrong here: gap validation can drop sessions at checkout, and a bundle
+            // invite may map sessions the learner never bought, so decrementing all of them
+            // over-counted seats.
             List<String> activatedPackageSessionIds;
             try {
                 Set<String> activeOnPlan = new HashSet<>(studentSessionInstituteGroupMappingRepository
@@ -852,22 +941,21 @@ public class UserPlanService {
                         .filter(activeOnPlan::contains)
                         .toList();
             } catch (Exception e) {
-                logger.warn("Could not resolve activated sessions for plan {}; skipping inventory decrement: {}",
+                logger.warn("Could not resolve activated sessions for plan {}; no new stock taken: {}",
                         userPlan.getId(), e.getMessage());
                 activatedPackageSessionIds = List.of();
             }
             if (activatedPackageSessionIds.size() != packageSessionIds.size()) {
-                logger.info("Plan {} activated {} of the invite's {} package sessions; decrementing only those",
+                logger.info("Plan {} activated {} of the invite's {} package sessions; taking stock only for those",
                         userPlan.getId(), activatedPackageSessionIds.size(), packageSessionIds.size());
             }
-            for (String psId : activatedPackageSessionIds) {
-                try {
-                    packageSessionService.decrementAvailability(psId, 1);
-                } catch (Exception e) {
-                    logger.warn("Failed to decrement inventory for packageSession {} after payment: {}",
-                            psId, e.getMessage());
-                    // Don't block enrollment if inventory update fails
-                }
+            // Holds taken at checkout become SOLD (no second decrement); sessions without one
+            // take the plan's quantity atomically. Never throws: a stock problem is logged and
+            // sent to Sentry, it must not roll back this payment.
+            try {
+                stockHoldService.onPlanActivated(userPlan, activatedPackageSessionIds);
+            } catch (Exception e) {
+                logger.warn("Failed to update stock for plan {} after payment: {}", userPlan.getId(), e.getMessage());
             }
 
             userPlan.setStatus(UserPlanStatusEnum.ACTIVE.name());
@@ -1370,6 +1458,7 @@ public class UserPlanService {
                 .updatedAt(userPlan.getUpdatedAt())
                 .startDate(userPlan.getStartDate())
                 .endDate(userPlan.getEndDate())
+                .quantity(userPlan.getQuantity())
                 .enrollInvite(
                         userPlan.getEnrollInvite() != null ? userPlan.getEnrollInvite().toEnrollInviteDTO() : null)
                 .paymentPlanDTO(
@@ -1435,6 +1524,7 @@ public class UserPlanService {
                 .updatedAt(userPlan.getUpdatedAt())
                 .startDate(userPlan.getStartDate())
                 .endDate(userPlan.getEndDate())
+                .quantity(userPlan.getQuantity())
                 .enrollInvite(
                         userPlan.getEnrollInvite() != null ? userPlan.getEnrollInvite().toEnrollInviteDTO() : null)
                 .paymentPlanDTO(
@@ -1605,6 +1695,20 @@ public class UserPlanService {
             }
         } catch (Exception me) {
             logger.warn("Failed to revoke mandate on cancel for plan {}: {}", userPlanId, me.getMessage());
+        }
+
+        // Terminate removes access, so the plan's stock goes back once (a returned book is on the
+        // shelf again). A soft cancel keeps access until the plan ends — the item is still with
+        // the learner — so only holds still waiting for payment go back. Plans from before V633
+        // have no stock rows and keep today's behaviour. Never throws.
+        try {
+            if (force) {
+                stockHoldService.restoreForPlan(userPlanId, null);
+            } else {
+                stockHoldService.releaseHeldForPlan(userPlanId);
+            }
+        } catch (Exception se) {
+            logger.warn("Failed to restore stock on cancel for plan {}: {}", userPlanId, se.getMessage());
         }
 
         // Fire the matching workflow trigger so admin/learner workflows can react

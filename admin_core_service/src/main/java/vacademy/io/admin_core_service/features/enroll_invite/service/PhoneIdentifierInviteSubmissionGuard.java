@@ -1,7 +1,7 @@
 package vacademy.io.admin_core_service.features.enroll_invite.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.enroll_invite.entity.EnrollInvite;
@@ -9,6 +9,7 @@ import vacademy.io.admin_core_service.features.enroll_invite.entity.PackageSessi
 import vacademy.io.admin_core_service.features.enroll_invite.repository.PackageSessionLearnerInvitationToPaymentOptionRepository;
 import vacademy.io.admin_core_service.features.institute.service.setting.InstituteSettingService;
 import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository;
+import vacademy.io.admin_core_service.features.stock_hold.service.RepeatPurchasePolicyService;
 import vacademy.io.common.exceptions.EnrollmentConflictException;
 
 import java.util.List;
@@ -35,10 +36,15 @@ import java.util.Objects;
  * <p>A member who is refused is told to sign in: their dashboard offers "Pay to
  * continue", which renews the plan they already hold. Independent of trial or payment
  * settings.
+ *
+ * <p>Two kinds of item are never "enrolling a second time" and always pass: a charge
+ * (shipping / deposit), which every storefront order carries, so the second order of a
+ * learner was refused over the first order's shipping line; and an item whose course allows
+ * repeat purchases ({@code COURSE_SETTING.data.commerce.allowRepeatPurchase}), e.g. a book
+ * bought again.
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class PhoneIdentifierInviteSubmissionGuard {
 
     private static final String USER_IDENTIFIER_SETTING = "USER_IDENTIFIER";
@@ -46,6 +52,26 @@ public class PhoneIdentifierInviteSubmissionGuard {
     private final InstituteSettingService instituteSettingService;
     private final StudentSessionInstituteGroupMappingRepository mappingRepository;
     private final PackageSessionLearnerInvitationToPaymentOptionRepository inviteMappingRepository;
+    /** Null only through the test constructor below: no charge / repeat-purchase exemption. */
+    private final RepeatPurchasePolicyService repeatPurchasePolicyService;
+
+    @Autowired
+    public PhoneIdentifierInviteSubmissionGuard(InstituteSettingService instituteSettingService,
+                                                StudentSessionInstituteGroupMappingRepository mappingRepository,
+                                                PackageSessionLearnerInvitationToPaymentOptionRepository inviteMappingRepository,
+                                                RepeatPurchasePolicyService repeatPurchasePolicyService) {
+        this.instituteSettingService = instituteSettingService;
+        this.mappingRepository = mappingRepository;
+        this.inviteMappingRepository = inviteMappingRepository;
+        this.repeatPurchasePolicyService = repeatPurchasePolicyService;
+    }
+
+    /** For tests written before the repeat-purchase rule. */
+    PhoneIdentifierInviteSubmissionGuard(InstituteSettingService instituteSettingService,
+                                         StudentSessionInstituteGroupMappingRepository mappingRepository,
+                                         PackageSessionLearnerInvitationToPaymentOptionRepository inviteMappingRepository) {
+        this(instituteSettingService, mappingRepository, inviteMappingRepository, null);
+    }
 
     private static final String ALREADY_ENROLLED_MESSAGE =
             "This mobile number is already registered for this course. Please sign in to continue — "
@@ -57,6 +83,11 @@ public class PhoneIdentifierInviteSubmissionGuard {
                 || !StringUtils.hasText(userId)
                 || !StringUtils.hasText(instituteId)
                 || !usesPhoneIdentifier(instituteId)) {
+            return;
+        }
+        if (repeatPurchasePolicyService != null
+                && (repeatPurchasePolicyService.isChargeItem(enrollInvite)
+                        || repeatPurchasePolicyService.allowsRepeatPurchase(enrollInvite))) {
             return;
         }
 
