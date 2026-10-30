@@ -23,6 +23,7 @@ import { partFailed, type ReportPart } from '../../-utils/report-errors';
 import { formatNumber } from '../../-utils/report-format';
 import type { ReportView } from '../../-utils/use-report-model';
 import { NewTemplatesBlock } from './NewTemplatesBlock';
+import { useReportT } from './range-context';
 import { ReportSection, SectionError } from './ReportSection';
 import { ReportTable } from './ReportTable';
 import { StatsGrid } from './StatsGrid';
@@ -115,7 +116,7 @@ interface ReportSectionsProps {
  * engine did, what came back, what it cost.
  */
 export function ReportSections({ data, view, onRetry }: ReportSectionsProps) {
-    const { t } = useTranslation('engagementDailyReport');
+    const t = useReportT();
     if (!data || !view) return <SectionsSkeleton />;
 
     const { model } = view;
@@ -140,8 +141,7 @@ export function ReportSections({ data, view, onRetry }: ReportSectionsProps) {
         (!whatsappCostFailed &&
             costs.credits.total === 0 &&
             costs.whatsapp.amount === 0 &&
-            costs.whatsapp.billableMessages === 0 &&
-            costs.ai.tokensIn + costs.ai.tokensOut === 0);
+            costs.whatsapp.billableMessages === 0);
 
     const section = (
         icon: Icon,
@@ -347,16 +347,6 @@ export function ReportSections({ data, view, onRetry }: ReportSectionsProps) {
                             </div>
                         )}
                     </div>
-                    {model.costAi && (
-                        <div className="flex flex-col gap-3">
-                            <SubHeading title={model.costAi.title} note={model.costAi.subtitle} />
-                            <StatsGrid
-                                stats={model.costAi.stats}
-                                note={model.costAi.note}
-                                noteHint={model.costAi.noteHint}
-                            />
-                        </div>
-                    )}
                 </div>,
                 t('empty.costs')
             )}

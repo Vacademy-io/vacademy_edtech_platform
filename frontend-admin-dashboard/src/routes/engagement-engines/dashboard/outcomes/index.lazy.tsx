@@ -5,6 +5,7 @@ import {
     GroupDashboardShell,
     useIsInstituteAdmin,
 } from '@/components/shared/crm-enhance/group-dashboard-shell';
+import { rangeT } from '../-utils/report-range-t';
 import { OutcomesBody } from './-components/OutcomesBody';
 import type { OutcomesSearch } from './index';
 
@@ -18,13 +19,15 @@ const LINK_BTN =
 /**
  * Leads & outcomes: the people behind the daily report's numbers (leads added, demos, status
  * changes, conversions). Opened from the report's links, so it is not in the sidebar; the
- * header link goes back to the report for the same engine and day. Whole-institute data, so
+ * header link goes back to the report for the same engine and period. Whole-institute data, so
  * admins only.
  */
 function LeadsAndOutcomesPage() {
-    const { t } = useTranslation('engagementDailyReport');
+    const { t: plainT } = useTranslation('engagementDailyReport');
     const isAdmin = useIsInstituteAdmin();
-    const { engine, date } = useSearch({ strict: false }) as OutcomesSearch;
+    const { engine, date, from, to } = useSearch({ strict: false }) as OutcomesSearch;
+    // "On this day" for one day, "in this period" for a range.
+    const t = rangeT(plainT, !!from && !!to);
     return (
         <GroupDashboardShell
             title={t('outcomesPage.title')}
@@ -35,7 +38,7 @@ function LeadsAndOutcomesPage() {
             actions={
                 <Link
                     to="/engagement-engines/dashboard"
-                    search={{ engine, date }}
+                    search={{ engine, date, from, to }}
                     className={LINK_BTN}
                 >
                     <ArrowLeft size={14} />

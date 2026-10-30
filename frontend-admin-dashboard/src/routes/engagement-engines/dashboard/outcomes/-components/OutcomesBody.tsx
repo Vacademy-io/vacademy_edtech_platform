@@ -22,6 +22,7 @@ import {
     type DailyReportEngineOption,
 } from '@/services/engagement-daily-report';
 import { useEngines } from '../../../-hooks';
+import { ReportRangeContext, useReportT } from '../../-components/daily-report/range-context';
 import { ReportFilterBar } from '../../-components/daily-report/ReportFilterBar';
 import {
     OUTCOME_TABS,
@@ -30,7 +31,15 @@ import {
     normalizeOutcomeFilter,
     type OutcomeTab,
 } from '../../-utils/outcomes-params';
-import { formatNumber, minDateIso, shiftDay, todayIso } from '../../-utils/report-format';
+import { formatNumber, minDateIso, todayIso } from '../../-utils/report-format';
+import {
+    clampPeriod,
+    isSingleDay,
+    periodOfSearch,
+    periodPatch,
+    type ReportPeriod,
+} from '../../-utils/report-period';
+import { rangeT } from '../../-utils/report-range-t';
 import { engineDisplayName } from '../../-utils/use-report-model';
 import { reportTerms } from '../../-utils/report-terms';
 import type { OutcomesSearch } from '../index';
@@ -64,14 +73,14 @@ const EMPTY_KEY: Record<OutcomeTab, string> = {
 };
 
 /**
- * Leads & outcomes: for one engine (or all) and one day, the people behind the daily report's
- * numbers. Five lists, one per tab, each a full-width table with filter chips, search, paging
+ * Leads & outcomes: for one engine (or all) and one day or range of days, the people behind the
+ * report's numbers. Five lists, one per tab, each a full-width table with filter chips, search, paging
  * and an Excel export of the whole list. The Templates list is of WhatsApp templates, not
  * people: no lead search, and a row opens nothing. Everything that picks a list is in the URL, so a link
  * from the report (or one you share) opens exactly this view; a row opens the lead's profile.
  */
 export function OutcomesBody() {
-    const { t } = useTranslation('engagementDailyReport');
+    const { t: plainT } = useTranslation('engagementDailyReport');
     const navigate = useNavigate();
     const isAdmin = useIsInstituteAdmin();
     const params = useSearch({ strict: false }) as OutcomesSearch;
@@ -93,10 +102,11 @@ export function OutcomesBody() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const terms = useMemo(() => reportTerms(), [namingVersion]);
 
-    // The report for the same engine and day gives the institute's time zone and the lists to
-    // pick from. It is cached on the server and shared with the report page; the lists below
+    // The report for the same engine and period gives the institute's time zone and the lists
+    // to pick from. It is cached on the server and shared with the report page; the lists below
     // work without it.
-    const report = useEngagementDailyReport(instituteId, engineId, params.date ?? null, isAdmin);
+    const urlPeriod = periodOfSearch(params);
+    const report = useEngagementDailyReport(instituteId, engineId, urlPeriod, isAdmin);
     const engines = useEngines();
     const engineOptions = useMemo<DailyReportEngineOption[]>(
         () =>
@@ -114,14 +124,20 @@ export function OutcomesBody() {
     const reportZone = report.data?.timezone || null;
     const today = todayIso(reportZone);
     const minDate = minDateIso(reportZone);
-    const shownDate = params.date ?? report.data?.date ?? today;
+    const shownPeriod: ReportPeriod =
+        urlPeriod ??
+        (report.data ? { from: report.data.from, to: report.data.to } : { from: today, to: today });
+    // One day reads "on this day"; a range reads "in this period".
+    const range = !isSingleDay(shownPeriod);
+    const t = useMemo(() => rangeT(plainT, range), [plainT, range]);
 
     const query = itemsQueryFor(tab, filter);
     const items = useEngagementReportItems(
         {
             instituteId,
             engineId,
-            date: shownDate,
+            from: shownPeriod.from,
+            to: shownPeriod.to,
             kind: query.kind,
             filter: query.filter,
             search: searchText || undefined,
@@ -141,10 +157,10 @@ export function OutcomesBody() {
         [navigate, params]
     );
 
-    const changeDate = (value: string) => {
-        if (!value) return;
-        update({ date: value < minDate ? minDate : value > today ? today : value });
-    };
+    // The day or range is always written to the URL (even when it is today), so the page keeps
+    // showing the same people when it is shared.
+    const changePeriod = (next: ReportPeriod) =>
+        update(periodPatch(clampPeriod(next, minDate, today)));
     const changeTab = (next: string) =>
         update({
             tab: next as OutcomeTab,
@@ -215,7 +231,8 @@ export function OutcomesBody() {
                 {
                     instituteId,
                     engineId,
-                    date: shownDate,
+                    from: shownPeriod.from,
+                    to: shownPeriod.to,
                     kind: query.kind,
                     filter: query.filter,
                     search: searchText || undefined,
@@ -230,7 +247,7 @@ export function OutcomesBody() {
                 tab,
                 engineName,
                 engineId,
-                date: shownDate,
+                period: shownPeriod,
             });
             if (all.truncated) {
                 toast.warning(
@@ -255,163 +272,171 @@ export function OutcomesBody() {
     const emptyKey = searchText ? 'searched' : filter ? 'filtered' : EMPTY_KEY[tab];
 
     return (
-        <SidebarProvider
-            style={LEAD_SHEET_STYLE}
-            defaultOpen={false}
-            open={sheetOpen}
-            onOpenChange={setSheetOpen}
-        >
-            <div className="flex min-w-0 flex-1 flex-col gap-4">
-                <ReportFilterBar
-                    engines={engineOptions}
-                    engineId={engineId}
-                    onEngineChange={(id) => update({ engine: id ?? undefined })}
-                    date={shownDate}
-                    minDate={minDate}
-                    maxDate={today}
-                    onDateChange={changeDate}
-                    onPreviousDay={() => changeDate(shiftDay(shownDate, -1))}
-                    onNextDay={() => changeDate(shiftDay(shownDate, 1))}
-                    onExport={handleExport}
-                    exporting={exporting}
-                    exportDisabled={!items.data || total === 0}
-                    exportKinds={['xlsx']}
-                />
+        <ReportRangeContext.Provider value={range}>
+            <SidebarProvider
+                style={LEAD_SHEET_STYLE}
+                defaultOpen={false}
+                open={sheetOpen}
+                onOpenChange={setSheetOpen}
+            >
+                <div className="flex min-w-0 flex-1 flex-col gap-4">
+                    <ReportFilterBar
+                        engines={engineOptions}
+                        engineId={engineId}
+                        onEngineChange={(id) => update({ engine: id ?? undefined })}
+                        period={shownPeriod}
+                        minDate={minDate}
+                        maxDate={today}
+                        onPeriodChange={changePeriod}
+                        onExport={handleExport}
+                        exporting={exporting}
+                        exportDisabled={!items.data || total === 0}
+                        exportKinds={['xlsx']}
+                    />
 
-                <Tabs value={tab} onValueChange={changeTab}>
-                    <TabsList
-                        aria-label={t('outcomesPage.tabsLabel')}
-                        className="h-auto w-full flex-wrap justify-start sm:w-fit"
-                    >
-                        {OUTCOME_TABS.map((key) => (
-                            <TabsTrigger key={key} value={key}>
-                                {t(`outcomesPage.tab.${key}`)}
-                            </TabsTrigger>
-                        ))}
-                    </TabsList>
-                    <TabsContent value={tab} className="mt-4">
-                        <Card className="flex flex-col gap-4 rounded-xl border-neutral-200 p-4 shadow-sm">
-                            <OutcomesFilters
-                                tab={tab}
-                                filter={filter}
-                                onFilterChange={(next) => update({ filter: next })}
-                                listOptions={listOptions}
-                                selectedListName={selectedListName}
-                                terms={terms}
-                            />
-
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                                {searchable && (
-                                    <div className="relative w-full sm:w-80">
-                                        <MagnifyingGlass
-                                            size={16}
-                                            aria-hidden="true"
-                                            className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-neutral-400"
-                                        />
-                                        <MyInput
-                                            inputType="text"
-                                            size="medium"
-                                            inputPlaceholder={t('outcomesPage.search.placeholder')}
-                                            input={searchInput}
-                                            onChangeFunction={(event) =>
-                                                setSearchInput(event.target.value)
-                                            }
-                                            aria-label={t('outcomesPage.search.label')}
-                                            className="ps-9 sm:w-full"
-                                        />
-                                    </div>
-                                )}
-                                <p
-                                    role="status"
-                                    aria-live="polite"
-                                    className="tabular-nums text-neutral-600"
-                                >
-                                    <span className="text-body">
-                                        {items.data
-                                            ? t('outcomesPage.results', {
-                                                  count: total,
-                                                  total: formatNumber(total),
-                                              })
-                                            : ''}
-                                    </span>
-                                </p>
-                            </div>
-
-                            {failed ? (
-                                <ItemsError
-                                    status={errorStatus}
-                                    retrying={items.isFetching}
-                                    onRetry={() => items.refetch()}
-                                    onResetDate={() => update({ date: undefined })}
-                                    onResetEngine={() => update({ engine: undefined })}
+                    <Tabs value={tab} onValueChange={changeTab}>
+                        <TabsList
+                            aria-label={t('outcomesPage.tabsLabel')}
+                            className="h-auto w-full flex-wrap justify-start sm:w-fit"
+                        >
+                            {OUTCOME_TABS.map((key) => (
+                                <TabsTrigger key={key} value={key}>
+                                    {t(`outcomesPage.tab.${key}`)}
+                                </TabsTrigger>
+                            ))}
+                        </TabsList>
+                        <TabsContent value={tab} className="mt-4">
+                            <Card className="flex flex-col gap-4 rounded-xl border-neutral-200 p-4 shadow-sm">
+                                <OutcomesFilters
+                                    tab={tab}
+                                    filter={filter}
+                                    onFilterChange={(next) => update({ filter: next })}
+                                    listOptions={listOptions}
+                                    selectedListName={selectedListName}
+                                    terms={terms}
                                 />
-                            ) : items.isLoading ? (
-                                <OutcomesTable
-                                    columns={columns}
-                                    rows={[]}
-                                    isLoading
-                                    onOpenRow={searchable ? openLead : undefined}
-                                />
-                            ) : rows.length === 0 ? (
-                                <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-neutral-200 bg-neutral-50 p-8 text-center">
-                                    <p className="font-semibold text-neutral-800">
-                                        <span className="text-subtitle">
-                                            {t('outcomesPage.empty.title')}
-                                        </span>
-                                    </p>
-                                    <p className="max-w-md text-neutral-500">
-                                        <span className="text-body">
-                                            {emptyKey === 'searched'
-                                                ? t('outcomesPage.empty.searched', {
-                                                      query: searchText,
-                                                  })
-                                                : t(`outcomesPage.empty.${emptyKey}`)}
-                                        </span>
-                                    </p>
-                                    {hasNarrowing && (
-                                        <MyButton
-                                            buttonType="secondary"
-                                            scale="medium"
-                                            onClick={() =>
-                                                update({ search: undefined, filter: undefined })
-                                            }
-                                        >
-                                            {t('outcomesPage.empty.clear')}
-                                        </MyButton>
+
+                                <div className="flex flex-wrap items-center justify-between gap-3">
+                                    {searchable && (
+                                        <div className="relative w-full sm:w-80">
+                                            <MagnifyingGlass
+                                                size={16}
+                                                aria-hidden="true"
+                                                className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-neutral-400"
+                                            />
+                                            <MyInput
+                                                inputType="text"
+                                                size="medium"
+                                                inputPlaceholder={t(
+                                                    'outcomesPage.search.placeholder'
+                                                )}
+                                                input={searchInput}
+                                                onChangeFunction={(event) =>
+                                                    setSearchInput(event.target.value)
+                                                }
+                                                aria-label={t('outcomesPage.search.label')}
+                                                className="ps-9 sm:w-full"
+                                            />
+                                        </div>
                                     )}
+                                    <p
+                                        role="status"
+                                        aria-live="polite"
+                                        className="tabular-nums text-neutral-600"
+                                    >
+                                        <span className="text-body">
+                                            {items.data
+                                                ? t('outcomesPage.results', {
+                                                      count: total,
+                                                      total: formatNumber(total),
+                                                  })
+                                                : ''}
+                                        </span>
+                                    </p>
                                 </div>
-                            ) : (
-                                <>
+
+                                {failed ? (
+                                    <ItemsError
+                                        status={errorStatus}
+                                        retrying={items.isFetching}
+                                        onRetry={() => items.refetch()}
+                                        onResetDate={() =>
+                                            update({
+                                                date: undefined,
+                                                from: undefined,
+                                                to: undefined,
+                                            })
+                                        }
+                                        onResetEngine={() => update({ engine: undefined })}
+                                    />
+                                ) : items.isLoading ? (
                                     <OutcomesTable
                                         columns={columns}
-                                        rows={rows}
-                                        stale={items.isPlaceholderData}
+                                        rows={[]}
+                                        isLoading
                                         onOpenRow={searchable ? openLead : undefined}
                                     />
-                                    <MyPagination
-                                        currentPage={page}
-                                        totalPages={Math.max(1, Math.ceil(total / pageSize))}
-                                        onPageChange={(next) =>
-                                            update({ page: next === 0 ? undefined : next + 1 })
-                                        }
-                                        totalElements={total}
-                                        pageSize={pageSize}
-                                        onPageSizeChange={(size) => {
-                                            setPageSize(size);
-                                            update({ page: undefined });
-                                        }}
-                                        pageSizeOptions={PAGE_SIZES}
-                                    />
-                                </>
-                            )}
-                        </Card>
-                    </TabsContent>
-                </Tabs>
-            </div>
+                                ) : rows.length === 0 ? (
+                                    <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-neutral-200 bg-neutral-50 p-8 text-center">
+                                        <p className="font-semibold text-neutral-800">
+                                            <span className="text-subtitle">
+                                                {t('outcomesPage.empty.title')}
+                                            </span>
+                                        </p>
+                                        <p className="max-w-md text-neutral-500">
+                                            <span className="text-body">
+                                                {emptyKey === 'searched'
+                                                    ? t('outcomesPage.empty.searched', {
+                                                          query: searchText,
+                                                      })
+                                                    : t(`outcomesPage.empty.${emptyKey}`)}
+                                            </span>
+                                        </p>
+                                        {hasNarrowing && (
+                                            <MyButton
+                                                buttonType="secondary"
+                                                scale="medium"
+                                                onClick={() =>
+                                                    update({ search: undefined, filter: undefined })
+                                                }
+                                            >
+                                                {t('outcomesPage.empty.clear')}
+                                            </MyButton>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <>
+                                        <OutcomesTable
+                                            columns={columns}
+                                            rows={rows}
+                                            stale={items.isPlaceholderData}
+                                            onOpenRow={searchable ? openLead : undefined}
+                                        />
+                                        <MyPagination
+                                            currentPage={page}
+                                            totalPages={Math.max(1, Math.ceil(total / pageSize))}
+                                            onPageChange={(next) =>
+                                                update({ page: next === 0 ? undefined : next + 1 })
+                                            }
+                                            totalElements={total}
+                                            pageSize={pageSize}
+                                            onPageSizeChange={(size) => {
+                                                setPageSize(size);
+                                                update({ page: undefined });
+                                            }}
+                                            pageSizeOptions={PAGE_SIZES}
+                                        />
+                                    </>
+                                )}
+                            </Card>
+                        </TabsContent>
+                    </Tabs>
+                </div>
 
-            {/* The same lead side sheet Recent Leads, Follow-ups and the Call Log open. */}
-            <StudentSidebar defaultLeadProfile />
-        </SidebarProvider>
+                {/* The same lead side sheet Recent Leads, Follow-ups and the Call Log open. */}
+                <StudentSidebar defaultLeadProfile />
+            </SidebarProvider>
+        </ReportRangeContext.Provider>
     );
 }
 
@@ -425,7 +450,7 @@ interface ItemsErrorProps {
 
 /** A list that could not load: each cause gets its own words and its own way out. */
 function ItemsError({ status, retrying, onRetry, onResetDate, onResetEngine }: ItemsErrorProps) {
-    const { t } = useTranslation('engagementDailyReport');
+    const t = useReportT();
     const kind =
         status === 400
             ? 'badDate'

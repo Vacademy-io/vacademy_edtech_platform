@@ -1,11 +1,11 @@
 import type { TFunction } from 'i18next';
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
     normalizeDailyReport,
     type EngagementDailyReport,
 } from '@/services/engagement-daily-report';
 import { buildFunnelSteps } from '../report-funnel';
-import { buildKpis } from '../report-kpis';
+import { buildKpis, previousTotals } from '../report-kpis';
 import { makeReportLinks } from '../report-links';
 import { partFailed } from '../report-errors';
 import { buildExportTables, buildReportModel, type ReportCtx } from '../report-tables';
@@ -211,7 +211,7 @@ const ctxFor = (data: EngagementDailyReport): ReportCtx => ({
     t,
     channelLabel: (c) => c,
     terms,
-    links: makeReportLinks(data.engineId, data.date),
+    links: makeReportLinks(data.engineId, { from: data.from, to: data.to }),
 });
 
 type Cell<R> = { id: string; link?: (row: R) => unknown };
@@ -441,5 +441,245 @@ describe('new WhatsApp templates', () => {
         expect(buildExportTables(model, failed, t).some((x) => x.key === 'newTemplates')).toBe(
             false
         );
+    });
+});
+
+describe('a report for a range', () => {
+    const RANGE = { date: '2026-10-29', from: '2026-10-23', to: '2026-10-29', days: 7 };
+
+    it('links every figure to the whole period, with from and to instead of a date', () => {
+        const data = report(RANGE);
+        const ctx = ctxFor(data);
+        const model = buildReportModel(data, ctx);
+        const range = { from: '2026-10-23', to: '2026-10-29' };
+
+        expect(linkOf(model.channels.columns, 'sent', model.channels.rows[0])).toMatchObject({
+            to: '/engagement-engines/inbox',
+            search: { filter: 'sent', channel: 'EMAIL', ...range },
+        });
+        expect(linkOf(model.lists.columns, 'leadsAdded', model.lists.rows[0])).toMatchObject({
+            to: '/engagement-engines/dashboard/outcomes',
+            search: { tab: 'leads', filter: 'list:list-1', ...range },
+        });
+        const kpis = buildKpis(data, t, ctx.channelLabel, ctx.links);
+        expect(kpis.find((k) => k.key === 'demosBooked')?.link?.search).toEqual({
+            tab: 'demos',
+            ...range,
+        });
+        const steps = buildFunnelSteps(data, t, ctx.links);
+        expect(steps[0]?.link?.search).toMatchObject(range);
+        expect(steps[0]?.link?.search).not.toHaveProperty('date');
+    });
+
+    it('links the new templates and the status changes the same way', () => {
+        const data = report({
+            ...RANGE,
+            newTemplates: {
+                created: 2,
+                byCategory: [{ category: 'MARKETING', count: 2 }],
+                inReview: 2,
+                approvedByYou: 0,
+                withMeta: 0,
+                live: 0,
+                rejected: 0,
+                withdrawn: 0,
+                movedToMarketing: 0,
+            },
+        });
+        const model = buildReportModel(data, ctxFor(data));
+        const cats = Object.fromEntries(
+            (model.newTemplates?.categories ?? []).map((c) => [c.key, c])
+        );
+        expect(cats.created?.link?.search).toEqual({
+            tab: 'templates',
+            from: '2026-10-23',
+            to: '2026-10-29',
+        });
+        const status = model.statusChanges;
+        const row = status?.rows[0];
+        expect(row && linkOf(status?.columns ?? [], 'byEngine', row)).toMatchObject({
+            search: { tab: 'status', filter: 'engine', from: '2026-10-23', to: '2026-10-29' },
+        });
+    });
+
+    it('takes the period from the response, and from the day alone on an older server', () => {
+        const range = report(RANGE);
+        expect([range.from, range.to, range.days]).toEqual(['2026-10-23', '2026-10-29', 7]);
+        const old = report({ date: '2026-10-28' });
+        expect([old.from, old.to, old.days, old.previous]).toEqual([
+            '2026-10-28',
+            '2026-10-28',
+            1,
+            null,
+        ]);
+        // days is worked out when the server leaves it out.
+        const noDays = report({ date: '2026-10-29', from: '2026-10-20', to: '2026-10-29' });
+        expect(noDays.days).toBe(10);
+    });
+});
+
+describe('change against the previous period', () => {
+    // A recording translate function: the label's count and the compared days show in the text.
+    const tr = ((key: string, options?: Record<string, unknown>) =>
+        options ? `${key} ${JSON.stringify(options)}` : key) as unknown as TFunction;
+    const previous = {
+        from: '2026-10-16',
+        to: '2026-10-22',
+        leadsAdded: 6,
+        sent: 20,
+        replies: 2,
+        demosBooked: 4,
+        conversions: 0,
+        credits: 16,
+        statusChanges: 1,
+    };
+    const weekEndingYesterday = {
+        date: '2026-10-29',
+        from: '2026-10-23',
+        to: '2026-10-29',
+        days: 7,
+        previous,
+    };
+    const kpisOf = (data: EngagementDailyReport) =>
+        Object.fromEntries(
+            buildKpis(
+                data,
+                tr,
+                (c) => c,
+                makeReportLinks(data.engineId, { from: data.from, to: data.to })
+            ).map((k) => [k.key, k])
+        );
+
+    beforeEach(() => {
+        // 14:00 on 30 Oct in Asia/Dubai, the zone of the test reports.
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-10-30T10:00:00Z'));
+    });
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    it('compares a finished range with the range before it', () => {
+        const data = report(weekEndingYesterday);
+        if (data.summary) data.summary = { ...data.summary, costPerDemo: 4 };
+        const k = kpisOf(data);
+        // 40 messages (30 email + 10 WhatsApp) against 20, 4 replies against 2, and so on.
+        expect(k.messagesSent?.delta).toBe(100);
+        expect(k.replies?.delta).toBe(100);
+        expect(k.demosBooked?.delta).toBe(-50);
+        expect(k.creditsSpent?.delta).toBe(-50);
+        expect(k.peopleAdded?.delta).toBe(100);
+        // 0 conversions against 0 is flat, not missing.
+        expect(k.conversions?.delta).toBe(0);
+        // Credits per demo: 8 / 2 = 4 now against 16 / 4 = 4 before.
+        expect(k.costPerDemo?.delta).toBe(0);
+        // There is no earlier figure for calls connected.
+        expect(k.callsConnected?.delta).toBeNull();
+    });
+
+    it('says what it compared with: the previous N days and which days', () => {
+        const k = kpisOf(report(weekEndingYesterday));
+        expect(k.messagesSent?.deltaLabel).toContain('kpi.delta.label');
+        expect(k.messagesSent?.deltaLabel).toContain('"count":7');
+        expect(k.messagesSent?.deltaTitle).toContain('"range":"16–22 Oct"');
+        // A card with no change has no label either.
+        expect(k.callsConnected?.deltaLabel).toBeUndefined();
+    });
+
+    it('says "previous day" for a single day', () => {
+        const day = report({
+            date: '2026-10-29',
+            previous: { ...previous, from: '2026-10-28', to: '2026-10-28' },
+        });
+        const k = kpisOf(day);
+        expect(k.messagesSent?.deltaLabel).toContain('"count":1');
+        expect(k.messagesSent?.delta).toBe(100);
+    });
+
+    it("shows no change when the period includes the institute's today", () => {
+        for (const patch of [
+            { ...weekEndingYesterday, date: '2026-10-30', to: '2026-10-30' },
+            { date: '2026-10-30', previous },
+        ]) {
+            const k = kpisOf(report(patch));
+            expect(Object.values(k).every((x) => x.delta === null)).toBe(true);
+            expect(Object.values(k).every((x) => x.deltaLabel === undefined)).toBe(true);
+        }
+        expect(previousTotals(report({ date: '2026-10-30', previous }))).toBeNull();
+    });
+
+    it('uses the day before in the trend when an older server sends no previous period', () => {
+        const day = report({
+            date: '2026-10-29',
+            trend: [
+                {
+                    date: '2026-10-28',
+                    sent: 20,
+                    replies: 2,
+                    demosBooked: 4,
+                    credits: 16,
+                    statusChanges: 0,
+                },
+                {
+                    date: '2026-10-29',
+                    sent: 40,
+                    replies: 4,
+                    demosBooked: 2,
+                    credits: 8,
+                    statusChanges: 0,
+                },
+            ],
+        });
+        const totals = previousTotals(day);
+        expect(totals?.sent).toBe(20);
+        expect(totals?.leadsAdded).toBeNull();
+        const k = kpisOf(day);
+        expect(k.messagesSent?.delta).toBe(100);
+        // The trend carries no leads or conversions, so those two stay without a change.
+        expect(k.peopleAdded?.delta).toBeNull();
+        expect(k.conversions?.delta).toBeNull();
+    });
+
+    it('does not guess for a range when the server sends no previous period', () => {
+        expect(
+            previousTotals(
+                report({ date: '2026-10-29', from: '2026-10-23', to: '2026-10-29', days: 7 })
+            )
+        ).toBeNull();
+    });
+
+    it('shows nothing for a growth from zero, and hides the change of a card that failed', () => {
+        const fromZero = kpisOf(
+            report({ ...weekEndingYesterday, previous: { ...previous, sent: 0 } })
+        );
+        expect(fromZero.messagesSent?.delta).toBeNull();
+        const failed = kpisOf(report({ ...weekEndingYesterday, errors: { outreach: 'boom' } }));
+        expect(failed.messagesSent?.delta).toBeNull();
+        expect(failed.messagesSent?.deltaLabel).toBeUndefined();
+    });
+});
+
+describe('no token counts', () => {
+    it('are not in the model or the exports, whatever the server sends', () => {
+        const data = report({
+            costs: {
+                credits: { messages: 3, calls: 1, leadAgent: 0, total: 4 },
+                whatsapp: {
+                    amount: 0,
+                    currency: 'INR',
+                    billableMessages: 0,
+                    estimatedMessages: 0,
+                    missingRate: 0,
+                },
+                ai: { tokensIn: 1200, tokensOut: 300, decisionsWithUsage: 12, trackedSince: null },
+            },
+        });
+        const model = buildReportModel(data, ctxFor(data));
+        expect(model).not.toHaveProperty('costAi');
+        // The credits table stays.
+        expect(model.costCredits?.rows.map((r) => r.credits)).toEqual([3, 1, 0, 4]);
+        const exported = JSON.stringify(buildExportTables(model, data, t));
+        expect(exported).not.toMatch(/token/i);
+        expect(exported).not.toContain('costAi');
     });
 });

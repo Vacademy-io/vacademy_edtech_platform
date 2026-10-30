@@ -2,17 +2,14 @@ import dayjs from 'dayjs';
 import type { TFunction } from 'i18next';
 import { pctChange } from '@/routes/dashboard/-utils/crm-dashboard';
 import type { DailyReportTrendPoint } from '@/services/engagement-daily-report';
+import { periodFileTag, shiftDay, windowStart, type ReportPeriod } from './report-period';
 
 export { formatMinutes, formatNumber, humanizeKey } from '@/routes/dashboard/-utils/crm-dashboard';
 
-/** The report can go this many days back. */
-export const MAX_DAYS_BACK = 90;
 /** How long a reply can still arrive after a message, so recent days keep changing. */
 export const REPLY_WINDOW_DAYS = 3;
 
 export const DASH = '—';
-
-const ISO = 'YYYY-MM-DD';
 
 /** Today's calendar day in one time zone, as yyyy-MM-dd. */
 const dayInZone = (timeZone?: string): string => {
@@ -38,10 +35,12 @@ export const todayIso = (timeZone?: string | null): string => {
         return dayInZone(undefined);
     }
 };
-export const shiftDay = (iso: string, days: number) => dayjs(iso).add(days, 'day').format(ISO);
-/** The earliest day the report can show: MAX_DAYS_BACK days before the institute's today. */
-export const minDateIso = (timeZone?: string | null): string =>
-    shiftDay(todayIso(timeZone), -MAX_DAYS_BACK);
+export { shiftDay };
+/**
+ * The earliest day the report can show: the first day of the 90-day window that ends on the
+ * institute's today (so "Last 90 days" is the whole window).
+ */
+export const minDateIso = (timeZone?: string | null): string => windowStart(todayIso(timeZone));
 /** Whole days between `iso` and the institute's today (0 = today). */
 export const daysAgo = (iso: string, timeZone?: string | null): number =>
     dayjs(todayIso(timeZone)).diff(dayjs(iso), 'day');
@@ -203,17 +202,18 @@ export const fileSlug = (value: string): string =>
         .replace(/^-+|-+$/g, '');
 
 /**
- * engagement-report-<engine>-<date>.xlsx. An engine whose name has no Latin letters or digits
- * (so its slug is empty) is named by the first 8 characters of its id; "all" is only for the
- * all-engines report.
+ * engagement-report-<engine>-<day>.xlsx, or engagement-report-<engine>-<from>_to_<to>.xlsx for a
+ * range. An engine whose name has no Latin letters or digits (so its slug is empty) is named by
+ * the first 8 characters of its id; "all" is only for the all-engines report.
  */
 export const exportFileName = (
     engineName: string,
-    date: string,
+    period: string | ReportPeriod,
     ext: 'xlsx' | 'pdf',
     engineId?: string | null
 ): string => {
     const slug =
         fileSlug(engineName) || (engineId ? fileSlug(engineId.slice(0, 8)) || 'engine' : 'all');
-    return `engagement-report-${slug}-${date}.${ext}`;
+    const when = typeof period === 'string' ? period : periodFileTag(period);
+    return `engagement-report-${slug}-${when}.${ext}`;
 };

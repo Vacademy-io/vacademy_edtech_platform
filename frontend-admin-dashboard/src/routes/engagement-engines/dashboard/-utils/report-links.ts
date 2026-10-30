@@ -1,10 +1,11 @@
 import type { OutcomeTab } from './outcomes-params';
+import type { ReportPeriod } from './report-period';
 
 /*
  * Where each number on the report leads: the Task Inbox (the engine's activity: messages,
  * calls, failures, decisions to wait) or the Leads & outcomes page (the people). A link always
- * carries the day, so it keeps showing the same numbers when shared or opened later, and the
- * engine when one is picked.
+ * carries the period, so it keeps showing the same numbers when shared or opened later: `date`
+ * for a single day, `from` + `to` for a range. It carries the engine too when one is picked.
  */
 
 export const INBOX_PATH = '/engagement-engines/inbox' as const;
@@ -56,18 +57,26 @@ const CHANNELS = new Set(['EMAIL', 'WHATSAPP', 'IN_APP', 'AI_CALL']);
 
 /**
  * Link builders for one report: the engine it covers (null = all engines, so no `engine`
- * param) and its day. Without a day there is nothing stable to link to, so no links are made.
+ * param) and its period, as a day (`'2026-10-30'`) or a `{ from, to }` range. Without a period
+ * there is nothing stable to link to, so no links are made.
  */
-export const makeReportLinks = (engineId: string | null, date: string): ReportLinks => {
+export const makeReportLinks = (
+    engineId: string | null,
+    period: string | ReportPeriod
+): ReportLinks => {
+    const range: ReportPeriod = typeof period === 'string' ? { from: period, to: period } : period;
+    const known = !!range.from && !!range.to;
+    const when: Record<string, string> =
+        range.from === range.to ? { date: range.from } : { from: range.from, to: range.to };
     const base = (engine: string | null | undefined): Record<string, string> => ({
         ...(engine ? { engine } : {}),
-        date,
+        ...when,
     });
     const engineOf = (override: string | null | undefined) =>
         override === undefined ? engineId : override;
     return {
         inbox: (p) => {
-            if (!date) return null;
+            if (!known) return null;
             return {
                 to: INBOX_PATH,
                 search: {
@@ -80,7 +89,7 @@ export const makeReportLinks = (engineId: string | null, date: string): ReportLi
             };
         },
         outcomes: (tab, filter, override) => {
-            if (!date) return null;
+            if (!known) return null;
             return {
                 to: OUTCOMES_PATH,
                 search: {

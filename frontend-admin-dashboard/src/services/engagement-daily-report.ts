@@ -4,9 +4,12 @@ import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { ENGAGEMENT_DAILY_REPORT, ENGAGEMENT_DAILY_REPORT_ITEMS } from '@/constants/urls';
 
 /*
- * Engagement daily report: one engine (or all engines) for one day.
+ * Engagement report: one engine (or all engines) for one day or a range of days.
  * Response contract: GET /admin-core-service/v1/engagement/reports/daily
- *   ?instituteId=&engineId=&date=YYYY-MM-DD   (engineId and date optional)
+ *   ?instituteId=&engineId=&date=YYYY-MM-DD        one day
+ *   ?instituteId=&engineId=&from=&to=              a range, both days included
+ * (engineId optional; no day at all = today in the institute time zone.) `from`/`to` win over
+ * `date`. Every day is in the institute time zone, at most 90 days back, none in the future.
  *
  * The people behind the report's numbers (leads added, demos, status changes, conversions)
  * come from GET /admin-core-service/v1/engagement/reports/daily/items, further down.
@@ -71,6 +74,21 @@ export interface DailyReportFunnelStage {
     stage: string;
     count: number;
 }
+
+/** A day (`from === to`) or a range of days, yyyy-MM-dd in the institute time zone, both included. */
+export interface ReportPeriod {
+    from: string;
+    to: string;
+}
+
+/**
+ * The query params for a period: `date` for one day (what older servers understand too),
+ * `from` + `to` for a range, nothing for "today".
+ */
+export const periodParams = (period: ReportPeriod | null): Record<string, string> => {
+    if (!period || !period.from || !period.to) return {};
+    return period.from === period.to ? { date: period.from } : { from: period.from, to: period.to };
+};
 
 export interface DailyReportTrendPoint {
     /** yyyy-MM-dd */
@@ -244,7 +262,8 @@ export interface DailyReportCosts {
         /** True when some billable messages had no rate, so the real amount is higher. */
         partial?: boolean;
     };
-    ai: {
+    /** Token counts. The server still sends them; the report no longer shows them. */
+    ai?: {
         tokensIn: number;
         tokensOut: number;
         decisionsWithUsage: number;
@@ -301,9 +320,31 @@ export interface DailyReportNewTemplates {
     movedToMarketing: number;
 }
 
+/**
+ * Totals for the period of equal length just before `from`, for the change shown on the
+ * headline numbers. Absent on older servers.
+ */
+/** Totals of the equal-length period before this one; a figure the server could not read is null. */
+export interface DailyReportPrevious {
+    from: string;
+    to: string;
+    leadsAdded: number | null;
+    sent: number | null;
+    replies: number | null;
+    demosBooked: number | null;
+    conversions: number | null;
+    credits: number | null;
+    statusChanges: number | null;
+}
+
 export interface EngagementDailyReport {
-    /** yyyy-MM-dd, in the institute time zone. */
+    /** yyyy-MM-dd, in the institute time zone. The last day of the period (`to`). */
     date: string;
+    /** First and last day of the period, both included. Older servers send neither: the day. */
+    from: string;
+    to: string;
+    /** How many days the period has (1 = a single day). */
+    days: number;
     timezone: string;
     engineId: string | null;
     generatedAt: string;
@@ -311,8 +352,13 @@ export interface EngagementDailyReport {
     engines: DailyReportEngineOption[];
     summary: DailyReportSummary | null;
     funnel: DailyReportFunnelStage[];
-    /** 7 days ending on `date`. */
+    /**
+     * One entry per day of the period. A period shorter than 7 days gets the 7 days ending on
+     * `to`, so the days before `from` are there for context.
+     */
     trend: DailyReportTrendPoint[];
+    /** The period just before this one; null on older servers. */
+    previous: DailyReportPrevious | null;
     /** Only when no engine is selected (null from the server otherwise, [] here). */
     perEngine: DailyReportEngineRow[];
     lists: DailyReportListRow[];
@@ -341,6 +387,10 @@ const list = <T>(value: T[] | null | undefined): T[] => (Array.isArray(value) ? 
 const count = (value: unknown): number =>
     typeof value === 'number' && Number.isFinite(value) ? value : 0;
 
+/** A figure the server could not read stays null (no change is shown), never a false 0. */
+const countOrNull = (value: unknown): number | null =>
+    typeof value === 'number' && Number.isFinite(value) ? value : null;
+
 /** A missing figure is 0; a missing block (older server) stays null so the page can tell. */
 const normalizeNewTemplates = (
     raw: Partial<DailyReportNewTemplates> | null | undefined
@@ -359,41 +409,84 @@ const normalizeNewTemplates = (
           }
         : null;
 
+/** Whole days from `from` to `to`, both included (UTC arithmetic, so no daylight-saving drift). */
+const inclusiveDays = (from: string, to: string): number => {
+    const dayNumber = (iso: string) => {
+        const [y, m, d] = iso.split('-').map(Number);
+        return Math.floor(Date.UTC(y ?? 0, (m ?? 1) - 1, d ?? 1) / 86_400_000);
+    };
+    const days = dayNumber(to) - dayNumber(from) + 1;
+    return Number.isFinite(days) && days >= 1 ? days : 1;
+};
+
+const normalizePrevious = (
+    raw: Partial<DailyReportPrevious> | null | undefined
+): DailyReportPrevious | null =>
+    raw && typeof raw === 'object'
+        ? {
+              from: raw.from ?? '',
+              to: raw.to ?? '',
+              leadsAdded: countOrNull(raw.leadsAdded),
+              sent: countOrNull(raw.sent),
+              replies: countOrNull(raw.replies),
+              demosBooked: countOrNull(raw.demosBooked),
+              conversions: countOrNull(raw.conversions),
+              credits: countOrNull(raw.credits),
+              statusChanges: countOrNull(raw.statusChanges),
+          }
+        : null;
+
 /** Fills the gaps of a partial response so the page never has to guard against undefined lists. */
 export const normalizeDailyReport = (
     raw: Partial<EngagementDailyReport> | null | undefined
-): EngagementDailyReport => ({
-    date: raw?.date ?? '',
-    timezone: raw?.timezone ?? '',
-    engineId: raw?.engineId ?? null,
-    generatedAt: raw?.generatedAt ?? '',
-    engines: list(raw?.engines),
-    summary: raw?.summary ?? null,
-    funnel: list(raw?.funnel),
-    trend: list(raw?.trend),
-    perEngine: list(raw?.perEngine),
-    lists: list(raw?.lists),
-    runs: raw?.runs ? { ...raw.runs, topErrors: list(raw.runs.topErrors) } : null,
-    channels: list(raw?.channels),
-    calls: raw?.calls ?? null,
-    email: raw?.email ?? null,
-    whatsapp: raw?.whatsapp ? { ...raw.whatsapp, byCategory: list(raw.whatsapp.byCategory) } : null,
-    templates: list(raw?.templates),
-    newTemplates: normalizeNewTemplates(raw?.newTemplates),
-    outcomes: raw?.outcomes
-        ? { ...raw.outcomes, statusChanges: list(raw.outcomes.statusChanges) }
-        : null,
-    costs: raw?.costs ?? null,
-    realCost: raw?.realCost ?? null,
-    health: list(raw?.health),
-    errors: raw?.errors ?? {},
-});
+): EngagementDailyReport => {
+    // A server that knows no ranges sends only the day.
+    const to = raw?.to || raw?.date || '';
+    const from = raw?.from || raw?.date || to;
+    return {
+        date: raw?.date || to,
+        from,
+        to,
+        days:
+            typeof raw?.days === 'number' && raw.days >= 1
+                ? Math.floor(raw.days)
+                : from && to
+                  ? inclusiveDays(from, to)
+                  : 1,
+        timezone: raw?.timezone ?? '',
+        engineId: raw?.engineId ?? null,
+        generatedAt: raw?.generatedAt ?? '',
+        engines: list(raw?.engines),
+        summary: raw?.summary ?? null,
+        funnel: list(raw?.funnel),
+        trend: list(raw?.trend),
+        previous: normalizePrevious(raw?.previous),
+        perEngine: list(raw?.perEngine),
+        lists: list(raw?.lists),
+        runs: raw?.runs ? { ...raw.runs, topErrors: list(raw.runs.topErrors) } : null,
+        channels: list(raw?.channels),
+        calls: raw?.calls ?? null,
+        email: raw?.email ?? null,
+        whatsapp: raw?.whatsapp
+            ? { ...raw.whatsapp, byCategory: list(raw.whatsapp.byCategory) }
+            : null,
+        templates: list(raw?.templates),
+        newTemplates: normalizeNewTemplates(raw?.newTemplates),
+        outcomes: raw?.outcomes
+            ? { ...raw.outcomes, statusChanges: list(raw.outcomes.statusChanges) }
+            : null,
+        costs: raw?.costs ?? null,
+        realCost: raw?.realCost ?? null,
+        health: list(raw?.health),
+        errors: raw?.errors ?? {},
+    };
+};
 
-/** `engineId` null = all engines; `date` null = today in the institute time zone. */
+/** `engineId` null = all engines; `period` null = today in the institute time zone. */
 export const fetchEngagementDailyReport = async (
     instituteId: string,
     engineId: string | null,
-    date: string | null
+    period: ReportPeriod | null
 ): Promise<EngagementDailyReport> => {
     const res = await authenticatedAxiosInstance.get<Partial<EngagementDailyReport>>(
         ENGAGEMENT_DAILY_REPORT,
@@ -401,7 +494,7 @@ export const fetchEngagementDailyReport = async (
             params: {
                 instituteId,
                 ...(engineId ? { engineId } : {}),
-                ...(date ? { date } : {}),
+                ...periodParams(period),
             },
         }
     );
@@ -411,21 +504,24 @@ export const fetchEngagementDailyReport = async (
 const REPORT_STALE_MS = 3 * 60 * 1000;
 
 /**
- * One engine (or all) for one day. The server caches each report for 3 minutes, so
+ * One engine (or all) for one day or a range. The server caches each report for 3 minutes, so
  * the same here, with no refetch on focus. A report with failed sections is never
  * treated as fresh, so a retry (or coming back to the page) asks the server again.
- * The previous report stays as placeholder while a new day or engine loads (check
+ * The previous report stays as placeholder while a new period or engine loads (check
  * `isPlaceholderData`), which keeps the engine picker populated.
  */
 export function useEngagementDailyReport(
     instituteId: string,
     engineId: string | null,
-    date: string | null,
+    period: ReportPeriod | null,
     enabled = true
 ) {
+    const from = period?.from ?? null;
+    const to = period?.to ?? null;
     return useQuery({
-        queryKey: ['engagement-daily-report', instituteId, engineId, date],
-        queryFn: () => fetchEngagementDailyReport(instituteId, engineId, date),
+        queryKey: ['engagement-daily-report', instituteId, engineId, from, to],
+        queryFn: () =>
+            fetchEngagementDailyReport(instituteId, engineId, from && to ? { from, to } : null),
         enabled: enabled && !!instituteId,
         staleTime: (query) =>
             Object.keys(query.state.data?.errors ?? {}).length > 0 ? 0 : REPORT_STALE_MS,
@@ -443,10 +539,10 @@ export function useEngagementDailyReport(
 
 /*
  * GET /admin-core-service/v1/engagement/reports/daily/items
- *   ?instituteId=&engineId=&date=YYYY-MM-DD&kind=&filter=&search=&page=&size=
+ *   ?instituteId=&engineId=&date=YYYY-MM-DD (or &from=&to=)&kind=&filter=&search=&page=&size=
  * Same access rules and day window as the report (not in the future, at most 90 days back;
  * 400 bad date, 403 no access, 404 unknown engine). Counts match the report for the same
- * engine and day. Only the fields that belong to the kind are filled; the rest are null.
+ * engine and period. Only the fields that belong to the kind are filled; the rest are null.
  */
 
 export type ReportItemsKind =
@@ -509,7 +605,11 @@ export interface ReportItemRow {
 
 export interface ReportItemsPage {
     kind: ReportItemsKind;
+    /** The last day of the period (`to`). */
     date: string;
+    /** First and last day of the period; older servers send only `date`. */
+    from: string;
+    to: string;
     timezone: string;
     engineId: string | null;
     total: number;
@@ -522,8 +622,9 @@ export interface ReportItemsParams {
     instituteId: string;
     /** null = all engines. */
     engineId: string | null;
-    /** yyyy-MM-dd, in the institute time zone. */
-    date: string;
+    /** First and last day, yyyy-MM-dd in the institute time zone (equal = one day). */
+    from: string;
+    to: string;
     kind: ReportItemsKind;
     /**
      * new | existing | list:<id> | done | no_show | not_marked | engine | team | automation,
@@ -546,10 +647,12 @@ export const REPORT_ITEMS_EXPORT_CAP = 5000;
 
 export const normalizeItemsPage = (
     raw: Partial<ReportItemsPage> | null | undefined,
-    params: Pick<ReportItemsParams, 'kind' | 'date' | 'page' | 'size'>
+    params: Pick<ReportItemsParams, 'kind' | 'from' | 'to' | 'page' | 'size'>
 ): ReportItemsPage => ({
     kind: raw?.kind ?? params.kind,
-    date: raw?.date ?? params.date,
+    date: raw?.date ?? raw?.to ?? params.to,
+    from: raw?.from ?? raw?.date ?? params.from,
+    to: raw?.to ?? raw?.date ?? params.to,
     timezone: raw?.timezone ?? '',
     engineId: raw?.engineId ?? null,
     total: typeof raw?.total === 'number' ? raw.total : 0,
@@ -567,7 +670,7 @@ export const fetchEngagementReportItems = async (
             params: {
                 instituteId: params.instituteId,
                 ...(params.engineId ? { engineId: params.engineId } : {}),
-                date: params.date,
+                ...periodParams({ from: params.from, to: params.to }),
                 kind: params.kind,
                 ...(params.filter ? { filter: params.filter } : {}),
                 ...(params.search ? { search: params.search } : {}),
@@ -606,17 +709,18 @@ const ITEMS_STALE_MS = 60 * 1000;
 
 /**
  * One page of one list. While another page of the same list loads, the previous page stays on
- * screen; a different list (another tab, day, engine, filter or search) does not, since its rows
+ * screen; a different list (another tab, period, engine, filter or search) does not, since its rows
  * would not match what was asked for.
  */
 export function useEngagementReportItems(params: ReportItemsParams, enabled = true) {
-    const { instituteId, engineId, date, kind, filter, search, page, size } = params;
+    const { instituteId, engineId, from, to, kind, filter, search, page, size } = params;
     return useQuery({
         queryKey: [
             'engagement-report-items',
             instituteId,
             engineId,
-            date,
+            from,
+            to,
             kind,
             filter ?? null,
             search ?? null,
@@ -627,14 +731,15 @@ export function useEngagementReportItems(params: ReportItemsParams, enabled = tr
             fetchEngagementReportItems({
                 instituteId,
                 engineId,
-                date,
+                from,
+                to,
                 kind,
                 filter,
                 search,
                 page,
                 size,
             }),
-        enabled: enabled && !!instituteId && !!date,
+        enabled: enabled && !!instituteId && !!from && !!to,
         staleTime: ITEMS_STALE_MS,
         refetchOnWindowFocus: false,
         retry: (failureCount, error) => {
@@ -643,8 +748,16 @@ export function useEngagementReportItems(params: ReportItemsParams, enabled = tr
         },
         placeholderData: (previous, previousQuery) =>
             previousQuery &&
-            JSON.stringify(previousQuery.queryKey.slice(1, 7)) ===
-                JSON.stringify([instituteId, engineId, date, kind, filter ?? null, search ?? null])
+            JSON.stringify(previousQuery.queryKey.slice(1, 8)) ===
+                JSON.stringify([
+                    instituteId,
+                    engineId,
+                    from,
+                    to,
+                    kind,
+                    filter ?? null,
+                    search ?? null,
+                ])
                 ? previous
                 : undefined,
     });

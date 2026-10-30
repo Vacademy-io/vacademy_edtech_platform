@@ -1,11 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { isOutcomeTab, type OutcomeTab } from '../-utils/outcomes-params';
+import { normalizePeriodSearch, type PeriodSearch } from '../-utils/report-period';
 
-const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
-
-export interface OutcomesSearch {
+export interface OutcomesSearch extends PeriodSearch {
     engine?: string;
-    date?: string;
     tab?: OutcomeTab;
     filter?: string;
     search?: string;
@@ -27,7 +25,8 @@ const text = (value: unknown): string | undefined => {
  *
  * Leads & outcomes: the people (and new WhatsApp templates) behind the daily report's numbers.
  *   ?engine=<engineId>   one engine (absent = all engines)
- *   ?date=yyyy-MM-dd     the day, in the institute time zone (absent = today)
+ *   ?date=yyyy-MM-dd     the day, in the institute time zone (absent = today), or
+ *   ?from=&to=           a range of days, both included (they win over `date`)
  *   ?tab=                leads (default) | demos | status | conversions | templates
  *   ?filter=             per tab, see outcomes-params.ts (a stale value for the tab is ignored)
  *   ?search=             lead name, email or phone (not used by the templates tab)
@@ -38,10 +37,7 @@ export const Route = createFileRoute('/engagement-engines/dashboard/outcomes/')(
         const page = Number(search.page);
         return {
             engine: text(search.engine),
-            date:
-                typeof search.date === 'string' && ISO_DAY.test(search.date)
-                    ? search.date
-                    : undefined,
+            ...normalizePeriodSearch(search),
             tab: isOutcomeTab(search.tab) ? search.tab : undefined,
             filter: text(search.filter),
             search: text(search.search),

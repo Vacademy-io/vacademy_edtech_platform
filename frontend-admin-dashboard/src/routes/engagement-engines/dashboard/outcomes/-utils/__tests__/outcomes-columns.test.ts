@@ -192,7 +192,7 @@ describe('Leads & outcomes columns', () => {
     });
 
     it('names the Excel file after the tab, the engine and the day', () => {
-        const base = { tab: 'demos', date: '2026-10-30' };
+        const base = { tab: 'demos', period: { from: '2026-10-30', to: '2026-10-30' } };
         expect(outcomesFileName({ ...base, engineName: 'Spring Push!', engineId: 'e1' })).toBe(
             'engagement-demos-spring-push-2026-10-30.xlsx'
         );
@@ -202,5 +202,17 @@ describe('Leads & outcomes columns', () => {
         expect(outcomesFileName({ ...base, engineName: 'All engines', engineId: null })).toBe(
             'engagement-demos-all-engines-2026-10-30.xlsx'
         );
+    });
+
+    it('names the Excel file after the whole period for a range', () => {
+        const range = { from: '2026-10-12', to: '2026-10-29' };
+        expect(
+            outcomesFileName({
+                tab: 'leads',
+                period: range,
+                engineName: 'Spring Push!',
+                engineId: 'e1',
+            })
+        ).toBe('engagement-leads-spring-push-2026-10-12_to_2026-10-29.xlsx');
     });
 });

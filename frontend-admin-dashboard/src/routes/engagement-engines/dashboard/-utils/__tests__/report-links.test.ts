@@ -69,6 +69,48 @@ describe('report links', () => {
         expect(makeReportLinks(null, '').outcomes('leads')).toBeNull();
     });
 
+    it('carries from and to, and no date, for a range', () => {
+        const links = makeReportLinks(null, { from: '2026-10-23', to: '2026-10-29' });
+        expect(links.inbox({ filter: 'sent' })).toEqual({
+            to: INBOX_PATH,
+            search: { filter: 'sent', from: '2026-10-23', to: '2026-10-29' },
+        });
+        expect(links.outcomes('demos', 'scheduled')).toEqual({
+            to: OUTCOMES_PATH,
+            search: { tab: 'demos', filter: 'scheduled', from: '2026-10-23', to: '2026-10-29' },
+        });
+        expect(links.inbox({ filter: 'sent' })?.search).not.toHaveProperty('date');
+        // The engine, channel and outcome ride along as before.
+        expect(
+            makeReportLinks('eng-1', { from: '2026-10-23', to: '2026-10-29' }).inbox({
+                filter: 'sent',
+                channel: 'EMAIL',
+                outcome: 'bounced',
+            })?.search
+        ).toEqual({
+            filter: 'sent',
+            channel: 'EMAIL',
+            outcome: 'bounced',
+            engine: 'eng-1',
+            from: '2026-10-23',
+            to: '2026-10-29',
+        });
+    });
+
+    it('uses date for a period of one day, however it is given', () => {
+        const asRange = makeReportLinks(null, { from: '2026-10-29', to: '2026-10-29' });
+        const asDay = makeReportLinks(null, '2026-10-29');
+        expect(asRange.inbox({ filter: 'failed' })).toEqual(asDay.inbox({ filter: 'failed' }));
+        expect(asRange.outcomes('leads')?.search).toEqual({ tab: 'leads', date: '2026-10-29' });
+    });
+
+    it('makes no link for a period with no days', () => {
+        const links = makeReportLinks(null, { from: '', to: '' });
+        expect(links.inbox({ filter: 'sent' })).toBeNull();
+        expect(links.outcomes('leads')).toBeNull();
+        expect(makeReportLinks(null, { from: '2026-10-23', to: '' }).outcomes('leads')).toBeNull();
+    });
+
     it('points a list row at the leads of that list', () => {
         const links = makeReportLinks(null, '2026-10-30');
         expect(links.outcomes('leads', listFilter('list-9'))?.search).toEqual({

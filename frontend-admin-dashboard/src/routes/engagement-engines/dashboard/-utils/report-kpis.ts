@@ -11,6 +11,7 @@ import {
     previousDayPoint,
     todayIso,
 } from './report-format';
+import { formatPeriodDates, previousPeriod, type ReportPeriod } from './report-period';
 
 export type KpiKey =
     | 'peopleAdded'
@@ -29,8 +30,12 @@ export interface ReportKpi {
     detail?: string;
     /** What the number means, for the info tooltip. */
     hint: string;
-    /** % against the previous day; null when the trend cannot tell. */
+    /** % against the previous period (the day before, for a single day); null when unknown. */
     delta: number | null;
+    /** What the change is against, for the line beside it: "vs previous 7 days". */
+    deltaLabel?: string;
+    /** The same with the days it compares with, for the chip's tooltip. */
+    deltaTitle?: string;
     /** For cost figures, where a rise is bad news. */
     lowerIsBetter?: boolean;
     /** The items behind the number; none for a figure that is not a list of things (credits). */
@@ -43,11 +48,61 @@ const has = (n: number | null | undefined): n is number =>
 const join = (parts: Array<string | false | null | undefined>) =>
     parts.filter((p): p is string => Boolean(p)).join(' · ');
 
+/** What the headline numbers are compared with. A figure the source does not carry is null. */
+export interface PreviousTotals {
+    /** The days compared with, both included. */
+    period: ReportPeriod;
+    /** How many days that is: the label says "previous 7 days". */
+    days: number;
+    leadsAdded: number | null;
+    sent: number | null;
+    replies: number | null;
+    demosBooked: number | null;
+    conversions: number | null;
+    credits: number | null;
+}
+
 /**
- * The eight headline numbers. Day-on-day change comes from the 7-day trend, which only
- * carries messages sent, replies, demos and credits, so the other cards show no change.
- * Today is a partial day, so comparing it with a full day before would mislead: no change
- * is shown for it.
+ * The totals of the period just before this one: the server's `previous`, or, from a server
+ * that sends none, the day before in the trend (for a single day only; it is the only thing
+ * the trend can tell). A period that includes the institute's today is partial, so comparing
+ * it with a full one would mislead: no change is shown for it.
+ */
+export const previousTotals = (data: EngagementDailyReport): PreviousTotals | null => {
+    if (data.to >= todayIso(data.timezone)) return null;
+    const own: ReportPeriod = { from: data.from, to: data.to };
+    const prev = data.previous;
+    if (prev) {
+        return {
+            period: prev.from && prev.to ? { from: prev.from, to: prev.to } : previousPeriod(own),
+            days: data.days,
+            leadsAdded: prev.leadsAdded,
+            sent: prev.sent,
+            replies: prev.replies,
+            demosBooked: prev.demosBooked,
+            conversions: prev.conversions,
+            credits: prev.credits,
+        };
+    }
+    if (data.days !== 1) return null;
+    const point = previousDayPoint(data.trend, data.to);
+    return point
+        ? {
+              period: previousPeriod(own),
+              days: 1,
+              leadsAdded: null,
+              sent: point.sent,
+              replies: point.replies,
+              demosBooked: point.demosBooked,
+              conversions: null,
+              credits: point.credits,
+          }
+        : null;
+};
+
+/**
+ * The eight headline numbers, each with its change against the period just before this one
+ * (see `previousTotals`). Calls connected has no earlier figure, so it shows no change.
  */
 export const buildKpis = (
     data: EngagementDailyReport,
@@ -57,8 +112,18 @@ export const buildKpis = (
 ): ReportKpi[] => {
     const s = data.summary;
     if (!s) return [];
-    const isToday = data.date === todayIso(data.timezone);
-    const prev = isToday ? null : previousDayPoint(data.trend, data.date);
+    const prev = previousTotals(data);
+    const delta = (current: number, before: number | null | undefined) =>
+        prev ? deltaAgainst(current, before) : null;
+    const deltaText = prev
+        ? {
+              deltaLabel: t('kpi.delta.label', { count: prev.days }),
+              deltaTitle: t('kpi.delta.title', {
+                  count: prev.days,
+                  range: formatPeriodDates(prev.period, 'compact'),
+              }),
+          }
+        : {};
     const messages = s.emailsSent + s.whatsappSent + s.inAppSent;
     // The WhatsApp charges come from their own queries; when those failed there is no figure.
     const whatsappCost = partFailed(data.errors, 'whatsappCost') ? null : s.whatsappCost;
@@ -94,8 +159,11 @@ export const buildKpis = (
             }),
     ]);
 
-    // Cost per demo the day before, from that day's credits and demos in the trend.
-    const prevCostPerDemo = prev && prev.demosBooked > 0 ? prev.credits / prev.demosBooked : null;
+    // Cost per demo in the period before, from its credits and demos.
+    const prevCostPerDemo =
+        prev && has(prev.credits) && has(prev.demosBooked) && prev.demosBooked > 0
+            ? prev.credits / prev.demosBooked
+            : null;
     const costPerDemo = has(s.costPerDemo) ? s.costPerDemo : null;
 
     const kpis: ReportKpi[] = [
@@ -111,7 +179,7 @@ export const buildKpis = (
                       })
                     : undefined,
             hint: t('kpi.peopleAdded.hint'),
-            delta: null,
+            delta: delta(s.leadsAdded, prev?.leadsAdded),
             link: s.leadsAdded > 0 ? links.outcomes('leads') : null,
         },
         {
@@ -120,7 +188,7 @@ export const buildKpis = (
             value: formatNumber(messages),
             detail: channelSplit || t('kpi.messagesSent.none'),
             hint: t('kpi.messagesSent.hint'),
-            delta: prev ? deltaAgainst(messages, prev.sent) : null,
+            delta: delta(messages, prev?.sent),
             link: messages > 0 ? links.inbox({ filter: 'sent' }) : null,
         },
         {
@@ -129,7 +197,7 @@ export const buildKpis = (
             value: formatNumber(s.replies),
             detail: emailRepliesOff ? t('kpi.replies.emailNotTracked') : undefined,
             hint: t('kpi.replies.hint'),
-            delta: prev ? deltaAgainst(s.replies, prev.replies) : null,
+            delta: delta(s.replies, prev?.replies),
             link: s.replies > 0 ? links.inbox({ filter: 'sent', outcome: 'replied' }) : null,
         },
         {
@@ -159,7 +227,7 @@ export const buildKpis = (
                     ? t('kpi.demosBooked.scheduled', { count: s.demosScheduled })
                     : undefined,
             hint: t('kpi.demosBooked.hint'),
-            delta: prev ? deltaAgainst(s.demosBooked, prev.demosBooked) : null,
+            delta: delta(s.demosBooked, prev?.demosBooked),
             link: s.demosBooked > 0 ? links.outcomes('demos') : null,
         },
         {
@@ -171,7 +239,7 @@ export const buildKpis = (
                     ? t('kpi.conversions.statusChanges', { count: s.statusChanges })
                     : undefined,
             hint: t('kpi.conversions.hint'),
-            delta: null,
+            delta: delta(s.conversions, prev?.conversions),
             link: s.conversions > 0 ? links.outcomes('conversions') : null,
         },
         {
@@ -180,7 +248,7 @@ export const buildKpis = (
             value: formatCredits(s.creditsSpent),
             detail: creditsDetail || undefined,
             hint: t('kpi.creditsSpent.hint'),
-            delta: prev ? deltaAgainst(s.creditsSpent, prev.credits) : null,
+            delta: delta(s.creditsSpent, prev?.credits),
             lowerIsBetter: true,
         },
         {
@@ -194,7 +262,7 @@ export const buildKpis = (
             hint: t('kpi.costPerDemo.hint'),
             delta:
                 costPerDemo !== null && prevCostPerDemo !== null
-                    ? deltaAgainst(costPerDemo, prevCostPerDemo)
+                    ? delta(costPerDemo, prevCostPerDemo)
                     : null,
             lowerIsBetter: true,
         },
@@ -204,6 +272,8 @@ export const buildKpis = (
     return kpis.map((k) =>
         kpiFailed(data.errors, k.key)
             ? { ...k, value: DASH, detail: t('kpi.unavailable'), delta: null, link: null }
-            : k
+            : k.delta === null
+              ? k
+              : { ...k, ...deltaText }
     );
 };

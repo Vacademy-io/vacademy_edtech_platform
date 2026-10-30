@@ -104,12 +104,17 @@ function KpiCard({ kpi }: { kpi: ReportKpi }) {
                     <span className="font-bold tabular-nums text-neutral-900">
                         <span className="text-h2">{kpi.value}</span>
                     </span>
-                    <span className="relative z-10 inline-flex">
+                    <span className="relative z-10 inline-flex items-center gap-1.5">
                         <DeltaChip
                             value={kpi.delta}
                             lowerIsBetter={kpi.lowerIsBetter}
-                            title={t('kpi.deltaTitle')}
+                            title={kpi.deltaTitle ?? kpi.deltaLabel ?? ''}
                         />
+                        {kpi.delta !== null && kpi.deltaLabel && (
+                            <span className="text-neutral-500">
+                                <span className="text-caption">{kpi.deltaLabel}</span>
+                            </span>
+                        )}
                     </span>
                 </div>
                 {kpi.detail && (
@@ -153,8 +158,8 @@ interface KpiCardsProps {
 }
 
 /**
- * The eight headline numbers, each with its change against the previous day. A number above
- * zero opens the items behind it.
+ * The eight headline numbers, each with its change against the previous period (the day before,
+ * for one day). A number above zero opens the items behind it.
  */
 export function KpiCards({ kpis, isLoading, hasError, onRetry }: KpiCardsProps) {
     if (hasError) return <SectionError onRetry={onRetry} />;

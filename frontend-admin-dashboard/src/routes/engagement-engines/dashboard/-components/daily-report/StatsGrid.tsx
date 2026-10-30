@@ -37,13 +37,10 @@ export function InfoHint({ label, hint }: { label: string; hint: string }) {
 export function StatsGrid({
     stats,
     note,
-    noteHint,
     compact,
 }: {
     stats: ReportStat[];
     note?: string;
-    /** A short tooltip beside the note. */
-    noteHint?: string;
     /** For half-width cards: two figures across instead of up to five. */
     compact?: boolean;
 }) {
@@ -98,9 +95,8 @@ export function StatsGrid({
                 ))}
             </dl>
             {note && (
-                <p className="flex items-center gap-1.5 text-neutral-500">
+                <p className="text-neutral-500">
                     <span className="text-caption">{note}</span>
-                    {noteHint && <InfoHint label={note} hint={noteHint} />}
                 </p>
             )}
         </div>

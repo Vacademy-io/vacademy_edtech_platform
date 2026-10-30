@@ -2,6 +2,7 @@ import { Warning } from '@phosphor-icons/react';
 import { Trans, useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import type { CellTone, NewTemplatesModel, ReportStat } from '../../-utils/report-tables';
+import { useReportT } from './range-context';
 import { ReportLink } from './ReportLink';
 import { InfoHint } from './StatsGrid';
 
@@ -65,13 +66,13 @@ function ChipGroup({ title, stats }: { title: string; stats: ReportStat[] }) {
 }
 
 /**
- * The WhatsApp templates the engine proposed on the day: how many, split by the category it
+ * The WhatsApp templates the engine proposed in the period: how many, split by the category it
  * proposed, and where each stands (with the team, with Meta, live, turned down). Every figure
- * above zero opens the Templates list for the same engine and day. A warning appears when Meta
+ * above zero opens the Templates list for the same engine and period. A warning appears when Meta
  * made utility templates marketing, because those cost far more per message.
  */
 export function NewTemplatesBlock({ model }: { model: NewTemplatesModel }) {
-    const { t } = useTranslation('engagementDailyReport');
+    const t = useReportT();
     const moved = model.moved;
     return (
         <div className="flex flex-col gap-4">

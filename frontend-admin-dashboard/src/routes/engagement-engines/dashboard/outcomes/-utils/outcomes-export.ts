@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import type { ReportItemRow } from '@/services/engagement-daily-report';
 import { fileSlug } from '../../-utils/report-format';
+import { periodFileTag, type ReportPeriod } from '../../-utils/report-period';
 import { sheet, type Cell } from '../../-utils/report-export';
 import type { OutcomeColumn } from './outcomes-columns';
 
@@ -13,13 +14,14 @@ export interface OutcomesExportInput {
     tab: string;
     engineName: string;
     engineId: string | null;
-    /** yyyy-MM-dd */
-    date: string;
+    /** The day, or the range of days, the list covers. */
+    period: ReportPeriod;
 }
 
 /**
- * engagement-<tab>-<engine>-<date>.xlsx. An engine whose name has no Latin letters or digits
- * is named by the first 8 characters of its id; "all" is for the all-engines list.
+ * engagement-<tab>-<engine>-<day>.xlsx, or engagement-<tab>-<engine>-<from>_to_<to>.xlsx for a
+ * range. An engine whose name has no Latin letters or digits is named by the first 8
+ * characters of its id; "all" is for the all-engines list.
  */
 export const outcomesFileName = (
     input: Omit<OutcomesExportInput, 'columns' | 'rows' | 'sheetName'>
@@ -27,7 +29,7 @@ export const outcomesFileName = (
     const slug =
         fileSlug(input.engineName) ||
         (input.engineId ? fileSlug(input.engineId.slice(0, 8)) || 'engine' : 'all');
-    return `engagement-${input.tab}-${slug}-${input.date}.xlsx`;
+    return `engagement-${input.tab}-${slug}-${periodFileTag(input.period)}.xlsx`;
 };
 
 /**

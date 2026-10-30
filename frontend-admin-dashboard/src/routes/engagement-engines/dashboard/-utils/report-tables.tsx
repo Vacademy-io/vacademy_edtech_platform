@@ -13,7 +13,6 @@ import type {
 import {
     DASH,
     formatCredits,
-    formatDay,
     formatDuration,
     formatMinutes,
     formatMoney,
@@ -93,8 +92,6 @@ export interface ReportStatsSpec {
     subtitle?: string;
     /** A line of explanation under the figures. */
     note?: string;
-    /** A short tooltip beside the note. */
-    noteHint?: string;
     sheetName: string;
     stats: ReportStat[];
 }
@@ -946,7 +943,7 @@ interface CreditRow {
 const buildCosts = (data: EngagementDailyReport, ctx: ReportCtx) => {
     const { t } = ctx;
     const c = data.costs;
-    if (!c) return { credits: null, whatsapp: null, categories: null, ai: null };
+    if (!c) return { credits: null, whatsapp: null, categories: null };
 
     const total = c.credits.total;
     const share = (n: number) => (total > 0 ? n / total : null);
@@ -1055,34 +1052,7 @@ const buildCosts = (data: EngagementDailyReport, ctx: ReportCtx) => {
         ],
     };
 
-    // Token counts exist only from the day the server started saving them. With no date at
-    // all nothing has been recorded yet, which reads as "no usage", not "not tracked".
-    const since = c.ai.trackedSince;
-    const beforeTracking = !!since && !!data.date && data.date < since;
-    const ai: ReportStatsSpec = {
-        key: 'costs',
-        title: t('costs.ai.title'),
-        subtitle: t('costs.ai.subtitle'),
-        note: since
-            ? t('costs.ai.trackedSince', { date: formatDay(since) })
-            : t('costs.ai.noUsage'),
-        noteHint: since ? undefined : t('costs.ai.trackingStartedHint'),
-        sheetName: t('sheet.costAi'),
-        stats: [
-            countStat(ctx, 'tokensIn', t('costs.ai.tokensIn'), c.ai.tokensIn, {
-                untracked: beforeTracking,
-                hint: t('costs.ai.tokensInHint'),
-            }),
-            countStat(ctx, 'tokensOut', t('costs.ai.tokensOut'), c.ai.tokensOut, {
-                untracked: beforeTracking,
-                hint: t('costs.ai.tokensOutHint'),
-            }),
-            countStat(ctx, 'decisions', t('costs.ai.decisions'), c.ai.decisionsWithUsage, {
-                untracked: beforeTracking,
-            }),
-        ],
-    };
-    return { credits, whatsapp, categories, ai };
+    return { credits, whatsapp, categories };
 };
 
 const buildRealCost = (data: EngagementDailyReport, ctx: ReportCtx): ReportStatsSpec | null => {
@@ -1129,7 +1099,6 @@ export interface ReportModel {
     costCredits: ReportTableSpec<CreditRow> | null;
     costWhatsapp: ReportStatsSpec | null;
     costWhatsappCategories: ReportTableSpec<DailyReportWhatsappCategory> | null;
-    costAi: ReportStatsSpec | null;
     realCost: ReportStatsSpec | null;
 }
 
@@ -1153,7 +1122,6 @@ export const buildReportModel = (data: EngagementDailyReport, ctx: ReportCtx): R
         costCredits: costs.credits,
         costWhatsapp: costs.whatsapp,
         costWhatsappCategories: costs.categories,
-        costAi: costs.ai,
         realCost: buildRealCost(data, ctx),
     };
 };
@@ -1231,7 +1199,6 @@ export const buildExportTables = (
     addTable(model.costCredits);
     addStats(model.costWhatsapp);
     addTable(model.costWhatsappCategories);
-    addStats(model.costAi);
     addStats(model.realCost);
     return out;
 };

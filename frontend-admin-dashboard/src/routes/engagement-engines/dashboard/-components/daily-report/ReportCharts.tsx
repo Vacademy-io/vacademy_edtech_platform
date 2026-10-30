@@ -18,7 +18,6 @@ import {
     type TooltipProps,
 } from 'recharts';
 import { format, parseISO } from 'date-fns';
-import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import type { EngagementDailyReport } from '@/services/engagement-daily-report';
 import {
@@ -28,12 +27,14 @@ import {
     humanizeKey,
 } from '../../-utils/report-format';
 import { partFailed } from '../../-utils/report-errors';
+import { sparseTicks, summarizeTrend, type TrendDay } from '../../-utils/report-trend';
 import {
     buildFunnelSteps,
     deliveryPartial,
     emailRepliesUntracked,
 } from '../../-utils/report-funnel';
 import type { ReportCtx } from '../../-utils/report-tables';
+import { useReportT } from './range-context';
 import { ReportLink } from './ReportLink';
 import { ReportSection } from './ReportSection';
 
@@ -79,7 +80,7 @@ export function FunnelCard({
     isLoading,
     onRetry,
 }: ChartCardProps & { ctx: ReportCtx | undefined }) {
-    const { t } = useTranslation('engagementDailyReport');
+    const t = useReportT();
     const navigate = useNavigate();
     const links = ctx?.links;
     const stages = useMemo(
@@ -244,13 +245,13 @@ export function FunnelCard({
     );
 }
 
-// ─── 7-day trend ────────────────────────────────────────────────────────────
+// ─── Day-by-day trend ───────────────────────────────────────────────────────
 
 type TrendKey = 'sent' | 'replies' | 'demosBooked' | 'credits';
 
 interface TrendSeries {
     key: TrendKey;
-    /** The selected day, and the six before it. */
+    /** The days of the period. */
     solid: string;
     soft: string;
     /** Counts are bars; credits, which are fractional and a running spend, are a line. */
@@ -264,13 +265,6 @@ const TREND_SERIES: TrendSeries[] = [
     { key: 'credits', solid: WARNING, soft: WARNING_SOFT, kind: 'line' },
 ];
 
-interface TrendDay {
-    date: string;
-    label: string;
-    value: number;
-    selected: boolean;
-}
-
 /** 1200 is "1.2K": the small charts have little room for axis numbers. */
 const compact = (n: number) =>
     new Intl.NumberFormat('en-IN', { notation: 'compact', maximumFractionDigits: 1 }).format(n);
@@ -278,16 +272,17 @@ const compact = (n: number) =>
 /** The scale starts at zero and is never flat, even when every day was zero. */
 const scaleTop = (max: number) => (max > 0 ? max : 1);
 
+/** Past this many days a line is drawn without a dot on every day. */
+const MANY_DAYS = 31;
+
 function MiniTrend({ series, days }: { series: TrendSeries; days: TrendDay[] }) {
-    const { t } = useTranslation('engagementDailyReport');
+    const t = useReportT();
     const show = series.key === 'credits' ? formatCredits : formatNumber;
     const name = t(`trend.series.${series.key}`);
-    const today = days.find((d) => d.selected) ?? days[days.length - 1];
-    const total = days.reduce((sum, d) => sum + d.value, 0);
-    // Only the first and last day are named under the bars: seven labels do not fit.
-    const first = days[0];
-    const last = days[days.length - 1];
-    const edgeTicks = first && last && first !== last ? [first.label, last.label] : undefined;
+    const summary = summarizeTrend(days);
+    // Only a few days are named under the bars: a week of labels does not fit, nor does a quarter.
+    const ticks = sparseTicks(days.map((d) => d.label));
+    const inPeriod = days.filter((d) => d.selected).length;
 
     const renderTooltip = ({ active, payload }: TooltipProps<number, string>) => {
         const day = payload?.[0]?.payload as TrendDay | undefined;
@@ -307,7 +302,7 @@ function MiniTrend({ series, days }: { series: TrendSeries; days: TrendDay[] }) 
             <CartesianGrid stroke={GRID} strokeDasharray="4 4" vertical={false} />
             <XAxis
                 dataKey="label"
-                ticks={edgeTicks}
+                ticks={ticks}
                 interval={0}
                 tick={AXIS_TICK}
                 tickLine={false}
@@ -335,11 +330,13 @@ function MiniTrend({ series, days }: { series: TrendSeries; days: TrendDay[] }) 
                     <span className="text-caption">{name}</span>
                 </span>
                 <span className="font-bold tabular-nums text-neutral-900">
-                    <span className="text-h2">{show(today?.value ?? 0)}</span>
+                    <span className="text-h2">{show(summary.headline)}</span>
                 </span>
                 <span className="truncate text-neutral-500">
                     <span className="text-caption">
-                        {t('trend.weekTotal', { value: show(total) })}
+                        {summary.note.kind === 'average'
+                            ? t('trend.dailyAverage', { value: show(summary.note.value) })
+                            : t('trend.weekTotal', { value: show(summary.note.value) })}
                     </span>
                 </span>
             </div>
@@ -348,6 +345,9 @@ function MiniTrend({ series, days }: { series: TrendSeries; days: TrendDay[] }) 
                 aria-label={t('trend.miniAria', {
                     name,
                     days: days.map((d) => `${d.label} ${show(d.value)}`).join(', '),
+                    total: show(summary.total),
+                    average: show(summary.average),
+                    numDays: inPeriod,
                 })}
                 className="h-28 w-full"
             >
@@ -370,22 +370,27 @@ function MiniTrend({ series, days }: { series: TrendSeries; days: TrendDay[] }) 
                             <Line
                                 type="monotone"
                                 dataKey="value"
-                                stroke={series.soft}
+                                // A period of several days is the line itself, in the solid colour.
+                                stroke={inPeriod > 1 ? series.solid : series.soft}
                                 strokeWidth={2}
                                 isAnimationActive={false}
-                                dot={({ cx, cy, payload }) => (
-                                    <circle
-                                        key={(payload as TrendDay).date}
-                                        cx={cx}
-                                        cy={cy}
-                                        r={(payload as TrendDay).selected ? 5 : 3}
-                                        fill={
-                                            (payload as TrendDay).selected
-                                                ? series.solid
-                                                : series.soft
-                                        }
-                                    />
-                                )}
+                                dot={
+                                    days.length > MANY_DAYS
+                                        ? false
+                                        : ({ cx, cy, payload }) => (
+                                              <circle
+                                                  key={(payload as TrendDay).date}
+                                                  cx={cx}
+                                                  cy={cy}
+                                                  r={(payload as TrendDay).selected ? 5 : 3}
+                                                  fill={
+                                                      (payload as TrendDay).selected
+                                                          ? series.solid
+                                                          : series.soft
+                                                  }
+                                              />
+                                          )
+                                }
                             />
                         </LineChart>
                     )}
@@ -396,14 +401,19 @@ function MiniTrend({ series, days }: { series: TrendSeries; days: TrendDay[] }) 
 }
 
 /**
- * The last 7 days as four small charts, each on its own scale: a single chart for messages
- * (tens or hundreds) and credits (fractions) made one of them unreadable. The selected day is
- * the big number and the solid bar or dot; the six days before it are the soft ones.
+ * Four small charts, one bar per day, each on its own scale: a single chart for messages (tens
+ * or hundreds) and credits (fractions) made one of them unreadable. For one day the chart shows
+ * the week ending on it: the day is the big number and the solid bar or dot, the six before it
+ * the soft ones. For a range the days of the period are solid and the big number is their total
+ * (a period shorter than a week also shows the days before it, softly, for context).
  */
 export function TrendCard({ data, isLoading, onRetry }: ChartCardProps) {
-    const { t } = useTranslation('engagementDailyReport');
+    const t = useReportT();
 
     const points = useMemo(() => data?.trend ?? [], [data]);
+    const from = data?.from;
+    const to = data?.to;
+    const day = data?.date;
     const seriesDays = useMemo(
         () =>
             TREND_SERIES.map((series) => ({
@@ -413,11 +423,11 @@ export function TrendCard({ data, isLoading, onRetry }: ChartCardProps) {
                         date: p.date,
                         label: dayLabel(p.date),
                         value: p[series.key],
-                        selected: p.date === data?.date,
+                        selected: from && to ? p.date >= from && p.date <= to : p.date === day,
                     })
                 ),
             })),
-        [points, data?.date]
+        [points, from, to, day]
     );
 
     const isEmpty = points.every((p) => p.sent + p.replies + p.demosBooked + p.credits === 0);
@@ -449,7 +459,7 @@ export function ChannelsCard({
     isLoading,
     onRetry,
 }: ChartCardProps & { ctx: ReportCtx | undefined }) {
-    const { t } = useTranslation('engagementDailyReport');
+    const t = useReportT();
     const emailRepliesOff = data?.email?.repliesTracked === false;
 
     const rows = useMemo(
@@ -591,7 +601,7 @@ const COST_SLICES = [
 ] as const;
 
 export function CostBreakdownCard({ data, isLoading, onRetry }: ChartCardProps) {
-    const { t } = useTranslation('engagementDailyReport');
+    const t = useReportT();
     const credits = data?.costs?.credits;
     const whatsapp = data?.costs?.whatsapp;
 

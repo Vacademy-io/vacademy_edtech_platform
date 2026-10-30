@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
-import { useTranslation } from 'react-i18next';
 import { ChipToggleGroup, type ChipToggleOption } from '@/components/design-system/chips';
 import {
     SearchableSelect,
     type SearchableSelectOption,
 } from '@/components/design-system/searchable-select';
+import { useReportT } from '../../-components/daily-report/range-context';
 import {
     listFilter,
     listIdOf,
@@ -44,7 +44,7 @@ export function OutcomesFilters({
     selectedListName,
     terms,
 }: OutcomesFiltersProps) {
-    const { t } = useTranslation('engagementDailyReport');
+    const t = useReportT();
     const label = (key: string) => t(`outcomesPage.filter.${key}`);
     const chips = (keys: string[]): ChipToggleOption[] =>
         keys.map((value) => ({ value, label: label(value) }));
