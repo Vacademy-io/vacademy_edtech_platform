@@ -242,6 +242,8 @@ public class EngagementDailyReportService {
         List<MessageCredit> messageCredits = List.of();
         Balance balance;
         List<StatusChangeRow> statusChanges = List.of();
+        /** null when the section failed: the report then sends newTemplates: null, not zeros. */
+        List<EngagementDailyReportDao.NewTemplateRow> newTemplates;
         List<Conversion> conversions = List.of();
         List<Booking> bookings = List.of();
     }
@@ -316,6 +318,10 @@ public class EngagementDailyReportService {
         }));
         section("conversions", errors, () -> inTx(() -> {
             d.conversions = dao.conversions(p);
+            return null;
+        }));
+        section("newTemplates", errors, () -> inTx(() -> {
+            d.newTemplates = dao.newTemplates(p);
             return null;
         }));
         section("demos", errors, () -> inTx(() -> {
@@ -952,7 +958,39 @@ public class EngagementDailyReportService {
                 .toList();
         return new EngagementDailyReport(day.toString(), w.zone().getId(), engineId, Instant.now().toString(),
                 options, summary, funnel, trendRows, engineRows, listRows, runs, channelRows, calls, emailBlock,
-                waBlock, templateRows, outcomes, costs, realCost, health, errors);
+                waBlock, templateRows, newTemplates(d.newTemplates), outcomes, costs, realCost, health, errors);
+    }
+
+    /**
+     * The day's new WhatsApp templates: by the category they were proposed in, and bucketed by where
+     * they stand now (see {@link EngagementDailyReport.NewTemplates}). null rows = section failed.
+     */
+    static EngagementDailyReport.NewTemplates newTemplates(List<EngagementDailyReportDao.NewTemplateRow> rows) {
+        if (rows == null) return null;
+        Map<String, Long> byCategory = new LinkedHashMap<>();
+        long created = 0, inReview = 0, approvedByYou = 0, withMeta = 0, live = 0, rejected = 0, withdrawn = 0,
+                moved = 0;
+        for (EngagementDailyReportDao.NewTemplateRow r : rows) {
+            created += r.n();
+            byCategory.merge(r.proposedCategory(), r.n(), Long::sum);
+            switch (r.status() == null ? "" : r.status()) {
+                case "AI_PROPOSED", "USER_REVIEW" -> inReview += r.n();
+                case "USER_APPROVED" -> approvedByYou += r.n();
+                case "SUBMITTED", "META_PENDING" -> withMeta += r.n();
+                case "META_APPROVED", "META_RECATEGORISED" -> live += r.n();
+                case "META_REJECTED", "META_DISABLED" -> rejected += r.n();
+                case "WITHDRAWN", "SUPERSEDED" -> withdrawn += r.n();
+                default -> {
+                }
+            }
+            if ("UTILITY".equals(r.proposedCategory()) && "MARKETING".equals(r.metaCategory())) moved += r.n();
+        }
+        List<EngagementDailyReport.CategoryCount> categories = byCategory.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .map(e -> new EngagementDailyReport.CategoryCount(e.getKey(), e.getValue()))
+                .toList();
+        return new EngagementDailyReport.NewTemplates(created, categories, inReview, approvedByYou, withMeta, live,
+                rejected, withdrawn, moved);
     }
 
     /**

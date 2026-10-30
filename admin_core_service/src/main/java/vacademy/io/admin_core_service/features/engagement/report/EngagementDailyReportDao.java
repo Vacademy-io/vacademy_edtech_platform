@@ -186,6 +186,16 @@ public class EngagementDailyReportDao {
         return new Balance(dblOrNull(rows.get(0), "balance"), dbl(rows.get(0), "last7"));
     }
 
+    record NewTemplateRow(String proposedCategory, String status, String metaCategory, long n) {
+    }
+
+    List<NewTemplateRow> newTemplates(MapSqlParameterSource p) {
+        return rows(EngagementDailyReportSql.NEW_TEMPLATES, p).stream()
+                .map(r -> new NewTemplateRow(str(r, "proposed_category"), str(r, "status"), str(r, "meta_category"),
+                        lng(r, "n")))
+                .toList();
+    }
+
     List<StatusChangeRow> statusChanges(MapSqlParameterSource p) {
         return rows(EngagementDailyReportSql.STATUS_CHANGES, p).stream()
                 .map(r -> new StatusChangeRow(LocalDate.parse(str(r, "day")), str(r, "from_label"), str(r, "to_label"),

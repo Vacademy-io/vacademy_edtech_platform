@@ -27,6 +27,8 @@ public record EngagementDailyReport(
         Email email,
         WhatsApp whatsapp,
         List<TemplateRow> templates,
+        /** WhatsApp templates the engine(s) proposed on the day; null when that section failed. */
+        NewTemplates newTemplates,
         Outcomes outcomes,
         Costs costs,
         RealCost realCost,
@@ -114,6 +116,19 @@ public record EngagementDailyReport(
      * byTeam: a person moved it (lead page, bulk change, call disposition). byAutomation: anything
      * else but the engine (AI calling, workflows, WhatsApp flows, cold-email replies, backfills).
      */
+    /**
+     * Templates proposed on the day, by proposed category, and where they stand now. inReview =
+     * AI_PROPOSED / USER_REVIEW; approvedByYou = USER_APPROVED; withMeta = SUBMITTED / META_PENDING;
+     * live = META_APPROVED / META_RECATEGORISED; rejected = META_REJECTED / META_DISABLED;
+     * withdrawn = WITHDRAWN / SUPERSEDED. movedToMarketing: proposed UTILITY, Meta made it MARKETING.
+     */
+    public record NewTemplates(long created, List<CategoryCount> byCategory, long inReview, long approvedByYou,
+                               long withMeta, long live, long rejected, long withdrawn, long movedToMarketing) {
+    }
+
+    public record CategoryCount(String category, long count) {
+    }
+
     public record StatusChange(String from, String to, long byEngine, long byTeam, long byAutomation) {
     }
 
