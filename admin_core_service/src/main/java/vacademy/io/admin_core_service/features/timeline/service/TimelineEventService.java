@@ -361,7 +361,7 @@ public class TimelineEventService {
         }
 
         /** The institute the current request is made for (clientId header); null outside a request. */
-        private String requestInstituteId() {
+        String requestInstituteId() {
                 RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
                 if (attributes instanceof ServletRequestAttributes servletAttributes) {
                         String clientId = servletAttributes.getRequest().getHeader("clientId");
