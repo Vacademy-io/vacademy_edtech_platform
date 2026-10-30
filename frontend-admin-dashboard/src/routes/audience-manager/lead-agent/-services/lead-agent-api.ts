@@ -466,6 +466,33 @@ export async function runAgentNow(agentId: string): Promise<{ queued: boolean }>
     return { queued: asObject(res.data).queued !== false };
 }
 
+export interface DeliverNowResult {
+    delivered: number;
+    skipped: number;
+    failed: number;
+    /** APPROVED leads still waiting after this pass. */
+    waiting: number;
+    /** Deliveries left in today's daily limit. */
+    quotaLeft: number;
+}
+
+/** Sync now: deliver the approved leads straight away (also while paused or outside the window):
+ * the ones in `ids`, or without ids the best-scored ones up to today's daily limit. */
+export async function deliverAgentNow(agentId: string, ids?: string[]): Promise<DeliverNowResult> {
+    const res = await authenticatedAxiosInstance.post(
+        `${LEAD_AGENT_BASE}/agents/${encodeURIComponent(agentId)}/deliver-now`,
+        ids?.length ? { ids } : {}
+    );
+    const d = asObject(res.data);
+    return {
+        delivered: num(d.delivered) ?? 0,
+        skipped: num(d.skipped) ?? 0,
+        failed: num(d.failed) ?? 0,
+        waiting: num(d.waiting) ?? 0,
+        quotaLeft: num(d.quota_left) ?? 0,
+    };
+}
+
 export async function getAgentStats(agentId: string, days = 14): Promise<AgentStatsDay[]> {
     const res = await authenticatedAxiosInstance.get(
         `${LEAD_AGENT_BASE}/agents/${encodeURIComponent(agentId)}/stats`,
