@@ -61,6 +61,31 @@ class FileServiceImplCdnPublishTest {
     }
 
     @Test
+    void batchPublishesEveryPrivateOnlyObjectAndChecksEachKeyOnce() {
+        List<FileMetadata> files = new java.util.ArrayList<>();
+        for (int i = 0; i < 5; i++) {
+            String key = "inst/COURSES/" + i + "-cover.png";
+            FileMetadata fm = new FileMetadata("cover.png", "image/png", key, "COURSES", "inst");
+            fm.setId("b" + i);
+            files.add(fm);
+            when(repo.findById("b" + i)).thenReturn(Optional.of(fm));
+            when(s3.doesObjectExist("public", key)).thenReturn(i % 2 == 0); // 1 and 3 are private-only
+            when(s3.doesObjectExist("main", key)).thenReturn(true);
+            when(s3.getObjectMetadata("main", key)).thenReturn(new ObjectMetadata());
+        }
+        when(repo.findAllById(any())).thenReturn(files);
+
+        var urls = service.getMultiplePublicUrlWithExpiryAndId("b0,b1,b2,b3,b4");
+
+        assertEquals(List.of("b0", "b1", "b2", "b3", "b4"),
+                urls.stream().map(m -> m.keySet().iterator().next()).toList());
+        verify(s3, times(2)).copyObject(any(CopyObjectRequest.class));
+        for (FileMetadata f : files) {
+            verify(s3, times(1)).doesObjectExist("public", f.getKey()); // the per-id loop hit the cache
+        }
+    }
+
+    @Test
     void publishesAPrivateOnlyObjectOnceBeforeHandingOutItsCdnUrl() throws Exception {
         file(KEY, "PDF_DOCUMENTS");
         when(s3.doesObjectExist("public", KEY)).thenReturn(false);

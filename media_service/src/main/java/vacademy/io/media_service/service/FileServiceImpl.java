@@ -34,6 +34,10 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @Slf4j
@@ -71,6 +75,19 @@ public class FileServiceImpl implements FileService {
      * cap only bounds memory.
      */
     private final Cache<String, Boolean> publishedKeys = Caffeine.newBuilder().maximumSize(200_000).build();
+
+    /**
+     * Runs a batch's publish checks side by side. Each uncached key costs an S3 round
+     * trip (~65 ms from prod), and catalogue callers give a whole batch 5 s.
+     */
+    private final ExecutorService publishPool = Executors.newFixedThreadPool(16, r -> {
+        Thread t = new Thread(r, "cdn-publish");
+        t.setDaemon(true);
+        return t;
+    });
+
+    /** How long a batch waits for its parallel publish checks before resolving the rest inline. */
+    private static final long BATCH_PUBLISH_WAIT_MILLIS = 3_000;
 
     @Autowired
     private FileMetadataRepository fileMetadataRepository;
@@ -362,6 +379,7 @@ public class FileServiceImpl implements FileService {
     @Override
     public List<Map<String, String>> getMultiplePublicUrlWithExpiryAndId(String fileIds) {
         List<String> dividedFileIds = MediaUtil.getFileIdsFromParam(fileIds);
+        publishInParallel(dividedFileIds);
         List<Map<String, String>> fileIdAndUrlList = new ArrayList<>();
         dividedFileIds.forEach((fileId) -> {
             try {
@@ -533,6 +551,35 @@ public class FileServiceImpl implements FileService {
             publishIfOnlyPrivate(key.trim());
         }
         return fallbackBucket == null ? cdnUrlService.publicUrl(key) : cdnUrlService.publicUrl(key, fallbackBucket);
+    }
+
+    /**
+     * Warms {@link #publishedKeys} for a batch in parallel, so the per-id loop that follows
+     * finds its keys already checked. Anything not done in time is checked inline by that loop.
+     */
+    private void publishInParallel(List<String> fileIds) {
+        if (!cdnUrlService.isCdnEnabled() || fileIds.size() < 2) {
+            return;
+        }
+        try {
+            CompletableFuture<?>[] checks = fileMetadataRepository.findAllById(fileIds).stream()
+                    .filter(f -> StringUtils.hasText(f.getKey())
+                            && !cdnUrlService.isRoutedToPrivateOrigin(f.getKey())
+                            && !EvalApiFileService.isReservedSource(f.getSource()))
+                    .map(f -> f.getKey().trim())
+                    .filter(key -> publishedKeys.getIfPresent(key) == null)
+                    .distinct()
+                    .map(key -> CompletableFuture.runAsync(() -> publishIfOnlyPrivate(key), publishPool))
+                    .toArray(CompletableFuture[]::new);
+            if (checks.length > 0) {
+                CompletableFuture.allOf(checks).get(BATCH_PUBLISH_WAIT_MILLIS, TimeUnit.MILLISECONDS);
+            }
+        } catch (Exception e) {
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+            log.warn("Parallel publish check for {} files did not finish: {}", fileIds.size(), e.getMessage());
+        }
     }
 
     private void publishIfOnlyPrivate(String key) {
