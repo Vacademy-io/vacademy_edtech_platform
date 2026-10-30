@@ -96,7 +96,7 @@ export const useApprovedWaiting = (agentId: string) =>
         refetchInterval: 60_000,
     });
 
-export const useCandidate =(candidateId: string, enabled: boolean) =>
+export const useCandidate = (candidateId: string, enabled: boolean) =>
     useQuery({
         queryKey: leadAgentKeys.candidate(candidateId),
         queryFn: () => getCandidate(candidateId),
