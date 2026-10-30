@@ -1960,6 +1960,7 @@ export const ENGAGEMENT_ENGINES_BASE = `${BASE_URL}/admin-core-service/v1/engage
 export const ENGAGEMENT_DATA_POINTS = `${ENGAGEMENT_ENGINES_BASE}/data-points`;
 export const ENGAGEMENT_TASKS_BASE = `${BASE_URL}/admin-core-service/v1/engagement/tasks`;
 export const ENGAGEMENT_TEMPLATES_BASE = `${BASE_URL}/admin-core-service/v1/engagement/template-proposals`;
+export const ENGAGEMENT_DAILY_REPORT = `${BASE_URL}/admin-core-service/v1/engagement/reports/daily`;
 
 // ---- ERP · HR & Payroll (admin-core-service) ----
 // Backend: see docs/erp/hr-payroll-review-and-gap-plan.md. Every endpoint is
