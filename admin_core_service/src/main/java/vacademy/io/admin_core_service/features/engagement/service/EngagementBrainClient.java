@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.agent.dto.ConversationSession;
@@ -42,6 +43,10 @@ public class EngagementBrainClient {
     @Value("${engagement.brain.model:}")
     private String brainModel;
 
+    /** Prices the brain's tokens for the daily report. Optional so plain-constructed tests need no DB. */
+    @Autowired(required = false)
+    private EngagementLlmPricing pricing;
+
     /** Structured decision for one member. Nulls where the model chose NO_OP. */
     public record Decision(
             String decision,        // ACT | NO_OP
@@ -57,8 +62,17 @@ public class EngagementBrainClient {
             Integer tokensIn,
             Integer tokensOut,
             String subject,         // EMAIL only: the subject line (null → derived from the draft)
-            Map<String, String> actionParams // B6 CRM actions: dueInHours, statusKey, note, reason
+            Map<String, String> actionParams, // B6 CRM actions: dueInHours, statusKey, note, reason
+            EngagementLlmUsage usage // tokens + price of the call(s) behind this decision; null in tests
     ) {
+        public Decision(String decision, String actionType, String channel, String draftBody,
+                        String templateName, Map<String, String> variables, String rationale,
+                        double priority, Integer scheduleInHours, Integer nextCheckHours,
+                        Integer tokensIn, Integer tokensOut, String subject, Map<String, String> actionParams) {
+            this(decision, actionType, channel, draftBody, templateName, variables, rationale, priority,
+                    scheduleInHours, nextCheckHours, tokensIn, tokensOut, subject, actionParams, null);
+        }
+
         public Decision(String decision, String actionType, String channel, String draftBody,
                         String templateName, Map<String, String> variables, String rationale,
                         double priority, Integer scheduleInHours, Integer nextCheckHours,
@@ -114,6 +128,7 @@ public class EngagementBrainClient {
         history.add(ConversationSession.ChatMessage.system(system));
         history.add(ConversationSession.ChatMessage.user(user));
 
+        EngagementLlmUsage usage = EngagementLlmUsage.NONE;
         for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
             ConversationSession session = ConversationSession.builder()
                     .instituteId(engine.getInstituteId())
@@ -124,6 +139,8 @@ public class EngagementBrainClient {
             // Engagement is billed per dispatched message (EngagementDispatchJob.charge), not per brain token.
             session.getContext().put(LLMService.CTX_BILLED_BY_CALLER, Boolean.TRUE);
             LLMService.LLMResponse resp = llmService.generateChatCompletion(session);
+            // Summed across attempts: an unparseable first answer was still paid for.
+            usage = usage.plus(resp, pricing);
             String raw = resp != null ? resp.getContent() : null;
             if (raw == null || raw.isBlank()) {
                 throw new IllegalStateException("Engagement brain returned an empty response");
@@ -141,9 +158,10 @@ public class EngagementBrainClient {
                         n.path("priority").asDouble(50),
                         n.hasNonNull("scheduleInHours") ? n.get("scheduleInHours").asInt() : null,
                         n.hasNonNull("nextCheckHours") ? n.get("nextCheckHours").asInt() : null,
-                        null, null,
+                        usage.tokensIn(), usage.tokensOut(),
                         n.hasNonNull("subject") ? n.get("subject").asText() : null,
-                        readStringMap(n.get("action")));
+                        readStringMap(n.get("action")),
+                        usage);
             } catch (Exception parseError) {
                 if (attempt == MAX_ATTEMPTS) {
                     throw new IllegalStateException("Engagement brain emitted unparseable JSON twice", parseError);

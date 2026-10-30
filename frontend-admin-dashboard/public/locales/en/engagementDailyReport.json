@@ -1,0 +1,528 @@
+{
+    "subtitle": "A daily report for each engine: what it did, what it cost and what came back.",
+    "viewSwitch": {
+        "label": "Dashboard view",
+        "daily": "Daily report",
+        "overview": "Overview"
+    },
+    "noActivity": "No activity on this day",
+    "notTracked": "Not tracked",
+    "estimated": "Estimated",
+    "estimatedSuffix": " (estimated)",
+    "retry": "Try again",
+    "sectionError": "We couldn’t load this section. The rest of the report is not affected.",
+    "partialNote": "Couldn’t load: {{sections}}. Parts that depend on them are marked below; the numbers elsewhere are not affected.",
+    "recentNote": "Replies can arrive up to 72 hours after a message, so the last few days will keep changing.",
+    "error": {
+        "generic": {
+            "title": "Couldn’t load the report",
+            "text": "Something went wrong while loading this report. Try again in a moment."
+        },
+        "badDate": {
+            "title": "That date isn’t available",
+            "text": "Pick a day from the last 90 days, up to today."
+        },
+        "noEngine": {
+            "title": "That engine wasn’t found",
+            "text": "It may have been removed, or it belongs to another account. Pick another engine."
+        },
+        "noAccess": {
+            "title": "You don’t have access to this report",
+            "text": "It covers everything the engines did, so it is limited to people who manage them."
+        },
+        "resetDate": "Go to today",
+        "resetEngine": "Show all engines"
+    },
+    "emptyDay": {
+        "title": "No activity on this day",
+        "text": "Nothing was added, sent, called or spent. Try another day, or check that the engine was active.",
+        "previous": "Go to the previous day"
+    },
+    "empty": {
+        "calls": "No calls were placed on this day",
+        "email": "No emails were sent on this day",
+        "templates": "No templates or subjects were sent on this day",
+        "costs": "No spend on this day"
+    },
+    "foot": {
+        "withTime": "Days follow {{timezone}} time. Updated at {{time}}.",
+        "timezoneOnly": "Days follow {{timezone}} time."
+    },
+    "table": {
+        "showAll": "Show all {{count}} rows",
+        "showFewer": "Show fewer",
+        "sortBy": "Sort by {{column}}",
+        "scrollHint": "Scroll sideways to see all columns"
+    },
+    "filter": {
+        "allEngines": "All engines",
+        "systemEngine": "AI call follow-ups (system)",
+        "selectedEngine": "Selected engine",
+        "searchEngines": "Search engines…",
+        "noEngines": "No engines found.",
+        "date": "Date",
+        "previousDay": "Previous day",
+        "nextDay": "Next day",
+        "export": "Export",
+        "exporting": "Preparing…",
+        "exportExcel": "Excel (.xlsx)",
+        "exportPdf": "PDF",
+        "exportDone": "Report downloaded",
+        "exportFailed": "Couldn’t create the report file. Please try again."
+    },
+    "groups": {
+        "did": {
+            "title": "What it did",
+            "subtitle": "Who was added, what the engine decided and what went out."
+        },
+        "back": {
+            "title": "What came back",
+            "subtitle": "Replies, bookings and status changes, and which messages to rewrite."
+        },
+        "cost": {
+            "title": "What it cost",
+            "subtitle": "Credits, WhatsApp charges and AI usage."
+        }
+    },
+    "health": {
+        "ariaLabel": "Warnings about this report",
+        "EMAIL_BOUNCE_HIGH": {
+            "title": "{{rate}} of emails bounced — clean the list before the next run",
+            "text": "Invalid or unused addresses hurt your sender reputation. Remove them so later emails keep reaching inboxes.",
+            "critical": {
+                "text": "This is very high and can get your sending blocked. Remove invalid addresses before anything else goes out."
+            }
+        },
+        "EMAIL_COMPLAINTS": {
+            "title_one": "1 person marked an email as spam",
+            "title_other": "{{count}} people marked an email as spam",
+            "text": "Stop emailing them and review the wording and where the list came from. Complaints damage your sender reputation quickly."
+        },
+        "WHATSAPP_FAILED_HIGH": {
+            "title": "{{rate}} of WhatsApp messages failed to deliver",
+            "text": "Check that the phone numbers are valid and that the template is still approved."
+        },
+        "OPT_OUTS": {
+            "title_one": "1 person asked to stop",
+            "title_other": "{{count}} people asked to stop",
+            "text": "Look at the messages that triggered this. Several opt-outs in a day usually mean the wording or the timing needs a rethink."
+        },
+        "CREDITS_LOW": {
+            "title": "Credits run out in {{runway}}",
+            "text": "Based on your spend over the last 7 days. Top up soon to keep messages going out.",
+            "critical": {
+                "text": "Based on your spend over the last 7 days. Top up now to avoid interruptions."
+            }
+        },
+        "TRACKING_OFF": {
+            "email": {
+                "title": "Email opens and bounces aren’t tracked for your sender",
+                "text": "Your emails go out through a sender that doesn’t report delivery events, so opens, bounces and complaints show as “Not tracked”."
+            },
+            "whatsapp": {
+                "title": "WhatsApp delivery isn’t tracked for your provider",
+                "text": "Your WhatsApp provider doesn’t report delivery or read receipts, so those figures show as “Not tracked”."
+            },
+            "generic": {
+                "title": "Some delivery details aren’t tracked",
+                "text": "Opens, bounces or read receipts aren’t reported for your current sender, so they show as “Not tracked”."
+            }
+        },
+        "unknown": {
+            "title": "{{name}}",
+            "text": "The report flagged this. Check the figures below."
+        }
+    },
+    "runway": {
+        "soon": "soon",
+        "lessThanDay": "less than a day",
+        "about_one": "about {{count}} day",
+        "about_other": "about {{count}} days"
+    },
+    "kpi": {
+        "deltaTitle": "Compared with the previous day",
+        "peopleAdded": {
+            "label": "Leads added",
+            "detail": "{{created}} new · {{existing}} already in the system",
+            "hint": "Leads who joined the engine on this day. “New” means the lead was created that same day; the rest were already in your CRM."
+        },
+        "messagesSent": {
+            "label": "Messages sent",
+            "none": "Nothing was sent on this day",
+            "hint": "Emails, WhatsApp and in-app messages sent on this day, both automatic ones and ones your team approved. Calls are counted separately."
+        },
+        "replies": {
+            "label": "Replies",
+            "emailNotTracked": "Email replies aren’t tracked, so this counts WhatsApp replies only.",
+            "hint": "Replies received on this day. The reply columns in the tables below count replies to the messages sent on this day, so the two can differ."
+        },
+        "callsConnected": {
+            "label": "Calls connected",
+            "detail": "{{placed}} calls placed",
+            "none": "No calls placed",
+            "hint": "Calls that were picked up, as defined by your call settings."
+        },
+        "demosBooked": {
+            "label": "Demos booked",
+            "scheduled_one": "{{count}} scheduled for this day",
+            "scheduled_other": "{{count}} scheduled for this day",
+            "hint": "Demos booked on this day. Cancelled and rescheduled bookings are not counted."
+        },
+        "conversions": {
+            "label": "Conversions",
+            "statusChanges_one": "{{count}} status change",
+            "statusChanges_other": "{{count}} status changes",
+            "hint": "People who moved to a converted status on this day."
+        },
+        "creditsSpent": {
+            "label": "Credits spent",
+            "balance": "Balance {{value}}",
+            "whatsapp": "WhatsApp {{value}}{{estimated}}",
+            "hint": "Credits used on AI-written messages, AI calls and the Lead Agent. WhatsApp charges are in a different currency, so they are shown beside it, not added in."
+        },
+        "costPerDemo": {
+            "label": "Cost per demo",
+            "unit": "credits per demo booked",
+            "noDemos": "No demos booked, so no cost per demo",
+            "perReply": "{{value}} per reply",
+            "perConversion": "{{value}} per conversion",
+            "hint": "Credits spent divided by demos booked. Empty when no demo was booked."
+        },
+        "unavailable": "Couldn’t load"
+    },
+    "funnel": {
+        "title": "Funnel",
+        "subtitle": "How many people made it through each step on this day.",
+        "note": "Every step follows the messages sent on this day. Contacted includes calls placed; Replied counts replies to those messages, which can keep arriving for 72 hours.",
+        "aria": "Funnel: {{summary}}",
+        "dropOff": "{{value}}% drop from the previous step",
+        "rise": "{{value}}% more than the previous step",
+        "stage": {
+            "CONTACTED": "Contacted",
+            "DELIVERED": "Delivered",
+            "REPLIED": "Replied",
+            "DEMO_BOOKED": "Demo booked",
+            "CONVERTED": "Converted"
+        },
+        "partialCaption": "{{value}} · partial",
+        "partialTooltip": "Only channels that report delivery are counted here, so this is a lower bound and is not compared with the steps around it.",
+        "deliveredNote": "Delivery isn’t reported for every channel that was used, so Delivered is partial and no drop-off is shown for it."
+    },
+    "trend": {
+        "title": "Last 7 days",
+        "subtitle": "Messages sent, replies and demos on the left axis; credits on the right.",
+        "empty": "Nothing sent in the last 7 days",
+        "aria": "Chart of the last seven days: messages sent, replies, demos booked and credits spent",
+        "seriesRight": "{{name}} (right axis)",
+        "series": {
+            "sent": "Messages sent",
+            "replies": "Replies",
+            "demosBooked": "Demos booked",
+            "credits": "Credits spent"
+        }
+    },
+    "channelsChart": {
+        "title": "Sent vs replied",
+        "subtitle": "Per channel. Replied counts replies to the messages sent on this day.",
+        "sent": "Sent",
+        "replied": "Replied",
+        "aria": "Bar chart comparing messages sent and replies for each channel",
+        "emailRepliesNote": "Email replies aren’t tracked, so the email bar shows none.",
+        "inAppRepliesNote": "Replies to in-app messages aren’t tracked, so no reply bar is shown for them."
+    },
+    "costChart": {
+        "title": "Where the credits went",
+        "subtitle": "Messages, calls and the Lead Agent.",
+        "centerLabel": "credits",
+        "empty": "No credits or WhatsApp charges on this day",
+        "aria": "Donut chart of {{total}} credits spent",
+        "whatsapp": "WhatsApp: {{amount}}{{estimated}}. Charged in a different currency, so it isn’t included in the credits above."
+    },
+    "perEngine": {
+        "title": "How each engine did",
+        "subtitle": "Compare engines side by side for this day. Replies are those received on this day; reply rate is replies to the messages sent on this day.",
+        "col": {
+            "engine": "Engine",
+            "added": "Leads added",
+            "sent": "Sent",
+            "replies": "Replies",
+            "replyRate": "Reply rate",
+            "demos": "Demos",
+            "conversions": "Conversions",
+            "credits": "Credits",
+            "costPerReply": "Credits per reply"
+        }
+    },
+    "lists": {
+        "title": "Leads added, by {{list}}",
+        "subtitle": "Who joined the engine on this day. Under each row, what the Lead Agent found for that {{list}}.",
+        "batchMembers": "{{batch}} members",
+        "individuals": "Individual people",
+        "agentLine": "Lead Agent: {{name}}",
+        "col": {
+            "name": "{{list}}",
+            "added": "Leads added",
+            "new": "New",
+            "existing": "Already existed",
+            "agentDelivered": "Lead Agent: delivered",
+            "agentName": "Lead Agent",
+            "discovered": "Found",
+            "researched": "Researched",
+            "review": "Needs review",
+            "rejected": "Rejected",
+            "alreadyInCrm": "Already in contacts",
+            "searches": "Searches",
+            "pages": "Pages read",
+            "agentCredits": "Lead Agent credits"
+        },
+        "deleted": "Deleted {{list}}"
+    },
+    "runs": {
+        "title": "Engine runs",
+        "subtitle": "What the engine decided on this day.",
+        "decisions": "Decisions",
+        "decisionsHint": "Each decision is one look at one person: send a message, create a task, wait or reply.",
+        "evaluated": "People looked at",
+        "failed": "Failed",
+        "expired": "Expired",
+        "expiredHint": "Tasks nobody acted on before they ran out of time.",
+        "byKindTitle": "Decisions by type",
+        "errorsTitle": "Top errors",
+        "noErrors": "No failures on this day.",
+        "col": {
+            "kind": "Type",
+            "count": "Decisions",
+            "share": "Share",
+            "error": "Error"
+        },
+        "kind": {
+            "SEND": "Send a message",
+            "TASK": "Task for your team",
+            "NO_OP": "Decided to wait",
+            "REPLY": "Reply to a person"
+        }
+    },
+    "channels": {
+        "title": "By channel",
+        "subtitle": "Delivered, read and failed come from each channel’s own receipts. Replied and reply rate count replies to the messages sent on this day and keep growing for 72 hours, so they can differ from the Replies figure above.",
+        "col": {
+            "channel": "Channel",
+            "sent": "Sent",
+            "delivered": "Delivered",
+            "read": "Read",
+            "replied": "Replied",
+            "replyRate": "Reply rate",
+            "failed": "Failed",
+            "credits": "Credits"
+        }
+    },
+    "calls": {
+        "title": "Calls",
+        "subtitle": "AI calls placed by the engine on this day.",
+        "placed": "Placed",
+        "notDialled": "Not dialled",
+        "notDialledHint": "Cancelled, expired or failed before the call was dialled.",
+        "connected": "Connected",
+        "connectedHint": "Calls that were picked up, as defined by your call settings.",
+        "noAnswer": "No answer",
+        "busy": "Rejected (busy)",
+        "busyHint": "The line was busy or the call was declined.",
+        "failed": "Failed",
+        "inProgress": "In progress",
+        "talkTime": "Talk time",
+        "avgDuration": "Average call",
+        "credits": "Credits"
+    },
+    "email": {
+        "title": "Email",
+        "subtitle": "Delivery and engagement for emails sent on this day. Figures are matched to emails by recipient and time, so they can be slightly off.",
+        "sent": "Sent",
+        "delivered": "Delivered",
+        "opened": "Opened",
+        "openedHint": "Opens are counted when the email loads images, so the true number is usually higher.",
+        "clicked": "Clicked",
+        "bounced": "Bounced",
+        "bouncedHint": "Addresses that couldn’t receive the email.",
+        "complained": "Spam complaints",
+        "complainedHint": "People who marked the email as spam.",
+        "bounceRate": "Bounce rate",
+        "bounceRateHint": "Bounced divided by sent. Above 5% is worth cleaning up.",
+        "repliesNote": "Email replies aren’t tracked yet, so reply figures cover WhatsApp only.",
+        "trackingOffNote": "Your emails go out through a sender that doesn’t report delivery events, so only “Sent” is known."
+    },
+    "templates": {
+        "title": "Which messages get replies",
+        "subtitle": "WhatsApp templates and email subjects, most sent first. Sort by reply rate to find the ones to rewrite. AI-written emails usually get a new subject each time, so they show one send each.",
+        "col": {
+            "channel": "Channel",
+            "name": "Template or subject",
+            "sent": "Sent",
+            "delivered": "Delivered",
+            "read": "Read",
+            "replied": "Replied",
+            "replyRate": "Reply rate",
+            "bounced": "Bounced",
+            "cost": "Cost"
+        },
+        "capped": "Showing the top {{count}}.",
+        "noTemplate": "No template name",
+        "noSubject": "No subject",
+        "other": "Other messages"
+    },
+    "outcomes": {
+        "title": "Outcomes",
+        "subtitle": "What the messages led to.",
+        "demosBooked": "Demos booked",
+        "demosBookedHint": "Booked on this day. Cancelled and rescheduled bookings are not counted.",
+        "demosScheduled": "Demos scheduled for this day",
+        "demosScheduledHint": "Demos taking place on this day, whenever they were booked.",
+        "demosDone": "Done",
+        "demosNoShow": "No-shows",
+        "demosNotMarked": "Not marked",
+        "demosNotMarkedHint": "Scheduled demos where nobody has recorded whether they happened.",
+        "conversions": "Conversions",
+        "conversionsHint": "People who moved to a converted status on this day."
+    },
+    "statusChanges": {
+        "title": "Status changes",
+        "subtitle": "Moves between pipeline stages on this day: by the engine, by your team, and by other automations such as AI calls and workflows.",
+        "col": {
+            "from": "From",
+            "to": "To",
+            "byEngine": "By engine",
+            "byTeam": "By your team",
+            "total": "Total",
+            "byAutomation": "By automation"
+        },
+        "noStatus": "No status"
+    },
+    "costs": {
+        "title": "Costs",
+        "subtitle": "Everything the engine spent on this day.",
+        "credits": {
+            "title": "Credits",
+            "subtitle": "Spent on AI-written messages, AI calls and the Lead Agent.",
+            "messages": "Messages",
+            "calls": "Calls",
+            "leadAgent": "Lead Agent",
+            "total": "Total",
+            "col": {
+                "where": "Spent on",
+                "credits": "Credits",
+                "share": "Share"
+            }
+        },
+        "whatsapp": {
+            "title": "WhatsApp charges",
+            "subtitle": "Billed by WhatsApp in a different currency, so kept apart from credits.",
+            "amount": "Charges",
+            "estimatedHint": "Some prices weren’t reported by WhatsApp, so they are estimated from your rate card.",
+            "billable": "Billable messages",
+            "billableHint": "Messages WhatsApp charges for. Replies inside the 24-hour service window are free.",
+            "estimated": "Estimated messages",
+            "missingRate": "Messages with no rate set",
+            "missingRateHint": "No rate is set for these messages, so they aren’t in the total or the table below.",
+            "byCategoryTitle": "By message category",
+            "basisEstimated": "Estimated",
+            "basisReported": "Reported",
+            "col": {
+                "category": "Category",
+                "messages": "Messages",
+                "rate": "Rate",
+                "cost": "Cost",
+                "basis": "Basis"
+            },
+            "partialHint": "Some billable messages have no rate set, so this is a minimum and the real charge is higher."
+        },
+        "ai": {
+            "title": "AI usage",
+            "subtitle": "Tokens used by the engine to write its decisions and replies.",
+            "tokensIn": "Tokens in",
+            "tokensInHint": "Text sent to the AI model: the instructions and the person’s details.",
+            "tokensOut": "Tokens out",
+            "tokensOutHint": "Text the AI model wrote back.",
+            "decisions": "Decisions with usage",
+            "trackedSince": "Token counts are tracked from {{date}}. Earlier days show nothing.",
+            "noUsage": "No AI token usage recorded for this day.",
+            "trackingStartedHint": "Token tracking started with this release, so earlier days have no counts."
+        }
+    },
+    "whatsappCategory": {
+        "marketing": "Marketing",
+        "utility": "Utility",
+        "authentication": "Authentication",
+        "service": "Service",
+        "free": "Free (no WhatsApp charge)"
+    },
+    "realCost": {
+        "title": "Real cost (USD)",
+        "subtitle": "What the AI providers and the Lead Agent’s searches actually cost. Visible only to platform operators.",
+        "ai": "AI usage",
+        "aiHint": "What the AI models cost for this day’s decisions and replies.",
+        "leadAgent": "Lead Agent",
+        "leadAgentHint": "Search and AI spend of the Lead Agent for this day.",
+        "calls": "Calls",
+        "callsHint": "Call costs aren’t recorded yet.",
+        "total": "Total",
+        "notRecorded": "Not recorded"
+    },
+    "export": {
+        "pdfTitle": "Engagement report",
+        "engine": "Engine",
+        "date": "Date",
+        "timezone": "Time zone",
+        "generatedAt": "Generated at",
+        "metric": "Metric",
+        "value": "Value",
+        "detail": "Detail",
+        "health": "Warnings",
+        "warning": "Warning",
+        "stage": "Step",
+        "people": "People",
+        "changeFromPrevious": "Change from previous step",
+        "failedSections": "Sections that couldn’t load",
+        "cornerLabel": "ENGAGEMENT REPORT",
+        "severity": {
+            "title": "Severity",
+            "critical": "Critical",
+            "warning": "Warning",
+            "info": "Info"
+        }
+    },
+    "sheet": {
+        "summary": "Summary",
+        "engines": "Engines",
+        "lists": "{{lists}}",
+        "runs": "Runs",
+        "decisions": "Decisions",
+        "errors": "Top errors",
+        "channels": "Channels",
+        "calls": "Calls",
+        "email": "Email",
+        "templates": "Templates",
+        "outcomes": "Outcomes",
+        "statusChanges": "Status changes",
+        "costCredits": "Costs - credits",
+        "costWhatsapp": "Costs - WhatsApp",
+        "costWhatsappCategories": "WhatsApp by category",
+        "costAi": "Costs - AI usage",
+        "realCost": "Real cost (USD)"
+    },
+    "errorSection": {
+        "lists": "leads added",
+        "runs": "engine runs",
+        "outreach": "messages sent",
+        "calls": "calls",
+        "costs": "costs",
+        "creditBalance": "credit balance",
+        "statusChanges": "status changes",
+        "conversions": "conversions",
+        "demos": "demos",
+        "delivery": "delivery details",
+        "replies": "replies",
+        "whatsappCost": "WhatsApp charges"
+    },
+    "atLeast": "at least {{value}}",
+    "retrying": "Trying again…",
+    "refreshFailed": "We couldn’t refresh this report, so the numbers below may be out of date."
+}

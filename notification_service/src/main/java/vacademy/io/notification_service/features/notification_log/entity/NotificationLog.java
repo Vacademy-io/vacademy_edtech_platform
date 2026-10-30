@@ -103,4 +103,27 @@ public class NotificationLog {
     /** When the status webhook that set deliveryStatus was reported by the provider. Added V33. */
     @Column(name = "delivery_updated_at")
     private Instant deliveryUpdatedAt;
+
+    /*
+     * Meta's pricing for an outbound WhatsApp message, copied from the `pricing` object on its
+     * status webhook by WhatsAppPricingRecorder (matched by wamid in source_id). Meta sends no
+     * amount: type is regular / free_customer_service / free_entry_point / ..., category is
+     * marketing / utility / authentication / service / ..., model is CBP or PMP. NULL = no pricing
+     * seen. Read-only here (insertable/updatable = false): only that recorder's UPDATE writes them,
+     * so an entity loaded before the webhook and saved after it can never wipe them. Added V39.
+     */
+    @Column(name = "pricing_billable", insertable = false, updatable = false)
+    private Boolean pricingBillable;
+
+    @Column(name = "pricing_type", length = 40, insertable = false, updatable = false)
+    private String pricingType;
+
+    @Column(name = "pricing_category", length = 40, insertable = false, updatable = false)
+    private String pricingCategory;
+
+    @Column(name = "pricing_model", length = 10, insertable = false, updatable = false)
+    private String pricingModel;
+
+    @Column(name = "pricing_updated_at", insertable = false, updatable = false)
+    private Instant pricingUpdatedAt;
 }
