@@ -2,10 +2,12 @@ package vacademy.io.admin_core_service.features.engagement.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementAction;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementEngine;
@@ -25,11 +27,15 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.OptionalInt;
 import java.util.Set;
+import java.util.function.IntPredicate;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -326,7 +332,13 @@ public class EngagementDecisionService {
             int hoursOut = d.scheduleInHours() != null
                     ? Math.min(Math.max(d.scheduleInHours(), 0), maxScheduleHours) : 0;
             Instant proposed = now.plus(Duration.ofHours(hoursOut));
-            Instant scheduledFor = policyGate.scheduleSend(engine, proposed, sendTiming(engine, member, bundle));
+            PolicyGate.SendTiming timing = sendTiming(engine, member, bundle);
+            Instant planned = policyGate.scheduleSend(engine, proposed, timing);
+            // Someone who has not answered three messages at the same time of day gets the next one at
+            // another time (answers to a message they sent are not planned outreach and keep their time).
+            AdaptedTime adapted = timing == PolicyGate.SendTiming.REPLY ? null
+                    : adaptSendTime(engine, member, bundle, proposed, planned, now);
+            Instant scheduledFor = adapted != null ? adapted.time() : planned;
 
             EngagementAction action = new EngagementAction();
             action.setEngineId(engine.getId());
@@ -336,7 +348,8 @@ public class EngagementDecisionService {
             action.setActionType(validActionType(d.actionType()));
             action.setChannel(chosenChannel);
             action.setDraftBody(cap(d.draftBody()));
-            action.setRationale(cap(d.rationale()));
+            action.setRationale(cap(adapted != null && adapted.note() != null
+                    ? (nullToEmpty(d.rationale()) + " " + adapted.note()).trim() : d.rationale()));
             action.setPriority(BigDecimal.valueOf(Math.max(0, Math.min(100, d.priority()))));
             action.setScheduledFor(scheduledFor);
             action.setExpiresAt(scheduledFor.plus(Duration.ofHours(taskExpireHours)));
@@ -746,6 +759,109 @@ public class EngagementDecisionService {
             }
         }
         return false;
+    }
+
+    /** A planned send moved to another time of day; note explains it when the time just changed. */
+    private record AdaptedTime(Instant time, String note) {}
+
+    /**
+     * Adapts this person's send time (see {@link EngagementAdaptiveSendTime}): the time of day the
+     * engine remembered for them, or a new one when the last three sends went unanswered at the same
+     * hour. null keeps {@code planned}. The remembered time is dropped when the person writes back or
+     * the admin changes the engine's send time, so the engine's own schedule applies again.
+     */
+    private AdaptedTime adaptSendTime(EngagementEngine engine, EngagementMember member,
+                                      DataPointRegistry.CohortBundle bundle, Instant proposed,
+                                      Instant planned, Instant now) {
+        EngagementSendSchedule schedule = EngagementSendSchedule.of(engine.getQuietHours(), objectMapper);
+        ZoneId zone = schedule.zone();
+        Instant lastReply = latestReply(bundle, member);
+
+        Integer rememberedHour = null;
+        JsonNode pref = sendPreference(member);
+        if (pref != null) {
+            Instant since = parseInstant(pref.path("since").asText(null));
+            Integer engineHour = pref.hasNonNull("engineHour") ? pref.get("engineHour").asInt() : null;
+            boolean answered = lastReply != null && since != null && lastReply.isAfter(since);
+            if (pref.path("hour").canConvertToInt() && !answered && Objects.equals(engineHour, schedule.sendHour())) {
+                rememberedHour = pref.get("hour").asInt();
+            } else {
+                forgetSendPreference(member, now);
+            }
+        }
+
+        List<Instant> sent = actionRepository.recentSendTimes(member.getId(),
+                PageRequest.of(0, EngagementAdaptiveSendTime.STREAK));
+        OptionalInt stuck = EngagementAdaptiveSendTime.stuckHour(sent, lastReply, zone);
+        if (stuck.isPresent() && (rememberedHour == null || rememberedHour == stuck.getAsInt())) {
+            int from = stuck.getAsInt();
+            IntPredicate allowed = h -> {
+                Instant at = EngagementAdaptiveSendTime.atHour(planned, h, zone, proposed);
+                return policyGate.clampToAllowedWindow(engine, at).equals(at);
+            };
+            OptionalInt to = EngagementAdaptiveSendTime.nextHour(from, allowed);
+            if (to.isPresent()) {
+                rememberSendPreference(member, to.getAsInt(), schedule.sendHour(), now);
+                String note = "Send time changed: %d messages at %02d:00 got no reply, so this one goes at %02d:00."
+                        .formatted(EngagementAdaptiveSendTime.STREAK, from, to.getAsInt());
+                return new AdaptedTime(policyGate.scheduleSend(engine,
+                        EngagementAdaptiveSendTime.atHour(planned, to.getAsInt(), zone, proposed),
+                        PolicyGate.SendTiming.ANYTIME), note);
+            }
+        }
+        if (rememberedHour != null && planned.atZone(zone).getHour() != rememberedHour) {
+            return new AdaptedTime(policyGate.scheduleSend(engine,
+                    EngagementAdaptiveSendTime.atHour(planned, rememberedHour, zone, proposed),
+                    PolicyGate.SendTiming.ANYTIME), null);
+        }
+        return null;
+    }
+
+    /** The person's latest reply on WhatsApp or email (the ledger), or null when they never wrote. */
+    private Instant latestReply(DataPointRegistry.CohortBundle bundle, EngagementMember m) {
+        JsonNode ledger = bundle.payloadsFor(m.getId()).get("ledger");
+        if (ledger == null) return null;
+        Instant latest = null;
+        for (String ch : List.of("whatsapp", "email")) {
+            JsonNode c = ledger.get(ch);
+            if (c == null || c.isNull()) continue;
+            Instant reply = parseInstant(c.path("lastReplyAt").asText(null));
+            if (reply != null && (latest == null || reply.isAfter(latest))) latest = reply;
+        }
+        return latest;
+    }
+
+    private ObjectNode memoryOf(EngagementMember m) {
+        try {
+            JsonNode n = m.getMemoryJson() == null ? null : objectMapper.readTree(m.getMemoryJson());
+            if (n != null && n.isObject()) return (ObjectNode) n;
+        } catch (Exception ignored) {
+            // unreadable memory: start from an empty one, never fail a decision over it
+        }
+        return objectMapper.createObjectNode();
+    }
+
+    private JsonNode sendPreference(EngagementMember m) {
+        JsonNode pref = memoryOf(m).get("sendPref");
+        return pref != null && pref.isObject() ? pref : null;
+    }
+
+    private void rememberSendPreference(EngagementMember m, int hour, Integer engineHour, Instant now) {
+        ObjectNode pref = objectMapper.createObjectNode();
+        pref.put("hour", hour);
+        if (engineHour != null) pref.put("engineHour", engineHour);
+        pref.put("since", now.toString());
+        memberRepository.setSendPreference(m.getId(), pref.toString(), now);
+        ObjectNode memory = memoryOf(m);
+        memory.set("sendPref", pref);
+        m.setMemoryJson(memory.toString()); // a later save of this member must not put the old memory back
+    }
+
+    private void forgetSendPreference(EngagementMember m, Instant now) {
+        memberRepository.clearSendPreference(m.getId(), now);
+        ObjectNode memory = memoryOf(m);
+        memory.remove("sendPref");
+        m.setMemoryJson(memory.toString());
     }
 
     private boolean cadenceElapsed(EngagementMember m, EngagementEngine engine, Instant now) {
