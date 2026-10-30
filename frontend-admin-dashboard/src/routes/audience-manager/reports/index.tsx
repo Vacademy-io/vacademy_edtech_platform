@@ -20,6 +20,7 @@ export const REPORT_TABS = [
     'conversions',
     'manager',
     'revenue',
+    'admissions',
     'cohort',
     'forecast',
     'custom',

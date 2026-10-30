@@ -18,6 +18,17 @@
         "placeholder": "Sélectionner les statuts de prospect",
         "placeholderLoading": "Chargement des statuts…"
     },
+    "courseGroupOrder": {
+        "label": "Ordre des groupes de cours (rapport Admissions)",
+        "hint": "Choisissez les tags de cours par ordre de priorité. Un élève inscrit à des cours de plusieurs groupes en même temps est compté une fois, dans le groupe qui vient en premier.",
+        "placeholder": "Sélectionnez les tags dans l'ordre",
+        "current": "Ordre : {{order}}"
+    },
+    "admissionField": {
+        "label": "Champ des admissions",
+        "hint": "Champ personnalisé (par exemple l'agence) selon lequel le rapport Admissions répartit les admissions.",
+        "none": "Aucun"
+    },
     "save": {
         "button": "Enregistrer les paramètres de rapport",
         "saving": "Enregistrement…"

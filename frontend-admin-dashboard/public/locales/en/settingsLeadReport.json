@@ -18,6 +18,17 @@
         "placeholder": "Select lead statuses",
         "placeholderLoading": "Loading statuses…"
     },
+    "courseGroupOrder": {
+        "label": "Course group order (Admissions report)",
+        "hint": "Pick course tags in priority order. A student who joined courses from several groups at once is counted once, under the group that comes first.",
+        "placeholder": "Select course tags in order",
+        "current": "Order: {{order}}"
+    },
+    "admissionField": {
+        "label": "Admissions field",
+        "hint": "Custom field (for example Branch) the Admissions report breaks admissions down by.",
+        "none": "None"
+    },
     "save": {
         "button": "Save report settings",
         "saving": "Saving…"
