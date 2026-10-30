@@ -28,7 +28,8 @@
         "jupyter": "ज्यूपिटर",
         "image": "छवि",
         "audio": "ऑडियो",
-        "html": "HTML"
+        "html": "HTML",
+        "scorm": "SCORM"
     },
     "noItemsToAdd": "जोड़ने के लिए कोई आइटम नहीं",
     "addedSlides": "{{count}} स्लाइड(स्लाइडें) जोड़ी गईं",
@@ -43,5 +44,9 @@
     "failed": "विफल",
     "failedWithReason": "विफल: {{reason}}",
     "editTitle": "शीर्षक संपादित करें",
-    "remove": "हटाएं"
+    "remove": "हटाएं",
+    "scorm": {
+        "notAllowed": "आपकी भूमिका के लिए SCORM पैकेज सक्षम नहीं हैं — {{name}} छोड़ा गया",
+        "fileTooLarge": "{{name}} का आकार {{size}} है — SCORM पैकेज की अधिकतम सीमा {{max}} है। छोड़ा गया।"
+    }
 }

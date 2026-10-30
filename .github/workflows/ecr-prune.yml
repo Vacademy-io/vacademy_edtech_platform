@@ -1,0 +1,46 @@
+# Weekly clean-up of old images in our public ECR registry, which bills per GB stored.
+# Without it every build's image is kept forever (Oct 2026: 2,258 images, ~$75/month).
+# Keeps the newest 10 per repo, anything from the last 14 days, `latest`, and whatever
+# prod is running. See scripts/ecr_prune.py.
+name: ECR image clean-up
+
+on:
+  schedule:
+    - cron: '30 21 * * 0'   # Sunday 21:30 UTC = Monday 03:00 IST
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Delete the images (unchecked = dry run only)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  prune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts
+
+      - uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - uses: Azure/k8s-set-context@v4.0.0
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.VACADEMY_PROD_KUBECONFIG }}
+
+      - name: Prune
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.apply }}" = "true" ]; then
+            python3 scripts/ecr_prune.py --apply
+          else
+            python3 scripts/ecr_prune.py
+          fi

@@ -28,7 +28,8 @@
         "jupyter": "Jupyter",
         "image": "Image",
         "audio": "Audio",
-        "html": "HTML"
+        "html": "HTML",
+        "scorm": "SCORM"
     },
     "noItemsToAdd": "Aucun élément à ajouter",
     "addedSlides": "{{count}} diapositive(s) ajoutée(s)",
@@ -43,5 +44,9 @@
     "failed": "Échec",
     "failedWithReason": "Échec : {{reason}}",
     "editTitle": "Modifier le titre",
-    "remove": "Retirer"
+    "remove": "Retirer",
+    "scorm": {
+        "notAllowed": "Les paquets SCORM ne sont pas activés pour votre rôle — {{name}} ignoré",
+        "fileTooLarge": "{{name}} fait {{size}} — la taille maximale d'un paquet SCORM est {{max}}. Ignoré."
+    }
 }

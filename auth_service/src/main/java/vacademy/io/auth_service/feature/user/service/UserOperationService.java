@@ -3,6 +3,7 @@ package vacademy.io.auth_service.feature.user.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import vacademy.io.auth_service.feature.auth.constants.AuthConstants;
 import vacademy.io.auth_service.feature.institute.InstituteInfoDTO;
@@ -341,16 +342,57 @@ public class UserOperationService {
      * copies stale.
      */
     public String updateUserPassword(UserCredentials userCredentials, CustomUserDetails userDetails) {
+        User before = userRepository.findById(userCredentials.getUserId()).orElse(null);
+        String oldUsername = before != null ? before.getUsername() : null;
+        String oldEmail = before != null ? before.getEmail() : null;
+
         User user = userCredentialUpdateService.updateCredentials(
                 userCredentials.getUserId(),
                 userCredentials.getUsername(),
                 userCredentials.getPassword());
+
+        String newEmail = emailFollowingUsername(oldUsername, oldEmail, user.getUsername());
+        if (newEmail != null) {
+            user.setEmail(newEmail);
+            user = userRepository.save(user);
+            // admin_core updates student.email and pushes the rename to every connected
+            // WordPress LMS. The password rides in the same edit-user call, so it cannot
+            // race the rename and miss the user on the LMS.
+            UserDTO emailChange = new UserDTO();
+            emailChange.setId(user.getId());
+            emailChange.setEmail(newEmail);
+            emailChange.setPassword(user.getPassword());
+            institutePolicyService.updateLearnerDetails(emailChange);
+        } else {
+            // Mirror the new password to any WordPress LMS the learner's courses are
+            // connected to (async, best-effort — never blocks/fails the password change).
+            institutePolicyService.syncLmsPassword(user.getId(), user.getEmail(), user.getPassword());
+        }
         sendPasswordToUser(user);
-        // Mirror the new password to any WordPress LMS the learner's courses are
-        // connected to (async, best-effort — never blocks/fails the password change).
-        institutePolicyService.syncLmsPassword(user.getId(), user.getEmail(), user.getPassword());
         return "Password updated successfully";
     }
+
+    /**
+     * Portal Access has no email field, but many institutes use the email AS the username.
+     * When the old username was the learner's email and the new username is also an email,
+     * the admin is changing the email: return the new one. Otherwise null (a username that
+     * is not an email, or one that never matched the email, leaves the email alone).
+     */
+    private static String emailFollowingUsername(String oldUsername, String oldEmail, String newUsername) {
+        if (!StringUtils.hasText(oldUsername) || !StringUtils.hasText(oldEmail) || !StringUtils.hasText(newUsername)) {
+            return null;
+        }
+        String next = newUsername.trim();
+        if (!oldUsername.trim().equalsIgnoreCase(oldEmail.trim())
+                || next.equalsIgnoreCase(oldEmail.trim())
+                || !EMAIL_SHAPE.matcher(next).matches()) {
+            return null;
+        }
+        return next;
+    }
+
+    private static final java.util.regex.Pattern EMAIL_SHAPE =
+            java.util.regex.Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
 
     @Async
     public String sendPasswordToUser(User user) {

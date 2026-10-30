@@ -1,12 +1,11 @@
 package vacademy.io.admin_core_service.features.engagement.actions;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementActionHandler;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementActionTypes;
+import vacademy.io.admin_core_service.features.engagement.service.EngagementAiCallPool;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementCoordinationDao;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallRequestDTO;
 import vacademy.io.admin_core_service.features.telephony.enums.CallTrigger;
@@ -28,7 +27,9 @@ import java.util.Map;
  *   <li>C-2 / C-3: never after a call ended as wrong number or do-not-disturb.</li>
  *   <li>C-4: at most {@code maxAttempts} AI calls to the lead in the last 7 days, from any system.</li>
  * </ul>
- * The agent is the engine's {@code channels.AI_CALL.agent}, else the institute's default.
+ * The agent is the next one in the engine's AI call pool ({@code channels.AI_CALL.agentPool}, the
+ * "Agents to call with" picker). With no pool the call is refused: falling back to the institute's
+ * default agent called the engine's leads with another product's script.
  */
 @Component
 @RequiredArgsConstructor
@@ -36,10 +37,11 @@ public class ScheduleAiCallActionHandler implements EngagementActionHandler {
 
     static final String QUEUE_SOURCE = "ENGAGEMENT_ENGINE";
     static final int MAX_HOURS = 24 * 14;
+    static final String NO_AGENT = "This engine has no AI agent to call with. Add one to its AI call pool.";
 
     private final AiCallQueueService queueService;
     private final EngagementCoordinationDao coordinationDao;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final EngagementAiCallPool agentPool;
 
     @Value("${engagement.ai-call.max-attempts-per-week:3}")
     private int maxAttempts = 3;
@@ -58,6 +60,7 @@ public class ScheduleAiCallActionHandler implements EngagementActionHandler {
         if (recent >= maxAttempts) {
             return "This lead already had " + recent + " AI calls this week (the limit is " + maxAttempts + ").";
         }
+        if (!agentPool.hasPool(ctx.engine())) return NO_AGENT;
         return null;
     }
 
@@ -81,7 +84,9 @@ public class ScheduleAiCallActionHandler implements EngagementActionHandler {
         req.setResponseId(ctx.leadRowId());
         req.setUserId(ctx.member().getUserId());
         req.setPhoneNumber(ctx.phone());
-        req.setCampaignName(agent(ctx));
+        String agentId = agentPool.next(ctx.engine());
+        if (agentId == null) throw new VacademyException(NO_AGENT);
+        req.setCampaignId(agentId);   // an agent's id IS its campaign id in AI_CALLING_SETTING
         req.setMetadata(Map.of("engagementActionId", ctx.actionId()));
         AiCallQueueDTOs.EnqueueResult r = queueService.enqueue(req, CallTrigger.AUTOMATION, QUEUE_SOURCE,
                 ctx.actionId(), approver.userId());
@@ -95,16 +100,6 @@ public class ScheduleAiCallActionHandler implements EngagementActionHandler {
     public void undo(Context ctx, Map<String, String> params, Map<String, String> result, Approver approver) {
         if (!queueService.cancelOne(ctx.instituteId(), result.get("queueItemId"), "Undone in the engagement inbox")) {
             throw new VacademyException("The call has already been placed, so it cannot be undone.");
-        }
-    }
-
-    private String agent(Context ctx) {
-        try {
-            JsonNode ai = objectMapper.readTree(ctx.engine().getChannels()).path("AI_CALL");
-            String a = ai.path("agent").asText(null);
-            return a != null && !a.isBlank() ? a : null;
-        } catch (Exception e) {
-            return null;
         }
     }
 }
