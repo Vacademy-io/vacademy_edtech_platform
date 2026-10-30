@@ -21,7 +21,7 @@ final class EngagementDailyReportSql {
             "COALESCE(a.action_type, '') NOT IN ('ADD_NOTE', 'CREATE_FOLLOWUP', 'ESCALATE', 'UPDATE_STATUS', 'SCHEDULE_AI_CALL')";
 
     /** The engine's audience selectors as rows; a malformed (non-array) audience reads as none. */
-    private static final String SELECTORS =
+    static final String SELECTORS =
             "jsonb_array_elements(CASE WHEN jsonb_typeof(e.audience) = 'array' THEN e.audience ELSE '[]'::jsonb END)";
 
     // ── engines ──────────────────────────────────────────────────────────────
@@ -265,9 +265,23 @@ final class EngagementDailyReportSql {
      * other source except the engine is automation (AI_CALLING, AI_WORKFLOW, WHATSAPP_FLOW,
      * COLD_EMAIL_REPLY, BACKFILL, ...).
      */
-    private static final String HUMAN_STATUS_SOURCES = "'MANUAL', 'BULK_MANUAL', 'MANUAL_DISPOSITION'";
+    static final String HUMAN_STATUS_SOURCES = "'MANUAL', 'BULK_MANUAL', 'MANUAL_DISPOSITION'";
 
     /** Lead status moves of the engines' leads per local day (trend range), from → to, by actor. */
+    /**
+     * WhatsApp templates the engine(s) proposed on D: the category each was proposed in, where it
+     * stands now (admin review, Meta, live, rejected, withdrawn) and the category Meta gave it, so a
+     * utility proposal Meta moved to marketing (the expensive category) shows up.
+     */
+    static final String NEW_TEMPLATES = """
+            SELECT UPPER(COALESCE(p.proposed_category, 'UNKNOWN')) AS proposed_category, p.status,
+                   UPPER(p.meta_category) AS meta_category, COUNT(*) AS n
+            FROM engagement_template_proposal p
+            WHERE p.institute_id = :instituteId AND p.engine_id IN (:engineIds)
+              AND p.created_at >= :from AND p.created_at < :to
+            GROUP BY 1, 2, 3
+            """;
+
     static final String STATUS_CHANGES = """
             SELECT (h.changed_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date::text AS day,
                    fs.label AS from_label, ts.label AS to_label,
