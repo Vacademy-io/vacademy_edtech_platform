@@ -2,7 +2,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { getInstituteId } from '@/constants/helper';
-import type { CreateEngineRequest, EngineStatus, TemplateEditRequest } from '../-types';
+import type {
+    CreateEngineRequest,
+    EngineStatus,
+    TaskListFilters,
+    TemplateEditRequest,
+} from '../-types';
 import {
     ackTask,
     approveTemplate,
@@ -15,7 +20,9 @@ import {
     enrollEngine,
     getChannelReadiness,
     getDataPointCatalog,
+    getEmailSenders,
     getEngine,
+    getTaskOutcomes,
     getTaskPeople,
     listEngines,
     listTasks,
@@ -73,6 +80,19 @@ export const useChannelReadiness = (emailType?: string) => {
         queryKey: ['engagementChannelReadiness', instituteId, emailType ?? ''],
         queryFn: () => getChannelReadiness(instituteId, emailType),
         enabled: !!instituteId,
+        staleTime: 30 * 1000,
+        refetchOnWindowFocus: true,
+    });
+};
+
+/** The institute's email senders for the Email channel's "From email" picker. Refetched on
+ *  window focus, so a sender added or verified in Settings shows up without a reload. */
+export const useEmailSenders = (enabled = true) => {
+    const instituteId = getInstituteId() || '';
+    return useQuery({
+        queryKey: ['engagementEmailSenders', instituteId],
+        queryFn: () => getEmailSenders(instituteId),
+        enabled: enabled && !!instituteId,
         staleTime: 30 * 1000,
         refetchOnWindowFocus: true,
     });
@@ -185,16 +205,36 @@ export const useTasks = (
     statuses: string,
     page: number,
     size: number,
-    engineId?: string,
-    channel?: string,
-    kind?: string
+    filters: TaskListFilters = {}
 ) => {
     const instituteId = getInstituteId() || '';
     return useQuery({
-        queryKey: ['engagementTasks', instituteId, statuses, page, size, engineId, channel, kind],
-        queryFn: () => listTasks(instituteId, statuses, page, size, engineId, channel, kind),
+        queryKey: ['engagementTasks', instituteId, statuses, page, size, filters],
+        queryFn: () => listTasks(instituteId, statuses, page, size, filters),
         enabled: !!instituteId,
         staleTime: 10 * 1000,
+        // A filter the server refuses (unknown engine, outcome without a day or period) will not pass on a retry.
+        retry: (count, error) => {
+            const status = (error as { response?: { status?: number } })?.response?.status;
+            return count < 3 && !(status && status >= 400 && status < 500);
+        },
+    });
+};
+
+/** What came of the messages and calls on screen, as an actionId → outcome map. */
+export const useTaskOutcomes = (actionIds: string[]) => {
+    const instituteId = getInstituteId() || '';
+    const ids = Array.from(new Set(actionIds)).sort();
+    return useQuery({
+        queryKey: ['engagementTaskOutcomes', instituteId, ids],
+        queryFn: async () => {
+            const outcomes = await getTaskOutcomes(instituteId, ids);
+            return Object.fromEntries(outcomes.map((o) => [o.actionId, o]));
+        },
+        enabled: !!instituteId && ids.length > 0,
+        staleTime: 60 * 1000,
+        // An older backend has no /tasks/outcomes: rows simply show no outcome.
+        retry: false,
     });
 };
 

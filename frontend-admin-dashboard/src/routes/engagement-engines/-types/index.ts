@@ -69,10 +69,25 @@ export type CrmActionEntry = string | { type: string; auto?: boolean };
 /** GET /engines/channel-readiness: whether the institute has set each channel up. */
 export interface ChannelReadiness {
     ready: boolean;
-    /** NOT_SET_UP, or SENDER_MISSING when the engine's email sender no longer exists. */
-    reason?: 'NOT_SET_UP' | 'SENDER_MISSING' | null;
+    /**
+     * NOT_SET_UP; SENDER_MISSING when the engine's email sender doesn't exist; SENDER_NOT_VERIFIED
+     * when it isn't SES-verified yet (its mail would leave from the platform's support address).
+     */
+    reason?: 'NOT_SET_UP' | 'SENDER_MISSING' | 'SENDER_NOT_VERIFIED' | null;
 }
 export type ChannelReadinessMap = Partial<Record<ChannelKey, ChannelReadiness>>;
+
+/** GET /engines/email-senders: one of the institute's senders (a key of EMAIL_SETTING.data). */
+export interface EmailSender {
+    /** The sender's key, saved as channels.EMAIL.emailType. */
+    type: string;
+    email: string;
+    name?: string | null;
+    verified: boolean;
+}
+
+/** The sender an engine uses when channels.EMAIL.emailType is unset (backend EngagementDispatcher). */
+export const DEFAULT_EMAIL_TYPE = 'UTILITY_EMAIL';
 
 /** The engine entity as returned by GET /engines. */
 export interface EngagementEngine {
@@ -207,6 +222,54 @@ export interface TaskPerson {
     name?: string | null;
     phone?: string | null;
     email?: string | null;
+}
+
+/** What GET /tasks can be narrowed by; every field is optional and sent as a query param. */
+export interface TaskListFilters {
+    engineId?: string;
+    channel?: ChannelKey;
+    /** TASK | REPLY | SEND | NO_OP | CRM (CRM = a CRM action such as a follow-up or note). */
+    kind?: string;
+    /** YYYY-MM-DD, a day in the institute time zone. */
+    date?: string;
+    /** YYYY-MM-DD to YYYY-MM-DD, inclusive, institute time zone. Both or neither; wins over `date`. */
+    from?: string;
+    to?: string;
+    /** Template name, or an email subject. */
+    template?: string;
+    /** Needs `date`, or `from` and `to`. One of INBOX_OUTCOME_KEYS. */
+    outcome?: string;
+}
+
+/** The call behind an AI_CALL action (GET /tasks/outcomes). */
+export interface TaskCallOutcome {
+    status: 'COMPLETED' | 'NO_ANSWER' | 'BUSY' | 'FAILED' | 'QUEUED' | 'INITIATED' | 'NOT_DIALLED';
+    connected: boolean;
+    durationSeconds?: number | null;
+    callLogId?: string | null;
+    queueStatus?: string | null;
+}
+
+/**
+ * What happened after one action went out (GET /tasks/outcomes). `tracked` is false when
+ * there is no signal at all (in-app, an SMTP provider without tracking, WATI).
+ */
+export interface TaskOutcome {
+    actionId: string;
+    channel: ChannelKey;
+    tracked: boolean;
+    deliveryStatus?: 'SENT' | 'DELIVERED' | 'READ' | 'FAILED' | null;
+    delivered: boolean;
+    opened: boolean;
+    clicked: boolean;
+    bounced: boolean;
+    complained: boolean;
+    /** The reply attributed to this message (WhatsApp; email when inbound email is on). */
+    repliedAt?: string | null;
+    errorCode?: string | null;
+    pricingCategory?: string | null;
+    /** Only on AI_CALL actions. */
+    call?: TaskCallOutcome | null;
 }
 
 /** Spring Page<T> envelope. */

@@ -176,7 +176,14 @@
             "TEMPLATE_PLUS_AI_LINE": "Templates + one AI line"
         },
         "coldTitle": "Cold outreach",
-        "coldHint": "Turn on if these people never contacted you (e.g. Lead Agent leads). Every email will then say how to stop."
+        "coldHint": "Turn on if these people never contacted you (e.g. Lead Agent leads). Every email will then say how to stop.",
+        "senderTitle": "From email",
+        "senderPlaceholder": "Pick a sender",
+        "senderHint": "This engine's emails go out from this address. Add or verify senders in Settings → Notification.",
+        "senderNotVerified": "not verified",
+        "senderLoading": "Loading your email senders…",
+        "senderLoadFailed": "Couldn't load your email senders. Reopen this step to try again.",
+        "senderEmpty": "Your institute has no email sender yet. Add one in Settings → Notification."
     },
     "brief": {
         "weak": "This brief is thin, so the AI will write generic messages. Answer what you can; your answers are added to the brief.",

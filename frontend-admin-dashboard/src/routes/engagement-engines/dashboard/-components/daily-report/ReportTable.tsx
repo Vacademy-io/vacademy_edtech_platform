@@ -7,6 +7,7 @@ import { MyTable } from '@/components/design-system/table';
 import { staticTableData } from '@/components/shared/crm-enhance/group-dashboard-shell';
 import { cn } from '@/lib/utils';
 import type { CellTone, ReportColumn, ReportTableSpec } from '../../-utils/report-tables';
+import { ReportLink } from './ReportLink';
 
 const TONE_CLASS: Record<CellTone, string> = {
     danger: 'text-danger-600',
@@ -84,15 +85,27 @@ function HeaderCell<R>({
 }
 
 function BodyCell<R>({ column, row }: { column: ReportColumn<R>; row: R }) {
+    const { t } = useTranslation('engagementDailyReport');
     const text = column.text(row);
     const tone = column.tone?.(row);
+    const target = column.link?.(row) ?? null;
+    const content = column.render ? column.render(row) : text;
     return (
         <div className={cn(column.numeric && 'text-end tabular-nums', tone && TONE_CLASS[tone])}>
             <span
                 title={text}
                 className={column.wrap ? 'line-clamp-2 break-words' : 'block truncate'}
             >
-                {column.render ? column.render(row) : text}
+                {target ? (
+                    <ReportLink
+                        target={target}
+                        label={t('links.open', { value: text, what: column.header })}
+                    >
+                        {content}
+                    </ReportLink>
+                ) : (
+                    content
+                )}
             </span>
         </div>
     );

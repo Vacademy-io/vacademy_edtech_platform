@@ -102,6 +102,38 @@ export const NEXT_STATUSES: Partial<Record<EngineStatus, EngineStatus[]>> = {
     PAUSED: ['ACTIVE', 'ARCHIVED'],
 };
 
-/** Task inbox tabs, also accepted as ?filter= so a link can open the right one. */
-export const INBOX_FILTER_KEYS = ['needsAction', 'sent', 'failed', 'handled', 'dryRun'] as const;
+/**
+ * Task inbox tabs, also accepted as ?filter= so a link can open the right one. `waited` lists
+ * the engine's "decided to wait" decisions (statuses DONE, kind NO_OP).
+ */
+export const INBOX_FILTER_KEYS = [
+    'needsAction',
+    'sent',
+    'failed',
+    'waited',
+    'handled',
+    'dryRun',
+] as const;
 export type InboxFilterKey = (typeof INBOX_FILTER_KEYS)[number];
+
+/** Kinds the inbox can be narrowed to (?kind=). NO_OP is the `waited` tab. */
+export const INBOX_KIND_KEYS = ['TASK', 'REPLY', 'SEND', 'CRM', 'NO_OP'] as const;
+export type InboxKindKey = (typeof INBOX_KIND_KEYS)[number];
+
+/** What happened to a message (?outcome=); the server filters on these. Needs a day. */
+export const INBOX_OUTCOME_KEYS = [
+    'delivered',
+    'not_delivered',
+    'opened',
+    'clicked',
+    'bounced',
+    'complained',
+    'read',
+    'replied',
+    'failed',
+    'connected',
+    'no_answer',
+    'busy',
+    'call_failed',
+] as const;
+export type InboxOutcomeKey = (typeof INBOX_OUTCOME_KEYS)[number];

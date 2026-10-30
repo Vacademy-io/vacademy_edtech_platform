@@ -1,0 +1,111 @@
+# Assessment exam load test (loadtest/assessment-exam-journey.js), split across several
+# GitHub runners so one machine's network is never the bottleneck. Manual runs only, and
+# it hits PRODUCTION: read docs/EXAM_10K_SCALEUP_RUNBOOK.md (sections 4, 6 and 8) first,
+# watch the database while it runs, and clean up the test attempts afterwards.
+# Cancel the run to stop the load.
+name: Load test - assessment exam
+
+on:
+  workflow_dispatch:
+    inputs:
+      total_vus:
+        description: Total simulated learners (split evenly across shards)
+        required: true
+        default: '3000'
+      shards:
+        description: Number of runners (about 500 learners each)
+        required: true
+        default: '6'
+      login_window:
+        description: Seconds the logins are spread over
+        default: '300'
+      start_window:
+        description: Seconds after the login window that learners press start
+        default: '120'
+      exam_minutes:
+        description: Exam length in minutes
+        default: '10'
+      start_delay:
+        description: Seconds from now until every shard starts together
+        default: '180'
+
+concurrency:
+  group: loadtest-assessment
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      shards: ${{ steps.plan.outputs.shards }}
+      start_at: ${{ steps.plan.outputs.start_at }}
+      per_shard: ${{ steps.plan.outputs.per_shard }}
+    steps:
+      - id: plan
+        env:
+          TOTAL: ${{ inputs.total_vus }}
+          SHARDS: ${{ inputs.shards }}
+          DELAY: ${{ inputs.start_delay }}
+        run: |
+          PER=$(( (TOTAL + SHARDS - 1) / SHARDS ))
+          echo "shards=$(seq 0 $((SHARDS - 1)) | jq -cs .)" >> "$GITHUB_OUTPUT"
+          echo "per_shard=$PER" >> "$GITHUB_OUTPUT"
+          echo "start_at=$(( $(date +%s) + DELAY ))" >> "$GITHUB_OUTPUT"
+          echo "$SHARDS shards x $PER learners, start at $(date -u -d @$(( $(date +%s) + DELAY )))"
+
+  k6:
+    needs: plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.plan.outputs.shards) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: loadtest
+
+      - name: Install k6
+        run: |
+          curl -fsSL https://dl.k6.io/key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/k6.gpg
+          echo "deb [signed-by=/usr/share/keyrings/k6.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update -q && sudo apt-get install -y -q k6
+          k6 version
+
+      - name: Run shard ${{ matrix.shard }}
+        working-directory: loadtest
+        env:
+          PER: ${{ needs.plan.outputs.per_shard }}
+          TOTAL: ${{ inputs.total_vus }}
+          SHARD: ${{ matrix.shard }}
+          START_AT: ${{ needs.plan.outputs.start_at }}
+        run: |
+          OFFSET=$(( SHARD * PER ))
+          VUS=$(( TOTAL - OFFSET < PER ? TOTAL - OFFSET : PER ))
+          WAIT=$(( START_AT - $(date +%s) ))
+          echo "shard $SHARD: learners $((OFFSET + 1))-$((OFFSET + VUS)), waiting ${WAIT}s for the shared start"
+          [ "$WAIT" -gt 0 ] && sleep "$WAIT"
+          ulimit -n 65536
+          # Thresholds failing exit 99; still keep the summary for the artifact.
+          k6 run assessment-exam-journey.js --quiet \
+            --summary-export "summary-$SHARD.json" \
+            -e BASE_URL=https://backend-stage.vacademy.io \
+            -e INSTITUTE_ID=245536e4-3748-4065-a7d3-0df03c9e5ddc \
+            -e ASSESSMENT_ID=55af0371-e36d-4554-ae4a-d998ace3261e \
+            -e BATCH_IDS=88d0e88e-8518-49c7-9a51-daefb80b752f \
+            -e USER_PREFIX=loadtest -e PASSWORD=LoadTest@123 -e USER_COUNT=10000 \
+            -e USER_OFFSET="$OFFSET" -e VUS="$VUS" \
+            -e LOGIN_WINDOW=${{ inputs.login_window }} -e START_WINDOW=${{ inputs.start_window }} \
+            -e EXAM_MINUTES=${{ inputs.exam_minutes }} -e SYNC_INTERVAL=60 \
+            2>&1 | grep -v 'level=warning' | tail -200 || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: k6-summary-${{ matrix.shard }}
+          path: loadtest/summary-*.json
+          if-no-files-found: warn

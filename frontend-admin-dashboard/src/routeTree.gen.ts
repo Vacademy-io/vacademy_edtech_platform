@@ -214,6 +214,7 @@ import { Route as ErpComplianceProvisionsIndexRouteImport } from "./routes/erp/c
 import { Route as ErpComplianceChallansIndexRouteImport } from "./routes/erp/compliance/challans/index"
 import { Route as ErpAttendanceSetupIndexRouteImport } from "./routes/erp/attendance/setup/index"
 import { Route as ErpAttendanceRegularizationsIndexRouteImport } from "./routes/erp/attendance/regularizations/index"
+import { Route as EngagementEnginesDashboardOutcomesIndexRouteImport } from "./routes/engagement-engines/dashboard/outcomes/index"
 import { Route as AudienceManagerListCampaignUsersIndexRouteImport } from "./routes/audience-manager/list/campaign-users/index"
 import { Route as AudienceManagerLeadAgentAgentIdIndexRouteImport } from "./routes/audience-manager/lead-agent/$agentId/index"
 import { Route as AssessmentExportAssessmentIdIndexRouteImport } from "./routes/assessment/export/$assessmentId/index"
@@ -1826,6 +1827,16 @@ const ErpAttendanceRegularizationsIndexRoute =
       (d) => d.Route,
     ),
   )
+const EngagementEnginesDashboardOutcomesIndexRoute =
+  EngagementEnginesDashboardOutcomesIndexRouteImport.update({
+    id: "/engagement-engines/dashboard/outcomes/",
+    path: "/engagement-engines/dashboard/outcomes/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/engagement-engines/dashboard/outcomes/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
 const AudienceManagerListCampaignUsersIndexRoute =
   AudienceManagerListCampaignUsersIndexRouteImport.update({
     id: "/audience-manager/list/campaign-users/",
@@ -2382,6 +2393,7 @@ export interface FileRoutesByFullPath {
   "/assessment/export/$assessmentId/": typeof AssessmentExportAssessmentIdIndexRoute
   "/audience-manager/lead-agent/$agentId/": typeof AudienceManagerLeadAgentAgentIdIndexRoute
   "/audience-manager/list/campaign-users/": typeof AudienceManagerListCampaignUsersIndexRoute
+  "/engagement-engines/dashboard/outcomes/": typeof EngagementEnginesDashboardOutcomesIndexRoute
   "/erp/attendance/regularizations/": typeof ErpAttendanceRegularizationsIndexRoute
   "/erp/attendance/setup/": typeof ErpAttendanceSetupIndexRoute
   "/erp/compliance/challans/": typeof ErpComplianceChallansIndexRoute
@@ -2631,6 +2643,7 @@ export interface FileRoutesByTo {
   "/assessment/export/$assessmentId": typeof AssessmentExportAssessmentIdIndexRoute
   "/audience-manager/lead-agent/$agentId": typeof AudienceManagerLeadAgentAgentIdIndexRoute
   "/audience-manager/list/campaign-users": typeof AudienceManagerListCampaignUsersIndexRoute
+  "/engagement-engines/dashboard/outcomes": typeof EngagementEnginesDashboardOutcomesIndexRoute
   "/erp/attendance/regularizations": typeof ErpAttendanceRegularizationsIndexRoute
   "/erp/attendance/setup": typeof ErpAttendanceSetupIndexRoute
   "/erp/compliance/challans": typeof ErpComplianceChallansIndexRoute
@@ -2882,6 +2895,7 @@ export interface FileRoutesById {
   "/assessment/export/$assessmentId/": typeof AssessmentExportAssessmentIdIndexRoute
   "/audience-manager/lead-agent/$agentId/": typeof AudienceManagerLeadAgentAgentIdIndexRoute
   "/audience-manager/list/campaign-users/": typeof AudienceManagerListCampaignUsersIndexRoute
+  "/engagement-engines/dashboard/outcomes/": typeof EngagementEnginesDashboardOutcomesIndexRoute
   "/erp/attendance/regularizations/": typeof ErpAttendanceRegularizationsIndexRoute
   "/erp/attendance/setup/": typeof ErpAttendanceSetupIndexRoute
   "/erp/compliance/challans/": typeof ErpComplianceChallansIndexRoute
@@ -3134,6 +3148,7 @@ export interface FileRouteTypes {
     | "/assessment/export/$assessmentId/"
     | "/audience-manager/lead-agent/$agentId/"
     | "/audience-manager/list/campaign-users/"
+    | "/engagement-engines/dashboard/outcomes/"
     | "/erp/attendance/regularizations/"
     | "/erp/attendance/setup/"
     | "/erp/compliance/challans/"
@@ -3383,6 +3398,7 @@ export interface FileRouteTypes {
     | "/assessment/export/$assessmentId"
     | "/audience-manager/lead-agent/$agentId"
     | "/audience-manager/list/campaign-users"
+    | "/engagement-engines/dashboard/outcomes"
     | "/erp/attendance/regularizations"
     | "/erp/attendance/setup"
     | "/erp/compliance/challans"
@@ -3633,6 +3649,7 @@ export interface FileRouteTypes {
     | "/assessment/export/$assessmentId/"
     | "/audience-manager/lead-agent/$agentId/"
     | "/audience-manager/list/campaign-users/"
+    | "/engagement-engines/dashboard/outcomes/"
     | "/erp/attendance/regularizations/"
     | "/erp/attendance/setup/"
     | "/erp/compliance/challans/"
@@ -3883,6 +3900,7 @@ export interface RootRouteChildren {
   AssessmentExportAssessmentIdIndexRoute: typeof AssessmentExportAssessmentIdIndexRoute
   AudienceManagerLeadAgentAgentIdIndexRoute: typeof AudienceManagerLeadAgentAgentIdIndexRoute
   AudienceManagerListCampaignUsersIndexRoute: typeof AudienceManagerListCampaignUsersIndexRoute
+  EngagementEnginesDashboardOutcomesIndexRoute: typeof EngagementEnginesDashboardOutcomesIndexRoute
   ErpAttendanceRegularizationsIndexRoute: typeof ErpAttendanceRegularizationsIndexRoute
   ErpAttendanceSetupIndexRoute: typeof ErpAttendanceSetupIndexRoute
   ErpComplianceChallansIndexRoute: typeof ErpComplianceChallansIndexRoute
@@ -5390,6 +5408,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof ErpAttendanceRegularizationsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/engagement-engines/dashboard/outcomes/": {
+      id: "/engagement-engines/dashboard/outcomes/"
+      path: "/engagement-engines/dashboard/outcomes"
+      fullPath: "/engagement-engines/dashboard/outcomes/"
+      preLoaderRoute: typeof EngagementEnginesDashboardOutcomesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/audience-manager/list/campaign-users/": {
       id: "/audience-manager/list/campaign-users/"
       path: "/audience-manager/list/campaign-users"
@@ -5912,6 +5937,8 @@ const rootRouteChildren: RootRouteChildren = {
     AudienceManagerLeadAgentAgentIdIndexRoute,
   AudienceManagerListCampaignUsersIndexRoute:
     AudienceManagerListCampaignUsersIndexRoute,
+  EngagementEnginesDashboardOutcomesIndexRoute:
+    EngagementEnginesDashboardOutcomesIndexRoute,
   ErpAttendanceRegularizationsIndexRoute:
     ErpAttendanceRegularizationsIndexRoute,
   ErpAttendanceSetupIndexRoute: ErpAttendanceSetupIndexRoute,

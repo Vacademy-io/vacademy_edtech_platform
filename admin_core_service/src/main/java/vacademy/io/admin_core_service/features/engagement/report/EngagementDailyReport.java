@@ -4,20 +4,30 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * GET /admin-core-service/v1/engagement/reports/daily: one engine's (or every engine's) day.
- * Field names and nesting are the contract the dashboard reads (design §5.1); JSON is camelCase
- * and nulls are written out. Counts are whole numbers, credits and money are decimals, rates are
- * fractions 0..1. {@code realCost} is filled for platform super admins only.
+ * GET /admin-core-service/v1/engagement/reports/daily: one engine's (or every engine's) period of
+ * institute-local days, a single day by default. Field names and nesting are the contract the
+ * dashboard reads (design §5.1, v3 for the period); JSON is camelCase and nulls are written out.
+ * Counts are whole numbers, credits and money are decimals, rates are fractions 0..1. Every
+ * number is the period's total; the lists that were per day (channels, templates, lists,
+ * perEngine, outcomes) sum the period. {@code realCost} is filled for platform super admins only.
  */
 public record EngagementDailyReport(
+        /** The period's last day (= to), kept for clients that read one day. */
         String date,
+        /** The period, YYYY-MM-DD inclusive; from = to for a single day. */
+        String from,
+        String to,
+        /** Days in the period. */
+        int days,
         String timezone,
         String engineId,
         String generatedAt,
         List<EngineOption> engines,
         Summary summary,
         List<FunnelStage> funnel,
+        /** One entry per day of the period, oldest first; the 7 days ending {@code to} when it is shorter. */
         List<TrendDay> trend,
+        Previous previous,
         /** Only for "All engines" (engineId null); null for one engine. */
         List<EngineRow> perEngine,
         List<ListRow> lists,
@@ -27,6 +37,8 @@ public record EngagementDailyReport(
         Email email,
         WhatsApp whatsapp,
         List<TemplateRow> templates,
+        /** WhatsApp templates the engine(s) proposed in the period; null when that section failed. */
+        NewTemplates newTemplates,
         Outcomes outcomes,
         Costs costs,
         RealCost realCost,
@@ -60,6 +72,17 @@ public record EngagementDailyReport(
     }
 
     public record TrendDay(String date, long sent, long replies, long demosBooked, double credits, long statusChanges) {
+    }
+
+    /**
+     * The same totals for the equal-length period just before {@code from} (the KPI deltas): from
+     * / to of that period, leads added and conversions in distinct people as the summary counts
+     * them, the rest summed per day as the trend. A number is null when it could not be read: its
+     * section failed (also named in errors) or, for replies, there were too many messages to read
+     * the delivery data of that period too.
+     */
+    public record Previous(String from, String to, Long leadsAdded, Long sent, Long replies, Long demosBooked,
+                           Long conversions, Double credits, Long statusChanges) {
     }
 
     public record EngineRow(String engineId, String name, boolean system, long leadsAdded, long sent, long replies,
@@ -111,6 +134,19 @@ public record EngagementDailyReport(
     }
 
     /**
+     * Templates proposed in the period, by proposed category, and where they stand now. inReview =
+     * AI_PROPOSED / USER_REVIEW; approvedByYou = USER_APPROVED; withMeta = SUBMITTED / META_PENDING;
+     * live = META_APPROVED / META_RECATEGORISED; rejected = META_REJECTED / META_DISABLED;
+     * withdrawn = WITHDRAWN / SUPERSEDED. movedToMarketing: proposed UTILITY, Meta made it MARKETING.
+     */
+    public record NewTemplates(long created, List<CategoryCount> byCategory, long inReview, long approvedByYou,
+                               long withMeta, long live, long rejected, long withdrawn, long movedToMarketing) {
+    }
+
+    public record CategoryCount(String category, long count) {
+    }
+
+    /**
      * byTeam: a person moved it (lead page, bulk change, call disposition). byAutomation: anything
      * else but the engine (AI calling, workflows, WhatsApp flows, cold-email replies, backfills).
      */
@@ -128,7 +164,7 @@ public record EngagementDailyReport(
                                long missingRate, boolean partial) {
     }
 
-    /** trackedSince: first institute-local day with token data in the report's 90-day range, else null. */
+    /** trackedSince: first institute-local day with token data in the report's 90-day window, else null. */
     public record AiUsage(long tokensIn, long tokensOut, long decisionsWithUsage, String trackedSince) {
     }
 

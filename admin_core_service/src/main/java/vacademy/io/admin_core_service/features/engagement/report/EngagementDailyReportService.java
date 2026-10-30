@@ -39,7 +39,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -53,20 +53,30 @@ import java.util.TreeMap;
 import java.util.function.Supplier;
 
 /**
- * Engagement daily report: what an engine (or every engine) did on one institute-local day, what
- * it cost and what came back (design §3). Each section runs in its own read-only transaction
- * (replica) with a statement timeout, as the group dashboards do; a section that fails is named
- * in {@code errors} and the rest still renders. Delivery, replies and WhatsApp pricing come from
- * notification_service in one batched call. A complete report is cached for {@link #CACHE_TTL}
- * per institute, engine, day and viewer class (super admins also get real money).
+ * Engagement daily report: what an engine (or every engine) did in a period of institute-local
+ * days (one day by default), what it cost and what came back (design §3, v3 for the period). Each
+ * section runs in its own read-only transaction (replica) with a statement timeout, as the group
+ * dashboards do; a section that fails is named in {@code errors} and the rest still renders.
+ * Delivery, replies and WhatsApp pricing come from notification_service in chunked calls. A
+ * complete report is cached for {@link #CACHE_TTL} per institute, engine, period and viewer class
+ * (super admins also get real money).
  */
 @Slf4j
 @Service
 public class EngagementDailyReportService {
 
     static final Duration CACHE_TTL = Duration.ofMinutes(3);
-    static final int MAX_DAYS_BACK = 90;
+    /** The trend shows at least this many days (ending the period's last). */
     static final int TREND_DAYS = 7;
+    /**
+     * Most messages one report reads delivery for. Past it (a long period of a busy institute) the
+     * delivery and reply numbers are skipped as "too_many" rather than left to time out.
+     */
+    static final int MAX_SIGNAL_ACTIONS = 20_000;
+    /** errors value when there were more than {@link #MAX_SIGNAL_ACTIONS} messages to read. */
+    static final String TOO_MANY = "too_many";
+    /** errors key of the previous period's own reads (its sends, leads added and conversions). */
+    static final String PREVIOUS = "previous";
     /** A reply counts for a message when it arrives within this long after it (design D7). */
     static final int REPLY_WINDOW_HOURS = 72;
     /** A message goes out within hours of its draft; this bounds the send scan to the engine index. */
@@ -110,51 +120,62 @@ public class EngagementDailyReportService {
 
     /**
      * @param engineId null or blank = every engine of the institute
-     * @param date     YYYY-MM-DD in the institute's zone; null or blank = today there
-     * @throws InvalidRequestException  bad date, a future day, or a day more than 90 days back
+     * @param date     YYYY-MM-DD in the institute's zone, the same as from = to = date
+     * @param from     with to: the period, YYYY-MM-DD inclusive (wins over date); neither = today there
+     * @throws InvalidRequestException  a bad format, from after to, a future day, a day before
+     *                                   today − 89, or only one of from / to
      * @throws ResourceNotFoundException the engine is not one of this institute's
      */
-    public EngagementDailyReport daily(String instituteId, String engineId, String date, boolean superAdmin) {
+    public EngagementDailyReport daily(String instituteId, String engineId, String date, String from, String to,
+                                       boolean superAdmin) {
         ZoneId zone = zone(timezoneService.getTimezoneId(instituteId));
         LocalDate today = LocalDate.now(zone);
-        LocalDate day = parseDay(date, today);
+        EngagementReportDay.Period period = EngagementReportDay.period(date, from, to, today);
+        if (period == null) period = EngagementReportDay.Period.of(today);
         String engine = engineId == null || engineId.isBlank() ? null : engineId.trim();
-        String key = String.join("|", instituteId, engine == null ? "*" : engine, day.toString(), zone.getId(),
-                superAdmin ? "sa" : "admin");
+        String key = String.join("|", instituteId, engine == null ? "*" : engine, period.from().toString(),
+                period.to().toString(), zone.getId(), superAdmin ? "sa" : "admin");
         EngagementDailyReport cached = cache.getIfPresent(key);
         if (cached != null) return cached;
-        EngagementDailyReport report = build(instituteId, engine, day, today, zone, superAdmin);
-        if (report.errors().isEmpty()) cache.put(key, report);
+        EngagementDailyReport report = build(instituteId, engine, period, today, zone, superAdmin);
+        if (cacheable(report.errors())) cache.put(key, report);
         return report;
     }
 
-    static LocalDate parseDay(String date, LocalDate today) {
-        if (date == null || date.isBlank()) return today;
-        LocalDate day;
-        try {
-            day = LocalDate.parse(date.trim());
-        } catch (DateTimeParseException e) {
-            throw new InvalidRequestException("date must be YYYY-MM-DD");
-        }
-        if (day.isAfter(today)) {
-            throw new InvalidRequestException("date is in the future");
-        }
-        if (day.isBefore(today.minusDays(MAX_DAYS_BACK))) {
-            throw new InvalidRequestException("date is more than " + MAX_DAYS_BACK + " days ago");
-        }
-        return day;
+    /** Complete, or only short of what it will never read (too many messages): same answer next time. */
+    static boolean cacheable(Map<String, String> errors) {
+        return errors.values().stream().allMatch(TOO_MANY::equals);
     }
 
     // ── window ───────────────────────────────────────────────────────────────
 
     /**
-     * D and the ranges around it, as naive UTC bounds (the engagement tables' storage).
-     * trendFrom = start of D-6; signalsFrom = trendFrom - the reply window (a reply on any trend
-     * day belongs to a message sent at most that long before it); scanFrom bounds the send scan.
+     * The period [fromDay, toDay] and the ranges around it, as naive UTC bounds (the engagement
+     * tables' storage). from / to = start of fromDay / of the day after toDay.
+     * <ul>
+     *   <li>trendFromDay: the trend's first day, fromDay or 6 days before toDay when the period is
+     *   shorter than {@link #TREND_DAYS}.</li>
+     *   <li>prevFromDay .. fromDay − 1: the equal-length period before (the KPI deltas); prevFrom
+     *   is its start.</li>
+     *   <li>dataFromDay / dataFrom: where the per-day reads start, the earlier of the two above.</li>
+     *   <li>signalsFrom = start of the trend − the reply window: the sends whose delivery and
+     *   replies the period and the trend need (a reply on a day belongs to a message sent at most
+     *   that long before it). sendsFrom = dataFrom − the reply window does the same for the
+     *   previous period, read separately (its sends are [sendsFrom, signalsFrom)).</li>
+     * </ul>
      */
-    record Window(LocalDate day, ZoneId zone, LocalDateTime from, LocalDateTime to, LocalDate trendFromDay,
-                  LocalDateTime trendFrom, LocalDateTime signalsFrom, LocalDateTime scanFrom,
-                  LocalDateTime trackedLookback) {
+    record Window(LocalDate fromDay, LocalDate toDay, ZoneId zone, LocalDateTime from, LocalDateTime to,
+                  LocalDate trendFromDay, LocalDate prevFromDay, LocalDateTime prevFrom,
+                  LocalDate dataFromDay, LocalDateTime dataFrom, LocalDateTime signalsFrom,
+                  LocalDateTime sendsFrom, LocalDateTime trackedLookback) {
+
+        int days() {
+            return (int) ChronoUnit.DAYS.between(fromDay, toDay) + 1;
+        }
+
+        LocalDate prevToDay() {
+            return fromDay.minusDays(1);
+        }
 
         LocalDate localDay(LocalDateTime utc) {
             return utc == null ? null : utc.atOffset(ZoneOffset.UTC).atZoneSameInstant(zone).toLocalDate();
@@ -164,23 +185,43 @@ public class EngagementDailyReportService {
             return epochMs == null ? null : Instant.ofEpochMilli(epochMs).atZone(zone).toLocalDate();
         }
 
+        boolean inPeriod(LocalDate d) {
+            return d != null && !d.isBefore(fromDay) && !d.isAfter(toDay);
+        }
+
+        boolean inPrevious(LocalDate d) {
+            return d != null && !d.isBefore(prevFromDay) && d.isBefore(fromDay);
+        }
+
         boolean inTrend(LocalDate d) {
-            return d != null && !d.isBefore(trendFromDay) && !d.isAfter(day);
+            return d != null && !d.isBefore(trendFromDay) && !d.isAfter(toDay);
+        }
+
+        /** The previous period's sends are not all in the first sends read (a period of 4+ days). */
+        boolean previousBeforeTrend() {
+            return prevFromDay.isBefore(trendFromDay);
         }
     }
 
-    static Window window(LocalDate day, LocalDate today, ZoneId zone) {
-        LocalDate trendFromDay = day.minusDays(TREND_DAYS - 1L);
-        Instant trendFrom = trendFromDay.atStartOfDay(zone).toInstant();
-        Instant signalsFrom = trendFrom.minus(Duration.ofHours(REPLY_WINDOW_HOURS));
-        return new Window(day, zone,
-                utc(day.atStartOfDay(zone).toInstant()),
-                utc(day.plusDays(1).atStartOfDay(zone).toInstant()),
+    static Window window(LocalDate fromDay, LocalDate toDay, LocalDate today, ZoneId zone) {
+        long days = ChronoUnit.DAYS.between(fromDay, toDay) + 1;
+        LocalDate shortTrend = toDay.minusDays(TREND_DAYS - 1L);
+        LocalDate trendFromDay = shortTrend.isBefore(fromDay) ? shortTrend : fromDay;
+        LocalDate prevFromDay = fromDay.minusDays(days);
+        LocalDate dataFromDay = prevFromDay.isBefore(trendFromDay) ? prevFromDay : trendFromDay;
+        Duration replyWindow = Duration.ofHours(REPLY_WINDOW_HOURS);
+        Instant dataFrom = dataFromDay.atStartOfDay(zone).toInstant();
+        return new Window(fromDay, toDay, zone,
+                utc(fromDay.atStartOfDay(zone).toInstant()),
+                utc(toDay.plusDays(1).atStartOfDay(zone).toInstant()),
                 trendFromDay,
-                utc(trendFrom),
-                utc(signalsFrom),
-                utc(signalsFrom.minus(SEND_SCAN_SLACK)),
-                utc(today.minusDays(MAX_DAYS_BACK).atStartOfDay(zone).toInstant()));
+                prevFromDay,
+                utc(prevFromDay.atStartOfDay(zone).toInstant()),
+                dataFromDay,
+                utc(dataFrom),
+                utc(trendFromDay.atStartOfDay(zone).toInstant().minus(replyWindow)),
+                utc(dataFrom.minus(replyWindow)),
+                utc(EngagementReportDay.earliest(today).atStartOfDay(zone).toInstant()));
     }
 
     /**
@@ -207,13 +248,12 @@ public class EngagementDailyReportService {
                 .addValue("instituteId", instituteId)
                 .addValue("engineIds", engineIds)
                 .addValue("tz", w.zone().getId())
-                .addValue("day", w.day().toString())
-                .addValue("trendFromDay", w.trendFromDay().toString())
+                .addValue("toDay", w.toDay().toString())
+                .addValue("dataFromDay", w.dataFromDay().toString())
                 .addValue("from", w.from(), java.sql.Types.TIMESTAMP)
                 .addValue("to", w.to(), java.sql.Types.TIMESTAMP)
-                .addValue("trendFrom", w.trendFrom(), java.sql.Types.TIMESTAMP)
-                .addValue("signalsFrom", w.signalsFrom(), java.sql.Types.TIMESTAMP)
-                .addValue("scanFrom", w.scanFrom(), java.sql.Types.TIMESTAMP)
+                .addValue("prevFrom", w.prevFrom(), java.sql.Types.TIMESTAMP)
+                .addValue("dataFrom", w.dataFrom(), java.sql.Types.TIMESTAMP)
                 .addValue("trackedLookback", w.trackedLookback(), java.sql.Types.TIMESTAMP)
                 .addValue("connectedCsv", connectedCsv);
     }
@@ -235,19 +275,29 @@ public class EngagementDailyReportService {
         List<Run> runs = List.of();
         List<ErrorRow> topErrors = List.of();
         LocalDateTime aiTrackedSince;
+        /** Sends of [signalsFrom, to): the period, the trend and the reply lookback. */
         List<Send> sends = List.of();
         boolean sendsLoaded;
+        /** Sends of [sendsFrom, signalsFrom): the rest of the previous period and its lookback. */
+        List<Send> previousSends = List.of();
+        boolean previousSendsLoaded;
+        /** null when the previous period's leads added and conversions could not be read. */
+        EngagementDailyReportDao.PreviousTotals previous;
         Signals signals;
+        /** Delivery and replies were read for previousSends too. */
+        boolean previousSignals;
         List<CallDay> calls = List.of();
         List<MessageCredit> messageCredits = List.of();
         Balance balance;
         List<StatusChangeRow> statusChanges = List.of();
+        /** null when the section failed: the report then sends newTemplates: null, not zeros. */
+        List<EngagementDailyReportDao.NewTemplateRow> newTemplates;
         List<Conversion> conversions = List.of();
         List<Booking> bookings = List.of();
     }
 
-    private EngagementDailyReport build(String instituteId, String engineId, LocalDate day, LocalDate today,
-                                        ZoneId zone, boolean superAdmin) {
+    private EngagementDailyReport build(String instituteId, String engineId, EngagementReportDay.Period period,
+                                        LocalDate today, ZoneId zone, boolean superAdmin) {
         List<Engine> engines = inTx(() -> dao.engines(instituteId));
         if (engineId != null && engines.stream().noneMatch(e -> e.id().equals(engineId))) {
             throw new ResourceNotFoundException("Engagement engine not found: " + engineId);
@@ -256,13 +306,17 @@ public class EngagementDailyReportService {
                 : engines.stream().filter(e -> e.id().equals(engineId)).toList();
         List<String> engineIds = scope.stream().map(Engine::id).toList();
 
-        Window w = window(day, today, zone);
+        Window w = window(period.from(), period.to(), today, zone);
         Map<String, String> errors = new LinkedHashMap<>();
         Data d = new Data();
         if (!engineIds.isEmpty()) {
             load(d, instituteId, engineId, scope, w, errors);
         } else {
-            d.signals = new Signals(false, Map.of());   // no engines: nothing went out, nothing is missing
+            // No engines: nothing went out, nothing is missing.
+            d.signals = new Signals(false, Map.of());
+            d.previousSignals = true;
+            d.sendsLoaded = d.previousSendsLoaded = true;
+            d.previous = new EngagementDailyReportDao.PreviousTotals(0, 0);
         }
         return assemble(d, engines, scope, engineId, w, superAdmin, errors);
     }
@@ -294,8 +348,16 @@ public class EngagementDailyReportService {
             return null;
         }));
         section("outreach", errors, () -> inTx(() -> {
-            d.sends = dao.sends(p);
+            d.sends = dao.sends(p, w.signalsFrom(), w.to());
             d.sendsLoaded = true;
+            return null;
+        }));
+        // The previous period, for the KPI deltas: its own section so a slow read of a long period
+        // costs the deltas only, never the period's numbers.
+        section(PREVIOUS, errors, () -> inTx(() -> {
+            d.previous = dao.previous(p);
+            if (w.previousBeforeTrend()) d.previousSends = dao.sends(p, w.sendsFrom(), w.signalsFrom());
+            d.previousSendsLoaded = true;
             return null;
         }));
         section("calls", errors, () -> inTx(() -> {
@@ -318,38 +380,66 @@ public class EngagementDailyReportService {
             d.conversions = dao.conversions(p);
             return null;
         }));
+        section("newTemplates", errors, () -> inTx(() -> {
+            d.newTemplates = dao.newTemplates(p);
+            return null;
+        }));
         section("demos", errors, () -> inTx(() -> {
             d.bookings = dao.bookings(p);
             return null;
         }));
 
-        // Delivery and replies: every WhatsApp / email message that went out in the signals range.
-        if (d.sendsLoaded) {
-            List<String> ids = d.sends.stream()
-                    .filter(s -> "SENT".equals(s.status())
-                            && ("WHATSAPP".equals(s.channel()) || "EMAIL".equals(s.channel())))
-                    .map(Send::id)
-                    .toList();
-            if (ids.isEmpty()) {
-                d.signals = new Signals(false, Map.of());
-            } else {
-                try {
-                    d.signals = signalsClient.fetch(instituteId, ids, REPLY_WINDOW_HOURS);
-                } catch (Exception e) {
-                    log.warn("[EngagementReport] signals failed for institute {}: {}", instituteId, e.getMessage());
-                    errors.put("delivery", "unavailable");
-                    errors.put("replies", "unavailable");
-                }
-            }
-        } else {
+        // Delivery and replies: every WhatsApp / email message that went out in the signals range,
+        // and the previous period's when they fit under the cap.
+        if (!d.sendsLoaded) {
+            errors.put("delivery", "unavailable");
+            errors.put("replies", "unavailable");
+            return;
+        }
+        List<String> ids = signalIds(d.sends);
+        if (ids.size() > MAX_SIGNAL_ACTIONS) {
+            log.warn("[EngagementReport] {} messages in {}..{} for institute {}: delivery skipped (cap {})",
+                    ids.size(), w.fromDay(), w.toDay(), instituteId, MAX_SIGNAL_ACTIONS);
+            errors.put("delivery", TOO_MANY);
+            errors.put("replies", TOO_MANY);
+            return;
+        }
+        List<String> previousIds = signalIds(d.previousSends);
+        boolean withPrevious = d.previousSendsLoaded && ids.size() + previousIds.size() <= MAX_SIGNAL_ACTIONS;
+        if (withPrevious && !previousIds.isEmpty()) {
+            List<String> all = new ArrayList<>(previousIds);   // both in send order, previous first
+            all.addAll(ids);
+            ids = all;
+        }
+        try {
+            d.signals = ids.isEmpty() ? new Signals(false, Map.of())
+                    : signalsClient.fetch(instituteId, ids, REPLY_WINDOW_HOURS);
+            d.previousSignals = withPrevious;
+        } catch (Exception e) {
+            log.warn("[EngagementReport] signals failed for institute {}: {}", instituteId, e.getMessage());
             errors.put("delivery", "unavailable");
             errors.put("replies", "unavailable");
         }
     }
 
     /**
-     * Lists an engine targets count even on a day they added no one. For "All", an archived
-     * engine's lists are left out unless they added people that day (the member buckets).
+     * The messages notification_service has delivery data for (sent WhatsApp / email), in send
+     * order: each chunk of the signals call then spans a short stretch of time, which keeps its
+     * inbound-reply read narrow on a long period.
+     */
+    static List<String> signalIds(List<Send> sends) {
+        return sends.stream()
+                .filter(s -> "SENT".equals(s.status())
+                        && ("WHATSAPP".equals(s.channel()) || "EMAIL".equals(s.channel())))
+                .sorted(Comparator.comparing(Send::dispatchedAt, Comparator.nullsFirst(Comparator.naturalOrder()))
+                        .thenComparing(Send::id))
+                .map(Send::id)
+                .toList();
+    }
+
+    /**
+     * Lists an engine targets count even in a period they added no one. For "All", an archived
+     * engine's lists are left out unless they added people in the period (the member buckets).
      */
     private static List<ListSelector> relevantSelectors(List<ListSelector> selectors, List<Engine> scope,
                                                         String engineId) {
@@ -447,11 +537,11 @@ public class EngagementDailyReportService {
 
     private EngagementDailyReport assemble(Data d, List<Engine> engines, List<Engine> scope, String engineId,
                                            Window w, boolean superAdmin, Map<String, String> errors) {
-        LocalDate day = w.day();
         Map<String, EngineAcc> perEngine = new LinkedHashMap<>();
         scope.forEach(e -> perEngine.put(e.id(), new EngineAcc()));
-        Map<LocalDate, TrendAcc> trend = new TreeMap<>();
-        for (LocalDate t = w.trendFromDay(); !t.isAfter(day); t = t.plusDays(1)) trend.put(t, new TrendAcc());
+        // Per-day totals from the first per-day day (trend or previous period) to the period's last:
+        // the trend and the previous period's totals are read off them.
+        Map<LocalDate, TrendAcc> daily = dailyAccs(w);
         Map<String, ChannelAcc> channels = new LinkedHashMap<>();
         for (String c : List.of("EMAIL", "WHATSAPP", "IN_APP", "AI_CALL")) channels.put(c, new ChannelAcc());
 
@@ -481,18 +571,15 @@ public class EngagementDailyReportService {
             if (acc.name == null) acc.name = s.listName();
             engineLists.computeIfAbsent(s.engineId(), k -> new HashSet<>()).add(s.listId());
         }
-        Map<String, AgentDay> agentToday = new HashMap<>();
-        Set<String> agentsWithToday = new HashSet<>();
+        // Each agent's counters summed over the period's days.
+        Map<String, AgentDay> agentPeriod = new HashMap<>();
         for (AgentDay ad : d.agentDays) {
-            TrendAcc t = trend.get(ad.day());
+            TrendAcc t = daily.get(ad.day());
             if (t != null) t.credits += ad.credits();
-            if (ad.day().equals(day)) {
-                agentToday.put(ad.agentId(), ad);
-                agentsWithToday.add(ad.agentId());
-            }
+            if (w.inPeriod(ad.day())) agentPeriod.merge(ad.agentId(), ad, AgentDay::plus);
         }
         double leadAgentCredits = 0, leadAgentUsd = 0;
-        for (AgentDay ad : agentToday.values()) {
+        for (AgentDay ad : agentPeriod.values()) {
             leadAgentCredits += ad.credits();
             leadAgentUsd += ad.costUsd();
         }
@@ -505,7 +592,7 @@ public class EngagementDailyReportService {
             Set<String> seen = new HashSet<>();
             for (String l : listIds) {
                 for (AgentInfo a : agentsByList.getOrDefault(l, List.of())) {
-                    AgentDay ad = agentToday.get(a.agentId());
+                    AgentDay ad = agentPeriod.get(a.agentId());
                     if (ad != null && seen.add(a.agentId())) ea.credits += ad.credits();
                 }
             }
@@ -516,11 +603,11 @@ public class EngagementDailyReportService {
             LeadAgent la = null;
             if ("LIST".equals(acc.kind) && acc.listId != null) {
                 AgentInfo agent = agentsByList.getOrDefault(acc.listId, List.of()).stream()
-                        .min(Comparator.comparing((AgentInfo a) -> agentsWithToday.contains(a.agentId()) ? 0 : 1)
+                        .min(Comparator.comparing((AgentInfo a) -> agentPeriod.containsKey(a.agentId()) ? 0 : 1)
                                 .thenComparing(a -> "ARCHIVED".equals(a.status()) ? 1 : 0))
                         .orElse(null);
                 if (agent != null) {
-                    AgentDay ad = agentToday.get(agent.agentId());
+                    AgentDay ad = agentPeriod.get(agent.agentId());
                     la = ad == null
                             ? new LeadAgent(agent.agentId(), agent.name(), 0, 0, 0, 0, 0, agent.alreadyInCrm(), 0, 0, 0)
                             : new LeadAgent(agent.agentId(), agent.name(), ad.discovered(), ad.researched(),
@@ -577,31 +664,36 @@ public class EngagementDailyReportService {
         long emailDelivered = 0, emailOpened = 0, emailClicked = 0, emailBounced = 0, emailComplained = 0;
         long waDelivered = 0, waRead = 0, waReplied = 0, waDispatchFailed = 0;
         boolean anyEmailTracked = false, anyWaObservable = false;
-        long repliesToday = 0;
+        long repliesInPeriod = 0;
         // WhatsApp pricing (design §3.5)
         Map<String, CategoryAcc> categories = new LinkedHashMap<>();
         String currency = null;
         double waAmount = 0;
         long billable = 0, estimatedMsgs = 0, missingRate = 0;
 
-        for (Send s : d.sends) {
+        // The previous period's own sends (before signalsFrom) only feed the per-day totals.
+        List<Send> allSends = new ArrayList<>(d.previousSends);
+        allSends.addAll(d.sends);
+        for (Send s : allSends) {
             LocalDate sentDay = w.localDay(s.dispatchedAt());
             boolean sent = "SENT".equals(s.status());
             Signal g = sent ? sig.get(s.id()) : null;
             Long repliedAt = g != null ? replyAt.get(s.id()) : null;
 
-            if (sent && w.inTrend(sentDay)) trend.get(sentDay).sent++;
+            TrendAcc sentAcc = sent && sentDay != null ? daily.get(sentDay) : null;
+            if (sentAcc != null) sentAcc.sent++;
             // Replies received on a day (activity): any message of the signals range answered that day.
             if (repliedAt != null) {
                 LocalDate replyDay = w.localDay(repliedAt);
-                if (w.inTrend(replyDay)) trend.get(replyDay).replies++;
-                if (day.equals(replyDay)) {
-                    repliesToday++;
+                TrendAcc replyAcc = daily.get(replyDay);
+                if (replyAcc != null) replyAcc.replies++;
+                if (w.inPeriod(replyDay)) {
+                    repliesInPeriod++;
                     EngineAcc ea = perEngine.get(s.engineId());
                     if (ea != null) ea.replies++;
                 }
             }
-            if (!day.equals(sentDay)) continue;
+            if (!w.inPeriod(sentDay)) continue;
 
             ChannelAcc ch = channels.get(s.channel());
             if (!sent) {
@@ -704,7 +796,7 @@ public class EngagementDailyReportService {
                     }
                     billable++;
                     WhatsAppRateCardService.Price price = category == null || errors.containsKey(WHATSAPP_COST)
-                            ? null : priceFor(g.recipient(), category, day, errors);
+                            ? null : priceFor(g.recipient(), category, sentDay, errors);
                     if (price == null || (currency != null && !currency.equals(price.currency()))) {
                         missingRate++;
                         break;
@@ -729,9 +821,9 @@ public class EngagementDailyReportService {
         long totalSeconds = 0;
         double connectedSecondsWeighted = 0, callCredits = 0;
         for (CallDay c : d.calls) {
-            TrendAcc t = trend.get(c.day());
+            TrendAcc t = daily.get(c.day());
             if (t != null) t.credits += c.credits();
-            if (!c.day().equals(day)) continue;
+            if (!w.inPeriod(c.day())) continue;
             placed += c.placed();
             notDialled += c.notDialled();
             connected += c.connected();
@@ -757,9 +849,9 @@ public class EngagementDailyReportService {
         // ── message credits ──
         double messageCredits = 0;
         for (MessageCredit m : d.messageCredits) {
-            TrendAcc t = trend.get(m.day());
+            TrendAcc t = daily.get(m.day());
             if (t != null) t.credits += m.credits();
-            if (!m.day().equals(day)) continue;
+            if (!w.inPeriod(m.day())) continue;
             messageCredits += m.credits();
             ChannelAcc ch = m.channel() == null ? null : channels.get(m.channel());
             if (ch != null) ch.credits += m.credits();
@@ -770,12 +862,12 @@ public class EngagementDailyReportService {
         // ── outcomes ──
         Map<String, long[]> moves = new LinkedHashMap<>();
         Map<String, String[]> moveLabels = new HashMap<>();
-        long statusChangesToday = 0;
+        long statusChangesInPeriod = 0;
         for (StatusChangeRow r : d.statusChanges) {
-            TrendAcc t = trend.get(r.day());
+            TrendAcc t = daily.get(r.day());
             if (t != null) t.statusChanges += r.total();
-            if (!r.day().equals(day)) continue;
-            statusChangesToday += r.total();
+            if (!w.inPeriod(r.day())) continue;
+            statusChangesInPeriod += r.total();
             String k = r.fromLabel() + "\u0000" + r.toLabel();
             long[] n = moves.computeIfAbsent(k, x -> new long[3]);
             n[0] += r.byEngine();
@@ -798,29 +890,31 @@ public class EngagementDailyReportService {
 
         Map<LocalDate, Set<String>> bookedByDay = new HashMap<>();
         Map<String, Set<String>> bookedByEngine = new HashMap<>();
+        Set<String> booked = new HashSet<>();
         Set<String> scheduled = new HashSet<>(), done = new HashSet<>(), noShow = new HashSet<>();
         for (Booking b : d.bookings) {
             if (b.bookedDay() != null) {
                 bookedByDay.computeIfAbsent(b.bookedDay(), k -> new HashSet<>()).add(b.bookingId());
-                if (b.bookedDay().equals(day)) {
+                if (w.inPeriod(b.bookedDay())) {
+                    booked.add(b.bookingId());
                     bookedByEngine.computeIfAbsent(b.engineId(), k -> new HashSet<>()).add(b.bookingId());
                 }
             }
-            if (b.scheduledOnDay()) {
+            if (b.scheduledInPeriod()) {
                 scheduled.add(b.bookingId());
                 if ("COMPLETED".equals(b.outcome())) done.add(b.bookingId());
                 if ("NO_SHOW".equals(b.outcome())) noShow.add(b.bookingId());
             }
         }
         bookedByDay.forEach((dd, ids) -> {
-            TrendAcc t = trend.get(dd);
+            TrendAcc t = daily.get(dd);
             if (t != null) t.demosBooked += ids.size();
         });
         bookedByEngine.forEach((eid, ids) -> {
             EngineAcc ea = perEngine.get(eid);
             if (ea != null) ea.demosBooked += ids.size();
         });
-        long demosBooked = bookedByDay.getOrDefault(day, Set.of()).size();
+        long demosBooked = booked.size();
         Outcomes outcomes = new Outcomes(demosBooked, scheduled.size(), done.size(), noShow.size(),
                 Math.max(0, scheduled.size() - done.size() - noShow.size()), converted.size(), statusChanges);
 
@@ -879,17 +973,17 @@ public class EngagementDailyReportService {
         // ── summary, funnel, trend ──
         long contacted = email.sent + wa.sent + inApp.sent + placed;
         long delivered = email.delivered + wa.delivered + inApp.delivered + connected;
-        // The funnel is one cohort, D's messages: replied = replies to messages sent on D, whenever
-        // they came. summary.replies stays the activity count (replies that arrived on D).
+        // The funnel is one cohort, the period's messages: replied = replies to messages sent in it,
+        // whenever they came. summary.replies stays the activity count (replies that arrived in it).
         long cohortReplies = channels.values().stream().mapToLong(a -> a.replied).sum();
         Summary summary = new Summary(leadsAdded, newLeads, leadsAdded - newLeads,
                 decisions, noOpK, failed,
                 contacted, email.sent, wa.sent, inApp.sent, placed,
-                delivered, repliesToday, connected,
-                demosBooked, scheduled.size(), done.size(), converted.size(), statusChangesToday, optOuts,
+                delivered, repliesInPeriod, connected,
+                demosBooked, scheduled.size(), done.size(), converted.size(), statusChangesInPeriod, optOuts,
                 round2(creditsTotal),
                 new Money(round4(waAmount), cur, estimatedMsgs > 0, missingRate > 0),
-                per(creditsTotal, repliesToday), per(creditsTotal, demosBooked), per(creditsTotal, converted.size()),
+                per(creditsTotal, repliesInPeriod), per(creditsTotal, demosBooked), per(creditsTotal, converted.size()),
                 balance == null ? null : round2(balance), runway);
         List<FunnelStage> funnel = List.of(
                 new FunnelStage("CONTACTED", contacted),
@@ -898,8 +992,13 @@ public class EngagementDailyReportService {
                 new FunnelStage("DEMO_BOOKED", demosBooked),
                 new FunnelStage("CONVERTED", converted.size()));
         List<TrendDay> trendRows = new ArrayList<>();
-        trend.forEach((dd, t) -> trendRows.add(new TrendDay(dd.toString(), t.sent, t.replies, t.demosBooked,
-                round2(t.credits), t.statusChanges)));
+        daily.forEach((dd, t) -> {
+            if (w.inTrend(dd)) {
+                trendRows.add(new TrendDay(dd.toString(), t.sent, t.replies, t.demosBooked, round2(t.credits),
+                        t.statusChanges));
+            }
+        });
+        Previous previous = previous(d, w, daily, errors);
 
         // ── per engine (All only) ──
         List<EngineRow> engineRows = null;
@@ -926,9 +1025,14 @@ public class EngagementDailyReportService {
         } else if (emailTracked && email.sent >= 20 && bounceRate >= 0.05) {
             health.add(new Health("EMAIL_BOUNCE_HIGH", "warning", bounceRate, null));
         }
-        if (emailComplained > 0) health.add(new Health("EMAIL_COMPLAINTS", "critical", emailComplained, null));
-        // Out of every WhatsApp tried on D: wa.failed also counts the ones rejected at dispatch,
-        // which never reach wa.sent, so over sent alone the ratio could pass 100%.
+        // Any spam complaint is worth seeing; it is critical from 0.1% of the emails sent (mailbox
+        // providers' bulk-sender line), so one complaint in a long, busy period reads as a warning.
+        if (emailComplained > 0) {
+            health.add(new Health("EMAIL_COMPLAINTS",
+                    rate(emailComplained, email.sent) >= 0.001 ? "critical" : "warning", emailComplained, null));
+        }
+        // Out of every WhatsApp tried in the period: wa.failed also counts the ones rejected at
+        // dispatch, which never reach wa.sent, so over sent alone the ratio could pass 100%.
         long waAttempted = wa.sent + waDispatchFailed;
         double waFailRate = Math.min(1.0, rate(wa.failed, waAttempted));
         if (waAttempted >= 20 && waFailRate >= 0.10) {
@@ -950,9 +1054,81 @@ public class EngagementDailyReportService {
         List<EngineOption> options = engines.stream()
                 .map(e -> new EngineOption(e.id(), e.name(), e.status(), e.system()))
                 .toList();
-        return new EngagementDailyReport(day.toString(), w.zone().getId(), engineId, Instant.now().toString(),
-                options, summary, funnel, trendRows, engineRows, listRows, runs, channelRows, calls, emailBlock,
-                waBlock, templateRows, outcomes, costs, realCost, health, errors);
+        return new EngagementDailyReport(w.toDay().toString(), w.fromDay().toString(), w.toDay().toString(), w.days(),
+                w.zone().getId(), engineId, Instant.now().toString(),
+                options, summary, funnel, trendRows, previous, engineRows, listRows, runs, channelRows, calls,
+                emailBlock, waBlock, templateRows, newTemplates(d.newTemplates), outcomes, costs, realCost, health,
+                errors);
+    }
+
+    /** One empty accumulator per day from the first per-day day to the period's last, in day order. */
+    private static TreeMap<LocalDate, TrendAcc> dailyAccs(Window w) {
+        TreeMap<LocalDate, TrendAcc> daily = new TreeMap<>();
+        for (LocalDate t = w.dataFromDay(); !t.isAfter(w.toDay()); t = t.plusDays(1)) daily.put(t, new TrendAcc());
+        return daily;
+    }
+
+    /**
+     * The previous period's totals (the KPI deltas): per-day sums over its days, leads added and
+     * conversions from their own read. A number whose read failed is null, as is replies when
+     * its delivery data was not read (too many messages, or notification_service down).
+     */
+    private static Previous previous(Data d, Window w, Map<LocalDate, TrendAcc> daily, Map<String, String> errors) {
+        long sent = 0, replies = 0, demos = 0, statusChanges = 0;
+        double credits = 0;
+        for (Map.Entry<LocalDate, TrendAcc> e : daily.entrySet()) {
+            if (!w.inPrevious(e.getKey())) continue;
+            TrendAcc t = e.getValue();
+            sent += t.sent;
+            replies += t.replies;
+            demos += t.demosBooked;
+            statusChanges += t.statusChanges;
+            credits += t.credits;
+        }
+        boolean sendsKnown = d.sendsLoaded && (!w.previousBeforeTrend() || d.previousSendsLoaded);
+        boolean repliesKnown = sendsKnown && d.signals != null && (!w.previousBeforeTrend() || d.previousSignals);
+        boolean creditsKnown = !errors.containsKey("costs") && !errors.containsKey("calls")
+                && !errors.containsKey("lists");
+        return new Previous(w.prevFromDay().toString(), w.prevToDay().toString(),
+                d.previous == null ? null : d.previous.leadsAdded(),
+                sendsKnown ? sent : null,
+                repliesKnown ? replies : null,
+                errors.containsKey("demos") ? null : demos,
+                d.previous == null ? null : d.previous.conversions(),
+                creditsKnown ? round2(credits) : null,
+                errors.containsKey("statusChanges") ? null : statusChanges);
+    }
+
+    /**
+     * The period's new WhatsApp templates: by the category they were proposed in, and bucketed by
+     * where they stand now (see {@link EngagementDailyReport.NewTemplates}). null rows = section failed.
+     */
+    static EngagementDailyReport.NewTemplates newTemplates(List<EngagementDailyReportDao.NewTemplateRow> rows) {
+        if (rows == null) return null;
+        Map<String, Long> byCategory = new LinkedHashMap<>();
+        long created = 0, inReview = 0, approvedByYou = 0, withMeta = 0, live = 0, rejected = 0, withdrawn = 0,
+                moved = 0;
+        for (EngagementDailyReportDao.NewTemplateRow r : rows) {
+            created += r.n();
+            byCategory.merge(r.proposedCategory(), r.n(), Long::sum);
+            switch (r.status() == null ? "" : r.status()) {
+                case "AI_PROPOSED", "USER_REVIEW" -> inReview += r.n();
+                case "USER_APPROVED" -> approvedByYou += r.n();
+                case "SUBMITTED", "META_PENDING" -> withMeta += r.n();
+                case "META_APPROVED", "META_RECATEGORISED" -> live += r.n();
+                case "META_REJECTED", "META_DISABLED" -> rejected += r.n();
+                case "WITHDRAWN", "SUPERSEDED" -> withdrawn += r.n();
+                default -> {
+                }
+            }
+            if ("UTILITY".equals(r.proposedCategory()) && "MARKETING".equals(r.metaCategory())) moved += r.n();
+        }
+        List<EngagementDailyReport.CategoryCount> categories = byCategory.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .map(e -> new EngagementDailyReport.CategoryCount(e.getKey(), e.getValue()))
+                .toList();
+        return new EngagementDailyReport.NewTemplates(created, categories, inReview, approvedByYou, withMeta, live,
+                rejected, withdrawn, moved);
     }
 
     /**

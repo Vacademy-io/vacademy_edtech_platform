@@ -8,6 +8,7 @@ import {
     EmptyChart,
     SectionCard,
 } from '@/routes/study-library/live-session/-components/dashboard/dashboard-charts';
+import { useReportT } from './range-context';
 import { ReportRetryingContext } from './retry-context';
 
 /**
@@ -60,7 +61,7 @@ interface ReportSectionProps {
     subtitle?: string;
     icon?: Icon;
     right?: React.ReactNode;
-    /** No report yet for this day or engine: show a skeleton. */
+    /** No report yet for this period or engine: show a skeleton. */
     isLoading?: boolean;
     /** The server listed this section under `errors`. */
     hasError?: boolean;
@@ -88,7 +89,7 @@ export function ReportSection({
     className,
     children,
 }: ReportSectionProps) {
-    const { t } = useTranslation('engagementDailyReport');
+    const t = useReportT();
     return (
         <SectionCard
             title={title}
