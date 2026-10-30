@@ -1,6 +1,7 @@
 'use client';
 
 import type React from 'react';
+import { getInstituteId } from '@/constants/helper';
 
 import { MyButton } from '@/components/design-system/button';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,7 +31,9 @@ const buildFormSchema = (t: TFunction) =>
 
 type FormValues = z.infer<ReturnType<typeof buildFormSchema>>;
 
-const INSTITUTE_ID = 'your-institute-id'; // Replace this in real usage
+// Uploads are stored under the institute's own folder, which is how storage is
+// attributed to it; the old placeholder hid every slide video/audio from that.
+const uploadInstituteId = () => getInstituteId() ?? 'your-institute-id';
 
 // Read the video file's intrinsic duration in milliseconds. Without this,
 // the slide is created with length=0 and the learner-side cascade can never
@@ -151,7 +154,7 @@ export const AddVideoFileDialog = ({ openState }: { openState?: (open: boolean) 
 
                 },
                 'your-user-id',
-                INSTITUTE_ID,
+                uploadInstituteId(),
                 'ADMIN',
                 true
             );

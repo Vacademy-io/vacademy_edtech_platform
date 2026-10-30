@@ -15,6 +15,22 @@ import java.util.List;
 public interface EngagementActionRepository extends JpaRepository<EngagementAction, String> {
 
     /**
+     * A row of engagement_action that counts as a touch of its member: something the engine did or
+     * still proposes. Not a touch: a no-op, a dry-run row, a message or AI call of the engine that
+     * expired without going out, and a message draft a person dismissed (neither reached anyone).
+     * Everything else counts as before: a reply draft (the lead wrote in), the internal CRM tasks,
+     * and a dismissed AI call, so a call a person turned down is not proposed again. No table alias:
+     * used as is in countTouches and in a subquery on engagement_action (EngagementUpcomingCallsDao).
+     */
+    String TOUCH_PREDICATE = "kind <> 'NO_OP' AND status <> 'SIMULATED'"
+            + " AND NOT (status = 'EXPIRED' AND kind IN ('TASK', 'SEND')"
+            + " AND COALESCE(action_type, '') NOT IN ('ADD_NOTE', 'CREATE_FOLLOWUP', 'ESCALATE', 'UPDATE_STATUS'))"
+            + " AND NOT (status = 'DISMISSED' AND kind = 'TASK'"
+            + " AND COALESCE(action_type, '') NOT IN ('ADD_NOTE', 'CREATE_FOLLOWUP', 'ESCALATE', 'UPDATE_STATUS',"
+            + " 'SCHEDULE_AI_CALL'))";
+
+
+    /**
      * When the engine's messages to this member went out, newest first. Answers to the person's own
      * messages (REPLY) are not outreach and do not count; callers pass PageRequest.of(0, n).
      */
@@ -35,6 +51,9 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
     // reconcile/reopen it, SENT so the Sent tab shows what the engine sent on its own. The default
     // view asks for OPEN/ACKED only, so a successful auto-send never clutters "needs action"; a
     // pending (OPEN, scheduled) auto-send stays the dispatch job's business.
+    // What waits on a person comes first: a lead's reply and an AI call to approve (by priority),
+    // then the other CRM actions, then the drafts. A CRM action waits for a person and nothing
+    // else, and 77 email drafts used to push an AI call to page 4, where nobody saw it.
     @Query(value = """
             SELECT * FROM engagement_action
             WHERE institute_id = :instituteId
@@ -46,7 +65,15 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
                    OR (CAST(:kind AS text) = 'CRM' AND action_type IN
                        ('ADD_NOTE', 'CREATE_FOLLOWUP', 'ESCALATE', 'UPDATE_STATUS', 'SCHEDULE_AI_CALL'))
                    OR (CAST(:kind AS text) <> 'CRM' AND kind = CAST(:kind AS text)))
-            ORDER BY priority DESC NULLS LAST, scheduled_for ASC NULLS LAST, created_at DESC
+            ORDER BY CASE
+                       WHEN status NOT IN ('OPEN', 'ACKED') THEN 2
+                       WHEN kind = 'REPLY' THEN 0
+                       WHEN kind <> 'TASK' THEN 2
+                       WHEN action_type = 'SCHEDULE_AI_CALL' THEN 0
+                       WHEN action_type IN ('ADD_NOTE', 'CREATE_FOLLOWUP', 'ESCALATE', 'UPDATE_STATUS') THEN 1
+                       ELSE 2
+                     END,
+                     priority DESC NULLS LAST, scheduled_for ASC NULLS LAST, created_at DESC
             """,
             countQuery = """
             SELECT count(*) FROM engagement_action
@@ -371,14 +398,9 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
     int rescheduleDueSend(@Param("id") String id, @Param("scheduledFor") Instant scheduledFor,
                           @Param("now") Instant now);
 
-    /**
-     * Everything the engine has done or proposed for one member (a no-op or a dry-run row is not a
-     * touch). Zero means the next thing it does is the member's first touch.
-     */
-    @Query(value = """
-            SELECT count(*) FROM engagement_action
-             WHERE member_id = :memberId AND kind <> 'NO_OP' AND status <> 'SIMULATED'
-            """, nativeQuery = true)
+    /** Touches of one member (TOUCH_PREDICATE). Zero means the next thing it does is the first touch. */
+    @Query(value = "SELECT count(*) FROM engagement_action WHERE member_id = :memberId AND " + TOUCH_PREDICATE,
+            nativeQuery = true)
     long countTouches(@Param("memberId") String memberId);
 
     /** Messages actually sent to one member — the touch count channels.maxTouches limits. */

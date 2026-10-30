@@ -718,7 +718,14 @@ function EventMeta({
             return <SourceMeta meta={meta} />;
         case 'FOLLOWUP_SCHEDULED':
         case 'FOLLOWUP':
-            return <FollowupMeta meta={meta} />;
+            // The follow-up's note is what was said; for migrated leads it is the
+            // only record of the conversation, so show it under the due date.
+            return (
+                <>
+                    <FollowupMeta meta={meta} />
+                    <DescriptionText description={event.description} />
+                </>
+            );
         case 'CALL_MADE':
             return (
                 <CallRecordingMeta
@@ -730,15 +737,19 @@ function EventMeta({
                 />
             );
         default:
-            if (!event.description) return null;
-            // Sanitize and render rich text (HTML from the RichTextEditor)
-            return (
-                <div
-                    className="prose-xs mt-1 text-xs leading-relaxed text-muted-foreground [&_p+p]:mt-1 [&_p]:m-0"
-                    dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(event.description) }}
-                />
-            );
+            return <DescriptionText description={event.description} />;
     }
+}
+
+function DescriptionText({ description }: { description: string | null }) {
+    if (!description) return null;
+    // Sanitize and render rich text (HTML from the RichTextEditor)
+    return (
+        <div
+            className="prose-xs mt-1 text-xs leading-relaxed text-muted-foreground [&_p+p]:mt-1 [&_p]:m-0"
+            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(description) }}
+        />
+    );
 }
 
 // ── Single event row ───────────────────────────────────────────────────────────

@@ -277,6 +277,33 @@ async def run_now(agent_id: str, s: Staff = Depends(admin)):
     return {"queued": True}
 
 
+@router.post("/agents/{agent_id}/deliver-now")
+async def deliver_now(agent_id: str, body: Optional[models.DeliverNowIn] = None, s: Staff = Depends(admin)):
+    """Sync now: deliver the APPROVED leads (all, best score first, or body.ids) into the lead list
+    straight away, also while the agent is paused or outside its window (2026-10-30: 127 leads
+    approved by hand on a paused agent sat waiting, as only a tick delivers). Today's quota and the
+    monthly credit cap still apply. Safe beside a tick: candidates are held with SKIP LOCKED and
+    slots reserved atomically."""
+    from ..services.lead_agent import delivery
+
+    if not flags.platform_enabled():
+        raise _err(status.HTTP_409_CONFLICT, "disabled", "The Lead Agent is switched off on the platform.")
+    agent = await run(store.get_agent, agent_id, s.institute_id)
+    if agent is None:
+        raise _err(status.HTTP_404_NOT_FOUND, "not_found", "No such agent.")
+    if agent["status"] == "ARCHIVED":
+        raise _err(status.HTTP_409_CONFLICT, "archived", "This agent is archived.")
+    ids = body.ids if body and body.ids else None
+    out = await delivery.deliver(agent, ignore_window=True, only_ids=ids)
+
+    def after(db):
+        today = store.get_day(db, agent_id, pacing.agent_day(agent.get("window_json")))
+        _, waiting = store.list_candidates(db, agent_id, status="APPROVED", page=0, size=1)
+        return {**out, "waiting": waiting,
+                "quota_left": max(0, int(agent.get("daily_quota") or 0) - int(today.get("delivered") or 0))}
+    return await run(after)
+
+
 @router.get("/agents/{agent_id}/candidates")
 async def list_candidates(agent_id: str, status_: Optional[str] = Query(None, alias="status", max_length=200),
                           page: int = Query(0, ge=0, le=10000), size: int = Query(25, ge=1, le=100),

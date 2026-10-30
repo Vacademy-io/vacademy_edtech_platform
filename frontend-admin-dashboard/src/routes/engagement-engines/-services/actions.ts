@@ -1,7 +1,7 @@
 import { BASE_URL, ENGAGEMENT_ENGINES_BASE, ENGAGEMENT_TASKS_BASE } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import type { EngagementAction } from '../-types';
-import type { CrmActionSetting, LeadAutomation } from '../-types/actions';
+import type { CrmActionSetting, LeadAutomation, UpcomingCalls } from '../-types/actions';
 
 const ENGAGEMENT_LEADS_BASE = `${BASE_URL}/admin-core-service/v1/engagement/leads`;
 
@@ -56,6 +56,15 @@ export const setLeadAutomation = async (
     const res = await authenticatedAxiosInstance.put(
         `${ENGAGEMENT_LEADS_BASE}/${leadId}/automation`,
         { doNotAutomate },
+        { params: { instituteId } }
+    );
+    return res.data;
+};
+
+/** The engine's AI calls still to happen, the ones placed in the last day, and the first calls coming. */
+export const getUpcomingCalls = async (engineId: string, instituteId: string): Promise<UpcomingCalls> => {
+    const res = await authenticatedAxiosInstance.get(
+        `${ENGAGEMENT_ENGINES_BASE}/${engineId}/upcoming-calls`,
         { params: { instituteId } }
     );
     return res.data;

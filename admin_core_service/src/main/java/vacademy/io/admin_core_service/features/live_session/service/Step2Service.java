@@ -21,6 +21,7 @@ import vacademy.io.admin_core_service.features.live_session.enums.*;
 import vacademy.io.admin_core_service.features.live_session.repository.*;
 import vacademy.io.admin_core_service.features.live_session.constants.LiveClassEmailBody;
 import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository;
+import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleMeetCohostSyncService;
 import vacademy.io.admin_core_service.features.live_session.scheduler.LiveSessionNotificationProcessor;
 import vacademy.io.admin_core_service.features.notification.dto.NotificationDTO;
 import vacademy.io.admin_core_service.features.notification.dto.NotificationToUserDTO;
@@ -85,6 +86,9 @@ public class Step2Service {
     @Autowired
     private LiveSessionInstructorService instructorService;
 
+    @Autowired
+    private GoogleMeetCohostSyncService googleMeetCohostSyncService;
+
     public Boolean step2AddService(LiveSessionStep2RequestDTO request, CustomUserDetails user) {
         LiveSession session = getSessionOrThrow(request.getSessionId());
 
@@ -96,7 +100,14 @@ public class Step2Service {
         linkParticipants(request);
         // Null means "client didn't send instructors" and is a no-op inside the
         // service, so pre-V524 clients keep the creator seeded at step 1.
-        instructorService.syncInstructors(session.getId(), resolveInstructorUserIds(request, session));
+        List<String> instructorUserIds = resolveInstructorUserIds(request, session);
+        instructorService.syncInstructors(session.getId(), instructorUserIds);
+        if (instructorUserIds != null) {
+            // Editing a class whose Meet spaces already exist: make newly assigned teachers co-hosts
+            // now, so their first "Start as host" doesn't join them as a participant. No-op on
+            // create, where the spaces are made after this call and get their co-hosts then.
+            googleMeetCohostSyncService.addCohostsToUpcomingSpaces(session.getId());
+        }
         processNotificationActions(request, session.getId(), isEdit);
         processCustomFields(request, session);
         liveSessionPaymentService.upsertPaymentConfig(session, request.getPaymentConfig());

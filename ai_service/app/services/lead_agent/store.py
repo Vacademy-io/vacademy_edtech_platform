@@ -778,13 +778,18 @@ def release_candidate(db: Session, candidate_id: str, error: str, delay_s: int) 
     return row[0] if row else None
 
 
-def claim_approved(db: Session, agent_id: str, n: int, hold_minutes: int = 10) -> List[Dict[str, Any]]:
-    """Up to n APPROVED candidates, best score first, held for hold_minutes
+def claim_approved(db: Session, agent_id: str, n: int, hold_minutes: int = 10,
+                   ids: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+    """Up to n APPROVED candidates (of ids, when given), best score first, held for hold_minutes
     (not_before pushed forward) so no other replica delivers them meanwhile."""
+    only = " AND id = ANY(CAST(:ids AS VARCHAR[]))" if ids is not None else ""
+    params: Dict[str, Any] = {"a": agent_id, "n": max(1, int(n)), "h": int(hold_minutes)}
+    if ids is not None:
+        params["ids"] = list(ids)
     rows = db.execute(text(f"""
         WITH pick AS (
             SELECT id FROM lead_candidate
-             WHERE agent_id = :a AND status = 'APPROVED' AND not_before <= now()
+             WHERE agent_id = :a AND status = 'APPROVED' AND not_before <= now(){only}
              ORDER BY score DESC NULLS LAST, created_at
              LIMIT :n
              FOR UPDATE SKIP LOCKED
@@ -793,7 +798,7 @@ def claim_approved(db: Session, agent_id: str, n: int, hold_minutes: int = 10) -
                                     updated_at = now()
           FROM pick WHERE c.id = pick.id
         RETURNING {CAND_COLS}
-    """), {"a": agent_id, "n": max(1, int(n)), "h": int(hold_minutes)}).mappings()
+    """), params).mappings()
     out = _rows(rows)
     out.sort(key=lambda r: (-(r["score"] or 0), r["created_at"]))
     return out

@@ -77,5 +77,62 @@
     "picker": {
         "autoHelp": "\"Runs on its own\" works only after a person has approved a few actions of that type (5 by default). Until then, each one is an inbox task.",
         "implicit": "Allowed because the AI call channel is on"
+    },
+    "upcomingCalls": {
+        "title": "AI calls",
+        "someone": "Someone",
+        "review_one": "Approve {{count}} call",
+        "review_other": "Approve {{count}} calls",
+        "empty": "No call is coming up. A call shows here as soon as the engine proposes one.",
+        "mode": {
+            "notLive": "The engine is not active, so no call is placed.",
+            "killed": "The kill switch is on: every call waits for your approval in the inbox.",
+            "manual": "Every call waits for your approval in the inbox.",
+            "learning": "{{approved}} of {{threshold}} calls approved. After that, calls go out on their own.",
+            "auto": "Calls go out on their own, in calling hours."
+        },
+        "section": {
+            "NEEDS_APPROVAL_one": "Waiting for your approval ({{count}})",
+            "NEEDS_APPROVAL_other": "Waiting for your approval ({{count}})",
+            "SCHEDULED_one": "Approved, calling later ({{count}})",
+            "SCHEDULED_other": "Approved, calling later ({{count}})",
+            "IN_QUEUE_one": "In the calling queue ({{count}})",
+            "IN_QUEUE_other": "In the calling queue ({{count}})",
+            "PLACED_one": "Placed in the last 24 hours ({{count}})",
+            "PLACED_other": "Placed in the last 24 hours ({{count}})",
+            "FIRST_one": "Next first call ({{count}} person)",
+            "FIRST_other": "Next first calls ({{count}} people)"
+        },
+        "firstHint": "Nothing has gone to these people yet. When the engine next looks at them, it proposes an AI call first.",
+        "state": {
+            "NEEDS_APPROVAL": "Needs approval",
+            "SCHEDULED": "Scheduled",
+            "IN_QUEUE": "In queue",
+            "PLACED": "Placed"
+        },
+        "result": {
+            "COMPLETED": "Connected",
+            "NO_ANSWER": "No answer",
+            "BUSY": "Busy",
+            "FAILED": "Failed"
+        },
+        "expires": "Expires {{time}}",
+        "callsAt": "Calls at {{time}}",
+        "notBefore": "Not before {{time}}",
+        "nextFreeLine": "When a line is free",
+        "placedAt": "{{time}}",
+        "around": "Around {{time}}",
+        "nextCheck": "At the next check",
+        "noPhone": "No phone: another channel",
+        "more_one": "and {{count}} more person",
+        "more_other": "and {{count}} more people",
+        "show": "Details",
+        "hide": "Hide",
+        "summary": {
+            "NEEDS_APPROVAL": "{{count}} to approve",
+            "SCHEDULED": "{{count}} scheduled",
+            "IN_QUEUE": "{{count}} in the queue",
+            "FIRST": "{{count}} to call first"
+        }
     }
 }

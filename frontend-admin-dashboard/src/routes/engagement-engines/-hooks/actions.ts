@@ -6,6 +6,7 @@ import {
     approveCrmTask,
     getEngineActions,
     getLeadAutomation,
+    getUpcomingCalls,
     saveEngineActions,
     setLeadAutomation,
     undoCrmTask,
@@ -30,6 +31,7 @@ export const useCrmTaskAction = () => {
             qc.invalidateQueries({ queryKey: ['engagementTasks'] });
             // Graduation per action type moves with every approval.
             qc.invalidateQueries({ queryKey: ['engagementEngineActions'] });
+            qc.invalidateQueries({ queryKey: ['engagementUpcomingCalls'] });
             if (vars.verb === 'undo') {
                 toast.success(t('inbox.undoneToast'));
             } else if (data?.kind === 'SEND' && data?.status === 'OPEN') {
@@ -91,5 +93,22 @@ export const useSetLeadAutomation = (leadId: string) => {
             toast.success(data.doNotAutomate ? t('lead.onToast') : t('lead.offToast'));
         },
         onError: (e) => toast.error(errMsg(e, t('lead.saveFailed'))),
+    });
+};
+
+/**
+ * The engine page's AI calls card. Refetched every minute while the page is open: calls move from
+ * approval to the queue to placed on their own.
+ */
+export const useUpcomingCalls = (engineId: string | undefined, enabled = true) => {
+    const instituteId = getInstituteId() || '';
+    return useQuery({
+        queryKey: ['engagementUpcomingCalls', instituteId, engineId],
+        queryFn: () => getUpcomingCalls(engineId as string, instituteId),
+        enabled: enabled && !!instituteId && !!engineId,
+        staleTime: 30 * 1000,
+        refetchInterval: 60 * 1000,
+        // An older backend has no /upcoming-calls: the card simply stays hidden.
+        retry: false,
     });
 };

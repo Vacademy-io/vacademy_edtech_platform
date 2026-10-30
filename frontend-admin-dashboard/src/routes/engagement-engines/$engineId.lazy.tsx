@@ -18,6 +18,7 @@ import {
     Lightning,
     Pause,
     PencilSimple,
+    PhoneCall,
     Trash,
     Play,
     Prohibit,
@@ -58,6 +59,7 @@ import { TemplateNegotiation } from './-components/TemplateNegotiation';
 import { EmailTemplatesPanel } from './-components/EmailTemplatesPanel';
 import { AssetsPanel } from './-components/AssetsPanel';
 import { CrmActionsPanel } from './-components/CrmActionsPanel';
+import { UpcomingAiCallsCard } from './-components/UpcomingAiCallsCard';
 import { useDeleteEngine } from './-hooks/engine-edit';
 import { ChannelChip, Chip, IconTile, KeyValue, SubHeading } from './-components/engine-ui';
 import { buildChannelMeta } from './-constants';
@@ -68,6 +70,7 @@ import {
     useEngine,
     useEnrollEngine,
     useSetAutonomy,
+    useTasks,
     useTransitionEngine,
 } from './-hooks';
 import {
@@ -131,6 +134,9 @@ function EngineDetailPage() {
     const navigate = useNavigate();
     const { setNavHeading } = useNavHeadingStore();
     const { data, isLoading, isError, refetch } = useEngine(engineId);
+    // AI calls and other CRM actions of this engine waiting for a person; approval happens only
+    // in the inbox, so the engine page points there instead of leaving the admin to find them.
+    const { data: approvals } = useTasks('OPEN,ACKED', 0, 50, { engineId, kind: 'CRM' });
     const { data: catalog } = useDataPointCatalog();
     const transition = useTransitionEngine();
     const enroll = useEnrollEngine();
@@ -206,8 +212,12 @@ function EngineDetailPage() {
 
     // Leads of the engine's first lead list, when it has one (a learner-only engine has none).
     const leadListId = audience.find((a) => a.type === 'AUDIENCE')?.id;
+    const waitingApprovals = approvals?.totalElements ?? 0;
+    const waitingAiCalls = (approvals?.content ?? []).filter(
+        (a) => a.kind === 'TASK' && a.actionType === 'SCHEDULE_AI_CALL'
+    ).length;
     const inboxHref = (filter?: string) =>
-        `/engagement-engines/inbox?engineId=${engine.id}${filter ? `&filter=${filter}` : ''}`;
+        `/engagement-engines/inbox?engine=${engine.id}${filter ? `&filter=${filter}` : ''}`;
 
     const kpis: StatItem[] = [
         {
@@ -339,7 +349,42 @@ function EngineDetailPage() {
                     </div>
                 )}
 
+                {waitingApprovals > 0 && (
+                    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-warning-200 bg-warning-50 p-3">
+                        <PhoneCall size={20} className="shrink-0 text-warning-600" />
+                        <span className="flex min-w-0 flex-1 flex-col">
+                            <span className="font-semibold text-neutral-800">
+                                <span className="text-body">
+                                    {t('approvalsWaiting.title', { count: waitingApprovals })}
+                                </span>
+                            </span>
+                            <span className="text-neutral-600">
+                                <span className="text-caption">
+                                    {waitingAiCalls > 0
+                                        ? t('approvalsWaiting.aiCalls', { count: waitingAiCalls })
+                                        : t('approvalsWaiting.text')}
+                                </span>
+                            </span>
+                        </span>
+                        <MyButton
+                            buttonType="primary"
+                            scale="small"
+                            onClick={() =>
+                                navigate({
+                                    to: '/engagement-engines/inbox',
+                                    search: { engine: engine.id, filter: 'approvals' },
+                                })
+                            }
+                        >
+                            <Tray className="me-1 size-4" /> {t('approvalsWaiting.open')}
+                        </MyButton>
+                    </div>
+                )}
+
                 <StatStrip items={kpis} compact />
+
+                {/* When the engine will call, and whom: approvals, held and queued calls, first calls. */}
+                {!!channelsJson.AI_CALL?.enabled && <UpcomingAiCallsCard engineId={engine.id} />}
 
                 {!engine.systemManaged && (
                     <EngineContactsCard

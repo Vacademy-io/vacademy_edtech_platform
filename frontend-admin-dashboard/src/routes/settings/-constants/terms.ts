@@ -138,6 +138,7 @@ export const enum SettingsTabs {
     SchoolSettings = 'schoolSettings',
     WhiteLabel = 'whiteLabel',
     AppStatus = 'appStatus',
+    StorageUsage = 'storageUsage',
     WhatsApp = 'whatsapp',
     LeadSettings = 'leadSettings',
     GuardianSettings = 'guardianSettings',

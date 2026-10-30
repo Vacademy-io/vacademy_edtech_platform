@@ -266,4 +266,58 @@ public interface LeadFollowupRepository extends JpaRepository<LeadFollowup, Stri
     @Query("UPDATE LeadFollowup lf SET lf.status = 'ONGOING' " +
            "WHERE lf.id = :id AND lf.status = 'OVERDUE' AND lf.isClosed = false")
     int releaseOverdueTransition(@Param("id") String id);
+
+    /** A follow-up as the Lead Journey needs it, plus whether its timeline events already exist. */
+    interface JourneyFollowupRow {
+        String getId();
+        String getResponseId();
+        String getLeadUserId();
+        String getCreatedBy();
+        Timestamp getScheduleTime();
+        String getStatus();
+        Boolean getClosed();
+        String getContent();
+        String getCloserReason();
+        String getClosedBy();
+        Timestamp getClosedAt();
+        Timestamp getCreatedAt();
+        Boolean getHasScheduledEvent();
+        Boolean getHasClosedEvent();
+    }
+
+    /*
+     * Follow-ups on a lead's enquiries (by lead user, or by enquiry id) for the Lead Journey.
+     * Follow-ups written through LeadFollowupService log FOLLOWUP_SCHEDULED / FOLLOWUP_CLOSED
+     * events carrying metadata.followupId, the two flags say which of those already exist.
+     * Only follow-ups missing an event come back (migrated follow-ups, the repeat-enquiry
+     * priority follow-up, bulk closes), so the cap is spent on rows the journey will show.
+     */
+    @Query(value = """
+            SELECT * FROM (
+                SELECT lf.id AS "id", lf.audience_response_id AS "responseId", ar.user_id AS "leadUserId",
+                       lf.created_by AS "createdBy", lf.schedule_time AS "scheduleTime",
+                       lf.status AS "status", lf.is_closed AS "closed", lf.content AS "content",
+                       lf.closer_reason AS "closerReason", lf.closed_by AS "closedBy",
+                       lf.closed_at AS "closedAt", lf.created_at AS "createdAt",
+                       EXISTS (SELECT 1 FROM timeline_event te
+                                WHERE te.type = 'LEAD' AND te.type_id = lf.audience_response_id
+                                  AND te.action_type = 'FOLLOWUP_SCHEDULED'
+                                  AND te.metadata_json ->> 'followupId' = lf.id) AS "hasScheduledEvent",
+                       EXISTS (SELECT 1 FROM timeline_event te
+                                WHERE te.type = 'LEAD' AND te.type_id = lf.audience_response_id
+                                  AND te.action_type = 'FOLLOWUP_CLOSED'
+                                  AND te.metadata_json ->> 'followupId' = lf.id) AS "hasClosedEvent"
+                FROM lead_followup lf
+                JOIN audience_response ar ON ar.id = lf.audience_response_id
+                WHERE (ar.user_id IN (:userIds) OR ar.id IN (:responseIds))
+                  AND (CAST(:instituteId AS text) IS NULL OR lf.institute_id = CAST(:instituteId AS text))
+            ) f
+            WHERE NOT f."hasScheduledEvent"
+               OR (f."closed" AND f."closedAt" IS NOT NULL AND NOT f."hasClosedEvent")
+            ORDER BY f."createdAt" DESC
+            LIMIT 5000
+            """, nativeQuery = true)
+    List<JourneyFollowupRow> findJourneyFollowups(@Param("userIds") List<String> userIds,
+                                                  @Param("responseIds") List<String> responseIds,
+                                                  @Param("instituteId") String instituteId);
 }

@@ -90,6 +90,14 @@
         "sourcesMore": "+{{count}} more"
     },
     "retry": "Try again",
+    "approvalsWaiting": {
+        "title_one": "{{count}} action is waiting for your approval",
+        "title_other": "{{count}} actions are waiting for your approval",
+        "aiCalls_one": "Includes {{count}} AI call. It is placed only after you approve it in the inbox.",
+        "aiCalls_other": "Includes {{count}} AI calls. They are placed only after you approve them in the inbox.",
+        "text": "Nothing runs until you approve it in the inbox.",
+        "open": "Review in inbox"
+    },
     "noPeople": {
         "title": "No one is in this engine yet",
         "text": "Add the people from the batches and lists you picked. Nothing is sent until you activate the engine."

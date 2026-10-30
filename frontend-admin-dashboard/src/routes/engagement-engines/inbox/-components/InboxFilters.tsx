@@ -52,8 +52,8 @@ export function InboxFilterControls({
     // A link can name an engine the list does not hold; the select still has to show something.
     const unknownEngine =
         enginesLoaded && !!search.engine && !engines.some((e) => e.id === search.engine);
-    // The waited tab is NO_OP by definition, so there is no kind to choose.
-    const showKind = search.filter !== 'waited';
+    // The waited tab is NO_OP and the approvals tab CRM by definition: no kind to choose.
+    const showKind = search.filter !== 'waited' && search.filter !== 'approvals';
     // A period set in the URL shows as a chip under the toolbar; the pickers open on request.
     const [editingPeriod, setEditingPeriod] = useState(false);
     const period = { from: search.from, to: search.to };

@@ -48,6 +48,7 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
     const [copiedField, setCopiedField] = useState<string>('');
     const [customFields, setCustomFields] = useState<FieldForLocation[]>([]);
     const [fieldGroups, setFieldGroups] = useState<FieldGroup[]>([]);
+    const [otherFields, setOtherFields] = useState<{ id: string; name: string }[]>([]);
     const [tncFileUrl, setTncFileUrl] = useState<string | null>(null);
     const userId = isSubmissionTab ? selectedStudent?.id : selectedStudent?.user_id;
     const { data: studentDetails, isLoading, isError, error } = useGetStudentDetails(userId || '');
@@ -93,9 +94,29 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
 
             setCustomFields(individualFields);
             setFieldGroups(filteredGroups);
+
+            // Fields switched off for the Learner's List (e.g. ones added only on a
+            // product page / invite / form) are still listed when this learner filled
+            // them — otherwise the answer is saved but never visible to the admin.
+            const shownIds = new Set([
+                ...individualFields.map((f) => f.id),
+                ...Array.from(fieldIdsInGroups),
+            ]);
+            const namesById = new Map<string, string>();
+            [
+                ...settings.customFields,
+                ...settings.fixedFields,
+                ...settings.fieldGroups.flatMap((group) => group.fields),
+            ].forEach((field) => {
+                if (!shownIds.has(field.id) && !namesById.has(field.id)) {
+                    namesById.set(field.id, field.name);
+                }
+            });
+            setOtherFields(Array.from(namesById, ([id, name]) => ({ id, name })));
         } else {
             setCustomFields(fields);
             setFieldGroups([]);
+            setOtherFields([]);
         }
     }, []);
 
@@ -208,6 +229,21 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
         console.error(error);
         return <div>{t('errors.fetchStudentDetails')}</div>;
     }
+
+    // Hidden-but-filled fields, minus the ones that only repeat the learner's
+    // name / email / phone (forms often re-ask these as "Student Name", "WhatsApp
+    // Number" etc.) — those are already shown in General Details / Contact.
+    const lastTenDigits = (value?: string | null) => (value || '').replace(/\D/g, '').slice(-10);
+    const learnerPhone = lastTenDigits(selectedStudent?.mobile_number);
+    const learnerNameAndEmail = [selectedStudent?.full_name, selectedStudent?.email]
+        .map((v) => (v || '').trim().toLowerCase())
+        .filter(Boolean);
+    const filledOtherFields = otherFields.filter((field) => {
+        const value = (selectedStudent?.custom_fields?.[field.id] || '').trim();
+        if (!value) return false;
+        if (learnerNameAndEmail.includes(value.toLowerCase())) return false;
+        return !(learnerPhone.length === 10 && lastTenDigits(value) === learnerPhone);
+    });
 
     // Copy icon is intentionally limited to Mobile No. + Email Id only — every
     // other field (IDs, custom fields, address, etc.) shows no copy affordance.
@@ -377,7 +413,7 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
             ))}
 
             {/* Individual custom fields */}
-            {customFields.length > 0 && (
+            {(customFields.length > 0 || filledOtherFields.length > 0) && (
                 <ProfileSectionCard icon={Tag} heading={t('sections.customFields')}>
                     <dl>
                         {customFields.map((field) => {
@@ -391,6 +427,13 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
                                 />
                             );
                         })}
+                        {filledOtherFields.map((field) => (
+                            <ProfileFieldRow
+                                key={field.id}
+                                label={field.name}
+                                value={selectedStudent?.custom_fields?.[field.id] || ''}
+                            />
+                        ))}
                     </dl>
                 </ProfileSectionCard>
             )}

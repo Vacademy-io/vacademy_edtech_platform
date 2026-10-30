@@ -32,6 +32,9 @@ public class TimelineEventController {
         private vacademy.io.admin_core_service.features.timeline.service.LeadJourneyBatchService leadJourneyBatchService;
 
         @Autowired
+        private vacademy.io.admin_core_service.features.timeline.service.LeadJourneyFollowupService leadJourneyFollowupService;
+
+        @Autowired
         private vacademy.io.admin_core_service.features.audience.repository.UserLeadProfileRepository userLeadProfileRepository;
 
         @Autowired
@@ -205,6 +208,7 @@ public class TimelineEventController {
                         @RequestParam(defaultValue = "50") int size) {
 
                 Pageable pageable = PageRequest.of(page, size);
-                return ResponseEntity.ok(timelineEventService.getAllEventsForStudent(studentUserId, typeIds, pageable));
+                // Timeline events + follow-ups that have no event (migrated leads) — see LeadJourneyFollowupService.
+                return ResponseEntity.ok(leadJourneyFollowupService.allEventsForStudent(studentUserId, typeIds, pageable));
         }
 }

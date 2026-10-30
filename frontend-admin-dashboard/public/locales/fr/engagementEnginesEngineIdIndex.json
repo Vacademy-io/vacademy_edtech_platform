@@ -91,6 +91,16 @@
         "sourcesMore": "+{{count}} de plus"
     },
     "retry": "Réessayer",
+    "approvalsWaiting": {
+        "title_one": "{{count}} action attend votre accord",
+        "title_many": "{{count}} actions attendent votre accord",
+        "title_other": "{{count}} actions attendent votre accord",
+        "aiCalls_one": "Dont {{count}} appel IA, passé seulement après votre accord dans la boîte de réception.",
+        "aiCalls_many": "Dont {{count}} appels IA, passés seulement après votre accord dans la boîte de réception.",
+        "aiCalls_other": "Dont {{count}} appels IA, passés seulement après votre accord dans la boîte de réception.",
+        "text": "Rien ne s’exécute avant votre accord dans la boîte de réception.",
+        "open": "Voir dans la boîte"
+    },
     "noPeople": {
         "title": "Personne dans ce moteur pour l'instant",
         "text": "Ajoutez les personnes des groupes et listes choisis. Rien n'est envoyé avant l'activation du moteur."

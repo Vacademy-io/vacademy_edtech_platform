@@ -1,6 +1,7 @@
 'use client';
 
 import type React from 'react';
+import { getInstituteId } from '@/constants/helper';
 
 import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
@@ -41,7 +42,9 @@ const formSchema = z.object({
 
 type FormValues = z.infer<typeof formSchema>;
 
-const INSTITUTE_ID = 'your-institute-id'; // Replace in real usage
+// Uploads are stored under the institute's own folder, which is how storage is
+// attributed to it; the old placeholder hid every slide video/audio from that.
+const uploadInstituteId = () => getInstituteId() ?? 'your-institute-id';
 
 export const AddAudioDialog = ({ openState }: { openState?: (open: boolean) => void }) => {
     const { t } = useTranslation('addAudioDialog');
@@ -152,7 +155,7 @@ export const AddAudioDialog = ({ openState }: { openState?: (open: boolean) => v
 
                 },
                 'your-user-id',
-                INSTITUTE_ID,
+                uploadInstituteId(),
                 'ADMIN',
                 true
             );
@@ -166,7 +169,7 @@ export const AddAudioDialog = ({ openState }: { openState?: (open: boolean) => v
 
                     },
                     'your-user-id',
-                    INSTITUTE_ID,
+                    uploadInstituteId(),
                     'ADMIN',
                     true
                 );

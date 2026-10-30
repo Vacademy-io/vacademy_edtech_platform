@@ -18,6 +18,7 @@ import vacademy.io.admin_core_service.features.live_session.provider.service.goo
 import vacademy.io.admin_core_service.features.live_session.provider.service.google.GoogleEventsSubscriptionService;
 import vacademy.io.admin_core_service.features.live_session.repository.LiveSessionRepository;
 import vacademy.io.admin_core_service.features.live_session.repository.SessionScheduleRepository;
+import vacademy.io.admin_core_service.features.live_session.service.LiveSessionInstructorService;
 import vacademy.io.admin_core_service.features.live_session.provider.manager.GoogleMeetManager.CohostResult;
 
 import java.util.ArrayList;
@@ -50,7 +51,7 @@ class GoogleMeetCohostTest {
         });
         return new GoogleMeetManager(mock(GoogleAccountStore.class), tokens, mock(GoogleConferenceService.class),
                 mock(GoogleEventsSubscriptionService.class), web, mock(SessionScheduleRepository.class),
-                mock(LiveSessionRepository.class), mock(AuthService.class));
+                mock(LiveSessionRepository.class), mock(AuthService.class), mock(LiveSessionInstructorService.class));
     }
 
     private static Mono<ClientResponse> reply(HttpStatus status, String body) {

@@ -84,6 +84,9 @@ function buildFilters(
             statuses: 'OPEN,ACKED',
             tone: 'warning',
         },
+        // AI calls and other CRM actions waiting for a person to approve them (kind CRM is added
+        // wherever the tab's list or count is requested).
+        { key: 'approvals', label: t('filters.approvals'), statuses: 'OPEN,ACKED', tone: 'danger' },
         { key: 'sent', label: t('filters.sent'), statuses: 'SENT', tone: 'success' },
         { key: 'failed', label: t('filters.failed'), statuses: 'FAILED', tone: 'danger' },
         // The engine's "decided to wait" decisions: DONE rows of kind NO_OP (the kind is added
@@ -126,6 +129,17 @@ const PAGE_SIZE = 20;
 type SortKey = 'priority' | 'oldest' | 'newest';
 
 const time = (iso?: string) => (iso ? new Date(iso).getTime() || 0 : 0);
+
+/**
+ * What waits on a person first, as the server orders it: a lead's reply and an AI call to approve,
+ * then the other CRM actions, then everything else. They must not sink under drafts.
+ */
+function approvalRank(task: EngagementAction): number {
+    if (task.status !== 'OPEN' && task.status !== 'ACKED') return 2;
+    if (task.kind === 'REPLY') return 0;
+    if (task.kind !== 'TASK' || !isCrmAction(task.actionType)) return 2;
+    return task.actionType === 'SCHEDULE_AI_CALL' ? 0 : 1;
+}
 
 /** "5m" / "3h" / "2d" since a timestamp; empty when there is none. */
 function ageText(iso: string | undefined, t: TFunction): string {
@@ -201,12 +215,12 @@ function TaskInboxPage() {
     // Labels come from t, so the list is built every render (not memoised).
     const FILTERS = buildFilters(t);
     const statuses = FILTERS.find((f) => f.key === activeKey)?.statuses ?? 'OPEN,ACKED';
-    // What the server is asked for. Waited is NO_OP by definition; the rest of the tabs take the
-    // kind from the select.
+    // What the server is asked for. Waited is NO_OP and approvals CRM by definition; the rest of
+    // the tabs take the kind from the select.
     const serverFilters = (tab: InboxFilterKey, withOutcome: boolean): TaskListFilters => ({
         engineId: filters.engine,
         channel: filters.channel,
-        kind: tab === 'waited' ? 'NO_OP' : filters.kind,
+        kind: tab === 'waited' ? 'NO_OP' : tab === 'approvals' ? 'CRM' : filters.kind,
         date: filters.date,
         from: filters.from,
         to: filters.to,
@@ -289,7 +303,7 @@ function TaskInboxPage() {
                   ? time(a.createdAt) - time(b.createdAt)
                   : sortKey === 'newest'
                     ? time(b.createdAt) - time(a.createdAt)
-                    : (b.priority ?? 0) - (a.priority ?? 0)
+                    : approvalRank(a) - approvalRank(b) || (b.priority ?? 0) - (a.priority ?? 0)
           )
         : matching;
     const current = visible.find((task) => task.id === selectedId) ?? visible[0];
