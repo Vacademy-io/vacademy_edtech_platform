@@ -137,6 +137,53 @@ describe("sanitizeBlogArticle (table of contents)", () => {
     expect(headings[0].id).toBe("intro");
     expect(headings[1].id).toBe("toc-पढ़ाई-कैसे-करें");
   });
+
+  it("reads a leading number badge as '1 Title', not '1Title'", () => {
+    const { headings } = sanitizeBlogArticle('<h2 class="h"><span class="num">1</span>What is UPPSC?</h2>');
+    expect(headings[0]).toEqual({ id: "toc-1-what-is-uppsc", text: "1 What is UPPSC?", level: 2 });
+  });
+});
+
+describe("sanitizeBlogArticle (the post's own <style>)", () => {
+  const pasted = `<!-- Elementor widget -->
+<style>
+.pcm *{box-sizing:border-box;margin:0}
+.pcm{--ink:#0e2742;color:var(--ink)}
+.pcm .hero:after{content:"}";position:absolute}
+:root{--x:1px} body .pcm{font-size:16px}
+h2, .pcm :is(p, li){line-height:1.6}
+@media(max-width:760px){.pcm .stats{grid-template-columns:repeat(2,1fr)}}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@import url("https://evil.example/x.css");
+.pcm .bg{background:url(https://evil.example/t.png)}
+</style>
+<div class="pcm"><h2>Hello</h2></div>`;
+
+  it("lifts the stylesheet out of the body and scopes every selector to the article", () => {
+    const { html, css } = sanitizeBlogArticle(pasted);
+    expect(html).not.toContain("<style");
+    expect(html).toContain('<div class="pcm">');
+    expect(css).toContain(".catalogue-blog-article .pcm *{");
+    expect(css).toContain('.catalogue-blog-article .pcm .hero:after{content:"}";position:absolute}');
+    expect(css).toContain(".catalogue-blog-article{--x:1px}");
+    expect(css).toContain(".catalogue-blog-article .pcm{font-size:16px}");
+    expect(css).toContain(".catalogue-blog-article h2,.catalogue-blog-article .pcm :is(p, li){");
+    expect(css).toContain("@media(max-width:760px){.catalogue-blog-article .pcm .stats{");
+    expect(css).toContain("@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}");
+  });
+
+  it("scrubs the stylesheet like a page block's CSS", () => {
+    const { css } = sanitizeBlogArticle(pasted);
+    expect(css).not.toContain("@import");
+    expect(css).not.toContain("evil.example");
+    expect(sanitizeBlogArticle("<style>.a{color:red}</style ><p>x</p>").css).not.toContain("</");
+  });
+
+  it("returns no css for a body without a stylesheet, and keeps CSS out of card previews", () => {
+    expect(sanitizeBlogArticle("<p>plain</p>").css).toBe("");
+    expect(blogPlainText(pasted)).toBe("Hello");
+    expect(sanitizeBlogHtml(pasted)).not.toContain("<style");
+  });
 });
 
 describe("blogPostSlugFor", () => {
