@@ -28,7 +28,8 @@
         "jupyter": "Jupyter",
         "image": "Image",
         "audio": "Audio",
-        "html": "HTML"
+        "html": "HTML",
+        "scorm": "SCORM"
     },
     "noItemsToAdd": "No items to add",
     "addedSlides": "Added {{count}} slide(s)",
@@ -43,5 +44,9 @@
     "failed": "Failed",
     "failedWithReason": "Failed: {{reason}}",
     "editTitle": "Edit title",
-    "remove": "Remove"
+    "remove": "Remove",
+    "scorm": {
+        "notAllowed": "SCORM packages are not enabled for your role — skipped {{name}}",
+        "fileTooLarge": "{{name}} is {{size}} — the maximum SCORM package size is {{max}}. Skipped."
+    }
 }

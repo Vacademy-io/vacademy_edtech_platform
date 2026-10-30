@@ -28,7 +28,8 @@
         "jupyter": "Jupyter",
         "image": "صورة",
         "audio": "صوت",
-        "html": "HTML"
+        "html": "HTML",
+        "scorm": "SCORM"
     },
     "noItemsToAdd": "لا توجد عناصر للإضافة",
     "addedSlides": "تمت إضافة {{count}} شريحة",
@@ -43,5 +44,9 @@
     "failed": "فشل",
     "failedWithReason": "فشل: {{reason}}",
     "editTitle": "تعديل العنوان",
-    "remove": "إزالة"
+    "remove": "إزالة",
+    "scorm": {
+        "notAllowed": "حزم SCORM غير مفعّلة لدورك — تم تخطي {{name}}",
+        "fileTooLarge": "حجم {{name}} هو {{size}} — الحد الأقصى لحجم حزمة SCORM هو {{max}}. تم التخطي."
+    }
 }

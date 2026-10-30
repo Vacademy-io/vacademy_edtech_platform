@@ -22,6 +22,12 @@ import { formatHTMLString } from './-components/slide-operations/formatHtmlStrin
 import { EMPTY_LEXICAL_INNER } from './-components/lexical-editor/lexical-doc-marker';
 import { docHtmlToLexicalIfSafe } from './-components/lexical-editor/convert-yoopta';
 import { HTML_DOC_TYPE } from './-components/html-doc/html-doc-utils';
+import { uploadScormPackage } from './-services/bulk-slide-creation';
+import {
+    formatBytes,
+    MAX_SCORM_BYTES,
+} from '@/components/common/study-library/bulk-content-uploading/conventions';
+import axios from 'axios';
 import {
     Plus,
     YoutubeLogo,
@@ -40,6 +46,7 @@ import {
     XCircle,
     CircleNotch,
     DotsSixVertical,
+    Package,
 } from '@phosphor-icons/react';
 import { type DisplaySettingsData } from '@/types/display-settings';
 import { getDisplaySettings, getDisplaySettingsFromCache } from '@/services/display-settings';
@@ -62,7 +69,8 @@ type StagedKind =
     | 'EMPTY_DOC'
     | 'CODE'
     | 'JUPYTER'
-    | 'PRESENTATION';
+    | 'PRESENTATION'
+    | 'SCORM';
 
 type StagedItem = {
     id: string;
@@ -111,6 +119,7 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
         addUpdateVideoSlide,
         addUpdateExcalidrawSlide,
         addUpdateAudioSlide,
+        addUpdateScormSlide,
         updateSlideOrder,
     } = useSlidesMutations(
         search.chapterId || '',
@@ -139,6 +148,8 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
     const [editingTitle, setEditingTitle] = useState<string>('');
     const [dragIndex, setDragIndex] = useState<number | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const scormInputRef = useRef<HTMLInputElement | null>(null);
+    const scormAllowed = roleDisplay?.contentTypes?.scorm !== false;
 
     const replaceBase64ImagesWithNetworkUrls = useReplaceBase64ImagesWithNetworkUrls();
     const normalizeHtmlQuotes = (html: string) => html.replace(/\\"/g, '"');
@@ -151,7 +162,34 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
         Array.from(files).forEach((file) => {
             const ext = file.name.split('.').pop()?.toLowerCase();
             const mime = file.type || '';
-            if (mime.includes('pdf') || ext === 'pdf') {
+            if (ext === 'zip') {
+                // A .zip here is a SCORM package; never let it fall through to the
+                // DOC fallback, which would try to read the archive as a document.
+                if (!scormAllowed) {
+                    toast.error(t('scorm.notAllowed', { name: file.name }));
+                    return;
+                }
+                // The server caps the multipart body at MAX_SCORM_BYTES and resets the
+                // connection past it (bare "Network Error"), so refuse it up front.
+                if (file.size > MAX_SCORM_BYTES) {
+                    toast.error(
+                        t('scorm.fileTooLarge', {
+                            name: file.name,
+                            size: formatBytes(file.size),
+                            max: formatBytes(MAX_SCORM_BYTES),
+                        }),
+                        { duration: 8000 }
+                    );
+                    return;
+                }
+                next.push({
+                    id: crypto.randomUUID(),
+                    kind: 'SCORM',
+                    title: file.name.replace(/\.[^/.]+$/, ''),
+                    file,
+                    mime,
+                });
+            } else if (mime.includes('pdf') || ext === 'pdf') {
                 next.push({
                     id: crypto.randomUUID(),
                     kind: 'PDF',
@@ -232,6 +270,7 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
                 });
             }
         });
+        if (next.length === 0) return;
         setStaged((prev) => [...prev, ...next]);
         toast.success(t('filesStaged', { count: next.length }));
     };
@@ -362,6 +401,8 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
                     return ct.jupyterNotebook !== false;
                 case 'presentation':
                     return ct.document !== false;
+                case 'scorm':
+                    return ct.scorm !== false;
                 default:
                     return true;
             }
@@ -450,6 +491,12 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
                 label: t('bubbles.html'),
                 icon: <FileHtml className="size-4" />,
                 onClick: () => fileInputRef.current?.click(),
+            },
+            allow('scorm') && {
+                key: 'scorm',
+                label: t('bubbles.scorm'),
+                icon: <Package className="size-4" />,
+                onClick: () => scormInputRef.current?.click(),
             },
         ].filter(Boolean) as {
             key: string;
@@ -948,6 +995,44 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
                     setStaged((prev) =>
                         prev.map((it) => (it.id === item.id ? { ...it, status: 'done' } : it))
                     );
+                } else if (item.kind === 'SCORM' && item.file) {
+                    // Two-step, same as the Add SCORM dialog: the server unzips and
+                    // parses the package, then the returned ScormSlide id is attached
+                    // to a new slide. The loop is sequential, so big zips never upload
+                    // in parallel.
+                    const id = crypto.randomUUID();
+                    try {
+                        const scormSlideId = await uploadScormPackage(item.file);
+                        const resp: unknown = await addUpdateScormSlide({
+                            id,
+                            title: item.title,
+                            description: null,
+                            status,
+                            slide_order: 0,
+                            new_slide: true,
+                            notify: false,
+                            scorm_slide: { id: scormSlideId },
+                        });
+                        // This endpoint returns the slide object, not a bare id string.
+                        const returnedId =
+                            typeof resp === 'string' ? resp : (resp as { id?: string } | null)?.id;
+                        createdIds.push(returnedId || id);
+                    } catch (err) {
+                        // Surface the backend's reason (e.g. not a SCORM package, no
+                        // launch file) instead of axios' generic status-code message.
+                        if (axios.isAxiosError(err)) {
+                            const data = err.response?.data as
+                                | { ex?: string; responseCode?: string; detail?: string }
+                                | undefined;
+                            throw new Error(
+                                data?.ex || data?.responseCode || data?.detail || err.message
+                            );
+                        }
+                        throw err;
+                    }
+                    setStaged((prev) =>
+                        prev.map((it) => (it.id === item.id ? { ...it, status: 'done' } : it))
+                    );
                 }
             }
 
@@ -1068,6 +1153,18 @@ export function QuickAddView({ search }: { search: ChapterSearchParamsForQuickAd
                         'audio/*',
                         '.html,.htm',
                     ].join(',')}
+                />
+                <input
+                    ref={scormInputRef}
+                    type="file"
+                    className="hidden"
+                    multiple
+                    accept=".zip,application/zip,application/x-zip-compressed"
+                    onChange={(e) => {
+                        addFilesToStage(e.target.files);
+                        // Reset so picking the same package again still fires onChange.
+                        e.target.value = '';
+                    }}
                 />
             </div>
 
@@ -1232,6 +1329,8 @@ function renderKindIcon(kind: StagedKind) {
             return <PresentationChart className={cls} />;
         case 'PPT':
             return <PresentationChart className={cls} />;
+        case 'SCORM':
+            return <Package className={cls} />;
         default:
             return null;
     }
