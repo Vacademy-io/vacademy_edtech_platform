@@ -148,6 +148,24 @@ def worth_searching(lead: Dict[str, Any], scored: Dict[str, Any], gate_cfg: Dict
     return decision != "REJECT"
 
 
+def worth_a_lookup(lead: Dict[str, Any], scored: Dict[str, Any], gate_cfg: Dict[str, Any],
+                   score: Callable[[Dict[str, Any]], Dict[str, Any]]) -> bool:
+    """The decision-maker lookup's guard (one search + one AI reply): the gate would not reject the lead
+    with the contact the lookup looks for, a direct one. So a hard reject (another segment, a competitor,
+    an excluded kind) is never looked up; before 2026-10-30 every lead at the review bar was. The lead's
+    own score, as it is, must reach the gate's bar, as before: the lookup finds the person to ask for at a
+    lead that already qualifies; lifting a weak or contact-less one is the Maps lookup's and the contact
+    hunt's job, at the effort the agent pays for (a BASIC agent searches nothing for it). The missing
+    contact does not count against it: no "no usable contact" flag, the contact level taken as direct, so
+    a list that takes only direct contacts still gets the one search that can find one (worth_searching,
+    which assumes a "likely" contact, would rule those out)."""
+    flags = [f for f in scored.get("flags") or [] if str(f).split(":", 1)[0] != "no_contact"]
+    quality = lead.get("contact_quality") or {}
+    decision, _reasons = engine_api.gate({**scored, "flags": flags},
+                                         {**lead, "contact_quality": {**quality, "level": "direct"}}, gate_cfg)
+    return decision != "REJECT"
+
+
 def maps_lookup(lead: Dict[str, Any], *, maps: Callable[[str], List[Dict[str, Any]]], city: Optional[str],
                 country: Optional[str], supp: Dict[str, set],
                 rescore: Rescore) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]], Dict[str, Any]]:
@@ -237,5 +255,5 @@ def no_contact_reason(*, maps_checked: bool, decision_maker: bool, hunt_searches
 
 
 __all__ = ["MAPS_FOUND_BY", "MAPS_CONTEXT", "SEARCH_ASSUMES_CONTACT", "last10", "filter_suppressed", "maps_url",
-           "maps_phone", "with_maps_phone", "reachable", "worth_searching", "maps_lookup", "hunt",
+           "maps_phone", "with_maps_phone", "reachable", "worth_searching", "worth_a_lookup", "maps_lookup", "hunt",
            "no_contact_reason"]

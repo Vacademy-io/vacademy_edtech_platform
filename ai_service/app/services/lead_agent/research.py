@@ -6,6 +6,11 @@ Cheapest filter first:
      the listing, without the model, and always waits for REVIEW), left-out kind
      of organisation (by name), no contact at all (neither on the website nor on
      its Google Maps listing), every contact suppressed;
+     then, still before the model, the organisation's own usable phones and emails (website + Maps
+     listing; helplines, toll-free, fax, template and other organisations' contacts left out) are looked
+     up in the institute's leads (admin_core existing-contacts, as delivery does): one already there is
+     SKIPPED "Already in your leads (same phone or email)" (prod 2026-10-30: 102 of 118 skips were found
+     only at delivery, after full research). A failed lookup never stops research: delivery checks again;
   2. the engine: LLM extraction (quotes checked against the pages) ->
      build_lead (contacts rated, stage; the Maps listing's phone confirms a
      website number or is added as one more) -> platform fingerprint + size
@@ -13,10 +18,11 @@ Cheapest filter first:
   3. the searches the agent's validation effort buys (effort.py, contact_hunt.py),
      only for a lead that reaches the review bar once it has a reachable contact:
      a Maps search by name for a lead not found on Maps (STANDARD, DEEP), then,
-     when the score reaches the bar and the website shows no direct route, the
-     decision-maker lookup (one Parallel search + one LLM reply,
-     engine.research.contact_search), then, while no reachable contact is known,
-     the contact hunt (1 search on STANDARD, up to 3 on DEEP); the contacts are
+     when its own score reaches the bar, the gate would not reject it with a direct
+     contact (contact_hunt.worth_a_lookup: never another segment, a competitor or an
+     excluded kind) and the website shows no direct route, the decision-maker lookup
+     (one Parallel search + one LLM reply, engine.research.contact_search), then,
+     while no reachable contact is known, the contact hunt (1 search on STANDARD, up to 3 on DEEP); the contacts are
      re-rated and the lead re-scored after each;
   4. engine.scoring.gate -> AUTO (APPROVED, waits for the window and quota),
      REVIEW, or REJECT (a lead with no usable contact says what was tried);
@@ -33,8 +39,9 @@ from __future__ import annotations
 import asyncio
 import dataclasses
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
+from . import admin_core
 from . import db as ladb
 from . import contact_hunt, dedupe, effort, engine_api, llm, pacing, planner, store
 from . import search as search_mod
@@ -50,15 +57,33 @@ EXTRACT_MAX_TOKENS = 6000  # reasoning counts as output (llm.REASONING_EFFORT)
 LOOKUP_MAX_TOKENS = 3000  # ~1,500 of it can be reasoning
 LLM_RETRY_S = 600
 INVALID_RETRY_S = 1800
-DEFAULT_GATE = {"auto_score": 70, "review_score": 45, "min_contact": "likely", "require_intent": False,
+DEFAULT_GATE = {"send_score": 50, "require_approval": False, "min_contact": "likely", "require_intent": False,
                 "auto_competitor_users": False}
-REGATE_MAX = 1000
 UNREADABLE = "No readable page (website could not be read)"
 MAPS_UNFIT = "Website unreadable and its Google Maps listing does not show the kind of organisation the brief targets"
+# delivery.py's note for a lead whose phone or email is already a contact of the institute
+ALREADY_IN_LEADS = "Already in your leads (same phone or email)"
+CRM_CHECK_TIMEOUT_S = admin_core.CHECK_TIMEOUT_S + 15
+PHONE_KINDS = ("institute_phone", "whatsapp")
+# known(phones as last 10 digits, emails in lower case) -> {"phones": [...], "emails": [...]} already in the
+# institute's leads (admin_core.existing_contacts)
+KnownContacts = Callable[[List[str], List[str]], Dict[str, List[str]]]
 
 
 class Rejected(Exception):
     """A free reject: no LLM call is spent on this candidate."""
+
+
+def brief_industries(plan: Dict[str, Any], brief: Dict[str, Any]) -> List[dict]:
+    """The brief's industries, as the plan keeps them (industries_detail: the ones outside its leave-out
+    list), else as the brief has them. The kinds of organisation the agent targets, read the same way
+    whether the website was read (the extraction prompt) or only the Google Maps listing (maps_kind)."""
+    return [i for i in (plan.get("industries_detail") or brief.get("industries") or []) if isinstance(i, dict)]
+
+
+def industry_names(plan: Dict[str, Any], brief: Dict[str, Any]) -> List[str]:
+    names = [" ".join(str(i.get("name") or i.get("search_term") or "").split()) for i in brief_industries(plan, brief)]
+    return list(dict.fromkeys(n for n in names if n))
 
 
 def _load(candidate_id: str) -> Optional[Dict[str, Any]]:
@@ -75,11 +100,13 @@ def _load(candidate_id: str) -> Optional[Dict[str, Any]]:
             "own_extension_pages": own_extension_pages}
 
 
-def pipeline(data: Dict[str, Any], *, ask, search, mx=None, maps=None, web=None) -> Dict[str, Any]:
+def pipeline(data: Dict[str, Any], *, ask, search, mx=None, maps=None, web=None,
+             known: Optional[KnownContacts] = None) -> Dict[str, Any]:
     """The research of one candidate (blocking; pure apart from `ask` and the searches).
     search(query) is the decision-maker lookup's; maps(query) -> Google Maps places and
     web(query) -> web results are the searches the agent's validation effort may spend
-    (contact_hunt.py), each step skipped without its callable.
+    (contact_hunt.py), each step skipped without its callable. known(phones, emails) -> the ones
+    already in the institute's leads (admin_core existing-contacts); without it nothing is looked up.
     Returns {"status", "decision", "score", "score_json", "lead_json", "stage",
     "reject_reason", "platforms", "size", "social"}. Raises Rejected for a free
     reject, or whatever ask raises (InvalidOutput / LLMUnavailable)."""
@@ -128,23 +155,27 @@ def pipeline(data: Dict[str, Any], *, ask, search, mx=None, maps=None, web=None)
     maps_phone = _maps_phone(discovery, name, site_domain, country, supp)
     if not contacts and maps_phone is None and not any(r["has_form"] for r in raw):
         raise Rejected("No contact published (or every contact is suppressed)")
+    if known is not None:
+        shared = _already_in_leads(known, *usable_keys(contacts, maps_phone, site_domain=site_domain,
+                                                       organisation=name, country=country))
+        if shared is not None:
+            return _skipped_as_known(*shared)
 
     page_texts = engine_api.extraction_pages(records)
-    segment = plan.get("segment") or ", ".join(i.get("name", "") for i in plan.get("industries_detail") or [])
-    if exclude:
-        segment += f" (not: {', '.join(exclude)})"
-    if brief.get("must_have"):
-        segment += f"; must have: {'; '.join(map(str, brief['must_have']))}"
+    # The kinds the brief targets are every one of its industries (any one is enough); the plan's segment,
+    # the planner's rewording in at most 120 characters, is a hint only. Before 2026-10-30 the segment was
+    # all the model saw (the industries were a fallback that never ran: a plan always has a segment), and it
+    # dropped kinds (prod audit: 42 of 179 "not the kind" rejects were a kind the brief lists). Markets one
+    # per line, from the agent's own list (a plan cached before this has them flattened).
     system, user = engine_api.build_extraction_prompt(
-        organisation=name, website=org.get("website") or home["url"], segment=segment,
-        locations=plan.get("locations") or [], products=offer, pages=page_texts,
-        max_input_chars=engine_api.config().max_input_chars,
+        organisation=name, website=org.get("website") or home["url"], segment=plan.get("segment") or "",
+        industries=industry_names(plan, brief), exclude=exclude, must_have=list(brief.get("must_have") or []),
+        locations=engine_api.market_names(markets) or plan.get("locations") or [], products=offer,
+        pages=page_texts, max_input_chars=engine_api.config().max_input_chars,
         hiring_roles=engine_api.run_hiring_roles(offer, hiring_roles),
     )
     extraction = ask(system, user, engine_api.schema("AccountExtraction"), "extract", EXTRACT_MAX_TOKENS)
-    phrase = engine_api.left_out(extraction.organisation_name or name, exclude) or (
-        engine_api.left_out(extraction.what_they_do, exclude) if not extraction.is_target_segment else None)
-    if phrase:
+    if phrase := engine_api.left_out_after_extraction(extraction, name, exclude):
         return _rejected_after_llm(f"Left out: {phrase}")
 
     lead = engine_api.build_lead(
@@ -184,10 +215,13 @@ def pipeline(data: Dict[str, Any], *, ask, search, mx=None, maps=None, web=None)
         except SearchFailed as exc:
             logger.info("lead agent: Google Maps lookup skipped (%s)", exc)
 
+    # The decision-maker lookup (a search + an AI reply) only for a lead whose own score reaches the bar and
+    # that the gate would not reject with a direct contact (contact_hunt.worth_a_lookup): before 2026-10-30
+    # it ran for any lead at the review bar, another segment, a competitor or an excluded kind included.
     looked_up = False
-    if (int(scored.get("score") or 0) >= int(gate_cfg.get("review_score") or 0)
-            and brief.get("find_contacts", True) is not False
-            and (lead.get("contact_quality") or {}).get("level") != "direct"):
+    if (brief.get("find_contacts", True) is not False
+            and (lead.get("contact_quality") or {}).get("level") != "direct"
+            and contact_hunt.worth_a_lookup(lead, scored, gate_cfg, score)):
         try:
             found = engine_api.lookup_contacts(
                 lead, place=place, country=country, search=search,
@@ -268,7 +302,7 @@ def _judged_from_maps(data: Dict[str, Any], *, name: str, discovery: Dict[str, A
     category = str(listing.get("type") or "").strip()
     if phrase := engine_api.left_out(f"{name} {category}", exclude):
         raise Rejected(f"Left out: {phrase}")
-    kind = engine_api.maps_kind(category, name, plan.get("industries_detail") or brief.get("industries") or [])
+    kind = engine_api.maps_kind(category, name, brief_industries(plan, brief))
     if kind is None:
         raise Rejected(MAPS_UNFIT)
 
@@ -315,6 +349,71 @@ def _judged_from_maps(data: Dict[str, Any], *, name: str, discovery: Dict[str, A
         "platforms": [], "size": {}, "social": {},
         "org_name": lead["organisation"].get("name"), "org_city": lead["organisation"].get("city"),
     }
+
+
+def usable_keys(contacts: List[Any], maps_phone: Optional[Dict[str, Any]], *, site_domain: Optional[str],
+                organisation: str, country: Optional[str]) -> Tuple[Set[str], Set[str]]:
+    """(phones as their last 10 digits, emails in lower case): the organisation's own contacts outreach
+    could use, judged before the AI step. The website's phones and emails and the Maps listing's phone
+    are rated with what is known then (engine contacts.rate_contact, no people, not a chain); a contact
+    rated "avoid" is left out: a helpline, toll-free, fax or template number, a support or careers line,
+    another organisation's email or a web agency's credit is printed on other organisations' sites too,
+    and must not make this one "already in your leads". A website number the Maps listing also shows is
+    read as the listing's (maps_confirmed), as research does after the model. Forms are not contacts."""
+    region = engine_api.phone_region(site_domain, country)
+    maps_digits = last10((maps_phone or {}).get("value"))
+    items: List[Dict[str, Any]] = []
+    for c in contacts or []:
+        item = c.as_dict() if hasattr(c, "as_dict") else dict(c)
+        if item.get("kind") in PHONE_KINDS and maps_digits and last10(item.get("value")) == maps_digits:
+            item["maps_confirmed"] = True
+        items.append(item)
+    if maps_phone:
+        items.append(dict(maps_phone))
+    phones: Set[str] = set()
+    emails: Set[str] = set()
+    for item in items:
+        kind, value = item.get("kind"), str(item.get("value") or "").strip()
+        if kind not in (*PHONE_KINDS, "published_email") or not value:
+            continue
+        try:
+            tier, _why = engine_api.rate_contact(item, site_domain=site_domain, organisation=organisation,
+                                                 region=region)
+        except Exception:  # noqa: BLE001 - an unratable contact is simply not looked up
+            continue
+        if tier == "avoid":
+            continue
+        if kind in PHONE_KINDS and last10(value):
+            phones.add(last10(value))
+        elif kind == "published_email" and "@" in value:
+            emails.add(value.lower())
+    return phones, emails
+
+
+def _already_in_leads(known: KnownContacts, phones: Set[str],
+                      emails: Set[str]) -> Optional[Tuple[List[str], List[str]]]:
+    """(phones, emails) of these that are already in the institute's leads, or None (none are, nothing
+    to look up, or the lookup failed: research carries on and delivery checks again before sending)."""
+    if not phones and not emails:
+        return None
+    try:
+        found = known(sorted(phones), sorted(emails)) or {}
+    except Exception as exc:  # noqa: BLE001 - fail open: an unreachable admin_core never stops research
+        logger.warning("lead agent: existing-contacts check before research failed (%s); research continues", exc)
+        return None
+    shared_phones = sorted(phones & {last10(p) or p for p in found.get("phones") or []})
+    shared_emails = sorted(emails & {str(e).lower() for e in found.get("emails") or []})
+    return (shared_phones, shared_emails) if shared_phones or shared_emails else None
+
+
+def _skipped_as_known(phones: List[str], emails: List[str]) -> Dict[str, Any]:
+    """SKIPPED before the model: the organisation's phone or email is already in the institute's leads
+    (delivery's note, which the dashboard lists under Rejected). Neither researched nor rejected; no
+    LLM call was spent and no delivery slot is taken."""
+    return {"status": "SKIPPED", "decision": None, "score": None, "lead_json": None, "stage": None,
+            "reject_reason": None, "delivery_note": ALREADY_IN_LEADS,
+            "score_json": {"reasons": [ALREADY_IN_LEADS], "gate_reasons": [ALREADY_IN_LEADS],
+                           "already_in_leads": {"phones": phones, "emails": emails}}}
 
 
 def _rejected_after_llm(reason: str) -> Dict[str, Any]:
@@ -418,10 +517,16 @@ async def research_candidate(candidate_id: str) -> Optional[str]:
     def web(query: str):
         return search_mod.run_sync(loop, search_mod.serper().search(query, gl=country, counter=counter), timeout=120)
 
+    # The institute's existing leads, looked up before the model (admin_core existing-contacts, as delivery).
+    def known(phones: List[str], emails: List[str]) -> Dict[str, List[str]]:
+        return search_mod.run_sync(loop, admin_core.existing_contacts(agent["institute_id"], phones, emails),
+                                   timeout=CRM_CHECK_TIMEOUT_S)
+
     try:
         from .mx import mx_lookup
 
-        result = await asyncio.to_thread(pipeline, data, ask=ask, search=search, mx=mx_lookup, maps=maps, web=web)
+        result = await asyncio.to_thread(pipeline, data, ask=ask, search=search, mx=mx_lookup, maps=maps, web=web,
+                                         known=known)
     except Rejected as exc:
         return await asyncio.to_thread(_free_reject, cand, agent, str(exc))
     except llm.LLMUnavailable as exc:
@@ -435,23 +540,4 @@ async def research_candidate(candidate_id: str) -> Optional[str]:
     return await asyncio.to_thread(_save, cand, agent, result)
 
 
-def regate_waiting(db, agent: Dict[str, Any]) -> int:
-    """The leads waiting for review, gated again with the agent's current gate (an admin lowered
-    the bar or let competitor users through): those it now passes go on to delivery, as research
-    would have sent them. Nothing is rejected or held back here. Returns how many moved."""
-    gate_cfg = {**DEFAULT_GATE, **(agent.get("gate_json") or {})}
-    rows, _total = store.list_candidates(db, agent["id"], status="REVIEW", page=0, size=REGATE_MAX)
-    moved = 0
-    for cand in rows:
-        scored, lead = cand.get("score_json"), cand.get("lead_json")
-        if not isinstance(scored, dict) or not isinstance(lead, dict):
-            continue
-        decision, reasons = engine_api.gate(scored, lead, gate_cfg)
-        if decision == "AUTO" and store.set_candidate(
-                db, cand["id"], expect=["REVIEW"], status="APPROVED", decision="AUTO",
-                score_json={**scored, "gate_reasons": list(reasons)}, not_before="now()"):
-            moved += 1
-    return moved
-
-
-__all__ = ["Rejected", "pipeline", "research_candidate", "regate_waiting", "last10"]
+__all__ = ["Rejected", "pipeline", "research_candidate", "last10", "usable_keys", "ALREADY_IN_LEADS"]
