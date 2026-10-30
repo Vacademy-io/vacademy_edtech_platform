@@ -50,9 +50,9 @@
         "sortPriority": "Priority first",
         "sortOldest": "Oldest first",
         "sortNewest": "Newest first",
-        "pageNote": "Search and filters apply to the tasks on this page."
+        "pageNote": "Engine, channel and kind filters cover every page. Search looks only at the tasks on this page."
     },
-    "filteredEmpty": "No tasks on this page match these filters.",
+    "filteredEmpty": "No tasks on this page match your search.",
     "age": {
         "minutes": "{{count}}m",
         "hours": "{{count}}h",

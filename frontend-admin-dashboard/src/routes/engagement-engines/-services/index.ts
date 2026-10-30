@@ -120,10 +120,13 @@ export const listTasks = async (
     instituteId: string,
     statuses: string,
     page: number,
-    size: number
+    size: number,
+    engineId?: string,
+    channel?: string,
+    kind?: string
 ): Promise<PageResponse<EngagementAction>> => {
     const res = await authenticatedAxiosInstance.get(ENGAGEMENT_TASKS_BASE, {
-        params: { instituteId, statuses, page, size },
+        params: { instituteId, statuses, page, size, engineId, channel, kind },
     });
     return res.data;
 };

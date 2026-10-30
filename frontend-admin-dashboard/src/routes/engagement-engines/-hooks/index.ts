@@ -181,11 +181,18 @@ export const useArchiveEngine = () => {
 };
 
 // ---- Tasks ----
-export const useTasks = (statuses: string, page: number, size: number) => {
+export const useTasks = (
+    statuses: string,
+    page: number,
+    size: number,
+    engineId?: string,
+    channel?: string,
+    kind?: string
+) => {
     const instituteId = getInstituteId() || '';
     return useQuery({
-        queryKey: ['engagementTasks', instituteId, statuses, page, size],
-        queryFn: () => listTasks(instituteId, statuses, page, size),
+        queryKey: ['engagementTasks', instituteId, statuses, page, size, engineId, channel, kind],
+        queryFn: () => listTasks(instituteId, statuses, page, size, engineId, channel, kind),
         enabled: !!instituteId,
         staleTime: 10 * 1000,
     });

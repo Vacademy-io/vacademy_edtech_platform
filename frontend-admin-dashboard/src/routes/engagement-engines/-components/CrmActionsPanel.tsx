@@ -17,7 +17,16 @@ import type { CrmActionSetting } from '../-types/actions';
  * AI calls), and which may run on their own once a person has approved enough of that type.
  * Every action starts as an inbox task; the kill switch stops all autonomous actions.
  */
-export function CrmActionsPanel({ engineId, killed }: { engineId: string; killed?: boolean }) {
+export function CrmActionsPanel({
+    engineId,
+    killed,
+    aiCallChannelOn,
+}: {
+    engineId: string;
+    killed?: boolean;
+    /** The AI call channel is on, so the AI call action is allowed and cannot be turned off here. */
+    aiCallChannelOn?: boolean;
+}) {
     const { t } = useTranslation('engagementEnginesActions');
     const { data, isLoading, isError, refetch } = useEngineActions(engineId);
     const save = useSaveEngineActions(engineId);
@@ -73,22 +82,36 @@ export function CrmActionsPanel({ engineId, killed }: { engineId: string; killed
                 <div className="flex flex-col gap-3">
                     <ul className="flex flex-col divide-y divide-neutral-100">
                         {rows.map((r) => (
-                            <li key={r.type} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center">
+                            <li
+                                key={r.type}
+                                className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center"
+                            >
                                 <div className="flex min-w-0 flex-1 items-start gap-3">
-                                    <IconTile icon={CRM_ACTION_ICON[r.type]} size="sm" tint={CRM_ACTION_TINT[r.type]} />
+                                    <IconTile
+                                        icon={CRM_ACTION_ICON[r.type]}
+                                        size="sm"
+                                        tint={CRM_ACTION_TINT[r.type]}
+                                    />
                                     <div className="min-w-0">
                                         <p className="font-semibold text-neutral-900">
-                                            <span className="text-body">{t(`types.${r.type}.label`)}</span>
+                                            <span className="text-body">
+                                                {t(`types.${r.type}.label`)}
+                                            </span>
                                         </p>
                                         <p className="text-neutral-500">
-                                            <span className="text-caption">{t(`types.${r.type}.description`)}</span>
+                                            <span className="text-caption">
+                                                {t(`types.${r.type}.description`)}
+                                            </span>
                                         </p>
                                         {r.allowed && r.auto && (
                                             <div className="mt-2 flex max-w-xs flex-col gap-1">
                                                 <Progress
                                                     value={
                                                         r.threshold > 0
-                                                            ? Math.min(100, (r.approved / r.threshold) * 100)
+                                                            ? Math.min(
+                                                                  100,
+                                                                  (r.approved / r.threshold) * 100
+                                                              )
                                                             : 100
                                                     }
                                                     aria-label={t('panel.progress', {
@@ -112,11 +135,18 @@ export function CrmActionsPanel({ engineId, killed }: { engineId: string; killed
                                     <label className="flex items-center gap-2">
                                         <Switch
                                             checked={r.allowed}
-                                            disabled={save.isPending}
+                                            disabled={
+                                                save.isPending ||
+                                                (aiCallChannelOn && r.type === 'SCHEDULE_AI_CALL')
+                                            }
                                             onCheckedChange={(v) => update(r.type, { allowed: v })}
-                                            aria-label={t('panel.allowedFor', { action: t(`types.${r.type}.label`) })}
+                                            aria-label={t('panel.allowedFor', {
+                                                action: t(`types.${r.type}.label`),
+                                            })}
                                         />
-                                        <span className="text-caption text-neutral-700">{t('panel.allowed')}</span>
+                                        <span className="text-caption text-neutral-700">
+                                            {t('panel.allowed')}
+                                        </span>
                                     </label>
                                     <label
                                         className="flex items-center gap-2"
@@ -126,8 +156,12 @@ export function CrmActionsPanel({ engineId, killed }: { engineId: string; killed
                                             checked={r.auto}
                                             disabled={save.isPending || !r.allowed}
                                             onCheckedChange={(v) => update(r.type, { auto: v })}
-                                            aria-label={t('panel.autoFor', { action: t(`types.${r.type}.label`) })}
-                                            aria-describedby={r.allowed ? undefined : `auto-needs-${r.type}`}
+                                            aria-label={t('panel.autoFor', {
+                                                action: t(`types.${r.type}.label`),
+                                            })}
+                                            aria-describedby={
+                                                r.allowed ? undefined : `auto-needs-${r.type}`
+                                            }
                                         />
                                         <span
                                             className={cn(
@@ -144,7 +178,10 @@ export function CrmActionsPanel({ engineId, killed }: { engineId: string; killed
                                         )}
                                     </label>
                                     {r.allowed && r.auto && killed && (
-                                        <Chip label={t('panel.paused')} className="bg-warning-50 text-warning-700" />
+                                        <Chip
+                                            label={t('panel.paused')}
+                                            className="bg-warning-50 text-warning-700"
+                                        />
                                     )}
                                 </div>
                             </li>

@@ -19,12 +19,15 @@ const isAuto = (e: CrmActionEntry) => typeof e !== 'string' && e.auto === true;
 export function CrmActionsPicker({
     value,
     onChange,
+    implicit = [],
 }: {
     value: CrmActionEntry[];
     onChange: (next: CrmActionEntry[]) => void;
+    /** Types allowed because of another setting (the AI call channel): shown on and locked. */
+    implicit?: CrmActionType[];
 }) {
     const { t } = useTranslation('engagementEnginesActions');
-    const allowed = new Set(value.map(typeOf));
+    const allowed = new Set([...value.map(typeOf), ...implicit]);
     const auto = new Set(value.filter(isAuto).map(typeOf));
 
     const toggle = (type: CrmActionType, on: boolean) => {
@@ -35,8 +38,14 @@ export function CrmActionsPicker({
         }
     };
 
-    const setAuto = (type: CrmActionType, on: boolean) =>
-        onChange(value.map((e) => (typeOf(e) === type ? (on ? { type, auto: true } : type) : e)));
+    const setAuto = (type: CrmActionType, on: boolean) => {
+        const entry = on ? { type, auto: true } : type;
+        onChange(
+            value.some((e) => typeOf(e) === type)
+                ? value.map((e) => (typeOf(e) === type ? entry : e))
+                : [...value, entry]
+        );
+    };
 
     return (
         <div className="flex flex-col gap-2">
@@ -62,6 +71,10 @@ export function CrmActionsPicker({
                             <label className="flex items-center gap-2">
                                 <Switch
                                     checked={allowed.has(type)}
+                                    disabled={implicit.includes(type)}
+                                    title={
+                                        implicit.includes(type) ? t('picker.implicit') : undefined
+                                    }
                                     onCheckedChange={(v) => toggle(type, v)}
                                     aria-label={t('panel.allowedFor', {
                                         action: t(`types.${type}.label`),

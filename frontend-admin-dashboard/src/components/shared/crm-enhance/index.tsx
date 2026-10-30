@@ -45,14 +45,28 @@ export interface StatItem {
     loading?: boolean;
 }
 
-function StatBody({ s, deltaTitle }: { s: StatItem; deltaTitle?: string }) {
+function StatBody({
+    s,
+    deltaTitle,
+    compact,
+}: {
+    s: StatItem;
+    deltaTitle?: string;
+    compact?: boolean;
+}) {
     const tint = s.tint ?? 'primary';
     return (
-        <Card className="flex h-full min-w-0 flex-col gap-2 rounded-xl border-neutral-200 p-4 shadow-sm transition-shadow hover:shadow-md">
+        <Card
+            className={cn(
+                'flex h-full min-w-0 flex-col rounded-xl border-neutral-200 shadow-sm transition-shadow hover:shadow-md',
+                compact ? 'gap-1 p-3' : 'gap-2 p-4'
+            )}
+        >
             <div className="flex items-center gap-2 text-neutral-600">
                 <span
                     className={cn(
-                        'flex size-8 items-center justify-center rounded-lg',
+                        'flex items-center justify-center rounded-lg',
+                        compact ? 'size-6' : 'size-8',
                         ICON_TINT[tint]
                     )}
                 >
@@ -85,7 +99,7 @@ function StatBody({ s, deltaTitle }: { s: StatItem; deltaTitle?: string }) {
                     ) : (
                         <div className="flex flex-wrap items-center gap-2">
                             <span className="font-bold tabular-nums text-neutral-900">
-                                <span className="text-h2">
+                                <span className={compact ? 'text-h3' : 'text-h2'}>
                                     {typeof s.value === 'number' ? fmt(s.value) : s.value ?? '—'}
                                 </span>
                             </span>
@@ -111,22 +125,32 @@ function StatBody({ s, deltaTitle }: { s: StatItem; deltaTitle?: string }) {
 }
 
 /** A row of 2–6 stat cards; each links to the list it counts when `href` is set. */
-export function StatStrip({ items, deltaTitle }: { items: StatItem[]; deltaTitle?: string }) {
+export function StatStrip({
+    items,
+    deltaTitle,
+    compact,
+}: {
+    items: StatItem[];
+    deltaTitle?: string;
+    /** Tighter cards for detail pages. */
+    compact?: boolean;
+}) {
     if (items.length === 0) return null;
     return (
         <div
             className={cn(
-                'grid grid-cols-1 gap-4 sm:grid-cols-2',
+                'grid grid-cols-1 sm:grid-cols-2',
+                compact ? 'gap-3' : 'gap-4',
                 items.length >= 4 ? 'xl:grid-cols-4' : 'xl:grid-cols-3'
             )}
         >
             {items.map((s) =>
                 s.href ? (
                     <CrmLink key={s.key} href={s.href} className="block h-full">
-                        <StatBody s={s} deltaTitle={deltaTitle} />
+                        <StatBody s={s} deltaTitle={deltaTitle} compact={compact} />
                     </CrmLink>
                 ) : (
-                    <StatBody key={s.key} s={s} deltaTitle={deltaTitle} />
+                    <StatBody key={s.key} s={s} deltaTitle={deltaTitle} compact={compact} />
                 )
             )}
         </div>

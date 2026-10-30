@@ -272,6 +272,12 @@ public class EngagementBrainClient {
                 ? "WHATSAPP, EMAIL, IN_APP, AI_CALL" : String.join(", ", new java.util.TreeSet<>(enabledChannels));
         sb.append("AVAILABLE CHANNELS (choose ONLY from these; if none fit, NO_OP): ").append(channels).append("\n");
 
+        if (enabledChannels != null && enabledChannels.contains("AI_CALL")) {
+            sb.append("\nAI_CALL IS NOT A MESSAGE. To call the person (including a first touch, when the brief says \n")
+              .append("to call), choose actionType SCHEDULE_AI_CALL from the CRM ACTIONS below and fill its \"action\"; \n")
+              .append("leave channel, draftBody and templateName null. Never answer with channel AI_CALL and a draft.\n");
+        }
+
         boolean waEnabled = enabledChannels == null || enabledChannels.isEmpty()
                 || enabledChannels.contains("WHATSAPP");
         if (waEnabled) {

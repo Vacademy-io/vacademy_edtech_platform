@@ -154,7 +154,15 @@ function TaskInboxPage() {
     const { t: tConstants } = useTranslation('engagementEnginesConstants');
     const navigate = useNavigate();
     const { setNavHeading } = useNavHeadingStore();
-    const { filter: filterParam } = useSearch({ strict: false }) as { filter?: InboxFilterKey };
+    const {
+        filter: filterParam,
+        engineId: engineParam,
+        channel: channelParam,
+    } = useSearch({ strict: false }) as {
+        filter?: InboxFilterKey;
+        engineId?: string;
+        channel?: string;
+    };
     const [filterIdx, setFilterIdx] = useState(() =>
         Math.max(0, INBOX_FILTER_KEYS.indexOf(filterParam ?? 'needsAction'))
     );
@@ -162,8 +170,8 @@ function TaskInboxPage() {
     const [sending, setSending] = useState<EngagementAction | null>(null);
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [search, setSearch] = useState('');
-    const [engineFilter, setEngineFilter] = useState('all');
-    const [channelFilter, setChannelFilter] = useState('all');
+    const [engineFilter, setEngineFilter] = useState(engineParam ?? 'all');
+    const [channelFilter, setChannelFilter] = useState(channelParam ?? 'all');
     const [kindFilter, setKindFilter] = useState('all');
     const [sort, setSort] = useState<SortKey>('priority');
 
@@ -172,7 +180,18 @@ function TaskInboxPage() {
     // Labels come from t, so the list is built every render (not memoised).
     const FILTERS = buildFilters(t);
     const statuses = FILTERS[filterIdx]?.statuses ?? 'OPEN,ACKED';
-    const { data, isLoading, isError, refetch } = useTasks(statuses, page, PAGE_SIZE);
+    // Engine and channel narrow the request itself, so pages and the chip counts match the filter.
+    const engineArg = engineFilter === 'all' ? undefined : engineFilter;
+    const channelArg = channelFilter === 'all' ? undefined : channelFilter;
+    const kindArg = kindFilter === 'all' ? undefined : kindFilter;
+    const { data, isLoading, isError, refetch } = useTasks(
+        statuses,
+        page,
+        PAGE_SIZE,
+        engineArg,
+        channelArg,
+        kindArg
+    );
     const { data: engines } = useEngines();
     const engineNames = useMemo(() => {
         const m: Record<string, string> = {};
@@ -185,8 +204,8 @@ function TaskInboxPage() {
     const instituteId = getInstituteId() || '';
     const counts = useQueries({
         queries: FILTERS.map((f) => ({
-            queryKey: ['engagementTasks', instituteId, f.statuses, 0, 1],
-            queryFn: () => listTasks(instituteId, f.statuses, 0, 1),
+            queryKey: ['engagementTasks', instituteId, f.statuses, 0, 1, engineArg, channelArg, kindArg],
+            queryFn: () => listTasks(instituteId, f.statuses, 0, 1, engineArg, channelArg, kindArg),
             enabled: !!instituteId,
             staleTime: 60 * 1000,
         })),
@@ -298,7 +317,13 @@ function TaskInboxPage() {
                                 className="ps-9"
                             />
                         </div>
-                        <Select value={engineFilter} onValueChange={setEngineFilter}>
+                        <Select
+                            value={engineFilter}
+                            onValueChange={(v) => {
+                                setEngineFilter(v);
+                                setPage(0);
+                            }}
+                        >
                             <SelectTrigger className="w-44" aria-label={t('toolbar.allEngines')}>
                                 <SelectValue />
                             </SelectTrigger>
@@ -311,7 +336,13 @@ function TaskInboxPage() {
                                 ))}
                             </SelectContent>
                         </Select>
-                        <Select value={channelFilter} onValueChange={setChannelFilter}>
+                        <Select
+                            value={channelFilter}
+                            onValueChange={(v) => {
+                                setChannelFilter(v);
+                                setPage(0);
+                            }}
+                        >
                             <SelectTrigger className="w-36" aria-label={t('toolbar.allChannels')}>
                                 <SelectValue />
                             </SelectTrigger>
@@ -324,7 +355,13 @@ function TaskInboxPage() {
                                 ))}
                             </SelectContent>
                         </Select>
-                        <Select value={kindFilter} onValueChange={setKindFilter}>
+                        <Select
+                            value={kindFilter}
+                            onValueChange={(v) => {
+                                setKindFilter(v);
+                                setPage(0);
+                            }}
+                        >
                             <SelectTrigger className="w-40" aria-label={t('toolbar.allKinds')}>
                                 <SelectValue />
                             </SelectTrigger>

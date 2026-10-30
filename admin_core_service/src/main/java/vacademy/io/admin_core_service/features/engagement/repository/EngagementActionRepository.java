@@ -40,6 +40,12 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
             WHERE institute_id = :instituteId
               AND status IN (:statuses)
               AND (kind IN ('TASK', 'REPLY') OR (kind = 'SEND' AND status IN ('FAILED', 'SENT')))
+              AND (CAST(:engineId AS text) IS NULL OR engine_id = CAST(:engineId AS text))
+              AND (CAST(:channel AS text) IS NULL OR channel = CAST(:channel AS text))
+              AND (CAST(:kind AS text) IS NULL
+                   OR (CAST(:kind AS text) = 'CRM' AND action_type IN
+                       ('ADD_NOTE', 'CREATE_FOLLOWUP', 'ESCALATE', 'UPDATE_STATUS', 'SCHEDULE_AI_CALL'))
+                   OR (CAST(:kind AS text) <> 'CRM' AND kind = CAST(:kind AS text)))
             ORDER BY priority DESC NULLS LAST, scheduled_for ASC NULLS LAST, created_at DESC
             """,
             countQuery = """
@@ -47,9 +53,18 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
             WHERE institute_id = :instituteId
               AND status IN (:statuses)
               AND (kind IN ('TASK', 'REPLY') OR (kind = 'SEND' AND status IN ('FAILED', 'SENT')))
+              AND (CAST(:engineId AS text) IS NULL OR engine_id = CAST(:engineId AS text))
+              AND (CAST(:channel AS text) IS NULL OR channel = CAST(:channel AS text))
+              AND (CAST(:kind AS text) IS NULL
+                   OR (CAST(:kind AS text) = 'CRM' AND action_type IN
+                       ('ADD_NOTE', 'CREATE_FOLLOWUP', 'ESCALATE', 'UPDATE_STATUS', 'SCHEDULE_AI_CALL'))
+                   OR (CAST(:kind AS text) <> 'CRM' AND kind = CAST(:kind AS text)))
             """, nativeQuery = true)
     Page<EngagementAction> findInbox(@Param("instituteId") String instituteId,
                                      @Param("statuses") List<String> statuses,
+                                     @Param("engineId") String engineId,
+                                     @Param("channel") String channel,
+                                     @Param("kind") String kind,
                                      Pageable pageable);
 
     /**

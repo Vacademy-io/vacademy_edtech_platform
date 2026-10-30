@@ -75,6 +75,7 @@
         "retry": "Retry"
     },
     "picker": {
-        "autoHelp": "\"Runs on its own\" works only after a person has approved a few actions of that type (5 by default). Until then, each one is an inbox task."
+        "autoHelp": "\"Runs on its own\" works only after a person has approved a few actions of that type (5 by default). Until then, each one is an inbox task.",
+        "implicit": "Allowed because the AI call channel is on"
     }
 }

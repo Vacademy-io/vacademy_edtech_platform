@@ -58,11 +58,21 @@ public class EngagementTaskController {
             @RequestParam(defaultValue = "OPEN,ACKED") String statuses,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "50") int size,
+            @RequestParam(required = false) String engineId,
+            @RequestParam(required = false) String channel,
+            @RequestParam(required = false) String kind,
             @RequestAttribute("user") CustomUserDetails user) {
         accessGuard.requireAdmin(user, instituteId);
         List<String> statusList = List.of(statuses.split(","));
+        // The institute id above already scopes the query, so an engine id from another institute
+        // matches nothing.
         return ResponseEntity.ok(actionRepository.findInbox(
-                instituteId, statusList, PageRequest.of(page, Math.min(size, 200))));
+                instituteId, statusList, blankToNull(engineId), blankToNull(channel), blankToNull(kind),
+                PageRequest.of(page, Math.min(size, 200))));
+    }
+
+    private static String blankToNull(String s) {
+        return s == null || s.isBlank() ? null : s;
     }
 
     /**

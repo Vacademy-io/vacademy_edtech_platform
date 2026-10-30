@@ -1089,7 +1089,11 @@ function CreateEnginePage() {
                 title={t('crmActions.title')}
                 hint={t('crmActions.hint')}
             >
-                <CrmActionsPicker value={crmActions} onChange={setCrmActions} />
+                <CrmActionsPicker
+                    value={crmActions}
+                    onChange={setCrmActions}
+                    implicit={channels.AI_CALL?.enabled ? ['SCHEDULE_AI_CALL'] : []}
+                />
             </StepSection>
             <StepSection
                 icon={BellRinging}
