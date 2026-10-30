@@ -57,6 +57,7 @@ const ManageInventoryPage = () => {
                 maxSeats: inventory?.maxSeats ?? undefined,
                 availableSlots: inventory?.availableSlots ?? undefined,
                 isUnlimited: inventory?.isUnlimited ?? undefined,
+                heldSlots: inventory?.heldSlots ?? undefined,
                 isLoadingInventory: isLoadingInventory,
             };
         });
