@@ -281,7 +281,8 @@ public class EngagementReplyResponder {
             String override = escalationOverride(replyText, decision.reply(), groundTruth);
             if (override != null) {
                 log.info("Auto-reply overridden to ESCALATE for member {}: {}", cand.getMemberId(), override);
-                decision = new EngagementReplyBrain.ReplyDecision("ESCALATE", decision.reply(), override, "tripwire");
+                decision = new EngagementReplyBrain.ReplyDecision("ESCALATE", decision.reply(), override, "tripwire",
+                        List.of(), null, decision.usage());
             }
         }
 
@@ -293,7 +294,8 @@ public class EngagementReplyResponder {
         if (decision.isAnswer() && decision.assetIds() != null && !decision.assetIds().isEmpty() && attach.isEmpty()) {
             decision = new EngagementReplyBrain.ReplyDecision("ESCALATE", decision.reply(),
                     "The reply promised material that is not in the assets.", "missing_material",
-                    List.of(), decision.requestedMaterial() != null ? decision.requestedMaterial() : "the material they asked for");
+                    List.of(), decision.requestedMaterial() != null ? decision.requestedMaterial() : "the material they asked for",
+                    decision.usage());
         }
 
         EngagementAction action = new EngagementAction();
@@ -322,6 +324,7 @@ public class EngagementReplyResponder {
         action.setPriority(BigDecimal.valueOf(decision.isAnswer() ? 60 : decision.isMissingMaterial() ? 90 : 85));
         action.setScheduledFor(now);
         action.setExpiresAt(now.plus(Duration.ofHours(taskExpireHours)));
+        EngagementLlmUsage.applyTo(decision.usage(), action);
         action = actionRepository.save(action);
 
         boolean settled = false; // true = answered (SENT) or a human-visible task exists for this reply

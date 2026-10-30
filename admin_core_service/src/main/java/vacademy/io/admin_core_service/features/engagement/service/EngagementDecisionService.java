@@ -304,6 +304,7 @@ public class EngagementDecisionService {
                 action.setRationale(cap("Proposed " + crmType + ", not drafted: " + rejected + " " + nullToEmpty(d.rationale())));
                 member.setConsecutiveNoOps((short) Math.min(member.getConsecutiveNoOps() + 1, 10));
             }
+            EngagementLlmUsage.applyTo(d.usage(), action);
             actionRepository.save(action);
             if (rejected == null && !dryRun) {
                 // B7: an action type the admin set to run on its own, graduated (S7), with no kill
@@ -386,6 +387,7 @@ public class EngagementDecisionService {
                     && graduated(engine, chosenChannel);
             action.setKind(autoSend ? "SEND" : "TASK");
             action.setStatus(dryRun ? "SIMULATED" : "OPEN");
+            EngagementLlmUsage.applyTo(d.usage(), action);
             actionRepository.save(action);
 
             member.setConsecutiveNoOps((short) 0);
@@ -398,6 +400,8 @@ public class EngagementDecisionService {
             noOp.setKind("NO_OP");
             noOp.setStatus("DONE");
             noOp.setRationale(cap(d.rationale()));
+            // Deciding to wait costs tokens too; the daily report shows it.
+            EngagementLlmUsage.applyTo(d.usage(), noOp);
             actionRepository.save(noOp);
 
             member.setConsecutiveNoOps((short) Math.min(member.getConsecutiveNoOps() + 1, 10));

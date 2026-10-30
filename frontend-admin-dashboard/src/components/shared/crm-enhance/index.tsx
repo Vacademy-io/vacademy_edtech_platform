@@ -1,7 +1,8 @@
 import type { Icon } from '@phosphor-icons/react';
-import { Lightbulb, Siren, Trophy, WarningCircle } from '@phosphor-icons/react';
+import { Info, Lightbulb, Siren, Trophy, WarningCircle } from '@phosphor-icons/react';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import {
     CrmLink,
@@ -37,7 +38,10 @@ export interface StatItem {
     delta?: number | null;
     lowerIsBetter?: boolean;
     spark?: number[];
+    /** Link target. Not combined with `hint`: a button cannot sit inside a link. */
     href?: string;
+    /** What the number means; shown in a tooltip from an info icon next to the label. */
+    hint?: string;
     loading?: boolean;
 }
 
@@ -57,6 +61,22 @@ function StatBody({ s, deltaTitle }: { s: StatItem; deltaTitle?: string }) {
                 <span className="truncate font-medium">
                     <span className="text-caption">{s.label}</span>
                 </span>
+                {s.hint && (
+                    <TooltipProvider delayDuration={150}>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    type="button"
+                                    aria-label={`${s.label}: ${s.hint}`}
+                                    className="ms-auto shrink-0 rounded-full text-neutral-400 hover:text-neutral-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                >
+                                    <Info size={14} />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">{s.hint}</TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
+                )}
             </div>
             <div className="flex items-end justify-between gap-2">
                 <div className="min-w-0">
