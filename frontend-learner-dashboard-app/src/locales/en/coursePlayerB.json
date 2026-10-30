@@ -181,7 +181,10 @@
             "paymentSuccessful": "Payment successful!",
             "paymentCancelled": "Payment cancelled",
             "checkoutSuccessful": "Checkout successful!",
-            "checkoutFailedDefault": "Checkout failed. Please try again."
+            "checkoutFailedDefault": "Checkout failed. Please try again.",
+            "confirmingPayment": "Confirming your payment...",
+            "paymentFailed": "Your payment could not be completed. Your cart is unchanged, so you can try again.",
+            "paymentPending": "Your payment is being confirmed. Your cart will clear once it is."
         },
         "razorpayDescription": "{{course}} Enrollment",
         "errors": {
@@ -222,7 +225,8 @@
             "itemsCount": "{{count}} Items",
             "secure": "Secure"
         },
-        "whatsappRequired": "WhatsApp verification required to continue"
+        "whatsappRequired": "WhatsApp verification required to continue",
+        "awaitingConfirmation": "Your payment is being confirmed. Please don't pay again. Refresh this page in a few minutes to check."
     },
     "policy": {
         "notFoundTitle": "Policy Not Found",

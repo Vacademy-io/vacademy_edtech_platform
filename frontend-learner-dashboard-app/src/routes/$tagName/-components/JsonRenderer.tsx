@@ -359,7 +359,7 @@ export const JsonRenderer: React.FC<JsonRendererProps> = ({
         // reviewSource "reviews" | "both" also reads the institute's approved site reviews.
         return <TestimonialSectionComponent key={id} {...props} instituteId={instituteId} />;
       case "cartComponent":
-        return <CartComponent key={id} {...props} instituteId={instituteId} globalSettings={globalSettings} isPreviewMode={isPreviewMode} />;
+        return <CartComponent key={id} {...props} instituteId={instituteId} tagName={tagName} globalSettings={globalSettings} isPreviewMode={isPreviewMode} />;
       case "buyRentSection":
         return <BuyRentSectionComponent key={id} {...props} tagName={tagName} />;
       case "policyRenderer":

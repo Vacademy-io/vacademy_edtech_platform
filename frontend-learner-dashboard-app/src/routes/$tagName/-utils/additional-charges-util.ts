@@ -104,6 +104,9 @@ export const sumChargeAmounts = (charges: ResolvedCharge[]): number =>
  * Shape matches the existing entries CheckoutForm builds for books, so the backend
  * treats them uniformly (creates UserPlan + PaymentLog per entry, sums per
  * `PaymentPlan.actualPrice` for amount verification).
+ *
+ * A charge is always one unit: the tier already prices the whole cart, so its
+ * entry carries `requested_quantity: 1` (the server rejects more on a charge).
  */
 export const buildChargeEnrollmentEntries = (charges: ResolvedCharge[]) =>
   charges.map((c) => ({
@@ -111,4 +114,5 @@ export const buildChargeEnrollmentEntries = (charges: ResolvedCharge[]) =>
     plan_id: c.planId,
     payment_option_id: c.paymentOptionId,
     enroll_invite_id: c.enrollInviteId,
+    requested_quantity: 1,
   }));
