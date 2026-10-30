@@ -73,5 +73,61 @@
         "onToast": "L'automatisation est désactivée pour ce prospect",
         "offToast": "L'automatisation est réactivée pour ce prospect",
         "retry": "Réessayer"
+    },
+    "upcomingCalls": {
+        "title": "Appels IA",
+        "someone": "Quelqu’un",
+        "review_one": "Approuver {{count}} appel",
+        "review_many": "Approuver {{count}} appels",
+        "review_other": "Approuver {{count}} appels",
+        "empty": "Aucun appel à venir. Un appel s’affiche ici dès que le moteur en propose un.",
+        "mode": {
+            "notLive": "Le moteur n’est pas actif : aucun appel n’est passé.",
+            "killed": "L’arrêt d’urgence est activé : chaque appel attend votre accord dans la boîte de réception.",
+            "manual": "Chaque appel attend votre accord dans la boîte de réception.",
+            "learning": "{{approved}} appels approuvés sur {{threshold}}. Ensuite, les appels partent seuls.",
+            "auto": "Les appels partent seuls, aux heures d’appel."
+        },
+        "section": {
+            "NEEDS_APPROVAL_one": "En attente de votre accord ({{count}})",
+            "NEEDS_APPROVAL_many": "En attente de votre accord ({{count}})",
+            "NEEDS_APPROVAL_other": "En attente de votre accord ({{count}})",
+            "SCHEDULED_one": "Approuvé, appel plus tard ({{count}})",
+            "SCHEDULED_many": "Approuvés, appels plus tard ({{count}})",
+            "SCHEDULED_other": "Approuvés, appels plus tard ({{count}})",
+            "IN_QUEUE_one": "Dans la file d’appels ({{count}})",
+            "IN_QUEUE_many": "Dans la file d’appels ({{count}})",
+            "IN_QUEUE_other": "Dans la file d’appels ({{count}})",
+            "PLACED_one": "Passé ces dernières 24 heures ({{count}})",
+            "PLACED_many": "Passés ces dernières 24 heures ({{count}})",
+            "PLACED_other": "Passés ces dernières 24 heures ({{count}})",
+            "FIRST_one": "Prochain premier appel ({{count}} personne)",
+            "FIRST_many": "Prochains premiers appels ({{count}} personnes)",
+            "FIRST_other": "Prochains premiers appels ({{count}} personnes)"
+        },
+        "firstHint": "Rien n’a encore été envoyé à ces personnes. Au prochain passage, le moteur propose d’abord un appel IA.",
+        "state": {
+            "NEEDS_APPROVAL": "À approuver",
+            "SCHEDULED": "Planifié",
+            "IN_QUEUE": "En file",
+            "PLACED": "Passé"
+        },
+        "result": {
+            "COMPLETED": "Joint",
+            "NO_ANSWER": "Pas de réponse",
+            "BUSY": "Occupé",
+            "FAILED": "Échec"
+        },
+        "expires": "Expire le {{time}}",
+        "callsAt": "Appel le {{time}}",
+        "notBefore": "Pas avant le {{time}}",
+        "nextFreeLine": "Dès qu’une ligne est libre",
+        "placedAt": "{{time}}",
+        "around": "Vers le {{time}}",
+        "nextCheck": "Au prochain passage",
+        "noPhone": "Pas de téléphone : autre canal",
+        "more_one": "et {{count}} autre personne",
+        "more_many": "et {{count}} autres personnes",
+        "more_other": "et {{count}} autres personnes"
     }
 }

@@ -59,6 +59,7 @@ import { TemplateNegotiation } from './-components/TemplateNegotiation';
 import { EmailTemplatesPanel } from './-components/EmailTemplatesPanel';
 import { AssetsPanel } from './-components/AssetsPanel';
 import { CrmActionsPanel } from './-components/CrmActionsPanel';
+import { UpcomingAiCallsCard } from './-components/UpcomingAiCallsCard';
 import { useDeleteEngine } from './-hooks/engine-edit';
 import { ChannelChip, Chip, IconTile, KeyValue, SubHeading } from './-components/engine-ui';
 import { buildChannelMeta } from './-constants';
@@ -381,6 +382,9 @@ function EngineDetailPage() {
                 )}
 
                 <StatStrip items={kpis} compact />
+
+                {/* When the engine will call, and whom: approvals, held and queued calls, first calls. */}
+                {!!channelsJson.AI_CALL?.enabled && <UpcomingAiCallsCard engineId={engine.id} />}
 
                 {!engine.systemManaged && (
                     <EngineContactsCard

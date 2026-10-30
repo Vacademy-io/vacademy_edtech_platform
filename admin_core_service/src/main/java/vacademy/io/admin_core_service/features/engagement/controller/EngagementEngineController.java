@@ -48,6 +48,7 @@ public class EngagementEngineController {
     private final DataPointRegistry dataPointRegistry;
     private final EngagementAccessGuard accessGuard;
     private final vacademy.io.admin_core_service.features.engagement.service.EngagementChannelReadiness channelReadiness;
+    private final vacademy.io.admin_core_service.features.engagement.service.EngagementUpcomingCallsService upcomingCalls;
 
     @org.springframework.beans.factory.annotation.Value("${engagement.autonomy.first-n:5}")
     private int defaultFirstN;
@@ -170,6 +171,20 @@ public class EngagementEngineController {
         accessGuard.requireAdmin(user, instituteId);
         engineService.requireEngine(engineId, instituteId);
         return ResponseEntity.ok(promptRepository.findByEngineIdOrderByVersionDesc(engineId));
+    }
+
+    /**
+     * The engine page's "AI calls" card: whether calls still need approval (and how many approvals
+     * until they run on their own), the calls waiting for approval, held or in the dialer queue, the
+     * ones placed in the last day, and the first people a call is coming for.
+     */
+    @GetMapping("/{engineId}/upcoming-calls")
+    public ResponseEntity<vacademy.io.admin_core_service.features.engagement.service.EngagementUpcomingCallsService.UpcomingCalls>
+            upcomingCalls(@PathVariable String engineId,
+                          @RequestParam String instituteId,
+                          @RequestAttribute("user") CustomUserDetails user) {
+        accessGuard.requireAdmin(user, instituteId);
+        return ResponseEntity.ok(upcomingCalls.upcoming(engineService.requireEngine(engineId, instituteId)));
     }
 
     /**
