@@ -57,7 +57,7 @@ function SyncApprovedBar({ agent }: { agent: LeadAgent }) {
                 type="button"
                 buttonType="secondary"
                 disable={sync.isPending || waiting === 0 || agent.status === 'ARCHIVED'}
-                onClick={() => sync.mutate()}
+                onClick={() => sync.mutate(undefined)}
                 className="shrink-0"
             >
                 <ArrowsClockwise className={cn('size-4', sync.isPending && 'animate-spin')} />{' '}
