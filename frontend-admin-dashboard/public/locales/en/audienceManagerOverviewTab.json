@@ -11,7 +11,8 @@
         "avgResponseTime": {
             "label": "Avg Response Time",
             "sub_one": "{{count}} lead responded",
-            "sub_other": "{{count}} leads responded"
+            "sub_other": "{{count}} leads responded",
+            "median": "Median {{value}}"
         },
         "tatMet": {
             "label": "TAT Met",
@@ -22,12 +23,13 @@
     "status": {
         "title": "Status distribution",
         "donutAriaLabel": "Status distribution donut",
-        "totalUnit": "leads"
+        "totalUnit": "leads",
+        "noStatus": "No status"
     },
     "trend": {
         "title": "Daily trend",
         "submittedLegend": "Submitted",
-        "convertedLegend": "Converted",
+        "convertedLegend": "Converted (of these leads)",
         "noData": "No data",
         "ariaLabel": "Daily submitted and converted leads"
     },

@@ -58,6 +58,16 @@ export interface PaymentLogsSummary {
     status_totals: PaymentStatusTotal[];
     /** Every plan the institute has, for the plan filter — not just the plans currently visible. */
     payment_plan_names: string[];
+    /** Every offline mode (and option) the institute's payments were recorded with. */
+    used_payment_modes?: UsedPaymentMode[];
+}
+
+/** A mode/option pair found on recorded payments, labelled as it was shown at the time. */
+export interface UsedPaymentMode {
+    mode: string;
+    sub_mode: string | null;
+    mode_label: string | null;
+    sub_mode_label: string | null;
 }
 
 /**

@@ -46,6 +46,15 @@ import {
 
 /** Where every drill-through on this tab lands. */
 const RECENT_LEADS_ROUTE = '/audience-manager/recent-leads' as const;
+/** Status bucket for leads with no status at all — the leads list's own sentinel. */
+const NO_STATUS_KEY = '__NO_STATUS__';
+
+/** yyyy-MM-dd of the day before an ISO day (the report's window end is exclusive). */
+function dayBefore(isoDay: string): string {
+    const d = new Date(`${isoDay.slice(0, 10)}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - 1);
+    return d.toISOString().slice(0, 10);
+}
 
 export function OverviewTab({
     instituteId,
@@ -91,6 +100,28 @@ export function OverviewTab({
     const summary = summaryQuery.data;
     const isLoading = summaryQuery.isLoading;
 
+    /**
+     * Recent Leads search for a drill-through: the window the report actually covered (resolved
+     * server-side, so the default last-30-days applies too), the counsellor and campaign the
+     * report is scoped to, and every status unless the drill picks one — so the list holds
+     * exactly the leads the clicked number counted.
+     */
+    const drillSearch = (extra: { status?: string; source?: string; tier?: string }) => ({
+        status: ALL_STATUSES_VALUE,
+        range: CUSTOM_DATE_VALUE,
+        // Empty inputs would fail the route's yyyy-MM-dd schema — omit them instead.
+        from: summary?.from_date ? summary.from_date.slice(0, 10) : fromDate || undefined,
+        to: summary?.to_date ? dayBefore(summary.to_date) : toDate || undefined,
+        // The list has no team filter, so a team scope travels as its counsellors.
+        counsellor:
+            counsellorUserId ||
+            (summary?.scope_counsellor_ids?.length
+                ? summary.scope_counsellor_ids.join(',')
+                : undefined),
+        audience: audienceId || undefined,
+        ...extra,
+    });
+
     if (isLoading) return <ReportTabSkeleton />;
     if (summaryQuery.isError) {
         return (
@@ -129,17 +160,7 @@ export function OverviewTab({
                     onClick={() =>
                         // Total = every status incl. Converted, so override the
                         // recent-leads default "Active leads" filter to match.
-                        navigate({
-                            to: RECENT_LEADS_ROUTE,
-                            search: {
-                                status: ALL_STATUSES_VALUE,
-                                range: CUSTOM_DATE_VALUE,
-                                // Empty inputs would fail the route's yyyy-MM-dd
-                                // schema — omit them instead.
-                                from: fromDate || undefined,
-                                to: toDate || undefined,
-                            },
-                        })
+                        navigate({ to: RECENT_LEADS_ROUTE, search: drillSearch({}) })
                     }
                 />
                 <KpiCard
@@ -162,9 +183,20 @@ export function OverviewTab({
                     value={fmtMinutes(summary?.totals.avg_response_minutes)}
                     sub={
                         summary
-                            ? t('kpi.avgResponseTime.sub', {
-                                  count: summary.totals.responded_leads ?? 0,
-                              })
+                            ? [
+                                  summary.totals.median_response_minutes != null
+                                      ? t('kpi.avgResponseTime.median', {
+                                            value: fmtMinutes(
+                                                summary.totals.median_response_minutes
+                                            ),
+                                        })
+                                      : null,
+                                  t('kpi.avgResponseTime.sub', {
+                                      count: summary.totals.responded_leads ?? 0,
+                                  }),
+                              ]
+                                  .filter(Boolean)
+                                  .join(' · ')
                             : undefined
                     }
                     icon={<ClockCounterClockwise size={20} weight="bold" />}
@@ -204,12 +236,16 @@ export function OverviewTab({
                     </div>
                     {summary && summary.by_status.length > 0 ? (
                         <StatusDonut
-                            data={summary.by_status}
+                            data={summary.by_status.map((s) =>
+                                s.status_key === NO_STATUS_KEY
+                                    ? { ...s, label: t('status.noStatus') }
+                                    : s
+                            )}
                             total={summary.totals.total_leads}
                             onSelectStatus={(statusKey) =>
                                 navigate({
                                     to: RECENT_LEADS_ROUTE,
-                                    search: { status: statusKey },
+                                    search: drillSearch({ status: statusKey }),
                                 })
                             }
                         />
@@ -256,7 +292,7 @@ export function OverviewTab({
                                 onClick={() =>
                                     navigate({
                                         to: RECENT_LEADS_ROUTE,
-                                        search: { source: b.source_type },
+                                        search: drillSearch({ source: b.source_type }),
                                     })
                                 }
                             />
@@ -278,6 +314,12 @@ export function OverviewTab({
                                 total={summary.totals.total_leads}
                                 colorHex={tierCatalog.byKey(b.tier)?.color}
                                 colorClass={tierBgClass(b.tier)}
+                                onClick={() =>
+                                    navigate({
+                                        to: RECENT_LEADS_ROUTE,
+                                        search: drillSearch({ tier: b.tier }),
+                                    })
+                                }
                             />
                         ))
                     ) : (

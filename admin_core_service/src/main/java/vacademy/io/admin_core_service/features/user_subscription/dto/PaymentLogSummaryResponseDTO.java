@@ -32,6 +32,25 @@ public class PaymentLogSummaryResponseDTO {
     /** Distinct plan names for the institute, for the plan filter's dropdown. */
     private List<String> paymentPlanNames;
 
+    /**
+     * Every offline payment mode (and option) the institute's payments were recorded with, for
+     * the mode filter's dropdown. Keeps modes since removed from Settings filterable.
+     */
+    private List<UsedPaymentMode> usedPaymentModes;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class UsedPaymentMode {
+        private String mode;
+        private String subMode;
+        /** Labels as shown when the payment was recorded; null when none was stored. */
+        private String modeLabel;
+        private String subModeLabel;
+    }
+
     @Data
     @Builder
     @NoArgsConstructor

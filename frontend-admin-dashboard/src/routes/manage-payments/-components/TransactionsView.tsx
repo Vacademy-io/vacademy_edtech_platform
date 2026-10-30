@@ -56,6 +56,8 @@ import { fetchPaymentLogs, fetchPaymentLogsSummary } from '@/services/payment-lo
 import { summaryFromStatusTotals, summarizeBucketAmount } from '../-utils/paymentSummary';
 import { ALL_TIME_RANGE, type DateRangeValue } from '../-utils/dateRange';
 import { resolvePaymentLogInvoices } from '../-utils/resolvePaymentLogInvoices';
+import { buildPaymentModeOptions } from '../-utils/paymentModeOptions';
+import { useOfflinePaymentModes } from '@/services/offline-payment-modes';
 
 const PAGE_SIZE = 20;
 
@@ -148,6 +150,7 @@ export function TransactionsView() {
     // Payment plan is the one detailed filter the API can't apply; it narrows the loaded set
     // locally, before the KPI tiles are computed, so it behaves like the server-side ones.
     const [selectedPaymentPlans, setSelectedPaymentPlans] = useState<SelectOption[]>([]);
+    const [selectedPaymentModes, setSelectedPaymentModes] = useState<SelectOption[]>([]);
     const [selectedPaymentSources, setSelectedPaymentSources] = useState<SelectOption[]>([]);
     const [selectedPaymentTypes, setSelectedPaymentTypes] = useState<SelectOption[]>([]);
     const [packageSessionFilter, setPackageSessionFilter] = useState<PackageSessionFilter>({});
@@ -227,6 +230,9 @@ export function TransactionsView() {
         if (selectedPaymentPlans.length > 0) {
             filters.payment_plan_names = selectedPaymentPlans.map((plan) => plan.value);
         }
+        if (selectedPaymentModes.length > 0) {
+            filters.payment_modes = selectedPaymentModes.map((mode) => mode.value);
+        }
         return filters;
     }, [
         startDate,
@@ -239,6 +245,7 @@ export function TransactionsView() {
         batchesForSessions,
         showPlanDates,
         selectedPaymentPlans,
+        selectedPaymentModes,
     ]);
 
     // Paging is the server's job now, so a narrowed result no longer silently clamps the page the
@@ -285,6 +292,14 @@ export function TransactionsView() {
                 _id: name,
             })),
         [summaryData]
+    );
+
+    // Every mode the institute offers in Settings (custom ones and their options included), plus
+    // any mode found on recorded payments that Settings no longer lists.
+    const { data: offlinePaymentModes } = useOfflinePaymentModes();
+    const paymentModeOptions = useMemo<SelectOption[]>(
+        () => buildPaymentModeOptions(offlinePaymentModes, summaryData?.used_payment_modes),
+        [offlinePaymentModes, summaryData]
     );
 
     // The tiles describe every row matching the filters — the selected tile is not among them, so
@@ -695,6 +710,7 @@ export function TransactionsView() {
         selectedPaymentTypes.length +
         selectedUserPlanStatuses.length +
         selectedPaymentPlans.length +
+        selectedPaymentModes.length +
         selectedPaymentSources.length +
         (packageSessionFilter.packageSessionIds?.length ||
             (packageSessionFilter.packageId ? 1 : 0));
@@ -766,6 +782,14 @@ export function TransactionsView() {
                     setSelectedPaymentPlans((prev) => prev.filter((x) => x.value !== p.value)),
             })
         );
+        selectedPaymentModes.forEach((m) =>
+            chips.push({
+                id: `payment-mode-${m.value}`,
+                label: `Mode: ${m.label}`,
+                onRemove: () =>
+                    setSelectedPaymentModes((prev) => prev.filter((x) => x.value !== m.value)),
+            })
+        );
         selectedPaymentSources.forEach((s) =>
             chips.push({
                 id: `source-${s.value}`,
@@ -791,6 +815,7 @@ export function TransactionsView() {
         selectedPaymentTypes,
         selectedUserPlanStatuses,
         selectedPaymentPlans,
+        selectedPaymentModes,
         selectedPaymentSources,
         packageSessionFilter,
         listMonth,
@@ -814,6 +839,7 @@ export function TransactionsView() {
         setDueMonth(null);
         setSelectedUserPlanStatuses([]);
         setSelectedPaymentPlans([]);
+        setSelectedPaymentModes([]);
         setSelectedPaymentSources([]);
         setSelectedPaymentTypes([]);
         setPackageSessionFilter({});
@@ -1159,6 +1185,12 @@ export function TransactionsView() {
                                 selectedPaymentPlans={selectedPaymentPlans}
                                 onPaymentPlansChange={(plans) => {
                                     setSelectedPaymentPlans(plans);
+                                    setCurrentPage(0);
+                                }}
+                                paymentModeOptions={paymentModeOptions}
+                                selectedPaymentModes={selectedPaymentModes}
+                                onPaymentModesChange={(modes) => {
+                                    setSelectedPaymentModes(modes);
                                     setCurrentPage(0);
                                 }}
                                 selectedPaymentSources={selectedPaymentSources}

@@ -11,7 +11,8 @@
         "avgResponseTime": {
             "label": "औसत प्रतिक्रिया समय",
             "sub_one": "{{count}} लीड ने जवाब दिया",
-            "sub_other": "{{count}} लीड्स ने जवाब दिया"
+            "sub_other": "{{count}} लीड्स ने जवाब दिया",
+            "median": "मीडियन {{value}}"
         },
         "tatMet": {
             "label": "TAT पूरा हुआ",
@@ -22,12 +23,13 @@
     "status": {
         "title": "स्थिति वितरण",
         "donutAriaLabel": "स्थिति वितरण डोनट चार्ट",
-        "totalUnit": "लीड्स"
+        "totalUnit": "लीड्स",
+        "noStatus": "कोई स्थिति नहीं"
     },
     "trend": {
         "title": "दैनिक रुझान",
         "submittedLegend": "सबमिट किया गया",
-        "convertedLegend": "रूपांतरित",
+        "convertedLegend": "रूपांतरित (इन्हीं लीड्स में से)",
         "noData": "कोई डेटा नहीं",
         "ariaLabel": "दैनिक सबमिट और रूपांतरित लीड्स"
     },

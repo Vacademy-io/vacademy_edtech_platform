@@ -36,6 +36,13 @@ interface PaymentFiltersProps {
     paymentPlanOptions?: SelectOption[];
     selectedPaymentPlans?: SelectOption[];
     onPaymentPlansChange?: (plans: SelectOption[]) => void;
+    /**
+     * Payment Mode field — how an offline payment was recorded (the institute's own modes from
+     * Settings, custom ones and their options included). Omit `onPaymentModesChange` to drop it.
+     */
+    paymentModeOptions?: SelectOption[];
+    selectedPaymentModes?: SelectOption[];
+    onPaymentModesChange?: (modes: SelectOption[]) => void;
     selectedPaymentSources: SelectOption[];
     onPaymentSourcesChange: (sources: SelectOption[]) => void;
     selectedPaymentTypes: SelectOption[];
@@ -122,6 +129,9 @@ export function PaymentFilters({
     paymentPlanOptions = [],
     selectedPaymentPlans,
     onPaymentPlansChange,
+    paymentModeOptions = [],
+    selectedPaymentModes,
+    onPaymentModesChange,
     selectedPaymentSources,
     onPaymentSourcesChange,
     selectedPaymentTypes,
@@ -221,6 +231,7 @@ export function PaymentFilters({
         (selectedPaymentStatuses?.length || 0) +
         (selectedUserPlanStatuses.length || 0) +
         (selectedPaymentPlans?.length || 0) +
+        (selectedPaymentModes?.length || 0) +
         (selectedPaymentSources.length || 0) +
         (selectedPaymentTypes.length || 0) +
         (hideDateFilters ? 0 : (startDate ? 1 : 0) + (endDate ? 1 : 0)) +
@@ -291,6 +302,25 @@ export function PaymentFilters({
                             disabled={
                                 paymentPlanOptions.length === 0 &&
                                 (selectedPaymentPlans?.length ?? 0) === 0
+                            }
+                            multiSelect
+                            fullWidth
+                            clearable
+                        />
+                    </FilterField>
+                )}
+                {onPaymentModesChange && (
+                    <FilterField label="Payment Mode">
+                        <SelectChips
+                            options={paymentModeOptions}
+                            selected={selectedPaymentModes ?? []}
+                            onChange={onPaymentModesChange}
+                            placeholder={
+                                paymentModeOptions.length === 0 ? 'No modes set up' : 'All modes'
+                            }
+                            disabled={
+                                paymentModeOptions.length === 0 &&
+                                (selectedPaymentModes?.length ?? 0) === 0
                             }
                             multiSelect
                             fullWidth

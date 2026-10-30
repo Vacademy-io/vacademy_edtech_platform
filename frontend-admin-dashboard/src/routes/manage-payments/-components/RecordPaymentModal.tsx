@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { CaretRight } from '@phosphor-icons/react';
 import { MyDialog } from '@/components/design-system/dialog';
@@ -7,13 +7,13 @@ import { MyInput } from '@/components/design-system/input';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { useOfflinePaymentModes } from '@/services/offline-payment-modes';
 
 interface RecordPaymentModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }
 
-const METHODS = ['Cash', 'Cheque', 'Bank transfer', 'UPI (offline)'];
 const APPLIES_TO = ['Installment', 'Registration fee', 'Custom line item'];
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -65,7 +65,19 @@ export function RecordPaymentModal({ open, onOpenChange }: RecordPaymentModalPro
     const [student, setStudent] = useState('');
     const [appliesTo, setAppliesTo] = useState(APPLIES_TO[0]!);
     const [amount, setAmount] = useState('');
-    const [method, setMethod] = useState(METHODS[0]!);
+    // The institute's own offline modes from Settings (custom ones included), not a fixed list.
+    const { data: offlineModes } = useOfflinePaymentModes();
+    const methods = useMemo(
+        () => (offlineModes?.modes ?? []).filter((m) => m.active).map((m) => m.label),
+        [offlineModes]
+    );
+    const defaultCode = offlineModes?.default_mode;
+    const defaultMethod =
+        (offlineModes?.modes ?? []).find((m) => m.active && m.code === defaultCode)?.label ??
+        methods[0] ??
+        '';
+    const [pickedMethod, setMethod] = useState('');
+    const method = pickedMethod || defaultMethod;
     const [reference, setReference] = useState('');
     const [note, setNote] = useState('');
 
@@ -74,7 +86,7 @@ export function RecordPaymentModal({ open, onOpenChange }: RecordPaymentModalPro
         setStudent('');
         setAppliesTo(APPLIES_TO[0]!);
         setAmount('');
-        setMethod(METHODS[0]!);
+        setMethod('');
         setReference('');
         setNote('');
     };
@@ -171,7 +183,7 @@ export function RecordPaymentModal({ open, onOpenChange }: RecordPaymentModalPro
                             </Field>
                         </div>
                         <Field label="Method">
-                            <PillGroup options={METHODS} value={method} onChange={setMethod} />
+                            <PillGroup options={methods} value={method} onChange={setMethod} />
                         </Field>
                         <Field label="Reference / receipt no.">
                             <MyInput
