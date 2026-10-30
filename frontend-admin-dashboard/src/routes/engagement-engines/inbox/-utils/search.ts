@@ -22,9 +22,15 @@ export interface InboxSearch {
     kind?: Exclude<InboxKindKey, 'NO_OP'>;
     /** yyyy-MM-dd, a day in the institute time zone. */
     date?: string;
+    /**
+     * A period, yyyy-MM-dd to yyyy-MM-dd inclusive, in the institute time zone. Both or neither:
+     * it replaces `date` when both are in the link, as it does on the server.
+     */
+    from?: string;
+    to?: string;
     /** Template name, or an email subject. */
     template?: string;
-    /** What happened to the message. Only meaningful with a day, so it is dropped without one. */
+    /** What happened to the message. Only meaningful with a day or period, so dropped without one. */
     outcome?: InboxOutcomeKey;
 }
 
@@ -52,12 +58,27 @@ function oneOf<T extends string>(list: readonly T[], value: unknown): T | undefi
 }
 
 /**
+ * A period needs both ends, each a real day, with `from` not after `to` (yyyy-MM-dd strings sort
+ * the same as the days they name). Anything else is no period.
+ */
+function readPeriod(from: unknown, to: unknown): { from: string; to: string } | undefined {
+    return isIsoDay(from) && isIsoDay(to) && from <= to ? { from, to } : undefined;
+}
+
+/** True when the list is narrowed to a day or a period (what the outcome filter needs). */
+export function hasInboxPeriod(s: Pick<InboxSearch, 'date' | 'from' | 'to'>): boolean {
+    return !!(s.date || (s.from && s.to));
+}
+
+/**
  * Turns whatever is in the URL into a valid InboxSearch: unknown values are dropped, the
- * `waited` tab and `kind=NO_OP` mean the same thing, and an outcome without a day is dropped
- * (the server needs the day to look the outcomes up).
+ * `waited` tab and `kind=NO_OP` mean the same thing, a period with a bad or reversed end is
+ * dropped whole (and wins over `date` when valid), and an outcome without a day or period is
+ * dropped (the server needs one to look the outcomes up).
  */
 export function normalizeInboxSearch(raw: Record<string, unknown>): InboxSearch {
-    const date = isIsoDay(raw.date) ? raw.date : undefined;
+    const period = readPeriod(raw.from, raw.to);
+    const date = !period && isIsoDay(raw.date) ? raw.date : undefined;
     const kind = oneOf(INBOX_KIND_KEYS, raw.kind);
     const plainKind = kind === 'NO_OP' ? undefined : kind;
     const waited = raw.filter === 'waited' || kind === 'NO_OP';
@@ -70,12 +91,23 @@ export function normalizeInboxSearch(raw: Record<string, unknown>): InboxSearch 
         // Waited rows are NO_OP by definition, so a kind next to it adds nothing.
         kind: waited ? undefined : plainKind,
         date,
+        from: period?.from,
+        to: period?.to,
         template,
-        outcome: date ? oneOf(INBOX_OUTCOME_KEYS, raw.outcome) : undefined,
+        outcome: date || period ? oneOf(INBOX_OUTCOME_KEYS, raw.outcome) : undefined,
     };
 }
 
 /** True when anything other than the tab narrows the list (what "Clear filters" resets). */
 export function hasInboxFilters(s: InboxSearch): boolean {
-    return !!(s.engine || s.channel || s.kind || s.date || s.template || s.outcome);
+    return !!(
+        s.engine ||
+        s.channel ||
+        s.kind ||
+        s.date ||
+        s.from ||
+        s.to ||
+        s.template ||
+        s.outcome
+    );
 }

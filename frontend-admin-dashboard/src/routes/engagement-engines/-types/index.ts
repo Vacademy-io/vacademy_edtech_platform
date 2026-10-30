@@ -213,9 +213,12 @@ export interface TaskListFilters {
     kind?: string;
     /** YYYY-MM-DD, a day in the institute time zone. */
     date?: string;
+    /** YYYY-MM-DD to YYYY-MM-DD, inclusive, institute time zone. Both or neither; wins over `date`. */
+    from?: string;
+    to?: string;
     /** Template name, or an email subject. */
     template?: string;
-    /** Needs `date`. One of INBOX_OUTCOME_KEYS. */
+    /** Needs `date`, or `from` and `to`. One of INBOX_OUTCOME_KEYS. */
     outcome?: string;
 }
 

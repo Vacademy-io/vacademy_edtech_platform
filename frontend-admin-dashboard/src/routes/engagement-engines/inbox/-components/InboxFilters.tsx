@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { X } from '@phosphor-icons/react';
+import { CalendarBlank, Check, X } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { DatePickerButton } from '@/components/shared/crm-enhance/date-picker-button';
 import {
@@ -11,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import { buildChannelMeta, CHANNEL_ORDER } from '../../-constants';
 import type { ChannelKey, EngagementEngine } from '../../-types';
+import { formatInboxPeriod, movePeriodEnd } from '../-utils/period';
 import { hasInboxFilters, type InboxSearch } from '../-utils/search';
 
 const ALL = 'all';
@@ -28,9 +30,9 @@ const KIND_LABEL_KEY = {
 type Patch = Partial<InboxSearch>;
 
 /**
- * The inbox's server-side filters: engine, channel, kind and day. They read from and write to
- * the URL (through `onChange`), so nothing here is local state. Renders inline, to sit in the
- * toolbar's wrapping row.
+ * The inbox's server-side filters: engine, channel, kind and day or period. They read from and
+ * write to the URL (through `onChange`); the only local state is whether the From / To pickers
+ * are open. Renders inline, to sit in the toolbar's wrapping row.
  */
 export function InboxFilterControls({
     search,
@@ -52,6 +54,14 @@ export function InboxFilterControls({
         enginesLoaded && !!search.engine && !engines.some((e) => e.id === search.engine);
     // The waited tab is NO_OP by definition, so there is no kind to choose.
     const showKind = search.filter !== 'waited';
+    // A period set in the URL shows as a chip under the toolbar; the pickers open on request.
+    const [editingPeriod, setEditingPeriod] = useState(false);
+    const period = { from: search.from, to: search.to };
+    const openPeriod = () => {
+        // A day already chosen becomes a one-day period to widen, rather than being lost.
+        if (search.date) onChange({ date: undefined, from: search.date, to: search.date });
+        setEditingPeriod(true);
+    };
 
     return (
         <>
@@ -112,26 +122,62 @@ export function InboxFilterControls({
                     </SelectContent>
                 </Select>
             )}
-            <div className="flex items-center gap-1">
-                <DatePickerButton
-                    label={t('toolbar.day')}
-                    value={search.date ?? ''}
-                    onChange={(date) => onChange({ date })}
-                    placeholder={t('toolbar.anyDay')}
-                />
-                {search.date && (
+            {editingPeriod ? (
+                <div className="flex items-center gap-1">
+                    <DatePickerButton
+                        label={t('toolbar.from')}
+                        value={search.from ?? ''}
+                        onChange={(day) =>
+                            onChange({ date: undefined, ...movePeriodEnd(period, 'from', day) })
+                        }
+                        placeholder={t('toolbar.pickDay')}
+                    />
+                    <DatePickerButton
+                        label={t('toolbar.to')}
+                        value={search.to ?? ''}
+                        onChange={(day) =>
+                            onChange({ date: undefined, ...movePeriodEnd(period, 'to', day) })
+                        }
+                        placeholder={t('toolbar.pickDay')}
+                    />
                     <MyButton
                         buttonType="secondary"
                         layoutVariant="icon"
                         scale="medium"
-                        aria-label={t('toolbar.clearDay')}
-                        title={t('toolbar.clearDay')}
-                        onClick={() => onChange({ date: undefined })}
+                        aria-label={t('toolbar.doneRange')}
+                        title={t('toolbar.doneRange')}
+                        onClick={() => setEditingPeriod(false)}
                     >
-                        <X size={14} />
+                        <Check size={14} />
                     </MyButton>
-                )}
-            </div>
+                </div>
+            ) : (
+                <div className="flex items-center gap-1">
+                    {!(search.from && search.to) && (
+                        <DatePickerButton
+                            label={t('toolbar.day')}
+                            value={search.date ?? ''}
+                            onChange={(date) => onChange({ date })}
+                            placeholder={t('toolbar.anyDay')}
+                        />
+                    )}
+                    {search.date && (
+                        <MyButton
+                            buttonType="secondary"
+                            layoutVariant="icon"
+                            scale="medium"
+                            aria-label={t('toolbar.clearDay')}
+                            title={t('toolbar.clearDay')}
+                            onClick={() => onChange({ date: undefined })}
+                        >
+                            <X size={14} />
+                        </MyButton>
+                    )}
+                    <MyButton buttonType="text" scale="medium" onClick={openPeriod}>
+                        <CalendarBlank className="me-1 size-4" /> {t('toolbar.dateRange')}
+                    </MyButton>
+                </div>
+            )}
         </>
     );
 }
@@ -165,8 +211,8 @@ function RemovableChip({
 }
 
 /**
- * What the list is narrowed to beyond the controls above: the outcome and template from a
- * report link, as removable chips, and "Clear filters". Renders nothing with no filter on.
+ * What the list is narrowed to beyond the controls above: the period, outcome and template from
+ * a report link, as removable chips, and "Clear filters". Renders nothing with no filter on.
  */
 export function ActiveFilters({
     search,
@@ -181,6 +227,15 @@ export function ActiveFilters({
     if (!hasInboxFilters(search)) return null;
     return (
         <div className="flex flex-wrap items-center gap-2">
+            {search.from && search.to && (
+                <RemovableChip
+                    label={t('chips.period', {
+                        value: formatInboxPeriod(search.from, search.to),
+                    })}
+                    removeLabel={t('chips.removePeriod')}
+                    onRemove={() => onChange({ from: undefined, to: undefined })}
+                />
+            )}
             {search.outcome && (
                 <RemovableChip
                     label={t('chips.outcome', { value: t(`outcomeFilter.${search.outcome}`) })}

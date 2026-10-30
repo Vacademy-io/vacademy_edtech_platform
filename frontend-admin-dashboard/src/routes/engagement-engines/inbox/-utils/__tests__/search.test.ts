@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasInboxFilters, isIsoDay, normalizeInboxSearch } from '../search';
+import { hasInboxFilters, hasInboxPeriod, isIsoDay, normalizeInboxSearch } from '../search';
 
 describe('inbox search params', () => {
     it('keeps a report deep link exactly as written', () => {
@@ -17,9 +17,65 @@ describe('inbox search params', () => {
             channel: 'EMAIL',
             kind: undefined,
             date: '2026-10-30',
+            from: undefined,
+            to: undefined,
             template: undefined,
             outcome: 'bounced',
         });
+    });
+
+    it('keeps a period deep link, and lets it win over a day', () => {
+        const range = { from: '2026-10-12', to: '2026-10-29' };
+        expect(
+            normalizeInboxSearch({ filter: 'sent', channel: 'EMAIL', outcome: 'bounced', ...range })
+        ).toMatchObject({ filter: 'sent', channel: 'EMAIL', outcome: 'bounced', ...range });
+        // The server lets from/to win over date, so the state keeps only the period.
+        const both = normalizeInboxSearch({ date: '2026-10-30', ...range });
+        expect(both).toMatchObject(range);
+        expect(both.date).toBeUndefined();
+        // One day is a valid period.
+        expect(normalizeInboxSearch({ from: '2026-10-29', to: '2026-10-29' })).toMatchObject({
+            from: '2026-10-29',
+            to: '2026-10-29',
+        });
+    });
+
+    it('ignores a period that is half given, reversed or not real days', () => {
+        const ignored = { from: undefined, to: undefined };
+        expect(normalizeInboxSearch({ from: '2026-10-12' })).toMatchObject(ignored);
+        expect(normalizeInboxSearch({ to: '2026-10-29' })).toMatchObject(ignored);
+        expect(normalizeInboxSearch({ from: '2026-10-29', to: '2026-10-12' })).toMatchObject(
+            ignored
+        );
+        expect(normalizeInboxSearch({ from: '2026-02-31', to: '2026-10-29' })).toMatchObject(
+            ignored
+        );
+        expect(normalizeInboxSearch({ from: '12-10-2026', to: 20261029 })).toMatchObject(ignored);
+    });
+
+    it('falls back to the day when the period is ignored', () => {
+        const s = normalizeInboxSearch({
+            date: '2026-10-30',
+            from: '2026-10-29',
+            to: '2026-10-12',
+        });
+        expect(s).toMatchObject({ date: '2026-10-30', from: undefined, to: undefined });
+    });
+
+    it('allows an outcome with a day or a period, and drops it with neither', () => {
+        expect(normalizeInboxSearch({ outcome: 'opened', date: '2026-10-30' }).outcome).toBe(
+            'opened'
+        );
+        expect(
+            normalizeInboxSearch({ outcome: 'opened', from: '2026-10-12', to: '2026-10-29' })
+                .outcome
+        ).toBe('opened');
+        expect(normalizeInboxSearch({ outcome: 'opened' }).outcome).toBeUndefined();
+        // A period that is ignored is no period.
+        expect(
+            normalizeInboxSearch({ outcome: 'opened', from: '2026-10-29', to: '2026-10-12' })
+                .outcome
+        ).toBeUndefined();
     });
 
     it('drops values it does not know', () => {
@@ -65,5 +121,18 @@ describe('inbox search params', () => {
         expect(hasInboxFilters(normalizeInboxSearch({ filter: 'failed', engine: 'e1' }))).toBe(
             true
         );
+        // A period counts, so "Clear filters" shows for it and removes it.
+        expect(
+            hasInboxFilters(normalizeInboxSearch({ from: '2026-10-12', to: '2026-10-29' }))
+        ).toBe(true);
+    });
+
+    it('knows when the list is narrowed to a day or a period', () => {
+        expect(hasInboxPeriod(normalizeInboxSearch({}))).toBe(false);
+        expect(hasInboxPeriod(normalizeInboxSearch({ date: '2026-10-30' }))).toBe(true);
+        expect(hasInboxPeriod(normalizeInboxSearch({ from: '2026-10-12', to: '2026-10-29' }))).toBe(
+            true
+        );
+        expect(hasInboxPeriod(normalizeInboxSearch({ from: '2026-10-12' }))).toBe(false);
     });
 });

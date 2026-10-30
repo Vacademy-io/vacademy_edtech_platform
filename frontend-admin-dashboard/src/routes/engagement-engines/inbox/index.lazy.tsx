@@ -46,7 +46,12 @@ import { ToneBadge } from '../-components/ToneBadge';
 import { ActiveFilters, InboxFilterControls } from './-components/InboxFilters';
 import { TaskOutcomeBadges, TaskOutcomeDetail } from './-components/TaskOutcome';
 import { hasBeenDispatched } from './-utils/outcome';
-import { hasInboxFilters, normalizeInboxSearch, type InboxSearch } from './-utils/search';
+import {
+    hasInboxFilters,
+    hasInboxPeriod,
+    normalizeInboxSearch,
+    type InboxSearch,
+} from './-utils/search';
 import { CrmActionChip } from '../-components/crm-action-ui';
 import { CrmTaskSection } from '../-components/CrmTaskSection';
 import { isCrmAction } from '../-types/actions';
@@ -178,6 +183,8 @@ function TaskInboxPage() {
         filters.channel,
         filters.kind,
         filters.date,
+        filters.from,
+        filters.to,
         filters.template,
         filters.outcome,
     ].join('|');
@@ -201,6 +208,8 @@ function TaskInboxPage() {
         channel: filters.channel,
         kind: tab === 'waited' ? 'NO_OP' : filters.kind,
         date: filters.date,
+        from: filters.from,
+        to: filters.to,
         template: filters.template,
         outcome: withOutcome ? filters.outcome : undefined,
     });
@@ -218,7 +227,7 @@ function TaskInboxPage() {
     }, [engines]);
 
     // A count on each tab: the same list request with one row and the same engine / channel /
-    // kind / day / template filters. The outcome filter is left out: it costs a delivery lookup
+    // kind / day or period / template filters. The outcome filter is left out: it costs a delivery lookup
     // per request, so with one set only the open tab shows a count (from its own list below).
     const instituteId = getInstituteId() || '';
     const counts = useQueries({
@@ -252,11 +261,12 @@ function TaskInboxPage() {
             setPageState({ page: Math.max(0, totalPages - 1), key: pageKey });
     }, [data, page, pageKey, totalPages]);
 
-    // Engine, channel, kind and day are asked of the server; only the search box runs over the
-    // page already loaded. With a day the server orders by when each item went out, and that
-    // order is kept; otherwise the order is the sort select (waited defaults to newest first).
+    // Engine, channel, kind and day or period are asked of the server; only the search box runs
+    // over the page already loaded. With a day or period the server orders by when each item went
+    // out, and that order is kept; otherwise the order is the sort select (waited defaults to
+    // newest first).
     const q = search.trim().toLowerCase();
-    const sortKey: SortKey | null = filters.date
+    const sortKey: SortKey | null = hasInboxPeriod(filters)
         ? null
         : sort ?? (activeKey === 'waited' ? 'newest' : 'priority');
     const matching = tasks.filter(
@@ -301,7 +311,7 @@ function TaskInboxPage() {
         task: EngagementAction,
         verb: 'ack' | 'done' | 'dismiss' | 'reopen' | 'restore'
     ) => action.mutate({ taskId: task.id, verb });
-    // A filter the server refuses (an engine that is not this institute's, a malformed day).
+    // A filter the server refuses (an engine that is not this institute's, a malformed or out-of-range day or period).
     const errorStatus = (error as { response?: { status?: number } } | null)?.response?.status;
     const badFilters = isError && filtersActive && (errorStatus === 400 || errorStatus === 404);
 

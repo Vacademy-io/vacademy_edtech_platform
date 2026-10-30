@@ -199,7 +199,7 @@ export const useTasks = (
         queryFn: () => listTasks(instituteId, statuses, page, size, filters),
         enabled: !!instituteId,
         staleTime: 10 * 1000,
-        // A filter the server refuses (unknown engine, outcome without a day) will not pass on a retry.
+        // A filter the server refuses (unknown engine, outcome without a day or period) will not pass on a retry.
         retry: (count, error) => {
             const status = (error as { response?: { status?: number } })?.response?.status;
             return count < 3 && !(status && status >= 400 && status < 500);

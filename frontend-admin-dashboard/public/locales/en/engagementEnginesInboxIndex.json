@@ -57,7 +57,12 @@
         "selectedEngine": "Selected engine",
         "day": "Day",
         "anyDay": "Any day",
-        "clearDay": "Clear the day filter"
+        "clearDay": "Clear the day filter",
+        "dateRange": "Date range",
+        "from": "From",
+        "to": "To",
+        "pickDay": "Pick a day",
+        "doneRange": "Done"
     },
     "filteredEmpty": "No tasks on this page match your search.",
     "age": {
@@ -124,12 +129,14 @@
         },
         "filtered": {
             "title": "Nothing matches these filters",
-            "text": "Try another day, channel or engine, or clear the filters to see everything."
+            "text": "Try another day or period, channel or engine, or clear the filters to see everything."
         }
     },
     "chips": {
+        "period": "Period: {{value}}",
         "outcome": "Outcome: {{value}}",
         "template": "Template: {{name}}",
+        "removePeriod": "Remove the date range",
         "removeOutcome": "Remove the outcome filter",
         "removeTemplate": "Remove the template filter",
         "clear": "Clear filters"
