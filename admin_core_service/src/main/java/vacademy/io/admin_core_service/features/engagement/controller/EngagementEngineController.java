@@ -91,6 +91,9 @@ public class EngagementEngineController {
         for (Object[] row : actionRepository.countApprovedSendsByChannel(engineId)) {
             if (row[0] != null) byChannel.put((String) row[0], ((Number) row[1]).longValue());
         }
+        // An AI call is a CRM action, not a message: a person approving one is DONE + ACCEPTED with no
+        // channel, so the per-channel count above never sees it. Its graduation is the action type's.
+        byChannel.put("AI_CALL", actionRepository.countApprovedCrmActions(engineId, "SCHEDULE_AI_CALL"));
         body.put("approvedSendsByChannel", byChannel);
         body.put("effectiveFirstN", effectiveFirstN);
         return ResponseEntity.ok(body);

@@ -344,6 +344,16 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
     int rescheduleDueSend(@Param("id") String id, @Param("scheduledFor") Instant scheduledFor,
                           @Param("now") Instant now);
 
+    /**
+     * Everything the engine has done or proposed for one member (a no-op or a dry-run row is not a
+     * touch). Zero means the next thing it does is the member's first touch.
+     */
+    @Query(value = """
+            SELECT count(*) FROM engagement_action
+             WHERE member_id = :memberId AND kind <> 'NO_OP' AND status <> 'SIMULATED'
+            """, nativeQuery = true)
+    long countTouches(@Param("memberId") String memberId);
+
     /** Messages actually sent to one member — the touch count channels.maxTouches limits. */
     long countByMemberIdAndStatus(String memberId, String status);
 
