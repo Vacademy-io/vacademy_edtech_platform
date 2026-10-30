@@ -10,6 +10,10 @@ package vacademy.io.admin_core_service.features.engagement.report;
  * are UTC LocalDateTimes. ai_usage_event and lead_candidate are timestamptz: the same bounds are
  * read as UTC explicitly ({@code CAST(:x AS timestamp) AT TIME ZONE 'UTC'}), so the session time
  * zone never shifts a day. {@code :tz} is a region id Postgres accepts (TimezoneNormalizer).
+ *
+ * <p>{@code :from}/{@code :to} are the period (its first day 00:00 to the day after its last). The
+ * per-day reads (trend, previous period) run from {@code :dataFrom}, the earlier of the trend's
+ * first day and the previous period's, to {@code :to}.
  */
 final class EngagementDailyReportSql {
 
@@ -47,12 +51,12 @@ final class EngagementDailyReportSql {
             """.formatted(SELECTORS);
 
     /**
-     * Members added on D, counted as distinct people (the lead row, else the user): one person two
-     * engines took in is one lead for "All". A member without a lead row came from a batch
-     * (PACKAGE_SESSION) or a named user (USER selector naming its user id). "New" = the lead row
-     * itself was created on D. grp tells the three levels apart (GROUPING over engine, kind, list):
-     * 0 = per engine and list, 4 = per list across the engines, 7 = everyone (one row, also on a
-     * day that added no one).
+     * Members added in the period, counted as distinct people (the lead row, else the user): one
+     * person two engines took in is one lead for "All". A member without a lead row came from a
+     * batch (PACKAGE_SESSION) or a named user (USER selector naming its user id). "New" = the lead
+     * row itself was created in the period. grp tells the three levels apart (GROUPING over engine,
+     * kind, list): 0 = per engine and list, 4 = per list across the engines, 7 = everyone (one row,
+     * also for a period that added no one).
      */
     static final String MEMBERS_ADDED = """
             WITH added AS (
@@ -80,7 +84,7 @@ final class EngagementDailyReportSql {
             GROUP BY GROUPING SETS ((engine_id, kind, list_id), (kind, list_id), ())
             """.formatted(SELECTORS);
 
-    /** Lead Agents feeding these lists, with D's "already in your leads" skips. */
+    /** Lead Agents feeding these lists, with the period's "already in your leads" skips. */
     static final String LEAD_AGENTS = """
             SELECT la.id AS agent_id, la.name, la.audience_id AS list_id, la.status,
                    (SELECT COUNT(*) FROM lead_candidate c
@@ -92,19 +96,22 @@ final class EngagementDailyReportSql {
             WHERE la.institute_id = :instituteId AND la.audience_id IN (:listIds)
             """;
 
-    /** The agents' own day counters (agent's window time zone; same calendar day), trend range. */
+    /**
+     * The agents' own day counters (agent's window time zone; same calendar day), from the first
+     * per-day day to the period's last. They are per-day increments, so a period sums them.
+     */
     static final String LEAD_AGENT_DAYS = """
             SELECT d.agent_id, d.day::text AS day, d.discovered, d.researched, d.delivered, d.review,
                    d.rejected, d.searches, d.pages, d.cost_usd, d.credits
             FROM lead_agent_day d
             JOIN lead_agent la ON la.id = d.agent_id
             WHERE la.institute_id = :instituteId AND la.audience_id IN (:listIds)
-              AND d.day >= CAST(:trendFromDay AS date) AND d.day <= CAST(:day AS date)
+              AND d.day >= CAST(:dataFromDay AS date) AND d.day <= CAST(:toDay AS date)
             """;
 
     // ── runs ─────────────────────────────────────────────────────────────────
 
-    /** Everything the engines decided on D, per engine. */
+    /** Everything the engines decided in the period, per engine. */
     static final String RUNS = """
             SELECT a.engine_id,
                    COUNT(*) AS decisions,
@@ -147,10 +154,11 @@ final class EngagementDailyReportSql {
     // ── outreach ─────────────────────────────────────────────────────────────
 
     /**
-     * Messages that went out (or failed going out) from {@code :signalsFrom} to the end of D: the
-     * trend's sends, D's sends, and the earlier sends a reply on D can belong to. A SEND row, or a
-     * TASK a person approved and sent (copilot mode). Message channels only; CRM tasks excluded.
-     * created_at bounds the scan to the engine index (a send goes out within hours of its draft).
+     * Messages that went out (or failed going out) in [{@code :sendsFrom}, {@code :sendsTo}): read
+     * once for the period and the trend with the earlier sends a reply in them can belong to, and
+     * once more for the previous period (the KPI deltas). A SEND row, or a TASK a person approved
+     * and sent (copilot mode). Message channels only; CRM tasks excluded. {@code :scanFrom} bounds
+     * the scan to the engine index on created_at (a send goes out within hours of its draft).
      * An email drafted on an approved email template carries its id (EngagementDispatcher
      * VAR_EMAIL_TEMPLATE); its name is read when the template is still the engine's.
      */
@@ -166,7 +174,7 @@ final class EngagementDailyReportSql {
                   AND et.engine_id = a.engine_id
             WHERE a.engine_id IN (:engineIds)
               AND a.created_at >= :scanFrom
-              AND a.dispatched_at >= :signalsFrom AND a.dispatched_at < :to
+              AND a.dispatched_at >= :sendsFrom AND a.dispatched_at < :sendsTo
               AND a.kind IN ('SEND', 'TASK')
               AND a.channel IN ('EMAIL', 'WHATSAPP', 'IN_APP')
               AND a.status IN ('SENT', 'FAILED')
@@ -174,7 +182,7 @@ final class EngagementDailyReportSql {
             """.formatted(NOT_CRM_ACTION);
 
     /**
-     * AI calls the engines queued, per engine and local day of queueing (trend range). A call is
+     * AI calls the engines queued, per engine and local day of queueing (per-day range). A call is
      * counted once per call log; credits are the call's telephony + AI-calling meters, whenever
      * they were billed.
      */
@@ -187,21 +195,21 @@ final class EngagementDailyReportSql {
                 JOIN engagement_action a ON a.id = q.source_ref
                 LEFT JOIN telephony_call_log t ON t.id = q.call_log_id
                 WHERE q.institute_id = :instituteId AND q.source = 'ENGAGEMENT_ENGINE'
-                  AND q.created_at >= :trendFrom AND q.created_at < :to
+                  AND q.created_at >= :dataFrom AND q.created_at < :to
                   AND a.engine_id IN (:engineIds)
             ),
             billed AS (
                 SELECT u.context ->> 'call_log_id' AS call_log_id, u.credits_charged - u.refunded_credits AS credits
                 FROM ai_usage_event u
                 WHERE u.institute_id = :instituteId AND u.use_case = 'telephony'
-                  AND u.occurred_at >= (CAST(:trendFrom AS timestamp) AT TIME ZONE 'UTC')
+                  AND u.occurred_at >= (CAST(:dataFrom AS timestamp) AT TIME ZONE 'UTC')
                   AND u.context ->> 'call_log_id' IN (SELECT call_log_id FROM calls WHERE call_log_id IS NOT NULL)
                 UNION ALL
                 SELECT r.call_log_id, u.credits_charged - u.refunded_credits
                 FROM ai_usage_event u
                 JOIN ai_call_result r ON r.id = u.context ->> 'ai_call_result_id'
                 WHERE u.institute_id = :instituteId AND u.use_case = 'ai_calling'
-                  AND u.occurred_at >= (CAST(:trendFrom AS timestamp) AT TIME ZONE 'UTC')
+                  AND u.occurred_at >= (CAST(:dataFrom AS timestamp) AT TIME ZONE 'UTC')
                   AND r.call_log_id IN (SELECT call_log_id FROM calls WHERE call_log_id IS NOT NULL)
             ),
             credits AS (
@@ -231,7 +239,7 @@ final class EngagementDailyReportSql {
     // ── costs ────────────────────────────────────────────────────────────────
 
     /**
-     * Engine message credits per engine, channel and local day (trend range). A row the
+     * Engine message credits per engine, channel and local day (per-day range). A row the
      * credit_transactions backfill wrote has no engine_id; its external_reference_id is the action.
      */
     static final String MESSAGE_CREDITS = """
@@ -243,7 +251,7 @@ final class EngagementDailyReportSql {
             LEFT JOIN engagement_action a
                    ON u.context ->> 'engine_id' IS NULL AND a.id = u.context ->> 'external_reference_id'
             WHERE u.institute_id = :instituteId AND u.use_case = 'engagement_message'
-              AND u.occurred_at >= (CAST(:trendFrom AS timestamp) AT TIME ZONE 'UTC')
+              AND u.occurred_at >= (CAST(:dataFrom AS timestamp) AT TIME ZONE 'UTC')
               AND u.occurred_at < (CAST(:to AS timestamp) AT TIME ZONE 'UTC')
               AND COALESCE(u.context ->> 'engine_id', a.engine_id) IN (:engineIds)
             GROUP BY 1, 2, 3
@@ -267,11 +275,10 @@ final class EngagementDailyReportSql {
      */
     static final String HUMAN_STATUS_SOURCES = "'MANUAL', 'BULK_MANUAL', 'MANUAL_DISPOSITION'";
 
-    /** Lead status moves of the engines' leads per local day (trend range), from → to, by actor. */
     /**
-     * WhatsApp templates the engine(s) proposed on D: the category each was proposed in, where it
-     * stands now (admin review, Meta, live, rejected, withdrawn) and the category Meta gave it, so a
-     * utility proposal Meta moved to marketing (the expensive category) shows up.
+     * WhatsApp templates the engine(s) proposed in the period: the category each was proposed in,
+     * where it stands now (admin review, Meta, live, rejected, withdrawn) and the category Meta gave
+     * it, so a utility proposal Meta moved to marketing (the expensive category) shows up.
      */
     static final String NEW_TEMPLATES = """
             SELECT UPPER(COALESCE(p.proposed_category, 'UNKNOWN')) AS proposed_category, p.status,
@@ -282,6 +289,7 @@ final class EngagementDailyReportSql {
             GROUP BY 1, 2, 3
             """;
 
+    /** Lead status moves of the engines' leads per local day (per-day range), from → to, by actor. */
     static final String STATUS_CHANGES = """
             SELECT (h.changed_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date::text AS day,
                    fs.label AS from_label, ts.label AS to_label,
@@ -292,7 +300,7 @@ final class EngagementDailyReportSql {
             LEFT JOIN lead_status fs ON fs.id = h.from_status_id
             LEFT JOIN lead_status ts ON ts.id = h.to_status_id
             WHERE h.institute_id = :instituteId
-              AND h.changed_at >= :trendFrom AND h.changed_at < :to
+              AND h.changed_at >= :dataFrom AND h.changed_at < :to
               AND h.audience_response_id IN (SELECT m.audience_response_id FROM engagement_member m
                                               WHERE m.institute_id = :instituteId AND m.engine_id IN (:engineIds)
                                                 AND m.audience_response_id IS NOT NULL)
@@ -300,12 +308,12 @@ final class EngagementDailyReportSql {
             """.formatted(HUMAN_STATUS_SOURCES);
 
     /**
-     * Engine leads converted on D (EngagementCrmMirrorDao's rule): the lead row moved to a
-     * CONVERTED status, or the person's lead profile was converted. One row per engine and
-     * person (the user, else the lead row), so a person converted on two lead rows, or by both
-     * rules, counts once.
+     * Engine leads converted between two bound parameters (%1$s = the start, %2$s = the end)
+     * (EngagementCrmMirrorDao's rule): the lead row moved to a CONVERTED status, or the person's
+     * lead profile was converted. One row per engine and person (the user, else the lead row), so
+     * a person converted on two lead rows, or by both rules, counts once.
      */
-    static final String CONVERSIONS = """
+    private static final String CONVERSIONS_BETWEEN = """
             SELECT m.engine_id, COALESCE(m.user_id, m.audience_response_id) AS lead_key
             FROM lead_status_history h
             JOIN engagement_member m ON m.audience_response_id = h.audience_response_id
@@ -313,7 +321,7 @@ final class EngagementDailyReportSql {
             WHERE h.institute_id = :instituteId
               AND h.to_status_id IN (SELECT ls.id FROM lead_status ls
                                       WHERE ls.institute_id = :instituteId AND ls.status_key = 'CONVERTED')
-              AND h.changed_at >= :from AND h.changed_at < :to
+              AND h.changed_at >= :%1$s AND h.changed_at < :%2$s
               AND m.engine_id IN (:engineIds)
             UNION
             SELECT m.engine_id, COALESCE(m.user_id, m.audience_response_id)
@@ -321,14 +329,31 @@ final class EngagementDailyReportSql {
             JOIN engagement_member m ON m.user_id = ulp.user_id AND m.institute_id = ulp.institute_id
             WHERE ulp.institute_id = :instituteId
               AND ulp.conversion_status = 'CONVERTED'
-              AND ulp.converted_at >= :from AND ulp.converted_at < :to
+              AND ulp.converted_at >= :%1$s AND ulp.converted_at < :%2$s
               AND m.audience_response_id IS NOT NULL
               AND m.engine_id IN (:engineIds)
             """;
 
+    /** The period's conversions. */
+    static final String CONVERSIONS = CONVERSIONS_BETWEEN.formatted("from", "to");
+
     /**
-     * Meetings of the engines' leads: booked in the trend range (not cancelled, not a reschedule)
-     * or scheduled on D (not cancelled or rescheduled), with the mentor's outcome when marked.
+     * The previous period's totals that count distinct people, not per-day sums: leads added (as
+     * MEMBERS_ADDED counts everyone) and conversions (as CONVERSIONS), in [{@code :prevFrom},
+     * {@code :from}). Its other totals (sends, replies, demos, credits, status changes) are per-day
+     * sums of the per-day reads, which start early enough to cover it.
+     */
+    static final String PREVIOUS = """
+            SELECT (SELECT COUNT(DISTINCT COALESCE(m.audience_response_id, 'u:' || m.user_id))
+                      FROM engagement_member m
+                     WHERE m.institute_id = :instituteId AND m.engine_id IN (:engineIds)
+                       AND m.created_at >= :prevFrom AND m.created_at < :from) AS leads_added,
+                   (SELECT COUNT(DISTINCT c.lead_key) FROM (%s) c) AS conversions
+            """.formatted(CONVERSIONS_BETWEEN.formatted("prevFrom", "from"));
+
+    /**
+     * Meetings of the engines' leads: booked in the per-day range (not cancelled, not a reschedule)
+     * or scheduled in the period (not cancelled or rescheduled), with the mentor's outcome when marked.
      * Matched by lead row or by the invitee's account, as EngagementCrmMirrorDao matches them.
      */
     static final String BOOKINGS = """
@@ -338,7 +363,7 @@ final class EngagementDailyReportSql {
                 JOIN engagement_member m ON m.audience_response_id = bi.audience_response_id
                                         AND m.institute_id = bi.institute_id
                 WHERE bi.institute_id = :instituteId AND m.engine_id IN (:engineIds)
-                  AND ((bi.created_at >= :trendFrom AND bi.created_at < :to)
+                  AND ((bi.created_at >= :dataFrom AND bi.created_at < :to)
                        OR (bi.scheduled_start_utc >= :from AND bi.scheduled_start_utc < :to))
                 UNION
                 SELECT m.engine_id, bi.id, bi.status, bi.reschedule_of_instance_id, bi.created_at, bi.scheduled_start_utc
@@ -347,15 +372,15 @@ final class EngagementDailyReportSql {
                                         AND m.institute_id = bi.institute_id
                 WHERE bi.institute_id = :instituteId AND m.engine_id IN (:engineIds)
                   AND bi.invitee_user_id IS NOT NULL
-                  AND ((bi.created_at >= :trendFrom AND bi.created_at < :to)
+                  AND ((bi.created_at >= :dataFrom AND bi.created_at < :to)
                        OR (bi.scheduled_start_utc >= :from AND bi.scheduled_start_utc < :to))
             )
             SELECT b.engine_id, b.id AS booking_id,
-                   CASE WHEN b.created_at >= :trendFrom AND b.created_at < :to
+                   CASE WHEN b.created_at >= :dataFrom AND b.created_at < :to
                              AND b.status <> 'CANCELLED' AND b.reschedule_of_instance_id IS NULL
                         THEN (b.created_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date::text END AS booked_day,
                    (b.scheduled_start_utc >= :from AND b.scheduled_start_utc < :to
-                       AND b.status NOT IN ('CANCELLED', 'RESCHEDULED')) AS scheduled_on_day,
+                       AND b.status NOT IN ('CANCELLED', 'RESCHEDULED')) AS scheduled_in_period,
                    r.outcome
             FROM b
             LEFT JOIN mentor_session_record r ON r.booking_instance_id = b.id

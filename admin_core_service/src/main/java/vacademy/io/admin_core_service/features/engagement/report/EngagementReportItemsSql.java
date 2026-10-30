@@ -12,7 +12,7 @@ package vacademy.io.admin_core_service.features.engagement.report;
  * filter is a {@code %s} the service fills with a fixed SQL fragment ("TRUE" for none). The
  * wrappers below add the person's contact for display and search: the student row first, then
  * the lead row's parent_* fields, as ContactResolver resolves them. Same parameters and time
- * rules as the report: naive UTC {@code :from}/{@code :to}.
+ * rules as the report: naive UTC {@code :from}/{@code :to}, the period's bounds.
  */
 final class EngagementReportItemsSql {
 
@@ -27,7 +27,7 @@ final class EngagementReportItemsSql {
 
     /**
      * MEMBERS_ADDED, one row per person (the lead row, else the user). is_new: the lead row itself
-     * was created on D. list_kind LIST | USERS | BATCH as the report's list rows.
+     * was created in the period. list_kind LIST | USERS | BATCH as the report's list rows.
      */
     static final String LEADS_ADDED = """
             WITH added AS (
@@ -90,17 +90,17 @@ final class EngagementReportItemsSql {
             )
             """;
 
-    /** Booked on D: not cancelled, not a reschedule (the report's demosBooked). */
+    /** Booked in the period: not cancelled, not a reschedule (the report's demosBooked). */
     static final String DEMOS_BOOKED = BOOKINGS.formatted("""
             bi.created_at >= :from AND bi.created_at < :to
                   AND bi.status <> 'CANCELLED' AND bi.reschedule_of_instance_id IS NULL""", "b.created_at");
 
-    /** Scheduled on D: not cancelled or rescheduled (the report's demosScheduled), with the mentor's outcome. */
+    /** Scheduled in the period: not cancelled or rescheduled (the report's demosScheduled), with the outcome. */
     static final String DEMOS_SCHEDULED = BOOKINGS.formatted("""
             bi.scheduled_start_utc >= :from AND bi.scheduled_start_utc < :to
                   AND bi.status NOT IN ('CANCELLED', 'RESCHEDULED')""", "b.scheduled_start_utc");
 
-    /** STATUS_CHANGES on D, one row per history row (the report counts rows). */
+    /** STATUS_CHANGES in the period, one row per history row (the report counts rows). */
     static final String STATUS_CHANGES = """
             WITH items AS (
                 SELECT DISTINCT ON (h.id) h.id AS item_key, m.engine_id, m.user_id, h.audience_response_id,
@@ -120,7 +120,7 @@ final class EngagementReportItemsSql {
             """.formatted(ACTOR);
 
     /**
-     * CONVERSIONS on D, one row per person (the user, else the lead row). A lead-status move to
+     * CONVERSIONS in the period, one row per person (the user, else the lead row). A lead-status move to
      * CONVERTED is preferred over the lead-profile flag, for its from/to and who made it; a
      * profile-only conversion has no status move and reads as automation (an enrolment, a payment).
      */
@@ -215,7 +215,7 @@ final class EngagementReportItemsSql {
     }
 
     /**
-     * TEMPLATES_CREATED: the WhatsApp templates the engine(s) proposed on D (the report's
+     * TEMPLATES_CREATED: the WhatsApp templates the engine(s) proposed in the period (the report's
      * newTemplates). %s = the filter AND the search.
      */
     static final String TEMPLATES_FROM = """

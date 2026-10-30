@@ -6,13 +6,17 @@ import java.util.List;
 
 /**
  * GET /admin-core-service/v1/engagement/reports/daily/items: the rows behind one of the daily
- * report's lead numbers, one page of them. total is what the report shows for the same engine, day
- * and filter (before search). Times are ISO instants ("…Z"); JSON is camelCase and nulls are
- * written out.
+ * report's lead numbers, one page of them. total is what the report shows for the same engine,
+ * period and filter (before search). Times are ISO instants ("…Z"); JSON is camelCase and nulls
+ * are written out.
  */
 public record EngagementReportItems(
         String kind,
+        /** The period's last day (= to), kept for clients that read one day. */
         String date,
+        /** The period, YYYY-MM-DD inclusive; from = to for a single day. */
+        String from,
+        String to,
         String timezone,
         String engineId,
         long total,

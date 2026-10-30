@@ -63,8 +63,9 @@ public class EngagementTaskController {
      * engineId (404 when not this institute's), channel EMAIL|WHATSAPP|IN_APP|AI_CALL, kind
      * TASK|REPLY|SEND|NO_OP|CRM (NO_OP rows only for kind=NO_OP; CRM = a TASK with a CRM action
      * type), date YYYY-MM-DD in the institute's zone on COALESCE(dispatched_at, created_at), newest
-     * first, template (WhatsApp template, email subject or email template), and outcome (needs date)
-     * as the report counts it.
+     * first, or from + to (a period, inclusive; wins over date; the report's rules: both or neither,
+     * from ≤ to, not in the future, from today − 89), template (WhatsApp template, email subject or
+     * email template), and outcome (needs date or from / to) as the report counts it.
      */
     @GetMapping
     public ResponseEntity<Page<EngagementAction>> inbox(
@@ -76,12 +77,14 @@ public class EngagementTaskController {
             @RequestParam(required = false) String channel,
             @RequestParam(required = false) String kind,
             @RequestParam(required = false) String date,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to,
             @RequestParam(required = false) String template,
             @RequestParam(required = false) String outcome,
             @RequestAttribute("user") CustomUserDetails user) {
         accessGuard.requireAdmin(user, instituteId);
         List<String> statusList = List.of(statuses.split(","));
-        TaskFilter filter = new TaskFilter(engineId, channel, kind, date, template, outcome);
+        TaskFilter filter = new TaskFilter(engineId, channel, kind, date, from, to, template, outcome);
         if (filter.isEmpty()) {
             return ResponseEntity.ok(actionRepository.findInbox(
                     instituteId, statusList, PageRequest.of(page, Math.min(size, 200))));

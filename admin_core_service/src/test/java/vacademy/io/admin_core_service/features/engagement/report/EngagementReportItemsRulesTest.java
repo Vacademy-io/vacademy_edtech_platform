@@ -72,6 +72,10 @@ class EngagementReportItemsRulesTest {
         return LocalDate.now(ZoneId.of(TZ)).toString();
     }
 
+    private static String daysAgo(int n) {
+        return LocalDate.now(ZoneId.of(TZ)).minusDays(n).toString();
+    }
+
     private static ItemRow row(String kind) {
         LocalDateTime t = LocalDateTime.of(2026, 10, 28, 4, 2, 15);
         boolean leads = "LEADS_ADDED".equals(kind), demos = kind.startsWith("DEMOS_");
@@ -197,21 +201,60 @@ class EngagementReportItemsRulesTest {
         @Test
         void kindAndDateAreRequiredAndCheckedAsTheReport() {
             assertThrows(InvalidRequestException.class,
-                    () -> service.items(INST, null, today(), "LEADS", null, null, 0, 50));
+                    () -> service.items(INST, null, today(), null, null, "LEADS", null, null, 0, 50));
             assertThrows(InvalidRequestException.class,
-                    () -> service.items(INST, null, null, "LEADS_ADDED", null, null, 0, 50));
-            assertThrows(InvalidRequestException.class, () -> service.items(INST, null,
-                    LocalDate.now(ZoneId.of(TZ)).plusDays(2).toString(), "LEADS_ADDED", null, null, 0, 50));
-            assertThrows(InvalidRequestException.class, () -> service.items(INST, null,
-                    LocalDate.now(ZoneId.of(TZ)).minusDays(91).toString(), "LEADS_ADDED", null, null, 0, 50));
+                    () -> service.items(INST, null, null, null, null, "LEADS_ADDED", null, null, 0, 50));
+            assertThrows(InvalidRequestException.class, () -> service.items(INST, null, daysAgo(-2), null, null,
+                    "LEADS_ADDED", null, null, 0, 50));
+            assertThrows(InvalidRequestException.class, () -> service.items(INST, null, daysAgo(90), null, null,
+                    "LEADS_ADDED", null, null, 0, 50));
             assertThrows(InvalidRequestException.class,
-                    () -> service.items(INST, null, today(), "LEADS_ADDED", null, null, -1, 50));
+                    () -> service.items(INST, null, today(), null, null, "LEADS_ADDED", null, null, -1, 50));
+        }
+
+        @Test
+        void aPeriodFollowsTheReportsRules() {
+            assertThrows(InvalidRequestException.class, () -> service.items(INST, null, null, daysAgo(3), null,
+                    "LEADS_ADDED", null, null, 0, 50));   // from without to
+            assertThrows(InvalidRequestException.class, () -> service.items(INST, null, null, daysAgo(1), daysAgo(3),
+                    "LEADS_ADDED", null, null, 0, 50));   // from after to
+            assertThrows(InvalidRequestException.class, () -> service.items(INST, null, null, daysAgo(90), today(),
+                    "LEADS_ADDED", null, null, 0, 50));   // starts before today - 89
+        }
+
+        @Test
+        void aPeriodWinsOverDateAndBoundsEveryKind() {
+            when(dao.count(anyString(), anyString(), any())).thenReturn(0L);
+
+            EngagementReportItems out = service.items(INST, null, today(), daysAgo(89), daysAgo(1),
+                    "CONVERSIONS", null, null, 0, 50);
+
+            ArgumentCaptor<MapSqlParameterSource> p = ArgumentCaptor.forClass(MapSqlParameterSource.class);
+            verify(dao).count(anyString(), eq("TRUE"), p.capture());
+            LocalDate first = LocalDate.now(ZoneId.of(TZ)).minusDays(89);
+            LocalDate last = LocalDate.now(ZoneId.of(TZ)).minusDays(1);
+            // IST days: [first 00:00, last + 1 00:00) is [first - 1 18:30, last 18:30) UTC.
+            assertEquals(first.minusDays(1).atTime(18, 30), p.getValue().getValue("from"));
+            assertEquals(last.atTime(18, 30), p.getValue().getValue("to"));
+            assertEquals(first.toString(), out.from());
+            assertEquals(last.toString(), out.to());
+            assertEquals(last.toString(), out.date());   // date stays the last day for old clients
+        }
+
+        @Test
+        void aSingleDayIsFromEqualsTo() {
+            EngagementReportItems out = service.items(INST, "e1", daysAgo(2), null, null, "TEMPLATES_CREATED",
+                    null, null, 0, 50);
+
+            assertEquals(daysAgo(2), out.from());
+            assertEquals(daysAgo(2), out.to());
+            assertEquals(daysAgo(2), out.date());
         }
 
         @Test
         void anotherInstitutesEngineIs404() {
             assertThrows(ResourceNotFoundException.class,
-                    () -> service.items(INST, "zz", today(), "CONVERSIONS", null, null, 0, 50));
+                    () -> service.items(INST, "zz", today(), null, null, "CONVERSIONS", null, null, 0, 50));
         }
 
         @Test
@@ -222,7 +265,8 @@ class EngagementReportItemsRulesTest {
             when(auth.getUsersFromAuthServiceByUserIds(anyList()))
                     .thenReturn(List.of(UserDTO.builder().id("staff-1").fullName("Meera").build()));
 
-            EngagementReportItems out = service.items(INST, " ", today(), "status_changes", "team", null, 1, 5000);
+            EngagementReportItems out = service.items(INST, " ", today(), null, null, "status_changes", "team", null,
+                    1, 5000);
 
             ArgumentCaptor<MapSqlParameterSource> p = ArgumentCaptor.forClass(MapSqlParameterSource.class);
             ArgumentCaptor<String> sql = ArgumentCaptor.forClass(String.class);
@@ -243,7 +287,8 @@ class EngagementReportItemsRulesTest {
         void aPagePastTheEndOrNothingAtAllSkipsThePageQuery() {
             when(dao.count(anyString(), anyString(), any())).thenReturn(40L);
 
-            EngagementReportItems out = service.items(INST, "e1", today(), "DEMOS_BOOKED", null, "asha", 1, 50);
+            EngagementReportItems out = service.items(INST, "e1", today(), null, null, "DEMOS_BOOKED", null, "asha",
+                    1, 50);
 
             assertEquals(40, out.total());
             assertTrue(out.rows().isEmpty());
@@ -257,7 +302,8 @@ class EngagementReportItemsRulesTest {
             when(dao.page(anyString(), anyString(), anyString(), any())).thenReturn(List.of(row("DEMOS_SCHEDULED")));
             when(auth.getUsersFromAuthServiceByUserIds(anyList())).thenThrow(new RuntimeException("auth down"));
 
-            EngagementReportItems out = service.items(INST, null, today(), "DEMOS_SCHEDULED", "no_show", null, 0, 50);
+            EngagementReportItems out = service.items(INST, null, today(), null, null, "DEMOS_SCHEDULED", "no_show",
+                    null, 0, 50);
 
             verify(dao).page(anyString(), eq("TRUE"), eq("i.sort_at ASC, i.item_key"), any());
             assertNull(out.rows().get(0).hostName());   // auth_service down: names left out, rows still served

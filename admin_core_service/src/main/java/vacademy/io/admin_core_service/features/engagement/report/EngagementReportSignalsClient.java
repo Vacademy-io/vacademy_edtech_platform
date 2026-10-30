@@ -29,8 +29,11 @@ import java.util.Map;
 public class EngagementReportSignalsClient {
 
     static final String ROUTE = "/notification-service/internal/v1/engagement/report-signals";
-    /** Ids per call; the endpoint refuses more than 2000. */
-    static final int CHUNK = 500;
+    /**
+     * Ids per call; the endpoint refuses more than 2000 and runs each call under its own 8s statement
+     * timeout, so a long period's thousands of actions go in calls of this many, one after another.
+     */
+    static final int CHUNK = 1000;
 
     @Autowired
     private InternalClientUtils internalClientUtils;

@@ -18,6 +18,7 @@ import vacademy.io.admin_core_service.features.institute.service.InstituteTimezo
 import vacademy.io.common.exceptions.InvalidRequestException;
 import vacademy.io.common.exceptions.ResourceNotFoundException;
 
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,16 +31,16 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * The task inbox as the daily report's drill-down: rows filtered by engine, channel, kind, day,
- * template and outcome, so each number on the report opens the rows behind it; and each row's
- * outcome for the inbox's outcome column. The unfiltered inbox stays on
+ * The task inbox as the daily report's drill-down: rows filtered by engine, channel, kind, day or
+ * period, template and outcome, so each number on the report opens the rows behind it; and each
+ * row's outcome for the inbox's outcome column. The unfiltered inbox stays on
  * EngagementActionRepository.findInbox; this is only reached when a filter is given.
  */
 @Slf4j
 @Service
 public class EngagementTaskQueryService {
 
-    /** Most rows of one day an outcome filter reads; the newest win past it. */
+    /** Most rows of one day or period an outcome filter reads; the newest win past it. */
     static final int MAX_OUTCOME_CANDIDATES = 5000;
     /** Most ids one outcomes lookup takes: an inbox page is at most 200 tasks. */
     public static final int MAX_OUTCOME_LOOKUP = 200;
@@ -65,18 +66,26 @@ public class EngagementTaskQueryService {
         this.timezoneService = timezoneService;
     }
 
-    /** The inbox's optional filters, as the request carries them (blank = not given). */
-    public record TaskFilter(String engineId, String channel, String kind, String date, String template,
-                             String outcome) {
+    /**
+     * The inbox's optional filters, as the request carries them (blank = not given). from + to (a
+     * period) win over date.
+     */
+    public record TaskFilter(String engineId, String channel, String kind, String date, String from, String to,
+                             String template, String outcome) {
         public boolean isEmpty() {
-            return blank(engineId) && blank(channel) && blank(kind) && blank(date) && blank(template)
-                    && blank(outcome);
+            return blank(engineId) && blank(channel) && blank(kind) && blank(date) && blank(from) && blank(to)
+                    && blank(template) && blank(outcome);
+        }
+
+        boolean dated() {
+            return !blank(date) || !blank(from) || !blank(to);
         }
     }
 
     /**
      * @throws InvalidRequestException   an unknown channel, kind or outcome; an outcome without a
-     *                                   date; a bad date; a negative page
+     *                                   date or period; a bad date; a period that breaks the
+     *                                   report's rules (EngagementReportDay.range); a negative page
      * @throws ResourceNotFoundException the engine is not one of this institute's
      */
     public Page<EngagementAction> inbox(String instituteId, List<String> statuses, TaskFilter f, int page, int size) {
@@ -85,18 +94,14 @@ public class EngagementTaskQueryService {
         String channel = oneOf("channel", upper(f.channel()), CHANNELS);
         String kind = oneOf("kind", upper(f.kind()), KINDS);
         String outcome = oneOf("outcome", lower(f.outcome()), EngagementActionOutcomeService.OUTCOMES);
-        if (outcome != null && blank(f.date())) {
-            throw new InvalidRequestException("outcome needs a date");
+        if (outcome != null && !f.dated()) {
+            throw new InvalidRequestException("outcome needs a date, or from and to");
         }
         List<String> statusList = statuses.stream().map(String::trim).filter(s -> !s.isEmpty()).distinct().toList();
         if (statusList.isEmpty()) throw new InvalidRequestException("statuses is required");
         List<String> engineIds = engineIds(instituteId, trim(f.engineId()));
 
-        EngagementReportDay.Bounds day = null;
-        if (!blank(f.date())) {
-            ZoneId zone = EngagementReportDay.zone(timezoneService.getTimezoneId(instituteId));
-            day = EngagementReportDay.bounds(EngagementReportDay.parse(f.date()), zone);
-        }
+        EngagementReportDay.Bounds day = f.dated() ? bounds(instituteId, f) : null;
         List<String> channels = channel == null ? null : List.of(channel);
         if (outcome != null) {
             // Read only the channels the outcome can occur on.
@@ -121,11 +126,22 @@ public class EngagementTaskQueryService {
         return new PageImpl<>(load(matched.subList(from, to)), pageable, matched.size());
     }
 
+    /**
+     * The day or period the rows went out in, in the institute's zone: from + to by the report's
+     * rules, else date as any one day (the inbox's own, older rule).
+     */
+    private EngagementReportDay.Bounds bounds(String instituteId, TaskFilter f) {
+        ZoneId zone = EngagementReportDay.zone(timezoneService.getTimezoneId(instituteId));
+        EngagementReportDay.Period range = EngagementReportDay.range(f.from(), f.to(), LocalDate.now(zone));
+        return EngagementReportDay.bounds(
+                range != null ? range : EngagementReportDay.Period.of(EngagementReportDay.parse(f.date())), zone);
+    }
+
     /** Ids of the rows that count toward the outcome, in the rows' order. */
     List<String> matching(String instituteId, String outcome, List<TaskRow> rows) {
         if (rows.size() >= MAX_OUTCOME_CANDIDATES) {
-            log.warn("[EngagementInbox] outcome {} for institute {} read the newest {} rows of the day only",
-                    outcome, instituteId, MAX_OUTCOME_CANDIDATES);
+            log.warn("[EngagementInbox] outcome {} for institute {} read the newest {} rows of the day or "
+                    + "period only", outcome, instituteId, MAX_OUTCOME_CANDIDATES);
         }
         if (rows.isEmpty()) return List.of();
         Map<String, ActionOutcome> outcomes = outcomeService.outcomes(instituteId, rows);

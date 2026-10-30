@@ -27,7 +27,9 @@ import vacademy.io.common.exceptions.InvalidRequestException;
 import vacademy.io.common.exceptions.ResourceNotFoundException;
 import vacademy.io.common.exceptions.VacademyException;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -108,7 +110,15 @@ class EngagementTaskInboxFiltersTest {
 
     private static TaskFilter filter(String engineId, String channel, String kind, String date, String template,
                                      String outcome) {
-        return new TaskFilter(engineId, channel, kind, date, template, outcome);
+        return new TaskFilter(engineId, channel, kind, date, null, null, template, outcome);
+    }
+
+    private static TaskFilter period(String from, String to, String date, String outcome) {
+        return new TaskFilter(null, null, null, date, from, to, null, outcome);
+    }
+
+    private static LocalDate daysAgo(int n) {
+        return LocalDate.now(ZoneId.of("Asia/Kolkata")).minusDays(n);
     }
 
     private static List<String> ids(Page<EngagementAction> page) {
@@ -136,7 +146,7 @@ class EngagementTaskInboxFiltersTest {
             when(actions.findInbox(eq(INST), eq(List.of("OPEN", "ACKED")), any(Pageable.class))).thenReturn(old);
 
             Page<EngagementAction> out = controller.inbox(INST, "OPEN,ACKED", 0, 500,
-                    null, " ", "", null, null, null, user).getBody();
+                    null, " ", "", null, null, " ", null, null, user).getBody();
 
             assertSame(old, out);
             verify(actions).findInbox(INST, List.of("OPEN", "ACKED"), PageRequest.of(0, 200));
@@ -146,9 +156,20 @@ class EngagementTaskInboxFiltersTest {
         @Test
         @DisplayName("a filter goes to the query service, size still capped at 200")
         void aFilterUsesTheQueryService() {
-            controller.inbox(INST, "SENT", 1, 999, "e1", null, null, null, null, null, user);
+            controller.inbox(INST, "SENT", 1, 999, "e1", null, null, null, null, null, null, null, user);
 
             verify(query).inbox(INST, List.of("SENT"), filter("e1", null, null, null, null, null), 1, 200);
+            verify(actions, never()).findInbox(anyString(), anyList(), any(Pageable.class));
+        }
+
+        @Test
+        @DisplayName("from + to alone are a filter too")
+        void aPeriodAloneUsesTheQueryService() {
+            controller.inbox(INST, "SENT", 0, 50, null, null, null, null, "2026-10-27", "2026-10-29", null, null,
+                    user);
+
+            verify(query).inbox(INST, List.of("SENT"),
+                    new TaskFilter(null, null, null, null, "2026-10-27", "2026-10-29", null, null), 0, 50);
             verify(actions, never()).findInbox(anyString(), anyList(), any(Pageable.class));
         }
 
@@ -169,6 +190,23 @@ class EngagementTaskInboxFiltersTest {
         void outcomeNeedsADate() {
             assertThrows(InvalidRequestException.class, () -> service.inbox(INST, List.of("SENT"),
                     filter(null, null, null, null, null, "delivered"), 0, 50));
+        }
+
+        @Test
+        void aPeriodFollowsTheReportsRules() {
+            String today = daysAgo(0).toString();
+            // only one of from / to; from after to; a day in the future; a day before today - 89
+            assertThrows(InvalidRequestException.class, () -> service.inbox(INST, List.of("SENT"),
+                    period(daysAgo(3).toString(), null, null, "delivered"), 0, 50));
+            assertThrows(InvalidRequestException.class, () -> service.inbox(INST, List.of("SENT"),
+                    period(null, today, null, null), 0, 50));
+            assertThrows(InvalidRequestException.class, () -> service.inbox(INST, List.of("SENT"),
+                    period(today, daysAgo(2).toString(), null, null), 0, 50));
+            assertThrows(InvalidRequestException.class, () -> service.inbox(INST, List.of("SENT"),
+                    period(today, daysAgo(-1).toString(), null, null), 0, 50));
+            assertThrows(InvalidRequestException.class, () -> service.inbox(INST, List.of("SENT"),
+                    period(daysAgo(90).toString(), today, null, null), 0, 50));
+            verifyNoInteractions(dao);
         }
 
         @Test
@@ -216,6 +254,46 @@ class EngagementTaskInboxFiltersTest {
             assertEquals(LocalDateTime.of(2026, 10, 28, 18, 30), query.to());
             assertEquals(List.of("a1", "a2", "a3"), ids(page));
             assertEquals(103, page.getTotalElements());
+        }
+
+        @Test
+        void aPeriodWinsOverDateAndSpansWholeInstituteDays() {
+            when(dao.pageIds(any(), anyInt(), anyLong())).thenReturn(List.of());
+
+            service.inbox(INST, List.of("SENT"), period(daysAgo(29).toString(), daysAgo(1).toString(),
+                    "2026-01-01", null), 0, 50);
+
+            ArgumentCaptor<Query> q = ArgumentCaptor.forClass(Query.class);
+            verify(dao).pageIds(q.capture(), eq(50), eq(0L));
+            // IST: [first 00:00, last + 1 00:00) is [first - 1 18:30, last 18:30) UTC.
+            assertEquals(daysAgo(30).atTime(18, 30), q.getValue().from());
+            assertEquals(daysAgo(1).atTime(18, 30), q.getValue().to());
+            assertEquals(daysAgo(30).atTime(18, 30).minusDays(15), q.getValue().scanFrom());
+        }
+
+        @Test
+        void aLoneDateKeepsTheInboxsOwnRuleAnyDay() {
+            when(dao.pageIds(any(), anyInt(), anyLong())).thenReturn(List.of());
+
+            service.inbox(INST, List.of("SENT"), filter(null, null, null, "2025-01-01", null, null), 0, 50);
+
+            ArgumentCaptor<Query> q = ArgumentCaptor.forClass(Query.class);
+            verify(dao).pageIds(q.capture(), eq(50), eq(0L));
+            assertEquals(LocalDateTime.of(2024, 12, 31, 18, 30), q.getValue().from());
+        }
+
+        @Test
+        void anOutcomeWithAPeriodReadsItsRows() {
+            when(dao.rows(any(), eq(5000))).thenReturn(List.of());
+
+            Page<EngagementAction> page = service.inbox(INST, List.of("SENT"),
+                    period(daysAgo(6).toString(), daysAgo(0).toString(), null, "bounced"), 0, 50);
+
+            ArgumentCaptor<Query> q = ArgumentCaptor.forClass(Query.class);
+            verify(dao).rows(q.capture(), eq(5000));
+            assertEquals(daysAgo(7).atTime(18, 30), q.getValue().from());
+            assertEquals(daysAgo(0).atTime(18, 30), q.getValue().to());
+            assertEquals(0, page.getTotalElements());
         }
 
         @Test

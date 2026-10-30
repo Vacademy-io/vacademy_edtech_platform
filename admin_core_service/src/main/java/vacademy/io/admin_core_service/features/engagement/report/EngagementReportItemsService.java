@@ -30,10 +30,11 @@ import java.util.function.Supplier;
 
 /**
  * The rows behind the daily report's lead numbers: leads added, demos booked and scheduled, lead
- * status changes and conversions of one engine's (or every engine's) institute-local day. Same
- * definitions, scope and day rules as {@link EngagementDailyReportService}, so with no search the
- * total is the number the report shows for that engine, day and filter. Staff names (demo host,
- * who changed a status) come from auth_service; when it cannot answer they are left null.
+ * status changes and conversions of one engine's (or every engine's) period of institute-local
+ * days. Same definitions, scope and period rules as {@link EngagementDailyReportService}, so with
+ * no search the total is the number the report shows for that engine, period and filter. Staff
+ * names (demo host, who changed a status) come from auth_service; when it cannot answer they are
+ * left null.
  */
 @Slf4j
 @Service
@@ -92,12 +93,14 @@ public class EngagementReportItemsService {
 
     /**
      * @param engineId null or blank = every engine of the institute
-     * @param date     YYYY-MM-DD in the institute's zone (required; not in the future, at most 90 days back)
-     * @throws InvalidRequestException   bad kind, filter, date, page
+     * @param date     YYYY-MM-DD in the institute's zone, the same as from = to = date
+     * @param from     with to: the period, YYYY-MM-DD inclusive (wins over date). One of date or from /
+     *                 to is required; the report's rules apply (not in the future, from today − 89)
+     * @throws InvalidRequestException   bad kind, filter, date / period, page
      * @throws ResourceNotFoundException the engine is not one of this institute's
      */
-    public EngagementReportItems items(String instituteId, String engineId, String date, String kind,
-                                       String filter, String search, int page, int size) {
+    public EngagementReportItems items(String instituteId, String engineId, String date, String from, String to,
+                                       String kind, String filter, String search, int page, int size) {
         String k = kind == null ? null : kind.trim().toUpperCase(Locale.ROOT);
         if (k == null || !EngagementReportItems.KINDS.contains(k)) {
             throw new InvalidRequestException("kind must be one of " + EngagementReportItems.KINDS);
@@ -107,7 +110,8 @@ public class EngagementReportItemsService {
         if (size < 1) throw new InvalidRequestException("size must be at least 1");
         int pageSize = Math.min(size, MAX_SIZE);
         ZoneId zone = EngagementReportDay.zone(timezoneService.getTimezoneId(instituteId));
-        LocalDate day = EngagementReportDay.parseReportDay(date, zone);
+        EngagementReportDay.Period period = EngagementReportDay.period(date, from, to, LocalDate.now(zone));
+        if (period == null) throw new InvalidRequestException("date, or from and to, is required");
         String engine = engineId == null || engineId.isBlank() ? null : engineId.trim();
 
         List<Engine> engines = inTx(() -> reportDao.engines(instituteId));
@@ -116,11 +120,9 @@ public class EngagementReportItemsService {
         }
         List<String> engineIds = engines.stream().map(Engine::id)
                 .filter(id -> engine == null || id.equals(engine)).toList();
-        if (engineIds.isEmpty()) {
-            return new EngagementReportItems(k, day.toString(), zone.getId(), engine, 0, page, pageSize, List.of());
-        }
+        if (engineIds.isEmpty()) return response(k, period, zone, engine, 0, page, pageSize, List.of());
 
-        EngagementReportDay.Bounds b = EngagementReportDay.bounds(day, zone);
+        EngagementReportDay.Bounds b = EngagementReportDay.bounds(period, zone);
         MapSqlParameterSource p = new MapSqlParameterSource()
                 .addValue("instituteId", instituteId)
                 .addValue("engineIds", engineIds)
@@ -137,7 +139,7 @@ public class EngagementReportItemsService {
                 return n[0] <= (long) page * pageSize ? List.<Map<String, Object>>of() : dao.templatePage(where, p);
             });
             List<Item> out = found.stream().map(EngagementReportItemsService::templateItem).toList();
-            return new EngagementReportItems(k, day.toString(), zone.getId(), engine, n[0], page, pageSize, out);
+            return response(k, period, zone, engine, n[0], page, pageSize, out);
         }
         String searchSql = searchSql(k, search, p);
         String items = itemsSql(k).formatted(clause.sql());
@@ -152,7 +154,13 @@ public class EngagementReportItemsService {
                 ? inTx(() -> dao.convertedLabel(instituteId)) : null;
         Map<String, String> names = staffNames(rows);
         List<Item> out = rows.stream().map(r -> item(k, r, names, convertedLabel)).toList();
-        return new EngagementReportItems(k, day.toString(), zone.getId(), engine, total[0], page, pageSize, out);
+        return response(k, period, zone, engine, total[0], page, pageSize, out);
+    }
+
+    private static EngagementReportItems response(String kind, EngagementReportDay.Period period, ZoneId zone,
+                                                  String engine, long total, int page, int size, List<Item> rows) {
+        return new EngagementReportItems(kind, period.to().toString(), period.from().toString(),
+                period.to().toString(), zone.getId(), engine, total, page, size, rows);
     }
 
     // ── request → SQL ────────────────────────────────────────────────────────
