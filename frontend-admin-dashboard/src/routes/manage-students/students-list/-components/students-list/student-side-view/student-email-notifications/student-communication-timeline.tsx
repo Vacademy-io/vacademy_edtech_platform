@@ -62,6 +62,24 @@ import {
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 
+// Timestamps render in the viewer's zone, so label it (IST, GST, GMT+3…) —
+// otherwise a Gulf admin can't tell whether "7:55 PM" is their time or IST.
+// en-IN gives IST/GST abbreviations where en-US falls back to GMT offsets.
+const formatWithZone = (timestamp: string): string => {
+    const date = new Date(timestamp);
+    let zone = '';
+    try {
+        zone =
+            new Intl.DateTimeFormat('en-IN', { timeZoneName: 'short' })
+                .formatToParts(date)
+                .find((p) => p.type === 'timeZoneName')?.value ?? '';
+    } catch {
+        zone = '';
+    }
+    const base = format(date, 'MMM d, h:mm a');
+    return zone ? `${base} ${zone}` : base;
+};
+
 // ─── HTML helpers ──────────────────────────────────────────────────────────
 // The communication-timeline service often returns the raw email HTML in
 // `title` / `bodyPreview` (e.g. starting with `<!DOCTYPE html>`). Showing that
@@ -468,7 +486,7 @@ function ExpandedDetail({
                                     {item.senderInfo || t('expandedDetail.senderFallback')}
                                 </span>
                                 <span className="shrink-0 text-2xs text-neutral-400">
-                                    {format(new Date(item.timestamp), 'MMM d, h:mm a')}
+                                    {formatWithZone(item.timestamp)}
                                 </span>
                             </div>
                             {item.recipientInfo && (
@@ -582,7 +600,7 @@ function ExpandedDetail({
                                 <div className="size-1.5 rounded-full bg-neutral-300" />
                                 <StatusPill statusKey={event.status} />
                                 <span className="text-neutral-500">
-                                    {format(new Date(event.timestamp), 'MMM d, h:mm a')}
+                                    {formatWithZone(event.timestamp)}
                                 </span>
                             </div>
                         ))}
