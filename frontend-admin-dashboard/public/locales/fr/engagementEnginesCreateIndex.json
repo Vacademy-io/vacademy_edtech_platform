@@ -18,7 +18,25 @@
         "brief": "Le brief",
         "briefHint": "Décrivez l'objectif, le ton, ce qu'il faut dire et éviter, et les liens éventuels. Cela devient les instructions de l'IA : plus c'est précis, mieux c'est.",
         "briefPlaceholder": "Vous réengagez des {{learners}} qui ne viennent plus. Soyez chaleureux et bref…",
-        "language": "Langue"
+        "language": "Langue",
+        "agent": {
+            "heading": "De l’agent de leads « {{name}} » :",
+            "filled": "Rempli depuis l’agent de leads {{names}}. Modifiez-le librement.",
+            "use": "Utiliser la description de l’agent de leads comme brief"
+        },
+        "ai": {
+            "title": "Le rédiger avec l’IA",
+            "hint": "Donnez le produit et le site web, l’IA rédige le brief. Elle ne peut pas ouvrir le site : elle utilise l’adresse comme lien à partager et ce que vous écrivez sur le produit. Tout ce qui manque apparaît en ligne TODO à compléter.",
+            "website": "Site web",
+            "websitePlaceholder": "https://exemple.com",
+            "product": "À propos du produit ou de l’offre",
+            "productPlaceholder": "Ce que c’est, pour qui, en quoi c’est utile…",
+            "generate": "Générer avec l’IA",
+            "improve": "Améliorer avec l’IA",
+            "generating": "Rédaction du brief…",
+            "needInput": "Ajoutez d’abord l’objectif, le produit ou le site web.",
+            "failed": "Impossible de rédiger le brief"
+        }
     },
     "dataPoints": {
         "intro": "Choisissez ce que l'IA peut consulter pour chaque personne, comme l'assiduité ou les frais dus. Plus d'informations, des messages mieux placés.",
