@@ -13,6 +13,7 @@ import type { SelectOption } from '@/components/design-system/SelectChips';
 import { Funnel, GraduationCap, MagnifyingGlass, X } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { BatchForSession, PackageSessionFilter } from '@/types/payment-logs';
+import { isPaymentModeOptionToken, type PaymentModeGroup } from '../-utils/paymentModeOptions';
 
 interface PaymentFiltersProps {
     startDate: string;
@@ -38,9 +39,12 @@ interface PaymentFiltersProps {
     onPaymentPlansChange?: (plans: SelectOption[]) => void;
     /**
      * Payment Mode field — how an offline payment was recorded (the institute's own modes from
-     * Settings, custom ones and their options included). Omit `onPaymentModesChange` to drop it.
+     * Settings, custom ones included). Once a mode with options is picked, a second field asks for
+     * its options (named as in Settings, e.g. "Account"), the way recording a payment does.
+     * `selectedPaymentModes` holds both: mode tokens and "MODE|OPTION" tokens.
+     * Omit `onPaymentModesChange` to drop it.
      */
-    paymentModeOptions?: SelectOption[];
+    paymentModeGroups?: PaymentModeGroup[];
     selectedPaymentModes?: SelectOption[];
     onPaymentModesChange?: (modes: SelectOption[]) => void;
     selectedPaymentSources: SelectOption[];
@@ -129,7 +133,7 @@ export function PaymentFilters({
     paymentPlanOptions = [],
     selectedPaymentPlans,
     onPaymentPlansChange,
-    paymentModeOptions = [],
+    paymentModeGroups = [],
     selectedPaymentModes,
     onPaymentModesChange,
     selectedPaymentSources,
@@ -227,6 +231,51 @@ export function PaymentFilters({
         setter(value ? new Date(value).toISOString() : '');
     };
 
+    // Payment Mode: the modes alone, then the options of the modes picked.
+    const pickedModes = (selectedPaymentModes ?? []).filter(
+        (s) => !isPaymentModeOptionToken(s.value)
+    );
+    const pickedModeOptions = (selectedPaymentModes ?? []).filter((s) =>
+        isPaymentModeOptionToken(s.value)
+    );
+    const modeOptions: SelectOption[] = paymentModeGroups.map((g) => ({
+        value: g.value,
+        label: g.label,
+    }));
+    const groupsWithOptions = paymentModeGroups.filter(
+        (g) => g.subs.length > 0 && pickedModes.some((m) => m.value === g.value)
+    );
+    // With one mode picked its options read as they do in Settings; with more, each says its mode.
+    const subOptions: SelectOption[] = groupsWithOptions.flatMap((g) =>
+        g.subs.map((sub) => ({
+            value: sub.value,
+            label: groupsWithOptions.length > 1 ? `${g.label} · ${sub.label}` : sub.label,
+        }))
+    );
+    const subLabels = [...new Set(groupsWithOptions.map((g) => g.subLabel).filter(Boolean))];
+    const subFieldLabel =
+        subLabels.length === 1 && groupsWithOptions.every((g) => g.subLabel)
+            ? (subLabels[0] as string)
+            : groupsWithOptions.length === 1
+              ? `${groupsWithOptions[0]?.label} option`
+              : 'Mode option';
+    const handleModesChange = (modes: SelectOption[]) => {
+        // Unpicking a mode drops its options too.
+        const kept = pickedModeOptions.filter((o) =>
+            modes.some((m) => o.value.startsWith(`${m.value}|`))
+        );
+        onPaymentModesChange?.([...modes, ...kept]);
+    };
+    const handleModeOptionsChange = (options: SelectOption[]) => {
+        // Stored with the mode in the label, so the chip under the toolbar still says which mode.
+        const full = options.map((o) => {
+            const group = groupsWithOptions.find((g) => g.subs.some((s) => s.value === o.value));
+            const sub = group?.subs.find((s) => s.value === o.value);
+            return group && sub ? { value: o.value, label: `${group.label} · ${sub.label}` } : o;
+        });
+        onPaymentModesChange?.([...pickedModes, ...full]);
+    };
+
     const activeFilterCount =
         (selectedPaymentStatuses?.length || 0) +
         (selectedUserPlanStatuses.length || 0) +
@@ -263,6 +312,7 @@ export function PaymentFilters({
                         placeholder="All types"
                         multiSelect
                         fullWidth
+                        portal={!panelOnly}
                         clearable
                     />
                 </FilterField>
@@ -275,6 +325,7 @@ export function PaymentFilters({
                             placeholder="All statuses"
                             multiSelect
                             fullWidth
+                            portal={!panelOnly}
                             clearable
                         />
                     </FilterField>
@@ -287,6 +338,7 @@ export function PaymentFilters({
                         placeholder="All plan statuses"
                         multiSelect
                         fullWidth
+                        portal={!panelOnly}
                         clearable
                     />
                 </FilterField>
@@ -305,6 +357,7 @@ export function PaymentFilters({
                             }
                             multiSelect
                             fullWidth
+                            portal={!panelOnly}
                             clearable
                         />
                     </FilterField>
@@ -312,18 +365,30 @@ export function PaymentFilters({
                 {onPaymentModesChange && (
                     <FilterField label="Payment Mode">
                         <SelectChips
-                            options={paymentModeOptions}
-                            selected={selectedPaymentModes ?? []}
-                            onChange={onPaymentModesChange}
-                            placeholder={
-                                paymentModeOptions.length === 0 ? 'No modes set up' : 'All modes'
-                            }
-                            disabled={
-                                paymentModeOptions.length === 0 &&
-                                (selectedPaymentModes?.length ?? 0) === 0
-                            }
+                            options={modeOptions}
+                            selected={pickedModes}
+                            onChange={handleModesChange}
+                            placeholder={modeOptions.length === 0 ? 'No modes set up' : 'All modes'}
+                            disabled={modeOptions.length === 0 && pickedModes.length === 0}
                             multiSelect
                             fullWidth
+                            portal={!panelOnly}
+                            clearable
+                        />
+                    </FilterField>
+                )}
+                {onPaymentModesChange && subOptions.length > 0 && (
+                    <FilterField label={subFieldLabel}>
+                        <SelectChips
+                            options={subOptions}
+                            selected={pickedModeOptions
+                                .map((o) => subOptions.find((s) => s.value === o.value))
+                                .filter((o): o is SelectOption => !!o)}
+                            onChange={handleModeOptionsChange}
+                            placeholder="All"
+                            multiSelect
+                            fullWidth
+                            portal={!panelOnly}
                             clearable
                         />
                     </FilterField>
@@ -337,6 +402,7 @@ export function PaymentFilters({
                             placeholder="All sources"
                             multiSelect
                             fullWidth
+                            portal={!panelOnly}
                             clearable
                         />
                     </FilterField>
