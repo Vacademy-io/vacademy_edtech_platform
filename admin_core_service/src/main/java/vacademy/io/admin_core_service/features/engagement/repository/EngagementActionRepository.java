@@ -15,6 +15,22 @@ import java.util.List;
 public interface EngagementActionRepository extends JpaRepository<EngagementAction, String> {
 
     /**
+     * A row of engagement_action that counts as a touch of its member: something the engine did or
+     * still proposes. Not a touch: a no-op, a dry-run row, a message or AI call of the engine that
+     * expired without going out, and a message draft a person dismissed (neither reached anyone).
+     * Everything else counts as before: a reply draft (the lead wrote in), the internal CRM tasks,
+     * and a dismissed AI call, so a call a person turned down is not proposed again. No table alias:
+     * used as is in countTouches and in a subquery on engagement_action (EngagementUpcomingCallsDao).
+     */
+    String TOUCH_PREDICATE = "kind <> 'NO_OP' AND status <> 'SIMULATED'"
+            + " AND NOT (status = 'EXPIRED' AND kind IN ('TASK', 'SEND')"
+            + " AND COALESCE(action_type, '') NOT IN ('ADD_NOTE', 'CREATE_FOLLOWUP', 'ESCALATE', 'UPDATE_STATUS'))"
+            + " AND NOT (status = 'DISMISSED' AND kind = 'TASK'"
+            + " AND COALESCE(action_type, '') NOT IN ('ADD_NOTE', 'CREATE_FOLLOWUP', 'ESCALATE', 'UPDATE_STATUS',"
+            + " 'SCHEDULE_AI_CALL'))";
+
+
+    /**
      * When the engine's messages to this member went out, newest first. Answers to the person's own
      * messages (REPLY) are not outreach and do not count; callers pass PageRequest.of(0, n).
      */
@@ -357,21 +373,6 @@ public interface EngagementActionRepository extends JpaRepository<EngagementActi
             """, nativeQuery = true)
     int rescheduleDueSend(@Param("id") String id, @Param("scheduledFor") Instant scheduledFor,
                           @Param("now") Instant now);
-
-    /**
-     * A row of engagement_action that counts as a touch of its member: something the engine did or
-     * still proposes. Not a touch: a no-op, a dry-run row, a message or AI call of the engine that
-     * expired without going out, and a message draft a person dismissed (neither reached anyone).
-     * Everything else counts as before: a reply draft (the lead wrote in), the internal CRM tasks,
-     * and a dismissed AI call, so a call a person turned down is not proposed again. No table alias:
-     * used as is in countTouches and in a subquery on engagement_action (EngagementUpcomingCallsDao).
-     */
-    String TOUCH_PREDICATE = "kind <> 'NO_OP' AND status <> 'SIMULATED'"
-            + " AND NOT (status = 'EXPIRED' AND kind IN ('TASK', 'SEND')"
-            + " AND COALESCE(action_type, '') NOT IN ('ADD_NOTE', 'CREATE_FOLLOWUP', 'ESCALATE', 'UPDATE_STATUS'))"
-            + " AND NOT (status = 'DISMISSED' AND kind = 'TASK'"
-            + " AND COALESCE(action_type, '') NOT IN ('ADD_NOTE', 'CREATE_FOLLOWUP', 'ESCALATE', 'UPDATE_STATUS',"
-            + " 'SCHEDULE_AI_CALL'))";
 
     /** Touches of one member (TOUCH_PREDICATE). Zero means the next thing it does is the first touch. */
     @Query(value = "SELECT count(*) FROM engagement_action WHERE member_id = :memberId AND " + TOUCH_PREDICATE,
