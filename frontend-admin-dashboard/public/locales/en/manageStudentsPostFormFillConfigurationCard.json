@@ -9,6 +9,15 @@
         "label": "Show Login Button",
         "helpText": "Display the login button on the success page if not redirecting immediately."
     },
+    "registrationSubtitle": {
+        "label": "Enrollment Form Subtitle (Optional)",
+        "placeholder": "Fill in your details to get started",
+        "helpText": "Replaces the default \"Fill in your details to enroll in the course\" line under Registration Details. Leave blank to keep the default."
+    },
+    "hidePlanDuration": {
+        "label": "Hide Plan Duration",
+        "helpText": "Hide the plan validity (for example \"365 days\") shown under the price on the enrollment page."
+    },
     "content": {
         "label": "Success Page Content (Optional)",
         "placeholder": "HTML/Text Content",

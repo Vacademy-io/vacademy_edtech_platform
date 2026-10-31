@@ -397,6 +397,10 @@ export const inviteLinkSchema = z.object({
         showLoginButton: z.boolean().default(true),
         content: z.string().optional(),
         collectBillingContactDetails: z.boolean().default(false),
+        // Learner enrollment page copy: hide the validity text under the price,
+        // and replace the default "Fill in your details to enroll…" subtitle.
+        hidePlanDuration: z.boolean().default(false),
+        registrationSubtitle: z.string().optional(),
         // Per-field configuration for the billing-contact fields rendered on the
         // learner registration form when collectBillingContactDetails=true.
         // Each field has a customizable label and a required flag; the third

@@ -155,6 +155,8 @@ export interface RegistrationStepProps {
   onBillingContactChange?: (next: BillingContactState) => void;
   /** Per-field config from invite's settingJson (label, required, role options) */
   billingContactFields?: BillingContactFieldsConfig;
+  /** Invite's own subtitle under "Registration Details"; blank keeps the default */
+  registrationSubtitle?: string;
 }
 
 // Currency symbols come from the shared currency util so every flow stays in sync.
@@ -194,6 +196,7 @@ const RegistrationStep = ({
   billingContact = EMPTY_BILLING_CONTACT,
   onBillingContactChange,
   billingContactFields,
+  registrationSubtitle,
 }: RegistrationStepProps) => {
   const { t } = useTranslation("enrollmentA");
   const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
@@ -631,7 +634,7 @@ const RegistrationStep = ({
                 {t("registrationStep.title")}
               </h2>
               <p className="text-sm text-gray-500 mt-0.5">
-                {t("registrationStep.subtitle", { course })}
+                {registrationSubtitle?.trim() || t("registrationStep.subtitle", { course })}
               </p>
             </div>
           </div>
