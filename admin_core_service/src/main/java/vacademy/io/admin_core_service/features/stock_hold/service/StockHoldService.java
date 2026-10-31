@@ -6,7 +6,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
 import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository.StockInfoProjection;
@@ -51,8 +56,11 @@ import java.util.stream.Collectors;
  *
  * <p>Webhook safety: {@link #onPlanActivated}, {@link #onPlanStacked}, the release methods and
  * {@link #restoreForPlan} never throw. A stock problem is logged and sent to Sentry; it must not
- * roll back the payment it runs inside. Only the checkout-time {@link #hold} / {@link #attach}
- * throw, because a checkout that cannot hold its stock must fail.
+ * roll back the payment it follows. Catching is not enough for that: a failed statement aborts
+ * the whole Postgres transaction. So the hooks a payment, an enrollment or an admin action calls
+ * (activate, stack, restore, release held / unclaimed picks) move stock after the caller
+ * commits, in a transaction of their own ({@link #afterCommit}). Only the checkout-time
+ * {@link #hold} / {@link #attach} throw, because a checkout that cannot hold its stock must fail.
  */
 @Slf4j
 @Service
@@ -79,6 +87,7 @@ public class StockHoldService {
 
     private final StockHoldRepository stockHoldRepository;
     private final PackageSessionRepository packageSessionRepository;
+    private final PlatformTransactionManager transactionManager;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -230,19 +239,18 @@ public class StockHoldService {
      * taken at checkout for exactly what the learner bought (a repeat purchase of an owned book
      * activates no new mapping on this plan, yet its hold must still become SOLD). The list only
      * decides which sessions WITHOUT a hold take stock now; null means "none".
+     *
+     * <p>Runs once the caller commits ({@link #afterCommit}); never throws.
      */
-    @Transactional
     public void onPlanActivated(UserPlan userPlan, List<String> activatedPackageSessionIds) {
         if (userPlan == null || !StringUtils.hasText(userPlan.getId())) {
             return;
         }
-        try {
-            settleOnActivation(userPlan, activatedPackageSessionIds);
-        } catch (Exception e) {
-            log.error("Stock update failed while activating plan {} — enrollment continues", userPlan.getId(), e);
-            SentryLogger.logError(e, "Stock update failed on plan activation",
-                    tags("userPlanId", userPlan.getId(), "userId", userPlan.getUserId()));
-        }
+        loadForLater(userPlan);
+        List<String> sessionIds = activatedPackageSessionIds != null ? new ArrayList<>(activatedPackageSessionIds) : null;
+        afterCommit("Stock update failed on plan activation",
+                tags("userPlanId", userPlan.getId(), "userId", userPlan.getUserId()),
+                () -> settleOnActivation(userPlan, sessionIds));
     }
 
     /**
@@ -250,15 +258,14 @@ public class StockHoldService {
      * instead of activating, which is what a renewal bought through checkout looks like.
      * Stacking has never moved stock (nor does the later promotion), so the plan's own
      * PURCHASE holds go back; its RENT_PREFERENCE picks were paid for and settle as SOLD, ready
-     * for the admin to assign. Never throws.
+     * for the admin to assign. Runs once the caller commits; never throws.
      */
-    @Transactional
     public void onPlanStacked(UserPlan userPlan) {
         if (userPlan == null || !StringUtils.hasText(userPlan.getId())) {
             return;
         }
         String userPlanId = userPlan.getId();
-        try {
+        afterCommit("Stock update failed for stacked plan", tags("userPlanId", userPlanId), () -> {
             List<StockHoldRow> rows = sorted(stockHoldRepository.findRowsOwnedOrClaimedByPlan(userPlanId));
             for (StockHoldRow row : rows) {
                 if (!userPlanId.equals(row.getUserPlanId())) {
@@ -271,10 +278,7 @@ public class StockHoldService {
                     giveBack(row.getPackageSessionId(), quantityOf(row));
                 }
             }
-        } catch (Exception e) {
-            log.error("Stock update failed for stacked plan {}", userPlanId, e);
-            SentryLogger.logError(e, "Stock update failed for stacked plan", tags("userPlanId", userPlanId));
-        }
+        });
     }
 
     /** Payment window closed: releases the order's HELD holds unless its payment log is PAID. */
@@ -334,32 +338,35 @@ public class StockHoldService {
      *
      * <p>The released picks end RESTORED, not RELEASED: they were paid for, and RELEASED would
      * make a later activation of the membership plan take their stock again.
+     *
+     * <p>Runs once the caller commits, after the activations of the same assignment (which may
+     * claim some of these picks first); never throws.
      */
-    @Transactional
-    public int releaseUnclaimedRentPreferences(String userId, String instituteId,
-                                               List<String> assignedPackageSessionIds) {
+    public void releaseUnclaimedRentPreferences(String userId, String instituteId,
+                                                List<String> assignedPackageSessionIds) {
         if (!StringUtils.hasText(userId) || assignedPackageSessionIds == null
                 || assignedPackageSessionIds.isEmpty()) {
-            return 0;
+            return;
         }
-        int released = 0;
-        try {
-            Set<String> assignedLevelIds = stockInfo(assignedPackageSessionIds).values().stream()
+        List<String> assigned = new ArrayList<>(assignedPackageSessionIds);
+        afterCommit("Rent pick release failed", tags("userId", userId, "instituteId", instituteId), () -> {
+            Set<String> assignedLevelIds = stockInfo(assigned).values().stream()
                     .map(StockInfoProjection::getLevelId)
                     .filter(StringUtils::hasText)
                     .collect(Collectors.toSet());
             if (assignedLevelIds.isEmpty()) {
-                return 0;
+                return;
             }
             List<StockHoldRow> picks = sorted(stockHoldRepository.findUnclaimedSoldRentPreferences(userId)).stream()
                     .filter(row -> instituteId == null || row.getInstituteId() == null
                             || instituteId.equals(row.getInstituteId()))
                     .toList();
             if (picks.isEmpty()) {
-                return 0;
+                return;
             }
             Map<String, StockInfoProjection> pickStock = stockInfo(picks.stream()
                     .map(StockHoldRow::getPackageSessionId).collect(Collectors.toSet()));
+            int released = 0;
             for (StockHoldRow pick : picks) {
                 StockInfoProjection info = pickStock.get(pick.getPackageSessionId());
                 if (info == null || !assignedLevelIds.contains(info.getLevelId())) {
@@ -373,11 +380,7 @@ public class StockHoldService {
             if (released > 0) {
                 log.info("Released {} unclaimed rent pick(s) of user {} after an admin assignment", released, userId);
             }
-        } catch (Exception e) {
-            log.error("Could not release unclaimed rent picks of user {}", userId, e);
-            SentryLogger.logError(e, "Rent pick release failed", tags("userId", userId, "instituteId", instituteId));
-        }
-        return released;
+        });
     }
 
     /**
@@ -386,11 +389,13 @@ public class StockHoldService {
      * HELD on the plan (cancelled before the payment settled) is released at the same time
      * instead of waiting for its expiry.
      *
+     * <p>The plan's rows are looked up now, so the caller knows at once whether to fall back;
+     * the stock itself moves once the caller commits. Never throws.
+     *
      * @param packageSessionIdOrNull limit to one session (de-assign), or null for the whole plan
      * @return true when the plan had any stock_hold row — the caller then skips its legacy
      *         increment; false for plans created before V635, which keep today's behaviour.
      */
-    @Transactional
     public boolean restoreForPlan(String userPlanId, String packageSessionIdOrNull) {
         if (!StringUtils.hasText(userPlanId)) {
             return false;
@@ -406,7 +411,7 @@ public class StockHoldService {
         if (!hadRows) {
             return false;
         }
-        try {
+        afterCommit("Stock restore failed", tags("userPlanId", userPlanId, "packageSessionId", packageSessionIdOrNull), () -> {
             int restored = 0;
             for (StockHoldRow row : sorted(stockHoldRepository.findRowsOwnedOrClaimedByPlan(userPlanId))) {
                 if (packageSessionIdOrNull != null && !packageSessionIdOrNull.equals(row.getPackageSessionId())) {
@@ -432,38 +437,28 @@ public class StockHoldService {
                 log.info("Gave back stock of {} hold(s) for plan {} (session {})",
                         restored, userPlanId, packageSessionIdOrNull != null ? packageSessionIdOrNull : "all");
             }
-        } catch (Exception e) {
-            log.error("Could not restore stock for plan {}", userPlanId, e);
-            SentryLogger.logError(e, "Stock restore failed",
-                    tags("userPlanId", userPlanId, "packageSessionId", packageSessionIdOrNull));
-        }
+        });
         return true;
     }
 
     /**
      * Soft cancel (CANCELED): the learner keeps the item until the plan ends, so sold stock stays
      * out — only holds still waiting for payment go back. A terminate / return / hard de-assign
-     * gives sold stock back through {@link #restoreForPlan}. Never throws.
+     * gives sold stock back through {@link #restoreForPlan}. Runs once the caller commits;
+     * never throws.
      */
-    @Transactional
-    public int releaseHeldForPlan(String userPlanId) {
+    public void releaseHeldForPlan(String userPlanId) {
         if (!StringUtils.hasText(userPlanId)) {
-            return 0;
+            return;
         }
-        int released = 0;
-        try {
+        afterCommit("Stock release failed on cancel", tags("userPlanId", userPlanId), () -> {
             for (StockHoldRow row : sorted(stockHoldRepository.findRowsOwnedOrClaimedByPlan(userPlanId))) {
                 if (HELD.equals(row.getStatus()) && userPlanId.equals(row.getUserPlanId())
                         && stockHoldRepository.transitionStatus(row.getId(), HELD, RELEASED) == 1) {
                     giveBack(row.getPackageSessionId(), quantityOf(row));
-                    released++;
                 }
             }
-        } catch (Exception e) {
-            log.error("Could not release held stock for plan {}", userPlanId, e);
-            SentryLogger.logError(e, "Stock release failed on cancel", tags("userPlanId", userPlanId));
-        }
-        return released;
+        });
     }
 
     /** Sum of HELD quantity on a package session, for Manage Inventory's "held" count. */
@@ -500,6 +495,49 @@ public class StockHoldService {
     }
 
     // ── internals ───────────────────────────────────────────────────────────
+
+    /**
+     * Runs {@code update} once the caller's transaction commits, in a transaction of its own;
+     * with no caller transaction, runs it now. A failure is logged and sent to Sentry and never
+     * reaches the caller. If the caller rolls back, the update never runs — its plan was never
+     * activated, cancelled or assigned.
+     */
+    private void afterCommit(String failure, Map<String, String> sentryTags, Runnable update) {
+        Runnable inOwnTransaction = () -> {
+            try {
+                TransactionTemplate template = new TransactionTemplate(transactionManager);
+                template.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+                template.executeWithoutResult(status -> update.run());
+            } catch (Exception e) {
+                log.error("{} {}", failure, sentryTags, e);
+                SentryLogger.logError(e, failure, sentryTags);
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    inOwnTransaction.run();
+                }
+            });
+        } else {
+            inOwnTransaction.run();
+        }
+    }
+
+    /**
+     * Loads the plan's invite while the caller's session is still open: a deferred update reads
+     * its institute from it (instituteIdOf), when the plan is no longer attached to a session.
+     */
+    private static void loadForLater(UserPlan userPlan) {
+        try {
+            if (userPlan.getEnrollInvite() != null) {
+                userPlan.getEnrollInvite().getInstituteId();
+            }
+        } catch (Exception e) {
+            log.debug("Could not load the invite of plan {}: {}", userPlan.getId(), e.getMessage());
+        }
+    }
 
     private void settleOnActivation(UserPlan userPlan, List<String> activatedPackageSessionIds) {
         String userPlanId = userPlan.getId();
