@@ -157,9 +157,11 @@ public class PackageSessionService {
 
     @Transactional
     public void releaseSlot(String packageSessionId) {
-        if (packageRepository.giveBackAvailableSlots(packageSessionId, 1) == 0) {
-            stockInfo(packageSessionId); // not found -> same error as before; otherwise unlimited
+        PackageSessionRepository.StockInfoProjection stock = stockInfo(packageSessionId); // not found -> same error as before
+        if (stock.getMaxSeats() == null || stock.getAvailableSlots() == null) {
+            return; // Unlimited, or no count kept yet: nothing to give back, as before
         }
+        packageRepository.giveBackAvailableSlots(packageSessionId, 1);
     }
 
     /**
