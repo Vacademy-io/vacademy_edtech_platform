@@ -82,6 +82,48 @@ const PostFormFillConfigurationCard = ({ form }: PostFormFillConfigurationCardPr
 
                     <FormField
                         control={form.control}
+                        name="postformfillConfiguration.registrationSubtitle"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>{t('registrationSubtitle.label')}</FormLabel>
+                                <FormControl>
+                                    <Input
+                                        placeholder={t('registrationSubtitle.placeholder')}
+                                        {...field}
+                                        value={field.value ?? ''}
+                                    />
+                                </FormControl>
+                                <p className="text-xs text-neutral-500">
+                                    {t('registrationSubtitle.helpText')}
+                                </p>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
+                        name="postformfillConfiguration.hidePlanDuration"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                <div className="space-y-0.5">
+                                    <FormLabel className="text-sm font-semibold">{t('hidePlanDuration.label')}</FormLabel>
+                                    <p className="text-xs text-neutral-500">
+                                        {t('hidePlanDuration.helpText')}
+                                    </p>
+                                </div>
+                                <FormControl>
+                                    <Switch
+                                        checked={field.value ?? false}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
                         name="postformfillConfiguration.collectBillingContactDetails"
                         render={({ field }) => (
                             <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">

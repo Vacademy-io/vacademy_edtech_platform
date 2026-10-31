@@ -10,7 +10,7 @@ import { useCouponsEnabled } from "@/components/common/coupon/use-coupons-enable
 import { useCheckoutCoupon } from "@/components/common/coupon/use-checkout-coupon";
 import { CouponInput } from "@/components/common/coupon/CouponInput";
 import { useEffect, useState } from "react";
-import { safeJsonParse } from "../-utils/helper";
+import { formatPlanDuration, safeJsonParse } from "../-utils/helper";
 import { ReferRequest } from "../-services/enroll-invite-services";
 import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
@@ -640,7 +640,10 @@ const FreePlanReview = ({
             <div className="flex justify-between">
               <span className="text-gray-600">{t("reviewStep.validity")}</span>
               <div className="font-medium text-gray-900">
-                {plan.duration || t("reviewStep.pricing.days", { count: plan.validity_in_days })}
+                {(plan.plan_duration &&
+                  formatPlanDuration(plan.plan_duration.validityInDays, plan.plan_duration.unit)) ||
+                  plan.duration ||
+                  t("reviewStep.pricing.days", { count: plan.validity_in_days })}
               </div>
             </div>
           )}

@@ -275,6 +275,21 @@ export function convertInstituteCustomFields(
   });
 }
 
+/**
+ * Plan validity as display text ("365 days" / "2 months"), or undefined for a
+ * lifetime plan (no validity). Call it at render time: enrollmentB loads lazily,
+ * so a string built inside an effect can freeze as the raw "planDuration.days" key.
+ */
+export function formatPlanDuration(
+  validityInDays: number | null | undefined,
+  unit?: string,
+): string | undefined {
+  if (validityInDays == null) return undefined;
+  return (unit || "days") === "days"
+    ? i18n.t("enrollmentB:planDuration.days", { count: validityInDays })
+    : i18n.t("enrollmentB:planDuration.months", { count: Math.floor(validityInDays / 30) });
+}
+
 export function convertPlansToPaymentOptions(rawPlans: PackageSessionData) {
   const paymentOption = rawPlans.payment_option;
   const unit = JSON.parse(paymentOption.payment_option_metadata_json)?.unit;

@@ -9,6 +9,15 @@
         "label": "Afficher le bouton de connexion",
         "helpText": "Afficher le bouton de connexion sur la page de succès si la redirection n'est pas immédiate."
     },
+    "registrationSubtitle": {
+        "label": "Sous-titre du formulaire d'inscription (facultatif)",
+        "placeholder": "Renseignez vos informations pour commencer",
+        "helpText": "Remplace la ligne par défaut sous Informations d'inscription. Laissez vide pour conserver la valeur par défaut."
+    },
+    "hidePlanDuration": {
+        "label": "Masquer la durée du forfait",
+        "helpText": "Masque la validité du forfait (par exemple \"365 jours\") affichée sous le prix sur la page d'inscription."
+    },
     "content": {
         "label": "Contenu de la page de succès (facultatif)",
         "placeholder": "Contenu HTML/texte",

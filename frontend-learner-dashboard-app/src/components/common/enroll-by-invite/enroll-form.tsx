@@ -31,6 +31,7 @@ import { BASE_URL_LEARNER_DASHBOARD } from "@/constants/urls";
 import {
   convertInviteCustomFields,
   convertInstituteCustomFields,
+  formatPlanDuration,
   getDefaultPlanFromPaymentsData,
   safeJsonParse,
   transformApiDataToCourseDataForInvite,
@@ -344,6 +345,12 @@ const EnrollByInvite = ({
     (inviteConfig as { collectBillingContactDetails?: boolean })
       ?.collectBillingContactDetails
   );
+
+  // Per-invite copy overrides, written by the admin's Post Form Fill card.
+  const { hidePlanDuration, registrationSubtitle: rawRegistrationSubtitle } =
+    inviteConfig as { hidePlanDuration?: boolean; registrationSubtitle?: unknown };
+  const registrationSubtitle =
+    typeof rawRegistrationSubtitle === "string" ? rawRegistrationSubtitle : undefined;
 
   // Autopay: read the invite's AUTOPAY_SETTING so we can require an explicit
   // auto-renewal consent before payment for recurring subscriptions.
@@ -845,12 +852,6 @@ const EnrollByInvite = ({
           const metadata = JSON.parse(
             paymentOptionMeta?.payment_option_metadata_json || "{}",
           );
-          const unit = metadata?.unit || "days";
-          const duration =
-            unit === "days"
-              ? t("planDuration.days", { count: onlyPlan.validity_in_days })
-              : t("planDuration.months", { count: Math.floor(onlyPlan.validity_in_days / 30) });
-
           // @ts-expect-error // TODO: strong type SelectedPayment mapping
           const preselected: SelectedPayment = {
             id: onlyPlan.id,
@@ -858,7 +859,7 @@ const EnrollByInvite = ({
             amount: onlyPlan.actual_price,
             currency: onlyPlan.currency,
             description: onlyPlan.description,
-            duration,
+            plan_duration: { validityInDays: onlyPlan.validity_in_days, unit: metadata?.unit },
             // include numeric pricing fields for summary calculations
             actual_price: onlyPlan.actual_price,
             elevated_price: onlyPlan.elevated_price,
@@ -2508,14 +2509,6 @@ const EnrollByInvite = ({
             const paymentOptionMetadata = JSON.parse(
               paymentOptionMeta?.payment_option_metadata_json || "{}",
             );
-            const unit = paymentOptionMetadata?.unit || "days";
-
-            const duration =
-              unit === "days"
-                ? t("planDuration.days", { count: defaultPaymentPlan.validity_in_days })
-                : t("planDuration.months", {
-                    count: Math.floor(defaultPaymentPlan.validity_in_days / 30),
-                  });
 
             // @ts-expect-error // TODO:fix this
             const preselectedPayment: SelectedPayment = {
@@ -2524,7 +2517,10 @@ const EnrollByInvite = ({
               amount: defaultPaymentPlan.actual_price,
               currency: defaultPaymentPlan.currency,
               description: defaultPaymentPlan.description,
-              duration: duration,
+              plan_duration: {
+                validityInDays: defaultPaymentPlan.validity_in_days,
+                unit: paymentOptionMetadata?.unit,
+              },
               // Include referral option for free plans
               referral_option: defaultPaymentPlan.referral_option,
               // features: [],
@@ -2675,6 +2671,7 @@ const EnrollByInvite = ({
             billingContact={billingContact}
             onBillingContactChange={setBillingContact}
             billingContactFields={billingContactFields}
+            registrationSubtitle={registrationSubtitle}
           />
         );
       case 1: {
@@ -2994,6 +2991,7 @@ const EnrollByInvite = ({
             billingContact={billingContact}
             onBillingContactChange={setBillingContact}
             billingContactFields={billingContactFields}
+            registrationSubtitle={registrationSubtitle}
           />
         );
     }
@@ -3129,6 +3127,13 @@ const EnrollByInvite = ({
   // the full grid when the step-0 course-info rail is actually shown.
   const isWideLayout = hasRightSectionContent && currentStep === 0;
   const pageContainerWidth = isWideLayout ? "max-w-6xl" : "max-w-2xl";
+
+  // Built at render, never stored: see formatPlanDuration.
+  const headerPlanDuration = (() => {
+    const planDuration = enrollmentData.selectedPayment?.plan_duration;
+    if (hidePlanDuration || !planDuration) return undefined;
+    return formatPlanDuration(planDuration.validityInDays, planDuration.unit);
+  })();
 
   return (
     // Canvas follows --background (white by default, institute-tinted when a
@@ -3266,9 +3271,9 @@ const EnrollByInvite = ({
                       {enrollmentData.selectedPayment.currency?.toUpperCase()}{" "}
                       {getSelectedPaymentPrice(enrollmentData.selectedPayment)}
                     </div>
-                    {enrollmentData.selectedPayment.duration && (
+                    {headerPlanDuration && (
                       <div className="text-xs text-gray-500">
-                        {enrollmentData.selectedPayment.duration}
+                        {headerPlanDuration}
                       </div>
                     )}
                   </div>
