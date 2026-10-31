@@ -36,8 +36,10 @@ no AI selection. Once the organisation and Maps lanes are done, a round's buying
 searches are doubled (SIGNAL_BOOST), about what the two lanes cost (4 web searches and an AI
 selection, up to 3 Maps searches at 3 credits each). The new-centre searches, the weakest source (prod:
 8% of 35 sent, 40% rejected as not the kind), run every NEW_CENTRE_EVERY-th round; the other signal
-sources take their places. "Leads for Vacademy" went from ~22 new organisations per 10 searches in its
-first days to ~3, while its rounds kept running to the daily limit.
+sources take their places (every round when nothing else is left to search: a round without a search
+would still use up the day's round limit). A new organisation counts for the lane whose search found
+it (found_by_lane: a keyword result is the signal lane's). "Leads for Vacademy" went from ~22 new
+organisations per 10 searches in its first days to ~3, while its rounds kept running to the daily limit.
 
 A Maps listing whose category shows a kind the brief does not target at all is skipped before it is
 fetched (engine discovery/kinds.py, conservative: an unknown category, or one the listing's name or the
@@ -111,6 +113,15 @@ def candidate_source(engine_candidate: Any) -> str:
         label = signals[0].get("source") if signals else None
         return _LABEL_SOURCE.get(label or "", "hiring")
     return "organisation_search"
+
+
+def found_by_lane(source: str, query: Optional[str], org_queries: Iterable[str]) -> str:
+    """The lane a new organisation counts for: "org" when one of this round's organisation searches found
+    it, else "sig". A keyword result on the open web is chosen like a search result (its source is
+    organisation_search) but came from the signal lane's keyword search: until 2026-10-31 it counted for
+    the organisation lane whenever that lane searched too, so the signal lane was counted dry, and shut for
+    the day, while its keyword searches were the ones finding new organisations."""
+    return "org" if source == "organisation_search" and query in set(org_queries) else "sig"
 
 
 def round_limit(daily_quota: Any) -> int:
@@ -268,10 +279,16 @@ def _lane_reset(cursor: Dict[str, Any], lane: str) -> None:
     cursor["lane_done"].pop(lane, None)
 
 
-def round_sources(sources: List[str], turn: int) -> List[str]:
+def round_sources(sources: List[str], turn: int, *, other_lanes_search: bool = True) -> List[str]:
     """The engine sources this round runs: the new-centre searches only every NEW_CENTRE_EVERY-th round
     (sig_turn), the weakest source on prod (2026-10-30: 35 found, 8% sent, 40% rejected as not the kind,
-    mostly news sites reporting a new branch)."""
+    mostly news sites reporting a new branch), so the other signal sources take their places.
+
+    When nothing else would search this round (no other signal source, and the organisation and Maps lanes
+    done for the day or not chosen: other_lanes_search False), they run every round: until 2026-10-31 two
+    rounds in three then searched nothing and still used up the day's round limit."""
+    if not other_lanes_search and not any(s not in ("organisation_search", "new_centres") for s in sources):
+        return list(sources)
     return [s for s in sources if s != "new_centres" or turn % NEW_CENTRE_EVERY == 0]
 
 
@@ -328,7 +345,7 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
     notes: List[str] = []
 
     offer = engine_api.resolve_offer(brief)
-    this_round = round_sources(sources, turn)
+    this_round = round_sources(sources, turn, other_lanes_search="org" in alive or "maps" in alive)
     sig_on = "sig" in alive and any(s != "organisation_search" for s in this_round)
     # The org and Maps lanes are done for the day: their share of the round goes to buying signals.
     boost = sig_on and any(chosen[lane] for lane in ("org", "maps")) and all(
@@ -401,9 +418,7 @@ async def run_round(agent: Dict[str, Any], plan: Dict[str, Any], need: int) -> D
             skip.add(c.domain)
             if cid:
                 created.append(cid)
-                # A keyword result on the open web is chosen like a search result: the signal lane's when
-                # the organisation lane did not search this round.
-                made["org" if source == "organisation_search" and org_slice else "sig"] += 1
+                made[found_by_lane(source, detail.get("query"), org_slice)] += 1
 
     unfit = 0
     if "maps" in alive and len(created) < need:
@@ -456,7 +471,8 @@ async def _maps_lane(agent, cursor, combos, gl, counter, skip, exclude, industri
                      known_orgs: Optional[Dict[str, List[Set[str]]]] = None) -> tuple:
     """Up to MAPS_PER_ROUND Maps searches, (term, place) pairs in turn and page by page. Returns (the new
     candidates' ids, searches made, listings skipped as another kind). Wrapping past MAX_PAGE ends the
-    lane for the day (cursor lane_done): page 1 is searched again tomorrow, not in the next round."""
+    lane for the day (cursor lane_done) once that last search has run: page 1 is searched again tomorrow,
+    not in the next round. A failed search ends this round's Maps searches and is searched again next round."""
     known_orgs = {} if known_orgs is None else known_orgs
     out: List[str] = []
     searched = unfit = 0
@@ -466,6 +482,15 @@ async def _maps_lane(agent, cursor, combos, gl, counter, skip, exclude, industri
         idx = int(cursor.get("maps_idx") or 0)
         term, place = combos[idx % len(combos)]
         page = int(cursor.get("maps_page") or 1)
+        try:
+            places_found = await search_mod.serper().maps(f"{term} {place}", gl=gl, page=page, counter=counter)
+        except SearchFailed as exc:
+            # The cursor moves only past a search that ran: the next round searches this one again. Until
+            # 2026-10-31 it moved (and the lane was marked "wrapped") first, so a failed last-page search
+            # closed the lane for the day with that page never searched.
+            logger.warning("lead agent: maps search failed: %s", exc)
+            break
+        searched += 1
         cursor["maps_idx"] = (idx + 1) % len(combos)
         used_up = False
         if cursor["maps_idx"] == 0:
@@ -473,12 +498,6 @@ async def _maps_lane(agent, cursor, combos, gl, counter, skip, exclude, industri
             cursor["maps_page"] = 1 if used_up else page + 1
         if used_up:
             cursor["lane_done"]["maps"] = "wrapped"
-        try:
-            places_found = await search_mod.serper().maps(f"{term} {place}", gl=gl, page=page, counter=counter)
-        except SearchFailed as exc:
-            logger.warning("lead agent: maps search failed: %s", exc)
-            break
-        searched += 1
         for p in places_found:
             if len(out) >= room:
                 break
@@ -592,4 +611,4 @@ def schedule_discovered(agent: Dict[str, Any]) -> int:
 
 
 __all__ = ["run_round", "round_limit", "maps_combos", "brief_sources", "engine_sources", "schedule_discovered",
-           "candidate_source", "signal_places", "round_sources"]
+           "candidate_source", "found_by_lane", "signal_places", "round_sources"]

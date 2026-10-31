@@ -68,8 +68,8 @@ def scripted(monkeypatch):
         async def maps(self, query, **kw):
             calls.append("maps")
             return []
-    monkeypatch.setattr(search_mod, "parallel", lambda: Search())
-    monkeypatch.setattr(search_mod, "serper", lambda: Search())
+    monkeypatch.setattr(search_mod, "parallel", Search)
+    monkeypatch.setattr(search_mod, "serper", Search)
     monkeypatch.setattr("app.services.lead_agent.mx.mx_lookup", lambda d: True)
 
     async def existing(institute_id, phones, emails):
@@ -273,8 +273,8 @@ def _agent(la_db, sources, cursor=None, **brief):
     return agent
 
 
-def _round(agent, plan=PLAN, need=10):
-    return asyncio.run(discovery.run_round(agent, plan, need))
+def _round(agent, plan=None, need=10):
+    return asyncio.run(discovery.run_round(agent, plan or PLAN, need))
 
 
 def test_a_lane_that_wraps_past_the_last_page_is_done_for_the_day(la_db, lanes):
@@ -299,6 +299,30 @@ def test_the_maps_lane_wrapping_past_the_last_page_stops_for_the_day(la_db, lane
     lanes.serper.maps_queries.clear()
     assert _round(agent)["skipped"] == "every search lane is used up for today"
     assert lanes.serper.maps_queries == []
+
+
+def test_a_failed_last_page_maps_search_keeps_the_lane_open_and_runs_again(la_db, lanes, monkeypatch):
+    """Review of PR 3569 (2026-10-31): the lane was marked "wrapped" before its last search ran, so a failed
+    last-page search closed it for the day with that page never searched."""
+    agent = _agent(la_db, ["maps"], cursor={"maps_page": discovery.MAX_PAGE})
+    failing = [True]
+    asked = []
+
+    async def maps(query, *, gl=None, location=None, page=1, counter=None):
+        asked.append((query, page))
+        if failing[0]:
+            raise search_mod.SearchFailed("serper: HTTP 503")
+        return []
+    monkeypatch.setattr(lanes.serper, "maps", maps)
+    _round(agent)
+    cursor = agent["cursor_json"]
+    assert asked == [("coaching institute Indore", discovery.MAX_PAGE)]
+    assert cursor["lane_done"] == {} and (cursor["maps_idx"], cursor["maps_page"]) == (0, discovery.MAX_PAGE)
+    assert "maps" not in cursor["lane_dry"]  # nothing was searched: not a dry round either
+    failing[0] = False
+    _round(agent)  # the same page again, and only now the lane is done for the day
+    assert asked[1:] == [("coaching institute Indore", discovery.MAX_PAGE)]
+    assert agent["cursor_json"]["lane_done"] == {"maps": "wrapped"} and agent["cursor_json"]["maps_page"] == 1
 
 
 def test_two_rounds_with_nothing_new_end_a_lane_and_a_round_with_every_lane_done_costs_nothing(la_db, lanes):
@@ -350,6 +374,31 @@ def test_a_rebuilt_plan_brings_its_lane_back(la_db, lanes):
     assert "skipped" not in out and lanes.serper.queries == [("UPSC coaching Indore", 1)]
 
 
+def test_a_keyword_find_counts_for_the_signal_lane_even_when_the_organisation_lane_searched(la_db, lanes,
+                                                                                           monkeypatch):
+    """Review of PR 3569 (2026-10-31): a keyword result on the open web is chosen like a search result, and it
+    counted for the organisation lane whenever that lane searched too: the signal lane was counted dry (and
+    shut for the day) while its keyword searches found the new organisations."""
+    async def search(query, *, gl=None, location=None, num=10, page=1, counter=None):
+        lanes.serper.queries.append((query, page))
+        if query in PLAN["search_queries"]:
+            return []  # the organisation searches find nothing new
+        return [SearchResult(query=query, rank=1, title="Pulse Academy | NEET coaching",
+                             url="https://pulseacademy.co.in/",
+                             snippet="Looking for LMS for our NEET coaching centre in Indore.")]
+    monkeypatch.setattr(lanes.serper, "search", search)
+    agent = _agent(la_db, ["organisation_search", "keyword"])
+    out = _round(agent, {**PLAN, "keywords": ["looking for LMS"]})
+    assert {q for q, _p in lanes.serper.queries} - set(PLAN["search_queries"])  # a keyword search ran
+    assert out["created"] == 1 and out["lanes"] == {"org": 0, "maps": 0, "sig": 1}
+    assert agent["cursor_json"]["lane_dry"] == {"org": 1, "sig": 0}
+    with la_db() as db:  # still stored as chosen: like a search result
+        assert db.execute(text("SELECT source FROM lead_candidate")).scalar() == "organisation_search"
+    assert discovery.found_by_lane("organisation_search", "NEET coaching Indore", PLAN["search_queries"]) == "org"
+    assert discovery.found_by_lane("organisation_search", "looking for LMS Indore", PLAN["search_queries"]) == "sig"
+    assert discovery.found_by_lane("hiring", "NEET coaching Indore", PLAN["search_queries"]) == "sig"
+
+
 # ---------------------------------------------------------------------- the signal budget and the new-centre lane
 
 @pytest.fixture
@@ -398,7 +447,7 @@ def test_the_boosted_signal_searches_are_the_ones_sent_to_parallel(la_db, lanes,
         async def search(self, query, *, objective=None, country=None, counter=None, **kw):
             asked.append(query)
             return []
-    monkeypatch.setattr(search_mod, "parallel", lambda: Parallel())
+    monkeypatch.setattr(search_mod, "parallel", Parallel)
     _round(agent)
     expected = discovery._signal_query_set(["hiring_callers", "linkedin_posts"], PLAN["industries_detail"], ["Indore"],
                                            PLAN, engine_api.resolve_offer(agent["brief_json"]), 0,
@@ -420,11 +469,30 @@ def test_new_centre_searches_run_every_third_round(la_db, captured):
     assert discovery.round_sources(["new_centres"], 6) == ["new_centres"]
 
 
-def test_a_new_centre_only_agent_idles_between_its_rounds_without_spending(la_db, captured, lanes):
+def test_new_centre_searches_run_every_round_once_nothing_else_is_left_to_search(la_db, captured):
+    """Review of PR 3569 (2026-10-31): with the new-centre searches the only search left, two rounds in three
+    searched nothing and still used up the day's round limit."""
     agent = _agent(la_db, ["new_centre"], cursor={"sig_turn": 1})
-    out = _round(agent)
-    assert captured == [] and lanes.asked == [] and out["created"] == 0
-    assert agent["cursor_json"]["sig_turn"] == 2 and "sig" not in agent["cursor_json"]["lane_dry"]
+
+    def turn_one(sources, done=None):
+        agent["brief_json"] = {**agent["brief_json"], "sources": sources}
+        agent["cursor_json"] = {**agent["cursor_json"], "sig_turn": 1, "rounds": 0, "lane_dry": {},
+                                "lane_done": dict(done or {})}
+        _round(agent)
+        return captured[-1]
+
+    _round(agent)
+    assert [kw["sources"] for kw in captured] == [["new_centres"]]  # turn 1: no other search, so it runs
+    kw = turn_one(["organisation_search", "maps", "new_centre"], {"org": "wrapped", "maps": "dry"})
+    assert "new_centres" in kw["sources"] and kw["max_queries"] == 0
+    # another signal source, or a lane still searching: every third round, as before
+    kw = turn_one(["organisation_search", "maps", "hiring", "new_centre"], {"org": "wrapped", "maps": "dry"})
+    assert "new_centres" not in kw["sources"] and "hiring_callers" in kw["sources"]
+    kw = turn_one(["organisation_search", "new_centre"])
+    assert "new_centres" not in kw["sources"] and kw["max_queries"] > 0
+    assert discovery.round_sources(["new_centres"], 1, other_lanes_search=False) == ["new_centres"]
+    assert discovery.round_sources(["new_centres", "hiring_callers"], 1, other_lanes_search=False) == [
+        "hiring_callers"]
 
 
 # ------------------------------------------------------------------------- the kind of organisation, cheaply
@@ -509,6 +577,17 @@ def test_the_selection_prompt_lists_every_kind_and_never_judges_the_place():
     assert re.search(r"^\[1\] Finlearn Academy \|", user, re.M)
     # no industries: the plan's segment stands in
     assert pipeline.kinds_wanted(plan, None) == ["real estate developers"]
+
+
+def test_discovery_and_research_list_the_same_kinds():
+    """One helper (engine discovery.kinds.industry_names) behind the selection prompt and the extraction prompt."""
+    industries = [{"name": "  Coaching   institutes ", "search_term": "coaching institute"},
+                  {"search_term": "exam body"}, {"name": "Coaching institutes"}, {"name": ""}, "not an industry"]
+    plan = engine_api.schema("ResearchPlan").model_validate(
+        {k: PLAN[k] for k in engine_api.schema("ResearchPlan").model_fields if k in PLAN})
+    assert pipeline.kinds_wanted(plan, industries) == ["Coaching institutes", "exam body"]
+    assert research.industry_names({"industries_detail": industries}, {}) == ["Coaching institutes", "exam body"]
+    assert engine_api.industry_names(industries) == kinds.industry_names(industries)
 
 
 def test_the_signal_prompt_never_takes_the_news_site_reporting_it():
