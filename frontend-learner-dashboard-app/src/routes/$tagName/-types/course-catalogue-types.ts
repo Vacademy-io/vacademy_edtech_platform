@@ -27,10 +27,30 @@ export interface AdditionalChargeTier {
 }
 
 /**
+ * A delivery zone of a PIN-priced additional charge (e.g. shipping that costs
+ * one price within a state and another for the rest of the country).
+ * A zone matches a 6-digit delivery PIN when the PIN starts with any of
+ * `pinPrefixes` (absent or empty = every PIN) and with none of
+ * `excludePinPrefixes`. Zones are tried in array order and the first match wins,
+ * so list narrow zones before the catch-all. Each zone is backed by its own
+ * PaymentPlan, so the backend can verify `paid_amount == PaymentPlan.actualPrice`.
+ */
+export interface AdditionalChargeZone {
+  key: string;
+  label: string;
+  pinPrefixes?: string[];
+  excludePinPrefixes?: string[];
+  planId: string;
+  amount: number;
+}
+
+/**
  * Charge added to checkout beyond the items themselves — e.g. shipping, security deposit.
  * Backed by a dedicated "internal" Package (`package_type` = `DELIVERY_CHARGE` /
  * `SECURITY_DEPOSIT`) so it flows through the same enroll/payment/invoice plumbing
- * as a regular purchase. Two pricing shapes:
+ * as a regular purchase. Three pricing shapes:
+ *   - `zones[]` — priced by the delivery PIN code, once per order (a non-empty
+ *     `zones` wins: `tiers` and the flat `planId + amount` are then ignored)
  *   - `tiers[]` — quantity-dependent (cart picks the matching tier by total qty)
  *   - `planId + amount` — flat charge
  * `applicableTo` gates which cart mode the charge appears in: "COURSE" = buy mode,
@@ -43,6 +63,7 @@ export interface AdditionalCharge {
   packageSessionId: string;
   enrollInviteId: string;
   paymentOptionId: string;
+  zones?: AdditionalChargeZone[];
   tiers?: AdditionalChargeTier[];
   planId?: string;
   amount?: number;

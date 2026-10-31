@@ -195,7 +195,8 @@
             "phoneRequired": "सही फ़ोन नंबर आवश्यक है",
             "otpRequired": "कृपया OTP दर्ज करें",
             "phoneVerificationRequired": "फ़ोन नंबर का सत्यापन आवश्यक है",
-            "booksPreferenceMissing": "\"बुक्स प्रेफ़रेंस\" कस्टम फ़ील्ड नहीं मिला। कृपया सहायता टीम से संपर्क करें।"
+            "booksPreferenceMissing": "\"बुक्स प्रेफ़रेंस\" कस्टम फ़ील्ड नहीं मिला। कृपया सहायता टीम से संपर्क करें।",
+            "deliveryNotAvailable": "इस पिन कोड पर डिलीवरी उपलब्ध नहीं है"
         },
         "header": {
             "title": "चेकआउट",
@@ -222,6 +223,8 @@
             "subtotalCount_one": "उप-योग ({{count}} आइटम)",
             "subtotalCount_other": "उप-योग ({{count}} आइटम)",
             "orderTotal": "ऑर्डर का कुल योग",
+            "chargeWithZone": "{{charge}} ({{zone}})",
+            "shippingNeedPin": "शिपिंग देखने के लिए अपना पिन कोड दर्ज करें",
             "itemsCount": "{{count}} आइटम",
             "secure": "सुरक्षित"
         },
@@ -253,6 +256,7 @@
         "noImage": "कोई छवि नहीं",
         "paymentStatus": "भुगतान की स्थिति:",
         "dismiss": "बंद करें",
+        "chargeCalculatedAtCheckout": "चेकआउट पर गणना की जाएगी",
         "subtotalCount_one": "उप-योग ({{count}} किताब)",
         "subtotalCount_other": "उप-योग ({{count}} किताबें)",
         "crossStore": {
