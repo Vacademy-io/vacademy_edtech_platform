@@ -3,12 +3,22 @@
  *
  * Collected revenue from CONVERTED leads (GET /v1/reports/revenue): KPI strip, a daily revenue
  * trend, and per-source / per-counsellor breakdown tables. Revenue counts a payment only once the
- * lead it came from is converted, so totals here are "money won", not gross billing.
+ * lead it came from is converted, so totals here are "money won", not gross billing. Admissions /
+ * booked fee are the other view: converted leads enrolled in the range and their full fee, which
+ * is what counsellors are measured on.
  */
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { CurrencyCircleDollar, Megaphone, Receipt, TrendUp, Users } from '@phosphor-icons/react';
+import {
+    CurrencyCircleDollar,
+    GraduationCap,
+    Megaphone,
+    Receipt,
+    TrendUp,
+    Users,
+    Wallet,
+} from '@phosphor-icons/react';
 import {
     fetchRevenue,
     revenueQueryKey,
@@ -29,7 +39,14 @@ import {
 } from './report-shared';
 
 type SourceSortKey = 'source_type' | 'revenue' | 'paying_leads' | 'payments' | 'avg_deal_value';
-type CounsellorSortKey = 'name' | 'revenue' | 'paying_leads' | 'payments' | 'avg_deal_value';
+type CounsellorSortKey =
+    | 'name'
+    | 'admissions'
+    | 'booked_revenue'
+    | 'revenue'
+    | 'paying_leads'
+    | 'payments'
+    | 'avg_deal_value';
 
 export function RevenueTab({
     instituteId,
@@ -50,7 +67,7 @@ export function RevenueTab({
 
     const [srcSort, setSrcSort] = useState<SourceSortKey>('revenue');
     const [srcDir, setSrcDir] = useState<'asc' | 'desc'>('desc');
-    const [cslSort, setCslSort] = useState<CounsellorSortKey>('revenue');
+    const [cslSort, setCslSort] = useState<CounsellorSortKey>('booked_revenue');
     const [cslDir, setCslDir] = useState<'asc' | 'desc'>('desc');
 
     const currency = query.data?.currency ?? 'INR';
@@ -90,7 +107,21 @@ export function RevenueTab({
 
     return (
         <div className="flex flex-col gap-6">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <KpiCard
+                    label={t('column.admissions')}
+                    value={fmtNumber(totals?.admissions ?? 0)}
+                    icon={<GraduationCap size={18} />}
+                    tone="primary"
+                    sub={t('kpi.admissionsSub')}
+                />
+                <KpiCard
+                    label={t('column.bookedRevenue')}
+                    value={fmtCurrency(totals?.booked_revenue ?? 0, currency)}
+                    icon={<Wallet size={18} />}
+                    tone="info"
+                    sub={t('kpi.bookedRevenueSub')}
+                />
                 <KpiCard
                     label={t('column.revenue')}
                     value={fmtCurrency(totals?.revenue ?? 0, currency)}
@@ -257,6 +288,8 @@ export function RevenueTab({
                         getHeadersAndRows={() => ({
                             headers: [
                                 t('column.counsellor'),
+                                t('column.admissions'),
+                                t('column.bookedRevenue'),
                                 t('column.revenue'),
                                 t('column.payingLeads'),
                                 t('column.payments'),
@@ -264,6 +297,8 @@ export function RevenueTab({
                             ],
                             rows: counsellors.map((r) => [
                                 r.name ?? r.user_id,
+                                r.admissions,
+                                r.booked_revenue,
                                 r.revenue,
                                 r.paying_leads,
                                 r.payments,
@@ -287,6 +322,20 @@ export function RevenueTab({
                                         dir={cslDir}
                                         onClick={toggleCsl}
                                         align="left"
+                                    />
+                                    <SortableHeader
+                                        label={t('column.admissions')}
+                                        sortKey="admissions"
+                                        current={cslSort}
+                                        dir={cslDir}
+                                        onClick={toggleCsl}
+                                    />
+                                    <SortableHeader
+                                        label={t('column.bookedRevenue')}
+                                        sortKey="booked_revenue"
+                                        current={cslSort}
+                                        dir={cslDir}
+                                        onClick={toggleCsl}
                                     />
                                     <SortableHeader
                                         label={t('column.revenue')}
@@ -327,6 +376,12 @@ export function RevenueTab({
                                         <td className="py-2.5 pr-3 font-medium text-neutral-900">
                                             {r.name ?? r.user_id}
                                         </td>
+                                        <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                            {fmtNumber(r.admissions)}
+                                        </td>
+                                        <td className="py-2.5 pr-3 text-right font-semibold text-neutral-900">
+                                            {fmtCurrency(r.booked_revenue, currency)}
+                                        </td>
                                         <td className="py-2.5 pr-3 text-right font-semibold text-green-700">
                                             {fmtCurrency(r.revenue, currency)}
                                         </td>
@@ -345,6 +400,7 @@ export function RevenueTab({
                         </table>
                     </div>
                 )}
+                <p className="text-xs text-neutral-400">{t('byCounsellor.footnote')}</p>
             </ReportSection>
         </div>
     );

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { MyButton } from '@/components/design-system/button';
@@ -39,6 +39,9 @@ export interface StudentReportFilterInterface {
     name: string;
     status: string[];
     sort_columns: Record<string, string>;
+    // Learner's batches (package session ids). When sent, the backend returns only tests
+    // assigned to these batches or ones the learner is registered for / has attempted.
+    batch_ids?: string[];
 }
 
 // ── Score-tone helper ─────────────────────────────────────────────────────────
@@ -92,17 +95,33 @@ export const StudentTestRecord = ({
         refetch: refetchInstitute,
     } = useQuery(useInstituteQuery());
 
-    const [selectedFilter] = useState<StudentReportFilterInterface>({
-        name: '',
-        // The side-view / overlay drives status via the chip bar, which defaults
-        // to "All". So fetch every status up front — otherwise the initial query
-        // would be scoped to a single status (e.g. LIVE when no tab is passed) and
-        // "All" could never show Pending + Completed. The students-list "Tests" tab
-        // keeps its own comma-separated status selection.
-        status: isStudentList ? (selectedTab ?? '').split(',') : ['ENDED', 'PENDING', 'LIVE'],
-        sort_columns: {},
-    });
     const { selectedStudent } = useStudentSidebar();
+
+    // Every batch the learner is enrolled in — without this the backend lists every
+    // published test of the institute, and unassigned ones show up as "Pending".
+    const studentBatchIds = selectedStudent?.all_package_session_ids?.length
+        ? selectedStudent.all_package_session_ids
+        : [selectedStudent?.package_session_id].filter((id): id is string => !!id);
+    const studentBatchKey = studentBatchIds.join(',');
+
+    // The side-view / overlay drives status via the chip bar, which defaults
+    // to "All". So fetch every status up front — otherwise the initial query
+    // would be scoped to a single status (e.g. LIVE when no tab is passed) and
+    // "All" could never show Pending + Completed. The students-list "Tests" tab
+    // keeps its own comma-separated status selection. Fixed at mount, as before.
+    const [initialStatus] = useState<string[]>(() =>
+        isStudentList ? (selectedTab ?? '').split(',') : ['ENDED', 'PENDING', 'LIVE']
+    );
+
+    const selectedFilter = useMemo<StudentReportFilterInterface>(
+        () => ({
+            name: '',
+            status: initialStatus,
+            sort_columns: {},
+            batch_ids: studentBatchKey ? studentBatchKey.split(',') : [],
+        }),
+        [initialStatus, studentBatchKey]
+    );
 
     const [pageNo, setPageNo] = useState(0);
     const instituteId = getInstituteId();

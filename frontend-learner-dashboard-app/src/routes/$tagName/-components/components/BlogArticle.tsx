@@ -183,7 +183,7 @@ export const BlogArticle: React.FC<BlogArticleProps> = ({
   }, [slug]);
 
   const outline = useMemo(
-    () => (post?.content_html ? sanitizeBlogArticle(post.content_html) : { html: "", headings: [] as BlogHeading[] }),
+    () => (post?.content_html ? sanitizeBlogArticle(post.content_html) : { html: "", css: "", headings: [] as BlogHeading[] }),
     [post?.content_html]
   );
 
@@ -320,15 +320,19 @@ export const BlogArticle: React.FC<BlogArticleProps> = ({
         />
       </div>
     ) : (
-      <div
-        ref={bodyRef}
-        className={cn(
-          "catalogue-rich-text catalogue-blog-article",
-          variant === "magazine" && "catalogue-blog-article--magazine",
-          variant === "focus" && "catalogue-blog-article--focus"
-        )}
-        dangerouslySetInnerHTML={{ __html: outline.html }}
-      />
+      <>
+        {/* The post's own stylesheet, scoped to .catalogue-blog-article by sanitizeBlogArticle. */}
+        {outline.css && <style>{outline.css}</style>}
+        <div
+          ref={bodyRef}
+          className={cn(
+            "catalogue-rich-text catalogue-blog-article",
+            variant === "magazine" && "catalogue-blog-article--magazine",
+            variant === "focus" && "catalogue-blog-article--focus"
+          )}
+          dangerouslySetInnerHTML={{ __html: outline.html }}
+        />
+      </>
     );
 
   const courses = (

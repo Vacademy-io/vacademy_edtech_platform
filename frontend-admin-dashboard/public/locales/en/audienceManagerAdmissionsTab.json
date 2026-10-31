@@ -1,0 +1,45 @@
+{
+    "title": "Admissions",
+    "empty": "No admissions in this period.",
+    "column": {
+        "admissions": "Admissions",
+        "fees": "Fees",
+        "paid": "Paid",
+        "due": "Due",
+        "share": "% of total",
+        "month": "Month",
+        "source": "Source",
+        "courseTag": "Course group",
+        "course": "Course",
+        "counsellor": "Counsellor",
+        "total": "Total"
+    },
+    "kpi": {
+        "multiCourse_one": "{{count}} student joined more than one course",
+        "multiCourse_other": "{{count}} students joined more than one course",
+        "feesSub": "Fee plans of these admissions, after discount",
+        "collected": "Collected",
+        "collectedSub": "Paid as a share of fees",
+        "avgFee": "Average fee per admission"
+    },
+    "sections": {
+        "byMonth": "Admissions by month",
+        "bySource": "Admissions by source",
+        "byCourseTag": "Admissions by course group",
+        "byCourse": "Admissions by course",
+        "byCounsellor": "Admissions by counsellor",
+        "byField": "Admissions by {{field}}",
+        "byFieldUnset": "Admissions by branch"
+    },
+    "labels": {
+        "noTag": "No group",
+        "noEnquiry": "No enquiry",
+        "unassigned": "Unassigned",
+        "notSet": "Not set"
+    },
+    "footnotes": {
+        "mainCourse": "A student who joined several courses at once is counted once, under the course whose group comes first in Settings → Reports → Course group order (else the course they were enrolled in first). Course groups are course tags.",
+        "fieldHint": "Pick the field to break admissions down by (for example Branch) in Settings → Reports → Admissions field.",
+        "definitions": "An admission is a student enrolled in a month of the selected period. Fees are their fee plans for those enrolments (cancelled, voided and waived instalments left out); paid is what has been collected on them so far; due is fees minus paid."
+    }
+}

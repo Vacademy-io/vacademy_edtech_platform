@@ -231,8 +231,9 @@ public class EvalApiFileService {
         Date expiry = Date.from(expiresAt);
 
         String url = null;
-        // The private distribution fronts the main private bucket only.
-        if (evalBucket.equals(mainPrivateBucket) && cloudFrontSignerService.isEnabled()) {
+        // The private distribution fronts the main private bucket only, and only for the
+        // prefixes it routes there (eval-api/ is not one of them today, so this presigns).
+        if (evalBucket.equals(mainPrivateBucket) && cloudFrontSignerService.canSign(fm.getKey())) {
             try {
                 url = cloudFrontSignerService.signedUrl(fm.getKey(), expiry);
             } catch (Exception e) {

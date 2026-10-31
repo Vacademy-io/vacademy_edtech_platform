@@ -657,3 +657,15 @@ export function SortableHeader<K extends string>({
         </th>
     );
 }
+
+/**
+ * Recent Leads filters for one source row. A row named after a campaign type (see the backend's
+ * ReportSourceSql) filters on that type; any other row filters on its source.
+ */
+export function sourceDrillSearch(row: {
+    source_type: string | null;
+    campaign_type?: string | null;
+}): { source?: string; campaignType?: string } {
+    if (row.campaign_type) return { campaignType: row.campaign_type };
+    return { source: row.source_type ?? undefined };
+}

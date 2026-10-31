@@ -7,9 +7,11 @@ import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import vacademy.io.admin_core_service.features.audience.dto.reports.AdmissionReportDTO;
 import vacademy.io.admin_core_service.features.audience.dto.reports.CohortAnalysisReportDTO;
 import vacademy.io.admin_core_service.features.audience.dto.reports.RevenueForecastDTO;
 import vacademy.io.admin_core_service.features.audience.dto.reports.RevenueReportDTO;
+import vacademy.io.admin_core_service.features.audience.service.AdmissionReportService;
 import vacademy.io.admin_core_service.features.audience.service.RevenueReportService;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
@@ -25,6 +27,28 @@ import vacademy.io.common.auth.model.CustomUserDetails;
 public class RevenueReportController {
 
     private final RevenueReportService revenueReportService;
+    private final AdmissionReportService admissionReportService;
+
+    /** Admissions in the range with fees / paid / due, by month, source, course, counsellor and field. */
+    @GetMapping("/admissions")
+    public ResponseEntity<AdmissionReportDTO> getAdmissions(
+            @RequestParam String instituteId,
+            @RequestParam(required = false) String fromDate,
+            @RequestParam(required = false) String toDate,
+            @RequestParam(required = false) String teamId,
+            @RequestParam(required = false) String counsellorUserId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        return ResponseEntity.ok(admissionReportService.getAdmissions(
+                instituteId, fromDate, toDate, teamId, counsellorUserId, user.getUserId()));
+    }
+
+    /** Course tags and custom fields offered by the Admissions report settings. */
+    @GetMapping("/admissions/options")
+    public ResponseEntity<AdmissionReportDTO.Options> getAdmissionOptions(
+            @RequestParam String instituteId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        return ResponseEntity.ok(admissionReportService.getOptions(instituteId));
+    }
 
     /** Collected revenue from converted leads, split by source / counsellor / day. */
     @GetMapping("/revenue")

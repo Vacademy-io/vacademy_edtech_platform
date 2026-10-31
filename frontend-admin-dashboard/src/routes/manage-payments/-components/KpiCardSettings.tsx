@@ -139,6 +139,12 @@ interface KpiCardSettingsProps {
     isCustomised: boolean;
     /** Options this screen has no use for (e.g. the schedule where there is no instalment plan). */
     hiddenOptions?: KpiCardKey[];
+    /**
+     * Institute-wide (every admin, not just this browser): whether the Filters panel offers Payment
+     * Plan. Omit `onTogglePaymentPlanFilter` to leave the Filters section out.
+     */
+    showPaymentPlanFilter?: boolean;
+    onTogglePaymentPlanFilter?: () => void;
 }
 
 /** The gear button: tick which summary cards (and their tabs) to show. */
@@ -148,6 +154,8 @@ export function KpiCardSettings({
     onReset,
     isCustomised,
     hiddenOptions,
+    showPaymentPlanFilter = true,
+    onTogglePaymentPlanFilter,
 }: KpiCardSettingsProps) {
     return (
         <Popover>
@@ -205,6 +213,24 @@ export function KpiCardSettings({
                         )
                     )}
                 </div>
+                {onTogglePaymentPlanFilter && (
+                    <div className="mt-2 border-t border-neutral-200 pt-2">
+                        <span className="text-caption font-semibold text-neutral-700">Filters</span>
+                        <label className="mt-1 flex cursor-pointer items-start gap-2 rounded-md p-1.5 hover:bg-neutral-50">
+                            <Checkbox
+                                className="mt-0.5"
+                                checked={showPaymentPlanFilter}
+                                onCheckedChange={onTogglePaymentPlanFilter}
+                            />
+                            <span className="flex flex-col">
+                                <span className="text-caption text-neutral-700">Payment Plan</span>
+                                <span className="text-2xs text-neutral-400">
+                                    Applies to every admin of this institute
+                                </span>
+                            </span>
+                        </label>
+                    </div>
+                )}
             </PopoverContent>
         </Popover>
     );

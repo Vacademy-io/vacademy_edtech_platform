@@ -327,6 +327,21 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
             AND (:releaseResultStatus IS NULL OR sa.report_release_status IN (:releaseResultStatus))
             AND (:assessmentType IS NULL OR a.assessment_type IN(:assessmentType))
             and a.status = 'PUBLISHED'
+            -- Admin learner profile (scopeToBatches = true) -- only tests this learner can actually
+            -- take, so an attempt, an active registration, or an active mapping to one of the
+            -- learner batches. Otherwise every published test of the institute shows as PENDING.
+            AND (
+                :scopeToBatches = FALSE
+                OR sa.id IS NOT NULL
+                OR aur.status = 'ACTIVE'
+                OR EXISTS (
+                    SELECT 1
+                    FROM public.assessment_batch_registration abr
+                    WHERE abr.assessment_id = a.id
+                    AND abr.status = 'ACTIVE'
+                    AND abr.batch_id IN (:batchIds)
+                )
+            )
             """, countQuery = """
             SELECT COUNT(*)
             FROM public.assessment a
@@ -349,6 +364,21 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
             AND (:releaseResultStatus IS NULL OR sa.report_release_status IN (:releaseResultStatus))
             AND (:assessmentType IS NULL OR a.assessment_type IN(:assessmentType))
             and a.status = 'PUBLISHED'
+            -- Admin learner profile (scopeToBatches = true) -- only tests this learner can actually
+            -- take, so an attempt, an active registration, or an active mapping to one of the
+            -- learner batches. Otherwise every published test of the institute shows as PENDING.
+            AND (
+                :scopeToBatches = FALSE
+                OR sa.id IS NOT NULL
+                OR aur.status = 'ACTIVE'
+                OR EXISTS (
+                    SELECT 1
+                    FROM public.assessment_batch_registration abr
+                    WHERE abr.assessment_id = a.id
+                    AND abr.status = 'ACTIVE'
+                    AND abr.batch_id IN (:batchIds)
+                )
+            )
             """, nativeQuery = true)
     Page<StudentReportDto> findAssessmentForUserWithFilter(@Param("hideHeldManualMarks") boolean hideHeldManualMarks,
                                                            @Param("userId") String userId,
@@ -356,6 +386,8 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
                                                            @Param("statusList") List<String> statusList,
                                                            @Param("releaseResultStatus") List<String> releaseStatus,
                                                            @Param("assessmentType") List<String> assessmentTypes,
+                                                           @Param("scopeToBatches") boolean scopeToBatches,
+                                                           @Param("batchIds") List<String> batchIds,
                                                            Pageable pageable);
 
     /**
@@ -468,6 +500,21 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
             AND (:releaseResultStatus IS NULL OR sa.report_release_status IN (:releaseResultStatus))
             AND (:assessmentType IS NULL OR a.assessment_type IN(:assessmentType))
             and a.status = 'PUBLISHED'
+            -- Admin learner profile (scopeToBatches = true) -- only tests this learner can actually
+            -- take, so an attempt, an active registration, or an active mapping to one of the
+            -- learner batches. Otherwise every published test of the institute shows as PENDING.
+            AND (
+                :scopeToBatches = FALSE
+                OR sa.id IS NOT NULL
+                OR aur.status = 'ACTIVE'
+                OR EXISTS (
+                    SELECT 1
+                    FROM public.assessment_batch_registration abr
+                    WHERE abr.assessment_id = a.id
+                    AND abr.status = 'ACTIVE'
+                    AND abr.batch_id IN (:batchIds)
+                )
+            )
             """, countQuery = """
             SELECT COUNT(*)
             FROM public.assessment a
@@ -496,6 +543,21 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
             AND (:releaseResultStatus IS NULL OR sa.report_release_status IN (:releaseResultStatus))
             AND (:assessmentType IS NULL OR a.assessment_type IN(:assessmentType))
             and a.status = 'PUBLISHED'
+            -- Admin learner profile (scopeToBatches = true) -- only tests this learner can actually
+            -- take, so an attempt, an active registration, or an active mapping to one of the
+            -- learner batches. Otherwise every published test of the institute shows as PENDING.
+            AND (
+                :scopeToBatches = FALSE
+                OR sa.id IS NOT NULL
+                OR aur.status = 'ACTIVE'
+                OR EXISTS (
+                    SELECT 1
+                    FROM public.assessment_batch_registration abr
+                    WHERE abr.assessment_id = a.id
+                    AND abr.status = 'ACTIVE'
+                    AND abr.batch_id IN (:batchIds)
+                )
+            )
             """, nativeQuery = true)
     Page<StudentReportDto> findAssessmentForUserWithFilterAndSearch(@Param("hideHeldManualMarks") boolean hideHeldManualMarks,
                                                                     @Param("name") String name,
@@ -504,6 +566,8 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
                                                                     @Param("statusList") List<String> statusList,
                                                                     @Param("releaseResultStatus") List<String> releaseStatus,
                                                                     @Param("assessmentType") List<String> assessmentTypes,
+                                                                    @Param("scopeToBatches") boolean scopeToBatches,
+                                                                    @Param("batchIds") List<String> batchIds,
                                                                     Pageable pageable);
 
     @Query(value = """

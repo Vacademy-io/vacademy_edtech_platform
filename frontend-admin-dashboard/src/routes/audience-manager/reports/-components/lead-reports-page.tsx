@@ -54,6 +54,7 @@ import { FollowupsTab } from './followups-tab';
 import { CounsellorsTab } from './counsellors-tab';
 import { ConversionsTab } from './conversions-tab';
 import { RevenueTab } from './revenue-tab';
+import { AdmissionsTab } from './admissions-tab';
 import { CohortTab } from './cohort-tab';
 import { ForecastTab } from './forecast-tab';
 import { CustomReportTab } from './custom-report-tab';
@@ -357,6 +358,9 @@ export function LeadReportsPage() {
                 </TabsContent>
                 <TabsContent value="revenue">
                     <RevenueTab {...tabProps} />
+                </TabsContent>
+                <TabsContent value="admissions">
+                    <AdmissionsTab {...tabProps} />
                 </TabsContent>
                 <TabsContent value="cohort">
                     <CohortTab {...tabProps} />
