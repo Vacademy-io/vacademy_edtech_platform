@@ -111,7 +111,8 @@
             "phoneRequired": "Un numéro de téléphone valide est requis",
             "otpRequired": "Veuillez saisir le code OTP",
             "phoneVerificationRequired": "La vérification du numéro de téléphone est requise",
-            "booksPreferenceMissing": "Impossible de trouver le champ personnalisé « Préférence de livres ». Veuillez contacter le support."
+            "booksPreferenceMissing": "Impossible de trouver le champ personnalisé « Préférence de livres ». Veuillez contacter le support.",
+            "deliveryNotAvailable": "La livraison n'est pas disponible pour ce code postal"
         },
         "header": {
             "title": "Paiement",
@@ -138,6 +139,8 @@
             "subtotalCount_one": "Sous-total ({{count}} article)",
             "subtotalCount_other": "Sous-total ({{count}} articles)",
             "orderTotal": "Total de la commande",
+            "chargeWithZone": "{{charge}} ({{zone}})",
+            "shippingNeedPin": "Saisissez votre code postal pour voir les frais de livraison",
             "itemsCount": "{{count}} articles",
             "secure": "Sécurisé",
             "subtotalCount_many": "Sous-total ({{count}} articles)"
@@ -170,6 +173,7 @@
         "noImage": "Pas d'image",
         "paymentStatus": "Statut du paiement :",
         "dismiss": "Fermer",
+        "chargeCalculatedAtCheckout": "Calculé au moment du paiement",
         "subtotalCount_one": "Sous-total ({{count}} livre)",
         "subtotalCount_other": "Sous-total ({{count}} livres)",
         "crossStore": {

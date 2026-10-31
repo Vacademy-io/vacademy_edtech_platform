@@ -117,7 +117,8 @@
             "phoneRequired": "يلزم إدخال رقم هاتف صحيح",
             "otpRequired": "يرجى إدخال رمز التحقق",
             "phoneVerificationRequired": "التحقق من رقم الهاتف مطلوب",
-            "booksPreferenceMissing": "تعذّر العثور على حقل \"تفضيلات الكتب\" المخصص. يرجى التواصل مع الدعم."
+            "booksPreferenceMissing": "تعذّر العثور على حقل \"تفضيلات الكتب\" المخصص. يرجى التواصل مع الدعم.",
+            "deliveryNotAvailable": "التوصيل غير متاح لهذا الرمز البريدي"
         },
         "header": {
             "title": "الدفع",
@@ -148,6 +149,8 @@
             "subtotalCount_many": "الإجمالي الفرعي ({{count}} عنصرًا)",
             "subtotalCount_other": "الإجمالي الفرعي ({{count}} عنصر)",
             "orderTotal": "إجمالي الطلب",
+            "chargeWithZone": "{{charge}} ({{zone}})",
+            "shippingNeedPin": "أدخل الرمز البريدي لعرض تكلفة الشحن",
             "itemsCount": "{{count}} عنصر",
             "secure": "آمن"
         },
@@ -179,6 +182,7 @@
         "noImage": "لا توجد صورة",
         "paymentStatus": "حالة الدفع:",
         "dismiss": "إغلاق",
+        "chargeCalculatedAtCheckout": "يُحسب عند الدفع",
         "subtotalCount_zero": "الإجمالي الفرعي ({{count}} كتاب)",
         "subtotalCount_one": "الإجمالي الفرعي ({{count}} كتاب)",
         "subtotalCount_two": "الإجمالي الفرعي ({{count}} كتاب)",

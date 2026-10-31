@@ -195,7 +195,8 @@
             "phoneRequired": "Valid phone number is required",
             "otpRequired": "Please enter the OTP",
             "phoneVerificationRequired": "Phone verification is required",
-            "booksPreferenceMissing": "Unable to find Books Preference custom field. Please contact support."
+            "booksPreferenceMissing": "Unable to find Books Preference custom field. Please contact support.",
+            "deliveryNotAvailable": "Delivery is not available to this PIN code"
         },
         "header": {
             "title": "Checkout",
@@ -222,6 +223,8 @@
             "subtotalCount_one": "Subtotal ({{count}} item)",
             "subtotalCount_other": "Subtotal ({{count}} items)",
             "orderTotal": "Order Total",
+            "chargeWithZone": "{{charge}} ({{zone}})",
+            "shippingNeedPin": "Enter your PIN code to see shipping",
             "itemsCount": "{{count}} Items",
             "secure": "Secure"
         },
@@ -253,6 +256,7 @@
         "noImage": "No Img",
         "paymentStatus": "Payment Status:",
         "dismiss": "Dismiss",
+        "chargeCalculatedAtCheckout": "Calculated at checkout",
         "subtotalCount_one": "Subtotal ({{count}} book)",
         "subtotalCount_other": "Subtotal ({{count}} books)",
         "crossStore": {
