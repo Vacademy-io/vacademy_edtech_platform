@@ -187,6 +187,20 @@ const defaultMergeTags: Record<string, Record<string, string>> = Object.fromEntr
     ])
 );
 
+// Membership renewal / expiry reminder merge tags. These resolve only in the
+// enrolment-policy reminder emails (EmailNotificationService.buildPlaceholders) that a
+// course's BEFORE_EXPIRY / expiry notifications send — not in announcements or workflows.
+const membershipRenewalMergeTags = {
+    'Membership Renewal': {
+        'Learner Name': '{{learner_name}}',
+        'First Name': '{{first_name}}',
+        'Practice Name': '{{practice_name}}',
+        'Membership End Date (14 November 2026)': '{{expiry_date_long}}',
+        'Membership End Date (2026-11-14)': '{{expiry_date}}',
+        'Manage / Cancel Subscription Link': '{{subscription_link}}',
+    },
+};
+
 // Invoice-specific merge tags (shown when template type is INVOICE or INVOICE_EMAIL).
 // These resolve in InvoiceService.replaceTemplatePlaceholders at generation time.
 const invoiceMergeTags = {
@@ -859,7 +873,7 @@ const EmailBuilder: React.FC<EmailBuilderProps> = ({
         if (templateType === 'PAYMENT_CONFIRMATION') {
             return paymentConfirmationMergeTags;
         }
-        return defaultMergeTags;
+        return { ...defaultMergeTags, ...membershipRenewalMergeTags };
     }, [templateType]);
 
     // easy-email's own merge-tag pickers (text toolbar, link/button fields) insert
