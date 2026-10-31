@@ -10,7 +10,7 @@ import pytest
 from sqlalchemy import text
 
 from conftest import INSTITUTE, PLAN, make_candidate, make_world
-from app.services.lead_agent import billing, discovery, pacing, scheduler, store
+from app.services.lead_agent import billing, discovery, engine_api, pacing, scheduler, store
 
 LEAD = {"organisation": {"name": "A", "city": "Indore"},
         "contacts": [{"kind": "institute_phone", "value": "+91 98765 12345", "quality": "likely"}],
@@ -204,13 +204,18 @@ def test_waiting_leads_are_judged_again_with_the_current_gate(la_db):
     for left in (maps, dup, listing, decided, decided_low, old, bare):
         row = _row(la_db, left["id"])
         assert row["status"] == "REVIEW" and "rejudged_at" not in (row["score_json"] or {}), left["org_domain"]
+    # kept for a person: stamped with the gate they were judged under, the rest of score_json as stored
+    fingerprint = engine_api.gate_fingerprint(store.DEFAULT_GATE_JSON)
+    for kept, flags in ((maps, ["maps_only"]), (dup, ["possible_duplicate:other.in"]), (listing, [])):
+        assert _row(la_db, kept["id"])["score_json"] == {**_scored(kept["score"], flags), "rejudged_for": fingerprint}
+    for untouched in (decided, decided_low, old):
+        assert "rejudged_for" not in _row(la_db, untouched["id"])["score_json"]
     with la_db() as db:  # the day's counters keep what research decided that day
         assert store.get_day(db, agent["id"], pacing.agent_day(agent["window_json"])) == {
             c: 0 for c in store.DAY_COUNTERS}
         # nothing more to do on a second run, and the held leads kept for a person are not read again
         assert scheduler.rejudge_waiting(db, store.get_agent(db, agent["id"])) == {"approved": 0, "rejected": 0}
-        assert store.review_to_rejudge(db, agent["id"], limit=200, held_flags=("maps_only", "possible_duplicate"),
-                                       send_score=50) == []
+        assert store.review_to_rejudge(db, agent["id"], limit=200, fingerprint=fingerprint) == []
 
 
 def test_a_higher_send_bar_rejects_held_leads_it_no_longer_reaches(la_db):
@@ -224,6 +229,74 @@ def test_a_higher_send_bar_rejects_held_leads_it_no_longer_reaches(la_db):
     assert _row(la_db, maps["id"])["reject_reason"] == (
         "Judged from its Google Maps listing only: score 60 is below the send bar (70)")
     assert _row(la_db, dup["id"])["status"] == "REVIEW"
+
+
+def test_a_lead_the_gate_keeps_is_read_once_per_gate_and_never_crowds_out_new_rows(la_db):
+    """Review of PR 3569 (2026-10-31): a held competitor's user on a list that takes them (stored score below
+    the bar, above it without that penalty) stayed in REVIEW and was read again every tick, ahead of the rest."""
+    agent = _set_gate(la_db, make_world(la_db), auto_competitor_users=True)
+    held = _waiting(la_db, agent, "held.in", 45, score_json={
+        **_scored(45, ["competitor_platform:classplus", "possible_duplicate:other.in"]), "base_score": 65, "risk": 40})
+    new = _waiting(la_db, agent, "new.in", 40)
+
+    def batch(a=agent):
+        with la_db() as db:
+            out = scheduler.rejudge_waiting(db, a, limit=1)
+            db.commit()
+        return out
+
+    assert batch() == {"approved": 0, "rejected": 0}  # read first (best score): kept for a person, stamped
+    assert _row(la_db, held["id"])["score_json"]["rejudged_for"] == engine_api.gate_fingerprint(agent["gate_json"])
+    assert batch() == {"approved": 0, "rejected": 1}  # the next batch reaches the new row
+    assert _row(la_db, new["id"])["status"] == "REJECTED"
+    assert batch() == {"approved": 0, "rejected": 0}
+    # a new gate reads it once more: without the competitor rule its score (45) is below the bar
+    agent = _set_gate(la_db, agent, auto_competitor_users=False)
+    assert batch(agent) == {"approved": 0, "rejected": 1}
+    assert _row(la_db, held["id"])["reject_reason"].startswith("Score 45 is below the send bar (50)")
+
+
+def test_a_kept_lead_a_person_decides_meanwhile_is_not_stamped(la_db):
+    agent = make_world(la_db)
+    held = _waiting(la_db, agent, "held.in", 70, ["maps_only"])
+    with la_db() as db:
+        store.decide(db, ids=[held["id"]], institute_id=INSTITUTE, action="REJECT", reason=None, user_id="user-2")
+        before = db.execute(text("SELECT updated_at FROM lead_candidate WHERE id = :i"), {"i": held["id"]}).scalar()
+        assert store.mark_rejudged(db, [held["id"]], "v2:x") == 0  # decided: no longer the rejudge's
+        db.execute(text("UPDATE lead_candidate SET status = 'REVIEW', reviewed_at = NULL WHERE id = :i"),
+                   {"i": held["id"]})
+        assert store.mark_rejudged(db, [held["id"]], "v2:x") == 1
+        assert store.mark_rejudged(db, [held["id"]], "v2:x") == 1  # idempotent
+        row = db.execute(text("SELECT score_json, updated_at FROM lead_candidate WHERE id = :i"),
+                         {"i": held["id"]}).mappings().first()
+        assert row["score_json"] == {**_scored(70, ["maps_only"]), "rejudged_for": "v2:x"}
+        assert row["updated_at"] == before  # bookkeeping only
+        assert store.mark_rejudged(db, [], "v2:x") == 0
+
+
+def test_a_held_lead_failing_the_lists_rules_leaves_the_review_queue(la_db):
+    """The gate reads min_contact / require_intent before the held flags (2026-10-31): a Maps-only lead at the
+    bar with only a general contact is rejected on a list that needs no approval, not kept for a person."""
+    agent = make_world(la_db)
+    general = {**LEAD, "contact_quality": {"level": "general", "label": "Front desk landline"}}
+    held = _waiting(la_db, agent, "held.in", 70, score_json={**_scored(70, ["maps_only"]), "reach_level": "general"},
+                    lead=general)
+    with la_db() as db:
+        assert scheduler.rejudge_waiting(db, store.get_agent(db, agent["id"])) == {"approved": 0, "rejected": 1}
+        db.commit()
+    assert _row(la_db, held["id"])["reject_reason"] == "Best contact is general; this list needs at least likely"
+
+
+def test_the_gate_defaults_have_one_source():
+    """engine scoring.DEFAULT_GATE: research reads it through engine_api, store's new-agent gate is built from it,
+    and the API model's defaults must agree with it."""
+    from app.services.lead_agent import models, research
+
+    defaults = engine_api.default_gate()
+    assert {k: store.DEFAULT_GATE_JSON[k] for k in defaults} == defaults
+    assert {k: models.Gate().model_dump()[k] for k in defaults} == defaults
+    assert research.gate_settings({"gate_json": {"send_score": 65}}) == {**defaults, "send_score": 65}
+    assert not hasattr(research, "DEFAULT_GATE")
 
 
 def test_the_rejudge_takes_a_bounded_batch_best_score_first(la_db):

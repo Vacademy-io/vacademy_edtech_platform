@@ -19,6 +19,8 @@ from typing import Any, Dict, Iterable, List, Optional, Sequence, Set
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from . import engine_api
+
 # --------------------------------------------------------------------------
 # limits shared by the queue code
 # --------------------------------------------------------------------------
@@ -34,10 +36,9 @@ ONLINE_SECONDS = 90
 
 AGENT_STATUSES = ("ACTIVE", "PAUSED", "ARCHIVED")
 # What a new agent gets when the request has none (bound as parameters: a ':' inside SQL text would read
-# as a bind). The V612 column defaults, plus send_score / require_approval (rank and fill, 2026-10-30;
-# the gate reads an agent without them as send_score 50, no approval).
-DEFAULT_GATE_JSON = {"send_score": 50, "require_approval": False, "auto_score": 70, "review_score": 45,
-                     "min_contact": "likely", "require_intent": False, "auto_competitor_users": False}
+# as a bind): the engine gate's defaults (engine scoring.DEFAULT_GATE: send_score 50, no approval since rank
+# and fill, 2026-10-30), plus the two bars before it at their V612 column defaults (ignored by the gate).
+DEFAULT_GATE_JSON = {**engine_api.default_gate(), "auto_score": 70, "review_score": 45}
 DEFAULT_WINDOW_JSON = {"tz": "Asia/Kolkata", "start": "09:30", "end": "19:00", "days": [1, 2, 3, 4, 5, 6]}
 MODES = ("LOCAL", "REMOTE", "AUTO")
 # Candidates on their way to a decision (scheduler pacing counts them toward the pool they will feed).
@@ -586,16 +587,14 @@ GATE_INPUTS = {"score": "number", "base_score": "number", "risk": "number", "fla
                "has_intent": "boolean", "reach_level": "string"}
 
 
-def review_to_rejudge(db: Session, agent_id: str, *, limit: int, held_flags: Sequence[str],
-                      send_score: int) -> List[Dict[str, Any]]:
+def review_to_rejudge(db: Session, agent_id: str, *, limit: int, fingerprint: str) -> List[Dict[str, Any]]:
     """Up to `limit` of the agent's REVIEW candidates the gate may judge again from what is stored
     (scheduler.rejudge_waiting), best score first: never one a person decided (reviewed_at), only rows
-    whose score_json carries every GATE_INPUTS field, and a lead the gate holds for a person (a flag in
-    held_flags: maps_only, possible_duplicate; or lead_json.maps_only) only while its stored score is
-    below send_score: the gate rejects it, while one at or above the bar stays in REVIEW and is not read
-    again. So every row returned leaves REVIEW when the agent needs no approval and the next batch starts
-    on new rows (one exception: a held competitor's user on a list that takes them, whose score without
-    that penalty reaches the bar, stays and is read again).
+    whose score_json carries every GATE_INPUTS field, and never one already judged under this gate
+    (score_json.rejudged_for = fingerprint, engine scoring.gate_fingerprint; mark_rejudged stamps the rows
+    the gate keeps for a person). A row leaves REVIEW or gets the stamp, so the next batch starts on new
+    rows: before 2026-10-31 a lead the gate kept (a held competitor's user on a list that takes them) was
+    read again every tick and could crowd new rows out of the batch. A new gate reads every row once more.
     Rows {id, score, score_json, lead_json}."""
     typed = " AND ".join(f"jsonb_typeof(c.score_json->'{k}') = '{t}'" for k, t in GATE_INPUTS.items())
     return _rows(db.execute(text(f"""
@@ -604,17 +603,28 @@ def review_to_rejudge(db: Session, agent_id: str, *, limit: int, held_flags: Seq
          WHERE c.agent_id = :a AND c.status = 'REVIEW' AND c.reviewed_at IS NULL
            AND jsonb_typeof(c.score_json) = 'object' AND jsonb_typeof(c.lead_json) = 'object'
            AND {typed}
-           AND (NOT (COALESCE(c.lead_json->>'maps_only', '') = 'true'
-                     OR EXISTS (
-                         SELECT 1 FROM jsonb_array_elements_text(
-                             CASE WHEN jsonb_typeof(c.score_json->'flags') = 'array'
-                                  THEN c.score_json->'flags' ELSE CAST('[]' AS jsonb) END) AS f
-                          WHERE split_part(f, ':', 1) = ANY(CAST(:held AS TEXT[]))))
-                OR (CASE WHEN jsonb_typeof(c.score_json->'score') = 'number'
-                         THEN CAST(c.score_json->>'score' AS numeric) END) < CAST(:bar AS numeric))
+           AND COALESCE(c.score_json->>'rejudged_for', '') <> CAST(:fp AS TEXT)
          ORDER BY c.score DESC NULLS LAST, c.created_at, c.id
          LIMIT :n
-    """), {"a": agent_id, "held": list(held_flags), "bar": int(send_score), "n": max(1, int(limit))}).mappings())
+    """), {"a": agent_id, "fp": fingerprint, "n": max(1, int(limit))}).mappings())
+
+
+def mark_rejudged(db: Session, ids: Sequence[str], fingerprint: str) -> int:
+    """Stamps REVIEW rows the gate kept for a person with the gate they were judged under
+    (score_json.rejudged_for), so review_to_rejudge skips them until the gate changes. Only rows still in
+    REVIEW and undecided (a person deciding meanwhile wins), only that one key (nothing else in score_json
+    is rewritten), and stamping twice changes nothing. Bookkeeping only: updated_at is left alone.
+    Returns the rows stamped."""
+    if not ids:
+        return 0
+    rows = db.execute(text("""
+        UPDATE lead_candidate c
+           SET score_json = c.score_json || jsonb_build_object('rejudged_for', CAST(:fp AS TEXT))
+         WHERE c.id = ANY(CAST(:ids AS VARCHAR[])) AND c.status = 'REVIEW' AND c.reviewed_at IS NULL
+           AND jsonb_typeof(c.score_json) = 'object'
+        RETURNING c.id
+    """), {"ids": list(ids), "fp": fingerprint}).fetchall()
+    return len(rows)
 
 
 def get_candidate(db: Session, candidate_id: str, institute_id: Optional[str] = None) -> Optional[Dict[str, Any]]:

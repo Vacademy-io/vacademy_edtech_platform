@@ -158,13 +158,15 @@ def rejudge_waiting(db, agent: dict, limit: int = REJUDGE_BATCH) -> Dict[str, in
     next ones, best score first), REJECT -> REJECTED with the gate's reasons; a lead the gate still
     sends to a person stays in REVIEW. Clears the queue the old two-bar gate left (2026-10-30: about
     820 researched leads in REVIEW, which nobody works on: the funnel after delivery is automated).
-    A Maps-only lead or a possible duplicate below the send bar is REJECTED too; at or above it, it
-    stays for a person (and is not read again).
+    A Maps-only lead or a possible duplicate below the send bar, or failing the list's min_contact /
+    require_intent, is REJECTED too; otherwise it stays for a person.
 
     Only for an agent that needs no approval. Never a lead a person decided, nor a row missing what the
-    gate reads (store.review_to_rejudge picks the rows), at most `limit` per call. Each move expects
-    REVIEW, so a person deciding at the same moment wins, and a second run finds nothing more to do.
-    Returns {"approved", "rejected"}.
+    gate reads (store.review_to_rejudge picks the rows), at most `limit` per call. A row the gate keeps
+    (or cannot read) is stamped with the gate's fingerprint (store.mark_rejudged) and not read again
+    until the gate changes, so kept rows never crowd new ones out of the batch. Each move and each stamp
+    expects REVIEW, so a person deciding at the same moment wins, and a second run finds nothing more to
+    do. Returns {"approved", "rejected"}.
 
     lead_agent_day counters are not rewritten: they record what research decided on that day (a lead
     that went to REVIEW on Monday stays in Monday's review count), not where the lead is now."""
@@ -173,29 +175,39 @@ def rejudge_waiting(db, agent: dict, limit: int = REJUDGE_BATCH) -> Dict[str, in
     if needs_approval(agent):
         return out
     when = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    rows = store.review_to_rejudge(db, agent["id"], limit=limit, held_flags=engine_api.always_review_flags(),
-                                   send_score=engine_api.send_bar(gate_cfg))
-    for cand in rows:
-        scored, lead = cand.get("score_json"), cand.get("lead_json")
-        if not _judgeable(scored, lead):
-            continue
-        try:
-            decision, reasons = engine_api.gate(scored, lead, gate_cfg)
-        except Exception:  # noqa: BLE001 - a row the gate cannot read stays in REVIEW for a person
-            logger.warning("lead agent: could not judge REVIEW lead %s again", cand["id"], exc_info=True)
-            continue
-        score_json = {**scored, "gate_reasons": list(reasons), "rejudged_at": when}
-        if decision == "AUTO":
-            moved = store.set_candidate(db, cand["id"], expect=["REVIEW"], status="APPROVED", decision="AUTO",
-                                        score_json=score_json, not_before="now()")
-        elif decision == "REJECT":
-            moved = store.set_candidate(db, cand["id"], expect=["REVIEW"], status="REJECTED", decision="REJECT",
-                                        score_json=score_json, reject_reason="; ".join(reasons)[:300])
-        else:
-            continue
-        if moved is not None:
+    fingerprint = engine_api.gate_fingerprint(gate_cfg)
+    kept: List[str] = []
+    for cand in store.review_to_rejudge(db, agent["id"], limit=limit, fingerprint=fingerprint):
+        decision = _rejudge_one(db, cand, gate_cfg, when)
+        if decision in ("AUTO", "REJECT"):
             out["approved" if decision == "AUTO" else "rejected"] += 1
+        elif decision is None:
+            kept.append(cand["id"])
+    store.mark_rejudged(db, kept, fingerprint)
     return out
+
+
+def _rejudge_one(db, cand: dict, gate_cfg: dict, when: str) -> Optional[str]:
+    """One REVIEW row gated again: "AUTO" / "REJECT" when it moved, "" when a person decided it meanwhile
+    (the move expected REVIEW), None when it stays in REVIEW (the gate keeps it, or cannot read it)."""
+    scored, lead = cand.get("score_json"), cand.get("lead_json")
+    if not _judgeable(scored, lead):
+        return None
+    try:
+        decision, reasons = engine_api.gate(scored, lead, gate_cfg)
+    except Exception:  # noqa: BLE001 - a row the gate cannot read stays in REVIEW for a person
+        logger.warning("lead agent: could not judge REVIEW lead %s again", cand["id"], exc_info=True)
+        return None
+    score_json = {**scored, "gate_reasons": list(reasons), "rejudged_at": when}
+    if decision == "AUTO":
+        moved = store.set_candidate(db, cand["id"], expect=["REVIEW"], status="APPROVED", decision="AUTO",
+                                    score_json=score_json, not_before="now()")
+    elif decision == "REJECT":
+        moved = store.set_candidate(db, cand["id"], expect=["REVIEW"], status="REJECTED", decision="REJECT",
+                                    score_json=score_json, reject_reason="; ".join(reasons)[:300])
+    else:
+        return None
+    return decision if moved is not None else ""
 
 
 def _rejudge(agent: dict) -> Dict[str, int]:
