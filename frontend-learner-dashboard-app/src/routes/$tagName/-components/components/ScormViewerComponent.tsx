@@ -67,6 +67,31 @@ const safeUrl = (raw: unknown): { href: string; origin: string } | null => {
   }
 };
 
+/**
+ * iSpring players (the flip-books this section mostly shows) never size
+ * themselves on Android when their frame is shorter than 70% of
+ * `screen.height`: they take it for the soft keyboard being open and leave
+ * the book at 0px, so the frame stays blank. Desktop and iOS skip that check.
+ * On Android the frame is kept just above that line; 0 elsewhere.
+ */
+const useAndroidFrameMinHeight = (): number => {
+  const [minPx, setMinPx] = useState(0);
+  useEffect(() => {
+    const ua = navigator.userAgent.toLowerCase();
+    if (!ua.includes("android") || ua.includes("windows phone")) return;
+    // screen.height swaps on rotation.
+    const update = () => setMinPx(Math.ceil(window.screen.height * 0.7) + 2);
+    update();
+    window.addEventListener("resize", update);
+    window.addEventListener("orientationchange", update);
+    return () => {
+      window.removeEventListener("resize", update);
+      window.removeEventListener("orientationchange", update);
+    };
+  }, []);
+  return minPx;
+};
+
 export const ScormViewerComponent: React.FC<ScormViewerProps> = ({
   heading,
   subheading,
@@ -85,6 +110,9 @@ export const ScormViewerComponent: React.FC<ScormViewerProps> = ({
   const [loaded, setLoaded] = useState(false);
   const isTablet = useMediaQuery("(min-width: 640px)");
   const isBook = appearance === "book";
+  const androidMinPx = useAndroidFrameMinHeight();
+  const authoredHeight = isTablet ? height : mobileHeight;
+  const frameHeight = androidMinPx ? `max(${authoredHeight}, ${androidMinPx}px)` : authoredHeight;
   const sectionRef = useRef<HTMLElement>(null);
   // The book look paints the player on the colour behind the section; until
   // that is known the frame waits, so the package never flashes its own grey.
@@ -150,7 +178,7 @@ export const ScormViewerComponent: React.FC<ScormViewerProps> = ({
           </div>
         ) : isBook ? (
           <>
-            <div className="relative" style={{ height: isTablet ? height : mobileHeight }}>{/* design-lint-ignore: author-set frame heights from the page builder */}
+            <div className="relative" style={{ height: frameHeight }}>{/* design-lint-ignore: author-set frame heights from the page builder */}
               {bookBg && (
                 <iframe
                   ref={iframeRef}
@@ -202,7 +230,7 @@ export const ScormViewerComponent: React.FC<ScormViewerProps> = ({
             <div
               ref={frameBoxRef}
               className="relative bg-catalogue-bg-muted"
-              style={{ height: isTablet ? height : mobileHeight }}// design-lint-ignore: author-set frame heights from the page builder
+              style={{ height: frameHeight }}// design-lint-ignore: author-set frame heights from the page builder
             >
               {!loaded && (
                 <div className="absolute inset-0 flex items-center justify-center text-sm text-catalogue-text-muted" role="status">

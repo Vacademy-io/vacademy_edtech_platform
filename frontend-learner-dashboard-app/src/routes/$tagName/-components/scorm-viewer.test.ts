@@ -9,6 +9,8 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 import React from "react";
 import { renderToString } from "react-dom/server";
+import { createRoot } from "react-dom/client";
+import { act } from "react";
 import { JsonRenderer } from "./JsonRenderer";
 
 /**
@@ -76,5 +78,30 @@ describe("scormViewer", () => {
       expect(html).toContain("jsonRenderer.scormViewer.noPackage");
       expect(html).not.toContain("<iframe");
     }
+  });
+
+  it("on Android keeps the frame above 70% of the screen height, where iSpring players size themselves", async () => {
+    const mount = async (ua: string) => {
+      vi.spyOn(window.navigator, "userAgent", "get").mockReturnValue(ua);
+      vi.spyOn(window.screen, "height", "get").mockReturnValue(900);
+      const el = document.createElement("div");
+      const root = createRoot(el);
+      (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+      await act(async () => {
+        root.render(React.createElement(JsonRenderer, {
+          page: page({ launchUrl: LAUNCH, mobileHeight: "60vh", height: "60vh" }), globalSettings: {} as never,
+          instituteId: "inst", tagName: "tag",
+        } as never));
+      });
+      const box = el.querySelector("iframe[data-scorm-frame]")?.parentElement as HTMLElement;
+      const h = box.style.height;
+      act(() => root.unmount());
+      vi.restoreAllMocks();
+      return h;
+    };
+    expect(await mount("Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 Chrome/134.0 Mobile Safari/537.36"))
+      .toBe("max(60vh, 632px)");
+    expect(await mount("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/134.0 Safari/537.36"))
+      .toBe("60vh");
   });
 });
