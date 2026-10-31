@@ -43,6 +43,8 @@ public class Student {
     private String city;
     @Column(name = "pin_code")
     private String pinCode;
+    @Column(name = "country")
+    private String country;
     @Column(name = "mobile_number")
     private String mobileNumber;
     @Column(name = "date_of_birth")
