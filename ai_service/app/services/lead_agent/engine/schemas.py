@@ -194,16 +194,41 @@ class JobPostDetail(BaseModel):
     cite: Cite
 
 
+def _all_required(schema: dict[str, Any]) -> None:
+    schema["required"] = list(schema.get("properties") or {})
+
+
 class AccountExtraction(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    # Every field is required in the schema the model sees (it skips optional ones), while parsing keeps
+    # the defaults for older replies (no pages_match_organisation: the pages are the organisation's).
+    model_config = ConfigDict(extra="forbid", json_schema_extra=_all_required)
 
     organisation_name: Text120 = Field(description="The organisation's name as shown on its website.")
-    is_target_segment: bool = Field(description="True if this organisation matches the requested segment and location.")
+    # Prod audit 2026-10-30: 34 of 179 "not the kind" rejects were pages of another organisation (a bit.ly
+    # page for a coaching centre, a Rediff page for a finance company), the only way the model had to say so.
+    pages_match_organisation: bool = Field(
+        default=True,
+        description="False when the pages read are about another organisation than the one named, e.g. a link "
+        "shortener, a portal or a directory page. A brand, legal or group name, a franchise or a branch of the named "
+        "organisation is the same organisation: true.",
+    )
+    # Kind only: where it is is scored separately (scoring._location_match). "Segment and location" made the
+    # model call Delhi colleges "outside the requested Rajasthan location" although Delhi was a market.
+    is_target_segment: bool = Field(
+        description="True if this organisation is one of the kinds of organisation the brief targets (a match with "
+        "any one kind is enough, each read broadly). The kind of organisation only, never where it is."
+    )
     what_they_do: Text240 = Field(description="What the organisation offers, in one sentence.")
     sells_the_offer: bool = Field(
         default=False,
-        description="True if the organisation itself sells, makes, installs or resells what is being sold: a "
-        "competitor or reseller, not a buyer.",
+        description="True only if the organisation sells or resells what is being sold, or a direct substitute, TO "
+        "OTHER ORGANISATIONS: a competitor or reseller, not a buyer. Running its own app, LMS, CRM or tools for its own "
+        "students or customers makes it a buyer, and selling courses or services is not selling the software behind them.",
+    )
+    sells_the_offer_cite: Cite | None = Field(
+        default=None,
+        description="When sells_the_offer is true: the page and exact words showing it sells this to other "
+        "organisations. Null otherwise. Without such words sells_the_offer counts as false.",
     )
     city: Text80 | None = Field(description="Main city, if stated.")
     branches: Annotated[list[Branch], _clip_list(15)] = Field(description="Centres or branches named on the pages.")
@@ -301,10 +326,6 @@ class CompetitorSuggestion(BaseModel):
 
     name: Text80 = Field(description="A product or company that sells the same thing.")
     domain: Text80 | None = Field(description="Its website domain, e.g. 'zoho.com', only if you are sure; else null.")
-
-
-def _all_required(schema: dict[str, Any]) -> None:
-    schema["required"] = list(schema.get("properties") or {})
 
 
 class ProductProfile(BaseModel):

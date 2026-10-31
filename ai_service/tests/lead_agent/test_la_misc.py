@@ -210,7 +210,7 @@ def test_tick_plans_discovers_and_delivers(la_db, monkeypatch):
     monkeypatch.setattr(billing, "affordable", lambda a, n: (True, ""))
     out = asyncio.run(scheduler.tick_once())
     assert len(out) == 1 and calls["plan"] == agent["id"] and calls["deliver"]
-    assert calls["need"] == 3 * 4 - 1               # backlog of one READY candidate
+    assert calls["need"] == scheduler.POOL_DAYS * 4 - 1   # one READY candidate on its way already
     assert asyncio.run(scheduler.tick_once()) == []  # ticked a moment ago
     with la_db() as db:   # the tick lease was released at the end
         assert db.execute(text("SELECT tick_owner, tick_until FROM lead_agent")).first() == (None, None)
@@ -258,7 +258,9 @@ def test_tick_skips_discovery_when_the_wallet_is_short(la_db, monkeypatch):
         assert store.get_agent(db, agent["id"])["last_error"] == "Not enough credits"
 
 
-def test_tick_skips_discovery_once_today_sent_the_rest_of_the_quota_to_review(la_db, monkeypatch):
+def test_a_review_queue_no_longer_stops_discovery(la_db, monkeypatch):
+    # The old guard stopped discovery once today's REVIEW count reached the rest of the quota; with rank
+    # and fill (2026-10-30) only the pool of sendable leads does (test_la_rank_fill.py).
     from app.services.lead_agent import delivery, discovery, planner
 
     agent = make_world(la_db, quota=3, plan=PLAN)
@@ -281,17 +283,7 @@ def test_tick_skips_discovery_once_today_sent_the_rest_of_the_quota_to_review(la
     monkeypatch.setattr(delivery, "deliver", fake_deliver)
     monkeypatch.setattr(billing, "affordable", lambda a, n: (True, ""))
     [summary] = asyncio.run(scheduler.tick_once())
-    assert summary["discovery"] == {"skipped": "review queue covers today"} and summary["review"] == 3
-    assert needs == []
-    # A queue left from earlier days does not hold the agent back: only today's count does.
-    for domain in ("a.in", "b.in", "c.in"):
-        make_candidate(la_db, agent, domain, status="REVIEW")
-    with la_db() as db:
-        db.execute(text("UPDATE lead_agent_day SET day = day - 1"))
-        db.execute(text("UPDATE lead_agent SET last_tick_at = now() - interval '1 hour'"))
-        db.commit()
-    asyncio.run(scheduler.tick_once())
-    assert needs == [3 * 3]
+    assert needs == [scheduler.POOL_DAYS * 3] and summary["pool"] == 0
 
 
 def test_nothing_runs_while_switched_off(la_db, monkeypatch):

@@ -17,7 +17,7 @@ import re
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
-from . import admin_core, billing, engine_api, pacing, store
+from . import admin_core, billing, dedupe, engine_api, pacing, store
 from . import db as ladb
 from .research import last10
 
@@ -362,9 +362,10 @@ async def deliver(agent: Dict[str, Any], *, now=None, ignore_window: bool = Fals
 
         if fresh_rows:
             try:
+                # Compared as research's check before the AI step and dedupe compare (dedupe.phone_key / email_key).
                 found = await admin_core.existing_contacts(
-                    agent["institute_id"], [p for p in (last10(r.get("mobile")) for r in fresh_rows) if p],
-                    [r["email"].lower() for r in fresh_rows if r.get("email")])
+                    agent["institute_id"], [p for p in (dedupe.phone_key(r.get("mobile")) for r in fresh_rows) if p],
+                    [dedupe.email_key(r["email"]) for r in fresh_rows if r.get("email")])
             except admin_core.AdminCoreError as exc:
                 logger.warning("lead agent: existing-contacts failed for agent %s: %s", agent["id"], exc)
                 for r in fresh_rows:
@@ -373,11 +374,12 @@ async def deliver(agent: Dict[str, Any], *, now=None, ignore_window: bool = Fals
                     await give_back()
                 fresh_rows = []
                 found = {}
-            phones, emails = set(found.get("phones") or []), set(found.get("emails") or [])
+            phones = {dedupe.phone_key(p) or p for p in found.get("phones") or []}
+            emails = {dedupe.email_key(e) for e in found.get("emails") or []}
             keep = []
             for r in fresh_rows:
-                if (r.get("mobile") and last10(r["mobile"]) in phones) or (
-                        r.get("email") and r["email"].lower() in emails):
+                if (r.get("mobile") and dedupe.phone_key(r["mobile"]) in phones) or (
+                        r.get("email") and dedupe.email_key(r["email"]) in emails):
                     await asyncio.to_thread(_skip, r["external_id"], "Already in your leads (same phone or email)")
                     out["skipped"] += 1
                     await give_back()

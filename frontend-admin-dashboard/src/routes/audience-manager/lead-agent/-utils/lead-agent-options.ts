@@ -96,19 +96,19 @@ export const MODE_LABEL: Record<AgentMode, string> = {
 };
 
 export type GatePresetKey = 'strict' | 'balanced' | 'volume';
+/** Presets for the minimum score to send. */
 export const GATE_PRESETS: {
     value: GatePresetKey;
     label: string;
-    auto: number;
-    review: number;
+    score: number;
 }[] = [
-    { value: 'strict', label: 'Strict', auto: 80, review: 55 },
-    { value: 'balanced', label: 'Balanced', auto: 70, review: 45 },
-    { value: 'volume', label: 'Volume', auto: 60, review: 40 },
+    { value: 'strict', label: 'Strict', score: 60 },
+    { value: 'balanced', label: 'Balanced', score: 50 },
+    { value: 'volume', label: 'Volume', score: 45 },
 ];
 
-export const presetFor = (auto: number, review: number): GatePresetKey | 'custom' =>
-    GATE_PRESETS.find((p) => p.auto === auto && p.review === review)?.value ?? 'custom';
+export const presetFor = (sendScore: number): GatePresetKey | 'custom' =>
+    GATE_PRESETS.find((p) => p.score === sendScore)?.value ?? 'custom';
 
 export const MIN_CONTACT_OPTIONS: { value: MinContact; label: string; hint: string }[] = [
     { value: 'direct', label: 'Direct', hint: 'A decision maker’s own number or email.' },
@@ -160,6 +160,9 @@ export const WEEKDAYS: { value: number; label: string }[] = [
 ];
 
 export const DEFAULT_GATE: AgentGate = {
+    send_score: 50,
+    require_approval: false,
+    // Legacy: no longer decide anything, but the payload still carries them.
     auto_score: 70,
     review_score: 45,
     min_contact: 'likely',
@@ -238,8 +241,8 @@ export const CANDIDATE_STATUS_LABEL: Record<CandidateStatus, string> = {
     FETCHING: 'Reading website',
     READY: 'Ready to research',
     RESEARCHING: 'Researching',
-    REVIEW: 'Waiting for review',
-    APPROVED: 'Approved, waiting to deliver',
+    REVIEW: 'Waiting for approval',
+    APPROVED: 'Ready to send',
     DELIVERED: 'Delivered',
     REJECTED: 'Rejected',
     SKIPPED: 'Skipped',

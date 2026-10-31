@@ -140,16 +140,31 @@ def build_lead(
         for x in extraction.job_posts if x.title.strip()
     ) if j]
 
+    # Pages about another organisation (a link shortener, a portal) say nothing about this one: the lead keeps
+    # the name it was found under, and neither their city nor a seller verdict (scoring flags wrong_site).
+    own_pages = extraction.pages_match_organisation
+    # "Sells what you sell" rejects the lead, so it needs a quote on the page like any other claim: 16 of 38
+    # such flags were false in the 2026-10-30 prod audit (Physics Wallah, Unacademy and BYJU'S for an LMS
+    # seller: their own apps read as making the product). No quote, or one not on the page: not a seller.
+    sells = False
+    if extraction.sells_the_offer and own_pages:
+        cite = extraction.sells_the_offer_cite
+        if cite is None or not cite.quote.strip():
+            dropped += 1
+        else:
+            sells = keep("Sells what is being sold", f"Sells {offer.name}: a competitor or reseller", cite) is not None
+
     lead = {
         "organisation": {
-            "name": extraction.organisation_name.strip() or name,
+            "name": (extraction.organisation_name.strip() if own_pages else "") or name,
             "listed_name": name,
             "website": website,
             "domain": domain,
-            "city": extraction.city,
+            "city": extraction.city if own_pages else None,
             "what_they_do": extraction.what_they_do,
             "is_target_segment": extraction.is_target_segment,
-            "sells_the_offer": extraction.sells_the_offer,
+            "pages_match_organisation": own_pages,
+            "sells_the_offer": sells,
             "branches": branches,
             "identity": "Official website read" if any(p.page_type != "job_post" for p in pages) else (
                 "Found from a search result; website not found" if external_signals else "Website not read"
@@ -394,8 +409,10 @@ def apply_rules(lead: dict[str, Any], products, buyer_roles: list[str],
         reason += f"; {lead['dropped_claims']} claim(s) dropped because the quote was not found on the page"
     if lead.get("rule_dropped_claims"):
         reason += f"; {lead['rule_dropped_claims']} signal(s) dropped because the quote did not show it"
-    if not in_segment:
-        reason += "; may not match the requested segment or location"
+    if lead["organisation"].get("pages_match_organisation") is False:
+        reason += "; the pages read belong to another organisation"
+    elif not in_segment:
+        reason += "; may not be the kind of organisation the brief targets"
     lead["confidence_reason"] = reason
 
     model_unknowns = lead.get("model_unknowns")

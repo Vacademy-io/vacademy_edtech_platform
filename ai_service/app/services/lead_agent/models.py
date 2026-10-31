@@ -166,7 +166,12 @@ class Market(BaseModel):
 
 
 class Gate(BaseModel):
+    """The agent's delivery gate (engine scoring.gate). Rank and fill (2026-10-30): send_score is the
+    one bar; require_approval holds every lead for a person. auto_score / review_score were the two bars
+    before it: still accepted (old agents and old dashboards send them) and checked, never used."""
     model_config = ConfigDict(extra="forbid")
+    send_score: int = Field(default=50, ge=0, le=100)  # the lowest score a lead is sent with
+    require_approval: bool = False
     auto_score: int = Field(default=70, ge=0, le=100)
     review_score: int = Field(default=45, ge=0, le=100)
     min_contact: ContactLevel = "likely"
@@ -324,7 +329,9 @@ def agent_out(row: Dict[str, Any], *, audience_name: Optional[str] = None, today
     brief["offer"] = engine_api.offer_dict(brief)  # older briefs: derived from their product keys
     out["brief"] = brief
     out["markets"] = row.get("markets_json") or []
-    out["gate"] = row.get("gate_json") or {}
+    # Every setting, the defaults filling what an older agent never saved (send_score 50 for one made
+    # before rank and fill, 2026-10-30): the gate (engine scoring.gate) reads it the same way.
+    out["gate"] = {**Gate().model_dump(), **(row.get("gate_json") or {})}
     out["window"] = row.get("window_json") or {}
     out["plan_built_at"] = _plain(row.get("plan_built_at"))
     if today is not None:

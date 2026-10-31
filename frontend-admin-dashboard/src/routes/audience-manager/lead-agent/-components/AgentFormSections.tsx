@@ -1011,7 +1011,7 @@ function NumberField({
     required,
 }: {
     form: Form;
-    name: 'daily_quota' | 'auto_score' | 'review_score';
+    name: 'daily_quota' | 'send_score';
     label: string;
     hint?: string;
     min: number;
@@ -1053,9 +1053,14 @@ function NumberField({
 export function PacingSection({ form }: { form: Form }) {
     const [advancedOpen, setAdvancedOpen] = useState(false);
     const tz = form.watch('tz');
-    const auto = form.watch('auto_score');
-    const review = form.watch('review_score');
-    const preset = presetFor(auto, review);
+    const quota = form.watch('daily_quota');
+    const preset = presetFor(form.watch('send_score'));
+    // Until the number is valid (1 to 200) the hint states the range instead.
+    const quotaHint = `${
+        Number.isInteger(quota) && quota >= 1 && quota <= 200
+            ? `Up to ${quota} ${quota === 1 ? 'lead' : 'leads'} a day.`
+            : 'Enter 1 to 200 leads a day.'
+    } You're charged only for leads that are sent.`;
 
     const tzOptions = useMemo(() => {
         const zones = new Set<string>(COMMON_TIMEZONES);
@@ -1076,7 +1081,7 @@ export function PacingSection({ form }: { form: Form }) {
                         form={form}
                         name="daily_quota"
                         label="Leads per day"
-                        hint="1 to 200"
+                        hint={quotaHint}
                         min={1}
                         max={200}
                         required
@@ -1249,25 +1254,21 @@ export function PacingSection({ form }: { form: Form }) {
 
             <div className="flex flex-col gap-3">
                 <SectionHeading
-                    title="Quality"
-                    hint="Leads at or above the auto score go straight into the list. Leads between the two scores wait for your review. The rest are kept but never delivered."
+                    title="Minimum score to send"
+                    hint="Leads scoring at least this are sent automatically, best first, up to your daily quota."
                 />
                 <RadioGroup
                     value={preset}
                     onValueChange={(v) => {
                         const p = GATE_PRESETS.find((x) => x.value === v);
                         if (!p) return;
-                        form.setValue('auto_score', p.auto, {
-                            shouldDirty: true,
-                            shouldValidate: true,
-                        });
-                        form.setValue('review_score', p.review, {
+                        form.setValue('send_score', p.score, {
                             shouldDirty: true,
                             shouldValidate: true,
                         });
                     }}
                     className="grid grid-cols-1 gap-2 sm:grid-cols-3"
-                    aria-label="Quality preset"
+                    aria-label="Minimum score preset"
                 >
                     {GATE_PRESETS.map((p) => {
                         const id = `la-gate-${p.value}`;
@@ -1289,19 +1290,41 @@ export function PacingSection({ form }: { form: Form }) {
                                         {p.value === 'balanced' ? ' (default)' : ''}
                                     </span>
                                     <span className="text-caption text-neutral-500">
-                                        Auto {p.auto} · review {p.review}
+                                        Score {p.score} or more
                                     </span>
                                 </span>
                             </label>
                         );
                     })}
                 </RadioGroup>
-                {preset === 'custom' && (
-                    <p className="text-caption text-neutral-500">
-                        Custom: auto {Number.isFinite(auto) ? auto : '–'} · review{' '}
-                        {Number.isFinite(review) ? review : '–'}
-                    </p>
-                )}
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <NumberField
+                        form={form}
+                        name="send_score"
+                        label="Minimum score"
+                        hint="Pick a preset above or type your own, 0 to 100."
+                        min={0}
+                        max={100}
+                    />
+                </div>
+                <FormField
+                    control={form.control}
+                    name="require_approval"
+                    render={({ field }) => (
+                        <FormItem className="flex items-start justify-between gap-3 rounded-md border border-neutral-200 p-3">
+                            <div className="flex flex-col gap-1">
+                                <FormLabel>Approve leads before they&apos;re sent</FormLabel>
+                                <FormDescription>
+                                    Off: the best leads go out automatically every day. On: they
+                                    wait for your approval first.
+                                </FormDescription>
+                            </div>
+                            <FormControl>
+                                <Switch checked={field.value} onCheckedChange={field.onChange} />
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
                 <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
                     <CollapsibleTrigger asChild>
                         <MyButton type="button" buttonType="text" scale="small" className="px-0">
@@ -1314,22 +1337,6 @@ export function PacingSection({ form }: { form: Form }) {
                         </MyButton>
                     </CollapsibleTrigger>
                     <CollapsibleContent className="flex flex-col gap-4 pt-3">
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <NumberField
-                                form={form}
-                                name="auto_score"
-                                label="Auto-deliver score"
-                                min={1}
-                                max={100}
-                            />
-                            <NumberField
-                                form={form}
-                                name="review_score"
-                                label="Review score"
-                                min={0}
-                                max={100}
-                            />
-                        </div>
                         <SelectField
                             label="Lowest contact to deliver"
                             name="min_contact"
@@ -1349,8 +1356,9 @@ export function PacingSection({ form }: { form: Form }) {
                                     <div className="flex flex-col gap-1">
                                         <FormLabel>Require a buying signal</FormLabel>
                                         <FormDescription>
-                                            Only auto-deliver leads that are acting now, e.g. hiring
-                                            the roles you list or asking for what you sell.
+                                            Only send leads that show a buying signal right now
+                                            (hiring, a new branch, asking for something like what
+                                            you sell).
                                         </FormDescription>
                                     </div>
                                     <FormControl>
@@ -1368,11 +1376,11 @@ export function PacingSection({ form }: { form: Form }) {
                             render={({ field }) => (
                                 <FormItem className="flex items-start justify-between gap-3 rounded-md border border-neutral-200 p-3">
                                     <div className="flex flex-col gap-1">
-                                        <FormLabel>Auto-deliver competitor users</FormLabel>
+                                        <FormLabel>Treat competitor users like any other</FormLabel>
                                         <FormDescription>
-                                            Leads already using a competitor&apos;s product wait for
-                                            your review by default. Turn this on to score them like
-                                            any other lead. Very large organisations still wait.
+                                            Treat organisations that already use a competitor like
+                                            any other. When off, they score lower and are sent only
+                                            if they still clear your minimum score.
                                         </FormDescription>
                                     </div>
                                     <FormControl>

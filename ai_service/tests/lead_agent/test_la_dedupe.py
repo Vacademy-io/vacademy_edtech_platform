@@ -143,17 +143,20 @@ def test_a_possible_duplicate_waits_for_review_instead_of_going_out():
     assert dedupe.apply(_result(), None, DEFAULT_GATE) == _result()
 
 
-def test_the_possible_duplicate_flag_never_lifts_a_low_score_into_review():
+def test_a_possible_duplicate_waits_for_a_person_only_at_or_above_the_send_bar():
     lead = {"contact_quality": {"level": "likely"}}
     flagged = {"score": 90, "base_score": 90, "risk": 0, "has_intent": True,
                "flags": ["possible_duplicate:quantumcoaching.in"]}
     decision, reasons = gate(flagged, lead, DEFAULT_GATE)
     assert decision == "REVIEW" and reasons == [
         "Possibly the same organisation as quantumcoaching.in (same name and city): check before it goes out"]
-    # below the bar only because of a single tutor's risk: still rejected (no switch pitch to decide on)
+    # Rank and fill (2026-10-30): nobody reviews in this funnel, so a duplicate that would not be sent
+    # anyway is rejected like any lead below the bar.
     low = {"score": 30, "base_score": 50, "risk": 25, "has_intent": True,
            "flags": ["micro", "possible_duplicate:quantumcoaching.in"]}
-    assert gate(low, lead, DEFAULT_GATE)[0] == "REJECT"
+    assert gate(low, lead, DEFAULT_GATE) == (
+        "REJECT", ["Score 30 is below the send bar (50)", "Single tutor or home tuition"])
+    assert gate({**low, "score": 50}, lead, DEFAULT_GATE)[0] == "REVIEW"
 
 
 # --------------------------------------------------------------------------- SQL, lock and save

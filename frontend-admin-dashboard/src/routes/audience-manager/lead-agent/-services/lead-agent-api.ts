@@ -186,6 +186,9 @@ const normalizeGate = (raw: unknown): AgentGate => {
     const minContact = str(g.min_contact);
     const effort = str(g.effort)?.toUpperCase() ?? null;
     return {
+        // Agents saved before "rank and fill" have neither: they read as the default bar, no approval.
+        send_score: num(g.send_score) ?? DEFAULT_GATE.send_score,
+        require_approval: g.require_approval === true,
         auto_score: num(g.auto_score) ?? DEFAULT_GATE.auto_score,
         review_score: num(g.review_score) ?? DEFAULT_GATE.review_score,
         min_contact:

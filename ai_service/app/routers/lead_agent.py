@@ -221,9 +221,13 @@ def _update_agent(db, s: Staff, agent_id: str, body: models.AgentUpdate) -> Dict
         fields["window_json"] = body.window.model_dump()
     row = store.update_agent(db, agent_id, s.institute_id, fields)
     if "gate_json" in fields and fields["gate_json"] != current.get("gate_json"):
-        moved = research.regate_waiting(db, row)
-        if moved:
-            logger.info("lead agent %s: %d lead(s) waiting for review pass the new gate", agent_id, moved)
+        # The leads waiting for review are judged again with the new gate now, not at the next tick.
+        from ..services.lead_agent import scheduler
+
+        moved = scheduler.rejudge_waiting(db, row)
+        if moved["approved"] or moved["rejected"]:
+            logger.info("lead agent %s: new gate moved %d waiting lead(s) to delivery and rejected %d",
+                        agent_id, moved["approved"], moved["rejected"])
     return _agent_view(db, row)
 
 

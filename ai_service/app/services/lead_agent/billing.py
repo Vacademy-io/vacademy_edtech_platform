@@ -15,9 +15,9 @@ cannot collide with another institute's and the spec's form is kept. A key
 already in the ledger makes no second billing call; the charged credits are read
 back from the ledger into lead_candidate.credits_charged.
 
-Before a day's discovery the agent is skipped when the wallet cannot cover the
-rest of today's quota at the agent's price, or when its monthly credit cap is
-reached (delivery stops at the cap too).
+Before a discovery round the agent is skipped when the wallet cannot cover the
+leads that round is looking for (at most a day's quota) at the agent's price, or
+when its monthly credit cap is reached (delivery stops at the cap too).
 """
 from __future__ import annotations
 
@@ -144,7 +144,7 @@ def affordable(agent: Dict[str, Any], leads: int) -> Tuple[bool, str]:
         return True, ""  # no wallet row: the house rule is "unknown balance = allow" (post-paid charge)
     need = each * leads
     if Decimal(str(balance)) < need:
-        return False, f"Not enough credits for today's quota ({balance} < {need})"
+        return False, f"Not enough credits for the next {leads} lead(s) ({balance} < {need})"
     return True, ""
 
 

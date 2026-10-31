@@ -28,6 +28,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
 
 from . import engine_api, store
+from .contact_hunt import last10
 
 SAME, POSSIBLE = "same", "possible"
 LIVE_STATUSES = ("APPROVED", "REVIEW", "DELIVERED")
@@ -57,9 +58,29 @@ class Match:
         return {"candidate_id": self.candidate_id, "domain": self.domain, "shared": list(self.shared)}
 
 
-def _last10(value: Optional[str]) -> str:
-    digits = re.sub(r"\D", "", value or "")
-    return digits[-10:] if len(digits) >= 10 else ""
+def phone_key(value: Optional[str]) -> str:
+    """A phone as it is compared everywhere: its last 10 digits ('' when it has fewer)."""
+    return last10(value)
+
+
+def email_key(value: Optional[str]) -> str:
+    """An email as it is compared everywhere: trimmed, lower case."""
+    return str(value or "").strip().lower()
+
+
+def keys_of(contacts: Iterable[Any]) -> Tuple[Set[str], Set[str]]:
+    """(phones, emails) of these contacts (dicts with kind and value), compared as phone_key / email_key.
+    The one normaliser behind the check before research (research.usable_keys), this module's matching and
+    delivery's existing-contacts check, so the three cannot disagree on what "the same number" is."""
+    phones: Set[str] = set()
+    emails: Set[str] = set()
+    for c in contacts:
+        value = str(c.get("value") or "").strip()
+        if c.get("kind") in PHONE_KINDS and phone_key(value):
+            phones.add(phone_key(value))
+        elif c.get("kind") == "published_email" and "@" in value:
+            emails.add(email_key(value))
+    return phones, emails
 
 
 def _mail_domain(email: str) -> str:
@@ -78,18 +99,8 @@ def _usable(c: Any) -> bool:
 
 
 def contact_keys(lead: Dict[str, Any]) -> Tuple[Set[str], Set[str]]:
-    """(phones as their last 10 digits, emails in lower case) of the lead's usable contacts."""
-    phones: Set[str] = set()
-    emails: Set[str] = set()
-    for c in lead.get("contacts") or []:
-        if not _usable(c):
-            continue
-        value = str(c.get("value") or "").strip()
-        if c.get("kind") in PHONE_KINDS and _last10(value):
-            phones.add(_last10(value))
-        elif c.get("kind") == "published_email" and "@" in value:
-            emails.add(value.lower())
-    return phones, emails
+    """(phones as their last 10 digits, emails in lower case) of the lead's usable contacts (keys_of)."""
+    return keys_of(c for c in lead.get("contacts") or [] if _usable(c))
 
 
 def city_key(city: Optional[str]) -> str:
@@ -135,7 +146,7 @@ def judge(lead: Dict[str, Any], others: List[Dict[str, Any]], *, org_domain: Opt
         domain = (other.get("domain") or "").lower()
         their_site = (other.get("site_domain") or "").lower()
         theirs = _domains(domain, their_site)
-        their_emails = {str(e).lower() for e in other.get("emails") or []}
+        their_emails = {email_key(e) for e in other.get("emails") or []}
         shared: List[str] = []
         if both := phones & set(other.get("phones") or []):
             shared.append(f"both show phone {_shown(both)}")
@@ -193,5 +204,5 @@ def apply(result: Dict[str, Any], match: Optional[Match], gate_cfg: Dict[str, An
             "reject_reason": "; ".join(reasons)[:300] if status == "REJECTED" else None}
 
 
-__all__ = ["SAME", "POSSIBLE", "LIVE_STATUSES", "Match", "contact_keys", "city_key", "name_words", "judge", "check",
-           "apply"]
+__all__ = ["SAME", "POSSIBLE", "LIVE_STATUSES", "Match", "phone_key", "email_key", "keys_of", "contact_keys",
+           "city_key", "name_words", "judge", "check", "apply"]
