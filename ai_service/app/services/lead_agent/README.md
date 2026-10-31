@@ -83,16 +83,19 @@ Prod, 2026-10-30: agents asked for 100-200 leads a day, but a lead went out on i
 researched leads were parked (Voomsales: 14 delivered, 214 in REVIEW in 2 days), teams lowered `auto_score`
 by hand, and the scheduler kept discovering because `quota - delivered` stayed large.
 
-* **Gate** (`engine/scoring.py` `gate`, `gate_json`): one bar, `send_score` (default 50, also for an agent
-  saved before it), and `require_approval` (default off). In order: a hard-reject flag -> REJECT; `maps_only`
-  or `possible_duplicate` -> REVIEW at or above `send_score` (validity first: a person decides), REJECT below
-  it ("Judged from its Google Maps listing only: score X is below the send bar (Y)" for a Maps-only lead;
-  nobody reviews in this funnel, so REVIEW holds only leads worth a person's look); score (after the
-  risk penalty; `auto_competitor_users` drops the competitor's) below `send_score` -> REJECT, naming the risks;
-  best contact below `min_contact`, or `require_intent` without a buying signal -> REVIEW with
-  `require_approval`, else REJECT; otherwise REVIEW ("waiting for your approval") with `require_approval`,
-  else AUTO. A competitor's user or a very large organisation is no longer held back: its penalty ranks it
-  lower. `auto_score` / `review_score` are still accepted (old agents and dashboards send them) and ignored.
+* **Gate** (`engine/scoring.py` `gate`, `gate_json`; defaults in `scoring.DEFAULT_GATE` only, which research
+  and `store.DEFAULT_GATE_JSON` read): one bar, `send_score` (default 50, also for an agent saved before it),
+  and `require_approval` (default off). In order: a hard-reject flag -> REJECT; score (after the risk penalty;
+  `auto_competitor_users` drops the competitor's) below `send_score` -> REJECT, naming the risks ("Judged from
+  its Google Maps listing only: score X is below the send bar (Y)" for a Maps-only lead; nobody reviews in this
+  funnel, so REVIEW holds only leads worth a person's look); best contact below `min_contact`, or
+  `require_intent` without a buying signal -> REVIEW with `require_approval`, else REJECT; `maps_only` or
+  `possible_duplicate` -> REVIEW (validity first: a person decides); otherwise REVIEW ("waiting for your
+  approval") with `require_approval`, else AUTO. The list's own rules come before the held flags since
+  2026-10-31: a held lead failing them used to wait in REVIEW on a list that needs no approval, where
+  approving it would send it. A competitor's user or a very large organisation is no longer held back: its
+  penalty ranks it lower. `auto_score` / `review_score` are still accepted (old agents and dashboards send
+  them) and ignored.
   What research may search for a lead follows the same gate (`contact_hunt.worth_searching`).
 * **Delivery order** (`store.claim_approved`): APPROVED by score, best first (then oldest), up to the daily
   quota, so each day sends the best of the pool.
@@ -104,10 +107,13 @@ by hand, and the scheduler kept discovering because `quota - delivered` stayed l
 * **The REVIEW queue judged again** (`scheduler.rejudge_waiting`, every tick, agents without
   `require_approval`): up to 200 REVIEW leads, best first, gated again from their stored `score_json` /
   `lead_json` with the current gate, no AI: AUTO -> APPROVED, REJECT -> REJECTED (`reject_reason`,
-  `score_json.rejudged_at`). A Maps-only lead or a possible duplicate below the bar is REJECTED too; at or
-  above it, it stays for a person and is not read again. Never a lead a person decided, or a row missing a
-  field the gate reads (`store.GATE_INPUTS`); each move expects REVIEW, so a reviewer deciding at the same
-  moment wins. `lead_agent_day` counters keep what research decided that day. Saving a new gate runs the
+  `score_json.rejudged_at`). A Maps-only lead or a possible duplicate below the bar or failing the list's
+  rules is REJECTED too; otherwise it stays for a person. A row that stays is stamped with the gate it was
+  judged under (`score_json.rejudged_for` = `scoring.gate_fingerprint`: the settings as the gate reads them
+  and `GATE_RULES`, bumped when the gate's rules change) and not read again until that changes, so kept rows
+  never crowd new ones out of the batch (2026-10-31). Never a lead a person decided, or a row missing a
+  field the gate reads (`store.GATE_INPUTS`); each move and each stamp expects REVIEW, so a reviewer deciding
+  at the same moment wins. `lead_agent_day` counters keep what research decided that day. Saving a new gate runs the
   same judging at once (the router), instead of waiting for the next tick.
 
 **Spend where it pays** (discovery and research). Prod, 2026-10-30, 5 agents, 2,548 researched leads: 24%
@@ -118,15 +124,20 @@ per 10 searches to ~3 while its rounds kept running.
   (website + Maps phone; helplines, toll-free, fax, template numbers and other organisations' contacts left
   out) go through admin_core existing-contacts. A match is SKIPPED "Already in your leads (same phone or
   email)" with no LLM call. On an error research carries on, and delivery checks again. 102 of the 118 prod
-  skips had been found only at delivery, after full research.
+  skips had been found only at delivery, after full research. Any usable contact counts, as in `dedupe.py`
+  (a shared usable phone or email is one organisation); delivery checks only the phone and email it sends
+  because that is all its row holds. All three compare through `dedupe.keys_of` / `phone_key` / `email_key`.
 * **Decision-maker lookup** (`contact_hunt.worth_a_lookup`): only for a lead whose own score reaches the bar
   and which the gate would pass with a direct contact; never for another segment, a competitor or an excluded
   kind.
 * **Lanes stop for the day** (`cursor_json.lane_done` / `lane_dry`): organisation search, Maps and signals each
-  stop after wrapping past MAX_PAGE or 2 rounds with nothing new, and come back the next day (new posts appear
-  daily) or when their list changes. A round with every lane done spends nothing.
+  stop after wrapping past MAX_PAGE (once that last search has run: a failed Maps search is searched again next
+  round) or 2 rounds with nothing new, and come back the next day (new posts appear daily) or when their list
+  changes. A new organisation counts for the lane whose search found it (`discovery.found_by_lane`: a keyword
+  result chosen like a search result is the signal lane's). A round with every lane done spends nothing.
 * **Signal budget**: once the organisation and Maps lanes are done for the day, signal and keyword searches
-  double (`SIGNAL_BOOST`). New-centre searches (35 found, 8% sent, 40% "not the kind") run every third round.
+  double (`SIGNAL_BOOST`). New-centre searches (35 found, 8% sent, 40% "not the kind") run every third round,
+  or every round when nothing else is left to search (a round without a search still uses up the round limit).
 * **Kind checks at discovery**: the web selection lists every industry of the brief (any one is enough, read
   broadly, location never judged there); Maps listings whose category is clearly a kind the brief does not
   target are skipped (`engine/discovery/kinds.py`; an unknown category or a broad brief keeps them). Link
@@ -147,13 +158,26 @@ organisation; 16 of 38 "Sells what you sell" flags were false.
   organisations may buy it ("LMS platform for institutes selling online courses": 50 of the 96 rejects of "Leads
   for Vacademy" said "not an institute selling online courses", schools and colleges among them).
 * **The kind only** (`AccountExtraction.is_target_segment`): never where the organisation is (the score's location
-  part does that). Markets go one per line, from the agent's markets (`planning.market_names`): joined, "Rajasthan,
+  part and `outside_market` do that). Markets go one per line, from the agent's markets (`planning.market_names`): joined, "Rajasthan,
   India, delhi" made the model call Delhi colleges "outside the requested Rajasthan location".
 * **Another country** (`engine/scoring.py` `outside_markets`): flag `outside_market`, a hard reject "Outside your
   markets: its phones are +1 (United States)", only on positive evidence: every usable phone from a country no
   market is in, or a country-code domain outside the markets (.uk; .in is India), with no phone from a market
   country and no market-country domain. Never for a city or state inside a market country, a generic domain, an
   unknown location, a market country the tables do not know, or an agent without markets.
+* **None of your cities and states** (`engine/scoring.py` `outside_market_places`, 2026-10-31): the same flag,
+  "Outside your markets: it is in Mumbai; your markets are Jaipur", only when the organisation's city is known
+  (its pages or Maps listing; not a country or "online"), nothing about it (city, branches, listing address,
+  description, evidence) names a market city or state, another name of one (Gurgaon / Gurugram: discovery's
+  renamings table) or a place of the metro area a market city stands for (`pipeline.METRO_AREAS`, this rule
+  only: Delhi takes in NCR (Noida, Gurugram, Ghaziabad, Faridabad), Mumbai takes in Thane and Navi Mumbai, and so on;
+  "delhi" stored as a state, as on Evalezy, counts too; a market named after a suburb never takes in the city),
+  and every market in its country names a city or state (with a country-wide market elsewhere,
+  a phone or country-code domain must show the lead is in a city-only country). A state market with no city is
+  ruled out only when the organisation's city or listing address names another state: a city rarely carries its
+  state's name (Kota, Pune). Before it, a Mumbai institute that was hiring scored ~57 on a Jaipur-only agent and
+  was sent: being elsewhere cost only `FIT_LOCATION` (3.5 points). The audit's Delhi colleges on "Rajasthan,
+  India" + "delhi, India" name a market and stay.
 * **Pages of another organisation** (`pages_match_organisation`, true when a reply lacks it): false -> flag
   `wrong_site`, a hard reject "The pages read belong to another organisation, not this one", instead of "not the
   kind". The lead keeps the name it was found under; no kind, city or seller verdict is read from those pages.
