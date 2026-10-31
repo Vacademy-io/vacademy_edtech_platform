@@ -42,12 +42,14 @@ import { releaseStockHold } from "@/components/common/enroll-by-invite/-services
 
 /**
  * Notes the order whose payment is still to be confirmed, with when it was
- * started, so the cart page can finish the check after a reload and give up on
- * an order that never settles.
+ * started and which cart it came from, so the cart page can finish the check
+ * after a reload (and empty the right cart) and give up on an order that never
+ * settles.
  */
-const markPendingOrder = (orderId: string) => {
+const markPendingOrder = (orderId: string, cartMode: "buy" | "rent") => {
     localStorage.setItem("pendingOrderId", orderId);
     localStorage.setItem("pendingOrderCreatedAt", String(Date.now()));
+    localStorage.setItem("pendingCartMode", cartMode);
 };
 
 interface CheckoutFormProps {
@@ -577,7 +579,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
 
             // Noted only now that the server has accepted the order (a refused one,
             // such as an out-of-stock 409, leaves nothing behind to verify later).
-            markPendingOrder(backendOrderId || orderId);
+            markPendingOrder(backendOrderId || orderId, isRentMode ? "rent" : "buy");
 
             // Handle automatic login BEFORE redirection or finishing
             const userUsername = response.data?.user?.username;
@@ -673,7 +675,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
 
                         if (outcome === "paid") {
                             try {
-                                await clearCart();
+                                await clearCart(isRentMode ? "rent" : "buy");
                             } catch (clearError) {
                                 console.error("[CheckoutForm] Could not clear the cart after payment:", clearError);
                             }
@@ -733,7 +735,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                 toast.success(t("checkoutForm.toast.checkoutSuccessful"));
                 // Nothing left to pay: the order is placed, so the cart is done with.
                 try {
-                    await clearCart();
+                    await clearCart(isRentMode ? "rent" : "buy");
                 } catch (clearError) {
                     console.error("[CheckoutForm] Could not clear the cart after checkout:", clearError);
                 }

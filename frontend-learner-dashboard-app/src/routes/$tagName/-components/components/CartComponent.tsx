@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import { FitImage } from "@/components/common/fit-image/FitImage";
 import { useTranslation } from "react-i18next";
 import axios from "axios";
-import { useCartStore, clearPendingCheckout, CartItem } from "../../-stores/cart-store";
+import { useCartStore, clearPendingCheckout, getPendingCartMode, CartItem } from "../../-stores/cart-store";
 import { CartComponentProps } from "../../-types/course-catalogue-types";
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import { Trash, Plus, Minus, X } from "@phosphor-icons/react";
@@ -451,7 +451,8 @@ export const CartComponent: React.FC<CartComponentProps> = ({
     // The order is paid: empty the cart, sign the learner in and send them on.
     const completePaidOrder = async () => {
       try {
-        await clearCart();
+        // The order's own cart: this tab may not know whether it was rent or buy.
+        await clearCart(getPendingCartMode());
 
         // Recovery reads the pending credentials/tokens, so they are cleared after it.
         const { checkAndRecoverSession } = await import("@/services/auth-cycle-service");
