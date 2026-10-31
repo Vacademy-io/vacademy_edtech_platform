@@ -1,0 +1,138 @@
+---
+title: "Previews and confirmations"
+sidebarTitle: "Confirmations"
+description: "How live changes work: the AI app shows you a preview, you say yes in the chat, and only then does anything happen."
+icon: "circle-check"
+---
+
+Most tools only read data, or only save drafts. A few do something real straight away: they publish your website, enrol learners, change a learner's details, regroup a live course, or (in the CRM) call or message a lead. Every one of these follows the same pattern.
+
+<Note>
+
+**Three different questions you may see**
+
+- **Approve**: once, on your admin portal, when you connect.
+- **Allow**: your AI app asking before it uses a tool.
+- **Confirm**: you say yes in the chat after reading a preview. Only this one makes a live change.
+
+This page is about the third one.
+</Note>
+
+<Steps>
+  <Step title="You ask">
+    For example: "Enrol these 12 people into the Class 10 Maths course."
+  </Step>
+  <Step title="The AI app asks for a preview">
+    The tool works out exactly what would happen and changes **nothing**. It sends back the preview and a confirmation code.
+  </Step>
+  <Step title="The AI app shows you the preview">
+    Who or what is affected, before and after, and any side effects (emails sent, automations that will run, credits used).
+  </Step>
+  <Step title="You say yes in the chat">
+    Or you say no, or ask for a change. A change means a new preview.
+  </Step>
+  <Step title="The AI app sends the same request again, with the code">
+    The tool checks that the code matches this exact request and that nothing has moved since the preview. Only then does it make the change, and it reports what it did.
+  </Step>
+</Steps>
+
+## What it looks like in the chat
+
+<Tabs>
+  <Tab title="Website">
+    > **You:** Publish the admissions site.
+    >
+    > **AI:** I checked the draft. Compared with the live site: the homepage hero has new text, the Fees page is new, and the contact form now goes to the "2026 Admissions" lead campaign. No blockers. Shall I publish it now?
+    >
+    > **You:** Yes.
+    >
+    > **AI:** Done. The site is live at the address shown. If you need to undo it, I can roll back to the previous version.
+
+    Check what changes compared with the live site before you say yes.
+  </Tab>
+  <Tab title="CRM call">
+    > **You:** Call Priya Sharma now.
+    >
+    > **AI:** This will call Priya Sharma on +91 ••••• 4321 from your number. She has not opted out. You have 18 calls left this hour. Shall I place the call?
+    >
+    > **You:** Yes.
+    >
+    > **AI:** Calling now.
+
+    Check the name, the last 4 digits and the count before you say yes.
+  </Tab>
+</Tabs>
+
+<Frame caption="A preview shown in a chat, waiting for your yes.">
+  <img src="/mcp-server/images/screenshots/chat-preview.svg" alt="Placeholder for a screenshot of a preview in an AI app's chat" />
+</Frame>
+
+The exact wording depends on your AI app. What matters is the order: **preview, your yes, then the change.**
+
+## Why the AI app must show you the preview
+
+The confirmation code proves that a preview was made. It does **not** prove that you read it. The AI app holds the code, and your "yes" happens in the chat, not on a screen in your admin portal.
+
+So:
+
+- **Read the preview before you say yes.** It is the only moment you see the change before it happens.
+- **If the AI app acts without showing you a preview, stop it** and ask it to show the preview first. Every tool tells the AI app, in its own instructions, to wait for a clear yes.
+- **Keep your AI app's own approval prompts on** for tools that change data. Most apps can ask you before each tool call. Choose "always allow" only for tools that read.
+- **Say no if anything looks wrong.** Nothing has changed yet. Ask the AI app to fix the request and preview again.
+
+<Warning>
+Be careful with "agent" or "research" modes that run many tools in a row without stopping. They may not pause for your yes. Turn off write tools in those modes. See your AI app's own settings.
+</Warning>
+
+## Which actions ask for a confirmation
+
+| What you ask for | Area in Settings → MCP Server | How long the preview lasts | Notes |
+|---|---|---|---|
+| Publish a website draft, or roll the live site back | Website, **Publish and roll back** | 10 minutes | Can be used **once**. Refused if the draft was edited, or the live site changed, after the check. |
+| Add folders, course tags, product pages or store courses that a website needs | Website, **Set up folders, course tags and product pages** | 10 minutes | Shown as a "dry run" plan first. Refused if your data changed since the plan. |
+| Change a course's depth or regroup it | Courses, **Structure and depth** | 15 minutes | Works on live courses. Learners see the new structure at once. |
+| Enrol learners into courses | Learners, **Enrol into courses** | 15 minutes | Preview shows who is new and who is already enrolled. |
+| Change a learner's details | Learners, **Edit learner details** | 15 minutes | Preview shows every before → after. Email and username can't be changed. |
+| Change CRM leads: status, owner, tier, tags, details | CRM areas | A short time (minutes) | Preview shows each lead's before → after and any automations that will run. |
+| Contact a lead: place a call, start an AI call, send a WhatsApp or an email, book a meeting, send fee reminders | CRM areas | A short time (minutes) | Can be used **once**. Hourly limits per person apply. |
+| Bulk CRM actions: reassign many leads, change many statuses, AI-call a list | CRM areas | A short time (minutes) | Can be used **once**. Applies to exactly the leads in the preview. |
+
+All of these edits are **turned on separately** (opt-in): an admin turns each one on by itself. See [Opt-in edits](/mcp-server/settings/opt-in-features).
+
+### What doesn't need a confirmation
+
+- **Reading.** Searching leads, opening a course, reading reports.
+- **Drafts.** Website pages, blog posts, automations and new courses are saved as drafts that a person publishes later. See [Drafts vs live](/mcp-server/usage/drafts-vs-live).
+- **Adding only.** For example, creating a lead campaign, adding form fields, or, in the CRM, logging a call, adding a note or scheduling or moving a follow-up. These are saved straight away.
+- **A few direct edits.** Invite page and form edits (Courses Edit), and a course's images or intro video, apply at once without a preview. See [Risk levels](/mcp-server/settings/risk-levels).
+
+<Note>
+In the CRM, logging a call can include a status change. If that status change would start an automation (for example a WhatsApp to the lead), the AI app saves the note and follow-up, then shows you a preview for the status change alone.
+</Note>
+
+## The rules behind the codes
+
+<AccordionGroup>
+  <Accordion title="Codes expire" icon="clock">
+    A preview lasts a short time (minutes), depending on the tool. After that the AI app has to preview again and ask you again. This stops a yes from this morning being used this afternoon, when things may have changed.
+  </Accordion>
+  <Accordion title="Any change means a new preview" icon="rotate">
+    The code is tied to the exact request: the same person, the same institute, the same arguments. Many tools also tie it to the data as it was at preview time: the draft's content, the live site's version, a lead's current status and owner. If you change your mind ("actually, make it 13 learners"), or someone else edits the same record in your admin portal, the old code is refused and the AI app must preview again.
+  </Accordion>
+  <Accordion title="Some codes work only once" icon="ticket">
+    Publishing a website, and every CRM action that contacts a lead or changes many leads at once, uses a code that is spent on first use. "Do it again" never repeats a call or a message by accident. A second send needs a second preview and a second yes.
+  </Accordion>
+  <Accordion title="Hourly limits on calls and messages" icon="gauge-high">
+    CRM calls and messages have hourly limits per person. If you reach one, the tool says so and how long to wait (`rate_limited`). The AI app can also tell you how many you have left this hour before you start.
+  </Accordion>
+  <Accordion title="Bulk actions apply to exactly what you saw" icon="list-check">
+    For bulk CRM actions, the preview lists the leads it found, and the ones it left out with a reason (for example opted out, already converted, or called very recently). The action then runs on exactly that list. If you lose access to some of those leads in between, they are skipped, never swapped for others.
+  </Accordion>
+  <Accordion title="Undoing a change" icon="clock-rotate-left">
+    A website publish can be rolled back to an earlier published version. Nothing is deleted: every version stays in the history. Other live changes are undone the normal way, in your admin portal or with another change. Calls and messages cannot be unsent, which is why they always ask first.
+  </Accordion>
+</AccordionGroup>
+
+## When a confirmation is refused
+
+The AI app gets an error code and a short reason, such as `confirm_token_expired` or `confirm_token_mismatch`. It should explain the problem and, if needed, make a new preview. See [Errors: previews and confirmations](/mcp-server/usage/errors#previews-and-confirmations) for every code.

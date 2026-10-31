@@ -1,6 +1,6 @@
-name: Build ZOE Edtech AppX (Microsoft Store)
+name: Build ZOE Online School AppX (Microsoft Store)
 
-# Builds the ZOE Edtech Windows Store package (.appx, x64 + ia32) on a Windows
+# Builds the ZOE Online School Windows Store package (.appx, x64 + ia32) on a Windows
 # runner and uploads it as a downloadable artifact. AppX packaging needs the
 # Windows SDK (makeappx), which only exists on Windows — hence windows-latest.
 #
@@ -71,7 +71,37 @@ jobs:
         run: |
           rm -rf electron/app
           cp -r dist electron/app
-          echo '{"flavor":"zoe"}' > electron/electron-flavor.json
+          # otaAppId must be the STORE bundle id — ota.ts falls back to
+          # app.getName() without it, which never matches an OTA target_app_ids.
+          echo '{"flavor":"zoe","otaAppId":"com.zoeedtech.app"}' > electron/electron-flavor.json
+          # Which web bundle is baked in. Without this ota.ts falls back to the
+          # ELECTRON package version (1.0.x), a different numbering space, so
+          # every OTA bundle looks newer and the fresh builtin bundle is
+          # immediately replaced by an older one on first launch.
+          node -p "require('./package.json').version" | tr -d '\n' > electron/app/ota-bundle-version.txt
+          cat electron/app/ota-bundle-version.txt
+
+      # electron/package.json is checked in with Shiksha Nation's identity and is
+      # rewritten per flavor at build time — build-windows-zoe.sh does this and CI
+      # used to skip it, so the ZOE package shipped as name "Shiksha_Nation".
+      # That is not cosmetic: on Windows app.getName() resolves to package.json
+      # productName ?? name, and userData is %APPDATA%\<that name> — so ZOE and
+      # Shiksha Nation shared one localStorage, cookie jar and OTA cache on any PC
+      # with both installed. Keep this identical to build-windows-zoe.sh.
+      - name: Patch package.json for ZOE
+        working-directory: frontend-learner-dashboard-app/electron
+        shell: bash
+        run: |
+          node -e "
+          const fs = require('fs');
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          pkg.name = 'ZOE_Online_School';
+          pkg.productName = 'ZOE Online School';
+          pkg.description = 'ZOE Global Online School — AI-Powered Learning Platform';
+          pkg.author = { name: 'ZOE Global Online School', email: 'support@zoeedtech.com' };
+          fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+          node -p "'name=' + require('./package.json').name + ' productName=' + require('./package.json').productName + ' author=' + require('./package.json').author.name"
 
       - name: Install electron dependencies
         working-directory: frontend-learner-dashboard-app/electron
@@ -93,7 +123,7 @@ jobs:
       - name: Upload AppX artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: zoe-edtech-appx
+          name: zoe-online-school-appx
           path: |
             frontend-learner-dashboard-app/electron/dist-store/*.appx
             frontend-learner-dashboard-app/electron/dist-store/*.appxbundle

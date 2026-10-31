@@ -31,16 +31,40 @@ export interface PerfSnapshot {
     serverMs: number | null;
     /** Median ping round trip (ms) — our proxy for the user's network. */
     networkMs: number | null;
+    /**
+     * Median time spent waiting on third parties, when any request reported it.
+     * Shown to explain a slow-feeling page that is nobody's fault locally — it is
+     * never counted against `serverMs`.
+     */
+    externalMs: number | null;
     /** How many API samples the verdict is based on. */
     sampleCount: number;
     /** Requests whose response carried no Server-Timing (large responses / SSE). */
     unannotatedCount: number;
+
+    // --- Detail below exists to make a complaint actionable ---------------
+    // A median alone tells you THAT it was slow. To do anything about it you need
+    // to know which call, how bad the worst one was, and exactly when — so the
+    // window can be lined up against backend logs and deploys.
+
+    /** Epoch ms of the newest sample, or null when nothing has been measured. */
+    updatedAt: number | null;
+    /** Epoch ms of the oldest sample still in the window. */
+    windowStart: number | null;
+    /** Worst single server timing in the window — the one worth investigating. */
+    slowest: { routeKey: string; serverMs: number; at: number } | null;
+    /** How many ping baselines the network figure rests on. */
+    pingCount: number;
+    /** Non-2xx responses in the window; slowness plus errors is a different story. */
+    errorCount: number;
 }
 
 interface ApiSample {
     at: number;
     totalMs: number;
     serverMs: number | null;
+    /** Third-party wait for this request, when the backend reported one. */
+    externalMs: number | null;
     routeKey: string;
     status: number;
 }
@@ -121,6 +145,21 @@ export function routeKeyFromUrl(rawUrl: string): string {
     }
 }
 
+/**
+ * Parse `ext;dur=2035` — time the request spent waiting on a third party (the
+ * telephony provider dialling a phone, BBB creating a room, an LLM answering).
+ * Deliberately NOT part of the verdict: it is real latency the user feels, but it
+ * is not us being slow, and calling it ours is what made the indicator report
+ * "Vacademy is slow" while the platform was serving p50 16ms.
+ */
+export function parseExternalTiming(headerValue: string | undefined | null): number | null {
+    if (!headerValue) return null;
+    const m = /(?:^|,)\s*ext;dur=([\d.]+)/i.exec(headerValue);
+    if (!m) return null;
+    const n = Number(m[1]);
+    return Number.isFinite(n) ? n : null;
+}
+
 /** Parse `app;dur=42` out of a Server-Timing header value. */
 export function parseServerTiming(headerValue: string | undefined | null): number | null {
     if (!headerValue) return null;
@@ -185,6 +224,7 @@ export function recordApiSample(sample: {
             at: Date.now(),
             totalMs: sample.totalMs,
             serverMs,
+            externalMs: parseExternalTiming(sample.serverTimingHeader),
             routeKey,
             status: sample.status,
         });
@@ -254,6 +294,11 @@ export function getSnapshot(): PerfSnapshot {
     const serverValues = recentApi.map((s) => s.serverMs).filter((v): v is number => v !== null);
     const serverMs = median(serverValues);
     const networkMs = median(pingSamples.slice(-WINDOW).map((p) => p.rttMs));
+    // Median over the requests that actually had a third-party wait, not over all
+    // of them — averaging in the zeroes would hide a genuine 2s provider call.
+    const externalMs = median(
+        recentApi.map((s) => s.externalMs).filter((v): v is number => v !== null && v > 0)
+    );
 
     let verdict: PerfVerdict = 'unknown';
     if (recentApi.length >= MIN_SAMPLES) {
@@ -267,13 +312,59 @@ export function getSnapshot(): PerfSnapshot {
         else verdict = 'healthy';
     }
 
+    let slowest: PerfSnapshot['slowest'] = null;
+    for (const sample of recentApi) {
+        if (sample.serverMs === null) continue;
+        if (!slowest || sample.serverMs > slowest.serverMs) {
+            slowest = { routeKey: sample.routeKey, serverMs: sample.serverMs, at: sample.at };
+        }
+    }
+
+    const times = [...recentApi.map((s) => s.at), ...pingSamples.slice(-WINDOW).map((p) => p.at)];
+
     return {
         verdict,
         serverMs,
         networkMs,
+        externalMs,
         sampleCount: recentApi.length,
         unannotatedCount,
+        updatedAt: times.length ? Math.max(...times) : null,
+        windowStart: times.length ? Math.min(...times) : null,
+        slowest,
+        pingCount: pingSamples.length,
+        errorCount: recentApi.filter((s) => s.status >= 400 || s.status === 0).length,
     };
+}
+
+/**
+ * A pasteable diagnostic block.
+ *
+ * The point is that a user reporting "it's slow" can hand over something with exact
+ * timestamps in it. Without those, the report reaches us as "it was slow this
+ * afternoon" and nobody can line it up against logs, a deploy, or a spike — which is
+ * precisely how the 2026-08-22 incident ended up being reconstructed from container
+ * logs that had already rotated.
+ */
+export function buildDiagnostics(): string {
+    const snap = getSnapshot();
+    const iso = (t: number | null) => (t === null ? 'n/a' : new Date(t).toISOString());
+    const ms = (v: number | null) => (v === null ? 'n/a' : `${Math.round(v)}ms`);
+
+    return [
+        'Performance diagnostics',
+        `verdict:      ${snap.verdict}`,
+        `server(med):  ${ms(snap.serverMs)}`,
+        `network(med): ${ms(snap.networkMs)}`,
+        snap.slowest
+            ? `slowest:      ${ms(snap.slowest.serverMs)} ${snap.slowest.routeKey} at ${iso(snap.slowest.at)}`
+            : 'slowest:      n/a',
+        `window:       ${iso(snap.windowStart)} .. ${iso(snap.updatedAt)}`,
+        `samples:      ${snap.sampleCount} requests, ${snap.pingCount} pings, ${snap.errorCount} errors, ${snap.unannotatedCount} unannotated`,
+        `page:         ${typeof window === 'undefined' ? 'n/a' : window.location.pathname}`,
+        `agent:        ${typeof navigator === 'undefined' ? 'n/a' : navigator.userAgent}`,
+        `generated:    ${new Date().toISOString()}`,
+    ].join('\n');
 }
 
 export function subscribe(fn: () => void): () => void {

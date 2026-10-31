@@ -1,6 +1,17 @@
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { ArrowClockwise, BookOpen, CheckCircle, WarningCircle } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import {
+    ArrowClockwise,
+    ArrowDown,
+    ArrowUp,
+    BookOpen,
+    CheckCircle,
+    PencilSimple,
+    Trash,
+    WarningCircle,
+} from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { StatusChip } from '@/components/design-system/status-chips';
 import { Card } from '@/components/ui/card';
@@ -13,12 +24,21 @@ interface ReviewBoardProps {
     issuesByQuestion: Map<number, PaperIssue[]>;
     regeneratingNumber: number | null;
     onRegenerate: (raw: RawPaperQuestion, instruction?: string) => void;
+    /** Hand-edit a question (text, options, answer, scheme). */
+    onEdit?: (index: number) => void;
+    /** Drop a question from the paper. */
+    onDelete?: (index: number) => void;
+    /** Move a question one place up or down within the paper. */
+    onMove?: (index: number, direction: -1 | 1) => void;
 }
 
-const NUDGES = [
-    { label: 'Make it harder', instruction: 'Make this question harder.' },
-    { label: 'Make it easier', instruction: 'Make this question easier.' },
-    { label: 'More application', instruction: 'Make this test application rather than recall.' },
+const buildNudges = (t: TFunction) => [
+    { label: t('nudges.harder.label'), instruction: 'Make this question harder.' },
+    { label: t('nudges.easier.label'), instruction: 'Make this question easier.' },
+    {
+        label: t('nudges.moreApplication.label'),
+        instruction: 'Make this test application rather than recall.',
+    },
 ];
 
 /**
@@ -34,20 +54,20 @@ export const ReviewBoard = ({
     issuesByQuestion,
     regeneratingNumber,
     onRegenerate,
+    onEdit,
+    onDelete,
+    onMove,
 }: ReviewBoardProps) => {
+    const { t } = useTranslation('knowledgeBaseReviewBoard');
     const [openNudge, setOpenNudge] = useState<number | null>(null);
+    const nudges = buildNudges(t);
 
     if (result.raw_questions.length === 0) {
         return (
             <Card className="flex flex-col items-center gap-2 p-8 text-center">
                 <WarningCircle className="size-6 text-warning-600" />
-                <p className="text-body text-neutral-600">
-                    No questions could be written from the selected material.
-                </p>
-                <p className="text-caption text-neutral-500">
-                    Try widening the chapter selection, or check that those chapters processed
-                    correctly.
-                </p>
+                <p className="text-body text-neutral-600">{t('emptyState.title')}</p>
+                <p className="text-caption text-neutral-500">{t('emptyState.description')}</p>
             </Card>
         );
     }
@@ -85,20 +105,20 @@ export const ReviewBoard = ({
                             <div className="flex shrink-0 items-center gap-2">
                                 {meta.marks != null && (
                                     <span className="text-caption text-neutral-500">
-                                        {meta.marks} mark{meta.marks === 1 ? '' : 's'}
+                                        {t('marks', { count: meta.marks })}
                                     </span>
                                 )}
                                 {errors.length > 0 ? (
                                     <StatusChip
                                         status="DANGER"
-                                        text="Needs fixing"
+                                        text={t('status.needsFixing')}
                                         textSize="text-caption"
                                         showIcon={false}
                                     />
                                 ) : warnings.length > 0 ? (
                                     <StatusChip
                                         status="WARNING"
-                                        text="Check"
+                                        text={t('status.check')}
                                         textSize="text-caption"
                                         showIcon={false}
                                     />
@@ -142,7 +162,7 @@ export const ReviewBoard = ({
                         {raw.exp && (
                             <div className="ml-8 rounded-md border border-neutral-200 bg-neutral-50 p-2">
                                 <p className="text-caption font-semibold text-neutral-600">
-                                    Marking scheme
+                                    {t('markingScheme')}
                                 </p>
                                 <MathHtml
                                     html={raw.exp}
@@ -151,6 +171,12 @@ export const ReviewBoard = ({
                             </div>
                         )}
 
+                        {meta.diagram_missing && (
+                            <p className="ml-8 flex items-start gap-1.5 text-caption text-warning-700">
+                                <WarningCircle className="mt-0.5 size-3.5 shrink-0" />
+                                {t('diagramMissing', { description: meta.diagram_missing })}
+                            </p>
+                        )}
                         {issues.length > 0 && (
                             <ul className="ml-8 flex flex-col gap-0.5">
                                 {issues.map((issue, ii) => (
@@ -172,13 +198,62 @@ export const ReviewBoard = ({
                             <span className="flex items-center gap-1.5 text-caption text-neutral-500">
                                 <BookOpen className="size-3.5" />
                                 {meta.topic ? `${meta.topic} · ` : ''}
-                                {page ? `page ${page}` : 'no page recorded'}
+                                {page ? t('pageLabel', { page }) : t('noPageRecorded')}
                                 {(meta.figures?.length ?? 0) > 0 &&
-                                    ` · ${meta.figures?.length} diagram from the book`}
+                                    ` · ${t('diagramsFromBook', { count: meta.figures?.length ?? 0 })}`}
                             </span>
-                            <div className="flex items-center gap-1">
+                            <div className="flex flex-wrap items-center gap-1">
+                                {onMove && (
+                                    <>
+                                        <MyButton
+                                            buttonType="text"
+                                            layoutVariant="icon"
+                                            scale="small"
+                                            disable={busy || index === 0}
+                                            aria-label={t('actions.moveUp')}
+                                            onClick={() => onMove(index, -1)}
+                                        >
+                                            <ArrowUp className="size-3.5" />
+                                        </MyButton>
+                                        <MyButton
+                                            buttonType="text"
+                                            layoutVariant="icon"
+                                            scale="small"
+                                            disable={
+                                                busy || index === result.raw_questions.length - 1
+                                            }
+                                            aria-label={t('actions.moveDown')}
+                                            onClick={() => onMove(index, 1)}
+                                        >
+                                            <ArrowDown className="size-3.5" />
+                                        </MyButton>
+                                    </>
+                                )}
+                                {onEdit && (
+                                    <MyButton
+                                        buttonType="secondary"
+                                        scale="small"
+                                        disable={busy}
+                                        onClick={() => onEdit(index)}
+                                    >
+                                        <PencilSimple className="mr-1 size-3.5" />
+                                        {t('actions.edit')}
+                                    </MyButton>
+                                )}
+                                {onDelete && (
+                                    <MyButton
+                                        buttonType="text"
+                                        scale="small"
+                                        className="text-danger-600"
+                                        disable={busy}
+                                        onClick={() => onDelete(index)}
+                                    >
+                                        <Trash className="mr-1 size-3.5" />
+                                        {t('actions.delete')}
+                                    </MyButton>
+                                )}
                                 {openNudge === num &&
-                                    NUDGES.map((n) => (
+                                    nudges.map((n) => (
                                         <MyButton
                                             key={n.label}
                                             buttonType="secondary"
@@ -200,9 +275,7 @@ export const ReviewBoard = ({
                                     }
                                     onClick={() => {
                                         if (!blueprint.rows.some((r) => r.id === meta.row_id)) {
-                                            toast.error(
-                                                'This question’s section is no longer in the plan.'
-                                            );
+                                            toast.error(t('errors.sectionRemoved'));
                                             return;
                                         }
                                         setOpenNudge(openNudge === num ? null : num);
@@ -213,7 +286,7 @@ export const ReviewBoard = ({
                                             busy ? 'mr-1 size-3.5 animate-spin' : 'mr-1 size-3.5'
                                         }
                                     />
-                                    {busy ? 'Rewriting…' : 'Rewrite'}
+                                    {busy ? t('actions.rewriting') : t('actions.rewrite')}
                                 </MyButton>
                             </div>
                         </div>

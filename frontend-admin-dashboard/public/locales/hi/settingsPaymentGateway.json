@@ -1,0 +1,197 @@
+{
+    "header": {
+        "title": "पेमेंट गेटवे",
+        "description": "उन वेंडरों (Stripe, Razorpay, PhonePe, Cashfree, Eway) को कॉन्फ़िगर करें जिनसे लर्नर भुगतान कर सकते हैं। कीज़ प्रति संस्थान संग्रहित की जाती हैं।",
+        "refresh": "रीफ़्रेश करें",
+        "addGateway": "गेटवे जोड़ें"
+    },
+    "list": {
+        "title": "कॉन्फ़िगर किए गए गेटवे",
+        "descriptionPre": "सीक्रेट वैल्यू छिपाई गई हैं। कीज़ बदलने के लिए",
+        "descriptionEdit": "संपादित करें",
+        "descriptionPost": "पर क्लिक करें, या मौजूदा सीक्रेट बनाए रखने के लिए छिपे हुए फ़ील्ड को ज्यों का त्यों छोड़ दें।",
+        "loading": "लोड हो रहा है…",
+        "emptyTitle": "अभी तक कोई पेमेंट गेटवे कॉन्फ़िगर नहीं किया गया है",
+        "emptyDescription": "Stripe, Razorpay, PhonePe, Cashfree, या Eway की जानकारी जोड़ें ताकि लर्नर आपके पोर्टलों के माध्यम से भुगतान कर सकें।",
+        "addFirstGateway": "अपना पहला गेटवे जोड़ें"
+    },
+    "status": {
+        "active": "सक्रिय",
+        "inactive": "निष्क्रिय"
+    },
+    "toast": {
+        "noInstituteSelected": "कोई संस्थान चयनित नहीं है",
+        "selectVendor": "एक पेमेंट गेटवे वेंडर चुनें",
+        "missingRequiredFields": "आवश्यक फ़ील्ड गायब हैं: {{fields}}",
+        "gatewayConfigured": "{{vendor}} कॉन्फ़िगर किया गया",
+        "gatewayUpdated": "{{vendor}} अपडेट किया गया",
+        "saveFailed": "गेटवे कॉन्फ़िगरेशन सहेजने में विफल",
+        "webhookUrlCopied": "वेबहुक URL कॉपी किया गया",
+        "loadFailed": "पेमेंट गेटवे लोड करने में विफल",
+        "gatewayDeactivated": "{{vendor}} निष्क्रिय किया गया",
+        "deactivateFailed": "गेटवे निष्क्रिय करने में विफल"
+    },
+    "dialog": {
+        "createTitle": "पेमेंट गेटवे जोड़ें",
+        "editTitle": "{{vendor}} संपादित करें",
+        "createDescription": "एक वेंडर चुनें और उनके डैशबोर्ड से API क्रेडेंशियल पेस्ट करें।",
+        "editDescription": "क्रेडेंशियल अपडेट करें। मौजूदा सीक्रेट बनाए रखने के लिए छिपे हुए फ़ील्ड को न बदलें।",
+        "vendorLabel": "वेंडर",
+        "vendorPlaceholder": "एक पेमेंट गेटवे चुनें",
+        "allConfigured": "सभी समर्थित गेटवे पहले से ही कॉन्फ़िगर किए जा चुके हैं।",
+        "findValuesPrefix": "ये वैल्यू आपको",
+        "dashboardLinkText": "{{vendor}} डैशबोर्ड",
+        "findValuesSuffix": "में मिलेंगी।",
+        "whereToFind": "ये वैल्यू कहां मिलेंगी",
+        "webhookUrlLabel": "वेबहुक URL — {{vendor}} डैशबोर्ड में पेस्ट करें",
+        "copyUrl": "URL कॉपी करें",
+        "hide": "छिपाएं",
+        "show": "दिखाएं",
+        "maskedValueNote": "छिपाई गई वैल्यू दिखाई जा रही है। इसे बदलने के लिए नया सीक्रेट टाइप करें, या मौजूदा सीक्रेट बनाए रखने के लिए इसे ज्यों का त्यों छोड़ दें।",
+        "cancel": "रद्द करें",
+        "saving": "सहेजा जा रहा है…",
+        "addGatewayButton": "गेटवे जोड़ें",
+        "saveChanges": "बदलाव सहेजें"
+    },
+    "mappingCard": {
+        "editCredentials": "क्रेडेंशियल संपादित करें",
+        "deactivateGateway": "गेटवे निष्क्रिय करें",
+        "unknownVendor": "अज्ञात वेंडर — कोई स्कीमा उपलब्ध नहीं है।",
+        "notSet": "सेट नहीं है",
+        "webhookUrlLabel": "वेबहुक URL",
+        "copyWebhookUrl": "वेबहुक URL कॉपी करें"
+    },
+    "deleteDialog": {
+        "title": "गेटवे निष्क्रिय करें?",
+        "description": "{{vendor}} को निष्क्रिय के रूप में चिह्नित किया जाएगा और लर्नर इसके माध्यम से भुगतान नहीं कर पाएंगे। आप इसे बाद में फिर से जोड़ सकते हैं।",
+        "cancel": "रद्द करें",
+        "deactivating": "निष्क्रिय किया जा रहा है…",
+        "deactivate": "निष्क्रिय करें"
+    },
+    "vendors": {
+        "stripe": {
+            "label": "Stripe",
+            "description": "वैश्विक कार्ड भुगतान और सब्सक्रिप्शन।",
+            "fields": {
+                "apiKey": {
+                    "label": "सीक्रेट की",
+                    "placeholder": "sk_live_…",
+                    "helper": "Stripe सीक्रेट API की। सहेजने के बाद यह दोबारा कभी नहीं दिखाई जाएगी।"
+                },
+                "publishableKey": {
+                    "label": "पब्लिशेबल की",
+                    "placeholder": "pk_live_…",
+                    "helper": "ब्राउज़र में लर्नर चेकआउट द्वारा उपयोग की जाती है।"
+                },
+                "webhookSecret": {
+                    "label": "वेबहुक साइनिंग सीक्रेट",
+                    "placeholder": "whsec_…",
+                    "helper": "वैकल्पिक। आने वाले वेबहुक कॉलबैक सत्यापित करने के लिए उपयोग किया जाता है।"
+                }
+            }
+        },
+        "razorpay": {
+            "label": "Razorpay",
+            "description": "भारतीय व्यवसायों के लिए कार्ड / UPI / नेटबैंकिंग।",
+            "fields": {
+                "keyId": {
+                    "label": "की ID",
+                    "placeholder": "rzp_live_…",
+                    "helper": "Razorpay की ID (सार्वजनिक; चेकआउट में दिखाई देती है)।"
+                },
+                "keySecret": {
+                    "label": "की सीक्रेट",
+                    "placeholder": "आपकी Razorpay की सीक्रेट"
+                },
+                "webhookSecret": {
+                    "label": "वेबहुक सीक्रेट",
+                    "placeholder": "वेबहुक साइनिंग सीक्रेट",
+                    "helper": "इसे Razorpay के वेबहुक पेज पर सेट करें। इसके बिना, पेमेंट स्टेटस कॉलबैक 404 के साथ अस्वीकार कर दिए जाते हैं और असिंक्रोनस पुष्टि प्लेटफ़ॉर्म तक कभी नहीं पहुंचती।"
+                }
+            }
+        },
+        "phonepe": {
+            "label": "PhonePe",
+            "description": "भारतीय व्यापारियों के लिए PhonePe PG (UPI, कार्ड, वॉलेट)। V2 (OAuth) स्टैंडर्ड चेकआउट। केवल INR में सेटलमेंट।",
+            "setupSteps": {
+                "step1": "अपने PhonePe for Business मर्चेंट लॉगिन से PhonePe Business डैशबोर्ड (business.phonepe.com) में साइन इन करें।",
+                "step2": "Developer Settings → API Keys पर जाएं। नए (V2) मर्चेंट को एक Client ID, Client Secret और Client Version दिखाई देगा — तीनों को नीचे दिए गए फ़ील्ड में कॉपी करें।",
+                "step3": "केवल पुराने मर्चेंट के लिए: यदि आपको इसके बजाय Salt Key + Salt Index दिया गया था, तो अपना Merchant ID “Client ID” में, अपनी Salt Key (KEY###INDEX के रूप में) “Client Secret” में डालें, और “Client Version” को खाली छोड़ दें।",
+                "step4": "“API Base URL” सेट करें: V2 LIVE = https://api.phonepe.com/apis/pg, V2 UAT/Sandbox = https://api-preprod.phonepe.com/apis/pg-sandbox (लीगेसी V1 = https://api.phonepe.com/apis/hermes)।",
+                "step5": "Developer Settings → Webhooks में, नीचे दिखाया गया वेबहुक URL जोड़ें और एक यूज़रनेम + पासवर्ड सेट करें। आने वाले कॉलबैक को सुरक्षित करने के लिए नीचे वही यूज़रनेम/पासवर्ड दर्ज करें।"
+            },
+            "fields": {
+                "clientId": {
+                    "label": "Client ID",
+                    "placeholder": "V2 Client ID (या लीगेसी Merchant ID)",
+                    "helper": "V2: Developer Settings → API Keys से Client ID। लीगेसी V1 मर्चेंट: आपका Merchant ID (MID)।"
+                },
+                "clientSecret": {
+                    "label": "Client Secret",
+                    "placeholder": "V2 Client Secret (या लीगेसी Salt Key###index)",
+                    "helper": "V2: आपका Client Secret। लीगेसी V1 मर्चेंट: आपकी Salt Key, KEY###INDEX के रूप में पेस्ट करें (इंडेक्स आमतौर पर 1)। गोपनीय रखी जाती है।"
+                },
+                "clientVersion": {
+                    "label": "Client Version",
+                    "placeholder": "जैसे 1",
+                    "helper": "केवल V2 — डैशबोर्ड से Client Version (आमतौर पर 1)। यदि आप Salt Key का उपयोग करने वाले लीगेसी मर्चेंट हैं तो इसे खाली छोड़ दें।"
+                },
+                "baseUrl": {
+                    "label": "API Base URL",
+                    "placeholder": "https://api.phonepe.com/apis/pg",
+                    "helper": "V2 LIVE: https://api.phonepe.com/apis/pg • V2 UAT: https://api-preprod.phonepe.com/apis/pg-sandbox • लीगेसी V1: https://api.phonepe.com/apis/hermes"
+                },
+                "webhookUsername": {
+                    "label": "वेबहुक यूज़रनेम (वैकल्पिक)",
+                    "placeholder": "PhonePe → Webhooks पर सेट किया गया वही यूज़रनेम",
+                    "helper": "आने वाले कॉलबैक का सिग्नेचर सत्यापन सक्षम करता है। यह PhonePe डैशबोर्ड पर कॉन्फ़िगर किए गए यूज़रनेम से मेल खाना चाहिए।"
+                },
+                "webhookPassword": {
+                    "label": "वेबहुक पासवर्ड (वैकल्पिक)",
+                    "placeholder": "PhonePe → Webhooks पर सेट किया गया वही पासवर्ड",
+                    "helper": "यह PhonePe डैशबोर्ड पर कॉन्फ़िगर किए गए पासवर्ड से मेल खाना चाहिए। सत्यापन छोड़ने के लिए दोनों वेबहुक फ़ील्ड खाली छोड़ दें।"
+                }
+            }
+        },
+        "cashfree": {
+            "label": "Cashfree",
+            "description": "भारत के लिए Cashfree Payments।",
+            "fields": {
+                "clientId": {
+                    "label": "App ID",
+                    "placeholder": "TEST… या लाइव app id"
+                },
+                "clientSecret": {
+                    "label": "सीक्रेट की"
+                },
+                "baseUrl": {
+                    "label": "API Base URL",
+                    "placeholder": "https://api.cashfree.com/pg"
+                }
+            }
+        },
+        "eway": {
+            "label": "Eway",
+            "description": "Eway Payments (AU / NZ)।",
+            "fields": {
+                "apiKey": {
+                    "label": "API की"
+                },
+                "password": {
+                    "label": "पासवर्ड"
+                },
+                "publicKey": {
+                    "label": "पब्लिक API की",
+                    "helper": "ब्राउज़र में लर्नर चेकआउट द्वारा उपयोग की जाती है।"
+                },
+                "encryptionKey": {
+                    "label": "एन्क्रिप्शन की"
+                },
+                "baseUrl": {
+                    "label": "API Base URL",
+                    "placeholder": "https://api.ewaypayments.com"
+                }
+            }
+        }
+    }
+}

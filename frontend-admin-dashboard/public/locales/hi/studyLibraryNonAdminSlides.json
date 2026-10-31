@@ -1,0 +1,25 @@
+{
+    "toasts": {
+        "createdAndAutoPublished": "स्लाइड बनाई गई और समीक्षा के लिए ऑटो-प्रकाशित की गई",
+        "assignmentPublished": "असाइनमेंट स्लाइड सफलतापूर्वक प्रकाशित हुई",
+        "questionPublished": "प्रश्न स्लाइड सफलतापूर्वक प्रकाशित हुई",
+        "quizPublished": "क्विज़ स्लाइड सफलतापूर्वक प्रकाशित हुई",
+        "videoPublished": "वीडियो स्लाइड सफलतापूर्वक प्रकाशित हुई",
+        "videoDataMissing": "वीडियो स्लाइड डेटा गुम है",
+        "audioPublished": "ऑडियो स्लाइड सफलतापूर्वक प्रकाशित हुई",
+        "audioDataMissing": "ऑडियो स्लाइड डेटा गुम है",
+        "presentationPublished": "प्रस्तुति सफलतापूर्वक प्रकाशित हुई",
+        "slidePublished": "स्लाइड सफलतापूर्वक प्रकाशित हुई",
+        "saveFailed": "स्लाइड सेव करने में विफल",
+        "alreadyUpToDate": "{{slideType}} पहले से अद्यतित है!"
+    },
+    "slideTypes": {
+        "codeEditor": "कोड एडिटर",
+        "jupyterNotebook": "जुपिटर नोटबुक",
+        "scratchProject": "स्क्रैच प्रोजेक्ट",
+        "interactiveSlide": "इंटरैक्टिव स्लाइड"
+    },
+    "confirm": {
+        "unsavedChanges": "\"{{slideTitle}}\" में आपके परिवर्तन सेव नहीं हुए हैं। क्या आप उन्हें सेव करना चाहते हैं?"
+    }
+}

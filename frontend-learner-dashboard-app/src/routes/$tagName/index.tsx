@@ -1,5 +1,10 @@
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, redirect, Navigate } from "@tanstack/react-router";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
+import { getCachedRootCatalogueTag } from "@/services/domain-routing";
+import { RouteMatcher } from "./-services/route-matcher";
+import { CatalogueTagContext } from "./-components/CatalogueTagContext";
+import { retainSiteLanguage } from "./-utils/catalogue-route-search";
+import { RootMountedSegment } from "./-components/RootMountedSegment";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 import RootNotFoundComponent from "@/components/core/default-not-found";
 import { useEffect, useState, lazy, Suspense } from "react";
@@ -14,7 +19,16 @@ const CourseCataloguePage = lazy(() =>
   })),
 );
 
+const isPreviewUrl = () =>
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).get("preview") === "true";
+
 export const Route = createFileRoute("/$tagName/")({
+  // On a site with languages, the language picked on one page (?lang=hi)
+  // follows every link into another catalogue page; on every other site this
+  // changes nothing. Catalogue routes only — /login and /dashboard never
+  // inherit it.
+  search: { middlewares: [retainSiteLanguage] },
   // Reader mode (iOS always / reader-mode institutes): the public course
   // catalogue is a marketplace surface — block it (Apple 3.1.1).
   beforeLoad: async () => {
@@ -100,7 +114,7 @@ function RouteComponent() {
           </p>
           <button
             onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+            className="px-4 py-2 bg-primary-600 text-white rounded-catalogue-sm hover:bg-primary-700"
           >
             Retry
           </button>
@@ -121,13 +135,40 @@ function RouteComponent() {
   //   instituteThemeCode: domainRouting.instituteThemeCode,
   // });
 
-  return (
-    <Suspense fallback={<DashboardLoader />}>
-      <CourseCataloguePage
-        tagName={resolvedTagName}
+  const classic = (
+    <CatalogueTagContext.Provider value={resolvedTagName}>
+      <Suspense fallback={<DashboardLoader />}>
+        <CourseCataloguePage
+          tagName={resolvedTagName}
+          instituteId={domainRouting.instituteId}
+          instituteThemeCode={domainRouting.instituteThemeCode}
+        />
+      </Suspense>
+    </CatalogueTagContext.Provider>
+  );
+
+  // Root-mounted host (institute_domain_routing.root_catalogue_tag): the
+  // catalogue answers on "/" so a URL that still carries its tag is a legacy
+  // link — forward it to the clean address. Any other single segment is
+  // read as a page or course of the root catalogue first, and only then as a
+  // second catalogue's tag.
+  const rootTag = getCachedRootCatalogueTag();
+  if (rootTag) {
+    if (RouteMatcher.isRootMounted(resolvedTagName)) {
+      // The page editor's preview (?preview=true) must survive the hop, or the
+      // root page renders as a normal visit and never answers the editor.
+      return isPreviewUrl() ? <Navigate to="/" search={true} replace /> : <Navigate to="/" replace />;
+    }
+    return (
+      <RootMountedSegment
+        rootTag={rootTag}
+        segment={resolvedTagName}
         instituteId={domainRouting.instituteId}
         instituteThemeCode={domainRouting.instituteThemeCode}
+        fallback={classic}
       />
-    </Suspense>
-  );
+    );
+  }
+
+  return classic;
 }

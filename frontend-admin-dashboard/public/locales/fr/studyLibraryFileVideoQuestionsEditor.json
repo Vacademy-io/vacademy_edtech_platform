@@ -1,0 +1,20 @@
+{
+    "toasts": {
+        "questionDeleted": "Question supprimée",
+        "questionDeleteFailed": "Échec de la suppression de la question"
+    },
+    "labels": {
+        "timestamp": "Horodatage : {{time}}",
+        "timeStampIndexed": "{{index}}. Horodatage - {{time}}",
+        "correct": "Correct"
+    },
+    "deleteDialog": {
+        "title": "Supprimer la question",
+        "confirmMessage": "Voulez-vous vraiment supprimer cette question ?",
+        "description": "Cela supprime définitivement la question à cet horodatage et ne peut pas être annulé."
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "delete": "Supprimer"
+    }
+}

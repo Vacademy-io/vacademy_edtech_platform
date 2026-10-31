@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -24,7 +25,7 @@ import type {
     DecisionAnswer,
     DecisionRequest,
 } from '../../-services/video-generation';
-import { GATE_META, gateTitle } from './-utils/decision-copy';
+import { buildGateMeta, gateTitle } from './-utils/decision-copy';
 import { NarrationDecision } from './gates/NarrationDecision';
 import { ShotPlanDecision } from './gates/ShotPlanDecision';
 import { VisualCastingDecision } from './gates/VisualCastingDecision';
@@ -156,6 +157,7 @@ function StatusBubble({
     shotsTotal?: number;
     stages?: StageRow[];
 }) {
+    const { t } = useTranslation('videoApiStudioAssistChat');
     const pct = Math.max(0, Math.min(100, Math.round(percentage ?? 0)));
     return (
         <div className="flex gap-2.5">
@@ -165,7 +167,7 @@ function StatusBubble({
             <div className="w-full max-w-md rounded-2xl rounded-tl-sm bg-muted px-3.5 py-2.5 text-sm">
                 <div className="flex items-center gap-2 text-foreground">
                     <CircleNotch className="size-4 shrink-0 animate-spin text-violet-600" />
-                    <span className="truncate">{message || 'Working on it…'}</span>
+                    <span className="truncate">{message || t('statusBubble.workingOnIt')}</span>
                 </div>
 
                 {stages && stages.length > 0 && (
@@ -185,7 +187,10 @@ function StatusBubble({
                 </div>
                 {typeof shotsTotal === 'number' && shotsTotal > 0 && (
                     <div className="mt-1 text-xs text-muted-foreground">
-                        Shot {Math.min(shotsCompleted ?? 0, shotsTotal)} / {shotsTotal}
+                        {t('statusBubble.shotProgress', {
+                            completed: Math.min(shotsCompleted ?? 0, shotsTotal),
+                            total: shotsTotal,
+                        })}
                     </div>
                 )}
             </div>
@@ -203,6 +208,7 @@ function GenericDecision({
     isSubmitting?: boolean;
     onSubmit: (answer: DecisionAnswer) => void;
 }) {
+    const { t } = useTranslation('videoApiStudioAssistChat');
     const concept = decision.payload?.concept as Record<string, unknown> | undefined;
     return (
         <div className="rounded-xl border bg-white p-4 shadow-sm dark:bg-card">
@@ -245,7 +251,7 @@ function GenericDecision({
                     className="gap-1.5 text-muted-foreground"
                 >
                     <Sparkle className="size-3.5" />
-                    Let AI decide
+                    {t('genericDecision.letAiDecide')}
                 </Button>
                 <Button
                     size="sm"
@@ -254,7 +260,7 @@ function GenericDecision({
                     className="gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700"
                 >
                     <Check className="size-4" />
-                    Approve
+                    {t('genericDecision.approve')}
                 </Button>
             </div>
         </div>
@@ -371,6 +377,7 @@ function CompletionCard({
      *  the timeline fetch cache so the updated frame shows. */
     reloadKey?: number;
 }) {
+    const { t } = useTranslation('videoApiStudioAssistChat');
     const isPortrait = orientation === 'portrait';
     const effectiveTimelineUrl =
         timelineUrl && reloadKey
@@ -381,7 +388,7 @@ function CompletionCard({
             <Bubble side="agent">
                 <span className="flex items-center gap-2 font-medium text-foreground">
                     <CheckCircle weight="fill" className="size-4 text-emerald-600" />
-                    Your video is ready.
+                    {t('completion.videoReady')}
                 </span>
             </Bubble>
             <div className="overflow-hidden rounded-xl border bg-black shadow-sm">
@@ -397,7 +404,7 @@ function CompletionCard({
                         />
                     </div>
                 ) : (
-                    <div className="p-8 text-center text-sm text-white/70">Preparing preview…</div>
+                    <div className="p-8 text-center text-sm text-white/70">{t('completion.preparingPreview')}</div>
                 )}
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -408,19 +415,19 @@ function CompletionCard({
                         className="gap-1.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white hover:from-violet-700 hover:to-indigo-700"
                     >
                         <PencilSimple className="size-4" />
-                        Edit video
+                        {t('completion.editVideo')}
                     </Button>
                 )}
                 {onShowProgress && (
                     <Button variant="outline" size="sm" onClick={onShowProgress} className="gap-1.5">
                         <SidebarSimple className="size-3.5" />
-                        Details & download
+                        {t('completion.detailsAndDownload')}
                     </Button>
                 )}
                 {onSaveCast && (
                     <Button variant="outline" size="sm" onClick={onSaveCast} className="gap-1.5">
                         <UsersThree className="size-3.5" />
-                        Save cast
+                        {t('completion.saveCast')}
                     </Button>
                 )}
             </div>
@@ -460,6 +467,7 @@ export function AssistChat({
     postEdits,
     playerReloadKey,
 }: AssistChatProps) {
+    const { t } = useTranslation('videoApiStudioAssistChat');
     const bottomRef = useRef<HTMLDivElement | null>(null);
     const [steer, setSteer] = useState('');
 
@@ -502,7 +510,7 @@ export function AssistChat({
                     <span className="flex size-7 items-center justify-center rounded-md bg-violet-100 dark:bg-violet-900/30">
                         <Sparkle className="size-4 text-violet-600" />
                     </span>
-                    <div className="text-sm font-semibold text-foreground">Assist</div>
+                    <div className="text-sm font-semibold text-foreground">{t('header.title')}</div>
                 </div>
                 <div className="flex items-center gap-2">
                     {working && onAbort && (
@@ -513,13 +521,13 @@ export function AssistChat({
                             className="gap-1.5 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
                         >
                             <Stop className="size-3.5" />
-                            Stop
+                            {t('header.stop')}
                         </Button>
                     )}
                     {onShowProgress && (
                         <Button variant="outline" size="sm" onClick={onShowProgress} className="gap-1.5">
                             <SidebarSimple className="size-3.5" />
-                            Show progress
+                            {t('header.showProgress')}
                         </Button>
                     )}
                 </div>
@@ -529,20 +537,20 @@ export function AssistChat({
             <div className="flex-1 space-y-4 overflow-y-auto p-4">
                 <Bubble side="user">{prompt}</Bubble>
 
-                {transcript.map((t) => (
-                    <div key={t.decision_id} className="space-y-2">
-                        <Bubble side="agent">{t.prompt}</Bubble>
-                        <Bubble side="user">{t.answer_summary}</Bubble>
+                {transcript.map((turn) => (
+                    <div key={turn.decision_id} className="space-y-2">
+                        <Bubble side="agent">{turn.prompt}</Bubble>
+                        <Bubble side="user">{turn.answer_summary}</Bubble>
                     </div>
                 ))}
 
                 {pending ? (
                     <div className="space-y-3">
                         <Bubble side="agent">
-                            <div className="font-medium">{gateTitle(pending.gate_type)}</div>
+                            <div className="font-medium">{gateTitle(pending.gate_type, t)}</div>
                             <div className="mt-0.5 text-muted-foreground">{pending.prompt}</div>
                             <div className="mt-0.5 text-xs text-muted-foreground/70">
-                                {GATE_META[pending.gate_type]?.blurb}
+                                {buildGateMeta(t)[pending.gate_type]?.blurb}
                             </div>
                         </Bubble>
                         <DecisionCard
@@ -572,7 +580,7 @@ export function AssistChat({
                                     {p.busy ? (
                                         <span className="flex items-center gap-2 text-muted-foreground">
                                             <CircleNotch className="size-3.5 animate-spin" />
-                                            Updating the shot…
+                                            {t('postEdit.updating')}
                                         </span>
                                     ) : (
                                         p.reply
@@ -613,10 +621,10 @@ export function AssistChat({
                             }}
                             placeholder={
                                 isComplete
-                                    ? 'Edit the video — e.g. “redo shot 3 — bigger headline, real screenshot”'
+                                    ? t('input.placeholderEdit')
                                     : pending
-                                      ? 'Steer it — e.g. “make shot 3 funnier and shorter”'
-                                      : 'Working…'
+                                      ? t('input.placeholderSteer')
+                                      : t('input.placeholderWorking')
                             }
                             className="h-9"
                         />

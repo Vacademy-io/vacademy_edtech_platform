@@ -1,0 +1,65 @@
+{
+    "father": {
+        "sectionLabel": "पिता",
+        "sectionHeading": "विवरण",
+        "name": {
+            "label": "पिता का नाम",
+            "placeholder": "पिता का नाम दर्ज करें"
+        },
+        "mobile": {
+            "label": "मोबाइल नंबर"
+        },
+        "email": {
+            "label": "ईमेल पता",
+            "placeholder": "ईमेल दर्ज करें"
+        },
+        "aadhaar": {
+            "label": "आधार संख्या"
+        },
+        "qualification": {
+            "label": "योग्यता",
+            "placeholder": "योग्यता दर्ज करें"
+        },
+        "occupation": {
+            "label": "व्यवसाय",
+            "placeholder": "व्यवसाय दर्ज करें"
+        }
+    },
+    "mother": {
+        "sectionLabel": "माता",
+        "sectionHeading": "विवरण",
+        "name": {
+            "label": "माता का नाम",
+            "placeholder": "माता का नाम दर्ज करें"
+        },
+        "mobile": {
+            "label": "मोबाइल नंबर"
+        },
+        "email": {
+            "label": "ईमेल पता",
+            "placeholder": "ईमेल दर्ज करें"
+        },
+        "aadhaar": {
+            "label": "आधार संख्या"
+        },
+        "qualification": {
+            "label": "योग्यता",
+            "placeholder": "योग्यता दर्ज करें"
+        },
+        "occupation": {
+            "label": "व्यवसाय",
+            "placeholder": "व्यवसाय दर्ज करें"
+        }
+    },
+    "guardian": {
+        "sectionLabel": "अभिभावक",
+        "sectionHeading": "विवरण",
+        "name": {
+            "label": "अभिभावक का नाम",
+            "placeholder": "अभिभावक का नाम दर्ज करें"
+        },
+        "mobile": {
+            "label": "अभिभावक का मोबाइल नंबर"
+        }
+    }
+}

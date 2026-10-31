@@ -1,32 +1,24 @@
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
-import { useState, useEffect } from 'react';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { Command, CommandInput, CommandList } from '@/components/ui/command';
-import { LevelType } from '@/schemas/student/student-list/institute-schema';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { MyButton } from '@/components/design-system/button';
 import { SearchableSelect } from '@/components/design-system/searchable-select';
 import ReportRecipientsDialogBox from './reportRecipientsDialogBox';
-import { useLearnerDetails, UserResponse } from '../../-store/useLearnersDetails';
+import { useLearnerDetailsForBatches } from '../../-store/useLearnersDetails';
 import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
 import { TokenKey } from '@/constants/auth/tokens';
 import { MyTable } from '@/components/design-system/table';
 import {
     SubjectProgressResponse,
     SubjectOverviewColumns,
-    SUBJECT_OVERVIEW_WIDTH,
     SubjectOverviewColumnType,
 } from '../../-types/types';
 import { fetchLearnersSubjectWiseProgress } from '../../-services/utils';
-import { useMutation } from '@tanstack/react-query';
+import { useQueries } from '@tanstack/react-query';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { usePacageDetails } from '../../-store/usePacageDetails';
 import { convertMinutesToTimeFormat, formatToTwoDecimalPlaces } from '../../-services/helper';
@@ -36,500 +28,475 @@ import { useSearch } from '@tanstack/react-router';
 import { Route } from '@/routes/study-library/reports';
 import { toast } from 'sonner';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
-import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import { ContentTerms, RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import { Export, FileCsv, Warning } from '@phosphor-icons/react';
+import BatchMultiSelect, { useBatchLookup, type BatchOption } from '../batchMultiSelect';
+import { buildReportCsv, csvFileName, downloadCsv, num } from '../../-utils/reportCsv';
 
-const formSchema = z.object({
-    course: z.string().min(1, 'Course is required'),
-    session: z.string().min(1, 'Session is required'),
-    level: z.string().min(1, 'Level is required'),
-    student: z.string().min(1, 'Level is required'),
-});
+const buildFormSchema = (t: TFunction) =>
+    z.object({
+        batches: z.array(z.string()).min(1, t('validation.batchRequired')),
+        student: z.string().min(1, t('validation.studentRequired')),
+    });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<ReturnType<typeof buildFormSchema>>;
+
+interface Applied {
+    userId: string;
+    learnerName: string;
+    /** Only the selected batches this learner is actually enrolled in. */
+    batchIds: string[];
+    /**
+     * Stamped per "Generate" click and part of every query key, so re-running the
+     * same batch + range always fetches fresh numbers (the mutation-based
+     * version fetched on every click) while paging within a run stays cached.
+     */
+    runId: number;
+}
+
+interface BatchResult {
+    batchId: string;
+    option: BatchOption | undefined;
+    /** `null` is what the service returns on a failed request. */
+    data: SubjectProgressResponse | null | undefined;
+    isError: boolean;
+}
+
+/** Rows for one batch; each carries its batch so "View details" queries the right one. */
+const transformToSubjectOverview = (
+    data: SubjectProgressResponse,
+    userId: string,
+    batchId: string,
+    option: BatchOption | undefined
+): SubjectOverviewColumnType[] =>
+    data.flatMap((subject) =>
+        subject.modules.map((module) => ({
+            subject: subject.subject_name,
+            module: module.module_name,
+            module_id: module.module_id,
+            module_completed: `${formatToTwoDecimalPlaces(module.module_completion_percentage)}%`,
+            module_completed_by_batch: `${formatToTwoDecimalPlaces(
+                module.module_completion_percentage_by_batch
+            )}%`,
+            average_time_spent: `${convertMinutesToTimeFormat(module.avg_time_spent_minutes)}`,
+            average_time_spent_by_batch: `${convertMinutesToTimeFormat(
+                module.avg_time_spent_minutes_by_batch ?? 0
+            )}`,
+            user_id: userId,
+            package_session_id: batchId,
+            course_name: option?.courseName ?? '',
+            session_name: option?.sessionName ?? '',
+            level_name: option?.levelName ?? '',
+        }))
+    );
+
+// Courses shallower than the full Subject → Module structure come back with
+// the literal "DEFAULT" placeholder for the missing level(s). Rather than
+// showing a whole column of "DEFAULT", hide any structural column whose
+// every row is that placeholder. Metric columns are never hidden this way.
+const isStructuralColumnAllDefault = (
+    rows: SubjectOverviewColumnType[],
+    key: 'subject' | 'module'
+) =>
+    rows.length > 0 &&
+    rows.every((row) => (row[key] ?? '').toString().trim().toUpperCase() === 'DEFAULT');
 
 export default function ProgressReports() {
-    const {
-        getCourseFromPackage,
-        getSessionFromPackage,
-        getLevelsFromPackage2,
-        getPackageSessionId,
-    } = useInstituteDetailsStore();
+    const { t } = useTranslation('studyLibraryReportsProgressReports');
+    const { getPackageSessionId } = useInstituteDetailsStore();
     const instituteDetails = useInstituteDetailsStore((s) => s.instituteDetails);
-    const { setPacageSessionId, setCourse, setSession, setLevel, setLearnerName, pacageSessionId } =
+    const { setPacageSessionId, setCourse, setSession, setLevel, setLearnerName } =
         usePacageDetails();
+    const batchLookup = useBatchLookup();
+    const batchTerm = getTerminology(ContentTerms.Batch, SystemTerms.Batch);
+    const courseTerm = getTerminology(ContentTerms.Course, SystemTerms.Course);
+    const learnerTerm = getTerminology(RoleTerms.Learner, SystemTerms.Learner);
+    const subjectTerm = getTerminology(ContentTerms.Subject, SystemTerms.Subject);
+    const moduleTerm = getTerminology(ContentTerms.Module, SystemTerms.Module);
 
     const accessToken = getTokenFromCookie(TokenKey.accessToken);
     const tokenData = getTokenDecodedData(accessToken);
     const INSTITUTE_ID = tokenData && Object.keys(tokenData.authorities)[0];
-    const courseList = getCourseFromPackage();
-    const [sessionList, setSessionList] = useState<{ id: string; name: string }[]>([]);
-    const [levelList, setLevelList] = useState<LevelType[]>([]);
-    const [studentList, setStudentList] = useState<UserResponse>([]);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [subjectReportData, setSubjectReportData] = useState<SubjectProgressResponse>();
-    // Match by name-start or any word-start (so "mo" finds "Dipti Mohile"),
-    // ranking whole-name prefixes first. Far more precise than a raw substring
-    // match, which surfaced everyone sharing a common letter.
-    const studentQuery = searchTerm.trim().toLowerCase();
-    const filteredStudents = studentList
-        .filter((student) => {
-            if (!studentQuery) return true;
-            const name = student.full_name.toLowerCase();
-            return (
-                name.startsWith(studentQuery) ||
-                name.split(/\s+/).some((word) => word.startsWith(studentQuery))
-            );
-        })
-        .sort((a, b) => {
-            if (!studentQuery) return 0;
-            const ap = a.full_name.toLowerCase().startsWith(studentQuery) ? 0 : 1;
-            const bp = b.full_name.toLowerCase().startsWith(studentQuery) ? 0 : 1;
-            return ap - bp || a.full_name.localeCompare(b.full_name);
-        });
     const search = useSearch({ from: Route.id });
+
+    const [applied, setApplied] = useState<Applied | null>(null);
+    const [isExportingPdf, setIsExportingPdf] = useState<string | null>(null);
+    const [isExportingCsv, setIsExportingCsv] = useState(false);
+
     const {
-        register,
         handleSubmit,
         setValue,
         watch,
+        clearErrors,
         formState: { errors },
     } = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            course: '',
-            session: '',
-            level: '',
-        },
+        resolver: zodResolver(buildFormSchema(t)),
+        defaultValues: { batches: [], student: '' },
     });
-
-    const selectedCourse = watch('course');
-    const selectedSession = watch('session');
-    const selectedLevel = watch('level');
+    const selectedBatches = watch('batches');
     const selectedStudent = watch('student');
 
-    const { data } = useLearnerDetails(
-        getPackageSessionId({
-            courseId: selectedCourse || '',
-            sessionId: selectedSession || '',
-            levelId: selectedLevel || '',
-        }) || '',
+    const { learners: studentList, isLoading: isLearnersLoading } = useLearnerDetailsForBatches(
+        selectedBatches,
         INSTITUTE_ID || ''
     );
+
+    // A learner that is no longer in any selected batch can't stay picked.
     useEffect(() => {
-        if (data) {
-            setStudentList(data);
+        if (
+            selectedStudent &&
+            !isLearnersLoading &&
+            !studentList.some((s) => s.user_id === selectedStudent)
+        ) {
+            setValue('student', '');
         }
-    }, [data]);
+    }, [studentList, isLearnersLoading, selectedStudent, setValue]);
 
     // Prefill the form when the user lands here from the learner profile's
-    // "Learning Progress" button — see the matching block in timelineReports.tsx
-    // for the cascading-effect rationale.
+    // "Learning Progress" button — see the matching block in timelineReports.tsx.
     const prefill = search.studentReport;
+    // Each half applies exactly once: the batch as soon as the institute store
+    // can resolve it, the learner as soon as that batch's list contains them.
+    // Without the guards an institute refetch (new `instituteDetails` identity)
+    // or a later list change would snap the admin's own picks back to the URL.
+    const prefillBatchDone = useRef(false);
+    const prefillLearnerDone = useRef(false);
     useEffect(() => {
-        if (prefill?.courseId) {
-            setValue('course', prefill.courseId);
+        if (prefillBatchDone.current) return;
+        if (prefill?.courseId && prefill.sessionId && prefill.levelId) {
+            const batchId = getPackageSessionId({
+                courseId: prefill.courseId,
+                sessionId: prefill.sessionId,
+                levelId: prefill.levelId,
+            });
+            if (batchId) {
+                setValue('batches', [batchId]);
+                prefillBatchDone.current = true;
+            }
+        } else {
+            prefillBatchDone.current = true;
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [instituteDetails]);
     useEffect(() => {
-        if (
-            prefill?.sessionId &&
-            sessionList.some((s) => s.id === prefill.sessionId)
-        ) {
-            setValue('session', prefill.sessionId);
-        }
-    }, [sessionList, prefill?.sessionId, setValue]);
-    useEffect(() => {
-        if (prefill?.levelId && levelList.some((l) => l.id === prefill.levelId)) {
-            setValue('level', prefill.levelId);
-        }
-    }, [levelList, prefill?.levelId, setValue]);
-    useEffect(() => {
-        if (
-            prefill?.userId &&
-            studentList.some((s) => s.user_id === prefill.userId)
-        ) {
+        if (prefillLearnerDone.current) return;
+        if (prefill?.userId && studentList.some((s) => s.user_id === prefill.userId)) {
             setValue('student', prefill.userId);
+            prefillLearnerDone.current = true;
         }
     }, [studentList, prefill?.userId, setValue]);
 
-    useEffect(() => {
-        if (selectedCourse) {
-            const sessions = getSessionFromPackage({ courseId: selectedCourse });
-            setSessionList(sessions);
-            // Auto-select when the course has exactly one session.
-            setValue('session', sessions.length === 1 && sessions[0] ? sessions[0].id : '');
-        } else {
-            setSessionList([]);
-            setStudentList([]);
-        }
-    }, [selectedCourse]);
-
-    useEffect(() => {
-        if (selectedSession === '') {
-            setValue('level', '');
-            setLevelList([]);
-            setStudentList([]);
-        } else if (selectedCourse && selectedSession) {
-            const levels = getLevelsFromPackage2({
-                courseId: selectedCourse,
-                sessionId: selectedSession,
-            });
-            setLevelList(levels);
-            // Auto-select when the session exposes exactly one level.
-            if (levels.length === 1 && levels[0]) {
-                setValue('level', levels[0].id);
-            }
-        }
-    }, [selectedSession]);
-
-    // Fallbacks: auto-select the session/level as soon as its list resolves to a
-    // single option and nothing is chosen yet — so picking a course reliably
-    // prefills the whole form even if the cascade above misses on the first resolve.
-    useEffect(() => {
-        if (!selectedSession && sessionList.length === 1 && sessionList[0]) {
-            setValue('session', sessionList[0].id);
-        }
-    }, [sessionList, selectedSession]);
-    useEffect(() => {
-        if (!selectedLevel && levelList.length === 1 && levelList[0]) {
-            setValue('level', levelList[0].id);
-        }
-    }, [levelList, selectedLevel]);
-
-    const SubjectWiseMutation = useMutation({
-        mutationFn: fetchLearnersSubjectWiseProgress,
-    });
-    const { isPending, error } = SubjectWiseMutation;
-
     const onSubmit = (data: FormValues) => {
-        const calculatedPackageSessionId = getPackageSessionId({
-            courseId: data.course || '',
-            sessionId: data.session || '',
-            levelId: data.level || '',
-        }) || '';
-        
-        setPacageSessionId(calculatedPackageSessionId);
-        
-        SubjectWiseMutation.mutate(
-            {
-                packageSessionId: calculatedPackageSessionId,
-                userId: data.student || '',
-            },
-            {
-                onSuccess: (data) => {
-                    setSubjectReportData(data);
-                },
-                onError: (error) => {
-                    console.error('Error:', error);
-                },
-            }
-        );
-        setCourse(courseList.find((course) => course.id === data.course)?.name || '');
-        setSession(sessionList.find((sessionItem) => sessionItem.id === data.session)?.name || '');
-        setLevel(levelList.find((levelItem) => levelItem.id === data.level)?.level_name || '');
-        setLearnerName(
-            studentList.find((student) => student.user_id === data.student)?.full_name || ''
-        );
+        const learner = studentList.find((s) => s.user_id === data.student);
+        const batchIds = data.batches.filter((id) => learner?.batchIds.includes(id));
+        if (!batchIds.length) {
+            toast.error(t('toast.learnerNotInBatches'));
+            return;
+        }
+        setApplied({
+            userId: data.student,
+            learnerName: learner?.full_name ?? '',
+            batchIds,
+            runId: Date.now(),
+        });
+        // The chapter-wise "View details" dialog also reads names from this
+        // store; keep the first batch there so its header stays populated.
+        const first = batchLookup.get(batchIds[0] ?? '');
+        setPacageSessionId(batchIds[0] ?? '');
+        setCourse(first?.courseName || '');
+        setSession(first?.sessionName || '');
+        setLevel(first?.levelName || '');
+        setLearnerName(learner?.full_name || '');
     };
 
-    const [isExporting, setIsExporting] = useState(false);
-    const handleExportPDF = async () => {
-        if (!subjectReportData) return;
-        setIsExporting(true);
+    const queries = useQueries({
+        queries: (applied?.batchIds ?? []).map((batchId) => ({
+            queryKey: ['learnerSubjectWiseProgress', applied?.userId, batchId, applied?.runId],
+            queryFn: () =>
+                fetchLearnersSubjectWiseProgress({
+                    packageSessionId: batchId,
+                    userId: applied?.userId ?? '',
+                }) as Promise<SubjectProgressResponse | null>,
+            staleTime: 5 * 60 * 1000,
+        })),
+    });
+    const isPending = queries.some((q) => q.isLoading);
+    const resultsKey = queries.map((q) => `${q.status}:${q.dataUpdatedAt}`).join('|');
+    const results = useMemo<BatchResult[]>(
+        () =>
+            (applied?.batchIds ?? []).map((batchId, index) => ({
+                batchId,
+                option: batchLookup.get(batchId),
+                data: queries[index]?.data,
+                isError: Boolean(queries[index]?.isError),
+            })),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [applied, batchLookup, resultsKey]
+    );
+    const isMulti = (applied?.batchIds.length ?? 0) > 1;
+    const hasAnyData = results.some((r) => r.data?.length);
+    const blockTitle = (r: BatchResult) => r.option?.label || r.option?.courseName || '';
+
+    const handleExportPDF = async (result: BatchResult) => {
+        if (!result.data || !applied) return;
+        setIsExportingPdf(result.batchId);
         try {
-            const logoUrl = await resolveInstituteLogoUrl(
-                instituteDetails?.institute_logo_file_id
-            );
+            const logoUrl = await resolveInstituteLogoUrl(instituteDetails?.institute_logo_file_id);
             await exportSubjectProgressPdf(
                 {
                     instituteName: instituteDetails?.institute_name || 'Vacademy',
                     logoUrl,
-                    learnerName:
-                        studentList.find((s) => s.user_id === selectedStudent)?.full_name || '',
-                    courseName: courseList.find((c) => c.id === selectedCourse)?.name || '',
-                    sessionName: sessionList.find((s) => s.id === selectedSession)?.name || '',
-                    levelName: levelList.find((l) => l.id === selectedLevel)?.level_name || '',
-                    courseTerm: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                    learnerName: applied.learnerName,
+                    courseName: result.option?.courseName || '',
+                    sessionName: result.option?.sessionName || '',
+                    levelName: result.option?.levelName || '',
+                    courseTerm,
                     sessionTerm: getTerminology(ContentTerms.Session, SystemTerms.Session),
                     levelTerm: getTerminology(ContentTerms.Level, SystemTerms.Level),
-                    moduleTerm: getTerminology(ContentTerms.Module, SystemTerms.Module),
-                    subjectTerm: getTerminology(ContentTerms.Subject, SystemTerms.Subject),
-                    batchTerm: getTerminology(ContentTerms.Batch, SystemTerms.Batch),
+                    moduleTerm,
+                    subjectTerm,
+                    batchTerm,
                 },
-                subjectReportData
+                result.data,
+                t
             );
-            toast.success('Report exported');
+            toast.success(t('toast.exportSuccess'));
         } catch {
-            toast.error('Failed to export PDF');
+            toast.error(t('toast.exportFailed'));
         } finally {
-            setIsExporting(false);
+            setIsExportingPdf(null);
         }
     };
 
-    const transformToSubjectOverview = (
-        data: SubjectProgressResponse,
-        user_id: string
-    ): SubjectOverviewColumnType[] => {
-        return data.flatMap((subject) =>
-            subject.modules.map((module) => ({
-                subject: subject.subject_name,
-                module: module.module_name,
-                module_id: module.module_id,
-                module_completed: `${formatToTwoDecimalPlaces(module.module_completion_percentage)}%`,
-                module_completed_by_batch: `${formatToTwoDecimalPlaces(
-                    module.module_completion_percentage_by_batch
-                )}%`,
-                average_time_spent: `${convertMinutesToTimeFormat(module.avg_time_spent_minutes)}`,
-                average_time_spent_by_batch: `${convertMinutesToTimeFormat(
-                    module.avg_time_spent_minutes_by_batch ?? 0
-                )}`,
-                user_id,
-            }))
-        );
+    const handleExportCsv = () => {
+        if (!applied || !hasAnyData) return;
+        setIsExportingCsv(true);
+        try {
+            const csv = buildReportCsv([
+                {
+                    title: t('csv.title', { term: subjectTerm }),
+                    headers: [
+                        batchTerm,
+                        courseTerm,
+                        learnerTerm,
+                        subjectTerm,
+                        moduleTerm,
+                        t('csv.moduleCompleted', { module: moduleTerm }),
+                        t('csv.moduleCompletedByBatch', { module: moduleTerm, batch: batchTerm }),
+                        t('csv.dailyTimeMin'),
+                        t('csv.dailyTimeByBatchMin', { batch: batchTerm }),
+                    ],
+                    rows: results.flatMap((r) =>
+                        (r.data ?? []).flatMap((subject) =>
+                            subject.modules.map((module) => [
+                                blockTitle(r),
+                                r.option?.courseName ?? '',
+                                applied.learnerName,
+                                subject.subject_name,
+                                module.module_name,
+                                num(module.module_completion_percentage),
+                                num(module.module_completion_percentage_by_batch),
+                                num(module.avg_time_spent_minutes),
+                                num(module.avg_time_spent_minutes_by_batch),
+                            ])
+                        )
+                    ),
+                },
+            ]);
+            downloadCsv(csvFileName(t('csv.fileStem'), applied.learnerName), csv);
+            toast.success(t('toast.csvExportSuccess'));
+        } catch {
+            toast.error(t('toast.csvExportFailed'));
+        } finally {
+            setIsExportingCsv(false);
+        }
     };
 
-    const subjectWiseData = {
-        content: subjectReportData
-            ? transformToSubjectOverview(subjectReportData, watch('student') || '')
-            : [],
-        total_pages: 0,
-        page_no: 0,
-        page_size: 10,
-        total_elements: 0,
-        last: false,
-    };
-
-    // Courses shallower than the full Subject → Module structure come back with
-    // the literal "DEFAULT" placeholder for the missing level(s). Rather than
-    // showing a whole column of "DEFAULT", hide any structural column whose
-    // every row is that placeholder. Metric columns are never hidden this way.
-    const isStructuralColumnAllDefault = (key: 'subject' | 'module') =>
-        subjectWiseData.content.length > 0 &&
-        subjectWiseData.content.every(
-            (row) => (row[key] ?? '').toString().trim().toUpperCase() === 'DEFAULT'
-        );
-    const tableState = {
-        columnVisibility: {
-            module_id: false,
-            user_id: false,
-            subject: !isStructuralColumnAllDefault('subject'),
-            module: !isStructuralColumnAllDefault('module'),
-        },
-    };
+    const exportPdfButton = (result: BatchResult) => (
+        <MyButton
+            buttonType="secondary"
+            onClick={() => handleExportPDF(result)}
+            className="h-9 px-4 text-body"
+            disable={isExportingPdf === result.batchId}
+        >
+            <Export className="me-1.5 size-4" />
+            {isExportingPdf === result.batchId ? t('report.exporting') : t('report.exportPdf')}
+        </MyButton>
+    );
 
     return (
         <div className="space-y-6">
-            {/* Modern Filter Card */}
-            <div className="bg-white rounded-lg border border-neutral-200 p-4 shadow-sm">
+            {/* Filter card */}
+            <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    {/* First Row - Course, Session, Level */}
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                        <div>
-                            <label className="text-xs font-medium text-neutral-700 mb-1 block">
-                                {getTerminology(ContentTerms.Course, SystemTerms.Course)}
-                                <span className="text-red-500 ml-1">*</span>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <BatchMultiSelect
+                            selected={selectedBatches}
+                            onChange={(ids) => {
+                                setValue('batches', ids);
+                                if (ids.length) clearErrors('batches');
+                            }}
+                            error={errors.batches?.message}
+                        />
+                        <div className="flex flex-col gap-1">
+                            <label className="text-caption font-medium text-neutral-700">
+                                {learnerTerm}
+                                <span className="ms-1 text-danger-600">*</span>
                             </label>
                             <SearchableSelect
-                                options={courseList.map((course) => ({
-                                    label: course.name,
-                                    value: course.id,
+                                options={studentList.map((s) => ({
+                                    label: s.full_name,
+                                    value: s.user_id,
                                 }))}
-                                value={selectedCourse}
-                                onChange={(value) => setValue('course', value)}
-                                placeholder={`Select a ${getTerminology(
-                                    ContentTerms.Course,
-                                    SystemTerms.Course
-                                )}`}
-                                searchPlaceholder={`Search ${getTerminology(
-                                    ContentTerms.Course,
-                                    SystemTerms.Course
-                                )}...`}
-                                triggerClassName="h-9 text-sm"
+                                value={selectedStudent || ''}
+                                onChange={(value) => {
+                                    setValue('student', value);
+                                    clearErrors('student');
+                                }}
+                                placeholder={
+                                    isLearnersLoading
+                                        ? t('form.loadingStudents')
+                                        : t('form.selectStudent')
+                                }
+                                searchPlaceholder={t('form.searchStudent')}
+                                emptyText={t('form.noStudentsFound')}
+                                disabled={!selectedBatches.length || !studentList.length}
+                                triggerClassName="h-9 text-body"
                             />
-                        </div>
-
-                        <div>
-                            <label className="text-xs font-medium text-neutral-700 mb-1 block">
-                                {getTerminology(ContentTerms.Session, SystemTerms.Session)}
-                                <span className="text-red-500 ml-1">*</span>
-                            </label>
-                            <Select
-                                onValueChange={(value) => setValue('session', value)}
-                                defaultValue={search.studentReport ? search.studentReport.sessionId : ''}
-                                value={selectedSession}
-                                disabled={!sessionList.length}
-                            >
-                                <SelectTrigger className="h-9 text-sm">
-                                    <SelectValue
-                                        placeholder={`Select a ${getTerminology(ContentTerms.Session, SystemTerms.Session)}`}
-                                    />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {sessionList.map((session) => (
-                                        <SelectItem key={session.id} value={session.id}>
-                                            {session.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div>
-                            <label className="text-xs font-medium text-neutral-700 mb-1 block">
-                                {getTerminology(ContentTerms.Level, SystemTerms.Level)}
-                                <span className="text-red-500 ml-1">*</span>
-                            </label>
-                            <Select
-                                onValueChange={(value) => setValue('level', value)}
-                                value={selectedLevel}
-                                disabled={!levelList.length}
-                            >
-                                <SelectTrigger className="h-9 text-sm">
-                                    <SelectValue
-                                        placeholder={`Select a ${getTerminology(ContentTerms.Level, SystemTerms.Level)}`}
-                                    />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {levelList.map((level) => (
-                                        <SelectItem key={level.id} value={level.id}>
-                                            {level.level_name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            {errors.student ? (
+                                <span className="text-caption text-danger-600">
+                                    {errors.student.message}
+                                </span>
+                            ) : (
+                                <span className="text-caption text-neutral-500">
+                                    {selectedBatches.length
+                                        ? t('form.learnerHint', { count: studentList.length })
+                                        : t('form.pickBatchFirst', {
+                                              batch: batchTerm.toLowerCase(),
+                                          })}
+                                </span>
+                            )}
                         </div>
                     </div>
 
-                    {/* Student Selection Row */}
-                    <div>
-                        <label className="text-xs font-medium text-neutral-700 mb-1 block">
-                            Name <span className="text-red-500 ml-1">*</span>
-                        </label>
-                        <Select
-                            onValueChange={(value) => setValue('student', value)}
-                            {...register('student')}
-                            // Controlled like the course/session/level selects above so
-                            // the ?studentReport= prefill (setValue('student', userId))
-                            // is reflected in the trigger, not just in form state.
-                            value={selectedStudent || ''}
-                            disabled={!studentList.length}
-                        >
-                            <SelectTrigger className="h-9 text-sm">
-                                <SelectValue placeholder="Select Student" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <Command>
-                                    <CommandInput
-                                        placeholder="Search Student..."
-                                        value={searchTerm}
-                                        onValueChange={setSearchTerm}
-                                    />
-                                    <CommandList>
-                                        {filteredStudents.length > 0 ? (
-                                            filteredStudents.map((student, index) => (
-                                                <SelectItem
-                                                    key={index}
-                                                    value={student.user_id}
-                                                    onSelect={() =>
-                                                        setValue('student', student.user_id)
-                                                    }
-                                                >
-                                                    {student.full_name}
-                                                </SelectItem>
-                                            ))
-                                        ) : (
-                                            <div className="p-2 text-gray-500">No students found</div>
-                                        )}
-                                    </CommandList>
-                                </Command>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
-                    {/* Generate Button Row */}
                     <div className="flex justify-start">
-                        <MyButton 
-                            type="submit" 
-                            buttonType="primary" 
-                            className="h-9 px-4 text-sm font-medium focus:!bg-primary-600 focus:!border-primary-600 focus:!text-white active:!bg-primary-600 active:!border-primary-600 active:!text-white focus:!outline-none focus:!ring-0"
+                        <MyButton
+                            type="submit"
+                            buttonType="primary"
+                            className="h-9 px-4 text-body font-medium"
                         >
-                            Generate Report
+                            {t('form.generateReport')}
                         </MyButton>
                     </div>
-
-                    {/* Error Messages */}
-                    {Object.keys(errors).length > 0 && (
-                        <div className="rounded-md bg-red-50 border border-red-200 p-3">
-                            <div className="text-sm text-red-800">
-                                <p className="font-medium mb-1">Please fix the following errors:</p>
-                                <ul className="space-y-1">
-                                    {Object.entries(errors)?.map(([key, error]) => (
-                                        <li key={key} className="text-xs">• {error.message}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </div>
-                    )}
                 </form>
             </div>
-            
+
             {isPending && <DashboardLoader />}
-            
-            {subjectReportData && (
+
+            {applied && !isPending && (
                 <div className="space-y-6">
                     {/* Report Header */}
-                    <div className="bg-white rounded-lg border border-neutral-200 p-4 shadow-sm">
+                    <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                             <div className="space-y-2">
-                                <h3 className="text-lg font-semibold text-primary-600">
-                                    {studentList.find((s) => s.user_id === selectedStudent)?.full_name}
+                                <h3 className="text-subtitle font-semibold text-primary-600">
+                                    {applied.learnerName}
                                 </h3>
+                                {isMulti && (
+                                    <span className="inline-block rounded-md bg-primary-50 px-2 py-1 text-caption font-medium text-neutral-700">
+                                        {t('report.batchCount', {
+                                            count: results.length,
+                                            term: batchTerm,
+                                        })}
+                                    </span>
+                                )}
                             </div>
-                            <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
-                                <ReportRecipientsDialogBox userId={selectedStudent || ''} />
+                            <div className="flex flex-wrap items-center gap-2">
+                                <ReportRecipientsDialogBox userId={applied.userId} />
+                                {!isMulti && results[0]?.data && exportPdfButton(results[0])}
                                 <MyButton
                                     buttonType="secondary"
-                                    onClick={handleExportPDF}
-                                    className="h-9 px-4 text-sm"
-                                    disabled={isExporting}
+                                    onClick={handleExportCsv}
+                                    className="h-9 px-4 text-body"
+                                    disable={isExportingCsv || !hasAnyData}
                                 >
-                                    {isExporting ? (
-                                        <div className="flex items-center gap-2">
-                                            <div className="h-3 w-3 animate-spin rounded-full border border-neutral-300 border-t-primary-500"></div>
-                                            <span>Exporting...</span>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
-                                            Export PDF
-                                        </>
-                                    )}
+                                    <FileCsv className="me-1.5 size-4" />
+                                    {isExportingCsv ? t('report.exporting') : t('report.exportCsv')}
                                 </MyButton>
                             </div>
                         </div>
                     </div>
-                    
-                    {/* Report Content */}
-                    <div className="bg-white rounded-lg border border-neutral-200 p-4 shadow-sm">
-                        <div className="space-y-4">
-                            <h4 className="text-base font-semibold text-primary-600">
-                                Subject-wise Progress Report
-                            </h4>
-                            <div className="!min-w-full overflow-x-auto [&_table]:!w-full [&_table]:!min-w-full [&_td]:!whitespace-nowrap [&_th]:!whitespace-nowrap">
-                                <MyTable
-                                    data={subjectWiseData}
-                                    columns={SubjectOverviewColumns}
-                                    isLoading={isPending}
-                                    error={error}
-                                    currentPage={0}
-                                    tableState={tableState}
-                                />
+
+                    {results.map((result) => {
+                        const rows = result.data
+                            ? transformToSubjectOverview(
+                                  result.data,
+                                  applied.userId,
+                                  result.batchId,
+                                  result.option
+                              )
+                            : [];
+                        const tableState = {
+                            columnVisibility: {
+                                module_id: false,
+                                user_id: false,
+                                subject: !isStructuralColumnAllDefault(rows, 'subject'),
+                                module: !isStructuralColumnAllDefault(rows, 'module'),
+                            },
+                        };
+                        return (
+                            <div
+                                key={result.batchId}
+                                className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm"
+                            >
+                                <div className="space-y-4">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            {isMulti && (
+                                                <span className="rounded-md bg-primary-50 px-2 py-1 text-caption font-semibold uppercase tracking-wide text-primary-500">
+                                                    {batchTerm}
+                                                </span>
+                                            )}
+                                            <h4 className="text-body font-semibold text-primary-600">
+                                                {isMulti
+                                                    ? blockTitle(result)
+                                                    : t('report.subjectWiseHeading')}
+                                            </h4>
+                                        </div>
+                                        {isMulti && result.data?.length
+                                            ? exportPdfButton(result)
+                                            : null}
+                                    </div>
+                                    {result.isError || result.data === null ? (
+                                        <div className="flex items-center gap-3 rounded-lg border border-danger-200 bg-danger-50 p-4 text-body text-danger-700">
+                                            <Warning className="size-5 shrink-0" />
+                                            {t('report.batchLoadFailed', {
+                                                name: blockTitle(result),
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div className="!min-w-full overflow-x-auto [&_table]:!w-full [&_table]:!min-w-full [&_td]:!whitespace-nowrap [&_th]:!whitespace-nowrap">
+                                            <MyTable
+                                                data={{
+                                                    content: rows,
+                                                    total_pages: 0,
+                                                    page_no: 0,
+                                                    page_size: 10,
+                                                    total_elements: 0,
+                                                    last: false,
+                                                }}
+                                                columns={SubjectOverviewColumns}
+                                                isLoading={false}
+                                                error={null}
+                                                currentPage={0}
+                                                tableState={tableState}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    </div>
+                        );
+                    })}
                 </div>
             )}
         </div>

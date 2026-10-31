@@ -1,0 +1,13 @@
+{
+    "heading": "Accordion",
+    "addSection": "Add Section",
+    "tabs": {
+        "preview": "Preview",
+        "edit": "Edit"
+    },
+    "sectionNumber": "Section {{number}}",
+    "sectionTitlePlaceholder": "Section title…",
+    "sectionContentPlaceholder": "Section content — add text and/or an image…",
+    "removeSection": "Remove section",
+    "emptySection": "Empty section"
+}

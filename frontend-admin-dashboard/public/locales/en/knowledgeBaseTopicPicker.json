@@ -1,0 +1,23 @@
+{
+    "emptySelection": "Nothing selected — the paper will draw from everything.",
+    "selectedCount_one": "{{count}} of {{total}} subtopic selected",
+    "selectedCount_other": "{{count}} of {{total}} subtopics selected",
+    "actions": {
+        "clearAll": "Clear all",
+        "selectAll": "Select all",
+        "expandAll": "Expand all",
+        "collapseAll": "Collapse all"
+    },
+    "selectTopicAriaLabel": "Select {{title}}",
+    "subtopicsPartial_one": "{{count}} of {{total}} subtopic",
+    "subtopicsPartial_other": "{{count}} of {{total}} subtopics",
+    "subtopicsTotal_one": "{{count}} subtopic",
+    "subtopicsTotal_other": "{{count}} subtopics",
+    "searchPlaceholder": "Search chapters, topics, subtopics…",
+    "noMatches": "Nothing matches that search.",
+    "weightage": {
+        "total": "{{percent}}% weightage set",
+        "placeholder": "—",
+        "ariaLabel": "Weightage for {{title}}"
+    }
+}

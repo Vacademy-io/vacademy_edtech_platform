@@ -1,0 +1,20 @@
+{
+    "zoomModal": {
+        "closeTitle": "Fermer (Échap)"
+    },
+    "block": {
+        "clickToZoom": "Cliquer pour zoomer",
+        "header": "Diagramme Mermaid",
+        "done": "Terminé",
+        "editCode": "Modifier le code",
+        "diagramCodeLabel": "Code du diagramme",
+        "diagramCodePlaceholder": "Saisissez du code Mermaid, par exemple :",
+        "livePreviewHintPrefix": "Aperçu en direct ci-dessous. Prend en charge les organigrammes",
+        "livePreviewHintSuffix": ", les diagrammes de séquence, de classes, de Gantt, circulaires, etc.",
+        "insertExample": "Insérer un exemple",
+        "renderingDiagram": "Rendu du diagramme en cours…",
+        "renderError": "Impossible d'afficher ce diagramme — vérifiez la syntaxe Mermaid.",
+        "noDiagram": "Aucun diagramme",
+        "clickToAdd": "Cliquer pour ajouter du code de diagramme Mermaid"
+    }
+}

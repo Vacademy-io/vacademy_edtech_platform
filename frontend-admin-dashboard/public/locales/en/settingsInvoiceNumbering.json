@@ -1,0 +1,98 @@
+{
+    "format": {
+        "title": "Invoice number format",
+        "description": "Build the format from the values below. Every invoice number must include a sequence number so it stays unique.",
+        "presets": {
+            "label": "Start from a common format"
+        },
+        "formatField": {
+            "label": "Format",
+            "hint": "Anything outside {{braces}} is used as-is. Letters, digits and - / _ . are allowed."
+        },
+        "preview": {
+            "title": "Next invoice numbers",
+            "checking": "Checking…",
+            "unavailable": "No preview available.",
+            "lengthHint_one": "Up to {{count}} character (limit 100). Previewing does not use up a number.",
+            "lengthHint_other": "Up to {{count}} characters (limit 100). Previewing does not use up a number."
+        },
+        "tokenPalette": {
+            "label": "Insert a value",
+            "tokenTitle": "{{label}} — e.g. {{example}}",
+            "shortenHint": {
+                "part1": "Shorten any value with ",
+                "part2": " (first 4 characters) or ",
+                "part3": " — for example ",
+                "part4": ". Values highlighted in amber make numbering non-sequential."
+            }
+        },
+        "tokenGroups": {
+            "sequence": "Sequence",
+            "institute": "Institute",
+            "learner": "Learner",
+            "date": "Date",
+            "transaction": "Payment & course"
+        }
+    },
+    "counter": {
+        "title": "Counter",
+        "description": "Controls the sequence number. Existing invoices are never renumbered, and a number is never reused.",
+        "scope": {
+            "label": "Restart the counter",
+            "options": {
+                "never": {
+                    "label": "Never",
+                    "hint": "One counter that keeps growing forever"
+                },
+                "yearly": {
+                    "label": "Every year",
+                    "hint": "Counter restarts each January"
+                },
+                "monthly": {
+                    "label": "Every month",
+                    "hint": "Counter restarts on the 1st"
+                },
+                "daily": {
+                    "label": "Every day",
+                    "hint": "Counter restarts at midnight"
+                }
+            }
+        },
+        "padding": {
+            "label": "Minimum digits",
+            "hint": "4 digits shows invoice 42 as 0042."
+        },
+        "instituteCode": {
+            "label": "Institute code",
+            "placeholder": "Derived from the institute name",
+            "hint": "Fills the Institute code value."
+        },
+        "startFrom": {
+            "label": "Start next invoice at",
+            "placeholder": "Currently next: #{{count}}",
+            "hint": "Only for continuing a series from another system. Moves numbering forward only."
+        },
+        "fyStart": {
+            "label": "Financial year starts in",
+            "hint": "April for India and the UK, July for Australia."
+        },
+        "months": {
+            "january": "January",
+            "february": "February",
+            "march": "March",
+            "april": "April",
+            "may": "May",
+            "june": "June",
+            "july": "July",
+            "august": "August",
+            "september": "September",
+            "october": "October",
+            "november": "November",
+            "december": "December"
+        },
+        "sanitize": {
+            "label": "Clean up text values",
+            "hint": "Converts names to capitals and removes spaces, accents and punctuation — “Rahul Sharma” becomes RAHULSHARMA."
+        }
+    }
+}

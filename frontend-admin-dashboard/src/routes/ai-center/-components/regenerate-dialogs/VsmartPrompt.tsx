@@ -5,15 +5,18 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { AITaskIndividualListInterface } from '@/types/ai/generate-assessment/generate-complete-assessment';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
-const formSchema = z.object({
-    text: z.string().min(1),
-    num: z.number().min(1),
-    class_level: z.string().min(1),
-    topics: z.string().min(1),
-    question_type: z.string().min(1),
-    question_language: z.string().min(1),
-});
+const buildFormSchema = (t: TFunction) =>
+    z.object({
+        text: z.string().min(1, t('validation.textRequired')),
+        num: z.number().min(1, t('validation.numRequired')),
+        class_level: z.string().min(1, t('validation.classLevelRequired')),
+        topics: z.string().min(1, t('validation.topicsRequired')),
+        question_type: z.string().min(1, t('validation.questionTypeRequired')),
+        question_language: z.string().min(1, t('validation.questionLanguageRequired')),
+    });
 
 export const VsmartPrompt = ({
     open,
@@ -26,6 +29,8 @@ export const VsmartPrompt = ({
     pollGenerateQuestionsFromText?: (data: QuestionsFromTextData) => void;
     task: AITaskIndividualListInterface;
 }) => {
+    const { t } = useTranslation('aiCenterRegenerateVsmartPrompt');
+    const formSchema = buildFormSchema(t);
     const {
         register,
         handleSubmit,
@@ -47,26 +52,26 @@ export const VsmartPrompt = ({
                 buttonType="secondary"
                 onClick={() => handleOpen(false)}
             >
-                Cancel
+                {t('actions.cancel')}
             </MyButton>
             <MyButton type="submit" scale="small" buttonType="primary">
-                Regenerate
+                {t('actions.regenerate')}
             </MyButton>
         </div>
     );
 
     return (
-        <MyDialog heading="Vsmart Prompt" open={open} onOpenChange={handleOpen}>
+        <MyDialog heading={t('dialog.heading')} open={open} onOpenChange={handleOpen}>
             <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
                 <div className="flex flex-col gap-2">
                     <label htmlFor="text" className="text-sm font-medium">
-                        Text
+                        {t('fields.text.label')}
                     </label>
                     <textarea
                         id="text"
                         {...register('text')}
                         className="h-32 w-full resize-none rounded-md border p-2"
-                        placeholder="Enter text"
+                        placeholder={t('fields.text.placeholder')}
                     />
                     {errors.text && (
                         <span className="text-sm text-red-500">{errors.text.message}</span>
@@ -75,14 +80,14 @@ export const VsmartPrompt = ({
 
                 <div className="flex flex-col gap-2">
                     <label htmlFor="num" className="text-sm font-medium">
-                        Number of Questions
+                        {t('fields.num.label')}
                     </label>
                     <input
                         id="num"
                         type="number"
                         {...register('num', { valueAsNumber: true })}
                         className="w-full rounded-md border p-2"
-                        placeholder="Enter number of questions"
+                        placeholder={t('fields.num.placeholder')}
                     />
                     {errors.num && (
                         <span className="text-sm text-red-500">{errors.num.message}</span>
@@ -91,13 +96,13 @@ export const VsmartPrompt = ({
 
                 <div className="flex flex-col gap-2">
                     <label htmlFor="class_level" className="text-sm font-medium">
-                        Class Level
+                        {t('fields.classLevel.label')}
                     </label>
                     <input
                         id="class_level"
                         {...register('class_level')}
                         className="w-full rounded-md border p-2"
-                        placeholder="Enter class level"
+                        placeholder={t('fields.classLevel.placeholder')}
                     />
                     {errors.class_level && (
                         <span className="text-sm text-red-500">{errors.class_level.message}</span>
@@ -106,13 +111,13 @@ export const VsmartPrompt = ({
 
                 <div className="flex flex-col gap-2">
                     <label htmlFor="topics" className="text-sm font-medium">
-                        Topics
+                        {t('fields.topics.label')}
                     </label>
                     <input
                         id="topics"
                         {...register('topics')}
                         className="w-full rounded-md border p-2"
-                        placeholder="Enter topics"
+                        placeholder={t('fields.topics.placeholder')}
                     />
                     {errors.topics && (
                         <span className="text-sm text-red-500">{errors.topics.message}</span>
@@ -121,13 +126,13 @@ export const VsmartPrompt = ({
 
                 <div className="flex flex-col gap-2">
                     <label htmlFor="question_type" className="text-sm font-medium">
-                        Question Type
+                        {t('fields.questionType.label')}
                     </label>
                     <input
                         id="question_type"
                         {...register('question_type')}
                         className="w-full rounded-md border p-2"
-                        placeholder="Enter question type"
+                        placeholder={t('fields.questionType.placeholder')}
                     />
                     {errors.question_type && (
                         <span className="text-sm text-red-500">{errors.question_type.message}</span>
@@ -136,13 +141,13 @@ export const VsmartPrompt = ({
 
                 <div className="flex flex-col gap-2">
                     <label htmlFor="question_language" className="text-sm font-medium">
-                        Question Language
+                        {t('fields.questionLanguage.label')}
                     </label>
                     <input
                         id="question_language"
                         {...register('question_language')}
                         className="w-full rounded-md border p-2"
-                        placeholder="Enter question language"
+                        placeholder={t('fields.questionLanguage.placeholder')}
                     />
                     {errors.question_language && (
                         <span className="text-sm text-red-500">

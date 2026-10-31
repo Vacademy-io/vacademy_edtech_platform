@@ -1,9 +1,10 @@
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { OfferPricingSettings, OfferPriceRoundingMode } from '@/types/course-settings';
-import { Tag, Info } from 'lucide-react';
+import { Tag, Info } from '@phosphor-icons/react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
     getTerminology,
@@ -20,6 +21,8 @@ interface OfferPricingCardProps {
 }
 
 export const OfferPricingCard: React.FC<OfferPricingCardProps> = ({ settings, onUpdate }) => {
+    const { t } = useTranslation('settingsOfferPricingCard');
+
     const handleToggle = (enabled: boolean) => {
         onUpdate({ ...settings, enabled });
     };
@@ -38,11 +41,11 @@ export const OfferPricingCard: React.FC<OfferPricingCardProps> = ({ settings, on
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Tag className="size-5 text-emerald-600" />
-                        <CardTitle>Offer Pricing</CardTitle>
+                        <CardTitle>{t('title')}</CardTitle>
                     </div>
                     <div className="flex items-center gap-2">
                         <Label htmlFor="offer-pricing-toggle">
-                            {settings.enabled ? 'Enabled' : 'Disabled'}
+                            {settings.enabled ? t('toggle.enabled') : t('toggle.disabled')}
                         </Label>
                         <Switch
                             id="offer-pricing-toggle"
@@ -56,19 +59,14 @@ export const OfferPricingCard: React.FC<OfferPricingCardProps> = ({ settings, on
                 <Alert>
                     <Info className="size-4" />
                     <AlertDescription>
-                        Allow admins to set an offer price below the MRP on individual {coursesTerm}.
-                        When enabled, an "Apply Offer Price" action appears on the {courseTerm}{' '}
-                        management page.
+                        {t('alert.description', { courseTerm, coursesTerm })}
                     </AlertDescription>
                 </Alert>
 
                 {settings.enabled && (
                     <div className="space-y-2">
-                        <Label className="text-sm font-medium">Offer price rounding</Label>
-                        <p className="text-xs text-neutral-500">
-                            Round the discounted price to a whole unit (₹1, $1, etc.). Applies to
-                            the price saved when an offer is applied — regardless of currency.
-                        </p>
+                        <Label className="text-sm font-medium">{t('rounding.label')}</Label>
+                        <p className="text-xs text-neutral-500">{t('rounding.description')}</p>
                         <RadioGroup
                             value={rounding}
                             onValueChange={handleRoundingChange}
@@ -80,7 +78,7 @@ export const OfferPricingCard: React.FC<OfferPricingCardProps> = ({ settings, on
                                     htmlFor="offer-rounding-none"
                                     className="cursor-pointer font-normal"
                                 >
-                                    Off (keep decimals as computed)
+                                    {t('rounding.options.none')}
                                 </Label>
                             </div>
                             <div className="flex items-center gap-2">
@@ -89,7 +87,7 @@ export const OfferPricingCard: React.FC<OfferPricingCardProps> = ({ settings, on
                                     htmlFor="offer-rounding-ceil"
                                     className="cursor-pointer font-normal"
                                 >
-                                    Round up (e.g. 479.20 → 480)
+                                    {t('rounding.options.ceil')}
                                 </Label>
                             </div>
                             <div className="flex items-center gap-2">
@@ -98,7 +96,7 @@ export const OfferPricingCard: React.FC<OfferPricingCardProps> = ({ settings, on
                                     htmlFor="offer-rounding-floor"
                                     className="cursor-pointer font-normal"
                                 >
-                                    Round down (e.g. 479.80 → 479)
+                                    {t('rounding.options.floor')}
                                 </Label>
                             </div>
                         </RadioGroup>

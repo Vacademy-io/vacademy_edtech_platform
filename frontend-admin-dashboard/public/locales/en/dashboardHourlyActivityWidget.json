@@ -1,0 +1,29 @@
+{
+    "header": {
+        "title": "Hourly Activity",
+        "subtitle": "Activity distribution throughout the day"
+    },
+    "peakHour": {
+        "label": "Peak Hour"
+    },
+    "error": {
+        "message": "Failed to load hourly data"
+    },
+    "empty": {
+        "message": "No hourly data available"
+    },
+    "tooltip": {
+        "activity": "Activity: {{value}}",
+        "users": "Users: {{value}}"
+    },
+    "period": {
+        "night": "Night",
+        "morning": "Morning",
+        "afternoon": "Afternoon",
+        "evening": "Evening"
+    },
+    "time": {
+        "am": "{{hour}} AM",
+        "pm": "{{hour}} PM"
+    }
+}

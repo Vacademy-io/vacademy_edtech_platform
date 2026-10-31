@@ -1,0 +1,15 @@
+{
+    "tabs": {
+        "problem": "المسألة",
+        "testCases_zero": "حالات الاختبار ({{count}})",
+        "testCases_one": "حالة اختبار واحدة",
+        "testCases_two": "حالتا اختبار",
+        "testCases_few": "حالات الاختبار ({{count}})",
+        "testCases_many": "حالة اختبار ({{count}})",
+        "testCases_other": "حالات الاختبار ({{count}})",
+        "settings": "الإعدادات",
+        "starterCode": "الكود الابتدائي",
+        "submissions": "التسليمات"
+    },
+    "problemPlaceholder": "صف المسألة. اذكر القيود، وتنسيق الإدخال/الإخراج، والأمثلة."
+}

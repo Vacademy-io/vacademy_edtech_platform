@@ -1,0 +1,13 @@
+{
+    "dialog": {
+        "heading": "Réévaluation par question"
+    },
+    "table": {
+        "questionNo": "N° Q.",
+        "question": "Question"
+    },
+    "revaluateButton": "Réévaluer",
+    "toasts": {
+        "revaluateSuccess": "La tentative des élèves sélectionnés pour cette évaluation a été réévaluée. Veuillez vérifier votre e-mail !"
+    }
+}

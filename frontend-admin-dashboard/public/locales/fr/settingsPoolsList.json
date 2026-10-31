@@ -1,0 +1,43 @@
+{
+    "loading": "Chargement des pools…",
+    "header": {
+        "title": "Pools de conseillers",
+        "description": "Un pool regroupe des conseillers et détermine comment les prospects de ses campagnes sont attribués automatiquement. Chaque campagne ne peut appartenir qu'à un seul pool.",
+        "createPool": "+ Créer un pool"
+    },
+    "emptyState": {
+        "message": "Aucun pool pour l'instant. Créez votre premier pool pour commencer à attribuer automatiquement les prospects.",
+        "createPool": "Créer un pool"
+    },
+    "modes": {
+        "manual": "Manuel",
+        "roundRobin": "Tour de rôle",
+        "timeBased": "Basé sur l'horaire"
+    },
+    "card": {
+        "campaignsCount_one": "{{count}} campagne",
+        "campaignsCount_many": "{{count}} campagnes",
+        "campaignsCount_other": "{{count}} campagnes",
+        "counselorsCount_one": "{{count}} conseiller",
+        "counselorsCount_many": "{{count}} conseillers",
+        "counselorsCount_other": "{{count}} conseillers",
+        "actionsAriaLabel": "Actions du pool",
+        "edit": "Modifier",
+        "triggerWorkflow": "Déclencher le workflow",
+        "delete": "Supprimer"
+    },
+    "deleteDialog": {
+        "title": "Supprimer le pool \"{{name}}\" ?",
+        "description": "Cette action supprime définitivement le pool, son planning de roulement et toute la configuration des membres. Les conseillers déjà attribués à des prospects existants ne sont pas affectés ; les nouveaux prospects sur les campagnes de ce pool ne seront plus attribués automatiquement.",
+        "campaignsAttachedWarning_one": "Ce pool contient encore {{count}} campagne. Vous devez d'abord retirer toutes les campagnes du pool.",
+        "campaignsAttachedWarning_many": "Ce pool contient encore {{count}} campagnes. Vous devez d'abord retirer toutes les campagnes du pool.",
+        "campaignsAttachedWarning_other": "Ce pool contient encore {{count}} campagnes. Vous devez d'abord retirer toutes les campagnes du pool.",
+        "cancel": "Annuler",
+        "deleting": "Suppression…",
+        "delete": "Supprimer"
+    },
+    "toasts": {
+        "deleted": "Pool \"{{name}}\" supprimé",
+        "deleteFailed": "Échec de la suppression du pool"
+    }
+}

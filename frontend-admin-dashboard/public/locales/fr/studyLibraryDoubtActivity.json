@@ -1,0 +1,34 @@
+{
+    "title": "Activité",
+    "empty": "Aucune activité pour l'instant",
+    "failedToLoad": "Impossible de charger l'activité",
+    "someone": "Quelqu'un",
+    "rule": "Règle d'attribution automatique",
+    "system": "Système",
+    "ruleBadge": "Règle",
+    "defaultRouting": "Routage par défaut : {{source}}",
+    "sources": {
+        "SUBJECT_TEACHER": "Enseignant de la matière",
+        "BATCH_TEACHER": "Enseignants du groupe",
+        "BOTH": "Enseignants matière + groupe",
+        "ROLE": "Rôle",
+        "SPECIFIC_USERS": "Personnel spécifique",
+        "NONE": "Personne",
+        "SUB_ORG": "Personnel de la sous-organisation",
+        "ADMIN_FALLBACK": "Repli administrateur"
+    },
+    "lines": {
+        "created": "{{actor}} a posé cette question",
+        "assigned": "{{actor}} a attribué à {{target}}",
+        "autoAssigned": "{{target}} attribué automatiquement par la règle : {{rule}}",
+        "unassigned": "{{actor}} a retiré {{target}}",
+        "removedDefault": "{{actor}} a retiré le responsable par défaut {{target}}",
+        "statusChanged": "{{actor}} a changé le statut {{from}} → {{to}}",
+        "remark": "{{actor}} a laissé une remarque sur {{status}}"
+    },
+    "remarkPlaceholder": "Ajouter une remarque pour le personnel (jamais visible par les apprenants)",
+    "addRemark": "Ajouter une remarque",
+    "saving": "Enregistrement…",
+    "remarkAdded": "Remarque ajoutée",
+    "remarkFailed": "Impossible d'ajouter la remarque"
+}

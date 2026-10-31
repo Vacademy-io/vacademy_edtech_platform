@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Warning, Info, Hash } from '@phosphor-icons/react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -23,25 +25,37 @@ import {
     type InvoiceSeqScope,
 } from './invoice-settings-service';
 
-const SCOPE_OPTIONS: Array<{ value: InvoiceSeqScope; label: string; hint: string }> = [
-    { value: 'NEVER', label: 'Never', hint: 'One counter that keeps growing forever' },
-    { value: 'YEARLY', label: 'Every year', hint: 'Counter restarts each January' },
-    { value: 'MONTHLY', label: 'Every month', hint: 'Counter restarts on the 1st' },
-    { value: 'DAILY', label: 'Every day', hint: 'Counter restarts at midnight' },
+const buildScopeOptions = (
+    t: TFunction
+): Array<{ value: InvoiceSeqScope; label: string; hint: string }> => [
+    { value: 'NEVER', label: t('counter.scope.options.never.label'), hint: t('counter.scope.options.never.hint') },
+    { value: 'YEARLY', label: t('counter.scope.options.yearly.label'), hint: t('counter.scope.options.yearly.hint') },
+    { value: 'MONTHLY', label: t('counter.scope.options.monthly.label'), hint: t('counter.scope.options.monthly.hint') },
+    { value: 'DAILY', label: t('counter.scope.options.daily.label'), hint: t('counter.scope.options.daily.hint') },
 ];
 
-const MONTHS = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
+const buildMonths = (t: TFunction): string[] => [
+    t('counter.months.january'),
+    t('counter.months.february'),
+    t('counter.months.march'),
+    t('counter.months.april'),
+    t('counter.months.may'),
+    t('counter.months.june'),
+    t('counter.months.july'),
+    t('counter.months.august'),
+    t('counter.months.september'),
+    t('counter.months.october'),
+    t('counter.months.november'),
+    t('counter.months.december'),
 ];
 
-const GROUP_LABELS: Record<InvoiceNumberToken['group'], string> = {
-    SEQUENCE: 'Sequence',
-    INSTITUTE: 'Institute',
-    LEARNER: 'Learner',
-    DATE: 'Date',
-    TRANSACTION: 'Payment & course',
-};
+const buildGroupLabels = (t: TFunction): Record<InvoiceNumberToken['group'], string> => ({
+    SEQUENCE: t('format.tokenGroups.sequence'),
+    INSTITUTE: t('format.tokenGroups.institute'),
+    LEARNER: t('format.tokenGroups.learner'),
+    DATE: t('format.tokenGroups.date'),
+    TRANSACTION: t('format.tokenGroups.transaction'),
+});
 
 const GROUP_ORDER: Array<InvoiceNumberToken['group']> = [
     'SEQUENCE',
@@ -72,9 +86,14 @@ interface Props {
  * gets stamped on an invoice. Previewing never consumes a sequence number.
  */
 export function InvoiceNumberingSection({ value, onChange }: Props) {
+    const { t } = useTranslation('settingsInvoiceNumbering');
     const inputRef = useRef<HTMLInputElement>(null);
     const [preview, setPreview] = useState<InvoiceNumberPreview | null>(null);
     const [previewing, setPreviewing] = useState(false);
+
+    const SCOPE_OPTIONS = useMemo(() => buildScopeOptions(t), [t]);
+    const MONTHS = useMemo(() => buildMonths(t), [t]);
+    const GROUP_LABELS = useMemo(() => buildGroupLabels(t), [t]);
 
     const { data: tokens = [] } = useQuery({
         queryKey: ['invoice-number-tokens'],
@@ -144,16 +163,13 @@ export function InvoiceNumberingSection({ value, onChange }: Props) {
         <div className="space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">Invoice number format</CardTitle>
-                    <CardDescription>
-                        Build the format from the values below. Every invoice number must include
-                        a sequence number so it stays unique.
-                    </CardDescription>
+                    <CardTitle className="text-base">{t('format.title')}</CardTitle>
+                    <CardDescription>{t('format.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-5">
                     {/* Presets */}
                     <div className="space-y-1.5">
-                        <Label>Start from a common format</Label>
+                        <Label>{t('format.presets.label')}</Label>
                         <div className="flex flex-wrap gap-2">
                             {PRESETS.map((preset) => (
                                 <Button
@@ -173,7 +189,7 @@ export function InvoiceNumberingSection({ value, onChange }: Props) {
 
                     {/* Format field */}
                     <div className="space-y-1.5">
-                        <Label htmlFor="invoice-number-format">Format</Label>
+                        <Label htmlFor="invoice-number-format">{t('format.formatField.label')}</Label>
                         <Input
                             id="invoice-number-format"
                             ref={inputRef}
@@ -184,8 +200,7 @@ export function InvoiceNumberingSection({ value, onChange }: Props) {
                             placeholder="INV-{{YYYYMMDD}}-{{seq}}"
                         />
                         <p className="text-caption text-neutral-500">
-                            Anything outside {'{{ }}'} is used as-is. Letters, digits and - / _ .
-                            are allowed.
+                            {t('format.formatField.hint', { braces: '{{ }}' })}
                         </p>
                     </div>
 
@@ -194,7 +209,7 @@ export function InvoiceNumberingSection({ value, onChange }: Props) {
                         <div className="mb-2 flex items-center gap-2">
                             <Hash className="size-4 text-neutral-500" />
                             <span className="text-body font-medium text-neutral-700">
-                                Next invoice numbers
+                                {t('format.preview.title')}
                             </span>
                         </div>
                         {errors.length > 0 ? (
@@ -222,13 +237,12 @@ export function InvoiceNumberingSection({ value, onChange }: Props) {
                             </div>
                         ) : (
                             <p className="text-caption text-neutral-500">
-                                {previewing ? 'Checking…' : 'No preview available.'}
+                                {previewing ? t('format.preview.checking') : t('format.preview.unavailable')}
                             </p>
                         )}
                         {preview && errors.length === 0 && (
                             <p className="mt-2 text-caption text-neutral-500">
-                                Up to {preview.maxLength} characters (limit 100). Previewing does
-                                not use up a number.
+                                {t('format.preview.lengthHint', { count: preview.maxLength })}
                             </p>
                         )}
                     </div>
@@ -248,7 +262,7 @@ export function InvoiceNumberingSection({ value, onChange }: Props) {
 
                     {/* Token palette */}
                     <div className="space-y-3">
-                        <Label>Insert a value</Label>
+                        <Label>{t('format.tokenPalette.label')}</Label>
                         {GROUP_ORDER.filter((group) => grouped.has(group)).map((group) => (
                             <div key={group} className="space-y-1.5">
                                 <p className="text-caption font-medium text-neutral-500">
@@ -260,7 +274,10 @@ export function InvoiceNumberingSection({ value, onChange }: Props) {
                                             key={token.key}
                                             type="button"
                                             onClick={() => insertToken(token.key)}
-                                            title={`${token.label} — e.g. ${token.example}`}
+                                            title={t('format.tokenPalette.tokenTitle', {
+                                                label: token.label,
+                                                example: token.example,
+                                            })}
                                             className={cn(
                                                 'rounded-md border px-2 py-1 text-caption transition-colors',
                                                 'border-neutral-200 bg-white hover:border-primary-300 hover:bg-primary-50',
@@ -279,10 +296,13 @@ export function InvoiceNumberingSection({ value, onChange }: Props) {
                         <div className="flex items-start gap-2 text-caption text-neutral-500">
                             <Info className="mt-0.5 size-3.5 shrink-0" />
                             <span>
-                                Shorten any value with <code className="font-mono">:4</code> (first
-                                4 characters) or <code className="font-mono">:initials</code> — for
-                                example <code className="font-mono">{'{{learner_name:initials}}'}</code>.
-                                Values highlighted in amber make numbering non-sequential.
+                                {t('format.tokenPalette.shortenHint.part1')}
+                                <code className="font-mono">:4</code>
+                                {t('format.tokenPalette.shortenHint.part2')}
+                                <code className="font-mono">:initials</code>
+                                {t('format.tokenPalette.shortenHint.part3')}
+                                <code className="font-mono">{'{{learner_name:initials}}'}</code>
+                                {t('format.tokenPalette.shortenHint.part4')}
                             </span>
                         </div>
                     </div>
@@ -291,16 +311,13 @@ export function InvoiceNumberingSection({ value, onChange }: Props) {
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-base">Counter</CardTitle>
-                    <CardDescription>
-                        Controls the sequence number. Existing invoices are never renumbered, and
-                        a number is never reused.
-                    </CardDescription>
+                    <CardTitle className="text-base">{t('counter.title')}</CardTitle>
+                    <CardDescription>{t('counter.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-5">
                     <div className="grid gap-5 sm:grid-cols-2">
                         <div className="space-y-1.5">
-                            <Label htmlFor="invoice-seq-scope">Restart the counter</Label>
+                            <Label htmlFor="invoice-seq-scope">{t('counter.scope.label')}</Label>
                             <Select
                                 value={value.seqScope}
                                 onValueChange={(v) => onChange({ seqScope: v as InvoiceSeqScope })}
@@ -324,7 +341,7 @@ export function InvoiceNumberingSection({ value, onChange }: Props) {
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label htmlFor="invoice-seq-padding">Minimum digits</Label>
+                            <Label htmlFor="invoice-seq-padding">{t('counter.padding.label')}</Label>
                             <Input
                                 id="invoice-seq-padding"
                                 type="number"
@@ -340,46 +357,45 @@ export function InvoiceNumberingSection({ value, onChange }: Props) {
                                     })
                                 }
                             />
-                            <p className="text-caption text-neutral-500">
-                                4 digits shows invoice 42 as 0042.
-                            </p>
+                            <p className="text-caption text-neutral-500">{t('counter.padding.hint')}</p>
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label htmlFor="invoice-institute-code">Institute code</Label>
+                            <Label htmlFor="invoice-institute-code">{t('counter.instituteCode.label')}</Label>
                             <Input
                                 id="invoice-institute-code"
                                 value={value.instituteCode}
                                 maxLength={12}
                                 onChange={(e) => onChange({ instituteCode: e.target.value })}
-                                placeholder="Derived from the institute name"
+                                placeholder={t('counter.instituteCode.placeholder')}
                             />
                             <p className="text-caption text-neutral-500">
-                                Fills the Institute code value.
+                                {t('counter.instituteCode.hint')}
                             </p>
                         </div>
 
                         <div className="space-y-1.5">
-                            <Label htmlFor="invoice-start-from">Start next invoice at</Label>
+                            <Label htmlFor="invoice-start-from">{t('counter.startFrom.label')}</Label>
                             <Input
                                 id="invoice-start-from"
                                 type="number"
                                 min={0}
                                 value={value.startFrom || ''}
-                                placeholder={`Currently next: #${preview?.nextSequence ?? 1}`}
+                                placeholder={t('counter.startFrom.placeholder', {
+                                    count: preview?.nextSequence ?? 1,
+                                })}
                                 onChange={(e) =>
                                     onChange({ startFrom: Math.max(0, Number(e.target.value) || 0) })
                                 }
                             />
                             <p className="text-caption text-neutral-500">
-                                Only for continuing a series from another system. Moves numbering
-                                forward only.
+                                {t('counter.startFrom.hint')}
                             </p>
                         </div>
 
                         {usesFinancialYear && (
                             <div className="space-y-1.5">
-                                <Label htmlFor="invoice-fy-start">Financial year starts in</Label>
+                                <Label htmlFor="invoice-fy-start">{t('counter.fyStart.label')}</Label>
                                 <Select
                                     value={String(value.fyStartMonth)}
                                     onValueChange={(v) => onChange({ fyStartMonth: Number(v) })}
@@ -396,7 +412,7 @@ export function InvoiceNumberingSection({ value, onChange }: Props) {
                                     </SelectContent>
                                 </Select>
                                 <p className="text-caption text-neutral-500">
-                                    April for India and the UK, July for Australia.
+                                    {t('counter.fyStart.hint')}
                                 </p>
                             </div>
                         )}
@@ -404,10 +420,9 @@ export function InvoiceNumberingSection({ value, onChange }: Props) {
 
                     <div className="flex items-center justify-between rounded-md border border-neutral-200 p-3">
                         <div className="space-y-0.5 pr-4">
-                            <Label htmlFor="invoice-sanitize">Clean up text values</Label>
+                            <Label htmlFor="invoice-sanitize">{t('counter.sanitize.label')}</Label>
                             <p className="text-caption text-neutral-500">
-                                Converts names to capitals and removes spaces, accents and
-                                punctuation — &ldquo;Rahul Sharma&rdquo; becomes RAHULSHARMA.
+                                {t('counter.sanitize.hint')}
                             </p>
                         </div>
                         <Switch

@@ -1,0 +1,10 @@
+{
+    "heading": "Performance par classe",
+    "columns": {
+        "className": "Nom de la classe",
+        "projected": "Prévu",
+        "expected": "Attendu",
+        "collected": "Collecté",
+        "collectionRate": "Taux de collecte"
+    }
+}

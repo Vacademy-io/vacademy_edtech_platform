@@ -1,0 +1,93 @@
+{
+    "dialogTitle": "Send Email",
+    "dialogDescription": "Compose and send an email to the selected students.",
+    "steps": {
+        "composeEmail": "Compose Email",
+        "mapVariables": "Map Variables",
+        "reviewSend": "Review & Send"
+    },
+    "studentFields": {
+        "fullName": "Full Name",
+        "email": "Email",
+        "mobileNumber": "Mobile Number",
+        "username": "Username",
+        "enrollmentNumber": "Enrollment Number",
+        "registrationDate": "Registration Date",
+        "referralCode": "Referral Code",
+        "courseName": "Course Name",
+        "batchName": "Batch Name",
+        "batchStartDate": "Batch Start Date",
+        "batchEndDate": "Batch End Date",
+        "instituteName": "Institute Name",
+        "instituteEmail": "Institute Email",
+        "institutePhone": "Institute Phone",
+        "attendancePercentage": "Attendance %",
+        "classesAttended": "Classes Attended",
+        "totalClasses": "Total Classes",
+        "currentDate": "Current Date",
+        "supportEmail": "Support Email"
+    },
+    "toasts": {
+        "loadTemplatesFailed": "Failed to load email templates",
+        "templateContentFailed": "Failed to load template content",
+        "noValidRecipients": "No valid recipients to send email to.",
+        "sendSuccess": "Email sent successfully",
+        "sendFailed": "Failed to send email. Please try again.",
+        "unexpectedError": "An unexpected error occurred. Please try again."
+    },
+    "composeStep": {
+        "templateLabel": "Template",
+        "loadingTemplates": "Loading templates...",
+        "selectPlaceholder": "Select a template",
+        "emptyText": "No template matches your search.",
+        "noneOptionLabel": "Custom — write from scratch",
+        "loadingTemplateContent": "Loading template content...",
+        "subjectLabel": "Subject",
+        "subjectPlaceholder": "Enter email subject...",
+        "bodyLabel": "Body",
+        "previewTab": "Preview",
+        "editTab": "Edit HTML",
+        "previewEmptyState": "Pick a template or switch to Edit HTML to write content.",
+        "bodyPlaceholder": "Enter email body HTML... use {{example}} for placeholders",
+        "placeholderHintPrefix": "Use placeholders like",
+        "placeholderHintSuffix": "— you can map them to student fields (course, batch, attendance & more) in the next step.",
+        "recipientsNotice_one": "{{count}} recipient will receive this email.",
+        "recipientsNotice_other": "{{count}} recipients will receive this email.",
+        "skippedNotice_one": "({{count}} skipped — no email address)",
+        "skippedNotice_other": "({{count}} skipped — no email address)"
+    },
+    "variableMappingStep": {
+        "noVariables": "No variables to map. You can proceed.",
+        "mapHintPrefix": "Map each placeholder to a student field, or set a fixed value. Standard names you leave unmapped (e.g.",
+        "mapHintSuffix": ") still resolve automatically.",
+        "columnVariable": "Variable",
+        "columnMappedField": "Mapped Field",
+        "selectFieldPlaceholder": "Select field...",
+        "staticValueOption": "Static value…",
+        "staticValuePlaceholder": "e.g. \"Student\""
+    },
+    "reviewStep": {
+        "emailSent": "Email Sent",
+        "sendCompleted": "Send Completed",
+        "recipientsLabel": "Recipients",
+        "sentLabel": "Sent",
+        "failedLabel": "Failed",
+        "close": "Close",
+        "channelLabel": "Email",
+        "channelHeading": "Channel",
+        "subjectLabel": "Subject",
+        "selectedStudentsCount_one": "{{count}} selected student",
+        "selectedStudentsCount_other": "{{count}} selected students",
+        "skippedNotice_one": "({{count}} skipped — no email)",
+        "skippedNotice_other": "({{count}} skipped — no email)",
+        "variableMappingsLabel": "Variable Mappings",
+        "staticValueLabel": "Static: \"{{value}}\"",
+        "sending": "Sending...",
+        "sendButton_one": "Send to {{count}} student",
+        "sendButton_other": "Send to {{count}} students"
+    },
+    "footer": {
+        "back": "Back",
+        "next": "Next"
+    }
+}

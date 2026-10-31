@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import {
     YooptaPlugin,
     useYooptaEditor,
@@ -53,6 +54,7 @@ try { initializeMermaid(); } catch (_) { /* silent */ }
 
 /** Portal-based zoom modal — renders at document.body so it's never clipped */
 function MermaidZoomModal({ svg, onClose }: { svg: string; onClose: () => void }) {
+    const { t } = useTranslation('studyLibraryMermaidEditor');
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose();
@@ -105,7 +107,7 @@ function MermaidZoomModal({ svg, onClose }: { svg: string; onClose: () => void }
                     backdropFilter: 'blur(4px)',
                     zIndex: 100000,
                 }}
-                title="Close (Esc)"
+                title={t('zoomModal.closeTitle')}
             >
                 ✕
             </button>
@@ -143,6 +145,7 @@ const EXAMPLE_CODE = `graph TD
   B -->|No| D[Do that]`;
 
 export function MermaidBlock({ element, attributes, children, blockId }: PluginElementRenderProps) {
+    const { t } = useTranslation('studyLibraryMermaidEditor');
     const editor = useYooptaEditor();
     const isReadOnly = useYooptaReadOnly();
     const initialCode = element?.props?.code || '';
@@ -240,7 +243,7 @@ export function MermaidBlock({ element, attributes, children, blockId }: PluginE
         <>
             <div
                 onClick={() => setIsZoomed(true)}
-                title="Click to zoom"
+                title={t('block.clickToZoom')}
                 style={{
                     margin: '12px 0 0',
                     padding: '16px',
@@ -270,7 +273,7 @@ export function MermaidBlock({ element, attributes, children, blockId }: PluginE
                         opacity: 0.85,
                     }}
                 >
-                    🔍 Click to zoom
+                    🔍 {t('block.clickToZoom')}
                 </div>
                 <div
                     dangerouslySetInnerHTML={{ __html: svg }}
@@ -307,7 +310,7 @@ export function MermaidBlock({ element, attributes, children, blockId }: PluginE
                     }}
                 >
                     <span style={{ fontSize: '14px', fontWeight: 600, color: C.accent }}>
-                        Mermaid Diagram
+                        {t('block.header')}
                     </span>
                     <button
                         onClick={() => setIsEditing((v) => !v)}
@@ -321,7 +324,7 @@ export function MermaidBlock({ element, attributes, children, blockId }: PluginE
                             cursor: 'pointer',
                         }}
                     >
-                        {isEditing ? 'Done' : 'Edit code'}
+                        {isEditing ? t('block.done') : t('block.editCode')}
                     </button>
                 </div>
             )}
@@ -330,14 +333,14 @@ export function MermaidBlock({ element, attributes, children, blockId }: PluginE
                 {isEditing && !isReadOnly ? (
                     <>
                         <label style={{ fontSize: '12px', fontWeight: 600, color: C.label, display: 'block', marginBottom: '4px' }}>
-                            Diagram code
+                            {t('block.diagramCodeLabel')}
                         </label>
                         <textarea
                             value={code}
                             onChange={(e) => commitCode(e.target.value)}
                             onBlur={() => commitCode(code)}
                             onKeyDown={handleKeyDown}
-                            placeholder={`Type Mermaid code, e.g.\n${EXAMPLE_CODE}`}
+                            placeholder={`${t('block.diagramCodePlaceholder')}\n${EXAMPLE_CODE}`}
                             spellCheck={false}
                             rows={6}
                             style={{
@@ -355,8 +358,7 @@ export function MermaidBlock({ element, attributes, children, blockId }: PluginE
                             }}
                         />
                         <div style={{ marginTop: '6px', fontSize: '11px', color: C.muted, lineHeight: 1.5 }}>
-                            Live preview below. Supports flowcharts (<code>graph TD</code>), sequence,
-                            class, gantt, pie, etc.{' '}
+                            {t('block.livePreviewHintPrefix')} (<code>graph TD</code>){t('block.livePreviewHintSuffix')}{' '}
                             <button
                                 type="button"
                                 onClick={() => commitCode(EXAMPLE_CODE)}
@@ -370,13 +372,13 @@ export function MermaidBlock({ element, attributes, children, blockId }: PluginE
                                     textDecoration: 'underline',
                                 }}
                             >
-                                Insert example
+                                {t('block.insertExample')}
                             </button>
                         </div>
 
                         {isRendering && (
                             <div style={{ textAlign: 'center', padding: '16px', color: C.muted, fontSize: '13px' }}>
-                                Rendering diagram…
+                                {t('block.renderingDiagram')}
                             </div>
                         )}
                         {renderedDiagram}
@@ -392,13 +394,13 @@ export function MermaidBlock({ element, attributes, children, blockId }: PluginE
                                     color: C.danger,
                                 }}
                             >
-                                Couldn't render this diagram — check the Mermaid syntax.
+                                {t('block.renderError')}
                             </div>
                         )}
                     </>
                 ) : isRendering ? (
                     <div style={{ textAlign: 'center', padding: '20px', color: C.muted, fontSize: '13px' }}>
-                        Rendering diagram…
+                        {t('block.renderingDiagram')}
                     </div>
                 ) : svg ? (
                     renderedDiagram
@@ -415,8 +417,8 @@ export function MermaidBlock({ element, attributes, children, blockId }: PluginE
                     >
                         <em>
                             {isReadOnly
-                                ? 'No diagram'
-                                : 'Click to add Mermaid diagram code'}
+                                ? t('block.noDiagram')
+                                : t('block.clickToAdd')}
                         </em>
                     </div>
                 )}

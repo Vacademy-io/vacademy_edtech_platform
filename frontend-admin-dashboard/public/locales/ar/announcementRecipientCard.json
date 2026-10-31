@@ -1,0 +1,94 @@
+{
+    "ruleTypes": {
+        "role": "كل من لديه دور",
+        "packageSession": "دفعات محددة",
+        "packageSessionSpecific": "{{batchNounPlural}} محددة",
+        "user": "أشخاص محددون",
+        "tag": "أشخاص يحملون وسومًا",
+        "audience": "جمهور حملة",
+        "customFieldFilter": "أشخاص يطابقون قيم الحقول"
+    },
+    "removeAudience": "إزالة الجمهور {{index}}",
+    "role": {
+        "label": "الدور",
+        "placeholder": "اختر دورًا",
+        "admins": "المسؤولون"
+    },
+    "packageSession": {
+        "orgRoleLabel": "من داخل المنظمة الفرعية؟",
+        "orgRolePlaceholder": "اختر مسؤول أو متعلم",
+        "orgRoleLearners": "المتعلمون",
+        "orgRoleAdmins": "المسؤولون",
+        "orgRoleHint": "ينتمي واحد أو أكثر من {{batchNounPlural}} المحددة إلى منظمة فرعية، مما يتطلب تحديد دور صريح."
+    },
+    "user": {
+        "label": "معرّفات المستخدمين أو بريدهم الإلكتروني",
+        "placeholder": "الصق المعرّفات أو رسائل البريد الإلكتروني، مفصولة بفواصل",
+        "add": "إضافة",
+        "remove": "إزالة {{id}}"
+    },
+    "tag": {
+        "label": "الوسوم",
+        "scopeAll": "جميع الوسوم",
+        "scopeDefault": "الوسوم الافتراضية",
+        "scopeInstitute": "وسوم المعهد",
+        "loading": "جارٍ تحميل الوسوم…",
+        "placeholder": "اختر وسمًا واحدًا أو أكثر",
+        "hintPrefix": "كل من يحمل",
+        "hintAny": "أيًا",
+        "hintSuffix": "من الوسوم المحددة يتلقى هذا."
+    },
+    "audience": {
+        "label": "الحملات",
+        "loading": "جارٍ تحميل الحملات…",
+        "placeholder": "اختر حملة واحدة أو أكثر",
+        "searchPlaceholder": "البحث عن الحملات…",
+        "emptyText": "لم يتم العثور على حملات.",
+        "hint": "يستلم هذا كل من ينتمي إلى أي من الحملات المختارة."
+    },
+    "customFieldFilter": {
+        "hintPrefix": "كل من يطابق ملفه الشخصي الفلاتر أدناه يتلقى هذا. أضفهم ضمن",
+        "hintRefine": "التنقيح"
+    },
+    "refine": {
+        "toggle": "تنقيح — فلاتر الحقول والاستثناءات",
+        "fieldFiltersLabel": "فلاتر الحقول",
+        "addFilter": "إضافة فلتر",
+        "noCustomFields": "لا توجد حقول مخصصة مُهيَّأة لهذا المعهد.",
+        "noFilters": "لا توجد فلاتر — يشمل ذلك جميع من سبق ذكرهم أعلاه.",
+        "chooseField": "اختر حقلًا",
+        "removeFilter": "إزالة الفلتر",
+        "selectValues": "اختر القيم",
+        "enterNumber": "أدخل رقمًا",
+        "operatorEquals": "يساوي",
+        "operatorContains": "يحتوي على",
+        "operatorStartsWith": "يبدأ بـ",
+        "operatorEndsWith": "ينتهي بـ",
+        "valueToMatch": "القيمة المطلوب مطابقتها",
+        "exclusionsLabel": "الاستثناءات",
+        "addExclusion": "إضافة استثناء",
+        "noExclusions": "لا يُستثنى أحد من هذا الجمهور.",
+        "exclusionRole": "الدور",
+        "exclusionTag": "الوسم",
+        "exclusionUser": "المستخدم",
+        "selectRole": "اختر دورًا",
+        "removeExclusion": "إزالة الاستثناء",
+        "selectBatch": "اختر {{batchNoun}}",
+        "searchBatches": "البحث عن {{batchNounPlural}}…",
+        "noBatchesFound": "لم يتم العثور على {{batchNounPlural}}.",
+        "selectTag": "اختر وسمًا",
+        "searchTags": "البحث عن الوسوم…",
+        "noTagsFound": "لم يتم العثور على وسوم.",
+        "userIdOrEmail": "معرّف المستخدم أو بريده الإلكتروني"
+    },
+    "reach": {
+        "estimating": "جارٍ تقدير مدى الوصول…",
+        "unavailable": "تقدير مدى الوصول غير متوفر.",
+        "summary_zero": "لا أحد يحمل الوسوم المحددة في هذا الإعلان ({{formattedCount}}).",
+        "summary_one": "شخص واحد يحمل الوسوم المحددة في هذا الإعلان.",
+        "summary_two": "شخصان يحملان الوسوم المحددة في هذا الإعلان.",
+        "summary_few": "{{formattedCount}} أشخاص يحملون الوسوم المحددة في هذا الإعلان.",
+        "summary_many": "{{formattedCount}} شخصًا يحملون الوسوم المحددة في هذا الإعلان.",
+        "summary_other": "{{formattedCount}} شخص يحمل الوسوم المحددة في هذا الإعلان."
+    }
+}

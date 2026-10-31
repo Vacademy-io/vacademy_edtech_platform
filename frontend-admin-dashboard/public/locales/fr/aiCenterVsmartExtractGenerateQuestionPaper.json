@@ -1,0 +1,46 @@
+{
+    "header": {
+        "title": "Réutiliser des questions existantes",
+        "subtitle": "Déposez un sujet d'examen (PDF, Word ou PowerPoint). Nous en extrairons les questions et les transformerons en un ensemble modifiable."
+    },
+    "dropzone": {
+        "instruction": "Déposez votre sujet d'examen ici, ou cliquez pour le choisir",
+        "hint": "PDF, Word ou PowerPoint contenant des questions existantes."
+    },
+    "fileCard": {
+        "removeAriaLabel": "Supprimer le fichier",
+        "status": {
+            "uploading": "Envoi en cours…",
+            "processing": "Lecture en cours…",
+            "ready": "Prêt à extraire",
+            "generating": "Extraction des questions",
+            "done": "Terminé"
+        }
+    },
+    "workingLabel": {
+        "uploading": "Lecture de votre fichier…",
+        "processing": "Préparation de votre document…",
+        "generating": "Extraction des questions — cela prend généralement ~30 secondes."
+    },
+    "generatingState": {
+        "title": "Extraction des questions",
+        "subtitle": "Lecture du sujet et numérisation de chaque question. Généralement ~30 secondes."
+    },
+    "questionConfig": {
+        "ctaLabel": "Extraire les questions"
+    },
+    "recentFiles": {
+        "title": "Vos extractions récentes",
+        "emptyHint": "Vos extractions apparaîtront ici. Déposez un sujet d'examen ci-dessus pour commencer.",
+        "fallbackLabel": "Extraction sans titre"
+    },
+    "productName": "Vsmart Extract",
+    "errors": {
+        "unsupportedFormat": "Nous ne pouvons pas encore lire les fichiers .{{ext}}. Essayez PDF, Word ou PowerPoint.",
+        "uploadFailed": "L'envoi ne s'est pas terminé. Voulez-vous réessayer ?",
+        "processFailed": "Nous n'avons pas pu lire ce fichier. Essayer un autre ?",
+        "readFailed": "Un problème est survenu lors de la lecture de votre fichier. Réessayer ?",
+        "extractionFailed": "Nous n'avons pas pu terminer cette extraction. Voulez-vous réessayer ?",
+        "generateFailed": "Nous n'avons pas pu extraire de questions de ce fichier. Essayer un autre ?"
+    }
+}

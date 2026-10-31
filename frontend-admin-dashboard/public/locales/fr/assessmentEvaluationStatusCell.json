@@ -1,0 +1,10 @@
+{
+    "evaluated": "Évalué",
+    "evaluating": "Évaluation en cours",
+    "pending": "En attente",
+    "viewEvaluatedCopy": "Voir la copie évaluée",
+    "noEvaluatedCopyError": "Aucune copie évaluée trouvée pour cette tentative.",
+    "loadFailedError": "Échec du chargement de la copie évaluée. Veuillez réessayer.",
+    "evaluatedCopyHeading": "Copie évaluée",
+    "fileNamePrefix": "Copie-Evaluee"
+}

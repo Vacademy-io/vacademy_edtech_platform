@@ -1,0 +1,15 @@
+{
+    "dialog": {
+        "defaultTitle": "विश्लेषण रिपोर्ट"
+    },
+    "tabs": {
+        "efforts": "प्रयास",
+        "overview": "अवलोकन",
+        "topics": "विषय",
+        "remedial": "उपचारात्मक"
+    },
+    "sections": {
+        "strengths": "मजबूत पक्ष",
+        "weaknesses": "कमज़ोर पक्ष"
+    }
+}

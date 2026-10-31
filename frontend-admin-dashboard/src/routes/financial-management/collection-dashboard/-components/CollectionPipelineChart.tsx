@@ -1,6 +1,7 @@
 import React from 'react';
-import { 
-    BarChart, 
+import { useTranslation } from 'react-i18next';
+import {
+    BarChart,
     Bar, 
     XAxis, 
     YAxis, 
@@ -26,10 +27,11 @@ const renderCustomAxisTick = ({ x, y, payload }: any) => {
 };
 
 export const CollectionPipelineChart: React.FC<PipelineChartProps> = ({ data }) => {
+    const { t } = useTranslation('financialManagementCollectionPipelineChart');
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 h-full">
             <h2 className="text-sm font-bold text-gray-800 mb-6 border-b border-gray-100 pb-2 uppercase tracking-wide">
-                Collection Pipeline
+                {t('heading')}
             </h2>
             <div className="h-[280px] w-full">
                 <ResponsiveContainer width="100%" height="100%">

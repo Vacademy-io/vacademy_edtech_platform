@@ -1,0 +1,23 @@
+{
+    "loading": "लीड लोड हो रही हैं…",
+    "empty": "कोई खुली लीड नहीं है।",
+    "table": {
+        "expandRow": "पंक्ति विस्तृत करें",
+        "lead": "लीड",
+        "status": "स्थिति",
+        "score": "स्कोर",
+        "campaign": "अभियान",
+        "assigned": "असाइन किया गया",
+        "actions": "कार्रवाइयाँ",
+        "hideTransferHistory": "स्थानांतरण इतिहास छिपाएं",
+        "showTransferHistory": "स्थानांतरण इतिहास दिखाएं",
+        "transferHistory": "स्थानांतरण इतिहास",
+        "openLead": "लीड खोलें",
+        "call": "कॉल करें",
+        "reassign": "पुनः असाइन करें"
+    },
+    "pagination": {
+        "showingRange": "{{total}} में से {{from}}–{{to}} दिखा रहे हैं",
+        "loadingSuffix": " · लोड हो रहा है…"
+    }
+}

@@ -1,0 +1,53 @@
+{
+    "kpi": {
+        "callsAnalyzed": {
+            "label": "Appels analysés"
+        },
+        "avgCallerRating": {
+            "label": "Note moyenne appelant",
+            "sub": "dans quelle mesure l'équipe a fait avancer son objectif"
+        },
+        "avgOutcomeRating": {
+            "label": "Note moyenne résultat",
+            "sub": "comment l'appel s'est déroulé pour le prospect"
+        },
+        "positiveSentiment": {
+            "label": "Ressenti positif",
+            "sub_one": "{{positive}} sur {{count}} prospect",
+            "sub_many": "{{positive}} sur {{count}} prospects",
+            "sub_other": "{{positive}} sur {{count}} prospects"
+        }
+    },
+    "breakdown": {
+        "callOutcomesTitle": "Résultats des appels",
+        "leadSentimentTitle": "Ressenti des prospects"
+    },
+    "section": {
+        "teamCallQualityTitle": "Équipe — qualité des appels"
+    },
+    "table": {
+        "counsellor": "Conseiller",
+        "calls": "Appels",
+        "avgCaller": "Moy. appelant",
+        "avgOutcome": "Moy. résultat"
+    },
+    "emptyHint": {
+        "noAnalyzedCalls": "Aucun appel analysé sur cette période. Activez CRM Intelligence et analysez des appels pour alimenter ce rapport.",
+        "noPerCounsellorData": "Aucune donnée par conseiller sur cette période."
+    },
+    "status": {
+        "connectedPositive": "Positif",
+        "connectedNeutral": "Neutre",
+        "connectedNegative": "Négatif",
+        "callbackRequested": "Rappel demandé",
+        "notInterested": "Pas intéressé",
+        "informationOnly": "Information seulement",
+        "noClearOutcome": "Résultat peu clair",
+        "wrongNumber": "Mauvais numéro"
+    },
+    "sentiment": {
+        "positive": "Positif",
+        "neutral": "Neutre",
+        "negative": "Négatif"
+    }
+}

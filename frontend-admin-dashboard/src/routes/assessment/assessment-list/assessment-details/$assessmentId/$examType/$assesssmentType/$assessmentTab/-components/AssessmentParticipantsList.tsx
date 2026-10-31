@@ -4,6 +4,7 @@
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getBatchDetailsListOfStudents } from '../-services/assessment-details-services';
 import { getInstituteId } from '@/constants/helper';
 import { MyTable } from '@/components/design-system/table';
@@ -29,6 +30,7 @@ export interface AssessmentParticipantsInterface {
 }
 
 export const AssessmentParticipantsList = ({ batchId }: { batchId: string }) => {
+    const { t } = useTranslation('assessmentParticipantsList');
     const { data: initData } = useSuspenseQuery(useInstituteQuery());
     const instituteId = getInstituteId();
     const [pageNo, setPageNo] = useState(0);
@@ -167,13 +169,13 @@ export const AssessmentParticipantsList = ({ batchId }: { batchId: string }) => 
                         className="text-sm text-primary-500"
                         onClick={handleGetParticipantsDetails}
                     >
-                        View List
+                        {t('trigger.viewList')}
                     </span>
                 </div>
             </DialogTrigger>
-            <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col gap-6 overflow-y-auto !p-0">
+            <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col gap-6 overflow-y-auto !p-0">{/* design-lint-ignore: vh/vw dialog sizing matches MyDialog primitive */}
                 <h1 className="rounded-t-lg bg-primary-100 p-4 font-semibold text-primary-500">
-                    Participants List
+                    {t('dialog.title')}
                 </h1>
                 {getParticipantsData.status === 'pending' ? (
                     <DashboardLoader />
@@ -187,7 +189,7 @@ export const AssessmentParticipantsList = ({ batchId }: { batchId: string }) => 
                                 clearSearch={clearSearch}
                             />
                             <ScheduleTestFilters
-                                label="Gender"
+                                label={t('filters.genderLabel')}
                                 data={initData?.genders.map((gender, idx) => ({
                                     id: String(idx),
                                     name: gender,
@@ -240,6 +242,7 @@ export const Step3ParticipantsFilterButtons = ({
     handleSubmitFilters,
     handleResetFilters,
 }: ScheduleTestFilterButtonsProps) => {
+    const { t } = useTranslation('assessmentParticipantsList');
     const isButtonEnabled = () => {
         const { name, gender } = selectedQuestionPaperFilters;
         return name || gender?.length > 0;
@@ -255,7 +258,7 @@ export const Step3ParticipantsFilterButtons = ({
                         className="h-8"
                         onClick={handleSubmitFilters}
                     >
-                        Filter
+                        {t('filterButtons.filter')}
                     </MyButton>
                     <MyButton
                         buttonType="secondary"
@@ -264,7 +267,7 @@ export const Step3ParticipantsFilterButtons = ({
                         className="h-8 border border-neutral-400 bg-neutral-200 hover:border-neutral-500 hover:bg-neutral-300 active:border-neutral-600 active:bg-neutral-400"
                         onClick={handleResetFilters}
                     >
-                        Reset
+                        {t('filterButtons.reset')}
                     </MyButton>
                 </div>
             )}

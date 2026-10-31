@@ -1,0 +1,235 @@
+{
+    "common": {
+        "sourceList": "Source List",
+        "resultKey": "Result Key",
+        "templateVariables": "Template Variables",
+        "selectANode": "Select a node to configure",
+        "nodeName": "Node Name",
+        "nodeNamePlaceholder": "Enter node name",
+        "requiredParameters": "Required Parameters",
+        "autoFilled": "Auto-filled from workflow context",
+        "pickOrTypeValueFor": "Pick or type value for {{param}}...",
+        "enterParam": "Enter {{param}}...",
+        "deleteNode": "Delete Node",
+        "configurationJson": "Configuration (JSON)"
+    },
+    "triggerScope": {
+        "noScope": "This event fires for the whole institute — there is nothing to scope it to."
+    },
+    "trigger": {
+        "triggerEvent": "Trigger Event",
+        "selectEvent": "Select event..."
+    },
+    "email": {
+        "sendEmailsTo": "Send emails to",
+        "selectDataSource": "Select data source...",
+        "respondentEmails": "Respondent emails (from trigger)",
+        "respondentEmailsDesc": "Pre-built email with to/subject/body from the form submission",
+        "adminEmails": "Admin emails (from trigger)",
+        "adminEmailsDesc": "Email notifications for admins",
+        "audienceLeads": "Audience leads (from query)",
+        "audienceLeadsDesc": "List of leads with custom field data",
+        "students": "Students (from query)",
+        "studentsDesc": "List of students with name, email, phone",
+        "enrolledStudents": "Enrolled students (from query)",
+        "enrolledStudentsDesc": "List of enrolled students with name, email, mobile",
+        "queryResults": "Query results ({{queryKey}})",
+        "queryResultsDesc": "Results from the query node",
+        "connectUpstreamData": "Connect a Trigger or Query node upstream to auto-detect data sources.",
+        "pickRecipients": "Pick a list of recipients...",
+        "emailTemplate": "Email Template",
+        "emailTemplateOptional": "(optional — skip to use pre-built email from data source)",
+        "noTemplatePlaceholder": "No template (use data source's subject/body)",
+        "noTemplateSearchEmpty": "No email template matches your search.",
+        "sendToField": "Send to field",
+        "sendToFieldHint": "(which email field from each item)",
+        "autoDetectToEmail": "Auto-detect (to, email)",
+        "studentEmail": "Student Email",
+        "fatherParentEmail": "Father/Parent Email",
+        "guardianEmail": "Guardian Email",
+        "motherEmail": "Mother Email",
+        "toPrebuiltRecipient": "To (pre-built recipient)",
+        "templateVariablesHint": "Map each template placeholder to a data field. Select from dropdown or type a custom field name.",
+        "selectAField": "Select a field...",
+        "itemFieldsGroup": "Item Fields (from list)",
+        "contextFieldsGroup": "Context / Trigger Fields",
+        "customFieldsGroup": "Custom Fields (type name manually)",
+        "typeCustomFieldBelow": "Type the custom field name below",
+        "customValue": "Custom: {{value}}",
+        "customFieldPlaceholder": "Or type custom field name (e.g. Full Name, Phone Number)",
+        "field": {
+            "recipientEmail": "Recipient Email",
+            "emailSubject": "Email Subject",
+            "email": "Email",
+            "parentEmail": "Parent Email",
+            "parentName": "Parent Name",
+            "mobileNumber": "Mobile Number",
+            "userId": "User ID",
+            "studentName": "Student Name",
+            "studentEmail": "Student Email",
+            "enrollmentNumber": "Enrollment Number",
+            "attendancePercentage": "Attendance %",
+            "totalDuration": "Total Duration (min)",
+            "chatCount": "Chat Count",
+            "handRaiseCount": "Hand Raise Count",
+            "sessionsAttended": "Sessions Attended",
+            "reportStartDate": "Report Start Date",
+            "reportEndDate": "Report End Date",
+            "fullName": "Full Name",
+            "username": "Username",
+            "batchId": "Batch ID"
+        },
+        "context": {
+            "instituteName": "Institute Name (auto)",
+            "instituteId": "Institute ID (auto)",
+            "learnerUsername": "Learner Username (from trigger)",
+            "learnerPassword": "Learner Password (from trigger)",
+            "learnerFullName": "Learner Full Name (from trigger)",
+            "learnerEmail": "Learner Email (from trigger)",
+            "learnerMobile": "Learner Mobile (from trigger)",
+            "liveSessionTitle": "Live Session Title (from trigger)",
+            "sessionStartTime": "Session Start Time (from trigger)",
+            "sessionMeetLink": "Session Meet Link (from trigger)",
+            "campaignName": "Campaign Name (from trigger)",
+            "submissionTime": "Submission Time (from trigger)"
+        }
+    },
+    "whatsapp": {
+        "template": "WhatsApp Template",
+        "selectTemplate": "Select template...",
+        "noTemplateSearchEmpty": "No WhatsApp template matches your search.",
+        "sendTo": "Send WhatsApp to",
+        "selectRecipients": "Select recipients...",
+        "connectUpstreamRecipients": "Connect a Trigger or Query node upstream to auto-detect recipients.",
+        "leadSubmitter": "Lead submitter (from trigger)",
+        "leadSubmitterDesc": "The single user who submitted the form — their mobileNumber is used",
+        "audienceLeads": "Audience leads (from query)",
+        "audienceLeadsDesc": "Leads with phone in custom fields",
+        "students": "Students (from query)",
+        "studentsDesc": "Students with mobileNumber",
+        "enrolledStudents": "Enrolled students (from query)",
+        "enrolledStudentsDesc": "Enrolled students with mobileNumber",
+        "queryResults": "Query results ({{queryKey}})",
+        "queryResultsDesc": "Results from the query node",
+        "valueForField": "Value for {{field}}..."
+    },
+    "http": {
+        "requestType": "Request Type",
+        "externalApi": "External API",
+        "internalService": "Internal Service",
+        "url": "URL",
+        "internalUrlPlaceholder": "/admin-core-service/v1/...",
+        "externalUrlPlaceholder": "https://api.example.com/endpoint",
+        "method": "Method",
+        "headers": "Headers",
+        "optional": "(optional)",
+        "queryParameters": "Query Parameters",
+        "requestBody": "Request Body",
+        "requestBodyJson": "(JSON)",
+        "resultKeyHint": "Response will be available as #ctx['{{resultKey}}']['body']",
+        "condition": "Condition",
+        "conditionHint": "(optional — skip request if false)",
+        "conditionPlaceholder": "Leave empty to always execute"
+    },
+    "query": {
+        "query": "Query",
+        "selectQuery": "Select a query...",
+        "optionalFilters": "Optional Filters",
+        "optional": "(optional)"
+    },
+    "delay": {
+        "waitMode": "Wait mode",
+        "fixedDuration": "Fixed duration",
+        "untilNextWeekday": "Until next weekday",
+        "waitFor": "Wait for",
+        "pauseResumeAfter_one": "Workflow will pause and resume automatically after {{count}} day.",
+        "pauseResumeAfter_other": "Workflow will pause and resume automatically after {{count}} days.",
+        "waitUntilNext": "Wait until next",
+        "timezone": "Timezone",
+        "pausesUntil": "Pauses until the next {{day}} at {{time}}. An event on that same weekday waits a full week.",
+        "day": {
+            "monday": "Monday",
+            "tuesday": "Tuesday",
+            "wednesday": "Wednesday",
+            "thursday": "Thursday",
+            "friday": "Friday",
+            "saturday": "Saturday",
+            "sunday": "Sunday"
+        },
+        "unit": {
+            "seconds": "Seconds",
+            "minutes": "Minutes",
+            "hours": "Hours",
+            "days": "Days"
+        }
+    },
+    "filter": {
+        "pickListToFilter": "Pick a list to filter...",
+        "keepItemsWhere": "Keep items where",
+        "saveFilteredListAs": "Save filtered list as"
+    },
+    "aggregate": {
+        "pickListToAggregate": "Pick a list to aggregate...",
+        "operations": "Operations"
+    },
+    "condition": {
+        "trueLabel": "True Label",
+        "falseLabel": "False Label"
+    },
+    "loop": {
+        "sourceExpression": "Source Expression",
+        "pickListVariable": "Pick a list variable...",
+        "itemVariableName": "Item Variable Name",
+        "itemVariableHint": "Access each item in downstream nodes as #ctx['{variableName}']",
+        "outputKey": "Output Key"
+    },
+    "merge": {
+        "waitForNodeIds": "Wait For Node IDs (comma-separated)",
+        "waitForHint": "IDs of upstream nodes whose output must be present before continuing.",
+        "strategy": "Strategy",
+        "waitAll": "Wait for ALL upstream nodes",
+        "waitAny": "Continue when ANY upstream completes"
+    },
+    "scheduleTask": {
+        "delayDuration": "Delay Duration (ISO-8601)",
+        "delayDurationHint": "PT1H = 1 hour, P3D = 3 days, PT30M = 30 minutes",
+        "targetWorkflowId": "Target Workflow ID (optional)",
+        "targetWorkflowIdPlaceholder": "Leave empty for current workflow",
+        "contextKeysToForward": "Context Keys to Forward (comma-separated)"
+    },
+    "updateRecord": {
+        "table": "Table",
+        "selectTable": "Select table...",
+        "findRecordsWhere": "Find records where",
+        "setValuesTo": "Set values to",
+        "columnPlaceholder": "column",
+        "matchValuePlaceholder": "match value",
+        "newValuePlaceholder": "new value"
+    },
+    "pushNotification": {
+        "title": "Title",
+        "titlePlaceholder": "New assignment posted!",
+        "body": "Body",
+        "bodyPlaceholder": "Check out the new assignment in your course",
+        "recipientTokens": "Recipient Tokens",
+        "recipientTokensPlaceholder": "Pick FCM token list...",
+        "dataPayload": "Data Payload (JSON, optional)"
+    },
+    "leadStatus": {
+        "label": "Lead Status",
+        "selectStatus": "Select status..."
+    },
+    "callAi": {
+        "agent": "Agent",
+        "selectAgent": "Select agent...",
+        "infoPrefix": "Agents are registered in Settings → AI Calling (Campaigns / AI Agents). The call outcome comes back as",
+        "infoOutcomeSuffix": "(ASSIGN | STOP | RETRY),",
+        "infoAnd": "and",
+        "provider": "Provider (optional)",
+        "instituteDefault": "Institute default",
+        "instituteDefaultWithProvider": "Institute default ({{provider}})",
+        "ignoreAssignedGuardLabel": "Also call leads that already have a counsellor",
+        "ignoreAssignedGuardHint": "Off by default: the bot skips leads a counsellor already owns. Turn this on for workflows that deliberately target owned leads — e.g. re-calling a lead a counsellor just marked DNP — or the node will stop without dialling. Daily call caps still apply.",
+        "extraMetadata": "Extra metadata for the agent (JSON, optional)"
+    }
+}

@@ -1,0 +1,5 @@
+{
+    "httpError": "Judge0 HTTP {{status}} : {{statusText}}",
+    "compileError": "Erreur de compilation",
+    "noOutput": "(aucune sortie)"
+}

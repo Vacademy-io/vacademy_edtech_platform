@@ -1,0 +1,58 @@
+{
+    "header": {
+        "title": "خيارات الدفع"
+    },
+    "emptyState": {
+        "title": "لم يتم إنشاء أي خيار دفع بعد",
+        "subtitle": "أنشئ خيار الدفع الأول لبدء قبول المدفوعات"
+    },
+    "badge": {
+        "default": "افتراضي"
+    },
+    "actions": {
+        "viewDetails": "عرض التفاصيل",
+        "hide": "إخفاء",
+        "makeDefault": "تعيين كافتراضي"
+    },
+    "currency": "العملة: {{currency}}",
+    "priceDetails": {
+        "noConfig": "لا يوجد تكوين متاح",
+        "percentOff": "خصم {{amount}}%",
+        "amountOff": "خصم {{symbol}}{{amount}}",
+        "fullPriceLabel": "السعر الكامل:",
+        "fullPriceValue": "السعر الكامل: {{symbol}}{{price}}",
+        "suggestedAmounts": "المبالغ المقترحة: {{symbol}}{{amount}}",
+        "minimumAmount": "الحد الأدنى للمبلغ: {{symbol}}{{amount}}",
+        "feeTypeCount_zero": "{{count}} نوع رسوم",
+        "feeTypeCount_one": "نوع رسوم واحد ({{count}})",
+        "feeTypeCount_two": "نوعا رسوم ({{count}})",
+        "feeTypeCount_few": "{{count}} أنواع رسوم",
+        "feeTypeCount_many": "{{count}} نوع رسوم",
+        "feeTypeCount_other": "{{count}} نوع رسوم",
+        "total": "الإجمالي: ₹{{total}}",
+        "batchLinked_zero": "{{count}} دفعة مرتبطة",
+        "batchLinked_one": "دفعة واحدة مرتبطة ({{count}})",
+        "batchLinked_two": "دفعتان مرتبطتان ({{count}})",
+        "batchLinked_few": "{{count}} دفعات مرتبطة",
+        "batchLinked_many": "{{count}} دفعة مرتبطة",
+        "batchLinked_other": "{{count}} دفعة مرتبطة",
+        "clickViewDetails": "انقر على \"عرض التفاصيل\" لرؤية تفاصيل الرسوم"
+    },
+    "cpo": {
+        "feeTypesTitle": "أنواع الرسوم",
+        "loadingDetails": "جارٍ تحميل تفاصيل الأقساط…",
+        "noFeeTypes": "لم يتم العثور على أنواع رسوم.",
+        "installmentCount_zero": "{{count}} قسط",
+        "installmentCount_one": "قسط واحد ({{count}})",
+        "installmentCount_two": "قسطان ({{count}})",
+        "installmentCount_few": "{{count}} أقساط",
+        "installmentCount_many": "{{count}} قسطًا",
+        "installmentCount_other": "{{count}} قسط",
+        "refundable": "قابل للاسترداد",
+        "penalty": "غرامة {{percent}}%",
+        "columnNumber": "#",
+        "columnAmount": "المبلغ",
+        "totalLabel": "الإجمالي",
+        "oneTimePayment": "دفعة واحدة بقيمة ₹{{amount}}"
+    }
+}

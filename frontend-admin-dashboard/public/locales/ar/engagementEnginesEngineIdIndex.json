@@ -1,0 +1,128 @@
+{
+    "navHeading": "المحرك",
+    "backToAll": "كل المحركات",
+    "loadError": "تعذّر تحميل هذا المحرك.",
+    "viewTaskInbox": "عرض صندوق المهام",
+    "detail": {
+        "activeMember_zero": "عضو نشط",
+        "activeMember_one": "عضو نشط",
+        "activeMember_two": "عضوان نشطان",
+        "activeMember_few": "أعضاء نشطون",
+        "activeMember_many": "عضوًا نشطًا",
+        "activeMember_other": "عضو نشط",
+        "resolveAudience": "إضافة الأشخاص الآن",
+        "resolving": "جارٍ إضافة الأشخاص…"
+    },
+    "statusActions": {
+        "DRY_RUN": "بدء تجربة وهمية",
+        "ACTIVE": "تفعيل",
+        "PAUSED": "إيقاف مؤقت",
+        "ARCHIVED": "أرشفة"
+    },
+    "templatesPendingBanner": "يُرسل هذا المحرك عبر واتساب — اعتمد قالبًا واحدًا على الأقل أدناه قبل تفعيله.",
+    "brief": {
+        "title": "الموجز",
+        "amend": "تعديل",
+        "empty": "لا يوجد موجز محدَّد.",
+        "version": "الإصدار {{version}}"
+    },
+    "config": {
+        "title": "الإعدادات",
+        "channels": "القنوات",
+        "noChannels": "لا شيء",
+        "language": "اللغة",
+        "cadenceLabel": "التواصل",
+        "cadence": "كل {{hours}} ساعة",
+        "quietHours": "Quiet hours",
+        "dataPoints": "Data points",
+        "noDataPoints": "الأساسيات فقط"
+    },
+    "amendDialog": {
+        "heading": "تعديل الموجز",
+        "description": "يكبر الموجز بالتعديلات — يُضاف إليه، ولا يُعاد كتابة النص الأصلي أبدًا. يُطبَّق التعديل عند نقطة التواصل الطبيعية التالية مع كل شخص.",
+        "placeholder": "مثال: اذكر أيضًا الدفعة الجديدة لعطلة نهاية الأسبوع التي تبدأ الشهر القادم.",
+        "cancel": "إلغاء",
+        "submit": "إضافة التعديل",
+        "saving": "جارٍ الحفظ…"
+    },
+    "autonomy": {
+        "title": "الإرسال التلقائي",
+        "allowAutoSend": "السماح بالإرسال التلقائي",
+        "keepAsCopilot": "إيقاف الإرسال التلقائي",
+        "autoSendChannels": "قنوات الإرسال التلقائي",
+        "noAutoSend": "لا توجد قناة ترسل تلقائيًا. كل رسالة تنتظرك في صندوق المهام.",
+        "holdout": "مجموعة اختبار",
+        "holdoutValue": "{{pct}}% (مضافون، لا يُراسلون أبدًا)",
+        "badge": {
+            "off": "الإرسال التلقائي متوقف — تراجع كل رسالة",
+            "ramping": "قيد التجربة · {{approved}} من {{target}} موافق عليها",
+            "sendingAutonomously": "يرسل بشكل مستقل",
+            "dryRun": "تجربة وهمية (محاكاة)",
+            "onEngineStatus": "الاستقلالية مفعّلة · حالة المحرك {{status}}"
+        },
+        "statusFor": "حالة {{channel}}",
+        "rampingHintChannel_zero": "حاليًا تراجع كل رسالة على {{channel}}. وافق على {{count}} أخرى وستبدأ {{channel}} الإرسال بنفسها.",
+        "rampingHintChannel_one": "حاليًا تراجع كل رسالة على {{channel}}. وافق على {{count}} أخرى وستبدأ {{channel}} الإرسال بنفسها.",
+        "rampingHintChannel_two": "حاليًا تراجع كل رسالة على {{channel}}. وافق على {{count}} أخرى وستبدأ {{channel}} الإرسال بنفسها.",
+        "rampingHintChannel_few": "حاليًا تراجع كل رسالة على {{channel}}. وافق على {{count}} أخرى وستبدأ {{channel}} الإرسال بنفسها.",
+        "rampingHintChannel_many": "حاليًا تراجع كل رسالة على {{channel}}. وافق على {{count}} أخرى وستبدأ {{channel}} الإرسال بنفسها.",
+        "rampingHintChannel_other": "حاليًا تراجع كل رسالة على {{channel}}. وافق على {{count}} أخرى وستبدأ {{channel}} الإرسال بنفسها."
+    },
+    "archiveDialog": {
+        "title": "أرشفة هذا المحرك؟",
+        "description": "سيتوقف نهائيًا عن اتخاذ القرارات والإرسال. تبقى المهام الموجودة في صندوق الوارد والرسائل السابقة.",
+        "cancel": "الإبقاء عليه",
+        "confirm": "أرشفة"
+    },
+    "kpi": {
+        "members": "Active members",
+        "holdout": "{{pct}}% في مجموعة الاختبار (لا يُراسلون أبدًا)",
+        "noHoldout": "No holdout",
+        "approved": "Approved sends",
+        "graduateAfter": "يبدأ الإرسال التلقائي بعد {{n}} موافقات",
+        "cadence": "التواصل",
+        "quiet": "Quiet hours {{window}}",
+        "nextRun": "Next check-in",
+        "notScheduled": "Not scheduled",
+        "lastRun": "آخر متابعة {{when}}"
+    },
+    "status": {
+        "title": "Status & audience",
+        "sources": "مختار من",
+        "people": "people",
+        "change": "Change status",
+        "noTransitions": "Archived engines can’t change status.",
+        "footnote": "الإيقاف المؤقت يوقف كل الرسائل. «إيقاف الإرسال التلقائي» يواصل كتابة الرسائل لتراجعها.",
+        "noSources": "لم يُختر شيء",
+        "sourcesMore": "+{{count}} أخرى"
+    },
+    "retry": "إعادة المحاولة",
+    "approvalsWaiting": {
+        "title_zero": "{{count}} إجراء بانتظار موافقتك",
+        "title_one": "إجراء واحد بانتظار موافقتك",
+        "title_two": "إجراءان بانتظار موافقتك",
+        "title_few": "{{count}} إجراءات بانتظار موافقتك",
+        "title_many": "{{count}} إجراءً بانتظار موافقتك",
+        "title_other": "{{count}} إجراء بانتظار موافقتك",
+        "aiCalls_zero": "منها {{count}} مكالمة ذكاء اصطناعي، ولا تُجرى إلا بعد موافقتك في صندوق المهام.",
+        "aiCalls_one": "منها مكالمة ذكاء اصطناعي واحدة، ولا تُجرى إلا بعد موافقتك في صندوق المهام.",
+        "aiCalls_two": "منها مكالمتا ذكاء اصطناعي، ولا تُجريان إلا بعد موافقتك في صندوق المهام.",
+        "aiCalls_few": "منها {{count}} مكالمات ذكاء اصطناعي، ولا تُجرى إلا بعد موافقتك في صندوق المهام.",
+        "aiCalls_many": "منها {{count}} مكالمة ذكاء اصطناعي، ولا تُجرى إلا بعد موافقتك في صندوق المهام.",
+        "aiCalls_other": "منها {{count}} مكالمة ذكاء اصطناعي، ولا تُجرى إلا بعد موافقتك في صندوق المهام.",
+        "text": "لا يُنفَّذ شيء حتى توافق عليه في صندوق المهام.",
+        "open": "مراجعة في صندوق المهام"
+    },
+    "noPeople": {
+        "title": "لا يوجد أحد في هذا المحرك بعد",
+        "text": "أضف الأشخاص من المجموعات والقوائم التي اخترتها. لا يُرسل شيء حتى تفعّل المحرك."
+    },
+    "activateDialog": {
+        "title": "تشغيل هذا المحرك لـ {{count}} شخص؟",
+        "descriptionAuto": "سيبدأ التواصل مع الأشخاص الآن. القنوات المضبوطة على الإرسال التلقائي سترسل دون سؤال بعد انتهاء تجربتها؛ وكل ما عدا ذلك ينتظرك في صندوق المهام.",
+        "descriptionCopilot": "سيبدأ كتابة الرسائل الآن. كل رسالة تنتظرك في صندوق المهام؛ لا يُرسل شيء دون موافقتك.",
+        "noPeople": "لم يُضف أحد بعد، فلا يوجد من يُتواصل معه. اضغط «إضافة الأشخاص الآن» أولًا.",
+        "cancel": "ليس الآن",
+        "confirm": "تشغيل المحرك"
+    }
+}

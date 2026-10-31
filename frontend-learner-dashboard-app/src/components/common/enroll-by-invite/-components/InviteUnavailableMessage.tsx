@@ -1,6 +1,9 @@
 import { CalendarX, Clock } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { cn, sanitizeHtml } from "@/lib/utils";
 import type { InviteAvailability } from "@/lib/invite-availability";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 interface InviteUnavailableMessageProps {
   availability: InviteAvailability;
@@ -8,14 +11,6 @@ interface InviteUnavailableMessageProps {
   messageHtml?: string | null;
   className?: string;
 }
-
-// Neutral fallback lines used ONLY when the admin left the message blank — never override an
-// admin-provided message, and intentionally generic so nothing course-specific is hardcoded.
-const FALLBACK: Record<Exclude<InviteAvailability, "AVAILABLE">, string> = {
-  NOT_STARTED: "Enrollment for this course hasn't opened yet. Please check back later.",
-  EXPIRED: "Enrollment for this course is currently closed.",
-  INACTIVE: "Enrollment for this course is currently closed.",
-};
 
 /**
  * Renders the admin's rich-text "unavailable" message (sanitized) for an expired / not-yet-started
@@ -27,9 +22,18 @@ export function InviteUnavailableMessage({
   messageHtml,
   className,
 }: InviteUnavailableMessageProps) {
+  const { t } = useTranslation("enrollmentA");
+  const course = getTerminology(ContentTerms.Course, SystemTerms.Course);
   const html = (messageHtml ?? "").trim();
   const hasHtml = html.replace(/<[^>]*>/g, "").trim().length > 0;
   const Icon = availability === "NOT_STARTED" ? Clock : CalendarX;
+  // Neutral fallback lines used ONLY when the admin left the message blank — never override an
+  // admin-provided message, and intentionally generic so nothing course-specific is hardcoded.
+  const FALLBACK: Record<Exclude<InviteAvailability, "AVAILABLE">, string> = {
+    NOT_STARTED: t("inviteUnavailable.notStarted", { course }),
+    EXPIRED: t("inviteUnavailable.closed", { course }),
+    INACTIVE: t("inviteUnavailable.closed", { course }),
+  };
   const fallback = availability === "AVAILABLE" ? "" : FALLBACK[availability];
 
   return (

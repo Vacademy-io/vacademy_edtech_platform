@@ -1,0 +1,89 @@
+{
+    "dialog": {
+        "eyebrow": "Create Plan",
+        "title": "New Fee Plan"
+    },
+    "summary": {
+        "feeTypes": "Fee Types",
+        "totalAmount": "Total Amount",
+        "paymentDates": "Payment Dates"
+    },
+    "classSelect": {
+        "label": "Select Class",
+        "placeholder": "Select classes...",
+        "searchPlaceholder": "Search classes...",
+        "noClasses": "No classes available",
+        "noMatch": "No classes match your search",
+        "selectedBadge_one": "{{count}} class selected",
+        "selectedBadge_other": "{{count}} classes selected",
+        "selectedSummary_one": "{{count}} class selected",
+        "selectedSummary_other": "{{count}} classes selected"
+    },
+    "packageName": {
+        "label": "Package Name",
+        "placeholder": "e.g. 2026 Elite Fee Plan"
+    },
+    "status": {
+        "label": "Status",
+        "active": "Active",
+        "draft": "Draft"
+    },
+    "approval": {
+        "label": "Enroll learners on approval",
+        "description": "When on, learners who enroll via this plan wait for admin approval before getting course access."
+    },
+    "feeType": {
+        "remove": "Remove",
+        "defaultName": "Fee Type {{index}}",
+        "installmentCount_one": "{{count}} installment",
+        "installmentCount_other": "{{count}} installments",
+        "nameLabel": "Fee Name",
+        "namePlaceholder": "e.g. Tuition Fee",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "Brief description",
+        "totalAmountLabel": "Total Amount (₹)",
+        "amountPlaceholder": "e.g. 50000",
+        "hasInstallments": "Has Installments",
+        "refundable": "Refundable",
+        "latePenalty": "Late Penalty",
+        "penaltyPlaceholder": "%",
+        "paymentFrequency": "Payment Frequency",
+        "presetMultiplier": "({{count}}x)",
+        "installmentCountPlaceholder": "Number of installments",
+        "columnIndex": "#",
+        "columnAmount": "Amount (₹)",
+        "columnStartDate": "Start Date",
+        "columnEndDate": "End Date",
+        "columnDueDate": "Due Date",
+        "remainingToAllocate": "₹{{amount}} remaining to allocate",
+        "exceedsTotal": "Exceeds total by ₹{{amount}}",
+        "total": "Total"
+    },
+    "presets": {
+        "installment": {
+            "annual": "Annual",
+            "halfYearly": "Half-Yearly",
+            "quarterly": "Quarterly",
+            "monthly": "Monthly",
+            "custom": "Custom"
+        },
+        "feeType": {
+            "tuitionLabel": "Tuition Fee",
+            "tuitionDescription": "Regular tuition charges for the academic year",
+            "examLabel": "Exam Fee",
+            "examDescription": "Examination and assessment charges",
+            "libraryLabel": "Library Fee",
+            "libraryDescription": "Library access and resource charges",
+            "transportLabel": "Transport Fee",
+            "transportDescription": "School transportation charges",
+            "hostelLabel": "Hostel Fee",
+            "hostelDescription": "Hostel accommodation charges",
+            "labLabel": "Lab Fee",
+            "labDescription": "Laboratory usage and material charges"
+        }
+    },
+    "addFeeType": "Add Fee Type",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "savePackage": "Save Package"
+}

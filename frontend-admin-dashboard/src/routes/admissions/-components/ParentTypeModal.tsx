@@ -1,5 +1,6 @@
 import React from 'react';
-import { X, User } from 'lucide-react';
+import { X, User } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 interface ParentTypeModalProps {
     isOpen: boolean;
@@ -8,17 +9,17 @@ interface ParentTypeModalProps {
 }
 
 export const ParentTypeModal: React.FC<ParentTypeModalProps> = ({ isOpen, onClose, onSelect }) => {
+    const { t } = useTranslation('admissionsParentTypeModal');
+
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/20 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-2xl border border-neutral-100 scale-in-center">
                 <div className="mb-4 flex items-center justify-between">
                     <div>
-                        <h2 className="text-xl font-bold text-neutral-900">Select Parent Type</h2>
-                        <p className="mt-1 text-sm text-neutral-500">
-                            Specify if the contact details belong to the father or mother
-                        </p>
+                        <h2 className="text-xl font-bold text-neutral-900">{t('title')}</h2>
+                        <p className="mt-1 text-sm text-neutral-500">{t('description')}</p>
                     </div>
                     <button 
                         onClick={onClose}
@@ -37,8 +38,10 @@ export const ParentTypeModal: React.FC<ParentTypeModalProps> = ({ isOpen, onClos
                             <User className="size-6 transition-transform group-hover:scale-110" />
                         </div>
                         <div>
-                            <h3 className="text-base font-bold text-neutral-900">Father</h3>
-                            <p className="text-sm text-neutral-500">Map details to father's info</p>
+                            <h3 className="text-base font-bold text-neutral-900">
+                                {t('father')}
+                            </h3>
+                            <p className="text-sm text-neutral-500">{t('fatherDescription')}</p>
                         </div>
                     </button>
 
@@ -50,8 +53,10 @@ export const ParentTypeModal: React.FC<ParentTypeModalProps> = ({ isOpen, onClos
                             <User className="size-6 transition-transform group-hover:scale-110" />
                         </div>
                         <div>
-                            <h3 className="text-base font-bold text-neutral-900">Mother</h3>
-                            <p className="text-sm text-neutral-500">Map details to mother's info</p>
+                            <h3 className="text-base font-bold text-neutral-900">
+                                {t('mother')}
+                            </h3>
+                            <p className="text-sm text-neutral-500">{t('motherDescription')}</p>
                         </div>
                     </button>
                 </div>

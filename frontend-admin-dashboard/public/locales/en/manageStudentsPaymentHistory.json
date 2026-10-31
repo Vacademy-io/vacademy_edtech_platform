@@ -1,0 +1,143 @@
+{
+    "feePlan": {
+        "heading": "Fee Plan",
+        "planLabelFallback": "Fee Plan",
+        "installments_one": "{{count}} installment",
+        "installments_other": "{{count}} installments",
+        "netPaid": "Net {{net}} · Paid {{paid}}",
+        "outstanding": "Outstanding"
+    },
+    "accountSummary": {
+        "heading": "Account Summary",
+        "totalAccrued": "Total accrued",
+        "totalPaid": "Total paid",
+        "due": "Due",
+        "pastDue": "Past Due"
+    },
+    "markPaidDialog": {
+        "successToast": "Invoice {{invoice}} marked as paid",
+        "errorToast": "Failed to mark as paid",
+        "title": "Mark invoice paid",
+        "descriptionPrefix": "Records an offline payment against",
+        "descriptionFallback": "Records an offline payment against this invoice.",
+        "transactionReference": "Transaction reference",
+        "transactionReferencePlaceholder": "cheque #, UPI ref, receipt no.",
+        "notes": "Notes",
+        "notesPlaceholder": "Optional note",
+        "cancel": "Cancel",
+        "saving": "Saving…",
+        "submit": "Mark as paid"
+    },
+    "invoicesList": {
+        "cancelSuccessToast": "Invoice cancelled",
+        "cancelErrorToast": "Could not cancel invoice",
+        "copyLinkSuccessToast": "Payment link copied",
+        "copyLinkErrorToast": "Could not copy to clipboard",
+        "emptyTitle": "No invoices yet",
+        "emptyHint": "Invoices generated for this learner will appear here.",
+        "proforma": "PROFORMA",
+        "proformaTitle": "Proforma — becomes a numbered invoice when paid",
+        "discountFallback": "Discount",
+        "sourceAdminInvoice": "Admin Invoice",
+        "sourceSubscription": "Subscription",
+        "sourceFeePayment": "Fee Payment",
+        "previewTitle": "Preview the invoice PDF without downloading it",
+        "preview": "Preview",
+        "downloadTitle": "Download Invoice PDF",
+        "download": "Download",
+        "copied": "Copied",
+        "copyPaymentLink": "Copy Payment Link",
+        "copyPaymentLinkTitle": "Copy payment link to share with learner",
+        "editTitle": "Edit this unpaid invoice — keeps the same invoice number",
+        "edit": "Edit",
+        "markPaidTitle": "Record an offline / manual payment",
+        "markPaid": "Mark Paid",
+        "cancelInvoiceTitle": "Void this invoice — the payment link stops working",
+        "cancelling": "Cancelling…",
+        "cancelAction": "Cancel",
+        "paginationRange": "{{from}}–{{to}} of {{total}}",
+        "cancelDialog": {
+            "title": "Cancel invoice {{number}}?",
+            "description": "This voids the invoice permanently — the payment link stops working and it can never be marked paid. This cannot be undone. To correct a mistake, raise a new invoice afterwards.",
+            "keep": "Keep Invoice",
+            "confirm": "Cancel Invoice"
+        },
+        "left": "{{amount}} left",
+        "paidWithReceipt": "{{amount}} paid · receipt {{receipt}}",
+        "paidSoFar": "{{amount}} paid"
+    },
+    "invoiceStatus": {
+        "generated": "Generated",
+        "sent": "Sent",
+        "viewed": "Viewed",
+        "pendingPayment": "Pending Payment",
+        "paid": "Paid",
+        "rejected": "Rejected"
+    },
+    "transactionHistory": {
+        "heading": "Transaction History",
+        "loading": "Loading transactions…",
+        "empty": "No transaction history yet.",
+        "pageOf": "Page {{page}} of {{total}}",
+        "event": {
+            "debitAccrual": "Invoice raised",
+            "creditPayment": "Payment received",
+            "creditWaiver": "Waiver",
+            "creditAdjustment": "Adjustment",
+            "debitPenalty": "Penalty",
+            "debitReversal": "Invoice cancelled",
+            "creditReversal": "Payment voided"
+        }
+    },
+    "main": {
+        "loadInvoiceError": "Could not load invoice to edit",
+        "noLearnerTitle": "No learner selected",
+        "noLearnerHint": "Select a learner to view their payment history.",
+        "installmentsHeading": "Installments",
+        "invoicesHeading": "Invoices",
+        "invoicesHeadingCount": "Invoices ({{count}})",
+        "createInvoice": "Create Invoice",
+        "loadingInvoices": "Loading invoices..."
+    },
+    "voidPayment": {
+        "action": "Void",
+        "actionTitle": "Void this payment — use it when a payment was recorded by mistake",
+        "voidedTag": "Voided",
+        "dialog": {
+            "title": "Void this {{amount}} payment?",
+            "description": "Use this for a payment that was recorded by mistake. The amount goes back onto the learner's balance and installments, its invoice is cancelled, and it stops counting as collected. The payment stays in the history, marked as voided. This cannot be undone.",
+            "reasonLabel": "Reason (optional)",
+            "reasonPlaceholder": "e.g. Entered twice",
+            "keep": "Keep payment",
+            "confirm": "Void payment"
+        },
+        "successToast": "Payment voided — {{amount}} is back on the learner's balance",
+        "errorToast": "Could not void this payment"
+    },
+    "permanentDelete": {
+        "action": "Delete permanently",
+        "paymentTitle": "Permanently delete the {{label}} payment?",
+        "invoiceTitle": "Permanently delete invoice {{label}}?",
+        "cannotUndo": "This cannot be undone.",
+        "whatHappens": "What happens",
+        "payment": {
+            "removed": "The payment record is removed for good.",
+            "balance": "If it still counts, the amount goes back onto the learner's balance and installments.",
+            "invoice": "The receipt invoice generated for it is deleted, and its number is freed for the next invoice."
+        },
+        "invoice": {
+            "removed": "The invoice is removed for good.",
+            "balance": "An unpaid bill stops counting towards the learner's balance.",
+            "number": "Its invoice number is freed and given to the next invoice."
+        },
+        "auditLog": "A record of the deletion is kept in the admin activity log.",
+        "typePrefix": "Type",
+        "typeSuffix": "to confirm",
+        "keep": "Keep it",
+        "confirm": "Delete permanently",
+        "deleting": "Deleting…",
+        "paymentDeletedToast": "Payment {{label}} deleted",
+        "invoiceDeletedToast": "Invoice {{label}} deleted",
+        "errorToast": "Could not delete"
+    }
+}

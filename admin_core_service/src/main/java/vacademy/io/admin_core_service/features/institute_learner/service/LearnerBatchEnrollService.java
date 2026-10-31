@@ -151,7 +151,8 @@ public class LearnerBatchEnrollService {
                     instituteStudentDetail);
             if (instituteStudentDetail.getEnrollmentStatus().equalsIgnoreCase(LearnerSessionStatusEnum.ACTIVE.name())) {
                 studentRegistrationManager.triggerEnrollmentWorkflow(instituteId, userDTO,
-                        instituteStudentDetail.getPackageSessionId(), suborg);
+                        instituteStudentDetail.getPackageSessionId(), suborg,
+                        userPlan != null ? userPlan.getId() : null);
             }
             customFieldValueService.addCustomFieldValue(customFieldValues,
                     CustomFieldValueSourceTypeEnum.STUDENT_SESSION_INSTITUTE_GROUP_MAPPING.name(), studentSessionId);
@@ -179,9 +180,9 @@ public class LearnerBatchEnrollService {
         return studentExtraDetails;
     }
 
-    public void shiftLearnerFromInvitedToActivePackageSessions(List<String> packageSessionIds, String userId,
+    public int shiftLearnerFromInvitedToActivePackageSessions(List<String> packageSessionIds, String userId,
             String enrollInviteId) {
-        shiftLearnerToActiveStatus(packageSessionIds, userId, enrollInviteId, LearnerStatusEnum.INVITED, null);
+        return shiftLearnerToActiveStatus(packageSessionIds, userId, enrollInviteId, LearnerStatusEnum.INVITED, null);
     }
 
     /**
@@ -191,19 +192,98 @@ public class LearnerBatchEnrollService {
      * to be shifted — for a learner who retried a failed checkout that is the
      * first (PAYMENT_FAILED) plan, not the paid one.
      */
-    public void shiftLearnerFromInvitedToActivePackageSessions(List<String> packageSessionIds, String userId,
+    public int shiftLearnerFromInvitedToActivePackageSessions(List<String> packageSessionIds, String userId,
             String enrollInviteId, String paidUserPlanId) {
-        shiftLearnerToActiveStatus(packageSessionIds, userId, enrollInviteId, LearnerStatusEnum.INVITED,
+        return shiftLearnerToActiveStatus(packageSessionIds, userId, enrollInviteId, LearnerStatusEnum.INVITED,
                 paidUserPlanId);
     }
 
-    public void shiftLearnerFromPendingForApprovalToActivePackageSessions(List<String> packageSessionIds, String userId,
-            String enrollInviteId) {
-        shiftLearnerToActiveStatus(packageSessionIds, userId, enrollInviteId, LearnerStatusEnum.PENDING_FOR_APPROVAL,
-                null);
+    /**
+     * Revives a LAPSED membership for a learner who has paid but holds no ACTIVE enrollment and
+     * has nothing left to shift.
+     *
+     * <p>Needed because {@code shiftLearnerToActiveStatus} only PROMOTES existing INVITED /
+     * ABANDONED_CART rows. A learner whose trial ran and was revoked has neither: August's
+     * enrollment consumed the INVITED row, and the abandoned-cart rows were deleted when a
+     * payment succeeded. So the repair that was supposed to catch a paid-but-unenrolled member
+     * shifted nothing and reported success, which is the failure it was written to prevent
+     * (Nitika Maheshwari, 2026-10-04 — her mapping had to be inserted by hand).
+     *
+     * <p>Revives the learner's most recent row in these package sessions whatever its status,
+     * rather than creating a parallel one: that keeps their enrollment number, sub-org and roles.
+     * Expiry comes from the plan's own end_date, which the renewal has already extended, so the
+     * access window and the plan can never disagree. Fires the enrollment workflow exactly as a
+     * normal enrollment does, so the member message is sent and the next class batch picks the
+     * learner up without anyone intervening.
+     *
+     * @return true when a row was revived. False means the learner has never had any row in
+     *         these sessions — nothing to revive, and deliberately not force-created here: that
+     *         needs an auth round trip and a Student record inside a payment transaction. The
+     *         04:30 paid-without-enrollment report is what surfaces those.
+     */
+    @Transactional
+    public boolean reviveLapsedEnrollment(List<String> packageSessionIds, String userId, UserPlan userPlan) {
+        int revivedCount = 0;
+        for (String packageSessionId : packageSessionIds) {
+            StudentSessionInstituteGroupMapping revived = studentSessionRepository
+                    .findLatestForUserInPackageSession(userId, packageSessionId)
+                    .orElse(null);
+            if (revived == null) {
+                log.error("Cannot revive an enrollment for user {} on plan {}: no mapping has ever existed "
+                        + "in package session {}", userId, userPlan.getId(), packageSessionId);
+                continue;
+            }
+            if (LearnerSessionStatusEnum.ACTIVE.name().equals(revived.getStatus())
+                    && !LearnerSessionTypeEnum.ABANDONED_CART.name().equals(revived.getType())
+                    && !LearnerSessionTypeEnum.PAYMENT_FAILED.name().equals(revived.getType())) {
+                // Already a live membership in this session — leave it alone. Matches what
+                // existsActiveMembership counts, so the repair never fights the check that sent
+                // it here.
+                continue;
+            }
+            log.warn("Reviving lapsed mapping {} (was status={} type={}) for user {} onto paid plan {}",
+                    revived.getId(), revived.getStatus(), revived.getType(), userId, userPlan.getId());
+            revived.setStatus(LearnerSessionStatusEnum.ACTIVE.name());
+            revived.setUserPlanId(userPlan.getId());
+            revived.setType(LearnerSessionTypeEnum.PACKAGE_SESSION.name());
+            if (userPlan.getEndDate() != null) {
+                revived.setExpiryDate(userPlan.getEndDate());
+            }
+            studentSessionRepository.save(revived);
+            revivedCount++;
+
+            try {
+                UserDTO userDTO = authService.getUsersFromAuthServiceWithPasswordByUserId(userId);
+                String instituteId = revived.getInstitute() != null ? revived.getInstitute().getId() : null;
+                String revivedSessionId = revived.getPackageSession() != null
+                        ? revived.getPackageSession().getId()
+                        : packageSessionId;
+                if (instituteId != null && revivedSessionId != null) {
+                    studentRegistrationManager.triggerEnrollmentWorkflow(instituteId, userDTO, revivedSessionId,
+                            revived.getSubOrg(), userPlan.getId());
+                }
+            } catch (Exception e) {
+                log.error("Revived mapping {} but could not fire the enrollment workflow: {}",
+                        revived.getId(), e.getMessage(), e);
+            }
+        }
+        return revivedCount > 0;
     }
 
-    private void shiftLearnerToActiveStatus(List<String> packageSessionIds, String userId, String enrollInviteId,
+    public int shiftLearnerFromPendingForApprovalToActivePackageSessions(List<String> packageSessionIds, String userId,
+            String enrollInviteId) {
+        return shiftLearnerToActiveStatus(packageSessionIds, userId, enrollInviteId,
+                LearnerStatusEnum.PENDING_FOR_APPROVAL, null);
+    }
+
+    /**
+     * @return how many mappings were actually shifted. Zero is the interesting answer: it means
+     *         the learner had nothing in INVITED or ABANDONED_CART to promote, so this call
+     *         enrolled nobody. Callers repairing a paid-but-unenrolled learner must check it —
+     *         treating the call as "the enrollment now exists" is how a paying member ends up in
+     *         no batch at all.
+     */
+    private int shiftLearnerToActiveStatus(List<String> packageSessionIds, String userId, String enrollInviteId,
             LearnerStatusEnum fromStatus, String activeUserPlanId) {
         // First, find entries with the specified status (INVITED or PENDING_FOR_APPROVAL)
         List<StudentSessionInstituteGroupMapping> invitedMappings = studentSessionRepository
@@ -233,6 +313,7 @@ public class LearnerBatchEnrollService {
 
         UserDTO userDTO = authService.getUsersFromAuthServiceWithPasswordByUserId(userId);
 
+        int shifted = 0;
         for (StudentSessionInstituteGroupMapping mapping : invitedMappings) {
             if (mapping.getDestinationPackageSession() != null) {
                 String newSessionId = studentRegistrationManager.shiftStudentBatch(
@@ -240,7 +321,8 @@ public class LearnerBatchEnrollService {
                         LearnerStatusEnum.ACTIVE.name(),
                         activeUserPlanId);
                 studentRegistrationManager.triggerEnrollmentWorkflow(mapping.getInstitute().getId(), userDTO,
-                        mapping.getDestinationPackageSession().getId(), mapping.getSubOrg());
+                        mapping.getDestinationPackageSession().getId(), mapping.getSubOrg(),
+                        StringUtils.hasText(activeUserPlanId) ? activeUserPlanId : mapping.getUserPlanId());
                 customFieldValueService.shiftCustomField(
                         CustomFieldValueSourceTypeEnum.STUDENT_SESSION_INSTITUTE_GROUP_MAPPING.name(),
                         mapping.getId(),
@@ -260,8 +342,10 @@ public class LearnerBatchEnrollService {
                     UserPlan userPlan = userPlanService.findById(userPlanId);
                     referralMappingService.processReferralBenefitsIfApplicable(userPlan);
                 }
+                shifted++;
             }
         }
+        return shifted;
     }
 
     /**

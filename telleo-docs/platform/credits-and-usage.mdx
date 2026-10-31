@@ -1,0 +1,85 @@
+---
+title: "Credits and usage"
+description: "Check your balance before a campaign and track what calls cost."
+---
+
+## Balance
+
+```bash
+curl https://api.telleo.ai/v1/credits -H "X-API-Key: $TELLEO_API_KEY"
+```
+
+```json
+{
+  "object": "credits",
+  "balance": 1834.25,
+  "low_balance_threshold": 10.0,
+  "low_balance": false,
+  "can_place_calls": true,
+  "calls_waiting": 42,
+  "updated_at": "2026-10-14T05:12:40Z"
+}
+```
+
+<ResponseField name="balance" type="number">Credits left in your account.</ResponseField>
+<ResponseField name="low_balance" type="boolean">`true` when the balance is under `low_balance_threshold`.</ResponseField>
+<ResponseField name="can_place_calls" type="boolean">Whether new real calls are accepted right now. When `false`, `POST /v1/calls` returns `402 insufficient_credits`.</ResponseField>
+<ResponseField name="calls_waiting" type="integer">Calls in your queue that have not been dialled yet (from the API and from the dashboard).</ResponseField>
+
+Queued calls do not reserve credits. Each call is charged after it ends, so a large batch can use more than your balance shows. Check `balance` against your expected volume before a campaign, and top up from the dashboard (**AI Credits → Billing**).
+
+## Usage per day
+
+```bash
+curl "https://api.telleo.ai/v1/usage?from=2026-10-01&to=2026-10-14&timezone=Asia/Kolkata" \
+  -H "X-API-Key: $TELLEO_API_KEY"
+```
+
+```json
+{
+  "object": "usage",
+  "source": "api",
+  "from": "2026-10-01",
+  "to": "2026-10-14",
+  "timezone": "Asia/Kolkata",
+  "totals": { "calls": 1240, "connected": 702, "talk_seconds": 95310, "credits": 9821.5, "calls_not_yet_billed": 3 },
+  "days": [
+    { "date": "2026-10-01", "calls": 88, "connected": 51, "talk_seconds": 6912, "credits": 712.0 },
+    { "date": "2026-10-02", "calls": 0, "connected": 0, "talk_seconds": 0, "credits": 0.0 }
+  ],
+  "human_calls": {
+    "totals": { "calls": 96, "connected": 61, "talk_seconds": 18240, "credits": 312.0, "calls_not_yet_billed": 0 },
+    "days": [
+      { "date": "2026-10-01", "calls": 7, "connected": 5, "talk_seconds": 1320, "credits": 22.5 }
+    ]
+  }
+}
+```
+
+| Parameter | Default | |
+|---|---|---|
+| `from`, `to` | the last 7 days | Dates as `YYYY-MM-DD`, both included. At most 92 days. |
+| `timezone` | `UTC` | An IANA name such as `Asia/Kolkata`. Days are cut at midnight in this zone. |
+| `source` | `api` | `api`: calls placed through the API. `all`: every AI call on your account, including dashboard campaigns and automations. |
+
+- `calls` counts dial attempts; `connected` counts calls that were answered; `talk_seconds` is the total length of connected calls.
+- `credits` is what was actually charged for those calls, read from your account's ledger. Calls are listed on the day they were placed.
+- Test calls are not included.
+- `human_calls` has the same figures for [human calls](/concepts/human-calls): with `source=api` the calls placed through `POST /v1/human-calls`, with `source=all` every outbound counsellor call placed on Vacademy Voice, Exotel or Airtel (from the API, the dashboard's Call button, or an Airtel extension). Recordings of calls made elsewhere and uploaded to Telleo are not counted. Only Vacademy Voice talk time is charged to your credits; calls on your own Exotel or Airtel account count with `0` credits. AI analysis of human calls is charged separately and is not in these figures.
+- Charges are made shortly after a call ends. `calls_not_yet_billed` counts calls with a charge still to be made: the call minutes of a connected call, or the AI minutes once its outcome has been processed. Their `credits` arrive within minutes. Calls that are never charged (for example on your own telephony provider's minutes) are not counted.
+
+## Cost of one call
+
+Every call object (from `GET /v1/calls/{id}` and in webhooks) carries its cost once it has ended:
+
+```json
+"cost": { "credits": 12.5, "billed": true }
+```
+
+- `credits`: what this call was charged. `0` for test calls and for calls that did not connect, which are never billed.
+- `billed`: `false` while a charge for this call is still to be made (the call minutes right after it ends, then the AI minutes once its outcome is processed), usually for a few minutes. Read the call again later for the final amount.
+- `cost` is `null` while the call has not ended.
+
+## Rates
+
+Calls are billed per connected minute at your plan's rate, in 30-second pulses. See [Billing](/platform/billing) and [telleo.ai/pricing](https://telleo.ai/pricing/).

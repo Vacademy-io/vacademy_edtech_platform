@@ -1,6 +1,7 @@
 import axios from "axios";
 import { CATALOGUE_LEAD_SUBMIT_URL } from "@/constants/urls";
 import { emitLeadCaptured, getStoredUtm } from "./catalogue-tracking";
+import { trackUtmAttribution } from "@/lib/utm-attribution";
 
 /**
  * Website lead capture — the one funnel every catalogue capture point
@@ -59,6 +60,17 @@ export const submitWebsiteLead = async (
   emitLeadCaptured({
     audienceId: payload.audienceId,
     sourceType: payload.sourceType,
+    sourceId: payload.sourceId,
+  });
+  // Also record the touch against the person, not just as a custom field on
+  // the lead: the custom-field copy is human-readable in the CRM but cannot be
+  // grouped or counted, so "how many people did this campaign bring?" was
+  // unanswerable from it.
+  trackUtmAttribution({
+    instituteId: payload.instituteId,
+    email: payload.email,
+    mobileNumber: payload.mobileNumber,
+    sourceType: "CATALOGUE",
     sourceId: payload.sourceId,
   });
   // The endpoint returns 200 with either the new response id or a friendly

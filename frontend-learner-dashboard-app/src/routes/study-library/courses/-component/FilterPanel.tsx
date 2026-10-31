@@ -428,8 +428,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
 
                         <div className="flex-1 overflow-auto p-4">
                             <Accordion type="multiple" defaultValue={[]} className="w-full">
-                                <AccordionItem value="levels" className="border-b-0 mb-4">
-                                    <h4 className="font-semibold mb-3 text-sm flex items-center justify-between">
+                                <AccordionItem value="levels" className="border-b-0 mb-4 space-y-stack">
+                                    <h4 className="font-semibold text-sm flex items-center justify-between">
                                         {getTerminology(ContentTerms.Level, SystemTerms.Level)}
                                         {selectedLevels.length > 0 && (
                                             <Badge variant="secondary" className="text-caption">{selectedLevels.length}</Badge>
@@ -445,8 +445,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
 
                                 <Separator className="my-4" />
 
-                                <AccordionItem value="sessions" className="border-b-0 mb-4">
-                                    <h4 className="font-semibold mb-3 text-sm flex items-center justify-between">
+                                <AccordionItem value="sessions" className="border-b-0 mb-4 space-y-stack">
+                                    <h4 className="font-semibold text-sm flex items-center justify-between">
                                         {getTerminology(ContentTerms.Session, SystemTerms.Session)}
                                         {selectedSessions.length > 0 && (
                                             <Badge variant="secondary" className="text-caption">{selectedSessions.length}</Badge>
@@ -462,8 +462,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
 
                                 <Separator className="my-4" />
 
-                                <AccordionItem value="tags" className="border-b-0 mb-4">
-                                    <h4 className="font-semibold mb-3 text-sm flex items-center justify-between">
+                                <AccordionItem value="tags" className="border-b-0 mb-4 space-y-stack">
+                                    <h4 className="font-semibold text-sm flex items-center justify-between">
                                         {getTerminologyPlural(ContentTerms.PopularTag, SystemTerms.PopularTag)}
                                         {selectedTags.length > 0 && (
                                             <Badge variant="secondary" className="text-caption">{selectedTags.length}</Badge>
@@ -479,8 +479,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
 
                                 <Separator className="my-4" />
 
-                                <AccordionItem value="instructors" className="border-b-0">
-                                    <h4 className="font-semibold mb-3 text-sm flex items-center justify-between">
+                                <AccordionItem value="instructors" className="border-b-0 space-y-stack">
+                                    <h4 className="font-semibold text-sm flex items-center justify-between">
                                         {getTerminologyPlural(RoleTerms.Teacher, SystemTerms.Teacher)}
                                         {selectedInstructors.length > 0 && (
                                             <Badge variant="secondary" className="text-caption">{selectedInstructors.length}</Badge>

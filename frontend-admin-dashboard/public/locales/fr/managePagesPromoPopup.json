@@ -1,0 +1,169 @@
+{
+    "previewNote": "Sélectionnez ce bloc dans la vue Site pour voir la popup telle que les visiteurs la verront. La bande en pointillés ne leur est jamais montrée.",
+    "sections": {
+        "template": "Modèle",
+        "content": "Contenu",
+        "offer": "Offre",
+        "button": "Bouton",
+        "behaviour": "Quand l’afficher",
+        "colours": "Couleurs",
+        "customHtml": "HTML personnalisé"
+    },
+    "templates": {
+        "spotlight": {
+            "label": "Projecteur",
+            "description": "Grande offre sur dégradé, centrée"
+        },
+        "split": {
+            "label": "Divisé",
+            "description": "Image d’un côté, détails de l’autre"
+        },
+        "poster": {
+            "label": "Affiche",
+            "description": "Image pleine avec texte par-dessus"
+        },
+        "ticket": {
+            "label": "Ticket coupon",
+            "description": "Ticket détachable autour du code"
+        },
+        "corner": {
+            "label": "Carte d’angle",
+            "description": "Glisse dans un coin, la page reste utilisable"
+        },
+        "bar": {
+            "label": "Barre fixe",
+            "description": "Fine bande en bas de l’écran"
+        },
+        "custom": {
+            "label": "HTML personnalisé",
+            "description": "Votre propre design — HTML et CSS dans un seul champ"
+        }
+    },
+    "fields": {
+        "badge": "Badge",
+        "highlight": "Grand texte d’offre",
+        "heading": "Titre",
+        "body": "Description",
+        "image": "Image (facultatif)",
+        "dismissText": "Lien « Non merci »",
+        "footnote": "Mentions",
+        "couponCode": "Code promo",
+        "showCountdown": "Afficher le compte à rebours",
+        "buttonText": "Texte du bouton",
+        "onClick": "Au clic",
+        "formToOpen": "Formulaire à ouvrir",
+        "formTitle": "Titre du formulaire",
+        "whatsappPhone": "Numéro WhatsApp",
+        "whatsappMessage": "Message prérempli",
+        "link": "Lien",
+        "trigger": "Ouvrir la popup",
+        "delaySeconds": "Délai après chargement",
+        "scrollPercent": "Après défilement",
+        "frequency": "Fréquence",
+        "devices": "Afficher sur",
+        "closeOnBackdrop": "Fermer en cliquant à l’extérieur",
+        "accentColor": "Couleur d’accent",
+        "backgroundColor": "Fond de la carte",
+        "textColor": "Couleur du texte",
+        "customHtml": "HTML + CSS (un seul champ)",
+        "customWidth": "Largeur de la popup",
+        "endDate": "Fin de l’offre",
+        "startDate": "Afficher à partir de"
+    },
+    "placeholders": {
+        "badge": "Durée limitée",
+        "highlight": "-50 %",
+        "heading": "Vente flash sur tous les cours",
+        "body": "Une ou deux lignes sur l’offre",
+        "imageAlt": "Décrivez l’image (lecteurs d’écran)",
+        "dismissText": "Non merci",
+        "footnote": "*Conditions applicables",
+        "couponCode": "SAVE50",
+        "buttonText": "Profiter de l’offre",
+        "formTitle": "Titre de la popup",
+        "whatsappPhone": "33612345678",
+        "whatsappMessage": "Bonjour, je souhaite en savoir plus sur l’offre"
+    },
+    "hints": {
+        "highlight": "Affiché en grand — une remise, un prix ou un mot court.",
+        "barNoImage": "La barre fixe n’affiche pas d’image.",
+        "couponCode": "Les visiteurs ont un bouton Copier. Laissez vide pour masquer.",
+        "countdownNeedsEnd": "Définissez « Fin de l’offre » pour afficher le compte à rebours.",
+        "noButton": "Pas de texte = pas de bouton.",
+        "pickForm": "Choisissez un formulaire, sinon le bouton ne fait rien.",
+        "whatsappPhone": "Indicatif + numéro, chiffres uniquement.",
+        "exit": "S’ouvre quand la souris se dirige vers les onglets. Sur mobile (sans souris), après 20 secondes.",
+        "frequency": "Compté par visiteur, dans son navigateur. Un clic sur le bouton compte comme terminé.",
+        "startAfterEnd": "Le début est après la fin — la popup ne s’affichera jamais.",
+        "ended": "Cette offre est terminée — les visiteurs ne voient plus la popup.",
+        "colours": "Laissez vide pour utiliser la couleur de la marque.",
+        "customHtml": "Collez le HTML avec son <style> dans le même champ — la popup les sépare. Scripts, formulaires et iframes sont supprimés. Couleurs du site : hsl(var(--primary-500)). Le bouton ✕ est toujours ajouté.",
+        "customLimit": "{{count}} / {{limit}} caractères",
+        "customTooLong": "Trop long — ce qui dépasse la limite est coupé sur le site.",
+        "endDate": "Le compte à rebours va jusqu’à cette date, puis la popup ne s’affiche plus.",
+        "startDate": "Laissez vide pour commencer tout de suite.",
+        "endDateCustom": "Utilisé par data-vacademy=\"countdown\" dans votre HTML ; la popup ne s’affiche plus après."
+    },
+    "actions": {
+        "link": "Ouvrir le lien",
+        "openForm": "Ouvrir le formulaire",
+        "whatsapp": "Discussion WhatsApp"
+    },
+    "triggers": {
+        "delay": "Après un délai",
+        "scroll": "Au défilement",
+        "exit": "Intention de sortie"
+    },
+    "delay": {
+        "instant": "Immédiat",
+        "seconds_one": "{{count}} s",
+        "seconds_other": "{{count}} s"
+    },
+    "frequency": {
+        "always": "À chaque chargement",
+        "session": "Une fois par visite",
+        "daily": "Une fois par jour",
+        "weekly": "Une fois par semaine",
+        "once": "Une seule fois"
+    },
+    "devices": {
+        "all": "Tous les appareils",
+        "desktop": "Ordinateur uniquement",
+        "mobile": "Mobile uniquement"
+    },
+    "resetColours": "Utiliser les couleurs de la marque",
+    "width": {
+        "sm": "Étroite",
+        "md": "Moyenne",
+        "lg": "Large"
+    },
+    "starters": {
+        "title": "Partir d’un design",
+        "offer": "Carte d’offre",
+        "banner": "Bannière image",
+        "simple": "Simple",
+        "hint": "Construit à partir de votre texte et de vos couleurs — puis modifiez librement.",
+        "replaceConfirm": "Cela remplace le HTML du champ. Continuer ?",
+        "replace": "Remplacer",
+        "cancel": "Annuler"
+    },
+    "starterText": {
+        "useCode": "Utilisez le code",
+        "copy": "Copier",
+        "endsIn": "Se termine dans"
+    },
+    "hooks": {
+        "title": "Hooks — faire agir les boutons",
+        "intro": "Ajoutez ces attributs à n’importe quel bouton ou lien de votre HTML.",
+        "close": "Fermer la popup",
+        "copy": "Copier un code promo",
+        "countdown": "Compte à rebours jusqu’à « Fin de l’offre »",
+        "route": "Ouvrir une page du site",
+        "form": "Ouvrir un formulaire (campagne)",
+        "link": "Ouvrir un lien externe",
+        "whatsapp": "Discussion WhatsApp",
+        "formPicker": "Formulaire pour l’extrait",
+        "copied": "Copié",
+        "copyAction": "Copier"
+    }
+}

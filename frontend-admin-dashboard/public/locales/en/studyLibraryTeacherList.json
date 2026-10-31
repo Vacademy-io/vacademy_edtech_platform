@@ -1,0 +1,24 @@
+{
+    "toast": {
+        "removeSuccess": "Teacher removed from this batch",
+        "removeFailed": "Failed to remove teacher."
+    },
+    "table": {
+        "name": "Name",
+        "status": "Status",
+        "active": "Active",
+        "actions": "Actions"
+    },
+    "removeFromBatchTitle": "Remove from this batch",
+    "dialog": {
+        "title": "Remove Teacher",
+        "description": "Remove <strong>{{name}}</strong> from this batch? They will no longer have access to teach here.",
+        "cancel": "Cancel",
+        "removing": "Removing...",
+        "remove": "Remove"
+    },
+    "errors": {
+        "forbidden": "You don't have permission to load teachers for this batch.",
+        "loadFailed": "Error loading teachers"
+    }
+}

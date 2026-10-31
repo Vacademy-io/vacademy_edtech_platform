@@ -1,7 +1,9 @@
 import { ArrowsClockwise, WifiSlash, CloudSlash } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '../design-system/button';
 
 export function OfflineErrorPage() {
+    const { t } = useTranslation('courseComponentsExtra');
     return (
         <div className="h-screen w-full bg-gray-50 overflow-y-auto flex flex-col justify-center items-center px-4 py-12 sm:px-6 lg:px-8">
             <div className="max-w-md mx-auto text-center w-full">
@@ -16,10 +18,10 @@ export function OfflineErrorPage() {
                     </div>
                 </div>
                 
-                <p className="text-sm font-semibold text-slate-600 uppercase tracking-wide">No Connection</p>
-                <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">You are offline</h1>
+                <p className="text-sm font-semibold text-slate-600 uppercase tracking-wide">{t('offlineErrorPage.noConnection')}</p>
+                <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">{t('offlineErrorPage.youAreOffline')}</h1>
                 <p className="mt-4 text-base text-gray-500 max-w-md mx-auto">
-                    It looks like you've lost your connection to the internet. Please check your network settings and try reconnecting.
+                    {t('offlineErrorPage.description')}
                 </p>
 
                 <div className="mt-8 flex justify-center">
@@ -28,7 +30,7 @@ export function OfflineErrorPage() {
                         onClick={() => window.location.reload()}
                     >
                         <ArrowsClockwise className="me-2 h-4 w-4" />
-                        Try Again
+                        {t('common.tryAgain')}
                     </MyButton>
                 </div>
             </div>

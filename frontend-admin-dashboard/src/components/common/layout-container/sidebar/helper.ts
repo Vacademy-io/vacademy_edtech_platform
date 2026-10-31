@@ -1,8 +1,8 @@
 import { SidebarItemsType } from '@/types/layout-container/layout-container-types';
+import type { DisplaySettingsData } from '@/types/display-settings';
 import { SubModuleType } from '@/schemas/student/student-list/institute-schema';
 import { SUB_MODULE_SIDEBAR_MAPPING, controlledTabs, modules } from './constant';
-import { getTokenFromCookie, getUserRoles } from '@/lib/auth/sessionUtility';
-import { TokenKey } from '@/constants/auth/tokens';
+import { getRolesForCurrentInstitute } from '@/lib/auth/instituteUtils';
 import {
     SUB_ORG_MODULE_SUB_ITEM_ID,
     SUB_ORG_MODULE_TAB_ID,
@@ -49,13 +49,41 @@ export function getAllowedSidebarItems(subModules: SubModuleType[] | undefined):
     return allowedItems;
 }
 
+/** Never shown to a non-admin, whatever their Display Settings say. */
+const ALWAYS_ADMIN_ONLY_TAB_IDS = [
+    'learner-insights', // Learner Live Activities
+    'settings', // Settings — institute configuration
+    'admin-activity-logs', // Admin audit trail — institute ADMIN only
+];
+
 /**
- * Filters sidebar items based on user role
- * Removes admin-only items for non-admin users
+ * Tabs whose `adminOnly` sub-items can never be switched on for a non-admin.
+ * Every engagement API requires institute ADMIN (EngagementAccessGuard), so
+ * opting a role in would only hand it a page of 403s.
  */
-export function filterSidebarByRole(menuList: SidebarItemsType[]): SidebarItemsType[] {
-    const accessToken = getTokenFromCookie(TokenKey.accessToken);
-    const userRoles = getUserRoles(accessToken);
+const NO_OPT_IN_SUB_ITEM_TAB_IDS = ['engagement-engines'];
+
+/**
+ * Tabs a non-admin only gets when their role's Display Settings switch them on.
+ * The teacher/custom defaults ship these hidden, so a saved `visible: true` is a
+ * deliberate choice by the institute admin.
+ */
+const NON_ADMIN_OPT_IN_TAB_IDS = [SUB_ORG_MODULE_TAB_ID];
+
+/**
+ * Filters sidebar items based on user role.
+ *
+ * Admins see everything. For every other role (teacher, custom roles like
+ * "Operations") the role's Display Settings decide: an admin-only tab or
+ * `adminOnly` sub-item shows only when those settings explicitly mark it
+ * visible. With no settings loaded (cold cache, failed fetch) they stay hidden.
+ */
+export function filterSidebarByRole(
+    menuList: SidebarItemsType[],
+    roleDisplay?: DisplaySettingsData | null
+): SidebarItemsType[] {
+    // Roles are per institute: an ADMIN of another institute is not an admin here.
+    const userRoles = getRolesForCurrentInstitute();
     const isAdmin = userRoles.includes('ADMIN');
 
     // If user is admin, return all items
@@ -63,38 +91,45 @@ export function filterSidebarByRole(menuList: SidebarItemsType[]): SidebarItemsT
         return menuList;
     }
 
-    // "Manage Institute" is admin-only as a whole, but a non-admin role can be
-    // granted the Sub-Organizations (Channel Partners) module from Display
-    // Settings. In that case keep the parent alive carrying ONLY the sub-orgs
-    // entry — the rest of Manage Institute (teams, sessions, …) stays admin-only,
-    // and the sub-org rows themselves are scoped to the user's assignments
-    // server-side.
+    const tabCfg = new Map((roleDisplay?.sidebar || []).map((t) => [t.id, t]));
+    const isTabOptedIn = (tabId: string) => tabCfg.get(tabId)?.visible === true;
+    const isSubOptedIn = (tabId: string, subId: string) =>
+        isTabOptedIn(tabId) &&
+        (tabCfg.get(tabId)?.subTabs || []).some((s) => s.id === subId && s.visible === true);
+
+    // The Sub-Organizations (Channel Partners) module has its own grant. A role
+    // with only that grant keeps Manage Institute carrying ONLY the sub-orgs entry;
+    // the sub-org rows themselves are scoped to the user's assignments server-side.
     const subOrgModuleGranted = canAccessSubOrgModule();
 
-    // For non-admin users, filter out admin-only items and sub-items
-    const adminOnlyIds = [
-        'learner-insights', // Learner Live Activities
-        'settings', // Settings
-        'admin-activity-logs', // Admin audit trail
-        ...(subOrgModuleGranted ? [] : [SUB_ORG_MODULE_TAB_ID]), // Institute settings
-    ];
-
     return menuList
-        .filter((item) => !adminOnlyIds.includes(item.id))
+        .filter((item) => !ALWAYS_ADMIN_ONLY_TAB_IDS.includes(item.id))
+        .filter((item) => {
+            if (!NON_ADMIN_OPT_IN_TAB_IDS.includes(item.id)) return true;
+            if (item.id === SUB_ORG_MODULE_TAB_ID && subOrgModuleGranted) return true;
+            return isTabOptedIn(item.id);
+        })
         .map((item) => {
-            if (item.id === SUB_ORG_MODULE_TAB_ID && subOrgModuleGranted) {
+            if (!item.subItems || item.subItems.length === 0) return item;
+            if (item.id === SUB_ORG_MODULE_TAB_ID && !isTabOptedIn(item.id)) {
                 return {
                     ...item,
-                    subItems: (item.subItems || []).filter(
+                    subItems: item.subItems.filter(
                         (sub) => sub.subItemId === SUB_ORG_MODULE_SUB_ITEM_ID
                     ),
                 };
             }
-            if (item.subItems && item.subItems.length > 0) {
-                const filteredSubItems = item.subItems.filter((sub) => !sub.adminOnly);
-                return { ...item, subItems: filteredSubItems };
-            }
-            return item;
+            const filteredSubItems = item.subItems.filter((sub) => {
+                if (sub.subItemId === SUB_ORG_MODULE_SUB_ITEM_ID && !subOrgModuleGranted) {
+                    return false;
+                }
+                if (!sub.adminOnly) return true;
+                return (
+                    !NO_OPT_IN_SUB_ITEM_TAB_IDS.includes(item.id) &&
+                    isSubOptedIn(item.id, sub.subItemId)
+                );
+            });
+            return { ...item, subItems: filteredSubItems };
         });
 }
 
@@ -191,10 +226,11 @@ export function filterMenuItems(
     menuList: SidebarItemsType[],
     instituteId: string | undefined,
     isTabVisible?: (tabId: string) => boolean,
-    isSubItemVisible?: (parentTabId: string, subItemTabId: string) => boolean
+    isSubItemVisible?: (parentTabId: string, subItemTabId: string) => boolean,
+    roleDisplay?: DisplaySettingsData | null
 ) {
     // Define the tabs that should be controlled by tab settings
-    let filteredList = filterSidebarByRole(menuList);
+    let filteredList = filterSidebarByRole(menuList, roleDisplay);
 
     // Apply tab settings filtering if functions are provided
     if (isTabVisible && isSubItemVisible) {
@@ -279,4 +315,117 @@ export function parseSidebarLink(link?: string): {
         }
     });
     return { to: link.slice(0, q), search };
+}
+
+/**
+ * Is this sidebar link the one the user is currently on?
+ *
+ * Several sub-items can share a path and differ only by query — the Follow-ups
+ * buckets are all /audience-manager/follow-ups with ?bucket=today|all|overdue|…
+ * Comparing the pathname against the whole link meant none of those ever
+ * matched, so the highlight stayed on whichever sibling had a bare path and
+ * clicking "All Follow Ups" left it on "Today's Pending Follow-ups".
+ *
+ * A link's identifying params must all be satisfied (see sidebarLinkIdentity);
+ * extra params in the URL (date=, a filter the user added) don't stop it matching.
+ */
+export function isSidebarLinkActive(
+    link: string | undefined,
+    currentPath: string,
+    currentSearch: Record<string, unknown> | undefined
+): boolean {
+    if (!sidebarLinkPathMatches(link, currentPath)) return false;
+    const identity = sidebarLinkIdentity(parseSidebarLink(link).search);
+    if (!identity) return true;
+    return Object.entries(identity).every(([key, value]) =>
+        sameSearchValue(currentSearch?.[key], value)
+    );
+}
+
+/** Does the link's path (query ignored) cover the current pathname? */
+function sidebarLinkPathMatches(link: string | undefined, currentPath: string): boolean {
+    if (!link) return false;
+    const { to } = parseSidebarLink(link);
+    if (!to) return false;
+    return currentPath === to || currentPath.startsWith(to + '/');
+}
+
+/**
+ * The params that say WHICH sub-tab a link is.
+ *
+ * A link that pins filters with `lock=` is identified by those, plus `lock`
+ * itself (it tells "All Leads", which pins status, apart from "Shortlisted",
+ * which pins tier AND the same status). Its other params are only the values the
+ * page opens with, and the user is free to change them: every I2CAN Enquiry link
+ * opens on `range=ALL`, so picking a date used to drop the highlight and leave
+ * nothing in the sidebar saying which list was open.
+ *
+ * A link without `lock=` is identified by all of its params, as before.
+ */
+function sidebarLinkIdentity(
+    search: Record<string, unknown> | undefined
+): Record<string, unknown> | undefined {
+    if (!search || search.lock == null || search.lock === '') return search;
+    const pinned = new Set(['lock', ...splitSearchList(search.lock)]);
+    return Object.fromEntries(Object.entries(search).filter(([key]) => pinned.has(key)));
+}
+
+const splitSearchList = (value: unknown): string[] =>
+    String(value ?? '')
+        .split(',')
+        .map((part) => part.trim())
+        .filter(Boolean);
+
+/**
+ * Comma lists compare as sets: the page writes back the statuses it holds, which
+ * need not be in the order the route listed them.
+ */
+const sameSearchValue = (a: unknown, b: unknown): boolean =>
+    splitSearchList(a).sort().join(',') === splitSearchList(b).sort().join(',');
+
+/** How many of the link's own params the current URL still carries unchanged. */
+function matchedParamCount(link: string, currentSearch: Record<string, unknown> | undefined) {
+    const { search } = parseSidebarLink(link);
+    return Object.entries(search ?? {}).filter(([key, value]) =>
+        sameSearchValue(currentSearch?.[key], value)
+    ).length;
+}
+
+/**
+ * How specific a link is, for picking a winner when several match. With the
+ * current URL given, only params it still carries count, so between two links
+ * that pin the same filters the one whose opening values are untouched wins.
+ */
+export function sidebarLinkSpecificity(
+    link: string | undefined,
+    currentSearch?: Record<string, unknown>
+): number {
+    if (!link) return 0;
+    const { to, search } = parseSidebarLink(link);
+    const params = currentSearch
+        ? matchedParamCount(link, currentSearch)
+        : Object.keys(search ?? {}).length;
+    return to.length + params * 1000;
+}
+
+/**
+ * Which of `links` is the page the user is on, or null. The most specific match
+ * wins; on a tie the earlier link does, as the panel always picked.
+ */
+export function pickActiveSidebarLink(
+    links: Array<string | undefined>,
+    currentPath: string,
+    currentSearch: Record<string, unknown> | undefined
+): string | null {
+    let best: string | null = null;
+    let bestScore = -1;
+    for (const link of links) {
+        if (!link || !isSidebarLinkActive(link, currentPath, currentSearch)) continue;
+        const score = sidebarLinkSpecificity(link, currentSearch);
+        if (score > bestScore) {
+            best = link;
+            bestScore = score;
+        }
+    }
+    return best;
 }

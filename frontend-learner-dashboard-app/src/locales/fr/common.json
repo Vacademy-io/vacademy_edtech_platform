@@ -1,0 +1,51 @@
+{
+    "login": {
+        "heading": "Ravis de vous revoir !",
+        "subheading": "Connectez-vous et poursuivez votre parcours d'apprentissage !",
+        "emailPlaceholder": "vous@email.com",
+        "passwordPlaceholder": "Mot de passe",
+        "forgotPasswordLink": "Mot de passe oublié ?",
+        "loginButton": "Se connecter",
+        "forgotPasswordHeading": "Mot de passe oublié",
+        "forgotPasswordSubheading": "Saisissez votre adresse e-mail et nous enverrons votre mot de passe dans votre boîte de réception",
+        "forgotPasswordEmailPlaceholder": "vous@email.com",
+        "forgotPasswordButton": "Envoyer le lien de réinitialisation",
+        "forgotPasswordBottomText": "Vous vous souvenez de votre mot de passe ?",
+        "setPasswordHeading": "Définir un nouveau mot de passe",
+        "setPasswordSubheading": "Sécurisez votre compte avec un nouveau mot de passe",
+        "setPasswordNewPlaceholder": "Nouveau mot de passe",
+        "setPasswordConfirmPlaceholder": "Confirmer le nouveau mot de passe",
+        "setPasswordButton": "Réinitialiser le mot de passe",
+        "setPasswordBottomText": "Retour à la connexion ?"
+    },
+    "profile": {
+        "language": "Langue",
+        "languageHint": "Choisissez la langue des menus et des boutons."
+    },
+    "actions": {
+        "save": "Enregistrer",
+        "cancel": "Annuler",
+        "delete": "Supprimer"
+    },
+    "table": {
+        "noResults": "Aucun résultat trouvé"
+    },
+    "common": {
+        "loading": "Chargement..."
+    },
+    "aiUsageLimit": {
+        "title": "Limite d'utilisation de l'IA atteinte",
+        "featureFallback": "IA",
+        "reachedDay": "Vous avez utilisé votre quota du jour pour {{feature}}.",
+        "reachedWeek": "Vous avez utilisé votre quota de la semaine pour {{feature}}.",
+        "reachedMonth": "Vous avez utilisé votre quota du mois pour {{feature}}.",
+        "reachedPlanPeriod": "Vous avez utilisé votre quota pour {{feature}} sur cette période d'abonnement.",
+        "reached": "Vous avez atteint la limite d'utilisation pour {{feature}}.",
+        "numbersCredits": "{{used}} crédits utilisés sur {{limit}}.",
+        "numbersRequests": "{{used}} requêtes utilisées sur {{limit}}.",
+        "numbersUsd": "{{used}} utilisés sur {{limit}}.",
+        "resetsAt": "Vous pourrez l'utiliser à nouveau après {{when}}, ou demandez à votre enseignant.",
+        "tryLater": "Réessayez plus tard, ou demandez à votre enseignant.",
+        "warning": "Vous approchez de votre quota d'utilisation de l'IA."
+    }
+}

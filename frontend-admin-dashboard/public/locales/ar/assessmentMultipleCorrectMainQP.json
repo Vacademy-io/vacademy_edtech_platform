@@ -1,0 +1,9 @@
+{
+    "emptyState": "الرجاء إضافة سؤال لعرض تفاصيل السؤال",
+    "comprehensionText": "نص الفهم",
+    "questionLabel": "السؤال",
+    "questionLabelNumbered": "السؤال {{number}}",
+    "questionPlaceholder": "اكتب السؤال",
+    "explanationHint": "يظهر للمتعلمين مع نتيجتهم.",
+    "explanationPlaceholder": "التوضيح"
+}

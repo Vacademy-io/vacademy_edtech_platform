@@ -1,0 +1,15 @@
+{
+    "noSubOrgsFound": "Aucune sous-organisation trouvée",
+    "pleaseSelectASubOrg": "Veuillez sélectionner une sous-organisation",
+    "loadingSubOrgs": "Chargement des sous-organisations...",
+    "logoAlt": "Logo",
+    "selectSubOrg": "Sélectionner une sous-organisation",
+    "pleaseChooseSubOrgToAccess": "Veuillez choisir la sous-organisation à laquelle vous souhaitez accéder",
+    "availableSubOrgs": "Sous-organisations disponibles",
+    "subOrgFallbackName": "Sous-organisation {{subOrgId}}",
+    "chooseASubOrg": "Choisissez une sous-organisation",
+    "idLabel": "ID : {{idPrefix}}...",
+    "continueToPortal": "Continuer vers le portail",
+    "selectASubOrg": "Sélectionner une sous-organisation",
+    "backToLogin": "Retour à la connexion"
+}

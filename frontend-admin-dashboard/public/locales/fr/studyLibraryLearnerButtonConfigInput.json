@@ -1,0 +1,17 @@
+{
+    "defaultButtonText": "Voir le contenu du cours",
+    "addCustomButton": "Ajouter un bouton personnalisé",
+    "customButtonConfiguration": "Configuration du bouton personnalisé",
+    "addCustomActionButtonNote": "Ajouter un bouton d'action personnalisé pour les apprenants",
+    "remove": "Supprimer",
+    "buttonText": "Texte du bouton",
+    "buttonTextPlaceholder": "ex. Voir le contenu du cours",
+    "charactersCount_one": "{{count}}/{{max}} caractère",
+    "charactersCount_many": "{{count}}/{{max}} caractères",
+    "charactersCount_other": "{{count}}/{{max}} caractères",
+    "buttonUrl": "URL du bouton",
+    "buttonUrlPlaceholder": "https://example.com/class-link...",
+    "backgroundColor": "Couleur de fond",
+    "textColor": "Couleur du texte",
+    "preview": "Aperçu"
+}

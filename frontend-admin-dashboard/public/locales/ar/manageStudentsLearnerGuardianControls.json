@@ -1,0 +1,16 @@
+{
+    "toggle": {
+        "isGuardianLabel": "هل هذا ولي أمر؟",
+        "addGuardianButton": "+ إضافة ولي أمر",
+        "removeGuardianButton": "إزالة ولي الأمر"
+    },
+    "hints": {
+        "emailRequired": "أضف بريدًا إلكترونيًا إلى هذا السجل لتفعيل ربط ولي الأمر.",
+        "linkStudentPrompt": "أضف أو اربط الطالب الذي يقوم ولي الأمر هذا بتسجيله:",
+        "linkGuardianPrompt": "أضف أو اربط ولي أمر هذا المتعلم (اختياري):"
+    },
+    "personLabels": {
+        "student": "طالب",
+        "guardian": "ولي الأمر"
+    }
+}

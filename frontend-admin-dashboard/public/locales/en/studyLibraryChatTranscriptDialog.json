@@ -1,0 +1,14 @@
+{
+    "chatHeading": "Chat",
+    "chatWith": "Chat with {{name}}",
+    "started": "Started {{time}}",
+    "loadingTranscript": "Loading transcript…",
+    "loadFailed": "Could not load this transcript. Please try again.",
+    "noMessages": "This chat has no messages.",
+    "practiceQuiz": "Practice quiz",
+    "quizResult": "Quiz result",
+    "usedTool": "Used tool: {{tool}}",
+    "aiUsedTool": "AI used a tool",
+    "toolResultNamed": "{{tool}} result",
+    "toolResult": "Tool result"
+}

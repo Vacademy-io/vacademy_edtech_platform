@@ -3,8 +3,10 @@ import { SplashScreenProps } from "@/types/loginTypes";
 // import { SsdcLogo_Login } from "@/assets/svgs";
 import { useEffect } from "react";
 import Logo from "@/svgs/ssdc-logo.svg?url"
+import { useTranslation } from "react-i18next";
 
 export const SplashScreen = ({ children }: SplashScreenProps) => {
+  const { t } = useTranslation("authExtraA");
   useEffect(() => {
     // Disable scrolling while splash screen is active
     document.body.style.overflow = "hidden";
@@ -42,7 +44,7 @@ export const SplashScreen = ({ children }: SplashScreenProps) => {
           ease: "easeInOut",
         }}
       >
-        <img src={Logo} alt="Logo" />
+        <img src={Logo} alt={t("logo.alt")} />
       </motion.div>
 
       {/* Content Section */}

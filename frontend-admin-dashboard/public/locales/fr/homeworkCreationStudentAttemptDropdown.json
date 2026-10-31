@@ -1,0 +1,30 @@
+{
+    "dialogs": {
+        "attentionLabel": "Attention",
+        "yes": "Oui",
+        "provideReattempt": {
+            "title": "Offrir une nouvelle tentative",
+            "confirmMessagePrefix": "Êtes-vous sûr de vouloir offrir une nouvelle tentative à"
+        },
+        "releaseResult": {
+            "title": "Publier le résultat",
+            "confirmMessagePrefix": "Êtes-vous sûr de vouloir publier le résultat pour"
+        },
+        "revaluateEntireAssessment": {
+            "title": "Réévaluer l'évaluation entière",
+            "confirmMessagePrefix": "Êtes-vous sûr de vouloir réévaluer pour",
+            "confirmMessageSuffix": "pour l'évaluation entière ?"
+        }
+    },
+    "dropdown": {
+        "provideReattempt": "Offrir une nouvelle tentative",
+        "revaluate": "Réévaluer",
+        "questionWise": "Par question",
+        "entireAssessment": "Évaluation entière",
+        "releaseResult": "Publier le résultat"
+    },
+    "toasts": {
+        "releaseResultSuccess": "Votre tentative pour cette évaluation a été réévaluée. Veuillez vérifier votre e-mail !",
+        "revaluateSuccess": "Votre tentative pour cette évaluation a été réévaluée. Veuillez vérifier votre e-mail !"
+    }
+}

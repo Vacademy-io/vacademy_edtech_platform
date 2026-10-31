@@ -1,0 +1,101 @@
+{
+    "dialog": {
+        "eyebrow": "إنشاء خطة",
+        "title": "خطة رسوم جديدة"
+    },
+    "summary": {
+        "feeTypes": "أنواع الرسوم",
+        "totalAmount": "المبلغ الإجمالي",
+        "paymentDates": "تواريخ الدفع"
+    },
+    "classSelect": {
+        "label": "اختر الصف",
+        "placeholder": "اختر الصفوف...",
+        "searchPlaceholder": "ابحث عن الصفوف...",
+        "noClasses": "لا توجد صفوف متاحة",
+        "noMatch": "لا توجد صفوف تطابق بحثك",
+        "selectedBadge_zero": "لم يتم تحديد أي صف",
+        "selectedBadge_one": "تم تحديد صف واحد",
+        "selectedBadge_two": "تم تحديد صفين",
+        "selectedBadge_few": "تم تحديد {{count}} صفوف",
+        "selectedBadge_many": "تم تحديد {{count}} صفًا",
+        "selectedBadge_other": "تم تحديد {{count}} صف",
+        "selectedSummary_zero": "لم يتم تحديد أي صف",
+        "selectedSummary_one": "تم تحديد صف واحد",
+        "selectedSummary_two": "تم تحديد صفين",
+        "selectedSummary_few": "تم تحديد {{count}} صفوف",
+        "selectedSummary_many": "تم تحديد {{count}} صفًا",
+        "selectedSummary_other": "تم تحديد {{count}} صف"
+    },
+    "packageName": {
+        "label": "اسم الباقة",
+        "placeholder": "مثال: خطة رسوم النخبة 2026"
+    },
+    "status": {
+        "label": "الحالة",
+        "active": "نشط",
+        "draft": "مسودة"
+    },
+    "approval": {
+        "label": "تسجيل المتعلمين بعد الموافقة",
+        "description": "عند التفعيل، ينتظر المتعلمون الذين يسجلون عبر هذه الخطة موافقة المسؤول قبل الحصول على الوصول إلى الدورة."
+    },
+    "feeType": {
+        "remove": "إزالة",
+        "defaultName": "نوع الرسوم {{index}}",
+        "installmentCount_zero": "بدون أقساط",
+        "installmentCount_one": "قسط واحد",
+        "installmentCount_two": "قسطان",
+        "installmentCount_few": "{{count}} أقساط",
+        "installmentCount_many": "{{count}} قسطًا",
+        "installmentCount_other": "{{count}} قسط",
+        "nameLabel": "اسم الرسوم",
+        "namePlaceholder": "مثال: رسوم التعليم",
+        "descriptionLabel": "الوصف",
+        "descriptionPlaceholder": "وصف مختصر",
+        "totalAmountLabel": "المبلغ الإجمالي (₹)",
+        "amountPlaceholder": "مثال: 50000",
+        "hasInstallments": "دفع بالتقسيط",
+        "refundable": "قابل للاسترداد",
+        "latePenalty": "غرامة التأخير",
+        "penaltyPlaceholder": "%",
+        "paymentFrequency": "تكرار الدفع",
+        "presetMultiplier": "({{count}}x)",
+        "installmentCountPlaceholder": "عدد الأقساط",
+        "columnIndex": "#",
+        "columnAmount": "المبلغ (₹)",
+        "columnStartDate": "تاريخ البدء",
+        "columnEndDate": "تاريخ الانتهاء",
+        "columnDueDate": "تاريخ الاستحقاق",
+        "remainingToAllocate": "متبقٍ ₹{{amount}} لتخصيصه",
+        "exceedsTotal": "يتجاوز الإجمالي بمقدار ₹{{amount}}",
+        "total": "الإجمالي"
+    },
+    "presets": {
+        "installment": {
+            "annual": "سنوي",
+            "halfYearly": "نصف سنوي",
+            "quarterly": "ربع سنوي",
+            "monthly": "شهري",
+            "custom": "مخصص"
+        },
+        "feeType": {
+            "tuitionLabel": "رسوم التعليم",
+            "tuitionDescription": "رسوم التعليم المنتظمة للعام الدراسي",
+            "examLabel": "رسوم الامتحان",
+            "examDescription": "رسوم الامتحانات والتقييم",
+            "libraryLabel": "رسوم المكتبة",
+            "libraryDescription": "رسوم الوصول إلى المكتبة والموارد",
+            "transportLabel": "رسوم النقل",
+            "transportDescription": "رسوم النقل المدرسي",
+            "hostelLabel": "رسوم السكن الداخلي",
+            "hostelDescription": "رسوم إقامة السكن الداخلي",
+            "labLabel": "رسوم المختبر",
+            "labDescription": "رسوم استخدام المختبر والمواد"
+        }
+    },
+    "addFeeType": "إضافة نوع رسوم",
+    "cancel": "إلغاء",
+    "saving": "جارٍ الحفظ...",
+    "savePackage": "حفظ الباقة"
+}

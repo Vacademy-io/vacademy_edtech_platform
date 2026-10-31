@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useSearch } from "@tanstack/react-router";
 import { Preferences } from "@capacitor/preferences";
@@ -133,6 +134,7 @@ interface SearchParams {
 }
 
 export default function AttendanceReportPage() {
+  const { t } = useTranslation("layoutCommonB");
   const search = useSearch({ from: "/reports/attendance/" }) as SearchParams;
   const [downloading, setDownloading] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
@@ -193,7 +195,7 @@ export default function AttendanceReportPage() {
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Failed to generate PDF:", err);
-      alert("Failed to generate PDF. Please try again.");
+      alert(t("attendanceReport.pdfGenerationFailed"));
     } finally {
       setDownloading(false);
     }
@@ -213,9 +215,9 @@ export default function AttendanceReportPage() {
   if (isError) {
     return (
       <div className="mx-auto max-w-2xl p-6 text-center">
-        <p className="text-red-600">Failed to load report.</p>
+        <p className="text-red-600">{t("attendanceReport.loadFailed")}</p>
         <p className="mt-2 text-sm text-gray-500">
-          {error instanceof Error ? error.message : "Unknown error"}
+          {error instanceof Error ? error.message : t("attendanceReport.unknownError")}
         </p>
       </div>
     );
@@ -224,7 +226,7 @@ export default function AttendanceReportPage() {
   if (!student) {
     return (
       <div className="mx-auto max-w-2xl p-6 text-center">
-        <p className="text-gray-700">No attendance data available for this period.</p>
+        <p className="text-gray-700">{t("attendanceReport.noData")}</p>
         {data?.message && <p className="mt-2 text-sm text-gray-500">{data.message}</p>}
       </div>
     );
@@ -234,14 +236,14 @@ export default function AttendanceReportPage() {
     <div className="mx-auto max-w-2xl p-4">
       {/* Action bar — not included in PDF */}
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-gray-800">Attendance Report</h1>
+        <h1 className="text-lg font-semibold text-gray-800">{t("attendanceReport.title")}</h1>
         <Button
           onClick={handleDownloadPdf}
           disabled={downloading}
           className="gap-2"
         >
           <DownloadSimple size={16} />
-          {downloading ? "Generating..." : "Download PDF"}
+          {downloading ? t("attendanceReport.generating") : t("attendanceReport.downloadPdf")}
         </Button>
       </div>
 
@@ -310,17 +312,17 @@ export default function AttendanceReportPage() {
                 )}
               </td>
               <td style={{ textAlign: "right", verticalAlign: "top", fontSize: 11, color: "#94a3b8" }}> {/* design-lint-ignore: PDF template inline style */}
-                <div>Generated</div>
+                <div>{t("attendanceReport.generated")}</div>
                 <div style={{ marginTop: 2 }}>{new Date().toLocaleDateString()}</div>
               </td>
             </tr>
           </tbody>
         </table>
 
-        <h2 style={{ color: "#1a1a1a", marginTop: 0 }}>Attendance Report</h2> {/* design-lint-ignore: PDF template inline style */}
+        <h2 style={{ color: "#1a1a1a", marginTop: 0 }}>{t("attendanceReport.title")}</h2> {/* design-lint-ignore: PDF template inline style */}
         <p style={{ color: "#444", lineHeight: 1.6 }}> {/* design-lint-ignore: PDF template inline style */}
-          Hi <strong>{student.fullName}</strong>, here's your attendance summary for{" "}
-          <strong>{student.startDate}</strong> to <strong>{student.endDate}</strong>:
+          {t("attendanceReport.greeting.prefix")} <strong>{student.fullName}</strong>{t("attendanceReport.greeting.middle")}{" "}
+          <strong>{student.startDate}</strong> {t("attendanceReport.greeting.to")} <strong>{student.endDate}</strong>:
         </p>
 
         <div
@@ -344,15 +346,16 @@ export default function AttendanceReportPage() {
             {student.attendancePercentage}%
           </div>
           <div style={{ color: "#444", marginTop: 12, fontSize: 14 }}> {/* design-lint-ignore: PDF template inline style */}
-            Attendance Rate
+            {t("attendanceReport.attendanceRate")}
           </div>
           <div style={{ color: "#666", marginTop: 6, fontSize: 13 }}> {/* design-lint-ignore: PDF template inline style */}
-            {student.sessionsAttended} sessions attended &middot;{" "}
-            {student.totalDurationMinutes} min total
+            {t("attendanceReport.sessionsAttended", { count: student.sessionsAttended })}
+            {" · "}
+            {t("attendanceReport.minutesTotal", { count: student.totalDurationMinutes })}
           </div>
         </div>
 
-        <h3 style={{ color: "#1e293b", marginTop: 24 }}>Session Details</h3> {/* design-lint-ignore: PDF template inline style */}
+        <h3 style={{ color: "#1e293b", marginTop: 24 }}>{t("attendanceReport.sessionDetails")}</h3> {/* design-lint-ignore: PDF template inline style */}
         {/* Reuse the exact same pre-rendered HTML the backend builds for emails */}
         <div dangerouslySetInnerHTML={{ __html: student.sessionsTableHtml }} />
 
@@ -361,12 +364,12 @@ export default function AttendanceReportPage() {
         {student.engagementLogs.some((l) => l.engagementScore !== undefined) && (
           <div style={{ marginTop: 24 }}>
             <h3 style={{ color: "#1e293b", marginTop: 0 }}> {/* design-lint-ignore: PDF template inline style */}
-              Engagement Score Breakdown
+              {t("attendanceReport.engagement.breakdownTitle")}
             </h3>
             <p style={{ color: "#64748b", fontSize: 12, lineHeight: 1.5, marginTop: 4 }}> {/* design-lint-ignore: PDF template inline style */}
-              How each session's score is computed: <strong>80 pts</strong> based on
-              attendance time vs. total session length, plus <strong>20 pts</strong>{" "}
-              from in-session interactions. Total capped at 100.
+              {t("attendanceReport.engagement.explanationPrefix")} <strong>{t("attendanceReport.engagement.attendancePts")}</strong>{" "}
+              {t("attendanceReport.engagement.explanationMiddle")} <strong>{t("attendanceReport.engagement.interactionPts")}</strong>{" "}
+              {t("attendanceReport.engagement.explanationSuffix")}
             </p>
             {student.engagementLogs
               .filter((l) => l.engagementScore !== undefined)
@@ -410,26 +413,26 @@ export default function AttendanceReportPage() {
                           </div>
                           <div style={{ fontSize: 12, color: "#475569", lineHeight: 1.7 }}> {/* design-lint-ignore: PDF template inline style */}
                             <div>
-                              <strong style={{ color: "#1e293b" }}>Attendance:</strong>{" "} {/* design-lint-ignore: PDF template inline style */}
+                              <strong style={{ color: "#1e293b" }}>{t("attendanceReport.engagement.attendanceLabel")}</strong>{" "} {/* design-lint-ignore: PDF template inline style */}
                               {attPts}/80
                               {mtgMins !== undefined && joined > 0 && (
                                 <span style={{ color: "#94a3b8" }}> {/* design-lint-ignore: PDF template inline style */}
                                   {" "}
-                                  ({joined} of {mtgMins} min joined)
+                                  {t("attendanceReport.engagement.joinedOf", { joined, total: mtgMins })}
                                 </span>
                               )}
                             </div>
                             <div>
-                              <strong style={{ color: "#1e293b" }}>Interactions:</strong>{" "} {/* design-lint-ignore: PDF template inline style */}
+                              <strong style={{ color: "#1e293b" }}>{t("attendanceReport.engagement.interactionsLabel")}</strong>{" "} {/* design-lint-ignore: PDF template inline style */}
                               {intPts}/20
                               {ib && (
                                 <span style={{ color: "#94a3b8" }}> {/* design-lint-ignore: PDF template inline style */}
                                   {" "}
-                                  ({ib.chats} chat
-                                  {ib.chats === 1 ? "" : "s"}, {ib.raisehand} raise
-                                  {ib.raisehand === 1 ? "" : "s"}, {ib.talkTime} talktime (in sec), {ib.emojis} emoji
-                                  {ib.emojis === 1 ? "" : "s"}, {ib.pollVotes} poll
-                                  {ib.pollVotes === 1 ? "" : "s"})
+                                  ({t("attendanceReport.engagement.chats", { count: ib.chats })}
+                                  , {t("attendanceReport.engagement.raises", { count: ib.raisehand })}
+                                  , {t("attendanceReport.engagement.talkTime", { count: ib.talkTime })}
+                                  , {t("attendanceReport.engagement.emojis", { count: ib.emojis })}
+                                  , {t("attendanceReport.engagement.polls", { count: ib.pollVotes })})
                                 </span>
                               )}
                             </div>
@@ -441,7 +444,7 @@ export default function AttendanceReportPage() {
                               }}
                             >
                               <strong style={{ color: scoreColor }}>
-                                Total: {score}/100
+                                {t("attendanceReport.engagement.total", { score })}
                               </strong>
                             </div>
                           </div>
@@ -455,10 +458,10 @@ export default function AttendanceReportPage() {
         )}
 
         <p style={{ color: "#444", lineHeight: 1.6, marginTop: 16 }}> {/* design-lint-ignore: PDF template inline style */}
-          Regular attendance is the key to success.
+          {t("attendanceReport.closingNote")}
         </p>
         <p style={{ color: "#888", fontSize: 13, marginTop: 32 }}> {/* design-lint-ignore: PDF template inline style */}
-          Best regards,
+          {t("attendanceReport.bestRegards")}
           <br />
           {student.instituteName}
         </p>

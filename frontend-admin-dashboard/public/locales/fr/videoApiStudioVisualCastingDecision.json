@@ -1,0 +1,29 @@
+{
+    "header": {
+        "title_one": "Choisir les visuels ({{count}} plan)",
+        "title_many": "Choisir les visuels ({{count}} plans)",
+        "title_other": "Choisir les visuels ({{count}} plans)"
+    },
+    "empty": {
+        "noCandidates": "Aucun visuel candidat à examiner.",
+        "continue": "Continuer"
+    },
+    "shot": {
+        "queryFallback": "visuel",
+        "generateWithAi": "Générer avec l'IA",
+        "searchPlaceholderClips": "Rechercher des clips…",
+        "searchPlaceholderPhotos": "Rechercher des photos…",
+        "search": "Rechercher",
+        "upload": "Importer",
+        "noCandidates": "Aucun candidat — recherchez, importez, ou laissez l'IA le générer.",
+        "yours": "À vous"
+    },
+    "footer": {
+        "letAiDoAll": "Laisser l'IA tout faire",
+        "useThese": "Utiliser ceux-ci"
+    },
+    "toast": {
+        "noResults": "Aucun résultat — essayez d'autres termes.",
+        "uploadFailed": "Échec de l'import. Essayez une image plus petite."
+    }
+}

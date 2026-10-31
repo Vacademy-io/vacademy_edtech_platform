@@ -8,8 +8,8 @@ import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.institute.entity.InstituteSubOrg;
 import vacademy.io.admin_core_service.features.institute.repository.InstituteSubOrgRepository;
 import vacademy.io.admin_core_service.features.institute.service.setting.InstituteSettingService;
+import vacademy.io.admin_core_service.features.live_session.client.InstituteRoleUserClient;
 import vacademy.io.common.auth.model.CustomUserDetails;
-import vacademy.io.common.auth.repository.UserRoleRepository;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.ArrayList;
@@ -17,6 +17,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -80,7 +81,8 @@ public class SubOrgAccessScopeService {
             Set.of(PERM_VIEW_FINANCE, PERM_EXPORT);
 
     private final SubOrgLeadScopeService subOrgLeadScopeService;
-    private final UserRoleRepository userRoleRepository;
+    /** Roles live in auth_service's DB — admin_core has no user_role table. */
+    private final InstituteRoleUserClient instituteRoleUserClient;
     private final InstituteSubOrgRepository instituteSubOrgRepository;
     private final InstituteSettingService instituteSettingService;
 
@@ -133,9 +135,12 @@ public class SubOrgAccessScopeService {
      * </ul>
      */
     private boolean isTrueInstituteAdmin(String userId, String parentInstituteId) {
-        return StringUtils.hasText(parentInstituteId)
-                && userRoleRepository.existsByUserIdAndInstituteIdAndRoleName(
-                        userId, parentInstituteId, ROLE_NAME_ADMIN);
+        if (!StringUtils.hasText(parentInstituteId)) {
+            return false;
+        }
+        // A failed lookup is "not admin" — falls through to the role-grant scope, never widens.
+        Optional<Set<String>> roles = instituteRoleUserClient.findRolesOfUser(parentInstituteId, userId);
+        return roles.isPresent() && roles.get().contains(ROLE_NAME_ADMIN);
     }
 
     private List<String> unionWithRoleGrants(List<String> base, String userId, String instituteId) {
@@ -148,7 +153,7 @@ public class SubOrgAccessScopeService {
      * Sub-orgs granted to this caller by any ACTIVE role they hold in the institute.
      *
      * <p>Role display settings are keyed by role UUID while the JWT only carries role names,
-     * so the caller's role ids are resolved from {@code user_role} first. Fails closed on any
+     * so the caller's role ids are resolved from auth_service first. Fails closed on any
      * error — a malformed settings blob must never widen visibility.
      */
     @SuppressWarnings("unchecked")
@@ -157,9 +162,9 @@ public class SubOrgAccessScopeService {
             return Collections.emptyList();
         }
         try {
-            List<String> roleIds = userRoleRepository
-                    .findActiveRoleIdsByUserIdAndInstituteId(userId, parentInstituteId);
-            if (roleIds == null || roleIds.isEmpty()) {
+            Set<String> roleIds = instituteRoleUserClient
+                    .findRoleIdsOfUser(parentInstituteId, userId).orElse(Set.of());
+            if (roleIds.isEmpty()) {
                 return Collections.emptyList();
             }
             Object data = instituteSettingService
@@ -298,9 +303,9 @@ public class SubOrgAccessScopeService {
             return defaultValue;
         }
         try {
-            List<String> roleIds = userRoleRepository
-                    .findActiveRoleIdsByUserIdAndInstituteId(userId, instituteId);
-            if (roleIds == null || roleIds.isEmpty()) return defaultValue;
+            Set<String> roleIds = instituteRoleUserClient
+                    .findRoleIdsOfUser(instituteId, userId).orElse(Set.of());
+            if (roleIds.isEmpty()) return defaultValue;
             Object data = instituteSettingService
                     .getSettingByInstituteIdAndKey(instituteId, ROLE_DISPLAY_SETTINGS_KEY);
             if (!(data instanceof Map)) return defaultValue;

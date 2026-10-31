@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.student_analysis.dto.*;
 import vacademy.io.admin_core_service.features.student_analysis.entity.StudentAnalysisProcess;
 import vacademy.io.admin_core_service.features.student_analysis.repository.StudentAnalysisProcessRepository;
@@ -47,8 +48,16 @@ public class StudentAnalysisController {
         private final UserLinkedDataRepository userLinkedDataRepository;
         private final StudentReportPdfService reportPdfService;
         private final vacademy.io.admin_core_service.core.security.GuardianAccessGuard guardianAccessGuard;
+        private final vacademy.io.admin_core_service.features.institute_learner.repository.InstituteStudentRepository studentRepository;
 
         @PostMapping("/initiate")
+        @Auditable(
+                        entityType = "STUDENT_REPORT",
+                        action = "GENERATE",
+                        conditionExpr = "#result?.body?.processId != null",
+                        entityIdExpr = "#result?.body?.processId",
+                        descriptionExpr = "'generated progress report for ' + (#result?.body?.learnerName ?: #request.userId)"
+                                        + " + ' (' + #request.startDateIso + ' to ' + #request.endDateIso + ')'")
         @Operation(summary = "Initiate student analysis report generation", description = "Starts async processing of student analysis. Returns a process ID to check status later.")
         public ResponseEntity<StudentAnalysisInitiateResponse> initiateAnalysis(
                         @RequestBody StudentAnalysisRequest request,
@@ -106,13 +115,16 @@ public class StudentAnalysisController {
 
                         process = processRepository.save(process);
 
-                        // Start async processing
-                        processorService.processStudentAnalysis(process.getId());
+                        // Start async processing; the admin's id rides along so every AI credit charge
+                        // for this report is attributed to them.
+                        processorService.processStudentAnalysis(process.getId(), userDetails.getUserId());
 
                         return ResponseEntity.ok(StudentAnalysisInitiateResponse.builder()
                                         .processId(process.getId())
                                         .status("PENDING")
                                         .message("Student analysis processing initiated successfully")
+                                        // For the admin activity log description ("… for Anmol Agarwal").
+                                        .learnerName(learnerNameOf(request.getUserId()))
                                         .build());
 
                 } catch (Exception e) {
@@ -122,6 +134,19 @@ public class StudentAnalysisController {
                                                         .status("ERROR")
                                                         .message("Failed to initiate analysis: " + e.getMessage())
                                                         .build());
+                }
+        }
+
+        /** Best-effort learner name for the audit description — never fails the initiate call. */
+        private String learnerNameOf(String userId) {
+                try {
+                        return studentRepository.findByUserId(userId).stream()
+                                        .map(student -> student.getFullName())
+                                        .filter(n -> n != null && !n.isBlank())
+                                        .findFirst().orElse(null);
+                } catch (Exception e) {
+                        log.warn("[Student-Analysis-API] Could not resolve learner name for {}: {}", userId, e.getMessage());
+                        return null;
                 }
         }
 

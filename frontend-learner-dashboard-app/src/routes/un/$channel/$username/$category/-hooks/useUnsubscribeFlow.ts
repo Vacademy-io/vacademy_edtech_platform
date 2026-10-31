@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import type { AxiosError } from "axios";
+import { useTranslation } from "react-i18next";
 
 import {
   resolveChannel,
@@ -26,6 +27,8 @@ export interface UseUnsubscribeFlowParams {
 
 export interface UseUnsubscribeFlowResult {
   channelInfo: ChannelDescriptor | null;
+  /** Localized display label for the channel — "Email" / "WhatsApp" in the active locale. */
+  channelLabel: string;
   maskedRecipient: string;
   displayCategory: string;
   rawCategoryKey: string;
@@ -53,6 +56,7 @@ export const useUnsubscribeFlow = ({
   category,
   instituteId,
 }: UseUnsubscribeFlowParams): UseUnsubscribeFlowResult => {
+  const { t } = useTranslation("miscRoutesA");
   const decodedUsername = useMemo(
     () => decodeURIComponent(username ?? "").trim(),
     [username]
@@ -66,9 +70,16 @@ export const useUnsubscribeFlow = ({
   const channelInfo = useMemo(() => resolveChannel(channel), [channel]);
 
   const maskedRecipient = useMemo(
-    () => maskIdentifier(decodedUsername),
-    [decodedUsername]
+    () => maskIdentifier(decodedUsername, t),
+    [decodedUsername, t]
   );
+
+  const channelLabel = useMemo(() => {
+    if (!channelInfo) return t("unsubscribe.channel.notification");
+    return channelInfo.channel === "WHATSAPP"
+      ? t("unsubscribe.channel.whatsapp")
+      : t("unsubscribe.channel.email");
+  }, [channelInfo, t]);
 
   const rawCategoryKey = decodedCategory || "GENERAL";
   const displayCategory = rawCategoryKey;
@@ -194,11 +205,12 @@ export const useUnsubscribeFlow = ({
 
   const successMessage =
     lastActionRef.current === "RESUBSCRIBE"
-      ? `You're subscribed again to the ${channelInfo?.label ?? "notification"} updates.`
-      : `You've unsubscribed from the ${channelInfo?.label ?? "notification"} updates.`;
+      ? t("unsubscribe.messages.resubscribed", { channel: channelLabel })
+      : t("unsubscribe.messages.unsubscribed", { channel: channelLabel });
 
   return {
     channelInfo,
+    channelLabel,
     maskedRecipient,
     displayCategory,
     rawCategoryKey,
@@ -208,7 +220,7 @@ export const useUnsubscribeFlow = ({
     status: statusState,
     messages: {
       success: successMessage,
-      error: getUnsubscribeErrorMessage(mutation.error),
+      error: getUnsubscribeErrorMessage(mutation.error, t),
     },
     retry,
     resubscribe,

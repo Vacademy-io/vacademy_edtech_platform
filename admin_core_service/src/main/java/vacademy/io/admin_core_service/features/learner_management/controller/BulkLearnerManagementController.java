@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.learner_management.controller;
 
+import vacademy.io.admin_core_service.features.user_subscription.service.coupon.AdminDiscountPermissionService;
+import vacademy.io.admin_core_service.features.user_subscription.service.coupon.AdminDiscountService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +35,7 @@ public class BulkLearnerManagementController {
 
     private final BulkAssignmentService bulkAssignmentService;
     private final BulkDeassignmentService bulkDeassignmentService;
+    private final AdminDiscountPermissionService adminDiscountPermissionService;
 
     /**
      * Bulk assign users to multiple package sessions.
@@ -64,6 +67,13 @@ public class BulkLearnerManagementController {
                 request.getAssignments() != null ? request.getAssignments().size() : 0,
                 request.getOptions() != null && request.getOptions().isDryRun(),
                 userDetails != null ? userDetails.getUserId() : "unknown");
+
+        // Only roles allowed to by Display Settings (learnerManagement.canApplyDiscounts).
+        boolean discountRequested = request.getAssignments() != null && request.getAssignments().stream()
+                .anyMatch(a -> AdminDiscountService.isRequested(a.getAdminDiscount()));
+        if (discountRequested) {
+            adminDiscountPermissionService.requireCanApplyDiscounts(userDetails, request.getInstituteId());
+        }
 
         String adminUserId = userDetails != null ? userDetails.getUserId() : null;
         BulkAssignResponseDTO response = bulkAssignmentService.bulkAssign(request, adminUserId);
@@ -97,7 +107,8 @@ public class BulkLearnerManagementController {
             conditionExpr = "#result?.body != null and !#result.body.dryRun "
                     + "and (#result.body.summary?.successful ?: 0) > 0",
             descriptionExpr = "@auditNarrator.bulkDeassignmentOf(#request?.options?.mode, "
-                    + "#result?.body?.summary?.successful, #request?.userIds, #request?.packageSessionIds)")
+                    + "#result?.body?.summary?.successful, #request?.userIds, #request?.packageSessionIds, "
+                    + "#request?.options?.reason)")
     public ResponseEntity<BulkDeassignResponseDTO> bulkDeassign(
             @RequestBody BulkDeassignRequestDTO request,
             @AuthenticationPrincipal CustomUserDetails userDetails) {

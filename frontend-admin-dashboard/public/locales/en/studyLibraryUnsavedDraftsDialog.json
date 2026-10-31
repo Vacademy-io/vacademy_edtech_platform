@@ -1,0 +1,19 @@
+{
+    "heading": "Unsaved changes",
+    "keptOnDeviceHint": "Kept only on this device — logging out or clearing browser data will lose these changes. Open a {{slideTerm}} to save it.",
+    "keepInBrowser": "Keep in browser",
+    "discardChanges": "Discard changes",
+    "close": "Close",
+    "unsavedEditsHintLeave": "These {{slidesTermPlural}} have edits that haven't been saved to the database. Click one to open it, or choose what to do before leaving.",
+    "unsavedEditsHintReview": "These {{slidesTermPlural}} have edits that haven't been saved to the database. Click one to open it and save.",
+    "untitled": "Untitled",
+    "editedAgo": "edited {{timeAgo}}",
+    "noUnsavedChanges": "No unsaved changes in this course.",
+    "justNow": "just now",
+    "minAgo_one": "{{count}} min ago",
+    "minAgo_other": "{{count}} min ago",
+    "hrAgo_one": "{{count}} hr ago",
+    "hrAgo_other": "{{count}} hr ago",
+    "dayAgo_one": "{{count}} day ago",
+    "dayAgo_other": "{{count}} days ago"
+}

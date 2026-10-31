@@ -1,0 +1,22 @@
+{
+    "status": {
+        "success": "نجاح",
+        "failed": "فشل",
+        "created": "تم الإنشاء",
+        "unknownError": "خطأ غير معروف"
+    },
+    "errors": {
+        "missingColumns": "أعمدة مطلوبة مفقودة: {{columns}}. استخدم صف رأس القالب الذي تم تنزيله.",
+        "titleRequired": "العنوان مطلوب",
+        "startDateRequired": "start_date مطلوب",
+        "invalidStartDate": "start_date غير صالح (استخدم صيغة YYYY-MM-DD)",
+        "startTimeRequired": "start_time مطلوب",
+        "invalidStartTime": "start_time غير صالح (استخدم صيغة 24 ساعة HH:mm)",
+        "durationRequired": "يجب أن تكون المدة أكبر من صفر",
+        "unknownPlatform": "منصة غير معروفة أو معطّلة \"{{platform}}\". المسموح بها: {{allowed}}",
+        "linkRequired": "الرابط مطلوب للمنصة \"{{platform}}\"",
+        "invalidLink": "رابط غير صالح",
+        "unknownBatchId": "معرّف دفعة غير معروف: {{id}}",
+        "failedToReadCsv": "تعذّرت قراءة ملف CSV"
+    }
+}

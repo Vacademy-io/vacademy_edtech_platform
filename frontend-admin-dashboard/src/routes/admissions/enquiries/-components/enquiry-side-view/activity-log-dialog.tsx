@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     createTimelineEvent,
@@ -22,34 +24,41 @@ interface ActivityLogDialogProps {
     enquiryId: string;
 }
 
-const NOTE_ACTION_TYPES = [
-    { value: 'NOTE_ADDED', label: 'Note', icon: <NotePencil weight="fill" className="size-3.5" /> },
+const buildNoteActionTypes = (t: TFunction) => [
+    {
+        value: 'NOTE_ADDED',
+        label: t('actionTypes.note'),
+        icon: <NotePencil weight="fill" className="size-3.5" />,
+    },
     {
         value: 'PHONE_CALL',
-        label: 'Phone Call',
+        label: t('actionTypes.phoneCall'),
         icon: <Phone weight="fill" className="size-3.5" />,
     },
     {
         value: 'EMAIL_SENT',
-        label: 'Email Sent',
+        label: t('actionTypes.emailSent'),
         icon: <EnvelopeSimple weight="fill" className="size-3.5" />,
     },
     {
         value: 'CAMPUS_VISIT',
-        label: 'Campus Visit',
+        label: t('actionTypes.campusVisit'),
         icon: <Buildings weight="fill" className="size-3.5" />,
     },
 ];
 
 export const ActivityLogDialog = ({ isOpen, onOpenChange, enquiryId }: ActivityLogDialogProps) => {
+    const { t } = useTranslation('admissionsActivityLogDialog');
     const [noteText, setNoteText] = useState('');
     const [actionType, setActionType] = useState('NOTE_ADDED');
     const queryClient = useQueryClient();
 
+    const noteActionTypes = buildNoteActionTypes(t);
+
     const createMutation = useMutation({
         mutationFn: createTimelineEvent,
         onSuccess: () => {
-            toast.success('Activity logged successfully');
+            toast.success(t('toast.success'));
             setNoteText('');
             setActionType('NOTE_ADDED');
             onOpenChange(false);
@@ -58,17 +67,19 @@ export const ActivityLogDialog = ({ isOpen, onOpenChange, enquiryId }: ActivityL
             });
         },
         onError: () => {
-            toast.error('Failed to add activity. Please try again.');
+            toast.error(t('toast.error'));
         },
     });
 
     const handleSubmit = () => {
         if (!noteText.trim()) {
-            toast.warning('Please enter a note');
+            toast.warning(t('toast.emptyWarning'));
             return;
         }
 
-        const actionLabel = NOTE_ACTION_TYPES.find((t) => t.value === actionType)?.label || 'Note';
+        const actionLabel =
+            noteActionTypes.find((noteType) => noteType.value === actionType)?.label ||
+            t('actionTypes.note');
 
         const payload: CreateTimelineEventPayload = {
             type: 'ENQUIRY',
@@ -83,16 +94,16 @@ export const ActivityLogDialog = ({ isOpen, onOpenChange, enquiryId }: ActivityL
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-lg">
                 <DialogHeader className="my-2">
-                    <DialogTitle>Add Activity Log</DialogTitle>
-                    <DialogDescription>Log an activity or note for this enquiry</DialogDescription>
+                    <DialogTitle>{t('dialogTitle')}</DialogTitle>
+                    <DialogDescription>{t('dialogDescription')}</DialogDescription>
                 </DialogHeader>
 
                 <div className="space-y-4">
                     {/* Action type selector */}
                     <div className="flex flex-wrap items-center gap-2">
-                        {NOTE_ACTION_TYPES.map((type) => (
+                        {noteActionTypes.map((type) => (
                             <button
                                 key={type.value}
                                 onClick={() => setActionType(type.value)}
@@ -113,7 +124,7 @@ export const ActivityLogDialog = ({ isOpen, onOpenChange, enquiryId }: ActivityL
                     <textarea
                         value={noteText}
                         onChange={(e) => setNoteText(e.target.value)}
-                        placeholder="Type your note here…"
+                        placeholder={t('notePlaceholder')}
                         rows={4}
                         autoFocus
                         className="w-full resize-none rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm text-neutral-800 placeholder:text-neutral-400 focus:border-primary-300 focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary-300"
@@ -131,14 +142,14 @@ export const ActivityLogDialog = ({ isOpen, onOpenChange, enquiryId }: ActivityL
                         }}
                         disabled={createMutation.isPending}
                     >
-                        Cancel
+                        {t('cancel')}
                     </MyButton>
                     <MyButton
                         onClick={handleSubmit}
                         disabled={createMutation.isPending || !noteText.trim()}
                         className="bg-primary-500 hover:bg-primary-600"
                     >
-                        {createMutation.isPending ? 'Saving…' : 'Add Activity'}
+                        {createMutation.isPending ? t('submitting') : t('submit')}
                     </MyButton>
                 </div>
             </DialogContent>

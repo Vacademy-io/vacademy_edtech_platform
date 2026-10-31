@@ -1,0 +1,2791 @@
+{
+  "_generated": "scripts/export-catalogue-schema-catalog.mjs — do not edit by hand",
+  "source": "frontend-learner-dashboard-app/src/routes/$tagName/-ai/design-patterns.ts",
+  "patterns": [
+    {
+      "id": "catalog.hero",
+      "label": "Catalogue hero",
+      "component": "courseCatalog",
+      "propPath": "props.hero",
+      "looksLike": "A full-bleed cream band above the course grid: breadcrumb trail, a large H1, a one-line lead, 2-3 big live numbers with small labels on the right, a wide search box with a solid button, then a row of rounded 'Popular:' shortcut chips.",
+      "figmaCues": [
+        "full-width band directly above stream tabs or the grid, 200-320px tall, tinted (cream/sand) fill",
+        "breadcrumb text 'Home / Courses' over a 40-48px heading",
+        "2-3 large numerals each with a small caption ('24 courses & resources')",
+        "a 56-64px tall input with a filled button on its right",
+        "a 'Popular:' label followed by 4-8 pill chips"
+      ],
+      "useWhen": "A course listing page opens with a search-led band. Numbers shown are courses, streams or categories.",
+      "avoidWhen": "The design shows a marketing hero (image, CTA buttons) — use heroSection. Never add a separate heroSection above a catalogue that has this band: it duplicates the H1 and the search.",
+      "requires": [
+        {
+          "kind": "folderLibrary",
+          "detail": "stats of kind 'streams'/'categories' and chips with streamSlug need streams.source 'folderLibrary'"
+        }
+      ],
+      "bound": [],
+      "i18n": "mixed",
+      "reviewAs": [
+        "hero",
+        "proof"
+      ],
+      "pitfalls": [
+        "Stats are LIVE (kind: courses | streams | categories). Never author the numbers from the design; the label is the only text.",
+        "The breadcrumb is hidden on the site's home route; on other routes the last item is the current page and is never a link.",
+        "Popular chips act by precedence: searchValue > streamSlug (+categorySlug) > quickFilterId > route. streamSlug/categorySlug are folder slugs, not names.",
+        "At most 3 stats and 8 chips are shown."
+      ],
+      "minimal": {
+        "hero": {
+          "enabled": true,
+          "title": "All courses",
+          "lead": "<one line about the catalogue, from the design>",
+          "stats": [
+            {
+              "kind": "courses",
+              "label": "courses & resources"
+            }
+          ],
+          "search": {
+            "enabled": true
+          }
+        }
+      },
+      "full": {
+        "hero": {
+          "enabled": true,
+          "breadcrumb": [
+            {
+              "label": "Home",
+              "route": "homepage"
+            },
+            {
+              "label": "Courses"
+            }
+          ],
+          "title": "All courses",
+          "lead": "E-learning courses, E-books, live sessions, videos and short films across six knowledge streams, in English and Hindi.",
+          "stats": [
+            {
+              "kind": "courses",
+              "label": "courses & resources"
+            },
+            {
+              "kind": "streams",
+              "label": "knowledge streams"
+            }
+          ],
+          "search": {
+            "enabled": true,
+            "placeholder": "Search courses, topics or teachers, e.g. “parenting”, “Gita”, “Ayurveda”"
+          },
+          "popular": [
+            {
+              "label": "Holistic Parenting",
+              "streamSlug": "dharma",
+              "categorySlug": "vedic-parenting"
+            },
+            {
+              "label": "Bhagwadgeeta",
+              "streamSlug": "shastra",
+              "categorySlug": "gita"
+            },
+            {
+              "label": "Garbha Vigyan",
+              "streamSlug": "swasthya",
+              "categorySlug": "garbha-vigyan"
+            },
+            {
+              "label": "Gurukul Education",
+              "streamSlug": "shiksha",
+              "categorySlug": "gurukul-shiksha"
+            },
+            {
+              "label": "Free",
+              "quickFilterId": "qf-free"
+            }
+          ]
+        }
+      },
+      "fullSource": "brahm-varchas-site#/pages/1/components/0/props"
+    },
+    {
+      "id": "catalog.resultsHeader",
+      "label": "Results header",
+      "component": "courseCatalog",
+      "propPath": "props.hero.resultsHeader",
+      "looksLike": "A thin row above the results: 'Showing 22 courses', a chip with the current stream, and a boxed 'Sort: Most popular' select on the right.",
+      "figmaCues": [
+        "text 'Showing N courses' left-aligned above the first card row",
+        "a bordered select reading 'Sort: …' on the same row"
+      ],
+      "useWhen": "The design shows a result count and a sort box above the grid instead of a toolbar card.",
+      "avoidWhen": "The design keeps the original search + sort toolbar card.",
+      "requires": [],
+      "bound": [],
+      "i18n": "translatable",
+      "reviewAs": [
+        "content"
+      ],
+      "pitfalls": [
+        "It also appears automatically whenever hero.search is on, so the page keeps exactly one search box."
+      ],
+      "minimal": {
+        "hero": {
+          "resultsHeader": {
+            "enabled": true
+          }
+        }
+      },
+      "full": {
+        "hero": {
+          "resultsHeader": {
+            "enabled": true,
+            "showStreamChip": true,
+            "streamChipMode": "subtitle",
+            "sortLabels": {
+              "popular": "Most popular"
+            }
+          }
+        }
+      },
+      "fullSource": "brahm-varchas-site#/pages/1/components/0/props"
+    },
+    {
+      "id": "catalog.quickFilters",
+      "label": "Quick filters",
+      "component": "courseCatalog",
+      "propPath": "props.quickFilters + props.hero.quickFilterBar",
+      "looksLike": "A 'Quick filters:' label followed by small filled chips (Popular, New, Free, Bestseller, Hindi, Under ₹1000).",
+      "figmaCues": [
+        "a row of 4-6 small chips (12px bold text) preceded by a label ending in ':'",
+        "the active chip is solid filled"
+      ],
+      "useWhen": "The design shows one-tap shortcut chips above the grid.",
+      "avoidWhen": "The chips are navigation to other pages — use hero.popular or links.",
+      "requires": [
+        {
+          "kind": "courseLanguages",
+          "detail": "kind 'language' needs globalSettings.courseLanguages.enabled"
+        }
+      ],
+      "bound": [],
+      "i18n": "mixed",
+      "reviewAs": [
+        "content"
+      ],
+      "pitfalls": [
+        "Leave label '' to get the built-in translated label for the kind.",
+        "kind 'language' takes value = a courseLanguages code ('hi'); kind 'priceMax' takes a number."
+      ],
+      "minimal": {
+        "quickFilters": [
+          {
+            "id": "qf-popular",
+            "label": "",
+            "kind": "popular"
+          },
+          {
+            "id": "qf-new",
+            "label": "",
+            "kind": "new"
+          },
+          {
+            "id": "qf-free",
+            "label": "",
+            "kind": "free"
+          },
+          {
+            "id": "qf-bestseller",
+            "label": "",
+            "kind": "bestseller"
+          },
+          {
+            "id": "qf-hindi",
+            "label": "",
+            "kind": "language",
+            "value": "hi"
+          },
+          {
+            "id": "qf-under-1000",
+            "label": "",
+            "kind": "priceMax",
+            "value": 1000
+          }
+        ],
+        "hero": {
+          "quickFilterBar": {
+            "label": "Quick filters:",
+            "variant": "filled"
+          }
+        }
+      },
+      "full": {
+        "quickFilters": [
+          {
+            "id": "qf-popular",
+            "label": "",
+            "kind": "popular"
+          },
+          {
+            "id": "qf-new",
+            "label": "",
+            "kind": "new"
+          },
+          {
+            "id": "qf-free",
+            "label": "",
+            "kind": "free"
+          },
+          {
+            "id": "qf-bestseller",
+            "label": "",
+            "kind": "bestseller"
+          },
+          {
+            "id": "qf-hindi",
+            "label": "",
+            "kind": "language",
+            "value": "hi"
+          },
+          {
+            "id": "qf-under-1000",
+            "label": "",
+            "kind": "priceMax",
+            "value": 1000
+          }
+        ],
+        "hero": {
+          "quickFilterBar": {
+            "label": "Quick filters:",
+            "variant": "filled"
+          }
+        }
+      },
+      "fullSource": "brahm-varchas-site#/pages/1/components/0/props"
+    },
+    {
+      "id": "catalog.streams.icons",
+      "label": "Stream icon tabs",
+      "component": "courseCatalog",
+      "propPath": "props.streams",
+      "looksLike": "A full-width row of equal tabs, each a 40px round image over the stream's native name and an 'English · 12' line, with an accent underline under the active tab.",
+      "figmaCues": [
+        "6-8 equal-width columns in one row, each with a 40-72px circle image and two text lines",
+        "a second line in a smaller muted style with a middle dot and a number",
+        "a 2-3px underline under one tab"
+      ],
+      "useWhen": "Courses are grouped into streams that the design shows as icon tabs.",
+      "avoidWhen": "The tabs are plain rounded pills (catalog.streams.pills) or there is no folder library to back them.",
+      "requires": [
+        {
+          "kind": "folderLibrary",
+          "detail": "a library whose top-level folders (streams) have an image, a title and a subtitle, and whose course_tag matches course tags"
+        }
+      ],
+      "bound": [
+        "streams.libraryId"
+      ],
+      "i18n": "mixed",
+      "reviewAs": [
+        "content"
+      ],
+      "pitfalls": [
+        "Counts are live catalogue totals per stream (they ignore other filters). Never author them.",
+        "The icon band is not sticky unless sticky:true is set (pills default to sticky).",
+        "labelMode 'both' shows title + subtitle; use it for bilingual stream names."
+      ],
+      "minimal": {
+        "streams": {
+          "enabled": true,
+          "source": "folderLibrary",
+          "libraryId": "<libraryId: leave empty — the admin picks a folder library (Manage Pages → Folders) in the editor>",
+          "variant": "icons",
+          "showCounts": true
+        }
+      },
+      "full": {
+        "streams": {
+          "enabled": true,
+          "source": "folderLibrary",
+          "libraryId": "<libraryId: leave empty — the admin picks a folder library (Manage Pages → Folders) in the editor>",
+          "libraryName": "<name shown in the editor>",
+          "variant": "icons",
+          "showCounts": true,
+          "labelMode": "both",
+          "allLabel": "सभी",
+          "allSubtitle": "All courses",
+          "sticky": false
+        }
+      },
+      "fullSource": "brahm-varchas-site#/pages/1/components/0/props"
+    },
+    {
+      "id": "catalog.streams.pills",
+      "label": "Stream pill tabs",
+      "component": "courseCatalog",
+      "propPath": "props.streams",
+      "looksLike": "A row of rounded pill tabs above the grid ('All courses', 'Science', 'Arts'…), sticky under the header.",
+      "figmaCues": [
+        "3-10 rounded-full chips in one scrollable row above the grid",
+        "one chip filled with the brand colour"
+      ],
+      "useWhen": "The design groups courses by subject with simple pill tabs.",
+      "avoidWhen": "The tabs carry round images and counts (catalog.streams.icons).",
+      "requires": [
+        {
+          "kind": "courseTags",
+          "detail": "source 'tags': each item filters by one course tag; source 'folderLibrary' needs a library instead"
+        }
+      ],
+      "bound": [],
+      "i18n": "mixed",
+      "reviewAs": [
+        "content"
+      ],
+      "pitfalls": [
+        "items[].tag must be a tag the courses already carry; slug is the ?stream= URL value."
+      ],
+      "minimal": {
+        "streams": {
+          "enabled": true,
+          "source": "tags",
+          "variant": "pills",
+          "items": [
+            {
+              "label": "<tab label>",
+              "slug": "<url-slug>",
+              "tag": "<existing course tag>"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "catalog.filterSidebar.editorial",
+      "label": "Editorial filter sidebar",
+      "component": "courseCatalog",
+      "propPath": "props.filterSidebar + priceFilter + categoryFilter + languageFilter",
+      "looksLike": "One 280px card titled 'Filters' with 'Clear all', uppercase group labels (PRICE / LANGUAGE / FORMAT / CATEGORY / FOR) with −/+ toggles, square checkboxes, greyed zero-count rows and '+ Show all N'.",
+      "figmaCues": [
+        "a left column 260-300px wide beside the grid, one bordered card",
+        "uppercase 11-12px group labels each followed by 2-8 checkbox rows",
+        "a '+ Show all 12 categories' text link"
+      ],
+      "useWhen": "The design shows a checkbox filter card left of the results.",
+      "avoidWhen": "The design has no sidebar (set showFilters false) or uses dropdown filters.",
+      "requires": [
+        {
+          "kind": "folderLibrary",
+          "detail": "the category group lists the streams' sub-folders"
+        },
+        {
+          "kind": "courseLanguages",
+          "detail": "the language group needs globalSettings.courseLanguages.enabled"
+        }
+      ],
+      "bound": [],
+      "i18n": "mixed",
+      "reviewAs": [
+        "content"
+      ],
+      "pitfalls": [
+        "order[] takes 'price', 'language', 'category' and customFilters ids; unlisted groups follow.",
+        "priceFilter.control 'checkbox' = Free / Paid checkboxes with no 'Any price' row.",
+        "Colour props take hex; the palette fills everything else."
+      ],
+      "minimal": {
+        "showFilters": true,
+        "filterSidebar": {
+          "variant": "editorial",
+          "order": [
+            "price",
+            "language",
+            "category"
+          ]
+        },
+        "priceFilter": {
+          "enabled": true,
+          "control": "checkbox"
+        },
+        "languageFilter": {
+          "enabled": true
+        },
+        "categoryFilter": {
+          "enabled": true,
+          "scope": "all",
+          "labelMode": "both",
+          "sort": "count",
+          "hideComingSoon": true,
+          "visibleCount": 6
+        }
+      },
+      "full": {
+        "showFilters": true,
+        "filterSidebar": {
+          "variant": "editorial",
+          "width": 280,
+          "sticky": false,
+          "collapsible": true,
+          "order": [
+            "price",
+            "language",
+            "format",
+            "category",
+            "for"
+          ],
+          "dividerColor": "#EFE6CC",
+          "checkboxColor": "#A08A5C",
+          "checkboxSoftColor": "#CFC0A0"
+        },
+        "priceFilter": {
+          "enabled": true,
+          "label": "Price",
+          "showFree": true,
+          "maxOptions": [],
+          "control": "checkbox"
+        },
+        "languageFilter": {
+          "enabled": true,
+          "label": "Language"
+        },
+        "categoryFilter": {
+          "enabled": true,
+          "label": "Category  ·  श्रेणी",
+          "scope": "all",
+          "labelMode": "both",
+          "sort": "count",
+          "hideComingSoon": true,
+          "visibleCount": 6,
+          "showAllLabel": "+ Show all {count} categories"
+        }
+      },
+      "fullSource": "brahm-varchas-site#/pages/1/components/0/props"
+    },
+    {
+      "id": "catalog.filterSidebar.promo",
+      "label": "Sidebar promo card",
+      "component": "courseCatalog",
+      "propPath": "props.filterSidebar.promo",
+      "looksLike": "A dark card under the filter card: small coloured eyebrow, a bold title, one line of text, a button, and a phone mock-up showing an app screen.",
+      "figmaCues": [
+        "a dark-filled rounded card in the left column below the filters",
+        "a phone outline with a screenshot inside",
+        "an eyebrow in an accent colour"
+      ],
+      "useWhen": "The design promotes an app or offer under the filters.",
+      "avoidWhen": "There is no editorial sidebar (the promo renders only inside it).",
+      "requires": [
+        {
+          "kind": "asset",
+          "detail": "screenImage (the picture inside the drawn phone) or image (a ready illustration)"
+        }
+      ],
+      "bound": [],
+      "i18n": "mixed",
+      "reviewAs": [
+        "cta"
+      ],
+      "pitfalls": [
+        "enabled must be true; button.target is a site route or an https URL."
+      ],
+      "minimal": {
+        "filterSidebar": {
+          "variant": "editorial",
+          "promo": {
+            "enabled": true,
+            "eyebrow": "<app name>",
+            "title": "<promo title>",
+            "button": {
+              "text": "Get the app",
+              "target": "/login"
+            },
+            "screenImage": "<image url from website(list_media) or website_edit(import_image)>"
+          }
+        }
+      },
+      "full": {
+        "filterSidebar": {
+          "variant": "editorial",
+          "promo": {
+            "enabled": true,
+            "screenImage": "<image url from website(list_media) or website_edit(import_image)>",
+            "imageAlt": "",
+            "eyebrow": "<institute name> app",
+            "title": "Your learning, in your pocket",
+            "text": "Pick up where you left off, and learn in English or Hindi wherever you are.",
+            "button": {
+              "text": "Get the app",
+              "target": "/login"
+            },
+            "eyebrowColor": "#E8A860",
+            "textColor": "#D9CEB4"
+          }
+        }
+      },
+      "fullSource": "brahm-varchas-site#/pages/1/components/0/props"
+    },
+    {
+      "id": "catalog.customFilters",
+      "label": "Custom filters",
+      "component": "courseCatalog",
+      "propPath": "props.customFilters",
+      "looksLike": "Extra checkbox groups such as FORMAT (E-books, Live sessions…) and FOR (Parents, Students…) inside the filter sidebar.",
+      "figmaCues": [
+        "filter groups whose options are not price, language or category",
+        "options that read like audiences or media types"
+      ],
+      "useWhen": "The design filters by format or audience.",
+      "avoidWhen": "The options are not backed by course tags or level names yet — tag the courses first.",
+      "requires": [
+        {
+          "kind": "courseFormats",
+          "detail": "source 'courseFormats' lists globalSettings.courseFormats"
+        },
+        {
+          "kind": "courseTags",
+          "detail": "authored options match course tags (e.g. for-parents) or level names"
+        },
+        {
+          "kind": "courseTags",
+          "detail": "source 'tags' also lists every course tag starting with its prefix (\"for parents\" → Parents)"
+        }
+      ],
+      "bound": [],
+      "i18n": "mixed",
+      "reviewAs": [
+        "content"
+      ],
+      "pitfalls": [
+        "Each group id is also its ?<id>= URL parameter; option ids are slugs.",
+        "An option no course has is not listed; one that is 0 only under other filters stays, greyed, unless showEmpty is false.",
+        "A source 'tags' group needs a prefix; with none it is an authored group."
+      ],
+      "minimal": {
+        "customFilters": [
+          {
+            "id": "format",
+            "label": "Format",
+            "source": "courseFormats"
+          },
+          {
+            "id": "for",
+            "label": "For",
+            "source": "options",
+            "options": [
+              {
+                "id": "parents",
+                "label": "Parents",
+                "tags": [
+                  "for-parents"
+                ]
+              }
+            ]
+          },
+          {
+            "id": "audience",
+            "label": "Audience",
+            "source": "tags",
+            "prefix": "for",
+            "exclude": [
+              "everyone"
+            ]
+          }
+        ]
+      },
+      "full": {
+        "customFilters": [
+          {
+            "id": "format",
+            "label": "Format",
+            "source": "courseFormats"
+          },
+          {
+            "id": "for",
+            "label": "For",
+            "showCounts": false,
+            "options": [
+              {
+                "id": "parents",
+                "label": "Parents",
+                "tags": [
+                  "for-parents"
+                ]
+              },
+              {
+                "id": "womens-health",
+                "label": "Women's health",
+                "tags": [
+                  "for-womens-health"
+                ]
+              },
+              {
+                "id": "students",
+                "label": "Students",
+                "tags": [
+                  "for-students"
+                ]
+              },
+              {
+                "id": "teachers",
+                "label": "Teachers",
+                "tags": [
+                  "for-teachers"
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "fullSource": "brahm-varchas-site#/pages/1/components/0/props"
+    },
+    {
+      "id": "catalog.cards.editorial",
+      "label": "Editorial course cards",
+      "component": "courseCatalog",
+      "propPath": "props.render.cardStyle + props.render.card",
+      "looksLike": "Course cards with a format pill and a 'Free' pill on the image, a small round stream icon and stream line, the title, a short description, EN/हिं chips, then a hairline and the price with a 'View course →' text link. No buttons.",
+      "figmaCues": [
+        "cards with no filled button, only a text link ending in an arrow",
+        "a small pill over the top-left of the card image",
+        "a 16-20px round icon beside a muted stream name"
+      ],
+      "useWhen": "The design's course card is text-led with pills and a text link.",
+      "avoidWhen": "The design shows add-to-cart buttons on each card (default card).",
+      "requires": [
+        {
+          "kind": "courseFormats",
+          "detail": "the format pill comes from globalSettings.courseFormats"
+        }
+      ],
+      "bound": [
+        "render.card.descriptions{}"
+      ],
+      "i18n": "opaque",
+      "reviewAs": [
+        "content"
+      ],
+      "pitfalls": [
+        "render is opaque to the props translator: text here is base language and shown through the site dictionary.",
+        "descriptions is keyed by course (package) id; only for courses whose own description is unsuitable.",
+        "freeCtaByFormat maps a format key to start | watch | read | listen."
+      ],
+      "minimal": {
+        "render": {
+          "cardStyle": "editorial",
+          "card": {
+            "streamLabel": "subtitle"
+          }
+        }
+      },
+      "full": {
+        "render": {
+          "cardStyle": "editorial",
+          "card": {
+            "streamLabel": "subtitle",
+            "formatLabels": {
+              "elearning": "E-Learning",
+              "ebook": "E-book",
+              "live": "Live session",
+              "video": "Video",
+              "animation": "Animation",
+              "article": "Articles - essays",
+              "merch": "Merchandise",
+              "audiobook": "Audio Book"
+            },
+            "freeCtaByFormat": {
+              "animation": "watch",
+              "video": "watch",
+              "ebook": "read",
+              "article": "read",
+              "audiobook": "listen"
+            },
+            "descriptions": {
+              "<course id: leave empty — the admin picks the course in the editor>": "The Vedic science of conception, pregnancy and newborn care."
+            },
+            "colors": {
+              "divider": "#EFE6CC",
+              "freePrice": "#3F4A26"
+            }
+          }
+        }
+      },
+      "fullSource": "brahm-varchas-site#/pages/1/components/0/props"
+    },
+    {
+      "id": "catalog.pagination.loadMore",
+      "label": "Load more",
+      "component": "courseCatalog",
+      "propPath": "props.render.pagination + props.render.gridHeading",
+      "looksLike": "An 'All courses · Sorted by most popular' heading over the grid and a centred 'Load more courses' button with 'Showing 9 of 24' under it.",
+      "figmaCues": [
+        "a single outlined button centred under the grid",
+        "small text 'Showing N of M'",
+        "a heading with a muted 'Sorted by…' note"
+      ],
+      "useWhen": "The design pages the grid with a Load more button.",
+      "avoidWhen": "The design shows numbered pages (the default).",
+      "requires": [],
+      "bound": [],
+      "i18n": "opaque",
+      "reviewAs": [
+        "content"
+      ],
+      "pitfalls": [
+        "pageSize is clamped 1..60 (default 9)."
+      ],
+      "minimal": {
+        "render": {
+          "pagination": {
+            "mode": "loadMore",
+            "pageSize": 9
+          },
+          "gridHeading": {
+            "showSort": true
+          }
+        }
+      },
+      "full": {
+        "render": {
+          "pagination": {
+            "mode": "loadMore",
+            "pageSize": 9
+          },
+          "gridHeading": {
+            "showSort": true
+          }
+        }
+      },
+      "fullSource": "brahm-varchas-site#/pages/1/components/0/props"
+    },
+    {
+      "id": "catalog.languageVersions",
+      "label": "Language versions",
+      "component": "courseCatalog",
+      "propPath": "props.groupLanguageVersions + props.languageFilter",
+      "looksLike": "One card per course with EN / हिं chips instead of one card per language version.",
+      "figmaCues": [
+        "two small language chips on each card ('EN', 'हिं')",
+        "a LANGUAGE filter group"
+      ],
+      "useWhen": "Courses exist in several languages and the design shows them as one card.",
+      "avoidWhen": "The site has a single language of courses.",
+      "requires": [
+        {
+          "kind": "courseLanguages",
+          "detail": "globalSettings.courseLanguages (global.courseLanguages), plus versionGroups for separate packages"
+        }
+      ],
+      "bound": [],
+      "i18n": "opaque",
+      "reviewAs": [
+        "content"
+      ],
+      "pitfalls": [
+        "Nothing groups unless globalSettings.courseLanguages.enabled is true."
+      ],
+      "minimal": {
+        "groupLanguageVersions": true,
+        "languageFilter": {
+          "enabled": true,
+          "label": "Language"
+        }
+      },
+      "full": {
+        "groupLanguageVersions": true,
+        "languageFilter": {
+          "enabled": true,
+          "label": "Language"
+        }
+      },
+      "fullSource": "brahm-varchas-site#/pages/1/components/0/props"
+    },
+    {
+      "id": "catalog.sections.freeCourses",
+      "label": "Start-free row",
+      "component": "courseCatalog",
+      "propPath": "props.columnSections[kind=free-courses]",
+      "looksLike": "Inside the results column, before the grid: 'New here? Start free' with 3 free course cards and 'See all N free →'.",
+      "figmaCues": [
+        "a heading + subtitle and a row of 3 cards inside the results column, above the main grid",
+        "a 'See all … free' link"
+      ],
+      "useWhen": "The design highlights free courses inside the catalogue.",
+      "avoidWhen": "The free courses belong on another page (use courseShowcase there).",
+      "requires": [
+        {
+          "kind": "courseTags",
+          "detail": "free courses (price 0) must exist; courseIds pins the order"
+        }
+      ],
+      "bound": [
+        "columnSections[].courseIds[]"
+      ],
+      "i18n": "mixed",
+      "reviewAs": [
+        "content"
+      ],
+      "pitfalls": [
+        "showWhen 'unfiltered' shows it only on the plain All view."
+      ],
+      "minimal": {
+        "columnSections": [
+          {
+            "id": "start-free",
+            "kind": "free-courses",
+            "title": "New here? Start free",
+            "limit": 3
+          }
+        ]
+      },
+      "full": {
+        "columnSections": [
+          {
+            "id": "ks-free",
+            "kind": "free-courses",
+            "placement": "before-grid",
+            "showWhen": "unfiltered",
+            "title": "New here? Start free",
+            "subtitle": "Try a free E-learning course, film or article before you enrol.",
+            "courseIds": [
+              "<course id: leave empty — the admin picks the course in the editor>"
+            ],
+            "limit": 3,
+            "ctaRules": [
+              {
+                "formats": [
+                  "animation",
+                  "video"
+                ],
+                "label": "Watch free"
+              },
+              {
+                "formats": [
+                  "ebook",
+                  "article"
+                ],
+                "label": "Read free"
+              }
+            ]
+          }
+        ]
+      },
+      "fullSource": "brahm-varchas-site#/pages/1/components/0/props"
+    },
+    {
+      "id": "catalog.sections.spotlight",
+      "label": "Spotlight carousel",
+      "component": "courseCatalog",
+      "propPath": "props.columnSections[kind=spotlight]",
+      "looksLike": "A tinted flagship panel inside the results column: eyebrow, title with a native-script title, a paragraph, numbered step cards with prices ('Free', '₹251'), an 'Enrol for ₹X' button and carousel dots.",
+      "figmaCues": [
+        "a sand-tinted rounded panel 300-400px tall inside the results column",
+        "3-4 small numbered circles with labels and prices",
+        "pager dots or arrows"
+      ],
+      "useWhen": "The design spotlights one or more flagship programmes inside the catalogue.",
+      "avoidWhen": "The programme does not exist yet — never invent a course.",
+      "requires": [
+        {
+          "kind": "productPage",
+          "detail": "cta.action 'course' needs a course id (+ invite); 'product-page' a product page code; 'open-form' a campaign — all picked by the admin in the editor, so leave them empty"
+        }
+      ],
+      "bound": [
+        "columnSections[].slides[].cta.courseId",
+        "columnSections[].slides[].cta.enrollInviteId",
+        "columnSections[].slides[].cta.packageSessionId",
+        "columnSections[].slides[].cta.productPageCode",
+        "columnSections[].slides[].cta.audienceId",
+        "columnSections[].slides[].steps[].audienceId"
+      ],
+      "i18n": "mixed",
+      "reviewAs": [
+        "content",
+        "cta"
+      ],
+      "pitfalls": [
+        "'{price}' in the label is the LIVE price; the authored price is used only when no live price exists.",
+        "Carousel controls hide when there is one slide."
+      ],
+      "minimal": {
+        "columnSections": [
+          {
+            "id": "flagship",
+            "kind": "spotlight",
+            "slides": [
+              {
+                "id": "s1",
+                "eyebrow": "Flagship program",
+                "title": "<a real course name>",
+                "cta": {
+                  "label": "Enrol for {price}",
+                  "action": "product-page",
+                  "productPageCode": "<productPageCode: leave empty — the admin picks a product page in the editor>"
+                },
+                "steps": [
+                  {
+                    "title": "<step>",
+                    "meta": "Free",
+                    "tone": "accent"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "full": {
+        "columnSections": [
+          {
+            "id": "ks-flagship",
+            "kind": "spotlight",
+            "placement": "before-grid",
+            "showWhen": "unfiltered-or-own-stream",
+            "colors": {
+              "panelColor": "#F5EAC9",
+              "ringColor": "#A08A5C",
+              "dotColor": "#C9B78E",
+              "accentInkColor": "#3F4A26"
+            },
+            "slides": [
+              {
+                "id": "rajaswala",
+                "eyebrow": "Flagship program",
+                "streamSlug": "swasthya",
+                "title": "Rajaswala Paricharya",
+                "titleNative": "रजस्वला परिचर्या",
+                "description": "Menstrual care and wellbeing, the Ayurvedic way. E-Learning with a live session, in English and Hindi.",
+                "cta": {
+                  "label": "Enrol for {price}",
+                  "price": "₹1,001",
+                  "action": "course",
+                  "courseId": "<course id: leave empty — the admin picks the course in the editor>",
+                  "enrollInviteId": "<enrollInviteId: leave empty — the admin picks that course's invite>",
+                  "packageSessionId": "<packageSessionId: leave empty — the admin picks that course's batch>",
+                  "productPageCode": "<productPageCode: leave empty — the admin picks a product page in the editor>"
+                },
+                "steps": [
+                  {
+                    "title": "Rajaswala survey",
+                    "meta": "Free",
+                    "tone": "accent"
+                  },
+                  {
+                    "title": "E-Learning course",
+                    "meta": "{price}"
+                  },
+                  {
+                    "title": "Live session",
+                    "meta": "Included"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "fullSource": "brahm-varchas-site#/pages/1/components/0/props"
+    },
+    {
+      "id": "catalog.sections.comingSoon",
+      "label": "Coming-soon cards",
+      "component": "courseCatalog",
+      "propPath": "props.columnSections[kind=coming-soon]",
+      "looksLike": "After the grid: 'Coming soon' with dashed cards, each a bell icon, a category name and a 'Notify me' button.",
+      "figmaCues": [
+        "dashed-border cards after the pagination",
+        "a bell icon and 'Notify me' on each card"
+      ],
+      "useWhen": "The design lists categories that have not launched.",
+      "avoidWhen": "No folder-library category is flagged coming soon.",
+      "requires": [
+        {
+          "kind": "folderLibrary",
+          "detail": "categories flagged coming_soon, each with an audience form for Notify me"
+        }
+      ],
+      "bound": [],
+      "i18n": "mixed",
+      "reviewAs": [
+        "form"
+      ],
+      "pitfalls": [
+        "The title 'Coming soon' is real content here, not placeholder copy.",
+        "categorySlugs are folder slugs; absent = every coming-soon category in scope."
+      ],
+      "minimal": {
+        "columnSections": [
+          {
+            "id": "soon",
+            "kind": "coming-soon",
+            "placement": "after-grid",
+            "title": "Coming soon"
+          }
+        ]
+      },
+      "full": {
+        "columnSections": [
+          {
+            "id": "ks-coming-soon",
+            "kind": "coming-soon",
+            "placement": "after-grid",
+            "showWhen": "always",
+            "title": "Coming soon",
+            "subtitle": "Be the first to know when these open.",
+            "scope": "active-stream",
+            "categorySlugs": [
+              "chhanda",
+              "sanskrit",
+              "ganit",
+              "bal-shala",
+              "ayurveda-shiksha",
+              "vaidik-shikshan",
+              "katha-kathan",
+              "bhartiya-khel",
+              "khagol"
+            ],
+            "limit": 4,
+            "colors": {
+              "iconColor": "#C99621"
+            }
+          }
+        ]
+      },
+      "fullSource": "brahm-varchas-site#/pages/1/components/0/props"
+    },
+    {
+      "id": "hero.editorial",
+      "label": "Editorial hero",
+      "component": "heroSection",
+      "propPath": "props",
+      "looksLike": "A split hero on a tinted band: breadcrumb, a short rule + uppercase eyebrow, a two-line headline whose second line is in the accent colour, a lead, ✓ bullets, a filled and an outlined button, and an unframed illustration on the right.",
+      "figmaCues": [
+        "a 24-32px horizontal line before an uppercase eyebrow",
+        "a 48-56px headline whose second line has a different colour",
+        "3 short lines each starting with a check icon",
+        "an illustration with no card or shadow"
+      ],
+      "useWhen": "A content page (learning paths, about) opens with an editorial split hero.",
+      "avoidWhen": "The page is a course catalogue with search (catalog.hero) or a photo-led landing hero (default heroSection).",
+      "requires": [
+        {
+          "kind": "asset",
+          "detail": "the right-hand illustration"
+        }
+      ],
+      "bound": [],
+      "i18n": "translatable",
+      "reviewAs": [
+        "hero"
+      ],
+      "pitfalls": [
+        "titleAccent is its own line; do not repeat it in title.",
+        "Images with baked-in English text will not translate."
+      ],
+      "minimal": {
+        "variant": "editorial",
+        "layout": "split",
+        "eyebrow": {
+          "text": "<eyebrow>",
+          "style": "rule"
+        },
+        "left": {
+          "title": "<headline line 1>",
+          "titleAccent": "<headline line 2>",
+          "checklist": [
+            "<benefit>",
+            "<benefit>"
+          ],
+          "buttons": [
+            {
+              "text": "<primary action>",
+              "action": "navigate",
+              "target": "#paths",
+              "variant": "primary"
+            }
+          ]
+        },
+        "right": {
+          "image": "<image url from website(list_media) or website_edit(import_image)>"
+        }
+      },
+      "full": {
+        "variant": "editorial",
+        "layout": "split",
+        "backgroundColor": "#FDF6E8",
+        "mediaWidth": 500,
+        "outlineColor": "#A08A5C",
+        "breadcrumb": [
+          {
+            "label": "Home",
+            "route": "homepage"
+          },
+          {
+            "label": "Learning Paths"
+          }
+        ],
+        "eyebrow": {
+          "text": "Learning paths",
+          "style": "rule"
+        },
+        "left": {
+          "title": "Not sure where to start?",
+          "titleAccent": "Follow a path.",
+          "description": "<p>A learning path is a set of courses in the right order, leading to one clear outcome. Begin at step one, often for free, and always know what comes next.</p>",
+          "checklist": [
+            "Courses in the right order",
+            "Step 1 free on most paths",
+            "English & हिन्दी"
+          ],
+          "buttons": [
+            {
+              "text": "Find my path",
+              "action": "navigate",
+              "target": "#paths",
+              "variant": "primary"
+            },
+            {
+              "text": "Browse all courses",
+              "action": "navigate",
+              "target": "/courses",
+              "variant": "secondary"
+            }
+          ]
+        },
+        "right": {
+          "image": "<image url from website(list_media) or website_edit(import_image)>",
+          "alt": "An example learning path: from the seed to the fruit"
+        },
+        "styles": {
+          "roundedEdges": false,
+          "textAlign": "left"
+        }
+      },
+      "fullSource": "brahm-varchas-site#/pages/2/components/0/props"
+    },
+    {
+      "id": "learningPath.featured",
+      "label": "Featured path",
+      "component": "learningPath",
+      "propPath": "props",
+      "looksLike": "Goal chips that filter paths ('Raise my child', 'Care for my health'), then one large featured path card with a stepper of its courses, the total, 'View path' and a 'Step 1 is free' pill.",
+      "figmaCues": [
+        "a row of 4-6 rounded goal chips under a question heading",
+        "one wide card with a numbered horizontal stepper and a price total",
+        "a badge pill such as 'Most popular path'"
+      ],
+      "useWhen": "The design sells ordered course sequences (paths) built from product pages.",
+      "avoidWhen": "There are no product pages per path in a folder library — this section is admin-bound; never add it with an invented library.",
+      "requires": [
+        {
+          "kind": "folderLibrary",
+          "detail": "a library whose leaves are product pages, one per path"
+        },
+        {
+          "kind": "productPage",
+          "detail": "one product page per path; featured.code names one"
+        }
+      ],
+      "bound": [
+        "libraryId",
+        "folderId",
+        "productPageCode",
+        "featured.code",
+        "pathExtras[].code",
+        "pathExtras[].comingSoon[].audienceId"
+      ],
+      "i18n": "mixed",
+      "reviewAs": [
+        "content"
+      ],
+      "pitfalls": [
+        "Steps, prices and totals are live from each product page; never author them.",
+        "To put a band between the featured part and the grid, split into two sections: this one with showGrid:false, learningPath.moreGrid after the band.",
+        "goals[].tags are stream folder slugs."
+      ],
+      "minimal": {
+        "mode": "list",
+        "listLayout": "featured",
+        "libraryId": "<libraryId: leave empty — the admin picks a folder library (Manage Pages → Folders) in the editor>",
+        "title": "What do you want to achieve?",
+        "goals": [
+          {
+            "key": "<goal-key>",
+            "label": "<goal label>",
+            "tags": [
+              "<stream folder slug>"
+            ]
+          }
+        ],
+        "featured": {
+          "code": "<productPageCode: leave empty — the admin picks a product page in the editor>",
+          "badge": "Most popular path"
+        }
+      },
+      "full": {
+        "mode": "list",
+        "listLayout": "featured",
+        "productPageCode": "",
+        "productPageName": "",
+        "libraryId": "<libraryId: leave empty — the admin picks a folder library (Manage Pages → Folders) in the editor>",
+        "libraryName": "<name shown in the editor>",
+        "folderId": "",
+        "streamFromUrl": false,
+        "pathParam": "path",
+        "goalParam": "goal",
+        "title": "What do you want to achieve?",
+        "allGoalsLabel": "All paths",
+        "goals": [
+          {
+            "key": "child",
+            "label": "Raise my child",
+            "tags": [
+              "dharma"
+            ]
+          },
+          {
+            "key": "health",
+            "label": "Care for my health",
+            "tags": [
+              "swasthya"
+            ]
+          },
+          {
+            "key": "shastras",
+            "label": "Read the shastras",
+            "tags": [
+              "shastra"
+            ]
+          },
+          {
+            "key": "temples",
+            "label": "Discover India of temples",
+            "tags": [
+              "bharat"
+            ]
+          },
+          {
+            "key": "gurukul",
+            "label": "Teach the gurukul way",
+            "tags": [
+              "shiksha"
+            ]
+          }
+        ],
+        "featured": {
+          "code": "<productPageCode: leave empty — the admin picks a product page in the editor>",
+          "badge": "Most popular path"
+        },
+        "pathExtras": [
+          {
+            "code": "<productPageCode: leave empty — the admin picks a product page in the editor>",
+            "mergeSteps": [
+              [
+                1,
+                2
+              ]
+            ],
+            "comingSoon": [
+              {
+                "title": "Sanskrit Language teaching",
+                "audienceId": "<audienceId: leave empty — wire it with website_edit(link_lead_form), or the admin picks an ACTIVE campaign in the editor>"
+              }
+            ]
+          }
+        ],
+        "formatLabels": {
+          "elearning": "E-Learning",
+          "ebook": "E-book",
+          "live": "Live session",
+          "video": "Video",
+          "animation": "Animation",
+          "article": "Articles - essays",
+          "merch": "Merchandise",
+          "audiobook": "Audio Book"
+        },
+        "moreTitle": "More learning paths",
+        "moreNote": "New paths are added as courses launch",
+        "viewPathLabel": "View path",
+        "addAllLabel": "Add whole path to cart",
+        "enrolLabel": "Enrol in this path",
+        "emptyText": "New learning paths will appear here.",
+        "showStepNumbers": true,
+        "showTotal": true,
+        "backgroundColor": "#FFFFFF",
+        "outlineColor": "#A08A5C",
+        "dividerColor": "#EFE6CC",
+        "trackColor": "#D9C7A0",
+        "freeColor": "#3F4A26",
+        "showGrid": false
+      },
+      "fullSource": "brahm-varchas-site#/pages/2/components/1/props"
+    },
+    {
+      "id": "learningPath.moreGrid",
+      "label": "More paths grid",
+      "component": "learningPath",
+      "propPath": "props",
+      "looksLike": "'More learning paths' — two-column path cards further down the page, after a band.",
+      "figmaCues": [
+        "a 2-column grid of path cards with a heading and a muted note on the right"
+      ],
+      "useWhen": "The featured paths and the remaining paths are separated by another band.",
+      "avoidWhen": "One learningPath section can show everything (leave showGrid on).",
+      "requires": [
+        {
+          "kind": "folderLibrary",
+          "detail": "the same library as learningPath.featured"
+        }
+      ],
+      "bound": [
+        "libraryId",
+        "folderId",
+        "productPageCode",
+        "featured.code",
+        "pathExtras[].code",
+        "pathExtras[].comingSoon[].audienceId"
+      ],
+      "i18n": "mixed",
+      "reviewAs": [
+        "content"
+      ],
+      "pitfalls": [
+        "Use sharedWith: '<id of the featured section>' to keep one copy of goals / featured / pathExtras."
+      ],
+      "minimal": {
+        "mode": "list",
+        "listLayout": "featured",
+        "libraryId": "<libraryId: leave empty — the admin picks a folder library (Manage Pages → Folders) in the editor>",
+        "showGoals": false,
+        "showFeatured": false,
+        "moreTitle": "More learning paths"
+      },
+      "full": {
+        "mode": "list",
+        "listLayout": "featured",
+        "productPageCode": "",
+        "productPageName": "",
+        "libraryId": "<libraryId: leave empty — the admin picks a folder library (Manage Pages → Folders) in the editor>",
+        "libraryName": "<name shown in the editor>",
+        "folderId": "",
+        "streamFromUrl": false,
+        "pathParam": "path",
+        "goalParam": "goal",
+        "title": "What do you want to achieve?",
+        "allGoalsLabel": "All paths",
+        "goals": [
+          {
+            "key": "child",
+            "label": "Raise my child",
+            "tags": [
+              "dharma"
+            ]
+          },
+          {
+            "key": "health",
+            "label": "Care for my health",
+            "tags": [
+              "swasthya"
+            ]
+          },
+          {
+            "key": "shastras",
+            "label": "Read the shastras",
+            "tags": [
+              "shastra"
+            ]
+          },
+          {
+            "key": "temples",
+            "label": "Discover India of temples",
+            "tags": [
+              "bharat"
+            ]
+          },
+          {
+            "key": "gurukul",
+            "label": "Teach the gurukul way",
+            "tags": [
+              "shiksha"
+            ]
+          }
+        ],
+        "featured": {
+          "code": "<productPageCode: leave empty — the admin picks a product page in the editor>",
+          "badge": "Most popular path"
+        },
+        "pathExtras": [
+          {
+            "code": "<productPageCode: leave empty — the admin picks a product page in the editor>",
+            "mergeSteps": [
+              [
+                1,
+                2
+              ]
+            ],
+            "comingSoon": [
+              {
+                "title": "Sanskrit Language teaching",
+                "audienceId": "<audienceId: leave empty — wire it with website_edit(link_lead_form), or the admin picks an ACTIVE campaign in the editor>"
+              }
+            ]
+          }
+        ],
+        "formatLabels": {
+          "elearning": "E-Learning",
+          "ebook": "E-book",
+          "live": "Live session",
+          "video": "Video",
+          "animation": "Animation",
+          "article": "Articles - essays",
+          "merch": "Merchandise",
+          "audiobook": "Audio Book"
+        },
+        "moreTitle": "More learning paths",
+        "moreNote": "New paths are added as courses launch",
+        "viewPathLabel": "View path",
+        "addAllLabel": "Add whole path to cart",
+        "enrolLabel": "Enrol in this path",
+        "emptyText": "New learning paths will appear here.",
+        "showStepNumbers": true,
+        "showTotal": true,
+        "backgroundColor": "#FFFFFF",
+        "outlineColor": "#A08A5C",
+        "dividerColor": "#EFE6CC",
+        "trackColor": "#D9C7A0",
+        "freeColor": "#3F4A26",
+        "showGoals": false,
+        "showFeatured": false
+      },
+      "fullSource": "brahm-varchas-site#/pages/2/components/3/props"
+    },
+    {
+      "id": "learningPath.pathExtras",
+      "label": "Path extras",
+      "component": "learningPath",
+      "propPath": "props.pathExtras",
+      "looksLike": "Inside an opened path: two language versions shown as one step, and 'coming soon' steps with a Notify me action.",
+      "figmaCues": [
+        "a step row with 'EN · हिं' and one price",
+        "a greyed step labelled 'Coming soon'"
+      ],
+      "useWhen": "A path has a course in two languages or a step that has not launched.",
+      "avoidWhen": "The path's steps are all live single-language courses.",
+      "requires": [
+        {
+          "kind": "campaign",
+          "detail": "comingSoon[].audienceId opens a notify form"
+        }
+      ],
+      "bound": [
+        "pathExtras[].code",
+        "pathExtras[].comingSoon[].audienceId"
+      ],
+      "i18n": "mixed",
+      "reviewAs": [
+        "content"
+      ],
+      "pitfalls": [
+        "mergeSteps positions are 1-based and refer to the steps as shown."
+      ],
+      "minimal": {
+        "pathExtras": [
+          {
+            "code": "<productPageCode: leave empty — the admin picks a product page in the editor>",
+            "mergeSteps": [
+              [
+                1,
+                2
+              ]
+            ],
+            "comingSoon": [
+              {
+                "title": "<step not launched yet>",
+                "audienceId": "<audienceId: leave empty — wire it with website_edit(link_lead_form), or the admin picks an ACTIVE campaign in the editor>"
+              }
+            ]
+          }
+        ]
+      },
+      "full": {
+        "pathExtras": [
+          {
+            "code": "<productPageCode: leave empty — the admin picks a product page in the editor>",
+            "mergeSteps": [
+              [
+                1,
+                2
+              ]
+            ],
+            "comingSoon": [
+              {
+                "title": "Sanskrit Language teaching",
+                "audienceId": "<audienceId: leave empty — wire it with website_edit(link_lead_form), or the admin picks an ACTIVE campaign in the editor>"
+              }
+            ]
+          }
+        ]
+      },
+      "fullSource": "brahm-varchas-site#/pages/2/components/1/props"
+    },
+    {
+      "id": "cta.band",
+      "label": "Dark CTA band",
+      "component": "ctaBanner",
+      "propPath": "props",
+      "looksLike": "A full-width dark band: heading, one line of text, a filled (olive/primary) button with an arrow and an outlined light button.",
+      "figmaCues": [
+        "a full-bleed band 220-300px tall with a dark fill",
+        "two buttons side by side, one filled, one outlined in white"
+      ],
+      "useWhen": "The design ends a section with a two-action band.",
+      "avoidWhen": "The band holds a form (use leadForm) or only text (use sectionHeading).",
+      "requires": [
+        {
+          "kind": "campaign",
+          "detail": "a button with action 'openForm' needs an ACTIVE campaign"
+        }
+      ],
+      "bound": [
+        "button.audienceId",
+        "secondaryButton.audienceId"
+      ],
+      "i18n": "mixed",
+      "reviewAs": [
+        "cta",
+        "styledBand"
+      ],
+      "pitfalls": [
+        "Button styles: primary | olive | outline-light (on dark) | outline-dark (on light). icon 'arrow' adds →.",
+        "The renderer reads heading/subheading/button/secondaryButton only — headerText/buttonText are ignored."
+      ],
+      "minimal": {
+        "variant": "band",
+        "heading": "<band heading>",
+        "button": {
+          "enabled": true,
+          "text": "<action>",
+          "style": "olive",
+          "action": "navigate",
+          "target": "/learning-paths",
+          "icon": "arrow"
+        },
+        "secondaryButton": {
+          "enabled": true,
+          "text": "Talk to us",
+          "style": "outline-light",
+          "action": "openForm",
+          "audienceId": "<audienceId: leave empty — wire it with website_edit(link_lead_form), or the admin picks an ACTIVE campaign in the editor>"
+        }
+      },
+      "full": {
+        "variant": "band",
+        "layout": "split",
+        "backgroundColor": "#1A1208",
+        "textColor": "#FFFFFF",
+        "subheadingColor": "#A89C80",
+        "heading": "Not sure which course is right for you?",
+        "subheading": "Answer one question about where you are in life and we'll suggest where to begin.",
+        "button": {
+          "enabled": true,
+          "text": "Find your path",
+          "style": "olive",
+          "action": "navigate",
+          "target": "/learning-paths",
+          "icon": "arrow"
+        },
+        "secondaryButton": {
+          "enabled": true,
+          "text": "Talk to us",
+          "style": "outline-light",
+          "action": "openForm",
+          "audienceId": "<audienceId: leave empty — wire it with website_edit(link_lead_form), or the admin picks an ACTIVE campaign in the editor>",
+          "formTitle": "Talk to us"
+        }
+      },
+      "fullSource": "brahm-varchas-site#/pages/1/components/1/props"
+    },
+    {
+      "id": "cta.band.light",
+      "label": "Light CTA band",
+      "component": "ctaBanner",
+      "propPath": "props",
+      "looksLike": "A taller light band ('For schools & institutions'): eyebrow, heading, text, an outlined dark button and a filled primary button.",
+      "figmaCues": [
+        "a light (sand/cream) band 300-360px tall",
+        "an uppercase eyebrow over the heading",
+        "an outlined dark button next to a filled one"
+      ],
+      "useWhen": "A secondary audience (institutions, partners) gets its own call to action.",
+      "avoidWhen": "The band is the page's main dark CTA (cta.band).",
+      "requires": [
+        {
+          "kind": "campaign",
+          "detail": "openForm buttons need an ACTIVE campaign"
+        }
+      ],
+      "bound": [
+        "button.audienceId",
+        "secondaryButton.audienceId"
+      ],
+      "i18n": "mixed",
+      "reviewAs": [
+        "cta",
+        "styledBand"
+      ],
+      "pitfalls": [
+        "bandSize 'lg' = 72px padding and the 16/26 subheading."
+      ],
+      "minimal": {
+        "variant": "band",
+        "bandSize": "lg",
+        "eyebrow": "<eyebrow>",
+        "heading": "<band heading>",
+        "button": {
+          "enabled": true,
+          "text": "Talk to us",
+          "style": "outline-dark",
+          "action": "openForm",
+          "audienceId": "<audienceId: leave empty — wire it with website_edit(link_lead_form), or the admin picks an ACTIVE campaign in the editor>"
+        },
+        "secondaryButton": {
+          "enabled": true,
+          "text": "Partner with us",
+          "style": "primary",
+          "action": "openForm",
+          "audienceId": "<audienceId: leave empty — wire it with website_edit(link_lead_form), or the admin picks an ACTIVE campaign in the editor>"
+        }
+      },
+      "full": {
+        "variant": "band",
+        "bandSize": "lg",
+        "layout": "split",
+        "backgroundColor": "#F5EAC9",
+        "textColor": "#1A1208",
+        "eyebrow": "For schools & institutions",
+        "heading": "Need a path for your teachers or students?",
+        "subheading": "We design custom learning paths in Indian Knowledge Systems for schools, universities and organisations.",
+        "button": {
+          "enabled": true,
+          "text": "Talk to us",
+          "style": "outline-dark",
+          "action": "openForm",
+          "audienceId": "<audienceId: leave empty — wire it with website_edit(link_lead_form), or the admin picks an ACTIVE campaign in the editor>",
+          "formTitle": "Talk to us"
+        },
+        "secondaryButton": {
+          "enabled": true,
+          "text": "Partner with us",
+          "style": "primary",
+          "action": "openForm",
+          "audienceId": "<audienceId: leave empty — wire it with website_edit(link_lead_form), or the admin picks an ACTIVE campaign in the editor>",
+          "formTitle": "Partner with us"
+        }
+      },
+      "fullSource": "brahm-varchas-site#/pages/2/components/2/props"
+    },
+    {
+      "id": "cta.band.app",
+      "label": "App band",
+      "component": "ctaBanner",
+      "propPath": "props",
+      "looksLike": "A dark app banner: eyebrow, heading, text and a button on the left, a phone showing an app screenshot on the right.",
+      "figmaCues": [
+        "a phone frame with a screenshot inside a dark band",
+        "one filled button under the copy"
+      ],
+      "useWhen": "The design promotes an app in a band.",
+      "avoidWhen": "There is no real app screenshot to show.",
+      "requires": [
+        {
+          "kind": "asset",
+          "detail": "the app screenshot for mockup.image"
+        }
+      ],
+      "bound": [],
+      "i18n": "mixed",
+      "reviewAs": [
+        "cta",
+        "styledBand"
+      ],
+      "pitfalls": [
+        "mockup.kind is 'phone'; the screenshot is cropped into the screen."
+      ],
+      "minimal": {
+        "variant": "band",
+        "eyebrow": "<app name>",
+        "heading": "<band heading>",
+        "mockup": {
+          "kind": "phone",
+          "image": "<image url from website(list_media) or website_edit(import_image)>"
+        },
+        "button": {
+          "enabled": true,
+          "text": "Get the app",
+          "style": "olive",
+          "action": "navigate",
+          "target": "/login",
+          "icon": "arrow"
+        }
+      },
+      "full": {
+        "variant": "band",
+        "layout": "split",
+        "backgroundColor": "#1A1208",
+        "textColor": "#FFFFFF",
+        "eyebrow": "<institute name> app",
+        "heading": "Walk your path, one step at a time, from your phone.",
+        "subheading": "Open your next step wherever you are, and learn in English or Hindi.",
+        "mockup": {
+          "kind": "phone",
+          "image": "<image url from website(list_media) or website_edit(import_image)>",
+          "alt": "The <institute name> app on a phone"
+        },
+        "button": {
+          "enabled": true,
+          "text": "Get the app",
+          "style": "olive",
+          "action": "navigate",
+          "target": "/login",
+          "icon": "arrow"
+        }
+      },
+      "fullSource": "brahm-varchas-site#/pages/2/components/4/props"
+    },
+    {
+      "id": "steps.cards",
+      "label": "Step cards",
+      "component": "stepsProcess",
+      "propPath": "props",
+      "looksLike": "'How it works': three white numbered cards in one row on a tinted band.",
+      "figmaCues": [
+        "3-4 equal white cards in a row on a tinted band",
+        "a filled number circle at the top of each card"
+      ],
+      "useWhen": "The design explains a short process with numbered cards.",
+      "avoidWhen": "The steps need a timeline or alternating layout (timeline-cards | alternating variants).",
+      "requires": [],
+      "bound": [],
+      "i18n": "translatable",
+      "reviewAs": [
+        "content",
+        "styledBand"
+      ],
+      "pitfalls": [
+        "accentColor colours the number circles (default: palette primary)."
+      ],
+      "minimal": {
+        "variant": "cards",
+        "headerText": "<heading>",
+        "steps": [
+          {
+            "number": "1",
+            "title": "<step>",
+            "description": "<one line>"
+          }
+        ]
+      },
+      "full": {
+        "variant": "cards",
+        "headerText": "How a learning path works",
+        "subheading": "",
+        "backgroundColor": "#F5EAC9",
+        "textColor": "#1A1208",
+        "accentColor": "#883000",
+        "steps": [
+          {
+            "number": "1",
+            "title": "Start with step one",
+            "description": "Most paths open with a free course, film or workshop. Try it before you commit."
+          },
+          {
+            "number": "2",
+            "title": "Learn in order, at your pace",
+            "description": "Each step builds on the last. Your progress is saved, so you can pause and return anytime."
+          },
+          {
+            "number": "3",
+            "title": "Finish and keep going",
+            "description": "Complete the path, then pick a related path to go deeper."
+          }
+        ]
+      },
+      "fullSource": "brahm-varchas-site#/pages/2/components/5/props"
+    },
+    {
+      "id": "header.editorial",
+      "label": "Editorial header",
+      "component": "header",
+      "propPath": "globalSettings.layout.header.props",
+      "looksLike": "A 64px white header: logo only, small text nav with the current page bold in gold, a line search icon, a segmented हिन्दी | EN switch, and a cart icon only once the cart has items.",
+      "figmaCues": [
+        "a 64px bar with a 40-48px logo and no site name",
+        "13px nav text items 32px apart",
+        "a two-part bordered language toggle"
+      ],
+      "useWhen": "The design's header is compact and text-led.",
+      "avoidWhen": "The design shows the default header (title next to logo, pill-highlighted nav).",
+      "requires": [
+        {
+          "kind": "asset",
+          "detail": "the logo"
+        }
+      ],
+      "bound": [
+        "navigation[].megaMenu.libraryId"
+      ],
+      "i18n": "mixed",
+      "reviewAs": [],
+      "pitfalls": [
+        "set_layout replaces the whole header: send every prop, not just the changed ones.",
+        "The language switch shows only on a site with more than one locale (global.i18n)."
+      ],
+      "minimal": {
+        "logo": "<image url from website(list_media) or website_edit(import_image)>",
+        "logoOnly": true,
+        "barSize": "compact",
+        "contentWidth": "contained",
+        "navStyle": "editorial",
+        "activeStyle": "underline",
+        "languageSwitcherStyle": "segmented",
+        "cartDisplay": "whenNotEmpty",
+        "navigation": [
+          {
+            "label": "Courses",
+            "route": "courses"
+          }
+        ]
+      },
+      "full": {
+        "logo": "<image url from website(list_media) or website_edit(import_image)>",
+        "logoOnly": true,
+        "barSize": "compact",
+        "contentWidth": "contained",
+        "navStyle": "editorial",
+        "activeStyle": "underline",
+        "showSearch": true,
+        "showLanguageSwitcher": true,
+        "languageSwitcherStyle": "segmented",
+        "cartDisplay": "whenNotEmpty",
+        "navigation": [
+          {
+            "label": "Knowledge Streams",
+            "route": "/courses",
+            "openInSameTab": true,
+            "type": "megaMenu",
+            "megaMenu": {
+              "libraryId": "<libraryId: leave empty — the admin picks a folder library (Manage Pages → Folders) in the editor>",
+              "libraryName": "<name shown in the editor>",
+              "eyebrow": "Six streams of knowledge",
+              "helpLabel": "Not sure where to begin? Find your path",
+              "helpRoute": "/learning-paths",
+              "categoriesHeading": "श्रेणी · Categories in {stream}",
+              "showLegend": true,
+              "footnote": "Coming soon subjects: click to be notified when they launch."
+            }
+          },
+          {
+            "label": "Courses",
+            "route": "courses",
+            "openInSameTab": true
+          },
+          {
+            "label": "Learning Paths",
+            "route": "learning-paths",
+            "openInSameTab": true
+          },
+          {
+            "label": "Resources",
+            "route": "<link: a route of this site (e.g. /courses) or this institute's own https url>",
+            "openInSameTab": false
+          },
+          {
+            "label": "About Us",
+            "route": "<link: a route of this site (e.g. /courses) or this institute's own https url>",
+            "openInSameTab": false
+          }
+        ],
+        "authLinks": [
+          {
+            "label": "Login",
+            "route": "login",
+            "style": "text"
+          },
+          {
+            "label": "Become a member",
+            "route": "signup",
+            "style": "primary"
+          }
+        ]
+      },
+      "fullSource": "brahm-varchas-site#/globalSettings/layout/header/props"
+    },
+    {
+      "id": "header.megaMenu",
+      "label": "Mega menu",
+      "component": "header",
+      "propPath": "globalSettings.layout.header.props.navigation[type=megaMenu]",
+      "looksLike": "A nav item that opens a panel of stream tiles (120px images), the open stream's categories in a cream box, a legend and a footnote.",
+      "figmaCues": [
+        "a separate frame named like 'Mega Menu' under the header",
+        "a grid of image tiles with captions plus a category list"
+      ],
+      "useWhen": "The design's main nav opens a streams panel.",
+      "avoidWhen": "There is no folder library of streams.",
+      "requires": [
+        {
+          "kind": "folderLibrary",
+          "detail": "streams = top-level folders, categories = their children"
+        }
+      ],
+      "bound": [
+        "navigation[].megaMenu.libraryId"
+      ],
+      "i18n": "mixed",
+      "reviewAs": [],
+      "pitfalls": [
+        "Link patterns take {stream} / {category} folder slugs; a folder's own link_url wins."
+      ],
+      "minimal": {
+        "megaMenuStyle": "editorial",
+        "navigation": [
+          {
+            "label": "<nav label>",
+            "route": "/courses",
+            "type": "megaMenu",
+            "megaMenu": {
+              "libraryId": "<libraryId: leave empty — the admin picks a folder library (Manage Pages → Folders) in the editor>",
+              "eyebrow": "<panel eyebrow>",
+              "showLegend": true
+            }
+          }
+        ]
+      },
+      "full": {
+        "megaMenuStyle": "editorial",
+        "navigation": [
+          {
+            "label": "Knowledge Streams",
+            "route": "/courses",
+            "openInSameTab": true,
+            "type": "megaMenu",
+            "megaMenu": {
+              "libraryId": "<libraryId: leave empty — the admin picks a folder library (Manage Pages → Folders) in the editor>",
+              "libraryName": "<name shown in the editor>",
+              "eyebrow": "Six streams of knowledge",
+              "helpLabel": "Not sure where to begin? Find your path",
+              "helpRoute": "/learning-paths",
+              "categoriesHeading": "श्रेणी · Categories in {stream}",
+              "showLegend": true,
+              "footnote": "Coming soon subjects: click to be notified when they launch."
+            }
+          }
+        ]
+      },
+      "fullSource": "brahm-varchas-site#/globalSettings/layout/header/props"
+    },
+    {
+      "id": "footer.brand",
+      "label": "Brand footer",
+      "component": "footer",
+      "propPath": "globalSettings.layout.footer.props",
+      "looksLike": "A tinted footer: logo, large wordmark, description and tagline, a newsletter box, social icons, four link columns and a bottom bar with a language toggle.",
+      "figmaCues": [
+        "a footer with 4 link columns plus a brand column",
+        "a large wordmark under the logo",
+        "an email input with a Subscribe button"
+      ],
+      "useWhen": "The design's footer carries the brand, a newsletter and 4 link columns.",
+      "avoidWhen": "The design has a simple two- or three-column footer (default variant).",
+      "requires": [
+        {
+          "kind": "asset",
+          "detail": "the logo"
+        }
+      ],
+      "bound": [
+        "newsletter.audienceId"
+      ],
+      "i18n": "mixed",
+      "reviewAs": [],
+      "pitfalls": [
+        "rightSection1..4 are the columns; showLanguageSwitcher shows only on a multi-language site."
+      ],
+      "minimal": {
+        "variant": "brand",
+        "layout": "four-column",
+        "leftSection": {
+          "title": "<brand name>",
+          "logo": "<image url from website(list_media) or website_edit(import_image)>",
+          "tagline": "<tagline>"
+        },
+        "rightSection1": {
+          "title": "Explore",
+          "links": [
+            {
+              "label": "Courses",
+              "route": "/courses"
+            }
+          ]
+        },
+        "bottomTagline": "<line>"
+      },
+      "full": {
+        "variant": "brand",
+        "layout": "four-column",
+        "backgroundColor": "#F5EAC9",
+        "leftSection": {
+          "title": "<institute name>",
+          "logo": "<image url from website(list_media) or website_edit(import_image)>",
+          "text": "<p>A modern learning platform rooted in Bharatiya Knowledge Systems. Structured learning journeys inspired by Bharatiya knowledge traditions.</p>",
+          "tagline": "<the institute's tagline>",
+          "socials": [
+            {
+              "platform": "YouTube",
+              "icon": "youtube",
+              "url": "<link: a route of this site (e.g. /courses) or this institute's own https url>"
+            },
+            {
+              "platform": "Instagram",
+              "icon": "instagram",
+              "url": "<link: a route of this site (e.g. /courses) or this institute's own https url>"
+            },
+            {
+              "platform": "Facebook",
+              "icon": "facebook",
+              "url": "<link: a route of this site (e.g. /courses) or this institute's own https url>"
+            },
+            {
+              "platform": "Twitter",
+              "icon": "twitter",
+              "url": "<link: a route of this site (e.g. /courses) or this institute's own https url>"
+            }
+          ]
+        },
+        "newsletter": {
+          "enabled": true,
+          "heading": "Stay connected",
+          "subheading": "Join us for new courses, knowledge resources, live sessions and occasional updates.",
+          "placeholder": "Your email address",
+          "buttonText": "Subscribe",
+          "note": "No clutter. Just thoughtful updates from <institute name>.",
+          "successMessage": "Thank you. We'll keep you posted, with no clutter.",
+          "audienceId": "<audienceId: leave empty — wire it with website_edit(link_lead_form), or the admin picks an ACTIVE campaign in the editor>",
+          "audienceName": "<name shown in the editor>"
+        },
+        "rightSection1": {
+          "title": "Explore",
+          "links": [
+            {
+              "label": "Knowledge Streams",
+              "route": "/courses",
+              "openInSameTab": true
+            },
+            {
+              "label": "Courses",
+              "route": "/courses",
+              "openInSameTab": true
+            },
+            {
+              "label": "Learning Paths",
+              "route": "/learning-paths",
+              "openInSameTab": true
+            },
+            {
+              "label": "Resources",
+              "route": "<link: a route of this site (e.g. /courses) or this institute's own https url>"
+            }
+          ]
+        },
+        "rightSection2": {
+          "title": "Learn",
+          "links": [
+            {
+              "label": "E-books",
+              "route": "/courses?format=ebook",
+              "openInSameTab": true
+            },
+            {
+              "label": "Live sessions",
+              "route": "/courses?format=live",
+              "openInSameTab": true
+            },
+            {
+              "label": "Articles-essays",
+              "route": "/courses?format=article",
+              "openInSameTab": true
+            },
+            {
+              "label": "Short film / Animation",
+              "route": "/courses?format=animation",
+              "openInSameTab": true
+            }
+          ]
+        },
+        "rightSection3": {
+          "title": "About",
+          "links": [
+            {
+              "label": "About Us",
+              "route": "<link: a route of this site (e.g. /courses) or this institute's own https url>"
+            },
+            {
+              "label": "Team",
+              "route": "<link: a route of this site (e.g. /courses) or this institute's own https url>"
+            },
+            {
+              "label": "Testimonials",
+              "route": "<link: a route of this site (e.g. /courses) or this institute's own https url>"
+            },
+            {
+              "label": "Contact Us",
+              "route": "<link: a route of this site (e.g. /courses) or this institute's own https url>",
+              "openInSameTab": true
+            }
+          ]
+        },
+        "rightSection4": {
+          "title": "Support",
+          "links": [
+            {
+              "label": "FAQ",
+              "route": "<link: a route of this site (e.g. /courses) or this institute's own https url>",
+              "openInSameTab": true
+            },
+            {
+              "label": "Privacy Policy",
+              "route": "<link: a route of this site (e.g. /courses) or this institute's own https url>",
+              "openInSameTab": true
+            },
+            {
+              "label": "Terms of Use",
+              "route": "<link: a route of this site (e.g. /courses) or this institute's own https url>",
+              "openInSameTab": true
+            },
+            {
+              "label": "Refund Policy",
+              "route": "<link: a route of this site (e.g. /courses) or this institute's own https url>",
+              "openInSameTab": true
+            }
+          ]
+        },
+        "bottomNote": "© 2026 <institute name>. All rights reserved.",
+        "bottomTagline": "<the institute's tagline>",
+        "showLanguageSwitcher": true
+      },
+      "fullSource": "brahm-varchas-site#/globalSettings/layout/footer/props"
+    },
+    {
+      "id": "footer.newsletter",
+      "label": "Footer newsletter",
+      "component": "footer",
+      "propPath": "globalSettings.layout.footer.props.newsletter",
+      "looksLike": "'Stay connected' with an email field and a Subscribe button inside the brand footer.",
+      "figmaCues": [
+        "an email input and button inside the footer"
+      ],
+      "useWhen": "The brand footer has a newsletter signup.",
+      "avoidWhen": "There is no campaign to receive the addresses.",
+      "requires": [
+        {
+          "kind": "campaign",
+          "detail": "an ACTIVE newsletter campaign"
+        }
+      ],
+      "bound": [
+        "newsletter.audienceId"
+      ],
+      "i18n": "translatable",
+      "reviewAs": [
+        "form"
+      ],
+      "pitfalls": [
+        "Only the brand footer renders it."
+      ],
+      "minimal": {
+        "variant": "brand",
+        "newsletter": {
+          "enabled": true,
+          "heading": "Stay connected",
+          "audienceId": "<audienceId: leave empty — wire it with website_edit(link_lead_form), or the admin picks an ACTIVE campaign in the editor>"
+        }
+      },
+      "full": {
+        "variant": "brand",
+        "newsletter": {
+          "enabled": true,
+          "heading": "Stay connected",
+          "subheading": "Join us for new courses, knowledge resources, live sessions and occasional updates.",
+          "placeholder": "Your email address",
+          "buttonText": "Subscribe",
+          "note": "No clutter. Just thoughtful updates from <institute name>.",
+          "successMessage": "Thank you. We'll keep you posted, with no clutter.",
+          "audienceId": "<audienceId: leave empty — wire it with website_edit(link_lead_form), or the admin picks an ACTIVE campaign in the editor>",
+          "audienceName": "<name shown in the editor>"
+        }
+      },
+      "fullSource": "brahm-varchas-site#/globalSettings/layout/footer/props"
+    },
+    {
+      "id": "global.palette",
+      "label": "Palette",
+      "component": "globalSettings",
+      "propPath": "globalSettings.theme.palette",
+      "looksLike": "A named colour set used across the design: ink, body, muted text, brand, gold/accent highlights, cream/sand surfaces and hairline borders.",
+      "figmaCues": [
+        "5-17 recurring solid fills across frames",
+        "a page background that is not pure white",
+        "hairline 1px borders in a warm grey"
+      ],
+      "useWhen": "The design has its own colour system beyond one brand colour.",
+      "avoidWhen": "One brand colour is enough (theme.primaryColor / preset).",
+      "requires": [],
+      "bound": [],
+      "i18n": "opaque",
+      "reviewAs": [],
+      "pitfalls": [
+        "Values are hex (#rgb or #rrggbb); anything else is ignored.",
+        "applyToTokens:true re-points the shared catalogue tokens at the palette (light mode only) — check the cart drawer and course pages after.",
+        "Set theme.primaryColor to palette.primary as well."
+      ],
+      "minimal": {
+        "theme": {
+          "primaryColor": "<palette.primary hex>",
+          "palette": {
+            "text": "<ink hex>",
+            "body": "<body text hex>",
+            "primary": "<brand hex>",
+            "canvas": "<page background hex>",
+            "border": "<hairline hex>",
+            "applyToTokens": true
+          }
+        }
+      },
+      "full": {
+        "theme": {
+          "primaryColor": "#883000",
+          "palette": {
+            "text": "#1A1208",
+            "body": "#463D2D",
+            "muted": "#5C6640",
+            "muted2": "#7A6A4A",
+            "primary": "#883000",
+            "gold": "#9A5A14",
+            "accent": "#CC7722",
+            "olive": "#6F7A4D",
+            "cream": "#FDF6E8",
+            "canvas": "#FFFDF8",
+            "sand": "#F5EAC9",
+            "border": "#E8DFC4",
+            "borderStrong": "#E0D2AE",
+            "accentOnDark": "#E8A860",
+            "bodyOnDark": "#D9CEB4",
+            "outline": "#A08A5C",
+            "applyToTokens": true
+          }
+        }
+      },
+      "fullSource": "brahm-varchas-site#/globalSettings"
+    },
+    {
+      "id": "global.contentMaxWidth",
+      "label": "Content width",
+      "component": "globalSettings",
+      "propPath": "globalSettings.theme.contentMaxWidth",
+      "looksLike": "Content sits in a column narrower than the frame (1152px on a 1440px frame).",
+      "figmaCues": [
+        "most content starts at x=144 and ends at x=1296 in a 1440 frame (inner width = frame − 2 × side margin)"
+      ],
+      "useWhen": "The design's content column differs from the default.",
+      "avoidWhen": "The design uses the default width.",
+      "requires": [],
+      "bound": [],
+      "i18n": "opaque",
+      "reviewAs": [],
+      "pitfalls": [
+        "px of content, gutters excluded; 320-2400, anything else is ignored."
+      ],
+      "minimal": {
+        "theme": {
+          "contentMaxWidth": 1152
+        }
+      },
+      "full": {
+        "theme": {
+          "contentMaxWidth": 1152
+        }
+      },
+      "fullSource": "brahm-varchas-site#/globalSettings"
+    },
+    {
+      "id": "global.fonts",
+      "label": "Fonts",
+      "component": "globalSettings",
+      "propPath": "globalSettings.fonts",
+      "looksLike": "One body font across the design (e.g. Lato), with Devanagari runs in Noto Sans Devanagari.",
+      "figmaCues": [
+        "TEXT styles share one family",
+        "Devanagari text layers"
+      ],
+      "useWhen": "The design names a font from the registered list.",
+      "avoidWhen": "The font is not on the registered list — pick the closest one and say so.",
+      "requires": [],
+      "bound": [],
+      "i18n": "opaque",
+      "reviewAs": [],
+      "pitfalls": [
+        "Do NOT set fonts.headingFamily on a Hindi site: it replaces the heading stack without the Devanagari fallback.",
+        "Lato has no 500/600: Semibold in the design renders as 700."
+      ],
+      "minimal": {
+        "fonts": {
+          "enabled": true,
+          "family": "Lato, sans-serif"
+        }
+      },
+      "full": {
+        "fonts": {
+          "enabled": true,
+          "family": "Lato, sans-serif"
+        }
+      },
+      "fullSource": "brahm-varchas-site#/globalSettings"
+    },
+    {
+      "id": "global.courseFormats",
+      "label": "Course formats",
+      "component": "globalSettings",
+      "propPath": "globalSettings.courseFormats + courseFormatOrder",
+      "looksLike": "A format taxonomy (E-books, Live sessions, Short film…) on card pills, the FORMAT filter and path steps.",
+      "figmaCues": [
+        "the same set of 4-8 media-type words on cards and in a filter group"
+      ],
+      "useWhen": "Courses come in several formats the design names.",
+      "avoidWhen": "Every course has the same format.",
+      "requires": [
+        {
+          "kind": "courseTags",
+          "detail": "courses tagged format-<key>, or a level name listed in levels[]"
+        }
+      ],
+      "bound": [],
+      "i18n": "opaque",
+      "reviewAs": [],
+      "pitfalls": [
+        "Keys are lower-case slugs; a course's format is tag format-<key> first, then a listed tag, then a listed level name.",
+        "Labels are base-language text shown through the site dictionary."
+      ],
+      "minimal": {
+        "courseFormats": {
+          "ebook": {
+            "label": "E-books",
+            "levels": [
+              "eBook"
+            ]
+          },
+          "live": {
+            "label": "Live sessions"
+          }
+        },
+        "courseFormatOrder": [
+          "ebook",
+          "live"
+        ]
+      },
+      "full": {
+        "courseFormats": {
+          "elearning": {
+            "label": "Interactive, self-paced E-learning"
+          },
+          "ebook": {
+            "label": "E-books",
+            "levels": [
+              "eBook"
+            ]
+          },
+          "live": {
+            "label": "Live sessions"
+          },
+          "video": {
+            "label": "Video"
+          },
+          "animation": {
+            "label": "Short film / Animation",
+            "levels": [
+              "Short Film"
+            ]
+          },
+          "article": {
+            "label": "Articles-essays",
+            "levels": [
+              "Article/Essay"
+            ]
+          },
+          "merch": {
+            "label": "Merchandise (in collaboration)"
+          },
+          "audiobook": {
+            "label": "Audio Book"
+          }
+        },
+        "courseFormatOrder": [
+          "elearning",
+          "ebook",
+          "live",
+          "video",
+          "animation",
+          "article",
+          "merch",
+          "audiobook"
+        ]
+      },
+      "fullSource": "brahm-varchas-site#/globalSettings"
+    },
+    {
+      "id": "global.courseLanguages",
+      "label": "Course languages",
+      "component": "globalSettings",
+      "propPath": "globalSettings.courseLanguages",
+      "looksLike": "Language chips on cards and a LANGUAGE filter: one course, several language versions.",
+      "figmaCues": [
+        "'EN' / 'हिं' chips on cards"
+      ],
+      "useWhen": "Courses exist in more than one language.",
+      "avoidWhen": "All courses share one language.",
+      "requires": [
+        {
+          "kind": "courseTags",
+          "detail": "language words in the level names, or versionGroups pairing separate packages"
+        }
+      ],
+      "bound": [
+        "courseLanguages.versionGroups"
+      ],
+      "i18n": "opaque",
+      "reviewAs": [],
+      "pitfalls": [
+        "versionGroups lists course (package) ids of one course in several languages; the admin pairs them in the editor — leave it empty."
+      ],
+      "minimal": {
+        "courseLanguages": {
+          "enabled": true,
+          "languages": [
+            {
+              "code": "en",
+              "label": "English",
+              "chip": "EN",
+              "match": [
+                "english",
+                "en"
+              ]
+            },
+            {
+              "code": "hi",
+              "label": "Hindi",
+              "chip": "हिं",
+              "match": [
+                "hindi",
+                "hi"
+              ]
+            }
+          ]
+        }
+      },
+      "full": {
+        "courseLanguages": {
+          "enabled": true,
+          "languages": [
+            {
+              "code": "en",
+              "label": "English",
+              "chip": "EN",
+              "match": [
+                "english",
+                "en"
+              ]
+            },
+            {
+              "code": "hi",
+              "label": "Hindi",
+              "chip": "हिं",
+              "match": [
+                "hindi",
+                "हिन्दी",
+                "हिंदी",
+                "hi"
+              ]
+            }
+          ],
+          "versionGroups": [
+            [
+              "<course id (English version): leave empty — the admin groups versions>",
+              "<course id (Hindi version): leave empty>"
+            ]
+          ]
+        }
+      },
+      "fullSource": "brahm-varchas-site#/globalSettings"
+    },
+    {
+      "id": "global.naming",
+      "label": "Naming",
+      "component": "globalSettings",
+      "propPath": "globalSettings.naming",
+      "looksLike": "The site's own word for a level/course ('Format' instead of 'Level').",
+      "figmaCues": [
+        "filter or card labels that rename the platform's level/course/session terms"
+      ],
+      "useWhen": "The design uses its own term for levels, courses or sessions.",
+      "avoidWhen": "The institute's Naming Settings already match.",
+      "requires": [],
+      "bound": [],
+      "i18n": "translatable",
+      "reviewAs": [],
+      "pitfalls": [
+        "Affects this site only, not the institute's other surfaces."
+      ],
+      "minimal": {
+        "naming": {
+          "level": "<word for level>"
+        }
+      },
+      "full": {
+        "naming": {
+          "level": "Format"
+        }
+      },
+      "fullSource": "brahm-varchas-site#/globalSettings"
+    },
+    {
+      "id": "global.siteCart",
+      "label": "Site cart",
+      "component": "globalSettings",
+      "propPath": "globalSettings.siteCart",
+      "looksLike": "One site-wide cart icon whose checkout is a store product page.",
+      "figmaCues": [
+        "a cart icon in the header",
+        "'Add whole path to cart' actions"
+      ],
+      "useWhen": "Visitors buy several courses in one checkout.",
+      "avoidWhen": "There is no store product page selling every course.",
+      "requires": [
+        {
+          "kind": "productPage",
+          "detail": "a store product page that sells the courses"
+        }
+      ],
+      "bound": [
+        "siteCart.storeProductPageCode"
+      ],
+      "i18n": "opaque",
+      "reviewAs": [],
+      "pitfalls": [
+        "Absent = the original catalogue cart."
+      ],
+      "minimal": {
+        "siteCart": {
+          "enabled": true,
+          "storeProductPageCode": "<productPageCode: leave empty — the admin picks a product page in the editor>"
+        }
+      },
+      "full": {
+        "siteCart": {
+          "enabled": true,
+          "storeProductPageCode": "<productPageCode: leave empty — the admin picks a product page in the editor>",
+          "storeProductPageName": "<name shown in the editor>"
+        }
+      },
+      "fullSource": "brahm-varchas-site#/globalSettings"
+    },
+    {
+      "id": "global.i18n",
+      "label": "Site languages",
+      "component": "globalSettings",
+      "propPath": "globalSettings.i18n",
+      "looksLike": "A language switcher; the site in two languages.",
+      "figmaCues": [
+        "a हिन्दी | EN toggle",
+        "the same frame repeated in two scripts"
+      ],
+      "useWhen": "The design is bilingual.",
+      "avoidWhen": "The site has one language.",
+      "requires": [
+        {
+          "kind": "i18n",
+          "detail": "translations keyed by the EXACT base-language text"
+        }
+      ],
+      "bound": [],
+      "i18n": "opaque",
+      "reviewAs": [],
+      "pitfalls": [
+        "Never write the second language into props: translations live in strings[locale][<exact base text>].",
+        "Keys ending in Id/Slug/Url/Route/Color/Value and everything under render/styles/style/theme are not translated by key."
+      ],
+      "minimal": {
+        "i18n": {
+          "enabled": true,
+          "defaultLocale": "en",
+          "locales": [
+            {
+              "code": "en",
+              "label": "EN"
+            },
+            {
+              "code": "hi",
+              "label": "हिन्दी"
+            }
+          ]
+        }
+      },
+      "full": {
+        "i18n": {
+          "enabled": true,
+          "defaultLocale": "en",
+          "locales": [
+            {
+              "code": "en",
+              "label": "EN"
+            },
+            {
+              "code": "hi",
+              "label": "हिन्दी"
+            }
+          ]
+        }
+      },
+      "fullSource": "brahm-varchas-site#/globalSettings"
+    }
+  ],
+  "recipes": [
+    {
+      "id": "editorial-catalogue",
+      "name": "Editorial catalogue",
+      "description": "A Courses page built from ONE courseCatalog with every editorial opt-in, then a help band.",
+      "pages": [
+        {
+          "route": "courses",
+          "title": "Courses",
+          "sections": [
+            {
+              "component": "courseCatalog",
+              "patterns": [
+                "catalog.hero",
+                "catalog.resultsHeader",
+                "catalog.quickFilters",
+                "catalog.streams.icons",
+                "catalog.filterSidebar.editorial",
+                "catalog.filterSidebar.promo",
+                "catalog.customFilters",
+                "catalog.cards.editorial",
+                "catalog.pagination.loadMore",
+                "catalog.languageVersions",
+                "catalog.sections.freeCourses",
+                "catalog.sections.spotlight",
+                "catalog.sections.comingSoon"
+              ],
+              "note": "Deep-merge the patterns' minimal objects into one section's props: merge nested objects key by key (hero, filterSidebar, render…) and concatenate arrays (columnSections, quickFilters, customFilters). The hero carries the H1, so the section title is empty; the legacy level/session/tag filter groups are off (FORMAT and the sidebar replace them).",
+              "props": {
+                "title": "",
+                "filtersConfig": []
+              }
+            },
+            {
+              "component": "ctaBanner",
+              "patterns": [
+                "cta.band"
+              ]
+            }
+          ]
+        }
+      ],
+      "site": [
+        "global.palette",
+        "global.contentMaxWidth",
+        "global.fonts",
+        "global.courseFormats",
+        "global.courseLanguages"
+      ]
+    },
+    {
+      "id": "learning-paths",
+      "name": "Learning paths",
+      "description": "Editorial hero, goals + featured path, an institutions band, the remaining paths, an app band, how-it-works cards and a closing band.",
+      "pages": [
+        {
+          "route": "learning-paths",
+          "title": "Learning Paths",
+          "sections": [
+            {
+              "component": "heroSection",
+              "patterns": [
+                "hero.editorial"
+              ]
+            },
+            {
+              "component": "learningPath",
+              "patterns": [
+                "learningPath.featured",
+                "learningPath.pathExtras"
+              ],
+              "note": "showGrid:false",
+              "props": {
+                "showGrid": false
+              }
+            },
+            {
+              "component": "ctaBanner",
+              "patterns": [
+                "cta.band.light"
+              ]
+            },
+            {
+              "component": "learningPath",
+              "patterns": [
+                "learningPath.moreGrid"
+              ]
+            },
+            {
+              "component": "ctaBanner",
+              "patterns": [
+                "cta.band.app"
+              ]
+            },
+            {
+              "component": "stepsProcess",
+              "patterns": [
+                "steps.cards"
+              ]
+            },
+            {
+              "component": "ctaBanner",
+              "patterns": [
+                "cta.band"
+              ]
+            }
+          ]
+        }
+      ],
+      "site": [
+        "global.palette",
+        "global.contentMaxWidth",
+        "global.siteCart"
+      ]
+    },
+    {
+      "id": "brand-chrome",
+      "name": "Brand chrome",
+      "description": "Compact editorial header with a streams mega menu and the brand footer with a newsletter, on a bilingual site.",
+      "pages": [],
+      "site": [
+        "header.editorial",
+        "header.megaMenu",
+        "footer.brand",
+        "footer.newsletter",
+        "global.i18n",
+        "global.naming"
+      ]
+    }
+  ]
+}

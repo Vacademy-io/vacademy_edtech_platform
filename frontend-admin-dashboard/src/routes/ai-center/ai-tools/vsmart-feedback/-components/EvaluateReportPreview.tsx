@@ -2,53 +2,62 @@ import { Separator } from '@/components/ui/separator';
 import { MyButton } from '@/components/design-system/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AILectureFeedbackInterface } from '@/types/ai/generate-assessment/generate-complete-assessment';
 import { StarRatingComponent } from '@/components/common/star-rating-component';
 import {
     getPerformanceColor,
-    getPerformanceLabel,
     getScoreFromString,
 } from '@/routes/ai-center/-utils/helper';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-// Import Lucide Icons
+// Import Phosphor Icons
 import {
     FileText, // For Report Title
-    Download, // For Export Button
+    DownloadSimple, // For Export Button
     Clock, // For Duration
-    CalendarDays, // For Evaluation Date
+    CalendarBlank, // For Evaluation Date
     ListChecks, // For Evaluation Criteria Header
-    Mic, // For Delivery & Presentation
+    Microphone, // For Delivery & Presentation
     GraduationCap, // For Content Quality
     Users, // For Student Engagement
-    ClipboardCheck, // For Assessment & Feedback
-    Languages, // For Inclusivity & Language
+    ClipboardText, // For Assessment & Feedback
+    Translate, // For Inclusivity & Language
     Timer, // For Classroom Management (Pacing)
     Paperclip, // For Teaching Aids
-    BadgeCheck, // For Professionalism
+    SealCheck, // For Professionalism
     Lightbulb, // For Scope of Improvement
-    NotebookText, // For Summary
-    HelpCircle, // Default/Fallback Icon
-    LucideIcon,
-} from 'lucide-react';
+    Notebook, // For Summary
+    Question, // Default/Fallback Icon
+    type Icon,
+} from '@phosphor-icons/react';
 
 // Helper function to get the appropriate icon based on criterion name
-const getCriteriaIcon = (name: string | undefined): LucideIcon => {
+const getCriteriaIcon = (name: string | undefined): Icon => {
     const lowerCaseName = name?.toLowerCase() || '';
 
-    if (lowerCaseName.includes('delivery') || lowerCaseName.includes('presentation')) return Mic;
+    if (lowerCaseName.includes('delivery') || lowerCaseName.includes('presentation'))
+        return Microphone;
     if (lowerCaseName.includes('content')) return GraduationCap;
     if (lowerCaseName.includes('engagement')) return Users;
     if (lowerCaseName.includes('assessment') || lowerCaseName.includes('feedback'))
-        return ClipboardCheck;
+        return ClipboardText;
     if (lowerCaseName.includes('inclusivity') || lowerCaseName.includes('language'))
-        return Languages;
+        return Translate;
     if (lowerCaseName.includes('management') || lowerCaseName.includes('pacing')) return Timer; // Assuming pacing falls under management
     if (lowerCaseName.includes('teaching aids') || lowerCaseName.includes('resource'))
         return Paperclip;
-    if (lowerCaseName.includes('professionalism')) return BadgeCheck;
+    if (lowerCaseName.includes('professionalism')) return SealCheck;
 
-    return HelpCircle; // Fallback icon
+    return Question; // Fallback icon
+};
+
+// Maps a numeric score to a translation key for the performance label
+const getPerformanceLabelKey = (score: number): string => {
+    if (score < 40) return 'needsImprovement';
+    if (score >= 40 && score < 60) return 'average';
+    if (score >= 60 && score < 80) return 'good';
+    return 'excellent'; // score >= 80
 };
 
 const EvaluateReportPreview = ({
@@ -58,6 +67,7 @@ const EvaluateReportPreview = ({
     openDialog: boolean;
     evaluateLectureData: AILectureFeedbackInterface;
 }) => {
+    const { t } = useTranslation('aiCenterEvaluateReportPreview');
     const [open, setOpen] = useState(openDialog);
 
     if (!evaluateLectureData) {
@@ -69,11 +79,11 @@ const EvaluateReportPreview = ({
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             {/* Using 5xl width, adjust as needed */}
-            <DialogContent className="flex max-h-[90vh] w-full flex-col p-0 sm:max-w-5xl">
+            <DialogContent className="flex max-h-dialog-tall w-full flex-col p-0 sm:max-w-5xl">
                 <DialogHeader className="border-b bg-muted/30 p-4 px-6">
                     <DialogTitle className="text-primary flex items-center gap-2 text-lg font-semibold">
                         <FileText className="size-5" /> {/* Icon Added */}
-                        {evaluateLectureData.reportTitle || 'Evaluation Report'}
+                        {evaluateLectureData.reportTitle || t('dialog.defaultReportTitle')}
                     </DialogTitle>
                 </DialogHeader>
 
@@ -83,11 +93,11 @@ const EvaluateReportPreview = ({
                             <h2 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
                                 {/* Optional: Icon for main title */}
                                 {/* <Info className="h-6 w-6 text-muted-foreground" /> */}
-                                {evaluateLectureData.title || 'Lecture Evaluation'}
+                                {evaluateLectureData.title || t('header.defaultTitle')}
                             </h2>
                             {/* Added Icon to Button */}
                             <MyButton type="button" size="sm">
-                                <Download className="mr-2 size-4" /> Export
+                                <DownloadSimple className="me-2 size-4" /> {t('header.export')}
                             </MyButton>
                         </div>
 
@@ -97,28 +107,31 @@ const EvaluateReportPreview = ({
                                     <span className="flex w-28 items-center gap-1.5 font-medium text-muted-foreground">
                                         {/* Optional: Icon for Lecture Title */}
                                         {/* <Info className="h-4 w-4" /> Lecture Title: */}
-                                        Lecture Title:
+                                        {t('info.lectureTitle')}
                                     </span>
                                     <span className="text-foreground">
-                                        {evaluateLectureData.lectureInfo?.lectureTitle || 'N/A'}
+                                        {evaluateLectureData.lectureInfo?.lectureTitle ||
+                                            t('info.notAvailable')}
                                     </span>
                                 </div>
                                 <div className="flex items-center">
                                     <span className="flex w-28 items-center gap-1.5 font-medium text-muted-foreground">
                                         <Clock className="size-4" /> {/* Icon Added */}
-                                        Duration:
+                                        {t('info.duration')}
                                     </span>
                                     <span className="text-foreground">
-                                        {evaluateLectureData.lectureInfo?.duration || 'N/A'}
+                                        {evaluateLectureData.lectureInfo?.duration ||
+                                            t('info.notAvailable')}
                                     </span>
                                 </div>
                                 <div className="flex items-center">
                                     <span className="flex w-28 items-center gap-1.5 font-medium text-muted-foreground">
-                                        <CalendarDays className="size-4" /> {/* Icon Added */}
-                                        Evaluation Date:
+                                        <CalendarBlank className="size-4" /> {/* Icon Added */}
+                                        {t('info.evaluationDate')}
                                     </span>
                                     <span className="text-foreground">
-                                        {evaluateLectureData.lectureInfo?.evaluationDate || 'N/A'}
+                                        {evaluateLectureData.lectureInfo?.evaluationDate ||
+                                            t('info.notAvailable')}
                                     </span>
                                 </div>
                             </div>
@@ -127,10 +140,10 @@ const EvaluateReportPreview = ({
                             <div className="mt-4 flex items-center gap-4 sm:mt-0 sm:gap-6">
                                 <div className="text-center">
                                     <span className="block text-xs uppercase text-muted-foreground">
-                                        Total Score
+                                        {t('score.totalScore')}
                                     </span>
                                     <span className="text-primary text-2xl font-bold">
-                                        {evaluateLectureData.totalScore ?? 'N/A'}
+                                        {evaluateLectureData.totalScore ?? t('info.notAvailable')}
                                     </span>
                                 </div>
                                 <div className="text-center">
@@ -140,7 +153,7 @@ const EvaluateReportPreview = ({
                                             totalScoreNum
                                         )}`}
                                     >
-                                        {getPerformanceLabel(totalScoreNum)}
+                                        {t(`performance.${getPerformanceLabelKey(totalScoreNum)}`)}
                                     </span>
                                 </div>
                             </div>
@@ -151,14 +164,14 @@ const EvaluateReportPreview = ({
                         <div className="space-y-6">
                             <h3 className="flex items-center gap-2 text-xl font-semibold">
                                 <ListChecks className="text-primary size-5" /> {/* Icon Added */}
-                                Evaluation Criteria
+                                {t('criteria.heading')}
                             </h3>
                             {evaluateLectureData.criteria?.map((criterion, index) => {
                                 const IconComponent = getCriteriaIcon(criterion?.name); // Get specific icon
                                 
                                 // Validate that criterion score doesn't exceed max
                                 const getValidatedScore = () => {
-                                    if (!criterion?.score) return 'N/A';
+                                    if (!criterion?.score) return t('info.notAvailable');
                                     const match = criterion.score.match(/(\d+)\/(\d+)/);
                                     if (match && match[1] && match[2]) {
                                         const achieved = parseInt(match[1], 10);
@@ -181,7 +194,9 @@ const EvaluateReportPreview = ({
                                                 {index + 1}. {criterion?.name}
                                             </h4>
                                             <span className="text-sm font-medium text-muted-foreground">
-                                                (Score: {getValidatedScore()})
+                                                {t('score.criterionScore', {
+                                                    score: getValidatedScore(),
+                                                })}
                                             </span>
                                         </div>
 
@@ -213,7 +228,7 @@ const EvaluateReportPreview = ({
                                                     <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
                                                         <Lightbulb className="size-4 text-yellow-500" />{' '}
                                                         {/* Icon Added */}
-                                                        Scope of Improvement:
+                                                        {t('criteria.scopeOfImprovement')}
                                                     </span>
                                                     <ul className="list-outside list-disc space-y-1 pl-6">
                                                         {criterion.scopeOfImprovement.map(
@@ -239,9 +254,9 @@ const EvaluateReportPreview = ({
                                 <Separator />
                                 <div className="space-y-2 pb-4">
                                     <h3 className="flex items-center gap-2 text-xl font-semibold">
-                                        <NotebookText className="text-primary size-5" />{' '}
+                                        <Notebook className="text-primary size-5" />{' '}
                                         {/* Icon Added */}
-                                        Summary
+                                        {t('summary.heading')}
                                     </h3>
                                     <ul className="list-outside list-disc space-y-1.5 pl-5 text-sm text-muted-foreground">
                                         {evaluateLectureData.summary.map((summaryPoint, index) => (

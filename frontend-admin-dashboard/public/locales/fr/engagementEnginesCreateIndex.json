@@ -1,0 +1,205 @@
+{
+    "pageTitle": "Nouveau moteur d'engagement",
+    "heading": "Nouveau moteur",
+    "steps": {
+        "basics": "Essentiel",
+        "dataPoints": "Données",
+        "channels": "Canaux",
+        "audience": "Audience",
+        "cadence": "Rythme",
+        "review": "Récapitulatif",
+        "assets": "Ressources"
+    },
+    "basics": {
+        "name": "Nom du moteur",
+        "namePlaceholder": "Réengager les {{learners}} inactifs",
+        "objective": "Objectif (court)",
+        "objectivePlaceholder": "Faire revenir les {{learners}} devenus silencieux",
+        "brief": "Le brief",
+        "briefHint": "Décrivez l'objectif, le ton, ce qu'il faut dire et éviter, et les liens éventuels. Cela devient les instructions de l'IA : plus c'est précis, mieux c'est.",
+        "briefPlaceholder": "Vous réengagez des {{learners}} qui ne viennent plus. Soyez chaleureux et bref…",
+        "language": "Langue",
+        "agent": {
+            "heading": "De l’agent de leads « {{name}} » :",
+            "filled": "Rempli depuis l’agent de leads {{names}}. Modifiez-le librement.",
+            "use": "Utiliser la description de l’agent de leads comme brief"
+        },
+        "ai": {
+            "title": "Le rédiger avec l’IA",
+            "hint": "Donnez le produit et le site web, l’IA rédige le brief. Elle ne peut pas ouvrir le site : elle utilise l’adresse comme lien à partager et ce que vous écrivez sur le produit. Tout ce qui manque apparaît en ligne TODO à compléter.",
+            "website": "Site web",
+            "websitePlaceholder": "https://exemple.com",
+            "product": "À propos du produit ou de l’offre",
+            "productPlaceholder": "Ce que c’est, pour qui, en quoi c’est utile…",
+            "generate": "Générer avec l’IA",
+            "improve": "Améliorer avec l’IA",
+            "generating": "Rédaction du brief…",
+            "needInput": "Ajoutez d’abord l’objectif, le produit ou le site web.",
+            "failed": "Impossible de rédiger le brief"
+        }
+    },
+    "dataPoints": {
+        "intro": "Choisissez ce que l'IA peut consulter pour chaque personne, comme l'assiduité ou les frais dus. Plus d'informations, des messages mieux placés.",
+        "sensitive": "sensible",
+        "alwaysOn": "toujours actif",
+        "consent": "Je confirme que cet établissement dispose du consentement pour utiliser les données sensibles ci-dessus dans ses messages.",
+        "sensitivity": {
+            "LOW": "low",
+            "MEDIUM": "medium",
+            "HIGH": "sensitive · high"
+        }
+    },
+    "channels": {
+        "intro": "Quels canaux ce moteur peut-il utiliser ? Au début, vous vérifiez chaque message avant son envoi. WhatsApp nécessite des modèles approuvés par Meta (à configurer après la création).",
+        "enableAria": "Activer {{channel}}",
+        "auto": "Envoi proactif automatique (une fois ce canal validé ; d'ici là, vous relisez et envoyez chaque message)",
+        "autoAria": "Envoi proactif automatique sur {{channel}}",
+        "autoReply": "Réponse automatique (l'IA répond sous 24 h ; l'argent, la colère, les demandes d'arrêt et les incertitudes vous sont toujours transmis)",
+        "autoReplyAria": "Réponse automatique pour {{channel}}",
+        "autoTitle": "Envoyer seul après un essai",
+        "autoHint": "Une fois les premiers messages de ce canal approuvés, il envoie sans demander. D'ici là, vous vérifiez chacun.",
+        "autoReplyTitle": "Répondre seul",
+        "autoReplyHint": "L'IA répond sous 24 heures. Tout ce qui concerne l'argent, la colère, les demandes d'arrêt ou le doute vous revient toujours.",
+        "callNote": "The engine proposes a call for your team. Calls are never placed from the task inbox.",
+        "whatsappNote": "Needs Meta-approved templates — the AI proposes them after you create the engine."
+    },
+    "audience": {
+        "intro": "Choisissez qui ce moteur doit contacter. Cochez autant de {{batches}} et de {{audiences}} que vous voulez.",
+        "audiencesHint": "Les prospects des listes cochées.",
+        "batchesHint": "Toutes les personnes inscrites dans ceux cochés.",
+        "summary": "{{batches}} : {{batchCount}} · {{audiences}} : {{listCount}}",
+        "summaryNone": "Rien de sélectionné pour le moment",
+        "dedupNote": "Une personne présente dans plusieurs n'est contactée qu'une fois.",
+        "picker": {
+            "searchBatches": "Rechercher des {{batches}}",
+            "searchLists": "Rechercher des {{audiences}}",
+            "noBatches": "Aucun {{batches}} pour le moment.",
+            "noLists": "Aucune {{audiences}} pour le moment.",
+            "noMatch": "Aucun résultat pour « {{query}} ».",
+            "loading": "Chargement…",
+            "selectAll": "Tout sélectionner ({{count}})",
+            "selectShown": "Sélectionner ces {{count}}",
+            "unselectShown": "Tout désélectionner",
+            "clear": "Tout effacer",
+            "remove": "Retirer {{name}}",
+            "unknown": "Introuvable (supprimé ?)",
+            "moreLists": "{{shown}} sur {{total}} affichés. Tapez un nom pour trouver les autres."
+        }
+    },
+    "cadence": {
+        "recheck": "Contacter chaque personne au plus",
+        "recheckHint": "L'IA choisit le moment réel. Ce réglage l'empêche seulement de contacter quelqu'un plus souvent.",
+        "quietHours": "Heures silencieuses",
+        "quietHint": "Aucun message entre ces heures, dans le fuseau horaire ci-dessous. Le plancher d'heures silencieuses de l'établissement s'applique en plus.",
+        "from": "De",
+        "to": "À",
+        "timezone": "Fuseau horaire",
+        "legendQuiet": "Quiet (no messages)",
+        "legendOpen": "Can send"
+    },
+    "autonomy": {
+        "title": "Paramètres avancés",
+        "hint": "Facultatif. Quand les canaux commencent à envoyer seuls, et un groupe témoin.",
+        "firstN": "Approbations avant l'envoi automatique",
+        "firstNPlaceholder": "5 (par défaut)",
+        "firstNHint": "Pour les canaux réglés pour envoyer seuls : vous approuvez d'abord ce nombre de leurs messages, puis le canal envoie seul. Laissez vide pour 5.",
+        "holdout": "Groupe témoin (%)",
+        "holdoutHint": "Cette part des personnes est ajoutée mais jamais contactée, pour comparer et voir si le moteur aide. Laissez 0 en cas de doute."
+    },
+    "review": {
+        "name": "Nom",
+        "objective": "Objectif",
+        "language": "Langue",
+        "dataPoints": "Données",
+        "dataPointsNone": "Seulement celles toujours actives",
+        "channels": "Canaux",
+        "audienceSources": "Qui il contacte",
+        "cadence": "Contact",
+        "cadenceValue": "toutes les {{hours}} h",
+        "quietHours": "Heures silencieuses",
+        "autoSendChannels": "Canaux en envoi automatique",
+        "autoSendNone": "Aucun — vous vérifiez chaque message",
+        "holdout": "Groupe témoin",
+        "draftNote": "Le moteur démarre en brouillon. Après la création, ajoutez les personnes et (pour WhatsApp) approuvez les modèles, puis activez-le.",
+        "consentGiven": "consent given",
+        "whatNext": "What happens next",
+        "next": {
+            "draft": {
+                "title": "Starts as a Draft",
+                "text": "Nothing is sent yet."
+            },
+            "enroll": {
+                "title": "Ajouter les personnes",
+                "text": "Cliquez sur « Ajouter les personnes » sur la page du moteur pour importer les personnes choisies."
+            },
+            "templates": {
+                "title": "Approve WhatsApp templates",
+                "text": "The AI proposes them; you approve and submit; Meta reviews."
+            },
+            "activate": {
+                "title": "Dry run, then activate",
+                "text": "Un essai à blanc montre des brouillons dans la boîte des tâches sans rien envoyer."
+            }
+        },
+        "moreSources": "+{{count}} de plus",
+        "holdoutValue": "{{pct}} % (jamais contactés)",
+        "assets": "Ressources",
+        "assetsItems": "{{count}} éléments",
+        "assetsNone": "Aucun ajouté",
+        "teamContacts": "Les alertes vont à",
+        "teamContactsCount_one": "{{count}} membre de l'équipe (et le conseiller du prospect)",
+        "teamContactsCount_many": "{{count}} membres de l'équipe (et le conseiller du prospect)",
+        "teamContactsCount_other": "{{count}} membres de l'équipe (et le conseiller du prospect)",
+        "teamContactsNone": "Le conseiller du prospect"
+    },
+    "actions": {
+        "back": "Retour",
+        "continue": "Continuer",
+        "create": "Créer le moteur",
+        "creating": "Création…",
+        "cancel": "Cancel"
+    },
+    "errors": {
+        "nameAndBrief": "Un moteur doit avoir un nom et un brief."
+    },
+    "subtitle": "Six short steps. You can review everything before it is created — nothing is sent until you activate it.",
+    "stepHints": {
+        "basics": "Name, brief, language",
+        "dataPoints": "What the AI may read",
+        "channels": "Where it can message",
+        "audience": "Who it engages",
+        "cadence": "Fréquence, heures calmes",
+        "review": "Check and create",
+        "assets": "Facultatif : brochures, vidéos, liens"
+    },
+    "footer": {
+        "step": "Step {{n}} of {{total}} · {{label}}"
+    },
+    "blocked": {
+        "name": "Donnez un nom au moteur pour continuer.",
+        "brief": "Rédigez la consigne pour continuer.",
+        "consent": "Cochez la case de consentement pour continuer.",
+        "channel": "Activez au moins un canal pour continuer.",
+        "audience": "Cochez au moins un de vos {{batches}} ou {{audiences}} pour continuer.",
+        "cadence": "Choisissez la fréquence de contact."
+    },
+    "leaveDialog": {
+        "title": "Quitter sans enregistrer ?",
+        "description": "Ce que vous avez rempli jusqu’ici sera perdu.",
+        "editDescription": "Vos modifications de ce moteur ne seront pas enregistrées.",
+        "stay": "Continuer la modification",
+        "leave": "Quitter"
+    },
+    "assetsStep": {
+        "lead": "Ajoutez des documents que l'agent peut envoyer sur WhatsApp à la demande d'un prospect. Vous pouvez passer cette étape et en ajouter plus tard depuis la page du moteur.",
+        "editLead": "Ajoutez, remplacez ou supprimez les documents que l'agent peut envoyer sur WhatsApp à la demande d'un prospect. Les modifications ici sont enregistrées immédiatement, sans enregistrer le reste du moteur."
+    },
+    "team": {
+        "title": "Qui alerter et avec qui planifier les réunions",
+        "hint": "Quand l'agent ne peut pas traiter une réponse seul, ou qu'on lui demande un document qu'il n'a pas, cette personne reçoit une alerte système et un e-mail. Les réunions que l'agent planifie utilisent son compte Google si elle l'a connecté dans Mon agenda, sinon le compte Google par défaut de l'établissement. Le conseiller du prospect est toujours prévenu aussi.",
+        "searchPlaceholder": "Rechercher des membres de l'équipe",
+        "empty": "Aucun membre de l'équipe trouvé",
+        "note": "Choisissez une personne.",
+        "loadFailed": "Impossible de charger votre équipe. Réessayez dans un instant."
+    }
+}

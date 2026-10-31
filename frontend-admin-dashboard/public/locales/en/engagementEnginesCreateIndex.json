@@ -1,0 +1,246 @@
+{
+    "pageTitle": "New engagement engine",
+    "heading": "New engine",
+    "steps": {
+        "basics": "Basics",
+        "dataPoints": "Data points",
+        "channels": "Channels",
+        "audience": "Audience",
+        "cadence": "Timing",
+        "review": "Review",
+        "assets": "Assets"
+    },
+    "basics": {
+        "name": "Engine name",
+        "namePlaceholder": "Re-engage dormant {{learners}}",
+        "objective": "Objective (short)",
+        "objectivePlaceholder": "Bring back {{learners}} who went quiet",
+        "brief": "The brief",
+        "briefHint": "Describe the objective, tone, what to say and what to avoid, and any links. This becomes the AI's instructions, so the more specific, the better.",
+        "briefPlaceholder": "You are re-engaging {{learners}} who stopped attending. Be warm and brief…",
+        "language": "Language",
+        "agent": {
+            "heading": "From the Lead Agent “{{name}}”:",
+            "filled": "Filled from the Lead Agent {{names}}. Edit it freely.",
+            "use": "Use the Lead Agent’s description as the brief"
+        },
+        "ai": {
+            "title": "Write it with AI",
+            "hint": "The AI drafts the brief from your product details. It can't open the website; the address is used as the link to share. Gaps appear as TODO lines.",
+            "website": "Website",
+            "websitePlaceholder": "https://example.com",
+            "product": "About the product or offer",
+            "productPlaceholder": "What it is, who it's for, why it helps…",
+            "generate": "Generate with AI",
+            "improve": "Improve with AI",
+            "generating": "Writing the brief…",
+            "needInput": "Add the objective, the product or the website first.",
+            "failed": "Could not write the brief"
+        }
+    },
+    "dataPoints": {
+        "intro": "Choose what the AI may look at for each person, like attendance or fee dues. More information means better-timed messages.",
+        "sensitive": "sensitive",
+        "alwaysOn": "always on",
+        "consent": "I confirm this institute has consent to use the sensitive data points above for messaging.",
+        "sensitivity": {
+            "LOW": "low",
+            "MEDIUM": "medium",
+            "HIGH": "sensitive · high"
+        }
+    },
+    "channels": {
+        "intro": "Pick the channels to use. You approve every message at first. WhatsApp needs Meta-approved templates (set up after creating).",
+        "enableAria": "Enable {{channel}}",
+        "auto": "Auto-send proactively (after this channel graduates; until then you review and send each one)",
+        "autoAria": "Auto-send proactively on {{channel}}",
+        "autoReply": "Auto-answer replies (AI replies within 24h; money, anger, requests to stop and uncertainty always come to you)",
+        "autoReplyAria": "Auto-answer replies for {{channel}}",
+        "autoTitle": "Auto-send after a trial",
+        "autoHint": "Sends without asking once you've approved the first few.",
+        "autoReplyTitle": "Auto-reply",
+        "autoReplyHint": "AI answers replies within 24h. Money, anger, stop requests or doubt come to you.",
+        "callNote": "Calls leads with an AI agent from the pool you pick.",
+        "whatsappNote": "Needs Meta-approved templates, proposed by the AI after you create the engine."
+    },
+    "audience": {
+        "intro": "Pick who this engine should reach. Tick as many {{batches}} and {{audiences}} as you like.",
+        "audiencesHint": "Leads in the ticked lists.",
+        "batchesHint": "Everyone enrolled in the ticked ones.",
+        "summary": "{{batches}}: {{batchCount}} · {{audiences}}: {{listCount}}",
+        "summaryNone": "Nothing selected yet",
+        "dedupNote": "Someone in more than one is contacted only once.",
+        "picker": {
+            "searchBatches": "Search {{batches}}",
+            "searchLists": "Search {{audiences}}",
+            "noBatches": "No {{batches}} yet.",
+            "noLists": "No {{audiences}} yet.",
+            "noMatch": "Nothing matches “{{query}}”.",
+            "loading": "Loading…",
+            "selectAll": "Select all ({{count}})",
+            "selectShown": "Select these {{count}}",
+            "unselectShown": "Unselect all",
+            "clear": "Clear all",
+            "remove": "Remove {{name}}",
+            "unknown": "Not found (deleted?)",
+            "moreLists": "Showing {{shown}} of {{total}}. Type a name to find the others."
+        }
+    },
+    "cadence": {
+        "recheck": "How often to reach each person",
+        "recheckHint": "At most this often per person. The AI may skip a touch that would not help.",
+        "rhythmTitle": "When the engine reaches out",
+        "rhythmHint": "Pick a time and days, so you always know when messages go out.",
+        "sendTime": "Send time",
+        "sendTimeHint": "Planned messages go out within an hour of this time, in the timezone you pick.",
+        "anyTime": "Any time (the AI picks)",
+        "days": "Days",
+        "daysHint": "No planned messages on the other days. Replies are still answered.",
+        "dayAria": "Send on {{day}}",
+        "firstTouch": "When someone new joins",
+        "firstTouchNow": "Reach them right away",
+        "firstTouchNowHint": "A new lead within 15 minutes; a whole list you add within the hour. Always inside the allowed hours and days.",
+        "firstTouchWait": "Wait for the send time",
+        "firstTouchWaitHint": "Their first message goes out in the next send window.",
+        "goalTitle": "Goal",
+        "stopOnMeeting": "Stop when a meeting is booked",
+        "stopOnMeetingHint": "Ends outreach to that lead and cancels pending messages.",
+        "legendSend": "Send window",
+        "bookingPage": "Book meetings on",
+        "bookingPageNone": "Don't book (team books)",
+        "bookingPageHint": "Books a demo at the time a lead asks, or offers free slots. Reschedules too.",
+        "bookingPageEmpty": "No booking pages yet. Create one in Meetings to let the engine book demos.",
+        "quietHours": "Quiet hours",
+        "quietHint": "No messages between these hours, in the timezone below. The institute's own quiet-hours floor still applies on top of this.",
+        "from": "From",
+        "to": "To",
+        "timezone": "Timezone",
+        "legendQuiet": "Quiet (no messages)",
+        "legendOpen": "Can send"
+    },
+    "autonomy": {
+        "title": "Advanced settings",
+        "hint": "Optional. When channels start sending on their own, and a test group.",
+        "firstN": "Approvals before auto-send starts",
+        "firstNPlaceholder": "5 (default)",
+        "firstNHint": "For channels set to send on their own: you approve this many of their messages first, then the channel sends by itself. Leave blank for 5.",
+        "holdout": "Test group (%)",
+        "holdoutHint": "This share of people is added but never messaged, so you can compare and see whether the engine helps. Leave 0 if unsure."
+    },
+    "review": {
+        "name": "Name",
+        "objective": "Objective",
+        "language": "Language",
+        "dataPoints": "Data points",
+        "dataPointsNone": "Always-on only",
+        "channels": "Channels",
+        "audienceSources": "Who it reaches",
+        "cadence": "Schedule",
+        "goal": "Goal",
+        "goalMeeting": "Until a meeting is booked",
+        "goalNone": "Until converted, not interested or asked to stop",
+        "cadenceValue": "every {{hours}}h",
+        "quietHours": "Quiet hours",
+        "autoSendChannels": "Auto-send channels",
+        "autoSendNone": "None — you check every message",
+        "holdout": "Test group",
+        "draftNote": "The engine starts as a Draft. After creating it, add the people and (for WhatsApp) approve templates, then activate it.",
+        "consentGiven": "consent given",
+        "whatNext": "What happens next",
+        "next": {
+            "draft": {
+                "title": "Starts as a Draft",
+                "text": "Nothing is sent yet."
+            },
+            "enroll": {
+                "title": "Add the people",
+                "text": "Press “Add people now” on the engine page to bring in the people you picked."
+            },
+            "templates": {
+                "title": "Approve WhatsApp templates",
+                "text": "The AI proposes them; you approve and submit; Meta reviews."
+            },
+            "activate": {
+                "title": "Dry run, then activate",
+                "text": "A dry run shows sample drafts in the task inbox without sending anything."
+            }
+        },
+        "moreSources": "+{{count}} more",
+        "holdoutValue": "{{pct}}% (never messaged)",
+        "assets": "Assets",
+        "assetsItems": "{{count}} items",
+        "assetsNone": "None added",
+        "teamContacts": "Alerts go to",
+        "teamContactsCount_one": "{{count}} team member (and the lead's counsellor)",
+        "teamContactsCount_other": "{{count}} team members (and the lead's counsellor)",
+        "teamContactsNone": "The lead's counsellor",
+        "crmActions": "CRM actions",
+        "crmActionsNone": "None (messages only)"
+    },
+    "actions": {
+        "back": "Back",
+        "continue": "Continue",
+        "create": "Create engine",
+        "creating": "Creating…",
+        "cancel": "Cancel"
+    },
+    "errors": {
+        "nameAndBrief": "An engine needs a name and a brief."
+    },
+    "subtitle": "Six short steps. You can review everything before it is created — nothing is sent until you activate it.",
+    "stepHints": {
+        "basics": "Name, brief, language",
+        "dataPoints": "What the AI may read",
+        "channels": "Where it can message",
+        "audience": "Who it engages",
+        "cadence": "When, how often, goal",
+        "review": "Check and create",
+        "assets": "Optional: brochures, videos, links"
+    },
+    "footer": {
+        "step": "Step {{n}} of {{total}} · {{label}}"
+    },
+    "blocked": {
+        "name": "Give the engine a name to continue.",
+        "brief": "Write the brief to continue.",
+        "consent": "Tick the consent box to continue.",
+        "channel": "Turn on at least one channel to continue.",
+        "audience": "Tick at least one of your {{batches}} or {{audiences}} to continue.",
+        "cadence": "Choose how often to check in.",
+        "channelNotReady": "{{channel}} is not set up for your institute. Set it up, or turn the channel off to continue.",
+        "days": "Pick at least one day to continue.",
+        "sendTimeQuiet": "The send time is inside the quiet hours. Pick a time outside them.",
+        "aiCallPool": "Pick at least one AI agent for AI call, or turn it off to continue."
+    },
+    "leaveDialog": {
+        "title": "Leave without saving?",
+        "description": "What you have filled in so far will be lost.",
+        "editDescription": "Your changes to this engine will not be saved.",
+        "stay": "Keep editing",
+        "leave": "Leave"
+    },
+    "assetsStep": {
+        "lead": "Optional. Material the agent can send on WhatsApp when a lead asks. Add more later from the engine page.",
+        "editLead": "Material the agent can send on WhatsApp when a lead asks. Changes save immediately."
+    },
+    "team": {
+        "title": "Who to alert and book meetings with",
+        "hint": "Alerted (in-app and email) when the agent can't handle a reply or lacks requested material. Meetings use their Google account from My Schedule, else the institute default. The lead's counsellor is always told too.",
+        "searchPlaceholder": "Search team members",
+        "empty": "No team members found",
+        "note": "Pick one person.",
+        "loadFailed": "Couldn't load your team. Try again in a moment."
+    },
+    "aiCall": {
+        "poolTitle": "Agents to call with",
+        "search": "Search agents",
+        "empty": "No outbound AI agents yet.",
+        "create": "Create an AI agent",
+        "note": "Calls rotate through the agents you pick, one per call.",
+        "loadFailed": "Couldn't load your AI agents. Try again in a moment."
+    },
+    "crmActions": {
+        "title": "CRM actions",
+        "hint": "What else the AI may do on a lead. Each one starts as an inbox task you approve."
+    }
+}

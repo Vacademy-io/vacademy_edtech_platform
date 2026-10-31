@@ -46,10 +46,17 @@ public class EngagementInternalClients {
 
     /** subjects: [{key(memberId), userId?, phone?, email?}] → LedgerBatchResponse JSON. */
     public JsonNode ledgerBatch(String instituteId, List<Map<String, String>> subjects, int recentWindowDays) {
-        Map<String, Object> body = Map.of(
+        return ledgerBatch(instituteId, subjects, recentWindowDays, null);
+    }
+
+    /** contactWindowDays (B5): also return each subject's cross-system contact count for that window. */
+    public JsonNode ledgerBatch(String instituteId, List<Map<String, String>> subjects, int recentWindowDays,
+                                Integer contactWindowDays) {
+        Map<String, Object> body = new java.util.HashMap<>(Map.of(
                 "instituteId", instituteId,
                 "recentWindowDays", recentWindowDays,
-                "subjects", subjects);
+                "subjects", subjects));
+        if (contactWindowDays != null) body.put("contactWindowDays", contactWindowDays);
         return post(notificationServerBaseUrl,
                 "/notification-service/internal/v1/engagement/ledger-batch", body, "ledger-batch");
     }
@@ -78,11 +85,31 @@ public class EngagementInternalClients {
      * become %253A and the server's Instant.parse would 400 → the whole sweep silently no-ops.
      * instituteId is a UUID (URL-safe), so no encoding is needed on it either.
      */
+    /** WhatsApp sends Meta later reported as failed since the cursor: [{correlationId, errorCode, errorMessage}]. */
+    public JsonNode deliveryFailuresSince(String instituteId, long sinceEpochMillis) {
+        try {
+            String route = "/notification-service/internal/v1/engagement/delivery-failures-since"
+                    + "?instituteId=" + instituteId + "&since=" + sinceEpochMillis;
+            ResponseEntity<String> response = internalClientUtils.makeHmacRequest(
+                    clientName, HttpMethod.GET.name(), notificationServerBaseUrl, route, null);
+            if (response == null || !response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                throw new IllegalStateException("delivery-failures-since returned "
+                        + (response != null ? response.getStatusCode() : "null response"));
+            }
+            return objectMapper.readTree(response.getBody());
+        } catch (Exception e) {
+            throw new IllegalStateException("delivery-failures-since failed: " + e.getMessage(), e);
+        }
+    }
+
     public JsonNode inboundSince(String instituteId, long sinceEpochMillis) {
         try {
             String route = "/notification-service/internal/v1/engagement/inbound-since"
                     + "?instituteId=" + instituteId
-                    + "&since=" + sinceEpochMillis;
+                    + "&since=" + sinceEpochMillis
+                    // Email replies too (channel=EMAIL rows). An older notification-service ignores
+                    // the flag and answers WhatsApp only, so the two can deploy in either order.
+                    + "&includeEmail=true";
             ResponseEntity<String> response = internalClientUtils.makeHmacRequest(
                     clientName, HttpMethod.GET.name(), notificationServerBaseUrl, route, null);
             if (response == null || !response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
@@ -163,6 +190,21 @@ public class EngagementInternalClients {
         body.put("correlationId", correlationId);
         return post(notificationServerBaseUrl,
                 "/notification-service/internal/v1/engagement/whatsapp-reply", body, "whatsapp-reply");
+    }
+
+    /** A assets attachment as a native WhatsApp session media message (image|video|document|audio). */
+    public JsonNode sendWhatsAppMedia(String instituteId, String phone, String mediaType, String mediaUrl,
+                                      String caption, String filename, String correlationId) {
+        Map<String, Object> body = new java.util.HashMap<>();
+        body.put("instituteId", instituteId);
+        body.put("phone", phone);
+        body.put("mediaType", mediaType);
+        body.put("mediaUrl", mediaUrl);
+        body.put("caption", caption);
+        body.put("filename", filename);
+        body.put("correlationId", correlationId);
+        return post(notificationServerBaseUrl,
+                "/notification-service/internal/v1/engagement/whatsapp-media", body, "whatsapp-media");
     }
 
     private JsonNode post(String baseUrl, String route, Object body, String what) {

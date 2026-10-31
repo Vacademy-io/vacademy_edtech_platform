@@ -3,9 +3,15 @@
 import { useMemo } from 'react';
 import { ArrowCounterClockwise, CheckCircle, MinusCircle, XCircle } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
-import { getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
-import { useBulkContentUploadingStore } from '../use-bulk-content-uploading-store';
+import {
+    selectCreatedNodes,
+    useBulkContentUploadingStore,
+} from '../use-bulk-content-uploading-store';
 
 interface ResultsStepProps {
     onRetryFailed: () => void;
@@ -26,6 +32,37 @@ export const ResultsStep = ({ onRetryFailed }: ResultsStepProps) => {
         };
     }, [items]);
 
+    /** Folders auto-create actually turned into new entities this run. */
+    const createdSummary = useMemo(() => {
+        const created = selectCreatedNodes(nodes).filter((node) => node.status === 'done');
+        const parts = (
+            [
+                [ContentTerms.Subject, SystemTerms.Subject, 'subject'],
+                [ContentTerms.Module, SystemTerms.Module, 'module'],
+                [ContentTerms.Chapter, SystemTerms.Chapter, 'chapter'],
+            ] as const
+        )
+            .map(([key, fallback, kind]) => {
+                const count = created.filter((node) => node.kind === kind).length;
+                if (count === 0) return null;
+                const term =
+                    count === 1
+                        ? getTerminology(key, fallback)
+                        : getTerminologyPlural(key, fallback);
+                return `${count} ${term.toLowerCase()}`;
+            })
+            .filter((part): part is string => part !== null);
+        if (parts.length === 0) return '';
+        if (parts.length === 1) return parts[0]!;
+        return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+    }, [nodes]);
+
+    /** Hierarchy that failed to be created — its slides show up blocked below. */
+    const failedNodes = useMemo(
+        () => Object.values(nodes).filter((node) => node.status === 'failed'),
+        [nodes]
+    );
+
     const chapterName = (chapterNodeId: string) => {
         const node = nodes[chapterNodeId];
         const chapter = node?.displayName ?? '';
@@ -38,6 +75,11 @@ export const ResultsStep = ({ onRetryFailed }: ResultsStepProps) => {
 
     return (
         <div className="flex flex-col gap-4">
+            {createdSummary && (
+                <p className="text-caption text-neutral-500">
+                    Created {createdSummary} that didn’t exist before.
+                </p>
+            )}
             <div className="grid gap-3 sm:grid-cols-3">
                 <div className="flex items-center gap-3 rounded-lg border border-success-200 bg-success-50 px-4 py-3">
                     <CheckCircle className="size-6 text-success-600" />
@@ -69,6 +111,24 @@ export const ResultsStep = ({ onRetryFailed }: ResultsStepProps) => {
                     </div>
                 </div>
             </div>
+
+            {failedNodes.length > 0 && (
+                <div className="rounded-lg border border-danger-200 bg-white">
+                    <div className="border-b border-neutral-100 px-4 py-2 text-subtitle font-semibold text-danger-700">
+                        Folders that could not be created
+                    </div>
+                    <ul className="max-h-40 divide-y divide-neutral-100 overflow-y-auto">
+                        {failedNodes.map((node) => (
+                            <li key={node.id} className="px-4 py-2">
+                                <p className="text-subtitle text-neutral-700">{node.displayName}</p>
+                                {node.error && (
+                                    <p className="text-caption text-danger-600">{node.error}</p>
+                                )}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
 
             {summary.failed.length > 0 && (
                 <div className="rounded-lg border border-neutral-200 bg-white">

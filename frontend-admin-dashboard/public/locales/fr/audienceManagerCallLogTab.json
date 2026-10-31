@@ -1,0 +1,196 @@
+{
+    "kpi": {
+        "totalCalls": "Appels totaux",
+        "connected": "Connectés",
+        "talkTime": "Temps de conversation",
+        "talkTimeUnit": "h : min",
+        "uniqueLeads": "Prospects uniques",
+        "aiVsHuman": "IA vs humain",
+        "aiVsHumanUnit": "IA / humain"
+    },
+    "chips": {
+        "allCalls": "Tous les appels",
+        "missedInbound": "Appels entrants manqués",
+        "callbacksDue": "Rappels à effectuer"
+    },
+    "filters": {
+        "leadName": "Nom du prospect",
+        "leadNamePlaceholder": "Rechercher un nom",
+        "number": "Numéro",
+        "numberPlaceholder": "Chiffres du numéro",
+        "direction": "Sens",
+        "directionOutbound": "Sortant",
+        "directionInbound": "Entrant",
+        "type": "Type",
+        "typeHuman": "Humain",
+        "typeAi": "IA",
+        "provider": "Fournisseur",
+        "status": "Statut",
+        "disposition": "Résultat",
+        "all": "Tous",
+        "searchPlaceholder": "Rechercher {{label}}…"
+    },
+    "providers": {
+        "exotel": "Exotel",
+        "aavtaarAi": "IA (Aavtaar)",
+        "airtel": "Airtel",
+        "vacademyAi": "IA (agent Vacademy)",
+        "plivo": "Vacademy Voice",
+        "manual": "Import manuel",
+        "mock": "IA (test)"
+    },
+    "table": {
+        "heading": "Appels",
+        "empty": "Aucun appel ne correspond à ces filtres.",
+        "columns": {
+            "time": "Heure",
+            "lead": "Prospect",
+            "direction": "Sens",
+            "type": "Type",
+            "status": "Statut",
+            "health": "État technique",
+            "healthTooltip": "Verdict technique de l'agent vocal IA",
+            "duration": "Durée",
+            "counsellor": "Conseiller",
+            "disposition": "Résultat",
+            "recording": "Enregistrement",
+            "ai": "IA",
+            "leadStatus": "Statut du lead",
+            "scores": "Scores IA",
+            "scoresTooltip": "Note de l'appelant · note du résultat · sentiment du lead (Call Intelligence)",
+            "update": "Mise à jour",
+            "actions": "Actions pendant l'appel",
+            "actionsTooltip": "Envois WhatsApp, rappels et transferts effectués par l'agent"
+        },
+        "openLeadProfile": "Ouvrir le profil du prospect",
+        "viewLead": "Voir le prospect",
+        "ivrOptionChosen": "Option SVI choisie"
+    },
+    "directionBadge": {
+        "in": "Entrant",
+        "out": "Sortant"
+    },
+    "typeBadge": {
+        "ai": "IA",
+        "human": "Humain"
+    },
+    "statusDetail": {
+        "whyEnded": "Pourquoi cet appel s'est-il terminé ainsi ?",
+        "loading": "Chargement des détails…",
+        "reasonPrefix": "Motif : {{reason}}",
+        "noDetail": "Aucun détail supplémentaire disponible.",
+        "reason": "Motif",
+        "provider": "Fournisseur",
+        "attempted": "Tenté",
+        "answered": "Répondu",
+        "duration": "Durée",
+        "cost": "Coût",
+        "viewRawResponse": "Voir la réponse brute du fournisseur"
+    },
+    "disposition": {
+        "edit": "Modifier",
+        "set": "Définir"
+    },
+    "followUp": {
+        "titleCall": "Mérite un appel manuel",
+        "titleCallLater": "Rappeler à l’heure demandée",
+        "titleSkip": "Aucun appel manuel nécessaire"
+    },
+    "recording": {
+        "loading": "Chargement…",
+        "play": "Lire"
+    },
+    "export": {
+        "csv": "CSV",
+        "excel": "Excel",
+        "successToast": "{{format}} exporté",
+        "errorToast": "Échec de l'export. Veuillez réessayer."
+    },
+    "dispositionDialog": {
+        "heading": "Définir le résultat de l'appel",
+        "save": "Enregistrer",
+        "outcome": "Résultat",
+        "noOutcomes": "Aucun résultat configuré.",
+        "mapsToStatus": "→ statut",
+        "callbackAt": "Rappeler le",
+        "notes": "Notes (facultatif)",
+        "notesPlaceholder": "Ajouter une note",
+        "savedStatusUpdated": "Enregistré — statut du prospect mis à jour",
+        "saved": "Résultat enregistré",
+        "saveError": "Impossible d'enregistrer le résultat."
+    },
+    "intelligenceDialog": {
+        "heading": "Transcription et intelligence IA",
+        "analyzeHeading": "Analyser cet appel ?",
+        "analyzeConfirm": "Analyser"
+    },
+    "empty": {
+        "pickInstitute": "Choisissez un établissement pour voir le journal des appels."
+    },
+    "deployPending": {
+        "title": "Le tableau de bord des appels n'est pas encore disponible sur ce serveur",
+        "description": "Les points de terminaison du tableau de bord de téléphonie n'ont pas encore été déployés dans cet environnement. Revenez après la prochaine publication du backend."
+    },
+    "error": {
+        "loadFailed": "Impossible de charger le journal des appels."
+    },
+    "common": {
+        "retry": "Réessayer",
+        "leadFallback": "Prospect"
+    },
+    "dispositionStrip": {
+        "label": "Résultats",
+        "notSet": "Non défini",
+        "clear": "Effacer"
+    },
+    "scores": {
+        "caller": "Appelant",
+        "outcome": "Résultat",
+        "callerTooltip": "Dans quelle mesure l'appelant a fait avancer son objectif (0–10)",
+        "outcomeTooltip": "Force du résultat du point de vue du lead (0–10)",
+        "sentiment": {
+            "positive": "Positif",
+            "neutral": "Neutre",
+            "negative": "Négatif"
+        }
+    },
+    "update": {
+        "openFull": "Ouvrir l'analyse complète",
+        "viewAnalysis": "Voir l'analyse",
+        "inProgress": "Analyse en cours…",
+        "failed": "Analyse échouée",
+        "skipped": "Non analysé"
+    },
+    "actions": {
+        "sent": "WhatsApp envoyé ({{count}})",
+        "sentOf": "WhatsApp {{sent}}/{{total}} envoyés",
+        "callback": "Rappel",
+        "transferred": "Transféré"
+    },
+    "bulk": {
+        "selected": "{{count}} sélectionnés",
+        "clear": "Effacer",
+        "selectPage": "Tout sélectionner sur cette page",
+        "selectRow": "Sélectionner l'appel",
+        "leadStatus": "Statut du lead",
+        "disposition": "Disposition",
+        "assignCounsellor": "Attribuer un conseiller",
+        "addToCampaign": "Ajouter à une campagne",
+        "reanalyze": "Relancer l'analyse",
+        "done": "{{updated}} {{verb}}",
+        "partial": "{{updated}} {{verb}}, {{failed}} en échec",
+        "error": "La mise à jour groupée a échoué. Veuillez réessayer.",
+        "verbStatus": "statuts de lead mis à jour",
+        "verbDisposition": "dispositions définies",
+        "verbAnalyze": "appels mis en file pour analyse"
+    },
+    "bulkStatusDialog": {
+        "heading": "Définir le statut de {{count}} leads",
+        "status": "Statut",
+        "apply": "Appliquer",
+        "none": "Aucun statut de lead configuré."
+    },
+    "bulkDispositionDialog": {
+        "heading": "Définir la disposition de {{count}} appels"
+    }
+}

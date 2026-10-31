@@ -23,4 +23,6 @@ public class CreateReimbursementDTO {
     private String description;
     private String receiptFileId;
     private LocalDate expenseDate;
+    /** Optional ISO-4217 code (e.g. INR, USD); defaults to INR. */
+    private String currency;
 }

@@ -1,0 +1,19 @@
+{
+    "title": "Download Quiz PDF",
+    "description": "Choose your download options for the quiz PDF.",
+    "pdfType": "PDF Type",
+    "showAnswers": "Show Answers",
+    "showAnswersHint": "Include correct answers in the PDF (for answer key)",
+    "showExplanations": "Show Explanations",
+    "showExplanationsHint": "Include detailed explanations for each answer",
+    "answerKeyMode": "Answer Key Mode",
+    "assessmentPaperMode": "Assessment Paper Mode",
+    "answerKeyModeDescription": "The PDF will include correct answers highlighted in green. Perfect for teachers and answer keys.",
+    "assessmentPaperModeDescription": "The PDF will be formatted as a clean assessment paper without answers. Perfect for giving to students as a written test.",
+    "cancel": "Cancel",
+    "downloadPdf": "Download PDF",
+    "toast": {
+        "success": "Quiz PDF downloaded successfully!",
+        "error": "Failed to generate quiz PDF"
+    }
+}

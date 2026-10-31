@@ -4,11 +4,13 @@ Router for token usage viewing endpoints.
 from __future__ import annotations
 
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 
 from ..db import db_dependency
+from ..core.security import decode_access_token, is_platform_staff, require_institute_member
+from ..dependencies import require_internal_service_token
 from ..services.token_usage_service import TokenUsageService
 from ..schemas.token_usage import (
     TokenUsageListResponse,
@@ -27,6 +29,80 @@ from ..models.ai_token_usage import RequestType
 router = APIRouter(prefix="/token-usage", tags=["token-usage"])
 
 
+# ============================================================================
+# Auth
+# ============================================================================
+#
+# Every read here used to be open to anyone who knew (or guessed) an institute
+# or user id. The callers are the admin AI Settings screen (activity-log) and the
+# learner AI-settings page (/v1/user/{id}); both send `Authorization: Bearer`.
+# The learner call is a plain axios request WITHOUT the clientId header, so the
+# check is made against the signed JWT itself (the same claims
+# require_institute_member reads) rather than get_current_user's auth-service
+# lookup, which keys on clientId.
+
+
+def verified_claims(authorization: Optional[str] = Header(None)) -> dict:
+    """401 unless the request carries a valid, signed bearer token; returns its claims."""
+    token = authorization[len("Bearer "):] if authorization and authorization.startswith("Bearer ") else None
+    claims = decode_access_token(token) if token else None
+    if not claims or not claims.get("sub"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required.",
+        )
+    return claims
+
+
+def _claims_user_id(claims: dict) -> Optional[str]:
+    """The auth user id in the token (Java generateToken puts it under `user`)."""
+    uid = claims.get("user")
+    return str(uid).strip() if uid else None
+
+
+def _is_staff(claims: dict) -> bool:
+    return is_platform_staff({"user_id": _claims_user_id(claims)})
+
+
+def _admins_only() -> bool:
+    """security.credit_history_scope = own_unless_admin: these institute-wide views
+    (every user's usage and cost) are then for institute admins only, the same
+    line the credit history draws. Any read failure keeps today's rule."""
+    try:
+        from ..services.platform_settings_service import get_platform_setting
+
+        return str(get_platform_setting("security.credit_history_scope", "institute") or "") == "own_unless_admin"
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def require_institute_reader(
+    institute_id: str,
+    authorization: Optional[str] = Header(None),
+    claims: dict = Depends(verified_claims),
+) -> None:
+    """A member of `institute_id` (any role), or platform staff. Under
+    security.credit_history_scope = own_unless_admin, an ADMIN of it (or staff)."""
+    if _is_staff(claims):
+        return
+    require_institute_member(authorization, institute_id, admin=_admins_only())
+
+
+def require_self_reader(
+    user_id: str,
+    claims: dict = Depends(verified_claims),
+) -> None:
+    """The token's own user, or platform staff."""
+    if _is_staff(claims):
+        return
+    caller = _claims_user_id(claims)
+    if not caller or caller != str(user_id).strip():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only view your own usage.",
+        )
+
+
 @router.get(
     "/v1/institute/{institute_id}",
     response_model=TokenUsageListResponse,
@@ -36,6 +112,7 @@ async def get_institute_token_usage(
     institute_id: str,
     start_date: Optional[str] = Query(default=None, description="Start date (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(default=None, description="End date (YYYY-MM-DD)"),
+    _auth: None = Depends(require_institute_reader),
     db: Session = Depends(db_dependency),
 ) -> TokenUsageListResponse:
     """
@@ -80,6 +157,7 @@ async def get_user_token_usage(
     user_id: str,
     start_date: Optional[str] = Query(default=None, description="Start date (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(default=None, description="End date (YYYY-MM-DD)"),
+    _auth: None = Depends(require_self_reader),
     db: Session = Depends(db_dependency),
 ) -> TokenUsageListResponse:
     """
@@ -126,6 +204,7 @@ async def get_institute_token_summary(
     end_date: Optional[str] = Query(default=None, description="End date (YYYY-MM-DD)"),
     group_by_provider: bool = Query(default=True, description="Group results by API provider"),
     group_by_type: bool = Query(default=True, description="Group results by request type"),
+    _auth: None = Depends(require_institute_reader),
     db: Session = Depends(db_dependency),
 ) -> TokenUsageSummaryResponse:
     """
@@ -179,6 +258,7 @@ async def get_user_token_summary(
     end_date: Optional[str] = Query(default=None, description="End date (YYYY-MM-DD)"),
     group_by_provider: bool = Query(default=True, description="Group results by API provider"),
     group_by_type: bool = Query(default=True, description="Group results by request type"),
+    _auth: None = Depends(require_self_reader),
     db: Session = Depends(db_dependency),
 ) -> TokenUsageSummaryResponse:
     """
@@ -229,6 +309,7 @@ async def get_user_token_summary(
 async def get_institute_daily_usage(
     institute_id: str,
     days: int = Query(default=30, ge=1, le=365, description="Number of days to look back"),
+    _auth: None = Depends(require_institute_reader),
     db: Session = Depends(db_dependency),
 ) -> DailyUsageResponse:
     """
@@ -253,6 +334,7 @@ async def get_institute_daily_usage(
 async def get_user_daily_usage(
     user_id: str,
     days: int = Query(default=30, ge=1, le=365, description="Number of days to look back"),
+    _auth: None = Depends(require_self_reader),
     db: Session = Depends(db_dependency),
 ) -> DailyUsageResponse:
     """
@@ -281,6 +363,7 @@ async def get_institute_activity_log(
     start_date: Optional[str] = Query(default=None, description="Start date (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(default=None, description="End date (YYYY-MM-DD)"),
     request_type: Optional[str] = Query(default=None, description="Filter by request type (outline, image, content, video)"),
+    _auth: None = Depends(require_institute_reader),
     db: Session = Depends(db_dependency),
 ) -> ActivityLogResponse:
     """
@@ -348,6 +431,7 @@ async def get_institute_activity_log_by_user(
     start_date: Optional[str] = Query(default=None, description="Start date (YYYY-MM-DD)"),
     end_date: Optional[str] = Query(default=None, description="End date (YYYY-MM-DD)"),
     request_type: Optional[str] = Query(default=None, description="Filter by request type (outline, image, content, video)"),
+    _auth: None = Depends(require_institute_reader),
     db: Session = Depends(db_dependency),
 ) -> UserActivityLogResponse:
     """
@@ -412,11 +496,11 @@ async def get_institute_activity_log_by_user(
 
 
 # ============================================================================
-# Internal Recording Endpoint (No Auth - for inter-service communication)
+# Internal Recording Endpoint (service-to-service; X-Internal-Service-Token)
 # ============================================================================
 
 from pydantic import BaseModel, Field
-from typing import Any, Dict
+from typing import Any, Dict, List
 from ..models.ai_token_usage import ApiProvider
 
 
@@ -434,6 +518,30 @@ class RecordUsageRequest(BaseModel):
     metadata: Optional[Dict[str, Any]] = Field(None, description="Additional metadata")
     tts_provider: Optional[str] = Field(None, description="TTS provider: google, edge, elevenlabs")
     character_count: Optional[int] = Field(None, description="Character count for TTS requests")
+    # Optional usage-metering attribution (contract K2; ai_usage_event only).
+    use_case: Optional[str] = None
+    actor_kind: Optional[str] = None
+    actor_role_class: Optional[str] = None
+    actor_roles_raw: Optional[List[Any]] = None
+    actor_display_name: Optional[str] = None
+    subject_user_id: Optional[str] = None
+    subject_display_name: Optional[str] = None
+    surface: Optional[str] = None
+    source_service: Optional[str] = None
+    usage_context: Optional[Dict[str, Any]] = None
+    router: Optional[str] = None
+    provider: Optional[str] = None
+    gateway_key_id: Optional[str] = None
+    byo_key: Optional[bool] = None
+    parent_event_id: Optional[str] = None
+    usage_event_id: Optional[str] = None
+
+
+_RECORD_METERING_FIELDS = (
+    "use_case", "actor_kind", "actor_role_class", "actor_roles_raw", "actor_display_name",
+    "subject_display_name", "surface", "source_service", "usage_context", "router", "provider",
+    "gateway_key_id", "byo_key", "parent_event_id", "usage_event_id",
+)
 
 
 class RecordUsageResponse(BaseModel):
@@ -446,18 +554,25 @@ class RecordUsageResponse(BaseModel):
 @router.post(
     "/v1/record",
     response_model=RecordUsageResponse,
-    summary="Record token usage (Internal API - No Auth)",
-    description="Internal endpoint for external services to record AI token usage. No authentication required.",
+    summary="Record token usage (internal)",
+    description=(
+        "Internal endpoint for other Vacademy services to record AI token usage. "
+        "Requires X-Internal-Service-Token: it deducts credits from the named "
+        "institute, and the /ai-service/ prefix is publicly routed — left open, "
+        "anyone could drain any wallet. No caller exists in any repo (verified "
+        "before gating)."
+    ),
 )
 async def record_token_usage(
     request: RecordUsageRequest,
+    _auth: None = Depends(require_internal_service_token),
     db: Session = Depends(db_dependency),
 ) -> RecordUsageResponse:
     """
     Record token usage from external services.
     
-    This endpoint is designed for inter-service communication (e.g., media_service calling ai_service).
-    No authentication is required as it's meant for internal use within the cluster.
+    This endpoint is designed for inter-service communication and requires the
+    X-Internal-Service-Token header (require_internal_service_token).
     
     Args:
         request: Token usage data to record
@@ -503,6 +618,8 @@ async def record_token_usage(
             metadata=request.metadata,
             tts_provider=request.tts_provider,
             character_count=request.character_count,
+            **({"subject_user_id": request.subject_user_id} if request.subject_user_id else {}),
+            **{k: getattr(request, k) for k in _RECORD_METERING_FIELDS if getattr(request, k) is not None},
         )
         
         return RecordUsageResponse(

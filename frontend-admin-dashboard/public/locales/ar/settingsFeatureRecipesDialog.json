@@ -1,0 +1,20 @@
+{
+    "recipe": {
+        "setUpButton": "إعداد",
+        "modeScheduled": "يعمل وفق جدول زمني",
+        "modeTriggered": "يعمل تلقائيًا عند التشغيل"
+    },
+    "turnOffDialog": {
+        "title": "هل تريد إيقاف الأتمتة؟",
+        "descriptionPart1": "سيؤدي هذا إلى إيقاف ",
+        "descriptionPart2": ". لن يتم بعد الآن إرسال أي رسائل بريد إلكتروني مجدولة أو قائمة على أحداث تم إعدادها بواسطة هذه الأتمتة. يمكنك إعادة تشغيلها في أي وقت.",
+        "cancel": "إلغاء",
+        "turningOff": "جارٍ الإيقاف…",
+        "turnOff": "إيقاف"
+    },
+    "toasts": {
+        "turnedOff": "تم إيقاف الأتمتة.",
+        "turnOffFailed": "تعذّر إيقافها: {{message}}",
+        "unknownError": "خطأ غير معروف"
+    }
+}

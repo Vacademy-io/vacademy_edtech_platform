@@ -1,0 +1,25 @@
+{
+    "loading": "Loading...",
+    "header": {
+        "title": "User Identifier Setting",
+        "description": "Choose how users are uniquely identified when registering or logging in to your institute. This affects how duplicate accounts are detected during enrollment."
+    },
+    "options": {
+        "email": {
+            "label": "Email Address",
+            "description": "Users are identified by their email. Two users with the same email are treated as the same person across enrollments."
+        },
+        "phone": {
+            "label": "Phone Number",
+            "description": "Users are identified by their mobile number. Use this when learners register without email or when phone is the primary login method for your institute."
+        }
+    },
+    "saveButton": {
+        "saving": "Saving...",
+        "save": "Save Changes"
+    },
+    "toasts": {
+        "saveSuccess": "User identifier setting saved successfully",
+        "saveError": "Failed to save setting"
+    }
+}

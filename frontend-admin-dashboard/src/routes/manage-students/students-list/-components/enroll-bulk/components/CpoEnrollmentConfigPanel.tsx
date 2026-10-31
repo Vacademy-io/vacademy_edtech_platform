@@ -1,14 +1,35 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useCPOFullDetails } from '@/routes/financial-management/fee-plans/-services/cpo-service';
-import type { CPOFeeType, CPOInstallment } from '@/routes/financial-management/fee-plans/-types/cpo-types';
+import type {
+    CPOFeeType,
+    CPOInstallment,
+} from '@/routes/financial-management/fee-plans/-types/cpo-types';
 import type {
     CpoEnrollmentConfig,
     InstallmentOverride,
+    ScheduleDiscountSplit,
 } from '@/routes/manage-students/students-list/-types/bulk-assign-types';
-import type { DiscountSpec, DiscountType } from '@/routes/manage-students/students-list/-types/cpo-side-view-types';
+import type {
+    DiscountSpec,
+    DiscountType,
+} from '@/routes/manage-students/students-list/-types/cpo-side-view-types';
+import {
+    MAX_INSTALLMENTS,
+    discountAmount,
+    initialSchedule,
+    partsFromFeeTypes,
+    rowsFromRule,
+    spreadDiscount,
+    validateSchedule,
+    type SchedulePart,
+} from '@/routes/manage-students/students-list/-utils/installment-schedule';
+import { InstallmentScheduleEditor } from './InstallmentScheduleEditor';
+import { OfflinePaymentFields } from '@/components/common/payments/OfflinePaymentFields';
+import type { NumberingTarget } from '@/services/numbering-field';
 
 interface InstallmentRow {
-    id: string;            // aft_installment id (matches SFP.iId)
+    id: string; // aft_installment id (matches SFP.iId)
     feeTypeName: string;
     installmentNumber: number;
     amount: number;
@@ -18,8 +39,20 @@ interface InstallmentRow {
 
 interface Props {
     cpoId: string | null;
+    /**
+     * Set instead of `cpoId` when a course sold at a one-time price is being paid in
+     * installments: there is no fee plan yet (the backend builds a hidden one), so the
+     * panel splits this price and always uses a custom schedule.
+     */
+    oneTimePrice?: { amount: number; currency?: string | null } | null;
     value: CpoEnrollmentConfig | undefined;
     onChange: (next: CpoEnrollmentConfig) => void;
+    /** Reports a schedule problem (translated) so the wizard can block Preview; null when fine. */
+    onScheduleErrorChange?: (message: string | null) => void;
+    /** Reports what blocks the offline payment details (translated); null when fine. */
+    onPaymentErrorChange?: (message: string | null) => void;
+    /** Learner being enrolled, for the numbering-series field (e.g. branch); see OfflinePaymentFields. */
+    numbering?: NumberingTarget | null;
 }
 
 const flattenInstallments = (feeTypes: CPOFeeType[] | undefined): InstallmentRow[] => {
@@ -92,11 +125,78 @@ const blank: CpoEnrollmentConfig = {
  * <p>Output is sent to the backend on the `cpo_config` field of an
  * {@link AssignmentItem} and supersedes the legacy `cpo_payment_*` fields.
  */
-export const CpoEnrollmentConfigPanel = ({ cpoId, value, onChange }: Props) => {
+export const CpoEnrollmentConfigPanel = ({
+    cpoId,
+    oneTimePrice,
+    value,
+    onChange,
+    onScheduleErrorChange,
+    onPaymentErrorChange,
+    numbering,
+}: Props) => {
+    const { t } = useTranslation('manageStudentsCpoEnrollmentConfigPanel');
     const { data, isLoading, isError } = useCPOFullDetails(cpoId, !!cpoId);
     const installments = useMemo(() => flattenInstallments(data?.fee_types), [data]);
 
     const cfg = value ?? blank;
+
+    // ---- Learner-specific schedule (docs/CPO_FLEXIBLE_INSTALLMENTS.md) ----
+    const isFlexible = data?.schedule_mode === 'FLEXIBLE';
+    // A flexible plan has no fixed dates and a one-time price has no plan at all, so both
+    // always use a custom schedule; a fixed plan offers it as an alternative.
+    const customForced = isFlexible || !!oneTimePrice;
+    const customSchedule = cfg.installment_schedule ?? null;
+    const isCustom = customSchedule != null;
+    const scheduleParts: SchedulePart[] = useMemo(
+        () =>
+            oneTimePrice
+                ? [
+                      {
+                          feeTypeName: t('schedule.courseFee'),
+                          total: oneTimePrice.amount,
+                          split: true,
+                      },
+                  ]
+                : partsFromFeeTypes(data?.fee_types),
+        [oneTimePrice, data, t]
+    );
+    const maxCount = data?.flexible_defaults?.max_count ?? MAX_INSTALLMENTS;
+    const templateCount = useMemo(
+        () => installments.reduce((m, r) => Math.max(m, r.installmentNumber), 0),
+        [installments]
+    );
+    const selectCustomSchedule = () =>
+        onChange({
+            ...cfg,
+            installment_overrides: [],
+            installment_schedule: initialSchedule(data?.flexible_defaults, templateCount),
+        });
+    const selectPlanSchedule = () => onChange({ ...cfg, installment_schedule: null });
+
+    useEffect(() => {
+        if (customForced && !isCustom && (oneTimePrice || data)) selectCustomSchedule();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [customForced, isCustom, oneTimePrice, data]);
+
+    const scheduleError = useMemo(
+        () => (isCustom ? validateSchedule(customSchedule, scheduleParts, maxCount) : null),
+        [isCustom, customSchedule, scheduleParts, maxCount]
+    );
+    const scheduleErrorText = scheduleError ? t(scheduleError.key, scheduleError.params) : null;
+    // Report only real changes: the parent's update merges into the props it rendered with,
+    // so a redundant report in the same tick as another update would overwrite that update.
+    const reportedError = useRef<string | null>(null);
+    // A different plan starts from "nothing reported": the wizard clears the error when the
+    // invite changes, so the same text on the new plan must be reported again.
+    useEffect(() => {
+        reportedError.current = null;
+    }, [cpoId, oneTimePrice?.amount]);
+    useEffect(() => {
+        if (reportedError.current === scheduleErrorText) return;
+        reportedError.current = scheduleErrorText;
+        onScheduleErrorChange?.(scheduleErrorText);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [scheduleErrorText]);
     const overridesById = useMemo(() => {
         const m = new Map<string, InstallmentOverride>();
         for (const ov of cfg.installment_overrides ?? []) m.set(ov.aft_installment_id, ov);
@@ -104,10 +204,15 @@ export const CpoEnrollmentConfigPanel = ({ cpoId, value, onChange }: Props) => {
     }, [cfg.installment_overrides]);
 
     // Derived totals after overrides + CPO-level discount
-    const grossTotal = useMemo(
+    const templateGross = useMemo(
         () => installments.reduce((sum, r) => sum + r.amount, 0),
-        [installments],
+        [installments]
     );
+    const scheduleGross = useMemo(
+        () => scheduleParts.reduce((sum, p) => sum + p.total, 0),
+        [scheduleParts]
+    );
+    const grossTotal = isCustom ? scheduleGross : templateGross;
     /**
      * Per-row effective amount after applying installment overrides + CPO-level
      * discount (proportional share for PERCENTAGE; weighted-by-row-amount share
@@ -157,7 +262,110 @@ export const CpoEnrollmentConfigPanel = ({ cpoId, value, onChange }: Props) => {
             effectiveByRow,
         };
     }, [installments, overridesById, cfg.cpo_discount]);
-    const totals = breakdown;
+    // With a custom schedule the discount is split over the installments row by row (each
+    // row carries its own discount, which is exactly what gets billed). EVEN / FIRST / LAST
+    // re-split it whenever the discount, the split or the number of installments changes;
+    // editing an amount or what the learner pays keeps every row's discount.
+    const scheduleSplit: ScheduleDiscountSplit = customSchedule?.discount_split ?? 'EVEN';
+    const splitPartsOnly = useMemo(() => scheduleParts.filter((p) => p.split), [scheduleParts]);
+    const scheduleAmountsEditable = splitPartsOnly.length === 1;
+    const generatedRows = useMemo(
+        () => (customSchedule ? rowsFromRule(customSchedule, splitPartsOnly) : []),
+        [customSchedule, splitPartsOnly]
+    );
+    const scheduleRows = customSchedule?.rows ?? generatedRows;
+    const rowDiscountSum =
+        Math.round(scheduleRows.reduce((s, r) => s + (r.discount ?? 0), 0) * 100) / 100;
+    const wantedDiscount = isCustom ? discountAmount(cfg.cpo_discount, scheduleGross) : 0;
+    const scheduleTotals = useMemo(
+        () => ({
+            net: Math.max(0, scheduleGross - rowDiscountSum),
+            cpoDiscountAmt: rowDiscountSum,
+        }),
+        [scheduleGross, rowDiscountSum]
+    );
+    useEffect(() => {
+        if (!customSchedule) return;
+        // Custom amounts are the admin's own, until the discount is removed altogether.
+        if (scheduleSplit === 'CUSTOM' && cfg.cpo_discount) return;
+        const base = customSchedule.rows ?? generatedRows;
+        if (base.length === 0) return;
+        const gross = base.map((r, k) => r.amount ?? generatedRows[k]?.amount ?? 0);
+        const want =
+            wantedDiscount > 0
+                ? spreadDiscount(
+                      gross,
+                      wantedDiscount,
+                      scheduleSplit === 'CUSTOM' ? 'EVEN' : scheduleSplit
+                  )
+                : gross.map(() => 0);
+        const same = base.every(
+            (r, k) => Math.round((r.discount ?? 0) * 100) === Math.round((want[k] ?? 0) * 100)
+        );
+        if (same) return;
+        onChange({
+            ...cfg,
+            installment_schedule: {
+                ...customSchedule,
+                rows: base.map((r, k) => ({
+                    due_date: r.due_date,
+                    amount: scheduleAmountsEditable ? r.amount ?? null : null,
+                    discount: want[k] || null,
+                })),
+            },
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [
+        wantedDiscount,
+        scheduleSplit,
+        scheduleRows.length,
+        customSchedule?.rows == null,
+        !!cfg.cpo_discount,
+    ]);
+    const setScheduleSplit = (split: ScheduleDiscountSplit) => {
+        if (!customSchedule) return;
+        onChange({ ...cfg, installment_schedule: { ...customSchedule, discount_split: split } });
+    };
+    const totals = isCustom ? scheduleTotals : breakdown;
+    /**
+     * What falls due first, after discount: the usual amount collected at enrollment, so it
+     * prefills the offline payment. Custom schedule: installment 1 plus the fees paid upfront
+     * on its date. Plan schedule: the rows with the earliest due date plus one-off fees.
+     */
+    const firstDueNet = useMemo(() => {
+        if (customSchedule) {
+            const first = scheduleRows[0];
+            if (!first) return totals.net;
+            const net =
+                (first.amount ?? generatedRows[0]?.amount ?? 0) -
+                (first.discount ?? 0) +
+                scheduleParts.filter((p) => !p.split).reduce((s, p) => s + p.total, 0);
+            return Math.round(net * 100) / 100;
+        }
+        const dueOf = (r: InstallmentRow) =>
+            (overridesById.get(r.id)?.due_date ?? r.dueDate)?.slice(0, 10) ?? null;
+        const dated = installments.map(dueOf).filter((d): d is string => d != null);
+        const earliest = dated.length > 0 ? dated.reduce((a, b) => (b < a ? b : a)) : null;
+        const minNumber = installments.reduce((m, r) => Math.min(m, r.installmentNumber), Infinity);
+        const sum = installments
+            .filter((r) => {
+                const due = dueOf(r);
+                return earliest
+                    ? due == null || due === earliest
+                    : r.installmentNumber === minNumber;
+            })
+            .reduce((s, r) => s + (breakdown.effectiveByRow.get(r.id) ?? r.amount), 0);
+        return sum > 0 ? Math.round(sum * 100) / 100 : totals.net;
+    }, [
+        customSchedule,
+        scheduleParts,
+        scheduleRows,
+        generatedRows,
+        installments,
+        overridesById,
+        breakdown,
+        totals.net,
+    ]);
 
     // Helpers ----------------------------------------------------------------
 
@@ -192,55 +400,254 @@ export const CpoEnrollmentConfigPanel = ({ cpoId, value, onChange }: Props) => {
         }
     };
 
-    const setCpoDiscount = (d: DiscountSpec | null) =>
-        onChange({ ...cfg, cpo_discount: d });
+    const setCpoDiscount = (d: DiscountSpec | null) => onChange({ ...cfg, cpo_discount: d });
 
-    const setPayment = (patch: Partial<CpoEnrollmentConfig>) =>
-        onChange({ ...cfg, ...patch });
+    const setPayment = (patch: Partial<CpoEnrollmentConfig>) => onChange({ ...cfg, ...patch });
+
+    // While the amount is still the prefill, keep it in step with the schedule (e.g. the
+    // admin raises installment 1 after choosing "record a payment"). A typed amount stays.
+    const prefilledAmount = useRef<number | null>(null);
+    useEffect(() => {
+        if (cfg.payment_mode !== 'OFFLINE') return;
+        if (cfg.payment_amount === firstDueNet) {
+            prefilledAmount.current = firstDueNet;
+            return;
+        }
+        if (prefilledAmount.current != null && cfg.payment_amount === prefilledAmount.current) {
+            prefilledAmount.current = firstDueNet;
+            setPayment({ payment_amount: firstDueNet });
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [firstDueNet, cfg.payment_mode, cfg.payment_amount]);
 
     // Local string state for amount input so blank entries stay blank
     const [paymentInput, setPaymentInput] = useState<string>(
-        cfg.payment_amount != null ? String(cfg.payment_amount) : '',
+        cfg.payment_amount != null ? String(cfg.payment_amount) : ''
     );
     useEffect(() => {
         setPaymentInput(cfg.payment_amount != null ? String(cfg.payment_amount) : '');
     }, [cfg.payment_amount]);
 
-    if (!cpoId) return null;
+    if (!cpoId && !oneTimePrice) return null;
+
+    const discountBox = (
+        <div className="mb-3 rounded-md border border-neutral-200 bg-white p-2.5">
+            <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-neutral-500">
+                {t('cpoDiscount.heading')}
+            </p>
+            <div className="flex flex-wrap items-end gap-2">
+                <div>
+                    <label className="block text-2xs text-neutral-500">
+                        {t('cpoDiscount.typeLabel')}
+                    </label>
+                    <select
+                        value={cfg.cpo_discount?.type ?? ''}
+                        onChange={(e) => {
+                            const nextType = e.target.value as DiscountType | '';
+                            if (!nextType) setCpoDiscount(null);
+                            else
+                                setCpoDiscount({
+                                    type: nextType,
+                                    value: cfg.cpo_discount?.value ?? 0,
+                                    reason: cfg.cpo_discount?.reason ?? null,
+                                });
+                        }}
+                        className="rounded border border-neutral-200 px-2 py-1 text-2xs"
+                    >
+                        <option value="">{t('cpoDiscount.options.none')}</option>
+                        <option value="PERCENTAGE">{t('cpoDiscount.options.percentage')}</option>
+                        <option value="FLAT">{t('cpoDiscount.options.flat')}</option>
+                    </select>
+                </div>
+                <div>
+                    <label className="block text-2xs text-neutral-500">
+                        {t('cpoDiscount.valueLabel')}
+                    </label>
+                    <input
+                        type="number"
+                        step="any"
+                        min={0}
+                        disabled={!cfg.cpo_discount || (isCustom && scheduleSplit === 'CUSTOM')}
+                        // Render falsy / 0 as empty — avoids the "05" effect when
+                        // the value defaults to 0 on type selection.
+                        value={
+                            isCustom && scheduleSplit === 'CUSTOM'
+                                ? rowDiscountSum
+                                : !cfg.cpo_discount?.value
+                                  ? ''
+                                  : cfg.cpo_discount.value
+                        }
+                        onChange={(e) =>
+                            setCpoDiscount(
+                                cfg.cpo_discount
+                                    ? {
+                                          ...cfg.cpo_discount,
+                                          value: Number(e.target.value || 0),
+                                      }
+                                    : null
+                            )
+                        }
+                        className="w-24 rounded border border-neutral-200 px-2 py-1 text-2xs disabled:bg-neutral-50"
+                    />
+                </div>
+                <div className="min-w-40 flex-1">
+                    <label className="block text-2xs text-neutral-500">
+                        {t('cpoDiscount.reasonLabel')}
+                    </label>
+                    <input
+                        type="text"
+                        disabled={!cfg.cpo_discount}
+                        placeholder={t('cpoDiscount.reasonPlaceholder')}
+                        value={cfg.cpo_discount?.reason ?? ''}
+                        onChange={(e) =>
+                            setCpoDiscount(
+                                cfg.cpo_discount
+                                    ? { ...cfg.cpo_discount, reason: e.target.value }
+                                    : null
+                            )
+                        }
+                        className="w-full rounded border border-neutral-200 px-2 py-1 text-2xs disabled:bg-neutral-50"
+                    />
+                </div>
+                <span className="text-2xs text-neutral-600">
+                    {t('cpoDiscount.offSuffix', { amount: fmt(totals.cpoDiscountAmt) })}
+                </span>
+            </div>
+            {isCustom && cfg.cpo_discount && (
+                <div className="mt-2">
+                    <p className="mb-1 text-2xs text-neutral-500">{t('cpoDiscount.splitLabel')}</p>
+                    <div
+                        role="radiogroup"
+                        aria-label={t('cpoDiscount.splitLabel')}
+                        className="flex flex-wrap gap-1.5"
+                    >
+                        {(['EVEN', 'FIRST', 'LAST', 'CUSTOM'] as ScheduleDiscountSplit[]).map(
+                            (sp) => (
+                                <button
+                                    key={sp}
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={scheduleSplit === sp}
+                                    onClick={() => setScheduleSplit(sp)}
+                                    className={`rounded-full border px-2.5 py-0.5 text-2xs font-medium ${
+                                        scheduleSplit === sp
+                                            ? 'border-primary-400 bg-primary-50 text-primary-700'
+                                            : 'border-neutral-200 bg-white text-neutral-600'
+                                    }`}
+                                >
+                                    {t(`cpoDiscount.split.${sp}`)}
+                                </button>
+                            )
+                        )}
+                    </div>
+                    <p className="mt-1 text-2xs text-neutral-500">
+                        {t(`cpoDiscount.splitHint.${scheduleSplit}`)}
+                    </p>
+                    {scheduleSplit !== 'CUSTOM' &&
+                        Math.round(wantedDiscount * 100) > Math.round(rowDiscountSum * 100) + 1 &&
+                        rowDiscountSum > 0 && (
+                            <p className="mt-1 text-2xs text-warning-700">
+                                {t('cpoDiscount.cappedToInstallments', {
+                                    amount: fmt(rowDiscountSum),
+                                })}
+                            </p>
+                        )}
+                </div>
+            )}
+        </div>
+    );
 
     return (
         <div className="mt-3 rounded-lg border border-orange-200 bg-orange-50/40 p-3">
             <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-orange-700">
-                    Fee Configuration
+                <p className="text-2xs font-semibold uppercase tracking-wide text-orange-700">
+                    {t('header.title')}
                 </p>
-                <span className="text-[11px] text-neutral-600">
-                    Total: <span className="font-semibold text-neutral-800">{fmt(grossTotal)}</span>
+                <span className="text-2xs text-neutral-600">
+                    {t('header.totalLabel')}{' '}
+                    <span className="font-semibold text-neutral-800">{fmt(grossTotal)}</span>
                     {' · '}
-                    After discount: <span className="font-semibold text-orange-800">{fmt(totals.net)}</span>
+                    {t('header.afterDiscountLabel')}{' '}
+                    <span className="font-semibold text-orange-800">{fmt(totals.net)}</span>
                 </span>
             </div>
 
-            {isLoading && <p className="py-2 text-center text-[11px] text-neutral-500">Loading installments…</p>}
-            {isError && (
-                <p className="py-2 text-center text-[11px] text-red-600">
-                    Could not load CPO details.
+            {!customForced && installments.length > 0 && (
+                <div
+                    role="radiogroup"
+                    aria-label={t('schedule.modeLabel')}
+                    className="mb-2 flex flex-wrap gap-1.5"
+                >
+                    <button
+                        type="button"
+                        role="radio"
+                        aria-checked={!isCustom}
+                        onClick={selectPlanSchedule}
+                        className={`rounded-full border px-2.5 py-0.5 text-2xs font-medium ${
+                            !isCustom
+                                ? 'border-primary-400 bg-primary-50 text-primary-700'
+                                : 'border-neutral-200 bg-white text-neutral-600'
+                        }`}
+                    >
+                        {t('schedule.usePlan')}
+                    </button>
+                    <button
+                        type="button"
+                        role="radio"
+                        aria-checked={isCustom}
+                        onClick={() => !isCustom && selectCustomSchedule()}
+                        className={`rounded-full border px-2.5 py-0.5 text-2xs font-medium ${
+                            isCustom
+                                ? 'border-primary-400 bg-primary-50 text-primary-700'
+                                : 'border-neutral-200 bg-white text-neutral-600'
+                        }`}
+                    >
+                        {t('schedule.useCustom')}
+                    </button>
+                </div>
+            )}
+            {customForced && (
+                <p className="mb-2 text-2xs text-neutral-600">
+                    {oneTimePrice ? t('schedule.oneTimeIntro') : t('schedule.flexibleIntro')}
                 </p>
             )}
 
+            {isLoading && (
+                <p className="py-2 text-center text-2xs text-neutral-500">{t('loading')}</p>
+            )}
+            {isError && <p className="py-2 text-center text-2xs text-red-600">{t('loadError')}</p>}
+
+            {isCustom && discountBox}
+
+            {isCustom && customSchedule && (
+                <InstallmentScheduleEditor
+                    schedule={customSchedule}
+                    parts={scheduleParts}
+                    maxCount={maxCount}
+                    discountActive={!!cfg.cpo_discount}
+                    split={scheduleSplit}
+                    error={scheduleError}
+                    onChange={(next) => onChange({ ...cfg, installment_schedule: next })}
+                />
+            )}
+
             {/* Installments table with editable cells */}
-            {installments.length > 0 && (
+            {!isCustom && installments.length > 0 && (
                 <div className="mb-3 max-h-64 overflow-y-auto rounded border border-orange-100 bg-white">
-                    <table className="w-full text-left text-[11px]">
-                        <thead className="sticky top-0 bg-orange-50 text-[10px] uppercase text-neutral-500">
+                    <table className="w-full text-start text-2xs">
+                        <thead className="sticky top-0 bg-orange-50 text-2xs uppercase text-neutral-500">
                             <tr>
-                                <th className="px-2 py-1 font-medium">#</th>
-                                <th className="px-2 py-1 font-medium">Fee Type</th>
-                                <th className="px-2 py-1 font-medium">Start Date</th>
-                                <th className="px-2 py-1 font-medium">Due Date</th>
-                                <th className="px-2 py-1 text-right font-medium">Default</th>
-                                <th className="px-2 py-1 text-right font-medium">Amount (₹)</th>
-                                <th className="px-2 py-1 font-medium">Discount</th>
+                                <th className="px-2 py-1 font-medium">{t('table.index')}</th>
+                                <th className="px-2 py-1 font-medium">{t('table.feeType')}</th>
+                                <th className="px-2 py-1 font-medium">{t('table.startDate')}</th>
+                                <th className="px-2 py-1 font-medium">{t('table.dueDate')}</th>
+                                <th className="px-2 py-1 text-end font-medium">
+                                    {t('table.default')}
+                                </th>
+                                <th className="px-2 py-1 text-end font-medium">
+                                    {t('table.amount')}
+                                </th>
+                                <th className="px-2 py-1 font-medium">{t('table.discount')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-orange-50">
@@ -255,39 +662,48 @@ export const CpoEnrollmentConfigPanel = ({ cpoId, value, onChange }: Props) => {
                                 // amount override is set: template − per-row discount − share
                                 // of CPO discount. Used as placeholder so admins can see the
                                 // post-discount figure without having to type it.
-                                const effective = breakdown.effectiveByRow.get(row.id) ?? row.amount;
+                                const effective =
+                                    breakdown.effectiveByRow.get(row.id) ?? row.amount;
                                 return (
                                     <tr key={row.id}>
-                                        <td className="px-2 py-1 align-middle">{row.installmentNumber}</td>
-                                        <td className="px-2 py-1 align-middle">{row.feeTypeName}</td>
+                                        <td className="px-2 py-1 align-middle">
+                                            {row.installmentNumber}
+                                        </td>
+                                        <td className="px-2 py-1 align-middle">
+                                            {row.feeTypeName}
+                                        </td>
                                         <td className="px-2 py-1 align-middle">
                                             <input
                                                 type="date"
-                                                value={isoDate(typeof startVal === 'string' ? startVal : null)}
+                                                value={isoDate(
+                                                    typeof startVal === 'string' ? startVal : null
+                                                )}
                                                 onChange={(e) =>
                                                     updateRow(row.id, {
                                                         start_date: e.target.value || null,
                                                     })
                                                 }
-                                                className="w-[120px] rounded border border-neutral-200 px-1 py-0.5 text-[11px] outline-none focus:border-primary-300"
+                                                className="w-28 rounded border border-neutral-200 px-1 py-0.5 text-2xs outline-none focus:border-primary-300"
                                             />
                                         </td>
                                         <td className="px-2 py-1 align-middle">
                                             <input
                                                 type="date"
-                                                value={isoDate(typeof dueVal === 'string' ? dueVal : null)}
+                                                value={isoDate(
+                                                    typeof dueVal === 'string' ? dueVal : null
+                                                )}
                                                 onChange={(e) =>
                                                     updateRow(row.id, {
                                                         due_date: e.target.value || null,
                                                     })
                                                 }
-                                                className="w-[120px] rounded border border-neutral-200 px-1 py-0.5 text-[11px] outline-none focus:border-primary-300"
+                                                className="w-28 rounded border border-neutral-200 px-1 py-0.5 text-2xs outline-none focus:border-primary-300"
                                             />
                                         </td>
                                         <td className="px-2 py-1 text-right align-middle text-neutral-500">
                                             {fmt(row.amount)}
                                         </td>
-                                        <td className="px-2 py-1 align-middle text-right">
+                                        <td className="px-2 py-1 text-end align-middle">
                                             <input
                                                 type="number"
                                                 step="any"
@@ -295,8 +711,11 @@ export const CpoEnrollmentConfigPanel = ({ cpoId, value, onChange }: Props) => {
                                                 placeholder={effective.toFixed(2)}
                                                 title={
                                                     ov?.amount != null
-                                                        ? 'Manual amount override'
-                                                        : `Effective: ${fmt(effective)} (template ${fmt(row.amount)} after discounts)`
+                                                        ? t('table.amountOverrideTitle')
+                                                        : t('table.effectiveTitle', {
+                                                              effective: fmt(effective),
+                                                              template: fmt(row.amount),
+                                                          })
                                                 }
                                                 // Render 0/falsy as empty so typing into a
                                                 // pre-zero field doesn't produce "0<digits>".
@@ -307,7 +726,7 @@ export const CpoEnrollmentConfigPanel = ({ cpoId, value, onChange }: Props) => {
                                                         amount: v === '' ? null : Number(v),
                                                     });
                                                 }}
-                                                className={`w-[88px] rounded border px-1 py-0.5 text-right text-[11px] outline-none focus:border-primary-300 ${
+                                                className={`w-20 rounded border px-1 py-0.5 text-end text-2xs outline-none focus:border-primary-300 ${
                                                     ov?.amount != null
                                                         ? 'border-primary-300 font-medium'
                                                         : 'border-neutral-200'
@@ -319,24 +738,38 @@ export const CpoEnrollmentConfigPanel = ({ cpoId, value, onChange }: Props) => {
                                                 <select
                                                     value={discType}
                                                     onChange={(e) => {
-                                                        const t = e.target.value as DiscountType | '';
-                                                        if (!t) {
+                                                        const nextType = e.target.value as
+                                                            | DiscountType
+                                                            | '';
+                                                        if (!nextType) {
                                                             updateRow(row.id, { discount: null });
                                                         } else {
                                                             updateRow(row.id, {
                                                                 discount: {
-                                                                    type: t,
-                                                                    value: typeof discValue === 'number' ? discValue : 0,
-                                                                    reason: ov?.discount?.reason ?? null,
+                                                                    type: nextType,
+                                                                    value:
+                                                                        typeof discValue ===
+                                                                        'number'
+                                                                            ? discValue
+                                                                            : 0,
+                                                                    reason:
+                                                                        ov?.discount?.reason ??
+                                                                        null,
                                                                 },
                                                             });
                                                         }
                                                     }}
-                                                    className="rounded border border-neutral-200 px-1 py-0.5 text-[10px] outline-none"
+                                                    className="rounded border border-neutral-200 px-1 py-0.5 text-2xs outline-none"
                                                 >
-                                                    <option value="">none</option>
-                                                    <option value="PERCENTAGE">%</option>
-                                                    <option value="FLAT">₹</option>
+                                                    <option value="">
+                                                        {t('table.discountOptions.none')}
+                                                    </option>
+                                                    <option value="PERCENTAGE">
+                                                        {t('table.discountOptions.percentage')}
+                                                    </option>
+                                                    <option value="FLAT">
+                                                        {t('table.discountOptions.flat')}
+                                                    </option>
                                                 </select>
                                                 <input
                                                     type="number"
@@ -354,14 +787,18 @@ export const CpoEnrollmentConfigPanel = ({ cpoId, value, onChange }: Props) => {
                                                         updateRow(row.id, {
                                                             discount: discType
                                                                 ? {
-                                                                      type: (discType as DiscountType) || 'FLAT',
+                                                                      type:
+                                                                          (discType as DiscountType) ||
+                                                                          'FLAT',
                                                                       value: num,
-                                                                      reason: ov?.discount?.reason ?? null,
+                                                                      reason:
+                                                                          ov?.discount?.reason ??
+                                                                          null,
                                                                   }
                                                                 : null,
                                                         });
                                                     }}
-                                                    className="w-[64px] rounded border border-neutral-200 px-1 py-0.5 text-right text-[11px] outline-none focus:border-primary-300 disabled:bg-neutral-50"
+                                                    className="w-16 rounded border border-neutral-200 px-1 py-0.5 text-end text-2xs outline-none focus:border-primary-300 disabled:bg-neutral-50"
                                                 />
                                             </div>
                                         </td>
@@ -373,101 +810,34 @@ export const CpoEnrollmentConfigPanel = ({ cpoId, value, onChange }: Props) => {
                 </div>
             )}
 
-            {/* CPO-level discount */}
-            <div className="mb-3 rounded-md border border-neutral-200 bg-white p-2.5">
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
-                    Discount (optional)
-                </p>
-                <div className="flex flex-wrap items-end gap-2">
-                    <div>
-                        <label className="block text-[10px] text-neutral-500">Type</label>
-                        <select
-                            value={cfg.cpo_discount?.type ?? ''}
-                            onChange={(e) => {
-                                const t = e.target.value as DiscountType | '';
-                                if (!t) setCpoDiscount(null);
-                                else
-                                    setCpoDiscount({
-                                        type: t,
-                                        value: cfg.cpo_discount?.value ?? 0,
-                                        reason: cfg.cpo_discount?.reason ?? null,
-                                    });
-                            }}
-                            className="rounded border border-neutral-200 px-2 py-1 text-[11px]"
-                        >
-                            <option value="">none</option>
-                            <option value="PERCENTAGE">% of total</option>
-                            <option value="FLAT">flat ₹ off</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-[10px] text-neutral-500">Value</label>
-                        <input
-                            type="number"
-                            step="any"
-                            min={0}
-                            disabled={!cfg.cpo_discount}
-                            // Render falsy / 0 as empty — avoids the "05" effect when
-                            // the value defaults to 0 on type selection.
-                            value={!cfg.cpo_discount?.value ? '' : cfg.cpo_discount.value}
-                            onChange={(e) =>
-                                setCpoDiscount(
-                                    cfg.cpo_discount
-                                        ? {
-                                              ...cfg.cpo_discount,
-                                              value: Number(e.target.value || 0),
-                                          }
-                                        : null,
-                                )
-                            }
-                            className="w-[100px] rounded border border-neutral-200 px-2 py-1 text-[11px] disabled:bg-neutral-50"
-                        />
-                    </div>
-                    <div className="flex-1 min-w-[160px]">
-                        <label className="block text-[10px] text-neutral-500">Reason</label>
-                        <input
-                            type="text"
-                            disabled={!cfg.cpo_discount}
-                            placeholder="e.g. Sibling discount"
-                            value={cfg.cpo_discount?.reason ?? ''}
-                            onChange={(e) =>
-                                setCpoDiscount(
-                                    cfg.cpo_discount
-                                        ? { ...cfg.cpo_discount, reason: e.target.value }
-                                        : null,
-                                )
-                            }
-                            className="w-full rounded border border-neutral-200 px-2 py-1 text-[11px] disabled:bg-neutral-50"
-                        />
-                    </div>
-                    <span className="text-[11px] text-neutral-600">
-                        = {fmt(totals.cpoDiscountAmt)} off
-                    </span>
-                </div>
-            </div>
+            {/* CPO-level discount (above the schedule when it is a custom one) */}
+            {!isCustom && discountBox}
 
             {/* Initial offline payment */}
             <div className="rounded-md border border-neutral-200 bg-white p-2.5">
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wide text-neutral-500">
-                    Initial Payment (optional)
+                <p className="mb-2 text-2xs font-semibold uppercase tracking-wide text-neutral-500">
+                    {t('payment.heading')}
                 </p>
-                <div className="mb-2 flex flex-col gap-1.5 text-[11px] text-neutral-700">
+                <div className="mb-2 flex flex-col gap-1.5 text-2xs text-neutral-700">
                     <label className="flex cursor-pointer items-center gap-2">
                         <input
                             type="radio"
-                            name={`cpo-cfg-mode-${cpoId}`}
+                            name={`cpo-cfg-mode-${cpoId ?? 'one-time'}`}
                             checked={(cfg.payment_mode ?? 'SKIP') === 'SKIP'}
-                            onChange={() => setPayment({ payment_mode: 'SKIP', payment_amount: null })}
+                            onChange={() =>
+                                setPayment({ payment_mode: 'SKIP', payment_amount: null })
+                            }
                             className="h-3.5 w-3.5"
                         />
                         <span>
-                            <strong>Don't record any payment now.</strong> Learner pays each installment online later.
+                            <strong>{t('payment.skipLabelBold')}</strong>{' '}
+                            {t('payment.skipLabelRest')}
                         </span>
                     </label>
                     <label className="flex cursor-pointer items-center gap-2">
                         <input
                             type="radio"
-                            name={`cpo-cfg-mode-${cpoId}`}
+                            name={`cpo-cfg-mode-${cpoId ?? 'one-time'}`}
                             checked={cfg.payment_mode === 'OFFLINE'}
                             onChange={() =>
                                 setPayment({
@@ -475,13 +845,14 @@ export const CpoEnrollmentConfigPanel = ({ cpoId, value, onChange }: Props) => {
                                     payment_amount:
                                         cfg.payment_amount && cfg.payment_amount > 0
                                             ? cfg.payment_amount
-                                            : totals.net,
+                                            : firstDueNet,
                                 })
                             }
                             className="h-3.5 w-3.5"
                         />
                         <span>
-                            <strong>Record an offline payment.</strong> Applied across installments earliest first.
+                            <strong>{t('payment.offlineLabelBold')}</strong>{' '}
+                            {t('payment.offlineLabelRest')}
                         </span>
                     </label>
                 </div>
@@ -490,9 +861,9 @@ export const CpoEnrollmentConfigPanel = ({ cpoId, value, onChange }: Props) => {
                     // of the per-column helper text (the "Net dues" hint under Amount
                     // would otherwise push Reference's input down with items-end).
                     <div className="flex flex-wrap items-start gap-3">
-                        <div className="flex-1 min-w-[140px]">
-                            <label className="mb-1 block text-[10px] font-medium text-neutral-500">
-                                Amount (₹)
+                        <div className="min-w-36 flex-1">
+                            <label className="mb-1 block text-2xs font-medium text-neutral-500">
+                                {t('payment.amountLabel')}
                             </label>
                             <input
                                 type="number"
@@ -506,20 +877,19 @@ export const CpoEnrollmentConfigPanel = ({ cpoId, value, onChange }: Props) => {
                                 onFocus={(e) => e.currentTarget.select()}
                                 className="w-full rounded border border-neutral-200 px-2 py-1 text-xs outline-none focus:border-primary-300"
                             />
-                            <p className="mt-1 text-[10px] text-neutral-500">
-                                Net dues: {fmt(totals.net)}
+                            <p className="mt-1 text-2xs text-neutral-500">
+                                {t('payment.firstDue', { amount: fmt(firstDueNet) })} ·{' '}
+                                {t('payment.netDues', { amount: fmt(totals.net) })}
                             </p>
                         </div>
-                        <div className="flex-1 min-w-[160px]">
-                            <label className="mb-1 block text-[10px] font-medium text-neutral-500">
-                                Reference (optional)
-                            </label>
-                            <input
-                                type="text"
-                                placeholder="e.g. cheque #1234"
-                                value={cfg.payment_reference ?? ''}
-                                onChange={(e) => setPayment({ payment_reference: e.target.value || null })}
-                                className="w-full rounded border border-neutral-200 px-2 py-1 text-xs outline-none focus:border-primary-300"
+                        {/* How it was paid: mode, option (e.g. PhonePe), reference, proof. */}
+                        <div className="w-full">
+                            <OfflinePaymentFields
+                                compact
+                                value={cfg.payment_details ?? {}}
+                                onChange={(v) => setPayment({ payment_details: v })}
+                                numbering={numbering}
+                                onErrorChange={onPaymentErrorChange}
                             />
                         </div>
                     </div>

@@ -1,0 +1,32 @@
+{
+    "config": {
+        "backToList": "सूची पर वापस जाएं",
+        "createdOn": "{{date}} को बनाया गया",
+        "selectQuestionCount": "कितने प्रश्न शामिल करने हैं?",
+        "modeAll": "सभी प्रश्न",
+        "modeRandom": "यादृच्छिक चयन",
+        "modeTags": "टैग के अनुसार यादृच्छिक",
+        "modeManual": "मैन्युअल रूप से चुनें",
+        "modeManualHint": "— अगली स्क्रीन पर विशिष्ट प्रश्न चुनें",
+        "randomPlaceholder": "उदा. 20",
+        "questionsLabel": "प्रश्न",
+        "tagAvailable_one": "{{count}} उपलब्ध",
+        "tagAvailable_other": "{{count}} उपलब्ध",
+        "total": "कुल",
+        "totalQuestions_one": "{{count}} प्रश्न",
+        "totalQuestions_other": "{{count}} प्रश्न",
+        "cancel": "रद्द करें",
+        "chooseQuestions": "प्रश्न चुनें",
+        "addRandomCount_one": "{{count}} यादृच्छिक प्रश्न जोड़ें",
+        "addRandomCount_other": "{{count}} यादृच्छिक प्रश्न जोड़ें",
+        "addAllQuestions": "सभी प्रश्न जोड़ें"
+    },
+    "list": {
+        "viewButton": "देखें",
+        "deleteQuestionPaper": "प्रश्न पत्र हटाएं",
+        "createdOnLabel": "बनाया गया:",
+        "notAvailable": "उपलब्ध नहीं",
+        "yearClassLabel": "वर्ष/कक्षा:",
+        "subjectLabel": "विषय:"
+    }
+}

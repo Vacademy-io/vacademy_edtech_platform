@@ -35,5 +35,9 @@ logs/
 electron/embedded.provisionprofile
 # Per-account signing material and store build output — never commit these.
 electron/embedded-zoe.provisionprofile
+electron/embedded-sn-dev.provisionprofile
 electron/dist-mas
 electron/dist-mas-zoe
+electron/dist-mas-dev
+electron/dist-unsigned
+electron/dist-store

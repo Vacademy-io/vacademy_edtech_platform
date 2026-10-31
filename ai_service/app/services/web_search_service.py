@@ -27,9 +27,53 @@ _HTTP_TIMEOUT_S = 25.0
 class WebSearchService:
     """Web search wrapper around Perplexity Sonar (via OpenRouter)."""
 
-    def __init__(self, openrouter_key: str, model: str = _DEFAULT_MODEL):
+    def __init__(
+        self,
+        openrouter_key: str,
+        model: str = _DEFAULT_MODEL,
+        *,
+        institute_id: Optional[str] = None,
+        user_id: Optional[str] = None,
+        request_id: Optional[str] = None,
+    ):
         self._openrouter_key = openrouter_key
         self._model = model
+        # Only used to attribute the record-only usage row; optional.
+        self._institute_id = institute_id
+        self._user_id = user_id
+        self._request_id = request_id
+
+    def _record_usage(self, data: Any) -> None:
+        """Record-only ai_token_usage row for one Sonar call (tokens it billed
+        us, no credits charged). Queued off the request path; never raises."""
+        try:
+            usage = data.get("usage") if isinstance(data, dict) else None
+            if not isinstance(usage, dict):
+                usage = {}
+            meta: Dict[str, Any] = {"source": "web_search_service"}
+            if usage.get("cost") is not None:
+                meta["openrouter_cost_usd"] = usage.get("cost")
+            from ..models.ai_token_usage import ApiProvider, RequestType
+            from .usage_record_only import record_usage_only
+
+            record_usage_only(
+                api_provider=ApiProvider.OPENAI,
+                # No web-search request type exists (and the CHECK constraint
+                # stays as is); the only caller is the video pipeline.
+                request_type=RequestType.VIDEO,
+                model=self._model,
+                prompt_tokens=int(usage.get("prompt_tokens") or 0),
+                completion_tokens=int(usage.get("completion_tokens") or 0),
+                total_tokens=int(usage["total_tokens"]) if usage.get("total_tokens") is not None else None,
+                institute_id=self._institute_id,
+                user_id=self._user_id,
+                request_id=self._request_id,
+                metadata=meta,
+                # Usage-event label only (the row above is unchanged).
+                use_case="web_search",
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.debug(f"[WebSearch] usage record skipped: {exc}")
 
     async def search(self, query: str, *, max_results: int = 5) -> Dict[str, Any]:
         """
@@ -74,6 +118,8 @@ class WebSearchService:
         except Exception as e:
             logger.warning(f"[WebSearch] Sonar call failed for query={query!r}: {e}")
             return empty
+
+        self._record_usage(data)
 
         try:
             answer = data["choices"][0]["message"]["content"] or ""

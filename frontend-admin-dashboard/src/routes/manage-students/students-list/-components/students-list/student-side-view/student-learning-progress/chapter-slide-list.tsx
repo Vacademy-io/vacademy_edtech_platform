@@ -3,6 +3,7 @@ import { SlideWithStatusType } from '@/routes/manage-students/students-list/-typ
 import { InlineProgress } from './inline-progress';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { FilePdf, FileDoc, PlayCircle, FileText } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 const SlideTypeIcon = ({ slide }: { slide: SlideWithStatusType }) => {
     const cls = 'size-4 shrink-0 text-muted-foreground';
@@ -26,6 +27,7 @@ const SlideTypeIcon = ({ slide }: { slide: SlideWithStatusType }) => {
  * which needs the admin_core_service deploy to be populated.
  */
 export const ChapterSlideList = ({ userId, chapterId }: { userId: string; chapterId: string }) => {
+    const { t } = useTranslation('manageStudentsChapterSlideList');
     const { data: slides, isLoading, isError } = useStudentSlidesProgressQuery({ userId, chapterId });
 
     if (isLoading)
@@ -37,13 +39,13 @@ export const ChapterSlideList = ({ userId, chapterId }: { userId: string; chapte
     if (isError)
         return (
             <p className="py-2 pl-9 text-caption italic text-muted-foreground">
-                Couldn&apos;t load slides.
+                {t('loadError')}
             </p>
         );
     if (!slides || slides.length === 0)
         return (
             <p className="py-2 pl-9 text-caption italic text-muted-foreground">
-                No slides in this chapter.
+                {t('empty')}
             </p>
         );
 

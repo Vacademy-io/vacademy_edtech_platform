@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useEditorStore } from '../-stores/editor-store';
 import { PAGE_TEMPLATES, PageTemplate, applyPageTemplate, applySectionTemplate } from '../-utils/page-templates';
 import { Button } from '@/components/ui/button';
@@ -12,11 +13,12 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { FileText, Layers } from 'lucide-react';
+import { FileText, Stack } from '@phosphor-icons/react';
 
 type TemplateCategory = 'page' | 'section';
 
 export const TemplateLibrary = () => {
+    const { t: tTemplates } = useTranslation('managePagesComponentTemplates');
     const { config, selectedPageId, updateConfig } = useEditorStore();
     const [activeCategory, setActiveCategory] = useState<TemplateCategory>('page');
     const [pendingTemplate, setPendingTemplate] = useState<PageTemplate | null>(null);
@@ -26,11 +28,19 @@ export const TemplateLibrary = () => {
     const applyTemplate = (template: PageTemplate) => {
         if (!config || !selectedPageId) return;
 
+        if (template.applyLayout) {
+            // Site chrome (header / footer): merged onto the current layout, pages untouched.
+            const layout = template.applyLayout(config.globalSettings?.layout, tTemplates);
+            updateConfig({ ...config, globalSettings: { ...config.globalSettings, layout } });
+            setPendingTemplate(null);
+            return;
+        }
+
         const newPages = config.pages.map((page) => {
             if (page.id !== selectedPageId) return page;
             return template.category === 'page'
-                ? applyPageTemplate(page, template)
-                : applySectionTemplate(page, template);
+                ? applyPageTemplate(page, template, tTemplates)
+                : applySectionTemplate(page, template, tTemplates);
         });
 
         updateConfig({ ...config, pages: newPages });
@@ -39,8 +49,8 @@ export const TemplateLibrary = () => {
 
     const handleTemplateClick = (template: PageTemplate) => {
         if (!selectedPageId) return;
-        if (template.category === 'page') {
-            // Warn before replacing all components
+        if (template.category === 'page' || template.applyLayout) {
+            // Warn before replacing all components, or the header / footer of every page
             setPendingTemplate(template);
         } else {
             // Sections just insert — no warning needed
@@ -71,7 +81,7 @@ export const TemplateLibrary = () => {
                             : 'text-gray-500 hover:text-gray-700'
                     }`}
                 >
-                    <Layers className="size-3.5" />
+                    <Stack className="size-3.5" />
                     Sections
                 </button>
             </div>
@@ -92,21 +102,26 @@ export const TemplateLibrary = () => {
                     >
                         <span className="text-sm font-medium text-gray-800">{template.name}</span>
                         <span className="text-xs text-gray-500">{template.description}</span>
-                        <span className="mt-1 rounded bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500 uppercase tracking-wide">
-                            {template.category === 'page' ? 'Replaces page' : 'Inserts section'}
+                        <span className="mt-1 rounded bg-gray-100 px-2 py-0.5 text-2xs font-medium text-gray-500 uppercase tracking-wide">
+                            {template.applyLayout
+                                ? 'Sets header & footer'
+                                : template.category === 'page'
+                                  ? 'Replaces page'
+                                  : 'Inserts section'}
                         </span>
                     </button>
                 ))}
             </div>
 
-            {/* Confirmation dialog for page templates (they replace all components) */}
+            {/* Confirmation dialog for page templates (they replace all components) and site-chrome ones */}
             <AlertDialog open={!!pendingTemplate} onOpenChange={() => setPendingTemplate(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Apply "{pendingTemplate?.name}" template?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will replace ALL existing components on the current page with the template
-                            components. This action can be undone with Ctrl+Z.
+                            {pendingTemplate?.applyLayout
+                                ? 'This changes the header and footer on every page of the site. Your own text, links and logo are kept. This action can be undone with Ctrl+Z.'
+                                : 'This will replace ALL existing components on the current page with the template components. This action can be undone with Ctrl+Z.'}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

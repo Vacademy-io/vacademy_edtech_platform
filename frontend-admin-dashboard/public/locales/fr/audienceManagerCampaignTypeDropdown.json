@@ -1,0 +1,14 @@
+{
+    "placeholder": "Sélectionner {{term}}",
+    "optionWebsite": "Site web",
+    "optionGoogleAds": "Google Ads",
+    "optionFacebook": "Facebook",
+    "optionInstagram": "Instagram",
+    "optionSocialMedia": "Réseaux sociaux",
+    "addCustomType": "Ajouter un type de demande personnalisé",
+    "customInputPlaceholder": "Saisir {{term}}",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "searchPlaceholder": "Rechercher…",
+    "noMatches": "Aucun résultat pour « {{query}} »"
+}

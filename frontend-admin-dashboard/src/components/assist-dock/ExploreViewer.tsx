@@ -1,4 +1,5 @@
 import { Compass, X } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 /**
  * Full-screen feature-catalog viewer ("Explore"). Plays the self-contained catalog page shipped
@@ -8,6 +9,8 @@ import { Compass, X } from '@phosphor-icons/react';
  * parent app's DOM/session — same posture as RoadmapViewer/TutorialViewer.
  */
 export function ExploreViewer({ open, onClose }: { open: boolean; onClose: () => void }) {
+    const { t } = useTranslation('exploreViewer');
+
     if (!open) return null;
 
     return (
@@ -25,12 +28,12 @@ export function ExploreViewer({ open, onClose }: { open: boolean; onClose: () =>
                     <div className="flex items-center gap-2">
                         <Compass size={18} className="text-primary-500" />
                         <p className="text-subtitle font-semibold text-neutral-800">
-                            Explore Vacademy
+                            {t('title')}
                         </p>
                     </div>
                     <button
                         type="button"
-                        aria-label="Close explore"
+                        aria-label={t('closeAriaLabel')}
                         onClick={onClose}
                         className="flex size-8 items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-neutral-100"
                     >
@@ -39,7 +42,7 @@ export function ExploreViewer({ open, onClose }: { open: boolean; onClose: () =>
                 </div>
                 <div className="relative flex-1 bg-neutral-50">
                     <iframe
-                        title="Vacademy feature catalog"
+                        title={t('iframeTitle')}
                         src="/vacademy-features.html"
                         className="size-full border-0"
                         sandbox="allow-scripts allow-popups"

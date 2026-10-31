@@ -1,0 +1,39 @@
+{
+    "statusFilters": {
+        "all": "सभी",
+        "ready": "तैयार",
+        "inProgress": "प्रगति पर",
+        "failed": "विफल"
+    },
+    "dateBuckets": {
+        "today": "आज",
+        "yesterday": "कल",
+        "earlierThisWeek": "इस सप्ताह पहले",
+        "older": "पुराने"
+    },
+    "taskCard": {
+        "download": "डाउनलोड करें"
+    },
+    "dialog": {
+        "viewAll": "सभी देखें",
+        "refresh": "रीफ्रेश करें",
+        "close": "बंद करें",
+        "searchPlaceholder": "नाम या फ़ाइल नाम से खोजें…",
+        "clearSearch": "खोज हटाएं",
+        "itemCount_one": "{{count}} आइटम",
+        "itemCount_other": "{{count}} आइटम"
+    },
+    "emptyState": {
+        "nothingHereYet": "यहाँ अभी कुछ नहीं है",
+        "nothingHereYetDescription": "इस टूल से बनाई गई कोई भी चीज़ यहाँ दिखाई देगी।",
+        "noMatches": "कोई मेल नहीं मिला",
+        "noMatchesDescription": "कोई अलग खोज शब्द या फ़िल्टर आज़माएं।",
+        "clearFilters": "फ़िल्टर हटाएं"
+    },
+    "pagination": {
+        "showingRange": "{{total}} में से {{start}}–{{end}} दिखाया जा रहा है",
+        "prev": "पिछला",
+        "next": "अगला",
+        "pageOf": "पृष्ठ {{current}} में से {{total}}"
+    }
+}

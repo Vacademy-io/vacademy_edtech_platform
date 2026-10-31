@@ -1,0 +1,13 @@
+{
+    "title": "Confirmer le paiement",
+    "description": "Veuillez vérifier les détails du paiement avant de confirmer.",
+    "student": "Étudiant",
+    "installments": "Échéances",
+    "paymentMode": "Mode de paiement",
+    "transactionId": "ID de transaction",
+    "amount": "Montant",
+    "distributionNote": "Le montant sera réparti sur les échéances sélectionnées selon l'ordre de priorité des types de frais.",
+    "cancel": "Annuler",
+    "processing": "Traitement en cours...",
+    "confirmPayment": "Confirmer le paiement"
+}

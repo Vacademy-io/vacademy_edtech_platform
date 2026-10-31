@@ -1,0 +1,64 @@
+{
+    "title": {
+        "markInactive": "Mark {{name}} inactive",
+        "reassignFrom_one": "Reassign {{count}} lead from {{name}}",
+        "reassignFrom_other": "Reassign {{count}} leads from {{name}}",
+        "reassign_one": "Reassign {{count}} lead",
+        "reassign_other": "Reassign {{count}} leads"
+    },
+    "fallback": {
+        "counsellor": "counsellor",
+        "they": "They"
+    },
+    "markInactive": {
+        "noLeads": "{{name}} have no assigned leads — confirming will just take them offline.",
+        "withLeads_one": "Reassign their {{count}} assigned lead first. They'll be taken offline atomically when you confirm.",
+        "withLeads_other": "Reassign their {{count}} assigned leads first. They'll be taken offline atomically when you confirm."
+    },
+    "showingFirstOf": "Showing the first {{shown}} of {{total}} — confirming moves all {{total}}.",
+    "moveTo": "Move to",
+    "moveAllTo": "Move all to",
+    "selectCounsellorPlaceholder": "— Select a counsellor —",
+    "offlineLabel": "(offline)",
+    "ratingSuffix": "· rating {{rating}}",
+    "roundRobinActive_one": "Leads will be distributed evenly across {{count}} active counsellor.",
+    "roundRobinActive_other": "Leads will be distributed evenly across {{count}} active counsellors.",
+    "roundRobinAll_one": "Leads will be distributed evenly across {{count}} counsellor.",
+    "roundRobinAll_other": "Leads will be distributed evenly across {{count}} counsellors.",
+    "generatingPreview": "Generating preview…",
+    "noOpenLeads": "No open leads to reassign.",
+    "leadsAdjustTargets_one": "{{count}} lead · adjust targets inline",
+    "leadsAdjustTargets_other": "{{count}} leads · adjust targets inline",
+    "reshuffle": "Reshuffle",
+    "tableLead": "Lead",
+    "tableTargetCounsellor": "Target counsellor",
+    "cancel": "Cancel",
+    "markInactiveWithoutReassign": "Mark inactive without reassigning",
+    "markingInactive": "Marking inactive…",
+    "working": "Working…",
+    "reassigning": "Reassigning…",
+    "confirmMarkInactive": "Confirm mark inactive",
+    "reassignAndMarkInactive": "Reassign and mark inactive",
+    "confirmReassign": "Confirm reassign",
+    "modeLabel": {
+        "single": "Move to one",
+        "roundRobin": "Round-robin",
+        "manual": "Custom (preview)"
+    },
+    "modeDescription": {
+        "single": "All leads → one target",
+        "roundRobin": "Spread across actives",
+        "manual": "Per-lead override"
+    },
+    "toast": {
+        "previewFailed": "Preview failed",
+        "pickTarget": "Pick a counsellor to receive the leads",
+        "generatePreviewFirst": "Generate a preview first",
+        "reassignFailed": "Reassign failed",
+        "markedInactive": "Marked inactive",
+        "reassignedAndMarkedInactive_one": "Reassigned {{count}} lead and marked inactive",
+        "reassignedAndMarkedInactive_other": "Reassigned {{count}} leads and marked inactive",
+        "reassignedCount_one": "Reassigned {{count}} lead",
+        "reassignedCount_other": "Reassigned {{count}} leads"
+    }
+}

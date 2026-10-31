@@ -1,6 +1,9 @@
 import React, { Component, ReactNode } from 'react';
 import * as Sentry from '@sentry/react';
+import i18n from '@/i18n';
 import { YooptaEditorWrapper } from './YooptaEditorWrapper';
+
+const NAMESPACE = 'studyLibraryYooptaEditorWrapperSafe';
 
 interface YooptaEditorWrapperSafeProps {
     value: string;
@@ -55,11 +58,17 @@ export class YooptaEditorWrapperSafe extends Component<YooptaEditorWrapperSafePr
                     }}
                 >
                     <div className="text-sm text-red-600">
-                        <p className="font-semibold mb-1">Error loading editor</p>
-                        <p className="text-xs">Please refresh the page or try again later.</p>
+                        <p className="font-semibold mb-1">
+                            {i18n.t('errorLoadingEditor', { ns: NAMESPACE })}
+                        </p>
+                        <p className="text-xs">
+                            {i18n.t('refreshAndRetry', { ns: NAMESPACE })}
+                        </p>
                         {process.env.NODE_ENV === 'development' && this.state.error && (
                             <details className="mt-2">
-                                <summary className="cursor-pointer text-xs">Error details</summary>
+                                <summary className="cursor-pointer text-xs">
+                                    {i18n.t('errorDetails', { ns: NAMESPACE })}
+                                </summary>
                                 <pre className="mt-2 text-xs overflow-auto">{this.state.error.message}</pre>
                             </details>
                         )}

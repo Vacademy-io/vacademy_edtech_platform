@@ -1,0 +1,11 @@
+{
+    "dependsOn": {
+        "label": "Depends on (Optional)",
+        "none": "None",
+        "hint": "Show different options depending on the answer to another dropdown in this form.",
+        "activeHint": "Pick which {{parent}} answer shows each option. Options set to Any always show.",
+        "noCandidates": "Add another dropdown field to this form to make this one depend on it."
+    },
+    "showWhen": "Show when {{parent}} is",
+    "any": "Any"
+}

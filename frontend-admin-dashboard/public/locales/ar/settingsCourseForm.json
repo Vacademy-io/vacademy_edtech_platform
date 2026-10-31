@@ -1,0 +1,87 @@
+{
+    "actions": {
+        "resetAll": "إعادة تعيين الكل",
+        "saving": "جارٍ الحفظ...",
+        "saveChanges": "حفظ التغييرات"
+    },
+    "unsavedChanges": "لديك تغييرات غير محفوظة. لا تنسَ حفظ تحديثاتك.",
+    "courseInformation": {
+        "heading": "متطلبات معلومات الدورة",
+        "descriptionRequired": "الوصف مطلوب",
+        "enablePopularTopics": "تفعيل المواضيع الشائعة",
+        "learnerOutcomesRequired": "نتائج التعلم مطلوبة",
+        "aboutCourseRequired": "نبذة عن الدورة مطلوبة",
+        "targetAudienceRequired": "الجمهور المستهدف مطلوب",
+        "previewImageRequired": "صورة المعاينة مطلوبة",
+        "enableBannerImage": "تفعيل صورة البانر",
+        "bannerImageRequired": "صورة البانر مطلوبة",
+        "enableCourseMedia": "تفعيل وسائط الدورة"
+    },
+    "courseStructure": {
+        "heading": "إعدادات هيكل الدورة",
+        "defaultDepth": "العمق الافتراضي للدورة",
+        "depthOption_zero": "{{count}} مستوى",
+        "depthOption_one": "{{count}} مستوى",
+        "depthOption_two": "{{count}} مستويين",
+        "depthOption_few": "{{count}} مستويات",
+        "depthOption_many": "{{count}} مستوى",
+        "depthOption_other": "{{count}} مستوى",
+        "fixCourseDepth": "تثبيت عمق الدورة",
+        "enableSessions": "تفعيل الجلسات",
+        "enableLevels": "تفعيل المستويات"
+    },
+    "catalogueSettings": {
+        "heading": "إعدادات الكتالوج والنشر",
+        "catalogueMode": "وضع الكتالوج",
+        "modeAsk": "السؤال قبل النشر",
+        "modeAuto": "نشر تلقائي",
+        "modeManual": "يدوي فقط",
+        "autoPublish": "نشر تلقائي في الكتالوج",
+        "filterWizard": {
+            "heading": "معالج فلاتر الدورة (كتالوج المتعلم)",
+            "description": "في أول مرة يفتح فيها المتعلم كتالوج الدورات، اطلب منه اختيار الفلاتر خطوة بخطوة، ثم اعرض الدورات المطابقة فقط.",
+            "stepsToAsk": "الخطوات المطلوب طرحها",
+            "order": "يُسأل المتعلمون بهذا الترتيب الثابت — {{level}}، ثم {{session}}، ثم {{tag}} — مع تخطي أي خطوة غير محددة.",
+            "requireCompletion": "طلب الإكمال (بدون تخطٍّ)"
+        }
+    },
+    "viewSettings": {
+        "heading": "إعدادات عرض الدورة والواجهة",
+        "defaultViewMode": "وضع العرض الافتراضي",
+        "outlineMode": "وضع المخطط",
+        "structureMode": "وضع هيكل الدورة",
+        "defaultOutlineState": "الحالة الافتراضية للمخطط",
+        "expanded": "موسّع",
+        "collapsed": "مطوي",
+        "copiedSlideStatus": "حالة النشر للشرائح المنسوخة",
+        "keepDraft": "الإبقاء كمسودة (افتراضي)",
+        "inheritSource": "مطابقة الشريحة الأصلية",
+        "alwaysPublished": "النشر دائمًا",
+        "copiedSlideDescription": "عند نسخ شريحة إلى دورة أخرى، اختر ما إذا كانت النسخة تبقى مسودة، أو تطابق حالة نشر الأصل، أو تُنشر دائمًا. النسخ في وضع المسودة غير مرئية للمتعلمين.",
+        "showContentDescriptions": "إظهار أوصاف الوحدات والفصول",
+        "showContentDescriptionsHint": "عرض الوصف المُدخل للوحدة أو الفصل أسفل عنوانه في بطاقات المحتوى — في تفاصيل الدورة وفي تطبيق المتعلم. أوقف هذا الخيار لإبقاء تلك البطاقات بعناوين فقط."
+    },
+    "permissions": {
+        "heading": "أذونات المستخدمين والتحكم في الوصول",
+        "allowLearnersCreate": "السماح للمتعلمين بإنشاء دورات",
+        "allowPaymentChange": "السماح بتغيير خيارات الدفع",
+        "allowDiscountChange": "السماح بتغيير خيارات الخصم",
+        "allowReferralChange": "السماح بتغيير خيارات الإحالة",
+        "defaultCourseFilter": "فلتر الدورة الافتراضي (استكشاف الدورات)",
+        "selectDefaultFilter": "اختر الفلتر الافتراضي",
+        "filterAll": "إظهار الكل (بدون فلتر افتراضي)",
+        "filterParentsOnly": "الدفعات الرئيسية فقط (PARENTS_ONLY)",
+        "filterChildrenOnly": "الدفعات الفرعية فقط (CHILDREN_ONLY)",
+        "filterHint": "يتحكم فيما إذا كان استكشاف الدورات يعرض الدفعات الرئيسية فقط، أو الدفعات الفرعية فقط، أو جميع الدفعات افتراضيًا."
+    },
+    "enrollmentNotifications": {
+        "heading": "إشعارات التسجيل",
+        "description": "يتحكم في مفاتيح الإشعارات التي يراها المسؤولون في نافذة التسجيل الجماعي. عند إيقاف مفتاح هنا، يتم إخفاء الخيار المقابل في النافذة وإجباره على الإيقاف في طلب واجهة برمجة التطبيقات — حتى لا تُرسل أي رسائل بريد إلكتروني عن طريق الخطأ.",
+        "showNotifyLearners": "إظهار \"إشعار المتعلمين\" في التسجيل الجماعي",
+        "showSendCredentials": "إظهار \"إرسال بيانات الاعتماد\" في التسجيل الجماعي"
+    },
+    "footerNote": {
+        "label": "ملاحظة:",
+        "text": "سيتم تطبيق التغييرات على مؤسستك بالكامل بعد الحفظ. ستستخدم جميع مسارات إنشاء الدورات هذه الإعدادات المحدّثة."
+    }
+}

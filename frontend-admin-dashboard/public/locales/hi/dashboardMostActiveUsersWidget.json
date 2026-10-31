@@ -1,0 +1,31 @@
+{
+    "header": {
+        "title": "सबसे सक्रिय उपयोगकर्ता",
+        "subtitle": "गतिविधि और सहभागिता के आधार पर शीर्ष प्रदर्शनकर्ता"
+    },
+    "error": {
+        "message": "सक्रिय उपयोगकर्ताओं को लोड करने में विफल"
+    },
+    "empty": {
+        "message": "कोई उपयोगकर्ता गतिविधि डेटा उपलब्ध नहीं है"
+    },
+    "status": {
+        "online": "ऑनलाइन",
+        "recent": "हाल ही में",
+        "offline": "ऑफ़लाइन",
+        "unknown": "अज्ञात"
+    },
+    "device": {
+        "desktop": "डेस्कटॉप",
+        "mobile": "मोबाइल",
+        "tablet": "टैबलेट"
+    },
+    "stats": {
+        "sessions_one": "{{count}} सत्र",
+        "sessions_other": "{{count}} सत्र",
+        "calls_one": "{{count}} कॉल",
+        "calls_other": "{{count}} कॉल",
+        "totalTime": "कुल समय",
+        "last": "अंतिम: {{date}}"
+    }
+}

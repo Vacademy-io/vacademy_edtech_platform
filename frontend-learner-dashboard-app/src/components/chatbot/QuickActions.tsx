@@ -7,8 +7,12 @@ import {
   Repeat,
   Question,
 } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { MessageIntent } from "@/services/chatbot-api";
 import { cn } from "@/lib/utils";
+import { getAppTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 export interface QuickAction {
   label: string;
@@ -20,26 +24,35 @@ export interface QuickAction {
 /**
  * Returns context-aware quick action suggestions based on the current route.
  */
-export const getQuickActions = (pathname: string): QuickAction[] => {
+export const getQuickActions = (
+  pathname: string,
+  t: TFunction,
+  course: string,
+  slide: string,
+  completeOnly = false,
+): QuickAction[] => {
   // Slide/content pages
   if (pathname.includes("/slides") || pathname.includes("/content")) {
     return [
       {
-        label: "Explain this",
+        label: t("quickActions.explainThis.label"),
         icon: Lightbulb,
-        prompt: "Explain what's on this slide in simple terms",
+        prompt: t("quickActions.explainThis.prompt", { slide }),
         intent: "doubt",
       },
       {
-        label: "Quiz me",
+        // A complete request (not the "Quiz me on " prefill): learners sent
+        // the bare prefill 354 times a month. The tutor quizzes on this
+        // lesson through its quiz tool.
+        label: t("quickActions.quizMe.label"),
         icon: FileDashed,
-        prompt: "Quiz me on ",
-        intent: "practice",
+        prompt: t("quickActions.quizMeOnThis.prompt", { slide }),
+        intent: "general",
       },
       {
-        label: "Summarize",
+        label: t("quickActions.summarize.label"),
         icon: BookOpen,
-        prompt: "Give me a brief summary of this slide",
+        prompt: t("quickActions.summarize.prompt", { slide }),
         intent: "general",
       },
     ];
@@ -52,21 +65,21 @@ export const getQuickActions = (pathname: string): QuickAction[] => {
   ) {
     return [
       {
-        label: "Course overview",
+        label: t("quickActions.courseOverview.label", { course }),
         icon: BookOpen,
-        prompt: "Give me an overview of this course",
+        prompt: t("quickActions.courseOverview.prompt", { course }),
         intent: "general",
       },
       {
-        label: "Learning path",
+        label: t("quickActions.learningPath.label"),
         icon: Repeat,
-        prompt: "What's the recommended learning path for this course?",
+        prompt: t("quickActions.learningPath.prompt", { course }),
         intent: "general",
       },
       {
-        label: "Prerequisites",
+        label: t("quickActions.prerequisites.label"),
         icon: Question,
-        prompt: "What are the prerequisites for this course?",
+        prompt: t("quickActions.prerequisites.prompt", { course }),
         intent: "doubt",
       },
     ];
@@ -76,17 +89,40 @@ export const getQuickActions = (pathname: string): QuickAction[] => {
   if (pathname.includes("/assessment") || pathname.includes("/quiz")) {
     return [
       {
-        label: "Hint",
+        label: t("quickActions.hint.label"),
         icon: Lightbulb,
-        prompt:
-          "Give me a hint for this question without revealing the answer",
+        prompt: t("quickActions.hint.prompt"),
         intent: "doubt",
       },
       {
-        label: "Explain concept",
+        label: t("quickActions.explainConcept.label"),
         icon: ChatCircleText,
-        prompt: "Explain the concept being tested in this question",
+        prompt: t("quickActions.explainConcept.prompt"),
         intent: "doubt",
+      },
+    ];
+  }
+
+  // The empty chat sends complete requests only (never a bare prefill).
+  if (completeOnly) {
+    return [
+      {
+        label: t("quickActions.studyNext.label"),
+        icon: Lightbulb,
+        prompt: t("quickActions.studyNext.prompt"),
+        intent: "general",
+      },
+      {
+        label: t("quickActions.quizRecent.label"),
+        icon: FileDashed,
+        prompt: t("quickActions.quizRecent.prompt"),
+        intent: "general",
+      },
+      {
+        label: t("quickActions.myProgress.label"),
+        icon: Repeat,
+        prompt: t("quickActions.myProgress.prompt"),
+        intent: "general",
       },
     ];
   }
@@ -94,21 +130,21 @@ export const getQuickActions = (pathname: string): QuickAction[] => {
   // Default/general suggestions — all end with space so user can type before sending
   return [
     {
-      label: "Help me learn",
+      label: t("quickActions.helpMeLearn.label"),
       icon: Lightbulb,
-      prompt: "Help me learn about ",
+      prompt: t("quickActions.helpMeLearn.prompt"),
       intent: "general",
     },
     {
-      label: "Ask a doubt",
+      label: t("quickActions.askDoubt.label"),
       icon: Question,
-      prompt: "I have a question about ",
+      prompt: t("quickActions.askDoubt.prompt"),
       intent: "doubt",
     },
     {
-      label: "Practice",
+      label: t("quickActions.practice.label"),
       icon: FileDashed,
-      prompt: "Quiz me on ",
+      prompt: t("quickActions.quizMe.prompt"),
       intent: "practice",
     },
   ];
@@ -121,31 +157,42 @@ export interface QuickActionsProps {
   onAction: (prompt: string, intent?: MessageIntent) => void;
   /** Disable all chips (e.g. while loading or no session) */
   disabled?: boolean;
+  /** Complete requests only (no "Quiz me on " prefills), for the empty chat. */
+  completeOnly?: boolean;
   /**
    * Render smaller chips for the "after first message" compact mode.
    * When false/undefined, renders the larger initial-state chips.
    */
   compact?: boolean;
+  className?: string;
 }
 
 export const QuickActions: React.FC<QuickActionsProps> = ({
   pathname,
   onAction,
   disabled = false,
+  completeOnly = false,
   compact = false,
+  className,
 }) => {
-  const quickActions = getQuickActions(pathname);
+  const { t } = useTranslation("chatFeatureB");
+  // The chatbot speaks the app's language, also over a public site in another.
+  const course = getAppTerminology(ContentTerms.Course, SystemTerms.Course);
+  const slide = getAppTerminology(ContentTerms.Slides, SystemTerms.Slides);
+  const quickActions = getQuickActions(pathname, t, course, slide, completeOnly);
 
   return (
     <div
       className={cn(
         "w-full flex flex-wrap",
         compact ? "gap-1" : "gap-1.5",
+        className,
       )}
     >
       {quickActions.map((action, index) => (
         <button
           key={index}
+          type="button"
           onClick={() => onAction(action.prompt, action.intent)}
           disabled={disabled}
           className={cn(

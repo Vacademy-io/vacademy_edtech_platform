@@ -1,0 +1,53 @@
+{
+    "navHeading": "Instructor Copilot",
+    "pageTitle": "Instructor Copilot",
+    "pageDescription": "Manage your lectures, record sessions, and analyze performance with Instructor Copilot.",
+    "toast": {
+        "generationStarted": "Content generation started successfully!",
+        "generationStartFailed": "Failed to start content generation.",
+        "logDeleted": "Log deleted successfully",
+        "logDeleteFailed": "Failed to delete log",
+        "regenerationStarted": "Content regeneration started!",
+        "regenerationFailed": "Failed to regenerate content",
+        "uploadingAudio": "Uploading audio file...",
+        "processingTranscription": "Processing transcription...",
+        "transcriptionCompleted": "Transcription completed!",
+        "audioProcessFailed": "Failed to process audio file"
+    },
+    "status": {
+        "uploadingAudio": "Uploading audio file...",
+        "creatingTranscriptionJob": "Creating transcription job...",
+        "transcribingAudio": "Transcribing audio...",
+        "transcriptionStatus": "Transcription status: {{status}}"
+    },
+    "confirmDeleteLog": "Are you sure you want to delete this log?",
+    "back": "Back",
+    "untitledSession": "Untitled Session",
+    "generatedOn": "Generated on {{date}}",
+    "regenerating": "Regenerating...",
+    "waitCountdown": "Wait {{minutes}}:{{seconds}}",
+    "regenerateContent": "Regenerate Content",
+    "backToSelection": "Back to Selection",
+    "recordAudio": "Record Audio",
+    "uploadAudio": "Upload Audio",
+    "recordLectureDescription": "Record your live lecture directly.",
+    "uploadLectureDescription": "Upload a pre-recorded lecture audio file.",
+    "generatingContent": "Generating content...",
+    "cancel": "Cancel",
+    "backToMenu": "Back to Menu",
+    "previousLectureLogs": "Previous Lecture Logs",
+    "logStatus": {
+        "ready": "Ready",
+        "processing": "Processing"
+    },
+    "contentGenerationInProgress": "Content generation in progress...",
+    "viewDetails": "View Details",
+    "noSessionsYet": "No sessions yet",
+    "startSessionToSeeLogs": "Start a new session to see your logs here.",
+    "tabs": {
+        "lecture": "Lecture",
+        "assessment": "Assessment"
+    },
+    "assessmentTools": "Assessment Tools",
+    "comingSoon": "Coming soon."
+}

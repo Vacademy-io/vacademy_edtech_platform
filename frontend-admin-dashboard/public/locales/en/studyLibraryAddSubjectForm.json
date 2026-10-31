@@ -1,0 +1,15 @@
+{
+    "validation": {
+        "subjectNameRequired": "Subject name is required"
+    },
+    "nameLabel": "{{subject}} Name",
+    "namePlaceholder": "Enter {{subject}} name",
+    "imageLabel": "{{subject}} Image (Optional)",
+    "clickToUpload": "Click to upload an image",
+    "uploadHint": "PNG, JPG, GIF up to 10MB · 16:9 recommended",
+    "previewAlt": "Preview",
+    "uploading": "Uploading...",
+    "saveChanges": "Save Changes",
+    "add": "Add",
+    "cropTitle": "Crop Subject Thumbnail"
+}

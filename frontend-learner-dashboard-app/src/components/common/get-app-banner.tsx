@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Capacitor } from "@capacitor/core";
 import { X, DeviceMobile } from "@phosphor-icons/react";
 import { MyButton } from "@/components/design-system/button";
@@ -77,6 +78,7 @@ interface AppSuggestion {
 }
 
 export function GetAppBanner() {
+  const { t } = useTranslation("layoutCommonA");
   const [suggestion, setSuggestion] = useState<AppSuggestion | null>(null);
   const [hidden, setHidden] = useState(false);
 
@@ -153,8 +155,8 @@ export function GetAppBanner() {
   };
 
   const appLabel = suggestion.instituteName
-    ? `${suggestion.instituteName} app`
-    : "our app";
+    ? t("getAppBanner.appLabelWithName", { name: suggestion.instituteName })
+    : t("getAppBanner.appLabelGeneric");
 
   return (
     <div
@@ -163,12 +165,12 @@ export function GetAppBanner() {
         "bg-white px-3 py-2 shadow-sm"
       )}
       role="region"
-      aria-label={`Get the ${appLabel}`}
+      aria-label={t("getAppBanner.getRegionLabel", { appLabel })}
     >
       <button
         type="button"
         onClick={dismiss}
-        aria-label="Dismiss"
+        aria-label={t("getAppBanner.dismiss")}
         className="shrink-0 rounded-full p-1 text-neutral-500 hover:bg-neutral-100"
       >
         <X size={16} />
@@ -191,7 +193,9 @@ export function GetAppBanner() {
           {appLabel}
         </p>
         <p className="truncate text-caption text-neutral-500">
-          {suggestion.os === "android" ? "Get it on Google Play" : "Get it on the App Store"}
+          {suggestion.os === "android"
+            ? t("getAppBanner.googlePlay")
+            : t("getAppBanner.appStore")}
         </p>
       </div>
 
@@ -200,7 +204,7 @@ export function GetAppBanner() {
         scale="small"
         onClick={() => window.open(suggestion.storeUrl, "_blank", "noopener")}
       >
-        Get
+        {t("getAppBanner.getButton")}
       </MyButton>
     </div>
   );

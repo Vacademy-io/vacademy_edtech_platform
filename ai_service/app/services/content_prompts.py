@@ -179,10 +179,13 @@ Stay strictly on THIS slide's own subject. Do not re-explain a sibling's topic �
 
 **Diagrams** — {diagram_emphasis} Prefer hand-crafted inline SVG or styled HTML/CSS diagrams (they always render and match your design). Use Mermaid ONLY if you also include the mermaid CDN `<script>` and initialize it; otherwise avoid it. Precede each diagram with a short sentence explaining what it shows.
 
-{figures_block}**Illustrations (real, generated images)** — the page should be visual. Include 1-2 real illustrations where they add value:
+**Teach visually (institutes told us our pages read as walls of text — students learn from pictures)** — every major idea must be carried by something the learner can SEE, the way a textbook does it. Alongside the prose, use: labelled inline-SVG diagrams and cross-sections, icon-led key-point cards, colour-coded callouts (definition / example / common mistake / remember), side-by-side comparisons, step-numbered process strips, and a visual summary at the end. Aim for a diagram, picture or visual-note block roughly every screenful — never two long prose sections in a row.
+
+{figures_block}**Illustrations (real, generated images)** — include 2-4 real illustrations where a picture beats shapes (a realistic scene, an object, an organism, an apparatus, a historical setting):
 - If a source figure above already illustrates this slide, embed it (verbatim URL) and you usually don't need a generated one.
-- Otherwise emit a placeholder the pipeline fills with a real generated image, EXACTLY: `<img data-img-prompt="vivid, specific English description of an educational illustration for this topic" src="placeholder.png" alt="short description" style="max-width:100%;">` (style it further via your CSS/classes as you like).
+- Otherwise emit a placeholder the pipeline fills with a real generated image, EXACTLY: `<img data-img-prompt="vivid, specific English description of an educational illustration for this topic" src="placeholder.png" data-img-aspect="16:9" alt="short description" style="max-width:100%;">` (`data-img-aspect` is optional — 16:9 | 4:3 | 1:1 | 3:4 | 9:16, default 16:9 — and you may style it further via your CSS/classes).
 - The `data-img-prompt` MUST be in English (even when content language differs), describe subject/setting/style, and be unique per image. Never use external/fake image URLs for these. Don't use a generated image for something an SVG/table expresses better.
+- Wrap each one in a `<figure>` with a short `<figcaption>` saying what to notice, so the page still teaches if an image fails to render.
 
 **Code** — ONLY if the topic itself is about programming or a code-based skill (never for non-technical topics).
 - Emit code as `<pre data-language="python"><code class="language-python">...code...</code></pre>` and style it in your CSS. Escape `&`→`&amp;`, `<`→`&lt;`, `>`→`&gt;`; preserve real indentation; code must be complete and runnable.

@@ -1,0 +1,63 @@
+{
+    "errors": {
+        "build": "Could not build this filing."
+    },
+    "empty": {
+        "nothingToFile": "Nothing to file"
+    },
+    "ecr": {
+        "emptyText": "No PF contributions were recorded for this month."
+    },
+    "esi": {
+        "emptyText": "No employees were within the ESI wage ceiling this month."
+    },
+    "pt": {
+        "emptyText": "No professional tax was deducted this month.",
+        "slabSummary": "Slab summary"
+    },
+    "wps": {
+        "emptyText": "No approved payroll entries for this month."
+    },
+    "stats": {
+        "members": "Members",
+        "epfWages": "EPF wages",
+        "epfContribution": "EPF contribution",
+        "epsContribution": "EPS contribution",
+        "insuredPersons": "Insured persons",
+        "totalWages": "Total wages",
+        "ipContribution": "IP contribution",
+        "employerContribution": "Employer contribution",
+        "state": "State",
+        "employees": "Employees",
+        "totalPt": "Total PT",
+        "totalNetPay": "Total net pay",
+        "establishment": "Establishment"
+    },
+    "table": {
+        "member": "Member",
+        "uan": "UAN",
+        "epfWages": "EPF wages",
+        "employeeShare": "Employee",
+        "eps": "EPS",
+        "diff": "Diff",
+        "ncp": "NCP",
+        "employee": "Employee",
+        "ipNumber": "IP number",
+        "days": "Days",
+        "wage": "Wage",
+        "ip": "IP",
+        "employer": "Employer",
+        "slabAmount": "Slab amount",
+        "employees": "Employees",
+        "total": "Total",
+        "gross": "Gross",
+        "pt": "PT",
+        "iban": "IBAN",
+        "basic": "Basic",
+        "other": "Other",
+        "deductions": "Deductions",
+        "net": "Net",
+        "fixed": "Fixed",
+        "variable": "Variable"
+    }
+}

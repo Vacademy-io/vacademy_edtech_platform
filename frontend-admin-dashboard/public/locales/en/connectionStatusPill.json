@@ -1,0 +1,40 @@
+{
+    "label": {
+        "checking": "Checking",
+        "slow": "Slow",
+        "network": "Network",
+        "good": "Good"
+    },
+    "headline": {
+        "measuring": "Measuring speed",
+        "serverSlow": "Our servers are slow",
+        "networkSlow": "Your connection is slow",
+        "healthy": "Running normally"
+    },
+    "note": {
+        "notEnoughSamples": "Not enough samples yet to say anything useful.",
+        "serverSlow": "This is on our side — you don't need to do anything.",
+        "networkSlow": "Our servers are responding normally, so this looks like the network.",
+        "externalWait": "Some actions wait on an outside service, such as placing a call or starting a live class. That wait is normal."
+    },
+    "metric": {
+        "server": "Server",
+        "connection": "Your connection",
+        "provider": "Waiting on provider"
+    },
+    "slowestCall": "Slowest call",
+    "slowestAt": "at {{time}}",
+    "summary": {
+        "requests": "{{count}} requests",
+        "pings": "{{count}} pings",
+        "errors": "{{count}} errors",
+        "untimed": "{{count}} untimed"
+    },
+    "copied": "Copied to clipboard",
+    "copyHint": "Click the icon to copy diagnostics",
+    "aria": {
+        "status": "{{headline}}. Server {{server}}, your connection {{network}}.",
+        "provider": "Waiting on provider {{value}}.",
+        "copy": "Click to copy diagnostics."
+    }
+}

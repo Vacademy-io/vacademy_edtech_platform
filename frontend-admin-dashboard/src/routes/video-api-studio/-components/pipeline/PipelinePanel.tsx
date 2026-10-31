@@ -1,28 +1,29 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
-    CheckCircle2,
-    Code2,
+    CheckCircle,
+    Code,
     Copy,
     Check,
-    Download,
-    ExternalLink,
-    Link2,
-    Loader2,
+    DownloadSimple,
+    ArrowSquareOut,
+    Link,
+    CircleNotch,
     Pencil,
-    RefreshCw,
+    ArrowsClockwise,
     Terminal,
-    Zap,
+    Lightning,
     Clock,
-    Film,
-    AlertTriangle,
+    FilmStrip,
+    Warning,
     Octagon,
     X,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import {
     clearRenderedVideo,
@@ -34,7 +35,7 @@ import { RenderSettingsDialog } from '../RenderSettingsDialog';
 import { useEffectiveCreditRatio } from '@/services/ai-credits/use-credit-rate';
 import { formatCredits, usdToCredits } from '../../-utils/credits';
 import type { PipelineEventLogEntry, PipelineState } from './-utils/derive-pipeline-state';
-import { NODE_LABELS, type PipelineNodeId } from './-utils/stage-vocab';
+import { buildNodeLabels, type PipelineNodeId } from './-utils/stage-vocab';
 import { ThumbnailPickerPanel } from './ThumbnailPickerPanel';
 import { DeveloperAuditSheet } from './DeveloperAuditSheet';
 import { useVideoStatus } from './-utils/use-video-status';
@@ -105,17 +106,20 @@ export function PipelinePanel({
     onEdit,
 }: PipelinePanelProps) {
     const { videoId, status, contentType, orientation, artifactUrls, stats } = state;
+    const { t } = useTranslation(['videoApiStudioPipelinePanel', 'videoApiStudioCredits']);
+    // `stage-vocab` is a separate namespace — resolved explicitly via `t`'s
+    // fully-qualified `videoApiStudioStageVocab:key` lookups regardless of
+    // this component's own default namespace.
+    const nodeLabels = useMemo(() => buildNodeLabels(t), [t]);
     const isPortrait = orientation === 'portrait';
     // Live USD→credits rate for AI video cost tooltips (Veo per-shot range,
     // per-video cap). Falls back to the seed 150× when offline.
     const ratio = useEffectiveCreditRatio();
-    const aiVideoTooltip = `Veo-generated shots (fal.ai). Each runs ${formatCredits(
-        usdToCredits(0.12, ratio),
-        { suffix: '' }
-    )}–${formatCredits(usdToCredits(0.4, ratio), { suffix: '' })} credits — hard cap ${formatCredits(
-        usdToCredits(1.5, ratio),
-        { suffix: 'credits' }
-    )}/video.`;
+    const aiVideoTooltip = t('stats.aiVideoTooltip', {
+        min: formatCredits(usdToCredits(0.12, ratio), { suffix: '', t }),
+        max: formatCredits(usdToCredits(0.4, ratio), { suffix: '', t }),
+        cap: formatCredits(usdToCredits(1.5, ratio), { suffix: 'credits', t }),
+    });
     const showDownload =
         (contentType === 'VIDEO' || contentType === 'SLIDES' || !!artifactUrls.audio) && !!apiKey;
 
@@ -144,7 +148,7 @@ export function PipelinePanel({
                 if (attempts > MAX_ATTEMPTS) {
                     if (pollingRef.current) clearInterval(pollingRef.current);
                     setRenderState('error');
-                    setRenderError('Render timed out. Please try again.');
+                    setRenderError(t('render.timedOut'));
                     clearRenderJob(videoId);
                     return;
                 }
@@ -157,13 +161,13 @@ export function PipelinePanel({
                         setRenderState('done');
                         setRenderProgress(100);
                         clearRenderJob(videoId);
-                        toast.success('Video ready for download!');
+                        toast.success(t('render.readyToast'));
                     } else if (s.status === 'failed') {
                         if (pollingRef.current) clearInterval(pollingRef.current);
                         setRenderState('error');
-                        setRenderError(s.error || 'Render failed');
+                        setRenderError(s.error || t('render.failedGeneric'));
                         clearRenderJob(videoId);
-                        toast.error('Video render failed');
+                        toast.error(t('render.failedToast'));
                     }
                 } catch {
                     /* will retry */
@@ -194,7 +198,7 @@ export function PipelinePanel({
                         clearRenderJob(videoId);
                     } else if (s.status === 'failed') {
                         setRenderState('error');
-                        setRenderError(s.error || 'Render failed');
+                        setRenderError(s.error || t('render.failedGeneric'));
                         clearRenderJob(videoId);
                     } else {
                         renderJobIdRef.current = saved.jobId;
@@ -223,15 +227,15 @@ export function PipelinePanel({
                 renderJobIdRef.current = res.job_id;
                 setRenderState('rendering');
                 saveRenderJob(videoId, res.job_id);
-                toast.info('Video rendering started. This may take a few minutes.');
+                toast.info(t('render.startedToast'));
                 startRenderPolling(res.job_id);
             } catch (err) {
                 setRenderState('error');
-                setRenderError(err instanceof Error ? err.message : 'Failed to start render');
-                toast.error('Failed to start video render');
+                setRenderError(err instanceof Error ? err.message : t('render.failedToStart'));
+                toast.error(t('render.failedToStartToast'));
             }
         },
-        [apiKey, renderState, startRenderPolling, videoId]
+        [apiKey, renderState, startRenderPolling, videoId, t]
     );
 
     const handleClearRender = useCallback(async () => {
@@ -244,11 +248,11 @@ export function PipelinePanel({
             setRenderProgress(0);
             setRenderError(null);
             clearRenderJob(videoId);
-            toast.success('Cached video cleared. You can render again.');
+            toast.success(t('render.clearedToast'));
         } catch (err) {
-            toast.error(err instanceof Error ? err.message : 'Failed to clear cached video');
+            toast.error(err instanceof Error ? err.message : t('render.failedToClear'));
         }
-    }, [videoId, apiKey]);
+    }, [videoId, apiKey, t]);
 
     // ── Stages list (synced to PipelineState slot states) ────────────────
     // v3 swaps the v2 Beats/Screenplay/Narration/Storyboard chain for the
@@ -393,21 +397,21 @@ export function PipelinePanel({
                         variant="outline"
                         className="h-5 gap-1 border-green-200 bg-green-50 text-green-700"
                     >
-                        <CheckCircle2 className="size-3" /> Wrapped
+                        <CheckCircle className="size-3" /> {t('statusBadge.wrapped')}
                     </Badge>
                 ) : status === 'halted' ? (
                     <Badge
                         variant="outline"
                         className="h-5 gap-1 border-red-200 bg-red-50 text-red-700"
                     >
-                        <AlertTriangle className="size-3" /> Halted
+                        <Warning className="size-3" /> {t('statusBadge.halted')}
                     </Badge>
                 ) : (
                     <Badge
                         variant="outline"
                         className="h-5 gap-1 border-blue-200 bg-blue-50 text-blue-700"
                     >
-                        <Loader2 className="size-3 animate-spin" /> In production
+                        <CircleNotch className="size-3 animate-spin" /> {t('statusBadge.inProduction')}
                     </Badge>
                 )}
                 {/* In-flight cancel. Aborts the SSE stream + clears the
@@ -419,10 +423,10 @@ export function PipelinePanel({
                         variant="ghost"
                         size="sm"
                         onClick={onAbort}
-                        className="ml-auto h-7 gap-1.5 text-[11px] text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        className="ml-auto h-7 gap-1.5 text-2xs text-destructive hover:bg-destructive/10 hover:text-destructive"
                     >
                         <Octagon className="size-3" />
-                        Stop production
+                        {t('actions.stopProduction')}
                     </Button>
                 )}
                 {/* Developer / Audit drawer trigger. Always available so
@@ -433,13 +437,13 @@ export function PipelinePanel({
                     variant="ghost"
                     size="sm"
                     onClick={() => setDevOpen(true)}
-                    title="Open developer audit — see the full pipeline pathway, models, configs and URLs"
-                    className={`h-7 gap-1.5 text-[11px] text-muted-foreground hover:text-foreground ${
+                    title={t('actions.auditTooltip')}
+                    className={`h-7 gap-1.5 text-2xs text-muted-foreground hover:text-foreground ${
                         status === 'in_production' && onAbort ? '' : 'ml-auto'
                     }`}
                 >
                     <Terminal className="size-3" />
-                    Audit
+                    {t('actions.audit')}
                 </Button>
             </div>
             <DeveloperAuditSheet
@@ -456,22 +460,21 @@ export function PipelinePanel({
             {status === 'halted' && (
                 <div className="space-y-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-900">
                     <div className="flex items-center gap-1.5 font-medium">
-                        <AlertTriangle className="size-3.5" />
-                        Production halted
+                        <Warning className="size-3.5" />
+                        {t('haltedBanner.title')}
                     </div>
-                    <p className="text-[11px] leading-relaxed text-red-900/80">
-                        The pipeline failed before the final cut was assembled. Retry resumes from
-                        the last saved checkpoint — already-finished stages aren&apos;t redone.
+                    <p className="text-2xs leading-relaxed text-red-900/80">
+                        {t('haltedBanner.description')}
                     </p>
                     {onRetry && (
                         <Button
                             variant="default"
                             size="sm"
                             onClick={onRetry}
-                            className="h-7 gap-1.5 bg-red-600 text-[11px] text-white hover:bg-red-700"
+                            className="h-7 gap-1.5 bg-red-600 text-2xs text-white hover:bg-red-700"
                         >
-                            <RefreshCw className="size-3" />
-                            Retry production
+                            <ArrowsClockwise className="size-3" />
+                            {t('haltedBanner.retry')}
                         </Button>
                     )}
                 </div>
@@ -479,18 +482,18 @@ export function PipelinePanel({
 
             {/* Stages list */}
             <div className="rounded-lg border bg-card p-3 shadow-sm">
-                <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Production schedule
+                <div className="mb-2 text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t('stagesList.heading')}
                 </div>
                 <ul className="space-y-1 text-xs">
                     {stagesList.map(({ id, slotState }) => (
                         <li key={id} className="flex items-center gap-2 rounded px-1 py-0.5">
                             {slotState === 'wrapped' ? (
-                                <CheckCircle2 className="size-3 shrink-0 text-green-600" />
+                                <CheckCircle className="size-3 shrink-0 text-green-600" />
                             ) : slotState === 'in_production' ? (
-                                <Loader2 className="size-3 shrink-0 animate-spin text-blue-600" />
+                                <CircleNotch className="size-3 shrink-0 animate-spin text-blue-600" />
                             ) : slotState === 'cut' || slotState === 'reshoot' ? (
-                                <AlertTriangle
+                                <Warning
                                     className={`size-3 shrink-0 ${slotState === 'cut' ? 'text-red-600' : 'text-amber-600'}`}
                                 />
                             ) : (
@@ -503,7 +506,7 @@ export function PipelinePanel({
                                         : 'text-foreground'
                                 }
                             >
-                                {NODE_LABELS[id]}
+                                {nodeLabels[id]}
                             </span>
                             {id === 'filming' && <FilmingCounter state={state} />}
                             {id === 'talent' && <TalentCounter state={state} />}
@@ -515,9 +518,10 @@ export function PipelinePanel({
                     ))}
                 </ul>
                 {state.pipelineVersion === 'v3' && (
-                    <div className="mt-2 border-t pt-2 text-[10px] text-muted-foreground">
-                        Pipeline <span className="font-mono text-foreground">v3</span> ·
-                        ShotPlanner-first
+                    <div className="mt-2 border-t pt-2 text-2xs text-muted-foreground">
+                        {t('stagesList.pipelineLabel')}{' '}
+                        <span className="font-mono text-foreground">v3</span> ·{' '}
+                        {t('stagesList.shotPlannerFirst')}
                     </div>
                 )}
             </div>
@@ -525,13 +529,13 @@ export function PipelinePanel({
             {/* Production stats */}
             {(stats.cumulativeTokens || stats.tokenUsage) && (
                 <div className="rounded-lg border bg-card p-3 shadow-sm">
-                    <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                        Production budget
+                    <div className="mb-2 text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {t('stats.heading')}
                     </div>
-                    <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px]">
-                        <dt className="text-muted-foreground">Tokens</dt>
+                    <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-2xs">
+                        <dt className="text-muted-foreground">{t('stats.tokens')}</dt>
                         <dd className="tabular-nums">
-                            <Zap className="mr-0.5 inline size-3 text-amber-500" />
+                            <Lightning className="me-0.5 inline size-3 text-amber-500" />
                             {(
                                 stats.cumulativeTokens?.total_tokens ??
                                 stats.tokenUsage?.total_tokens ??
@@ -541,7 +545,7 @@ export function PipelinePanel({
                         {(stats.cumulativeTokens?.estimated_cost_usd ??
                             stats.tokenUsage?.estimated_cost_usd) != null && (
                             <>
-                                <dt className="text-muted-foreground">Est. cost</dt>
+                                <dt className="text-muted-foreground">{t('stats.estCost')}</dt>
                                 <dd className="font-medium text-emerald-600">
                                     $
                                     {(
@@ -554,18 +558,18 @@ export function PipelinePanel({
                         )}
                         {stats.tokenUsage?.image_count ? (
                             <>
-                                <dt className="text-muted-foreground">Stills</dt>
+                                <dt className="text-muted-foreground">{t('stats.stills')}</dt>
                                 <dd>{stats.tokenUsage.image_count}</dd>
                             </>
                         ) : null}
                         {aiVideoShotCount > 0 && (
                             <>
-                                <dt className="text-muted-foreground">AI video</dt>
+                                <dt className="text-muted-foreground">{t('stats.aiVideo')}</dt>
                                 <dd title={aiVideoTooltip} className="font-medium text-violet-700">
-                                    ✨ {aiVideoShotCount} shot{aiVideoShotCount === 1 ? '' : 's'}
+                                    ✨ {t('stats.aiVideoShots', { count: aiVideoShotCount })}
                                     {aiVideoCreditsSpent != null && (
                                         <span className="ml-1 font-mono tabular-nums text-violet-500">
-                                            ({formatCredits(aiVideoCreditsSpent, { precision: 0 })})
+                                            ({formatCredits(aiVideoCreditsSpent, { precision: 0, t })})
                                         </span>
                                     )}
                                 </dd>
@@ -581,56 +585,62 @@ export function PipelinePanel({
 
             {/* Artifact URLs */}
             <div className="rounded-lg border bg-card p-3 shadow-sm">
-                <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Production assets
+                <div className="mb-2 text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t('assets.heading')}
                 </div>
-                <ul className="space-y-1 text-[11px]">
+                <ul className="space-y-1 text-2xs">
                     {artifactUrls.script && (
-                        <ArtifactLink label="Screenplay" url={artifactUrls.script} suffix=".txt" />
+                        <ArtifactLink
+                            label={t('assets.screenplay')}
+                            url={artifactUrls.script}
+                            suffix=".txt"
+                        />
                     )}
                     {artifactUrls.audio && (
-                        <ArtifactLink label="Narration" url={artifactUrls.audio} suffix=".mp3" />
+                        <ArtifactLink
+                            label={t('assets.narration')}
+                            url={artifactUrls.audio}
+                            suffix=".mp3"
+                        />
                     )}
                     {artifactUrls.words && (
                         <ArtifactLink
-                            label="Word timings"
+                            label={t('assets.wordTimings')}
                             url={artifactUrls.words}
                             suffix=".json"
                         />
                     )}
                     {artifactUrls.timeline && (
                         <ArtifactLink
-                            label="Final Cut"
+                            label={t('assets.finalCut')}
                             url={artifactUrls.timeline}
                             suffix=".json"
                         />
                     )}
                     {!artifactUrls.script && !artifactUrls.audio && !artifactUrls.timeline && (
-                        <li className="text-muted-foreground">
-                            Assets will appear as production progresses…
-                        </li>
+                        <li className="text-muted-foreground">{t('assets.empty')}</li>
                     )}
                 </ul>
             </div>
 
             {/* Actions */}
             <div className="rounded-lg border bg-card p-3 shadow-sm">
-                <div className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Actions
+                <div className="mb-2 text-2xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {t('actionsCard.heading')}
                 </div>
                 <div className="space-y-2">
                     {/* Share */}
                     {shareableUrl && (
                         <div className="space-y-1">
-                            <label className="flex items-center gap-1.5 text-[11px] font-medium text-foreground">
-                                <Link2 className="size-3" />
-                                Shareable URL
+                            <label className="flex items-center gap-1.5 text-2xs font-medium text-foreground">
+                                <Link className="size-3" />
+                                {t('share.label')}
                             </label>
                             <div className="flex w-full items-center rounded-md border bg-background px-2 py-0.5 shadow-sm">
                                 <Input
                                     value={shareableUrl}
                                     readOnly
-                                    className="h-7 flex-1 border-0 bg-transparent p-0 font-mono text-[10px] shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                                    className="h-7 flex-1 border-0 bg-transparent p-0 font-mono text-2xs shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
                                     onClick={(e) => e.currentTarget.select()}
                                 />
                                 <Button
@@ -638,7 +648,7 @@ export function PipelinePanel({
                                     size="icon"
                                     onClick={handleCopyUrl}
                                     className="ml-1 size-6 shrink-0"
-                                    title="Copy link"
+                                    title={t('share.copyLinkTitle')}
                                 >
                                     {copiedUrl ? (
                                         <Check className="size-3.5 text-green-600" />
@@ -659,34 +669,36 @@ export function PipelinePanel({
                                     size="sm"
                                     className="h-8 w-full justify-start gap-2"
                                 >
-                                    <Code2 className="size-3.5" />
-                                    Get embed code
+                                    <Code className="size-3.5" />
+                                    {t('embed.getEmbedCode')}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-80" align="end" side="left">
                                 <div className="space-y-2">
                                     <div className="flex items-center justify-between">
-                                        <h4 className="text-sm font-medium">Embed code</h4>
+                                        <h4 className="text-sm font-medium">
+                                            {t('embed.heading')}
+                                        </h4>
                                         <Button
                                             variant="ghost"
                                             size="sm"
                                             onClick={handleCopyEmbed}
-                                            className="h-6 gap-1 text-[11px]"
+                                            className="h-6 gap-1 text-2xs"
                                         >
                                             {copiedEmbed ? (
                                                 <>
                                                     <Check className="size-3 text-green-600" />
-                                                    Copied
+                                                    {t('embed.copied')}
                                                 </>
                                             ) : (
                                                 <>
                                                     <Copy className="size-3" />
-                                                    Copy
+                                                    {t('embed.copy')}
                                                 </>
                                             )}
                                         </Button>
                                     </div>
-                                    <pre className="max-h-44 overflow-auto rounded border bg-muted p-2 font-mono text-[10px] text-muted-foreground">
+                                    <pre className="max-h-44 overflow-auto rounded border bg-muted p-2 font-mono text-2xs text-muted-foreground">
                                         {embedCode}
                                     </pre>
                                 </div>
@@ -703,7 +715,7 @@ export function PipelinePanel({
                             onClick={handleEditClick}
                         >
                             <Pencil className="size-3.5" />
-                            Open in editor
+                            {t('edit.openInEditor')}
                         </Button>
                     )}
 
@@ -718,16 +730,16 @@ export function PipelinePanel({
                                         rel="noopener noreferrer"
                                         className="flex h-8 flex-1 items-center gap-1.5 rounded-md border bg-green-50 px-2 text-xs font-medium text-green-700 hover:bg-green-100"
                                     >
-                                        <Download className="size-3.5" />
-                                        Download MP4
-                                        <ExternalLink className="ml-auto size-3" />
+                                        <DownloadSimple className="size-3.5" />
+                                        {t('render.downloadMp4')}
+                                        <ArrowSquareOut className="ml-auto size-3" />
                                     </a>
                                     <Button
                                         variant="outline"
                                         size="icon"
                                         className="size-8 shrink-0 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
                                         onClick={handleClearRender}
-                                        title="Clear cached video to re-render"
+                                        title={t('render.clearTitle')}
                                     >
                                         <X className="size-3.5" />
                                     </Button>
@@ -735,11 +747,15 @@ export function PipelinePanel({
                             ) : renderState === 'rendering' || renderState === 'submitting' ? (
                                 <div className="space-y-1.5 rounded-md border bg-muted/40 p-2">
                                     <div className="flex items-center gap-1.5">
-                                        <Loader2 className="size-3.5 shrink-0 animate-spin text-muted-foreground" />
-                                        <span className="text-[11px] text-muted-foreground">
+                                        <CircleNotch className="size-3.5 shrink-0 animate-spin text-muted-foreground" />
+                                        <span className="text-2xs text-muted-foreground">
                                             {renderState === 'submitting'
-                                                ? 'Starting render…'
-                                                : `Mastering… ${renderProgress > 0 ? `${Math.round(renderProgress)}%` : ''}`}
+                                                ? t('render.startingRender')
+                                                : renderProgress > 0
+                                                  ? t('render.masteringPercent', {
+                                                        percent: Math.round(renderProgress),
+                                                    })
+                                                  : t('render.mastering')}
                                         </span>
                                     </div>
                                     {renderState === 'rendering' && (
@@ -758,20 +774,20 @@ export function PipelinePanel({
                                     className="h-8 w-full justify-start gap-2"
                                     onClick={() => setSettingsOpen(true)}
                                 >
-                                    <Film className="size-3.5" />
-                                    Master the cut (MP4)
+                                    <FilmStrip className="size-3.5" />
+                                    {t('render.masterTheCut')}
                                 </Button>
                             )}
                             {renderState === 'error' && renderError && (
                                 <div className="space-y-1 rounded-md border border-destructive/30 bg-destructive/5 p-1.5">
-                                    <p className="text-[11px] text-destructive">{renderError}</p>
+                                    <p className="text-2xs text-destructive">{renderError}</p>
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        className="h-6 text-[11px]"
+                                        className="h-6 text-2xs"
                                         onClick={() => setSettingsOpen(true)}
                                     >
-                                        Retry
+                                        {t('render.retry')}
                                     </Button>
                                 </div>
                             )}
@@ -805,14 +821,14 @@ function FilmingCounter({ state }: { state: PipelineState }) {
         // the counter to avoid redundant N/N noise.
         if (state.filming.state === 'wrapped' && wrapped === total) return null;
         return (
-            <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">
+            <span className="ml-auto text-2xs tabular-nums text-muted-foreground">
                 {wrapped}/{total}
             </span>
         );
     }
     if (state.filming.state === 'in_production' && state.filming.partialData?.shotsTotal != null) {
         return (
-            <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">
+            <span className="ml-auto text-2xs tabular-nums text-muted-foreground">
                 {state.filming.partialData.shotsCompleted ?? 0}/
                 {state.filming.partialData.shotsTotal}
             </span>
@@ -831,7 +847,7 @@ function TalentCounter({ state }: { state: PipelineState }) {
     if (!slot) return null;
     if (slot.state === 'in_production' && slot.partialData?.total) {
         return (
-            <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">
+            <span className="ml-auto text-2xs tabular-nums text-muted-foreground">
                 {slot.partialData.completed ?? 0}/{slot.partialData.total}
             </span>
         );
@@ -848,7 +864,7 @@ function ScoreCounter({ state }: { state: PipelineState }) {
     if (!slot) return null;
     if (slot.state === 'in_production' && slot.partialData?.segmentsTotal) {
         return (
-            <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">
+            <span className="ml-auto text-2xs tabular-nums text-muted-foreground">
                 {slot.partialData.segmentsCompleted ?? 0}/{slot.partialData.segmentsTotal}
             </span>
         );
@@ -862,6 +878,7 @@ function ScoreCounter({ state }: { state: PipelineState }) {
  * so the counter prefers any field that exists.
  */
 function ResearchCounter({ state }: { state: PipelineState }) {
+    const { t } = useTranslation('videoApiStudioPipelinePanel');
     const slot = state.research;
     if (!slot) return null;
     let data: { sources?: unknown[]; screenshots?: unknown[]; urlsAttempted?: unknown[] } | null =
@@ -870,15 +887,19 @@ function ResearchCounter({ state }: { state: PipelineState }) {
     else if (slot.state === 'in_production') data = slot.partialData ?? null;
     if (!data) return null;
     const counts = [
-        data.sources?.length ? `${data.sources.length} src` : null,
-        data.screenshots?.length ? `${data.screenshots.length} 📸` : null,
+        data.sources?.length
+            ? t('counters.sources', { count: data.sources.length })
+            : null,
+        data.screenshots?.length
+            ? t('counters.screenshots', { count: data.screenshots.length })
+            : null,
         !data.sources?.length && !data.screenshots?.length && data.urlsAttempted?.length
-            ? `${data.urlsAttempted.length} URL`
+            ? t('counters.urls', { count: data.urlsAttempted.length })
             : null,
     ].filter(Boolean);
     if (counts.length === 0) return null;
     return (
-        <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">
+        <span className="ml-auto text-2xs tabular-nums text-muted-foreground">
             {counts.join(' · ')}
         </span>
     );
@@ -890,26 +911,31 @@ function ResearchCounter({ state }: { state: PipelineState }) {
  * planner produced (vs Talent / Score where the row's progress IS the count).
  */
 function ShotPlannerCounter({ state }: { state: PipelineState }) {
+    const { t } = useTranslation('videoApiStudioPipelinePanel');
     const slot = state.shotPlanner;
     if (!slot || slot.state !== 'wrapped') return null;
     const { shotCount, intrinsicCount } = slot.data;
     if (shotCount === 0) return null;
     return (
-        <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">
-            {shotCount} shot{shotCount === 1 ? '' : 's'}
-            {intrinsicCount > 0 ? ` · ${intrinsicCount} intr` : ''}
+        <span className="ml-auto text-2xs tabular-nums text-muted-foreground">
+            {t('counters.shots', { count: shotCount })}
+            {intrinsicCount > 0 ? ` · ${t('counters.intrinsic', { count: intrinsicCount })}` : ''}
         </span>
     );
 }
 
 function NarrationWriterCounter({ state }: { state: PipelineState }) {
+    const { t } = useTranslation('videoApiStudioPipelinePanel');
     const slot = state.narrationWriter;
     if (!slot || slot.state !== 'wrapped') return null;
     const { totalWords, skippedIntrinsicCount } = slot.data;
     if (totalWords === 0 && skippedIntrinsicCount === 0) return null;
     return (
-        <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">
-            {totalWords} w{skippedIntrinsicCount > 0 ? ` · ${skippedIntrinsicCount} silent` : ''}
+        <span className="ml-auto text-2xs tabular-nums text-muted-foreground">
+            {t('counters.words', { count: totalWords })}
+            {skippedIntrinsicCount > 0
+                ? ` · ${t('counters.silent', { count: skippedIntrinsicCount })}`
+                : ''}
         </span>
     );
 }
@@ -923,9 +949,9 @@ function ArtifactLink({ label, url, suffix }: { label: string; url: string; suff
                 rel="noopener noreferrer"
                 className="inline-flex flex-1 items-center gap-1 truncate rounded px-1 py-0.5 text-foreground hover:bg-muted hover:text-blue-700"
             >
-                <ExternalLink className="size-3 shrink-0 text-muted-foreground" />
+                <ArrowSquareOut className="size-3 shrink-0 text-muted-foreground" />
                 <span className="truncate">{label}</span>
-                <span className="ml-auto shrink-0 font-mono text-[10px] text-muted-foreground">
+                <span className="ml-auto shrink-0 font-mono text-2xs text-muted-foreground">
                     {suffix}
                 </span>
             </a>

@@ -35,6 +35,9 @@ public class AiAgentDTO {
     private Double pace;
     /** Expressiveness 0.01–2.0; null = Sarvam model default (~0.6). */
     private Double temperature;
+    /** Voice modulation 1.0–2.5 (pitch-range expansion on the audio, any engine);
+     *  null = bot's global default (off). */
+    private Double voiceModulation;
     /** {@code rumik} | {@code sarvam}. Null on create = rumik; null on update keeps
      *  the stored engine, so an old client that does not send the field cannot
      *  silently reprice an agent. */
@@ -48,4 +51,9 @@ public class AiAgentDTO {
      * older client that does not know about rules cannot wipe them.
      */
     private List<AiCallActionRule> sendRules;
+    /**
+     * Reference documents appended to the prompt at call time (V615). Absent on update =
+     * keep what is stored, like sendRules; an explicit empty list removes them all.
+     */
+    private List<AiAgentKnowledgeDocument> knowledgeDocuments;
 }

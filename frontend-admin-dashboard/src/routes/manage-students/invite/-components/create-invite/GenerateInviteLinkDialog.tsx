@@ -1,18 +1,18 @@
 import { MyButton } from '@/components/design-system/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LoadingSpinner } from '@/components/ai-course-builder/LoadingSpinner';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form } from '@/components/ui/form';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { useFileUpload } from '@/hooks/use-file-upload';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useForm as useDiscountForm } from 'react-hook-form';
 import { zodResolver as discountZodResolver } from '@hookform/resolvers/zod';
 import {
     AddDiscountFormValues,
-    addDiscountSchema,
+    buildAddDiscountSchema,
     GenerateInviteLinkDialogProps,
     InviteLinkFormValues,
     inviteLinkSchema,
@@ -37,6 +37,8 @@ import CustomHTMLCard from './-components/CustomHTMLCard';
 import InviteAvailabilityCard from './-components/InviteAvailabilityCard';
 import PostFormFillConfigurationCard from './-components/PostFormFillConfigurationCard';
 import SubOrgSettingsCard from './-components/SubOrgSettingsCard';
+import TeamNotificationsCard from './-components/TeamNotificationsCard';
+import { MultiEmailInputHandle } from '@/routes/audience-manager/list/-components/audience-invite/components/MultiEmailInput';
 import { toast } from 'sonner';
 import { AxiosError } from 'axios';
 import { handleEnrollInvite, handleGetEnrollSingleInviteDetails } from './-services/enroll-invite';
@@ -57,12 +59,14 @@ import {
     toDateInputValue,
 } from './-utils/helper';
 import { handleGetReferralProgramDetails } from './-services/referral-services';
+import { useInviteCustomFieldHandlers } from './-hooks/useInviteCustomFieldHandlers';
 import PreviewInviteLink from './PreviewInviteLink';
 import useInstituteLogoStore from '@/components/common/layout-container/sidebar/institutelogo-global-zustand';
 import createInviteLink from '../../-utils/createInviteLink';
 import { Copy } from '@phosphor-icons/react';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { OtherTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import { useTranslation } from 'react-i18next';
 
 const GenerateInviteLinkDialog = ({
     showSummaryDialog,
@@ -75,6 +79,16 @@ const GenerateInviteLinkDialog = ({
     setDialogOpen,
     selectCourseForm,
 }: GenerateInviteLinkDialogProps) => {
+    // 'manageStudentsGenerateInviteLinkSchema' is also requested here (not just
+    // 'manageStudentsGenerateInviteLinkDialog') so react-i18next loads it for us — it backs
+    // the addDiscountForm's validation schema built below via buildAddDiscountSchema(t).
+    // 'manageStudentsGetInviteListCustomFields' backs getInviteListCustomFieldsAsync(t)'s
+    // fallback default field labels (Full Name / Email / Phone Number).
+    const { t } = useTranslation([
+        'manageStudentsGenerateInviteLinkDialog',
+        'manageStudentsGenerateInviteLinkSchema',
+        'manageStudentsGetInviteListCustomFields',
+    ]);
     const { instituteLogo } = useInstituteLogoStore();
     const { data: inviteLinkDetails } = useSuspenseQuery(
         singlePackageSessionId && inviteLinkId
@@ -166,6 +180,7 @@ const GenerateInviteLinkDialog = ({
             accessDurationDays: '',
             inviteeEmail: '',
             inviteeEmails: [],
+            teamNotificationEmails: [],
             customHtml: '',
             showRelatedCourses: false,
             selectedOptionValue: 'textfield',
@@ -181,14 +196,23 @@ const GenerateInviteLinkDialog = ({
         },
     });
 
-    form.watch('custom_fields');
+    const { setValue, handleSubmit } = form;
 
-    const { control, setValue, getValues, handleSubmit } = form;
-    const { fields: customFieldsArray } = useFieldArray({
-        control,
-        name: 'custom_fields',
-    });
-    const customFields = getValues('custom_fields');
+    // The enrollment-form field builder's handlers. Shared with the course-creation
+    // wizard's Payment & Enrolment step, which renders the same CustomInviteFormCard.
+    const {
+        updateFieldOrders,
+        handleDeleteOpenField,
+        toggleIsRequired,
+        handleAddGender,
+        handleAddOpenFieldValues,
+        handleValueChange,
+        handleEditClick,
+        handleDeleteOptionField,
+        handleAddDropdownOptions,
+        handleCloseDialog,
+        handleEditFieldAt,
+    } = useInviteCustomFieldHandlers(form, t);
 
     // Each time the dialog OPENS in create mode: fetch fresh custom field
     // defaults from the API and seed the form. This must re-run on every open
@@ -202,7 +226,7 @@ const GenerateInviteLinkDialog = ({
     // plans, etc.).
     useEffect(() => {
         if (!isEditInviteLink && showSummaryDialog) {
-            getInviteListCustomFieldsAsync().then((fields) => {
+            getInviteListCustomFieldsAsync(t).then((fields) => {
                 if (fields && fields.length > 0) {
                     const currentValues = form.getValues();
                     form.reset({ ...currentValues, custom_fields: fields });
@@ -244,6 +268,9 @@ const GenerateInviteLinkDialog = ({
 
     const { uploadFile, getPublicUrl } = useFileUpload();
 
+    // Lets the submit handler commit a half-typed Team Notifications address before
+    // the payload is built (the input's blur is unreliable on a button click).
+    const teamNotificationsRef = useRef<MultiEmailInputHandle>(null);
     const coursePreviewRef = useRef<HTMLInputElement>(null);
     const courseBannerRef = useRef<HTMLInputElement>(null);
     const courseMediaRef = useRef<HTMLInputElement>(null);
@@ -290,8 +317,8 @@ const GenerateInviteLinkDialog = ({
             queryClient.invalidateQueries({ queryKey: ['inviteList'] });
             toast.success(
                 isEditInviteLink
-                    ? 'Your invite link has been updated successfully!'
-                    : 'Your invite link has been created successfully!',
+                    ? t('toast.updateSuccess')
+                    : t('toast.createSuccess'),
                 {
                     className: 'success-toast',
                     duration: 2000,
@@ -317,14 +344,14 @@ const GenerateInviteLinkDialog = ({
                 toast.error(
                     error?.response?.data?.ex ||
                     error?.response?.data?.message ||
-                    'Failed to save invite link',
+                    t('toast.saveError'),
                     {
                         className: 'error-toast',
                         duration: 3000,
                     }
                 );
             } else {
-                toast.error('An unexpected error occurred', {
+                toast.error(t('toast.unexpectedError'), {
                     className: 'error-toast',
                     duration: 2000,
                 });
@@ -340,7 +367,7 @@ const GenerateInviteLinkDialog = ({
         console.error('Form validation errors:', err);
         if (err && typeof err === 'object') {
             const fieldNames = Object.keys(err as Record<string, unknown>);
-            toast.error(`Validation failed on: ${fieldNames.join(', ')}`, {
+            toast.error(t('toast.validationFailed', { fields: fieldNames.join(', ') }), {
                 duration: 4000,
             });
         }
@@ -431,6 +458,12 @@ const GenerateInviteLinkDialog = ({
         setValue('tags', updatedTags);
     };
 
+    // addDiscountSchema used to be a module-level const built once at import time from
+    // i18next.t(), so its validation messages froze on the raw key before the namespace could
+    // ever load. buildAddDiscountSchema(t) rebuilds the schema from this component's own `t`,
+    // memoized so it's cheap per render and recomputed if the active locale changes.
+    const addDiscountSchema = useMemo(() => buildAddDiscountSchema(t), [t]);
+
     const addDiscountForm = useDiscountForm<AddDiscountFormValues>({
         resolver: discountZodResolver(addDiscountSchema),
         defaultValues: {
@@ -455,192 +488,6 @@ const GenerateInviteLinkDialog = ({
         addDiscountForm.reset();
     };
 
-    const handleDeleteOpenField = (id: number) => {
-        const updatedFields = customFieldsArray
-            .filter((field, idx) => idx !== id)
-            .map((field, index) => ({
-                ...field,
-                order: index, // Update order of remaining fields
-            }));
-        setValue('custom_fields', updatedFields);
-    };
-
-    // Function that explicitly updates the order property of all fields
-    const updateFieldOrders = () => {
-        const currentFields = getValues('custom_fields');
-
-        if (!currentFields) return;
-
-        // Create a copy with updated order values matching their array positions
-        const updatedFields = currentFields.map((field, index) => ({
-            ...field,
-            order: index,
-        }));
-
-        // Update the form values
-        setValue('custom_fields', updatedFields, {
-            shouldDirty: true,
-            shouldTouch: true,
-        });
-    };
-
-    const toggleIsRequired = (id: number) => {
-        const updatedFields = customFieldsArray?.map((field, idx) =>
-            idx === id ? { ...field, isRequired: !field.isRequired } : field
-        );
-        setValue('custom_fields', updatedFields);
-    };
-
-    // Index-based to match toggleIsRequired/handleDeleteOpenField in this file.
-    const patchFieldAt = (index: number, patch: Record<string, unknown>) => {
-        const current = form.getValues('custom_fields');
-        const updatedFields = current?.map((field, idx) =>
-            idx === index ? { ...field, ...patch } : field
-        );
-        form.setValue('custom_fields', updatedFields);
-    };
-
-    /**
-     * Applies an edit made in the (prefilled) custom-field dialog. Type, label, options and
-     * required come back together, so they are written in one patch.
-     */
-    const handleEditFieldAt = (
-        index: number,
-        type: string,
-        name: string,
-        options?: { id: string; value: string }[],
-        config?: Record<string, unknown>
-    ) =>
-        patchFieldAt(index, {
-            type,
-            name,
-            isRequired: (config?.isRequired as boolean | undefined) ?? true,
-            // The dialog only returns options for choice types, so switching away from one
-            // clears them instead of leaving stale values to reappear.
-            options: options?.map((opt, i) => ({ id: String(i), value: opt.value })),
-        });
-
-    const handleAddGender = (type: string, name: string, oldKey: boolean) => {
-        // Create the new field
-        const newField = {
-            id: String(customFields.length), // Use the current array length as the new ID
-            type,
-            name,
-            oldKey,
-            ...(type === 'dropdown' && {
-                options: [
-                    {
-                        id: '0',
-                        value: 'MALE',
-                        disabled: true,
-                    },
-                    {
-                        id: '1',
-                        value: 'FEMALE',
-                        disabled: true,
-                    },
-                    {
-                        id: '2',
-                        value: 'OTHER',
-                        disabled: true,
-                    },
-                ],
-            }), // Include options if type is dropdown
-            isRequired: true,
-            key: '',
-            order: customFields.length,
-        };
-
-        // Add the new field to the array
-        const updatedFields = [...customFields, newField];
-
-        // Update the form state
-        setValue('custom_fields', updatedFields);
-    };
-
-    const handleAddOpenFieldValues = (type: string, name: string, oldKey: boolean) => {
-        // Add the new field to the array
-        const updatedFields = [
-            ...customFields,
-            {
-                id: String(customFields.length), // Use the current array length as the new ID
-                type,
-                name,
-                oldKey,
-                isRequired: true,
-                key: '',
-                order: customFields.length,
-            },
-        ];
-
-        // Update the form state with the new array
-        setValue('custom_fields', updatedFields);
-    };
-
-    const handleValueChange = (id: string, newValue: string) => {
-        const prevOptions = form.getValues('dropdownOptions');
-        form.setValue(
-            'dropdownOptions',
-            prevOptions.map((option) =>
-                option.id === id ? { ...option, value: newValue } : option
-            )
-        );
-    };
-
-    const handleEditClick = (id: number) => {
-        const prevOptions = form.getValues('dropdownOptions');
-        form.setValue(
-            'dropdownOptions',
-            prevOptions.map((option, idx) =>
-                idx === id ? { ...option, disabled: !option.disabled } : option
-            )
-        );
-    };
-
-    const handleDeleteOptionField = (id: number) => {
-        const prevOptions = form.getValues('dropdownOptions');
-        form.setValue(
-            'dropdownOptions',
-            prevOptions.filter((field, idx) => idx !== id)
-        );
-    };
-
-    const handleAddDropdownOptions = () => {
-        const prevOptions = form.getValues('dropdownOptions');
-        form.setValue('dropdownOptions', [
-            ...prevOptions,
-            {
-                id: String(prevOptions.length),
-                value: `option ${prevOptions.length + 1}`,
-                disabled: true,
-            },
-        ]);
-    };
-
-    const handleCloseDialog = (type: string, name: string, oldKey: boolean) => {
-        // Create the new field
-        const newField = {
-            id: String(customFields.length), // Use the current array length as the new ID
-            type,
-            name,
-            oldKey,
-            ...(type === 'dropdown' && { options: form.getValues('dropdownOptions') }), // Include options if type is dropdown
-            isRequired: true,
-            key: '',
-            order: customFields.length,
-        };
-
-        // Add the new field to the array
-        const updatedFields = [...customFields, newField];
-
-        // Update the form state
-        setValue('custom_fields', updatedFields);
-
-        // Reset dialog and temporary values
-        form.setValue('isDialogOpen', false);
-        form.setValue('textFieldValue', '');
-        form.setValue('dropdownOptions', []);
-    };
     // Hide menu when clicking outside
     useEffect(() => {
         if (!form.watch('showMediaMenu')) return;
@@ -902,6 +749,13 @@ const GenerateInviteLinkDialog = ({
                         memberCount: subOrg?.MEMBER_COUNT ?? null,
                     };
                 })(),
+                teamNotificationEmails: (
+                    safeJsonParse(inviteLinkDetails?.setting_json, {})?.setting
+                        ?.NOTIFICATION_SETTING?.TO_NOTIFY || ''
+                )
+                    .split(',')
+                    .map((email: string) => email.trim())
+                    .filter(Boolean),
                 autopaySettings: (() => {
                     const autopay = safeJsonParse(inviteLinkDetails?.setting_json, {})?.setting
                         ?.AUTOPAY_SETTING;
@@ -936,7 +790,13 @@ const GenerateInviteLinkDialog = ({
                 <DialogHeader>
                     <div className="flex items-center justify-between">
                         <DialogTitle className="font-bold">
-                            {isEditInviteLink ? `Update ${getTerminology(OtherTerms.Invite, SystemTerms.Invite)} Link` : `Create ${getTerminology(OtherTerms.Invite, SystemTerms.Invite)} Link`}
+                            {isEditInviteLink
+                                ? t('dialogTitle.update', {
+                                      term: getTerminology(OtherTerms.Invite, SystemTerms.Invite),
+                                  })
+                                : t('dialogTitle.create', {
+                                      term: getTerminology(OtherTerms.Invite, SystemTerms.Invite),
+                                  })}
                         </DialogTitle>
                         {/* Preview Invite Link Dialog */}
                         <PreviewInviteLink
@@ -968,10 +828,10 @@ const GenerateInviteLinkDialog = ({
                                             instituteDetails?.learner_portal_base_url
                                         )
                                     );
-                                    toast.success('Invite link copied to clipboard');
+                                    toast.success(t('inviteLink.copiedToast'));
                                 }}
                                 className="shrink-0 rounded p-1 hover:bg-neutral-200"
-                                title="Copy invite link"
+                                title={t('inviteLink.copyTitle')}
                             >
                                 <Copy className="size-4" />
                             </button>
@@ -1040,6 +900,9 @@ const GenerateInviteLinkDialog = ({
 
                             {/* Sub-organization Settings Card */}
                             <SubOrgSettingsCard form={form} />
+
+                            {/* Team members notified on every form fill */}
+                            <TeamNotificationsCard form={form} ref={teamNotificationsRef} />
                         </form>
                     </Form>
                 </div>
@@ -1051,25 +914,32 @@ const GenerateInviteLinkDialog = ({
                         className="p-5"
                         onClick={() => setShowSummaryDialog(false)}
                     >
-                        Close
+                        {t('actions.close')}
                     </MyButton>
                     <MyButton
                         type="button"
                         scale="small"
                         buttonType="primary"
                         className="p-5"
-                        onClick={handleSubmit(onSubmit, onInvalid)}
+                        onClick={() => {
+                            teamNotificationsRef.current?.flush();
+                            handleSubmit(onSubmit, onInvalid)();
+                        }}
                         disable={!form.watch('name') || handleSubmitInviteLinkMutation.isPending}
                     >
                         {handleSubmitInviteLinkMutation.isPending ? (
                             <div className="flex items-center gap-2">
                                 <LoadingSpinner size={16} />
-                                {isEditInviteLink ? 'Updating...' : 'Creating...'}
+                                {isEditInviteLink ? t('actions.updating') : t('actions.creating')}
                             </div>
                         ) : isEditInviteLink ? (
-                            `Update ${getTerminology(OtherTerms.Invite, SystemTerms.Invite)} Link`
+                            t('dialogTitle.update', {
+                                term: getTerminology(OtherTerms.Invite, SystemTerms.Invite),
+                            })
                         ) : (
-                            `Create ${getTerminology(OtherTerms.Invite, SystemTerms.Invite)} Link`
+                            t('dialogTitle.create', {
+                                term: getTerminology(OtherTerms.Invite, SystemTerms.Invite),
+                            })
                         )}
                     </MyButton>
                 </div>

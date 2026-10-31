@@ -1,0 +1,19 @@
+{
+    "title": "Edit {{name}}",
+    "subtitle": "Pick a manager or change the position label.",
+    "reportsTo": "Reports to",
+    "noManager": "No manager — top of team",
+    "reportsToHint": "Their direct reports (and this person) are hidden from this list to prevent loops.",
+    "positionLabel": "Position label",
+    "optional": "(optional)",
+    "positionLabelPlaceholder": "e.g. Sales Head, Counsellor Lead",
+    "toast": {
+        "updated": "Updated",
+        "saveFailed": "Could not save"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "saving": "Saving…",
+        "saveChanges": "Save changes"
+    }
+}

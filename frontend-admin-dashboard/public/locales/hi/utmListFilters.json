@@ -1,0 +1,22 @@
+{
+    "dimensions": {
+        "source": "UTM स्रोत",
+        "medium": "UTM माध्यम",
+        "campaign": "UTM अभियान",
+        "content": "UTM कंटेंट",
+        "term": "UTM टर्म",
+        "sourceType": "UTM चैनल"
+    },
+    "sourceTypes": {
+        "audience": "ऑडियंस फ़ॉर्म",
+        "liveSession": "लाइव क्लास",
+        "assessment": "असेसमेंट",
+        "enrollInvite": "एनरोल इनवाइट",
+        "productPage": "प्रोडक्ट पेज",
+        "catalogue": "कैटलॉग साइट",
+        "custom": "अन्य पेज"
+    },
+    "untagged": "कोई अभियान नहीं (अनटैग्ड)",
+    "searchPlaceholder": "{{dimension}} खोजें…",
+    "chip": "{{dimension}}: {{value}}"
+}

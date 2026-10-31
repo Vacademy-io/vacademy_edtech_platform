@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
-import { Upload, X, Video, Monitor } from 'lucide-react';
+import { UploadSimple, X, Video, Monitor } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { useFileUpload } from '@/hooks/use-file-upload';
 import { getUserId } from '@/utils/userDetails';
 import { createInputVideo, type InputVideoMode } from '../-services/input-video';
@@ -15,6 +16,7 @@ interface UploadVideoDialogProps {
 }
 
 export function UploadVideoDialog({ apiKey, onClose, onComplete }: UploadVideoDialogProps) {
+    const { t } = useTranslation('videoApiStudioUploadVideoDialog');
     const [name, setName] = useState('');
     const [mode, setMode] = useState<InputVideoMode>('podcast');
     const [file, setFile] = useState<File | null>(null);
@@ -31,11 +33,11 @@ export function UploadVideoDialog({ apiKey, onClose, onComplete }: UploadVideoDi
         e.target.value = '';
 
         if (!ACCEPTED_TYPES.includes(selected.type)) {
-            toast.error('Unsupported format. Use MP4, WebM, or MOV.');
+            toast.error(t('errors.unsupportedFormat'));
             return;
         }
         if (selected.size > MAX_SIZE_MB * 1024 * 1024) {
-            toast.error(`File too large. Max ${MAX_SIZE_MB}MB.`);
+            toast.error(t('errors.fileTooLarge', { maxSize: MAX_SIZE_MB }));
             return;
         }
 
@@ -62,27 +64,31 @@ export function UploadVideoDialog({ apiKey, onClose, onComplete }: UploadVideoDi
                 publicUrl: true,
             });
 
-            if (!fileId) throw new Error('Upload failed');
+            if (!fileId) throw new Error(t('errors.uploadFailed'));
             setUploadProgress(60);
 
             const sourceUrl = await getPublicUrl(fileId);
-            if (!sourceUrl) throw new Error('Failed to get public URL');
+            if (!sourceUrl) throw new Error(t('errors.publicUrlFailed'));
             setUploadProgress(80);
             setIsUploading(false);
 
             // Step 2: Create record + start indexing
             setIsSubmitting(true);
-            await createInputVideo(apiKey, {
-                name: name.trim(),
-                mode,
-                source_url: sourceUrl,
-            });
+            await createInputVideo(
+                apiKey,
+                {
+                    name: name.trim(),
+                    mode,
+                    source_url: sourceUrl,
+                },
+                t
+            );
             setUploadProgress(100);
 
-            toast.success('Video uploaded and indexing started');
+            toast.success(t('success.uploadStarted'));
             onComplete();
         } catch (err) {
-            toast.error(err instanceof Error ? err.message : 'Upload failed');
+            toast.error(err instanceof Error ? err.message : t('errors.uploadFailed'));
             setIsUploading(false);
             setIsSubmitting(false);
         }
@@ -95,7 +101,7 @@ export function UploadVideoDialog({ apiKey, onClose, onComplete }: UploadVideoDi
             <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
                 {/* Header */}
                 <div className="mb-4 flex items-center justify-between">
-                    <h2 className="text-lg font-semibold">Upload Video for Indexing</h2>
+                    <h2 className="text-lg font-semibold">{t('title')}</h2>
                     <button
                         onClick={onClose}
                         disabled={busy}
@@ -112,7 +118,7 @@ export function UploadVideoDialog({ apiKey, onClose, onComplete }: UploadVideoDi
                             <Video className="size-4 text-gray-500" />
                             <span className="flex-1 truncate">{file.name}</span>
                             <span className="text-gray-400">
-                                {(file.size / 1024 / 1024).toFixed(1)} MB
+                                {t('fileSize', { size: (file.size / 1024 / 1024).toFixed(1) })}
                             </span>
                             {!busy && (
                                 <button
@@ -128,10 +134,10 @@ export function UploadVideoDialog({ apiKey, onClose, onComplete }: UploadVideoDi
                             onClick={() => fileInputRef.current?.click()}
                             className="flex w-full flex-col items-center gap-2 rounded-md border-2 border-dashed border-gray-300 px-4 py-8 text-sm text-gray-500 hover:border-gray-400 hover:text-gray-700"
                         >
-                            <Upload className="size-6" />
-                            <span>Click to select a video file</span>
+                            <UploadSimple className="size-6" />
+                            <span>{t('filePicker.selectPrompt')}</span>
                             <span className="text-xs text-gray-400">
-                                MP4, WebM, MOV up to {MAX_SIZE_MB}MB
+                                {t('filePicker.sizeHint', { maxSize: MAX_SIZE_MB })}
                             </span>
                         </button>
                     )}
@@ -146,12 +152,12 @@ export function UploadVideoDialog({ apiKey, onClose, onComplete }: UploadVideoDi
 
                 {/* Name */}
                 <div className="mb-4">
-                    <label className="mb-1 block text-sm font-medium">Name</label>
+                    <label className="mb-1 block text-sm font-medium">{t('name.label')}</label>
                     <input
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g. Product Demo Recording"
+                        placeholder={t('name.placeholder')}
                         className="w-full rounded-md border px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                         disabled={busy}
                     />
@@ -159,7 +165,7 @@ export function UploadVideoDialog({ apiKey, onClose, onComplete }: UploadVideoDi
 
                 {/* Mode */}
                 <div className="mb-6">
-                    <label className="mb-2 block text-sm font-medium">Video Type</label>
+                    <label className="mb-2 block text-sm font-medium">{t('videoType.label')}</label>
                     <div className="grid grid-cols-2 gap-3">
                         <button
                             type="button"
@@ -172,7 +178,7 @@ export function UploadVideoDialog({ apiKey, onClose, onComplete }: UploadVideoDi
                             }`}
                         >
                             <Video className="size-4" />
-                            Podcast
+                            {t('videoType.podcast')}
                         </button>
                         <button
                             type="button"
@@ -185,7 +191,7 @@ export function UploadVideoDialog({ apiKey, onClose, onComplete }: UploadVideoDi
                             }`}
                         >
                             <Monitor className="size-4" />
-                            Software Demo
+                            {t('videoType.demo')}
                         </button>
                     </div>
                 </div>
@@ -200,7 +206,7 @@ export function UploadVideoDialog({ apiKey, onClose, onComplete }: UploadVideoDi
                             />
                         </div>
                         <p className="mt-1 text-xs text-gray-500">
-                            {isUploading ? 'Uploading video...' : 'Starting indexing...'}
+                            {isUploading ? t('progress.uploading') : t('progress.indexing')}
                         </p>
                     </div>
                 )}
@@ -212,14 +218,14 @@ export function UploadVideoDialog({ apiKey, onClose, onComplete }: UploadVideoDi
                         disabled={busy}
                         className="rounded-md border px-4 py-2 text-sm hover:bg-gray-50"
                     >
-                        Cancel
+                        {t('actions.cancel')}
                     </button>
                     <button
                         onClick={handleSubmit}
                         disabled={!file || !name.trim() || busy}
                         className="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-medium disabled:opacity-50"
                     >
-                        {busy ? 'Processing...' : 'Upload & Index'}
+                        {busy ? t('actions.processing') : t('actions.upload')}
                     </button>
                 </div>
             </div>

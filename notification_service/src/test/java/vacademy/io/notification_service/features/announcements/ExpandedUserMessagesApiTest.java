@@ -12,6 +12,8 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import vacademy.io.common.auth.dto.UserServiceDTO;
+import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.notification_service.features.announcements.dto.CreateAnnouncementRequest;
 import vacademy.io.notification_service.features.announcements.service.AnnouncementDeliveryService;
 import vacademy.io.notification_service.features.announcements.service.RecipientResolutionService;
@@ -19,6 +21,7 @@ import vacademy.io.notification_service.features.announcements.service.Recipient
 import java.util.List;
 import java.util.Map;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -32,6 +35,15 @@ class ExpandedUserMessagesApiTest {
 
     @MockBean private RecipientResolutionService recipientResolutionService;
     @MockBean private AnnouncementDeliveryService announcementDeliveryService;
+
+    private static CustomUserDetails principal(String userId, String role) {
+        UserServiceDTO dto = new UserServiceDTO();
+        dto.setUserId(userId);
+        dto.setUsername(userId + "@example.com");
+        dto.setFullName(userId);
+        dto.setAuthorities(List.of(role));
+        return new CustomUserDetails(dto);
+    }
 
     private String createAnnouncementForSystemAlert() throws Exception {
         CreateAnnouncementRequest req = new CreateAnnouncementRequest();
@@ -67,7 +79,7 @@ class ExpandedUserMessagesApiTest {
                 .thenReturn(List.of(userId));
         Mockito.doNothing().when(announcementDeliveryService).deliverAnnouncement(announcementId);
 
-        mockMvc.perform(post("/notification-service/v1/announcements/" + announcementId + "/deliver"))
+        mockMvc.perform(post("/notification-service/v1/announcements/" + announcementId + "/deliver").header("clientId", "INST_U").with(user(principal("admin-1", "ADMIN"))))
                 .andExpect(status().isOk());
 
         var listRes = mockMvc.perform(get("/notification-service/v1/user-messages/user/" + userId + "?page=0&size=5"))

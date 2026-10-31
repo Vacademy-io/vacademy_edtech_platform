@@ -1,0 +1,14 @@
+{
+    "participantDetails": "Participant Details",
+    "faceProfileAlt": "face profile",
+    "attemptUploadSuccess": "Attempt uploaded successfully",
+    "fileUploadSuccess": "File uploaded successfully",
+    "uploadFailedRetry": "Upload failed. Please try again.",
+    "uploading": "Uploading",
+    "uploadAttempt": "Upload Attempt",
+    "submit": "Submit",
+    "evaluate": "Evaluate",
+    "confirmUploadHeading": "Confirm Upload?",
+    "confirmUploadBody": "Uploading a new file will overwrite the student's existing response. Are you sure you want to continue?",
+    "upload": "Upload"
+}

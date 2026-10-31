@@ -1,6 +1,8 @@
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { fetchAnalyticsEngagementTrends } from '../../-services/dashboard-services';
 import { ChartLine } from '@phosphor-icons/react';
 import {
@@ -38,6 +40,17 @@ interface TooltipPayloadEntry {
     value: number;
 }
 
+function buildFormatDate(t: TFunction) {
+    const months = t('chart.months', { returnObjects: true }) as string[];
+    return (dateStr: string) => {
+        const parsed = new Date(dateStr);
+        return t('chart.dateLabel', {
+            month: months[parsed.getMonth()],
+            day: parsed.getDate(),
+        });
+    };
+}
+
 const CustomTooltip = ({
     active,
     payload,
@@ -61,6 +74,7 @@ const CustomTooltip = ({
 };
 
 export default function DailyActivityTrendWidget({ instituteId }: DailyActivityTrendWidgetProps) {
+    const { t } = useTranslation('dashboardDailyActivityTrendWidget');
     const { data, isLoading, isError } = useQuery({
         queryKey: ['analytics-daily-trends', instituteId],
         queryFn: () => fetchAnalyticsEngagementTrends(instituteId),
@@ -69,13 +83,12 @@ export default function DailyActivityTrendWidget({ instituteId }: DailyActivityT
         retry: false,
     });
 
+    const formatDate = buildFormatDate(t);
+
     const days: TrendDay[] = data?.daily_activity_trend || [];
     const trendData: TrendPoint[] = days
         .map((day) => ({
-            date: new Date(day.date).toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-            }),
+            date: formatDate(day.date),
             users: day.unique_users,
             sessions: day.total_sessions,
             avgDuration: Math.round(day.average_session_duration || 0),
@@ -98,10 +111,10 @@ export default function DailyActivityTrendWidget({ instituteId }: DailyActivityT
                     </span>
                     <div className="min-w-0">
                         <CardTitle className="text-sm font-semibold">
-                            Daily Activity Trend
+                            {t('header.title')}
                         </CardTitle>
-                        <CardDescription className="line-clamp-1 text-[11px] text-neutral-500 sm:text-xs">
-                            User activity over the past week
+                        <CardDescription className="line-clamp-1 text-2xs text-neutral-500 sm:text-xs">
+                            {t('header.subtitle')}
                         </CardDescription>
                     </div>
                 </div>
@@ -119,10 +132,8 @@ export default function DailyActivityTrendWidget({ instituteId }: DailyActivityT
                 ) : isError || trendData.length === 0 ? (
                     <div className="flex flex-1 flex-col items-center justify-center gap-2 py-6 text-center">
                         <ChartLine size={20} weight="duotone" className="text-neutral-300" />
-                        <div className="text-[11px] text-neutral-500">
-                            {isError
-                                ? "Couldn't load trend data"
-                                : 'No activity recorded this week'}
+                        <div className="text-2xs text-neutral-500">
+                            {isError ? t('error.message') : t('empty.message')}
                         </div>
                     </div>
                 ) : (
@@ -132,20 +143,26 @@ export default function DailyActivityTrendWidget({ instituteId }: DailyActivityT
                                 <div className="text-base font-semibold tabular-nums text-blue-700">
                                     {totalUsers.toLocaleString('en-IN')}
                                 </div>
-                                <div className="text-[10px] text-blue-700/80">Users</div>
+                                <div className="text-2xs text-blue-700/80">
+                                    {t('stats.users')}
+                                </div>
                             </div>
                             <div className="rounded-md border border-emerald-100 bg-emerald-50/60 p-2">
                                 <div className="text-base font-semibold tabular-nums text-emerald-700">
                                     {totalSessions.toLocaleString('en-IN')}
                                 </div>
-                                <div className="text-[10px] text-emerald-700/80">Sessions</div>
+                                <div className="text-2xs text-emerald-700/80">
+                                    {t('stats.sessions')}
+                                </div>
                             </div>
                             <div className="rounded-md border border-violet-100 bg-violet-50/60 p-2">
                                 <div className="text-base font-semibold tabular-nums text-violet-700">
                                     {avgDuration}
-                                    <span className="text-xs">m</span>
+                                    <span className="text-xs">{t('stats.avgDurationUnit')}</span>
                                 </div>
-                                <div className="text-[10px] text-violet-700/80">Avg duration</div>
+                                <div className="text-2xs text-violet-700/80">
+                                    {t('stats.avgDuration')}
+                                </div>
                             </div>
                         </div>
                         <div className="mt-3 h-32 flex-1">
@@ -170,18 +187,18 @@ export default function DailyActivityTrendWidget({ instituteId }: DailyActivityT
                                     <Line
                                         type="monotone"
                                         dataKey="users"
-                                        stroke="#3B82F6"
+                                        stroke="hsl(var(--info-500))"
                                         strokeWidth={2}
-                                        dot={{ fill: '#3B82F6', r: 3 }}
-                                        name="Users"
+                                        dot={{ fill: 'hsl(var(--info-500))', r: 3 }}
+                                        name={t('stats.users')}
                                     />
                                     <Line
                                         type="monotone"
                                         dataKey="sessions"
-                                        stroke="#10B981"
+                                        stroke="hsl(var(--success-500))"
                                         strokeWidth={2}
-                                        dot={{ fill: '#10B981', r: 3 }}
-                                        name="Sessions"
+                                        dot={{ fill: 'hsl(var(--success-500))', r: 3 }}
+                                        name={t('stats.sessions')}
                                     />
                                 </LineChart>
                             </ResponsiveContainer>

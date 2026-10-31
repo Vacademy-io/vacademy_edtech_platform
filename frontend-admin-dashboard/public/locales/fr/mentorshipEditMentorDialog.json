@@ -1,0 +1,22 @@
+{
+    "editMentorHeading": "Modifier {{name}}",
+    "defaultMentorName": "mentor",
+    "description": "Comment ce mentor apparaît aux apprenants. Son compte et son rôle restent inchangés.",
+    "mentorAlt": "Mentor",
+    "uploading": "Téléversement…",
+    "changePhoto": "Changer la photo",
+    "uploadPhoto": "Téléverser une photo",
+    "photoHelp": "Affichée sur sa fiche annuaire et dans Mes mentors.",
+    "displayNameLabel": "Nom affiché",
+    "displayNamePlaceholder": "Nom affiché",
+    "titleLabel": "Titre",
+    "titlePlaceholder": "ex. Mentor de carrière senior",
+    "bioLabel": "Bio",
+    "bioPlaceholder": "Courte bio affichée aux apprenants",
+    "cancel": "Annuler",
+    "saving": "Enregistrement…",
+    "saveChanges": "Enregistrer les modifications",
+    "mentorUpdated": "Mentor mis à jour",
+    "photoUploadFailed": "Échec du téléversement de la photo",
+    "updateFailed": "Échec de la mise à jour du mentor"
+}

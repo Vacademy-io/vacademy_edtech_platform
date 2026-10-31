@@ -1,8 +1,12 @@
 import React from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { useSiteNavigate } from "../../-utils/catalogue-route-search";
 import { FooterProps } from "../../-types/course-catalogue-types";
 import { CourseCatalogueData } from "../../-types/course-catalogue-types";
 import { RouteMatcher } from "../../-services/route-matcher";
+import type { GlobalSettings } from "../../-types/course-catalogue-types";
+import type { FooterBrandProps } from "../../-types/site-chrome-types";
+import { FooterBrand } from "./footer/FooterBrand";
 
 export const FooterComponent: React.FC<FooterProps & {
   catalogueData?: CourseCatalogueData;
@@ -12,7 +16,11 @@ export const FooterComponent: React.FC<FooterProps & {
    *  pickers appeared to do nothing. */
   backgroundColor?: string;
   textColor?: string;
-}> = ({
+  /** Used by the opt-in "brand" variant only (newsletter, language switch). */
+  instituteId?: string;
+  globalSettings?: GlobalSettings;
+} & Omit<FooterBrandProps, "leftSection">> = (allProps) => {
+  const {
   layout,
   backgroundColor,
   textColor,
@@ -26,8 +34,9 @@ export const FooterComponent: React.FC<FooterProps & {
   bottomNote,
   catalogueData,
   tagName = "home"
-}) => {
+  } = allProps;
   const navigate = useNavigate();
+  const siteNavigate = useSiteNavigate();
   
   // Helper function to handle footer link navigation
   const handleLinkNavigation = (route: string, openInSameTab: boolean = false) => {
@@ -44,18 +53,18 @@ export const FooterComponent: React.FC<FooterProps & {
       const matchedPage = RouteMatcher.findMatchingPage(route, catalogueData.pages);
       if (matchedPage) {
         const navigationRoute = RouteMatcher.getPageNavigationRoute(matchedPage, tagName);
-        navigate({ to: navigationRoute });
+        void siteNavigate(navigationRoute);
         return;
       }
     }
 
     const normalizedRoute = RouteMatcher.normalizeRoute(route);
     if (normalizedRoute === 'home' || normalizedRoute === '') {
-      navigate({ to: `/${tagName}` });
+      navigate({ to: RouteMatcher.pagePath(tagName) });
       return;
     }
 
-    navigate({ to: route });
+    void siteNavigate(route);
   };
 
   const handleSocialLinkNavigation = (url: string, openInSameTab: boolean = false) => {
@@ -102,6 +111,12 @@ export const FooterComponent: React.FC<FooterProps & {
             <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
           </svg>
         );
+      case "telegram":
+        return (
+          <svg {...iconProps} viewBox="0 0 24 24">
+            <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+          </svg>
+        );
       case "pinterest":
         return (
           <svg {...iconProps} viewBox="0 0 24 24">
@@ -116,6 +131,12 @@ export const FooterComponent: React.FC<FooterProps & {
         );
     }
   };
+
+  // Opt-in "brand" footer (logo + newsletter + four columns + bottom bar).
+  // Every other footer renders the original markup below.
+  if (allProps.variant === "brand") {
+    return <FooterBrand {...allProps} tagName={tagName} />;
+  }
 
   // Determine grid columns based on layout
   const getGridCols = () => {
@@ -170,8 +191,8 @@ export const FooterComponent: React.FC<FooterProps & {
 
             {/* Legacy Social Media Section */}
             {socialsSection && !leftSection.socials && (
-              <div className="mt-4">
-                <h4 className="text-sm font-medium mb-2 text-catalogue-text-primary">{socialsSection.title}</h4>
+              <div className="mt-4 space-y-2">
+                <h4 className="text-sm font-medium text-catalogue-text-primary">{socialsSection.title}</h4>
                 <div className="flex gap-3">
                   {socialsSection.links.map((social, linkIndex) => (
                     <a
@@ -224,8 +245,8 @@ export const FooterComponent: React.FC<FooterProps & {
 
           {/* Right Section 2 */}
           {rightSection2 && (
-            <div>
-              <h3 className="text-sm font-semibold mb-3 text-primary-500">{rightSection2.title}</h3>
+            <div className="space-y-stack">
+              <h3 className="text-sm font-semibold text-primary-500">{rightSection2.title}</h3>
               <ul className="space-y-1.5">
                 {rightSection2.links.map((link, linkIndex) => (
                   <li key={linkIndex}>
@@ -254,8 +275,8 @@ export const FooterComponent: React.FC<FooterProps & {
 
           {/* Right Section 3 */}
           {rightSection3 && (
-            <div>
-              <h3 className="text-sm font-semibold mb-3 text-primary-500">{rightSection3.title}</h3>
+            <div className="space-y-stack">
+              <h3 className="text-sm font-semibold text-primary-500">{rightSection3.title}</h3>
               <ul className="space-y-1.5">
                 {rightSection3.links.map((link, linkIndex) => (
                   <li key={linkIndex}>
@@ -284,8 +305,8 @@ export const FooterComponent: React.FC<FooterProps & {
 
           {/* Legacy Support - Single Right Section */}
           {rightSection && !rightSection1 && !rightSection2 && !rightSection3 && (
-            <div>
-              <h3 className="text-sm font-semibold mb-3 text-primary-500">{rightSection.title}</h3>
+            <div className="space-y-stack">
+              <h3 className="text-sm font-semibold text-primary-500">{rightSection.title}</h3>
               <ul className="space-y-1.5">
                 {rightSection.links.map((link, linkIndex) => (
                   <li key={linkIndex}>
@@ -316,8 +337,8 @@ export const FooterComponent: React.FC<FooterProps & {
           {rightSections && rightSections.length > 0 && !rightSection1 && !rightSection2 && !rightSection3 && (
             <>
               {rightSections.map((section, sectionIndex) => (
-                <div key={sectionIndex}>
-                  <h3 className="text-sm font-semibold mb-3 text-primary-500">{section.title}</h3>
+                <div className="space-y-stack" key={sectionIndex}>
+                  <h3 className="text-sm font-semibold text-primary-500">{section.title}</h3>
                   <ul className="space-y-1.5">
                     {section.links.map((link, linkIndex) => (
                       <li key={linkIndex}>

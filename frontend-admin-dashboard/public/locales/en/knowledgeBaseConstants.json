@@ -1,0 +1,66 @@
+{
+    "purpose": {
+        "teaching": {
+            "label": "Teaching material",
+            "hint": "Textbooks, notes and reference books for a class or subject — e.g. \"Class 9 Science\"."
+        },
+        "questionBank": {
+            "label": "Question bank",
+            "hint": "Past papers and question collections — e.g. \"JEE Advanced previous year questions\"."
+        },
+        "general": {
+            "label": "General reference",
+            "hint": "Anything else you want the AI to be able to look things up in."
+        }
+    },
+    "sourceKind": {
+        "pdf": "Document",
+        "url": "Web page",
+        "youtube": "YouTube video",
+        "text": "Typed note"
+    },
+    "sourceStatus": {
+        "pending": {
+            "label": "Queued",
+            "hint": "Waiting to start."
+        },
+        "processing": {
+            "label": "Reading",
+            "hint": "Being read and indexed right now."
+        },
+        "ready": {
+            "label": "Ready",
+            "hint": "Fully readable and searchable."
+        },
+        "partial": {
+            "label": "Partly readable",
+            "hint": "Indexed, but some pages could not be read properly."
+        },
+        "failed": {
+            "label": "Failed",
+            "hint": "Nothing could be indexed from this."
+        },
+        "working": "Working",
+        "gettingStarted": "Getting started"
+    },
+    "stage": {
+        "parsing": "Reading pages",
+        "figures": "Collecting diagrams and tables",
+        "chunking": "Organising the text",
+        "embedding": "Making it searchable",
+        "summarizing": "Summarising chapters"
+    },
+    "language": {
+        "en": "English",
+        "hi": "Hindi",
+        "mr": "Marathi",
+        "ta": "Tamil",
+        "te": "Telugu",
+        "kn": "Kannada",
+        "ml": "Malayalam",
+        "bn": "Bengali",
+        "gu": "Gujarati",
+        "pa": "Punjabi",
+        "ur": "Urdu"
+    }
+}

@@ -5,6 +5,7 @@
  * each one sounds like, and the create/edit flow. Saving here also registers the
  * agent as a campaign server-side, so workflows and the IVR can pick it by name.
  */
+import { AiAgentsEnhancedHeader } from './-components/AiAgentsEnhancedHeader';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createLazyFileRoute, Link } from '@tanstack/react-router';
 import { Helmet } from 'react-helmet';
@@ -14,6 +15,7 @@ import {
     ArrowsClockwise,
     CaretDown,
     Copy,
+    FlowArrow,
     GearSix,
     MagnifyingGlass,
     PencilSimple,
@@ -123,8 +125,11 @@ function AgentCard({
         promptPreview(agent.systemPrompt) ||
         'No opening line yet — this agent will fall back to the platform default.';
     return (
-        <Card className="flex flex-col gap-3 p-4">
+        <Card className="flex flex-col gap-3 rounded-xl border-neutral-200 p-4 shadow-sm transition-shadow hover:shadow-md">
             <div className="flex items-start justify-between gap-2">
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-500">
+                    <Robot size={16} weight="duotone" />
+                </span>
                 <p className="min-w-0 flex-1 truncate text-subtitle font-semibold text-neutral-700">
                     {agent.name || 'Untitled agent'}
                 </p>
@@ -144,22 +149,24 @@ function AgentCard({
                 {agent.maxCallMinutes ? ` · max ${agent.maxCallMinutes} min` : ''}
             </p>
 
-            <p className="line-clamp-2 min-h-8 text-body text-neutral-500">{preview}</p>
+            <p className="line-clamp-2 min-h-8 rounded-lg bg-neutral-50 px-3 py-2 text-body text-neutral-600">
+                {preview}
+            </p>
 
             <div className="flex flex-wrap items-center gap-1.5">
                 {(agent.extractionQuestions ?? []).length > 0 && (
-                    <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-caption text-neutral-500">
+                    <span className="rounded-full border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-caption text-neutral-600">
                         {agent.extractionQuestions?.length} question
                         {agent.extractionQuestions?.length === 1 ? '' : 's'}
                     </span>
                 )}
                 {(agent.handoffNumbers ?? []).length > 0 && (
-                    <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-caption text-neutral-500">
+                    <span className="rounded-full border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-caption text-neutral-600">
                         handoff ready
                     </span>
                 )}
                 {agent.bookingPageId && (
-                    <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-caption text-neutral-500">
+                    <span className="rounded-full border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-caption text-neutral-600">
                         auto-books meetings
                     </span>
                 )}
@@ -324,13 +331,18 @@ function AiAgentsPage() {
             </Helmet>
             <div className="flex flex-col gap-5 p-1">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <h1 className="text-h3 font-semibold text-neutral-700">AI Agents</h1>
-                        <p className="max-w-2xl text-body text-neutral-500">
-                            The personas our AI caller speaks with — prompt, opening line, language,
-                            voice and what each call should find out. Every saved agent is available
-                            to workflows, campaigns and the IVR.
-                        </p>
+                    <div className="flex items-start gap-3">
+                        <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-500">
+                            <Robot size={20} weight="duotone" />
+                        </span>
+                        <div>
+                            <h1 className="text-h3 font-semibold text-neutral-900">AI Agents</h1>
+                            <p className="max-w-2xl text-body text-neutral-500">
+                                The personas our AI caller speaks with — prompt, opening line,
+                                language, voice and what each call should find out. Every saved
+                                agent is available to workflows, campaigns and the IVR.
+                            </p>
+                        </div>
                     </div>
                     <div className="flex items-center gap-2">
                         <Link to="/settings" search={{ selectedTab: 'aiCalling' }}>
@@ -352,6 +364,9 @@ function AiAgentsPage() {
                         </MyButton>
                     </div>
                 </div>
+
+                {/* Summary header. */}
+                <AiAgentsEnhancedHeader total={agents.length} active={activeCount} />
 
                 {!agentsQuery.isLoading && !agentsQuery.isError && agents.length > 0 && (
                     <div className="flex flex-wrap items-center gap-3">
@@ -487,6 +502,41 @@ function AiAgentsPage() {
                             <UseCaseGallery onPick={setPickedUseCase} title="" subtitle="" />
                         </CollapsibleContent>
                     </Collapsible>
+                )}
+
+                {/* Where saved agents are used — reference only. */}
+                {!agentsQuery.isLoading && !agentsQuery.isError && agents.length > 0 && (
+                    <Card className="flex flex-col gap-3 rounded-xl border-neutral-200 p-4 shadow-sm">
+                        <div className="flex items-center gap-2">
+                            <FlowArrow size={16} className="text-neutral-500" />
+                            <h3 className="text-subtitle font-semibold text-neutral-800">
+                                Use an agent in a workflow
+                            </h3>
+                        </div>
+                        <ul className="flex list-disc flex-col gap-1.5 pl-5 text-body text-neutral-600">
+                            <li>
+                                The workflow &ldquo;AI call&rdquo; step, bulk AI calls and the IVR
+                                &ldquo;Talk to AI agent&rdquo; step pick agents from this page by
+                                name.
+                            </li>
+                            <li>Disabled agents stay saved but cannot be picked.</li>
+                            <li>
+                                The call result comes back to the workflow as{' '}
+                                <code className="rounded bg-neutral-100 px-1 text-caption">
+                                    callOutcome
+                                </code>
+                                ,{' '}
+                                <code className="rounded bg-neutral-100 px-1 text-caption">
+                                    callDisposition
+                                </code>{' '}
+                                and{' '}
+                                <code className="rounded bg-neutral-100 px-1 text-caption">
+                                    callAnswers
+                                </code>{' '}
+                                for the next steps.
+                            </li>
+                        </ul>
+                    </Card>
                 )}
             </div>
 

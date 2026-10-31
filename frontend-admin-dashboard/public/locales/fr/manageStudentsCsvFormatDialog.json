@@ -1,0 +1,30 @@
+{
+    "title": "Choisir le format CSV",
+    "sections": {
+        "enrollmentPreferences": "Préférences d'inscription",
+        "optionalColumnSelection": "Sélection des colonnes CSV facultatives"
+    },
+    "preferences": {
+        "autoGenerateUsername": "Générer automatiquement le nom d'utilisateur",
+        "autoGeneratePassword": "Générer automatiquement le mot de passe",
+        "autoGenerateEnrollmentId": "Générer automatiquement l'ID d'inscription",
+        "setCommonExpiryDate": "Définir une date d'expiration commune",
+        "daysFromToday": "jours à partir d'aujourd'hui",
+        "addStudentStatus": "Ajouter le statut de l'étudiant",
+        "selectStatusPlaceholder": "Sélectionner le statut",
+        "statusActive": "Actif",
+        "statusInactive": "Inactif"
+    },
+    "columns": {
+        "fatherName": "Nom du père/tuteur",
+        "collegeName": "Nom du collège/école",
+        "motherName": "Nom de la mère/tutrice",
+        "state": "État/Région",
+        "city": "Ville",
+        "fatherEmail": "E-mail du père/tuteur",
+        "motherEmail": "E-mail de la mère/tutrice",
+        "pincode": "Code postal",
+        "fatherMobile": "Numéro de mobile du père/tuteur",
+        "motherMobile": "Numéro de mobile de la mère/tutrice"
+    }
+}

@@ -1,0 +1,38 @@
+{
+    "column": {
+        "revenue": "المحصّل",
+        "admissions": "القبولات",
+        "bookedRevenue": "الرسوم المحجوزة",
+        "payingLeads": "العملاء المحتملون الدافعون",
+        "payments": "المدفوعات",
+        "avgDealValue": "متوسط قيمة الصفقة",
+        "source": "المصدر",
+        "counsellor": "المستشار"
+    },
+    "kpi": {
+        "revenueSub": "محصّلة من العملاء المحتملين المحوّلين",
+        "admissionsSub": "العملاء المحوَّلون المسجَّلون في هذه الفترة",
+        "bookedRevenueSub": "الرسوم الكاملة لهذه القبولات، مدفوعة أو لا"
+    },
+    "dailyRevenue": {
+        "title": "الإيرادات اليومية",
+        "barTooltip_zero": "{{date}}: {{amount}} ({{count}} دفعة)",
+        "barTooltip_one": "{{date}}: {{amount}} ({{count}} دفعة)",
+        "barTooltip_two": "{{date}}: {{amount}} ({{count}} دفعتان)",
+        "barTooltip_few": "{{date}}: {{amount}} ({{count}} دفعات)",
+        "barTooltip_many": "{{date}}: {{amount}} ({{count}} دفعة)",
+        "barTooltip_other": "{{date}}: {{amount}} ({{count}} دفعة)",
+        "footnote": "يُسجَّل الإيراد بتاريخ الدفع للعملاء المحتملين الذين تم تحويل ملفاتهم."
+    },
+    "bySource": {
+        "title": "الإيرادات حسب المصدر"
+    },
+    "byCounsellor": {
+        "title": "الإيرادات حسب المستشار",
+        "footnote": "تُحتسب القبولات والرسوم المحجوزة حسب تاريخ التسجيل؛ أما المحصّل فحسب تاريخ الدفع، لذا يشمل أيضًا أقساط قبولات سابقة."
+    },
+    "empty": {
+        "noRevenue": "لا توجد إيرادات في هذا النطاق الزمني.",
+        "noCounsellorRevenue": "لا توجد إيرادات منسوبة إلى مستشار في هذا النطاق الزمني."
+    }
+}

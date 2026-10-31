@@ -1,0 +1,13 @@
+{
+    "validation": {
+        "endMustBeAfterStart": "अंत, प्रारंभ के बाद होना चाहिए"
+    },
+    "fileType": {
+        "allFiles": "सभी फ़ाइलें",
+        "pdf": "पीडीएफ़",
+        "image": "छवि (PNG, JPG, GIF)",
+        "document": "दस्तावेज़ (DOC, DOCX)",
+        "video": "वीडियो (MP4, MOV, WEBM)",
+        "audio": "ऑडियो (MP3, WAV, M4A)"
+    }
+}

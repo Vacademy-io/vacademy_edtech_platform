@@ -1,0 +1,24 @@
+{
+    "title": "Upload Document",
+    "errors": {
+        "noFileSelected": "Please select a file first.",
+        "noQuestionsFound": "No questions found. Make sure your document uses the required format shown above.",
+        "parseFailed": "Failed to parse document. Please try again."
+    },
+    "requiredFormat": {
+        "heading": "Required document format",
+        "sectionHeader": "section header",
+        "questionSample": "(1.) Question text…",
+        "optionSample": "(a.) Option text…",
+        "correctAnswer": "correct answer",
+        "explanation": "explanation"
+    },
+    "dropZone": {
+        "clickToSelect": "Click to select a file",
+        "supportedFormats": "Supports .docx and .html files"
+    },
+    "parsingProgress": "Parsing document… {{progress}}%",
+    "cancel": "Cancel",
+    "processing": "Processing…",
+    "parseAndPreview": "Parse & Preview"
+}

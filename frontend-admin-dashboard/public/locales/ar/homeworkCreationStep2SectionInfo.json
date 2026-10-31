@@ -1,0 +1,63 @@
+{
+    "header": {
+        "mcqSingleCorrect": "اختيار من متعدد (إجابة واحدة):",
+        "mcqMultipleCorrect": "اختيار من متعدد (إجابات متعددة):",
+        "total": "الإجمالي:"
+    },
+    "uploadSection": {
+        "title": "تحميل ورقة الأسئلة",
+        "uploadFromDevice": "التحميل من الجهاز",
+        "uploadFromDeviceDialogTitle": "تحميل ورقة الأسئلة من الجهاز",
+        "createManually": "الإنشاء يدويًا",
+        "createManuallyDialogTitle": "إنشاء ورقة أسئلة يدويًا",
+        "chooseSavedPaper": "اختيار ورقة محفوظة",
+        "chooseSavedDialogTitle": "اختيار ورقة أسئلة محفوظة من القائمة"
+    },
+    "sectionDescription": {
+        "title": "وصف القسم",
+        "placeholder": "صف هذا القسم"
+    },
+    "duration": {
+        "questionDuration": "مدة السؤال",
+        "sectionDuration": "مدة القسم",
+        "hrs": "ساعات",
+        "minutes": "دقائق"
+    },
+    "markingScheme": {
+        "marksPerQuestion": {
+            "title": "الدرجات لكل سؤال",
+            "default": "(افتراضي)"
+        },
+        "negativeMarking": "الدرجات السالبة",
+        "partialMarking": "التقييم الجزئي"
+    },
+    "randomization": {
+        "problemRandomization": "عشوائية الأسئلة"
+    },
+    "table": {
+        "adaptiveMarkingRulesTitle": "قواعد التقييم التكيفي",
+        "headers": {
+            "qno": "رقم السؤال",
+            "question": "السؤال",
+            "questionType": "نوع السؤال",
+            "marks": "الدرجات",
+            "penalty": "الخصم",
+            "time": "الوقت"
+        },
+        "questionTypeLabels": {
+            "MCQS": "اختيار من متعدد (إجابة واحدة)",
+            "MCQM": "اختيار من متعدد (إجابات متعددة)",
+            "NUMERIC": "رقمي",
+            "CMCQS": "استيعاب نصي - اختيار من متعدد (إجابة واحدة)",
+            "CMCQM": "استيعاب نصي - اختيار من متعدد (إجابات متعددة)",
+            "CNUMERIC": "استيعاب نصي - رقمي",
+            "ONE_WORD": "كلمة واحدة",
+            "LONG_ANSWER": "إجابة طويلة",
+            "TRUE_FALSE": "صواب/خطأ",
+            "CODING": "برمجة"
+        }
+    },
+    "totalMarks": {
+        "label": "إجمالي الدرجات"
+    }
+}

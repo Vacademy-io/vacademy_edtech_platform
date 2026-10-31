@@ -1,0 +1,22 @@
+{
+    "cardTitle": "Aperçu des intervalles d'abonnement",
+    "subtitle": "Aperçu en direct de vos intervalles d'abonnement avec comparaison des fonctionnalités",
+    "errors": {
+        "missingPlans": "Erreur : les données des plans d'abonnement sont manquantes",
+        "missingCurrency": "Erreur : aucune devise n'est sélectionnée"
+    },
+    "emptyState": {
+        "title": "Aucun intervalle d'abonnement activé pour le moment",
+        "description": "Activez des intervalles et définissez des prix dans les paramètres pour voir les cartes d'aperçu",
+        "howToTitle": "Pour afficher un plan :",
+        "step1": "Activez le plan à l'aide de l'interrupteur",
+        "step2": "Définissez un prix valide supérieur à 0"
+    },
+    "plan": {
+        "customIntervalTitle": "Plan {{interval}}",
+        "defaultTitle": "Plan personnalisé",
+        "percentOff": "{{value}} % de réduction",
+        "amountOff": "{{symbol}}{{value}} de réduction",
+        "selectPlan": "Sélectionner le plan"
+    }
+}

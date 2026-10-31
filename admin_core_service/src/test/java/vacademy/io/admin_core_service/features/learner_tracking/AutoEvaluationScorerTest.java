@@ -8,6 +8,7 @@ import vacademy.io.admin_core_service.features.learner_tracking.util.AutoEvaluat
 import vacademy.io.admin_core_service.features.learner_tracking.util.AutoEvaluationScorer.Verdict;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -143,5 +144,48 @@ class AutoEvaluationScorerTest {
                 List.copyOf(scorer.correctAnswerIds("{\"correctAnswers\":[1]}", () -> OPTIONS)));
         assertEquals(List.of("opt-c"), List.copyOf(scorer.selectedAnswerIds("{\"answer\":\"opt-c\"}")));
         assertEquals(List.of(), List.copyOf(scorer.selectedAnswerIds("garbage")));
+    }
+
+    @Nested
+    @DisplayName("partial marking on multiple-correct questions")
+    class PartialCredit {
+
+        private static final Set<String> KEY = Set.of("opt-a", "opt-c");
+
+        @Test
+        @DisplayName("one of two correct options earns half")
+        void subsetEarnsShare() {
+            assertEquals(0.5, AutoEvaluationScorer.partialCreditFraction(KEY, Set.of("opt-a")));
+        }
+
+        @Test
+        @DisplayName("the full key earns everything")
+        void fullKeyEarnsAll() {
+            assertEquals(1.0, AutoEvaluationScorer.partialCreditFraction(KEY, Set.of("opt-a", "opt-c")));
+        }
+
+        @Test
+        @DisplayName("any wrong option earns nothing, even alongside correct ones")
+        void wrongOptionEarnsNothing() {
+            assertEquals(0.0, AutoEvaluationScorer.partialCreditFraction(KEY, Set.of("opt-a", "opt-b")));
+            assertEquals(0.0, AutoEvaluationScorer.partialCreditFraction(KEY, Set.of("opt-b")));
+        }
+
+        @Test
+        @DisplayName("only responses flagged isPartial are read as partial")
+        void isMarkedPartial() {
+            assertEquals(true, scorer.isMarkedPartial("{\"marks\":0.5,\"isPartial\":true}"));
+            assertEquals(false, scorer.isMarkedPartial("{\"marks\":0,\"isPartial\":false}"));
+            assertEquals(false, scorer.isMarkedPartial("{\"marks\":0,\"isCorrect\":false}"));
+            assertEquals(false, scorer.isMarkedPartial("not json isPartial"));
+            assertEquals(false, scorer.isMarkedPartial(null));
+        }
+
+        @Test
+        @DisplayName("unanswered or keyless questions earn nothing")
+        void emptyEarnsNothing() {
+            assertEquals(0.0, AutoEvaluationScorer.partialCreditFraction(KEY, Set.of()));
+            assertEquals(0.0, AutoEvaluationScorer.partialCreditFraction(Set.of(), Set.of("opt-a")));
+        }
     }
 }

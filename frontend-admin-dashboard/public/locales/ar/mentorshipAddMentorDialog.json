@@ -1,0 +1,64 @@
+{
+    "optionalDetails": {
+        "hide": "إخفاء التفاصيل",
+        "show": "إضافة صورة وخبرة وسعة"
+    },
+    "toast": {
+        "selectTeamMember": "اختر عضوًا من الفريق",
+        "enterNameEmail": "أدخل اسمًا وعنوان بريد إلكتروني صالحًا",
+        "invitationSent": "تم إرسال الدعوة إلى {{email}} — إنه بالفعل موجّه",
+        "mentorAdded": "تمت إضافة الموجّه",
+        "photoUploadFailed": "فشل تحميل الصورة",
+        "inviteFailed": "فشلت دعوة هذا الموجّه",
+        "addFailed": "فشلت إضافة الموجّه"
+    },
+    "errors": {
+        "invitationMissingUser": "لم تُرجع الدعوة مستخدمًا لإضافته كموجّه"
+    },
+    "dialog": {
+        "heading": "إضافة موجّه"
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "chooseTeamMemberFirst": "اختر عضوًا من الفريق أعلاه أولاً",
+        "inviting": "جارٍ الدعوة…",
+        "adding": "جارٍ الإضافة…",
+        "inviteAsMentor": "دعوة كموجّه",
+        "addMentor": "إضافة موجّه"
+    },
+    "intro": "يحصل الموجّهون على دور الموجّه ويظهرون للطلاب الذين تُسندهم إليهم.",
+    "modeTabs": {
+        "team": "من فريقك",
+        "invite": "الدعوة عبر البريد الإلكتروني"
+    },
+    "inviteHint": "سيحصلون على بريد دعوة ودور الموجّه، ويظهرون في هذه القائمة فورًا — لا حاجة للذهاب إلى الفرق أولاً.",
+    "fields": {
+        "fullNameLabel": "الاسم الكامل",
+        "fullNamePlaceholder": "مثال: آشا نائير",
+        "emailLabel": "البريد الإلكتروني",
+        "emailPlaceholder": "asha@example.com",
+        "displayNameLabel": "الاسم المعروض",
+        "titleLabel": "المسمى الوظيفي",
+        "titlePlaceholder": "مثال: موجّه مسار مهني أول",
+        "bioLabel": "نبذة",
+        "bioPlaceholder": "نبذة قصيرة (اختياري)"
+    },
+    "teamSearch": {
+        "placeholder": "ابحث في فريقك بالاسم أو البريد الإلكتروني",
+        "loading": "جارٍ تحميل الفريق…",
+        "loadError": "تعذّر تحميل فريقك.",
+        "noMembers": "لم يتم العثور على أعضاء فريق.",
+        "noMatches": "لا توجد نتائج مطابقة."
+    },
+    "selectedMember": {
+        "change": "تغيير",
+        "changeTitle": "اختيار عضو فريق آخر"
+    },
+    "photo": {
+        "alt": "الموجّه",
+        "uploading": "جارٍ الرفع…",
+        "change": "تغيير الصورة",
+        "upload": "رفع صورة",
+        "hint": "اختياري. يستخدم افتراضيًا صورة ملفهم الشخصي في الفريق."
+    }
+}

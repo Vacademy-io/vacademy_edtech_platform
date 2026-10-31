@@ -1,0 +1,15 @@
+{
+    "warnings": {
+        "title": "Check before filing"
+    },
+    "skipped": {
+        "defaultNoun": "employees",
+        "excludedCount_one": "{{count}} {{noun}} excluded from this file",
+        "excludedCount_other": "{{count}} {{noun}} excluded from this file",
+        "fixHint": "Fix the reason below and generate again — the file as it stands does not include them.",
+        "table": {
+            "employee": "Employee",
+            "reason": "Reason"
+        }
+    }
+}

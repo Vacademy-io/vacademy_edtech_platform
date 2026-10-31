@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { useTranslation } from "react-i18next";
 
 interface SessionStatusCardProps {
   sessionDetails: SessionDetailsResponse;
@@ -33,6 +34,7 @@ export default function SessionStatusCard({
   alreadyRegisteredEmail,
   earliestScheduleId,
 }: SessionStatusCardProps) {
+  const { t } = useTranslation("registrationA");
   const [currentTime, setCurrentTime] = useState(new Date());
   const navigate = useNavigate();
   const { mutateAsync: markAttendance } = useMarkAttendance();
@@ -242,15 +244,16 @@ export default function SessionStatusCard({
         <div className="space-y-3">
           <Badge className="bg-green-100 text-green-700 border-green-200 hover:bg-green-100">
             <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-            Live now
+            {t("common.liveNow")}
           </Badge>
           <MyButton
             buttonType="primary"
             className="w-full h-11 text-sm font-semibold rounded-lg"
             onClick={handleJoinLiveSession}
           >
-            Join Live{" "}
-            {getTerminology(ContentTerms.Session, SystemTerms.Session)}
+            {t("liveClass.statusCard.joinLive", {
+              session: getTerminology(ContentTerms.Session, SystemTerms.Session),
+            })}
           </MyButton>
         </div>
       );
@@ -259,14 +262,14 @@ export default function SessionStatusCard({
         <div className="space-y-3">
           <Badge className="bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-50">
             <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-            Waiting Room Open
+            {t("liveClass.statusCard.waitingRoomOpenBadge")}
           </Badge>
           <MyButton
             buttonType="primary"
             className="w-full h-11 text-sm font-semibold rounded-lg"
             onClick={handleEnterWaitingRoom}
           >
-            Enter Waiting Room
+            {t("liveClass.statusCard.enterWaitingRoom")}
           </MyButton>
         </div>
       );
@@ -277,16 +280,18 @@ export default function SessionStatusCard({
             variant="outline"
             className="text-gray-500 border-gray-200 bg-gray-50"
           >
-            {getTerminology(ContentTerms.Session, SystemTerms.Session)} hasn't
-            started yet
+            {t("liveClass.statusCard.notStarted", {
+              session: getTerminology(ContentTerms.Session, SystemTerms.Session),
+            })}
           </Badge>
           <MyButton
             buttonType="secondary"
             className="w-full h-11 text-sm font-medium rounded-lg"
             disable={true}
           >
-            {getTerminology(ContentTerms.Session, SystemTerms.Session)} will
-            start soon
+            {t("liveClass.statusCard.willStartSoon", {
+              session: getTerminology(ContentTerms.Session, SystemTerms.Session),
+            })}
           </MyButton>
         </div>
       );
@@ -313,10 +318,12 @@ export default function SessionStatusCard({
           </svg>
         </div>
         <h3 className="text-lg font-bold text-green-700">
-          Already Registered!
+          {t("liveClass.statusCard.alreadyRegisteredTitle")}
         </h3>
         <p className="text-sm text-gray-500 text-center">
-          You're registered for this session with:
+          {t("liveClass.statusCard.registeredWith", {
+            session: getTerminology(ContentTerms.Session, SystemTerms.Session),
+          })}
         </p>
         <div className="bg-primary-50 border border-primary-100 rounded-lg px-4 py-2 mt-1">
           <span className="text-sm font-medium text-primary-500 break-all">
@@ -331,14 +338,14 @@ export default function SessionStatusCard({
         {/* Time Details */}
         <div className="space-y-2.5 mb-5">
           <div className="flex justify-between items-center text-sm">
-            <span className="text-gray-500">Start Time</span>
+            <span className="text-gray-500">{t("liveClass.statusCard.startTime")}</span>
             <span className="font-semibold text-gray-800">
               {formatStartTime()}
             </span>
           </div>
           {sessionDetails.waitingRoomTime !== 0 && (
             <div className="flex justify-between items-center text-sm">
-              <span className="text-gray-500">Waiting Room Opens</span>
+              <span className="text-gray-500">{t("liveClass.statusCard.waitingRoomOpens")}</span>
               <span className="font-semibold text-gray-800">
                 {formatWaitingRoomTime()}
               </span>
@@ -347,7 +354,7 @@ export default function SessionStatusCard({
         </div>
 
         {/* Action */}
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-stack">
           {renderSessionAction()}
         </div>
       </CardContent>

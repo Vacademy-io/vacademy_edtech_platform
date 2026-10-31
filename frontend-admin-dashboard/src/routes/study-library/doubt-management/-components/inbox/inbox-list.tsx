@@ -5,6 +5,7 @@ import {
 import { UserBasicDetails } from '@/services/get_user_basic_details';
 import { MyPagination } from '@/components/design-system/pagination';
 import { ChatTeardropDots } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { InboxListItem } from './inbox-list-item';
 
 /** Left pane: scrollable doubt list + pagination. */
@@ -29,6 +30,7 @@ export const InboxList = ({
     currentPage: number;
     setCurrentPage: (page: number) => void;
 }) => {
+    const { t } = useTranslation('studyLibraryInboxList');
     return (
         <div className="flex h-full flex-col">
             <div className="min-h-0 flex-1 overflow-y-auto">
@@ -39,7 +41,7 @@ export const InboxList = ({
                         ))}
                     </div>
                 ) : error ? (
-                    <p className="p-6 text-center text-sm text-danger-600">Failed to load doubts.</p>
+                    <p className="p-6 text-center text-sm text-danger-600">{t('failedToLoad')}</p>
                 ) : list.length === 0 ? (
                     <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
                         <div className="flex size-12 items-center justify-center rounded-full bg-primary-50">
@@ -49,10 +51,8 @@ export const InboxList = ({
                                 className="text-primary-500"
                             />
                         </div>
-                        <p className="text-sm font-medium text-neutral-700">No doubts</p>
-                        <p className="text-xs text-neutral-500">
-                            New doubts and queries will appear here.
-                        </p>
+                        <p className="text-sm font-medium text-neutral-700">{t('emptyTitle')}</p>
+                        <p className="text-xs text-neutral-500">{t('emptyDescription')}</p>
                     </div>
                 ) : (
                     list.map((d) => (

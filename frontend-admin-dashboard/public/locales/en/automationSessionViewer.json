@@ -1,0 +1,26 @@
+{
+    "sessionsAndAnalytics": "Sessions & Analytics",
+    "statusFilter": {
+        "all": "All statuses",
+        "active": "Active",
+        "completed": "Completed",
+        "error": "Error",
+        "timedOut": "Timed Out"
+    },
+    "refresh": "Refresh",
+    "stats": {
+        "total": "Total",
+        "active": "Active",
+        "completed": "Completed",
+        "errors": "Errors",
+        "timedOut": "Timed Out"
+    },
+    "loadingSessions": "Loading sessions...",
+    "noSessionsFound": "No sessions found",
+    "userId": "ID: {{id}}",
+    "nodeLabel": "Node:",
+    "noMessages": "No messages recorded for this session",
+    "selectSessionPrompt": "Select a session to view conversation",
+    "bot": "Bot",
+    "user": "User"
+}

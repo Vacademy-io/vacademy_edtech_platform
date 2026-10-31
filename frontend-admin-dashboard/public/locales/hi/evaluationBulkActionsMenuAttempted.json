@@ -1,0 +1,9 @@
+{
+    "provideReattempt": "पुनः प्रयास दें",
+    "revaluate": "पुनर्मूल्यांकन करें",
+    "questionWise": "प्रश्नवार",
+    "entireAssessment": "संपूर्ण मूल्यांकन",
+    "releaseResult": "परिणाम जारी करें",
+    "studentsCount_one": "{{count}} छात्र",
+    "studentsCount_other": "{{count}} छात्र"
+}

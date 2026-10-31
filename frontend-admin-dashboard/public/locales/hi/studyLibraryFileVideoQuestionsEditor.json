@@ -1,0 +1,20 @@
+{
+    "toasts": {
+        "questionDeleted": "प्रश्न हटा दिया गया",
+        "questionDeleteFailed": "प्रश्न हटाने में विफल"
+    },
+    "labels": {
+        "timestamp": "टाइमस्टैम्प: {{time}}",
+        "timeStampIndexed": "{{index}}. टाइम स्टैम्प - {{time}}",
+        "correct": "सही"
+    },
+    "deleteDialog": {
+        "title": "प्रश्न हटाएं",
+        "confirmMessage": "क्या आप वाकई इस प्रश्न को हटाना चाहते हैं?",
+        "description": "यह इस टाइमस्टैम्प पर मौजूद प्रश्न को स्थायी रूप से हटा देगा और इसे पूर्ववत नहीं किया जा सकता।"
+    },
+    "actions": {
+        "cancel": "रद्द करें",
+        "delete": "हटाएं"
+    }
+}

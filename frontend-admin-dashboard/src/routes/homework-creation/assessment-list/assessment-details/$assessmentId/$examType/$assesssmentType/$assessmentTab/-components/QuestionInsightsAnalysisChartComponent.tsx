@@ -1,4 +1,6 @@
 import { Pie, PieChart } from 'recharts';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     ChartConfig,
     ChartContainer,
@@ -7,24 +9,26 @@ import {
 } from '@/components/ui/chart';
 import { QuestionInsightsQuestionStatus } from '../-utils/assessment-details-interface';
 
-const chartConfig = {
-    correct: {
-        label: 'Correct',
-        color: 'hsl(var(--chart-1))',
-    },
-    partiallyCorrect: {
-        label: 'Partially Correct',
-        color: 'hsl(var(--chart-2))',
-    },
-    wrongResponse: {
-        label: 'Wrong Response',
-        color: 'hsl(var(--chart-3))',
-    },
-    skipped: {
-        label: 'Skipped',
-        color: 'hsl(var(--chart-4))',
-    },
-} satisfies ChartConfig;
+function buildChartConfig(t: TFunction) {
+    return {
+        correct: {
+            label: t('legend.correct'),
+            color: 'hsl(var(--chart-1))',
+        },
+        partiallyCorrect: {
+            label: t('legend.partiallyCorrect'),
+            color: 'hsl(var(--chart-2))',
+        },
+        wrongResponse: {
+            label: t('legend.wrongResponse'),
+            color: 'hsl(var(--chart-3))',
+        },
+        skipped: {
+            label: t('legend.skipped'),
+            color: 'hsl(var(--chart-4))',
+        },
+    } satisfies ChartConfig;
+}
 
 export function QuestionInsightsAnalysisChartComponent({
     questionStatus,
@@ -33,30 +37,32 @@ export function QuestionInsightsAnalysisChartComponent({
     questionStatus: QuestionInsightsQuestionStatus;
     skipped: number;
 }) {
+    const { t } = useTranslation('homeworkCreationQuestionInsightsAnalysisChartComponent');
+    const chartConfig = buildChartConfig(t);
     const chartData = [
         {
             responseType: 'correct',
             value: questionStatus?.correctAttempt,
-            fill: '#97D4B4',
+            fill: 'hsl(var(--chart-1))',
         },
         {
             responseType: 'partiallyCorrect',
             value: questionStatus?.partialCorrectAttempt,
-            fill: '#FFDD82',
+            fill: 'hsl(var(--chart-2))',
         },
         {
             responseType: 'wrongResponse',
             value: questionStatus?.incorrectAttempt,
-            fill: '#F49898',
+            fill: 'hsl(var(--chart-3))',
         },
         {
             responseType: 'skipped',
             value: skipped,
-            fill: '#EEE',
+            fill: 'hsl(var(--chart-4))',
         },
     ];
     return (
-        <ChartContainer config={chartConfig} className="mx-auto aspect-square h-[180px]">
+        <ChartContainer config={chartConfig} className="mx-auto aspect-square h-44">
             <PieChart>
                 <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel />} />
                 <Pie

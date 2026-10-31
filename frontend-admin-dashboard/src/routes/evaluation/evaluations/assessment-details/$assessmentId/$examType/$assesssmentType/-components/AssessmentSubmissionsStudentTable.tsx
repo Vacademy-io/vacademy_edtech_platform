@@ -21,6 +21,7 @@ import { ProvideRevaluateQuestionWiseDialog } from '@/routes/assessment/assessme
 import { ProvideRevaluateAssessmentDialog } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-components/assessment-menu-options-attempted-bulk/provide-revaluate-assessment-dialog';
 import { ProvideReleaseResultDialog } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-components/assessment-menu-options-attempted-bulk/provide-release-result';
 import { ProvideReattemptDialog } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-components/assessment-menu-options-attempted-bulk/provide-reattempt-dialog';
+import { useTranslation } from 'react-i18next';
 
 const headerTextCss = 'p-3 border-r border-neutral-300';
 const cellCommonCss = 'p-3';
@@ -56,6 +57,7 @@ export function AssessmentSubmissionsStudentTable<T>({
     rowSelection,
     onRowSelectionChange,
 }: MyTableProps<T>) {
+    const { t } = useTranslation('evaluationAssessmentSubmissionsStudentTable');
     const table = useReactTable({
         data: data?.content || [],
         columns,
@@ -90,8 +92,8 @@ export function AssessmentSubmissionsStudentTable<T>({
         closeAllDialogs,
     } = useSubmissionsBulkActionsDialogStoreAttempted();
 
-    if (isLoading) return <div>Loading...</div>;
-    if (error) return <div>Error loading data</div>;
+    if (isLoading) return <div>{t('loading')}</div>;
+    if (error) return <div>{t('errorLoadingData')}</div>;
     if (!data) return null;
     if (!table) return <DashboardLoader />;
 

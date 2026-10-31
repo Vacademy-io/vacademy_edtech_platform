@@ -39,12 +39,14 @@ export interface TokenUsageRecord {
   prompt_tokens: number;
   completion_tokens: number;
   total_tokens: number;
-  input_token_price: number;
-  output_token_price: number;
-  total_price: number;
+  // Pricing is only stamped when the model has a known price, so every one of
+  // these comes back null for TTS rows and unpriced models.
+  input_token_price: number | null;
+  output_token_price: number | null;
+  total_price: number | null;
   request_type: string;
-  request_id: string;
-  request_metadata: string;
+  request_id: string | null;
+  request_metadata: string | null;
   created_at: string;
 }
 

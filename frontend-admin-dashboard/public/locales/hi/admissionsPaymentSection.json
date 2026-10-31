@@ -1,0 +1,130 @@
+{
+    "common": {
+        "notAvailable": "लागू नहीं",
+        "remove": "हटाएं",
+        "generateButton": "जनरेट करें",
+        "confirmPaymentButton": "भुगतान की पुष्टि करें",
+        "recordingEllipsis": "दर्ज किया जा रहा है…",
+        "optionalLabel": "(वैकल्पिक)"
+    },
+    "defaults": {
+        "feeName": "आवेदन / पंजीकरण शुल्क",
+        "recipientName": "अभिभावक"
+    },
+    "paymentMethodLabel": {
+        "online": "ऑनलाइन भुगतान",
+        "upi": "यूपीआई भुगतान"
+    },
+    "paymentModeLabels": {
+        "upi": "यूपीआई",
+        "cash": "नकद",
+        "card": "कार्ड",
+        "cheque": "चेक",
+        "online": "ऑनलाइन",
+        "sendLink": "भुगतान लिंक",
+        "manual": "मैनुअल"
+    },
+    "upiDeepLink": {
+        "paymentNote": "{{feeName}} भुगतान"
+    },
+    "toast": {
+        "linkRequiresApplication": "भुगतान लिंक जनरेट करने के लिए पहले आवेदन जमा करें।",
+        "paymentOptionNotConfigured": "भुगतान विकल्प कॉन्फ़िगर नहीं किया गया है।",
+        "linkCopied": "{{method}} लिंक क्लिपबोर्ड पर कॉपी हो गया!",
+        "upiNotConfigured": "इस भुगतान चरण के लिए यूपीआई आईडी कॉन्फ़िगर नहीं की गई है।",
+        "upiLinkCopied": "यूपीआई डीप लिंक कॉपी हो गया! किसी भी यूपीआई ऐप में खोलने के लिए अभिभावक को भेजें।",
+        "linkEmailSent": "भुगतान लिंक ईमेल पर सफलतापूर्वक भेज दिया गया",
+        "linkEmailFailed": "ईमेल भेजने में विफल। कृपया पुनः प्रयास करें।",
+        "proofUploaded": "प्रमाण अपलोड हो गया",
+        "proofUploadFailed": "प्रमाण अपलोड करने में विफल",
+        "applicationNotSubmitted": "आवेदन अभी जमा नहीं हुआ है। कृपया पहले फ़ॉर्म जमा करें।",
+        "enterTransactionId": "कृपया लेन-देन आईडी दर्ज करें या जनरेट करें",
+        "paymentRecorded": "भुगतान सफलतापूर्वक दर्ज किया गया!",
+        "paymentRecordFailed": "भुगतान दर्ज करने में विफल। कृपया पुनः प्रयास करें।"
+    },
+    "paid": {
+        "title": "भुगतान प्राप्त हुआ",
+        "summaryLine": "{{amount}} • तरीका: {{mode}} • तारीख: {{date}}",
+        "todayFallback": "आज",
+        "refLabel": "संदर्भ: {{transactionId}}",
+        "undoButton": "↩ पूर्ववत करें — अवैतनिक के रूप में चिह्नित करें"
+    },
+    "receipt": {
+        "receiptNoLabel": "रसीद संख्या",
+        "dateLabel": "तारीख",
+        "studentLabel": "छात्र",
+        "feeDescriptionLabel": "शुल्क विवरण",
+        "paymentModeLabel": "भुगतान का तरीका",
+        "transactionIdLabel": "लेन-देन आईडी",
+        "amountPaidLabel": "भुगतान की गई राशि",
+        "downloadButton": "रसीद डाउनलोड करें"
+    },
+    "header": {
+        "title": "अपना भुगतान पूरा करें",
+        "subtitle": "आवेदन जमा करने के लिए एकमुश्त शुल्क"
+    },
+    "invoice": {
+        "title": "शुल्क भुगतान",
+        "gstLabel": "जीएसटी / कर",
+        "processingChargeLabel": "प्रोसेसिंग शुल्क",
+        "waivedLabel": "माफ किया गया",
+        "totalDueLabel": "कुल देय राशि"
+    },
+    "tabs": {
+        "payNow": "अभी भुगतान करें",
+        "generateLink": "लिंक जनरेट करें"
+    },
+    "methods": {
+        "sectionTitle": "अभी भुगतान करें",
+        "upi": {
+            "label": "यूपीआई / क्यूआर कोड",
+            "desc": "स्कैन करें और तुरंत भुगतान करें"
+        },
+        "cash": {
+            "label": "नकद प्राप्त हुआ",
+            "desc": "नकद भुगतान दर्ज करें"
+        }
+    },
+    "cashPanel": {
+        "title": "नकद भुगतान",
+        "amountToReceiveLabel": "प्राप्त की जाने वाली राशि",
+        "proofLabel": "भुगतान प्रमाण",
+        "proofHintCheque": "चेक की छवि",
+        "proofHintReceipt": "रसीद / स्क्रीनशॉट",
+        "uploadProofButton": "📎 रसीद / स्क्रीनशॉट अपलोड करें",
+        "txnLabelCheque": "चेक / डीडी संख्या",
+        "txnLabelReceipt": "लेन-देन / रसीद आईडी",
+        "placeholderCheque": "चेक / डीडी संख्या",
+        "placeholderCash": "स्वतः जनरेट करें या रसीद आईडी दर्ज करें",
+        "placeholderDefault": "लेन-देन आईडी दर्ज करें"
+    },
+    "upiPanel": {
+        "title": "यूपीआई भुगतान",
+        "clickToEnlargeTitle": "बड़ा करने के लिए क्लिक करें",
+        "openHoverLabel": "खोलें",
+        "openLargeQrTitle": "बड़ा क्यूआर खोलें",
+        "qrCodeLabel": "क्यूआर कोड",
+        "notConfiguredLabel": "कॉन्फ़िगर नहीं किया गया",
+        "proofLabel": "भुगतान छवि",
+        "uploadImageButton": "छवि अपलोड करें",
+        "transactionIdLabel": "लेन-देन आईडी",
+        "transactionIdPlaceholder": "उदाहरण: 312345678901"
+    },
+    "linkTab": {
+        "title": "भुगतान के लिए भुगतान लिंक जनरेट करें",
+        "subtitle": "अभिभावकों के साथ लिंक साझा करें ताकि वे अपने डिवाइस पर भुगतान पूरा कर सकें",
+        "onlineLinkButton": "ऑनलाइन लिंक",
+        "upiAppLinkButton": "यूपीआई ऐप लिंक",
+        "configureUpiTitle": "स्टेज सेटिंग्स में यूपीआई आईडी कॉन्फ़िगर करें",
+        "scanQrLabel": "भुगतान लिंक खोलने के लिए क्यूआर स्कैन करें",
+        "sendViaEmailButton": "ईमेल के माध्यम से लिंक भेजें",
+        "emailPlaceholder": "parent@example.com",
+        "sendingEllipsis": "भेजा जा रहा है...",
+        "sendButton": "भेजें"
+    },
+    "qrDialog": {
+        "scanToPayLabel": "भुगतान के लिए स्कैन करें — {{amount}}",
+        "upiIdLabel": "यूपीआई आईडी: {{upiId}}",
+        "closeHint": "बंद करने के लिए बाहर क्लिक करें या Escape दबाएं"
+    }
+}

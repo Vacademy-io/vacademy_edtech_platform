@@ -1,0 +1,33 @@
+{
+    "columns": {
+        "user": "उपयोगकर्ता",
+        "plan": "प्लान",
+        "status": "स्थिति",
+        "autoRenewal": "स्वतः नवीनीकरण",
+        "planEndDate": "प्लान समाप्ति तिथि",
+        "finalExpiry": "अंतिम समाप्ति",
+        "reenrollment": "पुनः-नामांकन"
+    },
+    "unknownUser": "अज्ञात उपयोगकर्ता",
+    "unknownPlan": "अज्ञात प्लान",
+    "notApplicable": "लागू नहीं",
+    "autoRenewal": "स्वतः नवीनीकरण",
+    "noAutoRenewal": "स्वतः नवीनीकरण नहीं",
+    "paymentAttemptOn": "भुगतान {{date}} को किया जाएगा",
+    "scheduledDate": "निर्धारित तिथि",
+    "autoRenewalDisabled": "इस सदस्यता के लिए स्वतः नवीनीकरण अक्षम है",
+    "gracePeriod_one": "{{count}} दिन की छूट अवधि",
+    "gracePeriod_other": "{{count}} दिनों की छूट अवधि",
+    "notAllowed": "अनुमति नहीं",
+    "availableNow": "अभी उपलब्ध",
+    "reenrollmentGap_one": "पुनः-नामांकन से पहले {{count}} दिन का अंतराल आवश्यक",
+    "reenrollmentGap_other": "पुनः-नामांकन से पहले {{count}} दिनों का अंतराल आवश्यक",
+    "reenrollImmediately": "समाप्ति के तुरंत बाद पुनः-नामांकन किया जा सकता है",
+    "errorLoadingData": "डेटा लोड करने में त्रुटि",
+    "status": {
+        "ended": "समाप्त",
+        "aboutToEnd": "समाप्त होने वाली",
+        "lifetime": "आजीवन",
+        "active": "सक्रिय"
+    }
+}

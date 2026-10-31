@@ -1,0 +1,10 @@
+{
+    "title": "ادعم التعليم المجاني",
+    "chooseAmount": "اختر مبلغًا للتبرع",
+    "customAmount": {
+        "label": "{{currency}} {{symbol}} آخر",
+        "placeholder": "أدخل مبلغًا مخصصًا",
+        "minimumAmount": "الحد الأدنى للمبلغ: {{symbol}}{{amount}}"
+    },
+    "continueButton": "متابعة"
+}

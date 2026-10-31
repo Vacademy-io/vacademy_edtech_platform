@@ -1,0 +1,38 @@
+{
+    "tooltips": {
+        "draftAssessmentTooltip": "प्रकाशित होने तक ड्राफ़्ट असेसमेंट नहीं दिया जा सकता"
+    },
+    "labels": {
+        "ends": "समाप्ति {{date}}",
+        "durationMinutes_one": "{{count}} मिनट",
+        "durationMinutes_other": "{{count}} मिनट"
+    },
+    "fallbackAssessmentName": "असेसमेंट {{number}}",
+    "assessmentSlideTitle": "असेसमेंट: {{name}}",
+    "assessmentFallbackBaseName": "असेसमेंट",
+    "errors": {
+        "linkFailed": "असेसमेंट लिंक करने में विफल"
+    },
+    "toasts": {
+        "linkedAsSlide": "असेसमेंट को स्लाइड के रूप में लिंक किया गया"
+    },
+    "search": {
+        "placeholder": "नाम से असेसमेंट खोजें..."
+    },
+    "states": {
+        "loading": "असेसमेंट लोड हो रहे हैं...",
+        "loadFailed": "असेसमेंट लोड करने में विफल। कृपया पुनः प्रयास करें।",
+        "noSearchMatches": "आपकी खोज से कोई असेसमेंट मेल नहीं खाया।",
+        "noAssessmentsAvailable": "इस संस्थान के लिए कोई असेसमेंट उपलब्ध नहीं है।"
+    },
+    "pagination": {
+        "pageOf": "पृष्ठ {{page}} / {{totalPages}}",
+        "prev": "पिछला",
+        "next": "अगला"
+    },
+    "actions": {
+        "cancel": "रद्द करें",
+        "linking": "लिंक हो रहा है...",
+        "linkAsSlide": "स्लाइड के रूप में लिंक करें"
+    }
+}

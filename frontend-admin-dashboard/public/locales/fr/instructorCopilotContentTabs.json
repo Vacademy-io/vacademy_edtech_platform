@@ -1,0 +1,87 @@
+{
+    "summaryView": {
+        "overview": "Aperçu",
+        "keyTakeaways": "Points clés"
+    },
+    "flashcardsView": {
+        "questionLabel": "Question",
+        "answerLabel": "Réponse",
+        "clickToFlip": "Cliquez pour retourner",
+        "previous": "Précédent",
+        "next": "Suivant",
+        "cardCounter": "Carte {{current}} sur {{total}}"
+    },
+    "classworkView": {
+        "emptyState": "Aucun travail en classe n'a été assigné"
+    },
+    "homeworkView": {
+        "emptyState": "Aucun devoir n'a été assigné"
+    },
+    "toasts": {
+        "instituteDetailsUnavailable": "Détails de l'établissement indisponibles",
+        "quizGenerationStarted": "Génération du quiz démarrée ! Attente des résultats...",
+        "quizGeneratedSuccess": "Quiz généré avec succès !",
+        "quizSavedFailed": "Quiz généré mais échec de l'enregistrement dans le journal",
+        "quizTimedOut": "La génération du quiz a expiré",
+        "quizGenerationFailedPoll": "Échec de la génération du quiz",
+        "quizGenerationFailedStart": "Échec du démarrage de la génération du quiz",
+        "noNotesAvailable": "Aucune note disponible à télécharger",
+        "notesDownloadSuccess": "PDF des notes téléchargé avec succès !",
+        "notesDownloadFailed": "Échec de la génération du PDF des notes",
+        "noSummaryAvailable": "Aucun résumé disponible à télécharger",
+        "summaryDownloadSuccess": "PDF du résumé téléchargé avec succès !",
+        "summaryDownloadFailed": "Échec de la génération du PDF du résumé",
+        "noQuizAvailable": "Aucun quiz disponible à télécharger",
+        "noClassworkAvailable": "Aucun travail en classe disponible à télécharger",
+        "classworkDownloadSuccess": "PDF du travail en classe téléchargé avec succès !",
+        "classworkDownloadFailed": "Échec de la génération du PDF du travail en classe",
+        "noHomeworkAvailable": "Aucun devoir disponible à télécharger",
+        "homeworkDownloadSuccess": "PDF des devoirs téléchargé avec succès !",
+        "homeworkDownloadFailed": "Échec de la génération du PDF des devoirs",
+        "generatingPlaceholder": "Génération de {{label}}... (TODO)"
+    },
+    "tabs": {
+        "transcription": {
+            "label": "Transcription",
+            "description": "Transcription textuelle complète de l'audio"
+        },
+        "notes": {
+            "label": "Notes",
+            "description": "Notes structurées issues du contenu"
+        },
+        "summary": {
+            "label": "Résumé",
+            "description": "Résumé des points clés généré par l'IA"
+        },
+        "flashcards": {
+            "label": "Cartes mémo",
+            "description": "Cartes mémo d'étude"
+        },
+        "quiz": {
+            "label": "Quiz",
+            "description": "Questions de quiz générées automatiquement"
+        },
+        "slides": {
+            "label": "Diapositives",
+            "description": "Plan des diapositives de présentation"
+        },
+        "videos": {
+            "label": "Idées de vidéos",
+            "description": "Suggestions de contenu vidéo"
+        },
+        "homework": {
+            "label": "Devoirs",
+            "description": "Idées d'exercices à faire à la maison"
+        },
+        "classwork": {
+            "label": "Travail en classe",
+            "description": "Idées d'activités en classe"
+        }
+    },
+    "emptyState": {
+        "title": "Aucun(e) {{label}} généré(e) pour l'instant",
+        "hint": "Générez {{label}} à partir de votre transcription pour voir le contenu ici.",
+        "generateButton": "Générer {{label}}"
+    },
+    "downloadButton": "Télécharger le PDF"
+}

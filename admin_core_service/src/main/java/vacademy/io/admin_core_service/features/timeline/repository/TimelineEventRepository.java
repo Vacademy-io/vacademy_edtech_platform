@@ -22,6 +22,22 @@ public interface TimelineEventRepository extends JpaRepository<TimelineEvent, St
     Page<TimelineEvent> findByTypeAndTypeIdOrderByCreatedAtDesc(String type, String typeId, Pageable pageable);
 
     /**
+     * The CALL_MADE event already written for one telephony call (matched on the call_log_id
+     * in its metadata). Lets the call-ended and recording-uploaded paths share one row.
+     */
+    @Query(value = """
+            SELECT * FROM timeline_event
+            WHERE type = 'LEAD'
+              AND type_id = :typeId
+              AND action_type = 'CALL_MADE'
+              AND metadata_json ->> 'call_log_id' = :callLogId
+            ORDER BY created_at
+            LIMIT 1
+            """, nativeQuery = true)
+    java.util.Optional<TimelineEvent> findCallEvent(@Param("typeId") String typeId,
+                                                    @Param("callLogId") String callLogId);
+
+    /**
      * Fetch ALL timeline events/notes for a student across all stages (enquiry,
      * application, enrollment).
      * Pinned notes appear first, then ordered by creation date descending.
@@ -96,7 +112,7 @@ public interface TimelineEventRepository extends JpaRepository<TimelineEvent, St
     @Query(value = """
             SELECT id, type, type_id, action_type, actor_type, actor_id,
                    actor_name, title, description, metadata_json,
-                   is_pinned, student_user_id, category, created_at
+                   is_pinned, student_user_id, category, created_at, institute_id
             FROM (
                 SELECT te.*,
                        ROW_NUMBER() OVER (
@@ -188,4 +204,156 @@ public interface TimelineEventRepository extends JpaRepository<TimelineEvent, St
             GROUP BY student_user_id
             """, nativeQuery = true)
     List<Object[]> countByStudentUserIds(@Param("studentUserIds") List<String> studentUserIds);
+
+    // ── Institute ownership ──────────────────────────────────────────────────
+
+    /** Institute of the lead list an enquiry was made on (LEAD / AUDIENCE_RESPONSE events). */
+    @Query(value = """
+            SELECT a.institute_id FROM audience_response ar
+            JOIN audience a ON a.id = ar.audience_id
+            WHERE ar.id = :responseId
+            """, nativeQuery = true)
+    java.util.Optional<String> findInstituteIdOfResponse(@Param("responseId") String responseId);
+
+    /** Institute of a lead profile (USER_LEAD_PROFILE events). */
+    @Query(value = "SELECT institute_id FROM user_lead_profile WHERE id = :profileId", nativeQuery = true)
+    java.util.Optional<String> findInstituteIdOfLeadProfile(@Param("profileId") String profileId);
+
+    // ── Institute-scoped reads ───────────────────────────────────────────────
+    // Same as the unscoped queries above, minus other institutes' events: a person is
+    // shared across institutes, so notes and journey keyed by them must not cross over.
+    // Events with no institute (written before institute_id existed) still show.
+
+    @Query("""
+            SELECT e FROM TimelineEvent e
+            WHERE e.type = :type AND e.typeId = :typeId
+              AND (e.instituteId IS NULL OR e.instituteId = :instituteId)
+            ORDER BY e.createdAt DESC
+            """)
+    Page<TimelineEvent> findForInstituteByTypeAndTypeId(@Param("type") String type,
+            @Param("typeId") String typeId, @Param("instituteId") String instituteId, Pageable pageable);
+
+    @Query("""
+            SELECT e FROM TimelineEvent e
+            WHERE e.type = :type AND e.typeId = :typeId
+              AND (e.instituteId IS NULL OR e.instituteId = :instituteId)
+            ORDER BY e.isPinned DESC, e.createdAt DESC
+            """)
+    Page<TimelineEvent> findForInstituteByTypeAndTypeIdPinnedFirst(@Param("type") String type,
+            @Param("typeId") String typeId, @Param("instituteId") String instituteId, Pageable pageable);
+
+    @Query("""
+            SELECT e FROM TimelineEvent e
+            WHERE e.studentUserId = :studentUserId
+              AND (e.instituteId IS NULL OR e.instituteId = :instituteId)
+            ORDER BY e.isPinned DESC, e.createdAt DESC
+            """)
+    Page<TimelineEvent> findForInstituteByStudentUserIdPinnedFirst(@Param("studentUserId") String studentUserId,
+            @Param("instituteId") String instituteId, Pageable pageable);
+
+    @Query(value = """
+            SELECT * FROM timeline_event
+            WHERE (student_user_id = :studentUserId OR type_id IN (:typeIds))
+              AND (institute_id IS NULL OR institute_id = :instituteId)
+            ORDER BY created_at DESC
+            """,
+           countQuery = """
+            SELECT COUNT(*) FROM timeline_event
+            WHERE (student_user_id = :studentUserId OR type_id IN (:typeIds))
+              AND (institute_id IS NULL OR institute_id = :instituteId)
+            """,
+           nativeQuery = true)
+    Page<TimelineEvent> findAllEventsForLeadForInstitute(
+            @Param("studentUserId") String studentUserId,
+            @Param("typeIds") List<String> typeIds,
+            @Param("instituteId") String instituteId,
+            Pageable pageable);
+
+    @Query("""
+            SELECT e FROM TimelineEvent e
+            WHERE e.type = :type AND e.typeId = :typeId AND e.category = :category
+              AND (e.instituteId IS NULL OR e.instituteId = :instituteId)
+            ORDER BY e.createdAt DESC
+            """)
+    Page<TimelineEvent> findForInstituteByTypeAndTypeIdAndCategory(@Param("type") String type,
+            @Param("typeId") String typeId, @Param("category") TimelineCategory category,
+            @Param("instituteId") String instituteId, Pageable pageable);
+
+    @Query("""
+            SELECT e FROM TimelineEvent e
+            WHERE e.studentUserId = :studentUserId AND e.category = :category
+              AND (e.instituteId IS NULL OR e.instituteId = :instituteId)
+            ORDER BY e.createdAt DESC
+            """)
+    Page<TimelineEvent> findForInstituteByStudentUserIdAndCategory(@Param("studentUserId") String studentUserId,
+            @Param("category") TimelineCategory category, @Param("instituteId") String instituteId,
+            Pageable pageable);
+
+    @Query(value = """
+            SELECT id, type, type_id, action_type, actor_type, actor_id,
+                   actor_name, title, description, metadata_json,
+                   is_pinned, student_user_id, category, created_at, institute_id
+            FROM (
+                SELECT te.*,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY te.student_user_id
+                           ORDER BY te.created_at DESC
+                       ) AS rn
+                FROM timeline_event te
+                WHERE te.student_user_id IN (:studentUserIds)
+                  AND (te.institute_id IS NULL OR te.institute_id = :instituteId)
+            ) ranked
+            WHERE rn <= :perStudentLimit
+            ORDER BY student_user_id, created_at DESC
+            """, nativeQuery = true)
+    List<TimelineEvent> findRecentPerStudentForInstitute(
+            @Param("studentUserIds") List<String> studentUserIds,
+            @Param("instituteId") String instituteId,
+            @Param("perStudentLimit") int perStudentLimit);
+
+    @Query(value = """
+            SELECT student_user_id, COUNT(*)
+            FROM timeline_event
+            WHERE student_user_id IN (:studentUserIds)
+              AND (institute_id IS NULL OR institute_id = :instituteId)
+            GROUP BY student_user_id
+            """, nativeQuery = true)
+    List<Object[]> countByStudentUserIdsForInstitute(@Param("studentUserIds") List<String> studentUserIds,
+            @Param("instituteId") String instituteId);
+
+    @Query(value = """
+            SELECT journey_user_id AS "journeyUserId",
+                   id, action_type AS "actionType", category, title, description,
+                   actor_name AS "actorName", created_at AS "createdAt"
+            FROM (
+                SELECT u.*,
+                       ROW_NUMBER() OVER (
+                           PARTITION BY u.journey_user_id
+                           ORDER BY u.created_at DESC
+                       ) AS rn
+                FROM (
+                    SELECT te.id, te.action_type, te.category, te.title, te.description,
+                           te.actor_name, te.created_at,
+                           te.student_user_id AS journey_user_id
+                    FROM timeline_event te
+                    WHERE te.student_user_id IN (:userIds)
+                      AND (te.institute_id IS NULL OR te.institute_id = :instituteId)
+                    UNION
+                    SELECT te.id, te.action_type, te.category, te.title, te.description,
+                           te.actor_name, te.created_at,
+                           ar.user_id AS journey_user_id
+                    FROM timeline_event te
+                    JOIN audience_response ar
+                      ON te.type IN ('AUDIENCE_RESPONSE', 'LEAD') AND ar.id = te.type_id
+                    WHERE ar.user_id IN (:userIds)
+                      AND (te.institute_id IS NULL OR te.institute_id = :instituteId)
+                ) u
+            ) ranked
+            WHERE rn <= :perUserLimit
+            ORDER BY journey_user_id, created_at DESC
+            """, nativeQuery = true)
+    List<JourneyEventRow> findJourneyRowsForUsersForInstitute(
+            @Param("userIds") List<String> userIds,
+            @Param("instituteId") String instituteId,
+            @Param("perUserLimit") int perUserLimit);
 }

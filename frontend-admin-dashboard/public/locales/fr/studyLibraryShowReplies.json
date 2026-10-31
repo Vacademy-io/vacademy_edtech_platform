@@ -1,0 +1,8 @@
+{
+    "showReplies_one": "Afficher la réponse ({{count}})",
+    "showReplies_many": "Afficher les réponses ({{count}})",
+    "showReplies_other": "Afficher les réponses ({{count}})",
+    "hideReplies_one": "Masquer la réponse ({{count}})",
+    "hideReplies_many": "Masquer les réponses ({{count}})",
+    "hideReplies_other": "Masquer les réponses ({{count}})"
+}

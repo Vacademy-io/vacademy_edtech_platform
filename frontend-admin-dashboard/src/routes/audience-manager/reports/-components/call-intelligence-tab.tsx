@@ -9,6 +9,8 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Sparkle, Star, ChartBar, Smiley, PhoneCall } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { cn } from '@/lib/utils';
 import { useGetUserBasicDetails } from '@/services/get_user_basic_details';
 import {
@@ -41,22 +43,39 @@ const ratingTone = (n?: number | null): 'success' | 'warning' | 'danger' | 'defa
     return 'danger';
 };
 
-const STATUS_LABEL: Record<string, string> = {
-    CONNECTED_POSITIVE: 'Positive',
-    CONNECTED_NEUTRAL: 'Neutral',
-    CONNECTED_NEGATIVE: 'Negative',
-    CALLBACK_REQUESTED: 'Callback requested',
-    NOT_INTERESTED: 'Not interested',
-    INFORMATION_ONLY: 'Info only',
-    NO_CLEAR_OUTCOME: 'No clear outcome',
-    WRONG_NUMBER: 'Wrong number',
-};
+/** Call-outcome enum → display label. */
+function buildStatusLabel(t: TFunction): Record<string, string> {
+    return {
+        CONNECTED_POSITIVE: t('status.connectedPositive'),
+        CONNECTED_NEUTRAL: t('status.connectedNeutral'),
+        CONNECTED_NEGATIVE: t('status.connectedNegative'),
+        CALLBACK_REQUESTED: t('status.callbackRequested'),
+        NOT_INTERESTED: t('status.notInterested'),
+        INFORMATION_ONLY: t('status.informationOnly'),
+        NO_CLEAR_OUTCOME: t('status.noClearOutcome'),
+        WRONG_NUMBER: t('status.wrongNumber'),
+    };
+}
+
+/**
+ * Sentiment enum → display label. Kept separate from SENTIMENT_COLOR (CSS-only,
+ * never user-facing) so that map never needs a translator.
+ */
+function buildSentimentLabel(t: TFunction): Record<string, string> {
+    return {
+        POSITIVE: t('sentiment.positive'),
+        NEUTRAL: t('sentiment.neutral'),
+        NEGATIVE: t('sentiment.negative'),
+    };
+}
+
 const SENTIMENT_COLOR: Record<string, string> = {
     POSITIVE: 'bg-green-600',
     NEUTRAL: 'bg-neutral-400',
     NEGATIVE: 'bg-red-500',
 };
 
+/** Fallback for a sentiment key this dashboard doesn't have a translation for yet. */
 const cap = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
 const initials = (name: string) =>
     name
@@ -67,6 +86,7 @@ const initials = (name: string) =>
         .join('') || '?';
 
 export default function CallIntelligenceTab({ instituteId, fromDate, toDate }: ReportTabProps) {
+    const { t } = useTranslation('audienceManagerCallIntelligenceTab');
     const from = toMillis(fromDate);
     const to = toMillis(toDate, true);
 
@@ -99,9 +119,7 @@ export default function CallIntelligenceTab({ instituteId, fromDate, toDate }: R
     if (query.isError)
         return <ReportErrorState error={query.error} onRetry={() => query.refetch()} />;
     if (!data || data.totalAnalyzed === 0) {
-        return (
-            <EmptyHint message="No analyzed calls in this range. Enable CRM Intelligence and analyze calls to populate this report." />
-        );
+        return <EmptyHint message={t('emptyHint.noAnalyzedCalls')} />;
     }
 
     const statusTotal = Object.values(data.statusDistribution ?? {}).reduce((s, v) => s + v, 0);
@@ -111,35 +129,37 @@ export default function CallIntelligenceTab({ instituteId, fromDate, toDate }: R
     );
     const positive = data.sentimentDistribution?.POSITIVE ?? 0;
     const positivePct = sentimentTotal > 0 ? Math.round((positive / sentimentTotal) * 100) : null;
+    const statusLabel = buildStatusLabel(t);
+    const sentimentLabel = buildSentimentLabel(t);
 
     return (
         <div className="flex flex-col gap-4">
             {/* KPI strip */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <KpiCard
-                    label="Calls analyzed"
+                    label={t('kpi.callsAnalyzed.label')}
                     value={fmtNumber(data.totalAnalyzed)}
                     icon={<Sparkle size={18} weight="fill" />}
                     tone="primary"
                 />
                 <KpiCard
-                    label="Avg caller rating"
+                    label={t('kpi.avgCallerRating.label')}
                     value={fmtRating(data.avgCallerSelfGoalRating)}
-                    sub="how well reps advanced their goal"
+                    sub={t('kpi.avgCallerRating.sub')}
                     icon={<Star size={18} weight="fill" />}
                     tone={ratingTone(data.avgCallerSelfGoalRating)}
                 />
                 <KpiCard
-                    label="Avg outcome rating"
+                    label={t('kpi.avgOutcomeRating.label')}
                     value={fmtRating(data.avgCallOutputRating)}
-                    sub="how calls landed for the lead"
+                    sub={t('kpi.avgOutcomeRating.sub')}
                     icon={<PhoneCall size={18} weight="fill" />}
                     tone={ratingTone(data.avgCallOutputRating)}
                 />
                 <KpiCard
-                    label="Positive sentiment"
+                    label={t('kpi.positiveSentiment.label')}
                     value={positivePct == null ? '—' : `${positivePct}%`}
-                    sub={`${positive} of ${sentimentTotal} leads`}
+                    sub={t('kpi.positiveSentiment.sub', { positive, count: sentimentTotal })}
                     icon={<Smiley size={18} weight="fill" />}
                     tone={positivePct != null && positivePct >= 50 ? 'success' : 'default'}
                 />
@@ -147,7 +167,7 @@ export default function CallIntelligenceTab({ instituteId, fromDate, toDate }: R
 
             {/* Distributions */}
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <BreakdownCard title="Call outcomes" icon={<ChartBar size={16} />}>
+                <BreakdownCard title={t('breakdown.callOutcomesTitle')} icon={<ChartBar size={16} />}>
                     {Object.entries(data.statusDistribution ?? {}).length === 0 ? (
                         <EmptyHint />
                     ) : (
@@ -156,7 +176,7 @@ export default function CallIntelligenceTab({ instituteId, fromDate, toDate }: R
                             .map(([k, v]) => (
                                 <BreakdownBar
                                     key={k}
-                                    label={STATUS_LABEL[k] ?? k}
+                                    label={statusLabel[k] ?? k}
                                     count={v}
                                     total={statusTotal}
                                 />
@@ -164,7 +184,7 @@ export default function CallIntelligenceTab({ instituteId, fromDate, toDate }: R
                     )}
                 </BreakdownCard>
 
-                <BreakdownCard title="Lead sentiment" icon={<Smiley size={16} />}>
+                <BreakdownCard title={t('breakdown.leadSentimentTitle')} icon={<Smiley size={16} />}>
                     {Object.entries(data.sentimentDistribution ?? {}).length === 0 ? (
                         <EmptyHint />
                     ) : (
@@ -173,7 +193,7 @@ export default function CallIntelligenceTab({ instituteId, fromDate, toDate }: R
                             .map(([k, v]) => (
                                 <BreakdownBar
                                     key={k}
-                                    label={cap(k)}
+                                    label={sentimentLabel[k] ?? cap(k)}
                                     count={v}
                                     total={sentimentTotal}
                                     colorClass={SENTIMENT_COLOR[k] ?? 'bg-primary-500'}
@@ -184,18 +204,18 @@ export default function CallIntelligenceTab({ instituteId, fromDate, toDate }: R
             </div>
 
             {/* Team leaderboard */}
-            <ReportSection title="Team — call quality" icon={<ChartBar size={16} />}>
+            <ReportSection title={t('section.teamCallQualityTitle')} icon={<ChartBar size={16} />}>
                 {perCounsellor.length === 0 ? (
-                    <EmptyHint message="No per-counsellor data in this range." />
+                    <EmptyHint message={t('emptyHint.noPerCounsellorData')} />
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-neutral-200 text-xs uppercase tracking-wide text-neutral-500">
-                                    <th className="py-2 text-left">Counsellor</th>
-                                    <th className="py-2 text-right">Calls</th>
-                                    <th className="py-2 text-right">Avg caller</th>
-                                    <th className="py-2 text-right">Avg outcome</th>
+                                    <th className="py-2 text-start">{t('table.counsellor')}</th>
+                                    <th className="py-2 text-end">{t('table.calls')}</th>
+                                    <th className="py-2 text-end">{t('table.avgCaller')}</th>
+                                    <th className="py-2 text-end">{t('table.avgOutcome')}</th>
                                 </tr>
                             </thead>
                             <tbody>

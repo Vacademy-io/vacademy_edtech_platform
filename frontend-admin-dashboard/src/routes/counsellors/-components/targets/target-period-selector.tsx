@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { CalendarBlank } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { TargetPeriodType } from '../../-services/counsellor-target-services';
@@ -10,11 +12,13 @@ export interface TargetPeriodValue {
     to?: string;
 }
 
-const OPTIONS: { key: TargetPeriodType; label: string }[] = [
-    { key: 'WEEK', label: 'This week' },
-    { key: 'MONTH', label: 'This month' },
-    { key: 'CUSTOM', label: 'Custom' },
-];
+function buildOptions(t: TFunction): { key: TargetPeriodType; label: string }[] {
+    return [
+        { key: 'WEEK', label: t('options.week') },
+        { key: 'MONTH', label: t('options.month') },
+        { key: 'CUSTOM', label: t('options.custom') },
+    ];
+}
 
 /**
  * Segmented control for the target timeline. Renders inline from/to date inputs
@@ -28,10 +32,12 @@ export function TargetPeriodSelector({
     value: TargetPeriodValue;
     onChange: (next: TargetPeriodValue) => void;
 }) {
+    const { t } = useTranslation('counsellorsTargetsPeriodSelector');
+    const options = buildOptions(t);
     return (
         <div className="flex flex-wrap items-center gap-2">
             <div className="flex overflow-hidden rounded-md border border-neutral-300">
-                {OPTIONS.map((o) => (
+                {options.map((o) => (
                     <button
                         key={o.key}
                         type="button"
@@ -55,15 +61,15 @@ export function TargetPeriodSelector({
                         value={value.from ?? ''}
                         onChange={(e) => onChange({ ...value, from: e.target.value })}
                         className="rounded-md border border-neutral-300 px-2 py-1.5 text-caption"
-                        aria-label="Target range start"
+                        aria-label={t('rangeStart')}
                     />
-                    <span className="text-caption text-neutral-400">to</span>
+                    <span className="text-caption text-neutral-400">{t('to')}</span>
                     <input
                         type="date"
                         value={value.to ?? ''}
                         onChange={(e) => onChange({ ...value, to: e.target.value })}
                         className="rounded-md border border-neutral-300 px-2 py-1.5 text-caption"
-                        aria-label="Target range end"
+                        aria-label={t('rangeEnd')}
                     />
                 </div>
             )}

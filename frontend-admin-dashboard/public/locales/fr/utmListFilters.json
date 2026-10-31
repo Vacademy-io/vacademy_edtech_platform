@@ -1,0 +1,22 @@
+{
+    "dimensions": {
+        "source": "Source UTM",
+        "medium": "Support UTM",
+        "campaign": "Campagne UTM",
+        "content": "Contenu UTM",
+        "term": "Terme UTM",
+        "sourceType": "Canal UTM"
+    },
+    "sourceTypes": {
+        "audience": "Formulaire d'audience",
+        "liveSession": "Cours en direct",
+        "assessment": "Évaluation",
+        "enrollInvite": "Invitation d'inscription",
+        "productPage": "Page produit",
+        "catalogue": "Site catalogue",
+        "custom": "Autre page"
+    },
+    "untagged": "Sans campagne (non tagué)",
+    "searchPlaceholder": "Rechercher {{dimension}}…",
+    "chip": "{{dimension}} : {{value}}"
+}

@@ -1,4 +1,5 @@
 import { Steps } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import {
@@ -36,6 +37,7 @@ export const CourseStatsSidebar = ({
   ratingsSlot,
   ctaSlot,
 }: CourseStatsSidebarProps) => {
+  const { t } = useTranslation("courseDetailsA");
   const capitalizeFirst = (text: string): string => {
     return text;
   };
@@ -70,13 +72,14 @@ export const CourseStatsSidebar = ({
               <Steps size={16} className="text-primary-600" weight="duotone" />
             </div>
             <h3 className="text-sm font-bold text-gray-900">
-              {capitalizeFirst(
-                getTerminology(
-                  ContentTerms.Course,
-                  SystemTerms.Course
-                ).toLocaleLowerCase()
-              )}{" "}
-              Overview
+              {t("statsSidebar.overview", {
+                course: capitalizeFirst(
+                  getTerminology(
+                    ContentTerms.Course,
+                    SystemTerms.Course
+                  ).toLocaleLowerCase()
+                ),
+              })}
             </h3>
           </div>
 
@@ -84,7 +87,7 @@ export const CourseStatsSidebar = ({
             {authorName && (
               <div className="flex items-center justify-between p-2.5 bg-gray-50/80 rounded-lg">
                 <span className="text-xs font-medium text-gray-700">
-                  Author
+                  {t("statsSidebar.author")}
                 </span>
                 <span className="text-xs font-bold text-gray-900 bg-white px-2 py-0.5 rounded-md shadow-sm">
                   {authorName}
@@ -123,7 +126,9 @@ export const CourseStatsSidebar = ({
             {/* Only total time shown, per-type stats hidden by design */}
             <div className="flex items-center justify-between p-2.5 bg-gray-50/80 rounded-lg">
               <span className="text-xs font-medium text-gray-700">
-                {getTerminology(ContentTerms.Course, SystemTerms.Course)} Time
+                {t("statsSidebar.courseTime", {
+                  course: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                })}
               </span>
               <span className="text-xs font-bold text-gray-900 bg-white px-2 py-0.5 rounded-md shadow-sm">
                 {totalDuration}

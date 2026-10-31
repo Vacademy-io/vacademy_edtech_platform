@@ -1,0 +1,24 @@
+{
+    "emptyState": "يرجى إضافة سؤال لعرض تفاصيل السؤال",
+    "settings": {
+        "title": "إعدادات الأسئلة",
+        "questionType": "نوع السؤال",
+        "marks": "الدرجات",
+        "negativeMarking": "العلامات السلبية",
+        "timeLimit": "الحد الزمني",
+        "hours": "ساعة",
+        "minutes": "دقيقة"
+    },
+    "question": {
+        "label": "السؤال {{number}}"
+    },
+    "answer": {
+        "label": "الإجابة:",
+        "optionLabel": "({{letter}}.)",
+        "removeOption": "إزالة الخيار",
+        "addOption": "إضافة خيار"
+    },
+    "explanation": {
+        "label": "الشرح:"
+    }
+}

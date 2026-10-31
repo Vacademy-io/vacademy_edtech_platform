@@ -1,0 +1,93 @@
+---
+title: "Other apps and custom clients"
+sidebarTitle: "Other apps"
+description: "Connect any MCP app that supports remote servers with OAuth sign-in, create a client ID for apps that need one, and debug with MCP Inspector."
+icon: "plug"
+---
+
+Vacademy MCP follows the open MCP standard. Any app that can connect to a **remote MCP server with OAuth sign-in** should work. This page covers what such an app needs, how to give it a client ID, and how to test a connection.
+
+## What your app needs
+
+| Requirement | Vacademy MCP |
+| :--- | :--- |
+| Transport | **Streamable HTTP**. The older HTTP + SSE transport and local-only (stdio) setups are not supported directly. |
+| Sign-in | **OAuth 2.1** with **PKCE** (required). |
+| Finding the sign-in server | Standard discovery: the server answers an unauthenticated request with `401` and a `WWW-Authenticate` header that points to its protected-resource metadata (RFC 9728). The authorization server metadata follows RFC 8414. |
+| App registration | **Dynamic Client Registration** (RFC 7591), or a client ID created by your admin. |
+| Redirect (callback) URLs | Must match exactly. `https://` anywhere, or `http://` only on `localhost`, `127.0.0.1` or `::1`. Custom app schemes are refused. |
+| Scope | One scope, `vacademy.read`. See the note below. |
+| Client secret | None. All clients are public clients and use PKCE. |
+
+Use the server URL from **Settings → MCP Server**:
+
+```text
+https://<your backend>/ai-service/mcp/i/<institute_id>
+```
+
+<Note>
+**About the scope name.** `vacademy.read` is the only OAuth scope and every app gets it. It does not mean read-only. What a connection can do is decided by your institute's MCP settings for the signed-in person's roles, checked on every request. Edit tools are available only where an admin switched them on.
+</Note>
+
+## Apps that register themselves
+
+Most apps do this, including Claude, ChatGPT, Cursor, Claude Code and VS Code. Paste the server URL, start the connection, sign in on your admin portal and approve. Nothing else is needed.
+
+## Apps that ask for a client ID
+
+Some apps want a client ID pasted into a form instead of registering themselves.
+
+### Your institute's own client ID
+
+Every institute gets one client ID automatically. It shows as **Your client ID** under **Settings → MCP Server → Connect your AI app** once the server is on. It:
+
+- already accepts the callback addresses of Claude (`claude.ai` and `claude.com`), ChatGPT's older callback address, and `cursor.com/connector/callback` (Cursor's documented desktop and web-agent callbacks are different; see [Cursor](/mcp-server/connect/cursor#using-a-fixed-client-id)),
+- cannot be removed, so your institute always has a working ID.
+
+Try it first. If the app says its redirect URL is not allowed, create a separate client ID as below.
+
+### Create a client ID for another app
+
+<Steps>
+  <Step title="Find the app's redirect URL">
+    The app's own documentation tells you its redirect (callback) URL. Desktop and command-line apps usually use something like `http://localhost:<port>/callback`.
+  </Step>
+  <Step title="Create the client ID (admin)">
+    In **Settings → MCP Server → Client IDs for other apps**, click **Add a client ID for another app**.
+
+    - **App name:** something you will recognise, for example *Marketing team's assistant*.
+    - **Redirect URLs:** comma-separated, up to five. Each must be `https://`, or `http://` on localhost.
+
+    Click **Create client ID**. The new ID starts with `vcm-`.
+  </Step>
+  <Step title="Paste it into the app">
+    Give the client ID to the people using that app. There is no secret. Each person still signs in with their own account.
+  </Step>
+</Steps>
+
+Redirect URLs cannot be changed after a client ID is created. To change them, create a new client ID and remove the old one. Removing a client ID you created is done from the same list.
+
+## Test a connection with MCP Inspector
+
+[MCP Inspector](https://modelcontextprotocol.io/docs/tools/inspector) is the open-source testing tool from the MCP project. It runs the full sign-in and lets you list and call tools by hand.
+
+```bash
+npx @modelcontextprotocol/inspector
+```
+
+1. In the Inspector, choose the **Streamable HTTP** transport.
+2. Paste your server URL and connect.
+3. Complete the sign-in in your browser and approve.
+4. Open **Tools**, list them, and call `whoami`.
+
+<Tip>
+If the tool list is empty after a successful sign-in, the server is answering correctly but you have no tools: the server is off, the settings were not saved, or your role is not allowed. If you see only `whoami`, every area is Off for your role. Check **Settings → MCP Server**.
+</Tip>
+
+## Technical notes
+
+- **Stateless.** Each request stands alone. There is no session to keep alive, and the server can run on several machines.
+- **Tool annotations.** View tools are marked `readOnlyHint: true`. Edit tools are marked `readOnlyHint: false` and `destructiveHint: true`, so apps that respect hints will ask before using them.
+- **One tool per feature.** Most tools take an `action` argument, for example `courses` with `action: "list"` or `action: "get"`. Each tool's input schema lists its actions.
+- **Prompts and resources.** When the website area is on, the server also offers the `figma_to_site` prompt and design playbook resources (`vacademy://playbook/{source}`, `vacademy://patterns/{id}`). The same guidance is available through the `website` tool, for apps that ignore prompts and resources.
+- **Revoking tokens.** The server supports standard token revocation, so apps that sign out properly end the connection on our side too.

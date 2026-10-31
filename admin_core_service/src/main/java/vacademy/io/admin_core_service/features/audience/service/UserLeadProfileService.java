@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.features.audience.dto.UserAudienceMembershipDTO;
 import vacademy.io.admin_core_service.features.audience.dto.UserLeadProfileDTO;
 import vacademy.io.admin_core_service.features.audience.entity.Audience;
+import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.admin_core_service.features.audience.entity.AudienceResponse;
 import vacademy.io.admin_core_service.features.audience.entity.LeadScore;
 import vacademy.io.admin_core_service.features.audience.entity.LeadStatus;
@@ -24,6 +25,10 @@ import vacademy.io.admin_core_service.features.audience.repository.LeadStatusHis
 import vacademy.io.admin_core_service.features.audience.repository.LeadStatusRepository;
 import vacademy.io.admin_core_service.features.audience.repository.UserLeadProfileRepository;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
+import vacademy.io.admin_core_service.features.course_settings.service.LeadConversionPolicyService;
+import vacademy.io.admin_core_service.features.institute_learner.enums.LearnerSessionStatusEnum;
+import vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository;
+import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
 import vacademy.io.admin_core_service.features.live_session.repository.LiveSessionLogsRepository;
 import vacademy.io.admin_core_service.features.timeline.repository.TimelineEventRepository;
 import vacademy.io.admin_core_service.features.workflow.enums.WorkflowTriggerEvent;
@@ -44,7 +49,7 @@ import java.util.stream.Collectors;
  * <p>Update triggers:
  * <ol>
  *   <li>Real-time: after any LeadScore save (called by LeadScoringService)</li>
- *   <li>Batch: every 30 minutes via {@link #batchRebuildProfiles()}</li>
+ *   <li>Batch: changed leads every 30 minutes via {@link #batchRebuildChangedProfiles()}, all leads nightly via {@link #batchRebuildProfiles()}</li>
  * </ol>
  * </p>
  */
@@ -67,6 +72,14 @@ public class UserLeadProfileService {
     private final AuthService authService;
     private final LeadSlaConfigService leadSlaConfigService;
     private final LeadStatusMirrorService leadStatusMirrorService;
+    private final LeadTierService leadTierService;
+    private final StudentSessionInstituteGroupMappingRepository studentSessionInstituteGroupMappingRepository;
+    private final PackageSessionRepository packageSessionRepository;
+
+    /** @Lazy: the settings services behind the policy are far from this one; don't risk a cycle. */
+    @Autowired
+    @Lazy
+    private LeadConversionPolicyService leadConversionPolicyService;
 
     /**
      * @Lazy breaks the cycle with LeadScoringService (which already injects this
@@ -118,6 +131,8 @@ public class UserLeadProfileService {
                         .instituteId(instituteId)
                         .build());
 
+        List<Object> before = computedFields(profile);
+
         // Don't update score if already CONVERTED
         if (!"CONVERTED".equals(profile.getConversionStatus())) {
             updateScoreFields(profile, instituteScores, responses);
@@ -126,10 +141,23 @@ public class UserLeadProfileService {
         // Always update activity counts
         updateActivityCounts(profile, userId, instituteScores);
 
+        // Nothing this method computes changed: keep the row as it is. The timestamps alone
+        // used to make every rebuild a write -- 4.7M updates a day, mostly no-ops.
+        if (profile.getId() != null && before.equals(computedFields(profile))) {
+            return profile;
+        }
+
         profile.setLastCalculatedAt(new Timestamp(System.currentTimeMillis()));
         profile.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
 
         return userLeadProfileRepository.save(profile);
+    }
+
+    /** The values buildOrUpdateProfile derives; a rebuild that leaves them equal changes nothing. */
+    private static List<Object> computedFields(UserLeadProfile p) {
+        return Arrays.asList(p.getBestScore(), p.getBestScoreResponseId(), p.getBestSourceType(),
+                p.getCampaignCount(), p.getLastActivityAt(), p.getTotalTimelineEvents(),
+                p.getDemoAttendanceCount());
     }
 
     /**
@@ -197,6 +225,7 @@ public class UserLeadProfileService {
                         .build());
 
         String oldStatus = profile.getConversionStatus();
+        status = canonicalStatusKey(instituteId, status);
         Timestamp now = new Timestamp(System.currentTimeMillis());
         profile.setConversionStatus(status);
         profile.setUpdatedAt(now);
@@ -234,6 +263,36 @@ public class UserLeadProfileService {
     }
 
     /**
+     * The institute's status key for a status given as a key or a label in any case or spacing
+     * ("Call Back", "call-back" → CALL_BACK; "Admission Taken" → CONVERTED). Callers that pass a
+     * label would otherwise store it verbatim, and reports would show it as a separate stage.
+     * Unknown values are kept as given.
+     */
+    String canonicalStatusKey(String instituteId, String status) {
+        if (status == null || status.isBlank()) return status;
+        String wanted = normalizeStatus(status);
+        try {
+            List<LeadStatus> catalog = leadStatusRepository.findByInstituteIdOrderByDisplayOrderAsc(instituteId);
+            for (LeadStatus s : catalog) {
+                if (status.equals(s.getStatusKey())) return status;
+            }
+            for (LeadStatus s : catalog) {
+                if (s.getStatusKey() != null && normalizeStatus(s.getStatusKey()).equals(wanted)) return s.getStatusKey();
+            }
+            for (LeadStatus s : catalog) {
+                if (s.getLabel() != null && normalizeStatus(s.getLabel()).equals(wanted)) return s.getStatusKey();
+            }
+        } catch (Exception e) {
+            log.warn("Status catalog lookup failed for institute {}: {}", instituteId, e.getMessage());
+        }
+        return Set.of("CONVERTED", "LOST", "LEAD").contains(wanted) ? wanted : status;
+    }
+
+    static String normalizeStatus(String value) {
+        return value.trim().toUpperCase(Locale.ROOT).replaceAll("[\\s_-]+", "_");
+    }
+
+    /**
      * Mirror a per-response lead-status change (made from the leads list, which writes
      * audience_response.lead_status_id) onto the user's profile conversion_status, so the
      * side-view — which reads conversion_status — shows the same value.
@@ -246,18 +305,43 @@ public class UserLeadProfileService {
      *
      * <p>Does NOT emit LEAD_STATUS_CHANGED — the caller (LeadStatusService.changeLeadStatus)
      * already emits it at the response grain, so emitting here would double-fire.</p>
+     *
+     * <p>An active enrolment in a course that counts as a conversion pins the profile to
+     * CONVERTED: a pipeline stage picked afterwards (e.g. a custom "Sales Won") must not wipe the
+     * stamp enrolment wrote, or the lead loses its Converted badge and drops out of the
+     * conversion/revenue reports. The per-response lead_status_id still takes the picked stage.</p>
      */
     @Transactional
     public void mirrorConversionStatusFromLead(String userId, String instituteId, String statusKey) {
         if (userId == null || instituteId == null || statusKey == null) return;
         userLeadProfileRepository.findByUserIdAndInstituteId(userId, instituteId).ifPresent(profile -> {
-            if (Objects.equals(profile.getConversionStatus(), statusKey)) return; // no-op
+            String effectiveKey = !"CONVERTED".equals(statusKey) && hasConvertingEnrollment(userId, instituteId)
+                    ? "CONVERTED" : statusKey;
+            if (Objects.equals(profile.getConversionStatus(), effectiveKey)) return; // no-op
             Timestamp now = new Timestamp(System.currentTimeMillis());
-            profile.setConversionStatus(statusKey);
-            profile.setConvertedAt("CONVERTED".equals(statusKey) ? now : null);
+            profile.setConversionStatus(effectiveKey);
+            profile.setConvertedAt("CONVERTED".equals(effectiveKey) ? now : null);
             profile.setUpdatedAt(now);
             userLeadProfileRepository.save(profile);
         });
+    }
+
+    /**
+     * Whether the user is ACTIVE-enrolled in at least one institute course whose enrolment counts
+     * as a conversion (LeadConversionPolicyService). No enrolment → false; the policy's
+     * empty-list institute fallback must not turn "not enrolled" into "converted".
+     */
+    private boolean hasConvertingEnrollment(String userId, String instituteId) {
+        List<String> packageSessionIds = studentSessionInstituteGroupMappingRepository
+                .findPackageSessionIdsByUserIdAndInstituteAndStatusIn(
+                        userId, instituteId, List.of(LearnerSessionStatusEnum.ACTIVE.name()));
+        if (packageSessionIds.isEmpty()) return false;
+        List<String> packageIds = packageSessionRepository.findAllById(packageSessionIds).stream()
+                .map(ps -> ps.getPackageEntity() != null ? ps.getPackageEntity().getId() : null)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        return !packageIds.isEmpty() && leadConversionPolicyService.anyCountsAsConversion(instituteId, packageIds);
     }
 
     /**
@@ -280,15 +364,15 @@ public class UserLeadProfileService {
                         .build());
 
         String oldTier = profile.getLeadTier();
-        String requested = tier.toUpperCase();
-        String scoreDerived = profile.computeTier();
-
-        // If the admin is requesting the tier the score would derive anyway, clear
-        // lead_tier instead of storing it. The frontend falls back to score-derived
-        // tier when lead_tier is null, so this acts as "reset override". It also
-        // lets users heal legacy stale lead_tier values (set by the old recompute
-        // path) by simply clicking the tier their score now lands in.
-        profile.setLeadTier(requested.equalsIgnoreCase(scoreDerived) ? null : requested);
+        String requested = tier.trim().toUpperCase();
+        if (!leadTierService.isKnownTier(instituteId, requested)) {
+            throw new VacademyException("Unknown lead tier: " + requested);
+        }
+        // Always store what the admin picked. This used to clear lead_tier when the pick
+        // matched the current score band ("reset override"), which left the lead on the
+        // score: the next rescore moved it to another tier and the admin's Hot / Warm /
+        // Cold click appeared not to stick.
+        profile.setLeadTier(requested);
         profile.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
 
         UserLeadProfile saved = userLeadProfileRepository.save(profile);
@@ -399,21 +483,24 @@ public class UserLeadProfileService {
     }
 
     /**
-     * Add {@code tat} (human-readable e.g. "24 hours") and {@code tatHours} (raw int) to ctx
-     * so templates can render copy like "Please reach out before {{tat}}". Falls back to a
-     * generic "the earliest" string when TAT isn't configured for the institute — that way
-     * the template still reads sensibly instead of leaving a literal `tat` placeholder.
+     * Add {@code tat} (human-readable e.g. "1 hour 30 minutes"), {@code tatMinutes} (exact)
+     * and {@code tatHours} (whole hours, rounded up) to ctx so templates can render copy like
+     * "Please reach out before {{tat}}". Falls back to a generic "the earliest" string when TAT
+     * isn't configured for the institute — that way the template still reads sensibly instead
+     * of leaving a literal `tat` placeholder.
      */
     private void enrichTatInfo(Map<String, Object> ctx, String instituteId) {
         String tat = "the earliest";
         Integer tatHours = null;
+        Integer tatMinutes = null;
         if (instituteId != null && !instituteId.isBlank()) {
             try {
                 LeadSlaConfigDTO config = leadSlaConfigService.getSchedulerConfig(instituteId);
                 if (config != null && config.getTatReminder() != null
-                        && config.getTatReminder().getTatHours() != null) {
+                        && config.getTatReminder().getTatMinutes() != null) {
+                    tatMinutes = config.getTatReminder().getTatMinutes();
                     tatHours = config.getTatReminder().getTatHours();
-                    tat = tatHours == 1 ? "1 hour" : tatHours + " hours";
+                    tat = LeadSlaConfigService.formatDuration(tatMinutes);
                 }
             } catch (Exception e) {
                 log.debug("[LeadTrigger] TAT lookup failed for institute {}: {}",
@@ -422,6 +509,7 @@ public class UserLeadProfileService {
         }
         leadTriggerContextBuilder.put(ctx, "tat", tat);
         if (tatHours != null) leadTriggerContextBuilder.put(ctx, "tatHours", tatHours);
+        if (tatMinutes != null) leadTriggerContextBuilder.put(ctx, "tatMinutes", tatMinutes);
     }
 
     /**
@@ -535,11 +623,13 @@ public class UserLeadProfileService {
     }
 
     /**
-     * Get all audience/campaign memberships for a user.
-     * Returns one entry per audience response the user has submitted.
+     * Get a user's audience/campaign memberships within one institute.
+     * Returns one entry per audience response the user has submitted there — never
+     * another institute's campaigns, even when the same person is a lead in both.
      */
-    public List<UserAudienceMembershipDTO> getUserAudienceMemberships(String userId) {
-        List<AudienceResponse> responses = audienceResponseRepository.findByUserIdOrStudentUserId(userId, userId);
+    public List<UserAudienceMembershipDTO> getUserAudienceMemberships(String userId, String instituteId) {
+        List<AudienceResponse> responses =
+                audienceResponseRepository.findAllByInstituteAndUserOrStudent(instituteId, userId);
         if (responses.isEmpty()) return Collections.emptyList();
 
         // Batch fetch audience details
@@ -577,12 +667,37 @@ public class UserLeadProfileService {
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Batch rebuild all profiles every 30 minutes.
-     * Catches up with any changes missed by real-time updates (e.g. percentile recalcs).
+     * Every 30 minutes: rebuild the profiles of leads whose inputs changed recently -- a new or
+     * updated response or score, a timeline event, a demo attendance. 65 minutes of look-back
+     * overlaps two runs, so a run that is late or lands on a restarting pod loses nothing.
+     * Rebuilding every profile here used to cost ~43 s of database time per run (about a fifth of
+     * admin-core's database load) to change a few hundred of ~118k profiles.
      */
     @Scheduled(fixedRate = 30 * 60 * 1000)
-    @SchedulerLock(name = "UserLeadProfileService_batchRebuildProfiles", lockAtMostFor = "PT29M", lockAtLeastFor = "PT1M")
+    // lockAtLeastFor sits just under the 30-minute rate so the rebuild runs once per interval,
+    // not once per replica: with a 1-minute floor the 4 replicas took turns and the rebuild
+    // ran back to back (~60 profile writes/s around the clock). See LeadScoringService.
+    @SchedulerLock(name = "UserLeadProfileService_batchRebuildProfiles", lockAtMostFor = "PT29M", lockAtLeastFor = "PT29M")
+    public void batchRebuildChangedProfiles() {
+        Set<String> changed = new HashSet<>(userLeadProfileRepository.findUserIdsWithLeadInputsChangedSince(
+                new Timestamp(System.currentTimeMillis() - 65L * 60 * 1000)));
+        if (changed.isEmpty()) return;
+        log.info("Incremental user_lead_profile rebuild for {} changed users", changed.size());
+        rebuildProfiles(changed);
+    }
+
+    /**
+     * Nightly full rebuild: catches what the incremental pass cannot see, such as deleted
+     * responses, scores or timeline events.
+     */
+    @Scheduled(cron = "0 30 3 * * *", zone = "Asia/Kolkata")
+    @SchedulerLock(name = "UserLeadProfileService_batchRebuildAllProfiles", lockAtMostFor = "PT2H", lockAtLeastFor = "PT5M")
     public void batchRebuildProfiles() {
+        rebuildProfiles(null);
+    }
+
+    /** Rebuild the profiles of every scored lead, or only those whose user is in onlyUserIds. */
+    private void rebuildProfiles(Set<String> onlyUserIds) {
         log.info("Starting batch user_lead_profile rebuild...");
 
         // Get all distinct (userId, instituteId) pairs from lead_score via audience_response
@@ -601,16 +716,18 @@ public class UserLeadProfileService {
             String instituteId = entry.getKey();
             List<String> responseIds = entry.getValue();
 
-            // Fetch responses by ID to get userIds
+            // Fetch responses to get userIds, in chunks rather than one findById per score.
             Set<String> userIds = new HashSet<>();
-            for (String responseId : responseIds) {
-                audienceResponseRepository.findById(responseId).ifPresent(r -> {
+            for (int i = 0; i < responseIds.size(); i += 1000) {
+                List<String> chunk = responseIds.subList(i, Math.min(i + 1000, responseIds.size()));
+                for (AudienceResponse r : audienceResponseRepository.findAllById(chunk)) {
                     if (r.getUserId() != null) userIds.add(r.getUserId());
                     if (r.getStudentUserId() != null) userIds.add(r.getStudentUserId());
-                });
+                }
             }
 
             for (String userId : userIds) {
+                if (onlyUserIds != null && !onlyUserIds.contains(userId)) continue;
                 try {
                     buildOrUpdateProfile(userId, instituteId);
                     total++;
@@ -735,6 +852,19 @@ public class UserLeadProfileService {
                         .instituteId(instituteId)
                         .build());
 
+        // Resolve the display name when the caller only knows the id. The column is a
+        // denormalised copy and the lead list renders the NAME, so an id written with a
+        // null name shows the lead as unassigned however correct the id is -- and on a
+        // REassignment it also wipes the name the previous assignment had stored, which
+        // is how an owned lead ends up looking ownerless. The AI-call outcome processor
+        // is the caller that has only the id (the pool rotation returns a user id), so
+        // it relied on this. A genuine un-assignment still clears both, because the
+        // backfill only runs when an id is actually being set.
+        if (counselorId != null && !counselorId.isBlank()
+                && (counselorName == null || counselorName.isBlank())) {
+            counselorName = resolveCounselorName(counselorId);
+        }
+
         profile.setAssignedCounselorId(counselorId);
         profile.setAssignedCounselorName(counselorName);
         profile.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
@@ -751,6 +881,26 @@ public class UserLeadProfileService {
             safeEmit(WorkflowTriggerEvent.LEAD_ASSIGNED_TO_COUNSELOR.name(), userId, instituteId, ctx);
         }
         return saved;
+    }
+
+    /**
+     * Display name for a counsellor user id, or null when it cannot be resolved.
+     *
+     * <p>Never throws: a name is cosmetic next to the assignment itself, so a flaky
+     * auth-service lookup must not fail the assignment or roll back the transaction
+     * it runs in. Returning null simply leaves the column as it would have been.
+     */
+    private String resolveCounselorName(String counselorId) {
+        try {
+            List<UserDTO> users = authService.getUsersFromAuthServiceByUserIds(List.of(counselorId));
+            if (users != null && !users.isEmpty() && users.get(0) != null) {
+                String name = users.get(0).getFullName();
+                if (name != null && !name.isBlank()) return name;
+            }
+        } catch (Exception e) {
+            log.warn("Could not resolve counsellor name for {}: {}", counselorId, e.getMessage());
+        }
+        return null;
     }
 
     private UserLeadProfileDTO toDTO(UserLeadProfile p) {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { cn, toTitleCase, compareByNameNatural } from "@/lib/utils";
 import CoursesPage from "./CoursesPage.tsx";
@@ -12,6 +12,7 @@ import { handleFetchInstituteDetails } from "../-services/institute-details.ts";
 import axios from "axios";
 import {
   STUDENT_DETAIL,
+  urlCourseDetails,
   urlInstructor,
   urlPublicCourseDetails,
 } from "@/constants/urls.ts";
@@ -21,15 +22,66 @@ import authenticatedAxiosInstance from "@/lib/auth/axiosInstance.ts";
 import { toast } from "sonner";
 import HeroSection from "../-component1/HeroSection.tsx";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { IconBooks, IconChartBar, IconCheck } from "@tabler/icons-react";
+import {
+  IconBooks,
+  IconBroadcast,
+  IconBuildingStore,
+  IconChartBar,
+  IconCheck,
+  IconChevronLeft,
+  IconChevronRight,
+  IconGift,
+  IconListCheck,
+  IconTag,
+} from "@tabler/icons-react";
 import { CoursePackageResponse } from "@/types/course-catalog/course-catalog-list.ts";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings.ts";
-import { getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils.ts";
+import { getTerminology, getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils.ts";
 import { useTranslation } from "react-i18next";
 import i18n from "@/i18n";
 import { Preferences } from "@capacitor/preferences";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
-import type { StudentAllCoursesTabId } from "@/types/student-display-settings";
+import type {
+  StudentAllCoursesCustomTab,
+  StudentAllCoursesTabId,
+} from "@/types/student-display-settings";
+import { LoadingState } from "@/components/design-system/states";
+import { CustomTabProductPages } from "./CustomTabProductPages";
+
+// Only the "Live sessions" custom tab needs the live-class list; keep it out
+// of the Courses page chunk until then.
+const LiveClassView = lazy(() =>
+  import("@/routes/study-library/live-class/index").then((m) => ({ default: m.LiveClassView }))
+);
+
+/** Whether the learner app can show a custom tab (the admin screen flags the rest). */
+const isCustomTabUsable = (t: StudentAllCoursesCustomTab): boolean => {
+  if (t.visible === false || !(t.label ?? "").trim()) return false;
+  switch (t.type ?? "TAG") {
+    case "TAG":
+      return Array.isArray(t.tags) && t.tags.length > 0;
+    case "COURSES":
+      return (t.courseIds ?? []).length > 0;
+    case "PRODUCT_PAGES":
+      return (t.productPages ?? []).length > 0;
+    case "FREE_COURSES":
+    case "LIVE_SESSIONS":
+      return true;
+    default:
+      return false;
+  }
+};
+
+const CUSTOM_TAB_ICONS = {
+  TAG: IconTag,
+  COURSES: IconListCheck,
+  FREE_COURSES: IconGift,
+  LIVE_SESSIONS: IconBroadcast,
+  PRODUCT_PAGES: IconBuildingStore,
+} as const;
+
+/** Most courses the catalogue V2 search returns in one call (and accepts as ids). */
+const CATALOGUE_SUBSET_LIMIT = 500;
 import { useDripConditionStore } from "@/stores/study-library/drip-conditions-store";
 import { parseDripConditions } from "@/services/getIsDrippingEnable";
 import { getChatbotSettings } from "@/services/chatbot-settings.ts";
@@ -75,9 +127,20 @@ const CourseCatalougePage: React.FC = () => {
     (state) => state.setIsDrippingEnable
   );
 
-  const [selectedTab, setSelectedTab] = useState("PROGRESS");
+  const [selectedTab, setSelectedTab] = useState<string>("PROGRESS");
+  // Admin-defined tag tabs (Display Settings → All Courses). Each is the ALL
+  // catalogue narrowed to its tags; keyed by `custom:<id>` tab value.
+  const [customTabs, setCustomTabs] = useState<
+    Record<string, StudentAllCoursesCustomTab>
+  >({});
+  // Read by fetchCoursesForTab so loading the tabs doesn't re-create it
+  // (and refetch the active tab).
+  const customTabsRef = useRef<Record<string, StudentAllCoursesCustomTab>>({});
+  const [customCourses, setCustomCourses] = useState<
+    Record<string, CoursePackageResponse>
+  >({});
   const [visibleTabs, setVisibleTabs] = useState<
-    { value: "ALL" | "PROGRESS" | "COMPLETED"; label?: string }[]
+    { value: string; label?: string }[]
   >(() => {
     // Labels intentionally omitted — the render falls back to translated
     // defaults so they stay in sync with the active language.
@@ -92,6 +155,28 @@ const CourseCatalougePage: React.FC = () => {
       ? base.filter((t) => t.value !== "ALL")
       : base;
   });
+  // More than three tabs scroll sideways on phones; these arrows show there
+  // is more to see and step through it (they hide at either end).
+  const tabsListRef = useRef<HTMLDivElement>(null);
+  const [tabScroll, setTabScroll] = useState({ start: false, end: false });
+  const updateTabScroll = useCallback(() => {
+    const el = tabsListRef.current;
+    if (!el) return;
+    const pos = Math.abs(el.scrollLeft); // negative in RTL
+    const max = el.scrollWidth - el.clientWidth;
+    setTabScroll((prev) => {
+      const next = { start: pos > 4, end: max - pos > 4 };
+      return prev.start === next.start && prev.end === next.end ? prev : next;
+    });
+  }, []);
+  const scrollTabs = (towardsEnd: boolean) => {
+    const el = tabsListRef.current;
+    if (!el) return;
+    const rtl = getComputedStyle(el).direction === "rtl";
+    const step = el.clientWidth * 0.7 * (towardsEnd ? 1 : -1) * (rtl ? -1 : 1);
+    el.scrollBy({ left: step, behavior: "smooth" });
+  };
+
   const [allCourses, setAllCourses] = useState<CoursePackageResponse>({
     content: [],
     empty: false,
@@ -129,11 +214,9 @@ const CourseCatalougePage: React.FC = () => {
     useState<CoursePackageResponse>({
       ...allCourses,
     });
-  const [isLoadingByTab, setIsLoadingByTab] = useState<{
-    ALL: boolean;
-    PROGRESS: boolean;
-    COMPLETED: boolean;
-  }>({
+  const [isLoadingByTab, setIsLoadingByTab] = useState<
+    Record<string, boolean>
+  >({
     ALL: false,
     PROGRESS: false,
     COMPLETED: false,
@@ -165,7 +248,10 @@ const CourseCatalougePage: React.FC = () => {
   const wizardLevels = useMemo<CatalogueFilterWizardOption[]>(
     () =>
       ((publicInstituteDetails?.levels || []) as WizardLevelItem[])
-        .map((level) => ({ id: level.id, name: toTitleCase(level.level_name || "Level") }))
+        .map((level) => ({
+          id: level.id,
+          name: toTitleCase(level.level_name || getTerminology(ContentTerms.Level, SystemTerms.Level)),
+        }))
         .sort(compareByNameNatural),
     [publicInstituteDetails?.levels]
   );
@@ -173,7 +259,12 @@ const CourseCatalougePage: React.FC = () => {
   const wizardSessions = useMemo<CatalogueFilterWizardOption[]>(
     () =>
       ((publicInstituteDetails?.sessions || []) as WizardSessionItem[])
-        .map((session) => ({ id: session.id, name: toTitleCase(session.session_name || "Session") }))
+        .map((session) => ({
+          id: session.id,
+          name: toTitleCase(
+            session.session_name || getTerminology(ContentTerms.Session, SystemTerms.Session)
+          ),
+        }))
         .sort(compareByNameNatural),
     [publicInstituteDetails?.sessions]
   );
@@ -195,16 +286,13 @@ const CourseCatalougePage: React.FC = () => {
   }, [searchTerm]);
 
   // Track pagination per tab
-  const [pageByTab, setPageByTab] = useState<{
-    ALL: number;
-    PROGRESS: number;
-    COMPLETED: number;
-  }>({
+  const [pageByTab, setPageByTab] = useState<Record<string, number>>({
     ALL: 0,
     PROGRESS: 0,
     COMPLETED: 0,
   });
-  const pageSize = 10;
+  // Student Display Settings → allCourses.pageSize (default 10; 1–100).
+  const [pageSize, setPageSize] = useState(10);
 
   // Version key to trigger fetch only when filters are explicitly applied
   const [filtersVersion, setFiltersVersion] = useState(0);
@@ -240,8 +328,150 @@ const CourseCatalougePage: React.FC = () => {
 
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // COURSES / FREE_COURSES tabs: the learner search carries no price and
+  // ignores package ids, so these read the catalogue V2 search (price + id
+  // filter) once per tab/sort and page/search the result here.
+  const subsetCacheRef = useRef<Record<string, { key: string; list: CoursePackageResponse["content"] }>>({});
+  const fetchCatalogueSubset = useCallback(
+    async (tabValue: string, tab: StudentAllCoursesCustomTab) => {
+      const ids = (tab.courseIds ?? []).slice(0, CATALOGUE_SUBSET_LIMIT);
+      const cacheKey = JSON.stringify([tab.type, ids, sortOption]);
+      setIsLoadingByTab((prev) => ({ ...prev, [tabValue]: true }));
+      try {
+        let list = subsetCacheRef.current[tabValue]?.key === cacheKey
+          ? subsetCacheRef.current[tabValue]!.list
+          : null;
+        if (!list) {
+          const instituteId = await getInstituteId();
+          const response = await authenticatedAxiosInstance.post(
+            urlCourseDetails,
+            {
+              status: [] as string[],
+              level_ids: [],
+              session_ids: [],
+              faculty_ids: [],
+              created_by_user_id: null,
+              search_by_name: "",
+              tag: [],
+              ...(tab.type === "COURSES" ? { package_ids: ids } : {}),
+              min_percentage_completed: 0,
+              max_percentage_completed: 0,
+              type: "ALL",
+              sort_columns: getSortPayload(sortOption),
+            },
+            { params: { instituteId, page: 0, size: CATALOGUE_SUBSET_LIMIT } }
+          );
+          const all = ((response.data as CoursePackageResponse)?.content ?? []) as Array<
+            CoursePackageResponse["content"][number] & { min_plan_actual_price?: number | null }
+          >;
+          // Same rule as the public catalogue's "Free" label: no price = free.
+          list = tab.type === "FREE_COURSES"
+            ? all.filter((c) => Number(c.min_plan_actual_price ?? 0) === 0)
+            : all;
+          subsetCacheRef.current[tabValue] = { key: cacheKey, list };
+          list.forEach((course) => {
+            if (!course.id) return;
+            clearDripCondition(course.id);
+            if (course.drip_condition_json) setDripCondition(course.id, course.drip_condition_json);
+          });
+        }
+        const q = debouncedSearch.trim().toLowerCase();
+        const filtered = q ? list.filter((c) => (c.package_name || "").toLowerCase().includes(q)) : list;
+        const totalPages = Math.ceil(filtered.length / pageSize);
+        const page = Math.min(pageByTab[tabValue] ?? 0, Math.max(totalPages - 1, 0));
+        const content = filtered.slice(page * pageSize, page * pageSize + pageSize);
+        setCustomCourses((prev) => ({
+          ...prev,
+          [tabValue]: {
+            ...allCourses,
+            content,
+            number: page,
+            size: pageSize,
+            numberOfElements: content.length,
+            totalElements: filtered.length,
+            totalPages,
+            first: page === 0,
+            last: page >= totalPages - 1,
+            empty: content.length === 0,
+          },
+        }));
+      } catch (err) {
+        if (import.meta.env.DEV) console.error("[Catalog] custom tab fetch failed", err);
+        toast.error(
+          i18n.t("study:catalog.toast.loadTabError", {
+            courses: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase(),
+          })
+        );
+      } finally {
+        setIsLoadingByTab((prev) => ({ ...prev, [tabValue]: false }));
+      }
+    },
+    // allCourses is only a shape template for the page envelope.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sortOption, debouncedSearch, pageByTab, pageSize, setDripCondition, clearDripCondition]
+  );
+
   const fetchCoursesForTab = useCallback(
-    async (tabType: "ALL" | "PROGRESS" | "COMPLETED") => {
+    async (tabType: string) => {
+      const customTab = customTabsRef.current[tabType];
+      // Built-in tab values are the API types; a custom tab browses ALL.
+      if (!customTab && tabType !== "ALL" && tabType !== "PROGRESS" && tabType !== "COMPLETED") {
+        return;
+      }
+      const customType = customTab?.type ?? "TAG";
+      // These render their own content and fetch nothing here.
+      if (customTab && (customType === "LIVE_SESSIONS" || customType === "PRODUCT_PAGES")) return;
+      if (customTab && (customType === "COURSES" || customType === "FREE_COURSES")) {
+        await fetchCatalogueSubset(tabType, customTab);
+        return;
+      }
+      const apiType = customTab ? "ALL" : (tabType as "ALL" | "PROGRESS" | "COMPLETED");
+      // The search endpoints drop the tag filter whenever search_by_name is
+      // set, so a searched custom tab fetches one wide page and narrows it here.
+      const narrowCustomClientSide = !!customTab && !!debouncedSearch;
+      const requestPage = narrowCustomClientSide ? 0 : pageByTab[tabType] ?? 0;
+      const requestSize = narrowCustomClientSide ? 200 : pageSize;
+      const expandTags = (tags: string[]) => {
+        const allTags = useCatalogStore.getState().instituteData?.tags || [];
+        if (!allTags.length) return tags;
+        const expanded = tags.flatMap((t) =>
+          allTags.filter((at) => at.toLowerCase() === t.toLowerCase())
+        );
+        return expanded.length > 0 ? Array.from(new Set(expanded)) : tags;
+      };
+      const requestTags = expandTags(customTab ? customTab.tags : selectedTags ?? []);
+      const applyCourses = (data: CoursePackageResponse) => {
+        if (!customTab) {
+          if (tabType === "ALL") setAllCourses(data);
+          if (tabType === "PROGRESS") setProgressCourses(data);
+          if (tabType === "COMPLETED") setCompletedCourses(data);
+          return;
+        }
+        if (!narrowCustomClientSide) {
+          setCustomCourses((prev) => ({ ...prev, [tabType]: data }));
+          return;
+        }
+        const wanted = new Set(customTab.tags.map((t) => t.trim().toLowerCase()));
+        const content = (data.content ?? []).filter((course) =>
+          (course.comma_separeted_tags || "")
+            .split(",")
+            .some((t) => wanted.has(t.trim().toLowerCase()))
+        );
+        setCustomCourses((prev) => ({
+          ...prev,
+          [tabType]: {
+            ...data,
+            content,
+            number: 0,
+            numberOfElements: content.length,
+            totalElements: content.length,
+            totalPages: content.length > 0 ? 1 : 0,
+            first: true,
+            last: true,
+            empty: content.length === 0,
+          },
+        }));
+      };
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
       }
@@ -251,7 +481,7 @@ const CourseCatalougePage: React.FC = () => {
       if (import.meta.env.DEV) {
         console.debug("[Catalog] fetch start", {
           tabType,
-          page: pageByTab[tabType],
+          page: requestPage,
           sort: sortOption,
           search: debouncedSearch,
           levels: selectedLevels,
@@ -263,23 +493,18 @@ const CourseCatalougePage: React.FC = () => {
       setIsLoadingByTab((prev) => ({ ...prev, [tabType]: true }));
       try {
         const instituteId = await getInstituteId();
+        // A custom tab is defined by its tags alone; the ALL tab's sidebar
+        // filters are not shown there, so they must not leak into it.
         const body = {
           status: [] as string[],
-          level_ids: selectedLevels ?? [],
-          session_ids: selectedSessions ?? [],
-          faculty_ids: selectedInstructors ?? [],
+          level_ids: customTab ? [] : selectedLevels ?? [],
+          session_ids: customTab ? [] : selectedSessions ?? [],
+          faculty_ids: customTab ? [] : selectedInstructors ?? [],
           search_by_name: debouncedSearch ?? "",
-          tag: (() => {
-            const allTags = useCatalogStore.getState().instituteData?.tags || [];
-            if (!allTags.length) return selectedTags ?? [];
-            const expanded = (selectedTags ?? []).flatMap((t) =>
-              allTags.filter((at) => at.toLowerCase() === t.toLowerCase())
-            );
-            return expanded.length > 0 ? Array.from(new Set(expanded)) : selectedTags ?? [];
-          })(),
+          tag: requestTags,
           min_percentage_completed: 0,
           max_percentage_completed: 0,
-          type: tabType,
+          type: apiType,
           sort_columns: getSortPayloadSnake(sortOption),
         };
         const response = await authenticatedAxiosInstance.post(
@@ -288,8 +513,8 @@ const CourseCatalougePage: React.FC = () => {
           {
             params: {
               instituteId,
-              page: pageByTab[tabType],
-              size: pageSize,
+              page: requestPage,
+              size: requestSize,
             },
             headers: {
               accept: "*/*",
@@ -306,9 +531,7 @@ const CourseCatalougePage: React.FC = () => {
           ...rawData,
           content: rawData.content ?? [],
         };
-        if (tabType === "ALL") setAllCourses(data);
-        if (tabType === "PROGRESS") setProgressCourses(data);
-        if (tabType === "COMPLETED") setCompletedCourses(data);
+        applyCourses(data);
 
         if (data.content?.length) {
           const current = useCatalogStore.getState().instructor;
@@ -349,7 +572,7 @@ const CourseCatalougePage: React.FC = () => {
         // For non-ALL tabs there is no fallback, so a non-500 error
         // (e.g. backend's custom 511) would otherwise fail silently and the
         // user is left staring at an empty tab. Surface it.
-        if (tabType !== "ALL" && status !== 500) {
+        if (apiType !== "ALL" && status !== 500) {
           toast.error(
             i18n.t("study:catalog.toast.loadTabError", {
               courses: getTerminologyPlural(
@@ -360,26 +583,18 @@ const CourseCatalougePage: React.FC = () => {
           );
         }
 
-        if (tabType === "ALL" && status !== 500) {
+        if (apiType === "ALL" && status !== 500) {
           let fallbackSucceeded = false;
           try {
-            const { urlCourseDetails } = await import("@/constants/urls");
             const instituteId = await getInstituteId();
             const body = {
               status: [] as string[],
-              level_ids: selectedLevels ?? [],
-              session_ids: selectedSessions ?? [],
-              faculty_ids: selectedInstructors ?? [],
+              level_ids: customTab ? [] : selectedLevels ?? [],
+              session_ids: customTab ? [] : selectedSessions ?? [],
+              faculty_ids: customTab ? [] : selectedInstructors ?? [],
               created_by_user_id: null as string | null,
               search_by_name: debouncedSearch ?? "",
-              tag: (() => {
-                const allTags = useCatalogStore.getState().instituteData?.tags || [];
-                if (!allTags.length) return selectedTags ?? [];
-                const expanded = (selectedTags ?? []).flatMap((t) =>
-                  allTags.filter((at) => at.toLowerCase() === t.toLowerCase())
-                );
-                return expanded.length > 0 ? Array.from(new Set(expanded)) : selectedTags ?? [];
-              })(),
+              tag: requestTags,
               min_percentage_completed: 0,
               max_percentage_completed: 0,
               type: "ALL" as const,
@@ -391,8 +606,8 @@ const CourseCatalougePage: React.FC = () => {
               {
                 params: {
                   instituteId,
-                  page: pageByTab[tabType],
-                  size: pageSize,
+                  page: requestPage,
+                  size: requestSize,
                 },
                 headers: {
                   accept: "*/*",
@@ -403,7 +618,7 @@ const CourseCatalougePage: React.FC = () => {
             );
             if (controller.signal.aborted) return;
             const fallbackData = response.data as CoursePackageResponse;
-            setAllCourses(fallbackData);
+            applyCourses({ ...fallbackData, content: fallbackData.content ?? [] });
             if (fallbackData.content?.length) {
               const current = useCatalogStore.getState().instructor;
               const merged = mergeInstructorsFromCourses(current, fallbackData.content);
@@ -446,7 +661,9 @@ const CourseCatalougePage: React.FC = () => {
       debouncedSearch,
       selectedTags,
       pageByTab,
+      pageSize,
       sortOption,
+      fetchCatalogueSubset,
       setDripCondition,
       clearDripCondition,
       setInstructors,
@@ -515,10 +732,9 @@ const CourseCatalougePage: React.FC = () => {
 
   // Single consolidated fetch: run when selected tab changes, or
   // when debounced search, sort, applied filters, or pagination for the active tab changes
-  const currentPageForActiveTab =
-    pageByTab[selectedTab as "ALL" | "PROGRESS" | "COMPLETED"];
+  const currentPageForActiveTab = pageByTab[selectedTab] ?? 0;
   useEffect(() => {
-    fetchCoursesForTab(selectedTab as "ALL" | "PROGRESS" | "COMPLETED");
+    fetchCoursesForTab(selectedTab);
   }, [
     selectedTab,
     debouncedSearch,
@@ -530,7 +746,7 @@ const CourseCatalougePage: React.FC = () => {
 
   // Reset current tab page to 0 when search or sort changes
   useEffect(() => {
-    setPageByTab((prev) => ({ ...prev, [selectedTab]: 0 } as typeof prev));
+    setPageByTab((prev) => ({ ...prev, [selectedTab]: 0 }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, sortOption]);
 
@@ -553,6 +769,33 @@ const CourseCatalougePage: React.FC = () => {
     }
     setPageByTab((prev) => ({ ...prev, COMPLETED: Math.max(0, page) }));
   };
+  const handlePageChangeCustom = (tabValue: string) => (page: number) => {
+    setPageByTab((prev) => ({ ...prev, [tabValue]: Math.max(0, page) }));
+  };
+
+  useEffect(() => {
+    const el = tabsListRef.current;
+    if (!el) return;
+    updateTabScroll();
+    el.addEventListener("scroll", updateTabScroll, { passive: true });
+    const observer = new ResizeObserver(updateTabScroll);
+    observer.observe(el);
+    return () => {
+      el.removeEventListener("scroll", updateTabScroll);
+      observer.disconnect();
+    };
+  }, [updateTabScroll, visibleTabs.length]);
+
+  // Keep the selected tab in view inside the sideways-scrolling bar.
+  useEffect(() => {
+    const el = tabsListRef.current;
+    if (!el || el.scrollWidth <= el.clientWidth) return;
+    el.querySelector<HTMLElement>('[role="tab"][data-state="active"]')?.scrollIntoView({
+      block: "nearest",
+      inline: "nearest",
+      behavior: "smooth",
+    });
+  }, [selectedTab, visibleTabs.length]);
 
   // Enforce Student Display Settings: visible/order tabs and default tab
   useEffect(() => {
@@ -572,14 +815,35 @@ const CourseCatalougePage: React.FC = () => {
     };
 
     getStudentDisplaySettings(false).then((settings) => {
+      const size = Number(settings?.allCourses?.pageSize);
+      if (Number.isInteger(size) && size >= 1 && size <= 100) setPageSize(size);
       const tabs = settings?.allCourses?.tabs || [];
-      const orderedRaw = tabs
-        .filter((t) => t.visible !== false)
-        .sort((a, b) => (a.order || 0) - (b.order || 0))
-        .map((t) => ({
-          value: mapSettingIdToValue(t.id),
-          label: t.label,
-        }));
+      // A custom tab without a label or tags would be blank or list the
+      // whole catalogue; the admin screen flags those as incomplete.
+      const usableCustomTabs = (settings?.allCourses?.customTabs || []).filter(isCustomTabUsable);
+      const customTabsByValue = Object.fromEntries(
+        usableCustomTabs.map((t) => [`custom:${t.id}`, t])
+      );
+      customTabsRef.current = customTabsByValue;
+      setCustomTabs(customTabsByValue);
+      const orderedRaw = [
+        ...tabs
+          .filter((t) => t.visible !== false)
+          .map((t) => ({
+            order: t.order || 0,
+            value: mapSettingIdToValue(t.id) as string,
+            label: t.label,
+          })),
+        // Custom tabs browse the catalogue, so reader mode hides them like ALL
+        // (a live-sessions tab too: paid webinars open the payment flow).
+        ...(shouldHidePaidPurchaseUI() ? [] : usableCustomTabs).map((t) => ({
+          order: t.order || 0,
+          value: `custom:${t.id}`,
+          label: (t.label ?? "").trim(),
+        })),
+      ]
+        .sort((a, b) => a.order - b.order)
+        .map(({ value, label }) => ({ value, label }));
       // Reader mode: never surface the "All Courses" (browse) tab, regardless
       // of admin display settings (Apple 3.1.1).
       const ordered = shouldHidePaidPurchaseUI()
@@ -738,8 +1002,19 @@ const CourseCatalougePage: React.FC = () => {
         >
           {/* Tab Navigation */}
           <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-md mb-3">
-            <div className="p-2 sm:p-3">
-              <TabsList className="bg-muted/50 dark:bg-neutral-900 justify-start p-1 w-full grid grid-cols-3 gap-1 sm:w-auto sm:flex sm:flex-row rounded-full [.ui-play_&]:!bg-white [.ui-play_&]:border-2 [.ui-play_&]:border-primary-200 [.ui-play_&]:rounded-2xl [.ui-play_&]:p-1.5 [.ui-play_&]:gap-1.5 [.ui-play_&]:shadow-play-3-primary">
+            <div className="relative p-2 sm:p-3">
+              <TabsList
+                ref={tabsListRef}
+                className={cn(
+                  "bg-muted/50 dark:bg-neutral-900 justify-start p-1 w-full gap-1 sm:w-auto sm:flex sm:flex-row rounded-full [.ui-play_&]:!bg-white [.ui-play_&]:border-2 [.ui-play_&]:border-primary-200 [.ui-play_&]:rounded-2xl [.ui-play_&]:p-1.5 [.ui-play_&]:gap-1.5 [.ui-play_&]:shadow-play-3-primary",
+                  // More than three tabs don't fit a 3-column grid: phones scroll
+                  // them sideways (arrows below), wider screens wrap them inside
+                  // the bar so none overflows onto the content.
+                  visibleTabs.length > 3
+                    ? "flex flex-nowrap overflow-x-auto no-scrollbar sm:flex-wrap sm:overflow-visible sm:h-auto sm:rounded-2xl"
+                    : "grid grid-cols-3"
+                )}
+              >
                 {visibleTabs.map((tab) => {
                   const count =
                     tab.value === "ALL"
@@ -748,12 +1023,13 @@ const CourseCatalougePage: React.FC = () => {
                         ? progressCourses.totalElements
                         : tab.value === "COMPLETED"
                           ? completedCourses.totalElements
-                          : 0;
+                          : customCourses[tab.value]?.totalElements ?? 0;
                   return (
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
                     className={cn(
+                      visibleTabs.length > 3 && "shrink-0 flex-none",
                       "flex-1 sm:flex-none px-2.5 sm:px-4 py-1.5 text-xs sm:text-sm font-medium rounded-full transition-all duration-200 data-[state=active]:bg-primary-100 data-[state=active]:text-primary-700 data-[state=active]:font-semibold data-[state=active]:shadow-sm dark:data-[state=active]:bg-primary-900/40 dark:data-[state=active]:text-primary-200",
                       // Vibrant Styles - Flat Pastel
                       tab.value === "COMPLETED" &&
@@ -779,6 +1055,8 @@ const CourseCatalougePage: React.FC = () => {
                         {tab.value === "ALL" && <IconBooks size={14} />}
                         {tab.value === "PROGRESS" && <IconChartBar size={14} />}
                         {tab.value === "COMPLETED" && <IconCheck size={14} />}
+                        {customTabs[tab.value] &&
+                          React.createElement(CUSTOM_TAB_ICONS[customTabs[tab.value]!.type ?? "TAG"] ?? IconTag, { size: 14 })}
                       </span>
                       <span className="truncate">
                         {tab.label ||
@@ -803,6 +1081,26 @@ const CourseCatalougePage: React.FC = () => {
                   );
                 })}
               </TabsList>
+              {visibleTabs.length > 3 && tabScroll.start && (
+                <button
+                  type="button"
+                  aria-label={t("catalog.tab.scrollStart")}
+                  onClick={() => scrollTabs(false)}
+                  className="absolute start-1 top-1/2 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-md sm:hidden"
+                >
+                  <IconChevronLeft size={16} className="rtl:rotate-180" />
+                </button>
+              )}
+              {visibleTabs.length > 3 && tabScroll.end && (
+                <button
+                  type="button"
+                  aria-label={t("catalog.tab.scrollEnd")}
+                  onClick={() => scrollTabs(true)}
+                  className="absolute end-1 top-1/2 z-10 flex size-8 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-card text-foreground shadow-md sm:hidden"
+                >
+                  <IconChevronRight size={16} className="rtl:rotate-180" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -882,6 +1180,43 @@ const CourseCatalougePage: React.FC = () => {
               />
             </TabsContent>
           )}
+          {visibleTabs
+            .filter((tab) => customTabs[tab.value])
+            .map((tab) => (
+              <TabsContent key={tab.value} value={tab.value} className="m-0">
+                {customTabs[tab.value]?.type === "LIVE_SESSIONS" ? (
+                  <Suspense fallback={<LoadingState variant="list" count={3} />}>
+                    <LiveClassView embedded />
+                  </Suspense>
+                ) : customTabs[tab.value]?.type === "PRODUCT_PAGES" ? (
+                  <CustomTabProductPages pages={customTabs[tab.value]?.productPages ?? []} />
+                ) : (
+                /* Browses the catalogue like ALL, so course details must see
+                    ALL (enrol CTA) rather than this tab's value. */
+                <CoursesPage
+                  courseData={customCourses[tab.value] ?? { ...allCourses, content: [], totalElements: 0, totalPages: 0 }}
+                  searchTerm={searchTerm}
+                  onSearchChange={setSearchTerm}
+                  sortOption={sortOption}
+                  onSortChange={setSortOption}
+                  selectedLevels={selectedLevels}
+                  setSelectedLevels={setSelectedLevels}
+                  selectedSessions={selectedSessions}
+                  setSelectedSessions={setSelectedSessions}
+                  selectedTags={selectedTags}
+                  setSelectedTags={setSelectedTags}
+                  selectedInstructors={selectedInstructors}
+                  setSelectedInstructors={setSelectedInstructors}
+                  onApplyFilters={handleApplyFilters}
+                  clearAllFilters={clearAllFilters}
+                  handlePageChange={handlePageChangeCustom(tab.value)}
+                  showFilters={false}
+                  selectedTab="ALL"
+                  isLoading={isLoadingByTab[tab.value] ?? false}
+                />
+                )}
+              </TabsContent>
+            ))}
         </Tabs>
       </div>
     </div>

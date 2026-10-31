@@ -1,0 +1,6 @@
+{
+    "validation": {
+        "nameRequired": "नाम आवश्यक है",
+        "invalidEmail": "अमान्य ईमेल पता"
+    }
+}

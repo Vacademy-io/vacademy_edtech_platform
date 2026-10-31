@@ -1,0 +1,60 @@
+{
+    "trigger": "تعديل التفاصيل",
+    "dialogHeading": "تعديل ملف العميل المحتمل",
+    "cancel": "إلغاء",
+    "saving": "جارٍ الحفظ...",
+    "saveChanges": "حفظ التغييرات",
+    "toast": {
+        "updateSuccess": "تم تحديث ملف العميل المحتمل",
+        "updateError": "فشل تحديث ملف العميل المحتمل"
+    },
+    "validation": {
+        "required": "هذا الحقل مطلوب",
+        "invalidEmail": "عنوان بريد إلكتروني غير صالح",
+        "invalidEmailShort": "بريد إلكتروني غير صالح"
+    },
+    "sections": {
+        "identity": {
+            "title": "الهوية",
+            "helper": "الاسم والمعلومات الأساسية."
+        },
+        "contact": {
+            "title": "التواصل",
+            "helper": "القنوات الأساسية للتواصل."
+        },
+        "guardian": {
+            "title": "ولي الأمر",
+            "helper": "بيانات التواصل مع ولي الأمر (اختياري)."
+        },
+        "additional": {
+            "title": "تفاصيل إضافية",
+            "helper": "الإجابات المسجَّلة في نموذج العميل المحتمل."
+        }
+    },
+    "fields": {
+        "fullName": {
+            "label": "الاسم الكامل",
+            "placeholder": "الاسم الكامل"
+        },
+        "email": {
+            "label": "البريد الإلكتروني",
+            "placeholder": "name@example.com"
+        },
+        "mobile": {
+            "label": "رقم الجوال",
+            "placeholder": "123 456 7890"
+        },
+        "guardianName": {
+            "label": "اسم ولي الأمر",
+            "placeholder": "اسم ولي الأمر"
+        },
+        "guardianMobile": {
+            "label": "جوال ولي الأمر",
+            "placeholder": "123 456 7890"
+        },
+        "guardianEmail": {
+            "label": "بريد ولي الأمر الإلكتروني",
+            "placeholder": "guardian@example.com"
+        }
+    }
+}

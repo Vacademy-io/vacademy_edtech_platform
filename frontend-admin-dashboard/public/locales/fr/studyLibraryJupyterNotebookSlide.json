@@ -1,0 +1,23 @@
+{
+    "errors": {
+        "urlRequired": "Veuillez saisir une URL de notebook",
+        "urlInvalid": "Veuillez saisir une URL valide",
+        "loadFailed": "Échec du chargement du notebook. Veuillez vérifier l'URL et réessayer."
+    },
+    "toast": {
+        "saveSuccess": "Configuration du notebook enregistrée avec succès !"
+    },
+    "configureTitle": "Configurer le notebook Jupyter",
+    "configureDescription": "Saisissez l'URL de votre notebook Jupyter pour l'intégrer à cette diapositive.",
+    "projectNameLabel": "Nom du projet (facultatif)",
+    "projectNamePlaceholder": "Mon projet Jupyter",
+    "notebookUrlLabel": "URL du notebook *",
+    "previewNotebook": "Prévisualiser le notebook",
+    "notConfiguredTitle": "Aucun notebook configuré",
+    "notConfiguredDescription": "Cette diapositive n'a pas encore d'URL de notebook configurée.",
+    "configureNotebook": "Configurer le notebook",
+    "defaultProjectName": "Notebook Jupyter",
+    "notebookLabel": "Notebook",
+    "open": "Ouvrir",
+    "edit": "Modifier"
+}

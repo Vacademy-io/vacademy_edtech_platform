@@ -1,0 +1,21 @@
+{
+    "title": "प्रश्न विश्लेषण",
+    "legend": {
+        "correct": "सही",
+        "partiallyCorrect": "आंशिक रूप से सही",
+        "wrongResponses": "गलत उत्तर",
+        "skip": "छोड़ा गया"
+    },
+    "chart": {
+        "xAxisLabel": "प्रश्न",
+        "yAxisLabel": "प्रतिभागियों की संख्या"
+    },
+    "actions": {
+        "checkQuestionInsights": "प्रश्न अंतर्दृष्टि देखें",
+        "selectSectionPlaceholder": "अनुभाग चुनें",
+        "export": "निर्यात करें"
+    },
+    "dialog": {
+        "questionInsightsTitle": "प्रश्न अंतर्दृष्टि"
+    }
+}

@@ -1,0 +1,81 @@
+{
+    "filters": {
+        "all": "सभी",
+        "upcoming": "आगामी",
+        "awaitingReview": "समीक्षा लंबित",
+        "completed": "पूर्ण",
+        "noShows": "अनुपस्थित",
+        "cancelled": "रद्द"
+    },
+    "fallback": {
+        "mentor": "मेंटर",
+        "learner": "शिक्षार्थी",
+        "mentorLower": "मेंटर",
+        "learnerLower": "शिक्षार्थी"
+    },
+    "columns": {
+        "mentor": "मेंटर",
+        "mentee": "मेंटी",
+        "when": "कब",
+        "duration": "अवधि",
+        "topic": "विषय",
+        "status": "स्थिति",
+        "rating": "रेटिंग",
+        "actions": "कार्रवाई"
+    },
+    "openSessionDetails": "सत्र विवरण खोलें",
+    "durationMinutes_one": "{{count}} मिनट",
+    "durationMinutes_other": "{{count}} मिनट",
+    "durationMinutesShort_one": "{{count}} मिनट",
+    "durationMinutesShort_other": "{{count}} मिनट",
+    "whoAndTemplate": "{{student}} के साथ {{mentor}}",
+    "viewSessionAria": "{{who}} के सत्र का विवरण देखें",
+    "viewSessionDetailsTitle": "सत्र विवरण देखें",
+    "joinSessionAria": "{{who}} के साथ सत्र में शामिल हों",
+    "noMeetingLinkAria": "{{who}} के लिए अभी तक कोई मीटिंग लिंक नहीं",
+    "joinMeetingTitle": "मीटिंग में शामिल हों",
+    "noMeetingLinkTitle": "अभी तक कोई मीटिंग लिंक नहीं",
+    "rescheduleAria": "इस सत्र को पुनर्निर्धारित करें",
+    "rescheduleTitle": "पुनर्निर्धारित करें",
+    "cancelAria": "इस सत्र को रद्द करें",
+    "cancelTitle": "रद्द करें",
+    "mentorsFilterLabel": "मेंटर",
+    "mentorsSearchPlaceholder": "मेंटर खोजें",
+    "loadError": "सत्र लोड नहीं हो सके।",
+    "retry": "पुनः प्रयास करें",
+    "emptyStateFiltered": "इस फ़िल्टर से कोई सत्र मेल नहीं खाता",
+    "emptyStateAll": "अभी तक कोई सत्र नहीं",
+    "emptyStateHint": "मेंटर बुकिंग पेजों के माध्यम से बुक किए गए सत्र यहाँ दिखाई देंगे।",
+    "lifecycle": {
+        "completed": "पूर्ण",
+        "noShow": "अनुपस्थित",
+        "cancelled": "रद्द",
+        "rescheduled": "पुनर्निर्धारित",
+        "upcoming": "आगामी",
+        "awaitingReview": "समीक्षा लंबित"
+    },
+    "detailDialog": {
+        "heading": "सत्र विवरण",
+        "defaultTitle": "मेंटर सत्र",
+        "openMeetingLink": "मीटिंग लिंक खोलें",
+        "mentorNotesLabel": "मेंटर के नोट्स",
+        "learnerFeedbackLabel": "शिक्षार्थी की प्रतिक्रिया",
+        "ratingOutOfFive": "{{rating}}/5"
+    },
+    "fieldLabels": {
+        "mentor": "मेंटर",
+        "learner": "शिक्षार्थी",
+        "when": "कब",
+        "duration": "अवधि",
+        "topic": "विषय",
+        "bookingStatus": "बुकिंग स्थिति"
+    },
+    "searchPlaceholder": "मेंटर, {{learner}} या विषय से खोजें",
+    "shownCount_one": "{{count}} सत्र दिखाया गया",
+    "shownCount_other": "{{count}} सत्र दिखाए गए",
+    "week": {
+        "title": "इस सप्ताह",
+        "subtitle": "आज और अगले छह दिन · विवरण के लिए किसी सत्र पर क्लिक करें",
+        "more": "+{{count}} और"
+    }
+}

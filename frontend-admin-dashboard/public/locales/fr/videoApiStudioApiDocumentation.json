@@ -1,0 +1,324 @@
+{
+    "common": {
+        "copy": "Copier",
+        "paramTable": {
+            "field": "Champ",
+            "type": "Type",
+            "required": "Obligatoire",
+            "default": "Valeur par défaut",
+            "description": "Description",
+            "yes": "Oui",
+            "no": "Non"
+        },
+        "sectionTitles": {
+            "queryParameters": "Paramètres de requête",
+            "codeExamples": "Exemples de code",
+            "response": "Réponse",
+            "requestBody": "Corps de la requête",
+            "requestBodyParameters": "Paramètres du corps de la requête"
+        }
+    },
+    "overview": {
+        "cardTitle": "API de génération de contenu Vacademy",
+        "cardDescription": "Générez du contenu éducatif propulsé par l'IA — vidéos, quiz, cartes mémo, jeux et plus encore — via un seul point de terminaison REST.",
+        "features": {
+            "sse": {
+                "title": "Diffusion SSE",
+                "description": "Obtenez une progression en direct à mesure que chaque étape se termine."
+            },
+            "backgroundJobs": {
+                "title": "Tâches en arrière-plan",
+                "description": "La génération se poursuit même si vous fermez la connexion."
+            },
+            "restPolling": {
+                "title": "Interrogation REST",
+                "description": "Alternative simple — démarrer puis interroger /urls/{id}."
+            }
+        },
+        "baseUrlLabel": "URL de base",
+        "authHeaderLabel": "En-tête d'authentification",
+        "authHeaderNote": "Chaque requête doit inclure cet en-tête. Générez des clés depuis l'onglet Clés API ci-dessus."
+    },
+    "contentTypes": {
+        "sectionTitle": "Types de contenu pris en charge",
+        "video": {
+            "description": "Diapositives HTML synchronisées dans le temps avec narration audio et sous-titres."
+        },
+        "slides": {
+            "description": "Diaporama HTML avec images, tableaux et diagrammes."
+        },
+        "quiz": {
+            "description": "Série de questions à choix multiples avec explications."
+        },
+        "storybook": {
+            "description": "Récit illustré page par page."
+        },
+        "flashcards": {
+            "description": "Jeu de cartes mémo pour l'apprentissage par répétition espacée."
+        },
+        "interactiveGame": {
+            "description": "Jeu HTML éducatif autonome."
+        },
+        "puzzleBook": {
+            "description": "Mots croisés, mots mêlés ou casse-têtes logiques."
+        },
+        "simulation": {
+            "description": "Bac à sable interactif de physique/sciences/économie."
+        },
+        "mapExploration": {
+            "description": "Carte SVG cliquable avec informations régionales."
+        },
+        "worksheet": {
+            "description": "Fiche de devoirs imprimable ou remplissable."
+        },
+        "codePlayground": {
+            "description": "Exercice de code dans le navigateur avec instructions."
+        },
+        "timeline": {
+            "description": "Visualisation chronologique d'événements."
+        },
+        "conversation": {
+            "description": "Exercice d'apprentissage des langues basé sur le dialogue."
+        },
+        "navigationModeLabel": "Mode de navigation",
+        "navAutoPlays": "lecture automatique avec audio",
+        "navUserClicks": "l'utilisateur navigue en cliquant",
+        "navSelfContained": "application HTML entièrement interactive"
+    },
+    "generationStages": {
+        "sectionTitle": "Étapes de génération",
+        "tableHeaders": {
+            "stage": "Étape",
+            "outputFile": "Fichier de sortie",
+            "s3UrlsKey": "Clé s3_urls",
+            "description": "Description"
+        },
+        "script": {
+            "description": "Le LLM génère le script de narration et le plan de contenu."
+        },
+        "tts": {
+            "description": "La synthèse vocale convertit le script en audio."
+        },
+        "words": {
+            "description": "Alignement horodaté au niveau des mots pour les sous-titres."
+        },
+        "html": {
+            "description": "✅ Point d'arrêt recommandé. Diapositives HTML synchronisées avec les horodatages audio."
+        },
+        "render": {
+            "description": "Rendu vidéo complet (lent, requis seulement pour le téléchargement/export)."
+        },
+        "footer": "Le paramètre de requête <1>target_stage</1> sur <3>POST /generate</3> contrôle à quelle étape s'arrêter. La valeur par défaut est <5>HTML</5>."
+    },
+    "tabs": {
+        "generate": "Générer",
+        "polling": "Interrogation REST",
+        "history": "Historique",
+        "status": "Statut",
+        "urls": "URLs",
+        "frames": "Édition d'image",
+        "events": "Événements SSE"
+    },
+    "generateTab": {
+        "streamBadge": "Flux SSE",
+        "cardTitle": "Générer du contenu — Diffusion SSE",
+        "cardDescription": "Démarre une tâche de génération et diffuse la progression en temps réel via des <1>Server-Sent Events</1>. La tâche s'exécute en arrière-plan sur le serveur — fermer la connexion N'annulera PAS la génération. Utilisez <3>GET /urls/{video_id}</3> pour récupérer le résultat plus tard.",
+        "targetStageDescription": "Arrête la génération à cette étape. Recommandé : HTML (contenu complet, sans rendu). Options : SCRIPT · TTS · WORDS · HTML · RENDER.",
+        "responseTitle": "Réponse (flux d'événements SSE)",
+        "responseNote": "Content-Type : <1>text/event-stream</1>. Chaque ligne est préfixée par <3>data: </3> suivie d'un objet JSON."
+    },
+    "generateParams": {
+        "prompt": {
+            "description": "Description en langage naturel du contenu à générer."
+        },
+        "contentType": {
+            "description": "Type de contenu. L'un de : VIDEO, SLIDES, QUIZ, STORYBOOK, FLASHCARDS, INTERACTIVE_GAME, PUZZLE_BOOK, SIMULATION, MAP_EXPLORATION, WORKSHEET, CODE_PLAYGROUND, TIMELINE, CONVERSATION."
+        },
+        "language": {
+            "description": "Langue pour la narration et le contenu. Ex. \"English (India)\", \"Hindi\", \"Spanish\"."
+        },
+        "voiceGender": {
+            "description": "\"female\" ou \"male\"."
+        },
+        "ttsProvider": {
+            "description": "\"standard\" (Edge TTS, gratuit) ou \"premium\" (Google Cloud / Sarvam AI, 2x crédits). Le mode premium redirige automatiquement : langues indiennes → Sarvam, international → Google."
+        },
+        "voiceId": {
+            "description": "Voix spécifique pour la synthèse vocale premium. Voix Sarvam : \"shubh\", \"priya\", etc. Voix Google : \"en-US-Journey-F\", etc. Utilisez GET /tts/voices pour lister les options disponibles."
+        },
+        "captionsEnabled": {
+            "description": "Indique s'il faut intégrer les données de sous-titres au niveau des mots dans la sortie."
+        },
+        "htmlQuality": {
+            "description": "\"classic\" (plus rapide, mises en page simples) ou \"advanced\" (plus riche, plus complexe)."
+        },
+        "targetAudience": {
+            "description": "Description de l'âge/niveau utilisée pour calibrer la complexité. Ex. \"Class 5 (Ages 10-11)\", \"Undergraduate\"."
+        },
+        "targetDuration": {
+            "description": "Durée approximative de la sortie. Options : \"30 seconds\", \"1 minute\", \"2-3 minutes\", \"5 minutes\", \"10 minutes\"."
+        },
+        "model": {
+            "description": "ID du modèle LLM à utiliser. Laissez vide pour la valeur par défaut recommandée."
+        },
+        "videoId": {
+            "description": "Identifiant stable personnalisé pour cette génération. Généré automatiquement si omis. Utilisez le même ID pour reprendre."
+        }
+    },
+    "pollingTab": {
+        "badge": "Interrogation REST",
+        "cardTitle": "Générer du contenu — Interrogation REST",
+        "cardDescription": "Alternative plus simple à la diffusion SSE. Démarrez la génération (vous pouvez fermer immédiatement la connexion HTTP — le serveur continue de fonctionner), puis appelez périodiquement <1>GET /urls/{video_id}</1> jusqu'à ce que <3>html_url</3> soit renseigné.",
+        "whenToUseTitle": "Quand utiliser l'interrogation plutôt que le SSE",
+        "sseBullet": "<0>SSE</0> : idéal pour les tableaux de bord UI qui ont besoin de barres de progression en direct (étape %, messages).",
+        "pollingBullet": "<0>Interrogation</0> : idéal pour les scripts backend, les tâches cron, ou lorsque vous n'avez pas besoin de mises à jour en temps réel.",
+        "sameEndpointBullet": "Les deux utilisent le même point de terminaison — la différence est simplement de savoir si vous lisez le flux de réponse.",
+        "flowTitle": "Flux d'interrogation",
+        "steps": {
+            "1": {
+                "label": "POST /generate",
+                "description": "Démarrez la tâche. Incluez un video_id stable que vous contrôlez."
+            },
+            "2": {
+                "label": "Fermez (ou ignorez) le flux SSE",
+                "description": "La génération se poursuit sur le serveur quoi qu'il arrive."
+            },
+            "3": {
+                "label": "Interrogez GET /urls/{video_id} toutes les 10 s",
+                "description": "Répétez jusqu'à ce que html_url soit présent."
+            },
+            "4": {
+                "label": "Utilisez les URLs renvoyées",
+                "description": "Transmettez html_url + audio_url à votre lecteur."
+            }
+        }
+    },
+    "historyTab": {
+        "cardTitle": "Obtenir l'historique de génération",
+        "cardDescription": "Renvoie les N dernières générations de contenu pour votre établissement, triées de la plus récente à la plus ancienne. Maximum 50 par requête.",
+        "limitParamDescription": "Nombre d'éléments à renvoyer. Plafonné à 50."
+    },
+    "statusTab": {
+        "cardTitle": "Obtenir le statut de la vidéo",
+        "cardDescription": "Renvoie l'enregistrement de statut complet d'une génération, y compris toutes les URLs S3 disponibles. Utilisez ceci pour vérifier quelles étapes sont terminées.",
+        "statusValuesLabel": "Valeurs de statut (champ <1>status</1>)",
+        "values": {
+            "pending": {
+                "description": "En file d'attente, pas encore démarré"
+            },
+            "inProgress": {
+                "description": "Génération en cours"
+            },
+            "completed": {
+                "description": "Toutes les étapes sont terminées"
+            },
+            "failed": {
+                "description": "Une erreur s'est produite"
+            }
+        }
+    },
+    "urlsTab": {
+        "cardTitle": "Obtenir les URLs du lecteur",
+        "cardDescription": "Renvoie les URLs spécifiques nécessaires pour intégrer le contenu dans un lecteur. C'est le point de terminaison le plus efficace pour l'interrogation — réponse plus légère que <1>/status</1>.",
+        "howToDetectTitle": "Comment détecter la fin de la génération",
+        "videoBullet": "<0>VIDEO</0> : attendez <2>html_url != null AND audio_url != null</2>",
+        "slidesBullet": "<0>SLIDES / QUIZ / etc.</0> : attendez <2>html_url != null</2> (aucun audio requis)",
+        "failedBullet": "<0>Échec</0> : <2>status === \"FAILED\"</2>",
+        "urlFileDescriptionsTitle": "Description des fichiers d'URL",
+        "params": {
+            "htmlUrl": {
+                "description": "time_based_frame.json — tableau d'objets {timestamp, html}. À transmettre à AIContentPlayer."
+            },
+            "audioUrl": {
+                "description": "narration.mp3 — audio de narration synthétisé par IA."
+            },
+            "wordsUrl": {
+                "description": "narration.words.json — tableau de {word, start, end} pour l'affichage des sous-titres."
+            },
+            "avatarUrl": {
+                "description": "avatar_video.mp4 — vidéo d'avatar parlant (si generate_avatar était activé)."
+            }
+        }
+    },
+    "framesTab": {
+        "regenerate": {
+            "cardTitle": "Régénérer une image",
+            "cardDescription": "Demande à l'IA de réécrire le HTML d'une diapositive/image spécifique à partir d'une consigne. Renvoie le nouveau HTML pour <1>aperçu uniquement</1> — ne modifie pas encore la chronologie. Confirmez en appelant <3>/frame/update</3>.",
+            "params": {
+                "videoId": {
+                    "description": "ID du contenu généré."
+                },
+                "timestamp": {
+                    "description": "Temps en secondes de l'image à modifier. L'image la plus proche sera sélectionnée."
+                },
+                "userPrompt": {
+                    "description": "Instruction sur la façon de modifier l'image. Ex. \"Change background to dark blue and font to yellow.\""
+                }
+            }
+        },
+        "update": {
+            "cardTitle": "Valider la mise à jour de l'image",
+            "cardDescription": "Écrit la modification HTML confirmée dans la chronologie stockée (time_based_frame.json). Appelez ceci après que l'utilisateur a approuvé l'aperçu de <1>/frame/regenerate</1>.",
+            "params": {
+                "videoId": {
+                    "description": "ID du contenu généré."
+                },
+                "frameIndex": {
+                    "description": "Index de base zéro de l'image à mettre à jour. Utilisez la valeur renvoyée par /frame/regenerate."
+                },
+                "newHtml": {
+                    "description": "Chaîne HTML complète à stocker. Généralement le new_html provenant de /frame/regenerate."
+                }
+            }
+        }
+    },
+    "eventsTab": {
+        "cardTitle": "Référence des événements SSE",
+        "cardDescription": "Chaque événement du flux SSE de <1>POST /generate</1> est un objet JSON sur une ligne <3>data: </3>. Il existe quatre types d'événements.",
+        "progress": {
+            "sectionTitle": "progress — mise à jour d'étape",
+            "note": "Émis au début et à la fin de chaque étape. Le champ <1>files</1> est renseigné à mesure que chaque étape se termine."
+        },
+        "completed": {
+            "sectionTitle": "completed — génération terminée",
+            "note": "Événement final. Toutes les étapes demandées sont terminées."
+        },
+        "info": {
+            "sectionTitle": "info — message informatif",
+            "note": "Messages de statut non critiques (par ex. étapes ignorées lors d'une reprise)."
+        },
+        "error": {
+            "sectionTitle": "error — échec de la génération",
+            "note": "Envoyé lorsque le pipeline échoue. Le champ <1>stage</1> indique quelle étape a échoué."
+        },
+        "heartbeatNote": "<0>Signal de vie</0> — toutes les 60 s de silence, le serveur envoie une ligne de commentaire SSE (<2>: heartbeat</2>) pour maintenir les proxys actifs. Ce ne sont pas des événements <4>data:</4> et ils doivent être ignorés par votre analyseur."
+    },
+    "errors": {
+        "cardTitle": "Référence des erreurs HTTP",
+        "tableHeaders": {
+            "code": "Code",
+            "meaning": "Signification",
+            "cause": "Cause courante"
+        },
+        "unauthorized": {
+            "meaning": "Non autorisé",
+            "cause": "En-tête X-Institute-Key manquant ou invalide."
+        },
+        "forbidden": {
+            "meaning": "Interdit",
+            "cause": "La clé API est révoquée ou appartient à un autre établissement."
+        },
+        "notFound": {
+            "meaning": "Introuvable",
+            "cause": "Le video_id n'existe pas dans la base de données."
+        },
+        "validationError": {
+            "meaning": "Erreur de validation",
+            "cause": "Champ obligatoire manquant ou valeur de paramètre invalide."
+        },
+        "internalServerError": {
+            "meaning": "Erreur interne du serveur",
+            "cause": "Échec du pipeline. Consultez l'événement d'erreur SSE pour plus de détails."
+        }
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "editMentorHeading": "Edit {{name}}",
+    "defaultMentorName": "mentor",
+    "description": "How this mentor appears to learners. Their account and role are unchanged.",
+    "mentorAlt": "Mentor",
+    "uploading": "Uploading…",
+    "changePhoto": "Change photo",
+    "uploadPhoto": "Upload photo",
+    "photoHelp": "Shown on their directory card and in My Mentors.",
+    "displayNameLabel": "Display name",
+    "displayNamePlaceholder": "Display name",
+    "titleLabel": "Title",
+    "titlePlaceholder": "e.g. Senior Career Mentor",
+    "bioLabel": "Bio",
+    "bioPlaceholder": "Short bio shown to learners",
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "saveChanges": "Save changes",
+    "mentorUpdated": "Mentor updated",
+    "photoUploadFailed": "Photo upload failed",
+    "updateFailed": "Failed to update mentor"
+}

@@ -1,0 +1,177 @@
+{
+  "scheduleTest": {
+    "header": {
+      "title": "Restez prêt pour vos évaluations",
+      "description": "Consultez toutes les évaluations créées par {{admin}}, ainsi que leurs horaires et statuts, pour rester à jour."
+    },
+    "search": {
+      "placeholder": "Rechercher un sujet d'examen"
+    },
+    "tabs": {
+      "live": "En direct",
+      "upcoming": "À venir",
+      "past": "Passées"
+    },
+    "navHeading": {
+      "assessment": "Évaluation",
+      "homework": "Devoirs"
+    },
+    "empty": {
+      "live": {
+        "title": "Rien en direct pour le moment",
+        "description": "Lorsqu'un test s'ouvre pour votre groupe, il apparaît ici avec un bouton pour le rejoindre.",
+        "action": "Voir les prochaines"
+      },
+      "upcoming": {
+        "title": "Rien de prévu pour le moment",
+        "description": "Les tests programmés par votre établissement apparaîtront ici avec leur heure de début."
+      },
+      "past": {
+        "title": "Aucune tentative passée pour le moment",
+        "description": "Une fois qu'un test que vous avez tenté se termine, il apparaît ici avec son rapport."
+      }
+    },
+    "loading": {
+      "assessments": "Chargement des évaluations...",
+      "more": "Chargement en cours..."
+    },
+    "folders": {
+      "title": "Vos dossiers d’évaluations",
+      "subtitle": "Ouvrez un dossier pour voir ses tests en cours, à venir et passés.",
+      "others": "Autres",
+      "othersDescription": "Tests qui ne sont dans aucun dossier",
+      "count_one": "{{count}} test",
+      "count_many": "{{count}} tests",
+      "count_other": "{{count}} tests",
+      "back": "Retour aux dossiers",
+      "fallbackName": "Dossier",
+      "otherTests": "Autres tests"
+    }
+  },
+  "card": {
+    "playMode": {
+      "exam": "Examen",
+      "mock": "Simulation",
+      "practice": "Entraînement",
+      "survey": "Sondage",
+      "offlineExam": "Examen hors ligne"
+    },
+    "toast": {
+      "surveyStartFailed": "Échec du démarrage du sondage. Veuillez réessayer.",
+      "resumeFailed": "Échec de la reprise de l'évaluation. L'évaluation est déjà terminée.",
+      "resumeError": "Une erreur s'est produite lors de la reprise de l'évaluation."
+    },
+    "button": {
+      "resume": "Reprendre",
+      "ended": "Terminé",
+      "startSurvey": "Commencer le sondage",
+      "start": "Commencer",
+      "joinNow": "Rejoindre maintenant",
+      "showReport": "Voir le rapport",
+      "showAiReport": "Voir le rapport IA"
+    },
+    "meta": {
+      "starts": "Commence {{date}}",
+      "closes": "Se termine {{date}}",
+      "noExpiry": "Pas d'expiration",
+      "validTill": "Valable jusqu'au {{date}}",
+      "attempt": "Tentative {{used}} sur {{max}}",
+      "endedOn": "Terminé le {{date}}",
+      "resultsPending": "Résultats en attente",
+      "notAttempted": "Non tenté",
+      "liveNow": "En direct maintenant",
+      "closesIn": "Se termine dans {{time}}",
+      "startsIn": "Commence dans {{time}}"
+    },
+    "common": {
+      "cancel": "Annuler"
+    },
+    "dialog": {
+      "unavailable": {
+        "title": "Évaluation indisponible",
+        "description": "L'évaluation n'est pas en direct actuellement. Vous pourrez y participer dès qu'elle sera en direct."
+      },
+      "resume": {
+        "title": "Reprendre l'évaluation",
+        "description": "Souhaitez-vous continuer l'évaluation à partir de votre dernière progression enregistrée ?",
+        "resuming": "Reprise en cours..."
+      },
+      "survey": {
+        "title": "Commencer le sondage",
+        "description": "Êtes-vous prêt à commencer à remplir le sondage ? Une fois commencé, vous pourrez le terminer à votre propre rythme."
+      }
+    }
+  },
+  "util": {
+    "toast": {
+      "missingDetails": "Informations sur l'étudiant ou l'établissement manquantes.",
+      "studentDetailsNotFound": "Informations sur l'étudiant introuvables.",
+      "startFailed": "Impossible de démarrer l'évaluation. Veuillez réessayer."
+    }
+  },
+  "reportList": {
+    "navHeading": "Rapports",
+    "toast": {
+      "evaluatedNotAvailable": "La copie corrigée n'est pas encore disponible.",
+      "evaluatedOpenFailed": "Impossible d'ouvrir la copie corrigée."
+    },
+    "evaluatedFileName": "{{name}} - corrigée",
+    "fallback": {
+      "assessmentName": "évaluation",
+      "evaluatedCopy": "Copie corrigée"
+    },
+    "error": {
+      "loadFailed": "Échec du chargement des rapports. Veuillez réessayer plus tard.",
+      "loadTitle": "Impossible de charger les rapports"
+    },
+    "status": {
+      "manual": "Manuel",
+      "auto": "Automatique",
+      "released": "Publié",
+      "pendingEvaluation": "Évaluation en attente"
+    },
+    "button": {
+      "viewAiReport": "Voir le rapport IA",
+      "report": "Rapport",
+      "opening": "Ouverture…",
+      "viewEvaluated": "Voir la copie corrigée",
+      "viewReport": "Voir le rapport"
+    },
+    "meta": {
+      "marksLabel": "points",
+      "noMore": "Aucun autre rapport à charger"
+    },
+    "empty": {
+      "title": "Aucun rapport pour le moment",
+      "description": "Les rapports apparaissent ici une fois que vous avez terminé un test et que ses résultats sont publiés.",
+      "actionHomework": "Aller aux devoirs",
+      "actionAssessment": "Aller aux tests"
+    }
+  },
+  "aiReport": {
+    "generating": {
+      "title": "Génération de votre rapport IA",
+      "description": "Nous analysons votre évaluation. Cela peut prendre jusqu'à une minute — merci de ne pas fermer cette page."
+    },
+    "unavailable": {
+      "title": "Rapport non disponible",
+      "description": "Nous n'avons pas pu générer le rapport IA pour cette évaluation pour le moment.",
+      "checkBack": "Veuillez revérifier après {{time}}."
+    },
+    "tabs": {
+      "analysis": "Analyse IA",
+      "questions": "Questions et notes"
+    }
+  },
+  "comparison": {
+    "navHeading": "Comparaison des performances",
+    "defaultAssessmentName": "Évaluation",
+    "error": "Échec du chargement des données de comparaison. Veuillez réessayer plus tard."
+  },
+  "assignment": {
+    "notFound": "Devoir introuvable",
+    "notAssignmentSlide": "Ceci n'est pas une diapositive de devoir",
+    "defaultTitle": "Devoir",
+    "uploadFailed": "Échec du téléversement"
+  }
+}

@@ -4,10 +4,11 @@ import { MyButton } from '@/components/design-system/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getCurrencySymbol, getPaymentPlanIcon } from '../PaymentPlansDialog';
-import { X, Check } from 'lucide-react';
+import { X, Check } from '@phosphor-icons/react';
 import { FormControl, FormField, FormItem } from '@/components/ui/form';
 import { Switch } from '@/components/ui/switch';
 import { formatPlanPrice } from '@/utils/finance-utils';
+import { useTranslation } from 'react-i18next';
 
 interface DiscountSettingsDialogProps {
     form: UseFormReturn<InviteLinkFormValues>;
@@ -33,6 +34,7 @@ export const getAllUniqueFeatures = (paymentOptions: PaymentOption[]): string[] 
 };
 
 const PaymentPlanCard = ({ form }: DiscountSettingsDialogProps) => {
+    const { t } = useTranslation('manageStudentsPaymentPlanCard');
     // Get all unique features across all payment options
     const selectedPlan = form.watch('selectedPlan');
     const allFeatures = selectedPlan?.paymentOption
@@ -44,7 +46,7 @@ const PaymentPlanCard = ({ form }: DiscountSettingsDialogProps) => {
             {/* Payment Plan Section */}
             <div className="flex items-center justify-between py-2">
                 <div className="flex items-center gap-2">
-                    <span className="text-base font-semibold">Payment Plan</span>
+                    <span className="text-base font-semibold">{t('header.title')}</span>
                     {(form.watch('selectedPlan')?.type?.toLowerCase() === 'subscription' ||
                         form.watch('selectedPlan')?.type?.toLowerCase() === 'upfront' ||
                         form.watch('selectedPlan')?.type?.toLowerCase() === 'one_time') && (
@@ -60,7 +62,7 @@ const PaymentPlanCard = ({ form }: DiscountSettingsDialogProps) => {
                                                 checked={field.value}
                                                 onCheckedChange={field.onChange}
                                             />
-                                            <span>Show Payment Plans In Invite</span>
+                                            <span>{t('header.showInInvite')}</span>
                                         </div>
                                     </FormControl>
                                 </FormItem>
@@ -75,7 +77,7 @@ const PaymentPlanCard = ({ form }: DiscountSettingsDialogProps) => {
                     className="p-4"
                     onClick={() => form.setValue('showPlansDialog', true)}
                 >
-                    Change Payment Plans
+                    {t('header.changePlans')}
                 </MyButton>
             </div>
             {/* Show selected plan in a card */}
@@ -90,27 +92,39 @@ const PaymentPlanCard = ({ form }: DiscountSettingsDialogProps) => {
                                 <span>{form.watch('selectedPlan')?.name}</span>
                             </div>
                             <Badge variant="default" className="ml-auto">
-                                Default
+                                {t('badge.default')}
                             </Badge>
                         </div>
                         {form.watch('selectedPlan')?.type?.toLowerCase() === 'donation' && (
                             <div className="flex flex-col gap-2 pl-8 text-xs text-neutral-600">
                                 <span>
-                                    Suggested Amounts:{' '}
-                                    {getCurrencySymbol(form.watch('selectedPlan')?.currency || '')}
-                                    {form.watch('selectedPlan')?.suggestedAmount?.join(',')}
+                                    {t('donation.suggestedAmounts', {
+                                        amount: `${getCurrencySymbol(
+                                            form.watch('selectedPlan')?.currency || ''
+                                        )}${form.watch('selectedPlan')?.suggestedAmount?.join(',')}`,
+                                    })}
                                 </span>
                                 <span>
-                                    Minimum Amount:{' '}
-                                    {getCurrencySymbol(form.watch('selectedPlan')?.currency || '')}
-                                    {form.watch('selectedPlan')?.minAmount}
+                                    {t('donation.minimumAmount', {
+                                        amount: `${getCurrencySymbol(
+                                            form.watch('selectedPlan')?.currency || ''
+                                        )}${form.watch('selectedPlan')?.minAmount}`,
+                                    })}
                                 </span>
-                                <span>Currency: {form.watch('selectedPlan')?.currency}</span>
+                                <span>
+                                    {t('donation.currency', {
+                                        currency: form.watch('selectedPlan')?.currency,
+                                    })}
+                                </span>
                             </div>
                         )}
                         {form.watch('selectedPlan')?.type?.toLowerCase() === 'free' && (
                             <div className="flex flex-col gap-2 pl-8 text-xs text-neutral-600">
-                                <span>Free for {form.watch('selectedPlan')?.days} days</span>
+                                <span>
+                                    {t('freePlan.days', {
+                                        count: form.watch('selectedPlan')?.days || 0,
+                                    })}
+                                </span>
                             </div>
                         )}
                         {(form.watch('selectedPlan')?.type?.toLowerCase() === 'upfront' ||

@@ -1,0 +1,375 @@
+{
+    "navHeading": "Teams",
+    "header": {
+        "title": "Team members",
+        "subtitle": "Everyone who can sign in to your admin dashboard — their roles and login details. People you add can sign in straight away.",
+        "invite": "Invite member",
+        "import": "Import",
+        "export": "Export"
+    },
+    "stats": {
+        "members": "Team members",
+        "membersCaption": "Active and disabled",
+        "active": "Active",
+        "activeCaption": "Can sign in",
+        "disabled": "Disabled",
+        "disabledCaption": "Access paused",
+        "invites": "Pending invites",
+        "invitesCaption": "Older invites not yet accepted"
+    },
+    "tabs": {
+        "members": "Members",
+        "instituteUsers": "Institute Users",
+        "invites": "Invites",
+        "orgChart": "Org Chart"
+    },
+    "search": {
+        "placeholder": "Search by name, email or username",
+        "clear": "Clear search"
+    },
+    "filters": {
+        "roleType": "Role",
+        "status": "Status",
+        "subOrg": "Sub-Org",
+        "applyFilters": "Apply Filters",
+        "clearAll": "Clear all",
+        "clearAllFilters": "Clear search and filters",
+        "customRoleOption": "{{role}} (custom)"
+    },
+    "hint": {
+        "members": "Click a row to see and edit details",
+        "invites": "Click a row to edit the invite"
+    },
+    "columns": {
+        "member": "Member",
+        "invitee": "Invitee",
+        "invitedAs": "Invited as",
+        "login": "Login",
+        "name": "Name",
+        "email": "Email",
+        "username": "Username",
+        "password": "Password",
+        "phone": "Phone",
+        "roles": "Role",
+        "subOrgs": "Sub-Orgs",
+        "status": "Status",
+        "actions": "Actions"
+    },
+    "status": {
+        "active": "Active",
+        "disabled": "Disabled",
+        "invited": "Invite pending",
+        "notSignedIn": "Not signed in yet",
+        "notSignedInHint": "Already has access — just hasn't signed in for the first time yet."
+    },
+    "subOrgColumn": {
+        "assignedTooltip": "Assigned to this person",
+        "grantedByRoleTooltip": "Granted by this person's role",
+        "viaRole": "via role"
+    },
+    "assignSubOrgs": "Assign {{term}}",
+    "emptyState": {
+        "title": "No team members found",
+        "body": "We couldn't find any team members matching your current search or filters. Try adjusting them or invite new users.",
+        "filteredTitle": "No one matches these filters",
+        "filteredBody": "Try a different name or email, or clear the filters to see the whole team.",
+        "noMembersTitle": "No team members yet",
+        "noMembersBody": "Invite your first team member — they'll get an email with their login details.",
+        "invitesTitle": "No pending invites",
+        "invitesBody": "People you add are active straight away and show under Members. Only invites sent before that change wait here until the person signs in."
+    },
+    "error": {
+        "body": "We couldn't load your team. Check your connection and try again.",
+        "retry": "Try again"
+    },
+    "common": {
+        "cancel": "Cancel",
+        "close": "Close",
+        "optional": "(optional)"
+    },
+    "actions": {
+        "edit": "Edit",
+        "more": "More actions",
+        "editDetails": "Edit details",
+        "changeRole": "Change role",
+        "enable": "Enable access",
+        "disable": "Disable access",
+        "delete": "Delete member",
+        "deleteShort": "Delete",
+        "editInvite": "Edit invite",
+        "resend": "Resend login details",
+        "resendShort": "Resend",
+        "cancelInvite": "Cancel invite"
+    },
+    "login": {
+        "copy": "Copy",
+        "copyDetails": "Copy login details",
+        "copied": "Login details copied",
+        "copyFailed": "Couldn't copy — select and copy it manually",
+        "copyTemplate": "Username: {{username}}\nPassword: {{password}}",
+        "copyValue": "Copy {{label}}",
+        "valueCopied": "{{label}} copied"
+    },
+    "roles": {
+        "builtInGroup": "Built-in roles",
+        "customGroup": "Custom roles",
+        "customGroupHint": "· made by your institute",
+        "manageCustom": "Manage custom roles",
+        "createCustom": "Create a custom role",
+        "noCustomRoles": "Your institute hasn't created any custom roles yet.",
+        "customDescription": "Custom role — what it can open is set in Settings → Role Display.",
+        "builtInDescription": "Built-in role.",
+        "descriptions": {
+            "admin": "Full access to every module and setting.",
+            "teacher": "Teaches the batches and subjects you assign.",
+            "contentCreator": "Builds and edits course content.",
+            "assessmentCreator": "Creates assessments and question papers.",
+            "evaluator": "Checks and grades submitted answers."
+        },
+        "selectedCount_one": "{{count}} role selected",
+        "selectedCount_other": "{{count}} roles selected",
+        "multiSummary": "{{name}} gets everything these {{count}} roles allow: {{roles}}.",
+        "theyFallback": "They"
+    },
+    "invite": {
+        "heading": "Invite a team member",
+        "editHeading": "Edit invite",
+        "subtitle": "They can sign in straight away. New people get a username and password by email; anyone who already has an account keeps their current login.",
+        "editSubtitle": "Roles you keep stay as they are and new roles work straight away. Saving emails them their login details again.",
+        "steps": {
+            "details": {
+                "title": "Who are you inviting?",
+                "description": "Name and email are required — their login details go to this email."
+            },
+            "roles": {
+                "title": "What will they do?",
+                "description": "Pick one or more roles — they get everything each role allows. You can change this any time."
+            },
+            "batches": {
+                "title": "Which batches will they teach?",
+                "description": "Pick the batches, then the subjects they teach in each one."
+            }
+        },
+        "fields": {
+            "name": "Full name",
+            "namePlaceholder": "e.g. Priya Sharma",
+            "email": "Email",
+            "emailPlaceholder": "name@example.com",
+            "mobile": "Mobile number",
+            "mobilePlaceholder": "Enter mobile number",
+            "mobileHelp": "Saved on their profile so your team can call or message them."
+        },
+        "missing": {
+            "name": "Add their name to continue",
+            "email": "Add a valid email to continue",
+            "phone": "Fix the mobile number, or leave it empty",
+            "roles": "Pick at least one role",
+            "batches": "Pick at least one batch they will teach",
+            "subjects": "Pick subjects for every selected batch"
+        },
+        "footer": {
+            "ready": "Login details go to {{email}}",
+            "editReady": "Saving emails their login details again"
+        },
+        "submit": "Send invite",
+        "submitEdit": "Save changes",
+        "teacherNote": "Teacher is selected — pick the batches and subjects they teach in step 3.",
+        "teacherEditNote": "Batch and subject assignments for this teacher stay as they are.",
+        "validation": {
+            "nameRequired": "Enter their full name",
+            "emailRequired": "Enter their email address",
+            "emailInvalid": "That doesn't look like a valid email",
+            "phoneInvalid": "Enter a valid mobile number for the selected country",
+            "roleRequired": "Pick at least one role"
+        },
+        "errors": {
+            "disabledHere": "This person is disabled in your institute — use Enable on the Members tab"
+        },
+        "toast": {
+            "updated": "Invite for {{name}} updated",
+            "failed": "Couldn't send the invite. Please try again."
+        },
+        "sent": {
+            "heading": "Member added",
+            "title": "{{name}} is on the team",
+            "body": "{{firstName}} can sign in now. We've emailed {{email}} how to sign in.",
+            "existingBody": "{{firstName}} can sign in now with their current login. We've emailed {{email}} to say they've been added.",
+            "existingTag": "Existing account — they sign in with their current login",
+            "alreadyHeading": "Already on the team",
+            "alreadyTitle": "{{name}} is already on the team",
+            "alreadyBody": "{{firstName}} already has these roles here, so nothing changed and no email was sent.",
+            "rolesLabel_one": "Role",
+            "rolesLabel_other": "Roles",
+            "mobileLabel": "Mobile",
+            "loginLabel": "Login",
+            "loginHint": "Email not arriving? Share these directly.",
+            "inviteAnother": "Invite another",
+            "viewTeam": "View team"
+        }
+    },
+    "member": {
+        "breadcrumb": "Team members",
+        "title": "Member details",
+        "srDescription": "Profile, roles and access for {{name}}",
+        "sections": {
+            "profile": "Profile",
+            "access": "Role & access",
+            "login": "Login",
+            "account": "Account"
+        },
+        "profileHint": "Photo, designation and bio are shared — they show wherever {{name}} appears on a course.",
+        "profileReadOnly": "You can view this profile. Editing it needs the profile-edit permission in your role's display settings.",
+        "photo": {
+            "label": "Photo",
+            "upload": "Upload photo",
+            "replace": "Replace photo",
+            "remove": "Remove",
+            "help": "JPG or PNG. A square photo works best.",
+            "change": "Change photo"
+        },
+        "fields": {
+            "name": "Full name",
+            "email": "Email",
+            "mobile": "Mobile number",
+            "designation": "Designation",
+            "designationPlaceholder": "e.g. Senior Physics Faculty",
+            "bio": "Bio",
+            "bioPlaceholder": "A line or two learners will see on courses {{name}} teaches.",
+            "bioCount_one": "{{count}} character",
+            "bioCount_other": "{{count}} characters"
+        },
+        "accessHint": "Roles decide which modules {{name}} can open. Pick as many as they need.",
+        "rolesLockedWhileDisabled": "Access is paused for this member. Enable access to change their roles.",
+        "viaRole": "via {{role}} role",
+        "viaRoleHelp": "Access granted by a role is changed on the role, in Settings → Display Settings.",
+        "loginHint": "Share these only with the member.",
+        "notSignedInHint": "{{name}} already has access. Email the login details again if they haven't received them.",
+        "accountHint": "Pause or remove {{name}}'s access.",
+        "accessOn": "Access is on",
+        "accessOnHint": "{{name}} can sign in to the admin dashboard.",
+        "accessPaused": "Access is paused",
+        "accessPausedHint": "{{name}} can't sign in until you enable access again.",
+        "deleteHint": "Removes {{name}} from the team. This can't be undone.",
+        "unsaved": "Unsaved changes",
+        "noChanges": "No changes",
+        "save": "Save changes",
+        "toast": {
+            "saved": "{{name}}'s details saved",
+            "saveFailed": "Couldn't save the changes. Please try again.",
+            "notImage": "Please choose an image file.",
+            "uploadFailed": "Couldn't upload the photo. Please try again."
+        },
+        "validation": {
+            "nameRequired": "Name can't be empty",
+            "emailRequired": "Enter an email address",
+            "emailInvalid": "Enter a valid email",
+            "phoneInvalid": "Enter a valid mobile number for the selected country",
+            "roleRequired": "Keep at least one role"
+        }
+    },
+    "confirm": {
+        "failed": "Something went wrong. Please try again.",
+        "disable": {
+            "title": "Disable access for {{name}}?",
+            "body": "won't be able to sign in until you enable access again. Their courses, content and history stay as they are.",
+            "action": "Disable access",
+            "toast": "{{name}} can no longer sign in"
+        },
+        "enable": {
+            "title": "Enable access for {{name}}?",
+            "body": "can sign in again with their existing username and password.",
+            "action": "Enable access",
+            "toast": "{{name}} can sign in again"
+        },
+        "delete": {
+            "title": "Delete {{name}} from the team?",
+            "body": "is removed from the team and loses access straight away. This can't be undone.",
+            "note": "Only need to pause access? Disable the account instead — you can turn it back on later.",
+            "disableInstead": "Disable instead",
+            "action": "Delete member",
+            "toast": "{{name}} removed from the team"
+        },
+        "resend": {
+            "title": "Resend login details to {{name}}?",
+            "body": "We'll email their sign-in details again to",
+            "action": "Resend login details",
+            "toast": "Login details sent to {{email}}",
+            "reminderToast": "Sign-in reminder sent to {{email}} (they already use this account, so no password was included)"
+        },
+        "cancel": {
+            "title": "Cancel {{name}}'s invite?",
+            "body": "won't be able to sign in with this invite. You can invite them again later.",
+            "action": "Cancel invite",
+            "keep": "Keep invite",
+            "toast": "{{name}}'s invite cancelled"
+        },
+        "discard": {
+            "title": "Discard unsaved changes?",
+            "body": "Your edits to {{name}}'s details will be lost.",
+            "action": "Discard changes",
+            "keep": "Keep editing"
+        }
+    },
+    "table": {
+        "openRow": "Open {{name}}"
+    },
+    "export": {
+        "done_one": "Exported {{count}} person",
+        "done_other": "Exported {{count}} people",
+        "truncated": "Exported the first {{count}} people — narrow the filters to export the rest.",
+        "empty": "Nothing to export with the current search and filters.",
+        "failed": "Couldn't export the list. Please try again."
+    },
+    "import": {
+        "heading": "Import team members",
+        "intro": "Invite many people at once from a CSV file. Nothing is sent until you have reviewed the file.",
+        "formatTitle": "File format",
+        "rules": {
+            "required": "full_name, email and roles are required; mobile_number is optional.",
+            "roles": "Write role names as they appear in the app (see the role list). Separate several roles with |",
+            "phone": "Mobile numbers can include the country code (+44 …); without one, your institute’s default country is used.",
+            "teacher": "Teachers invited here get their batches and subjects assigned later."
+        },
+        "template": "Download template",
+        "roleReference": "Role list",
+        "dropHere": "Drag a .csv here, or click to choose a file",
+        "checkingTeam": "Checking your current team…",
+        "teamLoadFailed": "Couldn't load your current team, so duplicates can't be checked. Close and try again.",
+        "limit": "Up to {{max}} people per file.",
+        "ready": "Ready to invite",
+        "skipped": "Will be skipped",
+        "totalRows": "Rows in file",
+        "skippedTitle": "Skipped rows",
+        "readyTitle": "Will be invited",
+        "fileLevel": "File",
+        "rowLabel": "Row {{row}}",
+        "emailNote_one": "{{count}} person will be added — active straight away — and emailed how to sign in.",
+        "emailNote_other": "{{count}} people will be added — active straight away — and each emailed how to sign in.",
+        "chooseAnother": "Choose another file",
+        "send_one": "Send {{count}} invite",
+        "send_other": "Send {{count}} invites",
+        "stop": "Stop after this one",
+        "progress": "Inviting {{done}} of {{total}}…",
+        "keepOpen": "Keep this window open until it finishes.",
+        "doneTitle_one": "{{count}} person invited",
+        "doneTitle_other": "{{count}} people invited",
+        "doneBody": "They're active now and show under Members.",
+        "failedBody_one": "{{count}} row could not be invited — see below or download the results.",
+        "failedBody_other": "{{count}} rows could not be invited — see below or download the results.",
+        "stoppedBody": "Stopped after {{done}} of {{total}}. Download the results to see who was invited.",
+        "downloadResults": "Download results",
+        "done": "Done",
+        "errors": {
+            "missingColumns": "Missing column(s): {{columns}}. Start from the template.",
+            "tooManyRows": "This file has more than {{max}} rows. Split it into smaller files.",
+            "nameRequired": "full_name is empty",
+            "emailRequired": "email is empty",
+            "emailInvalid": "email doesn't look valid",
+            "alreadyOnTeam": "Already on the team (member or pending invite)",
+            "duplicateInFile": "Same email appears earlier in the file",
+            "phoneInvalid": "mobile_number \"{{value}}\" is not a valid number",
+            "unknownRoles": "Unknown role(s): {{roles}}",
+            "roleRequired": "roles is empty"
+        }
+    }
+}

@@ -1,4 +1,5 @@
 import jsPDF from 'jspdf';
+import type { TFunction } from 'i18next';
 import type { SummaryData } from './types';
 import {
     stripHtmlTags,
@@ -9,7 +10,7 @@ import {
     getContentWidth,
 } from './helpers';
 
-export const generateSummaryPDF = (content: string): void => {
+export const generateSummaryPDF = (content: string, t: TFunction): void => {
     let data: SummaryData | null = null;
 
     try {
@@ -25,7 +26,7 @@ export const generateSummaryPDF = (content: string): void => {
     }
 
     const doc = new jsPDF();
-    addHeader(doc, 'Summary');
+    addHeader(doc, t('instructorCopilotSummaryGenerator:title'));
 
     const pageHeight = doc.internal.pageSize.getHeight();
     const contentWidth = getContentWidth(doc);
@@ -36,7 +37,7 @@ export const generateSummaryPDF = (content: string): void => {
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(41, 128, 185);
-        doc.text('Overview', PDF_CONSTANTS.MARGIN, yPosition);
+        doc.text(t('instructorCopilotSummaryGenerator:overview'), PDF_CONSTANTS.MARGIN, yPosition);
         yPosition += 8;
 
         doc.setFontSize(11);
@@ -66,7 +67,11 @@ export const generateSummaryPDF = (content: string): void => {
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(41, 128, 185);
-        doc.text('Key Takeaways', PDF_CONSTANTS.MARGIN, yPosition);
+        doc.text(
+            t('instructorCopilotSummaryGenerator:keyTakeaways'),
+            PDF_CONSTANTS.MARGIN,
+            yPosition
+        );
         yPosition += 10;
 
         data.key_points.forEach((point, index) => {

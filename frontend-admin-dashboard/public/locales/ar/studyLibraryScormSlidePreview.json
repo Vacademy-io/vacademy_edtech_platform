@@ -1,0 +1,30 @@
+{
+    "header": {
+        "title": "وحدة SCORM",
+        "untitled": "وحدة SCORM بلا عنوان",
+        "scormVersion": "SCORM {{version}}",
+        "interactiveBadge": "تفاعلي"
+    },
+    "deleted": {
+        "badge": "محذوف",
+        "heading": "تم حذف وحدة SCORM هذه",
+        "description": "لم يعد محتوى SCORM متاحًا"
+    },
+    "loading": "جارٍ تحميل محتوى SCORM...",
+    "errors": {
+        "dataNotFound": "لم يتم العثور على بيانات شريحة SCORM",
+        "launchPathNotConfigured": "مسار تشغيل SCORM غير مُهيّأ",
+        "loadFailed": "فشل تحميل محتوى SCORM"
+    },
+    "infoBar": {
+        "versionLabel": "الإصدار:",
+        "entryLabel": "نقطة الدخول:",
+        "statusLabel": "الحالة:",
+        "openInNewTab": "فتح في تبويب جديد"
+    },
+    "iframeTitle": "محتوى SCORM",
+    "notReady": {
+        "heading": "حزمة SCORM غير جاهزة",
+        "description": "رابط تشغيل SCORM غير متاح. يرجى إعادة رفع حزمة SCORM."
+    }
+}

@@ -1,0 +1,53 @@
+{
+    "header": {
+        "title": "Démo d'analyse des réponses",
+        "subtitle": "Avant vs Après : comment les réponses sont désormais affichées"
+    },
+    "card": {
+        "title": "Q{{number}}. Question de sondage {{number}}",
+        "beforeLabel": "❌ Avant (JSON brut) :",
+        "afterLabel": "✅ Après (analysé) :",
+        "visited": "Visitée",
+        "markedForReview": "Marquée pour révision",
+        "timeTaken": "Temps pris : {{seconds}} s",
+        "durationLeft": "Temps restant : {{seconds}} s",
+        "questionId": "ID de la question : {{id}}"
+    },
+    "improvements": {
+        "title": "✨ Principales améliorations :",
+        "humanReadable": {
+            "bold": "Réponses lisibles",
+            "text": "au lieu du JSON brut"
+        },
+        "questionTypeBadges": {
+            "bold": "Badges de type de question",
+            "text": "pour une identification facile"
+        },
+        "statusIndicators": {
+            "bold": "Indicateurs de statut de réponse",
+            "text": "(Visitée, Marquée pour révision)"
+        },
+        "timeTracking": {
+            "bold": "Suivi du temps",
+            "text": "(Temps pris, Temps restant)"
+        },
+        "questionIdReference": {
+            "bold": "Référence de l'ID de question",
+            "text": "pour le débogage"
+        },
+        "surveySpecific": {
+            "bold": "Traitement spécifique au sondage",
+            "text": "(aucune bonne réponse requise)"
+        }
+    },
+    "response": {
+        "unknown": "Inconnu",
+        "unknownType": "Type de réponse inconnu",
+        "parseError": "Erreur lors de l'analyse des données de réponse",
+        "selectedOptions": "Options sélectionnées : {{options}}",
+        "noOptionsSelected": "Aucune option sélectionnée",
+        "answerValue": "Réponse : {{value}}",
+        "noNumericAnswer": "Aucune réponse numérique fournie",
+        "noTextAnswer": "Aucune réponse textuelle fournie"
+    }
+}

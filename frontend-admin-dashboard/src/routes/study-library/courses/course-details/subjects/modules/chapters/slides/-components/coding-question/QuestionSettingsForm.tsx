@@ -5,6 +5,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { LANGUAGE_REGISTRY, ALL_LANG_IDS, type LangId } from '../constants/code-editor';
 import type { CodingQuestionConfig } from '../utils/code-editor-types';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
     question: CodingQuestionConfig;
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function QuestionSettingsForm({ question, onChange, disabled }: Props) {
+    const { t } = useTranslation('studyLibraryQuestionSettingsForm');
     const toggleLang = useCallback(
         (lang: LangId, checked: boolean) => {
             let next = checked
@@ -58,7 +60,7 @@ export function QuestionSettingsForm({ question, onChange, disabled }: Props) {
     return (
         <div className="space-y-5">
             <section>
-                <Label className="mb-2 block text-sm font-semibold">Allowed languages</Label>
+                <Label className="mb-2 block text-sm font-semibold">{t('allowedLanguages.label')}</Label>
                 <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
                     {ALL_LANG_IDS.map((lang) => {
                         const def = LANGUAGE_REGISTRY[lang];
@@ -82,28 +84,27 @@ export function QuestionSettingsForm({ question, onChange, disabled }: Props) {
                     })}
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">
-                    Pyodide runs in-browser (Python). JS uses native eval. C/C++/Java/Go run on
-                    Judge0.
+                    {t('allowedLanguages.runtimeNote')}
                 </p>
             </section>
 
             <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                    <Label className="text-sm font-semibold">Session timer (minutes)</Label>
+                    <Label className="text-sm font-semibold">{t('sessionTimer.label')}</Label>
                     <Input
                         type="number"
                         min={0}
                         value={question.sessionTimeMinutes ?? ''}
-                        placeholder="No timer"
+                        placeholder={t('sessionTimer.placeholder')}
                         onChange={(e) => setNumber('sessionTimeMinutes', e.target.value)}
                         disabled={disabled}
                     />
                     <p className="mt-1 text-xs text-muted-foreground">
-                        Empty = unlimited. Auto-submits on expiry.
+                        {t('sessionTimer.hint')}
                     </p>
                 </div>
                 <div>
-                    <Label className="text-sm font-semibold">Max points</Label>
+                    <Label className="text-sm font-semibold">{t('maxPoints.label')}</Label>
                     <Input
                         type="number"
                         min={0}
@@ -112,15 +113,14 @@ export function QuestionSettingsForm({ question, onChange, disabled }: Props) {
                         disabled={disabled}
                     />
                     <p className="mt-1 text-xs text-muted-foreground">
-                        Total marks for this question, split equally across hidden test cases
-                        (samples if no hidden test exists).
+                        {t('maxPoints.hint')}
                     </p>
                 </div>
             </section>
 
             <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                    <Label className="text-sm font-semibold">CPU time per run (seconds)</Label>
+                    <Label className="text-sm font-semibold">{t('cpuTime.label')}</Label>
                     <Input
                         type="number"
                         min={1}
@@ -132,7 +132,7 @@ export function QuestionSettingsForm({ question, onChange, disabled }: Props) {
                     />
                 </div>
                 <div>
-                    <Label className="text-sm font-semibold">Memory (KB)</Label>
+                    <Label className="text-sm font-semibold">{t('memory.label')}</Label>
                     <Input
                         type="number"
                         min={16_000}

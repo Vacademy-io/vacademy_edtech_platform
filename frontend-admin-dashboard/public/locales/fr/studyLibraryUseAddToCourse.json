@@ -1,0 +1,15 @@
+{
+    "errors": {
+        "noInstitute": "Impossible de déterminer votre établissement.",
+        "pickDestination": "Choisissez au moins un chapitre de destination pour continuer.",
+        "emptyNotes": "Ces notes sont vides — rien à ajouter.",
+        "pdfUploadFailed": "Impossible d’envoyer le PDF des notes.",
+        "publishAssessmentFirst": "Publiez d’abord l’évaluation pour la lier en tant que diapositive d’évaluation.",
+        "noQuestions": "Il n’y a aucune question à ajouter.",
+        "allChaptersFailed": "Impossible d’ajouter la diapositive à un quelconque chapitre."
+    },
+    "defaultTitles": {
+        "notes": "Notes de cours",
+        "assessment": "Évaluation"
+    }
+}

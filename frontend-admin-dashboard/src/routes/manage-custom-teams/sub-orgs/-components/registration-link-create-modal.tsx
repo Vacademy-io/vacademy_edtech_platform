@@ -4,6 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { CircleNotch, FilePdf, Plus, Trash } from '@phosphor-icons/react';
 
 import { MyDialog } from '@/components/design-system/dialog';
@@ -103,11 +105,13 @@ type KycScope = (typeof KYC_SCOPE_VALUES)[number];
 const COMPLETION_MODE_VALUES = ['DEFAULT', 'MESSAGE', 'REDIRECT'] as const;
 type CompletionMode = (typeof COMPLETION_MODE_VALUES)[number];
 
-const baseFormSchema = z.object({
-    name: z.string().min(1, 'Name is required'),
-    memberCount: z.number().min(1, 'Must be at least 1').optional(),
-    validityInDays: z.number().min(1, 'Must be at least 1 day').optional(),
-    maxRegistrations: z.number().min(1, 'Must be at least 1').optional(),
+// Type-only shape — messages don't matter for z.infer, so this instance is never
+// used for runtime validation (see buildBaseFormSchema below for the translated one).
+const baseFormSchemaShape = z.object({
+    name: z.string().min(1),
+    memberCount: z.number().min(1).optional(),
+    validityInDays: z.number().min(1).optional(),
+    maxRegistrations: z.number().min(1).optional(),
     paymentType: z.enum(PAYMENT_TYPE_VALUES),
     // Required for ONE_TIME / SUBSCRIPTION — picked from the institute's existing
     // payment options (Payment Settings). FREE keeps the fresh-option backend path.
@@ -117,23 +121,37 @@ const baseFormSchema = z.object({
     currency: z.string().optional(),
 });
 
-const formSchema = baseFormSchema
-    .refine((values) => values.paymentType === 'FREE' || !!values.paymentOptionId, {
-        message: 'Select a payment option',
-        path: ['paymentOptionId'],
-    })
-    .refine((values) => values.paymentType === 'FREE' || !!values.vendor, {
-        message: 'A payment vendor is required for paid links',
-        path: ['vendor'],
+type FormValues = z.infer<typeof baseFormSchemaShape>;
+
+const buildBaseFormSchema = (t: TFunction) =>
+    z.object({
+        name: z.string().min(1, t('validation.nameRequired')),
+        memberCount: z.number().min(1, t('validation.minOne')).optional(),
+        validityInDays: z.number().min(1, t('validation.minOneDay')).optional(),
+        maxRegistrations: z.number().min(1, t('validation.minOne')).optional(),
+        paymentType: z.enum(PAYMENT_TYPE_VALUES),
+        paymentOptionId: z.string().optional(),
+        vendor: z.string().optional(),
+        vendorId: z.string().optional(),
+        currency: z.string().optional(),
     });
 
-type FormValues = z.infer<typeof baseFormSchema>;
+const buildFormSchema = (t: TFunction) =>
+    buildBaseFormSchema(t)
+        .refine((values) => values.paymentType === 'FREE' || !!values.paymentOptionId, {
+            message: t('validation.selectPaymentOption'),
+            path: ['paymentOptionId'],
+        })
+        .refine((values) => values.paymentType === 'FREE' || !!values.vendor, {
+            message: t('validation.vendorRequired'),
+            path: ['vendor'],
+        });
 
-const PAYMENT_TYPE_LABELS: Record<PaymentType, string> = {
-    FREE: 'Free',
-    ONE_TIME: 'One-Time',
-    SUBSCRIPTION: 'Subscription',
-};
+const buildPaymentTypeLabels = (t: TFunction): Record<PaymentType, string> => ({
+    FREE: t('paymentTypeLabel.free'),
+    ONE_TIME: t('paymentTypeLabel.oneTime'),
+    SUBSCRIPTION: t('paymentTypeLabel.subscription'),
+});
 
 /**
  * Reverse of buildInstituteCustomFields — maps an existing template's custom-field rows
@@ -208,6 +226,7 @@ export function RegistrationLinkCreateModal({
     onOpenChange,
     editTemplate,
 }: RegistrationLinkCreateModalProps) {
+    const { t } = useTranslation('manageCustomTeamsRegistrationLinkCreateModal');
     // Institutes rename this concept via Settings → Naming (Channel Partner,
     // Branch, Franchise, VLE …); user-facing labels must follow that.
     const subOrgTerm = getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg);
@@ -222,7 +241,7 @@ export function RegistrationLinkCreateModal({
     // Edit mode skips the paid-link refinements — payment config is immutable and the
     // PUT endpoint ignores payment fields, so they must never block saving other edits.
     const form = useForm<FormValues>({
-        resolver: zodResolver(isEditMode ? baseFormSchema : formSchema),
+        resolver: zodResolver(isEditMode ? buildBaseFormSchema(t) : buildFormSchema(t)),
         defaultValues: { name: '', paymentType: 'FREE' },
     });
 
@@ -387,7 +406,7 @@ export function RegistrationLinkCreateModal({
         setTncEnabled(!!editTemplate.tnc_file_id || consentItems.length > 0);
         setTncFileId(editTemplate.tnc_file_id ?? null);
         // The real filename isn't stored on the template — the chip falls back to a label.
-        setTncFileName(editTemplate.tnc_file_id ? 'Existing T&C PDF' : '');
+        setTncFileName(editTemplate.tnc_file_id ? t('tnc.existingFileLabel') : '');
         setTncConsentItems(consentItems);
         const kycDocs = editTemplate.kyc_documents ?? [];
         setKycEnabled(kycDocs.length > 0);
@@ -408,15 +427,15 @@ export function RegistrationLinkCreateModal({
         setCompletionButtonLabel(buttonLabel);
         setCompletionButtonUrl(buttonUrl);
         setCompletionRedirectUrl(redirectUrl);
-    }, [open, editTemplate, form]);
+    }, [open, editTemplate, form, t]);
 
     const createMutation = useMutation({
         mutationFn: (payload: CreateRegistrationTemplateRequest) =>
             createRegistrationTemplate(instituteId || '', payload),
         onSuccess: (data) => {
-            toast.success('Registration link created');
+            toast.success(t('toast.createSuccess'));
             if (data.invite_code) {
-                toast.info(`Registration code: ${data.invite_code}`);
+                toast.info(t('toast.createCode', { code: data.invite_code }));
             }
             queryClient.invalidateQueries({
                 queryKey: ['sub-org-registration-templates', instituteId],
@@ -427,7 +446,7 @@ export function RegistrationLinkCreateModal({
         onError: (error: unknown) => {
             const message =
                 (error as { response?: { data?: { message?: string } } })?.response?.data
-                    ?.message || 'Failed to create registration link';
+                    ?.message || t('toast.createError');
             toast.error(message);
         },
     });
@@ -442,7 +461,7 @@ export function RegistrationLinkCreateModal({
             payload: CreateRegistrationTemplateRequest;
         }) => updateRegistrationTemplate(templateId, instituteId || '', payload),
         onSuccess: (_data, variables) => {
-            toast.success('Registration link updated');
+            toast.success(t('toast.updateSuccess'));
             queryClient.invalidateQueries({
                 queryKey: ['sub-org-registration-templates', instituteId],
             });
@@ -455,7 +474,7 @@ export function RegistrationLinkCreateModal({
         onError: (error: unknown) => {
             const message =
                 (error as { response?: { data?: { message?: string } } })?.response?.data
-                    ?.message || 'Failed to update registration link';
+                    ?.message || t('toast.updateError');
             toast.error(message);
         },
     });
@@ -518,7 +537,7 @@ export function RegistrationLinkCreateModal({
 
     const handleTncFileSelected = async (file: File) => {
         if (file.type !== 'application/pdf') {
-            toast.error('Only PDF files are supported');
+            toast.error(t('toast.pdfOnly'));
             return;
         }
         try {
@@ -533,12 +552,12 @@ export function RegistrationLinkCreateModal({
             if (fileId && typeof fileId === 'string') {
                 setTncFileId(fileId);
                 setTncFileName(file.name);
-                toast.success('T&C PDF uploaded');
+                toast.success(t('toast.pdfUploaded'));
             } else {
-                toast.error('Upload did not return a file ID');
+                toast.error(t('toast.uploadNoFileId'));
             }
         } catch {
-            toast.error('Failed to upload T&C PDF');
+            toast.error(t('toast.pdfUploadFailed'));
         }
     };
 
@@ -606,12 +625,12 @@ export function RegistrationLinkCreateModal({
 
     const onSubmit = (values: FormValues) => {
         if (selectedPackageSessionIds.length === 0) {
-            toast.error('Select at least one batch');
+            toast.error(t('toast.selectBatch'));
             return;
         }
         const cleanedConsentItems = tncConsentItems.map((s) => s.trim()).filter(Boolean);
         if (tncEnabled && !tncFileId && cleanedConsentItems.length === 0) {
-            toast.error('Add a T&C PDF or at least one consent statement, or disable the T&C step');
+            toast.error(t('toast.tncRequired'));
             return;
         }
         const invalidDropdown = customFields.find(
@@ -624,7 +643,7 @@ export function RegistrationLinkCreateModal({
                     .filter(Boolean).length === 0
         );
         if (invalidDropdown) {
-            toast.error(`Add at least one option for dropdown field "${invalidDropdown.name}"`);
+            toast.error(t('toast.dropdownOptionRequired', { field: invalidDropdown.name }));
             return;
         }
 
@@ -637,27 +656,25 @@ export function RegistrationLinkCreateModal({
         if (completionMode === 'MESSAGE') {
             // Message OR a complete button pair is enough (backend allows button-only).
             if (!trimmedCompletionMessage && !(trimmedButtonLabel && trimmedButtonUrl)) {
-                toast.error(
-                    'Add a completion message or a button, or switch "After registration" back to Default'
-                );
+                toast.error(t('toast.completionMessageRequired'));
                 return;
             }
             if (!!trimmedButtonLabel !== !!trimmedButtonUrl) {
-                toast.error('Completion button label and URL are required together');
+                toast.error(t('toast.completionButtonPairRequired'));
                 return;
             }
             if (trimmedButtonUrl && !trimmedButtonUrl.startsWith('https://')) {
-                toast.error('Completion button URL must start with https://');
+                toast.error(t('toast.completionButtonUrlHttps'));
                 return;
             }
         }
         if (completionMode === 'REDIRECT') {
             if (!trimmedRedirectUrl) {
-                toast.error('Enter the URL to redirect to after registration');
+                toast.error(t('toast.redirectUrlRequired'));
                 return;
             }
             if (!trimmedRedirectUrl.startsWith('https://')) {
-                toast.error('Redirect URL must start with https://');
+                toast.error(t('toast.redirectUrlHttps'));
                 return;
             }
         }
@@ -738,14 +755,14 @@ export function RegistrationLinkCreateModal({
     const editIsPaid = editPaymentType === 'ONE_TIME' || editPaymentType === 'SUBSCRIPTION';
     const editPaymentOptionName = editTemplate?.payment_option_id
         ? isLoadingPaymentOptions
-            ? 'Loading...'
+            ? t('payment.option.loadingShort')
             : institutePaymentOptions.find((o) => o.id === editTemplate.payment_option_id)?.name ||
               editTemplate.payment_option_id
         : '—';
 
     return (
         <MyDialog
-            heading={isEditMode ? 'Edit Registration Link' : 'Create Registration Link'}
+            heading={isEditMode ? t('title.edit') : t('title.create')}
             open={open}
             onOpenChange={(o) => {
                 if (!o) resetAll();
@@ -756,10 +773,10 @@ export function RegistrationLinkCreateModal({
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 {/* 1. Name */}
                 <div className="space-y-2">
-                    <Label htmlFor="registration-link-name">Name *</Label>
+                    <Label htmlFor="registration-link-name">{t('fields.name.label')}</Label>
                     <Input
                         id="registration-link-name"
-                        placeholder="e.g. Partner School Onboarding"
+                        placeholder={t('fields.name.placeholder')}
                         {...form.register('name')}
                     />
                     {form.formState.errors.name && (
@@ -772,21 +789,21 @@ export function RegistrationLinkCreateModal({
                 {/* 2. Courses (package-session picker) */}
                 <div className="space-y-2">
                     <div>
-                        <Label>{coursesLabel} *</Label>
+                        <Label>{t('fields.courses.label', { label: coursesLabel })}</Label>
                         <p className="text-xs text-muted-foreground">
-                            Every {subOrgTerm.toLowerCase()} registered via this link gets exactly these batches.
+                            {t('fields.courses.hint', { subOrg: subOrgTerm.toLowerCase() })}
                         </p>
                     </div>
                     <ScrollArea className="h-72 rounded-md border p-3">
                         {isLoadingSessions && flatRows.length === 0 && (
                             <div className="flex items-center justify-center gap-2 py-8 text-sm text-muted-foreground">
                                 <CircleNotch className="size-4 animate-spin" />
-                                Loading batches...
+                                {t('fields.courses.loading')}
                             </div>
                         )}
                         {!isLoadingSessions && flatRows.length === 0 && (
                             <p className="py-8 text-center text-sm text-muted-foreground">
-                                No batches found.
+                                {t('fields.courses.empty')}
                             </p>
                         )}
                         {(packagesSummary?.packages || []).map(
@@ -827,7 +844,9 @@ export function RegistrationLinkCreateModal({
                     </ScrollArea>
                     {selectedPackageSessionIds.length > 0 && (
                         <p className="text-sm text-muted-foreground">
-                            {selectedPackageSessionIds.length} selected
+                            {t('fields.courses.selectedCount', {
+                                count: selectedPackageSessionIds.length,
+                            })}
                         </p>
                     )}
                 </div>
@@ -835,16 +854,16 @@ export function RegistrationLinkCreateModal({
                 {/* 3. Seat cap + validity */}
                 <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
-                        <Label htmlFor="registration-link-seats">Seat limit</Label>
+                        <Label htmlFor="registration-link-seats">{t('fields.seatLimit.label')}</Label>
                         <Input
                             id="registration-link-seats"
                             type="number"
                             min={1}
-                            placeholder="e.g. 10"
+                            placeholder={t('fields.seatLimit.placeholder')}
                             {...form.register('memberCount', { setValueAs: numberOrUndefined })}
                         />
                         <p className="text-xs text-muted-foreground">
-                            Maximum members per spawned {subOrgTerm.toLowerCase()}.
+                            {t('fields.seatLimit.hint', { subOrg: subOrgTerm.toLowerCase() })}
                         </p>
                         {form.formState.errors.memberCount && (
                             <p className="text-sm text-danger-600">
@@ -853,16 +872,16 @@ export function RegistrationLinkCreateModal({
                         )}
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="registration-link-validity">Validity (days)</Label>
+                        <Label htmlFor="registration-link-validity">{t('fields.validity.label')}</Label>
                         <Input
                             id="registration-link-validity"
                             type="number"
                             min={1}
-                            placeholder="e.g. 365"
+                            placeholder={t('fields.validity.placeholder')}
                             {...form.register('validityInDays', { setValueAs: numberOrUndefined })}
                         />
                         <p className="text-xs text-muted-foreground">
-                            Access duration for each spawned {subOrgTerm.toLowerCase()}.
+                            {t('fields.validity.hint', { subOrg: subOrgTerm.toLowerCase() })}
                         </p>
                         {form.formState.errors.validityInDays && (
                             <p className="text-sm text-danger-600">
@@ -875,43 +894,42 @@ export function RegistrationLinkCreateModal({
                 {/* 4. Payment — read-only in edit mode; payment config is immutable */}
                 {isEditMode ? (
                     <div className="space-y-2">
-                        <Label>Payment</Label>
+                        <Label>{t('payment.label')}</Label>
                         <div className="space-y-1 rounded-md border bg-muted/50 p-3 text-sm">
                             <p>
-                                <span className="text-muted-foreground">Type: </span>
-                                {PAYMENT_TYPE_LABELS[editPaymentType]}
+                                <span className="text-muted-foreground">{t('payment.typeLabelPrefix')}</span>
+                                {buildPaymentTypeLabels(t)[editPaymentType]}
                             </p>
                             {editIsPaid && (
                                 <>
                                     <p>
                                         <span className="text-muted-foreground">
-                                            Payment option:{' '}
+                                            {t('payment.optionLabelPrefix')}
                                         </span>
                                         {editPaymentOptionName}
                                     </p>
                                     <p>
-                                        <span className="text-muted-foreground">Vendor: </span>
+                                        <span className="text-muted-foreground">{t('payment.vendorLabelPrefix')}</span>
                                         {editTemplate?.vendor || '—'}
                                     </p>
                                     <p>
-                                        <span className="text-muted-foreground">Currency: </span>
+                                        <span className="text-muted-foreground">{t('payment.currencyLabelPrefix')}</span>
                                         {editTemplate?.currency || '—'}
                                     </p>
                                 </>
                             )}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            Payment settings can&apos;t be changed after creation — create a new
-                            link instead.
+                            {t('payment.immutableNote')}
                         </p>
                     </div>
                 ) : (
                 <div className="space-y-4">
                     <div className="space-y-2">
                         <div>
-                            <Label>Payment type</Label>
+                            <Label>{t('payment.typeSelect.label')}</Label>
                             <p className="text-xs text-muted-foreground">
-                                What each organization pays when registering via this link.
+                                {t('payment.typeSelect.hint')}
                             </p>
                         </div>
                         <Select
@@ -928,9 +946,9 @@ export function RegistrationLinkCreateModal({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="FREE">Free</SelectItem>
-                                <SelectItem value="ONE_TIME">One-Time</SelectItem>
-                                <SelectItem value="SUBSCRIPTION">Subscription</SelectItem>
+                                <SelectItem value="FREE">{t('paymentTypeLabel.free')}</SelectItem>
+                                <SelectItem value="ONE_TIME">{t('paymentTypeLabel.oneTime')}</SelectItem>
+                                <SelectItem value="SUBSCRIPTION">{t('paymentTypeLabel.subscription')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
@@ -938,10 +956,9 @@ export function RegistrationLinkCreateModal({
                     {isPaid && (
                         <div className="space-y-2">
                             <div>
-                                <Label>Payment option *</Label>
+                                <Label>{t('payment.option.label')}</Label>
                                 <p className="text-xs text-muted-foreground">
-                                    The registering admin pays via this existing institute payment
-                                    option. Price &amp; currency come from the option&apos;s plan.
+                                    {t('payment.option.hint')}
                                 </p>
                             </div>
                             <Select
@@ -960,10 +977,10 @@ export function RegistrationLinkCreateModal({
                                     <SelectValue
                                         placeholder={
                                             isLoadingPaymentOptions
-                                                ? 'Loading payment options...'
+                                                ? t('payment.option.loading')
                                                 : optionsForType.length === 0
-                                                  ? 'No active option found'
-                                                  : 'Select a payment option'
+                                                  ? t('payment.option.noneFound')
+                                                  : t('payment.option.placeholder')
                                         }
                                     />
                                 </SelectTrigger>
@@ -984,8 +1001,9 @@ export function RegistrationLinkCreateModal({
                             </Select>
                             {!isLoadingPaymentOptions && optionsForType.length === 0 && (
                                 <p className="text-sm text-amber-600">
-                                    No active {paymentType.replace('_', '-').toLowerCase()} option —
-                                    create one in Payment Settings.
+                                    {t('payment.option.noActiveOfType', {
+                                        type: paymentType.replace('_', '-').toLowerCase(),
+                                    })}
                                 </p>
                             )}
                             {form.formState.errors.paymentOptionId && (
@@ -998,11 +1016,10 @@ export function RegistrationLinkCreateModal({
 
                     {isPaid && (
                         <div className="space-y-2">
-                            <Label>Payment vendor</Label>
+                            <Label>{t('payment.vendor.label')}</Label>
                             {vendorsList.length === 0 ? (
                                 <p className="text-sm text-amber-600">
-                                    No payment vendor found — configure a payment gateway in
-                                    Settings first.
+                                    {t('payment.vendor.noneFound')}
                                 </p>
                             ) : vendorsList.length === 1 && vendorsList[0] ? (
                                 <Input
@@ -1020,7 +1037,7 @@ export function RegistrationLinkCreateModal({
                                     }}
                                 >
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select payment vendor" />
+                                        <SelectValue placeholder={t('payment.vendor.placeholder')} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {vendorsList.map((v) => (
@@ -1045,9 +1062,9 @@ export function RegistrationLinkCreateModal({
                 <div className="space-y-4">
                     <div className="space-y-2">
                         <div>
-                            <Label>Admin roles (auth service)</Label>
+                            <Label>{t('roles.admin.label')}</Label>
                             <p className="text-xs text-muted-foreground">
-                                Roles assigned to the admin who registers via this link.
+                                {t('roles.admin.hint')}
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2 rounded-md border p-2">
@@ -1071,7 +1088,7 @@ export function RegistrationLinkCreateModal({
                             ))}
                             {rolesList.length === 0 && (
                                 <span className="text-xs text-muted-foreground">
-                                    No roles found
+                                    {t('roles.noneFound')}
                                 </span>
                             )}
                         </div>
@@ -1079,10 +1096,9 @@ export function RegistrationLinkCreateModal({
 
                     <div className="space-y-2">
                         <div>
-                            <Label>Allowed team roles</Label>
+                            <Label>{t('roles.team.label')}</Label>
                             <p className="text-xs text-muted-foreground">
-                                Roles the {subOrgTerm.toLowerCase()} admin can assign to their own team. Leave empty to
-                                allow any custom role.
+                                {t('roles.team.hint', { subOrg: subOrgTerm.toLowerCase() })}
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2 rounded-md border p-2">
@@ -1106,7 +1122,7 @@ export function RegistrationLinkCreateModal({
                             ))}
                             {rolesList.length === 0 && (
                                 <span className="text-xs text-muted-foreground">
-                                    No roles found
+                                    {t('roles.noneFound')}
                                 </span>
                             )}
                         </div>
@@ -1114,9 +1130,9 @@ export function RegistrationLinkCreateModal({
 
                     <div className="space-y-2">
                         <div>
-                            <Label>Admin permissions</Label>
+                            <Label>{t('roles.permissions.label')}</Label>
                             <p className="text-xs text-muted-foreground">
-                                What the {subOrgTerm.toLowerCase()} admin can do. Leave empty to grant FULL access.
+                                {t('roles.permissions.hint', { subOrg: subOrgTerm.toLowerCase() })}
                             </p>
                         </div>
                         <div className="flex flex-wrap gap-2 rounded-md border p-2">
@@ -1135,7 +1151,9 @@ export function RegistrationLinkCreateModal({
                                             )
                                         }
                                     />
-                                    {perm === 'CREATE_COURSE' ? `Create ${courseLabel}` : perm}
+                                    {perm === 'CREATE_COURSE'
+                                        ? t('roles.permissions.createCourse', { course: courseLabel })
+                                        : perm}
                                 </label>
                             ))}
                         </div>
@@ -1146,9 +1164,9 @@ export function RegistrationLinkCreateModal({
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <div>
-                            <Label>Registration form fields</Label>
+                            <Label>{t('customFields.label')}</Label>
                             <p className="text-xs text-muted-foreground">
-                                Extra questions the registrant answers. Order follows this list.
+                                {t('customFields.hint')}
                             </p>
                         </div>
                         <MyButton
@@ -1158,12 +1176,12 @@ export function RegistrationLinkCreateModal({
                             onClick={addCustomField}
                         >
                             <Plus className="mr-1 size-3" />
-                            Add Field
+                            {t('customFields.addField')}
                         </MyButton>
                     </div>
                     {customFields.length === 0 ? (
                         <p className="rounded-md border border-dashed p-3 text-center text-sm text-muted-foreground">
-                            No extra fields — the form only asks for organization and admin details.
+                            {t('customFields.empty')}
                         </p>
                     ) : (
                         <div className="space-y-2">
@@ -1171,7 +1189,7 @@ export function RegistrationLinkCreateModal({
                                 <div key={index} className="space-y-2 rounded-md border p-3">
                                     <div className="flex items-center gap-2">
                                         <Input
-                                            placeholder="Field name"
+                                            placeholder={t('customFields.namePlaceholder')}
                                             value={field.name}
                                             onChange={(e) =>
                                                 updateCustomField(index, {
@@ -1205,14 +1223,14 @@ export function RegistrationLinkCreateModal({
                                             scale="small"
                                             layoutVariant="icon"
                                             onClick={() => removeCustomField(index)}
-                                            aria-label="Remove field"
+                                            aria-label={t('customFields.removeAria')}
                                         >
                                             <Trash className="size-4" />
                                         </MyButton>
                                     </div>
                                     {field.type === 'DROPDOWN' && (
                                         <Input
-                                            placeholder="Options, comma separated (e.g. Small, Medium, Large)"
+                                            placeholder={t('customFields.optionsPlaceholder')}
                                             value={field.optionsCsv}
                                             onChange={(e) =>
                                                 updateCustomField(index, {
@@ -1230,7 +1248,7 @@ export function RegistrationLinkCreateModal({
                                                 })
                                             }
                                         />
-                                        Mandatory
+                                        {t('customFields.mandatory')}
                                     </label>
                                 </div>
                             ))}
@@ -1241,35 +1259,33 @@ export function RegistrationLinkCreateModal({
                 {/* 6b. Wizard content — copy tweaks + address collection */}
                 <div className="space-y-2">
                     <div>
-                        <Label>Wizard content</Label>
+                        <Label>{t('wizard.label')}</Label>
                         <p className="text-xs text-muted-foreground">
-                            Fine-tune what registrants see while filling the form.
+                            {t('wizard.hint')}
                         </p>
                     </div>
                     <div className="space-y-2 rounded-md border p-3">
                         <Label htmlFor="registration-link-org-name-hint">
-                            Organization name hint
+                            {t('wizard.orgNameHint.label')}
                         </Label>
                         <Input
                             id="registration-link-org-name-hint"
                             maxLength={300}
-                            placeholder="e.g. If you have no registered organization, write your full name"
+                            placeholder={t('wizard.orgNameHint.placeholder')}
                             value={orgNameHint}
                             onChange={(e) => setOrgNameHint(e.target.value)}
                         />
                         <p className="text-xs text-muted-foreground">
-                            Shown as helper text under the Organization Name field in the
-                            registration form. Leave empty for none.
+                            {t('wizard.orgNameHint.hint')}
                         </p>
                     </div>
                     <div className="flex items-center justify-between gap-3 rounded-md border p-3">
                         <div>
                             <Label htmlFor="registration-link-collect-address">
-                                Collect full address
+                                {t('wizard.collectAddress.label')}
                             </Label>
                             <p className="text-xs text-muted-foreground">
-                                Adds Address Line 1/2, City, State and Pincode to the registration
-                                form and saves them on the new organization.
+                                {t('wizard.collectAddress.hint')}
                             </p>
                         </div>
                         <Switch
@@ -1284,10 +1300,9 @@ export function RegistrationLinkCreateModal({
                 <div className="space-y-2">
                     <div className="flex items-center justify-between rounded-md border p-3">
                         <div>
-                            <Label htmlFor="registration-link-tnc">Terms &amp; Conditions</Label>
+                            <Label htmlFor="registration-link-tnc">{t('tnc.label')}</Label>
                             <p className="text-xs text-muted-foreground">
-                                Require registrants to accept a T&amp;C PDF and/or consent
-                                statements before completing.
+                                {t('tnc.hint')}
                             </p>
                         </div>
                         <Switch
@@ -1302,7 +1317,7 @@ export function RegistrationLinkCreateModal({
                                 <span className="flex min-w-0 items-center gap-2 text-sm">
                                     <FilePdf className="size-4 shrink-0 text-primary-500" />
                                     <span className="truncate">
-                                        {tncFileName || 'T&C PDF uploaded'}
+                                        {tncFileName || t('tnc.defaultFileLabel')}
                                     </span>
                                 </span>
                                 <MyButton
@@ -1314,7 +1329,7 @@ export function RegistrationLinkCreateModal({
                                         setTncFileName('');
                                     }}
                                 >
-                                    Remove
+                                    {t('tnc.removeFile')}
                                 </MyButton>
                             </div>
                         ) : (
@@ -1323,21 +1338,19 @@ export function RegistrationLinkCreateModal({
                                     onFileSelected={handleTncFileSelected}
                                     maxSize={10}
                                     acceptFormats={{ 'application/pdf': ['.pdf'] }}
-                                    acceptMsg="Supported format: PDF (optional)"
+                                    acceptMsg={t('tnc.acceptFormat')}
                                 />
                                 {isUploadingTnc && (
-                                    <p className="text-xs text-primary-500">Uploading PDF...</p>
+                                    <p className="text-xs text-primary-500">{t('tnc.uploading')}</p>
                                 )}
                             </div>
                         ))}
                     {tncEnabled && (
                         <div className="space-y-2 rounded-md border p-3">
                             <div>
-                                <Label>Consent statements</Label>
+                                <Label>{t('tnc.consent.label')}</Label>
                                 <p className="text-xs text-muted-foreground">
-                                    Each statement becomes a required checkbox. Add inline links
-                                    with [label](url) — e.g. We have read the [Code of
-                                    Conduct](https://example.com/coc) and agree to abide by it.
+                                    {t('tnc.consent.hint')}
                                 </p>
                             </div>
                             {tncConsentItems.map((item, index) => (
@@ -1351,7 +1364,7 @@ export function RegistrationLinkCreateModal({
                                                 )
                                             )
                                         }
-                                        placeholder="e.g. By submitting, you agree to receive communication. See our [Privacy Policy](https://example.com/privacy)."
+                                        placeholder={t('tnc.consent.itemPlaceholder')}
                                         rows={2}
                                         maxLength={1000}
                                         className="flex-1 text-sm"
@@ -1378,7 +1391,7 @@ export function RegistrationLinkCreateModal({
                                 disable={tncConsentItems.length >= 10}
                             >
                                 <Plus className="mr-1 size-4" />
-                                Add statement
+                                {t('tnc.consent.addStatement')}
                             </MyButton>
                         </div>
                     )}
@@ -1389,10 +1402,10 @@ export function RegistrationLinkCreateModal({
                     <div className="flex items-center justify-between rounded-md border p-3">
                         <div>
                             <Label htmlFor="registration-link-kyc">
-                                Identity Verification (DigiLocker)
+                                {t('kyc.label')}
                             </Label>
                             <p className="text-xs text-muted-foreground">
-                                Require identity verification via DigiLocker.
+                                {t('kyc.hint')}
                             </p>
                         </div>
                         <Switch
@@ -1409,20 +1422,19 @@ export function RegistrationLinkCreateModal({
                             >
                                 <label className="flex w-fit cursor-pointer items-center gap-2 text-sm">
                                     <RadioGroupItem value="AADHAAR" />
-                                    Aadhaar only
+                                    {t('kyc.aadhaarOnly')}
                                 </label>
                                 <label className="flex w-fit cursor-pointer items-center gap-2 text-sm">
                                     <RadioGroupItem value="AADHAAR_PAN" />
-                                    Aadhaar + PAN
+                                    {t('kyc.aadhaarPan')}
                                 </label>
                             </RadioGroup>
                             <p className="text-xs text-muted-foreground">
-                                The registering organization&apos;s admin must verify their identity
-                                through DigiLocker before completing registration.
+                                {t('kyc.scopeHint')}
                             </p>
                             <div className="space-y-1 border-t pt-3">
                                 <Label htmlFor="registration-link-kyc-instructions">
-                                    DigiLocker instructions
+                                    {t('kyc.instructions.label')}
                                 </Label>
                                 <Textarea
                                     id="registration-link-kyc-instructions"
@@ -1430,13 +1442,11 @@ export function RegistrationLinkCreateModal({
                                     onChange={(e) => setKycInstructions(e.target.value)}
                                     rows={3}
                                     maxLength={1000}
-                                    placeholder="e.g. Keep your Aadhaar-linked mobile handy. Facing issues? See our [DigiLocker guide](https://example.com/digilocker-help)."
+                                    placeholder={t('kyc.instructions.placeholder')}
                                     className="text-sm"
                                 />
                                 <p className="text-xs text-muted-foreground">
-                                    Shown on the identity-verification step. Leave empty for the
-                                    default note (which already tells users to tick both Aadhaar
-                                    &amp; PAN when PAN is required). Supports [label](url) links.
+                                    {t('kyc.instructions.hint')}
                                 </p>
                             </div>
                         </div>
@@ -1445,17 +1455,16 @@ export function RegistrationLinkCreateModal({
 
                 {/* 9. Max registrations */}
                 <div className="space-y-2">
-                    <Label htmlFor="registration-link-max">Max registrations</Label>
+                    <Label htmlFor="registration-link-max">{t('maxRegistrations.label')}</Label>
                     <Input
                         id="registration-link-max"
                         type="number"
                         min={1}
-                        placeholder="Unlimited"
+                        placeholder={t('maxRegistrations.placeholder')}
                         {...form.register('maxRegistrations', { setValueAs: numberOrUndefined })}
                     />
                     <p className="text-xs text-muted-foreground">
-                        Maximum completed registrations through this link. Leave blank for
-                        unlimited.
+                        {t('maxRegistrations.hint')}
                     </p>
                     {form.formState.errors.maxRegistrations && (
                         <p className="text-sm text-danger-600">
@@ -1467,9 +1476,9 @@ export function RegistrationLinkCreateModal({
                 {/* 10. After registration — completion screen behaviour */}
                 <div className="space-y-2">
                     <div>
-                        <Label>After registration</Label>
+                        <Label>{t('completion.label')}</Label>
                         <p className="text-xs text-muted-foreground">
-                            What the registrant sees once their registration completes.
+                            {t('completion.hint')}
                         </p>
                     </div>
                     <div className="space-y-3 rounded-md border p-3">
@@ -1480,28 +1489,27 @@ export function RegistrationLinkCreateModal({
                             <label className="flex cursor-pointer items-start gap-2 text-sm">
                                 <RadioGroupItem value="DEFAULT" className="mt-0.5" />
                                 <span>
-                                    Default
+                                    {t('completion.mode.default.title')}
                                     <span className="block text-xs text-muted-foreground">
-                                        Standard success screen with a &quot;Go to Admin
-                                        Portal&quot; button.
+                                        {t('completion.mode.default.desc')}
                                     </span>
                                 </span>
                             </label>
                             <label className="flex cursor-pointer items-start gap-2 text-sm">
                                 <RadioGroupItem value="MESSAGE" className="mt-0.5" />
                                 <span>
-                                    Custom message
+                                    {t('completion.mode.message.title')}
                                     <span className="block text-xs text-muted-foreground">
-                                        Show your own success message, optionally with a button.
+                                        {t('completion.mode.message.desc')}
                                     </span>
                                 </span>
                             </label>
                             <label className="flex cursor-pointer items-start gap-2 text-sm">
                                 <RadioGroupItem value="REDIRECT" className="mt-0.5" />
                                 <span>
-                                    Redirect to URL
+                                    {t('completion.mode.redirect.title')}
                                     <span className="block text-xs text-muted-foreground">
-                                        Send the registrant straight to your own page.
+                                        {t('completion.mode.redirect.desc')}
                                     </span>
                                 </span>
                             </label>
@@ -1510,7 +1518,7 @@ export function RegistrationLinkCreateModal({
                             <div className="space-y-2 border-t pt-3">
                                 <div className="space-y-1">
                                     <Label htmlFor="registration-link-completion-message">
-                                        Completion message *
+                                        {t('completion.message.label')}
                                     </Label>
                                     <Textarea
                                         id="registration-link-completion-message"
@@ -1518,22 +1526,22 @@ export function RegistrationLinkCreateModal({
                                         onChange={(e) => setCompletionMessage(e.target.value)}
                                         rows={3}
                                         maxLength={2000}
-                                        placeholder="e.g. Thanks for registering! Our team will reach out within 24 hours. Meanwhile, read the [getting-started guide](https://example.com/start)."
+                                        placeholder={t('completion.message.placeholder')}
                                         className="text-sm"
                                     />
                                     <p className="text-xs text-muted-foreground">
-                                        Supports [label](url) links.
+                                        {t('completion.message.linksHint')}
                                     </p>
                                 </div>
                                 <div className="grid gap-2 sm:grid-cols-2">
                                     <div className="space-y-1">
                                         <Label htmlFor="registration-link-completion-button-label">
-                                            Button label
+                                            {t('completion.message.buttonLabel.label')}
                                         </Label>
                                         <Input
                                             id="registration-link-completion-button-label"
                                             maxLength={100}
-                                            placeholder="e.g. Open your portal"
+                                            placeholder={t('completion.message.buttonLabel.placeholder')}
                                             value={completionButtonLabel}
                                             onChange={(e) =>
                                                 setCompletionButtonLabel(e.target.value)
@@ -1542,11 +1550,11 @@ export function RegistrationLinkCreateModal({
                                     </div>
                                     <div className="space-y-1">
                                         <Label htmlFor="registration-link-completion-button-url">
-                                            Button URL
+                                            {t('completion.message.buttonUrl.label')}
                                         </Label>
                                         <Input
                                             id="registration-link-completion-button-url"
-                                            placeholder="https://..."
+                                            placeholder={t('completion.message.buttonUrl.placeholder')}
                                             value={completionButtonUrl}
                                             onChange={(e) =>
                                                 setCompletionButtonUrl(e.target.value)
@@ -1555,25 +1563,23 @@ export function RegistrationLinkCreateModal({
                                     </div>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
-                                    Optional button — label and URL are required together, and the
-                                    URL must start with https://.
+                                    {t('completion.message.buttonHint')}
                                 </p>
                             </div>
                         )}
                         {completionMode === 'REDIRECT' && (
                             <div className="space-y-1 border-t pt-3">
                                 <Label htmlFor="registration-link-completion-redirect-url">
-                                    Redirect URL *
+                                    {t('completion.redirect.label')}
                                 </Label>
                                 <Input
                                     id="registration-link-completion-redirect-url"
-                                    placeholder="https://yourdomain.com/welcome"
+                                    placeholder={t('completion.redirect.placeholder')}
                                     value={completionRedirectUrl}
                                     onChange={(e) => setCompletionRedirectUrl(e.target.value)}
                                 />
                                 <p className="text-xs text-muted-foreground">
-                                    Registrants are redirected here automatically after completing.
-                                    Must start with https://.
+                                    {t('completion.redirect.hint')}
                                 </p>
                             </div>
                         )}
@@ -1590,7 +1596,7 @@ export function RegistrationLinkCreateModal({
                         }}
                         disable={isPending}
                     >
-                        Cancel
+                        {t('actions.cancel')}
                     </MyButton>
                     <MyButton
                         type="submit"
@@ -1598,7 +1604,7 @@ export function RegistrationLinkCreateModal({
                         disable={isPending || isUploadingTnc}
                     >
                         {isPending && <CircleNotch className="mr-2 size-4 animate-spin" />}
-                        {isEditMode ? 'Save Changes' : 'Create Registration Link'}
+                        {isEditMode ? t('actions.save') : t('title.create')}
                     </MyButton>
                 </div>
             </form>

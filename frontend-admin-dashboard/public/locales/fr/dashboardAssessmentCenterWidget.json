@@ -1,0 +1,16 @@
+{
+    "heading": {
+        "title": "Centre d'évaluation",
+        "description": "Créer, gérer et évaluer les évaluations"
+    },
+    "badges": {
+        "tests": "Tests",
+        "papers": "Sujets"
+    },
+    "features": {
+        "createAssessment": "Créer une évaluation",
+        "viewAssessments": "Voir les évaluations",
+        "questionPapers": "Sujets d'examen",
+        "evaluationCenter": "Centre de correction"
+    }
+}

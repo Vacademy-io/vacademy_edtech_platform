@@ -55,7 +55,10 @@ enum OfflineMediaCrypto {
                         keyPtr.baseAddress, key.count,
                         nil,
                         inPtr.baseAddress, block.count,
-                        outPtr.baseAddress, outBuf.count,
+                        // outPtr.count, not outBuf.count: reading outBuf here overlaps the
+                        // exclusive mutable access withUnsafeMutableBytes holds on it, which
+                        // Swift 6 rejects outright. Same value, no overlapping access.
+                        outPtr.baseAddress, outPtr.count,
                         &outLen
                     )
                 }

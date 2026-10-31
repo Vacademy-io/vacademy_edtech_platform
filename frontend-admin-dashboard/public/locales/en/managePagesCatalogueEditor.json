@@ -1,0 +1,30 @@
+{
+    "draft": {
+        "staleStarted": "This draft was started on {{date}}.",
+        "staleLiveChangedAt": "The live site changed after that ({{when}}).",
+        "staleLiveChanged": "The live site changed after that.",
+        "staleUndoWarning": "Publishing it would undo those changes.",
+        "staleSinceOpenedAt": "The live site changed after you opened the editor ({{when}}).",
+        "staleSinceOpened": "The live site changed after you opened the editor.",
+        "version": "v{{n}}",
+        "useLive": "Use the live site (discard this draft)",
+        "keepDraft": "Keep my draft",
+        "discard": "Discard draft",
+        "discardHint": "Throw away the unpublished changes and go back to the live site",
+        "discardTitle": "Discard this draft?",
+        "discardBody": "Your unpublished changes will be removed and the editor will show the live site again. This cannot be undone.",
+        "discardedTitle": "Draft discarded",
+        "discardedBody": "The editor now shows the live site.",
+        "discardedReloadBody": "The draft was removed, but the newest live site could not be loaded. Reload the page to see it.",
+        "discardFailedTitle": "Could not discard the draft",
+        "tryAgain": "Please try again.",
+        "stalePublishTitle": "Publish an older draft?",
+        "stalePublishBody": "The live site changed after this draft was started. Publishing it will replace those newer changes with this draft.",
+        "stalePublishConfirm": "Publish anyway",
+        "cancel": "Cancel"
+    },
+    "history": {
+        "liveNow": "Live now",
+        "draftStarted": "Started {{date}}"
+    }
+}

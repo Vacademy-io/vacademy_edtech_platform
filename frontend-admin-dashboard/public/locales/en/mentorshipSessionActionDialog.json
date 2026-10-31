@@ -1,0 +1,23 @@
+{
+    "pickNewSlot": "Pick a new slot",
+    "sessionCancelled": "Session cancelled",
+    "sessionMoved": "Session moved",
+    "cancelFailed": "Couldn't cancel the session.",
+    "rescheduleFailed": "Couldn't move the session.",
+    "cancelHeading": "Cancel session",
+    "rescheduleHeading": "Reschedule session",
+    "keepAsIs": "Keep as is",
+    "saving": "Saving…",
+    "cancelSession": "Cancel session",
+    "moveSession": "Move session",
+    "learnerFallback": "The learner",
+    "mentorFallback": "the mentor",
+    "cancelBody": "<bold1>{{studentName}}</bold1> and <bold2>{{mentorName}}</bold2> are told it's off, and the calendar entry and reminders are removed.",
+    "rescheduleBody": "The old slot is released and a new booking is created for <bold1>{{studentName}}</bold1>. If the new time was just taken, you'll be asked to pick another.",
+    "learnerFallbackLower": "the learner",
+    "newDateTime": "New date & time",
+    "reasonCancelPlaceholder": "e.g. Mentor is unwell",
+    "reasonOptionalPlaceholder": "Optional note",
+    "reasonCancelLabel": "Reason (shown to the learner)",
+    "reasonOptionalLabel": "Reason (optional)"
+}

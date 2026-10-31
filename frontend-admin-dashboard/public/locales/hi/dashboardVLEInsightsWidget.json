@@ -1,0 +1,37 @@
+{
+    "heading": "{{plural}} जानकारी",
+    "subtitle": "आपके नेटवर्क में योजनाएं, सीटें और वृद्धि",
+    "manage": "प्रबंधित करें",
+    "planStatus": {
+        "title": "योजना स्थिति",
+        "active": "सक्रिय",
+        "pending": "लंबित",
+        "expired": "समाप्त",
+        "inactive": "निष्क्रिय",
+        "none": "कोई योजना नहीं"
+    },
+    "seatUtilization": {
+        "title": "सीट उपयोग",
+        "seatsFraction": "{{used}} / {{total}} सीटें",
+        "seatsAvailable_one": "नेटवर्क में {{formatted}} सीट उपलब्ध है",
+        "seatsAvailable_other": "नेटवर्क में {{formatted}} सीटें उपलब्ध हैं"
+    },
+    "growth": {
+        "title": "नए पंजीकरण",
+        "tooltipLabel": "नए {{plural}}"
+    },
+    "months": {
+        "jan": "जन",
+        "feb": "फ़र",
+        "mar": "मार्च",
+        "apr": "अप्रैल",
+        "may": "मई",
+        "jun": "जून",
+        "jul": "जुल",
+        "aug": "अग",
+        "sep": "सित",
+        "oct": "अक्तू",
+        "nov": "नव",
+        "dec": "दिस"
+    }
+}

@@ -10,6 +10,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementAction;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementActionRepository;
+import vacademy.io.admin_core_service.features.engagement.service.EngagementDispatcher;
 import vacademy.io.admin_core_service.features.telephony.core.dto.AiCallActionRule;
 import vacademy.io.admin_core_service.features.telephony.persistence.entity.AiAgent;
 
@@ -56,7 +57,7 @@ import java.util.Set;
 public class AiCallActionService {
 
     /** Marks rows this feature created — the other half of the idempotency key. */
-    public static final String SOURCE = "AI_CALL";
+    public static final String SOURCE = EngagementAction.SOURCE_AI_CALL;
 
     public static final String TIMING_POST_CALL = "POST_CALL";
     public static final String TIMING_MID_CALL = "MID_CALL";
@@ -343,7 +344,7 @@ public class AiCallActionService {
                 if (!matches(rule, v)) continue;
                 try {
                     if (create(rule, instituteId, callLogId, userId, responseId, leadName,
-                               vars, "Promised on the AI call and accepted by the caller")) {
+                               vars, phone, "Promised on the AI call and accepted by the caller")) {
                         made++;
                     }
                 } catch (Exception one) {
@@ -388,7 +389,7 @@ public class AiCallActionService {
             if (!key.equalsIgnoreCase(rule.getArtefact())) continue;
             try {
                 if (create(rule, instituteId, callLogId, userId, responseId, leadName,
-                           vars, "Requested by the AI agent during the call")) {
+                           vars, phone, "Requested by the AI agent during the call")) {
                     made++;
                 }
             } catch (Exception one) {
@@ -403,10 +404,13 @@ public class AiCallActionService {
      * Write one action row. Returns false when this exact (call, rule) pair already has one —
      * the unique index on (source, source_ref) is the guard, NOT a prior SELECT, because a
      * check-then-insert races with itself across replicas.
+     *
+     * @param calledNumber the number the call was on; a WhatsApp promise is sent to it (see
+     *                     {@link EngagementDispatcher#VAR_TO_PHONE})
      */
     private boolean create(AiCallActionRule rule, String instituteId, String callLogId,
                            String userId, String responseId, String leadName,
-                           Map<String, String> vars, String rationale) {
+                           Map<String, String> vars, String calledNumber, String rationale) {
         String actionType = rule.getActionType().trim().toUpperCase(Locale.ROOT);
         String channel = rule.getChannel() == null ? null
                 : rule.getChannel().trim().toUpperCase(Locale.ROOT);
@@ -460,7 +464,7 @@ public class AiCallActionService {
         a.setStatus("OPEN");
         a.setTemplateName(blankToNull(rule.getTemplate()));
         a.setTemplateLanguage(blankToNull(rule.getTemplateLanguage()));
-        a.setVariablesJson(variablesJson(rule, channel, vars));
+        a.setVariablesJson(variablesJson(rule, channel, vars, calledNumber));
         a.setDraftBody(draftBody(rule, channel, leadName, vars));
         a.setRationale(rationale + " — rule "
                 + (notBlank(rule.getLabel()) ? rule.getLabel() : rule.getId()) + ".");
@@ -572,18 +576,47 @@ public class AiCallActionService {
      * <p>Email has no such constraint - it is substituted by name into the body text, and an
      * unmatched placeholder is simply left as written.
      */
-    private String variablesJson(AiCallActionRule rule, String channel, Map<String, String> vars) {
+    private String variablesJson(AiCallActionRule rule, String channel, Map<String, String> vars,
+                                 String calledNumber) {
         try {
             if (!"WHATSAPP".equals(channel)) {
                 return mapper.writeValueAsString(vars == null ? Map.of() : vars);
             }
             Map<String, String> positional = new java.util.LinkedHashMap<>();
+            // The caller agreed on THIS call ("shall I send it on this WhatsApp number?"), so the
+            // promise goes to the number the call was on. The dispatcher takes it from here and
+            // strips it before Meta sees the variables. Digits only: dialled numbers have arrived
+            // wrapped in invisible bidi marks (U+202A ... U+202C).
+            String digits = calledNumber == null ? "" : calledNumber.replaceAll("[^0-9]", "");
+            if (!digits.isEmpty()) {
+                positional.put(EngagementDispatcher.VAR_TO_PHONE, digits);
+            }
             List<String> params = rule.getTemplateParams();
             if (params != null) {
                 int i = 1;
                 for (String param : params) {
                     positional.put(String.valueOf(i++), resolveParam(param, vars));
                 }
+            }
+            // A media-header template renders an image/document above the body and is
+            // rejected outright without one: "(#132012) ... header: Format mismatch,
+            // expected IMAGE, received UNKNOWN" - sn_unlockx on every Shikshanation call.
+            // UnifiedSendService reads _headerUrl per recipient, and both provider paths
+            // filter "_"-prefixed keys out of the body parameters, so this cannot disturb
+            // the positional count above - the very thing (#132000) punishes.
+            if (notBlank(rule.getTemplateHeaderUrl())) {
+                positional.put("_headerUrl", resolveParam(rule.getTemplateHeaderUrl(), vars));
+                // The URL alone is not enough. WhatsAppService.buildHeaderConfig resolves
+                // the kind with "image".equalsIgnoreCase(headerType) ? "image" : "document",
+                // so an absent type makes every media header a DOCUMENT (with a made-up
+                // "file.pdf" filename) and Meta answers "(#132012) header: Format mismatch,
+                // expected IMAGE, received DOCUMENT". Default to image: that is what a
+                // header template overwhelmingly is, and it is the value that fails LOUDLY
+                // rather than silently mis-typing an image as a document.
+                String headerType = notBlank(rule.getTemplateHeaderType())
+                        ? rule.getTemplateHeaderType().trim().toLowerCase(Locale.ROOT)
+                        : "image";
+                positional.put("_headerType", headerType);
             }
             return mapper.writeValueAsString(positional);
         } catch (Exception e) {

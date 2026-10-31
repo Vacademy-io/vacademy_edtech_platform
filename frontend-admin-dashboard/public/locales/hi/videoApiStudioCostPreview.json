@@ -1,0 +1,72 @@
+{
+    "hook": {
+        "previewFailedFallback": "पूर्वावलोकन विफल रहा"
+    },
+    "avatarRow": {
+        "presetAvatar": "प्रीसेट अवतार",
+        "customAvatar": "कस्टम अवतार",
+        "labelWithName": "{{label}} — {{name}}",
+        "perShotIdentityImages": "प्रति-शॉट पहचान छवियां"
+    },
+    "inline": {
+        "expectedCredits_one": "~{{value}} क्रेडिट",
+        "expectedCredits_other": "~{{value}} क्रेडिट",
+        "range": "({{low}}–{{high}})",
+        "balanceAvailable": "{{value}} उपलब्ध"
+    },
+    "modal": {
+        "title": "जनरेशन की पुष्टि करें",
+        "estimating": "लागत का अनुमान लगाया जा रहा है…",
+        "loadFailed": "अनुमान लोड नहीं हो सका: {{error}}. आप फिर भी आगे बढ़ सकते हैं.",
+        "selections": {
+            "heading": "आपके चयन",
+            "quality": "गुणवत्ता",
+            "model": "मॉडल",
+            "modelDefault": "डिफ़ॉल्ट",
+            "duration": "अवधि",
+            "orientation": "ओरिएंटेशन",
+            "orientationLandscape": "लैंडस्केप",
+            "orientationPortrait": "पोर्ट्रेट",
+            "audience": "दर्शक वर्ग",
+            "language": "भाषा",
+            "voice": "आवाज़",
+            "captions": "कैप्शन",
+            "backgroundMusic": "बैकग्राउंड म्यूज़िक",
+            "soundEffects": "साउंड इफ़ेक्ट्स",
+            "reviewMode": "समीक्षा मोड",
+            "reviewModeOn": "चालू (स्क्रिप्ट पर रुकता है)",
+            "attachments": "अटैचमेंट",
+            "attachmentsValue_one": "{{count}} फ़ाइल",
+            "attachmentsValue_other": "{{count}} फ़ाइलें"
+        },
+        "cost": {
+            "heading": "अनुमानित लागत",
+            "component": "घटक",
+            "credits": "क्रेडिट",
+            "expectedTotal": "अपेक्षित कुल",
+            "range": "सीमा: {{low}}–{{high}} क्रेडिट"
+        },
+        "balance": {
+            "current": "मौजूदा बैलेंस",
+            "currentValue": "{{value}} क्रेडिट",
+            "afterExpected": "अपेक्षित शुल्क के बाद",
+            "afterHigh": "सबसे खराब स्थिति (उच्च)",
+            "insufficient": "सबसे खराब स्थिति के अनुमान को कवर करने के लिए क्रेडिट अपर्याप्त हैं."
+        },
+        "assumptions": {
+            "summary": "मान्यताएं"
+        },
+        "footer": {
+            "cancel": "रद्द करें",
+            "insufficientTopUp": "अपर्याप्त क्रेडिट — टॉप अप करें",
+            "confirm": "पुष्टि करें और जनरेट करें",
+            "confirmCredits_one": " · {{value}} क्रेडिट",
+            "confirmCredits_other": " · {{value}} क्रेडिट"
+        }
+    },
+    "common": {
+        "on": "चालू",
+        "off": "बंद",
+        "emptyValue": "—"
+    }
+}

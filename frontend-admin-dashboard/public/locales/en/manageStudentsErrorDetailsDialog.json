@@ -1,0 +1,32 @@
+{
+    "title": {
+        "apiError": "Upload Error",
+        "validationError": "Validation Errors"
+    },
+    "apiError": {
+        "heading": "Upload failed for this entry",
+        "sqlStatementLabel": "SQL Statement:",
+        "unknownError": "Unknown error",
+        "unknownUploadError": "Unknown error occurred during upload.",
+        "rowDataHeading": "Row Data",
+        "table": {
+            "field": "Field",
+            "value": "Value"
+        }
+    },
+    "validationErrors": {
+        "table": {
+            "position": "Position",
+            "error": "Error",
+            "resolution": "Resolution",
+            "currentValue": "Current Value"
+        },
+        "rowPosition": "In row {{row}} of {{field}}"
+    },
+    "common": {
+        "notAvailable": "N/A"
+    },
+    "buttons": {
+        "close": "Close"
+    }
+}

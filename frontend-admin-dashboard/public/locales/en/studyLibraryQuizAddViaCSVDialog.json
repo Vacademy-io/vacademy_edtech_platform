@@ -1,0 +1,38 @@
+{
+    "uploadQuestions": "Upload Questions",
+    "downloadTemplate": "Download Template",
+    "supportedQuestionTypes": "Supports MCQS, MCQM and TRUE_FALSE question types",
+    "csv": "CSV",
+    "excel": "Excel",
+    "columnsLabel": "Columns:",
+    "columnsHelp": "Add more options as needed (option_e, option_f, ...) — correct_answer must match an option letter (A, B, C, ...). For TRUE_FALSE, use A (True) or B (False).",
+    "multipleCorrectAnswersLabel": "Multiple correct answers:",
+    "multipleCorrectAnswersHelpBefore": "list every correct letter in correct_answer, e.g.",
+    "multipleCorrectAnswersHelpAfter": "— the question is imported as MCQ (Multiple correct). In a CSV, wrap it in double quotes so the comma is not read as a new column. question_type can be left blank and it will be detected automatically.",
+    "clickToSelectFile": "Click to select a file",
+    "supportedFileTypes": ".csv, .xlsx, or .xls files are supported",
+    "parseSummary": {
+        "added_one": "{{count}} question added successfully,",
+        "added_other": "{{count}} questions added successfully,",
+        "skipped_one": "{{count}} row skipped.",
+        "skipped_other": "{{count}} rows skipped."
+    },
+    "parseErrorsHeading_one": "Parse errors ({{count}}):",
+    "parseErrorsHeading_other": "Parse errors ({{count}}):",
+    "rowError": "Row {{row}}: {{message}}",
+    "noValidQuestionsFound": "No valid questions found. Fix the errors and try again.",
+    "cancel": "Cancel",
+    "parseAndPreview": "Parse & Preview",
+    "errors": {
+        "fileEmpty": "File is empty.",
+        "missingColumns": "Missing required column(s): {{columns}}.",
+        "noOptionColumns": "No option columns found. Add option_a, option_b, ... at minimum.",
+        "questionTextEmpty": "question_text is empty.",
+        "unsupportedQuestionType": "Unsupported question_type \"{{type}}\". Only MCQS, MCQM and TRUE_FALSE are allowed.",
+        "invalidCorrectAnswer": "Invalid correct_answer \"{{value}}\". Use {{letters}} (comma-separate for multiple correct answers).",
+        "referencedOptionsEmpty_one": "correct_answer references {{letters}} but {{columns}} is empty.",
+        "referencedOptionsEmpty_other": "correct_answer references {{letters}} but {{columns}} are empty.",
+        "needsAtLeastTwoOptions": "{{questionType}} requires at least 2 options (option_a and option_b).",
+        "invalidTrueFalseAnswer": "Invalid correct_answer \"{{value}}\" for TRUE_FALSE. Use A (True) or B (False)."
+    }
+}

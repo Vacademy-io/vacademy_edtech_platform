@@ -104,4 +104,29 @@ public class BbbServerRouter {
     public List<BbbServerPool> getRunningServers() {
         return poolRepository.findByStatusAndEnabledTrue("RUNNING");
     }
+
+    /**
+     * True when {@code server} is the primary pool server — the lowest-priority
+     * enabled row.
+     *
+     * This matters for per-institute custom live-class domains. An institute has a
+     * single A record for its domain and it points at exactly one box, the primary.
+     * If a meeting spills to a lower-priority server and we still rewrote the join
+     * URL to the institute's host, we would send the learner to a server that does
+     * not hold their meeting — strictly worse than an off-brand URL that works.
+     *
+     * Deliberately based on priority rather than status: a server can be the
+     * primary while briefly not RUNNING, and the DNS record still points at it.
+     *
+     * @return false when {@code server} is null or the pool is empty.
+     */
+    public boolean isPrimary(BbbServerPool server) {
+        if (server == null || server.getId() == null) {
+            return false;
+        }
+        return poolRepository.findByEnabledTrueOrderByPriorityAsc().stream()
+                .findFirst()
+                .map(primary -> primary.getId().equals(server.getId()))
+                .orElse(false);
+    }
 }

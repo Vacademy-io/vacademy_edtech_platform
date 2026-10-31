@@ -1,0 +1,22 @@
+{
+    "copyHistory": "سجل النسخ",
+    "copiedContent": "محتوى منسوخ",
+    "usedByBatches_zero": "غير مستخدم في أي دفعة ({{count}})",
+    "usedByBatches_one": "مستخدم في دفعة واحدة",
+    "usedByBatches_two": "مستخدم في دفعتين",
+    "usedByBatches_few": "مستخدم في {{count}} دفعات",
+    "usedByBatches_many": "مستخدم في {{count}} دفعة",
+    "usedByBatches_other": "مستخدم في {{count}} دفعة",
+    "showCopyHistory": "إظهار سجل النسخ",
+    "contentBroughtInFrom": "تم جلب المحتوى من",
+    "usedAsSourceBy": "استُخدم كمصدر بواسطة",
+    "batchCount_zero": "لا توجد دفعات ({{count}})",
+    "batchCount_one": "دفعة واحدة",
+    "batchCount_two": "دفعتان",
+    "batchCount_few": "{{count}} دفعات",
+    "batchCount_many": "{{count}} دفعة",
+    "batchCount_other": "{{count}} دفعة",
+    "linkedCopy": "نسخة مرتبطة",
+    "separateCopy": "نسخة منفصلة",
+    "unknownBatch": "دفعة غير معروفة"
+}

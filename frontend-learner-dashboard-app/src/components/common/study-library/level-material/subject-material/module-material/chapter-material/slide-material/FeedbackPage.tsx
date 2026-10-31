@@ -134,16 +134,16 @@ export default function FeedbackPage() {
 
   return (
     <div className="w-full min-h-[calc(100vh-150px)] bg-gradient-to-br px-6 py-10 overflow-y-auto"> {/* design-lint-ignore: viewport calc with fixed offset, no token equivalent */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">{t("feedback.heading")}</h2>
+      <div className="mb-6 space-y-2">
+        <h2 className="text-2xl font-bold">{t("feedback.heading")}</h2>
         <p className="text-base text-gray-600">
           {t("feedback.subheading")}
         </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        <div>
-          <label className="block text-lg font-semibold text-gray-700 mb-2">{t("feedback.overallRating")}</label>
+        <div className="space-y-2">
+          <label className="block text-lg font-semibold text-gray-700">{t("feedback.overallRating")}</label>
           <div className="flex gap-2" role="radiogroup" aria-label={t("feedback.overallRatingAria")}>
             {[1, 2, 3, 4, 5].map((star) => (
               <Star
@@ -170,8 +170,8 @@ export default function FeedbackPage() {
           </div>
         </div>
 
-        <div>
-          <label className="block text-lg font-semibold text-gray-700 mb-2">{t("feedback.shareYourThoughts")}</label>
+        <div className="space-y-2">
+          <label className="block text-lg font-semibold text-gray-700">{t("feedback.shareYourThoughts")}</label>
           <textarea
             value={comments}
             onChange={(e) => setComments(e.target.value)}

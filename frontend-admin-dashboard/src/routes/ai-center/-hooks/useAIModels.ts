@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useAIModelsList } from '@/hooks/useAiModels';
 import { ModelInfo } from '../-types/ai-models';
 
@@ -6,6 +7,7 @@ import { ModelInfo } from '../-types/ai-models';
  * Adapts the new v2 API response to the local component needs
  */
 export const useAIModels = () => {
+    const { t } = useTranslation('aiCenterUseAIModels');
     const { data, isLoading, isError, error, refetch } = useAIModelsList({ category: 'general' });
 
     // Transform available models to include display info
@@ -13,7 +15,8 @@ export const useAIModels = () => {
         data?.models?.map((model) => ({
             id: model.model_id,
             name: model.name,
-            description: model.description || `${model.provider} Model`,
+            description:
+                model.description || t('providerModelFallback', { provider: model.provider }),
             isDefault: model.is_default,
         })) || [];
 
@@ -24,7 +27,7 @@ export const useAIModels = () => {
         ? {
               id: defaultModelData.model_id,
               name: defaultModelData.name,
-              description: defaultModelData.description || 'Default Model',
+              description: defaultModelData.description || t('defaultModelFallback'),
               isDefault: true,
           }
         : null;

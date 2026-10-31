@@ -16,6 +16,9 @@
 > sends: graduation ramp + kill switch + holdout + enforced credits, backend + FE) BUILT + reviewed
 > 2026-07-17 — 4 findings (3 refuted; 2 P1s: holdout messaged via the reply path, and no circuit
 > breaker on a charge-failure divergence) all fixed.
+> **Updated 2026-10-31 — see §17.** The week of 2026-10-24 → 10-31 added CRM awareness, CRM actions, AI
+> calling inside the engine, send schedules, template reuse, meeting booking from replies, the daily
+> report and a reworked admin UI. Decisions **D14** and **D24** below are amended there.
 > Grounded in a verified 10-area recon, three competing architectures, three adversarial red-team
 > passes, and a 24-question founder interview (§0.1). Every class/table/endpoint named here was
 > read in source. Where the recon was wrong, this doc says so (Appendix).
@@ -64,7 +67,7 @@ answer on its own.
 | D11 | Audience | **Learners AND unconverted leads from day one.** Leads need a new reachability path — `RecipientType.AUDIENCE` is converted-only. §3 |
 | D12 | Engine scope | **Many per institute, one per objective.** Makes the institute-wide cross-engine cap mandatory. |
 | D13 | Cadence | **The prompt decides.** A hard institute-wide cross-engine per-user cap is the only safety mechanism — enforced **before** the LLM call. §12 |
-| D14 | Channels V1 | WhatsApp + Email + **In-app** (the only first-class read receipt in the platform). **No push** (unobservable). **AI call = task-only.** |
+| D14 | Channels V1 | WhatsApp + Email + **In-app** (the only first-class read receipt in the platform). **No push** (unobservable). **AI call = task-only.** | **Amended 2026-10-29:** an AI call is now placed through the `SCHEDULE_AI_CALL` CRM action, not a task-only channel. §17.3.
 | D15 | Metering | **Log usage, don't enforce**, in Phase 1. Price before automation. §13 |
 | D16 | Rollout | All institutes, **off by default**. Institute admin creates/activates. |
 | D17 | Quiet hours | Institute compliance floor (9 PM IST cutoff, DND) + engine may tighten, never loosen. Replies exempt. |
@@ -74,7 +77,7 @@ answer on its own.
 | D21 | `engagement_trigger_config` (V8) | **Leave permanently.** Deterministic thresholds vs judgement — different jobs. |
 | D22 | Naming | "Engagement Engine", registered via `getTerminology` per CLAUDE.md so institutes can rename it. |
 | D23 | Success metrics | **All four**: learner activity, lead conversion, message engagement, team time saved. §14 |
-| D24 | Action vocabulary | Extensible handler registry. V1 = reply + share links; **book meeting / update CRM are tasks for now**, handlers later. |
+| D24 | Action vocabulary | Extensible handler registry. V1 = reply + share links; **book meeting / update CRM are tasks for now**, handlers later. | **Amended 2026-10-29:** follow-up, note, escalation, status change, AI call and meeting booking/moving are real handlers. §17.2.
 
 ---
 
@@ -687,6 +690,24 @@ public interface EngagementActionHandler {          // mirrors NodeHandlerRegist
 Every auto-reply still passes `PolicyGate` (consent, cap, credits) and writes `engagement_action` +
 `timeline_event`, so a counsellor opening the lead sees what the AI said.
 
+### 11.1 Assets — material the agent can send (V625)
+
+Grounding in the prompt cannot carry a brochure or a demo video, so each engine has **assets**
+(`engagement_asset`): files and links the admin uploads while creating the engine (wizard step,
+optional) or later on the engine page. Each item has a title and a **description saying what it is and
+when to send it**; that description is what the agent matches a request against.
+
+| Aspect | Decision |
+|---|---|
+| **What the brain sees** | `EngagementReplyBrain.assetCatalogue`: id, type, title, description. **Never the URL** — the model names ids, it does not paste links. |
+| **Found** | `ANSWER` with `assetIds` (max 3). Ids are re-resolved against *this engine's* assets (`EngagementAssetService.resolve`), so an invented or foreign id resolves to nothing. |
+| **Delivery** | Ids ride on the action as `variables_json._assetIds`. `EngagementDispatcher.sendWhatsAppReply` sends the text, then each file as a native WhatsApp session media message (`notification_service` `POST /internal/v1/engagement/whatsapp-media`, Meta `link` / WATI `sendSessionFile`). A `link` item is appended to the text instead. It works the same when a human approves an escalated task: the attachments go with the edited text. |
+| **Attachment fails** | The text has already gone, so the action stays `SENT`; the failure is written to `error_message` and `rationale` so the counsellor can send it by hand. |
+| **Not found** | The brain returns `ESCALATE` with `escalationType=missing_material` and `requestedMaterial`. An `ANSWER` that names ids that do not resolve is turned into the same thing. An OPEN task (priority 90, above other escalations) holds a drafted holding reply, and `EngagementMaterialAlertService` tells the lead's counsellor (the engine's creator if the lead has none) by **bell alert and email**. Each channel is best-effort and independent. |
+| **Link guard** | URLs of assets count as grounded, like links in the brief. The holding reply is never auto-sent: a person sends it. |
+| **Team alerts** | `EngagementTeamAlertService` tells people whenever the engine hands a reply to a person: any escalation, a missing asset, an auto-send that failed. Recipients: the team members picked on the engine (`engagement_engine.notify_user_ids`, V626, max 10, each checked to hold a non-student role at the institute via `AuthService.getInstituteRoles`) **plus** the lead's own counsellor, de-duplicated; the engine's creator only if there is neither. Channels: bell alert and email, sent independently and best-effort. |
+| **Limits** | https URLs only (Meta fetches them), 50 items per engine, media types `document|image|video|audio|link`. |
+
 ---
 
 ## 12. D13 — Safety, consent, cost
@@ -822,6 +843,221 @@ simulated actions must never be picked up by the dispatcher.
    separately; do not design on it staying open.
 5. **Sub-orgs.** `sub_org_id` exists on `audience`/SSIGM. Engines are institute-scoped in V1; revisit if
    sub-org tenants need isolation.
+
+---
+
+## 17. What changed since 2026-10-24
+
+Everything in this section is built on `main` (admin_core, notification_service, admin dashboard). It
+extends the design above; where it contradicts an earlier section, this section wins. Commit hashes are
+the ones to read for the detail.
+
+### 17.1 The engine reads the whole CRM record, and wakes when it changes
+
+| What | How |
+|---|---|
+| New data points (`484aadcfd9`) | `crm_timeline` (last notes and journey events, notes capped and marked internal), `crm_followups` (open, overdue, last closed), `ai_calls` (last 3 calls with analysis, what the AI agent promised and whether it went out), `ownership` (counsellor, when a person last wrote or called). Batch-loaded per cohort; a failed fetch defers the cohort instead of deciding on missing data. |
+| CRM activity wakes the engine (`280987f993`) | A note, follow-up, status or counsellor change, re-enquiry, duplicate merge, list move, overdue follow-up, AI call outcome or finished call analysis asks for a look within 15-20 minutes instead of the next cadence. `EngagementTimelineWakeHook` (one hook on timeline writes) + `EngagementWakeService` (queued after the CRM save commits, debounced past the decision lease). More than 50 leads from one source in 5 minutes is a bulk change and wakes none (S2). The engine's own CRM writes never wake it. V623 adds the wake stamps. |
+| Fingerprint bands | Staff notes, follow-ups and calls join the fingerprint (§4.3); old fingerprints are recognised so the rollout does not send every member to the model at once. After a counsellor's note or call the next decision only drafts. |
+| Coordination (`3af76a41e2`) | One contact limit across all systems (S1, L10): the notification ledger counts touches per phone and email from the engine, workflows, announcements and the chatbot (once a day), plus outbound AI calls; at the limit the lead is looked at again tomorrow. Counsellor-active hold (F-1: a person touched the lead in 24 h, or a follow-up is due today) means the engine only drafts. Per-lead **do-not-automate** flag (V624) with an API. A lead marked Lost or Not interested is done like Converted (L2). A lead moved to another list leaves the old list's engines and joins the new one's within minutes (L7). |
+| Workflows step aside (`2bdf042400`) | Workflow WhatsApp/email nodes skip an ACTIVE lead member of an ACTIVE engine for scheduled runs and lead-nurture events (logged `SKIPPED / ENGAGEMENT_ENGINE`). Payment, enrolment, class, test and form sends are never held; neither are learners, dry-run engines or the AI-call engine. |
+| Converted leads leave fast (`75e2a02600`) | A job every 5 minutes reads conversions (lead status history, profile `converted_at`), exits those members and cancels pending rows. AI-call promises still go out. |
+
+### 17.2 CRM actions (D24 amended)
+
+The brain can propose a CRM action instead of a message (`a24ca06dda`, `6726fa2f43`, `9c50b9408d`).
+`EngagementCrmActionService` checks each proposal on the server against the engine's allow-list
+(`channels.actions`, empty by default) and the action's own rules, stores it as an inbox TASK, runs it
+on approval, and can undo it (S9).
+
+| Action | Rules |
+|---|---|
+| `ADD_NOTE`, `ESCALATE` | A normal note on the lead, labelled AI. |
+| `CREATE_FOLLOWUP` | Through the follow-up service; never a second open one (F-4); owned by the lead's counsellor, else left to a person (F-5). |
+| `UPDATE_STATUS` | Through the lead status service; never Converted; Lost / Not interested need a note that says why. |
+| `SCHEDULE_AI_CALL` | Through the AI call queue (calling shifts, capacity); never after a wrong number or do-not-disturb; at most 3 a week; held until the time the lead asked for (C-1..C-7); uses the engine's own agent pool (§17.3). |
+
+- **Autonomy is per action type (S7).** A type runs without a person only when the admin marked it
+  *Runs on its own* **and** a person approved at least `first_n` actions of that same type
+  (`countApprovedCrmActions`: DONE + ACCEPTED). Order of checks in `autonomyBlock`: dry run, kill switch
+  (S6), per-type intent, graduation, holdout (S10), do-not-automate / unknown coordination, a counsellor
+  active (calls and status changes wait; notes and follow-ups for the counsellor go), credits for a call
+  (S5). Anything blocked stays the copilot task it already is, with the reason. Actions the engine ran
+  itself are outcome `AUTO`, never count toward graduation, and can be undone.
+- **The AI call channel allows the AI call action** (2026-10-30). `EngagementCrmActionService.actionsWhere`
+  adds `SCHEDULE_AI_CALL` whenever `channels.AI_CALL.enabled`; "Runs on its own" stays a separate, earned
+  setting. The wizard shows the row locked on, and the engine-page panel locks the switch.
+- **Wizard parity** (2026-10-30): a *CRM actions* section on the Channels step (`CrmActionsPicker`) with
+  *Allowed* and *Runs on its own* per action and a help line that auto works after approvals. Create and
+  edit share one wizard, so both forms set the same thing; `channels.actions` is held outside the channel
+  state and written back unchanged, so an auto flag set on the engine page survives a wizard save.
+- UI: inbox shows the action, what will happen and its fields, with Approve / Undo / cancel-a-held-call;
+  engine page has a CRM actions panel (`GET/PUT /engines/{id}/actions`, which only rewrites
+  `channels.actions`) with graduation progress.
+
+### 17.3 AI calling inside the engine (D14 amended)
+
+1. **First touch is an AI call (hard rule, 2026-10-30).** With the AI call channel on, a person's first
+   touch is an AI call, decided in `EngagementDecisionService` (step 1e, before the wake gate and before
+   any LLM call), not left to the model. `EngagementCrmActionService.proposeFirstTouchCall` proposes it as
+   an inbox task, or runs it through `tryAutonomous`. If the call cannot be placed (no phone, wrong number,
+   weekly limit) it falls through to the normal decision, so the person can still be reached another way.
+   "First touch" means `EngagementActionRepository.countTouches == 0`, one predicate
+   (`TOUCH_PREDICATE`, `961b1d2723`) shared with the upcoming-calls card: no-ops, dry runs, expired
+   drafts and dismissed message drafts are not touches; reply drafts, internal CRM tasks and a dismissed
+   AI call are. An unanswered reply skips the rule so the reply is handled first.
+2. **The prompt knows what AI_CALL means.** It is not a message channel. The model is told to choose
+   `actionType SCHEDULE_AI_CALL` (also for a first touch when the brief says so), never `channel AI_CALL`
+   with a draft; if it does anyway, the decision step converts it into the call action
+   (`EngagementBrainClient.channelSection`, `EngagementDecisionService` step 3b).
+3. **A call that did not connect leads to another channel.** The prompt says: after no answer, busy,
+   voicemail, failed or a conversation-less call, do not just call again; use another enabled channel that
+   fits, never mention the missed call, call again only after a day or at the asked time, not after two
+   unanswered calls. The `ai_calls` data point is **always added** for an engine with the AI call channel
+   on (`withCallHistory`), because otherwise a missed call is invisible.
+4. **The engine wakes when a call fails to happen.** A call that reaches the call log (no answer, busy,
+   failed) already wakes it through the CALL_MADE timeline event. A call that never reaches a call log
+   (queue cancelled, failed, or expired) now wakes it too: `AiCallQueueDrainJob.finish` and the expiry
+   sweep call `EngagementWakeService.wakeLead` for engine-sourced items, and `ai_calls` lists such
+   attempts ("asked for but NEVER CONNECTED", last 7 days) via `EngagementCrmReadDao.unplacedCallsByLeadIds`.
+5. **Approved calls use the engine's agent pool** (`27f1c5fe6b`): `SCHEDULE_AI_CALL` takes the next agent
+   from `channels.AI_CALL.agentPool` (`EngagementAiCallPool.next`) as the campaign id; with no pool the
+   action is refused instead of calling with the institute's default agent.
+6. **A lead asking for a call gets one** (2026-10-30). `EngagementReplyResponder.isCallRequest` recognises
+   "call me back", "please call me", "I am waiting for a call", "can I talk on call", "call karo" (en +
+   Hinglish) and excludes refusals ("don't call me", "call mat karo"). A request is never auto-answered; it
+   escalates (inbox task + team alert) **and** `EngagementCrmActionService.proposeCallback` proposes an AI
+   call (timing from the text: "in 3 hours", "tomorrow"/"kal", "later"; else the next calling slot),
+   through `tryAutonomous`. Allowed only if the engine allows AI calls and the lead has a phone.
+7. **Follow-through after a call** (`e58d291841`, `ab06ff37d8`): `AiCallFollowThrough` puts the summary
+   and callback ask on the lead timeline, queues a callback for the time the lead asked for
+   (`AiCallQueueService.enqueueAt`), and leaves a `CALLBACK_REQUESTED` Lead Journey event, an Activity note
+   and a counsellor-owned CRM follow-up. `AiCallbackWatchJob` (5 min) alerts once when a scheduled callback
+   was not placed or rang unanswered. `EngagementPointsOfContact` resolves who is told (admins + the lead's
+   counsellor).
+8. **Upcoming AI calls card** (`961b1d2723`, `57ee30ba59`): `GET /engagement/engines/{id}/upcoming-calls`
+   (`EngagementUpcomingCallsService`). The engine page card is shown only with the AI call channel on,
+   collapsed to a summary line by default, and lists calls needing approval, held for later, in the dialer
+   queue, and the next people to be called first. Placed calls are not listed. Approvals come first in the
+   inbox (an *Approvals* tab, `c005b9762f`). The AI call channel card on the engine page counts approved
+   AI calls with the CRM-action count, since an approved call is DONE/ACCEPTED with no channel.
+
+### 17.4 Replies, consent and meetings
+
+- **STOP and opt-outs** (`2568adfb87`, `42d3d1ea89`, `7bb0b243a3`): STOP is honoured even when no engine
+  auto-replies; an opt-out is mirrored into the CRM (opt-out list, lead rows `OPTED_OUT`, timeline); a
+  whole-message "not interested" exits the lead, cancels pending rows and sets CRM status `NOT_INTERESTED`
+  (else Lost), never downgrading a Converted lead; a qualified refusal stays a human item. One member per
+  phone. A lead opted out in the CRM stops getting engine messages right away (`6c2a2e2a65`).
+- **Email replies** are read from the reply feed: "unsubscribe" opts out, a plain refusal exits, anything
+  else opens an email REPLY task with a "Re:" subject and holds the person's engines until handled.
+- **Meetings** (`ed68664755`, `3f50f63a45`, `3bcfa3a2e0`): an optional booking page
+  (`channels.bookingPageId`); a reply like "book the demo for Monday 11 am" books it through the booking
+  service; a reschedule or cancel is recognised (Hinglish too) and handled by `EngagementMeetingIntentService`
+  before the member lookup; with no clear time it asks "when?" with free slots, in the lead's own language;
+  a moved or booked meeting is confirmed on the channel the lead used. The goal `exitOnMeetingBooked`
+  takes the lead out once a meeting is booked.
+- **Known routing gap:** the WhatsApp webhook hands an inbound message to the chatbot flow engine first
+  (`CombotWebhookService`); a chatbot session waiting on an AI response node can answer before the engine
+  sees it. §10's rule that the engine owns replies to its own messages is not enforced in the webhook.
+
+### 17.5 Scheduling and sending
+
+- **Send schedule** (`405102568c`, `a9f446125a`): stored with the quiet hours (no migration). Planned
+  messages go out in a one-hour window from `sendHour:sendMinute` on chosen days; a new person's first touch
+  goes right away or waits for the window; replies go as soon as quiet hours allow
+  (`EngagementSendSchedule`, `PolicyGate.scheduleSend(REPLY|ANYTIME|PLANNED)`). With "reach people right
+  away", members added in bulk are looked at within the hour.
+- **Adaptive send time** (`2b6dfa18cb`): three messages at the same time of day with no reply move the
+  next one about half a day away, kept in `memory_json` until three more go unanswered, a reply, or an
+  admin change (`EngagementAdaptiveSendTime`).
+- **New leads join within a minute** (`3f50f63a45`): `EngagementIntakeSweepJob` reads the lists targeted
+  by live engines every minute and enrols new lead rows, instead of waiting for the 02:30 UTC reconcile.
+- **Graduation applies to waiting drafts** (2026-10-31): `EngagementDispatchJob.promoteGraduatedTasks`
+  runs before each dispatch (every 2 minutes). For each live engine whose kill switch is off, and each
+  channel set to auto that has `first_n` approved sends, it turns that channel's untouched OPEN message
+  drafts into auto-sends due now (`EngagementActionRepository.promoteTasksToAutoSends`). Excluded: ACKED
+  tasks, replies, CRM actions, the AI call channel, WhatsApp drafts without an approved template, template-
+  only emails without a template, expired drafts. Quiet hours, consent, holds, credits and the circuit
+  breaker still apply at send time. A draft sends as written, so a draft that is days old goes out unchanged.
+- **Channel readiness and sender** (`405102568c`, `336d1ae61a`): `GET /engines/channel-readiness`; create
+  and update refuse a channel that is not set up; the Email channel has a "From email" sender picker
+  (`GET /engagement/engines/email-senders`) with a verified flag and a `SENDER_NOT_VERIFIED` reason.
+- **Delivery truth** (`00feffcec6`): `EngagementDeliveryCheckJob` (2 min) moves a WhatsApp send Meta
+  later refuses (e.g. 131049) from SENT to FAILED with Meta's reason, from
+  `GET /internal/v1/engagement/delivery-failures-since`. Auto-sends now show in the Sent tab.
+- **Unsent drafts no longer use the weekly cap** (`44f63472ec`).
+
+### 17.6 Templates
+
+- **Email templates** (`55d0c3bf9b`, `c3df7314de`): AI-written, versioned, with a brief check; modes
+  `FREE_WRITE`, `TEMPLATE_ONLY`, `TEMPLATE_PLUS_AI_LINE`; a template that breaks the current brief is not
+  sent (V616).
+- **WhatsApp** (`04579413b9`, `c406d63c7a`): media headers and buttons, versioned edits, a Meta rate-limit
+  queue, a promo-label warning, a brief check, a refusal of links not in the brief, long footers refused,
+  and a template Meta later disables is taken out of use (V617, V618). The advisor writes **utility-first**
+  because Meta caps MARKETING templates per person (131049), and labels MARKETING only when the purpose is
+  promotional.
+- **Reuse before writing** (`de31b4054e`): `EngagementTemplateReuseMatcher` offers the institute's
+  approved templates from other engines (same language, not archived) to the model first; only one that
+  fits as written is taken over, with no new Meta review (V627, `reused_from_id`).
+- **The brain's template pick is tolerant** (2026-10-30): `attachWhatsAppTemplate` matches the template
+  name ignoring case and spacing, takes the only approved template when the name is missing, and finds a
+  variable by name (any case, braces) or by position. When a WhatsApp task still cannot get a template, the
+  reason is stored on the task (`error_message`) and shown in the inbox instead of only logged.
+
+### 17.7 Admin UI
+
+- **Brief from the Lead Agent or written with AI** (`b45e90d7bf`): `GET /engagement/brief/lead-agents`,
+  `POST /engagement/brief/generate` (admin only, not token-charged). It never invents facts; a missing fact
+  becomes a TODO line.
+- **Edit in the create wizard, archive from any state, delete one that never reached anyone**
+  (`4ef07ba0ee`, `5b473170d2`); template and task actions are in the admin activity log (`557f354b4c`);
+  status changes follow the dashboard's allow-list.
+- **Simpler wizard** (`f70e38614e`): searchable checkbox lists for batches and audience lists, a day-by-day
+  plan preview, names instead of counts on the engine page.
+- **Alert contacts card** (2026-10-30): the engine page shows who is told when the engine needs a person
+  (the team member picked on the engine, with role, email and phone; else the creator; plus each lead's own
+  counsellor) with a Change button.
+- **Task inbox filters**: engine, channel, kind, day and date range, template and outcome, in the URL
+  (`4f0a658386`, `dc13c60002`, `e83a0aced6`). The filters run on the server
+  (`GET /tasks?engineId&channel&kind…`), so paging and chip counts match the filter; search still looks only
+  at the current page. The engine page's compact stat cards link to the filtered inbox or lead list.
+- **Auto-send channel cards** are smaller and link to the engine's Sent tab for that channel.
+
+### 17.8 Reporting and cost
+
+- **Daily report** (`bdaa97acdc`, `5f4b3bc8ef`, `308bb0e6e7`, `9c46f28a7c`): a report API with a WhatsApp
+  rate card, a dashboard with Excel and PDF export, an Overview / Daily report switch, a period picker,
+  range-aware exports, report-item lists (leads, demos, status changes, conversions, new templates by
+  category) and a *Leads and outcomes* page. No token counts are shown.
+- **Spend**: the brain's token usage and cost are saved on every action (`fd5827db4f`, V631); Meta
+  WhatsApp pricing is saved from status webhooks (`a1fbbfc56c`, V632) and `report-signals`
+  (`cfee5fc9df`) feeds the report.
+
+### 17.9 Schema, endpoints and configuration
+
+- **admin_core migrations:** V616 email templates; V617/V618 WhatsApp template sources, headers, versions,
+  queue; V623 CRM wake stamps; V624 do-not-automate; V625 engagement assets; V626 notify contacts; V627
+  template reuse; V630 assets ensure; V631 action LLM cost; V632 WhatsApp rate card.
+- **New endpoints (admin_core, JWT):** `/engines/{id}/actions` (GET/PUT), `/engines/{id}/upcoming-calls`,
+  `/engines/channel-readiness`, `/engines/email-senders`, `/brief/lead-agents`, `/brief/generate`, task
+  list filters. **Internal (HMAC):** notification_service `delivery-failures-since`, `report-signals`;
+  admin_core `…/internal/…/call-analyzed`.
+- **Properties:** `engagement.autonomy.first-n` (5), `engagement.task.expire-hours` (72),
+  `engagement.wake.enabled` / `bulk-cap` / `bulk-window-minutes` / `jitter-minutes` / `settle-ms`,
+  `engagement.ai-call.max-attempts-per-week` (3), `engagement.dispatch.batch` / `delay-ms`.
+
+### 17.10 Open items
+
+1. A call that never connects **and never reports anything** (a dialler failure with no queue or call-log
+   row) still wakes nothing; the next look is the normal cadence.
+2. The chatbot flow can answer a WhatsApp reply before the engine does (§17.4).
+3. A lead's explicit call request still follows the per-type approval ramp for AI calls. Whether a request
+   should skip it is a product decision, not made.
+4. Drafts promoted on graduation are not re-checked for staleness beyond the 72-hour expiry.
+5. The inbox search is page-local; making it server-side needs a backend search over drafts and people.
+6. New UI strings added this week exist in English only unless a commit says en/hi/fr/ar.
 
 ---
 

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import {
     ChatCircleDots,
@@ -67,6 +67,22 @@ const conversationTitle = (c: ChatConversationResponse): string => {
     return 'Direct Message';
 };
 
+type ListFilter = 'all' | 'unread' | 'groups' | 'direct';
+
+const LIST_FILTERS: { key: ListFilter; label: string }[] = [
+    { key: 'all', label: 'All' },
+    { key: 'unread', label: 'Unread' },
+    { key: 'groups', label: 'Groups' },
+    { key: 'direct', label: 'Direct' },
+];
+
+const matchesFilter = (c: ChatConversationResponse, filter: ListFilter): boolean => {
+    if (filter === 'unread') return c.unreadCount > 0;
+    if (filter === 'groups') return c.type !== 'DIRECT';
+    if (filter === 'direct') return c.type === 'DIRECT';
+    return true;
+};
+
 const formatTime = (iso?: string): string => {
     const d = toUtcDate(iso);
     if (!d) return '';
@@ -97,6 +113,23 @@ export function ConversationList({
     onSelectPerson,
 }: ConversationListProps) {
     const batchPlural = getTerminologyPlural(ContentTerms.Batch, SystemTerms.Batch);
+    const batchSingular = getTerminology(ContentTerms.Batch, SystemTerms.Batch);
+    // Client-side view over the already-loaded list; search results are not filtered by it.
+    const [filter, setFilter] = useState<ListFilter>('all');
+    const visible = conversations.filter((c) => matchesFilter(c, filter));
+    const sections: { key: string; label: string; items: ChatConversationResponse[] }[] = [
+        { key: 'pinned', label: 'Pinned', items: visible.filter((c) => c.type === 'COMMUNITY') },
+        {
+            key: 'groups',
+            label: `${batchSingular} groups`,
+            items: visible.filter((c) => c.type === 'BATCH_GROUP'),
+        },
+        {
+            key: 'direct',
+            label: 'Direct messages',
+            items: visible.filter((c) => c.type === 'DIRECT'),
+        },
+    ].filter((sec) => sec.items.length > 0);
     // When searching, the open conversations whose title matches still surface as quick "Chats".
     const matchingConversations = conversations.filter((c) =>
         conversationTitle(c).toLowerCase().includes(search.trim().toLowerCase())
@@ -108,12 +141,16 @@ export function ConversationList({
     );
 
     return (
-        <div className="flex h-full w-full flex-col bg-white">
+        <div className="flex size-full flex-col bg-neutral-50">
             {/* Header */}
-            <div className="shrink-0 border-b border-neutral-200 p-3">
-                <div className="mb-3 flex items-center justify-between">
-                    <h2 className="text-base font-semibold text-neutral-700">Messages</h2>
-                    <Button size="sm" onClick={onNewChat} className="bg-primary-500 hover:bg-primary-600">
+            <div className="flex shrink-0 flex-col gap-2.5 border-b border-neutral-200 bg-white p-3">
+                <div className="flex items-center justify-between">
+                    <h2 className="text-base font-semibold text-neutral-800">Messages</h2>
+                    <Button
+                        size="sm"
+                        onClick={onNewChat}
+                        className="bg-primary-500 text-white hover:opacity-90"
+                    >
                         New message
                     </Button>
                 </div>
@@ -129,6 +166,26 @@ export function ConversationList({
                         className="pl-9"
                     />
                 </div>
+                {!searchActive && (
+                    <div className="flex gap-1 rounded-lg border border-neutral-200 bg-neutral-50 p-0.5">
+                        {LIST_FILTERS.map((f) => (
+                            <button
+                                key={f.key}
+                                type="button"
+                                onClick={() => setFilter(f.key)}
+                                aria-pressed={filter === f.key}
+                                className={cn(
+                                    'flex-1 rounded-md px-2 py-1 text-xs font-medium transition-colors',
+                                    filter === f.key
+                                        ? 'bg-white text-primary-600 shadow-sm'
+                                        : 'text-neutral-500 hover:text-neutral-700'
+                                )}
+                            >
+                                {f.label}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* List / search results */}
@@ -159,9 +216,28 @@ export function ConversationList({
                         <ChatCircleDots size={36} weight="duotone" className="mb-3 text-neutral-300" />
                         <p className="text-sm text-neutral-500">No conversations yet.</p>
                     </div>
+                ) : sections.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
+                        <ChatCircleDots
+                            size={36}
+                            weight="duotone"
+                            className="mb-3 text-neutral-300"
+                        />
+                        <p className="text-sm text-neutral-500">No conversations in this view.</p>
+                    </div>
                 ) : (
-                    conversations.map((c) => (
-                        <ConvRow key={c.id} c={c} active={c.id === activeId} onSelect={onSelect} />
+                    sections.map((sec) => (
+                        <div key={sec.key}>
+                            <SectionLabel>{sec.label}</SectionLabel>
+                            {sec.items.map((c) => (
+                                <ConvRow
+                                    key={c.id}
+                                    c={c}
+                                    active={c.id === activeId}
+                                    onSelect={onSelect}
+                                />
+                            ))}
+                        </div>
                     ))
                 )}
             </div>
@@ -184,8 +260,10 @@ function ConvRow({
             type="button"
             onClick={() => onSelect(c)}
             className={cn(
-                'flex w-full items-center gap-3 border-b border-neutral-100 px-3 py-3 text-left transition-colors hover:bg-neutral-50',
-                active && 'bg-primary-50 hover:bg-primary-50'
+                'flex w-full items-center gap-3 border-b border-l-2 border-neutral-100 px-3 py-3 text-left transition-colors',
+                active
+                    ? 'border-l-primary-500 bg-primary-50 hover:bg-primary-50'
+                    : 'border-l-transparent bg-white hover:bg-neutral-50'
             )}
         >
             <div
@@ -226,7 +304,7 @@ function ConvRow({
 
 function SectionLabel({ children }: { children: ReactNode }) {
     return (
-        <div className="bg-neutral-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-neutral-400">
+        <div className="px-3 pb-1.5 pt-3 text-xs font-semibold uppercase tracking-wide text-neutral-400">
             {children}
         </div>
     );
@@ -278,7 +356,7 @@ function SearchResults({
                             key={b.packageSessionId}
                             type="button"
                             onClick={() => onSelectBatch(b)}
-                            className="flex w-full items-center gap-3 border-b border-neutral-100 px-3 py-3 text-left transition-colors hover:bg-neutral-50"
+                            className="flex w-full items-center gap-3 border-b border-neutral-100 bg-white p-3 text-left transition-colors hover:bg-neutral-50"
                         >
                             <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-info-50 text-info-600">
                                 <UsersThree size={20} weight="duotone" />
@@ -299,7 +377,7 @@ function SearchResults({
                             key={p.userId}
                             type="button"
                             onClick={() => onSelectPerson(p)}
-                            className="flex w-full items-center gap-3 border-b border-neutral-100 px-3 py-3 text-left transition-colors hover:bg-neutral-50"
+                            className="flex w-full items-center gap-3 border-b border-neutral-100 bg-white p-3 text-left transition-colors hover:bg-neutral-50"
                         >
                             <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-xs font-semibold text-neutral-500">
                                 {initialsOf(p.fullName)}

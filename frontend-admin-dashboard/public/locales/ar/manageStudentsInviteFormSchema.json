@@ -1,0 +1,7 @@
+{
+    "validation": {
+        "inviteLinkRequired": "رابط الدعوة مطلوب",
+        "maxCoursesRequired": "هذا الحقل مطلوب",
+        "inviteLinkAlreadyPresent": "رابط الدعوة لهذه الدفعة موجود بالفعل"
+    }
+}

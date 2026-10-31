@@ -1,0 +1,46 @@
+{
+    "defaults": {
+        "title": "مراجعة النص",
+        "subtitle": "عدّل النص أدناه، ثم تابع لإنشاء الصوت والمرئيات.",
+        "ctaLabel": "المتابعة إلى الفيديو",
+        "discardLabel": "البدء من جديد"
+    },
+    "counts": {
+        "words_zero": "كلمات ({{count}})",
+        "words_one": "كلمة واحدة ({{count}})",
+        "words_two": "كلمتان ({{count}})",
+        "words_few": "كلمات ({{count}})",
+        "words_many": "كلمةً ({{count}})",
+        "words_other": "كلمة ({{count}})",
+        "sentences_zero": "جمل ({{count}})",
+        "sentences_one": "جملة واحدة ({{count}})",
+        "sentences_two": "جملتان ({{count}})",
+        "sentences_few": "جمل ({{count}})",
+        "sentences_many": "جملةً ({{count}})",
+        "sentences_other": "جملة ({{count}})"
+    },
+    "approxDuration": "≈ {{time}}",
+    "prompt": {
+        "toggleLabel": "الطلب الأصلي"
+    },
+    "viewToggle": {
+        "timeline": "الجدول الزمني",
+        "editRaw": "تحرير النص الخام",
+        "estimatesNote": "الأوقات تقديرية (≈{{wpm}} كلمة/دقيقة). التوقيتات الفعلية تأتي من تحويل النص إلى كلام في المرحلة التالية."
+    },
+    "timeline": {
+        "empty": "لم يتم اكتشاف أي جمل. انتقل إلى <strong>تحرير النص الخام</strong> لإضافة السرد."
+    },
+    "sentenceRow": {
+        "shortFragment": "مقطع قصير جدًا",
+        "longSentence": "جملة طويلة — يُفضّل تقسيمها",
+        "editTitle": "تعديل",
+        "insertTitle": "إدراج جملة أسفل هذه",
+        "deleteTitle": "حذف الجملة",
+        "newSentencePlaceholder": "جملة جديدة."
+    },
+    "rawView": {
+        "placeholder": "سيظهر النص هنا..."
+    },
+    "resuming": "جارٍ الاستئناف..."
+}

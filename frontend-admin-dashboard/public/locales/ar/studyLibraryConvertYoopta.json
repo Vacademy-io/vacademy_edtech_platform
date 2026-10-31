@@ -1,0 +1,10 @@
+{
+    "conversionFailed": "(فشل التحويل — تعذر تحليل المستند)",
+    "formatting": {
+        "textColour": "لون النص",
+        "backgroundColour": "لون الخلفية / التمييز",
+        "textAlignment": "محاذاة النص",
+        "customFontSizes": "أحجام خط مخصصة",
+        "highlightUnderlineStrikethrough": "تمييز / تسطير / خط في المنتصف"
+    }
+}

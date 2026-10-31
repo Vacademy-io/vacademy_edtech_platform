@@ -119,6 +119,10 @@ public class CallIntelligence {
     @Column(name = "general_summary", columnDefinition = "TEXT")
     private String generalSummary;
 
+    /** Two-line "what happened / what's next" for the call log row (V506, schema 1.1). */
+    @Column(name = "short_update", length = 200)
+    private String shortUpdate;
+
     @Column(name = "generic_status", length = 32)
     private String genericStatus;
 

@@ -74,6 +74,14 @@ public class CouponCode {
     @Column(name = "usage_limit") // Maximum number of times this coupon can be used
     private Long usageLimit;
 
+    /**
+     * Smallest basket this coupon may be used on — "₹99 off when you take 2 or
+     * more". NULL means no condition, which is every coupon that predates this,
+     * so nothing changes until an admin sets one.
+     */
+    @Column(name = "min_items")
+    private Integer minItems;
+
     @Column(name = "created_at", insertable = false, updatable = false)
     private Timestamp createdAt;
 

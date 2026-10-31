@@ -1,0 +1,72 @@
+{
+    "defaultSectionName": "सेक्शन {{number}}",
+    "trigger": {
+        "title": "नॉलेज बेस से बनाएं",
+        "subtitle": "आपकी अपनी किताबों और नोट्स से प्रश्न"
+    },
+    "dialog": {
+        "headingChooseKb": "एक नॉलेज बेस चुनें",
+        "headingKbSection": "{{kbName}} — {{sectionName}}"
+    },
+    "kbStep": {
+        "intro": "प्रश्न केवल आपके चुने गए नॉलेज बेस की सामग्री से लिखे जाएंगे, और हर एक में वह पेज दिखाया जाएगा जहां से वह लिया गया है।",
+        "emptyTitle": "अभी तक कोई नॉलेज बेस नहीं है",
+        "emptyDescription": "पहले नॉलेज बेस में अपनी किताबें या नोट्स जोड़ें, फिर यहां वापस आएं।",
+        "sourcesCount_one": "{{count}} स्रोत",
+        "sourcesCount_other": "{{count}} स्रोत"
+    },
+    "setup": {
+        "numberOfQuestions": "प्रश्नों की संख्या",
+        "questionType": "प्रश्न का प्रकार",
+        "difficulty": "कठिनाई स्तर",
+        "noTopicsWarning": "इस नॉलेज बेस में अभी तक कोई विषय नहीं है। प्रश्न इसकी पूरी सामग्री से लिए जाएंगे।",
+        "questionTypeOptions": {
+            "mcqs": "बहुविकल्पीय (एक उत्तर)",
+            "mcqm": "बहुविकल्पीय (कई उत्तर)",
+            "trueFalse": "सही / गलत",
+            "oneWord": "एक शब्द",
+            "longAnswer": "दीर्घ उत्तर",
+            "numeric": "संख्यात्मक",
+            "passage": "गद्यांश / बोध",
+            "assertionReason": "कथन–कारण"
+        },
+        "difficultyOptions": {
+            "easy": "आसान",
+            "medium": "मध्यम",
+            "hard": "कठिन"
+        },
+        "validation": {
+            "minCount": "कम से कम 1 प्रश्न",
+            "maxCount": "एक बार में अधिकतम 60"
+        }
+    },
+    "generating": {
+        "writingFrom": "{{kbName}} से प्रश्न लिखे जा रहे हैं",
+        "hint": "प्रश्न एक बार में कुछ ही लिखे जाते हैं, इसलिए बड़े सेक्शन में अधिक समय लगता है। यह प्रक्रिया नॉलेज बेस के इतिहास में सुरक्षित रहती है, भले ही आप इसे बंद कर दें।"
+    },
+    "review": {
+        "partialDelivery": "आपके चुने गए विषयों से {{planned}} में से {{delivered}} प्रश्न लिखे जा सके। बाकी के लिए अधिक सामग्री जोड़ें या चयन को व्यापक करें।"
+    },
+    "insert": {
+        "paperTitle": "{{kbName}} — {{sectionName}}",
+        "successToast_one": "{{sectionName}} में {{count}} प्रश्न जोड़ा गया",
+        "successToast_other": "{{sectionName}} में {{count}} प्रश्न जोड़े गए"
+    },
+    "footer": {
+        "cancel": "रद्द करें",
+        "back": "वापस",
+        "generateQuestions": "प्रश्न जनरेट करें",
+        "changeSelection": "चयन बदलें",
+        "adding": "जोड़ा जा रहा है…",
+        "addQuestions_one": "इस सेक्शन में {{count}} प्रश्न जोड़ें",
+        "addQuestions_other": "इस सेक्शन में {{count}} प्रश्न जोड़ें"
+    },
+    "errors": {
+        "loadTopics": "इस नॉलेज बेस के विषय नहीं पढ़े जा सके",
+        "startGenerating": "जनरेट करना शुरू नहीं किया जा सका",
+        "generationFailed": "जनरेशन विफल रहा",
+        "regenerateQuestion": "उस प्रश्न को फिर से नहीं लिखा जा सका",
+        "paperNotSaved": "प्रश्न पत्र सहेजा नहीं जा सका",
+        "insertQuestions": "इन प्रश्नों को सेक्शन में नहीं जोड़ा जा सका"
+    }
+}

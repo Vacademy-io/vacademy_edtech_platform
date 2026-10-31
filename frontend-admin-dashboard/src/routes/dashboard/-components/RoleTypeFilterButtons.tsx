@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { RoleTypeSelectedFilter } from './RoleTypeComponent';
 
@@ -12,6 +13,7 @@ const RoleTypeFilterButtons = ({
     handleSubmitFilters,
     handleResetFilters,
 }: RoleTypeFilterButtonsProps) => {
+    const { t } = useTranslation('dashboardRoleTypeFilterButtons');
     const isButtonEnabled = () => {
         const { roles, status } = selectedQuestionPaperFilters;
         return roles?.length > 0 || status?.length > 0;
@@ -27,7 +29,7 @@ const RoleTypeFilterButtons = ({
                         className="h-8"
                         onClick={handleSubmitFilters}
                     >
-                        Filter
+                        {t('filterButton')}
                     </MyButton>
                     <MyButton
                         buttonType="secondary"
@@ -36,7 +38,7 @@ const RoleTypeFilterButtons = ({
                         className="h-8 border border-neutral-400 bg-neutral-200 hover:border-neutral-500 hover:bg-neutral-300 active:border-neutral-600 active:bg-neutral-400"
                         onClick={handleResetFilters}
                     >
-                        Reset
+                        {t('resetButton')}
                     </MyButton>
                 </div>
             )}

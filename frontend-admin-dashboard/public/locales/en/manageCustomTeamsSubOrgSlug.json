@@ -1,0 +1,30 @@
+{
+    "untitled": "Untitled {{term}}",
+    "helmet": {
+        "title": "Manage {{termPlural}}",
+        "titleWithName": "{{name}} — Manage {{termPlural}}"
+    },
+    "backToList": "Back to {{termPlural}}",
+    "subtitle": {
+        "manage": "Manage this {{term}}'s admin payment, learners, invoices, and team members.",
+        "view": "View this {{term}}'s admin payment, learners, invoices, and team members."
+    },
+    "editTerm": "Edit {{term}}",
+    "resync": {
+        "action": "Re-sync invites",
+        "inProgress": "Re-syncing…",
+        "failed": "Failed to re-sync invites",
+        "alreadyInSync": "Already in sync — no changes needed",
+        "createdSummary": "Re-synced {{invites}} across {{courses}}",
+        "inviteCount_one": "{{count}} invite",
+        "inviteCount_other": "{{count}} invites",
+        "courseCount_one": "{{count}} course",
+        "courseCount_other": "{{count}} courses",
+        "renamedSummary_one": "renamed {{count}} to match your naming settings",
+        "renamedSummary_other": "renamed {{count}} to match your naming settings"
+    },
+    "notFound": {
+        "message": "Couldn't find a {{term}} matching this link.",
+        "goingBack": "Going back to the list…"
+    }
+}

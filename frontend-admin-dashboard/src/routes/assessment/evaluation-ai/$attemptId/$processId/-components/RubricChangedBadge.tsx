@@ -1,5 +1,6 @@
 import { Warning } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface Props {
     evaluationVersion: number | null | undefined;
@@ -13,6 +14,7 @@ interface Props {
  * (e.g. LLM-derived rubric, no fixed-test mode).
  */
 export function RubricChangedBadge({ evaluationVersion, currentVersion, className }: Props) {
+    const { t } = useTranslation('assessmentRubricChangedBadge');
     if (evaluationVersion == null || currentVersion == null) return null;
     if (evaluationVersion === currentVersion) return null;
     return (
@@ -22,10 +24,10 @@ export function RubricChangedBadge({ evaluationVersion, currentVersion, classNam
                 'bg-warning-50 text-warning-700 border border-warning-300',
                 className,
             )}
-            title={`Rubric was updated to v${currentVersion} since this evaluation (v${evaluationVersion})`}
+            title={t('tooltip', { currentVersion, evaluationVersion })}
         >
             <Warning size={14} weight="bold" />
-            Rubric updated since this evaluation
+            {t('badgeLabel')}
         </span>
     );
 }

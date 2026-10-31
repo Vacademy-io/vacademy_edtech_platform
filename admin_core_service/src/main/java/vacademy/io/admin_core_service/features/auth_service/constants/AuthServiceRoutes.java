@@ -15,6 +15,8 @@ public class AuthServiceRoutes {
     public static final String GET_USER_BY_ID_WITH_PASSWORD = "/auth-service/internal/user/user-by-id-with-password";
     public static final String GENERATE_TOKEN_FOR_LEARNER = "/auth-service/v1/internal/generate-token-for-learner";
     public static final String SEND_CRED_TO_USERS = "/auth-service/internal/v1/user-operation/send-passwords";
+    /** One user's current login details, branded for an institute, linking to a given portal. */
+    public static final String RESEND_LOGIN_DETAILS = "/auth-service/internal/v1/user-operation/resend-login-details";
     public static final String CREATE_OR_GET_EXISTING_BY_ID = "/auth-service/internal/user/create-or-get-existing-by-id";
     public static final String GET_STUDENT_LOGIN_STATS = "/auth-service/analytics/student-login-stats";
     public static final String CREATE_MULTIPLE_USERS = "/auth-service/v1/user/internal/create-multiple-users";
@@ -65,6 +67,15 @@ public class AuthServiceRoutes {
     public static final String USERS_OF_STATUS_INTERNAL = "/auth-service/internal/v1/user-roles/users-of-status";
 
     public static final String GET_USER_BY_EMAIL = "/auth-service/internal/user/by-email";
+
+    /** Every (institute, role, status) row of one user. Query param: userId. */
+    public static final String USER_ROLE_MEMBERSHIPS = "/auth-service/internal/v1/user-roles/memberships";
+
+    /**
+     * Pause (DISABLED) / restore (ACTIVE) only the named roles of one user in one institute.
+     * Query params: instituteId, userId, status; body: JSON array of role names.
+     */
+    public static final String USER_ROLE_STATUS_INTERNAL = "/auth-service/internal/v1/user-roles/role-status";
 
     // ── Organization teams (hybrid: flat teams + user-to-user inside) ──────
     // organization_team is the team list. organization_team_member has

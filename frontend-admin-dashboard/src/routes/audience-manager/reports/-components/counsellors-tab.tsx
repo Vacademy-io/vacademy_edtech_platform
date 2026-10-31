@@ -9,6 +9,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { CaretRight, Trophy, Users, WarningCircle } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import {
@@ -42,6 +43,7 @@ export function CounsellorsTab({
     audienceId,
 }: ReportTabProps) {
     const navigate = useNavigate();
+    const { t } = useTranslation('audienceManagerCounsellorsTab');
 
     const counsellorQuery = useQuery({
         queryKey: [
@@ -82,18 +84,19 @@ export function CounsellorsTab({
 
     return (
         <ReportSection
-            title="Counsellor performance"
+            title={t('title')}
             icon={<Users size={18} />}
             actions={
                 <div className="flex flex-wrap items-center gap-3">
                     {performance && (
                         <span className="text-xs text-neutral-500">
-                            {performance.summary.total_counselors} counsellor
-                            {performance.summary.total_counselors === 1 ? '' : 's'}
+                            {t('summary.counsellorCount', {
+                                count: performance.summary.total_counselors,
+                            })}
                             {performance.summary.avg_response_minutes != null && (
                                 <>
                                     {' '}
-                                    · avg resp{' '}
+                                    · {t('summary.avgResponse')}{' '}
                                     <strong className="text-neutral-700">
                                         {fmtMinutes(performance.summary.avg_response_minutes)}
                                     </strong>
@@ -102,7 +105,7 @@ export function CounsellorsTab({
                             {performance.summary.avg_conversion_rate != null && (
                                 <>
                                     {' '}
-                                    · avg conv.{' '}
+                                    · {t('summary.avgConversion')}{' '}
                                     <strong className="text-neutral-700">
                                         {fmtPct(performance.summary.avg_conversion_rate)}
                                     </strong>
@@ -115,15 +118,15 @@ export function CounsellorsTab({
                         disabled={!performance || performance.rows.length === 0}
                         getHeadersAndRows={() => ({
                             headers: [
-                                'Counsellor',
-                                'Assigned',
-                                'Responded',
-                                'Conversions',
-                                'Conv. rate %',
-                                'Avg response (min)',
-                                'TAT met %',
-                                'Open',
-                                'Overdue',
+                                t('csv.headers.counsellor'),
+                                t('csv.headers.assigned'),
+                                t('csv.headers.responded'),
+                                t('csv.headers.conversions'),
+                                t('csv.headers.convRate'),
+                                t('csv.headers.avgResponse'),
+                                t('csv.headers.tatMet'),
+                                t('csv.headers.open'),
+                                t('csv.headers.overdue'),
                             ],
                             rows: (performance?.rows ?? []).map((r) => [
                                 r.counselor_name,
@@ -175,6 +178,7 @@ interface CounsellorTableProps {
     onRowClick?: (counselorId: string) => void;
 }
 function CounsellorTable({ performance, loading, onRowClick }: CounsellorTableProps) {
+    const { t } = useTranslation('audienceManagerCounsellorsTab');
     const [sortKey, setSortKey] = useState<SortKey>('leads_assigned');
     const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
 
@@ -208,14 +212,16 @@ function CounsellorTable({ performance, loading, onRowClick }: CounsellorTablePr
 
     if (loading) {
         return (
-            <div className="py-8 text-center text-sm text-neutral-400">Loading counsellors…</div>
+            <div className="py-8 text-center text-sm text-neutral-400">
+                {t('table.loading')}
+            </div>
         );
     }
     if (!performance || performance.rows.length === 0) {
         return (
             <div className="flex flex-col items-center gap-2 py-10 text-sm text-neutral-400">
                 <Users size={28} />
-                No counsellor activity in this range.
+                {t('table.empty')}
             </div>
         );
     }
@@ -235,7 +241,7 @@ function CounsellorTable({ performance, loading, onRowClick }: CounsellorTablePr
                 <thead>
                     <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
                         <SortableHeader
-                            label="Counsellor"
+                            label={t('table.headers.counsellor')}
                             sortKey="counselor_name"
                             current={sortKey}
                             dir={sortDir}
@@ -243,56 +249,56 @@ function CounsellorTable({ performance, loading, onRowClick }: CounsellorTablePr
                             align="left"
                         />
                         <SortableHeader
-                            label="Assigned"
+                            label={t('table.headers.assigned')}
                             sortKey="leads_assigned"
                             current={sortKey}
                             dir={sortDir}
                             onClick={toggleSort}
                         />
                         <SortableHeader
-                            label="Responded"
+                            label={t('table.headers.responded')}
                             sortKey="leads_responded"
                             current={sortKey}
                             dir={sortDir}
                             onClick={toggleSort}
                         />
                         <SortableHeader
-                            label="Conversions"
+                            label={t('table.headers.conversions')}
                             sortKey="conversions"
                             current={sortKey}
                             dir={sortDir}
                             onClick={toggleSort}
                         />
                         <SortableHeader
-                            label="Conv. rate"
+                            label={t('table.headers.convRate')}
                             sortKey="conversion_rate"
                             current={sortKey}
                             dir={sortDir}
                             onClick={toggleSort}
                         />
                         <SortableHeader
-                            label="Avg response"
+                            label={t('table.headers.avgResponse')}
                             sortKey="avg_response_minutes"
                             current={sortKey}
                             dir={sortDir}
                             onClick={toggleSort}
                         />
                         <SortableHeader
-                            label="TAT met"
+                            label={t('table.headers.tatMet')}
                             sortKey="tat_met_rate"
                             current={sortKey}
                             dir={sortDir}
                             onClick={toggleSort}
                         />
                         <SortableHeader
-                            label="Open"
+                            label={t('table.headers.open')}
                             sortKey="open_leads"
                             current={sortKey}
                             dir={sortDir}
                             onClick={toggleSort}
                         />
                         <SortableHeader
-                            label="Overdue"
+                            label={t('table.headers.overdue')}
                             sortKey="overdue_leads"
                             current={sortKey}
                             dir={sortDir}
@@ -339,7 +345,7 @@ function CounsellorTable({ performance, loading, onRowClick }: CounsellorTablePr
                                             {isTop && (
                                                 <span className="flex items-center gap-1 text-xs text-amber-700">
                                                     <Trophy size={11} weight="fill" />
-                                                    Top performer
+                                                    {t('table.topPerformer')}
                                                 </span>
                                             )}
                                         </div>

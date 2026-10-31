@@ -1,0 +1,8 @@
+{
+    "cards": {
+        "totalTerm": "Total {{term}}",
+        "active": "Active",
+        "totalLearners": "Total Learners",
+        "totalSeats": "Total Seats"
+    }
+}

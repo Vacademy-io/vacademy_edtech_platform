@@ -1,0 +1,196 @@
+{
+    "kpi": {
+        "totalCalls": "إجمالي المكالمات",
+        "connected": "متصلة",
+        "talkTime": "مدة المكالمة",
+        "talkTimeUnit": "س : د",
+        "uniqueLeads": "العملاء المحتملون الفريدون",
+        "aiVsHuman": "الذكاء الاصطناعي مقابل البشر",
+        "aiVsHumanUnit": "الذكاء الاصطناعي / البشر"
+    },
+    "chips": {
+        "allCalls": "كل المكالمات",
+        "missedInbound": "مكالمات واردة فائتة",
+        "callbacksDue": "معاودة اتصال مستحقة"
+    },
+    "filters": {
+        "leadName": "اسم العميل المحتمل",
+        "leadNamePlaceholder": "البحث بالاسم",
+        "number": "الرقم",
+        "numberPlaceholder": "أرقام الهاتف",
+        "direction": "الاتجاه",
+        "directionOutbound": "صادرة",
+        "directionInbound": "واردة",
+        "type": "النوع",
+        "typeHuman": "بشري",
+        "typeAi": "ذكاء اصطناعي",
+        "provider": "المزوّد",
+        "status": "الحالة",
+        "disposition": "النتيجة",
+        "all": "الكل",
+        "searchPlaceholder": "البحث عن {{label}}…"
+    },
+    "providers": {
+        "exotel": "Exotel",
+        "aavtaarAi": "الذكاء الاصطناعي (Aavtaar)",
+        "airtel": "Airtel",
+        "vacademyAi": "ذكاء اصطناعي (وكيل Vacademy)",
+        "plivo": "Vacademy Voice",
+        "manual": "رفع يدوي",
+        "mock": "ذكاء اصطناعي (اختبار)"
+    },
+    "table": {
+        "heading": "المكالمات",
+        "empty": "لا توجد مكالمات مطابقة لهذه الفلاتر.",
+        "columns": {
+            "time": "الوقت",
+            "lead": "العميل المحتمل",
+            "direction": "الاتجاه",
+            "type": "النوع",
+            "status": "الحالة",
+            "health": "الحالة الفنية",
+            "healthTooltip": "التقييم الفني من وكيل المكالمات الذكي",
+            "duration": "المدة",
+            "counsellor": "المستشار",
+            "disposition": "النتيجة",
+            "recording": "التسجيل",
+            "ai": "ذكاء اصطناعي",
+            "leadStatus": "حالة العميل المحتمل",
+            "scores": "درجات الذكاء الاصطناعي",
+            "scoresTooltip": "تقييم المتصل · تقييم النتيجة · شعور العميل (من Call Intelligence)",
+            "update": "التحديث",
+            "actions": "إجراءات أثناء المكالمة",
+            "actionsTooltip": "رسائل واتساب والمعاودات والتحويلات التي أجراها الوكيل"
+        },
+        "openLeadProfile": "فتح الملف الشخصي للعميل المحتمل",
+        "viewLead": "عرض العميل المحتمل",
+        "ivrOptionChosen": "خيار الرد الآلي المُختار"
+    },
+    "directionBadge": {
+        "in": "وارد",
+        "out": "صادر"
+    },
+    "typeBadge": {
+        "ai": "ذكاء اصطناعي",
+        "human": "بشري"
+    },
+    "statusDetail": {
+        "whyEnded": "لماذا انتهت هذه المكالمة على هذا النحو؟",
+        "loading": "جارٍ تحميل التفاصيل…",
+        "reasonPrefix": "السبب: {{reason}}",
+        "noDetail": "لا تتوفر تفاصيل إضافية.",
+        "reason": "السبب",
+        "provider": "المزوّد",
+        "attempted": "وقت المحاولة",
+        "answered": "وقت الرد",
+        "duration": "المدة",
+        "cost": "التكلفة",
+        "viewRawResponse": "عرض استجابة المزوّد الخام"
+    },
+    "disposition": {
+        "edit": "تعديل",
+        "set": "تحديد"
+    },
+    "followUp": {
+        "titleCall": "يستحق مكالمة يدوية",
+        "titleCallLater": "أعد الاتصال في الوقت الذي طلبوه",
+        "titleSkip": "لا حاجة لمكالمة يدوية"
+    },
+    "recording": {
+        "loading": "جارٍ التحميل…",
+        "play": "تشغيل"
+    },
+    "export": {
+        "csv": "CSV",
+        "excel": "Excel",
+        "successToast": "تم تصدير {{format}}",
+        "errorToast": "فشل التصدير. يُرجى المحاولة مرة أخرى."
+    },
+    "dispositionDialog": {
+        "heading": "تحديد نتيجة المكالمة",
+        "save": "حفظ",
+        "outcome": "النتيجة",
+        "noOutcomes": "لا توجد نتائج مُهيَّأة.",
+        "mapsToStatus": "→ الحالة",
+        "callbackAt": "موعد المعاودة",
+        "notes": "ملاحظات (اختياري)",
+        "notesPlaceholder": "أضف ملاحظة",
+        "savedStatusUpdated": "تم الحفظ — تم تحديث حالة العميل المحتمل",
+        "saved": "تم حفظ النتيجة",
+        "saveError": "تعذّر حفظ النتيجة."
+    },
+    "intelligenceDialog": {
+        "heading": "نص المكالمة وذكاء المكالمة الاصطناعي",
+        "analyzeHeading": "هل تريد تحليل هذه المكالمة؟",
+        "analyzeConfirm": "تحليل"
+    },
+    "empty": {
+        "pickInstitute": "اختر مؤسسة لعرض سجل المكالمات."
+    },
+    "deployPending": {
+        "title": "لوحة المكالمات غير متاحة على هذا الخادم بعد",
+        "description": "لم يتم نشر نقاط نهاية لوحة الاتصالات في هذه البيئة بعد. يُرجى التحقق لاحقًا بعد الإصدار التالي للخادم."
+    },
+    "error": {
+        "loadFailed": "تعذّر تحميل سجل المكالمات."
+    },
+    "common": {
+        "retry": "إعادة المحاولة",
+        "leadFallback": "عميل محتمل"
+    },
+    "dispositionStrip": {
+        "label": "النتائج",
+        "notSet": "غير محدد",
+        "clear": "مسح"
+    },
+    "scores": {
+        "caller": "المتصل",
+        "outcome": "النتيجة",
+        "callerTooltip": "مدى تقدم المتصل نحو هدفه (0–10)",
+        "outcomeTooltip": "قوة النتيجة من جهة العميل المحتمل (0–10)",
+        "sentiment": {
+            "positive": "إيجابي",
+            "neutral": "محايد",
+            "negative": "سلبي"
+        }
+    },
+    "update": {
+        "openFull": "فتح التحليل الكامل",
+        "viewAnalysis": "عرض التحليل",
+        "inProgress": "جارٍ التحليل…",
+        "failed": "فشل التحليل",
+        "skipped": "لم يُحلَّل"
+    },
+    "actions": {
+        "sent": "أُرسل واتساب ({{count}})",
+        "sentOf": "واتساب {{sent}}/{{total}} أُرسل",
+        "callback": "معاودة اتصال",
+        "transferred": "تم التحويل"
+    },
+    "bulk": {
+        "selected": "{{count}} محدد",
+        "clear": "مسح",
+        "selectPage": "تحديد الكل في هذه الصفحة",
+        "selectRow": "تحديد المكالمة",
+        "leadStatus": "حالة العميل المحتمل",
+        "disposition": "التصنيف",
+        "assignCounsellor": "تعيين مستشار",
+        "addToCampaign": "إضافة إلى حملة",
+        "reanalyze": "إعادة التحليل",
+        "done": "{{updated}} {{verb}}",
+        "partial": "{{updated}} {{verb}}، فشل {{failed}}",
+        "error": "فشل التحديث الجماعي. يرجى المحاولة مجددًا.",
+        "verbStatus": "حالات محدثة",
+        "verbDisposition": "تصنيفات محددة",
+        "verbAnalyze": "مكالمات في قائمة التحليل"
+    },
+    "bulkStatusDialog": {
+        "heading": "تعيين حالة {{count}} عميل محتمل",
+        "status": "الحالة",
+        "apply": "تطبيق",
+        "none": "لا توجد حالات مهيأة."
+    },
+    "bulkDispositionDialog": {
+        "heading": "تعيين تصنيف {{count}} مكالمة"
+    }
+}

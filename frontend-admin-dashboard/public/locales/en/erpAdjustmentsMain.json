@@ -1,0 +1,51 @@
+{
+    "restricted": {
+        "title": "Variable pay is restricted",
+        "description": "One-off earnings and deductions are visible to HR roles only. Ask an administrator to grant you HR Manager or HR Admin access in this institute."
+    },
+    "tabs": {
+        "adjustments": "Adjustments",
+        "teachingPay": "Teaching Pay",
+        "incentives": "Incentives"
+    },
+    "toast": {
+        "removed": "Adjustment removed"
+    },
+    "errors": {
+        "deleteFailed": "Could not remove this adjustment. If a payroll run has already picked it up, reject that run first.",
+        "loadFailed": "Could not load adjustments for this month."
+    },
+    "columns": {
+        "employee": "Employee",
+        "type": "Type",
+        "code": "Code",
+        "label": "Label",
+        "amount": "Amount",
+        "runScope": "Run scope",
+        "source": "Source",
+        "pickedUp": "Picked up"
+    },
+    "manualSource": "MANUAL",
+    "inPayroll": "In payroll",
+    "pending": "Pending",
+    "locked": "Locked",
+    "removeAdjustment": "Remove {{label}}",
+    "adjustmentNoun": "adjustment",
+    "thisAdjustment": "This adjustment",
+    "intro": "One-off earnings and deductions for a single month — an incentive, an arrear, a recovery. Each one waits here until a payroll run for its month and scope picks it up; once a run has, it is locked and can only be undone by rejecting that run.",
+    "monthLabel": "Month",
+    "addAdjustment": "Add adjustment",
+    "retrying": "Retrying…",
+    "retry": "Retry",
+    "emptyState": {
+        "title": "Nothing extra this month",
+        "description": "No adjustments recorded for the selected month. Anything you add here will be picked up by the next matching payroll run."
+    },
+    "removeDialog": {
+        "title": "Remove this adjustment?",
+        "description": "{{label}} will no longer be applied to the next payroll run for {{month}}/{{year}}. This cannot be undone — you would have to add it again."
+    },
+    "keepIt": "Keep it",
+    "removing": "Removing…",
+    "remove": "Remove"
+}

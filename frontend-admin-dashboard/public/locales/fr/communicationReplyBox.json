@@ -1,0 +1,81 @@
+{
+    "toast": {
+        "loadTemplatesFailed": "Échec du chargement des modèles",
+        "fileTooLarge": "{{fileName}} fait {{fileSize}}. WhatsApp autorise {{limit}} pour {{kindLabel}}.",
+        "uploadFailed": "Échec de l'envoi. Veuillez réessayer.",
+        "noPublicLink": "Impossible d'obtenir un lien public pour le fichier envoyé.",
+        "downgradedToDocument": "WhatsApp ne peut pas afficher {{fileType}} comme {{asLabel}}, il sera donc envoyé comme document.",
+        "voiceNotesUnavailable": "Les notes vocales nécessitent le service de notification mis à jour. La fonctionnalité est prête mais pas encore déployée.",
+        "unsupportedRecordingFormat": "Ce navigateur ne peut enregistrer qu'en WebM, que WhatsApp refuse. Essayez Chrome 126+, Safari ou Firefox.",
+        "micAccessDenied": "Impossible d'accéder au microphone. Vérifiez l'autorisation du navigateur.",
+        "attachmentsUnavailable": "Les pièces jointes nécessitent le service de notification mis à jour. La fonctionnalité est prête mais pas encore déployée.",
+        "messageNotSent": "Message non envoyé",
+        "notDeliveredNote": "Il est marqué comme non livré dans la conversation.",
+        "templateSent": "Modèle « {{name}} » envoyé",
+        "templateNotSent": "Le modèle « {{name}} » n'a pas été envoyé",
+        "providerRejectedNoReason": "Le fournisseur a refusé l'envoi sans donner de raison.",
+        "couldNotSendTemplate": "Impossible d'envoyer le modèle « {{name}} »",
+        "templateHeaderFileMissing": "Le modèle « {{name}} » a besoin d'un {{kind}} dans son en-tête, mais aucun n'est enregistré sur le modèle. Ouvrez WhatsApp Templates et téléversez d'abord le {{kind}}."
+    },
+    "mediaKindPlural": {
+        "document": "documents",
+        "image": "images",
+        "video": "vidéos",
+        "audio": "audios"
+    },
+    "mediaKindLabel": {
+        "document": "document",
+        "image": "image",
+        "video": "vidéo",
+        "audio": "audio"
+    },
+    "downgradeAsLabel": {
+        "image": "une photo",
+        "video": "une vidéo",
+        "audio": "un audio"
+    },
+    "thisFormat": "ce format",
+    "sentAsDocument": "envoyé comme document",
+    "audioNoCaption": "WhatsApp envoie l'audio sans légende",
+    "windowClosed": {
+        "title": "La fenêtre de réponse de 24 heures est fermée.",
+        "body": "WhatsApp refusera les messages simples et les pièces jointes tant qu'ils ne vous auront pas écrit à nouveau — envoyez un",
+        "linkText": "modèle",
+        "suffix": "approuvé à la place."
+    },
+    "templateLabel": "[Modèle : {{name}}]",
+    "templateShortLabel": "[Modèle] {{name}}",
+    "removeAttachment": "Supprimer la pièce jointe",
+    "recordingInProgress": "Enregistrement de la note vocale · {{duration}}",
+    "cancel": "Annuler",
+    "sendTemplateTooltip": "Envoyer un modèle (pour les messages hors fenêtre de 24 h)",
+    "sendTemplateHeader": "Envoyer un modèle (hors fenêtre de 24 h)",
+    "searchTemplatesPlaceholder": "Rechercher des modèles...",
+    "noApprovedTemplates": "Aucun modèle approuvé trouvé",
+    "captionPlaceholder": "Ajouter une légende...",
+    "messagePlaceholder": "Écrire un message...",
+    "attachTooltip": "Joindre une photo, une vidéo ou un document",
+    "attachmentsUnavailableTooltip": "Les pièces jointes nécessitent le service de notification mis à jour — pas encore déployé",
+    "stopRecordingTooltip": "Arrêter et joindre l'enregistrement",
+    "recordVoiceNoteTooltip": "Enregistrer une note vocale",
+    "templateDialog": {
+        "heading": "Envoyer le modèle",
+        "to": "À {{phone}}",
+        "valuesLabel": "Renseignez les valeurs",
+        "valueFallback": "Valeur {{n}}",
+        "valuePlaceholder": "ex. {{value}}",
+        "missingValues_one": "{{count}} valeur est encore vide",
+        "missingValues_other": "{{count}} valeurs sont encore vides",
+        "headerMissing": "Ce modèle a besoin d'un {{kind}} dans son en-tête, mais aucun n'est enregistré. Ouvrez WhatsApp Templates et téléversez d'abord le {{kind}}.",
+        "note": "C'est exactement le message que le contact recevra. Les modèles ne peuvent pas être modifiés à l'envoi.",
+        "emptyBody": "Ce modèle n'a pas de corps de message.",
+        "media": {
+            "image": "Image",
+            "video": "Vidéo",
+            "document": "Document"
+        },
+        "cancel": "Annuler",
+        "send": "Envoyer le modèle",
+        "sending": "Envoi…"
+    }
+}

@@ -1,0 +1,63 @@
+{
+    "form16": {
+        "employeeLabel": "Employé",
+        "employeePickerPlaceholder": "Choisir un employé",
+        "empty": {
+            "title": "Choisissez un employé",
+            "description": "Le formulaire 16 Partie B est délivré par employé pour l'exercice fiscal."
+        },
+        "errors": {
+            "loadFailed": "Impossible de générer le formulaire 16 pour cet employé.",
+            "downloadFailed": "Impossible de télécharger le formulaire 16."
+        },
+        "incompleteYearNotice": "L'exercice fiscal est incomplet — les chiffres annuels sont des projections jusqu'au traitement de la paie de mars.",
+        "stats": {
+            "grossSalary": "Salaire brut",
+            "totalExemptions": "Total des exonérations",
+            "taxableIncome": "Revenu imposable",
+            "tdsDeducted": "TDS déduit"
+        },
+        "card": {
+            "regime": "Régime",
+            "pan": "PAN",
+            "deductorTan": "TAN du déducteur",
+            "totalTaxLiability": "Impôt total dû"
+        },
+        "table": {
+            "month": "Mois",
+            "incomePaid": "Revenu versé",
+            "tds": "TDS"
+        },
+        "toast": {
+            "downloaded": "Formulaire 16 téléchargé"
+        },
+        "actions": {
+            "preparing": "Préparation…",
+            "downloadPdf": "Télécharger le PDF"
+        }
+    },
+    "form24q": {
+        "errors": {
+            "loadFailed": "Impossible de générer les données du formulaire 24Q."
+        },
+        "reconciliation": {
+            "mismatch": "Le TDS déduit ne correspond pas aux challans enregistrés",
+            "matched": "Le TDS déduit correspond aux challans enregistrés",
+            "deducted": "Déduit :",
+            "deposited": "Déposé :",
+            "mismatchHint": "Enregistrez le challan manquant dans le registre des challans, ou vérifiez si un dépôt a été effectué sur un autre trimestre."
+        },
+        "stats": {
+            "deductees": "Bénéficiaires",
+            "challans": "Challans",
+            "deductorTan": "TAN du déducteur"
+        },
+        "table": {
+            "employee": "Employé",
+            "pan": "PAN",
+            "month": "Mois",
+            "incomePaid": "Revenu versé",
+            "tds": "TDS"
+        }
+    }
+}

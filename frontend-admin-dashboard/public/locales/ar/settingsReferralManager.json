@@ -1,0 +1,141 @@
+{
+    "header": {
+        "title": "برامج الإحالة",
+        "subtitle": "إدارة عدة برامج إحالة بهياكل مكافآت مختلفة",
+        "createNewProgram": "إنشاء برنامج جديد"
+    },
+    "emptyState": {
+        "title": "لم يتم إنشاء أي برنامج إحالة",
+        "description": "أنشئ أول برنامج إحالة لديك لبدء تحفيز الإحالات"
+    },
+    "rewardTypeLabels": {
+        "percentageDiscount": "خصم بالنسبة المئوية",
+        "fixedDiscount": "خصم ثابت",
+        "bonusContent": "محتوى إضافي",
+        "freeDays": "أيام مجانية",
+        "pointsSystem": "نظام النقاط"
+    },
+    "programCard": {
+        "defaultBadge": "افتراضي",
+        "refereeBenefit": {
+            "title": "مزايا المُحال إليه",
+            "empty": "لم يتم تكوين أي مزايا للمُحال إليه",
+            "percentOff": "خصم {{value}}%",
+            "amountOff": "خصم ₹{{value}}",
+            "freeDays": "{{value}} أيام مجانية",
+            "points": "{{value}} نقطة",
+            "bonusContentFallback": "محتوى إضافي",
+            "templateLabel": "القالب: {{template}}"
+        },
+        "referrerTiers": {
+            "title": "مستويات المُحيل",
+            "empty": "لم يتم تكوين أي مستويات للمُحيل",
+            "referralCount_zero": "{{count}} إحالة",
+            "referralCount_one": "{{count}} إحالة",
+            "referralCount_two": "{{count}} إحالتان",
+            "referralCount_few": "{{count}} إحالات",
+            "referralCount_many": "{{count}} إحالة",
+            "referralCount_other": "{{count}} إحالة",
+            "pointsValue": "+{{value}} نقطة",
+            "percentUnit": "%",
+            "daysUnit": "ي",
+            "currencyUnit": "₹",
+            "moreTiers_zero": "+{{count}} مستوى إضافي",
+            "moreTiers_one": "+{{count}} مستوى إضافي",
+            "moreTiers_two": "+{{count}} مستويان إضافيان",
+            "moreTiers_few": "+{{count}} مستويات إضافية",
+            "moreTiers_many": "+{{count}} مستوى إضافيًا",
+            "moreTiers_other": "+{{count}} مستوى إضافيًا"
+        },
+        "settings": {
+            "title": "إعدادات البرنامج",
+            "vestingPeriod": "فترة الاستحقاق",
+            "days_zero": "{{count}} يوم",
+            "days_one": "{{count}} يوم",
+            "days_two": "{{count}} يومين",
+            "days_few": "{{count}} أيام",
+            "days_many": "{{count}} يومًا",
+            "days_other": "{{count}} يومًا",
+            "combineOffers": "دمج العروض",
+            "yes": "نعم",
+            "no": "لا"
+        },
+        "actions": {
+            "view": "عرض"
+        }
+    },
+    "modal": {
+        "subtitle": "تفاصيل البرنامج وإعداداته",
+        "defaultBadge": "افتراضي",
+        "editProgram": "تعديل البرنامج",
+        "close": "إغلاق",
+        "refereeBenefits": {
+            "title": "مزايا المُحال إليه (مرة واحدة)",
+            "percentUnit": "%",
+            "daysUnit": " أيام",
+            "pointsUnit": " نقطة",
+            "empty": "لم يتم تكوين أي مزايا للمُحال إليه لهذا البرنامج.",
+            "deliveryLabel": "التسليم:",
+            "emailBadge": "📧 البريد الإلكتروني",
+            "whatsappBadge": "💬 واتساب",
+            "contentDetails": {
+                "title": "تفاصيل المحتوى",
+                "contentType": "نوع المحتوى:",
+                "titleLabel": "العنوان:",
+                "template": "القالب:",
+                "templateValue": "القالب {{number}}",
+                "file": "الملف:",
+                "uploadedBadge": "✓ تم الرفع"
+            }
+        },
+        "referrerRewards": {
+            "title": "مكافآت المُحيل (على مستويات)",
+            "referralCount_zero": "{{count}} إحالة",
+            "referralCount_one": "{{count}} إحالة",
+            "referralCount_two": "{{count}} إحالتان",
+            "referralCount_few": "{{count}} إحالات",
+            "referralCount_many": "{{count}} إحالة",
+            "referralCount_other": "{{count}} إحالة",
+            "deliveryLabel": "التسليم:",
+            "emailBadge": "📧 البريد الإلكتروني",
+            "whatsappBadge": "💬 واتساب",
+            "pointsSystemDetails": {
+                "title": "تفاصيل نظام النقاط",
+                "perReferral": "لكل إحالة:",
+                "pointsEarnedValue": "+{{value}} نقطة",
+                "rewardAt": "المكافأة عند:",
+                "pointsValue": "{{value}} نقطة",
+                "referralsNeeded": "الإحالات المطلوبة:",
+                "reward": "المكافأة:",
+                "percentOff": "خصم {{value}}%",
+                "daysOff": "{{value}} أيام",
+                "amountOff": "خصم {{value}}₹"
+            },
+            "contentDetails": {
+                "title": "تفاصيل المحتوى",
+                "contentType": "نوع المحتوى:",
+                "titleLabel": "العنوان:",
+                "template": "القالب:",
+                "templateValue": "القالب {{number}}",
+                "file": "الملف:",
+                "uploadedBadge": "✓ تم الرفع"
+            }
+        },
+        "settings": {
+            "title": "إعدادات البرنامج",
+            "vestingPeriod": "فترة الاستحقاق",
+            "days_zero": "{{count}} يوم",
+            "days_one": "{{count}} يوم",
+            "days_two": "{{count}} يومين",
+            "days_few": "{{count}} أيام",
+            "days_many": "{{count}} يومًا",
+            "days_other": "{{count}} يومًا",
+            "combineWithOtherOffers": "الدمج مع عروض أخرى",
+            "yes": "نعم",
+            "no": "لا",
+            "programStatus": "حالة البرنامج",
+            "default": "افتراضي",
+            "available": "متاح"
+        }
+    }
+}

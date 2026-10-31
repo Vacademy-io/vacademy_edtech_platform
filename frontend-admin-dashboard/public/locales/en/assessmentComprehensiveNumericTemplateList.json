@@ -1,0 +1,29 @@
+{
+    "emptyState": {
+        "message": "Please add a question to show question details"
+    },
+    "header": {
+        "questionsSettings": "Questions Settings",
+        "questionTypeLabel": "Question Type",
+        "numericalTypeLabel": "Numerical Type"
+    },
+    "timeLimit": {
+        "title": "Time Limit",
+        "hrs": "hrs",
+        "min": "min"
+    },
+    "comprehensionText": "Comprehension Text",
+    "question": {
+        "label": "Question"
+    },
+    "answer": {
+        "label": "Answer:"
+    },
+    "explanation": {
+        "label": "Explanation:"
+    },
+    "editor": {
+        "showMore": "Show More",
+        "showLess": "Show Less"
+    }
+}

@@ -3,12 +3,13 @@ package vacademy.io.admin_core_service.features.hr_tax.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vacademy.io.admin_core_service.core.security.HrAccessGuard;
 import vacademy.io.admin_core_service.features.hr_employee.entity.EmployeeProfile;
-import vacademy.io.admin_core_service.features.hr_employee.repository.EmployeeProfileRepository;
 import vacademy.io.admin_core_service.features.hr_tax.dto.TaxDeclarationDTO;
 import vacademy.io.admin_core_service.features.hr_tax.entity.TaxDeclaration;
 import vacademy.io.admin_core_service.features.hr_tax.enums.DeclarationStatus;
 import vacademy.io.admin_core_service.features.hr_tax.repository.TaxDeclarationRepository;
+import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.time.LocalDateTime;
@@ -21,16 +22,18 @@ public class TaxDeclarationService {
     private TaxDeclarationRepository taxDeclarationRepository;
 
     @Autowired
-    private EmployeeProfileRepository employeeProfileRepository;
+    private HrAccessGuard hrAccessGuard;
 
+    /**
+     * The employee is the one already resolved and institute/self-checked by
+     * {@link HrAccessGuard#requireSelfOrHrStaff} in the controller — never
+     * re-fetched here from an unchecked dto id.
+     */
     @Transactional
-    public String submitDeclaration(TaxDeclarationDTO dto) {
-        EmployeeProfile employee = employeeProfileRepository.findById(dto.getEmployeeId())
-                .orElseThrow(() -> new VacademyException("Employee not found"));
-
+    public String submitDeclaration(TaxDeclarationDTO dto, EmployeeProfile employee) {
         // Check if a declaration already exists for this employee and FY
         Optional<TaxDeclaration> existingOpt = taxDeclarationRepository
-                .findByEmployee_IdAndFinancialYear(dto.getEmployeeId(), dto.getFinancialYear());
+                .findByEmployee_IdAndFinancialYear(employee.getId(), dto.getFinancialYear());
 
         if (existingOpt.isPresent()) {
             throw new VacademyException("Tax declaration already exists for this employee and financial year. Use update instead.");
@@ -50,9 +53,13 @@ public class TaxDeclarationService {
     }
 
     @Transactional
-    public String updateDeclaration(String id, TaxDeclarationDTO dto) {
+    public String updateDeclaration(String id, TaxDeclarationDTO dto, String instituteId, CustomUserDetails user) {
         TaxDeclaration declaration = taxDeclarationRepository.findById(id)
                 .orElseThrow(() -> new VacademyException("Tax declaration not found"));
+
+        // Owning employee is only known after the load: verify it belongs to the
+        // validated institute and the caller is HR staff or IS that employee.
+        hrAccessGuard.requireSelfOrHrStaff(user, instituteId, declaration.getEmployee().getId());
 
         // Only allow updates if status is DRAFT or SUBMITTED
         String status = declaration.getStatus();
@@ -84,9 +91,11 @@ public class TaxDeclarationService {
     }
 
     @Transactional
-    public String verifyDeclaration(String id, String verifierUserId) {
+    public String verifyDeclaration(String id, String instituteId, String verifierUserId) {
         TaxDeclaration declaration = taxDeclarationRepository.findById(id)
                 .orElseThrow(() -> new VacademyException("Tax declaration not found"));
+        hrAccessGuard.requireInstituteMatch(
+                declaration.getEmployee().getInstituteId(), instituteId, "Tax declaration");
 
         if (!DeclarationStatus.SUBMITTED.name().equals(declaration.getStatus())) {
             throw new VacademyException("Only SUBMITTED declarations can be verified. Current status: " + declaration.getStatus());

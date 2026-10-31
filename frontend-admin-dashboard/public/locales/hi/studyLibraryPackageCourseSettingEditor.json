@@ -1,0 +1,36 @@
+{
+    "advancedSettingsTitle": "एडवांस्ड सेटिंग्स (JSON)",
+    "actions": {
+        "format": "फ़ॉर्मैट करें",
+        "reset": "रीसेट करें",
+        "save": "सहेजें",
+        "saving": "सहेजा जा रहा है..."
+    },
+    "description": "ये सेटिंग्स इस कोर्स पर संग्रहीत होती हैं और वर्कफ़्लो (LMS कॉन्फ़िग, रिटेंशन, पूर्णता सीमा आदि) द्वारा पढ़ी जाती हैं। नीचे दिए गए रॉ JSON को संपादित करें — इसे <1>{ \"setting\": { ... } }</1> एनवेलप में ही रहना चाहिए।",
+    "insertTemplate": "टेम्पलेट डालें",
+    "loading": "लोड हो रहा है…",
+    "invalidJson": "अमान्य JSON: {{message}}",
+    "validJson": "मान्य JSON",
+    "saveSuccess": "कोर्स सेटिंग्स JSON सहेजी गई",
+    "errors": {
+        "loadFailed": "कोर्स सेटिंग्स लोड करने में विफल",
+        "invalidJson": "अमान्य JSON",
+        "formatFailed": "फ़ॉर्मैट नहीं हो सका — पहले JSON त्रुटि ठीक करें",
+        "saveFailed": "कोर्स सेटिंग्स सहेजने में विफल"
+    },
+    "confirmDialog": {
+        "title": "कोर्स सेटिंग्स JSON को अधिलेखित करें?",
+        "description": "यह इस कोर्स के वर्कफ़्लो (LMS, रिटेंशन, पूर्णता आदि) द्वारा उपयोग किए जाने वाले सेटिंग्स JSON को बदल देगा। सुनिश्चित करें कि कुंजियाँ सही हैं — यह तुरंत प्रभावी होगा।",
+        "cancel": "रद्द करें",
+        "confirm": "हां, सहेजें",
+        "saving": "सहेजा जा रहा है…"
+    },
+    "snippets": {
+        "moodleLabel": "Moodle (MOODLE_SETTING)",
+        "moodleName": "Moodle इंटीग्रेशन सेटिंग्स",
+        "learnDashLabel": "LearnDash (LMS_SETTING)",
+        "learnDashName": "LMS सेटिंग्स",
+        "courseSettingsLabel": "कोर्स सेटिंग्स (COURSE_SETTING)",
+        "courseSettingsName": "कोर्स सेटिंग्स"
+    }
+}

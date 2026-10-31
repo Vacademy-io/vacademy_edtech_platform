@@ -8,6 +8,7 @@ import { SelectedFilterRevaluateInterface } from '@/types/assessments/assessment
 import { useMutation } from '@tanstack/react-query';
 import { getRevaluateStudentResult } from '../../-services/assessment-details-services';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface ProvideDialogDialogProps {
     trigger: ReactNode;
@@ -16,6 +17,7 @@ interface ProvideDialogDialogProps {
 }
 
 const ProvideRevaluateAssessmentDialogContent = () => {
+    const { t } = useTranslation('assessmentProvideRevaluateDialog');
     const { selectedStudent, bulkActionInfo, isBulkAction, closeAllDialogs } =
         useSubmissionsBulkActionsDialogStoreAttempted();
 
@@ -43,13 +45,10 @@ const ProvideRevaluateAssessmentDialogContent = () => {
             selectedFilter: SelectedFilterRevaluateInterface;
         }) => getRevaluateStudentResult(assessmentId, instituteId, methodType, selectedFilter),
         onSuccess: () => {
-            toast.success(
-                'Your attempt for this assessment has been revaluated for the selected students. Please check your email!',
-                {
-                    className: 'success-toast',
-                    duration: 4000,
-                }
-            );
+            toast.success(t('toasts.revaluateSuccess'), {
+                className: 'success-toast',
+                duration: 4000,
+            });
             closeAllDialogs();
         },
         onError: (error: unknown) => {
@@ -86,8 +85,9 @@ const ProvideRevaluateAssessmentDialogContent = () => {
     return (
         <div className="flex flex-col gap-6 px-4 pb-2 text-neutral-600">
             <h1>
-                Are you sure you want to revaluate assessment for selected&nbsp;
-                <span className="text-primary-500">{displayText}</span>&nbsp;?
+                {t('dialog.confirmTextPrefix')}&nbsp;
+                <span className="text-primary-500">{displayText}</span>&nbsp;
+                {t('dialog.confirmSuffix')}
             </h1>
             <MyButton
                 buttonType="primary"
@@ -95,7 +95,7 @@ const ProvideRevaluateAssessmentDialogContent = () => {
                 layoutVariant="default"
                 onClick={handleSubmit}
             >
-                Done
+                {t('doneButton')}
             </MyButton>
         </div>
     );
@@ -106,11 +106,12 @@ export const ProvideRevaluateAssessmentDialog = ({
     open,
     onOpenChange,
 }: ProvideDialogDialogProps) => {
+    const { t } = useTranslation('assessmentProvideRevaluateDialog');
     return (
         <MyDialog
             trigger={trigger}
-            heading="Revaluate Assessment"
-            dialogWidth="w-[400px] max-w-[400px]"
+            heading={t('dialog.heading')}
+            dialogWidth="w-full max-w-sm"
             content={<ProvideRevaluateAssessmentDialogContent />}
             open={open}
             onOpenChange={onOpenChange}

@@ -8,13 +8,41 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Buildings, BookOpen, Envelope, Warning, UserCircle } from '@phosphor-icons/react';
+import { Button } from '@/components/ui/button';
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+    CommandSeparator,
+} from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+    Buildings,
+    BookOpen,
+    CaretUpDown,
+    Check,
+    CircleNotch,
+    Envelope,
+    Warning,
+    UserCircle,
+} from '@phosphor-icons/react';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
+import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import {
     PackageSessionSubOrg,
     SelectedPackageSession,
     SubOrgRoleChoice,
 } from '../../../../-types/bulk-assign-types';
-import { useSubOrgsForPackageSession } from '../../../../-hooks/useSubOrgsForPackageSession';
+import {
+    SUB_ORG_SEARCH_MIN_CHARS,
+    useSubOrgSearch,
+    useSubOrgsForPackageSession,
+} from '../../../../-hooks/useSubOrgsForPackageSession';
 import {
     getTerminology,
     getTerminologyPlural,
@@ -42,12 +70,10 @@ interface RowProps {
 
 /** Read-only contact card for the picked organisation's admins. */
 const AdminList = ({ subOrg }: { subOrg: PackageSessionSubOrg }) => {
+    const { t } = useTranslation('manageStudentsStep4SubOrg');
+
     if (!subOrg.admins?.length) {
-        return (
-            <p className="text-xs text-neutral-400">
-                This organisation has no admin on record yet.
-            </p>
-        );
+        return <p className="text-xs text-neutral-400">{t('adminList.noAdmins')}</p>;
     }
 
     return (
@@ -59,7 +85,7 @@ const AdminList = ({ subOrg }: { subOrg: PackageSessionSubOrg }) => {
                 >
                     <UserCircle size={14} weight="duotone" className="shrink-0 text-primary-500" />
                     <span className="font-medium text-neutral-700">
-                        {admin.name || 'Unnamed admin'}
+                        {admin.name || t('adminList.unnamedAdmin')}
                     </span>
                     {admin.email ? (
                         <span className="inline-flex items-center gap-1 text-neutral-500">
@@ -67,7 +93,7 @@ const AdminList = ({ subOrg }: { subOrg: PackageSessionSubOrg }) => {
                             {admin.email}
                         </span>
                     ) : (
-                        <span className="text-neutral-300">no email on record</span>
+                        <span className="text-neutral-300">{t('adminList.noEmailOnRecord')}</span>
                     )}
                     {admin.role && (
                         <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-caption font-medium text-neutral-600">
@@ -80,20 +106,176 @@ const AdminList = ({ subOrg }: { subOrg: PackageSessionSubOrg }) => {
     );
 };
 
+interface SubOrgPickerProps {
+    value: string;
+    selectedLabel: string | null;
+    batchSubOrgs: PackageSessionSubOrg[];
+    onPick: (value: string, picked?: PackageSessionSubOrg) => void;
+}
+
+/**
+ * Searchable organisation picker. With an empty search box it lists the organisations already
+ * in this batch. Typing filters that list and also searches every organisation in the
+ * institute, so one with no member in the batch yet (new, or used under another course) can
+ * still be picked.
+ */
+const SubOrgPicker = ({ value, selectedLabel, batchSubOrgs, onPick }: SubOrgPickerProps) => {
+    const { t } = useTranslation('manageStudentsStep4SubOrg');
+    const [open, setOpen] = useState(false);
+    const [searchInput, setSearchInput] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(searchInput.trim()), 300);
+        return () => clearTimeout(timer);
+    }, [searchInput]);
+
+    const instituteId = getCurrentInstituteId() ?? '';
+    const isSearching = debouncedSearch.length >= SUB_ORG_SEARCH_MIN_CHARS;
+    const { data: searchHits = [], isFetching: isSearchLoading } = useSubOrgSearch({
+        instituteId,
+        search: isSearching ? debouncedSearch : '',
+    });
+
+    const needle = searchInput.trim().toLowerCase();
+    const batchMatches = needle
+        ? batchSubOrgs.filter((s) => (s.name ?? '').toLowerCase().includes(needle))
+        : batchSubOrgs;
+    const batchIds = new Set(batchSubOrgs.map((s) => s.sub_org_id));
+    const otherMatches = searchHits.filter((s) => !batchIds.has(s.sub_org_id));
+
+    const pick = (next: string, picked?: PackageSessionSubOrg) => {
+        onPick(next, picked);
+        setOpen(false);
+        setSearchInput('');
+        setDebouncedSearch('');
+    };
+
+    const triggerLabel =
+        value === SKIP
+            ? t('picker.skipOption')
+            : value === CREATE_NEW
+              ? t('picker.createNewOption')
+              : value
+                ? selectedLabel || value
+                : '';
+
+    const renderItem = (subOrg: PackageSessionSubOrg) => (
+        <CommandItem
+            key={subOrg.sub_org_id}
+            value={subOrg.sub_org_id}
+            onSelect={() => pick(subOrg.sub_org_id, subOrg)}
+        >
+            <Check
+                className={cn(
+                    'mr-2 size-4 shrink-0',
+                    value === subOrg.sub_org_id ? 'opacity-100' : 'opacity-0'
+                )}
+            />
+            <span className="truncate">
+                {subOrg.name || subOrg.sub_org_id}
+                {subOrg.member_count
+                    ? t('picker.memberCount', { count: subOrg.member_count })
+                    : ''}
+            </span>
+        </CommandItem>
+    );
+
+    return (
+        <Popover
+            open={open}
+            onOpenChange={(next) => {
+                setOpen(next);
+                if (!next) {
+                    setSearchInput('');
+                    setDebouncedSearch('');
+                }
+            }}
+        >
+            <PopoverTrigger asChild>
+                <Button
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className="w-full justify-between font-normal"
+                >
+                    <span className={cn('truncate', !triggerLabel && 'text-neutral-400')}>
+                        {triggerLabel || t('picker.placeholder')}
+                    </span>
+                    <CaretUpDown className="ml-2 size-4 shrink-0 opacity-50" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent
+                className="z-popover-above-modal w-[--radix-popover-trigger-width] p-0"
+                align="start"
+            >
+                <Command shouldFilter={false}>
+                    <CommandInput
+                        placeholder={t('picker.searchPlaceholder')}
+                        value={searchInput}
+                        onValueChange={setSearchInput}
+                    />
+                    <CommandList>
+                        <CommandEmpty>{t('picker.noMatches')}</CommandEmpty>
+                        {batchMatches.length > 0 && (
+                            <CommandGroup heading={t('picker.inBatchHeading')}>
+                                {batchMatches.map(renderItem)}
+                            </CommandGroup>
+                        )}
+                        {isSearching && (isSearchLoading || otherMatches.length > 0) && (
+                            <CommandGroup heading={t('picker.otherOrgsHeading')}>
+                                {isSearchLoading ? (
+                                    <div className="flex items-center gap-2 px-2 py-1.5 text-xs text-neutral-400">
+                                        <CircleNotch className="size-3 animate-spin" />
+                                        {t('picker.searching')}
+                                    </div>
+                                ) : (
+                                    otherMatches.map(renderItem)
+                                )}
+                            </CommandGroup>
+                        )}
+                        {!isSearching && needle.length > 0 && (
+                            <p className="px-3 py-1.5 text-xs text-neutral-400">
+                                {t('picker.searchHint', { count: SUB_ORG_SEARCH_MIN_CHARS })}
+                            </p>
+                        )}
+                        <CommandSeparator />
+                        <CommandGroup>
+                            <CommandItem value={CREATE_NEW} onSelect={() => pick(CREATE_NEW)}>
+                                {t('picker.createNewOption')}
+                            </CommandItem>
+                            <CommandItem value={SKIP} onSelect={() => pick(SKIP)}>
+                                {t('picker.skipOption')}
+                            </CommandItem>
+                        </CommandGroup>
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    );
+};
+
 const SubOrgConfigRow = ({ ps, onUpdate }: RowProps) => {
+    const { t } = useTranslation('manageStudentsStep4SubOrg');
     const learnerTerm = getTerminology(RoleTerms.Learner, SystemTerms.Learner);
 
     const { data: subOrgs = [], isLoading } = useSubOrgsForPackageSession({
         packageSessionId: ps.packageSessionId,
     });
+    // An organisation picked from the institute-wide search is not in `subOrgs`; keep it so its
+    // admins still show below the picker.
+    const [searchedPick, setSearchedPick] = useState<PackageSessionSubOrg | null>(null);
 
     const isSkipped = !!ps.subOrgSkipped;
     const isCreatingNew = !isSkipped && !ps.subOrgId && !!ps.newSubOrg;
     const pickerValue = isSkipped ? SKIP : (ps.subOrgId ?? (isCreatingNew ? CREATE_NEW : ''));
-    const selectedSubOrg = subOrgs.find((s) => s.sub_org_id === ps.subOrgId);
+    const selectedSubOrg =
+        subOrgs.find((s) => s.sub_org_id === ps.subOrgId) ??
+        (searchedPick?.sub_org_id === ps.subOrgId ? searchedPick : undefined);
     const role: SubOrgRoleChoice = ps.subOrgRole ?? 'STAFF';
 
-    const handlePick = (value: string) => {
+    const handlePick = (value: string, picked?: PackageSessionSubOrg) => {
         if (value === SKIP) {
             onUpdate({
                 subOrgSkipped: true,
@@ -112,11 +294,12 @@ const SubOrgConfigRow = ({ ps, onUpdate }: RowProps) => {
             });
             return;
         }
-        const picked = subOrgs.find((s) => s.sub_org_id === value);
+        const match = picked ?? subOrgs.find((s) => s.sub_org_id === value);
+        setSearchedPick(match ?? null);
         onUpdate({
             subOrgSkipped: false,
             subOrgId: value,
-            subOrgName: picked?.name ?? null,
+            subOrgName: match?.name ?? null,
             newSubOrg: undefined,
         });
     };
@@ -133,58 +316,49 @@ const SubOrgConfigRow = ({ ps, onUpdate }: RowProps) => {
 
             <div className="flex flex-col gap-4">
                 <div>
-                    <Label className="mb-1 text-xs text-neutral-500">Sub-Organisation *</Label>
+                    <Label className="mb-1 text-xs text-neutral-500">{t('picker.label')}</Label>
                     {isLoading ? (
                         <Skeleton className="h-9 w-full" />
                     ) : (
-                        <Select value={pickerValue} onValueChange={handlePick}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select an organisation" />
-                            </SelectTrigger>
-                            <SelectContent className="z-popover-above-modal">
-                                {subOrgs.map((subOrg) => (
-                                    <SelectItem key={subOrg.sub_org_id} value={subOrg.sub_org_id}>
-                                        {subOrg.name || subOrg.sub_org_id}
-                                        {subOrg.member_count
-                                            ? ` · ${subOrg.member_count} member${subOrg.member_count === 1 ? '' : 's'}`
-                                            : ''}
-                                    </SelectItem>
-                                ))}
-                                <SelectItem value={CREATE_NEW}>
-                                    + Create new organisation
-                                </SelectItem>
-                                <SelectItem value={SKIP}>
-                                    Don’t link an organisation
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <SubOrgPicker
+                            value={pickerValue}
+                            selectedLabel={ps.subOrgName ?? selectedSubOrg?.name ?? null}
+                            batchSubOrgs={subOrgs}
+                            onPick={handlePick}
+                        />
                     )}
                     {!isLoading && subOrgs.length === 0 && (
                         <p className="mt-1 text-xs text-neutral-400">
-                            No organisation is enrolled in this batch yet — create the first one.
+                            {t('picker.emptyState')}
+                        </p>
+                    )}
+                    {selectedSubOrg && !subOrgs.some((s) => s.sub_org_id === ps.subOrgId) && (
+                        <p className="mt-1 text-xs text-amber-700">
+                            {t('picker.notInBatchNotice')}
                         </p>
                     )}
                 </div>
 
                 {isSkipped && (
                     <div className="rounded-md border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-xs text-neutral-600">
-                        Enrolled as an ordinary {learnerTerm.toLowerCase()} with no organisation
-                        link. Runs the standard enrollment automation, not the sub-org member one.
+                        {t('skippedNotice', { learnerTerm: learnerTerm.toLowerCase() })}
                     </div>
                 )}
 
                 {selectedSubOrg && (
                     <div className="rounded-md border border-neutral-100 bg-neutral-50 px-3 py-2.5">
                         <p className="mb-1.5 text-xs font-semibold text-neutral-600">
-                            Organisation admins
+                            {t('adminInfo.heading')}
                         </p>
                         <AdminList subOrg={selectedSubOrg} />
                         {selectedSubOrg.email && (
                             <p className="mt-2 text-caption text-neutral-400">
-                                Organisation contact: {selectedSubOrg.email}
-                                {selectedSubOrg.mobile_number
-                                    ? ` · ${selectedSubOrg.mobile_number}`
-                                    : ''}
+                                {t('adminInfo.contactLine', {
+                                    email: selectedSubOrg.email,
+                                    mobile: selectedSubOrg.mobile_number
+                                        ? ` · ${selectedSubOrg.mobile_number}`
+                                        : '',
+                                })}
                             </p>
                         )}
                     </div>
@@ -193,15 +367,15 @@ const SubOrgConfigRow = ({ ps, onUpdate }: RowProps) => {
                 {isCreatingNew && (
                     <div className="flex flex-col gap-3 rounded-md border border-primary-100 bg-primary-50/40 px-3 py-3">
                         <p className="text-xs font-semibold text-primary-700">
-                            New organisation details
+                            {t('newOrgForm.heading')}
                         </p>
                         <div>
                             <Label className="mb-1 text-xs text-neutral-500">
-                                Organisation Name *
+                                {t('newOrgForm.nameLabel')}
                             </Label>
                             <Input
                                 type="text"
-                                placeholder="e.g. Green Valley Clinic"
+                                placeholder={t('newOrgForm.namePlaceholder')}
                                 value={ps.newSubOrg?.name ?? ''}
                                 onChange={(e) =>
                                     onUpdate({
@@ -212,10 +386,12 @@ const SubOrgConfigRow = ({ ps, onUpdate }: RowProps) => {
                         </div>
                         <div className="flex flex-col gap-3 sm:flex-row">
                             <div className="flex-1">
-                                <Label className="mb-1 text-xs text-neutral-500">Email</Label>
+                                <Label className="mb-1 text-xs text-neutral-500">
+                                    {t('newOrgForm.emailLabel')}
+                                </Label>
                                 <Input
                                     type="email"
-                                    placeholder="contact@organisation.com"
+                                    placeholder={t('newOrgForm.emailPlaceholder')}
                                     value={ps.newSubOrg?.email ?? ''}
                                     onChange={(e) =>
                                         onUpdate({
@@ -229,10 +405,12 @@ const SubOrgConfigRow = ({ ps, onUpdate }: RowProps) => {
                                 />
                             </div>
                             <div className="flex-1">
-                                <Label className="mb-1 text-xs text-neutral-500">Phone</Label>
+                                <Label className="mb-1 text-xs text-neutral-500">
+                                    {t('newOrgForm.phoneLabel')}
+                                </Label>
                                 <Input
                                     type="tel"
-                                    placeholder="Contact number"
+                                    placeholder={t('newOrgForm.phonePlaceholder')}
                                     value={ps.newSubOrg?.mobileNumber ?? ''}
                                     onChange={(e) =>
                                         onUpdate({
@@ -251,7 +429,7 @@ const SubOrgConfigRow = ({ ps, onUpdate }: RowProps) => {
 
                 <div className={isSkipped ? 'hidden' : undefined}>
                     <Label className="mb-1 text-xs text-neutral-500">
-                        Role inside the organisation
+                        {t('role.label')}
                     </Label>
                     <Select
                         value={role}
@@ -261,17 +439,23 @@ const SubOrgConfigRow = ({ ps, onUpdate }: RowProps) => {
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent className="z-popover-above-modal">
-                            <SelectItem value="STAFF">Staff — {learnerTerm} (default)</SelectItem>
-                            <SelectItem value="ADMIN">Admin + {learnerTerm}</SelectItem>
-                            <SelectItem value="ADMIN_ONLY">Admin only</SelectItem>
+                            <SelectItem value="STAFF">
+                                {t('role.staffOption', { learnerTerm })}
+                            </SelectItem>
+                            <SelectItem value="ADMIN">
+                                {t('role.adminOption', { learnerTerm })}
+                            </SelectItem>
+                            <SelectItem value="ADMIN_ONLY">
+                                {t('role.adminOnlyOption')}
+                            </SelectItem>
                         </SelectContent>
                     </Select>
                     <p className="mt-1 text-xs text-neutral-400">
                         {role === 'ADMIN_ONLY'
-                            ? 'Manages the organisation’s roster without course access. Member-enrollment automations do not run for admin-only members.'
+                            ? t('role.adminOnlyDescription')
                             : role === 'ADMIN'
-                              ? 'Gets course access AND manages the organisation’s roster — they will show as an organisation admin.'
-                              : 'Course access only. No admin rights over the organisation.'}
+                              ? t('role.adminDescription')
+                              : t('role.staffDescription')}
                     </p>
                 </div>
             </div>
@@ -292,6 +476,7 @@ export const Step4SubOrg = ({
     selectedPackageSessions,
     onSelectedPackageSessionsChange,
 }: Props) => {
+    const { t } = useTranslation('manageStudentsStep4SubOrg');
     const learnersTerm = getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner);
     const batchTerm = getTerminology(ContentTerms.Batch, SystemTerms.Batch);
 
@@ -310,7 +495,7 @@ export const Step4SubOrg = ({
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
                 <Buildings size={36} weight="duotone" className="text-neutral-300" />
                 <p className="text-sm font-medium text-neutral-500">
-                    No organisation-linked {batchTerm.toLowerCase()} selected
+                    {t('emptyState.heading', { batchTerm: batchTerm.toLowerCase() })}
                 </p>
             </div>
         );
@@ -321,12 +506,11 @@ export const Step4SubOrg = ({
             <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-xs text-amber-800">
                 <Warning size={15} weight="fill" className="mt-0.5 shrink-0" />
                 <span>
-                    {orgAssociated.length === 1
-                        ? 'This batch is sold to organisations'
-                        : 'These batches are sold to organisations'}
-                    . Pick the organisation each selected {learnersTerm.toLowerCase().replace(/s$/, '')} joins
-                    and the role they hold inside it. The same choice applies to every{' '}
-                    {learnersTerm.toLowerCase()} in this run.
+                    {t('warningBanner.message', {
+                        count: orgAssociated.length,
+                        learnerSingular: learnersTerm.toLowerCase().replace(/s$/, ''),
+                        learnerPlural: learnersTerm.toLowerCase(),
+                    })}
                 </span>
             </div>
 

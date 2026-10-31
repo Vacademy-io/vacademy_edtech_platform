@@ -3,21 +3,29 @@ package vacademy.io.admin_core_service.features.engagement.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import vacademy.io.admin_core_service.features.credits.client.AuthorizeResult;
 import vacademy.io.admin_core_service.features.credits.client.CreditClient;
+import vacademy.io.admin_core_service.features.credits.client.MeteringFields;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementAction;
 import vacademy.io.admin_core_service.features.engagement.entity.EngagementEngine;
+import vacademy.io.admin_core_service.features.engagement.entity.EngagementMember;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementActionRepository;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementEngineRepository;
+import vacademy.io.admin_core_service.features.engagement.repository.EngagementMemberRepository;
 import vacademy.io.common.exceptions.VacademyException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Phase 2 — the autonomous dispatcher. The decision service creates a {@code kind=SEND} action when
@@ -27,7 +35,8 @@ import java.util.List;
  *
  * Order per send (all guards fail SAFE — a doubtful send becomes a copilot task, never a wrong send):
  *   1. re-check engine liveness + kill switch + channel `auto` intent → demote to TASK if revoked
- *   2. affordability (real balance, fail-CLOSED) → demote to TASK if unaffordable/unreachable
+ *   2. affordability (real balance, fail-CLOSED) → demote to TASK if unaffordable; an unreadable
+ *      balance holds the send and retries (demoted only when it is about to expire)
  *   3. claimForDispatch CAS (send-once) → dispatchClaimed → SENT/FAILED
  *   4. on SENT: charge one credit (idempotency = action id) and stamp billed
  * A separate reconciliation pass re-charges any SENT send whose deduct HTTP call was lost.
@@ -39,15 +48,45 @@ public class EngagementDispatchJob {
 
     private static final String ACTOR = "ENGAGEMENT_ENGINE";
     private static final String CREDIT_REQUEST_TYPE = "engagement_message";
+    /** ai_use_case_catalog key the usage-limit gate is asked about. */
+    static final String USE_CASE = "engagement_message";
+    /**
+     * A send an AI usage limit refused is moved this far out (or to the limit's reset, if
+     * sooner) rather than retried every tick: left due, it would be re-selected each cycle
+     * and, the scan being global and oldest-first, crowd out other institutes' sends. The
+     * 72 h expiry still applies.
+     */
+    static final Duration LIMIT_RETRY_DELAY = Duration.ofMinutes(30);
+    /** A send held because the credit balance could not be read is tried again this much later... */
+    static final Duration UNKNOWN_BALANCE_RETRY_DELAY = Duration.ofMinutes(10);
+    /** ...unless it expires within this window: then it goes to the inbox rather than lapse unseen. */
+    static final Duration UNKNOWN_BALANCE_GIVE_UP = Duration.ofHours(2);
 
     private final EngagementActionRepository actionRepository;
     private final EngagementEngineRepository engineRepository;
+    private final EngagementMemberRepository memberRepository;
+    private final PolicyGate policyGate;
     private final EngagementDispatcher dispatcher;
     private final CreditClient creditClient;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    /** B5: do-not-automate and the counsellor hold, re-checked at send time; optional in unit tests. */
+    @Autowired(required = false)
+    private EngagementCoordinationService coordination;
+
+    /** B6: approved CRM actions that waited for their time (an AI call back); optional in unit tests. */
+    @Autowired(required = false)
+    private EngagementCrmActionService crmActions;
+
     @Value("${engagement.dispatch.batch:100}")
     private int batch;
+
+    /** Approvals on a channel before the engine sends on it by itself (the engine's own first_n wins). */
+    @Value("${engagement.autonomy.first-n:5}")
+    private int defaultFirstN;
+
+    @Value("${engagement.task.expire-hours:72}")
+    private int taskExpireHours;
 
     @Value("${engagement.credits.per-message:1.0}")
     private BigDecimal perMessageCredits;
@@ -62,6 +101,11 @@ public class EngagementDispatchJob {
     @SchedulerLock(name = "EngagementAutoDispatch", lockAtMostFor = "PT15M", lockAtLeastFor = "PT10S")
     public void dispatch() {
         Instant now = Instant.now();
+        try {
+            promoteGraduatedTasks(now);
+        } catch (Exception e) {
+            log.error("Promoting graduated tasks failed: {}", e.getMessage());
+        }
         List<EngagementAction> due = actionRepository.findDueAutoSends(now, batch);
         int sent = 0;
         for (EngagementAction action : due) {
@@ -77,6 +121,43 @@ public class EngagementDispatchJob {
         }
     }
 
+    /**
+     * Graduation applies to the drafts already in the inbox, not only to future ones: once a person
+     * has approved first_n sends on a channel the admin set to auto, the rest of that channel's waiting
+     * drafts go out on the next run (20 drafts, 5 approved: the other 15 send). A killed engine, a
+     * channel not set to auto, or one still on trial promotes nothing. The send-time checks in
+     * {@link #dispatchOne} still apply to each promoted draft.
+     */
+    int promoteGraduatedTasks(Instant now) {
+        int promoted = 0;
+        for (EngagementEngine engine : engineRepository.findByStatus("ACTIVE")) {
+            if (Boolean.TRUE.equals(engine.getAutoSendKilled())) continue;
+            int threshold = engine.getFirstN() != null ? engine.getFirstN() : defaultFirstN;
+            JsonNode channels;
+            try {
+                channels = objectMapper.readTree(engine.getChannels());
+            } catch (Exception e) {
+                continue;
+            }
+            for (String channel : List.of("WHATSAPP", "EMAIL", "IN_APP")) {
+                JsonNode cfg = channels.path(channel);
+                if (!cfg.path("enabled").asBoolean(false) || !cfg.path("auto").asBoolean(false)) continue;
+                boolean graduated = threshold <= 0
+                        || actionRepository.countApprovedSendsForChannel(engine.getId(), channel) >= threshold;
+                if (!graduated) continue;
+                boolean emailNeedsTemplate = "EMAIL".equals(channel) && crmActions != null
+                        && crmActions.emailTemplateMode(engine);
+                int n = actionRepository.promoteTasksToAutoSends(engine.getId(), channel, emailNeedsTemplate,
+                        now, now.plus(Duration.ofHours(taskExpireHours)));
+                if (n > 0) {
+                    log.info("Engine {}: {} waiting {} draft(s) became auto-sends (graduated)", engine.getId(), n, channel);
+                    promoted += n;
+                }
+            }
+        }
+        return promoted;
+    }
+
     private boolean dispatchOne(EngagementAction action, Instant now) {
         String instituteId = action.getInstituteId();
         EngagementEngine engine = engineRepository.findById(action.getEngineId()).orElse(null);
@@ -90,10 +171,63 @@ public class EngagementDispatchJob {
         if (!"ACTIVE".equals(engine.getStatus())) {
             return false; // paused/archived/dry-run — leave OPEN; reaper expires if it goes stale
         }
+        // The person, re-checked at send time and before autonomy: a SEND is scheduled up to
+        // a week ahead, so they may have opted out or left the audience since the decision. Withdrawn,
+        // not demoted — a copilot task would invite a human to message someone who said no.
+        EngagementMember member = memberRepository.findById(action.getMemberId()).orElse(null);
+        String notSendable = notSendableReason(member, action);
+        if (notSendable != null) {
+            log.warn("Auto-send withdrawn for action {} (engine {}, source {}, member status {}): {}",
+                    action.getId(), action.getEngineId(), action.getSource(),
+                    member == null ? "missing" : member.getStatus(), notSendable);
+            actionRepository.withdrawDueSend(action.getId(), notSendable, now);
+            return false;
+        }
+        // S10: the holdout group gets no automated action of any type. Nothing should be queued for
+        // them; this is the backstop if something ever is.
+        if (Boolean.TRUE.equals(member.getIsHoldout())) {
+            actionRepository.withdrawDueSend(action.getId(), "Not sent: this person is in the holdout group.", now);
+            return false;
+        }
+        if (member.getUserId() != null
+                && policyGate.optedOutUserIds(instituteId, List.of(member.getUserId())).contains(member.getUserId())) {
+            actionRepository.withdrawDueSend(action.getId(), "Not sent: this person opted out after the decision.", now);
+            return false;
+        }
+        String leadGone = leadNotSendableReason(PolicyGate.effectiveLeadBlock(
+                policyGate.leadBlock(instituteId, member.getAudienceResponseId()), engine, member), action);
+        if (leadGone != null) {
+            actionRepository.withdrawDueSend(action.getId(), leadGone, now);
+            return false;
+        }
+        // B6: an approved AI call that waited for the time the lead asked for (C-1). A person
+        // approved it, so channel autonomy does not apply; consent above does, and the action re-checks
+        // its own rules (a "don't call" since, the weekly limit) before the call is queued.
+        if (EngagementActionTypes.isCrmAction(action.getActionType())) {
+            return crmActions != null && crmActions.runScheduled(action, now);
+        }
         if (Boolean.TRUE.equals(engine.getAutoSendKilled())
                 || !channelAutoEnabled(engine, action.getChannel())) {
             actionRepository.demoteSendToTask(action.getId(),
                     "Autonomy off for this channel — sent to the inbox for review.", now);
+            return false;
+        }
+        // B5: flagged do-not-automate, or a counsellor got in touch, after this was decided. To the
+        // inbox, not withdrawn: the draft may still be right, a person decides. An AI-call promise
+        // goes as promised.
+        String hold = coordination != null && !EngagementAction.SOURCE_AI_CALL.equals(action.getSource())
+                ? coordination.sendHold(member, now) : null;
+        if (hold != null) {
+            actionRepository.demoteSendToTask(action.getId(),
+                    "Held for the counsellor: " + EngagementCoordinationService.explain(hold) + ".", now);
+            return false;
+        }
+
+        // 1b. The clock: an engine resumed at night (or on a day it doesn't send) must not fire its
+        // past-due SENDs then. Not the send window: the decision already placed the send in it.
+        Instant allowedAt = policyGate.scheduleSend(engine, now, PolicyGate.SendTiming.ANYTIME);
+        if (allowedAt.isAfter(now)) {
+            actionRepository.rescheduleDueSend(action.getId(), allowedAt, now);
             return false;
         }
 
@@ -109,22 +243,54 @@ public class EngagementDispatchJob {
             return false;
         }
 
-        // 2b. Affordability — fail CLOSED (hasActiveCredits returns false when the balance can't be
-        // read), so an unreachable credits service never lets an autonomous send slip through unpriced.
-        boolean affordable;
+        // 2b. Affordability — fail CLOSED, so an unreachable credits service never lets an autonomous
+        // send slip through unpriced. But "couldn't read the balance" (an ai_service deploy, a 401/5xx
+        // blip) is not "out of credits": demoting would turn a minute-long blip into a send nobody
+        // makes, and an AI-call promise only lives 24 h. So an unknown balance holds the send and
+        // tries again shortly; only one about to expire goes to the inbox, labelled honestly.
+        Optional<Double> balance;
         try {
-            affordable = creditClient.hasActiveCredits(instituteId);
+            balance = creditClient.readBalance(instituteId);
         } catch (Exception e) {
-            affordable = false;
+            balance = Optional.empty();
         }
-        if (!affordable) {
+        if (balance.isEmpty()) {
+            if (action.getExpiresAt() != null
+                    && action.getExpiresAt().isBefore(now.plus(UNKNOWN_BALANCE_GIVE_UP))) {
+                actionRepository.demoteSendToTask(action.getId(),
+                        "Couldn't check the credit balance — sent to the inbox so you can send it manually.", now);
+            } else {
+                log.info("Auto-send for action {} held: credit balance for institute {} could not be read",
+                        action.getId(), instituteId);
+                actionRepository.rescheduleDueSend(action.getId(), now.plus(UNKNOWN_BALANCE_RETRY_DELAY), now);
+            }
+            return false;
+        }
+        if (balance.get() <= 0.0) {
             actionRepository.demoteSendToTask(action.getId(),
                     "Out of credits — sent to the inbox so you can top up or send manually.", now);
             return false;
         }
 
+        // 2c. AI usage limits (institute policy in ENFORCE): skip this cycle, try again later.
+        // No limits on for the institute = no call at all; any gate failure = allowed.
+        AuthorizeResult limit = authorizeSend(instituteId, action);
+        if (AuthorizeResult.blocks(limit)) {
+            Instant retryAt = now.plus(LIMIT_RETRY_DELAY);
+            Instant resetsAt = limit.resetsAt();
+            if (resetsAt != null && resetsAt.isAfter(now) && resetsAt.isBefore(retryAt)) {
+                retryAt = resetsAt;
+            }
+            log.info("Auto-send for action {} skipped: AI usage limit reached for institute {}; retry at {}",
+                    action.getId(), instituteId, retryAt);
+            actionRepository.rescheduleDueSend(action.getId(), retryAt, now);
+            return false;
+        }
+
         // 3. Send-once claim, then dispatch.
-        if (actionRepository.claimForDispatch(action.getId(), instituteId, now) != 1) {
+        // Stamped with the claim time, not the batch start: in a slow batch the batch start is already
+        // past the reaper's staleness cut-off, and it flipped rows to FAILED while they were sending.
+        if (actionRepository.claimForDispatch(action.getId(), instituteId, Instant.now()) != 1) {
             return false; // another replica grabbed it
         }
         EngagementAction claimed = actionRepository.findById(action.getId()).orElse(action);
@@ -150,10 +316,63 @@ public class EngagementDispatchJob {
 
         // 4. Charge only an actually-SENT message (a FAILED send is never charged).
         if ("SENT".equals(result.getStatus())) {
-            charge(instituteId, action, now);
+            // An AI call is billed by AI calling when it is placed, so the engine adds no charge.
+            if (!"AI_CALL".equals(action.getChannel())) charge(instituteId, action, now);
             return true;
         }
         return false;
+    }
+
+    /**
+     * Why this person must not get this send now, or null when they may.
+     *
+     * <p>An allow-list, so a status added later fails safe: ACTIVE members, plus PAUSED ones on
+     * an AI-call row. The AI-call system engine keeps every member PAUSED on purpose — that is
+     * what keeps its leads out of the LLM sweep (see AiCallEngagementProvisioner) — and the
+     * caller asked for this send on the call. Requiring ACTIVE here withdrew every AI-call
+     * promise from 2026-09-29. Opt-outs still stop it: OPTED_OUT/EXITED here, and the consent
+     * store check right after.
+     */
+    static String notSendableReason(EngagementMember member, EngagementAction action) {
+        if (member == null) {
+            return "Not sent: this person is no longer in the engine.";
+        }
+        String status = member.getStatus();
+        if ("ACTIVE".equals(status)) {
+            return null;
+        }
+        if ("PAUSED".equals(status) && EngagementAction.SOURCE_AI_CALL.equals(action.getSource())) {
+            return null;
+        }
+        return switch (status == null ? "" : status) {
+            case "OPTED_OUT" -> "Not sent: this person opted out.";
+            case "EXITED" -> "Not sent: this person left the engine's audience.";
+            case "PAUSED" -> "Not sent: this person is paused in the engine.";
+            default -> "Not sent: this person is no longer active in the engine (" + status + ").";
+        };
+    }
+
+    /**
+     * The lead row, re-checked at send time (F2 / L3): the consent store is keyed by user_id, so
+     * without this an unconverted lead who opted out in the CRM was still sent to. An AI-call
+     * promise is withdrawn only on an opt-out: the person asked for it on the call, and a lead
+     * row the admin tidied away (or marked Converted) since is no reason to break that promise.
+     */
+    static String leadNotSendableReason(PolicyGate.LeadBlock block, EngagementAction action) {
+        if (block == PolicyGate.LeadBlock.OPTED_OUT) {
+            return "Not sent: this lead opted out in the CRM after the decision.";
+        }
+        boolean promise = EngagementAction.SOURCE_AI_CALL.equals(action.getSource());
+        if (block == PolicyGate.LeadBlock.EXITED && !promise) {
+            return "Not sent: this lead was removed from the CRM after the decision.";
+        }
+        if (block == PolicyGate.LeadBlock.CONVERTED && !promise) {
+            return "Not sent: this lead was marked Converted in the CRM after the decision.";
+        }
+        if (block == PolicyGate.LeadBlock.LOST && !promise) {
+            return "Not sent: this lead was marked Lost or Not interested in the CRM after the decision.";
+        }
+        return null;
     }
 
     /** Charge one credit for a sent message; stamp billed on success. Idempotency key = action id. */
@@ -162,7 +381,7 @@ public class EngagementDispatchJob {
             boolean ok = creditClient.deductPrecomputed(
                     instituteId, CREDIT_REQUEST_TYPE,
                     "Engagement Engine autonomous " + action.getChannel() + " send",
-                    perMessageCredits, action.getId());
+                    perMessageCredits, action.getId(), sendMetering(action));
             if (ok) {
                 actionRepository.markBilled(action.getId(), now);
             } else {
@@ -183,7 +402,7 @@ public class EngagementDispatchJob {
             try {
                 if (creditClient.deductPrecomputed(a.getInstituteId(), CREDIT_REQUEST_TYPE,
                         "Engagement Engine autonomous " + a.getChannel() + " send (reconciled)",
-                        perMessageCredits, a.getId())) {
+                        perMessageCredits, a.getId(), sendMetering(a))) {
                     actionRepository.markBilled(a.getId(), now);
                     fixed++;
                 }
@@ -194,10 +413,32 @@ public class EngagementDispatchJob {
         return fixed;
     }
 
+    /** The limit gate for one send. Never throws. */
+    private AuthorizeResult authorizeSend(String instituteId, EngagementAction action) {
+        try {
+            return creditClient.authorize(instituteId, USE_CASE, CREDIT_REQUEST_TYPE, sendMetering(action),
+                    null, perMessageCredits, false);
+        } catch (Exception e) {
+            return AuthorizeResult.ALLOW_NONE;
+        }
+    }
+
+    /** Usage-metering fields for one autonomous send: a system job, with the action in the context. */
+    static MeteringFields sendMetering(EngagementAction action) {
+        java.util.Map<String, Object> context = new java.util.HashMap<>();
+        if (action.getId() != null) context.put("action_id", action.getId());
+        if (action.getEngineId() != null) context.put("engine_id", action.getEngineId());
+        if (action.getMemberId() != null) context.put("member_id", action.getMemberId());
+        if (action.getChannel() != null) context.put("channel", action.getChannel());
+        return MeteringFields.system("engagement_message").usageContext(context).build();
+    }
+
     private boolean channelAutoEnabled(EngagementEngine engine, String channel) {
         if (channel == null) return false;
         try {
-            return objectMapper.readTree(engine.getChannels()).path(channel).path("auto").asBoolean(false);
+            // Enabled AND auto: an "auto" flag left on a channel that was later switched off must not send.
+            com.fasterxml.jackson.databind.JsonNode ch = objectMapper.readTree(engine.getChannels()).path(channel);
+            return ch.path("enabled").asBoolean(false) && ch.path("auto").asBoolean(false);
         } catch (Exception e) {
             return false;
         }

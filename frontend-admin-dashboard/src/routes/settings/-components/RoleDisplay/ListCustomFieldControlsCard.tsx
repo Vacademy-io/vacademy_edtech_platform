@@ -5,11 +5,23 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { useCustomFieldSetup } from '@/routes/audience-manager/list/-hooks/useCustomFieldSetup';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import type {
     ListCustomFieldControls,
     ListCustomFieldSurface,
     ListCustomFieldSurfaceControls,
+    ListUtmFilterControls,
+    ListUtmFilterDimension,
+    ListBuiltInFilter,
+    ListBuiltInFilterControls,
 } from '@/types/display-settings';
+import { useUtmBuilderEnabled } from '@/hooks/use-utm-builder-enabled';
+import { Link } from '@tanstack/react-router';
+import { Funnel, Megaphone } from '@phosphor-icons/react';
+import { UTM_FILTER_DIMENSIONS, CORE_UTM_FILTER_DIMENSIONS } from '@/services/utm-list-filters';
+import { LIST_BUILT_IN_FILTERS } from '@/types/display-settings';
+import { useLeadTerminology } from '@/hooks/use-lead-terminology';
 
 interface ListCustomFieldControlsCardProps {
     /** The unified per-surface controls from the display-settings blob. */
@@ -27,12 +39,24 @@ interface ListCustomFieldControlsCardProps {
     /** Suppress the card's own title/description when a host (e.g. the
      *  "Manage filters" dialog) already provides a heading. */
     hideHeading?: boolean;
+    /** Campaign (UTM) filter controls for the same surfaces. Optional so the
+     *  card keeps working for hosts that only edit custom fields; when both
+     *  props are given a "Campaign (UTM) filters" section renders above the
+     *  custom-field rows of the selected surface. */
+    utmValue?: ListUtmFilterControls | undefined;
+    onUtmChange?: (next: ListUtmFilterControls) => void;
+    /** The surface's built-in filters (counsellor / campaign type / audience).
+     *  Optional for the same reason as the UTM pair above. */
+    builtInValue?: ListBuiltInFilterControls | undefined;
+    onBuiltInChange?: (next: ListBuiltInFilterControls) => void;
 }
 
-const SURFACES: Array<{ id: ListCustomFieldSurface; label: string; pages: string }> = [
-    { id: 'LEADS', label: 'Leads', pages: 'Lead List + Recent Leads' },
-    { id: 'CONTACTS', label: 'All Contacts', pages: 'Manage Students → All Contacts' },
-    { id: 'STUDENTS', label: 'Students', pages: 'Manage Students → Student List' },
+const buildSurfaces = (
+    t: TFunction
+): Array<{ id: ListCustomFieldSurface; label: string; pages: string }> => [
+    { id: 'LEADS', label: t('surfaces.leads.label'), pages: t('surfaces.leads.pages') },
+    { id: 'CONTACTS', label: t('surfaces.contacts.label'), pages: t('surfaces.contacts.pages') },
+    { id: 'STUDENTS', label: t('surfaces.students.label'), pages: t('surfaces.students.pages') },
 ];
 
 /**
@@ -52,10 +76,19 @@ export const ListCustomFieldControlsCard = ({
     onChange,
     initialSurface,
     hideHeading = false,
+    utmValue,
+    onUtmChange,
+    builtInValue,
+    onBuiltInChange,
 }: ListCustomFieldControlsCardProps) => {
+    const { t } = useTranslation('settingsListCustomFieldControlsCard');
+    const { t: tUtm } = useTranslation('utmListFilters');
+    const utm = useUtmBuilderEnabled();
+    const terminology = useLeadTerminology();
     const instituteId = getCurrentInstituteId();
     const { data: fields, isLoading } = useCustomFieldSetup(instituteId ?? undefined);
     const [surface, setSurface] = useState<ListCustomFieldSurface>(initialSurface ?? 'LEADS');
+    const surfaces = useMemo(() => buildSurfaces(t), [t]);
 
     const sortedFields = useMemo(
         () => [...(fields ?? [])].sort((a, b) => (a.form_order ?? 0) - (b.form_order ?? 0)),
@@ -100,19 +133,61 @@ export const ListCustomFieldControlsCard = ({
         });
     };
 
-    const surfaceMeta = SURFACES.find((s) => s.id === surface);
+    const surfaceMeta = surfaces.find((s) => s.id === surface);
+
+    // ── Campaign (UTM) filters for this surface ────────────────────────
+    // Absent entry = follow the institute UTM setting; absent dimensions =
+    // automatic (core three + whatever the data holds). The switches below
+    // show the EFFECTIVE state so an unsaved surface reads truthfully.
+    const utmSurface = utmValue?.[surface];
+    const utmEnabledEffective = utm.enabled && utmSurface?.enabled !== false;
+    const utmDimensionsEffective: ListUtmFilterDimension[] = utmSurface?.dimensions ?? [
+        ...UTM_FILTER_DIMENSIONS,
+    ];
+    const utmDimensionLabel = (d: ListUtmFilterDimension) =>
+        tUtm(`dimensions.${d === 'source_type' ? 'sourceType' : d}`);
+    const setUtmSurface = (patch: Partial<NonNullable<typeof utmSurface>>) => {
+        if (!onUtmChange) return;
+        onUtmChange({
+            ...(utmValue ?? {}),
+            [surface]: { ...(utmSurface ?? {}), ...patch },
+        });
+    };
+    const toggleUtmDimension = (d: ListUtmFilterDimension, on: boolean) => {
+        const next = new Set(utmDimensionsEffective);
+        if (on) next.add(d);
+        else next.delete(d);
+        // Keep the canonical order so the bar renders dimensions consistently.
+        setUtmSurface({ dimensions: UTM_FILTER_DIMENSIONS.filter((x) => next.has(x)) });
+    };
+
+    // ── Built-in filters for this surface ─────────────────────────────
+    // Named from Lead Settings, so an institute that calls the campaign type
+    // "Source" sees "Source" here and on the filter bar alike.
+    const builtInHidden = builtInValue?.[surface]?.hidden ?? [];
+    const builtInLabel = (f: ListBuiltInFilter) =>
+        f === 'campaignType'
+            ? terminology.campaignType
+            : f === 'audience'
+              ? terminology.leadSource
+              : t('builtIn.counsellor');
+    const toggleBuiltIn = (f: ListBuiltInFilter, on: boolean) => {
+        if (!onBuiltInChange) return;
+        const next = new Set(builtInHidden);
+        if (on) next.delete(f);
+        else next.add(f);
+        onBuiltInChange({
+            ...(builtInValue ?? {}),
+            [surface]: { hidden: LIST_BUILT_IN_FILTERS.filter((x) => next.has(x)) },
+        });
+    };
 
     return (
         <Card>
             {!hideHeading && (
                 <CardHeader>
-                    <CardTitle>List Filters &amp; Sorting — Custom Fields</CardTitle>
-                    <CardDescription>
-                        Choose which custom fields appear as filters on each list page (applies to
-                        everyone). Each enabled field adds a searchable multi-select to that
-                        page&apos;s filter bar; turning it off hides the filter and stops loading
-                        its values. Sortable applies where custom-field column sorting is available.
-                    </CardDescription>
+                    <CardTitle>{t('header.title')}</CardTitle>
+                    <CardDescription>{t('header.description')}</CardDescription>
                 </CardHeader>
             )}
             <CardContent>
@@ -121,7 +196,7 @@ export const ListCustomFieldControlsCard = ({
                     onValueChange={(v) => setSurface(v as ListCustomFieldSurface)}
                 >
                     <TabsList>
-                        {SURFACES.map((s) => (
+                        {surfaces.map((s) => (
                             <TabsTrigger key={s.id} value={s.id}>
                                 {s.label}
                             </TabsTrigger>
@@ -130,20 +205,117 @@ export const ListCustomFieldControlsCard = ({
                 </Tabs>
                 {surfaceMeta && (
                     <p className="mt-2 text-xs text-muted-foreground">
-                        Applies to: {surfaceMeta.pages}
+                        {t('appliesTo', { pages: surfaceMeta.pages })}
                     </p>
                 )}
+                {onBuiltInChange && (
+                    <div className="mt-4 rounded-lg border border-border bg-neutral-50/60 p-4">
+                        <div className="flex min-w-0 flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                                <Funnel className="size-4 text-neutral-500" />
+                                <span className="text-sm font-semibold text-neutral-800">
+                                    {t('builtIn.title')}
+                                </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                {t('builtIn.description')}
+                            </p>
+                        </div>
+                        <div className="mt-3 flex flex-col gap-2">
+                            {LIST_BUILT_IN_FILTERS.map((f) => (
+                                <div key={f} className="flex items-center justify-between gap-4">
+                                    <Label
+                                        htmlFor={`list-built-in-${surface}-${f}`}
+                                        className="cursor-pointer text-sm text-neutral-700"
+                                    >
+                                        {builtInLabel(f)}
+                                    </Label>
+                                    <Switch
+                                        id={`list-built-in-${surface}-${f}`}
+                                        checked={!builtInHidden.includes(f)}
+                                        onCheckedChange={(on) => toggleBuiltIn(f, on)}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+                {onUtmChange && (
+                    <div className="mt-4 rounded-lg border border-border bg-neutral-50/60 p-4">
+                        <div className="flex items-start justify-between gap-4">
+                            <div className="flex min-w-0 flex-col gap-1">
+                                <div className="flex items-center gap-2">
+                                    <Megaphone className="size-4 text-neutral-500" />
+                                    <Label
+                                        htmlFor={`list-utm-enabled-${surface}`}
+                                        className="cursor-pointer text-sm font-semibold text-neutral-800"
+                                    >
+                                        {t('utm.title')}
+                                    </Label>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    {utm.enabled ? (
+                                        t('utm.description')
+                                    ) : (
+                                        <>
+                                            {t('utm.disabledHint')}{' '}
+                                            <Link
+                                                to="/settings"
+                                                search={{ selectedTab: 'utmSettings' }}
+                                                className="font-medium text-primary-500 hover:underline"
+                                            >
+                                                {t('utm.openSettings')}
+                                            </Link>
+                                        </>
+                                    )}
+                                </p>
+                            </div>
+                            <Switch
+                                id={`list-utm-enabled-${surface}`}
+                                checked={utmEnabledEffective}
+                                disabled={!utm.enabled}
+                                onCheckedChange={(v) => setUtmSurface({ enabled: v })}
+                            />
+                        </div>
+                        {utmEnabledEffective && (
+                            <div className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-2">
+                                {UTM_FILTER_DIMENSIONS.map((d) => (
+                                    <div
+                                        key={d}
+                                        className="flex items-center justify-between gap-3 py-1"
+                                    >
+                                        <Label
+                                            htmlFor={`list-utm-dim-${surface}-${d}`}
+                                            className="cursor-pointer text-sm text-neutral-700"
+                                        >
+                                            {utmDimensionLabel(d)}
+                                            {!utmSurface?.dimensions &&
+                                                !CORE_UTM_FILTER_DIMENSIONS.includes(d) && (
+                                                    <span className="ml-1.5 text-xs text-neutral-400">
+                                                        {t('utm.autoHint')}
+                                                    </span>
+                                                )}
+                                        </Label>
+                                        <Switch
+                                            id={`list-utm-dim-${surface}-${d}`}
+                                            checked={utmDimensionsEffective.includes(d)}
+                                            onCheckedChange={(v) => toggleUtmDimension(d, v)}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
                 {isLoading ? (
-                    <p className="mt-3 text-sm text-muted-foreground">Loading custom fields…</p>
+                    <p className="mt-3 text-sm text-muted-foreground">{t('loading')}</p>
                 ) : sortedFields.length === 0 ? (
-                    <p className="mt-3 text-sm text-muted-foreground">
-                        No custom fields configured for this institute yet.
-                    </p>
+                    <p className="mt-3 text-sm text-muted-foreground">{t('emptyState')}</p>
                 ) : (
                     <div className="mt-2 flex flex-col">
                         <div className="flex items-center justify-end gap-8 border-b border-border py-2 pr-1 text-xs font-medium text-muted-foreground">
-                            <span>Filter</span>
-                            <span>Sort</span>
+                            <span>{t('columns.filter')}</span>
+                            <span>{t('columns.sort')}</span>
                         </div>
                         {sortedFields.map((field) => (
                             <div

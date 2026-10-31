@@ -1,0 +1,57 @@
+{
+    "badge": {
+        "auto": "Auto (par défaut)",
+        "selectedFallback": "Invitation sélectionnée"
+    },
+    "actions": {
+        "change": "Modifier",
+        "close": "Fermer"
+    },
+    "autoOption": {
+        "title": "Auto (par défaut)",
+        "description": "Le backend utilisera/créera automatiquement l'invitation par défaut"
+    },
+    "divider": "ou sélectionner une invitation spécifique",
+    "search": {
+        "placeholder": "Rechercher des invitations..."
+    },
+    "codeLabel": "Code : {{code}}",
+    "list": {
+        "empty": "Aucune invitation trouvée pour ce cours",
+        "bundled_one": "Groupée ({{count}} cours)",
+        "bundled_many": "Groupée ({{count}} cours)",
+        "bundled_other": "Groupée ({{count}} cours)"
+    },
+    "errors": {
+        "loadInviteDetailsFailed": "Échec du chargement des détails de l'invitation. Veuillez réessayer."
+    },
+    "summary": {
+        "invite": {
+            "label": "Invitation",
+            "bundled": "Invitation groupée (multi-cours)"
+        },
+        "paymentOption": {
+            "label": "Option de paiement",
+            "approvalRequired": "Approbation requise",
+            "none": "Aucune option de paiement déterminée"
+        },
+        "plan": {
+            "label": "Forfait",
+            "priceLabel": "Prix :",
+            "validity_one": "{{count}} jour de validité",
+            "validity_many": "{{count}} jours de validité",
+            "validity_other": "{{count}} jours de validité",
+            "none": "Aucun plan — cette invitation ne peut inscrire personne tant qu'un prix n'est pas défini"
+        },
+        "access": {
+            "label": "Accès",
+            "days_one": "{{count}} jour",
+            "days_many": "{{count}} jours",
+            "days_other": "{{count}} jours",
+            "unlimited": "Illimité",
+            "from": "Du {{date}}",
+            "to": "au {{date}}",
+            "overrideLabel": "Remplacer les jours d'accès :"
+        }
+    }
+}

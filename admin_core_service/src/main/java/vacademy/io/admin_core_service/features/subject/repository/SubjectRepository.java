@@ -23,6 +23,20 @@ public interface SubjectRepository extends JpaRepository<Subject, String> {
             """)
     List<Subject> findDistinctSubjectsByInstituteId(@Param("instituteId") String instituteId);
 
+    /**
+     * Names for a specific set of subject ids, with no institute/session filtering.
+     *
+     * {@link #findDistinctSubjectsByInstituteId} collapses same-named subjects with
+     * DISTINCT ON and drops anything whose package session was deleted, so it can only
+     * ever resolve a fraction of the subject ids stored elsewhere (an assessment keeps a
+     * raw subject id). Callers that just need to render a stored id as a label use this
+     * instead, otherwise the label falls back to "N/A" even though the subject exists.
+     */
+    @Query(nativeQuery = true, value = """
+                SELECT s.* FROM public.subject s WHERE s.id IN (:subjectIds)
+            """)
+    List<Subject> findAllByIdIn(@Param("subjectIds") List<String> subjectIds);
+
 
     @Query(value = "SELECT DISTINCT s.*, ss.subject_order " +
             "FROM subject s " +

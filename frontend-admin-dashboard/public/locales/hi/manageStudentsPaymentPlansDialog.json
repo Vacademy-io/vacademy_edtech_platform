@@ -1,0 +1,53 @@
+{
+    "dialog": {
+        "title": "भुगतान योजना चुनें",
+        "description": "इस कोर्स के लिए एक भुगतान योजना चुनें"
+    },
+    "sections": {
+        "freePlans": "निःशुल्क योजनाएँ",
+        "paidPlans": "भुगतान योजनाएँ"
+    },
+    "badge": {
+        "default": "डिफ़ॉल्ट",
+        "cpo": "CPO"
+    },
+    "common": {
+        "currency": "मुद्रा: {{currency}}"
+    },
+    "cpo": {
+        "totalAmount": "कुल राशि: {{amount}}",
+        "installmentsLabel": "किस्तें",
+        "installmentsLoading": "लोड हो रहा है…"
+    },
+    "donation": {
+        "suggestedAmounts": "सुझाई गई राशियाँ: {{amount}}",
+        "minimumAmount": "न्यूनतम राशि: {{amount}}"
+    },
+    "freePlan": {
+        "days_one": "{{count}} दिन के लिए निःशुल्क",
+        "days_other": "{{count}} दिनों के लिए निःशुल्क"
+    },
+    "upfront": {
+        "fullPrice": "पूरी कीमत: {{amount}}"
+    },
+    "actions": {
+        "addNewPaymentPlan": "+ नई भुगतान योजना जोड़ें"
+    },
+    "search": {
+        "placeholder": "नाम से योजनाएँ खोजें…",
+        "noResults": "आपकी खोज या फ़िल्टर से कोई योजना मेल नहीं खाती।",
+        "clear": "साफ़ करें"
+    },
+    "filters": {
+        "all": "सभी",
+        "FREE": "निःशुल्क",
+        "ONE_TIME": "एकमुश्त",
+        "DONATION": "दान",
+        "SUBSCRIPTION": "सदस्यता",
+        "CPO": "CPO"
+    },
+    "meta": {
+        "created": "{{date}} को बनाया गया",
+        "createdBy": "{{name}} द्वारा"
+    }
+}

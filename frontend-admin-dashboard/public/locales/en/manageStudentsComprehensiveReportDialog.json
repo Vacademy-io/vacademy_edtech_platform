@@ -1,0 +1,194 @@
+{
+    "unavailable": {
+        "noDataForPeriod": "No data available for this period.",
+        "reportNotAvailable": "Report data is not available."
+    },
+    "common": {
+        "notAvailable": "N/A",
+        "stats": {
+            "present": "Present",
+            "absent": "Absent",
+            "late": "Late",
+            "unmarked": "Unmarked",
+            "notMarked": "Not marked",
+            "attended": "Attended",
+            "missed": "Missed"
+        },
+        "headings": {
+            "strengths": "Strengths",
+            "areasToImprove": "Areas to Improve",
+            "liveClasses": "Live Classes",
+            "assignments": "Assignments"
+        }
+    },
+    "overview": {
+        "studentDetailsHeading": "Student Details",
+        "stats": {
+            "batch": "Batch",
+            "enrollmentNo": "Enrollment No.",
+            "status": "Status",
+            "enrolled": "Enrolled",
+            "reportPeriod": "Report Period",
+            "generated": "Generated"
+        },
+        "loginActivityHeading": "Login Activity",
+        "loginStats": {
+            "totalLogins": "Total Logins",
+            "lastLogin": "Last Login",
+            "avgSession": "Avg Session",
+            "totalActiveTime": "Total Active Time"
+        },
+        "avgSessionValue": "{{minutes}} min",
+        "totalActiveTimeValue": "{{hours}} h"
+    },
+    "attendance": {
+        "overallHeading": "Overall Attendance",
+        "attendanceRate": "Attendance rate",
+        "recentSessionsHeading": "Recent Sessions",
+        "sessionFallbackTitle": "Session"
+    },
+    "academics": {
+        "summary": {
+            "assessments": "Assessments",
+            "avgScore": "Avg Score",
+            "best": "Best",
+            "needsWork": "Needs Work"
+        },
+        "assessmentScoresHeading": "Assessment Scores",
+        "chart": {
+            "marks": "Marks",
+            "total": "Total"
+        },
+        "allAssessmentsHeading": "All Assessments",
+        "assessmentFallbackName": "Assessment"
+    },
+    "activity": {
+        "totalTime": "Total Time",
+        "avgConcentration": "Avg Concentration",
+        "dailyActivityHeading": "Daily Activity",
+        "chart": {
+            "timeMinutes": "Time (min)"
+        },
+        "contentEngagementHeading": "Content Engagement",
+        "minutesValue": "{{minutes}} min"
+    },
+    "progress": {
+        "courseCompletionHeading": "Course Completion",
+        "overallProgress": "Overall progress",
+        "subjectProgressHeading": "Subject Progress"
+    },
+    "liveClasses": {
+        "summaryHeading": "Live Class Summary",
+        "totalClasses": "Total classes:",
+        "attendanceSuffix": "{{value}} attendance"
+    },
+    "certificates": {
+        "completion": "Completion"
+    },
+    "assignments": {
+        "summary": {
+            "submitted": "Submitted",
+            "graded": "Graded",
+            "late": "Late"
+        },
+        "notGraded": "Not graded",
+        "lateBadge": "Late",
+        "doubtsHeading": "Doubts",
+        "doubtsStats": {
+            "raised": "Raised",
+            "resolved": "Resolved",
+            "avgResolution": "Avg Resolution"
+        }
+    },
+    "insights": {
+        "summaryHeading": "Summary",
+        "keyInsightsHeading": "Key Insights",
+        "recommendationsHeading": "Recommendations"
+    },
+    "adminSections": {
+        "attendance": "Attendance",
+        "academicPerformance": "Academic Performance",
+        "marksBySubject": "Marks by Subject",
+        "studyHabits": "Study Habits & Daily Engagement",
+        "courseProgress": "Course Progress — {{percentage}}% complete"
+    },
+    "adminReport": {
+        "title": "Student Progress Report",
+        "periodGenerated": "{{period}} · Generated {{date}}",
+        "statusGrade": "{{status}} · Grade {{grade}}",
+        "studentLabels": {
+            "student": "Student",
+            "class": "Class",
+            "enrollmentNo": "Enrollment No.",
+            "rollNo": "Roll No."
+        },
+        "atAGlanceHeading": "At a Glance",
+        "summaryForParentsHeading": "Summary for Parents",
+        "weeklyTrend": "Weekly trend",
+        "averagePrefix": "Average",
+        "vsClassAverage": "vs class avg {{percentage}}%",
+        "bestSubjectLabel": "Best:",
+        "weakestSubjectLabel": "Needs work:",
+        "subjectPerformanceVsClass": "Subject performance vs class",
+        "marksAggregationNote": "Aggregated across assessments, assignments, quizzes and practice questions.",
+        "needsWorkBadge": "Needs work",
+        "studyHabitsStats": {
+            "activeDays": "Active days",
+            "longestStreak": "Longest streak",
+            "focusScore": "Focus score",
+            "mostActive": "Most active"
+        },
+        "dailyStudyTimeDays_one": "Daily study time (minutes) · {{count}} day",
+        "dailyStudyTimeDays_other": "Daily study time (minutes) · {{count}} days",
+        "dayLabel": "Day {{count}}",
+        "contentExplored": "Content explored:",
+        "videosWatched": "videos",
+        "documentsRead": "documents",
+        "quizzesAttempted": "quizzes",
+        "liveClassesStats": {
+            "totalClasses": "Total classes",
+            "attended": "Attended",
+            "missed": "Missed",
+            "notMarked": "Not marked",
+            "attendance": "Attendance"
+        },
+        "assignmentsStats": {
+            "assigned": "Assigned",
+            "submitted": "Submitted",
+            "onTime": "On time",
+            "late": "Late",
+            "pending": "Pending",
+            "avgScore": "Avg. score"
+        },
+        "achievementsHeading": "Achievements",
+        "whatWeNoticedHeading": "What we noticed",
+        "recommendedNextStepsHeading": "Recommended next steps",
+        "footer": "{{instituteName}} · Generated by Vacademy on {{date}} · {{period}}"
+    },
+    "dialog": {
+        "headingWithName": "{{reportName}} — {{studentName}}",
+        "headingDefault": "Comprehensive Report — {{studentName}}",
+        "headingWithPeriod": "Comprehensive Report — {{studentName}} ({{periodLabel}})",
+        "studentFallbackName": "Student",
+        "reportNotAvailable": "Report data is not available.",
+        "tabs": {
+            "overview": "Overview",
+            "attendance": "Attendance",
+            "academics": "Academics",
+            "activity": "Activity",
+            "progress": "Progress",
+            "liveClasses": "Live Classes",
+            "certificates": "Certificates",
+            "assignments": "Assignments",
+            "insights": "AI Insights"
+        },
+        "actions": {
+            "downloading": "Downloading…",
+            "downloadPdf": "Download PDF",
+            "close": "Close"
+        },
+        "toast": {
+            "downloadFailed": "Failed to download PDF"
+        }
+    }
+}

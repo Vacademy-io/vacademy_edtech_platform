@@ -1,0 +1,30 @@
+{
+    "ariaLabel": "दृश्य {{sceneNumber}} — विवरण के लिए क्लिक करें",
+    "aiVideoTooltip": "AI-जनित वीडियो (fal.ai Veo)",
+    "aiBadge": "AI",
+    "intrinsicTooltip": "{{field}} — इस विंडो में मुख्य नैरेशन म्यूट है; शॉट अपनी खुद की ऑडियो चलाता है (Veo ऑडियो / स्रोत क्लिप)।",
+    "intrinsicBadge": "मौन",
+    "regenTooltip_one": "{{count}} पुनर्जनन प्रयास — सत्यापन लॉग के लिए क्लिक करें",
+    "regenTooltip_other": "{{count}} पुनर्जनन प्रयास — सत्यापन लॉग के लिए क्लिक करें",
+    "intentRoleTooltip": "इरादा भूमिका: {{value}}",
+    "backgroundTreatmentTooltip": "पृष्ठभूमि उपचार: {{value}}",
+    "transitionInTooltip": "प्रवेश ट्रांज़िशन: {{value}}",
+    "workingFallback": "काम जारी है…",
+    "htmlPreviewTitle": "दृश्य {{sceneNumber}} HTML पूर्वावलोकन",
+    "htmlSceneLabel": "HTML दृश्य",
+    "textSceneLabel": "टेक्स्ट दृश्य",
+    "substage": {
+        "htmlGen": "HTML बनाया जा रहा है",
+        "density": "एनिमेशन घनत्व",
+        "bboxLint": "बाउंडिंग-बॉक्स जांच",
+        "brandAsset": "ब्रांड एसेट जांच",
+        "visionReview": "विज़न समीक्षा",
+        "screenshot": "स्क्रीनशॉट लिया जा रहा है",
+        "tts": "वर्णन रिकॉर्ड किया जा रहा है",
+        "mediaPolling": "मीडिया जॉब पोल किया जा रहा है"
+    },
+    "externalCallState": {
+        "queued": "कतार में",
+        "polling": "पोलिंग जारी"
+    }
+}

@@ -1,0 +1,83 @@
+{
+    "validation": {
+        "descriptionRequired": "Description is required",
+        "minQuantity": "Min 1",
+        "priceMustBePositive": "Must be > 0",
+        "lineItemsRequired": "At least one line item is required",
+        "dueDateRequired": "Due date is required",
+        "currencyRequired": "Currency is required"
+    },
+    "success": {
+        "copyFailed": "Could not copy to clipboard",
+        "invoiceUpdatedTitle": "Invoice Updated!",
+        "invoiceCreatedTitle": "Invoice Created!",
+        "totalLabel": "Total:",
+        "paymentLinkLabel": "Payment Link",
+        "copyPaymentLinkTitle": "Copy payment link",
+        "whatsappShared": "WhatsApp opened with the payment and PDF links",
+        "shareOnWhatsapp": "Share on WhatsApp",
+        "preparingWhatsapp": "Preparing…",
+        "downloadPdf": "Download PDF",
+        "downloadingPdf": "Downloading…",
+        "close": "Close"
+    },
+    "review": {
+        "helperText": "These values fill your invoice template. Edit anything before creating — the preview updates live.",
+        "previewLabel": "Invoice preview",
+        "previewTitle": "Invoice preview",
+        "retry": "Retry",
+        "groups": {
+            "invoice": "Invoice",
+            "billTo": "Bill To",
+            "institute": "Institute",
+            "tax": "Tax",
+            "amounts": "Amounts",
+            "notes": "Notes"
+        }
+    },
+    "items": {
+        "loadingSettings": "Loading settings…",
+        "heading": "Items",
+        "table": {
+            "description": "Description",
+            "qty": "Qty",
+            "price": "Price",
+            "amount": "Amount"
+        },
+        "descriptionPlaceholder": "e.g. Course Fee",
+        "removeItem": "Remove",
+        "addItem": "Add Item"
+    },
+    "summary": {
+        "subtotal": "Subtotal",
+        "applyTax": "Apply {{taxLabel}}",
+        "taxRateAriaLabel": "{{taxLabel}} rate percent",
+        "taxIncludedNote": "Incl. {{taxRate}}% {{taxLabel}} (prices already include tax)",
+        "total": "Total",
+        "taxLabelFallback": "Tax"
+    },
+    "emailNotice": "Invoice email will be sent to the learner automatically after payment.",
+    "form": {
+        "dueDateLabel": "Due Date",
+        "currencyLabel": "Currency"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "next": "Next: Review & Preview",
+        "loadingPreview": "Loading preview…",
+        "back": "Back",
+        "saveChanges": "Save Changes",
+        "createInvoice": "Create Invoice",
+        "saving": "Saving…",
+        "creating": "Creating…"
+    },
+    "errors": {
+        "previewFailed": "Could not render the invoice preview. Please try again."
+    },
+    "heading": {
+        "invoice": "Invoice — {{userName}}",
+        "reviewInvoice": "Review Invoice — {{userName}}",
+        "editInvoice": "Edit Invoice {{invoiceNumber}} — {{userName}}",
+        "createInvoice": "Create Invoice — {{userName}}"
+    }
+}

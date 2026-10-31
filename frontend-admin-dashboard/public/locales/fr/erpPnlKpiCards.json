@@ -1,0 +1,22 @@
+{
+    "tiles": {
+        "revenue": {
+            "label": "Revenu encaissé",
+            "hint": "Paiements de frais reçus ce mois-ci — trésorerie réelle, pas facturée"
+        },
+        "payrollCost": {
+            "label": "Coût de la paie",
+            "hint": "Coût total employeur : salaire net plus cotisations patronales"
+        },
+        "margin": {
+            "label": "Marge",
+            "hintComputed": "Revenu encaissé moins coût de la paie",
+            "hintReported": "Communiqué par le service financier pour cette période"
+        },
+        "costToRevenue": {
+            "label": "Coût par rapport au revenu",
+            "hintMissing": "Nécessite à la fois le revenu encaissé et le coût de la paie pour le mois",
+            "hintPresent": "Part du revenu encaissé consacrée à la paie"
+        }
+    }
+}

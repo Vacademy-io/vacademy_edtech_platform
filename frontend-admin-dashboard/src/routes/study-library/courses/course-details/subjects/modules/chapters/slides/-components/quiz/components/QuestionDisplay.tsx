@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TransformedQuestion } from '../types';
 import { CaretDown, CaretUp } from '@phosphor-icons/react';
 import { isRichTextEmpty } from '@/lib/utils';
@@ -23,10 +24,13 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
     onEdit,
     onDelete,
 }) => {
+    const { t } = useTranslation('studyLibraryQuestionDisplay');
+
     const renderOptions = (options: Array<{ id: string; name: string; isSelected: boolean }>) => {
+        const correctCount = options.filter((opt) => opt.isSelected).length;
         return (
             <div className="mt-3 space-y-2">
-                <div className="text-xs font-medium text-slate-600">Options:</div>
+                <div className="text-xs font-medium text-slate-600">{t('optionsLabel')}</div>
                 <div className="grid grid-cols-2 gap-2">
                     {options.map((option, optionIndex) => (
                         <div
@@ -53,16 +57,16 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                                 }}
                             />
                             {option.isSelected && (
-                                <div className="text-xs font-medium text-green-600">✓ Correct</div>
+                                <div className="text-xs font-medium text-green-600">
+                                    ✓ {t('correct')}
+                                </div>
                             )}
                         </div>
                     ))}
                 </div>
                 <div className="mt-2 text-xs text-slate-500">
                     <span className="font-medium">
-                        {options.filter((opt) => opt.isSelected).length > 1
-                            ? 'Correct Answers: '
-                            : 'Correct Answer: '}
+                        {t('correctAnswerLabel', { count: correctCount })}{' '}
                     </span>
                     {options
                         .map((option, index) =>
@@ -77,7 +81,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
 
     const renderSubjectiveAnswer = (
         answerText: string | undefined,
-        label: string = 'Correct Answer:'
+        label: string = t('correctAnswerSingularLabel')
     ) => {
         const hasAnswer =
             answerText && answerText.trim() !== '' && answerText !== 'No answer provided';
@@ -91,7 +95,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                 >
                     <div
                         dangerouslySetInnerHTML={{
-                            __html: hasAnswer ? answerText : '<em>No answer provided</em>',
+                            __html: hasAnswer ? answerText : `<em>${t('noAnswerProvided')}</em>`,
                         }}
                     />
                 </div>
@@ -102,7 +106,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
     const renderNumericAnswer = (validAnswers: (number | string)[]) => {
         return (
             <div className="mt-3 space-y-2">
-                <div className="text-xs font-medium text-slate-600">Correct Answer(s):</div>
+                <div className="text-xs font-medium text-slate-600">{t('correctAnswersLabel')}</div>
                 <div className="flex flex-wrap gap-2">
                     {validAnswers.map((answer, answerIndex) => (
                         <div
@@ -122,14 +126,19 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
 
         return (
             <div className="mt-3 space-y-2">
-                <div className="text-xs font-medium text-slate-600">Correct Answer(s):</div>
+                <div className="text-xs font-medium text-slate-600">{t('correctAnswersLabel')}</div>
                 <div className="flex flex-wrap gap-2">
                     {validAnswers.map((answerIndex, index) => (
                         <div
                             key={index}
                             className="rounded-md border border-green-200 bg-green-50 px-3 py-1 text-xs font-medium text-green-700"
                         >
-                            {typeof answerIndex === 'number' ? `Option ${String.fromCharCode(65 + answerIndex)} (Index: ${answerIndex})` : `Option ID: ${answerIndex}`}
+                            {typeof answerIndex === 'number'
+                                ? t('optionWithIndex', {
+                                      letter: String.fromCharCode(65 + answerIndex),
+                                      index: answerIndex,
+                                  })
+                                : t('optionId', { id: answerIndex })}
                         </div>
                     ))}
                 </div>
@@ -142,7 +151,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
 
         return (
             <div className="mt-4 space-y-2">
-                <div className="text-xs font-medium text-slate-600">Explanation:</div>
+                <div className="text-xs font-medium text-slate-600">{t('explanationLabel')}</div>
                 <div className="rounded-md border border-purple-200 bg-purple-50 p-3 text-xs">
                     <div
                         className="text-slate-700"
@@ -210,11 +219,11 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                     question.questionType === 'CMCQM' ||
                     question.questionType === 'CNUMERIC' ? (
                         <span className="ml-2 text-xs font-bold uppercase tracking-wide text-blue-600">
-                            Passage
+                            {t('passageLabel')}
                         </span>
                     ) : (
                         <span className="ml-2 text-xs font-bold uppercase tracking-wide text-slate-600">
-                            Question
+                            {t('questionLabel')}
                         </span>
                     )}
                 </div>
@@ -225,7 +234,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                     </span>
                     {question.marks != null && (
                         <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-700">
-                            {question.marks} mark{question.marks !== 1 ? 's' : ''}
+                            {t('marksBadge', { count: question.marks })}
                         </span>
                     )}
                     <button
@@ -295,7 +304,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                                             className="ml-1 mt-1 flex items-center gap-1 text-xs text-blue-500 underline hover:text-blue-700 focus:outline-none"
                                             onClick={() => setShowFullPassage((prev) => !prev)}
                                         >
-                                            {showFullPassage ? 'Show less' : 'Show more'}
+                                            {showFullPassage ? t('showLess') : t('showMore')}
                                             {showFullPassage ? (
                                                 <CaretUp size={14} />
                                             ) : (
@@ -308,7 +317,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                         )}
                         {/* Add Question label above question card for comprehension types */}
                         <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
-                            Question
+                            {t('questionLabel')}
                         </div>
                         <div className="mb-3">
                             <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-800 shadow-sm">
@@ -327,7 +336,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                             <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-800 shadow-sm">
                                 <div
                                     dangerouslySetInnerHTML={{
-                                        __html: question.questionName || 'Untitled Question',
+                                        __html: question.questionName || t('untitledQuestion'),
                                     }}
                                 />
                             </div>
@@ -358,8 +367,8 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                         question.singleChoiceOptions.length === 0) && (
                         <div className="mt-3 space-y-2">
                             <div className="text-xs text-orange-600">
-                                <span className="font-medium">Note: </span>
-                                No options found for this {question.questionType} question
+                                <span className="font-medium">{t('noteLabel')} </span>
+                                {t('noOptionsFound', { type: question.questionType })}
                             </div>
                             {question.validAnswers &&
                                 renderCorrectAnswerIndex(
@@ -374,8 +383,8 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                         question.multipleChoiceOptions.length === 0) && (
                         <div className="mt-3 space-y-2">
                             <div className="text-xs text-orange-600">
-                                <span className="font-medium">Note: </span>
-                                No options found for this {question.questionType} question
+                                <span className="font-medium">{t('noteLabel')} </span>
+                                {t('noOptionsFound', { type: question.questionType })}
                             </div>
                             {question.validAnswers &&
                                 renderCorrectAnswerIndex(
@@ -389,8 +398,8 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                     (!question.trueFalseOptions || question.trueFalseOptions.length === 0) && (
                         <div className="mt-3 space-y-2">
                             <div className="text-xs text-orange-600">
-                                <span className="font-medium">Note: </span>
-                                No True/False options found for this question
+                                <span className="font-medium">{t('noteLabel')} </span>
+                                {t('noTrueFalseOptionsFound')}
                             </div>
                             {question.validAnswers &&
                                 renderCorrectAnswerIndex(

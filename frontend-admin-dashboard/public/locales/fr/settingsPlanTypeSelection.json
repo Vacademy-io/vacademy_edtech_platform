@@ -1,0 +1,57 @@
+{
+    "planName": {
+        "label": "Nom du plan *",
+        "placeholder": "Entrez le nom du plan",
+        "hint": "Un nom unique pour identifier ce plan de paiement"
+    },
+    "sections": {
+        "freeOptions": "Options gratuites",
+        "paidOptions": "Options payantes"
+    },
+    "free": {
+        "title": "Plan gratuit",
+        "description": "Plan gratuit sans paiement requis",
+        "features": {
+            "access": "Accès gratuit",
+            "noPayment": "Aucun paiement requis",
+            "promotional": "Idéal à des fins promotionnelles"
+        },
+        "restriction": "Restriction :"
+    },
+    "donation": {
+        "title": "Don facultatif",
+        "description": "Permettre aux étudiants de faire des dons volontaires avec des montants suggérés",
+        "features": {
+            "access": "Accès gratuit au cours",
+            "suggestedAmounts": "Montants de don suggérés",
+            "support": "Soutenez votre établissement"
+        }
+    },
+    "subscription": {
+        "title": "Abonnement",
+        "description": "Paiements récurrents avec des intervalles flexibles",
+        "features": {
+            "autoRenewal": "Options de renouvellement automatique",
+            "billingPeriods": "Plusieurs périodes de facturation",
+            "revenue": "Revenus récurrents"
+        }
+    },
+    "upfront": {
+        "title": "Paiement unique",
+        "description": "Paiement unique anticipé avec des plans d'échelonnement facultatifs",
+        "features": {
+            "lifetime": "Accès à vie",
+            "installments": "Options d'échelonnement",
+            "noRecurring": "Aucun frais récurrent"
+        }
+    },
+    "cpo": {
+        "title": "Option de paiement personnalisée",
+        "description": "Plans de frais échelonnés avec plusieurs types de frais liés à des lots spécifiques",
+        "features": {
+            "feeTypes": "Plusieurs types de frais (scolarité, examen, internat…)",
+            "schedules": "Calendriers d'échelonnement personnalisés",
+            "batches": "Lié à des lots spécifiques"
+        }
+    }
+}

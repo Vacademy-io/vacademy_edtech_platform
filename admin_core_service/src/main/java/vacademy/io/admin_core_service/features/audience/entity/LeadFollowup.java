@@ -40,8 +40,32 @@ public class LeadFollowup {
     @Builder.Default
     private Boolean isClosed = false;
 
+    /** Opened for a repeat-lead reattempt; the Follow-ups page lists these leads first. */
+    @Column(name = "is_priority", nullable = false)
+    @Builder.Default
+    private Boolean isPriority = false;
+
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
+
+    /*
+     * What the student said, how the counsellor reached them, and what happens
+     * next. The option lists live in the institute's LEAD_SETTING, so these are
+     * plain strings: an institute adding or renaming an option is a settings
+     * change, not a migration.
+     */
+    @Column(name = "student_response")
+    private String studentResponse;
+
+    @Column(name = "follow_up_mode")
+    private String followUpMode;
+
+    @Column(name = "next_action")
+    private String nextAction;
+
+    /** How warm the lead sounded on this follow-up - its own record, not the lead's tier. */
+    @Column(name = "interest_level")
+    private String interestLevel;
 
     @Column(name = "closer_reason", columnDefinition = "TEXT")
     private String closerReason;

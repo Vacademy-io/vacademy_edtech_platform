@@ -1,0 +1,66 @@
+{
+    "unknown": "Unknown",
+    "loading": "Loading…",
+    "exporting": "Exporting…",
+    "exportCsv": "Export CSV",
+    "header": {
+        "title": "Live Class Feedback",
+        "description": "Review learner feedback across all live classes, filtered by batch, subject and date."
+    },
+    "columns": {
+        "learner": "Learner",
+        "liveClass": "Live Class",
+        "subject": "Subject",
+        "date": "Date",
+        "batch": "Batch",
+        "submitted": "Submitted",
+        "rating": "Rating",
+        "feedback": "Feedback"
+    },
+    "filters": {
+        "searchPlaceholder": "Search by learner or class title…",
+        "clearSearchAriaLabel": "Clear search",
+        "batch": "Batch",
+        "subject": "Subject",
+        "ratingsBelow": "Ratings Below",
+        "anyRating": "Any",
+        "noBatches": "No batches",
+        "noSubjects": "No subjects",
+        "clearAll": "Clear all"
+    },
+    "summary": {
+        "totalResponses": "Total responses",
+        "avgRating": "Avg rating",
+        "lowRatings": "Low ratings",
+        "ratedBelow3": "rated below 3"
+    },
+    "viewMode": {
+        "detailed": "Detailed",
+        "simple": "Simple"
+    },
+    "states": {
+        "loadError": "Could not load feedback. Please retry.",
+        "emptyTitle": "No feedback found",
+        "emptyDescription": "No learners submitted feedback for the selected batch, subject and date range."
+    },
+    "toast": {
+        "noFeedbackToExport": "No feedback to export for the current filters.",
+        "exported_one": "Exported {{count}} feedback response.",
+        "exported_other": "Exported {{count}} feedback responses.",
+        "exportCapped": "Export was capped — narrow the filters to export the remaining rows.",
+        "exportFailed": "Could not export feedback. Please try again."
+    },
+    "csv": {
+        "learner": "Learner",
+        "batch": "Batch",
+        "rating": "Rating",
+        "feedback": "Feedback",
+        "submitted": "Submitted",
+        "email": "Email",
+        "mobile": "Mobile",
+        "liveClass": "Live Class",
+        "subject": "Subject",
+        "meetingDate": "Meeting Date",
+        "submittedAt": "Submitted At"
+    }
+}

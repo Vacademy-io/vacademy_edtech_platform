@@ -1,0 +1,324 @@
+{
+    "common": {
+        "copy": "نسخ",
+        "paramTable": {
+            "field": "الحقل",
+            "type": "النوع",
+            "required": "مطلوب",
+            "default": "القيمة الافتراضية",
+            "description": "الوصف",
+            "yes": "نعم",
+            "no": "لا"
+        },
+        "sectionTitles": {
+            "queryParameters": "معاملات الاستعلام",
+            "codeExamples": "أمثلة الكود",
+            "response": "الاستجابة",
+            "requestBody": "محتوى الطلب",
+            "requestBodyParameters": "معاملات محتوى الطلب"
+        }
+    },
+    "overview": {
+        "cardTitle": "واجهة برمجة توليد المحتوى في Vacademy",
+        "cardDescription": "أنشئ محتوى تعليميًا مدعومًا بالذكاء الاصطناعي — فيديوهات واختبارات وبطاقات تعليمية وألعاب وغير ذلك — عبر نقطة نهاية REST واحدة.",
+        "features": {
+            "sse": {
+                "title": "بث SSE",
+                "description": "احصل على تقدّم مباشر مع اكتمال كل مرحلة."
+            },
+            "backgroundJobs": {
+                "title": "مهام في الخلفية",
+                "description": "يستمر التوليد حتى لو أغلقت الاتصال."
+            },
+            "restPolling": {
+                "title": "استطلاع REST",
+                "description": "بديل بسيط — ابدأ ثم استطلع /urls/{id}."
+            }
+        },
+        "baseUrlLabel": "الرابط الأساسي",
+        "authHeaderLabel": "ترويسة المصادقة",
+        "authHeaderNote": "يجب أن يتضمن كل طلب هذه الترويسة. أنشئ المفاتيح من علامة تبويب مفاتيح API أعلاه."
+    },
+    "contentTypes": {
+        "sectionTitle": "أنواع المحتوى المدعومة",
+        "video": {
+            "description": "شرائح HTML متزامنة زمنيًا مع سرد صوتي وترجمة نصية."
+        },
+        "slides": {
+            "description": "عرض شرائح HTML يتضمن صورًا وجداول ومخططات."
+        },
+        "quiz": {
+            "description": "مجموعة أسئلة اختيار من متعدد مع شروحات."
+        },
+        "storybook": {
+            "description": "قصة مصورة تُعرض صفحة تلو الأخرى."
+        },
+        "flashcards": {
+            "description": "مجموعة بطاقات تعليمية للتعلم بالتكرار المتباعد."
+        },
+        "interactiveGame": {
+            "description": "لعبة HTML تعليمية قائمة بذاتها."
+        },
+        "puzzleBook": {
+            "description": "كلمات متقاطعة أو بحث عن كلمات أو ألغاز منطقية."
+        },
+        "simulation": {
+            "description": "بيئة تفاعلية للفيزياء أو العلوم أو الاقتصاد."
+        },
+        "mapExploration": {
+            "description": "خريطة SVG قابلة للنقر مع معلومات عن المناطق."
+        },
+        "worksheet": {
+            "description": "ورقة عمل منزلية قابلة للطباعة أو التعبئة."
+        },
+        "codePlayground": {
+            "description": "تمرين برمجي داخل المتصفح مع تعليمات."
+        },
+        "timeline": {
+            "description": "تصور زمني للأحداث."
+        },
+        "conversation": {
+            "description": "تمرين لتعلم اللغة قائم على الحوار."
+        },
+        "navigationModeLabel": "وضع التنقل",
+        "navAutoPlays": "يُشغَّل تلقائيًا مع الصوت",
+        "navUserClicks": "يتنقل المستخدم بالنقر",
+        "navSelfContained": "تطبيق HTML تفاعلي بالكامل"
+    },
+    "generationStages": {
+        "sectionTitle": "مراحل التوليد",
+        "tableHeaders": {
+            "stage": "المرحلة",
+            "outputFile": "ملف الإخراج",
+            "s3UrlsKey": "مفتاح s3_urls",
+            "description": "الوصف"
+        },
+        "script": {
+            "description": "يُنشئ النموذج اللغوي نص السرد وخطة المحتوى."
+        },
+        "tts": {
+            "description": "يحوّل تحويل النص إلى كلام النص إلى صوت."
+        },
+        "words": {
+            "description": "محاذاة الطوابع الزمنية على مستوى الكلمات للترجمة النصية."
+        },
+        "html": {
+            "description": "✅ نقطة التوقف الموصى بها. شرائح HTML متزامنة مع الطوابع الزمنية الصوتية."
+        },
+        "render": {
+            "description": "عرض فيديو كامل (بطيء، مطلوب فقط للتنزيل أو التصدير)."
+        },
+        "footer": "يتحكم معامل الاستعلام <1>target_stage</1> في <3>POST /generate</3> بالمرحلة التي يتوقف عندها. القيمة الافتراضية هي <5>HTML</5>."
+    },
+    "tabs": {
+        "generate": "توليد",
+        "polling": "استطلاع REST",
+        "history": "السجل",
+        "status": "الحالة",
+        "urls": "الروابط",
+        "frames": "تحرير الإطار",
+        "events": "أحداث SSE"
+    },
+    "generateTab": {
+        "streamBadge": "بث SSE",
+        "cardTitle": "توليد المحتوى — بث SSE",
+        "cardDescription": "يبدأ مهمة توليد ويبث التقدّم في الوقت الفعلي عبر <1>Server-Sent Events</1>. تعمل المهمة كمهمة خلفية على الخادم — إغلاق الاتصال لن يُلغي التوليد. استخدم <3>GET /urls/{video_id}</3> لجلب النتيجة لاحقًا.",
+        "targetStageDescription": "أوقف التوليد عند هذه المرحلة. الموصى به: HTML (محتوى كامل، بدون عرض). الخيارات: SCRIPT · TTS · WORDS · HTML · RENDER.",
+        "responseTitle": "الاستجابة (تدفق أحداث SSE)",
+        "responseNote": "Content-Type: <1>text/event-stream</1>. تبدأ كل سطر بـ <3>data: </3> متبوعًا بكائن JSON."
+    },
+    "generateParams": {
+        "prompt": {
+            "description": "وصف باللغة الطبيعية للمحتوى المطلوب توليده."
+        },
+        "contentType": {
+            "description": "نوع المحتوى. أحد: VIDEO, SLIDES, QUIZ, STORYBOOK, FLASHCARDS, INTERACTIVE_GAME, PUZZLE_BOOK, SIMULATION, MAP_EXPLORATION, WORKSHEET, CODE_PLAYGROUND, TIMELINE, CONVERSATION."
+        },
+        "language": {
+            "description": "لغة السرد والمحتوى. مثال: \"English (India)\", \"Hindi\", \"Spanish\"."
+        },
+        "voiceGender": {
+            "description": "\"female\" أو \"male\"."
+        },
+        "ttsProvider": {
+            "description": "\"standard\" (‏Edge TTS، مجاني) أو \"premium\" (‏Google Cloud / Sarvam AI، ضِعفا الرصيد). يوجّه الوضع المميز تلقائيًا: اللغات الهندية → Sarvam، العالمية → Google."
+        },
+        "voiceId": {
+            "description": "صوت محدد للتحويل الصوتي المميز. أصوات Sarvam: \"shubh\"، \"priya\"، إلخ. أصوات Google: \"en-US-Journey-F\"، إلخ. استخدم GET /tts/voices لعرض الخيارات المتاحة."
+        },
+        "captionsEnabled": {
+            "description": "ما إذا كان سيتم تضمين بيانات ترجمة نصية على مستوى الكلمات في الإخراج."
+        },
+        "htmlQuality": {
+            "description": "\"classic\" (أسرع، تخطيطات أبسط) أو \"advanced\" (أغنى وأكثر تعقيدًا)."
+        },
+        "targetAudience": {
+            "description": "وصف العمر/المستوى المستخدم لمعايرة التعقيد. مثال: \"Class 5 (Ages 10-11)\", \"Undergraduate\"."
+        },
+        "targetDuration": {
+            "description": "مدة الإخراج التقريبية. الخيارات: \"30 seconds\", \"1 minute\", \"2-3 minutes\", \"5 minutes\", \"10 minutes\"."
+        },
+        "model": {
+            "description": "معرّف نموذج اللغة المطلوب استخدامه. اتركه فارغًا لاستخدام القيمة الافتراضية الموصى بها."
+        },
+        "videoId": {
+            "description": "معرّف ثابت مخصص لهذا التوليد. يُنشأ تلقائيًا إذا تم حذفه. استخدم نفس المعرّف للاستئناف."
+        }
+    },
+    "pollingTab": {
+        "badge": "استطلاع REST",
+        "cardTitle": "توليد المحتوى — استطلاع REST",
+        "cardDescription": "بديل أبسط من بث SSE. ابدأ التوليد (يمكنك إغلاق اتصال HTTP فورًا — يستمر الخادم في العمل)، ثم استدعِ <1>GET /urls/{video_id}</1> بشكل دوري حتى يُملأ <3>html_url</3>.",
+        "whenToUseTitle": "متى تستخدم الاستطلاع بدلًا من SSE",
+        "sseBullet": "<0>SSE</0>: الأنسب للوحات معلومات واجهة المستخدم التي تحتاج أشرطة تقدّم مباشرة (نسبة المرحلة، الرسائل).",
+        "pollingBullet": "<0>الاستطلاع</0>: الأنسب للنصوص البرمجية الخلفية أو مهام cron أو عندما لا تحتاج إلى تحديثات فورية.",
+        "sameEndpointBullet": "كلاهما يستخدم نفس نقطة النهاية — الفرق فقط في ما إذا كنت تقرأ تدفق الاستجابة.",
+        "flowTitle": "مسار الاستطلاع",
+        "steps": {
+            "1": {
+                "label": "POST /generate",
+                "description": "ابدأ المهمة. أدرج video_id ثابتًا تتحكم به."
+            },
+            "2": {
+                "label": "أغلق (أو تجاهل) تدفق SSE",
+                "description": "يستمر التوليد على الخادم على أي حال."
+            },
+            "3": {
+                "label": "استطلع GET /urls/{video_id} كل 10 ثوانٍ",
+                "description": "كرر حتى يصبح html_url موجودًا."
+            },
+            "4": {
+                "label": "استخدم الروابط المُعادة",
+                "description": "مرّر html_url و audio_url إلى مشغّلك."
+            }
+        }
+    },
+    "historyTab": {
+        "cardTitle": "جلب سجل التوليد",
+        "cardDescription": "يُعيد آخر N عملية توليد محتوى لمؤسستك، مرتبة من الأحدث إلى الأقدم. الحد الأقصى 50 لكل طلب.",
+        "limitParamDescription": "عدد العناصر المطلوب إعادتها. الحد الأقصى 50."
+    },
+    "statusTab": {
+        "cardTitle": "جلب حالة الفيديو",
+        "cardDescription": "يُعيد سجل الحالة الكامل لعملية توليد، بما في ذلك جميع روابط S3 المتاحة. استخدم هذا للتحقق من المراحل التي اكتملت.",
+        "statusValuesLabel": "قيم الحالة (حقل <1>status</1>)",
+        "values": {
+            "pending": {
+                "description": "في قائمة الانتظار، لم يبدأ بعد"
+            },
+            "inProgress": {
+                "description": "قيد التوليد النشط"
+            },
+            "completed": {
+                "description": "اكتملت جميع المراحل"
+            },
+            "failed": {
+                "description": "حدث خطأ"
+            }
+        }
+    },
+    "urlsTab": {
+        "cardTitle": "جلب روابط المشغّل",
+        "cardDescription": "يُعيد الروابط المحددة اللازمة لتضمين المحتوى في مشغّل. هذه أكثر نقطة نهاية كفاءة للاستطلاع — استجابة أصغر من <1>/status</1>.",
+        "howToDetectTitle": "كيفية اكتشاف اكتمال التوليد",
+        "videoBullet": "<0>VIDEO</0>: انتظر <2>html_url != null AND audio_url != null</2>",
+        "slidesBullet": "<0>SLIDES / QUIZ / إلخ.</0>: انتظر <2>html_url != null</2> (لا يلزم صوت)",
+        "failedBullet": "<0>فشل</0>: <2>status === \"FAILED\"</2>",
+        "urlFileDescriptionsTitle": "أوصاف ملفات الروابط",
+        "params": {
+            "htmlUrl": {
+                "description": "time_based_frame.json — مصفوفة كائنات {timestamp, html}. أرسلها إلى AIContentPlayer."
+            },
+            "audioUrl": {
+                "description": "narration.mp3 — صوت سرد تم تركيبه بالذكاء الاصطناعي."
+            },
+            "wordsUrl": {
+                "description": "narration.words.json — مصفوفة {word, start, end} لعرض الترجمة النصية."
+            },
+            "avatarUrl": {
+                "description": "avatar_video.mp4 — فيديو صورة رمزية متحدثة (إذا كان generate_avatar مفعّلًا)."
+            }
+        }
+    },
+    "framesTab": {
+        "regenerate": {
+            "cardTitle": "إعادة توليد إطار",
+            "cardDescription": "اطلب من الذكاء الاصطناعي إعادة كتابة HTML لشريحة/إطار محدد بناءً على موجّه. يُعيد HTML الجديد <1>للمعاينة فقط</1> — لا يُعدّل المخطط الزمني بعد. أكّد ذلك عبر استدعاء <3>/frame/update</3>.",
+            "params": {
+                "videoId": {
+                    "description": "معرّف المحتوى المولَّد."
+                },
+                "timestamp": {
+                    "description": "الوقت بالثواني للإطار المراد تعديله. سيتم اختيار أقرب إطار."
+                },
+                "userPrompt": {
+                    "description": "تعليمات حول كيفية تغيير الإطار. مثال: \"Change background to dark blue and font to yellow.\""
+                }
+            }
+        },
+        "update": {
+            "cardTitle": "اعتماد تحديث الإطار",
+            "cardDescription": "يكتب تغيير HTML المؤكَّد في المخطط الزمني المخزَّن (time_based_frame.json). استدعِ هذا بعد أن يوافق المستخدم على المعاينة من <1>/frame/regenerate</1>.",
+            "params": {
+                "videoId": {
+                    "description": "معرّف المحتوى المولَّد."
+                },
+                "frameIndex": {
+                    "description": "فهرس الإطار المراد تحديثه (يبدأ من صفر). استخدم القيمة التي أعادها /frame/regenerate."
+                },
+                "newHtml": {
+                    "description": "سلسلة HTML كاملة لتخزينها. عادةً ما تكون new_html من /frame/regenerate."
+                }
+            }
+        }
+    },
+    "eventsTab": {
+        "cardTitle": "مرجع أحداث SSE",
+        "cardDescription": "كل حدث في تدفق SSE الخاص بـ <1>POST /generate</1> هو كائن JSON على سطر <3>data: </3>. توجد أربعة أنواع من الأحداث.",
+        "progress": {
+            "sectionTitle": "progress — تحديث المرحلة",
+            "note": "يُصدَر في بداية ونهاية كل مرحلة. يُملأ حقل <1>files</1> مع اكتمال كل مرحلة."
+        },
+        "completed": {
+            "sectionTitle": "completed — اكتمل التوليد",
+            "note": "الحدث الأخير. اكتملت جميع المراحل المطلوبة."
+        },
+        "info": {
+            "sectionTitle": "info — رسالة معلوماتية",
+            "note": "رسائل حالة غير حرجة (مثل المراحل المتجاوزة عند الاستئناف)."
+        },
+        "error": {
+            "sectionTitle": "error — فشل التوليد",
+            "note": "يُرسَل عند فشل خط المعالجة. يشير حقل <1>stage</1> إلى المرحلة التي فشلت."
+        },
+        "heartbeatNote": "<0>نبضة الاتصال</0> — كل 60 ثانية من الصمت يرسل الخادم سطر تعليق SSE (<2>: heartbeat</2>) للحفاظ على نشاط الوسطاء. هذه ليست أحداث <4>data:</4> ويجب على المحلِّل لديك تجاهلها."
+    },
+    "errors": {
+        "cardTitle": "مرجع أخطاء HTTP",
+        "tableHeaders": {
+            "code": "الرمز",
+            "meaning": "المعنى",
+            "cause": "السبب الشائع"
+        },
+        "unauthorized": {
+            "meaning": "غير مصرَّح",
+            "cause": "ترويسة X-Institute-Key مفقودة أو غير صالحة."
+        },
+        "forbidden": {
+            "meaning": "ممنوع",
+            "cause": "مفتاح API مُلغى أو يخص مؤسسة أخرى."
+        },
+        "notFound": {
+            "meaning": "غير موجود",
+            "cause": "video_id غير موجود في قاعدة البيانات."
+        },
+        "validationError": {
+            "meaning": "خطأ تحقق",
+            "cause": "حقل مطلوب مفقود أو قيمة معامل غير صالحة."
+        },
+        "internalServerError": {
+            "meaning": "خطأ داخلي في الخادم",
+            "cause": "فشل خط المعالجة. راجع حدث خطأ SSE للحصول على التفاصيل."
+        }
+    }
+}

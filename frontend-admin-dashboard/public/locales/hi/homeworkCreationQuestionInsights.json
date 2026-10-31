@@ -1,0 +1,29 @@
+{
+    "question": {
+        "label": "प्रश्न ({{number}}.) ",
+        "correctAnswer": "सही उत्तर:",
+        "explanation": "स्पष्टीकरण:",
+        "topCorrectResponses": "शीर्ष 3 सबसे तेज़ सही उत्तर",
+        "responseTime_one": "{{count}} सेकंड",
+        "responseTime_other": "{{count}} सेकंड"
+    },
+    "stats": {
+        "totalAttempts_one": "कुल प्रयास: {{count}} छात्र",
+        "totalAttempts_other": "कुल प्रयास: {{count}} छात्र",
+        "correctRespondents": "सही उत्तर देने वाले: ",
+        "partiallyCorrectRespondents": "आंशिक रूप से सही उत्तर देने वाले: ",
+        "wrongRespondents": "गलत उत्तर देने वाले: ",
+        "skipped": "छोड़ा गया: ",
+        "notAvailable": "लागू नहीं",
+        "viewList": "सूची देखें"
+    },
+    "dialog": {
+        "correctRespondents": "सही उत्तर देने वाले",
+        "partiallyCorrectRespondents": "आंशिक रूप से सही उत्तर देने वाले",
+        "wrongRespondents": "गलत उत्तर देने वाले",
+        "skippedRespondents": "प्रश्न छोड़ने वाले"
+    },
+    "toasts": {
+        "exportPdfSuccess": "छात्र प्रश्न विश्लेषण डेटा PDF के रूप में सफलतापूर्वक निर्यात किया गया"
+    }
+}

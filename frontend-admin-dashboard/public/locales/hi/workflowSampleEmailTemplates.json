@@ -1,0 +1,259 @@
+{
+    "common": {
+        "footer": "सादर,<br/>{{instituteName}}"
+    },
+    "emailBatchStudents": {
+        "subject": "{{fullName}}, आपके लिए महत्वपूर्ण अपडेट",
+        "greeting": "नमस्ते {{fullName}},",
+        "body1": "हमारे पास आपके लिए एक महत्वपूर्ण अपडेट है। अधिक जानकारी के लिए कृपया अपना डैशबोर्ड देखें।",
+        "body2": "यदि आपके कोई प्रश्न हैं, तो बेझिझक हमसे संपर्क करें।"
+    },
+    "welcomeEnrolledStudent": {
+        "subject": "स्वागत है {{fullName}}! आपका नामांकन पुष्ट हो गया है",
+        "heroTitle": "स्वागत है!",
+        "greeting": "नमस्ते {{fullName}},",
+        "body1": "बधाई हो! आपका नामांकन पुष्ट हो गया है। हम आपको अपने साथ पाकर उत्साहित हैं।",
+        "credentialsHeading": "आपके लॉगिन विवरण",
+        "usernameLabel": "उपयोगकर्ता नाम:",
+        "usernameValue": "{{username}}",
+        "passwordLabel": "पासवर्ड:",
+        "passwordValue": "{{password}}",
+        "credentialsNote": "पहली बार लॉगिन करने के बाद कृपया अपना पासवर्ड बदलें।",
+        "nextStepsIntro": "आगे क्या करना है:",
+        "step1": "ऊपर दिए गए विवरण से अपने स्टूडेंट डैशबोर्ड में लॉगिन करें",
+        "step2": "अपनी प्रोफ़ाइल पूरी करें",
+        "step3": "अपने कोर्स और सामग्री देखें",
+        "body2": "यदि आपको शुरुआत करने में मदद चाहिए, तो हमारी टीम आपके लिए यहां है।"
+    },
+    "emailParentsBatch": {
+        "subject": "{{fullName}} के बारे में अपडेट",
+        "greeting": "प्रिय अभिभावक,",
+        "body1": "हम आपको अपने बच्चे <strong>{{fullName}}</strong> से संबंधित एक महत्वपूर्ण अपडेट के बारे में सूचित करना चाहते हैं।",
+        "body2": "विवरण के लिए कृपया स्टूडेंट पोर्टल देखें या प्रश्न होने पर हमसे संपर्क करें।"
+    },
+    "terminationNotice": {
+        "subject": "{{fullName}}, आपकी सदस्यता अपडेट कर दी गई है",
+        "greeting": "नमस्ते {{fullName}},",
+        "body1": "हम आपको सूचित कर रहे हैं कि आपकी सदस्यता की स्थिति अपडेट कर दी गई है। संगठन से आपकी पहुंच हटा दी गई है।",
+        "body2": "यदि आपको लगता है कि यह एक त्रुटि है या आपके प्रश्न हैं, तो कृपया प्रशासक से संपर्क करें।"
+    },
+    "audienceLeadConfirmation": {
+        "subject": "आपकी रुचि के लिए धन्यवाद, {{parentName}}!",
+        "heroTitle": "धन्यवाद!",
+        "greeting": "नमस्ते {{parentName}},",
+        "body1": "आपकी रुचि के लिए धन्यवाद! हमें आपकी पूछताछ प्राप्त हुई है और हमारी टीम जल्द ही आपसे संपर्क करेगी।",
+        "body2": "इस बीच, हमारे कार्यक्रमों के बारे में अधिक जानने के लिए हमारी वेबसाइट देखें।"
+    },
+    "leadFollowupEmail": {
+        "subject": "{{parentName}}, आपकी पूछताछ पर अनुवर्तन",
+        "greeting": "नमस्ते {{parentName}},",
+        "body1": "हमने देखा कि आपने हाल ही में हमारे कार्यक्रमों में रुचि दिखाई है। हम यह जानने के लिए संपर्क कर रहे हैं कि क्या आपके कोई प्रश्न हैं।",
+        "body2": "हमारी टीम इनमें आपकी मदद करने के लिए तैयार है:",
+        "item1": "कोर्स की जानकारी और पाठ्यक्रम विवरण",
+        "item2": "फीस संरचना और भुगतान विकल्प",
+        "item3": "प्रवेश प्रक्रिया और समयसीमा",
+        "body3": "शुरू करने के लिए बस इस ईमेल का जवाब दें या हमें कॉल करें!"
+    },
+    "paymentFailedEmail": {
+        "subject": "{{fullName}}, भुगतान समस्या - कार्रवाई आवश्यक",
+        "bannerTitle": "भुगतान विफल",
+        "bannerBody": "आपका हालिया भुगतान संसाधित नहीं किया जा सका।",
+        "greetingLabel": "नमस्ते",
+        "greetingName": "{{fullName}}",
+        "body1": "हम आपका भुगतान संसाधित करने में असमर्थ थे। यह अपर्याप्त शेष राशि, कार्ड की समयसीमा समाप्त होने या अस्थायी बैंक समस्या के कारण हो सकता है।",
+        "nextStepsHeading": "आगे क्या करें:",
+        "step1": "अपने भुगतान विधि का विवरण जांचें",
+        "step2": "सुनिश्चित करें कि पर्याप्त शेष राशि उपलब्ध है",
+        "step3": "अपने डैशबोर्ड से भुगतान फिर से प्रयास करें",
+        "body2": "यदि समस्या बनी रहती है, तो कृपया हमारी सहायता टीम से संपर्क करें।"
+    },
+    "abandonedCartReminder": {
+        "subject": "{{fullName}}, बस थोड़ा और! अपना नामांकन पूरा करें",
+        "greeting": "नमस्ते {{fullName}},",
+        "body1": "हमने देखा कि आपने अपना नामांकन शुरू किया लेकिन भुगतान पूरा नहीं किया। आपकी जगह अभी भी उपलब्ध है!",
+        "body2": "अपनी जगह सुरक्षित करने और तुरंत शुरुआत करने के लिए अभी अपना नामांकन पूरा करें।",
+        "cta": "नामांकन पूरा करें",
+        "footNote": "यदि फीस के बारे में प्रश्न हैं या सहायता चाहिए, तो बस इस ईमेल का जवाब दें।"
+    },
+    "sessionStartReminder": {
+        "subject": "{{fullName}}, आपका लाइव सत्र शुरू हो रहा है!",
+        "bannerTitle": "लाइव सत्र अभी शुरू हो रहा है!",
+        "greetingLabel": "नमस्ते",
+        "greetingName": "{{fullName}}",
+        "body1": "आपका लाइव सत्र शुरू हो रहा है। कुछ भी न चूकने के लिए अभी शामिल हों!",
+        "body2": "सुनिश्चित करें कि आपका इंटरनेट कनेक्शन स्थिर है और आपका ऑडियो/वीडियो काम कर रहा है।",
+        "signoff": "वहां मिलते हैं!"
+    },
+    "postSessionFollowup": {
+        "subject": "{{fullName}}, सत्र पूर्ण - रिकॉर्डिंग और अगले कदम",
+        "greeting": "नमस्ते {{fullName}},",
+        "body1": "आज के सत्र में भाग लेने के लिए धन्यवाद! यहां एक त्वरित सारांश है:",
+        "item1": "सत्र रिकॉर्डिंग आपके डैशबोर्ड में उपलब्ध होगी",
+        "item2": "सत्र के दौरान साझा की गई सामग्री की समीक्षा करें",
+        "item3": "अगले सत्र से पहले किसी भी असाइनमेंट को पूरा करें",
+        "body2": "हम आपकी प्रतिक्रिया सुनना पसंद करेंगे। कृपया अपने विचार साझा करने के लिए एक क्षण लें।",
+        "signoff": "अगली बार मिलते हैं!<br/>{{instituteName}}"
+    },
+    "scheduledFeeReminder": {
+        "subject": "फीस भुगतान अनुस्मारक - {{dueDate}}",
+        "bannerTitle": "फीस भुगतान अनुस्मारक",
+        "greetingLabel": "प्रिय",
+        "greetingName": "{{recipientName}}",
+        "body1": "यह <strong>{{studentName}}</strong> के लिए आगामी फीस भुगतान का अनुस्मारक है।",
+        "dueDateLabel": "नियत तारीख",
+        "dueDateValue": "{{dueDate}}",
+        "totalAmountLabel": "कुल राशि",
+        "totalAmountValue": "{{amountExpected}}",
+        "alreadyPaidLabel": "पहले ही भुगतान किया गया",
+        "alreadyPaidValue": "{{amountPaid}}",
+        "remainingLabel": "शेष",
+        "remainingValue": "{{remainingAmount}}",
+        "body2": "देर से लगने वाले शुल्क से बचने के लिए कृपया नियत तारीख से पहले भुगतान सुनिश्चित करें।"
+    },
+    "scheduledBatchReport": {
+        "subject": "{{fullName}}, आपकी उपस्थिति रिपोर्ट ({{startDate}} - {{endDate}})",
+        "heading": "उपस्थिति रिपोर्ट",
+        "intro": "नमस्ते <strong>{{fullName}}</strong>, यह रहा आपका {{startDate}} से <strong>{{endDate}}</strong> तक का उपस्थिति सारांश:",
+        "percentValue": "{{attendancePercentage}}",
+        "attendanceRateLabel": "उपस्थिति दर",
+        "sessionsSummary": "{{totalSessions}} में से {{sessionsAttended}} सत्रों में भाग लिया &middot; कुल {{totalDurationMinutes}} मिनट",
+        "sessionDetailsHeading": "सत्र विवरण",
+        "cta": "पूरी रिपोर्ट देखें और PDF डाउनलोड करें",
+        "body1": "नियमित उपस्थिति सफलता की कुंजी है।",
+        "concentrationScoreLabel": "* एकाग्रता स्कोर",
+        "concentrationScoreBody": "= 80 अंक उपस्थिति समय + 20 अंक इंटरैक्शन (चैट, बातचीत, हाथ उठाना, इमोजी, पोल)। प्रति-सत्र विवरण के लिए पूरी रिपोर्ट देखें।"
+    },
+    "scheduledEngagementSummary": {
+        "subject": "{{fullName}}, आपकी साप्ताहिक सहभागिता रिपोर्ट",
+        "heading": "साप्ताहिक सहभागिता रिपोर्ट",
+        "intro": "नमस्ते <strong>{{fullName}}</strong>, इस सप्ताह आप कैसे सक्रिय रहे:",
+        "percentValue": "{{attendancePercentage}}",
+        "attendanceLabel": "उपस्थिति",
+        "sessionsValue": "{{sessionsAttended}}/{{totalSessions}}",
+        "sessionsLabel": "सत्र",
+        "minutesValue": "{{totalDurationMinutes}}",
+        "minutesLabel": "मिनट",
+        "chatsValue": "{{totalChats}}",
+        "chatsLabel": "चैट",
+        "sessionDetailsHeading": "सत्र विवरण",
+        "period": "अवधि: {{startDate}} से {{endDate}}",
+        "signoff": "सीखते रहें!<br/>{{instituteName}}"
+    },
+    "scheduledParentsAttendance": {
+        "subject": "{{fullName}} का साप्ताहिक उपस्थिति अपडेट ({{startDate}} - {{endDate}})",
+        "heading": "साप्ताहिक उपस्थिति अपडेट",
+        "greeting": "प्रिय अभिभावक,",
+        "intro": "यह <strong>{{fullName}}</strong> ({{startDate}} - {{endDate}}) का साप्ताहिक उपस्थिति सारांश है:",
+        "percentValue": "{{attendancePercentage}}",
+        "attendanceRateLabel": "उपस्थिति दर",
+        "sessionsSummary": "{{totalSessions}} में से {{sessionsAttended}} सत्रों में भाग लिया",
+        "sessionDetailsHeading": "सत्र विवरण",
+        "body1": "यदि आपको उपस्थिति के बारे में कोई चिंता है, तो कृपया हमसे संपर्क करें।"
+    },
+    "membershipExpiryReminder": {
+        "subject": "{{fullName}}, आपकी सदस्यता जल्द ही समाप्त हो रही है",
+        "bannerTitle": "सदस्यता जल्द समाप्त हो रही है",
+        "greetingLabel": "नमस्ते",
+        "greetingName": "{{fullName}}",
+        "body1": "आपकी सदस्यता समाप्त होने वाली है। अपने सभी कोर्स और सामग्री तक निर्बाध पहुंच जारी रखने के लिए अभी नवीनीकरण करें।",
+        "cta": "अभी नवीनीकरण करें",
+        "footNote": "अपनी प्रगति न खोएं! नवीनीकरण में बस एक मिनट लगता है।"
+    },
+    "scheduledExpiryCheck": {
+        "subject": "{{fullName}}, अपनी सदस्यता नवीनीकृत करें",
+        "greeting": "नमस्ते {{fullName}},",
+        "body1": "आपकी सदस्यता जल्द ही समाप्त हो जाएगी। बिना रुकावट अपने कोर्स तक पहुंच जारी रखने के लिए आज ही नवीनीकरण करें।",
+        "body2": "नवीनीकरण विकल्पों के बारे में कोई प्रश्न होने पर हमसे संपर्क करें।"
+    },
+    "assessmentCreatedNotify": {
+        "subject": "{{fullName}}, आपके लिए नया मूल्यांकन उपलब्ध है",
+        "bannerTitle": "नया मूल्यांकन उपलब्ध है",
+        "greetingLabel": "नमस्ते",
+        "greetingName": "{{fullName}}",
+        "body1": "आपके लिए एक नया मूल्यांकन प्रकाशित किया गया है। विवरण देखने और मूल्यांकन शुरू करने के लिए अपने डैशबोर्ड में लॉगिन करें।",
+        "goodLuck": "शुभकामनाएं!"
+    },
+    "assessmentEmailBatch": {
+        "subject": "{{fullName}}, मूल्यांकन सफलतापूर्वक सबमिट किया गया",
+        "heroTitle": "मूल्यांकन सबमिट किया गया!",
+        "greetingLabel": "नमस्ते",
+        "greetingName": "{{fullName}}",
+        "body1": "आपका मूल्यांकन सफलतापूर्वक सबमिट कर दिया गया है। मूल्यांकन पूरा होने के बाद परिणाम साझा किए जाएंगे।"
+    },
+    "inviteNotifyBatch": {
+        "subject": "नया नामांकन अवसर",
+        "greeting": "नमस्ते {{fullName}},",
+        "body1": "एक नया नामांकन आमंत्रण बनाया गया है। विवरण और नामांकन निर्देशों के लिए अपना डैशबोर्ड देखें।"
+    },
+    "scheduledAudienceFollowup": {
+        "subject": "{{parentName}}, हमें आपकी ओर से कोई जवाब नहीं मिला",
+        "greeting": "नमस्ते {{parentName}},",
+        "body1": "हमने देखा कि आपने हाल ही में हमारे कार्यक्रमों के बारे में पूछताछ की थी। हम जांचना चाहते थे कि क्या आपके कोई प्रश्न हैं या अधिक जानकारी चाहिए।",
+        "body2": "हमारी प्रवेश टीम आपकी किसी भी जरूरत में मदद करने के लिए खुश है। बस इस ईमेल का जवाब दें!"
+    },
+    "liveSessionRecapPresent": {
+        "subject": "{{sessionTitle}} में शामिल होने के लिए धन्यवाद",
+        "heroTitle": "आपको देखकर अच्छा लगा!",
+        "greeting": "नमस्ते {{fullName}},",
+        "body1": "{{date}} को {{time}} बजे <strong>{{sessionTitle}}</strong> में शामिल होने के लिए धन्यवाद। हमें उम्मीद है यह उपयोगी रहा।",
+        "body2": "निरंतरता बनाए रखें — अगली कक्षा में मिलते हैं!"
+    },
+    "liveSessionRecapAbsent": {
+        "subject": "आप {{sessionTitle}} में शामिल नहीं हो सके",
+        "heroTitle": "हमें आपकी कमी महसूस हुई!",
+        "greeting": "नमस्ते {{fullName}},",
+        "body1": "हमने देखा कि आप {{date}} को {{time}} बजे <strong>{{sessionTitle}}</strong> में शामिल नहीं हो सके।",
+        "body2": "कोई बात नहीं — कृपया सुनिश्चित करें कि आप पीछे न रहें और अगली लाइव कक्षा में शामिल हों।"
+    },
+    "leadAssignedToCounselor": {
+        "subject": "नया लीड असाइन किया गया: {{leadName}}",
+        "greeting": "नमस्ते {{counselorName}},",
+        "body1": "आपको एक नया लीड सौंपा गया है।",
+        "nameLabel": "नाम:",
+        "nameValue": "{{leadName}}",
+        "mobileLabel": "मोबाइल:",
+        "mobileValue": "{{leadMobile}}",
+        "emailLabel": "ईमेल:",
+        "emailValue": "{{leadEmail}}",
+        "campaignLabel": "अभियान:",
+        "campaignValue": "{{campaignName}}",
+        "body2": "कृपया {{tat}} समय के भीतर संपर्क करें।"
+    },
+    "leadTatReminderBefore": {
+        "subject": "अनुस्मारक: {{minutesToBreach}} मिनट में {{leadName}} को जवाब दें",
+        "heading": "लीड आपकी प्रतिक्रिया की प्रतीक्षा कर रहा है",
+        "greeting": "नमस्ते {{counselorName}},",
+        "body1": "इस लीड को <strong>{{minutesToBreach}} मिनट</strong> में प्रतिक्रिया चाहिए:",
+        "leadName": "{{leadName}}",
+        "leadMobile": "{{leadMobile}}",
+        "campaignLine": "अभियान: {{campaignName}}",
+        "dueAtLine": "SLA नियत समय: {{dueAt}}"
+    },
+    "leadTatOverdue": {
+        "subject": "अतिदेय: {{leadName}} से संपर्क नहीं किया गया",
+        "heading": "लीड TAT अतिदेय",
+        "body1": "नमस्ते {{counselorName}}, इस लीड के लिए SLA समयसीमा बीत चुकी है:",
+        "leadName": "{{leadName}}",
+        "leadMobile": "{{leadMobile}}",
+        "campaignLine": "अभियान: {{campaignName}}",
+        "dueAtLine": "नियत समय: {{dueAt}}",
+        "body2": "कृपया इस लीड पर जल्द से जल्द कार्रवाई करें।"
+    },
+    "followUpDue": {
+        "subject": "{{leadName}} के लिए फॉलो-अप देय",
+        "heading": "फॉलो-अप देय",
+        "body1": "नमस्ते {{counselorName}}, <strong>{{leadName}}</strong> ({{leadMobile}}) के लिए आपका अगला फॉलो-अप <strong>{{minutesToBreach}}</strong> मिनट में ({{dueAt}} पर) देय है।"
+    },
+    "followUpOverdue": {
+        "subject": "{{leadName}} के लिए फॉलो-अप अतिदेय",
+        "heading": "फॉलो-अप अतिदेय",
+        "body1": "नमस्ते {{counselorName}}, <strong>{{leadName}}</strong> ({{leadMobile}}) का फॉलो-अप अतिदेय है (नियत समय {{dueAt}} था)।",
+        "body2": "कृपया अभी इस लीड पर कार्रवाई करें।"
+    },
+    "leadStatusChanged": {
+        "subject": "लीड स्थिति अपडेट: {{leadName}} → {{newStatus}}",
+        "heading": "लीड स्थिति अपडेट की गई",
+        "greeting": "नमस्ते {{counselorName}},",
+        "body1": "<strong>{{leadName}}</strong> की स्थिति <strong>{{oldStatus}}</strong> से बदलकर <strong>{{newStatus}}</strong> हो गई (<em>{{changeType}}</em>)।"
+    }
+}

@@ -1,0 +1,43 @@
+{
+    "header": {
+        "title": "Coach de cours",
+        "subtitle": "Déposez l'enregistrement d'un cours que vous avez donné. Nous vous fournirons une évaluation claire et constructive."
+    },
+    "dropzone": {
+        "instruction": "Déposez votre enregistrement ici, ou cliquez pour le choisir",
+        "formats": "MP3, WAV, FLAC, AAC ou M4A."
+    },
+    "fileStatus": {
+        "uploading": "Envoi en cours…",
+        "listening": "Écoute en cours…",
+        "reviewing": "Évaluation en cours…",
+        "done": "Terminé",
+        "removeFile": "Supprimer le fichier"
+    },
+    "workingLabels": {
+        "uploading": "Envoi de votre enregistrement en cours…",
+        "processing": "Écoute de votre cours en cours…",
+        "generating": "Évaluation du rythme, de l'engagement et de la clarté — cela prend généralement environ 1 minute."
+    },
+    "errors": {
+        "unsupportedFormat": "Nous ne pouvons pas lire les fichiers .{{extension}}. Essayez MP3, WAV, FLAC, AAC ou M4A.",
+        "uploadIncomplete": "L'envoi ne s'est pas terminé. Voulez-vous réessayer ?",
+        "readFailed": "Une erreur s'est produite lors de la lecture de votre enregistrement. Réessayer ?",
+        "generateFailed": "Nous n'avons pas pu évaluer cet enregistrement. Essayer un autre fichier ?",
+        "taskFailed": "Nous n'avons pas pu terminer cette évaluation. Voulez-vous réessayer ?"
+    },
+    "generating": {
+        "title": "Évaluation de votre cours en cours",
+        "subtitle": "Analyse du rythme, de l'engagement et de la clarté. Généralement environ 1 minute."
+    },
+    "draftingDone": {
+        "title": "Voici l'évaluation de votre cours",
+        "subtitle": "Ouvrez-la pour voir ce qui a bien fonctionné et ce que vous pouvez ajuster."
+    },
+    "recentFiles": {
+        "title": "Vos évaluations récentes",
+        "fallbackLabel": "Évaluation de cours",
+        "emptyHint": "Vos évaluations de cours apparaîtront ici. Déposez un enregistrement ci-dessus pour en obtenir une."
+    },
+    "productName": "Vsmart Feedback"
+}

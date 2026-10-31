@@ -1,0 +1,77 @@
+{
+    "toast": {
+        "attendanceDownloaded": "उपस्थिति रिपोर्ट सफलतापूर्वक डाउनलोड हो गई।",
+        "selectAtLeastOneStudent": "कृपया कम से कम एक छात्र चुनें"
+    },
+    "studentsCount_one": "{{count}} छात्र",
+    "studentsCount_other": "{{count}} छात्र",
+    "labels": {
+        "startDateTime": "प्रारंभ तिथि और समय:",
+        "endTime": "समाप्ति समय:",
+        "batches": "बैच:"
+    },
+    "actions": {
+        "viewDetails": "{{term}} विवरण देखें",
+        "viewAttendanceReport": "उपस्थिति रिपोर्ट देखें",
+        "viewRecordings": "रिकॉर्डिंग देखें",
+        "exporting": "निर्यात हो रहा है...",
+        "csv": "CSV"
+    },
+    "dialog": {
+        "heading": "उपस्थिति रिपोर्ट",
+        "basicClassDetails": "मूल कक्षा विवरण",
+        "session": "सत्र:",
+        "paidMembers": "भुगतान किए सदस्य",
+        "openSession": "खुला सत्र",
+        "occurrence": "पुनरावृत्ति:",
+        "type": "प्रकार:",
+        "duration": "अवधि:",
+        "description": "विवरण",
+        "noDescriptionAvailable": "कोई विवरण उपलब्ध नहीं है।",
+        "participantsInsights": "प्रतिभागी अंतर्दृष्टि",
+        "totalParticipants_one": "कुल प्रतिभागी: {{count}}",
+        "totalParticipants_other": "कुल प्रतिभागी: {{count}}",
+        "attendees": "उपस्थित:",
+        "notAttendees": "अनुपस्थित:",
+        "attendancePercentage": "उपस्थिति प्रतिशत",
+        "attendance": "उपस्थिति"
+    },
+    "csv": {
+        "number": "#",
+        "name": "नाम",
+        "email": "ईमेल",
+        "batch": "बैच",
+        "course": "कोर्स",
+        "status": "स्थिति",
+        "mode": "मोड",
+        "durationMin": "अवधि (मिनट)",
+        "activePoints": "सक्रिय अंक",
+        "talkTimeMin": "बोलने का समय (मिनट)",
+        "talkSegments": "बोलने के खंड",
+        "raiseHands": "हाथ उठाना",
+        "emojis": "इमोजी",
+        "chats": "चैट",
+        "pollVotes": "पोल वोट",
+        "activeness": "एक्टिवनेस %",
+        "activenessOnScreen": "स्क्रीन के सामने %",
+        "activenessAttention": "ध्यान %",
+        "activenessStatus": "एक्टिवनेस स्थिति"
+    },
+    "status": {
+        "present": "उपस्थित",
+        "absent": "अनुपस्थित",
+        "unmarked": "अचिह्नित"
+    },
+    "activenessState": {
+        "1": "मापा गया",
+        "2": "शिक्षार्थी ने बंद किया",
+        "3": "फ़ोन/टैबलेट — मापा नहीं गया",
+        "4": "कैमरा ब्लॉक है",
+        "5": "कैमरा नहीं है",
+        "6": "कैमरा किसी दूसरे ऐप में चल रहा है",
+        "7": "डिवाइस बहुत धीमा",
+        "8": "लोड नहीं हो सका",
+        "9": "कैमरा रुक गया",
+        "10": "कैमरे की अनुमति नहीं दी"
+    }
+}

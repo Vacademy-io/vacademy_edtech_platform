@@ -1,0 +1,17 @@
+{
+    "dropzoneHint": "Drop your PDF here, or click to browse",
+    "dropzoneFormats": "Supports PDF files up to 10MB",
+    "invalidFileType": "Please upload only PDF files",
+    "reorderFailed": "Slide created but reordering failed",
+    "pdfSelectedWithPages_one": "PDF selected: {{count}} page detected.",
+    "pdfSelectedWithPages_other": "PDF selected: {{count}} pages detected.",
+    "pdfSelected": "PDF selected successfully",
+    "selectFileFirst": "Please select a file first",
+    "pdfUploaded": "PDF uploaded successfully!",
+    "uploadFailed": "Upload failed. Please try again.",
+    "pageCount_one": "{{count}} page",
+    "pageCount_other": "{{count}} pages",
+    "uploadingPdf": "Uploading PDF...",
+    "uploadingEllipsis": "Uploading...",
+    "uploadPdf": "Upload PDF"
+}

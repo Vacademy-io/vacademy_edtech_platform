@@ -111,7 +111,16 @@ public class CouponValidationService {
             return invalid(CouponValidationMessages.NOT_FOR_PLAN_TYPE);
         }
 
-        // 8. Discount
+        // 8. Quantity condition — "₹99 off when you take 2 or more". A caller that
+        //    does not deal in baskets sends no count, which reads as one item.
+        if (coupon.getMinItems() != null && coupon.getMinItems() > 1) {
+            int items = request.getItemCount() != null ? request.getItemCount() : 1;
+            if (items < coupon.getMinItems()) {
+                return invalid(CouponValidationMessages.BELOW_MIN_ITEMS);
+            }
+        }
+
+        // 9. Discount
         Optional<AppliedCouponDiscount> discountOpt =
                 appliedCouponDiscountRepository.findFirstByCouponCode_IdAndStatusOrderByCreatedAtDesc(
                         coupon.getId(), STATUS_ACTIVE);

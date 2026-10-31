@@ -1,0 +1,17 @@
+{
+    "selectTerm": "Select {{term}}",
+    "expandAll": "Expand All",
+    "collapseAll": "Collapse All",
+    "addSlide": "Add Slide",
+    "noSlidesInChapter": "No slides in this chapter.",
+    "noSubjectsAvailable": "No subjects available. Start by adding a new subject.",
+    "manageTeachers": "Manage Teachers",
+    "viewAndManageTeachers": "View and manage teachers assigned to this batch.",
+    "selectBatchLiveSessions": "Select a batch to view its live sessions.",
+    "selectBatchReports": "Select a batch to view its reports.",
+    "contentStructureHeading": "Content Structure",
+    "navigateContentStructure": "Navigate through your course content structure",
+    "contentStructureAvailableElsewhere": "Content structure view is available in the main course details page.",
+    "missingInformation": "Missing Information",
+    "missingIdsBody": "{{course}} ID or {{level}} ID is missing. Please ensure these are provided to proceed."
+}

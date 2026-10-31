@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import vacademy.io.admin_core_service.features.mentorship.entity.MentorStudentAssignment;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,6 +31,19 @@ public interface MentorStudentAssignmentRepository extends JpaRepository<MentorS
 
     Optional<MentorStudentAssignment> findByInstituteIdAndMentorIdAndStudentUserIdAndStatus(
             String instituteId, String mentorId, String studentUserId, String status);
+
+    /**
+     * Batched variants of the two lookups above, for assignment runs.
+     *
+     * The picker can hand over a whole batch in one request, and asking per student
+     * turned an assignment into one round trip per student — 500 queries inside a
+     * single transaction.
+     */
+    List<MentorStudentAssignment> findByInstituteIdAndMentorIdAndStudentUserIdInAndStatus(
+            String instituteId, String mentorId, Collection<String> studentUserIds, String status);
+
+    List<MentorStudentAssignment> findByInstituteIdAndStudentUserIdInAndStatus(
+            String instituteId, Collection<String> studentUserIds, String status);
 
     Optional<MentorStudentAssignment> findByIdAndInstituteId(String id, String instituteId);
 }

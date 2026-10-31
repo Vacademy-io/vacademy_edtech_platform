@@ -21,16 +21,25 @@ export function dayKey(iso: string): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
-/** Human-friendly day label: "Today", "Yesterday", or a full date. */
-export function dayLabel(iso: string): string {
+/**
+ * Human-friendly day label: "Today", "Yesterday", or a full date.
+ *
+ * This is a plain (non-hook) helper, so it can't call `useTranslation` itself —
+ * the caller passes its already-resolved `t()` labels for the two relative-day
+ * strings; everything else (the full-date fallback) is locale-formatted via `Intl`.
+ */
+export function dayLabel(
+  iso: string,
+  labels?: { today: string; yesterday: string },
+): string {
   const d = toUtcDate(iso);
   if (!d) return "";
   const now = new Date();
   const startOf = (x: Date) =>
     new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const diffDays = Math.round((startOf(now) - startOf(d)) / 86400000);
-  if (diffDays === 0) return "Today";
-  if (diffDays === 1) return "Yesterday";
+  if (diffDays === 0) return labels?.today ?? "Today";
+  if (diffDays === 1) return labels?.yesterday ?? "Yesterday";
   return d.toLocaleDateString(undefined, {
     weekday: "short",
     month: "short",

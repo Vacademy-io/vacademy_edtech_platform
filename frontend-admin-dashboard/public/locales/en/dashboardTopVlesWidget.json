@@ -1,0 +1,12 @@
+{
+    "heading": "Top {{plural}}",
+    "subtitle": "By seats used",
+    "viewAll": "View all",
+    "unnamedName": "Unnamed",
+    "planStatus": {
+        "active": "Active",
+        "pending": "Pending",
+        "expired": "Expired",
+        "none": "No plan"
+    }
+}

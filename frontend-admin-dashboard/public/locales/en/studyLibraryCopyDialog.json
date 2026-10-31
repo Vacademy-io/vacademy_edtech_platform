@@ -1,0 +1,15 @@
+{
+    "dialog": {
+        "heading": "Copy to",
+        "submitLabel": "Copy",
+        "busyLabel": "Copying…"
+    },
+    "toast": {
+        "copiedSuccess": "Slide copied successfully!",
+        "copiedToLocations_one": "Slide copied to {{count}} location",
+        "copiedToLocations_other": "Slide copied to {{count}} locations",
+        "copyFailed": "Failed to copy slide",
+        "partialSuccess_one": "Copied to {{count}} of {{total}} location. Retry the rest below.",
+        "partialSuccess_other": "Copied to {{count}} of {{total}} locations. Retry the rest below."
+    }
+}

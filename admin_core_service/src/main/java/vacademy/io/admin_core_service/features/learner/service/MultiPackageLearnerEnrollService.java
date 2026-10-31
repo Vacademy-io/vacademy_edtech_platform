@@ -6,6 +6,14 @@ import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.features.learner.dto.v2.LearnerPackageSessionEnrollmentItemDTO;
 import vacademy.io.admin_core_service.features.learner.dto.v2.MultiPackageLearnerEnrollRequestDTO;
 import vacademy.io.admin_core_service.features.audience.service.UserLeadProfileService;
+import vacademy.io.admin_core_service.features.course_settings.service.LeadConversionPolicyService;
+import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
+import vacademy.io.admin_core_service.features.enroll_invite.entity.EnrollInvite;
+import vacademy.io.admin_core_service.features.enroll_invite.repository.EnrollInviteRepository;
+import vacademy.io.admin_core_service.features.regional_pricing.dto.RegionalQuote;
+import vacademy.io.admin_core_service.features.regional_pricing.service.RegionalPriceResolver;
+import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan;
+import vacademy.io.admin_core_service.features.user_subscription.enums.PaymentOptionType;
 import vacademy.io.admin_core_service.features.user_subscription.service.PaymentLogService;
 import vacademy.io.common.auth.dto.learner.LearnerEnrollRequestDTO;
 import vacademy.io.common.auth.dto.learner.LearnerEnrollResponseDTO;
@@ -19,6 +27,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
@@ -43,6 +52,39 @@ public class MultiPackageLearnerEnrollService {
 
     @Autowired
     private UserLeadProfileService userLeadProfileService;
+
+    @Autowired
+    private LeadConversionPolicyService leadConversionPolicyService;
+
+    @Autowired
+    private PackageSessionRepository packageSessionRepository;
+
+    @Autowired
+    private EnrollInviteRepository enrollInviteRepository;
+
+    @Autowired
+    private RegionalPriceResolver regionalPriceResolver;
+
+    /**
+     * Courses (packages) behind the enrolled package sessions, for the conversion-policy lookup.
+     * A session whose package can't be resolved is simply left out — the policy service then
+     * falls back to the institute default, i.e. today's convert-on-enrollment behaviour.
+     */
+    private List<String> resolvePackageIds(List<LearnerPackageSessionEnrollmentItemDTO> items) {
+        List<String> packageSessionIds = items.stream()
+                .map(LearnerPackageSessionEnrollmentItemDTO::getPackageSessionId)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+        if (packageSessionIds.isEmpty()) {
+            return List.of();
+        }
+        return packageSessionRepository.findAllById(packageSessionIds).stream()
+                .map(ps -> ps.getPackageEntity() != null ? ps.getPackageEntity().getId() : null)
+                .filter(StringUtils::hasText)
+                .distinct()
+                .toList();
+    }
 
     @Transactional
     public LearnerEnrollResponseDTO enrollMultiPackage(MultiPackageLearnerEnrollRequestDTO request) {
@@ -74,12 +116,24 @@ public class MultiPackageLearnerEnrollService {
         PaymentInitiationRequestDTO paymentInit = request.getPaymentInitiationRequest();
 
         // 0.1 Calculate Total Amount if missing
+        // A negative amount is never legitimate, and the "free" checks below key off
+        // amount <= 0 — so letting one through skipped payment entirely.
+        if (paymentInit.getAmount() != null && paymentInit.getAmount() < 0
+                && !"MANUAL".equalsIgnoreCase(request.getEnrollmentType())) {
+            throw new VacademyException("Payment amount cannot be negative");
+        }
         if (paymentInit.getAmount() == null || paymentInit.getAmount() == 0.0) {
             double totalAmount = 0.0;
             for (LearnerPackageSessionEnrollmentItemDTO item : items) {
                 if (StringUtils.hasText(item.getPlanId())) {
                     vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan plan = paymentPlanService
                             .findById(item.getPlanId()).orElse(null);
+                    // This loop used to fetch the plan and never add its price, so an omitted
+                    // amount summed to 0 and the request was treated as FREE (skip payment +
+                    // force PAID) — a paid enrollment for nothing.
+                    if (plan != null) {
+                        totalAmount += plan.getActualPrice();
+                    }
 
                 } else if (StringUtils.hasText(item.getPaymentOptionId())) {
                     // Fallback to auto-select active plan if planId is missing but paymentOption is
@@ -98,7 +152,16 @@ public class MultiPackageLearnerEnrollService {
                             vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan autoPlan = activePlans
                                     .get(0);
                             log.info("Auto-calculated price from single ACTIVE plan: {}", autoPlan.getId());
-
+                            totalAmount += autoPlan.getActualPrice();
+                            // Pin the plan so the amount verification below checks the
+                            // same plan that was priced here.
+                            item.setPlanId(autoPlan.getId());
+                        } else if (!PaymentOptionType.FREE.name().equalsIgnoreCase(option.getType())
+                                && !"MANUAL".equalsIgnoreCase(request.getEnrollmentType())) {
+                            // A paid option whose plan can't be resolved can't be priced; summing
+                            // it as 0 would hand the course out for free.
+                            throw new VacademyException(
+                                    "plan_id is required for payment option " + option.getId());
                         }
                     }
                 }
@@ -119,6 +182,9 @@ public class MultiPackageLearnerEnrollService {
         boolean willSkipPaymentVerification =
                 "MANUAL".equalsIgnoreCase(request.getEnrollmentType())
                         || (paymentInit.getAmount() != null && paymentInit.getAmount() <= 0);
+        // Regional pricing for the whole order (null = base prices). Resolved before the items
+        // fan out so every item enrolment sees the same decision.
+        Double regionalTotal = willSkipPaymentVerification ? null : resolveRegionalTotal(items, paymentInit);
         if (!willSkipPaymentVerification && paymentInit.getAmount() != null) {
             double expectedSum = 0.0;
             for (LearnerPackageSessionEnrollmentItemDTO item : items) {
@@ -130,6 +196,9 @@ public class MultiPackageLearnerEnrollService {
                         paymentPlanService.findById(item.getPlanId()).orElseThrow(
                                 () -> new VacademyException("PaymentPlan not found: " + item.getPlanId()));
                 expectedSum += plan.getActualPrice();
+            }
+            if (regionalTotal != null) {
+                expectedSum = regionalTotal;
             }
             double clientAmount = paymentInit.getAmount();
             if (Math.abs(clientAmount - expectedSum) > 0.01) {
@@ -173,6 +242,13 @@ public class MultiPackageLearnerEnrollService {
         if ("MANUAL".equalsIgnoreCase(request.getEnrollmentType())) {
             log.info("Enrollment type is MANUAL, enabling SKIP_PAYMENT_INITIATION and immediate activation");
             isSkipPayment = true;
+        }
+
+        // Learner checkouts must not enroll through an expired / inactive link. Admin
+        // MANUAL enrollment is exempt (admins can place learners on closed invites).
+        boolean enforceAvailability = !"MANUAL".equalsIgnoreCase(request.getEnrollmentType());
+        if (enforceAvailability) {
+            mainExtraData.put(LearnerEnrollRequestService.ENFORCE_INVITE_AVAILABILITY, true);
         }
 
         if (isSkipPayment) {
@@ -219,6 +295,9 @@ public class MultiPackageLearnerEnrollService {
             Map<String, Object> childExtraData = new HashMap<>();
             childExtraData.put("SKIP_PAYMENT_INITIATION", true);
             childExtraData.put("PARENT_PAYMENT_LOG_ID", mainPaymentLogId);
+            if (enforceAvailability) {
+                childExtraData.put(LearnerEnrollRequestService.ENFORCE_INVITE_AVAILABILITY, true);
+            }
 
             // Inherit Manual/Skip flags from main if applicable
             if (isSkipPayment) {
@@ -247,12 +326,16 @@ public class MultiPackageLearnerEnrollService {
             paymentLogService.addChildLogsToPayment(mainPaymentLogId, childPaymentLogIds);
         }
 
-        // 4. Auto-mark conversion if this user came in as a lead.
+        // 4. Auto-mark conversion if this user came in as a lead — unless every course in this
+        // enrollment opted out of counting as a conversion (a free course / trial / lead magnet
+        // keeps the lead open). See LeadConversionPolicyService; defaults to converting.
         // Best-effort: failures here must not roll back the enrollment.
         try {
             String enrolledUserId = enrolledUser != null ? enrolledUser.getId() : null;
             String instituteId = request.getInstituteId();
-            if (StringUtils.hasText(enrolledUserId) && StringUtils.hasText(instituteId)) {
+            if (StringUtils.hasText(enrolledUserId) && StringUtils.hasText(instituteId)
+                    && leadConversionPolicyService.anyCountsAsConversion(
+                            instituteId, resolvePackageIds(items))) {
                 boolean converted = userLeadProfileService.markConvertedIfExists(enrolledUserId, instituteId);
                 if (converted) {
                     log.info("Auto-marked lead as CONVERTED on enrollment: userId={}, instituteId={}",
@@ -264,6 +347,67 @@ public class MultiPackageLearnerEnrollService {
         }
 
         return mainResponse;
+    }
+
+    /**
+     * Regional price of the whole order, or null when it stays on base prices. All or
+     * nothing: every paid ONE_TIME / SUBSCRIPTION item must price regionally in one currency.
+     * A mix (some regional, some not, or two currencies) would make one gateway order carry
+     * two currencies, so regional pricing is switched off for this request instead and every
+     * item enrolment — including the ones LearnerEnrollRequestService resolves on its own —
+     * falls back to base prices.
+     */
+    private Double resolveRegionalTotal(List<LearnerPackageSessionEnrollmentItemDTO> items,
+                                        PaymentInitiationRequestDTO paymentInit) {
+        try {
+            return resolveRegionalTotalOrThrow(items, paymentInit);
+        } catch (Exception e) {
+            // Never fail a checkout over regional pricing: the whole order (every item
+            // enrolment included) falls back to base prices, the pre-regional flow.
+            log.warn("Regional pricing skipped for multi-package order: {}", e.getMessage());
+            regionalPriceResolver.suppressForCurrentRequest();
+            return null;
+        }
+    }
+
+    private Double resolveRegionalTotalOrThrow(List<LearnerPackageSessionEnrollmentItemDTO> items,
+                                               PaymentInitiationRequestDTO paymentInit) {
+        String currency = null;
+        double total = 0.0;
+        boolean anyRegional = false;
+        boolean mixed = false;
+        for (LearnerPackageSessionEnrollmentItemDTO item : items) {
+            PaymentPlan plan = StringUtils.hasText(item.getPlanId())
+                    ? paymentPlanService.findById(item.getPlanId()).orElse(null) : null;
+            if (plan == null || plan.getActualPrice() <= 0) {
+                continue;
+            }
+            String type = plan.getPaymentOption() != null ? plan.getPaymentOption().getType() : null;
+            boolean eligible = (PaymentOptionType.ONE_TIME.name().equals(type)
+                    || PaymentOptionType.SUBSCRIPTION.name().equals(type))
+                    && Boolean.TRUE.equals(plan.getPaymentOption().getRegionalPricingEnabled());
+            String vendor = eligible && StringUtils.hasText(item.getEnrollInviteId())
+                    ? enrollInviteRepository.findById(item.getEnrollInviteId()).map(EnrollInvite::getVendor).orElse(null)
+                    : null;
+            Optional<RegionalQuote> quote = eligible ? regionalPriceResolver.quote(plan, vendor) : Optional.empty();
+            if (quote.isEmpty() || (currency != null && !currency.equals(quote.get().currency()))) {
+                mixed = true;
+                continue;
+            }
+            currency = quote.get().currency();
+            total += quote.get().actualPrice().doubleValue();
+            anyRegional = true;
+        }
+        if (!anyRegional) {
+            return null;
+        }
+        if (mixed) {
+            log.info("Multi-package order mixes regional and base prices — using base prices for all items");
+            regionalPriceResolver.suppressForCurrentRequest();
+            return null;
+        }
+        paymentInit.setCurrency(currency);
+        return total;
     }
 
     private LearnerEnrollRequestDTO mapToLegacyDTO(MultiPackageLearnerEnrollRequestDTO request,

@@ -1,6 +1,7 @@
 import { getServerTime, useServerTime } from "@/hooks/use-server-time";
 import { convertSessionTimeToUserTimezone } from "@/utils/timezone";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { SessionDetailsResponse } from "../../-types/types";
 
 interface CountdownTimerProps {
@@ -19,6 +20,7 @@ export function CountdownTimer({
     minutes: number;
     seconds: number;
   } | null>(null);
+  const { t } = useTranslation("study");
   const { data: serverTimeData } = useServerTime();
   const sessionStartInUserTimezone = convertSessionTimeToUserTimezone(
     sessionDetails.meetingDate,
@@ -84,19 +86,19 @@ export function CountdownTimer({
           <div className="text-3xl font-bold border-2 p-3 px-4 rounded">
             {String(timeLeft.hours).padStart(2, "0")}
           </div>
-          <div className="text-sm text-gray-500 mt-2">Hours</div>
+          <div className="text-sm text-gray-500 mt-2">{t("liveClass.countdown.hours")}</div>
         </div>
         <div className="flex flex-col items-center">
           <div className="text-3xl font-bold border-2 p-3 px-4 rounded">
             {String(timeLeft.minutes).padStart(2, "0")}
           </div>
-          <div className="text-sm text-gray-500 mt-2">Minutes</div>
+          <div className="text-sm text-gray-500 mt-2">{t("liveClass.countdown.minutes")}</div>
         </div>
         <div className="flex flex-col items-center">
           <div className="text-3xl font-bold border-2 p-3 px-4 rounded">
             {String(timeLeft.seconds).padStart(2, "0")}
           </div>
-          <div className="text-sm text-gray-500 mt-2">Seconds</div>
+          <div className="text-sm text-gray-500 mt-2">{t("liveClass.countdown.seconds")}</div>
         </div>
       </div>
     </div>

@@ -1,0 +1,30 @@
+{
+    "heading": "Ajouter des questions",
+    "defaultSectionName": "Section {{number}}",
+    "actions": {
+        "update": "Mettre à jour",
+        "next": "Suivant",
+        "addSection": "Ajouter une section"
+    },
+    "toast": {
+        "updateSuccess": "Les données de l'étape 2 ont été mises à jour avec succès !",
+        "saveSuccess": "Les données de l'étape 2 ont été enregistrées avec succès !"
+    },
+    "errors": {
+        "saveQuestionsFailed": "Échec de l'enregistrement des questions."
+    },
+    "durationDistribution": {
+        "entireAssessmentLabel": "Durée de l'évaluation entière",
+        "sectionWiseLabel": "Durée par section",
+        "questionWiseLabel": "Durée par question",
+        "entireAssessmentHeading": "Durée de l'évaluation entière",
+        "entireAssessmentDescription": "Définissez une seule limite de temps pour l'ensemble de l'évaluation.",
+        "sectionWiseHeading": "Durée par section",
+        "sectionWiseDescription": "Attribuez un temps spécifique à chaque section dans l'onglet Sections. La durée totale de l'évaluation sera la somme des durées de toutes les sections.",
+        "questionWiseHeading": "Durée par question",
+        "questionWiseDescription": "Définissez des limites de temps individuelles pour chaque question dans l'onglet Sections, où un champ de saisie du temps est disponible à côté de chaque question.",
+        "entireTestDurationLabel": "Durée totale du test",
+        "hrs": "h",
+        "minutes": "minutes"
+    }
+}

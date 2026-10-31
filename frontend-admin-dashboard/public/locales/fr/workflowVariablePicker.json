@@ -1,0 +1,12 @@
+{
+    "switchToVisualPicker": "Passer au sélecteur visuel",
+    "switchToRawSpelInput": "Passer à la saisie SpEL brute",
+    "advancedPlaceholder": "#ctx['variable']",
+    "visualPlaceholder": "Cliquez pour choisir une variable...",
+    "searchPlaceholder": "Rechercher des variables...",
+    "spelBadge": "SpEL",
+    "noVariablesAvailable": "Aucune variable disponible",
+    "noVariablesHint": "Connectez ce nœud à des nœuds en amont (comme Déclencheur ou Requête) pour voir leurs données de sortie ici.",
+    "switchToAdvancedHint": "Ou passez en mode Avancé pour saisir une expression SpEL manuellement",
+    "fromGroup": "De : {{group}}"
+}

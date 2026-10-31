@@ -39,6 +39,13 @@ public class WorkflowEngineService {
     // upstream of a long DELAY are not re-sent when the workflow is resumed from __resumed_at_node.
     private static final String EXECUTED_NOTIFICATION_NODES_KEY = "__executed_notification_nodes";
 
+    /**
+     * The running workflow's name, for send nodes to say which workflow a message came from
+     * (WhatsApp Inbox / student timeline). Engine-internal, like the key above, so it can never
+     * collide with a key a workflow author puts on the context.
+     */
+    public static final String WORKFLOW_NAME_KEY = "__workflowName";
+
     public Map<String, Object> run(String workflowId, Map<String, Object> seedContext) {
         try {
             // Check for dry-run mode from seedContext
@@ -67,6 +74,7 @@ public class WorkflowEngineService {
                 ctx.putAll(seedContext);
             }
             ctx.put("workflowId", workflowId);
+            ctx.put(WORKFLOW_NAME_KEY, wf.getName());
             ctx.put("instituteId", wf.getInstituteId());
 
             // Resolve and inject the institute name so SEND_EMAIL templates can use

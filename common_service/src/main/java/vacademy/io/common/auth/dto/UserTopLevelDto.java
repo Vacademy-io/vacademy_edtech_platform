@@ -28,6 +28,9 @@ public class UserTopLevelDto {
     private String gender;
     private boolean isRootUser;
     private String profilePicFileId;
+    /** Shared author profile fields, editable by authorised institute staff. */
+    private String authorSubtitle;
+    private String authorDescription;
     // BCP-47 language tag (serialized as preferred_locale); null = no preference
     private String preferredLocale;
     private List<UserRoleDTO> roles;

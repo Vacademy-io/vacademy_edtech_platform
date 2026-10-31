@@ -1,0 +1,27 @@
+{
+    "block": {
+        "title": "املأ الفراغات",
+        "preview": "معاينة",
+        "edit": "تحرير"
+    },
+    "editor": {
+        "usageHintPrefix": "استخدم",
+        "usageHintSuffix": "لإنشاء الفراغات.",
+        "exampleLabel": "مثال:",
+        "exampleSentence": "عاصمة فرنسا هي {blank:Paris}",
+        "textareaPlaceholder": "{blank:Sun} هي مركز {blank:solar system} الخاص بنا.",
+        "blanksDetected_zero": "لم يتم العثور على أي فراغ:",
+        "blanksDetected_one": "تم العثور على فراغ واحد:",
+        "blanksDetected_two": "تم العثور على فراغين:",
+        "blanksDetected_few": "تم العثور على {{count}} فراغات:",
+        "blanksDetected_many": "تم العثور على {{count}} فراغًا:",
+        "blanksDetected_other": "تم العثور على {{count}} فراغ:"
+    },
+    "preview": {
+        "blankPlaceholder": "الفراغ {{index}}",
+        "checkAnswers": "تحقق من الإجابات",
+        "reset": "إعادة تعيين",
+        "correct": "صحيح",
+        "emptyState": "انقر على تحرير لإضافة جملة بها فراغات"
+    }
+}

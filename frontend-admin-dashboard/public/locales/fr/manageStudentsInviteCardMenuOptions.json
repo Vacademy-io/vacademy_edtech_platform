@@ -1,0 +1,16 @@
+{
+    "menu": {
+        "edit": "Modifier",
+        "delete": "Supprimer"
+    },
+    "toast": {
+        "deleteSuccess": "Invitation supprimée !",
+        "deleteError": "Échec de la suppression du lien d'invitation !"
+    },
+    "deleteDialog": {
+        "heading": "Boîte de dialogue de suppression",
+        "confirmText": "Êtes-vous sûr de vouloir supprimer l'invitation {{name}} ?",
+        "cancel": "Annuler",
+        "confirm": "Oui, j'en suis sûr"
+    }
+}

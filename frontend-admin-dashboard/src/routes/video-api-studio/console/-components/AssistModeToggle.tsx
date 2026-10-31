@@ -1,4 +1,5 @@
 import { Sparkle, Lightning } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
 interface AssistModeToggleProps {
@@ -13,11 +14,12 @@ interface AssistModeToggleProps {
  * runs the whole thing autonomously (today's behaviour).
  */
 export function AssistModeToggle({ assistModeEnabled, onAssistModeChange, disabled }: AssistModeToggleProps) {
+    const { t } = useTranslation('videoApiStudioAssistModeToggle');
     return (
         <div className="inline-flex flex-col gap-1">
             <div
                 role="radiogroup"
-                aria-label="Generation mode"
+                aria-label={t('radiogroup.ariaLabel')}
                 className="inline-flex rounded-lg border bg-muted/40 p-0.5 text-xs"
             >
                 <button
@@ -34,7 +36,7 @@ export function AssistModeToggle({ assistModeEnabled, onAssistModeChange, disabl
                     )}
                 >
                     <Sparkle className="size-3.5" />
-                    Assist
+                    {t('options.assist')}
                 </button>
                 <button
                     type="button"
@@ -50,13 +52,11 @@ export function AssistModeToggle({ assistModeEnabled, onAssistModeChange, disabl
                     )}
                 >
                     <Lightning className="size-3.5" />
-                    Auto
+                    {t('options.auto')}
                 </button>
             </div>
             <span className="text-xs text-muted-foreground">
-                {assistModeEnabled
-                    ? 'Assist: review the plan, script & visuals as we go.'
-                    : 'Auto: we handle everything end-to-end.'}
+                {assistModeEnabled ? t('description.assist') : t('description.auto')}
             </span>
         </div>
     );

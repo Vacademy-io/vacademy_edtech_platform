@@ -1,0 +1,27 @@
+{
+    "toast": {
+        "saveSuccess": "Paramètres du certificat du cours enregistrés",
+        "saveFailed": "Impossible d'enregistrer les paramètres du certificat du cours"
+    },
+    "instituteState": {
+        "enabled": "activés",
+        "disabled": "désactivés"
+    },
+    "heading": "Paramètres du certificat pour ce cours",
+    "cancel": "Annuler",
+    "saving": "Enregistrement…",
+    "save": "Enregistrer",
+    "instituteDefaultSummary": "Par défaut de l'établissement : les certificats sont <strong>{{state}}</strong> à <strong>{{pct}} %</strong> d'achèvement. Tout ce que vous définissez ici s'applique uniquement à ce cours.",
+    "certificatesForCourse": "Certificats pour ce cours",
+    "choice": {
+        "inherit": "Utiliser la valeur par défaut de l'établissement",
+        "enabled": "Activés",
+        "disabled": "Désactivés"
+    },
+    "willReceiveCertificates": "Les apprenants de ce cours recevront des certificats une fois le seuil atteint.",
+    "noCertificates": "Aucun certificat ne sera généré pour ce cours.",
+    "instituteDefaultOffException": "La valeur par défaut de l'établissement est désactivée — ce cours fait exception.",
+    "overrideThresholdLabel": "Utiliser un seuil d'achèvement différent pour ce cours",
+    "percentCompletion": "% d'achèvement",
+    "certificateDesign": "Modèle de certificat"
+}

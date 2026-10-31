@@ -1,0 +1,9 @@
+{
+    "card": {
+        "title": "कस्टम HTML",
+        "helperText": "आमंत्रण पेज में कस्टम HTML सामग्री जोड़ें"
+    },
+    "textarea": {
+        "placeholder": "यहाँ कस्टम HTML कोड दर्ज करें..."
+    }
+}

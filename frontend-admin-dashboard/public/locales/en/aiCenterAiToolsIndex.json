@@ -1,0 +1,67 @@
+{
+    "navHeading": "Teaching Assistant",
+    "greetingMorning": "Good morning.",
+    "greetingMorningNamed": "Good morning, {{name}}.",
+    "greetingAfternoon": "Good afternoon.",
+    "greetingAfternoonNamed": "Good afternoon, {{name}}.",
+    "greetingEvening": "Good evening.",
+    "greetingEveningNamed": "Good evening, {{name}}.",
+    "headerSubtitle": "Let's get you to the right tool in a couple of clicks.",
+    "step1Heading": "What brings you here today?",
+    "step1Subtitle": "Pick the broad goal. We'll narrow down on the next step.",
+    "ctaOpen": "Open",
+    "ctaContinue": "Continue",
+    "back": "Back",
+    "step2HeadingFallback": "{{title}} — which one?",
+    "step2Subtitle": "Pick how you want to start. The next screen asks for the specifics.",
+    "recentWorkHeading": "Your recent work",
+    "viewAll": "View all",
+    "topicBasedQuestionsFallback": "Topic-based questions",
+    "categories": {
+        "assessment": {
+            "title": "Create an assessment",
+            "subtitle": "A question paper, quiz, or test — from any source you have.",
+            "step2Heading": "How would you like to generate the questions?"
+        },
+        "lecture-plan": {
+            "title": "Plan a lecture",
+            "subtitle": "A time-based plan with key points and optional homework."
+        },
+        "lecture-review": {
+            "title": "Review my teaching",
+            "subtitle": "Get a kind, specific review of a class you recorded."
+        }
+    },
+    "subOptions": {
+        "assessment": {
+            "fromTopic": {
+                "title": "From a topic",
+                "subtitle": "Type a topic, we draft the questions."
+            },
+            "fromDocument": {
+                "title": "From a document",
+                "subtitle": "PDF, Word, or PowerPoint — fresh questions about its content."
+            },
+            "fromAudio": {
+                "title": "From an audio recording",
+                "subtitle": "Upload a recording — questions based on what was said."
+            },
+            "fromPhoto": {
+                "title": "From a photo of a paper",
+                "subtitle": "Snap a printed paper — turn it into editable questions."
+            },
+            "fromExistingPaper": {
+                "title": "From an existing question paper",
+                "subtitle": "Digitize a question paper you already have."
+            },
+            "fromQuestionBank": {
+                "title": "From my question bank",
+                "subtitle": "Auto-sort by topic, or pull specific questions."
+            },
+            "chatWithDocument": {
+                "title": "Chat with a document",
+                "subtitle": "Have a back-and-forth about a PDF — ask for questions or summaries."
+            }
+        }
+    }
+}

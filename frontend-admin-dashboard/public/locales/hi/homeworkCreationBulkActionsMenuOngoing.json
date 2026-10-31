@@ -1,0 +1,10 @@
+{
+    "menu": {
+        "increaseAssessmentTime": "मूल्यांकन का समय बढ़ाएँ",
+        "closeSubmission": "सबमिशन बंद करें"
+    },
+    "actionInfo": {
+        "selectedStudents_one": "{{count}} विद्यार्थी",
+        "selectedStudents_other": "{{count}} विद्यार्थी"
+    }
+}

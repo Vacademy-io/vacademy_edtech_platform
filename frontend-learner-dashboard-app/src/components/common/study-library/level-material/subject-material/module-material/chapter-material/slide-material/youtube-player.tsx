@@ -13,13 +13,14 @@ import {
   useMemo,
 } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { Trans, useTranslation } from "react-i18next";
 import { useTrackingStore } from "@/stores/study-library/youtube-video-tracking-store";
 import { getEpochTimeInMillis } from "./utils";
 import { convertTimeToSeconds } from "@/utils/study-library/tracking/convertTimeToSeconds";
 import { formatVideoTime } from "@/utils/study-library/tracking/formatVideoTime";
 import { calculateNetDuration } from "@/utils/study-library/tracking/calculateNetDuration";
 import { useVideoSync } from "@/hooks/study-library/useVideoSync";
-import { getYouTubeEmbedOrigin } from "@/utils/youtube-embed";
+import { getYouTubeBridgeHost, getYouTubeEmbedOrigin } from "@/utils/youtube-embed";
 import { useSlideContentProtection } from "@/hooks/useSlideContentProtection";
 import YouTube, {
   type YouTubeEvent,
@@ -34,8 +35,12 @@ import {
   Rewind,
   X,
   Gauge,
+  CheckCircle,
+  Clock,
 } from "@phosphor-icons/react";
 import { Preferences } from "@capacitor/preferences";
+import { Capacitor, type PluginListenerHandle } from "@capacitor/core";
+import { App as CapacitorApp } from "@/utils/app-plugin";
 import { useContentStore } from "@/stores/study-library/chapter-sidebar-store";
 import VideoQuestionOverlay from "./video-question-overlay";
 import { useMediaRefsStore } from "@/stores/mediaRefsStore";
@@ -80,6 +85,19 @@ const suppressCaptions = (target: unknown) => {
   }
 };
 
+/**
+ * Drift (seconds) the live-class sync tolerates before it re-seeks.
+ *
+ * Small enough that nobody sits noticeably behind the class; large enough that
+ * the buffering stall which follows a seek does not itself count as drift and
+ * trigger a second seek (and a second stall) on a slow connection.
+ */
+const LIVE_SYNC_TOLERANCE_SECONDS = 8;
+
+/** Where a live class stands relative to its scheduled slot. */
+type LivePhase = "not-started" | "live" | "ended";
+type LiveSyncResult = "skipped" | LivePhase | "in-sync" | "seeked";
+
 // Add the YouTube PlayerState enum to avoid window.YT references
 enum PlayerState {
   UNSTARTED = -1,
@@ -122,6 +140,12 @@ interface YouTubePlayerProps {
   isLiveStream?: boolean; // If true, indicates this is a live stream
   liveTimestamp?: number; // Current live timestamp in seconds (for live streams)
   liveClassStartTime?: string; // ISO timestamp when the live class started (for syncing video position)
+  /**
+   * Server clock minus device clock, in ms. The live position is derived from
+   * "now − scheduled start", and a phone whose clock is a few minutes off would
+   * otherwise put its owner a few minutes away from everyone else.
+   */
+  liveClockOffsetMs?: number;
   enableConcentrationScore?: boolean; // If false, concentration score features are disabled
   concentrationSettings?: ConcentrationSettings;
 }
@@ -142,9 +166,11 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
   isLiveStream = false,
   liveTimestamp = 0,
   liveClassStartTime,
+  liveClockOffsetMs = 0,
   enableConcentrationScore = true,
   concentrationSettings,
 }) => {
+  const { t } = useTranslation("libraryCommonB");
   const { activeItem } = useContentStore();
   // When Slide Content Protection is on, block right-click on the player (the
   // iframe is pointer-events-none with custom controls, so the contextmenu fires
@@ -214,6 +240,10 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
         clearTimeout(autoplayVerifyTimeoutRef.current);
         autoplayVerifyTimeoutRef.current = null;
       }
+      if (liveStartTimerRef.current) {
+        clearTimeout(liveStartTimerRef.current);
+        liveStartTimerRef.current = null;
+      }
     };
   }, []);
 
@@ -239,6 +269,63 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
    * or seeking somewhere — clear it, so replaying on purpose still works.
    */
   const hasEndedRef = useRef(false);
+
+  // ---------------------------------------------------------------------------
+  // Live class wall-clock sync.
+  //
+  // A live class is a scheduled playback: the video's position must equal the
+  // time elapsed since the scheduled start — for everyone, all the time. The
+  // player cannot know that on its own; it resumes from wherever it was paused.
+  // So the position is re-derived from the clock at every point where it could
+  // have drifted:
+  //   ready          a learner joining at 12:35 for a 12:30 class lands at 5:00
+  //   foreground     the OS pauses the video while the app is in the background;
+  //                  on return it jumps ahead instead of resuming
+  //   PLAYING        after a pause nobody asked for (OS, tab, or a seek that iOS
+  //                  quietly ignored before its first tap)
+  //   play tap       the learner restarting it by hand after such a pause
+  //   scheduled start  PRE_JOINING lets learners in early; hold, then begin on time
+  // Before the scheduled start and once the video has run out, playback is HELD:
+  // nothing plays early and nothing starts over — that is the loop the learner
+  // saw when an 8-minute video sat in a 10-minute slot.
+  //
+  // Deliberate actions are left alone. A pause via the pause button resumes
+  // where it was paused, and a rewind (where allowed) is not snapped forward.
+  // Only interruptions are corrected.
+  // ---------------------------------------------------------------------------
+  const liveSyncEnabled = isLiveStream && !!liveClassStartTime;
+  const [livePhase, setLivePhase] = useState<LivePhase | null>(null);
+  /** Mirror of livePhase for async code; non-null while playback is held. */
+  const liveHoldRef = useRef<"not-started" | "ended" | null>(null);
+  /**
+   * True until a sync has confirmed the player sits at the live position. Set
+   * again by anything that may have moved it (background, clock correction),
+   * and by a seek — iOS ignores seekTo before the first tap, so a seek only
+   * counts once a PLAYING event shows it landed.
+   */
+  const liveSyncPendingRef = useRef(true);
+  const liveSyncInFlightRef = useRef(false);
+  const liveClockOffsetRef = useRef(liveClockOffsetMs);
+  const liveStartTimerRef = useRef<NodeJS.Timeout | null>(null);
+  /** Set by the pause button just before it pauses; consumed by the PAUSED event. */
+  const deliberatePauseRef = useRef(false);
+  /** The pause the player is currently in, if any; cleared on PLAYING. */
+  const lastPauseRef = useRef<{ deliberate: boolean } | null>(null);
+  const wasPlayingBeforeBackgroundRef = useRef(false);
+  // Mirrors for listeners registered once (visibility, app state, timers).
+  const isPlayedRef = useRef(isPlayed);
+  isPlayedRef.current = isPlayed;
+  const playerReadyRef = useRef(playerReady);
+  playerReadyRef.current = playerReady;
+  /** Latest sync function, for listeners registered once. */
+  const liveSyncRef = useRef<
+    | ((
+        reason: string,
+        opts: { resume: boolean; waitForDuration?: boolean }
+      ) => Promise<LiveSyncResult>)
+    | null
+  >(null);
+  const resumeFromInterruptionRef = useRef<((reason: string) => Promise<void>) | null>(null);
   // UI control states
   const [showControls, setShowControls] = useState(true);
   const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -888,7 +975,7 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
           visibilityResumeTimeoutRef.current = setTimeout(async () => {
             visibilityResumeTimeoutRef.current = null;
             if (!isMountedRef.current) return;
-            if (hasEndedRef.current) return;
+            if (hasEndedRef.current || liveHoldRef.current) return;
             const ok = await safePlayerOperation(
               () => player?.playVideo(),
               "visibilityResume"
@@ -1078,9 +1165,12 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
   // iOS exposes `capacitor://localhost` which YouTube rejects → Error 153.
   const getPlayerOrigin = () => getYouTubeEmbedOrigin();
 
+  // Native iOS loads the player through the https embed bridge (Error 153).
+  const bridgeHost = getYouTubeBridgeHost();
   const opts: YouTubeProps["opts"] = {
     height: "100%",
     width: "100%",
+    ...(bridgeHost ? { host: bridgeHost } : {}),
     playerVars: {
       controls: 0, // Disable YouTube controls
       disablekb: 1, // Disable keyboard controls
@@ -1114,12 +1204,40 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
 
   const togglePause = async () => {
     if (!allowPlayPause) return;
+    // The learner chose this pause: resuming later continues from here rather
+    // than jumping to the live position.
+    deliberatePauseRef.current = true;
     setIsPlayed(false);
 
     await safePlayerOperation(
       () => playerRef.current?.pauseVideo(),
       "togglePause"
     );
+  };
+
+  /**
+   * Live classes only: bring the player to the live position before a
+   * deliberate play, and refuse to play while the class is held. Returns
+   * true when playback may go ahead.
+   */
+  const liveSyncBeforePlay = async (reason: string): Promise<boolean> => {
+    if (!liveSyncEnabled) return true;
+    const needsSync =
+      liveSyncPendingRef.current ||
+      !!liveHoldRef.current ||
+      !!(lastPauseRef.current && !lastPauseRef.current.deliberate);
+    if (!needsSync) return true;
+    // No waiting for the duration here: the play must follow the tap closely
+    // (mobile Safari drops a play that arrives seconds after the gesture).
+    const result = await liveSyncRef.current?.(reason, {
+      resume: false,
+      waitForDuration: false,
+    });
+    // Nothing plays before the scheduled start, and nothing starts over once
+    // the video has run out. Any other outcome — including "skipped" when the
+    // duration is still unknown — lets the play through; the PLAYING event
+    // that follows finishes the sync.
+    return result !== "not-started" && result !== "ended";
   };
 
   // Direct pause function for question overlay - bypasses state management issues
@@ -1139,6 +1257,7 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
   };
 
   const togglePlay = async () => {
+    if (!(await liveSyncBeforePlay("play"))) return;
     // A deliberate press is a request to watch again; let it through.
     hasEndedRef.current = false;
     setIsPlayed(true);
@@ -1201,6 +1320,7 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
   // Handler for manual play button (for iOS/browsers that block autoplay)
   const handleManualPlay = async () => {
     if (!player || !playerReady) return;
+    if (!(await liveSyncBeforePlay("manualPlay"))) return;
     // Deliberate, like togglePlay — replaying a finished class on purpose is fine.
     hasEndedRef.current = false;
 
@@ -1245,7 +1365,9 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
         const success = await safePlayerOperation(async () => {
           const p = playerRef.current;
           if (!p) return;
-          if (hasEndedRef.current) return;
+          // A live class held before its start (or after its end) must not
+          // be autoplayed either — the sync resumes it on time.
+          if (hasEndedRef.current || liveHoldRef.current) return;
           try {
             await p.unMute(); // Unmute for autoplay
           } catch (e) {
@@ -1348,7 +1470,7 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
         if (isPlayed) {
           // Re-runs whenever its deps change, so without this it restarts a
           // finished class every time it fires.
-          if (hasEndedRef.current) return;
+          if (hasEndedRef.current || liveHoldRef.current) return;
           await p.playVideo();
           startProgressTracking();
         } else {
@@ -1419,7 +1541,7 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
         await safePlayerOperation(async () => {
           const p = playerRef.current;
           if (!p) return;
-          if (hasEndedRef.current) return;
+          if (hasEndedRef.current || liveHoldRef.current) return;
           await p.playVideo();
           if (isMountedRef.current) setIsPlayed(true);
         }, "autoPlayAfterSeek");
@@ -1444,6 +1566,26 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
     }
 
     if (event.data === PLAYING_STATE) {
+      // Playing now, so the "tap to start" fallback has nothing left to offer —
+      // a class that the live sync started on time must not sit under it.
+      setShowManualPlayButton(false);
+
+      // Live class: a pause nobody asked for (OS, tab switch) resumes from the
+      // paused position, which is now behind the class. Any play that follows
+      // one — or that arrives while a sync is still unconfirmed — is corrected
+      // here. A pause the learner chose is left where they left it.
+      const followsInterruption =
+        !!lastPauseRef.current && !lastPauseRef.current.deliberate;
+      lastPauseRef.current = null;
+      deliberatePauseRef.current = false;
+      if (
+        liveSyncEnabled &&
+        (liveSyncPendingRef.current || followsInterruption) &&
+        !liveSyncInFlightRef.current
+      ) {
+        void liveSyncRef.current?.("playing", { resume: false });
+      }
+
       startTimer();
       startProgressTracking();
 
@@ -1483,6 +1625,10 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
       setIsPlayed(true);
     } else if (event.data === PAUSED_STATE || event.data === ENDED_STATE) {
       if (event.data === ENDED_STATE) hasEndedRef.current = true;
+      // Remember whose pause this is; the next PLAYING decides from it
+      // whether the live position must be restored.
+      lastPauseRef.current = { deliberate: deliberatePauseRef.current };
+      deliberatePauseRef.current = false;
       stopTimer();
       stopProgressTracking();
       videoEndTime.current = now;
@@ -1537,6 +1683,14 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
       // avoid a per-pause POST storm during scrubbing.
       if (event.data === ENDED_STATE) {
         syncVideoTrackingData();
+        // Live class: the video ran out. Almost always that means the slot
+        // outlived the video and the class is over — hold it there, so the
+        // Play button cannot start it over. The clock decides rather than the
+        // event, because a learner who was ahead of the class (rewind allowed)
+        // should be put back at the live position instead.
+        if (liveSyncEnabled) {
+          void liveSyncRef.current?.("ended", { resume: true });
+        }
       }
     }
   };
@@ -1713,74 +1867,241 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
     }
   }, [ms, player, playerReady, isPlayed]);
 
-  // Live class synchronization - automatically sync video to live class progress
+  // ----- Live class wall-clock sync (see the note by liveHoldRef) -----
+
+  /** Seconds since the scheduled start on the server's clock; negative before it. */
+  const getLiveExpectedSeconds = (): number | null => {
+    if (!liveClassStartTime) return null;
+    const start = new Date(liveClassStartTime).getTime();
+    if (Number.isNaN(start)) return null;
+    return (Date.now() + liveClockOffsetRef.current - start) / 1000;
+  };
+
+  const setLiveHold = (hold: "not-started" | "ended" | null) => {
+    liveHoldRef.current = hold;
+    if (isMountedRef.current) setLivePhase(hold ?? "live");
+  };
+
+  /**
+   * Bring the player to where the class is right now.
+   *
+   * With `resume`, playback is (re)started once the player is in position —
+   * used when an interruption is what paused it. Without it the caller decides:
+   * a PLAYING event is already playing, a play tap plays afterwards.
+   *
+   * `waitForDuration` (default on) polls up to ~3 s for the video length. A
+   * play tap passes false: mobile Safari only honours a play that follows the
+   * tap closely, so the tap must not sit behind that wait — it plays, and the
+   * PLAYING event finishes the sync once the length is known.
+   */
+  const syncToLiveClass = async (
+    reason: string,
+    { resume, waitForDuration = true }: { resume: boolean; waitForDuration?: boolean }
+  ): Promise<LiveSyncResult> => {
+    if (!liveSyncEnabled) return "skipped";
+    const p = playerRef.current;
+    if (!p || !playerReadyRef.current || !isMountedRef.current) return "skipped";
+    // One at a time — overlapping seeks fight each other. A trigger that lands
+    // during a sync is not lost: the seek's own PLAYING event re-checks.
+    if (liveSyncInFlightRef.current) return "skipped";
+    liveSyncInFlightRef.current = true;
+    try {
+      const expected = getLiveExpectedSeconds();
+      if (expected === null) return "skipped";
+
+      if (liveStartTimerRef.current) {
+        clearTimeout(liveStartTimerRef.current);
+        liveStartTimerRef.current = null;
+      }
+
+      if (expected < 0) {
+        // Scheduled start is still ahead (PRE_JOINING admits learners during
+        // the waiting-room window). Hold the first frame and begin on time —
+        // starting now would put this learner minutes ahead of the class.
+        // Set the hold before the first await so the autoplay that fires
+        // shortly after ready sees it.
+        setLiveHold("not-started");
+        liveSyncPendingRef.current = true;
+        await safePlayerOperation(() => p.pauseVideo(), `liveSync(${reason}).holdBeforeStart`);
+        if (isMountedRef.current) setIsPlayed(false);
+        liveStartTimerRef.current = setTimeout(() => {
+          liveStartTimerRef.current = null;
+          void liveSyncRef.current?.("scheduled-start", { resume: true });
+        }, Math.ceil(-expected * 1000) + 250);
+        return "not-started";
+      }
+
+      // A duration of 0 means "not loaded yet", not "zero-length" — and on a
+      // phone it stays 0 until the first play. Clamping against it is how a
+      // late joiner used to be sent to the beginning, so wait for a real value
+      // and otherwise leave the player alone; the next PLAYING retries.
+      let duration = await safeGetNumber(p.getDuration());
+      for (let i = 0; waitForDuration && i < 10 && !(duration > 0); i++) {
+        await new Promise((r) => setTimeout(r, 300));
+        if (!isMountedRef.current || playerRef.current !== p) return "skipped";
+        duration = await safeGetNumber(p.getDuration());
+      }
+      if (!(duration > 0)) {
+        console.warn(`liveSync(${reason}): duration unavailable, not seeking`);
+        return "skipped";
+      }
+
+      // The slot outlives the video (an 8-minute video in a 10-minute class).
+      // There is nothing left to play: hold the last frame and let nothing —
+      // autoplay, a resume, or the Play button — start it over.
+      const holdAtEnd = async (): Promise<LiveSyncResult> => {
+        setLiveHold("ended");
+        hasEndedRef.current = true;
+        liveSyncPendingRef.current = false;
+        await safePlayerOperation(() => p.pauseVideo(), `liveSync(${reason}).holdAtEnd`);
+        if (isMountedRef.current) setIsPlayed(false);
+        return "ended";
+      };
+      if (expected >= duration - 1) return holdAtEnd();
+
+      const current = await safeGetNumber(p.getCurrentTime());
+      let result: LiveSyncResult;
+      if (Math.abs(current - expected) <= LIVE_SYNC_TOLERANCE_SECONDS) {
+        // The player sits at its end and the clock agrees to within the
+        // tolerance: that is the class ending, not drift to correct. A
+        // playVideo() on an ended player starts it over — the loop.
+        if (hasEndedRef.current) return holdAtEnd();
+        setLiveHold(null);
+        liveSyncPendingRef.current = false;
+        result = "in-sync";
+      } else {
+        setLiveHold(null);
+        // Re-read the clock: waiting for the duration may have taken seconds.
+        const target = getLiveExpectedSeconds() ?? expected;
+        console.log(
+          `liveSync(${reason}): player at ${Math.round(current)}s, class at ${Math.round(target)}s — seeking`
+        );
+        const seeked = await seekToTimestamp(target, true);
+        if (!seeked) return "skipped";
+        // Stays pending until a PLAYING event confirms the seek landed.
+        result = "seeked";
+      }
+
+      if (resume) {
+        // The clock says the class is mid-video, so whatever ended earlier
+        // (a learner who was ahead reaching the end) is not the class ending.
+        hasEndedRef.current = false;
+        await safePlayerOperation(() => p.playVideo(), `liveSync(${reason}).resume`);
+        // isPlayed follows the PLAYING event: if the browser refuses to play
+        // without a tap, the Play button stays for the learner to press.
+      }
+      return result;
+    } catch (error) {
+      console.error(`liveSync(${reason}) failed:`, error);
+      return "skipped";
+    } finally {
+      liveSyncInFlightRef.current = false;
+    }
+  };
+  liveSyncRef.current = syncToLiveClass;
+
+  /**
+   * The app or tab came back to the foreground. The OS pauses the video
+   * while the app is away and the player would resume where it stopped —
+   * behind the class. Put it at the live position and, if the interruption
+   * is what paused it, play on.
+   */
+  const resumeFromInterruption = async (reason: string) => {
+    if (!liveSyncEnabled) return;
+    const wasPlaying = wasPlayingBeforeBackgroundRef.current;
+    wasPlayingBeforeBackgroundRef.current = false;
+    // Let the player report the state it was left in: the PAUSED the OS
+    // caused arrives a beat after the foreground event, and acting before it
+    // lands means the pause handler's pauseVideo() would undo the resume.
+    await new Promise((r) => setTimeout(r, 400));
+    if (!isMountedRef.current) return;
+    const pausedOnPurpose = !!lastPauseRef.current?.deliberate;
+    const pausedByInterruption = !!lastPauseRef.current && !pausedOnPurpose;
+    // A learner who paused on purpose before leaving gets their paused
+    // position back — this is the pause button working as designed.
+    if (!wasPlaying && pausedOnPurpose && allowPlayPause) return;
+    liveSyncPendingRef.current = true;
+    await syncToLiveClass(reason, {
+      // Play on when the class must be playing, or when it was and the
+      // interruption is what stopped it. A video the learner never started
+      // (pause control on, no tap yet) stays waiting for their tap.
+      resume: !allowPlayPause || wasPlaying || pausedByInterruption,
+    });
+  };
+  resumeFromInterruptionRef.current = resumeFromInterruption;
+
+  // Initial sync once the player is ready: a late joiner lands mid-video, an
+  // early one (PRE_JOINING) is held until the scheduled start.
   useEffect(() => {
-    if (!liveClassStartTime || !player || !playerReady || !isLiveStream) return;
-
-    const syncToLiveClassProgress = () => {
-      try {
-        // Parse the live class start time (ISO string)
-        const startTime = new Date(liveClassStartTime).getTime();
-        const currentTime = Date.now();
-
-        // Calculate elapsed time in seconds since live class started
-        const elapsedSeconds = Math.floor((currentTime - startTime) / 1000);
-
-        // Only sync if elapsed time is positive (class has started)
-        if (elapsedSeconds > 0) {
-          // Add a small delay to ensure the player iframe is fully initialized
-          setTimeout(async () => {
-            // The scheduled slot is routinely longer than the video — a 60-minute
-            // class carrying a 57-minute recording leaves three minutes where
-            // "elapsed since start" points PAST the end. Seeking there does not
-            // land at the end: YouTube treats an out-of-range seek as a seek to
-            // zero, so the class appears to restart itself just as it finishes.
-            // Past the end there is nothing left to sync to, so leave the player
-            // where it is and let it finish.
-            // Same trap as in seekToTimestamp: a duration of 0 means "not loaded
-            // yet", not "zero-length". Waiting for it is what makes the check below
-            // meaningful — reading it once let the guard skip itself and hand an
-            // out-of-range target to the seek.
-            let duration = await safeGetNumber(playerRef.current?.getDuration());
-            for (let i = 0; i < 10 && !(duration > 0); i++) {
-              await new Promise((r) => setTimeout(r, 300));
-              if (!isMountedRef.current) return;
-              duration = await safeGetNumber(playerRef.current?.getDuration());
-            }
-            if (duration > 0 && elapsedSeconds >= duration - 1) {
-              console.log(
-                `Live class is ${elapsedSeconds}s in but the video is only ${duration}s long — not seeking.`
-              );
-              // The class is over even though its slot is not. Skipping the seek
-              // alone would leave autoplay to start it from the beginning, which
-              // is the same "it started again" the learner reports — just from
-              // arriving late rather than sitting through the end. Mark it ended
-              // so nothing automatic plays it, and hold the player quiet.
-              hasEndedRef.current = true;
-              void safePlayerOperation(async () => {
-                await playerRef.current?.pauseVideo();
-              }, "classAlreadyFinished");
-              if (isMountedRef.current) setIsPlayed(false);
-              return;
-            }
-            // Seek to the calculated position (force it to bypass restrictions)
-            seekToTimestamp(elapsedSeconds, true);
-          }, 500);
-        } else {
-          console.log("Live class hasn't started yet, waiting...");
-        }
-      } catch (error) {
-        console.error("Error syncing to live class progress:", error);
+    if (!liveSyncEnabled || !player || !playerReady) return;
+    liveSyncPendingRef.current = true;
+    // Autoplay (allowPlayPause=false) and YouTube's own play-on-seek from a
+    // cued player start playback; the sync only positions it.
+    void liveSyncRef.current?.("ready", { resume: false });
+    return () => {
+      if (liveStartTimerRef.current) {
+        clearTimeout(liveStartTimerRef.current);
+        liveStartTimerRef.current = null;
       }
     };
+  }, [liveSyncEnabled, liveClassStartTime, player, playerReady]);
 
-    // Initial sync when player becomes ready with a delay
-    const syncTimeout = setTimeout(() => {
-      syncToLiveClassProgress();
-    }, 500);
+  // Background / foreground. Both the document event and the Capacitor app
+  // state are listened to: in a WebView either can be the one that fires.
+  // Handlers are idempotent, so hearing the same transition twice is harmless.
+  useEffect(() => {
+    if (!liveSyncEnabled) return;
 
-    return () => clearTimeout(syncTimeout);
-  }, [liveClassStartTime, player, playerReady, isLiveStream]);
+    const onBackground = () => {
+      wasPlayingBeforeBackgroundRef.current =
+        wasPlayingBeforeBackgroundRef.current || isPlayedRef.current;
+      liveSyncPendingRef.current = true;
+    };
+    const onForeground = () => {
+      void resumeFromInterruptionRef.current?.("foreground");
+    };
+    const handleVisibilityChange = () => {
+      if (document.hidden) onBackground();
+      else onForeground();
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    let appStateHandle: PluginListenerHandle | null = null;
+    let removed = false;
+    if (Capacitor.isNativePlatform()) {
+      CapacitorApp.addListener("appStateChange", ({ isActive }: { isActive: boolean }) => {
+        if (isActive) onForeground();
+        else onBackground();
+      })
+        .then((handle) => {
+          if (removed) void handle.remove();
+          else appStateHandle = handle;
+        })
+        .catch(() => {
+          /* the visibility listener above still covers this */
+        });
+    }
+
+    return () => {
+      removed = true;
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      void appStateHandle?.remove();
+    };
+  }, [liveSyncEnabled]);
+
+  // Server time arrives after the player is often already ready. When it
+  // shows the device clock to be off by more than the tolerance, the position
+  // derived from that clock is off by the same amount — re-derive it.
+  useEffect(() => {
+    const previous = liveClockOffsetRef.current;
+    liveClockOffsetRef.current = liveClockOffsetMs;
+    if (!liveSyncEnabled) return;
+    if (Math.abs(liveClockOffsetMs - previous) / 1000 <= LIVE_SYNC_TOLERANCE_SECONDS) return;
+    liveSyncPendingRef.current = true;
+    void liveSyncRef.current?.("clock", {
+      resume: !allowPlayPause || isPlayedRef.current,
+    });
+  }, [liveClockOffsetMs, liveSyncEnabled]);
 
   const toggleFullscreen = useCallback(async (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -2084,6 +2405,39 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
     }
   };
 
+  // While a live class is held there is nothing a Play button could honestly
+  // do. The player says so across its whole surface rather than in a badge
+  // tucked into the control bar: on a phone the bar only appears on a tap, so
+  // a frozen last frame — or the thumbnail, for a learner arriving after the
+  // end — read as a hung video. The overlay is informative only
+  // (pointer-events-none): taps still reach the surface below, and the control
+  // bar (fullscreen, exit) sits above it.
+  const liveHold =
+    livePhase === "ended"
+      ? {
+          Icon: CheckCircle,
+          title: t("youtubePlayer.live.ended"),
+          hint: t("youtubePlayer.live.endedHint"),
+        }
+      : livePhase === "not-started"
+        ? {
+            Icon: Clock,
+            title: t("youtubePlayer.live.notStarted"),
+            hint: t("youtubePlayer.live.notStartedHint"),
+          }
+        : null;
+  const liveHoldOverlay = liveHold ? (
+    <div
+      role="status"
+      aria-live="polite"
+      className="pointer-events-none absolute inset-0 z-40 flex flex-col items-center justify-center gap-stack bg-black/90 p-6 text-center text-white"
+    >
+      <liveHold.Icon size={48} weight="fill" className="text-white/80" />
+      <span className="text-lg font-semibold">{liveHold.title}</span>
+      <span className="text-sm text-white/70">{liveHold.hint}</span>
+    </div>
+  ) : null;
+
   return (
     <div className="w-full max-w-vw-100 overflow-x-hidden flex flex-col items-center gap-4">
       {/* Non-fullscreen verification overlay - shown outside the player */}
@@ -2114,17 +2468,26 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
                 />
               </div>
 
-              <div className="p-5 flex flex-col sm:flex-row items-center gap-6">
+              <div className="p-5 flex flex-col sm:flex-row items-center gap-section">
                 <div className="flex-1 text-center sm:text-start space-y-2">
                   <div className="flex items-center justify-center sm:justify-start gap-2.5">
                     <span className="relative flex h-3 w-3">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                     </span>
-                    <h4 className="text-base font-bold text-white tracking-tight">Active Focus Check</h4>
+                    <h4 className="text-base font-bold text-white tracking-tight">{t("youtubePlayer.verification.title")}</h4>
                   </div>
                   <p className="text-sm text-zinc-400 leading-relaxed">
-                    Select <span className="inline-block px-2 py-0.5 mx-1 bg-zinc-900 border border-zinc-700 rounded text-emerald-400 font-mono font-bold text-base shadow-inner md:align-middle">{verificationNumbers[1]}</span> to maintain your learning streak.
+                    <Trans
+                      i18nKey="youtubePlayer.verification.prompt"
+                      t={t}
+                      values={{ number: verificationNumbers[1] }}
+                      components={{
+                        num: (
+                          <span className="inline-block px-2 py-0.5 mx-1 bg-zinc-900 border border-zinc-700 rounded text-emerald-400 font-mono font-bold text-base shadow-inner md:align-middle" />
+                        ),
+                      }}
+                    />
                   </p>
                 </div>
 
@@ -2143,7 +2506,7 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
             </div>
             <div className="text-center mt-3">
               <span className="text-xs font-medium text-zinc-500 bg-black/40 px-3 py-1 rounded-full border border-white/5 backdrop-blur-md">
-                Closing in {verificationCountdown}s
+                {t("youtubePlayer.verification.closingIn", { seconds: verificationCountdown })}
               </span>
             </div>
           </div>
@@ -2179,17 +2542,26 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
                   />
                 </div>
 
-                <div className="p-5 flex flex-col sm:flex-row items-center gap-6">
+                <div className="p-5 flex flex-col sm:flex-row items-center gap-section">
                   <div className="flex-1 text-center sm:text-start space-y-2">
                     <div className="flex items-center justify-center sm:justify-start gap-2.5">
                       <span className="relative flex h-3 w-3">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                       </span>
-                      <h4 className="text-base font-bold text-white tracking-tight">Active Focus Check</h4>
+                      <h4 className="text-base font-bold text-white tracking-tight">{t("youtubePlayer.verification.title")}</h4>
                     </div>
                     <p className="text-sm text-zinc-400 leading-relaxed">
-                      Select <span className="inline-block px-2 py-0.5 mx-1 bg-zinc-900 border border-zinc-700 rounded text-emerald-400 font-mono font-bold text-base shadow-inner md:align-middle">{verificationNumbers[1]}</span> to maintain your learning streak.
+                      <Trans
+                        i18nKey="youtubePlayer.verification.prompt"
+                        t={t}
+                        values={{ number: verificationNumbers[1] }}
+                        components={{
+                          num: (
+                            <span className="inline-block px-2 py-0.5 mx-1 bg-zinc-900 border border-zinc-700 rounded text-emerald-400 font-mono font-bold text-base shadow-inner md:align-middle" />
+                          ),
+                        }}
+                      />
                     </p>
                   </div>
 
@@ -2211,7 +2583,7 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
               </div>
               <div className="text-center mt-3">
                 <span className="text-xs font-medium text-zinc-500 bg-black/40 px-3 py-1 rounded-full border border-white/5 backdrop-blur-md">
-                  Closing in {verificationCountdown}s
+                  {t("youtubePlayer.verification.closingIn", { seconds: verificationCountdown })}
                 </span>
               </div>
             </div>
@@ -2244,7 +2616,7 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
                   toggleFullscreen(e as any);
                 }}
                 className="p-3 rounded-full bg-black/60 text-white hover:bg-black/80 transition-all active:scale-95 shadow-lg backdrop-blur-sm border border-white/10"
-                aria-label="Exit fullscreen"
+                aria-label={t("youtubePlayer.controls.exitFullscreen")}
               >
                 <X size={24} weight="bold" />
               </button>
@@ -2266,7 +2638,7 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
                         <Pause size={20} weight="fill" />
                       </button>
                     ) : null
-                  ) : (
+                  ) : liveHold ? null : (
                     <button
                       onClick={togglePlay}
                       className="p-2 rounded-full text-white transition-all backdrop-blur-sm bg-white/20 hover:bg-white/30"
@@ -2310,10 +2682,10 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
                     <button
                       onClick={goToLive}
                       className="flex items-center gap-1 px-3 py-1 rounded-full bg-red-500 hover:bg-red-600 text-white text-sm font-medium transition-all hover:scale-105 backdrop-blur-sm animate-pulse"
-                      title="Go to live stream"
+                      title={t("youtubePlayer.controls.goToLive")}
                     >
                       <div className="w-2 h-2 bg-white rounded-full"></div>
-                      LIVE
+                      {t("youtubePlayer.controls.live")}
                     </button>
                   )}
 
@@ -2351,7 +2723,7 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
                     {showSpeedOptions && allowRewind && (
                       <div className="speed-dropdown absolute bottom-full end-0 mb-2 bg-black/90 backdrop-blur-sm rounded-lg shadow-lg border border-white/20 z-20 min-w-20 max-h-reg-250 overflow-y-auto">
                         <div className="px-3 py-1 text-xs font-medium text-white/70 border-b border-white/20 sticky top-0 bg-black/90">
-                          Speed
+                          {t("youtubePlayer.controls.speed")}
                         </div>
                         <div className="py-2">
                           {speedOptions.map((speed) => (
@@ -2427,12 +2799,12 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
                           }
                         }}
                         disabled={!allowRewind}
-                        title={`Question ${index + 1}${isAnswered
-                            ? " (Answered)"
+                        title={`${t("youtubePlayer.questionMarker.title", { index: index + 1 })}${isAnswered
+                            ? t("youtubePlayer.questionMarker.answered")
                             : canSkip
-                              ? " (Skippable)"
-                              : " (Required)"
-                          }${!allowRewind ? " (Navigation disabled)" : ""}`}
+                              ? t("youtubePlayer.questionMarker.skippable")
+                              : t("youtubePlayer.questionMarker.required")
+                          }${!allowRewind ? t("youtubePlayer.questionMarker.navigationDisabled") : ""}`}
                       >
                         {isAnswered ? (
                           <span className="text-white text-xs font-bold flex items-center justify-center w-full h-full">
@@ -2490,20 +2862,25 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
           </div>
         )}
 
-        {/* Manual Play Button for iOS/browsers that block autoplay */}
-        {showManualPlayButton && !allowPlayPause && (
+        {/* A held live class: before its scheduled start, or once its video has
+            run out. Covers the frame so nothing looks frozen. */}
+        {liveHoldOverlay}
+
+        {/* Manual Play Button for iOS/browsers that block autoplay. Not while a
+            live class is deliberately held — that is not a blocked autoplay. */}
+        {showManualPlayButton && !allowPlayPause && !liveHold && (
           <div className="absolute inset-0 flex items-center justify-center z-50 bg-black/30 backdrop-blur-sm animate-in fade-in duration-500">
             <button
               onClick={handleManualPlay}
-              className="flex flex-col items-center gap-3 p-6 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-2xl hover:scale-105 transition-all duration-300 hover:shadow-primary-500/50 active:scale-95"
-              aria-label="Start video"
+              className="flex flex-col items-center gap-stack p-6 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-2xl hover:scale-105 transition-all duration-300 hover:shadow-primary-500/50 active:scale-95"
+              aria-label={t("youtubePlayer.manualPlay.ariaLabel")}
             >
               <div className="p-4 rounded-full bg-white/20 backdrop-blur-sm">
                 <Play size={48} weight="fill" />
               </div>
-              <span className="text-lg font-semibold">Tap to Start Video</span>
+              <span className="text-lg font-semibold">{t("youtubePlayer.manualPlay.tapToStart")}</span>
               <span className="text-sm text-white/80">
-                Video will play automatically
+                {t("youtubePlayer.manualPlay.autoplayHint")}
               </span>
             </button>
           </div>
@@ -2532,7 +2909,7 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
                         <Pause size={20} weight="fill" />
                       </button>
                     ) : null
-                  ) : (
+                  ) : liveHold ? null : (
                     <button
                       onClick={togglePlay}
                       className="p-2 rounded-full text-white transition-all backdrop-blur-sm bg-white/20 hover:bg-white/30"
@@ -2576,10 +2953,10 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
                     <button
                       onClick={goToLive}
                       className="flex items-center gap-1 px-3 py-1 rounded-full bg-red-500 hover:bg-red-600 text-white text-sm font-medium transition-all hover:scale-105 backdrop-blur-sm animate-pulse"
-                      title="Go to live stream"
+                      title={t("youtubePlayer.controls.goToLive")}
                     >
                       <div className="w-2 h-2 bg-white rounded-full"></div>
-                      LIVE
+                      {t("youtubePlayer.controls.live")}
                     </button>
                   )}
 
@@ -2672,12 +3049,12 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
                           }
                         }}
                         disabled={!allowRewind}
-                        title={`Question ${index + 1}${isAnswered
-                            ? " (Answered)"
+                        title={`${t("youtubePlayer.questionMarker.title", { index: index + 1 })}${isAnswered
+                            ? t("youtubePlayer.questionMarker.answered")
                             : canSkip
-                              ? " (Skippable)"
-                              : " (Required)"
-                          }${!allowRewind ? " (Navigation disabled)" : ""}`}
+                              ? t("youtubePlayer.questionMarker.skippable")
+                              : t("youtubePlayer.questionMarker.required")
+                          }${!allowRewind ? t("youtubePlayer.questionMarker.navigationDisabled") : ""}`}
                       >
                         {isAnswered ? (
                           <span className="text-white text-xs font-bold flex items-center justify-center w-full h-full">
@@ -2746,7 +3123,7 @@ export const YouTubePlayerComp: React.FC<YouTubePlayerProps> = ({
           }}
         >
           <div className="px-3 py-1 text-xs font-medium text-white/70 border-b border-white/20 sticky top-0 bg-black/90">
-            Speed
+            {t("youtubePlayer.controls.speed")}
           </div>
           <div className="py-2">
             {speedOptions.map((speed) => (
@@ -2796,6 +3173,7 @@ interface YouTubePlayerWrapperProps {
   isLiveStream?: boolean;
   liveTimestamp?: number;
   liveClassStartTime?: string;
+  liveClockOffsetMs?: number;
   enableConcentrationScore?: boolean;
   concentrationSettings?: ConcentrationSettings;
 }
@@ -2813,6 +3191,7 @@ const YouTubePlayerWrapper = forwardRef<any, YouTubePlayerWrapperProps>(
       isLiveStream,
       liveTimestamp,
       liveClassStartTime,
+      liveClockOffsetMs,
       enableConcentrationScore,
       concentrationSettings,
     },
@@ -2867,6 +3246,7 @@ const YouTubePlayerWrapper = forwardRef<any, YouTubePlayerWrapperProps>(
         isLiveStream={isLiveStream}
         liveTimestamp={liveTimestamp}
         liveClassStartTime={liveClassStartTime}
+        liveClockOffsetMs={liveClockOffsetMs}
         enableConcentrationScore={enableConcentrationScore}
         concentrationSettings={concentrationSettings}
       />

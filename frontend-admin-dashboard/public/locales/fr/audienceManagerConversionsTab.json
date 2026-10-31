@@ -1,0 +1,37 @@
+{
+    "unassigned": "Aucun conseiller",
+    "column": {
+        "convertedLeads": "Prospects convertis",
+        "enrolments": "Inscriptions",
+        "counsellor": "Conseiller",
+        "share": "Part",
+        "lead": "Prospect",
+        "phone": "Téléphone",
+        "email": "E-mail",
+        "course": "Cours",
+        "enrolledAt": "Inscrit le",
+        "enrolmentStatus": "Statut d’inscription",
+        "campaign": "Campagne",
+        "source": "Source"
+    },
+    "kpi": {
+        "convertedSub": "Prospects inscrits à un cours sur cette période",
+        "enrolmentsSub": "Un prospect inscrit à deux cours compte deux fois",
+        "counsellors": "Conseillers crédités"
+    },
+    "byCounsellor": {
+        "title": "Conversions par conseiller",
+        "rowHint": "Cliquez pour afficher les prospects de ce conseiller ci-dessous"
+    },
+    "leads": {
+        "title": "Prospects convertis",
+        "filteredBy": "Conseiller : {{name}}",
+        "clearFilter": "Afficher tous les conseillers",
+        "truncated": "Affichage des {{count}} inscriptions les plus récentes. Réduisez la période pour voir le reste.",
+        "showMore": "Afficher plus ({{shown}} sur {{total}})",
+        "footnote": "Une conversion est l’inscription d’un prospect à un cours dont le paramètre « compter l’inscription comme conversion » est activé, datée par l’inscription. Les inscriptions invitées, en attente et supprimées ne sont pas comptées."
+    },
+    "empty": {
+        "noConversions": "Aucune conversion sur cette période."
+    }
+}

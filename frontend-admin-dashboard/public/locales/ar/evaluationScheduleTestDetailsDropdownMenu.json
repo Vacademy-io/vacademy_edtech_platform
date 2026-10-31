@@ -1,0 +1,42 @@
+{
+    "viewAssessmentDetails": "عرض تفاصيل التقييم",
+    "deleteAssessment": "حذف التقييم",
+    "open": "فتح",
+    "attention": "تنبيه",
+    "sendReminder": "إرسال تذكير",
+    "reminderBody": {
+        "prefix": "سيتم إرسال تذكير بالتقييم إلى جميع",
+        "participantCount_zero": "لا يوجد مشاركون ({{count}})",
+        "participantCount_one": "مشارك واحد ({{count}})",
+        "participantCount_two": "مشاركَين ({{count}})",
+        "participantCount_few": "{{count}} مشاركين",
+        "participantCount_many": "{{count}} مشاركًا",
+        "participantCount_other": "{{count}} مشارك",
+        "suffix": "الذين لم يحضروا بعد من الدفعات المخصصة."
+    },
+    "send": "إرسال",
+    "toasts": {
+        "slideDeleteFailed": "تم حذف التقييم، لكن تعذّر إزالة شرائح الدورة المرتبطة به.",
+        "deleteSuccess": "تم حذف التقييم بنجاح!"
+    },
+    "deleteConfirm": {
+        "prefix": "هل أنت متأكد أنك تريد حذف"
+    },
+    "delete": "حذف",
+    "pauseLiveStatus": "إيقاف الحالة المباشرة مؤقتًا",
+    "date": "التاريخ",
+    "pauseUntil": "إيقاف حتى",
+    "time": "الوقت",
+    "pause": "إيقاف مؤقت",
+    "resumeLiveStatus": "استئناف الحالة المباشرة",
+    "resumeConfirm": {
+        "prefix": "هل تريد استئناف تقييمك المباشر",
+        "assessmentName": "العين البشرية والعالم الملون"
+    },
+    "resume": "استئناف",
+    "reopenAssessment": "إعادة فتح التقييم",
+    "selectReopenDateTime": "اختر تاريخ ووقت إعادة فتح التقييم",
+    "startDateTime": "تاريخ ووقت البدء",
+    "endDateTime": "تاريخ ووقت الانتهاء",
+    "reopen": "إعادة الفتح"
+}

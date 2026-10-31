@@ -1,0 +1,65 @@
+{
+    "card": {
+        "title": "معاينة الكورس",
+        "bundleBadge_zero": "حزمة ({{count}} دفعة)",
+        "bundleBadge_one": "حزمة ({{count}} دفعة واحدة)",
+        "bundleBadge_two": "حزمة ({{count}} دفعتان)",
+        "bundleBadge_few": "حزمة ({{count}} دفعات)",
+        "bundleBadge_many": "حزمة ({{count}} دفعة)",
+        "bundleBadge_other": "حزمة ({{count}} دفعة)"
+    },
+    "courseName": {
+        "placeholder": "أدخل اسم الكورس"
+    },
+    "description": {
+        "label": "الوصف",
+        "placeholder": "أدخل وصف الكورس (30 كلمة كحد أقصى)",
+        "maxWordsHint": "*يُسمح بحد أقصى 30 كلمة"
+    },
+    "tags": {
+        "sectionLabel": "وسوم {{term}}",
+        "helperText": "أضف وسومًا لمساعدتك على تصنيف كورسك والعثور عليه بسهولة",
+        "inputPlaceholder": "أدخل وسمًا",
+        "addButton": "إضافة"
+    },
+    "learningOutcome": {
+        "label": "ماذا سيكتسب المتعلمون؟"
+    },
+    "aboutCourse": {
+        "label": "عن الكورس"
+    },
+    "targetAudience": {
+        "label": "من ينبغي أن ينضم؟"
+    },
+    "placeholders": {
+        "courseOverview": "قدّم نظرة عامة تفصيلية عن الكورس. اذكر أهداف التعلّم، والمواضيع المطروحة، والصيغة (فيديو، اختبارات، مشاريع)، والفئة المستهدفة."
+    },
+    "media": {
+        "coursePreview": {
+            "label": "صورة معاينة الكورس",
+            "helperText": "هذه هي الصورة المصغّرة التي تظهر على بطاقة الكورس. الحجم الموصى به: نسبة 2:1",
+            "alt": "معاينة الكورس"
+        },
+        "courseBanner": {
+            "label": "صورة بانر الكورس",
+            "helperText": "صورة خلفية عريضة تُعرض أعلى صفحة تفاصيل الكورس. الحجم الموصى به: نسبة 2.64:1",
+            "alt": "بانر الكورس"
+        },
+        "courseMedia": {
+            "label": "وسائط الكورس (صورة أو فيديو)",
+            "helperText": "كتلة وسائط مميزة ضمن صفحة الكورس؛ يمكن أن تعرض المحتوى بصريًا أو تقدّم لمحة تعريفية. للفيديوهات، الصيغة الموصى بها: MP4",
+            "alt": "وسائط الكورس",
+            "videoUnsupported": "متصفحك لا يدعم وسم الفيديو.",
+            "uploadOption": "تحميل صورة/فيديو",
+            "youtubeOption": "رابط يوتيوب"
+        }
+    },
+    "youtube": {
+        "pasteLinkLabel": "الصق رابط يوتيوب",
+        "playerTitle": "مشغّل فيديو يوتيوب",
+        "saveButton": "حفظ رابط يوتيوب"
+    },
+    "errors": {
+        "invalidYoutubeLink": "رابط يوتيوب غير صالح"
+    }
+}

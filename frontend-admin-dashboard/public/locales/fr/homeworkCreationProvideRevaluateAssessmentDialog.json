@@ -1,0 +1,10 @@
+{
+    "dialog": {
+        "heading": "Réévaluer l'évaluation",
+        "confirmMessage": "Voulez-vous vraiment réévaluer l'évaluation pour le(s) élève(s) sélectionné(s) <highlight>{{name}}</highlight> ?"
+    },
+    "doneButton": "Terminé",
+    "toasts": {
+        "revaluateSuccess": "La tentative des élèves sélectionnés pour cette évaluation a été réévaluée. Veuillez vérifier votre e-mail !"
+    }
+}

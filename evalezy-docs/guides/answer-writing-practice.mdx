@@ -1,0 +1,367 @@
+---
+title: "Daily answer-writing practice"
+description: "Run a UPSC-style daily answer-writing programme: one question a day, handwritten answers, feedback and a model answer for every student."
+icon: "feather"
+---
+
+This guide is for test-prep apps that run daily answer writing, such as UPSC Mains GS practice. Every day there is one question. Students write their answer by hand, upload it from your app, and get marks, feedback, a model answer and a checked copy.
+
+<Steps>
+  <Step title="Create the day's question">
+    One exam per daily question, created open.
+  </Step>
+  <Step title="Turn the student's pages into a PDF">
+    Your backend combines the photos into one PDF.
+  </Step>
+  <Step title="Upload and submit">
+    Upload the PDF and submit it. The student is created on first use.
+  </Step>
+  <Step title="Follow results across all days">
+    One feed for every exam, polled by one worker.
+  </Step>
+  <Step title="Show the evaluation">
+    Marks, feedback, model answer and the checked copy, in your app.
+  </Step>
+</Steps>
+
+<Warning>
+**Your API key stays on your server.** The mobile app talks to your backend; your backend talks to Evalezy. Never put an API key in an app build, even an obfuscated one.
+</Warning>
+
+<Accordion title="Setup for the code samples" icon="gear">
+The Python and Node samples on this page assume this setup. The Node samples use top-level `await`, so run them as ES modules (a `.mjs` file, or `"type": "module"` in `package.json`).
+
+<CodeGroup>
+
+```python Python
+import os
+import requests
+
+API = "https://api.evalezy.com/v1"
+HEADERS = {"X-API-Key": os.environ["EVALEZY_API_KEY"]}
+```
+
+```javascript Node
+const API = "https://api.evalezy.com/v1";
+const headers = {
+  "X-API-Key": process.env.EVALEZY_API_KEY,
+  "Content-Type": "application/json",
+};
+```
+
+</CodeGroup>
+</Accordion>
+
+## 1. Create the day's question
+
+Create one exam per daily question with `"open": true`, so it is ready for answers in a single call. Use `"level": "upsc"`: the level, subject and exam instructions are passed to the AI as context, so it marks to the standard of the exam you are preparing students for.
+
+<CodeGroup>
+
+```bash curl
+curl https://api.evalezy.com/v1/exams \
+  -H "X-API-Key: $EVALEZY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: daily-2026-10-02-gs2" \
+  -d '{
+    "title": "Daily Answer Writing, 2 Oct 2026: GS Paper II",
+    "mode": "handwritten",
+    "external_ref": "daily-2026-10-02-gs2",
+    "subject": "GS Paper II: Polity and Governance",
+    "level": "upsc",
+    "instructions": "Answer in about 150 words. Use headings or a flow chart where useful.",
+    "open": true,
+    "questions": [
+      {
+        "label": "1",
+        "type": "long_answer",
+        "text": "Discuss the role of the Inter-State Council in strengthening cooperative federalism in India. (10 marks, 150 words)",
+        "max_marks": 10,
+        "word_limit": 150,
+        "model_answer": "Introduction: Article 263 lets the President set up an Inter-State Council; it was constituted in 1990 on the Sarkaria Commission's recommendation. Body: forum for Centre-state and inter-state dialogue; recommendations on policy coordination; examples of the issues it has taken up; limitations: advisory role, infrequent meetings, no permanent secretariat strength. Way forward: regular meetings as recommended by the Punchhi Commission, a standing committee with follow-up on decisions. Conclusion: a revitalised Council can institutionalise cooperative federalism.",
+        "rubric": {
+          "partial_marking": true,
+          "instructions": "Judge content first, then structure. Reward specific constitutional and commission references.",
+          "criteria": [
+            { "name": "Introduction and constitutional basis", "marks": 2, "keywords": ["Article 263", "Sarkaria"], "guidance": "Defines the Council and cites Article 263." },
+            { "name": "Role in cooperative federalism", "marks": 4, "guidance": "Explains functions with at least two concrete examples." },
+            { "name": "Limitations", "marks": 2, "guidance": "Identifies at least two weaknesses of the Council." },
+            { "name": "Way forward and conclusion", "marks": 2, "guidance": "Gives reforms (for example the Punchhi Commission) and a balanced conclusion." }
+          ]
+        }
+      }
+    ]
+  }'
+```
+
+```python Python
+from datetime import date
+
+def create_daily_exam(day: date, question):
+    ref = f"daily-{day.isoformat()}-{question.paper}"
+    resp = requests.post(
+        f"{API}/exams",
+        json={
+            "title": f"Daily Answer Writing, {day:%d %b %Y}: {question.paper_name}",
+            "mode": "handwritten",
+            "external_ref": ref,
+            "subject": question.paper_name,
+            "level": "upsc",
+            "open": True,
+            "questions": [{
+                "label": "1",
+                "type": "long_answer",
+                "text": question.text,
+                "max_marks": question.marks,          # 10 or 15
+                "word_limit": question.word_limit,    # 150 or 250
+                "model_answer": question.model_answer,
+                "rubric": question.rubric,
+            }],
+        },
+        headers={**HEADERS, "Idempotency-Key": ref},
+        timeout=30,
+    )
+    body = resp.json()
+    if resp.status_code == 409 and body["error"]["code"] == "exam_exists":
+        return body["error"]["details"]["exam_id"]   # already created today
+    resp.raise_for_status()
+    return body["id"]
+```
+
+```javascript Node
+async function createDailyExam(day, q) {
+  const ref = `daily-${day}-${q.paper}`;
+  const res = await fetch(`${API}/exams`, {
+    method: "POST",
+    headers: { ...headers, "Idempotency-Key": ref },
+    body: JSON.stringify({
+      title: `Daily Answer Writing, ${day}: ${q.paperName}`,
+      mode: "handwritten",
+      external_ref: ref,
+      subject: q.paperName,
+      level: "upsc",
+      open: true,
+      questions: [{
+        label: "1",
+        type: "long_answer",
+        text: q.text,
+        max_marks: q.marks,
+        word_limit: q.wordLimit,
+        model_answer: q.modelAnswer,
+        rubric: q.rubric,
+      }],
+    }),
+  });
+  const body = await res.json();
+  if (res.status === 409 && body.error.code === "exam_exists") return body.error.details.exam_id;
+  if (!res.ok) throw new Error(body.error.code);
+  return body.id;
+}
+```
+
+</CodeGroup>
+
+Run this from a scheduled job before the question goes live. `external_ref` makes it safe to run twice: the second call returns `409 exam_exists` with the existing `exam_id`.
+
+Write the rubric the way your evaluators already mark: what an introduction must contain, how many examples earn full credit, what a good conclusion looks like. Criterion marks must add up to `max_marks`, and `guidance` describes what to look for, never marks. See the [rubric rules](/guides/handwritten-exams#rubric-rules).
+
+<Note>
+`word_limit` is stored with the question and returned when you read it. To have the AI weigh length, say so in the question text or the rubric, as in the example.
+</Note>
+
+## 2. Turn the student's pages into one PDF
+
+Students photograph their 2 to 3 pages in your app. Today the API takes **one PDF per answer**: phone photos sent directly are refused with `422 feature_not_available`. Native photo submission is on the [Roadmap](/platform/roadmap).
+
+Your backend combines the photos, in page order, into a single PDF. For example, with Pillow:
+
+```python Python
+from io import BytesIO
+from PIL import Image, ImageOps
+
+def photos_to_pdf(photo_files) -> bytes:
+    pages = []
+    for f in photo_files:                       # in page order
+        img = ImageOps.exif_transpose(Image.open(f))  # respect phone rotation
+        pages.append(img.convert("RGB"))
+    out = BytesIO()
+    pages[0].save(out, format="PDF", save_all=True, append_images=pages[1:], resolution=200)
+    return out.getvalue()
+```
+
+Tips for readable answers:
+
+- Fix rotation before building the PDF; sideways pages read poorly.
+- One photo per page, the whole page in frame, no heavy shadows.
+- Keep the PDF under 50 MB. Compress large photos before combining.
+- Every page of the PDF is billed. Drop accidental duplicate photos.
+
+## 3. Upload and submit
+
+Upload the PDF, then submit it for the student. Send the student inline with your user ID as `external_id`: the first submission creates the student and registers them on the day's exam, so there is no sign-up call.
+
+<CodeGroup>
+
+```python Python
+def submit_answer(exam_id, user, pdf_bytes, answer_id):
+    # 1. Ask for an upload URL
+    up = requests.post(
+        f"{API}/uploads",
+        json={"filename": f"{answer_id}.pdf", "content_type": "application/pdf",
+              "size_bytes": len(pdf_bytes)},
+        headers=HEADERS, timeout=30,
+    )
+    up.raise_for_status()
+    upload = up.json()["uploads"][0]
+
+    # 2. PUT the file
+    requests.put(upload["upload_url"], data=pdf_bytes,
+                 headers=upload.get("headers") or {"Content-Type": "application/pdf"},
+                 timeout=120).raise_for_status()
+
+    # 3. Submit it for the student
+    resp = requests.post(
+        f"{API}/exams/{exam_id}/submissions",
+        json={
+            "candidate": {"external_id": user.id, "name": user.display_name},
+            "upload_id": upload["id"],
+            "metadata": {"answer_id": answer_id},
+        },
+        headers={**HEADERS, "Idempotency-Key": f"answer-{answer_id}"},
+        timeout=30,
+    )
+    body = resp.json()
+    if resp.status_code == 409 and body["error"]["code"] == "submission_exists":
+        raise AlreadySubmitted(body["error"]["details"]["submission_id"])
+    resp.raise_for_status()
+    return body   # status "queued", quote {"unit": "page", "pages": 3, "credits": 3, ...}
+```
+
+```javascript Node
+async function submitAnswer(examId, user, pdf, answerId) {
+  const { uploads: [upload] } = await (await fetch(`${API}/uploads`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ filename: `${answerId}.pdf`, content_type: "application/pdf", size_bytes: pdf.length }),
+  })).json();
+
+  const put = await fetch(upload.upload_url, {
+    method: upload.method ?? "PUT",
+    headers: upload.headers ?? { "Content-Type": "application/pdf" },
+    body: pdf,
+  });
+  if (!put.ok) throw new Error(`upload failed: ${put.status}`);
+
+  const res = await fetch(`${API}/exams/${examId}/submissions`, {
+    method: "POST",
+    headers: { ...headers, "Idempotency-Key": `answer-${answerId}` },
+    body: JSON.stringify({
+      candidate: { external_id: user.id, name: user.displayName },
+      upload_id: upload.id,
+      metadata: { answer_id: answerId },
+    }),
+  });
+  return res.json(); // 202 Accepted
+}
+```
+
+</CodeGroup>
+
+A 3-page answer costs 3 credits, charged only when it is graded. Each student has one live answer per daily question. If a student resubmits, either refuse it in your app or send `"replace": true`; the new answer is graded and charged again.
+
+## 4. Follow results across all days
+
+Students submit through the evening and read results whenever they open the app. Don't poll each answer. Run one worker over the submissions feed, which covers every exam:
+
+```bash
+curl "https://api.evalezy.com/v1/submissions?updated_since=2026-10-02T12:00:00Z&limit=200" \
+  -H "X-API-Key: $EVALEZY_API_KEY"
+```
+
+When a row reaches `graded` or `partially_graded`, fetch its result and store it. When it reaches `failed`, show the student what to do from `error.code`, for example `copy_unreadable` ("Please retake clearer photos"). Failed answers are not charged. [Syncing results](/guides/syncing-results) has a complete worker with checkpoints and retries.
+
+Each submission also carries an ETA while it waits: `queue.position` and `queue.estimated_ready_at`. Show it in the app ("Expected by 9:40 pm") rather than promising a fixed turnaround; evening peaks take longer.
+
+## 5. Show the evaluation
+
+Fetch the result with the model answer included:
+
+```bash
+curl "https://api.evalezy.com/v1/submissions/$SUBMISSION_ID/result?include=model_answer" \
+  -H "X-API-Key: $EVALEZY_API_KEY"
+```
+
+```json Response (abridged)
+{
+  "submission_id": "c2b1f0d4-6a0e-4d7b-9f3e-0b8f6b7d9e21",
+  "status": "graded",
+  "needs_review": false,
+  "totals": { "awarded": 6.5, "max": 10, "percentage": 65.0, "questions_graded": 1, "questions_failed": 0 },
+  "questions": [
+    {
+      "label": "1",
+      "awarded": 6.5,
+      "max": 10,
+      "source": "ai",
+      "confidence": 0.84,
+      "feedback": "Good use of Article 263 and the Sarkaria Commission in the introduction. The body lists functions but gives only one concrete example; add the Council's role in specific Centre-state disputes. The limitations are thin. End with a reform-oriented conclusion that cites the Punchhi Commission.",
+      "criteria": [
+        { "name": "Introduction and constitutional basis", "awarded": 2, "max": 2, "reason": "Cites Article 263 and the 1990 constitution of the Council." },
+        { "name": "Role in cooperative federalism", "awarded": 2.5, "max": 4, "reason": "Functions explained; only one example." },
+        { "name": "Limitations", "awarded": 1, "max": 2, "reason": "Mentions infrequent meetings only." },
+        { "name": "Way forward and conclusion", "awarded": 1, "max": 2, "reason": "Conclusion present but no reforms suggested." }
+      ],
+      "model_answer": "Introduction: Article 263 lets the President set up an Inter-State Council..."
+    }
+  ],
+  "checked_copy": { "available": true, "download_path": "/submissions/c2b1f0d4-6a0e-4d7b-9f3e-0b8f6b7d9e21/checked-copy" },
+  "credits_charged": 3
+}
+```
+
+A good results screen shows:
+
+- **Score and breakdown.** `totals.awarded` out of `totals.max`, then each criterion with its `reason`. Students learn most from where marks were lost.
+- **Feedback.** The `feedback` text, rendered as plain text.
+- **Model answer.** From `include=model_answer`, side by side with the student's own pages.
+- **Checked copy.** The student's answer with the evaluator's marks and comments on it.
+
+Download the checked copy on your backend and serve it to the app from your own storage, because the download needs your API key:
+
+```python Python
+def store_checked_copy(submission_id, answer_id):
+    with requests.get(f"{API}/submissions/{submission_id}/checked-copy",
+                      headers=HEADERS, stream=True, timeout=120) as r:
+        if r.status_code == 404:
+            return None   # checked_copy_not_found: no checked copy for this answer
+        r.raise_for_status()
+        key = f"checked/{answer_id}.pdf"
+        storage.upload(key, r.raw)   # your object storage
+        return storage.signed_url(key)
+```
+
+## Mentor review
+
+AI marks are drafts until you finalize them. Many programmes show the AI evaluation immediately and let mentors adjust it:
+
+- **On the dashboard.** Each daily exam appears in your institute's Vacademy dashboard, tagged **Source: API**. Mentors can open any answer and change marks and feedback there.
+- **In your own mentor tool.** Send changes with `PATCH /submissions/{id}/questions/{question_id}` (scope `evaluation:review`), in steps of 0.5 marks, with the mentor's ID in `reviewer`.
+
+Changes by mentors bump the submission in the feed, so your worker picks up the new marks and `source` becomes `ai_reviewed`. When a day's evaluations are settled, finalize the exam with `POST /exams/{id}/finalize` and `{"all_graded": true}` to lock them.
+
+## Volume and limits
+
+- **Daily quota.** Each institute has a daily copy quota, 2,000 copies by default, reset at 00:00 UTC. `GET /me` shows `daily_copy_quota`, `quota_used_today` and `quota_resets_at`. Beyond it, submissions are refused with `429 daily_quota_exceeded`. For a larger programme, ask [hello@evalezy.com](mailto:hello@evalezy.com) to raise it before launch.
+- **English only.** Hindi-medium answers are not supported yet. Such an answer fails with `error.code: "language_not_supported"` and is not charged. Tell Hindi-medium students before they submit.
+- **Answer length.** Copies of up to 40 pages are graded normally. A full-length mains booklet of 41 to 80 pages is accepted, but pages after the 40th get a simpler text-only read and the copy is flagged `needs_review` for a mentor. Copies over 80 pages are refused.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Syncing results" icon="arrows-rotate" href="/guides/syncing-results">
+    One feed for every daily exam.
+  </Card>
+  <Card title="Going live" icon="rocket" href="/guides/going-live">
+    Quotas, credits and retries before launch day.
+  </Card>
+</CardGroup>

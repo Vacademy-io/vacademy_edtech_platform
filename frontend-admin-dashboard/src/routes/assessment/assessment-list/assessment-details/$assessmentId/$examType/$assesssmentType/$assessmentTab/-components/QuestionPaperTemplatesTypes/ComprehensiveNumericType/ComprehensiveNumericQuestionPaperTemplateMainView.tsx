@@ -9,10 +9,14 @@ import SelectField from '@/components/design-system/select-field';
 import CustomInput from '@/components/design-system/custom-input';
 import { MainViewQuillEditor } from '@/components/quill/MainViewQuillEditor';
 import { QUESTION_TYPES, NUMERIC_TYPES } from '@/constants/dummy-data';
-import { MyInput } from '@/components/design-system/input';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SectionQuestionPaperFormProps } from '../../../-utils/assessment-question-paper';
 import { formatStructure } from '@/routes/assessment/question-papers/-utils/helper';
+import {
+    NumericAnswerInput,
+    answerSlots,
+} from '@/routes/assessment/question-papers/-components/NumericAnswerInput';
 
 export const ComprehensiveNumericQuestionPaperTemplateMainView = ({
     form,
@@ -20,6 +24,7 @@ export const ComprehensiveNumericQuestionPaperTemplateMainView = ({
     className,
     selectedSectionIndex,
 }: SectionQuestionPaperFormProps) => {
+    const { t } = useTranslation('assessmentComprehensiveNumericTemplateList');
     const { control, getValues, trigger, watch } = form;
 
     const numericType = watch(
@@ -32,8 +37,8 @@ export const ComprehensiveNumericQuestionPaperTemplateMainView = ({
         trigger(`sections.${selectedSectionIndex}.questions.${currentQuestionIndex}.validAnswers`);
     }, [numericType, currentQuestionIndex, trigger]);
 
-    const answersType = 'Answer:';
-    const explanationsType = 'Explanation:';
+    const answersType = t('answer.label');
+    const explanationsType = t('explanation.label');
     const questionsType = '';
 
     // const imageDetails = getValues(`questions.${currentQuestionIndex}.imageDetails`);
@@ -52,19 +57,20 @@ export const ComprehensiveNumericQuestionPaperTemplateMainView = ({
         onChange,
         onBlur,
     }) => {
+        const { t } = useTranslation('assessmentComprehensiveNumericTemplateList');
         return (
             <div className="">
                 {!isExpanded ? (
                     // Render only a single line preview
                     <div className="flex cursor-pointer flex-row gap-1 border bg-primary-100 p-2">
-                        <div className="w-full max-w-[50vw] truncate text-body">
+                        <div className="w-full max-w-[50vw] truncate text-body"> {/* design-lint-ignore: viewport-relative preview cap, no fixed-px token fits this responsive truncated preview */}
                             {value && value.replace(/<[^>]+>/g, '')}
                         </div>
                         <button
                             className="text-body text-blue-500"
                             onClick={() => setIsExpanded(true)}
                         >
-                            Show More
+                            {t('editor.showMore')}
                         </button>
                     </div>
                 ) : (
@@ -75,7 +81,7 @@ export const ComprehensiveNumericQuestionPaperTemplateMainView = ({
                             className="mt-2 text-body text-blue-500"
                             onClick={() => setIsExpanded(false)}
                         >
-                            Show Less
+                            {t('editor.showLess')}
                         </button>
                     </div>
                 )}
@@ -83,22 +89,10 @@ export const ComprehensiveNumericQuestionPaperTemplateMainView = ({
         );
     };
 
-    useEffect(() => {
-        const validAnswrs = form.getValues(
-            `sections.${selectedSectionIndex}.questions.${currentQuestionIndex}.validAnswers`
-        );
-        if (!validAnswrs) {
-            form.setValue(
-                `sections.${selectedSectionIndex}.questions.${currentQuestionIndex}.validAnswers`,
-                [0]
-            );
-        }
-    }, []);
-
     if (allQuestions.length === 0) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
-                <h1>Please add a question to show question details</h1>
+                <h1>{t('emptyState.message')}</h1>
             </div>
         );
     }
@@ -115,13 +109,13 @@ export const ComprehensiveNumericQuestionPaperTemplateMainView = ({
                     <PopoverContent>
                         <div className="mb-2 flex flex-col gap-4">
                             <div className="flex w-full items-center justify-between">
-                                <h1 className="text-primary-500">Questions Settings</h1>
+                                <h1 className="text-primary-500">{t('header.questionsSettings')}</h1>
                                 <PopoverClose>
                                     <X size={16} />
                                 </PopoverClose>
                             </div>
                             <SelectField
-                                label="Question Type"
+                                label={t('header.questionTypeLabel')}
                                 name={`questions.${currentQuestionIndex}.questionType`}
                                 options={QUESTION_TYPES.map((option, index) => ({
                                     value: option.code,
@@ -133,7 +127,7 @@ export const ComprehensiveNumericQuestionPaperTemplateMainView = ({
                                 required
                             />
                             <SelectField
-                                label="Numerical Type"
+                                label={t('header.numericalTypeLabel')}
                                 name={`questions.${currentQuestionIndex}.numericType`}
                                 options={NUMERIC_TYPES.map((option, index) => ({
                                     value: option,
@@ -145,7 +139,7 @@ export const ComprehensiveNumericQuestionPaperTemplateMainView = ({
                                 required
                             />
                             <div className="flex flex-col gap-2">
-                                <h1 className="text-sm font-semibold">Time Limit</h1>
+                                <h1 className="text-sm font-semibold">{t('timeLimit.title')}</h1>
                                 <div className="flex items-center gap-4 text-sm">
                                     <CustomInput
                                         control={form.control}
@@ -153,7 +147,7 @@ export const ComprehensiveNumericQuestionPaperTemplateMainView = ({
                                         label=""
                                         className="w-10"
                                     />
-                                    <span>hrs</span>
+                                    <span>{t('timeLimit.hrs')}</span>
                                     <span>:</span>
                                     <CustomInput
                                         control={form.control}
@@ -161,7 +155,7 @@ export const ComprehensiveNumericQuestionPaperTemplateMainView = ({
                                         label=""
                                         className="w-10"
                                     />
-                                    <span>min</span>
+                                    <span>{t('timeLimit.min')}</span>
                                 </div>
                             </div>
                         </div>
@@ -169,7 +163,7 @@ export const ComprehensiveNumericQuestionPaperTemplateMainView = ({
                 </Popover>
             </div>
             <div className="flex w-full flex-col !flex-nowrap items-start gap-1">
-                <span>Comprehension Text</span>
+                <span>{t('comprehensionText')}</span>
                 <FormField
                     control={control}
                     name={`sections.${selectedSectionIndex}.questions.${currentQuestionIndex}.parentRichTextContent`}
@@ -189,7 +183,7 @@ export const ComprehensiveNumericQuestionPaperTemplateMainView = ({
             </div>
             <div className="flex w-full flex-col !flex-nowrap items-start gap-1">
                 <span>
-                    Question&nbsp;
+                    {t('question.label')}&nbsp;
                     {questionsType
                         ? formatStructure(questionsType, currentQuestionIndex + 1)
                         : currentQuestionIndex + 1}
@@ -235,44 +229,37 @@ export const ComprehensiveNumericQuestionPaperTemplateMainView = ({
                         <FormItem className="w-full">
                             <FormControl>
                                 <div className="flex flex-row flex-wrap items-center gap-4">
-                                    {Array.isArray(field.value) &&
-                                        field.value.map((answer, index) => (
-                                            <div key={index} className="flex items-center gap-2">
-                                                {/* Input for each validAnswer */}
-                                                <MyInput
-                                                    input={answer.toString()}
-                                                    onChangeFunction={(e) => {
-                                                        const updatedAnswers = [
-                                                            ...(field.value ?? []),
-                                                        ];
-                                                        updatedAnswers[index] =
-                                                            parseFloat(e.target.value) || 0; // Ensure number
-                                                        field.onChange(updatedAnswers);
-                                                    }}
-                                                    inputType="number"
-                                                />
-                                                {/* Remove button for each answer */}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => {
-                                                        field.onChange(
-                                                            field.value?.filter(
-                                                                (_, i) => i !== index
-                                                            )
-                                                        );
-                                                    }}
-                                                >
-                                                    <X />
-                                                </button>
-                                            </div>
-                                        ))}
+                                    {answerSlots(field.value).map((answer, index) => (
+                                        <div key={index} className="flex items-center gap-2">
+                                            {/* Input for each validAnswer */}
+                                            <NumericAnswerInput
+                                                value={answer}
+                                                onChange={(value) => {
+                                                    const updatedAnswers = [...(field.value ?? [])];
+                                                    updatedAnswers[index] = value as number;
+                                                    field.onChange(updatedAnswers);
+                                                }}
+                                            />
+                                            {/* Remove button for each answer */}
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    field.onChange(
+                                                        field.value?.filter((_, i) => i !== index)
+                                                    );
+                                                }}
+                                            >
+                                                <X />
+                                            </button>
+                                        </div>
+                                    ))}
                                     {/* Add new answer */}
                                     <Button
                                         variant="outline"
                                         type="button"
                                         className="cursor-pointer"
                                         onClick={() => {
-                                            field.onChange([...(field.value || []), 0]);
+                                            field.onChange([...answerSlots(field.value), null]);
                                         }}
                                     >
                                         <Plus size={20} />

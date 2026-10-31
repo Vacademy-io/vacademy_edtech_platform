@@ -20,17 +20,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Switch } from "@/components/ui/switch";
 import {
   useGetUserApiKeys,
   useSaveUserApiKeys,
   useDeleteUserApiKeys,
   useGetTokenUsage,
 } from "@/services/ai-settings-api";
-import { Eye, EyeSlash, Key, Trash, FloppyDisk, WarningCircle, CheckCircle, CurrencyDollar } from "@phosphor-icons/react";
+import { Eye, EyeSlash, Key, Trash, FloppyDisk, WarningCircle, CheckCircle, CurrencyDollar, Gear } from "@phosphor-icons/react";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { useTranslation } from "react-i18next";
+import { format, isValid } from "date-fns";
 import { LayoutContainer } from "@/components/common/layout-container/layout-container";
 import { AI_SERVICE_BASE_URL } from "@/constants/urls";
+import {
+  setAiSettingsShortcutEnabled,
+  useAiSettingsShortcutEnabled,
+} from "@/services/ai-settings-shortcut";
 
 import axios from "axios";
 import { getTokenFromStorage } from "@/lib/auth/sessionUtility";
@@ -47,6 +53,7 @@ interface Model {
 }
 
 function APIKeyManagement() {
+  const { t } = useTranslation("miscRoutesB");
   const { data: apiKeyData, isLoading } = useGetUserApiKeys();
   const saveApiKeys = useSaveUserApiKeys();
   const deleteApiKeys = useDeleteUserApiKeys();
@@ -121,12 +128,12 @@ function APIKeyManagement() {
         !apiKeyData?.has_openai_key &&
         !apiKeyData?.has_gemini_key
       ) {
-        toast.error("Please provide at least one API key");
+        toast.error(t("aiSettings.apiKeys.toast.atLeastOneKey"));
         return;
       }
 
       await saveApiKeys.mutateAsync(payload);
-      toast.success("API keys saved successfully");
+      toast.success(t("aiSettings.apiKeys.toast.saveSuccess"));
 
       // Clear the input fields after successful save
       setFormData({
@@ -135,30 +142,26 @@ function APIKeyManagement() {
         gemini_key: "",
       });
     } catch (error) {
-      toast.error("Failed to save API keys");
+      toast.error(t("aiSettings.apiKeys.toast.saveError"));
       console.error(error);
     }
   };
 
   const handleDelete = async () => {
-    if (
-      !confirm(
-        "Are you sure you want to permanently delete your API keys? This action cannot be undone."
-      )
-    ) {
+    if (!confirm(t("aiSettings.apiKeys.deleteConfirm"))) {
       return;
     }
 
     try {
       await deleteApiKeys.mutateAsync();
-      toast.success("API keys deleted successfully");
+      toast.success(t("aiSettings.apiKeys.toast.deleteSuccess"));
       setFormData({
         openai_key: "",
         gemini_key: "",
         default_model: "System Default",
       });
     } catch (error) {
-      toast.error("Failed to delete API keys");
+      toast.error(t("aiSettings.apiKeys.toast.deleteError"));
       console.error(error);
     }
   };
@@ -176,11 +179,10 @@ function APIKeyManagement() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Key className="h-5 w-5" />
-          API Key Management
+          {t("aiSettings.apiKeys.title")}
         </CardTitle>
         <CardDescription>
-          Manage your OpenRouter and Gemini API keys for personalized AI
-          interactions
+          {t("aiSettings.apiKeys.description")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -190,16 +192,21 @@ function APIKeyManagement() {
             <Alert>
               <CheckCircle className="h-4 w-4" />
               <AlertDescription>
-                Active keys: {apiKeyData.has_openai_key && "OpenRouter"}{" "}
-                {apiKeyData.has_openai_key && apiKeyData.has_gemini_key && "& "}{" "}
-                {apiKeyData.has_gemini_key && "Gemini"}
+                {t("aiSettings.apiKeys.activeKeys", {
+                  keys: [
+                    apiKeyData.has_openai_key ? "OpenRouter" : null,
+                    apiKeyData.has_gemini_key ? "Gemini" : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" & "),
+                })}
               </AlertDescription>
             </Alert>
           )}
 
         {/* OpenAI Key */}
         <div className="space-y-2">
-          <Label htmlFor="openai-key">OpenRouter API Key</Label>
+          <Label htmlFor="openai-key">{t("aiSettings.apiKeys.openrouter.label")}</Label>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Input
@@ -207,8 +214,8 @@ function APIKeyManagement() {
                 type={showOpenAIKey ? "text" : "password"}
                 placeholder={
                   apiKeyData?.has_openai_key
-                    ? "••••••••••••••••••••"
-                    : "Enter your OpenRouter API key"
+                    ? t("aiSettings.apiKeys.openrouter.placeholderExisting")
+                    : t("aiSettings.apiKeys.openrouter.placeholderNew")
                 }
                 value={formData.openai_key}
                 onChange={(e) =>
@@ -233,15 +240,14 @@ function APIKeyManagement() {
           </div>
           {apiKeyData?.has_openai_key && (
             <p className="text-xs text-muted-foreground">
-              You have an OpenRouter key configured. Enter a new key to replace
-              it.
+              {t("aiSettings.apiKeys.openrouter.existingHint")}
             </p>
           )}
         </div>
 
         {/* Gemini Key */}
         <div className="space-y-2">
-          <Label htmlFor="gemini-key">Gemini API Key</Label>
+          <Label htmlFor="gemini-key">{t("aiSettings.apiKeys.gemini.label")}</Label>
           <div className="flex gap-2">
             <div className="relative flex-1">
               <Input
@@ -249,8 +255,8 @@ function APIKeyManagement() {
                 type={showGeminiKey ? "text" : "password"}
                 placeholder={
                   apiKeyData?.has_gemini_key
-                    ? "••••••••••••••••••••"
-                    : "Enter your Gemini API key"
+                    ? t("aiSettings.apiKeys.gemini.placeholderExisting")
+                    : t("aiSettings.apiKeys.gemini.placeholderNew")
                 }
                 value={formData.gemini_key}
                 onChange={(e) =>
@@ -275,14 +281,14 @@ function APIKeyManagement() {
           </div>
           {apiKeyData?.has_gemini_key && (
             <p className="text-xs text-muted-foreground">
-              You have a Gemini key configured. Enter a new key to replace it.
+              {t("aiSettings.apiKeys.gemini.existingHint")}
             </p>
           )}
         </div>
 
         {/* Default Model */}
         <div className="space-y-2">
-          <Label htmlFor="default-model">Default AI Model</Label>
+          <Label htmlFor="default-model">{t("aiSettings.apiKeys.defaultModel.label")}</Label>
           <Select
             value={formData.default_model || models[0]?.id || ""}
             onValueChange={(value) =>
@@ -291,7 +297,13 @@ function APIKeyManagement() {
             disabled={models.length === 0}
           >
             <SelectTrigger id="default-model">
-              <SelectValue placeholder={models.length === 0 ? "Loading models..." : "Select a model"} />
+              <SelectValue
+                placeholder={
+                  models.length === 0
+                    ? t("aiSettings.apiKeys.defaultModel.loading")
+                    : t("aiSettings.apiKeys.defaultModel.placeholder")
+                }
+              />
             </SelectTrigger>
             <SelectContent>
               {models.map((model) => (
@@ -302,7 +314,7 @@ function APIKeyManagement() {
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">
-            The default model used when "Auto" is selected during generation
+            {t("aiSettings.apiKeys.defaultModel.hint")}
           </p>
         </div>
 
@@ -310,9 +322,7 @@ function APIKeyManagement() {
         <Alert>
           <WarningCircle className="h-4 w-4" />
           <AlertDescription>
-            Your API keys are securely encrypted and stored. They are never
-            visible after saving and cannot be retrieved - only replaced or
-            deleted.
+            {t("aiSettings.apiKeys.securityWarning")}
           </AlertDescription>
         </Alert>
 
@@ -324,7 +334,9 @@ function APIKeyManagement() {
             className="flex-1"
           >
             <FloppyDisk className="h-4 w-4 me-2" />
-            {saveApiKeys.isPending ? "Saving..." : "Save Keys"}
+            {saveApiKeys.isPending
+              ? t("aiSettings.apiKeys.actions.saving")
+              : t("aiSettings.apiKeys.actions.save")}
           </Button>
           {apiKeyData &&
             (apiKeyData.has_openai_key || apiKeyData.has_gemini_key) && (
@@ -334,7 +346,7 @@ function APIKeyManagement() {
                 disabled={deleteApiKeys.isPending}
               >
                 <Trash className="h-4 w-4 me-2" />
-                Delete All Keys
+                {t("aiSettings.apiKeys.actions.deleteAll")}
               </Button>
             )}
         </div>
@@ -343,7 +355,22 @@ function APIKeyManagement() {
   );
 }
 
-function TokenUsage() {
+/** Shown wherever the API has no value to report for a usage row. */
+const EMPTY_CELL = "\u2014";
+
+/**
+ * created_at is a plain string from the API; anything unparseable would throw
+ * out of `format` and take the tab down with it.
+ */
+function formatUsageDate(value: string | null | undefined): string {
+  if (!value) return EMPTY_CELL;
+  const date = new Date(value);
+  return isValid(date) ? format(date, "MMM d, yyyy HH:mm") : EMPTY_CELL;
+}
+
+// Exported for the regression test that renders a priceless usage row.
+export function TokenUsage() {
+  const { t } = useTranslation("miscRoutesB");
   const [dateRange, setDateRange] = useState({
     start_date: format(
       new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
@@ -354,29 +381,37 @@ function TokenUsage() {
 
   const { data: tokenUsage, isLoading } = useGetTokenUsage(dateRange);
 
-  const totalCost =
-    tokenUsage?.records.reduce((sum, record) => sum + record.total_price, 0) ||
-    0;
-  const totalTokens =
-    tokenUsage?.records.reduce((sum, record) => sum + record.total_tokens, 0) ||
-    0;
+  // The API leaves every price null for TTS rows and models with no configured
+  // price, so nothing here may assume a number is present — a bare
+  // `total_price.toFixed()` is what used to crash this whole tab.
+  const rawRecords = tokenUsage?.records;
+  const records = Array.isArray(rawRecords) ? rawRecords : [];
+
+  const totalCost = records.reduce(
+    (sum, record) => sum + (record.total_price ?? 0),
+    0
+  );
+  const totalTokens = records.reduce(
+    (sum, record) => sum + (record.total_tokens ?? 0),
+    0
+  );
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CurrencyDollar className="h-5 w-5" />
-          Token Usage & Costs
+          {t("aiSettings.tokenUsage.title")}
         </CardTitle>
         <CardDescription>
-          View your AI token usage and associated costs
+          {t("aiSettings.tokenUsage.description")}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Date Range Filter */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label htmlFor="start-date">Start Date</Label>
+            <Label htmlFor="start-date">{t("aiSettings.tokenUsage.dateRange.start")}</Label>
             <Input
               id="start-date"
               type="date"
@@ -387,7 +422,7 @@ function TokenUsage() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="end-date">End Date</Label>
+            <Label htmlFor="end-date">{t("aiSettings.tokenUsage.dateRange.end")}</Label>
             <Input
               id="end-date"
               type="date"
@@ -403,7 +438,7 @@ function TokenUsage() {
         <div className="grid grid-cols-3 gap-4">
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription>Total Requests</CardDescription>
+              <CardDescription>{t("aiSettings.tokenUsage.stats.totalRequests")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{tokenUsage?.total || 0}</div>
@@ -411,7 +446,7 @@ function TokenUsage() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription>Total Tokens</CardDescription>
+              <CardDescription>{t("aiSettings.tokenUsage.stats.totalTokens")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
@@ -421,7 +456,7 @@ function TokenUsage() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardDescription>Total Cost</CardDescription>
+              <CardDescription>{t("aiSettings.tokenUsage.stats.totalCost")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">${totalCost.toFixed(4)}</div>
@@ -434,39 +469,38 @@ function TokenUsage() {
           <div className="flex items-center justify-center p-8">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
-        ) : tokenUsage && tokenUsage.records.length > 0 ? (
+        ) : records.length > 0 ? (
           <div className="space-y-3">
-            <Label>Recent Activity</Label>
+            <Label>{t("aiSettings.tokenUsage.recentActivity")}</Label>
             <div className="border rounded-lg overflow-hidden">
               <div className="max-h-96 overflow-y-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-muted sticky top-0">
                     <tr>
-                      <th className="text-start p-3 font-medium">Date</th>
-                      <th className="text-start p-3 font-medium">Provider</th>
-                      <th className="text-start p-3 font-medium">Model</th>
-                      <th className="text-end p-3 font-medium">Tokens</th>
-                      <th className="text-end p-3 font-medium">Cost</th>
+                      <th className="text-start p-3 font-medium">{t("aiSettings.tokenUsage.table.date")}</th>
+                      <th className="text-start p-3 font-medium">{t("aiSettings.tokenUsage.table.provider")}</th>
+                      <th className="text-start p-3 font-medium">{t("aiSettings.tokenUsage.table.model")}</th>
+                      <th className="text-end p-3 font-medium">{t("aiSettings.tokenUsage.table.tokens")}</th>
+                      <th className="text-end p-3 font-medium">{t("aiSettings.tokenUsage.table.cost")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {tokenUsage.records.map((record) => (
+                    {records.map((record) => (
                       <tr key={record.id} className="hover:bg-muted/50">
                         <td className="p-3">
-                          {format(
-                            new Date(record.created_at),
-                            "MMM d, yyyy HH:mm"
-                          )}
+                          {formatUsageDate(record.created_at)}
                         </td>
                         <td className="p-3 capitalize">
-                          {record.api_provider}
+                          {record.api_provider || EMPTY_CELL}
                         </td>
-                        <td className="p-3">{record.model}</td>
+                        <td className="p-3">{record.model || EMPTY_CELL}</td>
                         <td className="p-3 text-end">
-                          {record.total_tokens.toLocaleString()}
+                          {(record.total_tokens ?? 0).toLocaleString()}
                         </td>
                         <td className="p-3 text-end">
-                          ${record.total_price.toFixed(4)}
+                          {record.total_price == null
+                            ? EMPTY_CELL
+                            : `$${record.total_price.toFixed(4)}`}
                         </td>
                       </tr>
                     ))}
@@ -479,7 +513,7 @@ function TokenUsage() {
           <Alert>
             <WarningCircle className="h-4 w-4" />
             <AlertDescription>
-              No usage records found for the selected date range.
+              {t("aiSettings.tokenUsage.empty")}
             </AlertDescription>
           </Alert>
         )}
@@ -488,21 +522,67 @@ function TokenUsage() {
   );
 }
 
+function ChatbotPreferences() {
+  const { t } = useTranslation("miscRoutesB");
+  const shortcutEnabled = useAiSettingsShortcutEnabled();
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Gear className="h-5 w-5" />
+          {t("aiSettings.chatbot.title")}
+        </CardTitle>
+        <CardDescription>
+          {t("aiSettings.chatbot.description")}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-start justify-between gap-4">
+          <div className="space-y-1">
+            <Label htmlFor="chatbot-settings-shortcut">
+              {t("aiSettings.chatbot.shortcut.label")}
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              {t("aiSettings.chatbot.shortcut.hint")}
+            </p>
+          </div>
+          <Switch
+            id="chatbot-settings-shortcut"
+            checked={shortcutEnabled}
+            onCheckedChange={(checked) => {
+              setAiSettingsShortcutEnabled(checked);
+              toast.success(
+                checked
+                  ? t("aiSettings.chatbot.shortcut.toast.enabled")
+                  : t("aiSettings.chatbot.shortcut.toast.disabled")
+              );
+            }}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function AISettings() {
+  const { t } = useTranslation("miscRoutesB");
   return (
     <LayoutContainer>
-      <div className="container mx-auto py-8 px-4 max-w-6xl">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">AI Settings</h1>
+      <div className="container mx-auto py-8 px-4 max-w-6xl space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">{t("aiSettings.page.title")}</h1>
           <p className="text-muted-foreground mt-2">
-            Manage your AI API keys and monitor token usage
+            {t("aiSettings.page.description")}
           </p>
         </div>
 
+        <ChatbotPreferences />
+
         <Tabs defaultValue="api-keys" className="space-y-6">
           <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="api-keys">API Keys</TabsTrigger>
-            <TabsTrigger value="usage">Token Usage</TabsTrigger>
+            <TabsTrigger value="api-keys">{t("aiSettings.page.tabs.apiKeys")}</TabsTrigger>
+            <TabsTrigger value="usage">{t("aiSettings.page.tabs.usage")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="api-keys">

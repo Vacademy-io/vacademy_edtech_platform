@@ -11,6 +11,7 @@
  * Auth (`user`) is injected automatically by authenticatedAxiosInstance's
  * interceptor — never add it here.
  */
+import type { TFunction } from 'i18next';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import {
     ONBOARDING_FLOWS_BASE,
@@ -19,6 +20,7 @@ import {
     ONBOARDING_STEP_INSTANCES_BASE,
     ONBOARDING_STEP_FEATURE_FIELDS,
     COURSE_CATALOG_URL,
+    ROLES_BASE,
 } from '@/constants/urls';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { getInstituteId } from '@/constants/helper';
@@ -28,11 +30,20 @@ import { getInstituteId } from '@/constants/helper';
 export type OnboardingFlowStatus = 'DRAFT' | 'ACTIVE' | 'ARCHIVED';
 export type OnboardingStartMode = 'MANUAL' | 'AUTO' | 'BOTH';
 export type OnboardingStepType = 'FORM';
-export type OnboardingRoleKey = 'ADMIN' | 'STUDENT' | 'PARENT';
+/**
+ * A role in a step's / field's access grid. ADMIN, STUDENT and PARENT are the three the
+ * LEARNER surface resolves itself to and are always present in the grid; beyond those, a grid
+ * entry may name ANY institute role from auth_service (COUNSELLOR, a custom role, …) — that is
+ * how a non-admin staff member is given a step to work on. Hence `string`, not a closed union.
+ */
+export type OnboardingRoleKey = 'ADMIN' | 'STUDENT' | 'PARENT' | (string & {});
 export type OnboardingInstanceStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED' | string;
 export type OnboardingStepInstanceStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'SKIPPED';
 
-export const ONBOARDING_ROLE_KEYS: OnboardingRoleKey[] = ['ADMIN', 'STUDENT', 'PARENT'];
+/** The three built-ins, always shown in the grid and never removable. */
+export const ONBOARDING_BUILTIN_ROLE_KEYS = ['ADMIN', 'STUDENT', 'PARENT'] as const;
+/** @deprecated Use {@link ONBOARDING_BUILTIN_ROLE_KEYS} — the grid is no longer limited to these. */
+export const ONBOARDING_ROLE_KEYS: OnboardingRoleKey[] = [...ONBOARDING_BUILTIN_ROLE_KEYS];
 
 // ── Role access ──────────────────────────────────────────────────────────────
 
@@ -49,6 +60,47 @@ export function defaultRoleAccess(): OnboardingRoleAccess[] {
         { role_key: 'STUDENT', can_view: true, can_edit: false },
         { role_key: 'PARENT', can_view: false, can_edit: false },
     ];
+}
+
+/**
+ * Institute roles offered by the grid's "Add role" picker — auth_service's system roles
+ * (institute_id IS NULL) plus this institute's own custom roles, from
+ * GET /auth-service/v1/institute/{instituteId}/roles.
+ *
+ * The backend matches a grid entry against the caller's JWT role NAMES, so `role_key` is the
+ * role's name (uppercased), never its id — an id would never match anything. Matching is
+ * case-insensitive server-side, but we normalise here so stored grids stay consistent.
+ */
+export interface OnboardingAssignableRole {
+    role_key: string;
+    label: string;
+    /** True for auth_service system roles (shared across institutes) rather than custom ones. */
+    is_system: boolean;
+}
+
+export const onboardingAssignableRolesKey = (instituteId: string) =>
+    ['onboarding-assignable-roles', instituteId] as const;
+
+export async function fetchOnboardingAssignableRoles(
+    instituteId: string
+): Promise<OnboardingAssignableRole[]> {
+    const { data } = await authenticatedAxiosInstance.get(`${ROLES_BASE}/${instituteId}/roles`);
+    const rows: Array<{ id?: string; name?: string; instituteId?: string | null }> = Array.isArray(data)
+        ? data
+        : [];
+    const seen = new Set<string>();
+    const roles: OnboardingAssignableRole[] = [];
+    for (const row of rows) {
+        const name = (row?.name ?? '').trim();
+        if (!name) continue;
+        const key = name.toUpperCase();
+        // The endpoint concatenates system + custom roles, so a custom role sharing a system
+        // role's name would otherwise appear twice in the picker.
+        if (seen.has(key)) continue;
+        seen.add(key);
+        roles.push({ role_key: key, label: name, is_system: !row?.instituteId });
+    }
+    return roles.sort((a, b) => a.label.localeCompare(b.label));
 }
 
 // ── Step field config ────────────────────────────────────────────────────────
@@ -87,8 +139,10 @@ export interface OnboardingStepDTO {
     status: OnboardingFlowStatus | string;
     created_at?: string;
     updated_at?: string;
-    // NOT echoed by create/update responses (see note on fetchSteps below) —
-    // only populated when hydrated separately.
+    // Parsed from the step's own fields_config / role_access JSON by
+    // OnboardingStepDTO.fromEntity — null only when the step has none stored.
+    // This is the AUTHORITY for a field's order / mandatory / hidden / role access;
+    // fetchStepFields below supplies display names only.
     fields?: OnboardingStepFieldConfig[] | null;
     role_access?: OnboardingRoleAccess[] | null;
 }
@@ -237,10 +291,10 @@ export async function createOnboardingStep(
 }
 
 /**
- * The list/create/update responses never echo `fields`/`role_access`
- * (backend returns them null) — the step DTO alone is enough for the
- * ordered checklist, but per-step field config must be re-fetched via
- * {@link fetchStepFields} when a step is opened for editing.
+ * Each step carries its own `fields`/`role_access` (parsed from its fields_config /
+ * role_access JSON) — that is what the step builder must hydrate its field rows from.
+ * {@link fetchStepFields} is still needed alongside it, purely to resolve each
+ * `institute_custom_field_id` to a display name.
  */
 export async function fetchOnboardingSteps(flowId: string): Promise<OnboardingStepDTO[]> {
     const { data } = await authenticatedAxiosInstance.get(
@@ -326,6 +380,47 @@ export interface InstituteCustomFieldDTO {
 }
 
 const ONBOARDING_STEP_FEATURE_TYPE = 'ONBOARDING_STEP';
+
+/**
+ * One FORM-step field resolved for the ADMIN role, from
+ * GET .../step-instances/{id}/fields — the shape the admin's own "Complete step" FORM must
+ * render from, as opposed to {@link fetchStepFields}'s catalog view:
+ *  - ordered by the step builder's own `field_order` (the catalog endpoint orders by the
+ *    institute-wide catalog order, so a reordered step rendered in creation order);
+ *  - `is_mandatory` from the step's fields_config (the catalog row's is_mandatory is never
+ *    written by this domain, so it always came back null → no required marker on the admin
+ *    form, while the server still rejected the submit);
+ *  - `field_type` + `config`, so a dropdown/date/checkbox/file/phone field renders as itself
+ *    instead of degrading to a plain text box;
+ *  - `is_hidden` fields already dropped server-side.
+ * Fully snake_case (unlike InstituteCustomFieldDTO's nested camelCase `custom_field`).
+ */
+export interface OnboardingResolvedFieldDTO {
+    institute_custom_field_id: string;
+    field_name: string | null;
+    /** text | dropdown | number | email | url | date | phone | textarea | checkbox | radio | file | multi_select */
+    field_type: string | null;
+    /** custom_fields.config JSON verbatim — dropdown/radio options, min/max, allowedFileTypes, … */
+    config: string | null;
+    default_value: string | null;
+    field_order: number | null;
+    is_mandatory: boolean | null;
+    can_edit: boolean | null;
+    value: string | null;
+}
+
+export const onboardingStepInstanceFieldsKey = (stepInstanceId: string) =>
+    ['onboarding-step-instance-fields', stepInstanceId] as const;
+
+/** The step's fields, resolved + ordered for the admin form — see {@link OnboardingResolvedFieldDTO}. */
+export async function fetchStepInstanceFields(
+    stepInstanceId: string
+): Promise<OnboardingResolvedFieldDTO[]> {
+    const { data } = await authenticatedAxiosInstance.get(
+        `${ONBOARDING_STEP_INSTANCES_BASE}/${stepInstanceId}/fields`
+    );
+    return Array.isArray(data) ? data : [];
+}
 
 /** Existing fields attached to one onboarding step (edit-time hydration). */
 export async function fetchStepFields(
@@ -419,6 +514,18 @@ export const onboardingDashboardKey = (
     pageNo: number
 ) => ['onboarding-dashboard', instituteId, flowId ?? null, status ?? null, pageNo] as const;
 
+/** Instance counts per status plus ALL, for the dashboard count cards (one grouped query). */
+export async function fetchOnboardingStatusCounts(
+    instituteId: string,
+    flowId?: string
+): Promise<Record<string, number>> {
+    const { data } = await authenticatedAxiosInstance.get(
+        `${ONBOARDING_INSTANCES_BASE}/dashboard/status-counts`,
+        { params: { instituteId, flowId: flowId || undefined } }
+    );
+    return (data ?? {}) as Record<string, number>;
+}
+
 /** Every onboarding instance for the institute (optionally filtered), for the management dashboard. */
 export async function fetchOnboardingDashboard(
     instituteId: string,
@@ -487,10 +594,18 @@ export async function skipStepInstance(
     return data;
 }
 
-/** One field's actual submitted value for a completed FORM step instance. */
+/**
+ * One field's actual submitted value for a completed FORM step instance.
+ *
+ * `field_type`/`config` ride along so a read-only view can render the value AS ITS TYPE: a
+ * `file` field's value is the uploaded object's URL, and printing that raw leaves the viewer a
+ * URL to copy-paste instead of a file to open.
+ */
 export interface OnboardingSubmittedFieldDTO {
     institute_custom_field_id: string;
     field_name: string | null;
+    field_type: string | null;
+    config: string | null;
     value: string | null;
 }
 
@@ -576,11 +691,25 @@ export type OnboardingStepTriggerEvent =
     | 'ONBOARDING_STEP_COMPLETED'
     | 'ONBOARDING_STEP_SKIPPED';
 
-export const ONBOARDING_STEP_TRIGGER_EVENTS: { key: OnboardingStepTriggerEvent; label: string }[] = [
-    { key: 'ONBOARDING_STEP_ENTERED', label: 'When a subject enters this step' },
-    { key: 'ONBOARDING_STEP_COMPLETED', label: 'When this step is completed' },
-    { key: 'ONBOARDING_STEP_SKIPPED', label: 'When this step is skipped' },
-];
+/** UI labels for the fixed ONBOARDING_STEP_* trigger-event set (StepWorkflowTriggersCard's event picker). */
+export function buildOnboardingStepTriggerEvents(
+    t: TFunction
+): { key: OnboardingStepTriggerEvent; label: string }[] {
+    return [
+        {
+            key: 'ONBOARDING_STEP_ENTERED',
+            label: t('audienceManagerOnboardingService:triggerEvents.entered'),
+        },
+        {
+            key: 'ONBOARDING_STEP_COMPLETED',
+            label: t('audienceManagerOnboardingService:triggerEvents.completed'),
+        },
+        {
+            key: 'ONBOARDING_STEP_SKIPPED',
+            label: t('audienceManagerOnboardingService:triggerEvents.skipped'),
+        },
+    ];
+}
 
 export interface OnboardingStepTrigger {
     trigger_event_name: OnboardingStepTriggerEvent | string;

@@ -1,0 +1,15 @@
+{
+    "noSubOrgsFound": "कोई उप-संगठन नहीं मिला",
+    "pleaseSelectASubOrg": "कृपया एक उप-संगठन चुनें",
+    "loadingSubOrgs": "उप-संगठन लोड हो रहे हैं...",
+    "logoAlt": "लोगो",
+    "selectSubOrg": "उप-संगठन चुनें",
+    "pleaseChooseSubOrgToAccess": "कृपया वह उप-संगठन चुनें जिसे आप एक्सेस करना चाहते हैं",
+    "availableSubOrgs": "उपलब्ध उप-संगठन",
+    "subOrgFallbackName": "उप-संगठन {{subOrgId}}",
+    "chooseASubOrg": "एक उप-संगठन चुनें",
+    "idLabel": "आईडी: {{idPrefix}}...",
+    "continueToPortal": "पोर्टल पर जारी रखें",
+    "selectASubOrg": "एक उप-संगठन चुनें",
+    "backToLogin": "लॉगिन पर वापस जाएँ"
+}

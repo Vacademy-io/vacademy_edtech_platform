@@ -8,6 +8,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { CalendarBlank } from '@phosphor-icons/react';
 import type { DateRange } from 'react-day-picker';
+import { useTranslation } from 'react-i18next';
 
 const CUSTOM_VALUE = 'custom';
 
@@ -25,9 +26,9 @@ const parseYMD = (value: string | undefined): Date | undefined => {
     return new Date(y, m - 1, d);
 };
 
-const formatDisplay = (date: Date | undefined) => {
+const formatDisplay = (date: Date | undefined, locale: string) => {
     if (!date) return '';
-    return date.toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
+    return date.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' });
 };
 
 function getDatesFromValue(value: string): [string, string] {
@@ -36,20 +37,26 @@ function getDatesFromValue(value: string): [string, string] {
 }
 
 export const DateFilter = () => {
+    const { t, i18n } = useTranslation('studyLibraryDateFilter');
     const { filters, updateFilters } = useDoubtFilters();
 
     const dateFilterList: FilterType[] = useMemo(
         () => [
-            { label: 'Today', value: [getYesterday(), getTomorrow()].join(',') },
-            { label: 'This Week', value: [getDaysAgo(7), getTomorrow()].join(',') },
-            { label: 'This Month', value: [getDaysAgo(30), getTomorrow()].join(',') },
-            { label: 'This Year', value: [getDaysAgo(365), getTomorrow()].join(',') },
-            { label: 'Custom', value: CUSTOM_VALUE },
+            { label: t('options.today'), value: [getYesterday(), getTomorrow()].join(',') },
+            { label: t('options.thisWeek'), value: [getDaysAgo(7), getTomorrow()].join(',') },
+            { label: t('options.thisMonth'), value: [getDaysAgo(30), getTomorrow()].join(',') },
+            { label: t('options.thisYear'), value: [getDaysAgo(365), getTomorrow()].join(',') },
+            { label: t('options.custom'), value: CUSTOM_VALUE },
         ],
-        []
+        [t]
     );
 
     const [selectedDate, setSelectedDate] = useState<FilterType[]>([dateFilterList[1]!]);
+    // Labels are re-read from the live option list: the initial state captures `t` before the
+    // namespace has loaded in dev, which otherwise leaves "options.thisWeek" frozen on the chip.
+    const selectedDisplay = selectedDate.map(
+        (sel) => dateFilterList.find((o) => o.value === sel.value) ?? sel
+    );
     const [customOpen, setCustomOpen] = useState(false);
     const [customRange, setCustomRange] = useState<DateRange | undefined>(undefined);
 
@@ -88,15 +95,15 @@ export const DateFilter = () => {
     const isCustomSelected = selectedDate[0]?.value === CUSTOM_VALUE;
     const customLabel =
         isCustomSelected && customRange?.from && customRange?.to
-            ? `${formatDisplay(customRange.from)} – ${formatDisplay(customRange.to)}`
-            : 'Pick a range';
+            ? `${formatDisplay(customRange.from, i18n.language)} – ${formatDisplay(customRange.to, i18n.language)}`
+            : t('customRange.pickARange');
 
     return (
         <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-neutral-600">Date</span>
+            <span className="text-xs font-semibold text-neutral-600">{t('label.date')}</span>
             <SelectChips
                 options={dateFilterList}
-                selected={selectedDate}
+                selected={selectedDisplay}
                 onChange={handleDateChange}
                 hasClearFilter={false}
                 className="min-w-40"
@@ -128,7 +135,7 @@ export const DateFilter = () => {
                                 onClick={clearCustomRange}
                                 disabled={!customRange?.from && !customRange?.to}
                             >
-                                Clear
+                                {t('customRange.clear')}
                             </Button>
                             <div className="flex gap-2">
                                 <Button
@@ -136,14 +143,14 @@ export const DateFilter = () => {
                                     size="sm"
                                     onClick={() => setCustomOpen(false)}
                                 >
-                                    Cancel
+                                    {t('customRange.cancel')}
                                 </Button>
                                 <Button
                                     size="sm"
                                     onClick={applyCustomRange}
                                     disabled={!customRange?.from || !customRange?.to}
                                 >
-                                    Apply
+                                    {t('customRange.apply')}
                                 </Button>
                             </div>
                         </div>

@@ -41,6 +41,10 @@ public class LiveSessionStep1RequestDTO {
     private boolean allowPlayPause; // new added
     private String timeZone;
 
+    // Attendance-only institutes: true shows this class to learners. Null
+    // leaves the stored value untouched (older clients, edits that omit it).
+    private Boolean showToLearners;
+
     private String bookingTypeId;
     private String source;
     private String sourceId;
@@ -100,6 +104,10 @@ public class LiveSessionStep1RequestDTO {
         private Boolean hideUserList;
         // Auto-end the meeting shortly after the last moderator leaves
         private Boolean endWhenNoModerator;
+        // Opt-in on-device camera attention score (vacademy-activeness BBB plugin).
+        // Viewers only; persisted as activeness_score. Must stay declared here —
+        // this DTO is typed, so an undeclared key never reaches bbb_config_json.
+        private Boolean activenessScore;
     }
 
     @Data

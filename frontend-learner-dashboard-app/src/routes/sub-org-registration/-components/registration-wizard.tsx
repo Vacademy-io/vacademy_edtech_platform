@@ -3,6 +3,7 @@ import { useSuspenseQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Preferences } from "@capacitor/preferences";
 import { Check } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { applyTabBranding } from "@/utils/branding";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
 import { useInstituteDetailsStore } from "@/stores/study-library/useInstituteDetails";
@@ -65,6 +66,7 @@ const RegistrationWizard = ({
   instituteId,
   code,
 }: RegistrationWizardProps) => {
+  const { t } = useTranslation("registrationB");
   const domainRouting = useDomainRouting();
   const { setInstituteDetails } = useInstituteDetailsStore();
 
@@ -211,7 +213,7 @@ const RegistrationWizard = ({
     tncAccepted: boolean
   ) => {
     if (!registrationId) {
-      toast.error("Registration session missing. Please start again");
+      toast.error(t("common.sessionMissing"));
       setPhase("DETAILS");
       return;
     }
@@ -230,7 +232,7 @@ const RegistrationWizard = ({
       toast.error(
         getSubOrgApiErrorMessage(
           error,
-          "Failed to complete registration. Please try again"
+          t("subOrgRegistration.wizard.toast.completeError")
         )
       );
     } finally {
@@ -301,9 +303,9 @@ const RegistrationWizard = ({
         if (response.status === "DRAFT") {
           setOtpVerified(false);
           setPhase("OTP");
-          toast.success("Verification code sent to your new email");
+          toast.success(t("subOrgRegistration.wizard.toast.codeSentNewEmail"));
         } else {
-          toast.success("Details updated");
+          toast.success(t("subOrgRegistration.wizard.toast.detailsUpdated"));
           await advanceAfter("OTP", customFieldValues);
         }
         return;
@@ -324,14 +326,14 @@ const RegistrationWizard = ({
       setIsResumeMode(false);
       setIsPaymentRetry(false);
       setPhase("OTP");
-      toast.success("Verification code sent to your email");
+      toast.success(t("subOrgRegistration.wizard.toast.codeSent"));
     } catch (error) {
       // Duplicate email (and other 4xx) messages come from the backend
       const message = getSubOrgApiErrorMessage(
         error,
         isEditingAfterVerification
-          ? "Failed to save your details. Please try again"
-          : "Failed to start registration. Please try again"
+          ? t("subOrgRegistration.wizard.toast.saveError")
+          : t("subOrgRegistration.wizard.toast.startError")
       );
       // /start's in-flight-duplicate rejection gets a door, not a dead end:
       // keep the typed values and offer to resume that registration inline.
@@ -366,13 +368,13 @@ const RegistrationWizard = ({
       setIsResumeMode(true);
       setOtpVerified(false);
       setPhase("OTP");
-      toast.success("Verification code sent to your email");
+      toast.success(t("subOrgRegistration.wizard.toast.codeSent"));
     } catch (error) {
       // e.g. "No registration found for this email on this link"
       setResumeError(
         getSubOrgApiErrorMessage(
           error,
-          "Could not resume this registration. Please try again"
+          t("subOrgRegistration.wizard.toast.resumeError")
         )
       );
     } finally {
@@ -388,7 +390,7 @@ const RegistrationWizard = ({
    */
   const handleResumeVerify = async (otp: string) => {
     if (!registrationId) {
-      toast.error("Registration session missing. Please start again");
+      toast.error(t("common.sessionMissing"));
       setPhase("DETAILS");
       return;
     }
@@ -417,7 +419,7 @@ const RegistrationWizard = ({
       setIsResumeMode(false);
       setResumeEmail(null);
       setResumeError(null);
-      toast.success("Email verified successfully!");
+      toast.success(t("subOrgRegistration.wizard.toast.emailVerified"));
 
       const status = (response.status || "").toUpperCase();
       const isRetry = status === "PENDING_PAYMENT" && hasPaymentStep;
@@ -432,7 +434,12 @@ const RegistrationWizard = ({
         await advanceAfter("OTP", customFieldValues);
       }
     } catch (error) {
-      toast.error(getSubOrgApiErrorMessage(error, "Invalid or expired OTP"));
+      toast.error(
+        getSubOrgApiErrorMessage(
+          error,
+          t("subOrgRegistration.wizard.toast.invalidOtp")
+        )
+      );
     } finally {
       setIsVerifying(false);
     }
@@ -440,7 +447,7 @@ const RegistrationWizard = ({
 
   const handleVerifyOtp = async (otp: string) => {
     if (!registrationId) {
-      toast.error("Registration session missing. Please start again");
+      toast.error(t("common.sessionMissing"));
       setPhase("DETAILS");
       return;
     }
@@ -448,10 +455,15 @@ const RegistrationWizard = ({
     try {
       await verifySubOrgRegistrationOtp({ registrationId, otp });
       setOtpVerified(true);
-      toast.success("Email verified successfully!");
+      toast.success(t("subOrgRegistration.wizard.toast.emailVerified"));
       await advanceAfter("OTP", customFieldValues);
     } catch (error) {
-      toast.error(getSubOrgApiErrorMessage(error, "Invalid or expired OTP"));
+      toast.error(
+        getSubOrgApiErrorMessage(
+          error,
+          t("subOrgRegistration.wizard.toast.invalidOtp")
+        )
+      );
     } finally {
       setIsVerifying(false);
     }
@@ -468,10 +480,13 @@ const RegistrationWizard = ({
       } else {
         await resendSubOrgRegistrationOtp({ registrationId });
       }
-      toast.success("Verification code resent");
+      toast.success(t("subOrgRegistration.wizard.toast.codeResent"));
     } catch (error) {
       toast.error(
-        getSubOrgApiErrorMessage(error, "Failed to resend. Please try again")
+        getSubOrgApiErrorMessage(
+          error,
+          t("subOrgRegistration.wizard.toast.resendError")
+        )
       );
     } finally {
       setIsResending(false);
@@ -517,22 +532,33 @@ const RegistrationWizard = ({
   // ─── Progress indicator ────────────────────────────────────────────────────
   const progressSteps = useMemo(() => {
     const labels: { key: WizardPhase; label: string }[] = [
-      { key: "DETAILS", label: "Details" },
-      { key: "OTP", label: "Verify Email" },
+      { key: "DETAILS", label: t("subOrgRegistration.wizard.steps.details") },
+      { key: "OTP", label: t("subOrgRegistration.wizard.steps.verifyEmail") },
     ];
     postOtpSteps.forEach((step) => {
       labels.push(
         step === "CUSTOM_FIELDS"
-          ? { key: "CUSTOM_FIELDS", label: "Additional Info" }
+          ? {
+              key: "CUSTOM_FIELDS",
+              label: t("subOrgRegistration.wizard.steps.additionalInfo"),
+            }
           : step === "TNC"
-            ? { key: "TNC", label: "Terms" }
+            ? { key: "TNC", label: t("subOrgRegistration.wizard.steps.terms") }
             : step === "KYC"
-              ? { key: "KYC", label: "Identity Verification" }
-              : { key: "PAYMENT", label: "Payment" }
+              ? {
+                  key: "KYC",
+                  label: t(
+                    "subOrgRegistration.wizard.steps.identityVerification"
+                  ),
+                }
+              : {
+                  key: "PAYMENT",
+                  label: t("subOrgRegistration.wizard.steps.payment"),
+                }
       );
     });
     return labels;
-  }, [postOtpSteps]);
+  }, [postOtpSteps, t]);
 
   const currentStepIndex = progressSteps.findIndex((s) => s.key === phase);
 
@@ -588,11 +614,15 @@ const RegistrationWizard = ({
             <div className="space-y-5">
               <div className="text-center">
                 <h1 className="text-2xl font-bold text-neutral-700 sm:text-3xl">
-                  {template.template_name || "Organization Registration"}
+                  {template.template_name ||
+                    t("subOrgRegistration.wizard.defaultTemplateName")}
                 </h1>
                 <p className="mt-1 text-sm text-neutral-500">
-                  Register your organization with{" "}
-                  {instituteData?.institute_name ?? "the institute"}
+                  {t("subOrgRegistration.wizard.subtitle", {
+                    instituteName:
+                      instituteData?.institute_name ??
+                      t("subOrgRegistration.wizard.defaultInstituteName"),
+                  })}
                 </p>
               </div>
 
@@ -690,7 +720,7 @@ const RegistrationWizard = ({
               isSubmitting={isCompleting}
               onContinue={handleTncContinue}
               continueLabel={
-                isFinalPostOtpStep("TNC") ? undefined : "Continue"
+                isFinalPostOtpStep("TNC") ? undefined : t("common.continue")
               }
               onBack={() => goBackFrom("TNC")}
               initialAccepted={tncAcceptedOnce}
@@ -721,7 +751,8 @@ const RegistrationWizard = ({
                 <PaymentStep
                   payment={template.payment}
                   templateName={
-                    template.template_name || "Organization Registration"
+                    template.template_name ||
+                    t("subOrgRegistration.wizard.defaultTemplateName")
                   }
                   instituteId={instituteId}
                   code={code}

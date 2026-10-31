@@ -1,0 +1,283 @@
+{
+  "slideDisplayUtils": {
+    "untitled": "शीर्षक रहित",
+    "item": "आइटम"
+  },
+  "fileUploader": {
+    "types": {
+      "pdf": "PDF",
+      "image": "इमेज",
+      "doc": "DOC/DOCX",
+      "video": "वीडियो",
+      "audio": "ऑडियो"
+    },
+    "anyFile": "कोई भी फ़ाइल",
+    "clickToUpload": "अपलोड करने के लिए क्लिक करें",
+    "orDragAndDrop": "या खींचकर छोड़ें",
+    "sizeLimit": "{{hint}} अधिकतम 10MB तक",
+    "uploading": "अपलोड हो रहा है...",
+    "selectFile": "फ़ाइल चुनें",
+    "uploadedFiles": "अपलोड की गई फ़ाइलें",
+    "onlyTypesAllowed": "इस असाइनमेंट के लिए केवल {{types}} फ़ाइलों की अनुमति है।"
+  },
+  "htmlSlideIframe": {
+    "documentTitle": "दस्तावेज़"
+  },
+  "jupyterSlide": {
+    "loadingNotebook": "Jupyter नोटबुक लोड हो रही है...",
+    "loadingInterface": "नोटबुक इंटरफ़ेस लोड हो रहा है...",
+    "openInNewTab": "नए टैब में खोलें",
+    "errors": {
+      "loadConfigFailed": "नोटबुक कॉन्फ़िगरेशन लोड नहीं हो सका",
+      "loadFailed": "नोटबुक लोड नहीं हो सकी"
+    },
+    "verification": {
+      "prompt": "बस यह सुनिश्चित कर रहे हैं कि आप सक्रिय रूप से सीख रहे हैं, कृपया <cnt>{{countdown}}</cnt> सेकंड के भीतर संख्या <num>{{number}}</num> पर क्लिक करें।"
+    },
+    "paused": {
+      "title": "Jupyter नोटबुक रोकी गई",
+      "body_one": "आपने {{count}} बार टैब बदला है। अपना नोटबुक सत्र फिर से शुरू करने के लिए कृपया नीचे क्लिक करें।",
+      "body_other": "आपने {{count}} बार टैब बदला है। अपना नोटबुक सत्र फिर से शुरू करने के लिए कृपया नीचे क्लिक करें।",
+      "resume": "नोटबुक फिर से शुरू करें"
+    },
+    "header": {
+      "branchLocation": "शाखा: {{branch}} • स्थान: {{location}}"
+    },
+    "footer": {
+      "type": "प्रकार: Jupyter नोटबुक",
+      "activeTab": "सक्रिय टैब: {{tab}}",
+      "interactive": "इंटरैक्टिव"
+    }
+  },
+  "lessonListSidebar": {
+    "locked": "लॉक्ड",
+    "slideCount": "{{count}} {{term}}",
+    "progressCompleted": "{{done}} / {{total}} पूर्ण",
+    "noSlides": "कोई {{term}} नहीं",
+    "loadOutlineFailed": "कोर्स की रूपरेखा लोड नहीं हो सकी।",
+    "courseProgress": "{{done}} / {{total}} {{term}} पूर्ण",
+    "noModulesYet": "अभी तक कोई {{term}} नहीं है"
+  },
+  "leaseLockOverlay": {
+    "leaseExpired": {
+      "title": "ऑफ़लाइन एक्सेस बनाए रखने के लिए इंटरनेट से जुड़ें",
+      "body": "यह डिवाइस समय-समय पर ऑफ़लाइन सामग्री की पुनः जांच करता है। एक्सेस नवीनीकृत करने और इस कोर्स को ऑफ़लाइन देखते रहने के लिए थोड़ी देर के लिए फिर से कनेक्ट करें।"
+    },
+    "revoked": {
+      "title": "ऑफ़लाइन एक्सेस हटा दिया गया",
+      "body": "आपके इंस्टीट्यूट ने इस डिवाइस के लिए ऑफ़लाइन एक्सेस रद्द कर दिया है। अभी क्या उपलब्ध है, यह देखने के लिए फिर से कनेक्ट करें।"
+    }
+  },
+  "requiresInternetSlide": {
+    "title": "इस सामग्री के लिए इंटरनेट आवश्यक है",
+    "bodyWithType": "{{type}} सामग्री बाहरी रूप से होस्ट की गई है और इसे ऑफ़लाइन उपयोग के लिए डाउनलोड नहीं किया जा सकता। इसे देखने के लिए फिर से कनेक्ट करें।",
+    "bodyGeneric": "यह सामग्री बाहरी रूप से होस्ट की गई है और इसे ऑफ़लाइन उपयोग के लिए डाउनलोड नहीं किया जा सकता। इसे देखने के लिए फिर से कनेक्ट करें।",
+    "waiting": "कनेक्शन की प्रतीक्षा है"
+  },
+  "pdfViewer": {
+    "loading": "लोड हो रहा है…"
+  },
+  "questionSlide": {
+    "toast": {
+      "savedOffline": "सहेजा गया — ऑनलाइन होने पर सिंक होगा"
+    },
+    "placeholders": {
+      "oneWord": "अपना एक-शब्द वाला उत्तर टाइप करें",
+      "longAnswer": "अपना उत्तर टाइप करें...",
+      "decimal": "दशमलव मान दर्ज करें",
+      "integer": "पूर्णांक मान दर्ज करें"
+    },
+    "numericPad": {
+      "clear": "साफ़ करें"
+    },
+    "unsupportedType": "असमर्थित प्रश्न प्रकार: {{type}}",
+    "questionLabel": "प्रश्न:",
+    "prompts": {
+      "mcqs": "एक उत्तर चुनें:",
+      "trueFalse": "सही या गलत चुनें:",
+      "mcqm": "जो भी लागू हो उसे चुनें:",
+      "oneWord": "अपना उत्तर दर्ज करें:",
+      "longAnswer": "अपना उत्तर टाइप करें:",
+      "numeric": "संख्यात्मक मान दर्ज करें:"
+    },
+    "buttons": {
+      "submitting": "सबमिट हो रहा है...",
+      "submitted": "सबमिट हो गया",
+      "resubmit": "फिर से सबमिट करें",
+      "submit": "सबमिट करें"
+    },
+    "explanation": {
+      "hide": "उत्तर मार्गदर्शन छिपाएं",
+      "show": "उत्तर मार्गदर्शन दिखाएं"
+    }
+  },
+  "quizViewer": {
+    "selectAllThatApply": "एक से ज़्यादा विकल्प सही हो सकते हैं — सभी सही विकल्प चुनें",
+    "questionTypeDescriptions": {
+      "mcqs": "बहुविकल्पीय प्रश्न - एकल सही विकल्प",
+      "mcqm": "बहुविकल्पीय प्रश्न - एकाधिक सही विकल्प",
+      "numeric": "संख्यात्मक उत्तर",
+      "oneWord": "एक-शब्द वाला उत्तर",
+      "text": "संक्षिप्त उत्तर - टेक्स्ट प्रतिक्रिया",
+      "longAnswer": "दीर्घ उत्तर - विस्तृत प्रतिक्रिया",
+      "trueFalse": "सही या गलत",
+      "match": "मिलान करें",
+      "fillInTheBlank": "रिक्त स्थान भरें",
+      "comprehensionPrefix": "गद्यांश आधारित {{description}}",
+      "genericQuestion": "प्रश्न"
+    },
+    "noQuestionsAvailable": "कोई क्विज़ प्रश्न उपलब्ध नहीं है।",
+    "toast": {
+      "noAttemptsRemaining": "इस क्विज़ के लिए कोई प्रयास शेष नहीं है।",
+      "missingContext": "क्विज़ सबमिट नहीं हो सका — जानकारी अधूरी है। कृपया इस स्लाइड को फिर से खोलें।",
+      "savedOffline": "सहेजा गया — ऑनलाइन होने पर सिंक होगा",
+      "quizSubmitted": "क्विज़ सबमिट हो गई!",
+      "quizSubmittedSuccessfully": "क्विज़ सफलतापूर्वक सबमिट हो गई!",
+      "submitFailed": "क्विज़ सबमिट नहीं हो सकी। कृपया फिर से प्रयास करें।",
+      "incorrectAnswer": "गलत उत्तर। कृपया फिर से प्रयास करें।"
+    },
+    "invalidNumber": "कृपया एक मान्य संख्या दर्ज करें",
+    "placeholders": {
+      "numeric": "संख्यात्मक मान दर्ज करें",
+      "text": "अपना उत्तर टाइप करें",
+      "longAnswer": "अपना उत्तर टाइप करें..."
+    },
+    "questionOf": "प्रश्न {{current}} / {{total}}",
+    "passageLabel": "गद्यांश:",
+    "showLess": "कम दिखाएं",
+    "showMore": "और दिखाएं",
+    "questionLabel": "प्रश्न:",
+    "questionTextUnavailable": "प्रश्न का टेक्स्ट उपलब्ध नहीं है",
+    "buttons": {
+      "previous": "पिछला",
+      "submitting": "सबमिट हो रहा है...",
+      "finish": "समाप्त करें",
+      "next": "अगला"
+    },
+    "answered": "उत्तर दिया गया",
+    "notAnswered": "उत्तर नहीं दिया गया",
+    "incorrectTryAgain": "गलत। फिर से प्रयास करें।"
+  },
+  "scormSlide": {
+    "errors": {
+      "dataNotFound": "SCORM स्लाइड डेटा नहीं मिला",
+      "launchPathNotConfigured": "SCORM लॉन्च पथ कॉन्फ़िगर नहीं है",
+      "loadFailed": "SCORM सामग्री लोड नहीं हो सकी"
+    },
+    "loading": "SCORM सामग्री लोड हो रही है...",
+    "urlNotAvailable": "SCORM सामग्री का URL उपलब्ध नहीं है",
+    "defaultTitle": "SCORM सामग्री"
+  },
+  "scratchSlide": {
+    "loadingProject": "Scratch प्रोजेक्ट लोड हो रहा है...",
+    "loadingInterface": "Scratch इंटरफ़ेस लोड हो रहा है...",
+    "openInScratch": "Scratch में खोलें",
+    "editInScratch": "Scratch में संपादित करें",
+    "errors": {
+      "loadConfigFailed": "प्रोजेक्ट कॉन्फ़िगरेशन लोड नहीं हो सका",
+      "loadFailed": "प्रोजेक्ट लोड नहीं हो सका"
+    },
+    "verification": {
+      "prompt": "बस यह सुनिश्चित कर रहे हैं कि आप सक्रिय रूप से सीख रहे हैं, कृपया <cnt>{{countdown}}</cnt> सेकंड के भीतर संख्या <num>{{number}}</num> पर क्लिक करें।"
+    },
+    "paused": {
+      "title": "Scratch प्रोजेक्ट रोका गया",
+      "body_one": "आपने {{count}} बार टैब बदला है। अपना Scratch प्रोजेक्ट फिर से शुरू करने के लिए कृपया नीचे क्लिक करें।",
+      "body_other": "आपने {{count}} बार टैब बदला है। अपना Scratch प्रोजेक्ट फिर से शुरू करने के लिए कृपया नीचे क्लिक करें।",
+      "resume": "प्रोजेक्ट फिर से शुरू करें"
+    },
+    "header": {
+      "projectId": "प्रोजेक्ट ID: {{id}}"
+    },
+    "footer": {
+      "type": "प्रकार: Scratch प्रोजेक्ट",
+      "embedType": "एम्बेड प्रकार: {{type}}",
+      "autoStart": "ऑटो स्टार्ट",
+      "interactive": "इंटरैक्टिव"
+    }
+  },
+  "videoQuestionOverlay": {
+    "title": "वीडियो प्रश्न",
+    "skipQuestion": "प्रश्न छोड़ें",
+    "answerRequired": "जारी रखने के लिए उत्तर आवश्यक है",
+    "questionLabel": "प्रश्न: ",
+    "questionContextAlt": "प्रश्न संदर्भ {{index}}",
+    "placeholders": {
+      "oneWord": "अपना उत्तर दर्ज करें",
+      "longAnswer": "अपना विस्तृत उत्तर यहां टाइप करें...",
+      "decimal": "दशमलव मान दर्ज करें",
+      "integer": "पूर्णांक मान दर्ज करें"
+    },
+    "numericPad": {
+      "clear": "साफ़ करें"
+    },
+    "prompts": {
+      "mcqs": "एक उत्तर चुनें:",
+      "trueFalse": "सही या गलत चुनें:",
+      "mcqm": "जो भी लागू हो उसे चुनें:",
+      "oneWord": "अपना उत्तर दर्ज करें:",
+      "longAnswer": "विस्तृत उत्तर दें:",
+      "numeric": "संख्यात्मक मान दर्ज करें:",
+      "generic": "प्रश्न का उत्तर दें:"
+    },
+    "evaluation": {
+      "submittedSuccessfully": "उत्तर सफलतापूर्वक सबमिट हो गया।",
+      "correctWellDone": "सही! बहुत बढ़िया।",
+      "incorrectAnswerIs": "गलत। सही उत्तर है: {{answer}}",
+      "notFound": "नहीं मिला",
+      "correctAllSelected": "सही! आपने सभी सही उत्तर चुने हैं।",
+      "incorrectAnswersAre": "गलत। सही उत्तर हैं: {{answers}}",
+      "explanationSuffix": "\n\nस्पष्टीकरण: {{explanation}}",
+      "imagePlaceholder": "[इमेज: {{content}}]"
+    },
+    "submitError": "आपके उत्तर को प्रोसेस करने में एक त्रुटि हुई। कृपया फिर से प्रयास करें।",
+    "correct": "सही!",
+    "incorrect": "गलत",
+    "buttons": {
+      "continueVideo": "वीडियो जारी रखें",
+      "submitting": "सबमिट हो रहा है...",
+      "submitAnswer": "उत्तर सबमिट करें"
+    }
+  },
+  "vimeoPlayer": {
+    "unavailable": {
+      "title": "यह वीडियो उपलब्ध नहीं है",
+      "body": "इसे लोड नहीं किया जा सका। कृपया अपने एडमिन से संपर्क करें।"
+    },
+    "verification": {
+      "selectMiddleNumber": "जारी रखने के लिए बीच वाली संख्या चुनें",
+      "timeRemaining": "शेष समय: {{seconds}} सेकंड"
+    }
+  },
+  "youtubePlayer": {
+    "verification": {
+      "title": "एक्टिव फ़ोकस चेक",
+      "prompt": "अपनी सीखने की स्ट्रीक बनाए रखने के लिए <num>{{number}}</num> चुनें।",
+      "closingIn": "{{seconds}} सेकंड में बंद हो रहा है"
+    },
+    "controls": {
+      "exitFullscreen": "फ़ुलस्क्रीन से बाहर निकलें",
+      "goToLive": "लाइव स्ट्रीम पर जाएं",
+      "live": "लाइव",
+      "speed": "गति"
+    },
+    "manualPlay": {
+      "ariaLabel": "वीडियो शुरू करें",
+      "tapToStart": "वीडियो शुरू करने के लिए टैप करें",
+      "autoplayHint": "वीडियो अपने आप चलने लगेगा"
+    },
+    "questionMarker": {
+      "title": "प्रश्न {{index}}",
+      "answered": " (उत्तर दिया गया)",
+      "skippable": " (छोड़ा जा सकता है)",
+      "required": " (आवश्यक)",
+      "navigationDisabled": " (नेविगेशन अक्षम है)"
+    },
+    "live": {
+      "ended": "यह सत्र समाप्त हो गया है",
+      "notStarted": "निर्धारित समय पर शुरू होगा",
+      "endedHint": "अब चलाने के लिए कुछ नहीं बचा है। आप यह पेज छोड़ सकते हैं।",
+      "notStartedHint": "कक्षा शुरू होते ही यह अपने आप चलने लगेगा।"
+    }
+  }
+}

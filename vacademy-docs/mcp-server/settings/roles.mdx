@@ -1,0 +1,77 @@
+---
+title: "Who can connect"
+description: "Choose which staff roles may connect an AI app, and give some roles more access than others."
+icon: "users"
+---
+
+The **Who can connect** list in **Settings → MCP Server** decides which roles may connect an AI app to your institute. Everyone else is refused, even if they have the server URL.
+
+## The rules
+
+- **Admins are allowed by default.** A new setup allows only the **Admin** role.
+- **An empty list means admins only.** If you remove every role, the server falls back to allowing Admin.
+- **Learners and parents can never connect.** Learner, student and parent roles are removed from the list whatever is saved, and a learner or parent account is always refused.
+- **One allowed role is enough.** A person with several roles in your institute can connect if any one of them is on the list.
+- **The person must belong to your institute.** An account that holds no role in your institute is refused. This includes platform-level accounts that can open many institutes: give the account a role in your institute first.
+- **Role names are matched loosely.** Upper and lower case, spaces, hyphens and underscores are treated the same, so `Content Creator`, `content-creator` and `CONTENT_CREATOR` all match.
+
+## Add or remove a role
+
+<Steps>
+  <Step title="Open the list">
+    Go to **Settings → MCP Server → Who can connect**.
+  </Step>
+  <Step title="Add a role">
+    Pick a role from **Add a role…**. The list offers the built-in staff roles (Admin, Teacher, Evaluator, Content Creator, Assessment Creator) and any custom roles your institute has created.
+  </Step>
+  <Step title="Remove a role">
+    Click **Remove** next to it. This also deletes that role's [per-role access](#give-some-roles-more-access), if it had any.
+  </Step>
+  <Step title="Save">
+    Click **Save settings**. The change applies on each app's next request.
+  </Step>
+</Steps>
+
+## What a connected person can reach
+
+Two things decide what an AI app can do for a person:
+
+1. **This page.** Only the areas and edits you turned on, for that person's roles. Set these with care: an area set to View lets everyone with that role read that area through their AI app.
+2. **Who they are.** The app always acts as the person who approved it, inside your institute only.
+
+In the CRM areas, each person also sees only the leads their admin portal shows them. A counsellor sees the leads they see in the CRM today: their own, or their team's if they manage one. An admin sees the whole institute. Some CRM actions, such as starting an AI calling campaign, are for admins only, whatever this page says.
+
+## Give some roles more access
+
+Under **Per-role access (advanced)**, every allowed role has a **Customize** switch.
+
+- Turning on **Customize** opens the same area list for that role. It starts as a copy of your main settings.
+- What you turn on there is **added** to the main settings for people with that role. It never takes anything away.
+- A person with several customized roles gets the main settings plus the extras of each of their roles.
+
+Because extras only add, set the main list to what **everyone** may do, then add the rest per role.
+
+<Frame caption="Per-role access (advanced), with Customize switched on for one role.">
+  <img src="/mcp-server/images/screenshots/per-role-access.svg" alt="Placeholder for a screenshot of Per-role access with Customize on" />
+</Frame>
+
+<Accordion title="Example: teachers view, admins edit">
+  1. In **What AI apps can do**, set **Courses**, **Learners** and **Progress reports** to **View**. Leave everything else **Off**.
+  2. Under **Who can connect**, add **Teacher** next to **Admin**.
+  3. Under **Per-role access**, turn on **Customize** for **Admin**. Set **Website**, **Blog** and **Courses** to **Edit** there.
+  4. Save.
+
+  Teachers can now look up courses, learners and progress-report data. Admins can do that too, and can also draft website pages, blog posts and course content.
+
+  Courses **Edit** also lets admins create invite links and edit invite pages, which apply at once. Switch that off in the Courses row if you want drafts only.
+</Accordion>
+
+<Accordion title="Example: counsellors work their own leads">
+  1. Add the role your institute uses for counsellors (a custom role, if you created one) under **Who can connect**.
+  2. Turn on **Customize** for that role. Set **CRM: Leads** to **View**. Open the row and switch on the lead activity edits (notes and follow-ups) if you want counsellors to log their work from the AI app.
+  3. Leave calling and messaging off until you have tried them yourself. They contact real people. See [Risk levels](/mcp-server/settings/risk-levels).
+</Accordion>
+
+## Cutting off one person
+
+Removing a role from **Who can connect** affects everyone with that role, and applies on the next request. To stop one person, [revoke their connection](/mcp-server/settings/connections-and-revoking). When someone changes role or leaves, revoke their rows in **Active connections**. If they should not reconnect, also change their role in your team settings.

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ColumnDef } from '@tanstack/react-table';
 import { MyTable, TableData } from '@/components/design-system/table';
 import { MyPagination } from '@/components/design-system/pagination';
@@ -27,6 +28,7 @@ export function MembershipStatsTable({
     onPageChange,
     packageSessions,
 }: MembershipStatsTableProps) {
+    const { t, i18n } = useTranslation('membershipStatsMembershipStatsTable');
     // Transform API response to TableData format
     const tableData: TableData<StudentStatsDTO> | undefined = useMemo(() => {
         if (!data) return undefined;
@@ -44,7 +46,7 @@ export function MembershipStatsTable({
         () => [
             {
                 id: 'user',
-                header: 'User',
+                header: t('columns.user'),
                 accessorFn: (row) => row.user_dto.full_name,
                 cell: ({ row }) => (
                     <div className="flex items-center gap-3">
@@ -68,14 +70,14 @@ export function MembershipStatsTable({
             },
             {
                 id: 'user_type',
-                header: 'User Type',
+                header: t('columns.userType'),
                 accessorFn: (row) => row.user_type,
                 cell: ({ row }) => (
                     <Badge
                         variant={row.original.user_type === 'NEW_USER' ? 'default' : 'secondary'}
                         className="uppercase"
                     >
-                        {row.original.user_type === 'NEW_USER' ? 'New User' : 'Retainer'}
+                        {row.original.user_type === 'NEW_USER' ? t('newUser') : t('retainer')}
                     </Badge>
                 ),
                 size: 150,
@@ -90,14 +92,14 @@ export function MembershipStatsTable({
                             row.original.package_session_ids.map((id) => (
                                 <span
                                     key={id}
-                                    className="inline-flex max-w-[200px] truncate rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700"
+                                    className="inline-flex max-w-52 truncate rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-700"
                                     title={packageSessions[id] || id}
                                 >
                                     {packageSessions[id] || 'Unknown Session'}
                                 </span>
                             ))
                         ) : (
-                            <span className="text-gray-400 italic">No Packages</span>
+                            <span className="text-gray-400 italic">{t('noPackages')}</span>
                         )}
                     </div>
                 ),
@@ -105,7 +107,7 @@ export function MembershipStatsTable({
             },
             {
                 id: 'joined_on',
-                header: 'Joined On',
+                header: t('columns.joinedOn'),
                 accessorFn: (row) => row.created_at,
                 cell: ({ row }) => (
                     <div>
@@ -121,7 +123,7 @@ export function MembershipStatsTable({
             },
             {
                 id: 'roles',
-                header: 'Roles',
+                header: t('columns.roles'),
                 accessorFn: (row) => row.comma_separated_org_roles,
                 cell: ({ row }) => (
                     <div className="flex flex-wrap gap-1">
@@ -138,7 +140,7 @@ export function MembershipStatsTable({
                 size: 150,
             },
         ],
-        [packageSessions]
+        [packageSessions, t]
     );
 
     if (isLoading) {
@@ -152,7 +154,7 @@ export function MembershipStatsTable({
     if (error) {
         return (
             <div className="rounded-lg border border-red-200 bg-red-50 p-8 text-center">
-                <p className="text-red-800">Error loading membership stats</p>
+                <p className="text-red-800">{t('errorLoading')}</p>
                 <p className="mt-2 text-sm text-red-600">{error.message}</p>
             </div>
         );
@@ -167,9 +169,9 @@ export function MembershipStatsTable({
             <div className="rounded-lg border border-gray-200 bg-gray-50 p-12 text-center">
                 <div className="flex flex-col items-center justify-center">
                     <Users size={48} className="mb-4 text-gray-400" />
-                    <p className="text-lg font-medium text-gray-600">No records found</p>
+                    <p className="text-lg font-medium text-gray-600">{t('noRecordsFound')}</p>
                     <p className="mt-2 text-sm text-gray-500">
-                        Try adjusting your filters to see more results
+                        {t('tryAdjustingFilters')}
                     </p>
                 </div>
             </div>
@@ -194,12 +196,14 @@ export function MembershipStatsTable({
             {tableData.total_pages > 1 && (
                 <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3">
                     <div className="text-sm text-gray-600">
-                        Showing {tableData.page_no * tableData.page_size + 1} -{' '}
-                        {Math.min(
-                            (tableData.page_no + 1) * tableData.page_size,
-                            tableData.total_elements
-                        )}{' '}
-                        of {tableData.total_elements} records
+                        {t('showingRange', {
+                            start: tableData.page_no * tableData.page_size + 1,
+                            end: Math.min(
+                                (tableData.page_no + 1) * tableData.page_size,
+                                tableData.total_elements
+                            ),
+                            count: tableData.total_elements,
+                        })}
                     </div>
                     <MyPagination
                         currentPage={currentPage}

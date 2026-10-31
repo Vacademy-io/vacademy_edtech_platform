@@ -1,0 +1,7 @@
+{
+    "manageChapter": "إدارة الفصل",
+    "manageChapterDescription": "استكشف الفصول وأدرها. انقر على أي فصل لعرض والوصول إلى الكتب الإلكترونية ومحاضرات الفيديو وموارد الدراسة، أو أضف مواد جديدة لتعزيز تجربتك التعليمية.",
+    "session": "الجلسة: {{sessionName}}",
+    "chapterDeletedSuccessfully": "تم حذف الفصل بنجاح",
+    "failedToDeleteChapter": "فشل حذف الفصل"
+}

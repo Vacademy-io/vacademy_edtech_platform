@@ -1,0 +1,427 @@
+{
+    "tools": {
+        "assessment": {
+            "heading": "Vsmart Upload",
+            "instructionsHeading": "Suivez ces étapes simples pour générer un sujet d'examen à partir de vos fichiers PDF, Word ou PPT :",
+            "instructions": [
+                {
+                    "stepHeading": "Téléchargez votre fichier",
+                    "steps": [
+                        "Cliquez sur Télécharger un fichier",
+                        "Formats pris en charge : .pdf, .doc, .docx, .ppt, .pptx"
+                    ]
+                },
+                {
+                    "stepHeading": "Choisissez comment générer les questions",
+                    "steps": [
+                        "Option 1 : générer à partir du fichier entier. L'outil analysera l'intégralité du document et créera des questions à partir de tout le contenu",
+                        "Option 2 : copier un texte spécifique. Collez manuellement une section du contenu à partir de laquelle vous souhaitez générer des questions."
+                    ]
+                },
+                {
+                    "stepHeading": "Personnalisez le résultat",
+                    "stepSubHeading": "Après avoir sélectionné la source du contenu, précisez les détails suivants :",
+                    "steps": ["Générez un ensemble de questions en ajoutant des sujets"]
+                },
+                {
+                    "stepHeading": "Cliquez sur Générer",
+                    "steps": [
+                        "Détendez-vous pendant que l'IA traite votre contenu. Cela peut prendre quelques secondes",
+                        "Vous pouvez continuer à travailler ou naviguer ailleurs — le système continuera à fonctionner en arrière-plan."
+                    ]
+                },
+                {
+                    "stepHeading": "Consultez le statut dans My AI Task",
+                    "steps": [
+                        "Rendez-vous dans l'onglet My AI Task pour suivre l'avancement de vos sujets générés.",
+                        "Une fois prêt, le statut passera à Terminé (Completed)."
+                    ]
+                },
+                {
+                    "stepHeading": "Exporter et utiliser",
+                    "steps": [
+                        "Une fois généré, cliquez sur Exporter pour télécharger votre sujet d'examen au format PDF ou DOC.",
+                        "Vous êtes maintenant prêt à l'imprimer, à le partager ou à le télécharger dans votre système d'évaluation."
+                    ]
+                }
+            ]
+        },
+        "audio": {
+            "heading": "Vsmart Audio",
+            "instructionsHeading": "Comment utiliser Vsmart Audio",
+            "instructions": [
+                {
+                    "stepHeading": "Téléchargez votre fichier audio",
+                    "steps": [
+                        "Cliquez sur Télécharger un fichier",
+                        "Formats pris en charge : WAV, FLAC, MP3, AAC, M4A"
+                    ]
+                },
+                {
+                    "stepHeading": "Définissez vos préférences",
+                    "stepSubHeading": "Remplissez les détails pour façonner votre sujet d'examen :",
+                    "steps": [
+                        "Nombre de questions (ex. : 5, 10, 20...)",
+                        "Niveau (ex. : débutant, intermédiaire, avancé)",
+                        "Sujet ou domaine de focus (facultatif)",
+                        "Type de question (QCM, réponse courte, développement, mixte)",
+                        "Langue des questions (choisissez parmi les langues prises en charge)"
+                    ]
+                },
+                {
+                    "stepHeading": "Cliquez sur Générer",
+                    "steps": [
+                        "Une fois votre fichier téléchargé et les détails renseignés, appuyez sur le bouton Générer. L'IA traitera l'audio et commencera à créer des questions.",
+                        "Cela peut prendre un certain temps selon la durée de votre fichier audio. N'hésitez pas à explorer l'application ou à revenir plus tard."
+                    ]
+                },
+                {
+                    "stepHeading": "Consultez le statut dans My AI Task",
+                    "steps": [
+                        "Rendez-vous dans l'onglet My AI Task pour suivre l'avancement de vos sujets générés.",
+                        "Une fois prêt, le statut passera à Terminé (Completed)."
+                    ]
+                },
+                {
+                    "stepHeading": "Exporter et utiliser",
+                    "steps": [
+                        "Une fois généré, cliquez sur Exporter pour télécharger votre sujet d'examen au format PDF ou DOC.",
+                        "Vous êtes maintenant prêt à l'imprimer, à le partager ou à le télécharger dans votre système d'évaluation."
+                    ]
+                }
+            ]
+        },
+        "text": {
+            "heading": "Vsmart Topics",
+            "instructionsHeading": "Comment utiliser Vsmart Topics",
+            "instructions": [
+                {
+                    "stepHeading": "Cliquez sur Générer des questions",
+                    "steps": [
+                        "Commencez par cliquer sur le bouton Générer des questions pour ouvrir le panneau de consigne"
+                    ]
+                },
+                {
+                    "stepHeading": "Saisissez votre consigne",
+                    "steps": [
+                        "Décrivez le sujet des questions souhaitées — soyez aussi précis ou général que vous le souhaitez.",
+                        "Exemple : « Générez un ensemble de questions couvrant tous les principes de la photosynthèse, y compris le processus, les facteurs qui l'influencent et son importance dans l'écosystème. Privilégiez la compréhension conceptuelle et l'application »"
+                    ]
+                },
+                {
+                    "stepHeading": "Ajoutez des préférences de génération",
+                    "stepSubHeading": "Affinez votre sujet d'examen en renseignant les détails suivants :",
+                    "steps": [
+                        "Nombre de questions (ex. : 5, 10, 20...)",
+                        "Niveau (ex. : facile, moyen, difficile, intermédiaire...)",
+                        "Sujet ou nom du chapitre (facultatif)",
+                        "Type de question (QCM, réponse courte, développement, mixte)",
+                        "Langue des questions (choisissez parmi les langues prises en charge)"
+                    ]
+                },
+                {
+                    "stepHeading": "Cliquez sur Générer",
+                    "steps": [
+                        "Une fois prêt, cliquez sur le bouton Générer. L'IA commencera à travailler sur votre sujet personnalisé.",
+                        "Vous pouvez rester sur la page ou continuer à explorer — la génération se déroule en arrière-plan."
+                    ]
+                },
+                {
+                    "stepHeading": "Consultez le statut dans My AI Task",
+                    "steps": [
+                        "Rendez-vous dans l'onglet My AI Task pour suivre l'avancement de vos sujets générés.",
+                        "Une fois prêt, le statut passera à Terminé (Completed)."
+                    ]
+                },
+                {
+                    "stepHeading": "Exporter et utiliser",
+                    "steps": [
+                        "Une fois généré, cliquez sur Exporter pour télécharger votre sujet d'examen au format PDF ou DOC.",
+                        "Vous êtes maintenant prêt à l'imprimer, à le partager ou à le télécharger dans votre système d'évaluation."
+                    ]
+                }
+            ]
+        },
+        "chat": {
+            "heading": "Vsmart Chat",
+            "instructionsHeading": "Comment utiliser Vsmart Upload",
+            "instructionsSubHeading": "Cet outil vous permet de télécharger des fichiers pédagogiques — comme des PDF, DOC ou PPT — et génère automatiquement des questions à partir du contenu. Ensuite, grâce à une interface de discussion intégrée, vous pouvez personnaliser ces questions à l'aide de consignes simples.",
+            "instructions": [
+                {
+                    "stepHeading": "Téléchargez votre fichier",
+                    "steps": [
+                        "Cliquez sur télécharger un fichier",
+                        "Formats pris en charge : pdf, doc, docx, ppt, pptx"
+                    ]
+                },
+                {
+                    "stepHeading": "Laissez l'IA générer les questions",
+                    "steps": [
+                        "Une fois téléchargé, l'IA analyse le contenu et génère automatiquement un brouillon de sujet d'examen basé sur le support"
+                    ]
+                },
+                {
+                    "stepHeading": "Modifiez via la discussion",
+                    "steps": [
+                        "Une fois les questions prêtes, vous pouvez discuter avec l'IA pour les affiner :",
+                        "Demandez, par exemple :",
+                        "« Ajoute plus de questions/à choix multiples »",
+                        "« Ajoute plus de questions de réflexion approfondie »",
+                        "« Simplifie la question 3 »",
+                        "« Inclus plus de questions de la seconde moitié du document »"
+                    ],
+                    "stepFooter": "C'est aussi simple que d'envoyer un message — aucune compétence technique requise."
+                },
+                {
+                    "stepHeading": "Consultez le statut dans My AI Task",
+                    "steps": [
+                        "Vous pouvez consulter l'onglet My AI Tasks pour vérifier tous les sujets d'examen générés.",
+                        "Là, vous pouvez les consulter, les régénérer ou les exporter à tout moment."
+                    ]
+                }
+            ]
+        },
+        "question": {
+            "heading": "Vsmart Extract",
+            "instructionsHeading": "Comment utiliser Vsmart Extract",
+            "instructionsSubHeading": "Cet outil lit le contenu que vous avez téléchargé et en extrait automatiquement les questions pertinentes — parfait pour réutiliser des notes, des manuels ou des présentations.",
+            "instructions": [
+                {
+                    "stepHeading": "Téléchargez votre fichier",
+                    "steps": [
+                        "Cliquez sur télécharger un fichier",
+                        "Formats pris en charge : pdf, doc, docx, ppt, pptx"
+                    ]
+                },
+                {
+                    "stepHeading": "Laissez l'IA faire le travail",
+                    "steps": [
+                        "Une fois téléchargé, l'outil commence à traiter votre fichier pour identifier et extraire les questions potentielles."
+                    ]
+                },
+                {
+                    "stepHeading": "Consultez le statut dans My AI Task",
+                    "steps": [
+                        "Rendez-vous dans l'onglet My AI Task pour suivre l'avancement de vos sujets générés.",
+                        "Une fois prêt, le statut passera à Terminé (Completed)."
+                    ]
+                },
+                {
+                    "stepHeading": "Affinez avec des consignes (facultatif)",
+                    "steps": [
+                        "Utilisez l'option Régénérer pour générer des questions supplémentaires.",
+                        "Modifiez les questions existantes à l'aide d'une consigne personnalisée pour changer le type, la complexité ou le format."
+                    ]
+                },
+                {
+                    "stepHeading": "Exporter et utiliser",
+                    "steps": [
+                        "Une fois satisfait du résultat, cliquez sur Exporter pour télécharger votre sujet d'examen au format PDF ou DOC.",
+                        "Vous êtes maintenant prêt à l'imprimer, à le partager ou à le télécharger dans votre système d'évaluation."
+                    ]
+                }
+            ]
+        },
+        "image": {
+            "heading": "Vsmart Image",
+            "instructionsHeading": "Comment utiliser Vsmart Image",
+            "instructionsSubHeading": "Cet outil vous permet de télécharger une image de contenu — notes manuscrites, pages imprimées, extraits de manuel — et en extrait automatiquement les questions pertinentes.",
+            "instructions": [
+                {
+                    "stepHeading": "Téléchargez votre image",
+                    "steps": ["Cliquez sur Télécharger", "Formats pris en charge : jpg, jpeg, png"]
+                },
+                {
+                    "stepHeading": "Laissez l'IA la traiter",
+                    "steps": [
+                        "Une fois téléchargée, l'outil analyse l'image, lit le texte et commence à générer des questions pertinentes à partir du contenu extrait"
+                    ]
+                },
+                {
+                    "stepHeading": "Consultez le statut dans My AI Task",
+                    "steps": [
+                        "Rendez-vous dans l'onglet My AI Task pour suivre l'avancement de vos sujets générés",
+                        "Une fois prêt, le statut passera à Terminé (Completed)"
+                    ]
+                },
+                {
+                    "stepHeading": "Affinez avec des consignes (facultatif)",
+                    "steps": [
+                        "Utilisez l'option Régénérer pour générer des questions supplémentaires",
+                        "Modifiez les questions existantes à l'aide d'une consigne personnalisée pour changer le type, la complexité ou le format"
+                    ]
+                },
+                {
+                    "stepHeading": "Exporter et utiliser",
+                    "steps": [
+                        "Une fois satisfait du résultat, cliquez sur Exporter pour télécharger votre sujet d'examen au format PDF ou DOC",
+                        "Vous êtes maintenant prêt à l'imprimer, à le partager ou à le télécharger dans votre système d'évaluation"
+                    ]
+                }
+            ]
+        },
+        "sortSplitPdf": {
+            "heading": "Vsmart Organizer",
+            "instructionsHeading": "Comment utiliser Vsmart Organizer",
+            "instructionsSubHeading": "Téléchargez un fichier PDF, PPT ou DOC pour générer et regrouper automatiquement les questions par sujet — parfait pour des tests par chapitre ou des évaluations alignées sur le programme.",
+            "instructions": [
+                {
+                    "stepHeading": "Téléchargez votre fichier",
+                    "steps": [
+                        "Cliquez sur Télécharger un fichier",
+                        "Formats pris en charge : pdf, doc, docx, ppt, pptx"
+                    ]
+                },
+                {
+                    "stepHeading": "Laissez l'IA l'organiser",
+                    "steps": [
+                        "L'outil analyse le contenu, crée des questions pertinentes et les classe automatiquement sous des titres de sujets précis"
+                    ]
+                },
+                {
+                    "stepHeading": "Cliquez sur Régénérer (facultatif)",
+                    "steps": [
+                        "Vous souhaitez un autre ensemble de questions ou une autre structure ? Utilisez le bouton Régénérer et ajoutez une consigne personnalisée pour ajuster l'ordre, la complexité ou le style des questions."
+                    ]
+                },
+                {
+                    "stepHeading": "Consultez le statut dans My AI Task",
+                    "steps": [
+                        "Rendez-vous dans l'onglet My AI Task pour suivre l'avancement de vos sujets générés.",
+                        "Une fois prêt, le statut passera à Terminé (Completed)."
+                    ]
+                },
+                {
+                    "stepHeading": "Exporter et utiliser",
+                    "steps": [
+                        "Une fois généré, cliquez sur Exporter pour télécharger votre sujet d'examen au format PDF ou DOC.",
+                        "Vous êtes maintenant prêt à l'imprimer, à le partager ou à le télécharger dans votre système d'évaluation."
+                    ]
+                }
+            ]
+        },
+        "sortTopicsPdf": {
+            "heading": "Vsmart Sorter",
+            "instructionsHeading": "Comment utiliser Vsmart Sorter",
+            "instructionsSubHeading": "Organisez votre sujet d'examen avec précision — triez par sujet et définissez l'ordre exact à l'aide de consignes simples.",
+            "instructions": [
+                {
+                    "stepHeading": "Téléchargez votre fichier",
+                    "steps": [
+                        "Cliquez sur Télécharger un fichier",
+                        "Formats pris en charge : pdf, doc, docx, ppt, pptx"
+                    ]
+                },
+                {
+                    "stepHeading": "L'IA génère et trie les questions",
+                    "steps": [
+                        "Une fois téléchargé, l'outil lit le contenu, génère des questions et les regroupe sous les sujets ou chapitres correspondants"
+                    ]
+                },
+                {
+                    "stepHeading": "Réorganiser à l'aide de consignes",
+                    "steps": [
+                        "Vous souhaitez que certaines questions apparaissent en premier ? Il vous suffit de saisir votre instruction.",
+                        "Exemple : « Je veux que les 5e et 6e questions de 'Nutrition des plantes' soient les deux premières questions du sujet »"
+                    ]
+                },
+                {
+                    "stepHeading": "Consultez le statut dans My AI Task",
+                    "steps": [
+                        "Rendez-vous dans l'onglet My AI Task pour suivre l'avancement de vos sujets générés.",
+                        "Une fois prêt, le statut passera à Terminé (Completed)."
+                    ]
+                },
+                {
+                    "stepHeading": "Exporter et utiliser",
+                    "steps": [
+                        "Une fois généré, cliquez sur Exporter pour télécharger votre sujet d'examen au format PDF ou DOC.",
+                        "Vous êtes maintenant prêt à l'imprimer, à le partager ou à le télécharger dans votre système d'évaluation."
+                    ]
+                }
+            ]
+        },
+        "planLecture": {
+            "heading": "Vsmart Lecturer",
+            "instructionsHeading": "Comment utiliser Vsmart Sorter",
+            "instructionsSubHeading": "Cet outil vous aide à générer un plan de cours complet adapté à votre style d'enseignement, à vos sujets, à votre langue et à votre durée — avec, en option, des questions intercalées et un devoir de fin de cours.",
+            "instructions": [
+                {
+                    "stepHeading": "Cliquez sur Planifier un cours",
+                    "steps": [
+                        "Titre du cours et sujets",
+                        "Niveau scolaire (ex. : 8e année)",
+                        "Méthode d'enseignement préférée (ex. : narration, plus d'exemples)",
+                        "Langue (anglais ou hindi)",
+                        "Durée totale du cours",
+                        "Inclure des questions en cours de séance ? (oui/non)",
+                        "Ajouter un devoir ou des exercices à la fin ? (oui/non)"
+                    ]
+                },
+                {
+                    "stepHeading": "Cliquez sur Générer",
+                    "steps": [
+                        "Une fois vos préférences définies, appuyez sur le bouton Générer. L'IA prendra quelques instants pour élaborer un plan de cours intelligent, structuré et interactif basé sur vos indications."
+                    ]
+                },
+                {
+                    "stepHeading": "Exportez votre plan",
+                    "steps": [
+                        "Structure chronométrée",
+                        "Répartition par sujet",
+                        "Points d'engagement intégrés (si sélectionné)",
+                        "Section devoirs (si sélectionnée)",
+                        "Génération de contenu basée sur la méthode d'enseignement"
+                    ]
+                }
+            ]
+        },
+        "evaluateLecture": {
+            "heading": "Vsmart Feedback",
+            "instructionsHeading": "Comment utiliser Vsmart Feedback",
+            "instructionsSubHeading": "Cet outil vous aide à télécharger un fichier audio de votre cours et génère automatiquement un rapport d'évaluation détaillé — mettant en avant les points forts, les axes d'amélioration et un score de performance selon plusieurs critères.",
+            "instructions": [
+                {
+                    "stepHeading": "Téléchargez votre fichier",
+                    "steps": [
+                        "Cliquez sur Télécharger un fichier",
+                        "Formats pris en charge : WAV, FLAC, MP3, AAC, M4A"
+                    ]
+                },
+                {
+                    "stepHeading": "Laissez l'IA l'évaluer",
+                    "steps": [
+                        "Une fois téléchargé, l'outil écoute le cours et l'analyse selon huit domaines clés — de la clarté et de l'engagement à la qualité du contenu et au professionnalisme.",
+                        "Chaque section est notée, avec des commentaires et des suggestions."
+                    ]
+                },
+                {
+                    "stepHeading": "Exemples de domaines d'évaluation",
+                    "steps": [
+                        "Présentation et prestation (20 pts)",
+                        "Qualité du contenu (20 pts)",
+                        "Engagement des élèves (15 pts)",
+                        "Évaluation et retour (10 pts)",
+                        "Inclusivité et langage (10 pts)",
+                        "Gestion de la classe (10 pts)",
+                        "Supports pédagogiques (10 pts)",
+                        "Professionnalisme (5 pts)"
+                    ]
+                },
+                {
+                    "stepHeading": "Vérifiez plus tard dans My AI Tools",
+                    "steps": [
+                        "L'évaluation peut prendre quelques minutes selon la longueur du fichier. Vous pouvez attendre ou revenir plus tard pour vérifier le statut dans votre onglet My Builts.",
+                        "Une fois prêt, votre rapport complet apparaîtra — avec les points marquants, les scores et les suggestions générées par l'IA."
+                    ]
+                },
+                {
+                    "stepHeading": "Exportez votre rapport",
+                    "steps": [
+                        "Téléchargez le rapport d'évaluation final au format PDF pour le partager avec vos pairs, le conserver pour référence future ou l'utiliser pour votre développement personnel."
+                    ]
+                }
+            ]
+        }
+    }
+}

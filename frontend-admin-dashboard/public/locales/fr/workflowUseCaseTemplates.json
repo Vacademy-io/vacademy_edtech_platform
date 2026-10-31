@@ -1,0 +1,508 @@
+{
+    "shared": {
+        "channel": {
+            "label": "Envoyer via",
+            "helpText": "Contactez les destinataires par e-mail, WhatsApp, ou les deux.",
+            "options": {
+                "email": "E-mail uniquement",
+                "whatsapp": "WhatsApp uniquement",
+                "both": "E-mail + WhatsApp"
+            }
+        },
+        "whatsappTemplate": {
+            "label": "Quel modèle WhatsApp utiliser ?",
+            "helpTextDefault": "Modèle WhatsApp approuvé (Paramètres → Modèles, type WHATSAPP). Ses variables se remplissent automatiquement à partir des champs de chaque destinataire — ne les mappez plus tard dans le générateur que si les noms diffèrent."
+        },
+        "nodes": {
+            "fetchBatchStudents": "Récupérer les étudiants du groupe",
+            "fetchExpiringMemberships": "Récupérer les adhésions expirant bientôt",
+            "fetchStudentDetails": "Récupérer les détails de l'étudiant",
+            "triggerAudienceFormSubmitted": "Déclencheur : formulaire audience soumis",
+            "triggerGeneric": "Déclencheur : {{event}}",
+            "triggerStudentEnrolled": "Déclencheur : étudiant inscrit"
+        },
+        "questions": {
+            "batchId": {
+                "label": "Quel groupe ?"
+            },
+            "batchIdToNotify": {
+                "label": "Quel groupe notifier ?"
+            },
+            "courseId": {
+                "label": "Quel cours ?",
+                "helpText": "Le webhook ne se déclenchera que lorsque des apprenants s'inscriront à des groupes de ce cours."
+            },
+            "daysBack": {
+                "label": "Le rapport couvre les combien de derniers jours ?"
+            },
+            "daysUntilExpiry": {
+                "label": "Combien de jours avant l'expiration envoyer le rappel ?"
+            },
+            "excludeToday": {
+                "label": "Inclure les cours d'aujourd'hui ?",
+                "helpTextShort": "Pour les e-mails envoyés le matin : choisissez « exclure aujourd'hui » pour que les chiffres de l'e-mail correspondent à la vue du lien profond, même après d'autres cours dans la journée.",
+                "options": {
+                    "excludeShort": "Exclure aujourd'hui (recommandé pour les envois matinaux)",
+                    "includeShort": "Inclure aujourd'hui (peut afficher une journée partielle)"
+                }
+            },
+            "notificationTemplateName": {
+                "label": "Quel modèle de notification ?"
+            },
+            "payloadJson": {
+                "label": "Charge utile du webhook (JSON)"
+            },
+            "scope": {
+                "label": "Quand cela doit-il se déclencher ?"
+            },
+            "templateName": {
+                "label": "Quel modèle d'e-mail ?"
+            },
+            "webhookUrl": {
+                "label": "URL du webhook"
+            }
+        }
+    },
+    "templates": {
+        "ai_call_new_lead": {
+            "name": "Appeler les nouveaux prospects par IA",
+            "description": "Lorsqu'un prospect arrive, l'agent vocal IA l'appelle en premier, puis oriente selon le résultat de l'appel : les prospects intéressés reçoivent un statut, les autres un statut de relance. Choisissez les deux statuts dans le générateur.",
+            "questions": {
+                "campaignName": {
+                    "label": "Agent IA (facultatif)",
+                    "helpText": "Nom de l'agent/campagne IA à utiliser (depuis Paramètres → Appels IA → Campagnes). Indépendant du fournisseur — il se résout vers le bon identifiant de campagne selon le fournisseur actif. Laissez vide pour utiliser le défaut de l'établissement."
+                }
+            },
+            "nodes": {
+                "aiCall": "Appel IA",
+                "interested": "Intéressé ?",
+                "trueLabel": "Intéressé / assigner",
+                "falseLabel": "Pas intéressé / relance",
+                "setStatusInterested": "Définir le statut : intéressé",
+                "setStatusFollowup": "Définir le statut : relance"
+            },
+            "workflowDescription": "Passer un appel IA à la soumission d'un prospect, puis orienter selon le résultat de l'appel : callOutcome == ASSIGN définit le statut intéressé, sinon le statut de relance."
+        },
+        "ai_recall_on_status": {
+            "name": "L'IA rappelle les prospects sur un statut",
+            "description": "Lorsqu'un prospect est déplacé vers un statut choisi (ex. DNP) par une personne — depuis la liste des prospects ou une disposition post-appel — l'agent vocal IA le rappelle après un délai. Relances, horaires d'appel et transfert au conseiller suivent tous Paramètres → Appels IA.",
+            "questions": {
+                "statusKey": {
+                    "label": "Quel statut de prospect doit démarrer l'appel IA ?",
+                    "helpText": "La CLÉ du statut exactement comme elle apparaît dans Paramètres → Statuts des prospects (ex. DNP, NOT_REACHABLE, CALL_BACK). Le statut doit déjà exister pour cet établissement — le flux ne peut se déclencher que sur un statut qu'une personne peut réellement définir."
+                },
+                "campaignName": {
+                    "label": "Agent IA (facultatif)",
+                    "helpText": "Nom de l'agent/campagne IA depuis Paramètres → Appels IA → Campagnes. Laissez vide pour utiliser le défaut de l'établissement."
+                },
+                "delayMinutes": {
+                    "label": "Combien de temps attendre avant que le bot n'appelle ?",
+                    "helpText": "Minutes entre le changement de statut et l'appel IA, pour que le bot ne sonne jamais quelques secondes après que le conseiller a raccroché. L'appel ne part quand même que dans les horaires d'appel définis dans Paramètres → Appels IA."
+                }
+            },
+            "nodes": {
+                "manuallySetTo": "Défini manuellement sur {{status}} ?",
+                "gateTrueLabel": "Oui — transmettre au bot",
+                "gateFalseLabel": "Non — ignorer",
+                "waitMinutes_one": "Attendre {{count}} minute",
+                "waitMinutes_many": "Attendre {{count}} minutes",
+                "waitMinutes_other": "Attendre {{count}} minutes",
+                "aiCall": "Appel IA",
+                "interested": "Intéressé ?",
+                "outcomeTrueLabel": "Intéressé / assigner",
+                "outcomeFalseLabel": "Toujours rien",
+                "setStatusInterested": "Définir le statut : intéressé"
+            },
+            "workflowName": "L'IA rappelle les prospects {{status}}",
+            "workflowDescription_one": "Lorsqu'une personne déplace un prospect vers {{status}} — depuis la liste des prospects ou une disposition post-appel — attendre {{count}} minute, puis faire appeler l'agent IA. Les statuts définis par l'IA elle-même sont ignorés, afin que le flux ne puisse pas se redéclencher sur ses propres écritures.",
+            "workflowDescription_many": "Lorsqu'une personne déplace un prospect vers {{status}} — depuis la liste des prospects ou une disposition post-appel — attendre {{count}} minutes, puis faire appeler l'agent IA. Les statuts définis par l'IA elle-même sont ignorés, afin que le flux ne puisse pas se redéclencher sur ses propres écritures.",
+            "workflowDescription_other": "Lorsqu'une personne déplace un prospect vers {{status}} — depuis la liste des prospects ou une disposition post-appel — attendre {{count}} minutes, puis faire appeler l'agent IA. Les statuts définis par l'IA elle-même sont ignorés, afin que le flux ne puisse pas se redéclencher sur ses propres écritures."
+        },
+        "email_batch_students": {
+            "name": "Envoyer un message aux étudiants du groupe",
+            "description": "Récupérer les étudiants d'un groupe et leur envoyer un e-mail et/ou un message WhatsApp à l'aide d'un modèle.",
+            "questions": {
+                "batchId": {
+                    "label": "De quel groupe récupérer les étudiants ?",
+                    "helpText": "Sélectionnez le groupe dont les étudiants doivent recevoir le message."
+                },
+                "templateName": {
+                    "label": "Quel modèle d'e-mail utiliser ?",
+                    "helpText": "Choisissez le modèle d'e-mail qui sera envoyé à chaque étudiant."
+                },
+                "waTemplateName": {
+                    "helpText": "Envoyé au numéro mobile de chaque étudiant. Les variables se remplissent automatiquement depuis les champs de l'étudiant (fullName, email, ...)."
+                },
+                "recipientField": {
+                    "label": "Envoyer l'e-mail à",
+                    "options": {
+                        "student": "E-mail de l'étudiant (défaut)",
+                        "parent": "E-mail du parent",
+                        "guardian": "E-mail du tuteur"
+                    }
+                }
+            }
+        },
+        "audience_lead_confirmation": {
+            "name": "Envoyer un message de confirmation au prospect",
+            "description": "Lorsque quelqu'un remplit votre formulaire d'audience, envoyez-lui automatiquement un e-mail et/ou un message WhatsApp de confirmation.",
+            "questions": {
+                "templateName": {
+                    "label": "Quel modèle d'e-mail envoyer ?",
+                    "helpText": "Ce modèle sera envoyé à la personne qui a rempli le formulaire."
+                },
+                "waTemplateName": {
+                    "helpText": "Envoyé au numéro de téléphone saisi par le prospect sur le formulaire. Les variables se remplissent automatiquement depuis les champs personnalisés du formulaire."
+                }
+            },
+            "workflowDescription": "Envoyer un message de confirmation lorsqu'un prospect soumet le formulaire d'audience."
+        },
+        "payment_failed_email": {
+            "name": "Notification d'échec de paiement",
+            "description": "Envoyer un e-mail à l'utilisateur en cas d'échec de son paiement, avec des instructions de nouvelle tentative.",
+            "questions": {
+                "templateName": {
+                    "label": "Quel modèle d'e-mail envoyer ?",
+                    "helpText": "Modèle pour la notification d'échec de paiement."
+                }
+            },
+            "nodes": {
+                "trigger": "Déclencheur : échec du paiement"
+            }
+        },
+        "abandoned_cart_reminder": {
+            "name": "Rappel de panier abandonné",
+            "description": "Lorsque quelqu'un commence une inscription sans finaliser le paiement, envoyez-lui un e-mail de rappel.",
+            "questions": {
+                "templateName": {
+                    "label": "Quel modèle d'e-mail de rappel ?"
+                }
+            },
+            "nodes": {
+                "trigger": "Déclencheur : panier abandonné"
+            }
+        },
+        "invite_notify_batch": {
+            "name": "Notifier le groupe d'une nouvelle invitation",
+            "description": "Lorsqu'une nouvelle invitation d'inscription est créée, envoyez un e-mail aux étudiants d'un groupe à ce sujet.",
+            "questions": {
+                "batchId": {
+                    "label": "Quel groupe notifier ?"
+                },
+                "templateName": {
+                    "label": "Quel modèle d'e-mail ?"
+                }
+            }
+        },
+        "scheduled_batch_report": {
+            "name": "Rapport de présence quotidien/hebdomadaire",
+            "description": "Envoyer un rapport de présence de groupe par e-mail à l'administrateur selon une planification.",
+            "questions": {
+                "batchId": {
+                    "label": "Sur quel(s) groupe(s) faire le rapport ?",
+                    "helpText": "Choisissez un ou plusieurs groupes. Ne cochez rien pour couvrir tous les groupes actifs de votre établissement."
+                },
+                "templateName": {
+                    "label": "Quel modèle d'e-mail pour le rapport ?"
+                },
+                "excludeToday": {
+                    "helpText": "Pour les e-mails envoyés le matin : choisissez « exclure aujourd'hui » pour que le rapport ne couvre que jusqu'à hier. Cela garde l'e-mail et le lien profond « Voir le rapport complet » cohérents — ils ne divergeront pas au fil des cours de la journée. Choisissez « inclure aujourd'hui » seulement si le flux s'exécute le soir ou si vous voulez un aperçu partiel de la journée.",
+                    "options": {
+                        "exclude": "Exclure aujourd'hui (recommandé — N jours complets se terminant hier)",
+                        "include": "Inclure aujourd'hui (la fenêtre se termine maintenant — peut afficher une journée partielle)"
+                    }
+                }
+            },
+            "nodes": {
+                "fetchAttendanceReport": "Récupérer le rapport de présence"
+            }
+        },
+        "scheduled_audience_followup": {
+            "name": "E-mails de relance audience",
+            "description": "Envoyer des e-mails de relance aux prospects d'audience ayant soumis un formulaire au cours des N derniers jours.",
+            "questions": {
+                "audienceId": {
+                    "label": "Quelle(s) audience(s)/campagne(s) ?",
+                    "helpText": "Choisissez une ou plusieurs campagnes. Ne cochez rien pour relancer sur toutes les campagnes."
+                },
+                "daysAgo": {
+                    "label": "Envoyer la relance exactement combien de jours après la soumission ?",
+                    "helpText": "Cible les prospects dont la date de soumission est exactement ce nombre de jours. Planifiez ce flux quotidiennement. Pour relancer aux jours 3, 5 et 7, créez trois flux distincts."
+                },
+                "templateName": {
+                    "label": "Quel modèle d'e-mail de relance ?"
+                },
+                "waTemplateName": {
+                    "helpText": "Envoyé au numéro de téléphone du prospect issu du formulaire. Les variables se remplissent automatiquement depuis les champs du prospect."
+                }
+            },
+            "nodes": {
+                "fetchRecentLeads": "Récupérer les prospects récents"
+            }
+        },
+        "scheduled_fee_reminder": {
+            "name": "Rappels d'échéance de frais",
+            "description": "Envoyer des rappels aux étudiants ayant des échéances de frais à venir.",
+            "questions": {
+                "templateName": {
+                    "label": "Quel modèle d'e-mail pour le rappel ?"
+                }
+            },
+            "nodes": {
+                "fetchUpcomingInstallments": "Récupérer les échéances à venir"
+            }
+        },
+        "welcome_enrolled_student": {
+            "name": "E-mail de bienvenue à l'étudiant",
+            "description": "Envoyer un e-mail de bienvenue à un étudiant juste après son inscription dans un groupe.",
+            "questions": {
+                "templateName": {
+                    "label": "Quel modèle d'e-mail de bienvenue ?",
+                    "helpText": "Il sera envoyé immédiatement après l'inscription."
+                },
+                "waTemplateName": {
+                    "helpText": "Envoyé au numéro mobile du nouvel étudiant juste après l'inscription. Des variables comme fullName/username se remplissent automatiquement depuis l'utilisateur inscrit."
+                }
+            },
+            "workflowDescription": "Envoyer un message de bienvenue lorsqu'un étudiant s'inscrit."
+        },
+        "email_parents_batch": {
+            "name": "E-mail aux parents des étudiants du groupe",
+            "description": "Récupérer les étudiants d'un groupe et envoyer un e-mail à leurs parents à la place.",
+            "questions": {
+                "waTemplateName": {
+                    "helpText": "Remarque : la liste des étudiants ne stocke que le numéro mobile de l'étudiant, donc le message WhatsApp va au téléphone de l'étudiant (les e-mails des parents restent en e-mail uniquement)."
+                }
+            },
+            "nodes": {
+                "sendToParentsPrefix": "Envoyer aux parents"
+            }
+        },
+        "termination_notice": {
+            "name": "Notification de retrait de membre",
+            "description": "Notifier l'étudiant/membre lorsqu'il est retiré d'une sous-organisation.",
+            "nodes": {
+                "trigger": "Déclencheur : membre retiré"
+            }
+        },
+        "session_start_reminder": {
+            "name": "Rappel de démarrage de session en direct",
+            "description": "Lorsqu'une session en direct démarre, envoyer un e-mail de rappel à tous les étudiants d'un groupe.",
+            "questions": {
+                "templateName": {
+                    "label": "Quel modèle de rappel ?"
+                }
+            },
+            "nodes": {
+                "trigger": "Déclencheur : session démarrée"
+            },
+            "workflowDescription": "Notifier les étudiants du groupe au démarrage d'une session en direct."
+        },
+        "post_session_followup": {
+            "name": "Relance après session",
+            "description": "Après la fin d'une session en direct, envoyer un e-mail de relance (lien d'enregistrement, formulaire de retour, etc.).",
+            "questions": {
+                "batchId": {
+                    "label": "À quel groupe envoyer l'e-mail ?"
+                },
+                "templateName": {
+                    "label": "Quel modèle de relance ?",
+                    "helpText": "Inclure le lien d'enregistrement, le formulaire de retour ou les infos de la prochaine session."
+                }
+            },
+            "nodes": {
+                "trigger": "Déclencheur : session terminée"
+            },
+            "workflowDescription": "Envoyer un message de relance après la fin d'une session en direct."
+        },
+        "lead_followup_email": {
+            "name": "E-mail de relance de prospect",
+            "description": "Envoyer un e-mail de relance ou de fidélisation aux prospects qui remplissent votre formulaire d'audience (utilisez un flux planifié pour des relances différées).",
+            "questions": {
+                "templateName": {
+                    "label": "Quel modèle de relance ?"
+                }
+            },
+            "nodes": {
+                "trigger": "Déclencheur : prospect soumis",
+                "followUpPrefix": "Relance"
+            }
+        },
+        "membership_expiry_reminder": {
+            "name": "Rappel d'expiration d'adhésion",
+            "description": "Envoyer un rappel de renouvellement lorsqu'une adhésion ou un abonnement est sur le point d'expirer.",
+            "questions": {
+                "templateName": {
+                    "label": "Quel modèle de rappel ?",
+                    "helpText": "Modèle pour le rappel de renouvellement d'adhésion."
+                }
+            },
+            "nodes": {
+                "trigger": "Déclencheur : adhésion expirant"
+            },
+            "workflowDescription": "Envoyer des rappels de renouvellement pour les adhésions expirant bientôt."
+        },
+        "assessment_created_notify": {
+            "name": "Notifier les étudiants d'une nouvelle évaluation",
+            "description": "Lorsqu'une nouvelle évaluation est créée, envoyer un e-mail aux étudiants d'un groupe pour les en informer.",
+            "nodes": {
+                "trigger": "Déclencheur : évaluation créée"
+            },
+            "workflowDescription": "Notifier les étudiants du groupe d'une nouvelle évaluation."
+        },
+        "assessment_email_batch": {
+            "name": "Évaluation : e-mail aux étudiants du groupe",
+            "description": "Lorsqu'un événement d'évaluation se déclenche, envoyer un e-mail aux étudiants d'un groupe spécifique."
+        },
+        "assessment_start_notify": {
+            "name": "Notification de début d'évaluation",
+            "description": "Notifier les étudiants du groupe lorsqu'une fenêtre d'évaluation s'ouvre / qu'un étudiant démarre une tentative.",
+            "questions": {
+                "templateName": {
+                    "label": "Quel modèle ?"
+                }
+            },
+            "nodes": {
+                "trigger": "Déclencheur : évaluation démarrée"
+            }
+        },
+        "scheduled_expiry_check": {
+            "name": "E-mails d'adhésion expirant bientôt",
+            "description": "Exécuter quotidiennement/hebdomadairement pour trouver les adhésions qui expirent bientôt et envoyer des rappels de renouvellement.",
+            "questions": {
+                "daysUntilExpiry": {
+                    "label": "Combien de jours avant l'expiration avertir ?"
+                },
+                "templateName": {
+                    "label": "Quel modèle de rappel de renouvellement ?"
+                }
+            },
+            "workflowDescription_one": "Envoyer des rappels de renouvellement {{count}} jour avant l'expiration de l'adhésion.",
+            "workflowDescription_many": "Envoyer des rappels de renouvellement {{count}} jours avant l'expiration de l'adhésion.",
+            "workflowDescription_other": "Envoyer des rappels de renouvellement {{count}} jours avant l'expiration de l'adhésion."
+        },
+        "scheduled_engagement_summary": {
+            "name": "Rapport d'engagement des étudiants",
+            "description": "Envoyer à chaque étudiant un résumé personnalisé de sa présence et de son engagement.",
+            "questions": {
+                "templateName": {
+                    "label": "Quel modèle de rapport ?",
+                    "helpText": "Modèle avec des variables comme attendancePercentage, sessionsAttended."
+                },
+                "waTemplateName": {
+                    "helpText": "Des variables comme attendancePercentage et sessionsAttended se remplissent automatiquement depuis les données de rapport de chaque étudiant."
+                }
+            },
+            "nodes": {
+                "fetchStudentEngagement": "Récupérer l'engagement des étudiants"
+            },
+            "workflowDescription_one": "Rapport d'engagement hebdomadaire pour les étudiants du groupe (dernier {{count}} jour).",
+            "workflowDescription_many": "Rapport d'engagement hebdomadaire pour les étudiants du groupe (derniers {{count}} jours).",
+            "workflowDescription_other": "Rapport d'engagement hebdomadaire pour les étudiants du groupe (derniers {{count}} jours)."
+        },
+        "scheduled_parents_attendance": {
+            "name": "Envoyer une mise à jour de présence aux parents",
+            "description": "Envoyer aux parents une mise à jour hebdomadaire de la présence et de l'engagement de leur enfant.",
+            "questions": {
+                "templateName": {
+                    "label": "Quel modèle pour les parents ?"
+                },
+                "waTemplateName": {
+                    "helpText": "Remarque : la liste ne stocke que le numéro mobile de l'étudiant, donc la mise à jour WhatsApp va au téléphone de l'étudiant (les e-mails des parents restent en e-mail uniquement)."
+                }
+            },
+            "nodes": {
+                "fetchStudentData": "Récupérer les données des étudiants"
+            },
+            "workflowDescription_one": "Mise à jour de présence hebdomadaire envoyée aux parents (dernier {{count}} jour).",
+            "workflowDescription_many": "Mise à jour de présence hebdomadaire envoyée aux parents (derniers {{count}} jours).",
+            "workflowDescription_other": "Mise à jour de présence hebdomadaire envoyée aux parents (derniers {{count}} jours)."
+        },
+        "live_session_end_recap": {
+            "name": "E-mail après cours aux présents et absents",
+            "description": "Lorsqu'un cours en direct de votre établissement se termine, envoyer un e-mail aux étudiants ayant assisté et un autre à ceux qui l'ont manqué.",
+            "questions": {
+                "presentTemplate": {
+                    "label": "Modèle d'e-mail pour les étudiants présents",
+                    "helpText": "Envoyé aux apprenants marqués PRÉSENT dans le cours."
+                },
+                "absentTemplate": {
+                    "label": "Modèle d'e-mail pour les étudiants absents",
+                    "helpText": "Envoyé aux apprenants marqués ABSENT dans le cours."
+                },
+                "waPresentTemplate": {
+                    "label": "Modèle WhatsApp pour les étudiants présents",
+                    "helpText": "Envoyé aux apprenants marqués PRÉSENT. Des variables comme fullName/sessionTitle se remplissent automatiquement depuis les données de présence."
+                },
+                "waAbsentTemplate": {
+                    "label": "Modèle WhatsApp pour les étudiants absents",
+                    "helpText": "Envoyé aux apprenants marqués ABSENT. Des variables comme fullName/sessionTitle se remplissent automatiquement depuis les données de présence."
+                }
+            },
+            "nodes": {
+                "trigger": "Déclencheur : cours en direct terminé",
+                "fetchAttendance": "Récupérer la présence",
+                "sendToPresentPrefix": "Envoyer aux présents",
+                "sendToAbsentPrefix": "Envoyer aux absents"
+            },
+            "workflowDescription": "Envoyer des messages de récapitulatif après cours aux étudiants présents et absents pour chaque cours en direct de l'établissement."
+        },
+        "webhook_on_enrollment": {
+            "name": "Envoyer les données d'inscription au webhook",
+            "description": "Lorsqu'un apprenant s'inscrit, POST ses informations vers un webhook externe (Pabbly, Zapier, n8n, Make, etc.). La charge utile est entièrement configurable.",
+            "questions": {
+                "webhookUrl": {
+                    "helpText": "L'endpoint POST qui recevra les données d'inscription. Obtenez-le depuis votre flux Pabbly Connect, Zapier Catch Hook, nœud Webhook n8n, etc."
+                },
+                "scope": {
+                    "helpText": "Choisissez « à l'échelle de l'établissement » pour se déclencher sur chaque inscription d'apprenant dans votre établissement, ou « cours spécifique » pour ne se déclencher que lorsque des apprenants s'inscrivent à un cours choisi.",
+                    "options": {
+                        "institute": "Pour chaque inscription dans cet établissement",
+                        "course": "Seulement lorsque des apprenants s'inscrivent à un cours spécifique"
+                    }
+                },
+                "payloadJson": {
+                    "hint": "Modifiez le JSON ci-dessous. Chaque valeur peut être une chaîne littérale OU une expression SpEL. Variables disponibles sur le contexte :  #ctx['triggerTime'] (horodatage ISO), #ctx['user'].fullName / .email / .mobileNumber / .username, #ctx['packageName'] (cours), #ctx['packageId'], #ctx['packageSessionIds'] (groupe), #ctx['instituteName'], #ctx['instituteId'], #ctx['enrollmentStatus'] (statut SSIGM : ACTIVE/INVITED/...), #ctx['enrollmentId'], #ctx['enrolledAt'], #ctx['paymentStatus'] (PAID/PENDING/null), #ctx['paymentOrderId'], #ctx['paymentAmount'], #ctx['paymentCurrency'], #ctx['paymentVendor'], #ctx['paymentDate'], #ctx['hasPayment'] (booléen)."
+                }
+            },
+            "nodes": {
+                "fetchEnrollmentPaymentStatus": "Récupérer le statut d'inscription et de paiement",
+                "postToWebhook": "POST inscription vers le webhook"
+            },
+            "workflowDescription": {
+                "course": "Récupérer le statut d'inscription + de paiement et POST vers un webhook externe — se déclenche uniquement lorsque des apprenants s'inscrivent au cours sélectionné.",
+                "institute": "Récupérer le statut d'inscription + de paiement et POST vers un webhook externe à chaque nouvelle inscription dans cet établissement."
+            }
+        },
+        "webhook_on_abandoned_cart": {
+            "name": "Envoyer les données de panier abandonné au webhook",
+            "description": "Lorsqu'un apprenant remplit le formulaire d'inscription sans finaliser le paiement, POST ses informations vers un webhook externe (Pabbly, Zapier, n8n) pour le reciblage / des campagnes de fidélisation.",
+            "questions": {
+                "webhookUrl": {
+                    "helpText": "L'endpoint POST qui recevra les données de panier abandonné. Obtenez-le depuis votre flux Pabbly Connect / Zapier / n8n / Make."
+                },
+                "scope": {
+                    "helpText": "Choisissez « à l'échelle de l'établissement » pour se déclencher sur chaque panier abandonné dans votre établissement, ou « cours spécifique » pour ne se déclencher que pour un cours.",
+                    "options": {
+                        "institute": "Pour chaque panier abandonné dans cet établissement",
+                        "course": "Seulement lorsque des paniers sont abandonnés pour un cours spécifique"
+                    }
+                },
+                "courseId": {
+                    "helpText": "Le webhook ne se déclenchera que lorsque des paniers sont abandonnés pour des groupes de ce cours."
+                },
+                "payloadJson": {
+                    "hint": "Modifiez le JSON ci-dessous. Chaque valeur peut être une chaîne littérale OU une expression SpEL. Disponible sur le contexte :  #ctx['triggerTime'] (horodatage ISO), #ctx['user'].fullName / .email / .mobileNumber / .username, #ctx['packageName'] (cours), #ctx['packageId'], #ctx['packageSessionIds'] (groupe), #ctx['userId'], #ctx['userPlanId'] (souvent null au moment de l'abandon), #ctx['instituteName'], #ctx['instituteId']. Les champs de paiement ne sont PAS disponibles — le panier a été abandonné avant le début du paiement."
+                }
+            },
+            "nodes": {
+                "trigger": "Déclencheur : panier abandonné",
+                "postToWebhook": "POST panier abandonné vers le webhook"
+            },
+            "workflowDescription": {
+                "course": "POST des données de panier abandonné vers un webhook externe — se déclenche uniquement pour le cours sélectionné.",
+                "institute": "POST des données de panier abandonné vers un webhook externe pour chaque panier abandonné dans cet établissement."
+            }
+        }
+    }
+}

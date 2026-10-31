@@ -1,6 +1,7 @@
 import { Suspense, lazy } from 'react';
 import { YooptaPlugin, useYooptaEditor, Elements, PluginElementRenderProps } from '@yoopta/editor';
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const MonacoEditor = lazy(() => import('@monaco-editor/react'));
 
@@ -24,6 +25,7 @@ export function MultiLangCodeBlock({
     children,
     blockId,
 }: PluginElementRenderProps) {
+    const { t } = useTranslation('studyLibraryPythonEditor');
     const editor = useYooptaEditor();
     const initialLanguage = element?.props?.language || 'python';
     const initialCode =
@@ -137,10 +139,10 @@ export function MultiLangCodeBlock({
                     output += data.run.stderr;
                 }
                 if (data.compile && data.compile.stderr) {
-                    output += 'Compile Error: ' + data.compile.stderr;
+                    output += t('compileErrorPrefix') + data.compile.stderr;
                 }
 
-                const finalOutput = output || 'No output produced';
+                const finalOutput = output || t('noOutputProduced');
                 setOutput(finalOutput);
                 setHasRun(true);
             } else if (language === 'javascript') {
@@ -163,18 +165,18 @@ export function MultiLangCodeBlock({
                         output += (output ? '\n' : '') + String(result);
                     }
 
-                    const finalOutput = output || 'No output';
+                    const finalOutput = output || t('noOutput');
                     setOutput(finalOutput);
                     setHasRun(true);
                 } catch (err: any) {
-                    const errorOutput = 'Error: ' + String(err);
+                    const errorOutput = t('errorPrefix') + String(err);
                     setOutput(errorOutput);
                     setHasRun(true);
                 }
             }
         } catch (err: any) {
             console.error('Code execution error:', err);
-            const errorOutput = 'Error running code: ' + (err.message || String(err));
+            const errorOutput = t('errorRunningCodePrefix') + (err.message || String(err));
             setOutput(errorOutput);
             setHasRun(true);
         }
@@ -184,7 +186,7 @@ export function MultiLangCodeBlock({
     // Error boundary for Monaco Editor
     const handleEditorError = (error: any) => {
         console.error('Monaco Editor Error:', error);
-        setEditorError('Failed to load code editor');
+        setEditorError(t('failedToLoadCodeEditor'));
     };
 
     return (
@@ -218,12 +220,12 @@ export function MultiLangCodeBlock({
                         cursor: loading || !isEditorReady ? 'not-allowed' : 'pointer',
                     }}
                 >
-                    {loading ? 'Running...' : '▶ Run'}
+                    {loading ? t('running') : `▶ ${t('run')}`}
                 </button>
 
                 {/* Toggle Switch for Edit/View Mode */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '14px', color: '#666' }}>View</span>
+                    <span style={{ fontSize: '14px', color: '#666' }}>{t('view')}</span>
                     <div
                         onClick={() =>
                             !loading && isEditorReady && setMode(mode === 'edit' ? 'view' : 'edit')
@@ -253,7 +255,7 @@ export function MultiLangCodeBlock({
                             }}
                         />
                     </div>
-                    <span style={{ fontSize: '14px', color: '#666' }}>Edit</span>
+                    <span style={{ fontSize: '14px', color: '#666' }}>{t('edit')}</span>
                 </div>
             </div>
 
@@ -273,7 +275,7 @@ export function MultiLangCodeBlock({
                     {editorError}
                 </div>
             ) : (
-                <Suspense fallback={<div style={{ height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading Editor...</div>}>
+                <Suspense fallback={<div style={{ height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{t('loadingEditor')}</div>}>
                     <MonacoEditor
                         height="180px"
                         language={language}
@@ -309,7 +311,7 @@ export function MultiLangCodeBlock({
                         }}
                         loading={
                             <div style={{ padding: '20px', textAlign: 'center' }}>
-                                Loading editor...
+                                {t('loadingEditorLower')}
                             </div>
                         }
                         onValidate={() => { }}
@@ -334,7 +336,7 @@ export function MultiLangCodeBlock({
             {output && language !== 'html' && language !== 'css' && (
                 <div style={{ marginTop: 8 }}>
                     <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
-                        Output:
+                        {t('outputLabel')}
                     </div>
                     <pre
                         style={{
@@ -355,10 +357,10 @@ export function MultiLangCodeBlock({
             {(language === 'html' || language === 'css') && (
                 <div style={{ marginTop: 8 }}>
                     <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
-                        Preview:
+                        {t('previewLabel')}
                     </div>
                     <iframe
-                        title="Preview"
+                        title={t('previewTitle')}
                         style={{
                             background: '#fff',
                             border: '1px solid #e1e4e8',
@@ -369,7 +371,7 @@ export function MultiLangCodeBlock({
                         srcDoc={
                             language === 'html'
                                 ? code
-                                : `<style>${code}</style><div>CSS Preview Area</div>`
+                                : `<style>${code}</style><div>${t('cssPreviewArea')}</div>`
                         }
                     />
                 </div>

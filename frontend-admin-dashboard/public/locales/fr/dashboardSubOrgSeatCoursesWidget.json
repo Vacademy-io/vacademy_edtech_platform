@@ -1,0 +1,23 @@
+{
+    "heading": "Apprenants et cours",
+    "manage": "Gérer",
+    "recentEnrollments": {
+        "label": "Inscriptions récentes",
+        "oweFees_one": "{{count}} doit des frais",
+        "oweFees_many": "{{count}} doivent des frais",
+        "oweFees_other": "{{count}} doivent des frais",
+        "empty": "Aucune inscription pour le moment",
+        "learnerFallback": "Apprenant",
+        "joined": "Inscrit le {{date}}",
+        "due": "{{amount}} dû",
+        "paid": "Payé"
+    },
+    "courses": {
+        "label": "Mes cours",
+        "fallbackName": "Cours",
+        "empty": "Aucun cours assigné pour le moment",
+        "learnerCountTitle_one": "{{count}} apprenant",
+        "learnerCountTitle_many": "{{count}} apprenants",
+        "learnerCountTitle_other": "{{count}} apprenants"
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "header": {
+        "title": "Live Class Actions",
+        "description": "Control what this role can do with classes on the Live Sessions page."
+    },
+    "rows": {
+        "allowDeletePastSessions": {
+            "label": "Allow deleting past classes",
+            "hint": "Shows \"Delete\" in the \"…\" menu of each class on the Past tab. On for admins by default and off for every other role. Every delete is recorded in the Activity Log with the name of the person who did it."
+        }
+    }
+}

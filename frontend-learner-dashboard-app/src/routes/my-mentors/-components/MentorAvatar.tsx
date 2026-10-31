@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { getFilePublicUrlQuery } from "@/services/file-url-cache";
 
@@ -24,6 +25,7 @@ export function MentorAvatar({
     name?: string | null;
     className?: string;
 }) {
+    const { t } = useTranslation("miscRoutesA");
     const { data: url } = useQuery(getFilePublicUrlQuery(fileId ?? null));
     return (
         <div
@@ -33,7 +35,11 @@ export function MentorAvatar({
             )}
         >
             {url ? (
-                <img src={url} alt={name || "Mentor"} className="size-full object-cover" />
+                <img
+                    src={url}
+                    alt={name || t("myMentors.common.mentor")}
+                    className="size-full object-cover"
+                />
             ) : (
                 initials(name)
             )}

@@ -65,8 +65,14 @@ public class MCQMQuestionTypeBasedStrategy extends IQuestionTypeBasedStrategy {
                 return 0.0;
             }
 
-            // Check if the answer is completely correct
-            if (attemptedOptionIds.equals(correctOptionIds)) {
+            // Check if the answer is completely correct.
+            //
+            // Compared as SETS, not lists. List.equals is order-sensitive, so a learner
+            // who ticked the same options in a different order than the answer key was
+            // stored in missed full credit and fell through to the branches below —
+            // which, with partialMarking == 0, awarded FULL NEGATIVE MARKS for a fully
+            // correct answer. Option order carries no meaning here.
+            if (new HashSet<>(attemptedOptionIds).equals(new HashSet<>(correctOptionIds))) {
                 setAnswerStatus(QuestionResponseEnum.CORRECT.name());
                 return totalMarks;
             }

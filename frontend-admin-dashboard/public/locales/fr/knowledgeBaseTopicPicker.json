@@ -1,0 +1,17 @@
+{
+    "emptySelection": "Rien n'est sélectionné — le sujet s'appuiera sur tout le contenu.",
+    "selectedCount_one": "{{count}} sous-thème sélectionné sur {{total}}",
+    "selectedCount_many": "{{count}} sous-thèmes sélectionnés sur {{total}}",
+    "selectedCount_other": "{{count}} sous-thèmes sélectionnés sur {{total}}",
+    "actions": {
+        "clearAll": "Tout effacer",
+        "selectAll": "Tout sélectionner"
+    },
+    "selectTopicAriaLabel": "Sélectionner {{title}}",
+    "subtopicsPartial_one": "{{count}} sur {{total}} sous-thème",
+    "subtopicsPartial_many": "{{count}} sur {{total}} sous-thèmes",
+    "subtopicsPartial_other": "{{count}} sur {{total}} sous-thèmes",
+    "subtopicsTotal_one": "{{count}} sous-thème",
+    "subtopicsTotal_many": "{{count}} sous-thèmes",
+    "subtopicsTotal_other": "{{count}} sous-thèmes"
+}

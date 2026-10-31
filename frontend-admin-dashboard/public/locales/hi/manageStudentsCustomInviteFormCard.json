@@ -1,0 +1,33 @@
+{
+    "header": {
+        "title": "आमंत्रण फ़ॉर्म को अनुकूलित करें",
+        "subtitle": "विद्यार्थी जिन फ़ील्ड को भरेंगे उन्हें कॉन्फ़िगर करें"
+    },
+    "quickAddButtons": {
+        "gender": "लिंग जोड़ें",
+        "state": "राज्य जोड़ें",
+        "city": "शहर जोड़ें",
+        "schoolCollege": "स्कूल/कॉलेज जोड़ें"
+    },
+    "customFieldDialog": {
+        "triggerButton": "कस्टम फ़ील्ड जोड़ें",
+        "title": "कस्टम फ़ील्ड जोड़ें",
+        "typePrompt": "आप जिस प्रकार की कस्टम फ़ील्ड जोड़ना चाहते हैं उसे चुनें:",
+        "fieldTypeOptions": {
+            "textField": "टेक्स्ट फ़ील्ड",
+            "dropdown": "ड्रॉपडाउन"
+        },
+        "textFieldNameLabel": "टेक्स्ट फ़ील्ड का नाम",
+        "dropdownNameLabel": "ड्रॉपडाउन का नाम",
+        "dropdownOptionsLabel": "ड्रॉपडाउन विकल्प",
+        "addOptionButton": "जोड़ें",
+        "doneButton": "पूर्ण"
+    },
+    "placeholders": {
+        "typeHere": "यहाँ लिखें"
+    },
+    "previewDialog": {
+        "triggerButton": "पंजीकरण फ़ॉर्म का पूर्वावलोकन करें",
+        "title": "पंजीकरण फ़ॉर्म का पूर्वावलोकन"
+    }
+}

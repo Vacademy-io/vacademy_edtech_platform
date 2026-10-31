@@ -1,0 +1,43 @@
+{
+    "loading": "Chargement de l'historique des communications...",
+    "emptyState": "Aucun message envoyé à cette audience pour le moment.",
+    "heading": "Historique des communications",
+    "noValuePlaceholder": "—",
+    "failedCount_one": "{{count}} échec",
+    "failedCount_many": "{{count}} échecs",
+    "failedCount_other": "{{count}} échecs",
+    "pageOf": "Page {{current}} sur {{total}}",
+    "table": {
+        "channel": "Canal",
+        "templateSubject": "Modèle / Objet",
+        "recipients": "Destinataires",
+        "result": "Résultat",
+        "status": "Statut",
+        "sentAt": "Envoyé le"
+    },
+    "channels": {
+        "whatsapp": "WhatsApp",
+        "email": "E-mail",
+        "push": "Notification push",
+        "systemAlert": "Alerte système"
+    },
+    "statuses": {
+        "completed": "Terminé",
+        "processing": "En cours",
+        "partial": "Partiel",
+        "failed": "Échec",
+        "pending": "En attente"
+    },
+    "subtitle": "Messages sent to this list",
+    "sendMessage": "Send message",
+    "summary": {
+        "sent": "Messages sent",
+        "sentDetail": "to this list so far",
+        "recipients": "Recipients",
+        "accepted": "Accepted",
+        "acceptedDetail": "{{accepted}} of {{total}} accepted",
+        "failed": "Failed",
+        "latest_one": "across the latest {{count}} send",
+        "latest_other": "across the latest {{count}} sends"
+    }
+}

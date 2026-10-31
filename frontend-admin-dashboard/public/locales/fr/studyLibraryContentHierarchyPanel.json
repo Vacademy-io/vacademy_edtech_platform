@@ -1,0 +1,9 @@
+{
+    "courseStructure": "Structure du cours",
+    "completedRatio": "{{completed}}/{{total}} terminées",
+    "generatingCount_one": "{{count}} en cours de génération",
+    "generatingCount_many": "{{count}} en cours de génération",
+    "generatingCount_other": "{{count}} en cours de génération",
+    "aiVideoDelay": "La vidéo IA sera disponible dans quelques minutes",
+    "ratio": "{{completed}}/{{total}}"
+}

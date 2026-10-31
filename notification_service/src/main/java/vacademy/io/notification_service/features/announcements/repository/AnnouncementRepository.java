@@ -3,9 +3,11 @@ package vacademy.io.notification_service.features.announcements.repository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.notification_service.features.announcements.entity.Announcement;
 import vacademy.io.notification_service.features.announcements.enums.AnnouncementStatus;
 
@@ -16,6 +18,30 @@ import java.util.List;
 public interface AnnouncementRepository extends JpaRepository<Announcement, String> {
     
     Page<Announcement> findByInstituteIdOrderByCreatedAtDesc(String instituteId, Pageable pageable);
+
+    /*
+     * Switch off every still-active system alert raised ABOUT one thing — the
+     * lead-assignment bell, once the counsellor has actually worked that lead.
+     *
+     * Updates the alert row rather than deleting the announcement: the alert is
+     * what the bell reads, and the announcement stays as a record that it was
+     * sent. Scoped by institute so one institute can never clear another's.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            UPDATE announcement_system_alerts sa
+            SET is_active = FALSE
+            FROM announcements a
+            WHERE sa.announcement_id = a.id
+              AND sa.is_active = TRUE
+              AND a.institute_id = :instituteId
+              AND a.entity = :entity
+              AND a.entity_id = :entityId
+            """, nativeQuery = true)
+    int deactivateSystemAlertsForEntity(@Param("instituteId") String instituteId,
+                                        @Param("entity") String entity,
+                                        @Param("entityId") String entityId);
     
     Page<Announcement> findByInstituteIdAndStatusOrderByCreatedAtDesc(String instituteId, AnnouncementStatus status, Pageable pageable);
     

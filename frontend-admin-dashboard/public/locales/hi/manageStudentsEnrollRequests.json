@@ -1,0 +1,15 @@
+{
+    "heading": {
+        "title": "नामांकन अनुरोध सूची"
+    },
+    "search": {
+        "placeholder": "नाम या नामांकन से खोजें..."
+    },
+    "filters": {
+        "gender": "लिंग",
+        "preferredBatch": "पसंदीदा बैच",
+        "paymentStatus": "भुगतान स्थिति",
+        "approvalStatus": "स्वीकृति स्थिति",
+        "paymentOption": "भुगतान विकल्प"
+    }
+}

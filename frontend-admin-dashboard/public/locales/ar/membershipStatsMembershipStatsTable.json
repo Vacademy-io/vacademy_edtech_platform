@@ -1,0 +1,20 @@
+{
+    "columns": {
+        "user": "المستخدم",
+        "userType": "نوع المستخدم",
+        "joinedOn": "تاريخ الانضمام",
+        "roles": "الأدوار"
+    },
+    "newUser": "مستخدم جديد",
+    "retainer": "محتفظ به",
+    "noPackages": "لا توجد باقات",
+    "errorLoading": "خطأ في تحميل إحصائيات العضوية",
+    "noRecordsFound": "لم يتم العثور على سجلات",
+    "tryAdjustingFilters": "حاول ضبط عوامل التصفية لرؤية المزيد من النتائج",
+    "showingRange_zero": "لا توجد سجلات لعرضها",
+    "showingRange_one": "عرض {{start}} - {{end}} من أصل سجل واحد",
+    "showingRange_two": "عرض {{start}} - {{end}} من أصل سجلين",
+    "showingRange_few": "عرض {{start}} - {{end}} من أصل {{count}} سجلات",
+    "showingRange_many": "عرض {{start}} - {{end}} من أصل {{count}} سجلًا",
+    "showingRange_other": "عرض {{start}} - {{end}} من أصل {{count}} سجل"
+}

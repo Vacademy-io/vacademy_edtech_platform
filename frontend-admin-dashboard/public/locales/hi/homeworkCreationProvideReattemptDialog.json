@@ -1,0 +1,10 @@
+{
+    "dialog": {
+        "heading": "पुनः प्रयास प्रदान करें",
+        "confirmMessage": "क्या आप वाकई चयनित <highlight>{{name}}</highlight> को पुनः प्रयास प्रदान करना चाहते हैं?"
+    },
+    "doneButton": "पूर्ण",
+    "toasts": {
+        "reattemptSuccess": "चयनित प्रतिभागी(यों) को पुनः प्रयास प्रदान कर दिया गया है।"
+    }
+}

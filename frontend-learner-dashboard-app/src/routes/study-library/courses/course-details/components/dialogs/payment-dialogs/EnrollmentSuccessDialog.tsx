@@ -7,6 +7,8 @@ import {
 } from "@/components/ui/dialog";
 import { CheckCircle, ArrowRight } from "@phosphor-icons/react";
 import { MyButton } from "@/components/design-system/button";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 interface EnrollmentSuccessDialogProps {
   open: boolean;
@@ -42,7 +44,7 @@ export const EnrollmentSuccessDialog: React.FC<EnrollmentSuccessDialogProps> = (
           </h3>
           
           <p className="text-gray-600 mb-6">
-            You have successfully enrolled in the course. You can now access all the slides and start learning.
+            You have successfully enrolled in the {getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}. You can now access all the slides and start learning.
           </p>
           
           <MyButton
@@ -53,7 +55,7 @@ export const EnrollmentSuccessDialog: React.FC<EnrollmentSuccessDialogProps> = (
             onClick={onExploreCourse}
             className="w-full flex items-center justify-center space-x-2"
           >
-            <span>Explore Course</span>
+            <span>Explore {getTerminology(ContentTerms.Course, SystemTerms.Course)}</span>
             <ArrowRight className="w-4 h-4" />
           </MyButton>
         </div>

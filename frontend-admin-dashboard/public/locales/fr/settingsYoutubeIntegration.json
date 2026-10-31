@@ -1,0 +1,152 @@
+{
+    "header": {
+        "title": "Intégration YouTube",
+        "subtitle": "Publiez automatiquement les sessions en direct enregistrées sur votre chaîne YouTube. Connectez-vous une fois ; chaque enregistrement de cet établissement est ensuite publié sur votre chaîne."
+    },
+    "toasts": {
+        "channelConnected": "Chaîne YouTube connectée",
+        "connectFailed": "Échec de la connexion : {{reason}}",
+        "unknownReason": "inconnue",
+        "featureEnabled": "Intégration YouTube activée",
+        "featureDisabled": "Intégration YouTube désactivée",
+        "toggleFailed": "Échec de la mise à jour de l'interrupteur",
+        "oauthStartFailed": "Échec du démarrage de l'authentification YouTube — consultez la console.",
+        "disconnected": "YouTube déconnecté",
+        "disconnectFailed": "Échec de la déconnexion",
+        "defaultsSaved": "Paramètres de publication enregistrés",
+        "defaultsSaveFailed": "Échec de l'enregistrement des paramètres",
+        "requeued": "Remis en file d'attente pour publication",
+        "retryFailed": "Échec de la nouvelle tentative"
+    },
+    "featureGate": {
+        "title": "Activer l'intégration YouTube",
+        "description": "Activez cette option si cet établissement souhaite publier les sessions en direct enregistrées sur YouTube. Si elle est désactivée, aucun enregistrement n'est publié et aucun bouton « Publier sur YouTube » n'apparaît sur les sessions.",
+        "hint": "Une fois activée, vous pourrez connecter une chaîne YouTube, configurer les paramètres de publication (confidentialité, modèle de titre, catégorie) et consulter l'historique de publication de chaque enregistrement."
+    },
+    "connection": {
+        "title": "Chaîne YouTube",
+        "description": "Connectez-vous avec le compte Google propriétaire de la chaîne sur laquelle vous souhaitez publier. Un accès en modification à cette chaîne est requis.",
+        "loading": "Chargement…",
+        "unnamedChannel": "(chaîne sans nom)",
+        "reconnect": "Reconnecter",
+        "disconnect": "Déconnecter",
+        "invalidTitle": "Connexion invalide",
+        "invalidDefaultReason": "Google a rejeté le jeton d'actualisation. Cela signifie généralement que l'accès a été révoqué dans les paramètres du compte Google.",
+        "reconnectYoutube": "Reconnecter YouTube",
+        "redirecting": "Redirection…",
+        "notConnected": "Aucune chaîne connectée pour le moment. Une fois connectée, chaque enregistrement BBB sera publié automatiquement sur cette chaîne.",
+        "connectYoutube": "Connecter YouTube"
+    },
+    "status": {
+        "active": "Connectée",
+        "invalid": "Reconnexion nécessaire",
+        "notConnected": "Non connectée"
+    },
+    "defaults": {
+        "title": "Paramètres de publication par défaut",
+        "description": "Appliqués à chaque enregistrement publié automatiquement. La publication manuelle peut redéfinir la confidentialité pour chaque enregistrement.",
+        "loading": "Chargement…",
+        "reset": "Réinitialiser",
+        "save": "Enregistrer",
+        "saving": "Enregistrement…",
+        "autoUpload": {
+            "title": "Publication automatique dès l'enregistrement prêt",
+            "description": "Si désactivée, les enregistrements ne seront pas publiés automatiquement. Il reste possible de déclencher une publication manuellement depuis la vue de la session en direct."
+        },
+        "privacyLabel": "Confidentialité",
+        "categoryLabel": "Catégorie",
+        "licenseLabel": "Licence",
+        "licenseStandard": "Licence YouTube standard",
+        "licenseCreativeCommons": "Creative Commons",
+        "defaultLanguageLabel": "Langue par défaut",
+        "defaultLanguagePlaceholder": "en, hi, fr…",
+        "embeddable": {
+            "title": "Autoriser l'intégration (embed)",
+            "description": "Requis pour lire ces vidéos directement dans Vacademy. À désactiver uniquement pour un contenu dont le téléchargement doit être restreint."
+        },
+        "publicStats": {
+            "title": "Statistiques publiques visibles",
+            "description": "Indique si le nombre de vues / de mentions « j'aime » est visible sur la page de la vidéo."
+        },
+        "madeForKids": {
+            "title": "Contenu destiné aux enfants",
+            "description": "YouTube exige cette déclaration. La plupart des cours destinés à des apprenants adultes ne doivent pas cocher cette case."
+        },
+        "notifySubscribers": {
+            "title": "Notifier les abonnés de la chaîne",
+            "description": "Si activée, YouTube envoie une notification aux abonnés pour chaque enregistrement publié. Généralement désactivée pour les publications de routine."
+        },
+        "titleTemplateLabel": "Modèle de titre",
+        "titleTemplateTokens": "Jetons : {session_title}, {subject}, {date}",
+        "titleTemplatePlaceholder": "{session_title} | {date}",
+        "descriptionTemplateLabel": "Modèle de description",
+        "descriptionTemplateTokensHint": "Mêmes jetons que le titre",
+        "descriptionTemplatePlaceholder": "Enregistrement de la session {session_title} du {date}. © Votre établissement.",
+        "tagsLabel": "Balises (séparées par des virgules)",
+        "tagsPlaceholder": "cours, terminale, concours",
+        "playlistLabel": "ID de playlist par défaut (facultatif)",
+        "playlistPlaceholder": "PLxxxxxxxxxxxxxxxxxxxxxxxxx",
+        "playlistHint": "Les vidéos publiées automatiquement seront ajoutées à cette playlist."
+    },
+    "privacyOptions": {
+        "unlisted": {
+            "label": "Non répertoriée",
+            "help": "Toute personne disposant du lien peut regarder. Recommandé pour un usage en intégration uniquement."
+        },
+        "private": {
+            "label": "Privée",
+            "help": "Vous seul(e) pouvez regarder. À utiliser pour une relecture avant publication."
+        },
+        "public": {
+            "label": "Publique",
+            "help": "Consultable sur YouTube et sur votre chaîne."
+        }
+    },
+    "categoryOptions": {
+        "education": "Éducation",
+        "scienceAndTechnology": "Science et technologie",
+        "peopleAndBlogs": "Vie quotidienne",
+        "newsAndPolitics": "Actualités et politique",
+        "entertainment": "Divertissement",
+        "gaming": "Jeux vidéo",
+        "howToAndStyle": "Astuces et style"
+    },
+    "history": {
+        "title": "Historique des publications",
+        "description": "Les 50 dernières publications de cet établissement. Les échecs peuvent être relancés ; les erreurs de quota sont automatiquement relancées après réinitialisation de la limite quotidienne.",
+        "notConnected": "Connectez une chaîne YouTube pour commencer à publier des enregistrements.",
+        "loading": "Chargement…",
+        "empty": "Aucune publication pour le moment. Les enregistrements apparaîtront ici une fois leur traitement terminé.",
+        "columns": {
+            "when": "Date",
+            "title": "Titre",
+            "status": "Statut",
+            "trigger": "Déclencheur",
+            "video": "Vidéo"
+        },
+        "pendingFile": "(en attente — fichier {{fileId}})",
+        "triggerAuto": "Automatique",
+        "triggerManual": "Manuel",
+        "open": "Ouvrir",
+        "retry": "Réessayer"
+    },
+    "jobStatus": {
+        "queued": "En file d'attente",
+        "queuedWithAttempt": "En file d'attente (tentative {{attempt}}/{{maxAttempts}})",
+        "uploading": "Publication en cours…",
+        "done": "Publiée",
+        "failed": "Échec",
+        "cancelled": "Annulée"
+    },
+    "time": {
+        "justNow": "à l'instant",
+        "minutesAgo_one": "il y a {{count}} min",
+        "minutesAgo_many": "il y a {{count}} min",
+        "minutesAgo_other": "il y a {{count}} min",
+        "hoursAgo_one": "il y a {{count}} h",
+        "hoursAgo_many": "il y a {{count}} h",
+        "hoursAgo_other": "il y a {{count}} h",
+        "unknown": "—"
+    },
+    "channelThumbnailAlt": "chaîne"
+}

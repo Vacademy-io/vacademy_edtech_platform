@@ -1,0 +1,10 @@
+{
+    "srNo": "Sr. No.",
+    "membersName": "Members Name",
+    "attendanceStatus": "Attendance Status",
+    "present": "Present",
+    "absent": "Absent",
+    "unmarked": "Unmarked",
+    "membersPhoneNumber": "Members Phone Number",
+    "membersEmail": "Members Email"
+}

@@ -1,0 +1,30 @@
+{
+    "summary": {
+        "learnersSelected_zero": "لم يتم تحديد أي متعلم ({{count}})",
+        "learnersSelected_one": "تم تحديد {{count}} متعلم",
+        "learnersSelected_two": "تم تحديد {{count}} متعلمَين",
+        "learnersSelected_few": "تم تحديد {{count}} متعلمين",
+        "learnersSelected_many": "تم تحديد {{count}} متعلمًا",
+        "learnersSelected_other": "تم تحديد {{count}} متعلم"
+    },
+    "chip": {
+        "editing": "(جارٍ التعديل…)",
+        "newUser": "(مستخدم جديد)",
+        "editTitle": "تعديل",
+        "removeTitle": "إزالة"
+    },
+    "tabs": {
+        "search": "البحث عن موجود",
+        "fromCourse": "من {{term}}",
+        "csv": "استيراد CSV",
+        "manual": "إضافة يدويًا"
+    },
+    "search": {
+        "placeholder": "البحث بالاسم أو البريد الإلكتروني أو اسم المستخدم…",
+        "searching": "جارٍ البحث…",
+        "added": "تمت الإضافة",
+        "addAction": "+ إضافة",
+        "noResults": "لم يتم العثور على طلاب مطابقين لـ \"{{query}}\"",
+        "minChars": "اكتب حرفين على الأقل للبحث"
+    }
+}

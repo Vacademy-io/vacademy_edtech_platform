@@ -1,0 +1,108 @@
+{
+    "history": {
+        "empty": "अभी तक कोई AI उपयोग नहीं",
+        "emptyFiltered": "इन फ़िल्टर से कोई उपयोग मेल नहीं खाता",
+        "error": "उपयोग इतिहास लोड नहीं हो सका। कृपया बाद में फिर से प्रयास करें।",
+        "prev": "पिछला",
+        "next": "अगला",
+        "pageOf": "{{page}} / {{pages}}",
+        "balanceAfter": "शेष: {{balance}}",
+        "otherUsage": "AI उपयोग",
+        "showDetails": "विवरण दिखाएँ",
+        "hideDetails": "विवरण छिपाएँ"
+    },
+    "filters": {
+        "allUsers": "सभी उपयोगकर्ता",
+        "allRoles": "सभी भूमिकाएँ",
+        "allFeatures": "सभी सुविधाएँ",
+        "user": "उपयोगकर्ता",
+        "role": "भूमिका",
+        "feature": "सुविधा",
+        "clear": "साफ़ करें",
+        "export": "CSV निर्यात करें",
+        "exporting": "निर्यात हो रहा है…",
+        "exportFailed": "उपयोग निर्यात नहीं हो सका",
+        "exportFailedHint": "कृपया थोड़ी देर में फिर से प्रयास करें।"
+    },
+    "amount": {
+        "included": "शामिल",
+        "free": "निःशुल्क",
+        "ownKey": "अपनी कुंजी",
+        "notCharged": "शुल्क नहीं लिया (कम शेष)",
+        "refunded": "{{credits}} वापस किए गए",
+        "includedInPlan": "प्लान में शामिल",
+        "fromAllowance": "प्लान अलाउंस से",
+        "splitAllowance": "{{credits}} प्लान अलाउंस से"
+    },
+    "details": {
+        "promptTokens": "इनपुट टोकन",
+        "completionTokens": "आउटपुट टोकन",
+        "cachedTokens": "कैश्ड टोकन",
+        "images": "चित्र",
+        "seconds": "सेकंड",
+        "minutes": "मिनट",
+        "characters": "अक्षर",
+        "listCredits": "सूची मूल्य",
+        "charged": "शुल्क",
+        "refundedCredits": "वापस किए गए",
+        "batch": "बैच",
+        "model": "मॉडल",
+        "onBehalfOf": "किसके लिए",
+        "byUser": "द्वारा",
+        "realCost": "विक्रेता लागत (केवल स्टाफ़)",
+        "status": "स्थिति",
+        "fromAllowance": "प्लान अलाउंस से"
+    },
+    "ledger": {
+        "usage": "उपयोग",
+        "grant": "अनुदान",
+        "adminGrant": "एडमिन अनुदान",
+        "adminDeduction": "एडमिन समायोजन",
+        "refund": "रिफ़ंड",
+        "purchase": "खरीद",
+        "transaction": "लेन-देन"
+    },
+    "roleClass": {
+        "ADMIN": "एडमिन",
+        "TEACHER": "शिक्षक",
+        "STAFF": "स्टाफ़",
+        "PARENT": "अभिभावक",
+        "LEARNER": "शिक्षार्थी",
+        "SYSTEM": "सिस्टम",
+        "API_KEY": "API कुंजी",
+        "PUBLIC": "सार्वजनिक",
+        "UNKNOWN": "अज्ञात"
+    },
+    "surface": {
+        "ADMIN_APP": "एडमिन ऐप",
+        "LEARNER_APP": "शिक्षार्थी ऐप",
+        "PUBLIC": "सार्वजनिक पेज",
+        "PARTNER_API": "पार्टनर API",
+        "WHATSAPP": "WhatsApp",
+        "PHONE": "फ़ोन",
+        "SCHEDULED": "निर्धारित",
+        "INTERNAL": "आंतरिक",
+        "UNKNOWN": "अज्ञात"
+    },
+    "analytics": {
+        "byFeature": "सुविधा के अनुसार",
+        "byRole": "भूमिका के अनुसार",
+        "topUsers": "शीर्ष उपयोगकर्ता",
+        "dailyTrend": "दैनिक रुझान",
+        "charged": "शुल्क",
+        "list": "सूची मूल्य",
+        "credits": "{{credits}} क्रेडिट",
+        "events": "उपयोग: {{count}}",
+        "total": "{{credits}} क्रेडिट · उपयोग: {{events}}",
+        "empty": "इस अवधि में कोई AI उपयोग नहीं",
+        "error": "एनालिटिक्स लोड नहीं हो सका। कृपया बाद में फिर से प्रयास करें।",
+        "dayTooltip": "{{date}}: {{credits}}"
+    },
+    "plan": {
+        "grace": "ग्रेस अवधि",
+        "periodEnds": "अवधि {{date}} को समाप्त",
+        "allowance": "प्लान अलाउंस",
+        "allowanceLeft": "{{total}} में से {{remaining}} बाकी",
+        "includedCount": "शामिल सुविधाएँ: {{count}}"
+    }
+}

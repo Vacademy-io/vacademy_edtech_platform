@@ -1,0 +1,30 @@
+{
+    "chart": {
+        "ongoing": "जारी",
+        "pending": "लंबित",
+        "attempted": "प्रयास किया गया"
+    },
+    "info": {
+        "createdOn": "बनाया गया",
+        "startDateTime": "प्रारंभ तिथि और समय",
+        "endDateTime": "समाप्ति तिथि और समय",
+        "duration": "अवधि",
+        "totalParticipants": "कुल प्रतिभागी",
+        "subjectFallback": "लागू नहीं"
+    },
+    "durationLabel": {
+        "hoursMinutes": "{{hours}} घंटा {{minutes}} मिनट",
+        "hoursOnly": "{{hours}} घंटा",
+        "minutesOnly": "{{minutes}} मिनट"
+    },
+    "stats": {
+        "avgDuration": "औसत अवधि",
+        "avgDurationUnit": "मिनट",
+        "avgMarks": "औसत अंक"
+    },
+    "breakdown": {
+        "title": "भागीदारी विवरण",
+        "total_one": "{{count}} कुल",
+        "total_other": "{{count}} कुल"
+    }
+}

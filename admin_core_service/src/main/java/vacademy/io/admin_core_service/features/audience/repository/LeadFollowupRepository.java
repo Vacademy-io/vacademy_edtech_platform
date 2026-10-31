@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.audience.repository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -16,6 +18,22 @@ public interface LeadFollowupRepository extends JpaRepository<LeadFollowup, Stri
 
     List<LeadFollowup> findByAudienceResponseIdOrderByScheduleTimeAsc(String audienceResponseId);
 
+    /** Open follow-ups of a lead whose text starts with {@code prefix} (the ones the engine itself created). */
+    @org.springframework.data.jpa.repository.Query(value = """
+            SELECT f.id FROM lead_followup f
+             WHERE f.audience_response_id = :responseId
+               AND NOT (COALESCE(f.is_closed, false) OR f.status = 'COMPLETED')
+               AND f.content LIKE CONCAT(:prefix, '%')
+            """, nativeQuery = true)
+    List<String> openIdsWithContentPrefix(@org.springframework.data.repository.query.Param("responseId") String responseId,
+                                          @org.springframework.data.repository.query.Param("prefix") String prefix);
+
+    /** True when the lead already has an open priority follow-up (one per reattempt burst). */
+    boolean existsByAudienceResponseIdAndIsClosedFalseAndIsPriorityTrue(String audienceResponseId);
+
+    /** Check Lead's follow-up history: every follow-up across one person's enquiries. */
+    List<LeadFollowup> findByAudienceResponseIdInOrderByScheduleTimeDesc(List<String> audienceResponseIds);
+
     List<LeadFollowup> findByCreatedByAndIsClosedFalseOrderByScheduleTimeAsc(String createdBy);
 
     List<LeadFollowup> findByInstituteIdAndIsClosedFalseOrderByScheduleTimeAsc(String instituteId);
@@ -23,6 +41,140 @@ public interface LeadFollowupRepository extends JpaRepository<LeadFollowup, Stri
     /** Manager view: pending follow-ups owned by anyone in the caller's hierarchy scope. */
     List<LeadFollowup> findByInstituteIdAndCreatedByInAndIsClosedFalseOrderByScheduleTimeAsc(
             String instituteId, List<String> createdBy);
+
+    /*
+     * Completed follow-ups. Paged, unlike their pending counterparts above: the
+     * closed set only ever grows, so an institute a year in would otherwise be
+     * handing the browser every follow-up it has ever finished.
+     *
+     * Scoped on created_by to match the pending queries exactly. Who CLOSED a
+     * follow-up is a different question from whose follow-up it is, and only
+     * the latter decides who may see it; closed_by rides along on the DTO for
+     * display.
+     */
+    Page<LeadFollowup> findByCreatedByAndIsClosedTrue(String createdBy, Pageable pageable);
+
+    /*
+     * Completed follow-ups for the Completed tile, with the two controls that
+     * list needs: a closed_at window and a lead search.
+     *
+     * The search mirrors the leads query exactly, auth-service user ids
+     * included. A lead whose identity lives on its auth user carries nothing in
+     * ar.parent_name, so name search without searchUserIdsCsv finds nothing for
+     * it, which is a bug this codebase has already been bitten by.
+     *
+     * leadStatusCsv / leadStatusExcludeCsv are lead status keys, read the same
+     * way the leads query reads them (lead_status first, then the profile
+     * conversion status), so a sidebar tab that leaves LOST leads out of the
+     * open buckets can leave them out of this one too.
+     *
+     * No semicolon anywhere in the string: Hibernate appends its own limit
+     * clause to a paged native query and a stray one makes it a runtime error.
+     */
+    @Query(value = """
+            SELECT f.* FROM lead_followup f
+            LEFT JOIN audience_response ar ON ar.id = f.audience_response_id
+            LEFT JOIN lead_status ls ON ls.id = ar.lead_status_id
+            LEFT JOIN user_lead_profile ulp
+                   ON ulp.user_id = ar.user_id AND ulp.institute_id = f.institute_id
+            WHERE f.institute_id = :instituteId
+              AND f.is_closed = TRUE
+              AND (COALESCE(:createdByCsv, '') = ''
+                   OR f.created_by = ANY(STRING_TO_ARRAY(:createdByCsv, ',')))
+              AND (CAST(:closedFrom AS timestamp) IS NULL
+                   OR f.closed_at >= CAST(:closedFrom AS timestamp))
+              AND (CAST(:closedTo AS timestamp) IS NULL
+                   OR f.closed_at < CAST(:closedTo AS timestamp))
+              AND (COALESCE(:searchQuery, '') = ''
+                   OR LOWER(ar.parent_name) LIKE LOWER(CONCAT('%', CAST(:searchQuery AS text), '%'))
+                   OR LOWER(ar.parent_email) LIKE LOWER(CONCAT('%', CAST(:searchQuery AS text), '%'))
+                   OR ar.parent_mobile LIKE CONCAT('%', CAST(:searchQuery AS text), '%')
+                   OR (COALESCE(:searchUserIdsCsv, '') <> ''
+                       AND ar.user_id = ANY(STRING_TO_ARRAY(:searchUserIdsCsv, ','))))
+              AND (COALESCE(:leadStatusCsv, '') = ''
+                   OR COALESCE(ls.status_key, ulp.conversion_status)
+                      = ANY(STRING_TO_ARRAY(:leadStatusCsv, ',')))
+              AND (COALESCE(:leadStatusExcludeCsv, '') = ''
+                   OR COALESCE(ls.status_key, ulp.conversion_status) IS NULL
+                   OR NOT (COALESCE(ls.status_key, ulp.conversion_status)
+                           = ANY(STRING_TO_ARRAY(:leadStatusExcludeCsv, ','))))
+              AND (COALESCE(:audienceIdsCsv, '') = ''
+                   OR ar.audience_id = ANY(STRING_TO_ARRAY(:audienceIdsCsv, ',')))
+              AND (COALESCE(:matchedResponseIdsCsv, '') = ''
+                   OR f.audience_response_id = ANY(STRING_TO_ARRAY(:matchedResponseIdsCsv, ',')))
+              AND (COALESCE(:excludedResponseIdsCsv, '') = ''
+                   OR NOT (f.audience_response_id = ANY(STRING_TO_ARRAY(:excludedResponseIdsCsv, ','))))
+              AND (COALESCE(:interestLevels, '') = ''
+                   OR f.interest_level = ANY(STRING_TO_ARRAY(:interestLevels, CHR(31))))
+            ORDER BY f.closed_at DESC
+            """,
+            countQuery = """
+            SELECT COUNT(*) FROM lead_followup f
+            LEFT JOIN audience_response ar ON ar.id = f.audience_response_id
+            LEFT JOIN lead_status ls ON ls.id = ar.lead_status_id
+            LEFT JOIN user_lead_profile ulp
+                   ON ulp.user_id = ar.user_id AND ulp.institute_id = f.institute_id
+            WHERE f.institute_id = :instituteId
+              AND f.is_closed = TRUE
+              AND (COALESCE(:createdByCsv, '') = ''
+                   OR f.created_by = ANY(STRING_TO_ARRAY(:createdByCsv, ',')))
+              AND (CAST(:closedFrom AS timestamp) IS NULL
+                   OR f.closed_at >= CAST(:closedFrom AS timestamp))
+              AND (CAST(:closedTo AS timestamp) IS NULL
+                   OR f.closed_at < CAST(:closedTo AS timestamp))
+              AND (COALESCE(:searchQuery, '') = ''
+                   OR LOWER(ar.parent_name) LIKE LOWER(CONCAT('%', CAST(:searchQuery AS text), '%'))
+                   OR LOWER(ar.parent_email) LIKE LOWER(CONCAT('%', CAST(:searchQuery AS text), '%'))
+                   OR ar.parent_mobile LIKE CONCAT('%', CAST(:searchQuery AS text), '%')
+                   OR (COALESCE(:searchUserIdsCsv, '') <> ''
+                       AND ar.user_id = ANY(STRING_TO_ARRAY(:searchUserIdsCsv, ','))))
+              AND (COALESCE(:leadStatusCsv, '') = ''
+                   OR COALESCE(ls.status_key, ulp.conversion_status)
+                      = ANY(STRING_TO_ARRAY(:leadStatusCsv, ',')))
+              AND (COALESCE(:leadStatusExcludeCsv, '') = ''
+                   OR COALESCE(ls.status_key, ulp.conversion_status) IS NULL
+                   OR NOT (COALESCE(ls.status_key, ulp.conversion_status)
+                           = ANY(STRING_TO_ARRAY(:leadStatusExcludeCsv, ','))))
+              AND (COALESCE(:audienceIdsCsv, '') = ''
+                   OR ar.audience_id = ANY(STRING_TO_ARRAY(:audienceIdsCsv, ',')))
+              AND (COALESCE(:matchedResponseIdsCsv, '') = ''
+                   OR f.audience_response_id = ANY(STRING_TO_ARRAY(:matchedResponseIdsCsv, ',')))
+              AND (COALESCE(:excludedResponseIdsCsv, '') = ''
+                   OR NOT (f.audience_response_id = ANY(STRING_TO_ARRAY(:excludedResponseIdsCsv, ','))))
+              AND (COALESCE(:interestLevels, '') = ''
+                   OR f.interest_level = ANY(STRING_TO_ARRAY(:interestLevels, CHR(31))))
+            """,
+            nativeQuery = true)
+    Page<LeadFollowup> findCompleted(@Param("instituteId") String instituteId,
+                                     @Param("createdByCsv") String createdByCsv,
+                                     @Param("closedFrom") Timestamp closedFrom,
+                                     @Param("closedTo") Timestamp closedTo,
+                                     @Param("searchQuery") String searchQuery,
+                                     @Param("searchUserIdsCsv") String searchUserIdsCsv,
+                                     @Param("leadStatusCsv") String leadStatusCsv,
+                                     @Param("leadStatusExcludeCsv") String leadStatusExcludeCsv,
+                                     @Param("audienceIdsCsv") String audienceIdsCsv,
+                                     @Param("matchedResponseIdsCsv") String matchedResponseIdsCsv,
+                                     @Param("excludedResponseIdsCsv") String excludedResponseIdsCsv,
+                                     @Param("interestLevels") String interestLevels,
+                                     Pageable pageable);
+
+    /**
+     * Leads (audience_response ids) with an OPEN follow-up whose recorded interest
+     * level is one of the given values. interestLevels is joined with the ASCII
+     * unit separator CHR(31), not a comma, because the levels are labels an
+     * institute writes itself and may contain commas. Feeds the Follow-ups page
+     * interest filter through the leads query matched-id channel, so that query
+     * itself is unchanged.
+     */
+    @Query(value = """
+            SELECT DISTINCT lf.audience_response_id FROM lead_followup lf
+            WHERE lf.is_closed = FALSE
+              AND (COALESCE(:instituteId, '') = '' OR lf.institute_id = :instituteId)
+              AND lf.interest_level = ANY(STRING_TO_ARRAY(:interestLevels, CHR(31)))
+            """, nativeQuery = true)
+    List<String> findOpenResponseIdsByInterestLevels(@Param("instituteId") String instituteId,
+                                                     @Param("interestLevels") String interestLevels);
 
     /**
      * Batch fetch of every OPEN scheduled follow-up for the given leads, oldest schedule_time first.
@@ -67,4 +219,105 @@ public interface LeadFollowupRepository extends JpaRepository<LeadFollowup, Stri
     @Query("UPDATE LeadFollowup lf SET lf.status = 'OVERDUE' " +
            "WHERE lf.id = :id AND lf.status = 'ONGOING' AND lf.isClosed = false")
     int claimOverdueTransition(@Param("id") String id);
+
+    /**
+     * Undo a claim whose emission then failed, so the next scan retries it.
+     *
+     * <p>The claim has to happen BEFORE the emit (it is what makes the one-fire guarantee
+     * hold across replicas), which means a failed emit would otherwise leave the row
+     * advanced with nothing sent — and since the status only ever moves forward, that
+     * follow-up's reminder would be lost permanently rather than retried. One transient
+     * auth-service or workflow blip silently costs a counsellor their reminder.</p>
+     *
+     * <p>Retrying is safe: the workflow emission is idempotent per follow-up id
+     * (eventId = the row id under EVENT_BASED dedup), so a re-run cannot double-fire the
+     * workflow. Only the baseline bell alert can repeat, which is the right trade against
+     * dropping it entirely.</p>
+     *
+     * <p>Guarded on the expected current status so a release can never drag a row
+     * backwards past a transition another replica legitimately made in the meantime.</p>
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE LeadFollowup lf SET lf.status = 'PENDING' " +
+           "WHERE lf.id = :id AND lf.status = 'ONGOING' AND lf.isClosed = false")
+    int releaseDueTransition(@Param("id") String id);
+
+    /**
+     * Closes the open follow-ups that {@code createdBy} hold on any enquiry of {@code userIds}:
+     * a discarded lead that enquired again moved to a new counsellor, and the earlier owner
+     * could neither act on these (access follows the lead's owner) nor drop them otherwise.
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE LeadFollowup lf SET lf.status = 'COMPLETED', lf.isClosed = true, " +
+           "lf.closerReason = :reason, lf.closedAt = :closedAt " +
+           "WHERE lf.instituteId = :instituteId AND lf.isClosed = false AND lf.createdBy IN :createdBy " +
+           "AND lf.audienceResponseId IN (SELECT ar.id FROM AudienceResponse ar WHERE ar.userId IN :userIds)")
+    int closeOpenByCreatorsForLeadUsers(@Param("instituteId") String instituteId,
+                                        @Param("createdBy") java.util.Collection<String> createdBy,
+                                        @Param("userIds") java.util.Collection<String> userIds,
+                                        @Param("reason") String reason,
+                                        @Param("closedAt") Timestamp closedAt);
+
+    /** Overdue twin of {@link #releaseDueTransition}. */
+    @Modifying
+    @Transactional
+    @Query("UPDATE LeadFollowup lf SET lf.status = 'ONGOING' " +
+           "WHERE lf.id = :id AND lf.status = 'OVERDUE' AND lf.isClosed = false")
+    int releaseOverdueTransition(@Param("id") String id);
+
+    /** A follow-up as the Lead Journey needs it, plus whether its timeline events already exist. */
+    interface JourneyFollowupRow {
+        String getId();
+        String getResponseId();
+        String getLeadUserId();
+        String getCreatedBy();
+        Timestamp getScheduleTime();
+        String getStatus();
+        Boolean getClosed();
+        String getContent();
+        String getCloserReason();
+        String getClosedBy();
+        Timestamp getClosedAt();
+        Timestamp getCreatedAt();
+        Boolean getHasScheduledEvent();
+        Boolean getHasClosedEvent();
+    }
+
+    /*
+     * Follow-ups on a lead's enquiries (by lead user, or by enquiry id) for the Lead Journey.
+     * Follow-ups written through LeadFollowupService log FOLLOWUP_SCHEDULED / FOLLOWUP_CLOSED
+     * events carrying metadata.followupId, the two flags say which of those already exist.
+     * Only follow-ups missing an event come back (migrated follow-ups, the repeat-enquiry
+     * priority follow-up, bulk closes), so the cap is spent on rows the journey will show.
+     */
+    @Query(value = """
+            SELECT * FROM (
+                SELECT lf.id AS "id", lf.audience_response_id AS "responseId", ar.user_id AS "leadUserId",
+                       lf.created_by AS "createdBy", lf.schedule_time AS "scheduleTime",
+                       lf.status AS "status", lf.is_closed AS "closed", lf.content AS "content",
+                       lf.closer_reason AS "closerReason", lf.closed_by AS "closedBy",
+                       lf.closed_at AS "closedAt", lf.created_at AS "createdAt",
+                       EXISTS (SELECT 1 FROM timeline_event te
+                                WHERE te.type = 'LEAD' AND te.type_id = lf.audience_response_id
+                                  AND te.action_type = 'FOLLOWUP_SCHEDULED'
+                                  AND te.metadata_json ->> 'followupId' = lf.id) AS "hasScheduledEvent",
+                       EXISTS (SELECT 1 FROM timeline_event te
+                                WHERE te.type = 'LEAD' AND te.type_id = lf.audience_response_id
+                                  AND te.action_type = 'FOLLOWUP_CLOSED'
+                                  AND te.metadata_json ->> 'followupId' = lf.id) AS "hasClosedEvent"
+                FROM lead_followup lf
+                JOIN audience_response ar ON ar.id = lf.audience_response_id
+                WHERE (ar.user_id IN (:userIds) OR ar.id IN (:responseIds))
+                  AND (CAST(:instituteId AS text) IS NULL OR lf.institute_id = CAST(:instituteId AS text))
+            ) f
+            WHERE NOT f."hasScheduledEvent"
+               OR (f."closed" AND f."closedAt" IS NOT NULL AND NOT f."hasClosedEvent")
+            ORDER BY f."createdAt" DESC
+            LIMIT 5000
+            """, nativeQuery = true)
+    List<JourneyFollowupRow> findJourneyFollowups(@Param("userIds") List<String> userIds,
+                                                  @Param("responseIds") List<String> responseIds,
+                                                  @Param("instituteId") String instituteId);
 }

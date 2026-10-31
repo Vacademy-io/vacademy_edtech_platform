@@ -1,5 +1,7 @@
 import { GraduationCap } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 /**
  * LeadConversionBadge — a compact "Converted" pill shown against a lead that has
@@ -26,7 +28,7 @@ export function LeadConversionBadge({
                 'inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700',
                 className
             )}
-            title="Enrolled into a course"
+            title={`Enrolled into a ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}`}
         >
             <GraduationCap weight="fill" className="size-3" />
             Converted

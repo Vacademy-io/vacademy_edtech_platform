@@ -1,18 +1,12 @@
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
-import { useState, useEffect, useRef } from 'react';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { LevelType } from '@/schemas/student/student-list/institute-schema';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
+import type { ColumnDef } from '@tanstack/react-table';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { MyButton } from '@/components/design-system/button';
-import { SearchableSelect } from '@/components/design-system/searchable-select';
 import {
     CheckCircle,
     Clock,
@@ -20,14 +14,17 @@ import {
     ChartLineUp,
     Trophy,
     Export,
+    FileCsv,
     CalendarBlank,
     CaretDown,
+    ChartBar,
+    Warning,
 } from '@phosphor-icons/react';
-import { METRIC_INFO } from '../metricInfo';
+import { buildMetricInfo } from '../metricInfo';
 import { ReportHeader, MetricCard, SectionCard } from '../reportUi';
 import { LineChartComponent } from './lineChart';
 import { MyTable } from '@/components/design-system/table';
-import { useMutation } from '@tanstack/react-query';
+import { useQueries } from '@tanstack/react-query';
 import { fetchBatchReport, fetchLeaderboardData } from '../../-services/utils';
 import { resolveInstituteLogoUrl } from '../live/-utils/instituteLogo';
 import { exportBatchLearningPdf } from '../../-utils/exportLearningPdf';
@@ -35,9 +32,7 @@ import {
     DailyLearnerTimeSpent,
     BatchReportResponse,
     activityLogColumns,
-    CONCENTRATION_SCORE,
     leaderBoardColumns,
-    LEADERBOARD_WIDTH,
     LeaderBoardColumnType,
 } from '../../-types/types';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
@@ -48,32 +43,36 @@ import { usePacageDetails } from '../../-store/usePacageDetails';
 import { toast } from 'sonner';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
-import { cn, convertCapitalToTitleCase } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import DateRangeFilter from '@/components/design-system/date-range-filter';
+import BatchMultiSelect, { useBatchLookup, type BatchOption } from '../batchMultiSelect';
+import { buildReportCsv, csvFileName, downloadCsv, num, csvDate } from '../../-utils/reportCsv';
 
-const formSchema = z
-    .object({
-        course: z.string().min(1, 'Course is required'),
-        session: z.string().min(1, 'Session is required'),
-        level: z.string().min(1, 'Level is required'),
-        startDate: z.string().min(1, 'Start Date is required'),
-        endDate: z.string().min(1, 'End Date is required'),
-    })
-    .refine(
-        (data) => {
-            const start = new Date(data.startDate);
-            const end = new Date(data.endDate);
-            const diffInDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
-            return diffInDays <= 30;
-        },
-        {
-            message:
-                'The difference between Start Date and End Date should be less than one month.',
-            path: ['startDate'],
-        }
-    );
+const LEADERBOARD_PAGE_SIZE = 10;
+/** One page big enough for a whole batch — the CSV carries the full leaderboard. */
+const LEADERBOARD_EXPORT_PAGE_SIZE = 1000;
 
-type FormValues = z.infer<typeof formSchema>;
+const buildFormSchema = (t: TFunction) =>
+    z
+        .object({
+            batches: z.array(z.string()).min(1, t('form.batchRequired')),
+            startDate: z.string().min(1, t('form.startDateRequired')),
+            endDate: z.string().min(1, t('form.endDateRequired')),
+        })
+        .refine(
+            (data) => {
+                const start = new Date(data.startDate);
+                const end = new Date(data.endDate);
+                const diffInDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+                return diffInDays <= 30;
+            },
+            {
+                message: t('form.dateRangeTooLong'),
+                path: ['startDate'],
+            }
+        );
+
+type FormValues = z.infer<ReturnType<typeof buildFormSchema>>;
 
 interface LeaderBoardData {
     daily_avg_time: number;
@@ -85,47 +84,101 @@ interface LeaderBoardData {
     full_name: string;
 }
 
+interface LeaderboardPage {
+    content: LeaderBoardData[];
+    totalPages: number;
+}
+
+interface AppliedFilters {
+    batchIds: string[];
+    startDate: string;
+    endDate: string;
+    /**
+     * Stamped per "Generate" click and part of every query key, so re-running the
+     * same batch + range always fetches fresh numbers (the mutation-based
+     * version fetched on every click) while paging within a run stays cached.
+     */
+    runId: number;
+}
+
+/** Everything one batch contributes to the multi-batch view. */
+interface BatchResult {
+    batchId: string;
+    option: BatchOption | undefined;
+    report: BatchReportResponse | undefined;
+    reportError: boolean;
+    leaderboard: LeaderBoardData[];
+    leaderboardTotalPages: number;
+    leaderboardLoading: boolean;
+}
+
+interface ComparisonRow {
+    batch: string;
+    completed: string;
+    dailyTime: string;
+    concentration: string;
+}
+
 interface TimelineReportsProps {
     /**
      * When rendered inside a batch-scoped surface (e.g. Course Details → Reports),
-     * the batch is already known — the course/session/level picker is hidden and
-     * the report is generated for this package session directly.
+     * the batch is already known — the batch picker is hidden and the report is
+     * generated for this package session directly.
      */
     fixedPackageSessionId?: string;
     /** Course id backing `fixedPackageSessionId`, used only to title the report. */
     fixedCourseId?: string;
 }
 
+const convertFormat = (data: DailyLearnerTimeSpent[] | undefined) =>
+    (data ?? []).map((item) => ({
+        date: dayjs(item.activity_date).format('DD/MM/YYYY'),
+        timeSpent: convertMinutesToTimeFormat(item.avg_daily_time_minutes),
+    }));
+
+const convertChartData = (data: DailyLearnerTimeSpent[] | undefined) =>
+    (data ?? []).map((item) => ({
+        activity_date: item.activity_date,
+        avg_daily_time_minutes: item.avg_daily_time_minutes / 60,
+    }));
+
+const transformToLeaderBoard = (data: LeaderBoardData[]): LeaderBoardColumnType[] =>
+    data.map((item) => ({
+        rank: item.rank.toString(),
+        name: item.full_name,
+        score: `${formatToTwoDecimalPlaces(item.avg_concentration.toString())} %`,
+        average: convertMinutesToTimeFormat(item.daily_avg_time),
+        totalTime: convertMinutesToTimeFormat(item.total_time),
+    }));
+
 export default function TimelineReports({
     fixedPackageSessionId,
     fixedCourseId,
 }: TimelineReportsProps = {}) {
+    const { t } = useTranslation([
+        'studyLibraryBatchTimelineReports',
+        'studyLibraryExportLearningPdf',
+        'studyLibraryReportsMetricInfo',
+    ]);
+    const METRIC_INFO = buildMetricInfo(t);
     const isBatchFixed = Boolean(fixedPackageSessionId);
-    const {
-        getCourseFromPackage,
-        getSessionFromPackage,
-        getLevelsFromPackage2,
-        getPackageSessionId,
-    } = useInstituteDetailsStore();
-    const { setPacageSessionId, pacageSessionId } = usePacageDetails();
+    const { getCourseFromPackage } = useInstituteDetailsStore();
+    const { setPacageSessionId } = usePacageDetails();
     const courseList = getCourseFromPackage();
-    const [sessionList, setSessionList] = useState<{ id: string; name: string }[]>([]);
-    const [levelList, setLevelList] = useState<LevelType[]>([]);
-    const [reportData, setReportData] = useState<BatchReportResponse>();
-    const [leaderboardData, setleaderboardData] = useState<LeaderBoardData[]>();
-    const [loading, setLoading] = useState(false);
-    const [currPage, setCurrPage] = useState<number>(0);
-    const [totalPage, setTotalPage] = useState<number>(0);
-    const [appliedDateRange, setAppliedDateRange] = useState<{start: string, end: string} | null>(null);
-    const [defaultSessionLevels, setDefaultSessionLevels] = useState(false);
-    const [isExporting, setIsExporting] = useState(false);
+    const batchLookup = useBatchLookup();
+    const instituteDetails = useInstituteDetailsStore((s) => s.instituteDetails);
+    const batchTerm = getTerminology(ContentTerms.Batch, SystemTerms.Batch);
+    const courseTerm = getTerminology(ContentTerms.Course, SystemTerms.Course);
+
+    const [applied, setApplied] = useState<AppliedFilters | null>(null);
+    /** Leaderboard page per batch — each block pages independently. */
+    const [leaderboardPages, setLeaderboardPages] = useState<Record<string, number>>({});
+    const [isExportingPdf, setIsExportingPdf] = useState<string | null>(null);
+    const [isExportingCsv, setIsExportingCsv] = useState(false);
     // Fixed-batch mode: the date filter collapses away once the default 7-day
     // report has been generated, so the report itself gets the vertical space.
     const [showDateFilter, setShowDateFilter] = useState(false);
     const hasAutoGenerated = useRef(false);
-    const instituteDetails = useInstituteDetailsStore((s) => s.instituteDetails);
-
-    const selectRef = useRef<HTMLDivElement | null>(null);
 
     const {
         handleSubmit,
@@ -134,112 +187,19 @@ export default function TimelineReports({
         clearErrors,
         formState: { errors },
     } = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(buildFormSchema(t)),
         defaultValues: {
-            // In fixed-batch mode the picker is hidden; seed the three fields so the
-            // schema's "required" checks pass — only the date range is user-supplied.
-            course: fixedPackageSessionId ?? '',
-            session: fixedPackageSessionId ?? '',
-            level: fixedPackageSessionId ?? '',
+            // In fixed-batch mode the picker is hidden; seed the batch so the
+            // schema's "required" check passes — only the date range is user-supplied.
+            batches: fixedPackageSessionId ? [fixedPackageSessionId] : [],
             startDate: '',
             endDate: '',
         },
     });
 
-    const selectedCourse = watch('course');
-    const selectedSession = watch('session');
-    const selectedLevel = watch('level');
+    const selectedBatches = watch('batches');
     const startDate = watch('startDate');
     const endDate = watch('endDate');
-
-    useEffect(() => {
-        if (isBatchFixed) return;
-        if (selectedCourse) {
-            setSessionList(getSessionFromPackage({ courseId: selectedCourse }));
-            setValue('session', '');
-        } else {
-            setSessionList([]);
-        }
-    }, [selectedCourse]);
-
-    useEffect(() => {
-        if (isBatchFixed) return;
-        if (selectedSession === '') {
-            setValue('level', '');
-            setLevelList([]);
-        } else if (selectedCourse && selectedSession) {
-            const levels = getLevelsFromPackage2({
-                courseId: selectedCourse,
-                sessionId: selectedSession,
-            });
-            setLevelList(levels);
-            // Auto-select when the session exposes exactly one (real) level.
-            if (selectedSession !== 'DEFAULT' && levels.length === 1 && levels[0]) {
-                setValue('level', levels[0].id);
-                clearErrors('level');
-            }
-        }
-    }, [selectedSession]);
-    useEffect(() => {
-        if (isBatchFixed) return;
-        if (sessionList?.length === 1 && sessionList[0]?.id === 'DEFAULT') {
-            setValue('session', 'DEFAULT');
-            setValue('level', 'DEFAULT');
-            setDefaultSessionLevels(true);
-        } else {
-            setDefaultSessionLevels(false);
-            const onlySession = sessionList?.length === 1 ? sessionList[0] : undefined;
-            if (onlySession) {
-                // Auto-select when the course has exactly one (real) session.
-                setValue('session', onlySession.id);
-                clearErrors('session');
-            } else {
-                setValue('session', 'select level');
-                selectRef.current = null;
-                setValue('level', 'select level');
-            }
-        }
-    }, [sessionList]);
-
-    // Auto-select the level whenever the list resolves to exactly one (real)
-    // level and none is chosen yet. The [selectedSession] handler above already
-    // does this, but on the batch tab the session is itself auto-selected one
-    // render later (in the [sessionList] effect), so this guarantees the level
-    // fills in too instead of being left on "Select a Level".
-    useEffect(() => {
-        if (isBatchFixed) return;
-        if (!selectedLevel && levelList.length === 1 && levelList[0]) {
-            setValue('level', levelList[0].id);
-            clearErrors('level');
-        }
-    }, [levelList, selectedLevel]);
-
-    // Paging the leaderboard. Only meaningful once a report has been generated —
-    // before that there is no applied range to page through.
-    useEffect(() => {
-        if (!appliedDateRange) return;
-        leaderboardMutation.mutate(
-            {
-                body: {
-                    start_date: appliedDateRange.start,
-                    end_date: appliedDateRange.end,
-                    package_session_id: fixedPackageSessionId || pacageSessionId,
-                },
-                param: { pageNo: currPage, pageSize: 10 },
-            },
-            {
-                onSuccess: (data) => {
-                    setTotalPage(data.totalPages);
-                    setleaderboardData(data.content);
-                    setLoading(false);
-                },
-                onError: (error) => {
-                    console.error('Error:', error);
-                    setLoading(false);
-                },
-            }
-        );
-    }, [currPage]);
 
     // Fixed-batch mode: DateRangeFilter's "7 Days" default populates the form on
     // mount — fire the report once so the tab lands with data already loaded.
@@ -264,261 +224,325 @@ export default function TimelineReports({
         }
     };
 
-    const handleExportPDF = async () => {
-        if (!reportData) return;
-        setIsExporting(true);
+    const onSubmit = (data: FormValues) => {
+        setLeaderboardPages({});
+        setApplied({
+            batchIds: data.batches,
+            startDate: data.startDate,
+            endDate: data.endDate,
+            runId: Date.now(),
+        });
+        // Other report tabs read the last-used batch from this store; keep the
+        // first selection there so their behaviour is unchanged.
+        setPacageSessionId(data.batches[0] ?? '');
+    };
+
+    // ── Data: one report + one leaderboard page per selected batch ───────────
+    const reportQueries = useQueries({
+        queries: (applied?.batchIds ?? []).map((batchId) => ({
+            queryKey: [
+                'batchTimelineReport',
+                batchId,
+                applied?.startDate,
+                applied?.endDate,
+                applied?.runId,
+            ],
+            queryFn: () =>
+                fetchBatchReport({
+                    start_date: applied?.startDate ?? '',
+                    end_date: applied?.endDate ?? '',
+                    package_session_id: batchId,
+                }) as Promise<BatchReportResponse>,
+            staleTime: 5 * 60 * 1000,
+        })),
+    });
+
+    const leaderboardQueries = useQueries({
+        queries: (applied?.batchIds ?? []).map((batchId) => ({
+            queryKey: [
+                'batchTimelineLeaderboard',
+                batchId,
+                applied?.startDate,
+                applied?.endDate,
+                applied?.runId,
+                leaderboardPages[batchId] ?? 0,
+            ],
+            queryFn: () =>
+                fetchLeaderboardData({
+                    body: {
+                        start_date: applied?.startDate ?? '',
+                        end_date: applied?.endDate ?? '',
+                        package_session_id: batchId,
+                    },
+                    param: {
+                        pageNo: leaderboardPages[batchId] ?? 0,
+                        pageSize: LEADERBOARD_PAGE_SIZE,
+                    },
+                }) as Promise<LeaderboardPage>,
+            staleTime: 5 * 60 * 1000,
+        })),
+    });
+
+    const isLoading = reportQueries.some((q) => q.isLoading);
+    const resultsKey = reportQueries
+        .map((q) => `${q.status}:${q.dataUpdatedAt}`)
+        .concat(leaderboardQueries.map((q) => `${q.status}:${q.dataUpdatedAt}`))
+        .join('|');
+
+    const results = useMemo<BatchResult[]>(
+        () =>
+            (applied?.batchIds ?? []).map((batchId, index) => ({
+                batchId,
+                option: batchLookup.get(batchId),
+                report: reportQueries[index]?.data,
+                reportError: Boolean(reportQueries[index]?.isError),
+                leaderboard: leaderboardQueries[index]?.data?.content ?? [],
+                leaderboardTotalPages: leaderboardQueries[index]?.data?.totalPages ?? 0,
+                leaderboardLoading: Boolean(leaderboardQueries[index]?.isFetching),
+            })),
+        // The query arrays are recreated every render; key off the resolved values.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [applied, batchLookup, resultsKey]
+    );
+
+    const isMulti = (applied?.batchIds.length ?? 0) > 1;
+    const hasAnyReport = results.some((r) => r.report);
+
+    /** Title for one batch: the course in single mode, the full batch label otherwise. */
+    const blockTitle = (result: BatchResult) => {
+        if (isBatchFixed) {
+            return (
+                courseList.find((c) => c.id === fixedCourseId)?.name || result.option?.label || ''
+            );
+        }
+        return result.option?.label || result.option?.courseName || '';
+    };
+
+    const dateRangeLabel = applied
+        ? `${dayjs(applied.startDate).format('DD MMM YYYY')} — ${dayjs(applied.endDate).format('DD MMM YYYY')}`
+        : '';
+
+    // ── Exports ──────────────────────────────────────────────────────────────
+    const handleExportPdf = async (result: BatchResult) => {
+        if (!result.report || !applied) return;
+        setIsExportingPdf(result.batchId);
         try {
             const logoUrl = await resolveInstituteLogoUrl(instituteDetails?.institute_logo_file_id);
             await exportBatchLearningPdf(
                 {
                     instituteName: instituteDetails?.institute_name || 'Vacademy',
                     logoUrl,
-                    courseName:
-                        courseList.find((c) => c.id === (fixedCourseId || selectedCourse))?.name ||
-                        '',
-                    dateRange: `${dayjs(appliedDateRange?.start || startDate).format('DD MMM YYYY')} — ${dayjs(
-                        appliedDateRange?.end || endDate
-                    ).format('DD MMM YYYY')}`,
+                    courseName: isBatchFixed
+                        ? courseList.find((c) => c.id === fixedCourseId)?.name || ''
+                        : result.option?.label || '',
+                    dateRange: dateRangeLabel,
                 },
-                reportData,
-                (leaderboardData ?? []).map((l) => ({
+                result.report,
+                result.leaderboard.map((l) => ({
                     rank: l.rank,
                     full_name: l.full_name,
                     avg_concentration: l.avg_concentration,
                     daily_avg_time: l.daily_avg_time,
                     total_time: l.total_time,
-                }))
+                })),
+                t
             );
-            toast.success('Batch report exported');
+            toast.success(t('toast.exportSuccess'));
         } catch {
-            toast.error('Failed to export PDF');
+            toast.error(t('toast.exportFailed'));
         } finally {
-            setIsExporting(false);
+            setIsExportingPdf(null);
         }
     };
 
-    const onSubmit = (data: FormValues) => {
-        const resolvedPackageSessionId =
-            fixedPackageSessionId ||
-            getPackageSessionId({
-                courseId: data.course || '',
-                sessionId: data.session || '',
-                levelId: data.level || '',
-            }) ||
-            '';
-        setLoading(true);
-        setAppliedDateRange({ start: data.startDate, end: data.endDate });
-        generateReportMutation.mutate(
+    const handleExportCsv = async () => {
+        if (!applied || !hasAnyReport) return;
+        setIsExportingCsv(true);
+        try {
+            // The on-screen leaderboard is one page; the file carries all of it.
+            const fullLeaderboards = await Promise.all(
+                results.map(
+                    (r) =>
+                        fetchLeaderboardData({
+                            body: {
+                                start_date: applied.startDate,
+                                end_date: applied.endDate,
+                                package_session_id: r.batchId,
+                            },
+                            param: { pageNo: 0, pageSize: LEADERBOARD_EXPORT_PAGE_SIZE },
+                        }).then((page: LeaderboardPage) => page?.content ?? []) as Promise<
+                            LeaderBoardData[]
+                        >
+                )
+            );
+            const label = (r: BatchResult) => blockTitle(r);
+            const csv = buildReportCsv([
+                {
+                    title: t('csv.summaryTitle'),
+                    headers: [
+                        batchTerm,
+                        courseTerm,
+                        t('csv.startDate'),
+                        t('csv.endDate'),
+                        t('csv.courseCompleted', { term: courseTerm }),
+                        t('csv.dailyTimeMin'),
+                        t('csv.concentration'),
+                    ],
+                    rows: results
+                        .filter((r) => r.report)
+                        .map((r) => [
+                            label(r),
+                            r.option?.courseName ?? '',
+                            applied.startDate,
+                            applied.endDate,
+                            num(r.report?.percentage_course_completed),
+                            num(r.report?.avg_time_spent_in_minutes),
+                            num(r.report?.percentage_concentration_score),
+                        ]),
+                },
+                {
+                    title: t('csv.dailyTitle'),
+                    headers: [batchTerm, t('csv.date'), t('csv.avgDailyTimeMin')],
+                    rows: results.flatMap((r) =>
+                        (r.report?.daily_time_spent ?? []).map((d) => [
+                            label(r),
+                            csvDate(d.activity_date),
+                            num(d.avg_daily_time_minutes),
+                        ])
+                    ),
+                },
+                {
+                    title: t('csv.leaderboardTitle'),
+                    headers: [
+                        batchTerm,
+                        t('csv.rank'),
+                        t('csv.name'),
+                        t('csv.email'),
+                        t('csv.concentration'),
+                        t('csv.dailyTimeMin'),
+                        t('csv.totalTimeMin'),
+                    ],
+                    rows: results.flatMap((r, index) =>
+                        (fullLeaderboards[index] ?? []).map((l) => [
+                            label(r),
+                            l.rank,
+                            l.full_name,
+                            l.email,
+                            num(l.avg_concentration),
+                            num(l.daily_avg_time),
+                            num(l.total_time),
+                        ])
+                    ),
+                },
+            ]);
+            downloadCsv(
+                csvFileName(
+                    t('csv.fileStem'),
+                    isMulti ? `${results.length}-${batchTerm}` : label(results[0]!),
+                    applied.startDate,
+                    applied.endDate
+                ),
+                csv
+            );
+            toast.success(t('toast.csvExportSuccess'));
+        } catch {
+            toast.error(t('toast.csvExportFailed'));
+        } finally {
+            setIsExportingCsv(false);
+        }
+    };
+
+    // ── Comparison table (multi-batch only) ─────────────────────────────────
+    const comparisonColumns = useMemo<ColumnDef<ComparisonRow>[]>(
+        () => [
+            { accessorKey: 'batch', header: batchTerm },
             {
-                start_date: data.startDate,
-                end_date: data.endDate,
-                package_session_id: resolvedPackageSessionId,
+                accessorKey: 'completed',
+                header: t('report.courseCompletedLabel', { term: courseTerm }),
             },
-            {
-                onSuccess: (data) => {
-                    setReportData(data);
-                    setLoading(false);
-                },
-                onError: (error) => {
-                    console.error('Error:', error);
-                    setLoading(false);
-                },
-            }
-        );
-        leaderboardMutation.mutate(
-            {
-                body: {
-                    start_date: data.startDate,
-                    end_date: data.endDate,
-                    package_session_id: resolvedPackageSessionId,
-                },
-                param: {
-                    pageNo: currPage,
-                    pageSize: 10,
-                },
-            },
-            {
-                onSuccess: (data) => {
-                    setTotalPage(data.totalPages);
-                    setleaderboardData(data.content);
-                    setLoading(false);
-                },
-                onError: (error) => {
-                    console.error('Error:', error);
-                    setLoading(false);
-                },
-            }
-        );
-        setPacageSessionId(resolvedPackageSessionId);
-    };
-
-    const convertFormat = (data: DailyLearnerTimeSpent[] | undefined) => {
-        if (!data) return []; // Return an empty array if data is undefined
-
-        return data.map((item) => ({
-            date: dayjs(item.activity_date).format('DD/MM/YYYY'),
-            timeSpent: convertMinutesToTimeFormat(item.avg_daily_time_minutes),
-        }));
-    };
-
-    const convertChartData = (data: DailyLearnerTimeSpent[] | undefined) => {
-        if (!data) return []; // Return an empty array if data is undefined
-
-        return data.map((item) => ({
-            activity_date: item.activity_date,
-            avg_daily_time_minutes: item.avg_daily_time_minutes / 60,
-        }));
-    };
-
-    const transformToLeaderBoard = (data: LeaderBoardData[]): LeaderBoardColumnType[] => {
-        return data.map((item) => ({
-            rank: item.rank.toString(),
-            name: item.full_name,
-            score: `${formatToTwoDecimalPlaces(item.avg_concentration.toString())} %`,
-            average: convertMinutesToTimeFormat(item.daily_avg_time),
-            totalTime: convertMinutesToTimeFormat(item.total_time),
-        }));
-    };
-
-    const tableData = {
-        content: convertFormat(reportData?.daily_time_spent),
-        total_pages: totalPage,
-        page_no: currPage,
-        page_size: 10,
-        total_elements: 0,
-        last: false,
-    };
-
-    const leaderBoardData = {
-        content: leaderboardData ? transformToLeaderBoard(leaderboardData) : [],
+            { accessorKey: 'dailyTime', header: t('report.dailyTimeSpentAvg') },
+            { accessorKey: 'concentration', header: t('report.concentrationScoreAvg') },
+        ],
+        [t, batchTerm, courseTerm]
+    );
+    const comparisonData = {
+        content: results
+            .filter((r) => r.report)
+            .map((r) => ({
+                batch: blockTitle(r),
+                completed: `${formatToTwoDecimalPlaces(r.report?.percentage_course_completed)}%`,
+                dailyTime: convertMinutesToTimeFormat(r.report?.avg_time_spent_in_minutes ?? 0),
+                concentration: `${formatToTwoDecimalPlaces(r.report?.percentage_concentration_score || 0)}%`,
+            })),
         total_pages: 0,
         page_no: 0,
-        page_size: 10,
-        total_elements: 0,
-        last: false,
+        page_size: results.length,
+        total_elements: results.length,
+        last: true,
     };
 
-    const generateReportMutation = useMutation({ mutationFn: fetchBatchReport });
-    const leaderboardMutation = useMutation({
-        mutationFn: fetchLeaderboardData,
-    });
-    const { isPending, error } = leaderboardMutation;
+    const exportPdfButton = (result: BatchResult) => (
+        <MyButton
+            buttonType="secondary"
+            onClick={() => handleExportPdf(result)}
+            disable={isExportingPdf === result.batchId}
+            className="h-9 px-4 text-body"
+        >
+            <Export className="me-1.5 size-4" />
+            {isExportingPdf === result.batchId ? t('actions.exporting') : t('actions.exportPdf')}
+        </MyButton>
+    );
+
+    const exportCsvButton = (
+        <MyButton
+            buttonType="secondary"
+            onClick={handleExportCsv}
+            disable={isExportingCsv}
+            className="h-9 px-4 text-body"
+        >
+            <FileCsv className="me-1.5 size-4" />
+            {isExportingCsv ? t('actions.exporting') : t('actions.exportCsv')}
+        </MyButton>
+    );
 
     return (
         <div className="space-y-6">
-            {/* Modern Filter Card */}
-            <div className="bg-white rounded-lg border border-neutral-200 p-4 shadow-sm">
+            {/* Filter card */}
+            <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    {/* First Row - Course, Session, Level (hidden when the parent already scopes the batch) */}
+                    {/* Batch picker — hidden when the parent already scopes the batch */}
                     {!isBatchFixed && (
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                        <div>
-                            <label className="text-xs font-medium text-neutral-700 mb-1 block">
-                                {getTerminology(ContentTerms.Course, SystemTerms.Course)}
-                                <span className="text-red-500 ml-1">*</span>
-                            </label>
-                            <SearchableSelect
-                                options={courseList.map((course) => ({
-                                    label: convertCapitalToTitleCase(course.name),
-                                    value: course.id,
-                                }))}
-                                value={selectedCourse}
-                                onChange={(value) => setValue('course', value)}
-                                placeholder={`Select a ${getTerminology(
-                                    ContentTerms.Course,
-                                    SystemTerms.Course
-                                )}`}
-                                searchPlaceholder={`Search ${getTerminology(
-                                    ContentTerms.Course,
-                                    SystemTerms.Course
-                                )}...`}
-                                triggerClassName="h-9 text-sm"
-                            />
-                        </div>
-
-                        {!defaultSessionLevels && (
-                            <div>
-                                <label className="text-xs font-medium text-neutral-700 mb-1 block">
-                                    {getTerminology(ContentTerms.Session, SystemTerms.Session)}
-                                    <span className="text-red-500 ml-1">*</span>
-                                </label>
-                                <Select
-                                    onValueChange={(value) => setValue('session', value)}
-                                    defaultValue=""
-                                    value={selectedSession}
-                                    disabled={!sessionList.length}
-                                >
-                                    <SelectTrigger className="h-9 text-sm">
-                                        <SelectValue
-                                            placeholder={`Select a ${getTerminology(
-                                                ContentTerms.Session,
-                                                SystemTerms.Session
-                                            )}`}
-                                        />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {sessionList.map((session) => (
-                                            <SelectItem key={session.id} value={session.id}>
-                                                {convertCapitalToTitleCase(session.name)}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )}
-
-                        {!defaultSessionLevels && (
-                            <div>
-                                <label className="text-xs font-medium text-neutral-700 mb-1 block">
-                                    {getTerminology(ContentTerms.Level, SystemTerms.Level)}
-                                    <span className="text-red-500 ml-1">*</span>
-                                </label>
-                                <Select
-                                    onValueChange={(value) => setValue('level', value)}
-                                    defaultValue=""
-                                    value={selectedLevel}
-                                    disabled={!levelList.length}
-                                >
-                                    <SelectTrigger className="h-9 text-sm">
-                                        <SelectValue
-                                            placeholder={`Select a ${getTerminology(
-                                                ContentTerms.Level,
-                                                SystemTerms.Level
-                                            )}`}
-                                        />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {levelList.map((level) => (
-                                            <SelectItem key={level.id} value={level.id}>
-                                                {convertCapitalToTitleCase(level.level_name)}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        )}
-                    </div>
+                        <BatchMultiSelect
+                            selected={selectedBatches}
+                            onChange={(ids) => {
+                                setValue('batches', ids);
+                                if (ids.length) clearErrors('batches');
+                            }}
+                            error={errors.batches?.message}
+                        />
                     )}
 
-                    {/* Second Row - Dates and Generate Button.
+                    {/* Dates and Generate Button.
                         Batch-scoped: collapsed to a one-line summary, expandable to re-pick. */}
                     {isBatchFixed ? (
                         <div className="space-y-3">
                             <div className="flex flex-wrap items-center justify-between gap-3">
                                 <div className="flex flex-wrap items-center gap-2">
                                     <CalendarBlank className="size-4 text-neutral-400" />
-                                    <span className="text-caption text-neutral-500">Range:</span>
+                                    <span className="text-caption text-neutral-500">
+                                        {t('range.label')}
+                                    </span>
                                     <span className="text-body font-medium text-neutral-700">
                                         {startDate && endDate
                                             ? `${dayjs(startDate).format('DD MMM YYYY')} — ${dayjs(endDate).format('DD MMM YYYY')}`
-                                            : 'Last 7 days'}
+                                            : t('range.last7Days')}
                                     </span>
                                     <button
                                         type="button"
                                         onClick={() => setShowDateFilter((open) => !open)}
                                         className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-caption font-medium text-primary-500 hover:bg-primary-50"
                                     >
-                                        {showDateFilter ? 'Hide' : 'Change'}
+                                        {showDateFilter ? t('range.hide') : t('range.change')}
                                         <CaretDown
                                             className={cn(
                                                 'size-3 transition-transform',
@@ -532,7 +556,7 @@ export default function TimelineReports({
                                     buttonType="primary"
                                     className="h-9 px-4 text-body font-medium"
                                 >
-                                    Generate Report
+                                    {t('actions.generateReport')}
                                 </MyButton>
                             </div>
                             {/* Kept mounted (only visually hidden) so DateRangeFilter's
@@ -545,7 +569,7 @@ export default function TimelineReports({
                             </div>
                         </div>
                     ) : (
-                        <div className="flex flex-col gap-4 sm:flex-row sm:items-end w-full">
+                        <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-end">
                             <div className="flex-1">
                                 <DateRangeFilter onChange={handleDateRangeChange} />
                             </div>
@@ -553,155 +577,248 @@ export default function TimelineReports({
                                 <MyButton
                                     type="submit"
                                     buttonType="primary"
-                                    className="h-9 px-4 text-sm font-medium focus:!bg-primary-600 focus:!border-primary-600 focus:!text-white active:!bg-primary-600 active:!border-primary-600 active:!text-white focus:!outline-none focus:!ring-0"
+                                    className="h-9 px-4 text-body font-medium"
                                 >
-                                    Generate Report
+                                    {t('actions.generateReport')}
                                 </MyButton>
                             </div>
                         </div>
                     )}
 
-                    {/* Error Messages */}
-                    {Object.keys(errors).length > 0 && (
-                        <div className="rounded-md bg-red-50 border border-red-200 p-3">
-                            <div className="text-sm text-red-800">
-                                <p className="font-medium mb-1">Please fix the following errors:</p>
+                    {/* Error Messages (the batch error is shown under its own control) */}
+                    {(errors.startDate || errors.endDate) && (
+                        <div className="rounded-md border border-danger-200 bg-danger-50 p-3">
+                            <div className="text-body text-danger-700">
+                                <p className="mb-1 font-medium">{t('form.errorsHeading')}</p>
                                 <ul className="space-y-1">
-                                    {Object.entries(errors).map(([key, error]) => (
-                                        <li key={key} className="text-xs">• {error.message}</li>
-                                    ))}
+                                    {errors.startDate && (
+                                        <li className="text-caption">
+                                            • {errors.startDate.message}
+                                        </li>
+                                    )}
+                                    {errors.endDate && (
+                                        <li className="text-caption">• {errors.endDate.message}</li>
+                                    )}
                                 </ul>
                             </div>
                         </div>
                     )}
                 </form>
             </div>
-            
-            {loading && <DashboardLoader />}
-            
-            {reportData && !loading && (
+
+            {isLoading && <DashboardLoader />}
+
+            {applied && !isLoading && hasAnyReport && (
                 <div className="space-y-6">
-                    {/* Report Header */}
+                    {/* Report header — course in single mode, "N batches" otherwise */}
                     <ReportHeader
                         title={
-                            courseList.find((c) => c.id === (fixedCourseId || selectedCourse))
-                                ?.name || ''
+                            isMulti
+                                ? t('report.multiBatchTitle', {
+                                      count: results.length,
+                                      term: batchTerm,
+                                  })
+                                : blockTitle(results[0]!)
                         }
                         chips={
                             <>
-                                <span className="text-caption text-neutral-500">Duration:</span>
+                                <span className="text-caption text-neutral-500">
+                                    {t('report.duration')}
+                                </span>
                                 <span className="rounded-md bg-primary-50 px-2 py-1 text-caption font-medium text-neutral-700">
-                                    {dayjs(appliedDateRange?.start || startDate).format('DD MMM YYYY')}
+                                    {dayjs(applied.startDate).format('DD MMM YYYY')}
                                 </span>
                                 <span className="text-neutral-400">—</span>
                                 <span className="rounded-md bg-primary-50 px-2 py-1 text-caption font-medium text-neutral-700">
-                                    {dayjs(appliedDateRange?.end || endDate).format('DD MMM YYYY')}
+                                    {dayjs(applied.endDate).format('DD MMM YYYY')}
                                 </span>
                             </>
                         }
                         actions={
-                            <MyButton
-                                buttonType="secondary"
-                                onClick={handleExportPDF}
-                                disable={isExporting}
-                                className="h-9 px-4 text-body"
-                            >
-                                <Export className="mr-1.5 size-4" />
-                                {isExporting ? 'Exporting…' : 'Export PDF'}
-                            </MyButton>
+                            <>
+                                {!isMulti && results[0]?.report && exportPdfButton(results[0])}
+                                {exportCsvButton}
+                            </>
                         }
                     />
-                    
-                    {/* KPI cards */}
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        <MetricCard
-                            tone="success"
-                            label={`${getTerminology(ContentTerms.Course, SystemTerms.Course)} Completed`}
-                            value={`${formatToTwoDecimalPlaces(reportData?.percentage_course_completed)}%`}
-                            sub="across the batch"
-                            info={METRIC_INFO.courseCompleted}
-                            icon={<CheckCircle className="size-5" weight="duotone" />}
-                        />
-                        <MetricCard
-                            tone="primary"
-                            label="Daily Time Spent (Avg)"
-                            value={convertMinutesToTimeFormat(reportData?.avg_time_spent_in_minutes ?? 0)}
-                            info={METRIC_INFO.timeSpentAvg}
-                            icon={<Clock className="size-5" weight="duotone" />}
-                        />
-                        <MetricCard
-                            tone="warning"
-                            label="Concentration Score (Avg)"
-                            value={`${formatToTwoDecimalPlaces(reportData?.percentage_concentration_score || 0)}%`}
-                            info={METRIC_INFO.concentration}
-                            icon={<Brain className="size-5" weight="duotone" />}
-                        />
-                    </div>
-                    
-                    {/* Daily learning performance */}
-                    <SectionCard
-                        title="Daily Learning Performance"
-                        subtitle="Track daily progress and activity patterns"
-                        icon={<ChartLineUp className="size-4" />}
-                    >
-                        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                            <div className="lg:col-span-2">
-                                <div className="h-auto w-full overflow-visible rounded-lg border border-neutral-200 bg-white">
-                                    <div className="w-full p-4">
-                                        <LineChartComponent
-                                            chartData={convertChartData(reportData.daily_time_spent)}
+
+                    {/* Side-by-side comparison of the selected batches */}
+                    {isMulti && (
+                        <SectionCard
+                            title={t('report.comparisonTitle', { term: batchTerm })}
+                            subtitle={t('report.comparisonSubtitle')}
+                            icon={<ChartBar className="size-4" />}
+                        >
+                            <div className="w-full overflow-hidden">
+                                <MyTable
+                                    data={comparisonData}
+                                    columns={comparisonColumns}
+                                    isLoading={false}
+                                    error={null}
+                                    currentPage={0}
+                                    className="w-full !min-w-full [&_table]:!w-full [&_table]:!min-w-full [&_td]:!px-4 [&_th]:!px-4"
+                                />
+                            </div>
+                        </SectionCard>
+                    )}
+
+                    {results.map((result) => (
+                        <div key={result.batchId} className="space-y-6">
+                            {/* Per-batch heading (multi only) with its own PDF export */}
+                            {isMulti && (
+                                <div className="flex flex-col gap-3 border-b border-neutral-200 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="rounded-md bg-primary-50 px-2 py-1 text-caption font-semibold uppercase tracking-wide text-primary-500">
+                                            {batchTerm}
+                                        </span>
+                                        <h3 className="text-subtitle font-semibold text-neutral-700">
+                                            {blockTitle(result)}
+                                        </h3>
+                                    </div>
+                                    {result.report && exportPdfButton(result)}
+                                </div>
+                            )}
+
+                            {result.reportError || !result.report ? (
+                                <div className="flex items-center gap-3 rounded-lg border border-danger-200 bg-danger-50 p-4 text-body text-danger-700">
+                                    <Warning className="size-5 shrink-0" />
+                                    {t('report.batchLoadFailed', { name: blockTitle(result) })}
+                                </div>
+                            ) : (
+                                <>
+                                    {/* KPI cards */}
+                                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                        <MetricCard
+                                            tone="success"
+                                            label={t('report.courseCompletedLabel', {
+                                                term: courseTerm,
+                                            })}
+                                            value={`${formatToTwoDecimalPlaces(result.report.percentage_course_completed)}%`}
+                                            sub={t('report.acrossBatch')}
+                                            info={METRIC_INFO.courseCompleted}
+                                            icon={
+                                                <CheckCircle className="size-5" weight="duotone" />
+                                            }
+                                        />
+                                        <MetricCard
+                                            tone="primary"
+                                            label={t('report.dailyTimeSpentAvg')}
+                                            value={convertMinutesToTimeFormat(
+                                                result.report.avg_time_spent_in_minutes ?? 0
+                                            )}
+                                            info={METRIC_INFO.timeSpentAvg}
+                                            icon={<Clock className="size-5" weight="duotone" />}
+                                        />
+                                        <MetricCard
+                                            tone="warning"
+                                            label={t('report.concentrationScoreAvg')}
+                                            value={`${formatToTwoDecimalPlaces(result.report.percentage_concentration_score || 0)}%`}
+                                            info={METRIC_INFO.concentration}
+                                            icon={<Brain className="size-5" weight="duotone" />}
                                         />
                                     </div>
-                                </div>
-                            </div>
-                            <div className="lg:col-span-1">
-                                <div className="rounded-lg bg-neutral-50 p-4">
-                                    <h4 className="mb-4 text-caption font-semibold uppercase tracking-wide text-neutral-500">
-                                        Activity Summary
-                                    </h4>
-                                    <div className="h-96 overflow-auto">
-                                        <div className="!min-w-full [&_table]:!w-full [&_table]:!min-w-full [&_td]:!whitespace-nowrap [&_th]:!whitespace-nowrap">
+
+                                    {/* Daily learning performance */}
+                                    <SectionCard
+                                        title={t('report.dailyLearningPerformance')}
+                                        subtitle={t('report.trackDailyProgress')}
+                                        icon={<ChartLineUp className="size-4" />}
+                                    >
+                                        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                                            <div className="lg:col-span-2">
+                                                <div className="h-auto w-full overflow-visible rounded-lg border border-neutral-200 bg-white">
+                                                    <div className="w-full p-4">
+                                                        <LineChartComponent
+                                                            chartData={convertChartData(
+                                                                result.report.daily_time_spent
+                                                            )}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="lg:col-span-1">
+                                                <div className="rounded-lg bg-neutral-50 p-4">
+                                                    <h4 className="mb-4 text-caption font-semibold uppercase tracking-wide text-neutral-500">
+                                                        {t('report.activitySummary')}
+                                                    </h4>
+                                                    <div className="h-96 overflow-auto">
+                                                        <div className="!min-w-full [&_table]:!w-full [&_table]:!min-w-full [&_td]:!whitespace-nowrap [&_th]:!whitespace-nowrap">
+                                                            <MyTable
+                                                                data={{
+                                                                    content: convertFormat(
+                                                                        result.report
+                                                                            .daily_time_spent
+                                                                    ),
+                                                                    total_pages: 0,
+                                                                    page_no: 0,
+                                                                    page_size: 10,
+                                                                    total_elements: 0,
+                                                                    last: false,
+                                                                }}
+                                                                columns={activityLogColumns}
+                                                                isLoading={false}
+                                                                error={null}
+                                                                currentPage={0}
+                                                                scrollable={true}
+                                                                className="!h-full"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </SectionCard>
+
+                                    {/* Leaderboard */}
+                                    <SectionCard
+                                        title={t('report.leaderboard')}
+                                        subtitle={t('report.topPerformingStudents')}
+                                        icon={<Trophy className="size-4" />}
+                                        info={METRIC_INFO.leaderboard}
+                                    >
+                                        <div className="w-full overflow-hidden">
                                             <MyTable
-                                                data={tableData}
-                                                columns={activityLogColumns}
-                                                isLoading={isPending}
-                                                error={error}
+                                                data={{
+                                                    content: transformToLeaderBoard(
+                                                        result.leaderboard
+                                                    ),
+                                                    total_pages: result.leaderboardTotalPages,
+                                                    page_no: leaderboardPages[result.batchId] ?? 0,
+                                                    page_size: LEADERBOARD_PAGE_SIZE,
+                                                    total_elements: 0,
+                                                    last: false,
+                                                }}
+                                                columns={leaderBoardColumns}
+                                                isLoading={result.leaderboardLoading}
+                                                error={null}
                                                 currentPage={0}
-                                                scrollable={true}
-                                                className="!h-full"
+                                                className="w-full !min-w-full [&_table]:!w-full [&_table]:!min-w-full [&_tbody]:!w-full [&_td]:!px-4 [&_th]:!px-4 [&_thead]:!w-full [&_tr]:!w-full"
                                             />
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
+                                        <div className="mt-6 flex justify-center">
+                                            <MyPagination
+                                                currentPage={leaderboardPages[result.batchId] ?? 0}
+                                                totalPages={result.leaderboardTotalPages}
+                                                onPageChange={(page) =>
+                                                    setLeaderboardPages((prev) => ({
+                                                        ...prev,
+                                                        [result.batchId]: page,
+                                                    }))
+                                                }
+                                            />
+                                        </div>
+                                    </SectionCard>
+                                </>
+                            )}
                         </div>
-                    </SectionCard>
-                    
-                    {/* Leaderboard */}
-                    <SectionCard
-                        title="Leaderboard"
-                        subtitle="Top performing students in the batch"
-                        icon={<Trophy className="size-4" />}
-                        info={METRIC_INFO.leaderboard}
-                    >
-                        <div className="w-full overflow-hidden">
-                            <MyTable
-                                data={leaderBoardData}
-                                columns={leaderBoardColumns}
-                                isLoading={isPending}
-                                error={error}
-                                currentPage={0}
-                                className="w-full !min-w-full [&_table]:!w-full [&_table]:!min-w-full [&_thead]:!w-full [&_tbody]:!w-full [&_tr]:!w-full [&_th]:!px-4 [&_td]:!px-4"
-                            />
-                        </div>
-                        <div className="mt-6 flex justify-center">
-                            <MyPagination
-                                currentPage={currPage}
-                                totalPages={totalPage}
-                                onPageChange={setCurrPage}
-                            />
-                        </div>
-                    </SectionCard>
+                    ))}
+                </div>
+            )}
+
+            {applied && !isLoading && !hasAnyReport && (
+                <div className="flex items-center gap-3 rounded-lg border border-danger-200 bg-danger-50 p-4 text-body text-danger-700">
+                    <Warning className="size-5 shrink-0" />
+                    {t('report.loadFailed')}
                 </div>
             )}
         </div>

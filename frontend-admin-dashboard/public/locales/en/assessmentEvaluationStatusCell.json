@@ -1,0 +1,10 @@
+{
+    "evaluated": "Evaluated",
+    "evaluating": "Evaluating",
+    "pending": "Pending",
+    "viewEvaluatedCopy": "View evaluated copy",
+    "noEvaluatedCopyError": "No evaluated copy found for this attempt.",
+    "loadFailedError": "Failed to load the evaluated copy. Please try again.",
+    "evaluatedCopyHeading": "Evaluated Copy",
+    "fileNamePrefix": "Evaluated-Copy"
+}

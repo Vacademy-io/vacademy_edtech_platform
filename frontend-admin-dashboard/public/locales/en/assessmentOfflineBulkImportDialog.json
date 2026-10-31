@@ -1,0 +1,152 @@
+{
+    "dialog": {
+        "heading": "Bulk Offline Data Entry"
+    },
+    "footer": {
+        "close": "Close",
+        "cancel": "Cancel",
+        "chooseAnotherFile": "Choose another file",
+        "retryingText": "Retrying...",
+        "importingText": "Importing...",
+        "retryImport": "Retry import",
+        "importStudents_one": "Import {{count}} student",
+        "importStudents_other": "Import {{count}} students"
+    },
+    "pick": {
+        "errors": {
+            "studentsLoadFailed": {
+                "title": "Could not load the student list",
+                "detail": "Usernames can't be matched until it loads. Close and reopen this dialog to retry."
+            },
+            "noBatchLearners": {
+                "title": "No batch learners in this assessment",
+                "detail": "Bulk import matches students by username from the assessment's batches. Add batches to the assessment, or enter these students one at a time."
+            },
+            "zipInvalid": {
+                "title": "That zip couldn't be used"
+            }
+        },
+        "template": {
+            "title": "1. Start from a template",
+            "loadingStudents": "Loading the student list…",
+            "description_one": "Both downloads come pre-filled with the {{count}} student in this assessment's batches, so you only fill in marks and file names.",
+            "description_other": "Both downloads come pre-filled with the {{count}} students in this assessment's batches, so you only fill in marks and file names.",
+            "downloadCsv": "Download CSV",
+            "building": "Building...",
+            "downloadSampleZip": "Download sample zip"
+        },
+        "upload": {
+            "title": "2. Upload the filled zip",
+            "description": "The zip must contain <manifest>manifest.csv</manifest> plus your scanned PDFs. PDFs in <answers>answers/</answers>, <checked>checked/</checked> or <reports>reports/</reports> named after a username are picked up automatically. No column is required — a file named after the student identifies them on its own. Nothing is saved until you review the preview.",
+            "readingZip": "Reading zip...",
+            "clickOrDrag": "Click to upload or drag & drop",
+            "zipOnly": ".zip only"
+        }
+    },
+    "preview": {
+        "readyCount": "{{count}} ready",
+        "pdfsToUpload_one": "{{count}} PDF to upload",
+        "pdfsToUpload_other": "{{count}} PDFs to upload",
+        "problemsCount": "{{count}} with problems",
+        "downloadProblemsCsv": "Download problems CSV",
+        "errors": {
+            "manifestInvalid": {
+                "title": "This manifest can't be imported"
+            },
+            "importFailed": {
+                "title": "Import failed",
+                "retryNote": "Your files are already uploaded — \"Retry import\" re-sends them without uploading again."
+            },
+            "noRowsReady": {
+                "title": "No rows are ready to import",
+                "detail": "Every row in manifest.csv has a problem. Fix the issues listed below (or download the problems CSV) and upload the zip again."
+            }
+        },
+        "uploadFailures": {
+            "header_one": "{{count}} row was skipped because its file could not be uploaded",
+            "header_other": "{{count}} rows were skipped because their files could not be uploaded",
+            "lineDetail": "Line {{line}} ({{username}}): {{errors}}",
+            "andMore_one": "…and {{count}} more — see the problems CSV.",
+            "andMore_other": "…and {{count}} more — see the problems CSV."
+        },
+        "warnings": {
+            "marksReleased": "Rows with a total_marks value will have their result released to the student.",
+            "newAttempt": "Importing adds a new attempt per student. To fix failures, re-upload only the affected rows — not the whole file."
+        },
+        "ignoredColumns": {
+            "header": "Ignored column(s): {{columns}}",
+            "hint": "Check for a typo if you expected these to be read. Known columns: {{columns}}."
+        },
+        "unreferencedFiles": {
+            "header_one": "{{count}} file in the zip will be ignored",
+            "header_other": "{{count}} files in the zip will be ignored",
+            "noFileAttachedSuffix": " — no row has a file attached, so only marks would import",
+            "hint": "Name them in manifest.csv, or put them in <answers>answers/</answers>, <checked>checked/</checked> or <reports>reports/</reports> named after the student's username."
+        },
+        "progress": {
+            "uploading": "Uploading {{done}} of {{total}} files…"
+        }
+    },
+    "table": {
+        "headers": {
+            "line": "Line",
+            "student": "Student",
+            "marks": "Marks",
+            "answer": "Answer",
+            "checked": "Checked",
+            "report": "Report",
+            "status": "Status"
+        },
+        "status": {
+            "ready": "Ready"
+        },
+        "footerNote_one": "Showing {{visible}} of {{total}} rows — {{hidden}} more will import without problems.",
+        "footerNote_other": "Showing {{visible}} of {{total}} rows — {{hidden}} more will import without problems."
+    },
+    "done": {
+        "errors": {
+            "somethingWrong": {
+                "title": "Something went wrong"
+            }
+        },
+        "importedCount": "{{count}} imported",
+        "notImportedCount": "{{count}} not imported",
+        "resultLine": "{{rowLabel}} ({{username}}): {{message}}"
+    },
+    "slotCell": {
+        "auto": "auto"
+    },
+    "common": {
+        "emptyValue": "—"
+    },
+    "toasts": {
+        "importedWithFailures_one": "Imported {{success}} of {{count}} student — {{failed}} failed.",
+        "importedWithFailures_other": "Imported {{success}} of {{count}} students — {{failed}} failed.",
+        "importedSuccess_one": "Imported {{count}} student.",
+        "importedSuccess_other": "Imported {{count}} students.",
+        "noProblemsToDownload": "There are no problems to download."
+    },
+    "errors": {
+        "couldNotBuildCsvTemplate": "Could not build the CSV template.",
+        "couldNotBuildSampleZip": "Could not build the sample zip.",
+        "couldNotReadZip": "Could not read this zip file.",
+        "noRowsUploaded": "None of the rows could be uploaded, so nothing was imported. See the problems below.",
+        "bulkImportFailed": "Bulk import failed. Please try again.",
+        "couldNotBuildProblemsCsv": "Could not build the problems CSV.",
+        "uploadNoFileId": "upload of \"{{name}}\" returned no file id",
+        "fileUploadFailed": "file upload failed",
+        "importFailedGeneric": "Import failed"
+    },
+    "validation": {
+        "notZip": "\"{{fileName}}\" is not a .zip file. Put manifest.csv and your PDFs into a zip archive and upload that.",
+        "emptyZip": "\"{{fileName}}\" is empty (0 bytes). Re-create the zip and try again.",
+        "studentsNotLoaded": "The student list could not be loaded, so usernames cannot be matched. Close and reopen this dialog to retry.",
+        "noBatchLearners": "This assessment has no batch learners to match against. Bulk import matches students by username from the assessment’s batches.",
+        "noManifestFound": "No manifest.csv found in this zip. Download the sample zip above to see the expected layout.",
+        "manifestEmpty": "{{manifestPath}} is empty. Fill in at least one row and re-zip.",
+        "manifestNoDataRows": "{{manifestPath}} has a header but no data rows. Add a row per student and re-zip."
+    },
+    "network": {
+        "unreachable": "Could not reach the server. Check your connection and try again."
+    }
+}

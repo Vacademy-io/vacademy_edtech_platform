@@ -24,6 +24,7 @@ import {
 import { calculateAverageMarks, calculateAveragePenalty } from '../-utils/helper';
 import { QuestionData } from '@/types/assessments/assessment-steps';
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface QuestionDuration {
     hrs: string;
@@ -77,11 +78,12 @@ const SectionInfo = ({
     examType: string;
     assessmentDetails: any;
 }) => {
+    const { t } = useTranslation('homeworkCreationAssessmentQuestionsSection');
     return (
         <>
             {section?.description?.content && (
                 <div className="flex flex-col gap-2">
-                    <h1>Section Description</h1>
+                    <h1>{t('sectionDescription.title')}</h1>
                     <p
                         className="font-thin"
                         dangerouslySetInnerHTML={{
@@ -93,23 +95,22 @@ const SectionInfo = ({
             {assessmentDetails[1]?.saved_data?.duration_distribution === 'SECTION' &&
                 section.duration && (
                     <div className="flex w-96 items-center justify-start gap-8 text-sm font-thin">
-                        <h1 className="font-normal">Section Duration:</h1>
+                        <h1 className="font-normal">{t('duration.sectionDuration')}</h1>
                         <div className="flex items-center gap-1">
-                            <span>{section.duration}</span>
-                            <span>minutes</span>
+                            <span>{t('duration.minutes', { count: section.duration })}</span>
                         </div>
                     </div>
                 )}
             {examType !== 'SURVEY' && (
                 <div className="flex items-start gap-8 text-sm font-thin">
-                    <h1 className="font-normal">Marks Per Question (Default):</h1>
+                    <h1 className="font-normal">{t('markingScheme.marksPerQuestionDefault')}</h1>
                     <span>{calculateAverageMarks(adaptiveMarking)}</span>
                 </div>
             )}
             {calculateAveragePenalty(adaptiveMarking) > 0 && (
                 <div className="flex w-1/2 items-center justify-between">
                     <div className="flex w-52 items-center justify-start gap-8">
-                        <h1>Negative Marking:</h1>
+                        <h1>{t('markingScheme.negativeMarking')}</h1>
                         <span className="font-thin">
                             {calculateAveragePenalty(adaptiveMarking)}
                         </span>
@@ -119,14 +120,14 @@ const SectionInfo = ({
             )}
             {section.partial_marking && (
                 <div className="flex w-1/2 items-center justify-between">
-                    <h1>Partial Marking:</h1>
+                    <h1>{t('markingScheme.partialMarking')}</h1>
                     <CheckCircle size={22} weight="fill" className="text-success-600" />
                 </div>
             )}
             {section.cutoff_marks > 0 && (
                 <div className="flex w-1/2 items-center justify-between">
                     <div className="flex w-52 items-center justify-start gap-8">
-                        <h1>Cutoff Marking:</h1>
+                        <h1>{t('markingScheme.cutoffMarking')}</h1>
                         <span className="font-thin">{section.cutoff_marks}</span>
                     </div>
                     <CheckCircle size={22} weight="fill" className="text-success-600" />
@@ -134,7 +135,7 @@ const SectionInfo = ({
             )}
             {section.problem_randomization && (
                 <div className="flex w-1/2 items-center justify-between">
-                    <h1>Problem Randomization:</h1>
+                    <h1>{t('randomization.problemRandomization')}</h1>
                     <CheckCircle size={22} weight="fill" className="text-success-600" />
                 </div>
             )}
@@ -152,23 +153,28 @@ const QuestionsTable = ({
     examType: string;
     assessmentDetails: any;
 }) => {
+    const { t } = useTranslation('homeworkCreationAssessmentQuestionsSection');
     if (adaptiveMarking.length === 0) return null;
 
     return (
         <div>
             <h1 className="mb-4 text-primary-500">
-                {examType === 'SURVEY' ? 'Survey Questions' : 'Adaptive Marking Rules'}
+                {examType === 'SURVEY'
+                    ? t('table.surveyQuestionsTitle')
+                    : t('table.adaptiveMarkingRulesTitle')}
             </h1>
             <Table>
                 <TableHeader className="bg-primary-200">
                     <TableRow>
-                        <TableHead>Q.No.</TableHead>
-                        <TableHead>Question</TableHead>
-                        <TableHead>Question Type</TableHead>
-                        {examType !== 'SURVEY' && <TableHead>Marks</TableHead>}
-                        {examType !== 'SURVEY' && <TableHead>Penalty</TableHead>}
+                        <TableHead>{t('table.headers.qno')}</TableHead>
+                        <TableHead>{t('table.headers.question')}</TableHead>
+                        <TableHead>{t('table.headers.questionType')}</TableHead>
+                        {examType !== 'SURVEY' && <TableHead>{t('table.headers.marks')}</TableHead>}
+                        {examType !== 'SURVEY' && (
+                            <TableHead>{t('table.headers.penalty')}</TableHead>
+                        )}
                         {assessmentDetails[1]?.saved_data?.duration_distribution ===
-                            'QUESTION' && <TableHead>Time</TableHead>}
+                            'QUESTION' && <TableHead>{t('table.headers.time')}</TableHead>}
                     </TableRow>
                 </TableHeader>
                 <TableBody className="bg-neutral-50">
@@ -181,7 +187,11 @@ const QuestionsTable = ({
                                         __html: question.questionName || '',
                                     }}
                                 />
-                                <TableCell>{question.questionType}</TableCell>
+                                <TableCell>
+                                    {t(`table.questionTypeLabels.${question.questionType}`, {
+                                        defaultValue: question.questionType,
+                                    })}
+                                </TableCell>
                                 {examType !== 'SURVEY' && (
                                     <TableCell>{question.questionMark}</TableCell>
                                 )}
@@ -208,6 +218,7 @@ const QuestionsTable = ({
 };
 
 const AssessmentQuestionsSection = ({ section, index }: { section: Section; index: number }) => {
+    const { t } = useTranslation('homeworkCreationAssessmentQuestionsSection');
     const { assessmentId, examType } = Route.useParams();
     const { data: instituteDetails } = useSuspenseQuery(useInstituteQuery());
     const { data: assessmentDetails, isLoading: isAssessmentDetailsLoading } = useSuspenseQuery(
@@ -234,11 +245,12 @@ const AssessmentQuestionsSection = ({ section, index }: { section: Section; inde
                             {section.name}
                         </h1>
                         <span className="font-thin !text-neutral-600">
-                            (MCQ(Single Correct):&nbsp;
+                            ({t('header.mcqSingleCorrect')}&nbsp;
                             {getQuestionTypeCounts(adaptiveMarking).MCQS}
-                            ,&nbsp; MCQ(Multiple Correct):&nbsp;
+                            ,&nbsp; {t('header.mcqMultipleCorrect')}&nbsp;
                             {getQuestionTypeCounts(adaptiveMarking).MCQM}
-                            ,&nbsp; <span className="font-semibold">Total:&nbsp;</span>
+                            ,&nbsp;{' '}
+                            <span className="font-semibold">{t('header.total')}&nbsp;</span>
                             {getQuestionTypeCounts(adaptiveMarking).totalQuestions})
                         </span>
                     </div>
@@ -258,7 +270,7 @@ const AssessmentQuestionsSection = ({ section, index }: { section: Section; inde
                 />
                 {adaptiveMarking.length > 0 && (
                     <div className="flex items-center justify-end gap-1">
-                        <span>Total Marks</span>
+                        <span>{t('totalMarks.label')}</span>
                         <span>:</span>
                         <h1>{calculateTotalMarks(adaptiveMarking)}</h1>
                     </div>

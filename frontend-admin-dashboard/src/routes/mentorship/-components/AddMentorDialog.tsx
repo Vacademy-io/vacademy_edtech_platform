@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { CaretRight, Check, UploadSimple, UserCircle } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
 import { MyDialog } from '@/components/design-system/dialog';
@@ -41,6 +42,7 @@ function OptionalDetails({
     onToggle: () => void;
     children: React.ReactNode;
 }) {
+    const { t } = useTranslation('mentorshipAddMentorDialog');
     return (
         <div className="flex flex-col gap-3">
             <button
@@ -54,7 +56,7 @@ function OptionalDetails({
                     weight="bold"
                     className={`transition-transform ${open ? 'rotate-90' : ''}`}
                 />
-                {open ? 'Hide details' : 'Add photo, expertise and capacity'}
+                {open ? t('optionalDetails.hide') : t('optionalDetails.show')}
             </button>
             {open && <div className="flex flex-col gap-4">{children}</div>}
         </div>
@@ -82,6 +84,7 @@ function initials(name?: string | null): string {
  * and the person appears in the list straight away, pending their acceptance.
  */
 export function AddMentorDialog({ instituteId, open, onOpenChange }: AddMentorDialogProps) {
+    const { t } = useTranslation('mentorshipAddMentorDialog');
     const [mode, setMode] = useState<'team' | 'invite'>('team');
     // Everything past "who is it" is optional and editable later, so the dialog
     // opens short and only grows if the admin asks it to.
@@ -175,7 +178,7 @@ export function AddMentorDialog({ instituteId, open, onOpenChange }: AddMentorDi
             reportApiError(error, {
                 feature: 'mentorship',
                 tags: { 'mentorship.action': 'upload-mentor-photo' },
-                fallbackMessage: 'Photo upload failed',
+                fallbackMessage: t('toast.photoUploadFailed'),
             });
         } finally {
             setUploadingPhoto(false);
@@ -184,11 +187,11 @@ export function AddMentorDialog({ instituteId, open, onOpenChange }: AddMentorDi
 
     const submit = async () => {
         if (mode === 'team' && !selected) {
-            toast.error('Select a team member');
+            toast.error(t('toast.selectTeamMember'));
             return;
         }
         if (mode === 'invite' && (!inviteName.trim() || !isEmail(inviteEmail))) {
-            toast.error('Enter a name and a valid email address');
+            toast.error(t('toast.enterNameEmail'));
             return;
         }
         setSubmitting(true);
@@ -209,7 +212,7 @@ export function AddMentorDialog({ instituteId, open, onOpenChange }: AddMentorDi
                       )?.id as string | undefined);
 
             if (!userId) {
-                throw new Error('The invitation did not return a user to add as a mentor');
+                throw new Error(t('errors.invitationMissingUser'));
             }
 
             await createMentor.mutateAsync({
@@ -227,8 +230,8 @@ export function AddMentorDialog({ instituteId, open, onOpenChange }: AddMentorDi
             });
             toast.success(
                 mode === 'invite'
-                    ? `Invitation sent to ${inviteEmail.trim()} — they're a mentor already`
-                    : 'Mentor added'
+                    ? t('toast.invitationSent', { email: inviteEmail.trim() })
+                    : t('toast.mentorAdded')
             );
             reset();
             onOpenChange(false);
@@ -240,7 +243,7 @@ export function AddMentorDialog({ instituteId, open, onOpenChange }: AddMentorDi
                 tags: { 'mentorship.action': 'create-mentor' },
                 extra: { mode, userId: selected?.id },
                 fallbackMessage:
-                    mode === 'invite' ? 'Failed to invite this mentor' : 'Failed to add mentor',
+                    mode === 'invite' ? t('toast.inviteFailed') : t('toast.addFailed'),
             });
         } finally {
             setSubmitting(false);
@@ -249,7 +252,7 @@ export function AddMentorDialog({ instituteId, open, onOpenChange }: AddMentorDi
 
     return (
         <MyDialog
-            heading="Add mentor"
+            heading={t('dialog.heading')}
             open={open}
             onOpenChange={(o) => {
                 if (!o) reset();
@@ -264,7 +267,7 @@ export function AddMentorDialog({ instituteId, open, onOpenChange }: AddMentorDi
                         scale="medium"
                         onClick={() => onOpenChange(false)}
                     >
-                        Cancel
+                        {t('actions.cancel')}
                     </MyButton>
                     <MyButton
                         type="button"
@@ -279,45 +282,43 @@ export function AddMentorDialog({ instituteId, open, onOpenChange }: AddMentorDi
                         }
                         title={
                             mode === 'team' && !selected
-                                ? 'Choose a team member above first'
+                                ? t('actions.chooseTeamMemberFirst')
                                 : undefined
                         }
                     >
                         {submitting
                             ? mode === 'invite'
-                                ? 'Inviting…'
-                                : 'Adding…'
+                                ? t('actions.inviting')
+                                : t('actions.adding')
                             : mode === 'invite'
-                              ? 'Invite as mentor'
-                              : 'Add mentor'}
+                              ? t('actions.inviteAsMentor')
+                              : t('actions.addMentor')}
                     </MyButton>
                 </div>
             }
         >
             <div className="flex flex-col gap-4">
-                <p className="text-body text-neutral-600">
-                    Mentors get the Mentor role and appear to the students you assign them.
-                </p>
+                <p className="text-body text-neutral-600">{t('intro')}</p>
 
                 {!selected && (
                     <div className="flex gap-1 rounded-lg bg-neutral-100 p-1">
                         {(
                             [
-                                { key: 'team', label: 'From your team' },
-                                { key: 'invite', label: 'Invite by email' },
+                                { key: 'team', label: t('modeTabs.team') },
+                                { key: 'invite', label: t('modeTabs.invite') },
                             ] as const
-                        ).map((t) => (
+                        ).map((tab) => (
                             <button
-                                key={t.key}
+                                key={tab.key}
                                 type="button"
-                                onClick={() => setMode(t.key)}
+                                onClick={() => setMode(tab.key)}
                                 className={`flex-1 rounded-md px-3 py-1.5 text-body transition-colors ${
-                                    mode === t.key
+                                    mode === tab.key
                                         ? 'bg-white font-medium text-neutral-700 shadow-sm'
                                         : 'text-neutral-500 hover:text-neutral-700'
                                 }`}
                             >
-                                {t.label}
+                                {tab.label}
                             </button>
                         ))}
                     </div>
@@ -325,18 +326,15 @@ export function AddMentorDialog({ instituteId, open, onOpenChange }: AddMentorDi
 
                 {mode === 'invite' && !selected && (
                     <div className="flex flex-col gap-3">
-                        <p className="text-caption text-neutral-500">
-                            They&apos;ll get an invitation email and the Mentor role, and appear in
-                            this list right away — no need to go to Teams first.
-                        </p>
+                        <p className="text-caption text-neutral-500">{t('inviteHint')}</p>
                         <MyInput
                             input={inviteName}
                             onChangeFunction={(e: React.ChangeEvent<HTMLInputElement>) =>
                                 setInviteName(e.target.value)
                             }
                             inputType="text"
-                            inputPlaceholder="e.g. Asha Nair"
-                            label="Full name"
+                            inputPlaceholder={t('fields.fullNamePlaceholder')}
+                            label={t('fields.fullNameLabel')}
                             required
                             className="sm:w-full"
                         />
@@ -346,8 +344,8 @@ export function AddMentorDialog({ instituteId, open, onOpenChange }: AddMentorDi
                                 setInviteEmail(e.target.value)
                             }
                             inputType="email"
-                            inputPlaceholder="asha@example.com"
-                            label="Email"
+                            inputPlaceholder={t('fields.emailPlaceholder')}
+                            label={t('fields.emailLabel')}
                             required
                             className="sm:w-full"
                         />
@@ -362,21 +360,23 @@ export function AddMentorDialog({ instituteId, open, onOpenChange }: AddMentorDi
                                 setSearch(e.target.value)
                             }
                             inputType="text"
-                            inputPlaceholder="Search your team by name or email"
+                            inputPlaceholder={t('teamSearch.placeholder')}
                             className="sm:w-full"
                         />
                         <div className="max-h-64 overflow-y-auto rounded-md border border-neutral-200">
                             {membersQuery.isLoading ? (
-                                <div className="p-4 text-body text-neutral-400">Loading team…</div>
+                                <div className="p-4 text-body text-neutral-400">
+                                    {t('teamSearch.loading')}
+                                </div>
                             ) : membersQuery.isError ? (
                                 <div className="p-4 text-body text-danger-600">
-                                    Couldn&apos;t load your team.
+                                    {t('teamSearch.loadError')}
                                 </div>
                             ) : filtered.length === 0 ? (
                                 <div className="p-4 text-body text-neutral-400">
                                     {members.length === 0
-                                        ? 'No team members found.'
-                                        : 'No matches.'}
+                                        ? t('teamSearch.noMembers')
+                                        : t('teamSearch.noMatches')}
                                 </div>
                             ) : (
                                 filtered.map((m) => (
@@ -428,9 +428,9 @@ export function AddMentorDialog({ instituteId, open, onOpenChange }: AddMentorDi
                                 buttonType="text"
                                 scale="small"
                                 onClick={() => setSelected(null)}
-                                title="Pick a different team member"
+                                title={t('selectedMember.changeTitle')}
                             >
-                                Change
+                                {t('selectedMember.change')}
                             </MyButton>
                         </div>
 
@@ -443,7 +443,7 @@ export function AddMentorDialog({ instituteId, open, onOpenChange }: AddMentorDi
                                     {photoUrl ? (
                                         <img
                                             src={photoUrl}
-                                            alt="Mentor"
+                                            alt={t('photo.alt')}
                                             className="h-full w-full object-cover"
                                         />
                                     ) : (
@@ -460,13 +460,13 @@ export function AddMentorDialog({ instituteId, open, onOpenChange }: AddMentorDi
                                     >
                                         <UploadSimple size={16} />{' '}
                                         {uploadingPhoto
-                                            ? 'Uploading…'
+                                            ? t('photo.uploading')
                                             : photoUrl
-                                              ? 'Change photo'
-                                              : 'Upload photo'}
+                                              ? t('photo.change')
+                                              : t('photo.upload')}
                                     </MyButton>
                                     <span className="text-caption text-neutral-400">
-                                        Optional. Defaults to their team profile photo.
+                                        {t('photo.hint')}
                                     </span>
                                 </div>
                                 <input
@@ -484,8 +484,8 @@ export function AddMentorDialog({ instituteId, open, onOpenChange }: AddMentorDi
                                     setDisplayName(e.target.value)
                                 }
                                 inputType="text"
-                                inputPlaceholder={selected.full_name || 'Display name'}
-                                label="Display name"
+                                inputPlaceholder={selected.full_name || t('fields.displayNameLabel')}
+                                label={t('fields.displayNameLabel')}
                                 className="sm:w-full"
                             />
                             <MyInput
@@ -494,8 +494,8 @@ export function AddMentorDialog({ instituteId, open, onOpenChange }: AddMentorDi
                                     setTitle(e.target.value)
                                 }
                                 inputType="text"
-                                inputPlaceholder="e.g. Senior Career Mentor"
-                                label="Title"
+                                inputPlaceholder={t('fields.titlePlaceholder')}
+                                label={t('fields.titleLabel')}
                                 className="sm:w-full"
                             />
                             <MyInput
@@ -504,8 +504,8 @@ export function AddMentorDialog({ instituteId, open, onOpenChange }: AddMentorDi
                                     setBio(e.target.value)
                                 }
                                 inputType="text"
-                                inputPlaceholder="Short bio (optional)"
-                                label="Bio"
+                                inputPlaceholder={t('fields.bioPlaceholder')}
+                                label={t('fields.bioLabel')}
                                 className="sm:w-full"
                             />
 

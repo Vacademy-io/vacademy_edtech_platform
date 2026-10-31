@@ -1,0 +1,17 @@
+{
+    "title": "Assign Counsellor",
+    "description": "Search and select a counsellor to assign to this enquiry",
+    "searchLabel": "Search Counsellor",
+    "searchPlaceholder": "Type to search by name...",
+    "searching": "Searching...",
+    "noCounsellorsFound": "No counsellors found",
+    "selectedCounsellorLabel": "Selected Counsellor",
+    "cancel": "Cancel",
+    "assign": "Assign",
+    "assigning": "Assigning...",
+    "toast": {
+        "assignSuccess": "Counsellor assigned successfully",
+        "assignFailed": "Failed to assign counsellor",
+        "selectCounsellor": "Please select a counsellor"
+    }
+}

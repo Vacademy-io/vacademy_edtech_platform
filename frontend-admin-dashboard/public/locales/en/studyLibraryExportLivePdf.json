@@ -1,0 +1,61 @@
+{
+    "cornerLabel": "LIVE CLASS REPORT",
+    "subtitle": "Attendance & Engagement Report",
+    "fields": {
+        "course": "Course",
+        "batch": "Batch",
+        "period": "Period",
+        "learner": "Learner",
+        "attendance": "Attendance",
+        "engagement": "Engagement"
+    },
+    "batch": {
+        "title": "Batch Live Class Report",
+        "classWiseAttendance": "Class-wise Attendance",
+        "cards": {
+            "avgAttendance": "Avg Attendance",
+            "learnersCount_one": "{{count}} learner",
+            "learnersCount_other": "{{count}} learners",
+            "classesHeld": "Classes Held",
+            "avgDuration": "Avg Duration",
+            "perPresentLearner": "per present learner",
+            "avgEngagement": "Avg Engagement",
+            "participationPoints": "participation points"
+        }
+    },
+    "leaderboard": {
+        "title": "Leaderboard"
+    },
+    "learner": {
+        "title": "Learner Live Class Report",
+        "classHistory": "Class History",
+        "cards": {
+            "batchPct": "Batch {{pct}}%",
+            "classesAttended": "Classes Attended",
+            "batchDuration": "Batch {{duration}}",
+            "batchAvgPts": "Batch avg {{points}} pts"
+        }
+    },
+    "tableHeaders": {
+        "date": "Date",
+        "class": "Class",
+        "present": "Present",
+        "absent": "Absent",
+        "attendance": "Attendance",
+        "avgDuration": "Avg Duration",
+        "engagement": "Engagement",
+        "rank": "Rank",
+        "name": "Name",
+        "classes": "Classes",
+        "status": "Status",
+        "duration": "Duration",
+        "talkTime": "Talk Time",
+        "chats": "Chats",
+        "polls": "Polls",
+        "raiseHand": "Raise Hand"
+    },
+    "status": {
+        "present": "Present",
+        "absent": "Absent"
+    }
+}

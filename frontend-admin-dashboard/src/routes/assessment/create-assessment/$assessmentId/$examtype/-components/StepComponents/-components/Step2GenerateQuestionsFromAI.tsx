@@ -18,6 +18,7 @@ import { UseFormReturn } from 'react-hook-form';
 import sectionDetailsSchema from '../../../-utils/section-details-schema';
 import { z } from 'zod';
 import { useAIQuestionDialogStore } from '../../../-utils/zustand-global-states/ai-add-questions-dialog-zustand';
+import { useTranslation } from 'react-i18next';
 
 type SectionFormType = z.infer<typeof sectionDetailsSchema>;
 const Step2GenerateQuestionsFromAI = ({
@@ -45,6 +46,7 @@ const Step2GenerateQuestionsFromAI = ({
         isAIQuestionDialog8,
         setIsAIQuestionDialog8,
     } = useAIQuestionDialogStore();
+    const { t } = useTranslation('assessmentStep2GenerateQuestionsFromAI');
     return (
         <AlertDialog open={isAIQuestionDialog6} onOpenChange={setIsAIQuestionDialog6}>
             <AlertDialogTrigger asChild>
@@ -58,14 +60,14 @@ const Step2GenerateQuestionsFromAI = ({
                     <div className="flex-1">
                         <div className="flex items-center gap-1.5">
                             <span className="text-sm font-semibold text-neutral-800">
-                                Create From AI
+                                {t('trigger.title')}
                             </span>
-                            <span className="rounded-full bg-primary-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary-600">
-                                Vacademy AI
+                            <span className="rounded-full bg-primary-100 px-1.5 py-0.5 text-2xs font-semibold uppercase tracking-wide text-primary-600">
+                                {t('trigger.badge')}
                             </span>
                         </div>
                         <div className="text-xs text-neutral-500">
-                            Generate questions automatically
+                            {t('trigger.subtitle')}
                         </div>
                     </div>
                 </button>
@@ -73,7 +75,7 @@ const Step2GenerateQuestionsFromAI = ({
             <AlertDialogContent className="p-0">
                 <div className="flex items-center justify-between rounded-md bg-primary-50">
                     <h1 className="rounded-sm p-4 font-bold text-primary-500">
-                        Create Questions From AI
+                        {t('dialog.title')}
                     </h1>
                     <AlertDialogCancel className="border-none bg-primary-50 shadow-none hover:bg-primary-50">
                         <X className="text-neutral-600" />
@@ -87,18 +89,17 @@ const Step2GenerateQuestionsFromAI = ({
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <StarFour weight="fill" className="text-primary-500" />
-                                        Generate Questions
+                                        {t('generateSection.cardTitle')}
                                     </CardTitle>
                                     <CardDescription>
-                                        Ask AI to use PDF, Image or any topic to generate new
-                                        questions
+                                        {t('generateSection.cardDescription')}
                                     </CardDescription>
                                 </CardHeader>
                             </Card>
                         </DialogTrigger>
                         <DialogContent className="no-scrollbar !m-0 flex size-1/2 flex-col !gap-0 !p-0">
                             <h1 className="rounded-t-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                                Generate Questions
+                                {t('generateSection.dialogTitle')}
                             </h1>
                             <div className="flex flex-col gap-4 overflow-auto p-4">
                                 <Dialog
@@ -114,32 +115,19 @@ const Step2GenerateQuestionsFromAI = ({
                                                         weight="fill"
                                                         className="text-primary-500"
                                                     />
-                                                    VSmart Upload
+                                                    {t('generateSection.vsmartUpload.title')}
                                                     <p className="text-body">
-                                                        (Generate questions by uploading pdf, doc
-                                                        and ppt files)
+                                                        {t(
+                                                            'generateSection.vsmartUpload.subtitle'
+                                                        )}
                                                     </p>
                                                 </CardTitle>
                                                 <CardDescription className="flex flex-col justify-between">
                                                     <div className="flex flex-col gap-3">
                                                         <p>
-                                                            Generate question papers instantly by
-                                                            uploading study materials in PDF, Word,
-                                                            or PowerPoint formats. Vsmart Upload
-                                                            uses AI to analyze your entire file and
-                                                            create relevant, well-structured
-                                                            questions — or lets you paste content
-                                                            manually if preferred. No formatting
-                                                            needed, just plug and go. Perfect for
-                                                            educators, exam setters, and corporate
-                                                            trainers who work with existing content
-                                                            like lecture slides, study guides, or
-                                                            course handouts. Whether you are
-                                                            preparing assessments for a classroom, a
-                                                            coaching batch, or a training session —
-                                                            Vsmart Upload saves hours of effort by
-                                                            turning your materials into ready-to-use
-                                                            question papers.
+                                                            {t(
+                                                                'generateSection.vsmartUpload.description'
+                                                            )}
                                                         </p>
                                                     </div>
                                                 </CardDescription>
@@ -168,32 +156,19 @@ const Step2GenerateQuestionsFromAI = ({
                                                         weight="fill"
                                                         className="text-primary-500"
                                                     />
-                                                    Vsmart Audio
+                                                    {t('generateSection.vsmartAudio.title')}
                                                     <p className="text-body">
-                                                        (Generate questions by uploading audio
-                                                        files)
+                                                        {t(
+                                                            'generateSection.vsmartAudio.subtitle'
+                                                        )}
                                                     </p>
                                                 </CardTitle>
                                                 <CardDescription className="flex flex-col justify-between">
                                                     <div className="flex flex-col gap-3">
                                                         <p>
-                                                            Convert any lecture, meeting, or audio
-                                                            recording into a full question paper.
-                                                            Simply upload MP3, WAV, or other audio
-                                                            formats — Vsmart Audio transcribes your
-                                                            content and uses AI to generate
-                                                            structured, context-aware questions. No
-                                                            manual transcription or editing
-                                                            required. Perfect for language labs,
-                                                            podcast-based learning modules,
-                                                            corporate training sessions, and
-                                                            recorded lectures at universities or
-                                                            coaching centers. Trainers and educators
-                                                            can repurpose existing audio resources
-                                                            into quizzes, comprehension tests, or
-                                                            discussion prompts with just a few
-                                                            clicks, enhancing engagement and
-                                                            reinforcing learning outcomes.
+                                                            {t(
+                                                                'generateSection.vsmartAudio.description'
+                                                            )}
                                                         </p>
                                                     </div>
                                                 </CardDescription>
@@ -222,29 +197,19 @@ const Step2GenerateQuestionsFromAI = ({
                                                         weight="fill"
                                                         className="text-primary-500"
                                                     />
-                                                    Vsmart Topics
+                                                    {t('generateSection.vsmartTopics.title')}
                                                     <p className="text-body">
-                                                        (Generate questions by providing topics)
+                                                        {t(
+                                                            'generateSection.vsmartTopics.subtitle'
+                                                        )}
                                                     </p>
                                                 </CardTitle>
                                                 <CardDescription className="flex flex-col justify-between">
                                                     <div className="flex flex-col gap-3">
                                                         <p>
-                                                            Generate custom question papers in
-                                                            seconds by just typing a topic, concept,
-                                                            or instruction. Vsmart Prompt uses
-                                                            advanced AI to understand your input and
-                                                            create a tailored set of questions —
-                                                            covering various difficulty levels,
-                                                            formats, and cognitive skills, all
-                                                            aligned to your needs. Perfect for
-                                                            teachers, trainers, and academic heads
-                                                            who want quick assessments on specific
-                                                            topics without uploading any material.
-                                                            Whether this is for an impromptu quiz,
-                                                            concept revision, or rapid-fire session,
-                                                            Vsmart Prompt delivers accurate and
-                                                            varied questions with minimal input.
+                                                            {t(
+                                                                'generateSection.vsmartTopics.description'
+                                                            )}
                                                         </p>
                                                     </div>
                                                 </CardDescription>
@@ -271,18 +236,17 @@ const Step2GenerateQuestionsFromAI = ({
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
                                         <StarFour weight="fill" className="text-primary-500" />
-                                        Extract Questions
+                                        {t('extractSection.cardTitle')}
                                     </CardTitle>
                                     <CardDescription>
-                                        Ask AI to extract questions from any PDF, Image or Audio
-                                        Lecture
+                                        {t('extractSection.cardDescription')}
                                     </CardDescription>
                                 </CardHeader>
                             </Card>
                         </DialogTrigger>
                         <DialogContent className="no-scrollbar !m-0 flex size-1/2 flex-col !gap-0 !p-0">
                             <h1 className="rounded-t-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                                Extract Questions
+                                {t('extractSection.dialogTitle')}
                             </h1>
                             <div className="flex flex-col gap-4 overflow-auto p-4">
                                 <Dialog
@@ -298,30 +262,19 @@ const Step2GenerateQuestionsFromAI = ({
                                                         weight="fill"
                                                         className="text-primary-500"
                                                     />
-                                                    Vsmart Extract
+                                                    {t('extractSection.vsmartExtract.title')}
                                                     <p className="text-body">
-                                                        (Extract questions by uploading pdf, doc and
-                                                        ppt files)
+                                                        {t(
+                                                            'extractSection.vsmartExtract.subtitle'
+                                                        )}
                                                     </p>
                                                 </CardTitle>
                                                 <CardDescription className="flex flex-col justify-between">
                                                     <div className="flex flex-col gap-3">
                                                         <p>
-                                                            Easily extract all existing questions
-                                                            from any PDF document — whether it’s a
-                                                            past exam paper, a practice worksheet,
-                                                            or a question bank. Vsmart Extract scans
-                                                            the entire file, identifies question
-                                                            patterns, and neatly organizes them for
-                                                            easy reuse, editing, or export. Ideal
-                                                            for educators and academic teams who
-                                                            work with legacy PDFs, shared resources,
-                                                            or scanned papers. Save time manually
-                                                            copying or retyping questions — Vsmart
-                                                            Extract helps schools, coaching centers,
-                                                            and corporate training departments
-                                                            quickly build digital archives or create
-                                                            updated assessments from old materials.
+                                                            {t(
+                                                                'extractSection.vsmartExtract.description'
+                                                            )}
                                                         </p>
                                                     </div>
                                                 </CardDescription>
@@ -333,6 +286,7 @@ const Step2GenerateQuestionsFromAI = ({
                                             <GenerateAiQuestionPaperComponent
                                                 form={form}
                                                 currentSectionIndex={index}
+                                                sectionSplit
                                             />
                                         </AICenterProvider>
                                     </DialogContent>
@@ -350,29 +304,19 @@ const Step2GenerateQuestionsFromAI = ({
                                                         weight="fill"
                                                         className="text-primary-500"
                                                     />
-                                                    Vsmart Image
+                                                    {t('extractSection.vsmartImage.title')}
                                                     <p className="text-body">
-                                                        (Extract questions by uploading images)
+                                                        {t(
+                                                            'extractSection.vsmartImage.subtitle'
+                                                        )}
                                                     </p>
                                                 </CardTitle>
                                                 <CardDescription className="flex flex-col justify-between">
                                                     <div className="flex flex-col gap-3">
                                                         <p>
-                                                            Turn images into questions with ease.
-                                                            Vsmart Image uses advanced OCR and AI to
-                                                            scan photographs, scanned pages,
-                                                            handwritten notes, or screenshots — and
-                                                            extracts structured questions from them.
-                                                            Just upload your image, and let AI do
-                                                            the rest. Ideal for teachers, coaching
-                                                            institutes, and trainers who often
-                                                            receive content in the form of
-                                                            handwritten notes, textbook snapshots,
-                                                            or board images. Whether you are
-                                                            digitizing old test papers or pulling
-                                                            questions from printed material — Vsmart
-                                                            Image brings analog content into your
-                                                            digital workflow in seconds.
+                                                            {t(
+                                                                'extractSection.vsmartImage.description'
+                                                            )}
                                                         </p>
                                                     </div>
                                                 </CardDescription>

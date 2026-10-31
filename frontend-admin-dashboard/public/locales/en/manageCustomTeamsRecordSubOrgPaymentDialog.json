@@ -1,0 +1,22 @@
+{
+    "title": "Record offline payment",
+    "description": "Enter any amount — it is bucket-filled (oldest-first) across the pending installments. Excess is recorded as overpayment on the payment log; partials carry into the next installment.",
+    "fields": {
+        "amount": "Amount (₹)",
+        "amountPlaceholder": "e.g. 5000",
+        "paymentDate": "Payment date",
+        "reference": "Reference",
+        "referencePlaceholder": "cheque #, UPI ref, receipt no.",
+        "generateInvoice": "Generate invoice PDF"
+    },
+    "cancel": "Cancel",
+    "saving": "Saving…",
+    "saveAndAllocate": "Save & FIFO-allocate",
+    "toasts": {
+        "recorded": "Recorded offline payment",
+        "failed": "Payment record failed"
+    },
+    "errors": {
+        "enterPositiveAmount": "Enter a positive amount"
+    }
+}

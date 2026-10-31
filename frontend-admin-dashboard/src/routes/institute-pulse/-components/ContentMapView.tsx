@@ -16,6 +16,11 @@ import type {
     ContentMapCourseNode,
     InstituteContentMapResponse,
 } from '../-types/institute-pulse-types';
+import {
+    getTerminology,
+    getTerminologyPlural,
+} from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 /**
  * Open/closed state is held centrally as a Set of node keys rather than per-node useState,
@@ -189,7 +194,7 @@ export default function ContentMapView({
                 {courses.length === 0 ? (
                     <PulseMessage
                         title="No active content right now"
-                        subtitle="Courses appear here the moment a learner opens a slide."
+                        subtitle={`${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)} appear here the moment a learner opens a slide.`}
                     />
                 ) : (
                     courses.map((course) => {
@@ -201,7 +206,10 @@ export default function ContentMapView({
                             <div key={course.id}>
                                 <TreeRow
                                     depth={0}
-                                    label={course.name ?? 'Untitled course'}
+                                    label={
+                                        course.name ??
+                                        `Untitled ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}`
+                                    }
                                     heads={course.headsNow}
                                     open={openKeys.has(cKey)}
                                     onToggle={() => toggle(cKey)}
@@ -267,7 +275,7 @@ export default function ContentMapView({
                                                                                         depth={3}
                                                                                         label={
                                                                                             chapter.name ??
-                                                                                            'Untitled chapter'
+                                                                                            `Untitled ${getTerminology(ContentTerms.Chapters, SystemTerms.Chapters).toLocaleLowerCase()}`
                                                                                         }
                                                                                         heads={
                                                                                             chapter.headsNow

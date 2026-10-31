@@ -1,0 +1,90 @@
+{
+    "statusBadge": {
+        "wrapped": "पूर्ण",
+        "halted": "रुका हुआ",
+        "inProduction": "निर्माणाधीन"
+    },
+    "actions": {
+        "stopProduction": "निर्माण रोकें",
+        "auditTooltip": "डेवलपर ऑडिट खोलें — पूरा पाइपलाइन पथ, मॉडल, कॉन्फ़िगरेशन और URL देखें",
+        "audit": "ऑडिट"
+    },
+    "haltedBanner": {
+        "title": "निर्माण रुक गया",
+        "description": "फाइनल कट तैयार होने से पहले पाइपलाइन विफल हो गई। पुनः प्रयास आखिरी सहेजे गए चेकपॉइंट से फिर से शुरू होता है — पहले से पूरे हो चुके चरण दोहराए नहीं जाते।",
+        "retry": "निर्माण पुनः प्रयास करें"
+    },
+    "stagesList": {
+        "heading": "निर्माण अनुसूची",
+        "pipelineLabel": "पाइपलाइन",
+        "shotPlannerFirst": "शॉट प्लानर सबसे पहले"
+    },
+    "stats": {
+        "heading": "निर्माण बजट",
+        "tokens": "टोकन",
+        "estCost": "अनुमानित लागत",
+        "stills": "स्थिर छवियाँ",
+        "aiVideo": "AI वीडियो",
+        "aiVideoTooltip": "Veo द्वारा जनरेट किए गए शॉट्स (fal.ai)। प्रत्येक की लागत {{min}}–{{max}} क्रेडिट — अधिकतम सीमा {{cap}}/वीडियो।",
+        "aiVideoShots_one": "{{count}} शॉट",
+        "aiVideoShots_other": "{{count}} शॉट्स"
+    },
+    "assets": {
+        "heading": "निर्माण संपत्तियाँ",
+        "screenplay": "पटकथा",
+        "narration": "कथन",
+        "wordTimings": "शब्द समय",
+        "finalCut": "फाइनल कट",
+        "empty": "निर्माण आगे बढ़ने के साथ संपत्तियाँ यहाँ दिखेंगी…"
+    },
+    "actionsCard": {
+        "heading": "कार्रवाइयाँ"
+    },
+    "share": {
+        "label": "साझा करने योग्य URL",
+        "copyLinkTitle": "लिंक कॉपी करें"
+    },
+    "embed": {
+        "getEmbedCode": "एम्बेड कोड प्राप्त करें",
+        "heading": "एम्बेड कोड",
+        "copied": "कॉपी हो गया",
+        "copy": "कॉपी करें"
+    },
+    "edit": {
+        "openInEditor": "एडिटर में खोलें"
+    },
+    "render": {
+        "downloadMp4": "MP4 डाउनलोड करें",
+        "clearTitle": "पुनः रेंडर करने के लिए कैश किया गया वीडियो साफ़ करें",
+        "startingRender": "रेंडर शुरू हो रहा है…",
+        "mastering": "मास्टरिंग हो रही है…",
+        "masteringPercent": "मास्टरिंग हो रही है… {{percent}}%",
+        "masterTheCut": "कट को मास्टर करें (MP4)",
+        "retry": "पुनः प्रयास करें",
+        "timedOut": "रेंडर का समय समाप्त हो गया। कृपया फिर से प्रयास करें।",
+        "readyToast": "वीडियो डाउनलोड के लिए तैयार है!",
+        "failedGeneric": "रेंडर विफल",
+        "failedToast": "वीडियो रेंडर विफल हुआ",
+        "startedToast": "वीडियो रेंडरिंग शुरू हो गई। इसमें कुछ मिनट लग सकते हैं।",
+        "failedToStart": "रेंडर शुरू करने में विफल",
+        "failedToStartToast": "वीडियो रेंडर शुरू करने में विफल",
+        "clearedToast": "कैश किया गया वीडियो साफ़ हो गया। आप फिर से रेंडर कर सकते हैं।",
+        "failedToClear": "कैश किया गया वीडियो साफ़ करने में विफल"
+    },
+    "counters": {
+        "sources_one": "{{count}} स्रोत",
+        "sources_other": "{{count}} स्रोत",
+        "screenshots_one": "{{count}} 📸",
+        "screenshots_other": "{{count}} 📸",
+        "urls_one": "{{count}} URL",
+        "urls_other": "{{count}} URL",
+        "shots_one": "{{count}} शॉट",
+        "shots_other": "{{count}} शॉट्स",
+        "intrinsic_one": "{{count}} मूल",
+        "intrinsic_other": "{{count}} मूल",
+        "words_one": "{{count}} शब्द",
+        "words_other": "{{count}} शब्द",
+        "silent_one": "{{count}} मौन",
+        "silent_other": "{{count}} मौन"
+    }
+}

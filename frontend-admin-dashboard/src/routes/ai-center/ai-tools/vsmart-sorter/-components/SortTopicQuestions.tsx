@@ -1,6 +1,7 @@
 import { getInstituteId } from '@/constants/helper';
 import { useFileUpload } from '@/hooks/use-file-upload';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     handleQueryGetListIndividualTopics,
     handleSortQuestionsPDF,
@@ -33,6 +34,7 @@ const ACCEPTED_EXTENSIONS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'html'];
 type Phase = 'idle' | 'uploading' | 'processing' | 'ready' | 'generating' | 'done';
 
 const SortTopicQuestions = () => {
+    const { t } = useTranslation(['aiCenterSortTopicQuestions', 'aiCenterQuestionConfigPanel']);
     const [prompt, setPrompt] = useState('');
     const queryClient = useQueryClient();
     const instituteId = getInstituteId();
@@ -66,13 +68,13 @@ const SortTopicQuestions = () => {
     useEffect(() => {
         if (!pendingTaskId || !Array.isArray(recentTasksData)) return;
         const match = recentTasksData.find(
-            (t: AITaskIndividualListInterface) => t.id === pendingTaskId
+            (task: AITaskIndividualListInterface) => task.id === pendingTaskId
         );
         if (!match) return;
         if (match.status === 'COMPLETED') {
             setReadyTask(match);
         } else if (match.status === 'FAILED') {
-            setErrorMessage("We couldn't finish this sort. Want to try again?");
+            setErrorMessage(t('errors.taskFailed'));
             setPendingTaskId(null);
         }
     }, [recentTasksData, pendingTaskId]);
@@ -112,7 +114,7 @@ const SortTopicQuestions = () => {
             setLoader(false);
             setKey(null);
             setPhase('idle');
-            setErrorMessage("We couldn't sort this file. Try a different one?");
+            setErrorMessage(t('errors.sortFailed'));
         },
     });
 
@@ -126,6 +128,7 @@ const SortTopicQuestions = () => {
     const handleGenerate = () => {
         if (!uploadedFilePDFId) return;
         const configPrompt = buildQuestionPrompt(
+            t,
             numQuestions,
             questionType,
             difficulty,
@@ -145,7 +148,7 @@ const SortTopicQuestions = () => {
     const processFile = async (file: File) => {
         const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
         if (!ACCEPTED_EXTENSIONS.includes(ext)) {
-            setErrorMessage(`We can't read .${ext} files. Try PDF, Word, or PowerPoint.`);
+            setErrorMessage(t('errors.unsupportedFormat', { ext }));
             return;
         }
         setErrorMessage(null);
@@ -161,7 +164,7 @@ const SortTopicQuestions = () => {
                 sourceId: 'STUDENTS',
             });
             if (!fileId) {
-                setErrorMessage("Upload didn't complete. Want to try again?");
+                setErrorMessage(t('errors.uploadIncomplete'));
                 resetFile();
                 return;
             }
@@ -171,12 +174,12 @@ const SortTopicQuestions = () => {
                 setUploadedFilePDFId(response.pdf_id);
                 setPhase('ready');
             } else {
-                setErrorMessage("We couldn't read this file. Try a different one?");
+                setErrorMessage(t('errors.readFailed'));
                 resetFile();
             }
         } catch (err) {
             console.error(err);
-            setErrorMessage('Something went wrong reading your file. Try again?');
+            setErrorMessage(t('errors.genericFailure'));
             resetFile();
         }
     };
@@ -198,41 +201,36 @@ const SortTopicQuestions = () => {
     const isWorking = phase === 'uploading' || phase === 'processing' || phase === 'generating';
     const workingLabel =
         phase === 'uploading'
-            ? 'Reading your file…'
+            ? t('upload.workingUploading')
             : phase === 'processing'
-              ? 'Getting your document ready…'
+              ? t('upload.workingProcessing')
               : phase === 'generating'
-                ? 'Grouping questions by topic — usually takes ~30 seconds.'
+                ? t('upload.workingGenerating')
                 : '';
 
     return (
         <div className="flex w-full flex-col gap-8 px-4 pb-12 sm:px-8">
             <header className="flex flex-col gap-1">
                 <h1 className="text-2xl font-semibold text-gray-900 sm:text-3xl">
-                    Auto-Sort by Topic
+                    {t('header.title')}
                 </h1>
-                <p className="text-sm text-gray-500">
-                    Drop a question paper. We&apos;ll automatically group the questions by
-                    topic for you to reuse.
-                </p>
+                <p className="text-sm text-gray-500">{t('header.subtitle')}</p>
             </header>
 
             <section className="flex flex-col gap-2">
                 <label className="text-sm font-medium text-gray-900">
-                    Any specific topics in mind?{' '}
-                    <span className="font-normal text-neutral-500">(optional)</span>
+                    {t('prompt.label')}{' '}
+                    <span className="font-normal text-neutral-500">{t('prompt.optional')}</span>
                 </label>
                 <textarea
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     rows={2}
-                    placeholder="e.g. focus on Photosynthesis, Respiration, and Plant Nutrition"
+                    placeholder={t('prompt.placeholder')}
                     disabled={isWorking}
                     className="w-full resize-y rounded-xl border border-neutral-200 bg-white p-3 text-sm text-gray-900 placeholder:text-neutral-400 focus:border-primary-300 focus:outline-none focus:ring-2 focus:ring-primary-100 disabled:bg-neutral-50"
                 />
-                <p className="text-xs text-neutral-500">
-                    Leave blank and we&apos;ll figure out the topics ourselves.
-                </p>
+                <p className="text-xs text-neutral-500">{t('prompt.hint')}</p>
             </section>
 
             {!fileChosen ? (
@@ -255,11 +253,9 @@ const SortTopicQuestions = () => {
                     </div>
                     <div className="flex flex-col gap-1">
                         <p className="text-base font-medium text-gray-900">
-                            Drop your file here, or click to choose
+                            {t('upload.dropTitle')}
                         </p>
-                        <p className="text-xs text-neutral-500">
-                            PDF, Word, or PowerPoint with questions inside.
-                        </p>
+                        <p className="text-xs text-neutral-500">{t('upload.dropSubtitle')}</p>
                     </div>
                 </div>
             ) : (
@@ -274,11 +270,11 @@ const SortTopicQuestions = () => {
                                     {fileName}
                                 </span>
                                 <span className="text-xs text-neutral-500">
-                                    {phase === 'uploading' && 'Uploading…'}
-                                    {phase === 'processing' && 'Reading…'}
-                                    {phase === 'ready' && 'Ready to sort'}
-                                    {phase === 'generating' && 'Sorting…'}
-                                    {phase === 'done' && 'Done'}
+                                    {phase === 'uploading' && t('upload.statusUploading')}
+                                    {phase === 'processing' && t('upload.statusProcessing')}
+                                    {phase === 'ready' && t('upload.statusReady')}
+                                    {phase === 'generating' && t('upload.statusGenerating')}
+                                    {phase === 'done' && t('upload.statusDone')}
                                 </span>
                             </div>
                         </div>
@@ -287,7 +283,7 @@ const SortTopicQuestions = () => {
                                 type="button"
                                 onClick={resetFile}
                                 className="rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
-                                aria-label="Remove file"
+                                aria-label={t('upload.removeAriaLabel')}
                             >
                                 <X size={18} />
                             </button>
@@ -299,7 +295,7 @@ const SortTopicQuestions = () => {
                             readyTask={readyTask}
                             openPreview={openPreviewDialog}
                             setOpenPreview={setOpenPreviewDialog}
-                            heading="Vsmart Sorter"
+                            heading={t('generate.doneHeading')}
                             onDraftAnother={() => {
                                 setReadyTask(null);
                                 setPendingTaskId(null);
@@ -314,8 +310,8 @@ const SortTopicQuestions = () => {
                         />
                     ) : phase === 'generating' || (pendingTaskId && !readyTask) ? (
                         <GeneratingState
-                            title="Grouping questions by topic"
-                            subtitle="Reading the paper and organizing by topic. Usually ~30 seconds."
+                            title={t('generate.generatingTitle')}
+                            subtitle={t('generate.generatingSubtitle')}
                         />
                     ) : isWorking ? (
                         <div className="flex items-center gap-3 rounded-xl border border-blue-100 bg-blue-50 p-4">
@@ -333,7 +329,7 @@ const SortTopicQuestions = () => {
                             language={language}
                             setLanguage={setLanguage}
                             onSubmit={handleGenerate}
-                            ctaLabel="Sort and draft"
+                            ctaLabel={t('generate.ctaLabel')}
                         />
                     ) : null}
                 </div>
@@ -355,14 +351,14 @@ const SortTopicQuestions = () => {
 
             <RecentFilesPanel
                 tasks={recentTasks}
-                title="Your recent sorts"
-                fallbackLabel="Sorted question set"
-                emptyHint="Your sorted question sets will appear here. Drop a file above to start."
+                title={t('recentFiles.title')}
+                fallbackLabel={t('recentFiles.fallbackLabel')}
+                emptyHint={t('recentFiles.emptyHint')}
                 onOpenAll={() => setEnableTasksDialog(true)}
             />
 
             <AITasksList
-                heading="Vsmart Sorter"
+                heading={t('tasksList.heading')}
                 enableDialog={enableTasksDialog}
                 setEnableDialog={setEnableTasksDialog}
             />

@@ -1,0 +1,209 @@
+{
+    "helmetTitle": "Engagement task inbox",
+    "heading": "Task inbox",
+    "subheading": "Every message the engines drafted, ranked by priority. Review, edit, and send.",
+    "allEngines": "All engines",
+    "filters": {
+        "needsAction": "Needs action",
+        "approvals": "Approvals",
+        "sent": "Sent",
+        "failed": "Failed",
+        "waited": "Waited",
+        "handled": "Handled",
+        "dryRun": "Dry run"
+    },
+    "errors": {
+        "loadFailed": "Could not load tasks.",
+        "badFilters": "These filters can't be applied. Clear them to see everything again."
+    },
+    "noDraft": "(no draft)",
+    "kind": {
+        "reply": "Reply",
+        "autoSend": "Auto-send",
+        "task": "Task",
+        "waited": "Waited"
+    },
+    "actions": {
+        "reviewAndSend": "Review & send",
+        "acknowledge": "I am on it",
+        "handledElsewhere": "Mark done",
+        "dismiss": "Skip",
+        "reopen": "Reopen",
+        "cancel": "Cancel",
+        "restore": "Move back to inbox"
+    },
+    "sendDialog": {
+        "heading": "Review & send",
+        "fixedTemplateNotice": "This is a fixed Meta-approved WhatsApp template. The text can't be edited — only its variables. This is exactly what will be sent:",
+        "variables": "Variables",
+        "editableNotice": "Edit before sending if you like — your edit is what goes out.",
+        "sending": "Sending…",
+        "sendNow": "Send now",
+        "attachments": "Also sent with this reply",
+        "attachmentRemoved": "No longer in the engine's assets — it won't be sent"
+    },
+    "needsTemplate": "WhatsApp can only send an approved template, and this task has none. Handle it another way, or dismiss it.",
+    "toolbar": {
+        "search": "Search people, messages or engines",
+        "allEngines": "All engines",
+        "allChannels": "All channels",
+        "allKinds": "All kinds",
+        "kindTask": "Tasks only",
+        "kindReply": "Replies only",
+        "kindSend": "Auto-sends only",
+        "sortPriority": "Priority first",
+        "sortOldest": "Oldest first",
+        "sortNewest": "Newest first",
+        "pageNote": "Filters cover every page. Search and sorting look only at the tasks on this page.",
+        "selectedEngine": "Selected engine",
+        "day": "Day",
+        "anyDay": "Any day",
+        "clearDay": "Clear the day filter",
+        "dateRange": "Date range",
+        "from": "From",
+        "to": "To",
+        "pickDay": "Pick a day",
+        "doneRange": "Done"
+    },
+    "filteredEmpty": "No tasks on this page match your search.",
+    "age": {
+        "minutes": "{{count}}m",
+        "hours": "{{count}}h",
+        "days": "{{count}}d"
+    },
+    "detail": {
+        "why": "Why the AI picked this",
+        "draft": "Draft",
+        "sentMessage": "Sent message",
+        "callBrief": "Call brief",
+        "template": "Template {{name}}",
+        "simulated": "Dry-run draft — nothing was sent",
+        "timing": "Timing",
+        "created": "Drafted",
+        "scheduledFor": "Scheduled for",
+        "expiresAt": "Expires",
+        "dispatchedAt": "Dispatched",
+        "completedAt": "Completed",
+        "outcome": "Outcome",
+        "openEngine": "Open engine",
+        "draftedAgo": "Drafted {{age}} ago",
+        "variableN": "Value {{n}}",
+        "fromEngine": "From {{engine}}",
+        "whyWaited": "Why the engine waited",
+        "noReason": "The engine did not record a reason.",
+        "decidedAgo": "Decided {{age}} ago",
+        "decided": "Decided"
+    },
+    "footnote": "A send whose delivery can’t be confirmed moves to Failed. Dry-run drafts stay in their own bucket and are never sent.",
+    "retry": "Try again",
+    "priorityLevel": {
+        "high": "High",
+        "medium": "Medium",
+        "low": "Low"
+    },
+    "priorityChip": "{{level}} priority",
+    "empty": {
+        "goToEngines": "Go to engines",
+        "approvals": {
+            "title": "Nothing to approve",
+            "text": "AI calls and other actions the engines want to run wait here for your approval."
+        },
+        "needsAction": {
+            "title": "All caught up",
+            "text": "New messages appear here when an active engine checks in on someone."
+        },
+        "sent": {
+            "title": "Nothing sent yet",
+            "text": "Messages you or the engines send show up here."
+        },
+        "failed": {
+            "title": "No failed messages",
+            "text": "Messages that could not be delivered show up here."
+        },
+        "waited": {
+            "title": "No waiting decisions",
+            "text": "When an engine decides to hold off on someone, its reason shows up here so you can tune how it behaves."
+        },
+        "handled": {
+            "title": "Nothing handled yet",
+            "text": "Tasks you mark done or skip show up here. You can move them back."
+        },
+        "dryRun": {
+            "title": "No dry-run drafts",
+            "text": "Start a dry run on an engine to see what it would send, without sending anything."
+        },
+        "filtered": {
+            "title": "Nothing matches these filters",
+            "text": "Try another day or period, channel or engine, or clear the filters to see everything."
+        }
+    },
+    "chips": {
+        "period": "Period: {{value}}",
+        "outcome": "Outcome: {{value}}",
+        "template": "Template: {{name}}",
+        "removePeriod": "Remove the date range",
+        "removeOutcome": "Remove the outcome filter",
+        "removeTemplate": "Remove the template filter",
+        "clear": "Clear filters"
+    },
+    "outcomeFilter": {
+        "delivered": "Delivered",
+        "not_delivered": "Not delivered",
+        "opened": "Opened",
+        "clicked": "Clicked",
+        "bounced": "Bounced",
+        "complained": "Marked as spam",
+        "read": "Read",
+        "replied": "Replied",
+        "failed": "Failed to send",
+        "connected": "Call connected",
+        "no_answer": "Call not answered",
+        "busy": "Line busy",
+        "call_failed": "Call failed"
+    },
+    "outcome": {
+        "heading": "Delivery and response",
+        "yes": "Yes",
+        "no": "No",
+        "notTrackedText": "No delivery signal is available for this message. In-app messages, and some email and WhatsApp providers, don't report one.",
+        "badge": {
+            "sent": "Sent",
+            "delivered": "Delivered",
+            "opened": "Opened",
+            "clicked": "Clicked",
+            "bounced": "Bounced",
+            "spam": "Spam",
+            "read": "Read",
+            "failed": "Failed",
+            "replied": "Replied",
+            "connected": "Connected",
+            "noAnswer": "No answer",
+            "busy": "Busy",
+            "callFailed": "Call failed",
+            "callQueued": "Call queued",
+            "notConnected": "Not connected",
+            "notDialled": "Not dialled",
+            "notTracked": "Not tracked"
+        },
+        "delivery": {
+            "SENT": "Sent",
+            "DELIVERED": "Delivered",
+            "READ": "Read",
+            "FAILED": "Failed"
+        },
+        "fact": {
+            "delivered": "Delivered",
+            "opened": "Opened",
+            "clicked": "Clicked a link",
+            "bounced": "Bounced",
+            "spam": "Marked as spam",
+            "delivery": "Delivery",
+            "callStatus": "Call result",
+            "callLength": "Call length",
+            "dialStatus": "Dial status",
+            "errorCode": "Error code",
+            "category": "Message category",
+            "repliedAt": "Replied"
+        }
+    }
+}

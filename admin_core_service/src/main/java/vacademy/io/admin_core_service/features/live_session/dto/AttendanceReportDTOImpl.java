@@ -30,5 +30,9 @@ public class AttendanceReportDTOImpl implements AttendanceReportDTO {
     private String statusType;
     private String engagementData;
     private Integer providerTotalDurationMinutes;
+    /** Exact seconds when the provider reports them (BBB); NULL for Zoom. */
+    private Integer providerTotalDurationSeconds;
     private String feedbackDetails;
+    private String batchName;
+    private Timestamp registeredAt;
 }

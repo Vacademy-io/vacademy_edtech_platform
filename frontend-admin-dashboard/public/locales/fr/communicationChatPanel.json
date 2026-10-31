@@ -1,0 +1,78 @@
+{
+    "emptyState": {
+        "title": "Sélectionnez une conversation",
+        "subtitle": "Choisissez un contact à gauche pour voir les messages"
+    },
+    "backToConversations": "Retour aux conversations",
+    "idLabel": "ID : {{id}}",
+    "escalation": {
+        "title": "En attente de votre réponse",
+        "reason": {
+            "maxTurns": "La conversation a atteint sa limite de réponses automatiques.",
+            "aiError": "L'assistant n'a pas pu générer de réponse.",
+            "manual": "Transférée par un administrateur.",
+            "default": "L'assistant n'avait pas l'information pour répondre, il a donc indiqué qu'il vérifierait auprès de l'équipe.",
+            "existingLead": "Un prospect existant a écrit à nouveau via le chatbot. Aucun nouveau prospect n'a été créé — le contact a été enregistré sur son prospect existant.",
+            "crmSaveFailed": "Le chatbot n'a pas pu enregistrer ce prospect dans le CRM. Ses réponses figurent ci-dessous — ajoutez-les manuellement au CRM."
+        },
+        "askedQuote": "Ils ont demandé : « {{message}} »",
+        "messageQuote": "Son message : « {{message}} »",
+        "answersQuote": "Ses réponses :\n{{message}}"
+    },
+    "loadError": {
+        "retrying": "Nouvelle tentative…",
+        "tryAgain": "Réessayer"
+    },
+    "loadOlder": {
+        "loading": "Chargement...",
+        "cta": "Charger les messages plus anciens"
+    },
+    "noMessages": "Aucun message dans cette conversation pour le moment",
+    "bot": "Bot",
+    "viaTemplate": "via le modèle « {{name}} »",
+    "notDelivered": "Non livré",
+    "accountLevelFailure": "Cela affecte tous les messages WhatsApp envoyés depuis ce numéro, pas seulement cette conversation.",
+    "errorCode": "Code d'erreur WhatsApp {{code}}",
+    "viewDocument": "Voir le document",
+    "attachmentAlt": "pièce jointe",
+    "origin": {
+        "workflow": "Envoyé par le flux de travail « {{name}} »",
+        "workflowUnnamed": "Envoyé par un flux de travail",
+        "chatbotFlow": "Envoyé par le flux de chatbot « {{name}} »",
+        "chatbotFlowUnnamed": "Envoyé par un flux de chatbot"
+    },
+    "templateCategory": {
+        "MARKETING": "Marketing",
+        "UTILITY": "Utilitaire",
+        "AUTHENTICATION": "Authentification"
+    },
+    "noFailureReason": "WhatsApp n'a indiqué aucune raison pour ce message.",
+    "inbound": {
+        "kind": {
+            "image": "Photo",
+            "video": "Vidéo",
+            "audio": "Audio",
+            "voice": "Message vocal",
+            "sticker": "Autocollant",
+            "document": "Document",
+            "location": "Position",
+            "contacts": "Fiche contact",
+            "reaction": "Réaction",
+            "unsupported": "Un type de message que WhatsApp ne partage pas avec les applications professionnelles",
+            "form_response": "Réponse au formulaire",
+            "other": "Pièce jointe"
+        },
+        "mediaError": {
+            "expired": "WhatsApp ne conserve plus ce fichier — les médias sont gardés environ 30 jours.",
+            "tooLarge": "Ce fichier est trop volumineux pour être prévisualisé ici.",
+            "notConfigured": "WhatsApp n'est pas configuré pour cet établissement, le fichier ne peut pas être récupéré.",
+            "failed": "Impossible de charger ce fichier depuis WhatsApp."
+        },
+        "loading": "Chargement : {{kind}}…",
+        "openInMaps": "Ouvrir dans Google Maps",
+        "unnamedContact": "Contact sans nom",
+        "reactedTo": "A réagi {{emoji}} à « {{preview}} »",
+        "reactedToMessage": "A réagi {{emoji}} à un message",
+        "reactionRemoved": "A retiré une réaction"
+    }
+}

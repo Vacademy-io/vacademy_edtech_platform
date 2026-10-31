@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SchemaFields } from '@/routes/manage-students/students-list/-types/bulk-upload-types';
 import { CheckCircle, X, Warning } from '@phosphor-icons/react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -19,6 +20,7 @@ export const UploadResultsTable = ({
     onViewError,
     onDownloadResponse,
 }: UploadResultsTableProps) => {
+    const { t } = useTranslation('manageStudentsUploadResultsTable');
     // Calculate upload stats
     const [page, setPage] = useState(0);
     const ITEMS_PER_PAGE = 10;
@@ -90,6 +92,16 @@ export const UploadResultsTable = ({
 
     const displayColumns = getDisplayColumns();
 
+    // Human-readable labels for the known/essential columns
+    const columnLabels: Record<string, string> = {
+        FULL_NAME: t('columns.fullName'),
+        USERNAME: t('columns.username'),
+        ENROLLMENT_NUMBER: t('columns.enrollmentNumber'),
+        MOBILE_NUMBER: t('columns.mobileNumber'),
+        EMAIL: t('columns.email'),
+        STATUS: t('columns.status'),
+    };
+
     // Get abbreviated error message (first line or first 100 chars)
     const getAbbreviatedError = (error: string): string => {
         if (!error) return '';
@@ -107,7 +119,7 @@ export const UploadResultsTable = ({
         displayColumns.forEach((column) => {
             tableColumns.push({
                 accessorKey: column,
-                header: column.replace(/_/g, ' '),
+                header: columnLabels[column] ?? column.replace(/_/g, ' '),
                 cell: ({ row }) => {
                     const value = row.original[column];
 
@@ -129,13 +141,13 @@ export const UploadResultsTable = ({
                     // Format date values
                     if (column === 'ENROLLMENT_DATE' || column === 'DATE_OF_BIRTH') {
                         return (
-                            <div className="max-w-[180px] truncate">
+                            <div className="max-w-44 truncate">
                                 {value ? formatReadableDate(value.toString()) : ''}
                             </div>
                         );
                     }
 
-                    return <div className="max-w-[180px] truncate">{value?.toString() || ''}</div>;
+                    return <div className="max-w-44 truncate">{value?.toString() || ''}</div>;
                 },
             });
         });
@@ -143,12 +155,12 @@ export const UploadResultsTable = ({
         // Add ERROR column
         tableColumns.push({
             id: 'ERROR',
-            header: 'ERROR',
+            header: t('columns.error'),
             cell: ({ row }) => {
                 const error = row.original.ERROR;
 
                 if (!error) {
-                    return <span className="text-success-500">No errors</span>;
+                    return <span className="text-success-500">{t('error.none')}</span>;
                 }
 
                 return (
@@ -156,7 +168,7 @@ export const UploadResultsTable = ({
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <div className="flex items-center text-danger-500">
-                                    <span className="max-w-[200px] truncate">
+                                    <span className="max-w-48 truncate">
                                         {getAbbreviatedError(error as string)}
                                     </span>
                                     {onViewError && (
@@ -167,14 +179,14 @@ export const UploadResultsTable = ({
                                             className="ml-2 text-danger-500"
                                             onClick={() => onViewError(row.index)}
                                         >
-                                            View
+                                            {t('actions.view')}
                                         </MyButton>
                                     )}
                                 </div>
                             </TooltipTrigger>
                             <TooltipContent className="max-w-md whitespace-pre-wrap p-3">
                                 <p className="text-sm font-medium text-danger-700">
-                                    Error Details:
+                                    {t('error.detailsLabel')}
                                 </p>
                                 <p className="text-xs text-neutral-600">{error}</p>
                             </TooltipContent>
@@ -185,19 +197,19 @@ export const UploadResultsTable = ({
         });
 
         return tableColumns;
-    }, [displayColumns, onViewError]);
+    }, [displayColumns, onViewError, columnLabels, t]);
 
     // Create column widths config for the table
     const columnWidths = useMemo(() => {
         const widths: Record<string, string> = {
-            STATUS: 'w-[100px]',
-            ERROR: 'w-[200px]',
+            STATUS: 'w-24',
+            ERROR: 'w-48',
         };
 
         // Set standard width for other columns
         displayColumns.forEach((column) => {
             if (column !== 'STATUS') {
-                widths[column] = 'w-[180px]';
+                widths[column] = 'w-44';
             }
         });
 
@@ -218,13 +230,13 @@ export const UploadResultsTable = ({
                             failedCount > 0 ? 'text-warning-700' : 'text-success-700'
                         }`}
                     >
-                        {successCount} successful, {failedCount} failed
+                        {t('summary.successCount', { count: successCount })},{' '}
+                        {t('summary.failedCount', { count: failedCount })}
                     </h3>
                 </div>
                 {failedCount > 0 && (
                     <p className="text-body text-warning-700">
-                        Some entries were not uploaded successfully. Please check the ERROR column
-                        for details.
+                        {t('summary.warningMessage', { column: t('columns.error') })}
                     </p>
                 )}
                 {onDownloadResponse && (
@@ -235,7 +247,7 @@ export const UploadResultsTable = ({
                         onClick={onDownloadResponse}
                         className="w-fit"
                     >
-                        Download Response
+                        {t('actions.downloadResponse')}
                     </MyButton>
                 )}
             </div>

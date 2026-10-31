@@ -1,0 +1,26 @@
+{
+    "title": "Membership & Payment Behaviour",
+    "description": "Institute-wide switches for how memberships renew and whether members can move between plans. Both are off by default.",
+    "loading": "Loading payment settings…",
+    "toggle": {
+        "enabled": "مجدول التجديد مفعّل",
+        "disabled": "مجدول التجديد معطّل"
+    },
+    "button": {
+        "save": "حفظ",
+        "saving": "جارٍ الحفظ…"
+    },
+    "toasts": {
+        "saveSuccess": "Payment settings saved",
+        "saveError": "Failed to save payment settings"
+    },
+    "renewal": {
+        "hint": "يقوم بمسح يومي لخطط أعضاء هذه المؤسسة ويطبق سياسة التسجيل الخاصة بكل مجموعة: تذكيرات ما قبل انتهاء الصلاحية، وفترة الانتظار بعد انتهاء الصلاحية، والانتهاء النهائي. معطّل افتراضيًا — أثناء التعطيل، لا تتم معالجة أي خطة في هذه المؤسسة بواسطة المجدول."
+    },
+    "planChange": {
+        "enabled": "Plan switching is on",
+        "disabled": "Plan switching is off",
+        "hintOn": "Members can move between the plans you've marked switchable in the payment options below. Upgrades charge the prorated difference; downgrades take effect at the end of their paid cycle.",
+        "hintOff": "Members never see a “change plan” option. Turn this on to expose it, then choose which payment options and plans they may switch to."
+    }
+}

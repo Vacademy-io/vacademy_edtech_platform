@@ -1,0 +1,23 @@
+{
+    "errors": {
+        "loadTags": "تعذر تحميل الوسوم.",
+        "loadCustomFields": "تعذر تحميل الحقول المخصصة.",
+        "loadSenders": "تعذر تحميل عناوين المرسل.",
+        "loadEmailTemplates": "تعذر تحميل قوالب البريد الإلكتروني.",
+        "loadWhatsappTemplates": "تعذر تحميل قوالب واتساب.",
+        "syncFailed": "فشلت المزامنة. تحقق من اتصال واتساب في الإعدادات.",
+        "loadTemplate": "تعذر تحميل هذا القالب.",
+        "loadCampaigns": "تعذر تحميل الحملات."
+    },
+    "toast": {
+        "templateApplied": "تم تطبيق \"{{name}}\"",
+        "templateCachedCopy": "تم تحميل نسخة مخزنة مؤقتًا من هذا القالب — أعد فتحه للحصول على أحدث نسخة.",
+        "templatesSynced_zero": "تمت مزامنة {{count}} قالب من Meta.",
+        "templatesSynced_one": "تمت مزامنة قالب واحد من Meta.",
+        "templatesSynced_two": "تمت مزامنة قالبين من Meta.",
+        "templatesSynced_few": "تمت مزامنة {{count}} قوالب من Meta.",
+        "templatesSynced_many": "تمت مزامنة {{count}} قالبًا من Meta.",
+        "templatesSynced_other": "تمت مزامنة {{count}} قالب من Meta.",
+        "templatesUpToDate": "القوالب محدّثة بالفعل."
+    }
+}

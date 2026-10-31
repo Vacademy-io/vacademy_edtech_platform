@@ -1,0 +1,12 @@
+{
+    "addDefaultLinkForThisDay": "Ajouter un lien par défaut pour ce jour",
+    "shownToLearnersWhenNotLive": "Affiché aux apprenants lorsque les sessions ne sont pas en direct",
+    "defaultLink": "Lien par défaut",
+    "shownWhenNotLive": "Affiché lorsque les sessions ne sont pas en direct",
+    "copy": "Copier",
+    "remove": "Supprimer",
+    "className": "Nom de la classe",
+    "classNamePlaceholder": "ex. : Cours de mathématiques",
+    "linkUrl": "URL du lien",
+    "linkUrlPlaceholder": "https://exemple.com"
+}

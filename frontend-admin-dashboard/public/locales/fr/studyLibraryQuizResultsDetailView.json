@@ -1,0 +1,37 @@
+{
+    "views": {
+        "learners": "Apprenants",
+        "questionAnalysis": "Analyse des questions"
+    },
+    "loadErrorTitle": "Impossible de charger les résultats de ce quiz",
+    "loadErrorSubtitle": "La requête a échoué. Vérifiez votre connexion et réessayez.",
+    "retry": "Réessayer",
+    "untitledQuiz": "Quiz sans titre",
+    "notMappedToChapter": "Non associé à un chapitre",
+    "timeLimitSuffix_one": "limite de {{count}} min",
+    "timeLimitSuffix_many": "limite de {{count}} min",
+    "timeLimitSuffix_other": "limite de {{count}} min",
+    "reAttemptsSuffix_one": "{{count}} nouvelle tentative autorisée",
+    "reAttemptsSuffix_many": "{{count}} nouvelles tentatives autorisées",
+    "reAttemptsSuffix_other": "{{count}} nouvelles tentatives autorisées",
+    "refreshAriaLabel": "Actualiser les résultats de ce quiz",
+    "stats": {
+        "attempted": "Tentatives",
+        "attemptsInTotal_one": "{{count}} tentative au total",
+        "attemptsInTotal_many": "{{count}} tentatives au total",
+        "attemptsInTotal_other": "{{count}} tentatives au total",
+        "averageScore": "Score moyen",
+        "medianOutOfMarks": "Médiane {{median}} · sur {{total}} points",
+        "passed": "Réussi",
+        "scoreRange": "Plage de scores",
+        "passMark": "Note de passage {{percent}} %",
+        "noPassMark": "Ce quiz n'a pas de note de passage",
+        "averageTime": "Temps moyen",
+        "perLearnerLatestAttempt": "Par apprenant, dernière tentative"
+    },
+    "ungradedNotice_one": "{{count}} réponse doit être corrigée manuellement (texte libre ou questions évaluées manuellement). Elle est exclue des scores ci-dessus plutôt que comptée comme fausse, donc les pourcentages ici ne couvrent que ce qui a pu être corrigé automatiquement.",
+    "ungradedNotice_many": "{{count}} réponses doivent être corrigées manuellement (texte libre ou questions évaluées manuellement). Elles sont exclues des scores ci-dessus plutôt que comptées comme fausses, donc les pourcentages ici ne couvrent que ce qui a pu être corrigé automatiquement.",
+    "ungradedNotice_other": "{{count}} réponses doivent être corrigées manuellement (texte libre ou questions évaluées manuellement). Elles sont exclues des scores ci-dessus plutôt que comptées comme fausses, donc les pourcentages ici ne couvrent que ce qui a pu être corrigé automatiquement.",
+    "resultViewsAriaLabel": "Vues des résultats du quiz",
+    "allQuizzes": "Tous les quiz"
+}

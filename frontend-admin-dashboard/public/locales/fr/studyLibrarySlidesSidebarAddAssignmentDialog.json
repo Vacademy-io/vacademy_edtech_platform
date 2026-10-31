@@ -1,0 +1,21 @@
+{
+    "toast": {
+        "reorderFailed": "Diapositive créée mais la réorganisation a échoué",
+        "addSuccess": "Devoir ajouté avec succès !",
+        "addFailed": "Échec de l'ajout du devoir"
+    },
+    "header": {
+        "title": "Créer un nouveau devoir",
+        "subtitle": "Ajoutez une nouvelle diapositive de devoir pour vos apprenants"
+    },
+    "form": {
+        "titleLabel": "Titre du devoir",
+        "titlePlaceholder": "Saisissez le titre du devoir (ex. : Série de problèmes de maths 1)"
+    },
+    "preview": {
+        "assignmentDraft": "Devoir • Brouillon"
+    },
+    "helperText": "Le devoir sera créé en tant que brouillon et pourra être modifié plus tard",
+    "creating": "Création du devoir...",
+    "createAssignment": "Créer le devoir"
+}

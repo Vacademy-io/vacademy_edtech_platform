@@ -1,0 +1,67 @@
+{
+    "enterRange": "Saisissez 0–{{max}} %",
+    "cannotBeNegative": "Ne peut pas être négatif",
+    "errors": {
+        "computeFailed": "Impossible de calculer les primes pour ce mois.",
+        "materializeFailed": "Impossible de créer les ajustements de prime."
+    },
+    "toast": {
+        "previewReady": "{{count}} conseiller(s) en {{month}}",
+        "materialized_one": "{{count}} ajustement de prime créé sur la paie de {{month}}",
+        "materialized_many": "{{count}} d'ajustements de prime créés sur la paie de {{month}}",
+        "materialized_other": "{{count}} ajustements de prime créés sur la paie de {{month}}",
+        "skipped_one": "{{count}} ignoré",
+        "skipped_many": "{{count}} d'ignorés",
+        "skipped_other": "{{count}} ignorés"
+    },
+    "columns": {
+        "counsellor": "Conseiller",
+        "revenueCollected": "Revenu encaissé",
+        "payingLeads": "Prospects payants",
+        "payments": "Paiements",
+        "commission": "Commission",
+        "perConversion": "Par conversion",
+        "incentive": "Prime"
+    },
+    "intro": "Prime commerciale par conseiller, calculée à partir du revenu réellement encaissé sur un mois — les prospects payants des demandes converties, pas le pipeline. Définissez un pourcentage de commission, un montant fixe par conversion, ou les deux ; la matérialisation écrit un ajustement CRM_INCENTIVE que le cycle de paie régulier du mois de versement paie.",
+    "earningMonthLabel": "Mois d'acquisition (revenu encaissé)",
+    "commissionLabel": "Commission (%)",
+    "fixedPerConversionLabel": "Montant fixe par conversion (facultatif)",
+    "computing": "Calcul…",
+    "recomputePreview": "Recalculer l'aperçu",
+    "previewIncentives": "Aperçu des primes",
+    "commissionHint": "La commission va de 0 à {{max}} % du revenu encaissé ; le montant fixe est versé une fois par prospect payant. Au moins l'un des deux doit être défini, sinon chaque conseiller est calculé à zéro.",
+    "emptyTerms": {
+        "title": "Définissez une commission ou un montant par conversion",
+        "description": "Les primes correspondent au revenu × commission, plus un montant fixe par conversion. Si aucun des deux n'est défini, il n'y a rien à calculer."
+    },
+    "nothingComputed": {
+        "title": "Rien n'a encore été calculé",
+        "description": "L'aperçu lit chaque paiement encaissé en {{month}} et l'attribue au conseiller qui a converti le prospect. C'est une requête lourde, elle ne s'exécute donc que sur demande."
+    },
+    "stats": {
+        "counsellors": "Conseillers",
+        "revenueCollected": "Revenu encaissé",
+        "payingLeads": "Prospects payants",
+        "totalIncentive": "Prime totale",
+        "adjustmentsCreated": "Ajustements créés",
+        "skipped": "Ignorés",
+        "totalPaidOut": "Total versé"
+    },
+    "noneToPay": {
+        "title": "Aucun conseiller ne peut être payé pour ce mois",
+        "description": "Rien n'a été encaissé en {{month}}, ou chaque conseiller ayant encaissé n'a pas de fiche employé."
+    },
+    "willBeSkipped_one": "{{count}} conseiller sera ignoré",
+    "willBeSkipped_many": "{{count}} de conseillers seront ignorés",
+    "willBeSkipped_other": "{{count}} conseillers seront ignorés",
+    "unlinkedHint": "Ces personnes ont encaissé du revenu mais ne sont liées à aucune fiche employé — il n'y a personne contre qui créer un ajustement de paie, la matérialisation les laisse donc de côté. Leur prime est incluse dans le total ci-dessus pour que le chiffre reste exact.",
+    "payThisIncentive": "Verser cette prime",
+    "payThisIncentiveHint": "Un ajustement CRM_INCENTIVE par conseiller lié, sur le cycle de paie régulier du mois de versement. L'exécuter deux fois pour la même période de versement est sans risque — la seconde exécution ne crée rien.",
+    "earnedIn": "Acquis en",
+    "paidOnPayrollFor": "Versé sur la paie de",
+    "creating": "Création…",
+    "materialize": "Matérialiser",
+    "payoutSummary": "La prime de {{earning}} sera versée sur le cycle de paie de {{payout}}.",
+    "sameMonthWarning": "Les deux mois sont identiques — vérifiez que c'est bien voulu."
+}

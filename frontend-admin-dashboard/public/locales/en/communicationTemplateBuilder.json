@@ -1,0 +1,126 @@
+{
+    "languages": {
+        "en": "English",
+        "en_US": "English (US)",
+        "hi": "Hindi",
+        "es": "Spanish",
+        "pt_BR": "Portuguese (BR)",
+        "ar": "Arabic",
+        "fr": "French",
+        "de": "German",
+        "id": "Indonesian",
+        "it": "Italian",
+        "ja": "Japanese",
+        "ko": "Korean",
+        "zh_CN": "Chinese (Simplified)"
+    },
+    "toast": {
+        "maxButtons": "Maximum 3 buttons",
+        "multipleProblems_one": "{{count}} thing needs fixing before this can be saved — see the list above.",
+        "multipleProblems_other": "{{count}} things need fixing before this can be saved — see the list above.",
+        "draftSaved": "Draft saved",
+        "saveDraftFailed": "Could not save the draft.",
+        "saveTemplateFailed": "Could not save the template.",
+        "approvedByMeta": "Template approved by Meta and ready to use.",
+        "submittedToMeta": "Template submitted to Meta for approval.",
+        "metaRejected": "Meta rejected the template. Your draft has been saved.",
+        "draftSavedRetry": "Your draft is saved — fix the problem above and submit again.",
+        "sampleUploaded": "Sample {{kind}} uploaded — the public URL has been filled in.",
+        "sampleUploadFailed": "Could not upload the sample {{kind}}.",
+        "sampleWrongType": "That file isn't a supported {{kind}}. Use {{formats}}.",
+        "sampleTooLarge": "That file is too large. Use {{formats}}."
+    },
+    "problemsBanner": {
+        "single": "This template needs a fix",
+        "multiple_one": "{{count}} thing needs fixing",
+        "multiple_other": "{{count}} things need fixing"
+    },
+    "header": {
+        "edit": "Edit Template",
+        "create": "Create Template",
+        "saveDraft": "Save Draft",
+        "submitting": "Submitting...",
+        "submitForApproval": "Submit for Approval",
+        "back": "Back to templates",
+        "subtitleCreate": "Build a template and submit it to Meta. Approval usually takes minutes, at most 24 hours.",
+        "subtitleEdit": "{{name}} · fix anything flagged and submit again."
+    },
+    "fields": {
+        "templateName": "Template Name",
+        "templateNameHint": "Lowercase, underscores only",
+        "category": "Category",
+        "categoryMarketing": "Marketing",
+        "categoryUtility": "Utility",
+        "categoryAuthentication": "Authentication",
+        "language": "Language",
+        "header": "Header",
+        "headerNone": "None",
+        "headerText": "Text",
+        "headerImage": "Image",
+        "headerVideo": "Video",
+        "headerDocument": "Document",
+        "headerTextPlaceholder": "Header text (max 60 chars)",
+        "headerSampleValuePlaceholder": "Sample value for the header variable (e.g. October)",
+        "headerSampleUrlPlaceholder": "Sample {{kind}} URL (for Meta approval)",
+        "bodyText": "Body Text",
+        "addVariable": "Add Variable",
+        "charCount": "{{count}}/1024 characters",
+        "variableConfiguration": "Variable configuration:",
+        "variableNamePlaceholder": "Variable name (e.g. name, course)",
+        "sampleValuePlaceholder": "Sample value (e.g. John)",
+        "apiNamedParamsHint": "Variable names let you use named params in the API: {\"name\": \"John\"} instead of {\"1\": \"John\"}",
+        "footer": "Footer (optional)",
+        "footerPlaceholder": "Thank you for your business!",
+        "buttons": "Buttons (max 3)",
+        "buttonTextPlaceholder": "Button text",
+        "buttonUrlSamplePlaceholder": "Sample full URL (e.g. https://example.com/track/A123)",
+        "buttonPhonePlaceholder": "+919876543210",
+        "addQuickReply": "+ Quick Reply",
+        "addUrlButton": "+ URL Button",
+        "addPhone": "+ Phone",
+        "headerSampleUpload": "Upload",
+        "headerSampleUploading": "Uploading…",
+        "headerSampleUrlHint": "Upload a file or paste a public URL — Meta downloads it for review. {{formats}}.",
+        "headerSampleFormats": {
+            "image": "JPG or PNG, up to 5 MB",
+            "video": "MP4, up to 16 MB",
+            "document": "PDF, up to 100 MB"
+        }
+    },
+    "headerKind": {
+        "image": "image",
+        "video": "video",
+        "document": "document"
+    },
+    "preview": {
+        "title": "WhatsApp Preview",
+        "headerTextFallback": "Header text",
+        "imageFallback": "📷 Image",
+        "videoFallback": "🎬 Video",
+        "documentFallback": "📄 Document",
+        "bodyFallback": "Your message body will appear here...",
+        "buttonFallback": "Button {{n}}",
+        "category": "Category:",
+        "language": "Language:",
+        "placeholders": "Placeholders:",
+        "buttonsCount": "Buttons:"
+    },
+    "sections": {
+        "basics": {
+            "title": "Basics",
+            "description": "Name, category and language decide how Meta reviews and prices the template."
+        },
+        "header": {
+            "description": "Optional. A bold line, or an image, video or document shown above the message."
+        },
+        "body": {
+            "description": "What the recipient reads. Variables are numbered {{first}}, {{second}} and so on, in order."
+        },
+        "footer": {
+            "description": "Optional small grey line under the message. No variables."
+        },
+        "buttons": {
+            "description": "Optional, up to 3. {{used}}/3 used."
+        }
+    }
+}

@@ -1,3 +1,4 @@
+import type { TFunction } from "i18next";
 import type { QuestionState } from "@/types/assessment";
 
 export type QuestionStatus =
@@ -43,12 +44,23 @@ export const QUESTION_STATUS_LIST_CLASS: Record<QuestionStatus, string> = {
   "not-visited": "border-neutral-200 bg-white",
 };
 
-export const QUESTION_STATUS_LABEL: Record<QuestionStatus, string> = {
-  answered: "Answered",
-  "answered-marked": "Answered & marked",
-  marked: "Marked for review",
-  "not-answered": "Not answered",
-  "not-visited": "Not visited",
+/** Localized label for a question status — pass the `t` from `useTranslation("questionTest")`. */
+export const getQuestionStatusLabel = (
+  status: QuestionStatus,
+  t: TFunction,
+): string => {
+  switch (status) {
+    case "answered":
+      return t("questionStatus.answered");
+    case "answered-marked":
+      return t("questionStatus.answeredMarked");
+    case "marked":
+      return t("questionStatus.marked");
+    case "not-answered":
+      return t("questionStatus.notAnswered");
+    case "not-visited":
+      return t("questionStatus.notVisited");
+  }
 };
 
 export const QUESTION_LEGEND_ORDER: QuestionStatus[] = [

@@ -1,0 +1,15 @@
+{
+    "trigger": {
+        "questionWise": "Par question"
+    },
+    "table": {
+        "questionNumber": "N° Q.",
+        "question": "Question"
+    },
+    "toasts": {
+        "revaluateSuccess": "La tentative pour cette évaluation a été réévaluée pour tous les étudiants. Les participants doivent vérifier leur e-mail !"
+    },
+    "actions": {
+        "revaluate": "Réévaluer"
+    }
+}

@@ -1,0 +1,111 @@
+---
+title: "Turn on the MCP server"
+sidebarTitle: "Turn on the server"
+description: "Switch the server on for your institute, choose what AI apps may do, and share the server URL with your team."
+icon: "power"
+---
+
+The MCP server is **off** for every institute until an admin turns it on. While it is off, no AI app can read or change anything, even if someone has the server URL.
+
+You need the **Admin** role in your institute to manage this page.
+
+## Before you turn it on
+
+<Steps>
+  <Step title="Decide which AI apps and plans staff may use">
+    Whatever the AI app reads goes to that app's provider. Business or enterprise plans usually offer stronger data terms than personal ones. See [Data and privacy](/mcp-server/security/data-and-pii).
+  </Step>
+  <Step title="Start with Admin only, and View">
+    Allow only the **Admin** role, and set a few areas to **View**.
+  </Step>
+  <Step title="Try it yourself">
+    Connect your own AI app and ask *"Who am I connected as?"*, then a real question.
+  </Step>
+  <Step title="Add roles and areas">
+    Once you are comfortable, add roles under **Who can connect** and raise areas, one at a time.
+  </Step>
+</Steps>
+
+## Turn it on
+
+<Steps>
+  <Step title="Open the MCP settings">
+    In your admin portal, go to **Settings → MCP Server**.
+  </Step>
+  <Step title="Switch the server on">
+    Turn on **MCP server enabled**. The **Connect your AI app** card appears with your server URL and client ID.
+  </Step>
+  <Step title="Check what AI apps can do">
+    Under **What AI apps can do**, set each area to **Off**, **View** or **Edit**. See [Areas and access levels](/mcp-server/settings/areas-and-levels).
+
+    The first time you switch the server on, the page pre-selects every area, including the changes marked **Drafts only**, **Adds only**, **Not-live courses only** and the course invite edits marked **Changes live**. Features that are [turned on separately](/mcp-server/settings/opt-in-features) stay off. Review the list and turn off anything you do not want before you save.
+  </Step>
+  <Step title="Choose who can connect">
+    Under **Who can connect**, add the roles that may use an AI app. Only **Admin** is on at first. See [Who can connect](/mcp-server/settings/roles).
+  </Step>
+  <Step title="Save">
+    Click **Save settings**. Nothing changes for your team until you save.
+  </Step>
+  <Step title="Share the server URL">
+    Copy the **Server URL** from **Connect your AI app** and send it to the people you allowed. Each person adds it to their own AI app and signs in with their own account. See [Connect Claude](/mcp-server/connect/claude) and the other connect guides.
+  </Step>
+</Steps>
+
+<Tip>
+  Start small. Turn on **View** for one or two areas and allow only admins. Try it yourself with a prompt like *"Who am I connected as?"* and *"Which lead campaigns got the most leads this week?"*. Add more areas and roles once you are comfortable.
+</Tip>
+
+## What your team needs from you
+
+| They need | Where to find it |
+|---|---|
+| The server URL | **Connect your AI app → Server URL**. It ends in `/ai-service/mcp/i/<your institute id>`. See [Your institute's server URL](/mcp-server/oauth/institute-server-url). |
+| A role that is allowed | **Who can connect** |
+| The client ID (only some apps ask) | **Connect your AI app → Your client ID**. See [Client IDs](/mcp-server/settings/client-ids). |
+
+## Message to your team
+
+Copy this, fill in the parts in angle brackets, and send it to the people you allowed.
+
+```text Message to your team
+Our institute's AI connection is ready.
+
+Server URL: <paste the Server URL from Settings → MCP Server>
+
+Set it up in Claude: <link to the "Connect Claude" page of these docs>
+(Other apps: <link to the "Connect your AI app" pages>)
+
+Sign in with your own account and click Approve.
+First prompt to try: "Who am I connected as?"
+
+Counsellors: please read <link to the "For counsellors" page> first.
+```
+
+## What happens when someone connects
+
+1. They paste the server URL into their AI app.
+2. Their browser opens your admin portal and asks them to sign in, if they are not signed in already.
+3. They see which app is asking and click **Approve**.
+4. The AI app can now use the areas you turned on, as that person.
+
+Each person signs in as themselves. The app always acts as that person, inside your institute, and only in the areas you allow here for their role. In the CRM, it sees only the leads their admin portal shows them. Read [How sign-in works](/mcp-server/oauth/how-sign-in-works) for the details.
+
+## Turn it off
+
+Turn off **MCP server enabled** and click **Save settings**.
+
+- Every connected app is refused from its **next** request. Its list of tools becomes empty.
+- Existing connections are not deleted. If you turn the server back on, they work again.
+- To end a connection for good, revoke it under **Active connections**. See [Connections and revoking](/mcp-server/settings/connections-and-revoking).
+
+You can still open and change this page while the server is off. That is useful for setting up areas and roles before anyone connects.
+
+## Changes apply on the next request
+
+The server checks your settings on every request. It does not cache them. When you save a change to areas, roles or the on/off switch, it applies to every connected app the next time that app asks for its tools or uses one. Nobody needs to reconnect.
+
+Some AI apps load the list of tools only when a chat starts. If a tool still shows in an open chat after you turned it off, using it is refused. A new chat shows the updated list.
+
+<Note>
+  The AI app does the thinking with its own model. Reading and drafting through the MCP server uses no AI credits from your institute. Some actions have costs of their own, for example a phone call placed through the CRM. Those actions say so in their preview.
+</Note>

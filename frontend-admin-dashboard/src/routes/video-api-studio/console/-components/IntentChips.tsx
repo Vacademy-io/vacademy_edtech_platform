@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Sparkles, ChevronDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Sparkle as Sparkles, CaretDown as ChevronDown } from '@phosphor-icons/react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
-import { CONTENT_TYPES, ContentType } from '../../-services/video-generation';
+import { buildContentTypes, ContentType } from '../../-services/video-generation';
 import { cn } from '@/lib/utils';
 
 interface IntentChipsProps {
@@ -122,11 +123,13 @@ function Chip({ label, active, onClick }: { label: string; active: boolean; onCl
 
 export function IntentChips({ selected, onSelect, onSamplePromptSelect }: IntentChipsProps) {
     const [showSamples, setShowSamples] = useState(false);
+    // Named `translate` (not `t`) — the content-type list below already uses
+    // `t` as its per-item loop variable in several places.
+    const { t: translate } = useTranslation('videoApiStudioVideoGeneration');
+    const contentTypes = buildContentTypes(translate);
 
-    const popularChips = CONTENT_TYPES.filter((t) =>
-        POPULAR_TYPES.includes(t.value as ContentType)
-    );
-    const overflowChips = CONTENT_TYPES.filter(
+    const popularChips = contentTypes.filter((t) => POPULAR_TYPES.includes(t.value as ContentType));
+    const overflowChips = contentTypes.filter(
         (t) => !POPULAR_TYPES.includes(t.value as ContentType)
     );
 
@@ -169,7 +172,7 @@ export function IntentChips({ selected, onSelect, onSamplePromptSelect }: Intent
                                         )}
                                     >
                                         <span className="font-medium">{t.label}</span>
-                                        <span className="text-[10px] text-muted-foreground">
+                                        <span className="text-2xs text-muted-foreground">
                                             {t.description}
                                         </span>
                                     </button>
@@ -186,7 +189,7 @@ export function IntentChips({ selected, onSelect, onSamplePromptSelect }: Intent
                     <PopoverTrigger asChild>
                         <button
                             type="button"
-                            className="group flex items-center gap-1.5 text-[11px] text-muted-foreground transition-colors hover:text-violet-600"
+                            className="group flex items-center gap-1.5 text-2xs text-muted-foreground transition-colors hover:text-violet-600"
                         >
                             <Sparkles className="size-3 transition-colors group-hover:text-violet-600" />
                             <span>Try a sample prompt</span>
@@ -194,7 +197,7 @@ export function IntentChips({ selected, onSelect, onSamplePromptSelect }: Intent
                         </button>
                     </PopoverTrigger>
                     <PopoverContent
-                        className="w-[calc(100vw-2rem)] max-w-[420px] p-2"
+                        className="w-[calc(100vw-2rem)] max-w-md p-2" /* design-lint-ignore: mobile-viewport popover clamp, no token exists (same pattern as add-event-dialog.tsx) */
                         align="center"
                         collisionPadding={16}
                     >

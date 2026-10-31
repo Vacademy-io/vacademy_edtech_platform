@@ -1,6 +1,7 @@
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { Helmet } from 'react-helmet';
+import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useSidebar } from '@/components/ui/sidebar';
 import { MyButton } from '@/components/design-system/button';
@@ -140,6 +141,7 @@ const SortableSessionItem = ({
     setEditSessionTitle,
     children,
 }: SortableSessionItemProps) => {
+    const { t } = useTranslation('studyLibraryViewer');
     const isEditing = editingSessionId === session.sessionId;
     const {
         attributes,
@@ -208,7 +210,7 @@ const SortableSessionItem = ({
                                             onStartEdit(session.sessionId, session.sessionTitle);
                                         }}
                                         className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Edit"
+                                        title={t('actions.edit')}
                                     >
                                         <Edit2 className="h-3.5 w-3.5" />
                                     </button>
@@ -218,7 +220,7 @@ const SortableSessionItem = ({
                                             onDelete(session.sessionId);
                                         }}
                                         className="rounded p-1 text-xs text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Delete"
+                                        title={t('actions.delete')}
                                     >
                                         <Trash2 className="h-3.5 w-3.5" />
                                     </button>
@@ -232,7 +234,7 @@ const SortableSessionItem = ({
                                             handleSaveEdit();
                                         }}
                                         className="rounded p-1 text-xs text-indigo-600 hover:bg-indigo-50"
-                                        title="Save"
+                                        title={t('actions.save')}
                                     >
                                         <CheckCircle className="h-3.5 w-3.5" />
                                     </button>
@@ -242,14 +244,18 @@ const SortableSessionItem = ({
                                             onCancelEdit();
                                         }}
                                         className="rounded p-1 text-xs text-neutral-600 hover:bg-neutral-100"
-                                        title="Cancel"
+                                        title={t('actions.cancel')}
                                     >
                                         <X className="h-3.5 w-3.5" />
                                     </button>
                                 </div>
                             )}
                             <div className="text-xs text-neutral-500">
-                                {completedCount}/{session.slides.length} pages
+                                {t('pagesProgress', {
+                                    completed: completedCount,
+                                    total: session.slides.length,
+                                    count: session.slides.length,
+                                })}
                             </div>
                             {session.progress < 100 && (
                                 <CircularProgress value={session.progress} size={32} strokeWidth={3} />
@@ -269,6 +275,7 @@ const SortableSessionItem = ({
 // Use extracted SortableViewerSlideItem component (see ./components/SortableViewerSlideItem.tsx)
 
 function RouteComponent() {
+    const { t } = useTranslation('studyLibraryViewer');
     const navigate = useNavigate();
     const { setOpen } = useSidebar();
 
@@ -426,12 +433,12 @@ function RouteComponent() {
 
             return {
                 sessionId,
-                sessionTitle: firstSlide?.sessionTitle || 'Untitled Session',
+                sessionTitle: firstSlide?.sessionTitle || t('untitledSession'),
                 slides: sessionSlides,
                 progress,
             };
         });
-    }, [slides]);
+    }, [slides, t]);
 
     const getSlideIcon = (slideType: SlideType): React.ReactNode => {
         switch (slideType) {
@@ -551,7 +558,7 @@ function RouteComponent() {
     };
 
     const handleSessionDelete = (sessionId: string) => {
-        if (confirm('Are you sure you want to delete this session?')) {
+        if (confirm(t('confirmDeleteSession'))) {
             setSlides((prev) => prev.filter((slide) => slide.sessionId !== sessionId));
         }
     };
@@ -595,7 +602,7 @@ function RouteComponent() {
     };
 
     const handleSlideDelete = (slideId: string) => {
-        if (confirm(`Are you sure you want to delete this ${getTerminology(ContentTerms.Slides, SystemTerms.Slides).toLowerCase()}?`)) {
+        if (confirm(t('confirmDeleteSlide', { slideTerm: getTerminology(ContentTerms.Slides, SystemTerms.Slides).toLowerCase() }))) {
             setSlides((prev) => prev.filter((slide) => slide.id !== slideId));
         }
     };
@@ -633,7 +640,7 @@ function RouteComponent() {
             if (section === 'video') {
                 // If already regenerated twice, prevent further regeneration
                 if (regenerationCount >= 2) {
-                    alert('You have already regenerated this video content twice. Further regeneration is not allowed.');
+                    alert(t('regenerationLimitReachedVideo'));
                     return;
                 }
                 // Show warning inside the regenerate dialog for video
@@ -662,7 +669,7 @@ function RouteComponent() {
 
         // If already regenerated twice, prevent further regeneration
         if ((isDocumentWithImage || isVideoType) && regenerationCount >= 2) {
-            alert('You have already regenerated this content twice. Further regeneration is not allowed.');
+            alert(t('regenerationLimitReached'));
             return;
         }
 
@@ -753,8 +760,8 @@ function RouteComponent() {
     return (
         <LayoutContainer>
             <Helmet>
-                <title>Course Content Viewer</title>
-                <meta name="description" content="View your generated course content" />
+                <title>{t('pageTitle')}</title>
+                <meta name="description" content={t('pageDescription')} />
             </Helmet>
 
             <div className="min-h-screen bg-gradient-to-b from-indigo-50 via-white to-purple-50">
@@ -772,7 +779,7 @@ function RouteComponent() {
                                 className="flex items-center gap-2 text-sm font-medium text-neutral-600 transition-colors hover:text-indigo-600"
                             >
                                 <ArrowLeft className="h-4 w-4" />
-                                Back to Course Library
+                                {t('backToLibrary')}
                             </button>
 
                             {/* Create CTA Button */}
@@ -783,16 +790,16 @@ function RouteComponent() {
                                     console.log('Create course');
                                 }}
                             >
-                                Create
+                                {t('createButton')}
                             </MyButton>
                         </div>
 
                         <div>
                             <h1 className="mb-2 text-3xl font-semibold text-neutral-900">
-                                Final Step: Confirm Your Course
+                                {t('finalStepHeading')}
                             </h1>
                             <p className="text-base text-gray-600">
-                                Review the complete course content carefully. Make any last edits before creating your course.
+                                {t('finalStepSubtitle')}
                             </p>
                         </div>
                     </motion.div>
@@ -801,9 +808,9 @@ function RouteComponent() {
                     {sessionsWithProgress.length === 0 ? (
                         <div className="rounded-xl bg-white p-6 shadow-md">
                             <div className="text-center py-12">
-                                <p className="text-neutral-600 mb-4">No course content available.</p>
+                                <p className="text-neutral-600 mb-4">{t('noContentAvailable')}</p>
                                 <p className="text-sm text-neutral-500">
-                                    Please generate course content first from the generating page.
+                                    {t('noContentAvailableHint')}
                                 </p>
                             </div>
                         </div>
@@ -881,14 +888,22 @@ function RouteComponent() {
             <Dialog open={regenerateWarningDialogOpen} onOpenChange={setRegenerateWarningDialogOpen}>
                 <DialogContent className="sm:max-w-[500px]">
                     <DialogHeader>
-                        <DialogTitle>Regeneration Limit Warning</DialogTitle>
+                        <DialogTitle>{t('regenerationLimitWarningTitle')}</DialogTitle>
                         <DialogDescription>
-                            You can only regenerate this content twice. This is your {slides.find(s => s.id === pendingRegenerateSlideId)?.regenerationCount === 0 ? 'first' : 'second'} regeneration.
+                            {t('regenerationLimitWarningDescription', {
+                                replace: {
+                                    ordinal:
+                                        slides.find((s) => s.id === pendingRegenerateSlideId)
+                                            ?.regenerationCount === 0
+                                            ? t('ordinalFirst')
+                                            : t('ordinalSecond'),
+                                },
+                            })}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
                         <p className="text-sm text-neutral-600">
-                            Please review your content carefully before proceeding. After two regenerations, you will not be able to regenerate this content again.
+                            {t('regenerationLimitWarningBody')}
                         </p>
                     </div>
                     <DialogFooter>
@@ -896,13 +911,13 @@ function RouteComponent() {
                             buttonType="secondary"
                             onClick={handleCancelRegenerateWarning}
                         >
-                            Cancel
+                            {t('actions.cancel')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
                             onClick={handleConfirmRegenerateWarning}
                         >
-                            Proceed
+                            {t('proceedButton')}
                         </MyButton>
                     </DialogFooter>
                 </DialogContent>
@@ -919,7 +934,7 @@ function RouteComponent() {
             }}>
                 <DialogContent className="w-[80vw] max-w-[80vw] max-h-[90vh] flex flex-col p-0">
                     <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0 border-b">
-                        <DialogTitle>Regenerate Page</DialogTitle>
+                        <DialogTitle>{t('regeneratePageTitle')}</DialogTitle>
                     </DialogHeader>
                     <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
                         {(() => {
@@ -950,10 +965,17 @@ function RouteComponent() {
                                             </div>
                                             <div className="flex-1">
                                                 <h4 className="text-sm font-semibold text-amber-800 mb-1">
-                                                    Regeneration Limit Warning
+                                                    {t('regenerationLimitWarningTitle')}
                                                 </h4>
                                                 <p className="text-sm text-amber-700">
-                                                    You can regenerate this content only twice. This is your {regenerationCount === 0 ? 'first' : 'second'} regeneration. After two regenerations, you will not be able to regenerate this content again.
+                                                    {t('regenerationLimitWarningInline', {
+                                                        replace: {
+                                                            ordinal:
+                                                                regenerationCount === 0
+                                                                    ? t('ordinalFirst')
+                                                                    : t('ordinalSecond'),
+                                                        },
+                                                    })}
                                                 </p>
                                             </div>
                                         </div>
@@ -967,7 +989,7 @@ function RouteComponent() {
                                 ref={regenerationPromptTextareaRef}
                                 value={regenerationPrompt}
                                 onChange={(e) => setRegenerationPrompt(e.target.value)}
-                                placeholder="Enter a prompt describing how you want this page to be regenerated... (Optional - leave empty for simple regeneration)"
+                                placeholder={t('regeneratePromptPlaceholder')}
                                 className="min-h-[150px] text-sm"
                             />
                         </div>
@@ -977,7 +999,7 @@ function RouteComponent() {
                             buttonType="primary"
                             onClick={handleConfirmRegenerate}
                         >
-                            Regenerate
+                            {t('regenerateButton')}
                         </MyButton>
                     </div>
                 </DialogContent>
@@ -990,9 +1012,9 @@ function RouteComponent() {
             >
                 <DialogContent className="max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Go Back to Course Library?</DialogTitle>
+                        <DialogTitle>{t('goBackToLibraryTitle')}</DialogTitle>
                         <DialogDescription className="text-neutral-600">
-                            Are you sure you want to go back to course library? You can either discard your current course or save it to drafts.
+                            {t('goBackToLibraryDescription')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-neutral-200">
@@ -1001,21 +1023,21 @@ function RouteComponent() {
                             onClick={() => setBackToLibraryDialogOpen(false)}
                             className="min-w-[100px]"
                         >
-                            Cancel
+                            {t('actions.cancel')}
                         </MyButton>
                         <MyButton
                             buttonType="secondary"
                             onClick={handleDiscardCourse}
                             className="min-w-[120px] border-red-300 text-red-600 hover:text-red-700 hover:bg-red-50 hover:border-red-400"
                         >
-                            Discard Course
+                            {t('discardCourseButton')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
                             onClick={handleSaveToDrafts}
                             className="min-w-[130px]"
                         >
-                            Save to Drafts
+                            {t('saveToDraftsButton')}
                         </MyButton>
                     </div>
                 </DialogContent>

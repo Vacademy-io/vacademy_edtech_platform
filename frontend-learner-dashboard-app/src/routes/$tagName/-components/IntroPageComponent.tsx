@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Capacitor } from '@capacitor/core';
 import { IntroPage } from '../-types/course-catalogue-types';
 import { CaretLeft, CaretRight, X } from "@phosphor-icons/react";
@@ -6,6 +7,7 @@ import { useDomainRouting } from '@/hooks/use-domain-routing';
 import { getPublicUrlWithoutLogin } from '@/services/upload_file';
 import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
+import { useSiteT } from '../-utils/catalogue-locale';
 
 interface IntroPageComponentProps {
   introPage: IntroPage;
@@ -26,6 +28,11 @@ export const IntroPageComponent: React.FC<IntroPageComponentProps> = ({
   leadCollectionSettings,
   instituteId,
 }) => {
+  const { t } = useTranslation("coursePlayerA");
+  // Captions and field labels are authored in the catalogue JSON (introPage,
+  // leadCollection) outside the page tree, so they are translated here, for
+  // display only.
+  const siteT = useSiteT();
   const domainRouting = useDomainRouting();
   const isAndroid = Capacitor.getPlatform() === 'android';
   const isIOS = Capacitor.getPlatform() === 'ios';
@@ -146,7 +153,7 @@ export const IntroPageComponent: React.FC<IntroPageComponentProps> = ({
   };
 
   const getButtonStyle = (style: string) => {
-    const baseClasses = 'px-6 py-3 rounded-lg font-semibold transition-colors duration-200';
+    const baseClasses = 'px-6 py-3 rounded-catalogue-md font-semibold transition-colors duration-200';
     const themeColor = domainRouting.instituteThemeCode ? 
       `hsl(var(--primary))` : 
       '#3b82f6'; // design-lint-ignore: page-builder default color
@@ -218,8 +225,8 @@ export const IntroPageComponent: React.FC<IntroPageComponentProps> = ({
         <button
           onClick={onClose}
           className="absolute top-4 end-4 z-30 text-gray-400 hover:text-gray-600 transition-colors p-2 rounded-full hover:bg-gray-100"
-          aria-label="Close"
-          title="Close"
+          aria-label={t("common.close")}
+          title={t("common.close")}
         >
           <X className="w-6 h-6" aria-hidden="true" />
         </button>
@@ -228,13 +235,13 @@ export const IntroPageComponent: React.FC<IntroPageComponentProps> = ({
       {/* Logo - Use institute logo from domainRouting */}
       {instituteLogoUrl && (
         <div className={`flex-shrink-0 py-4 pt-10 md:pt-4 ${
-          introPage.logo?.alignment === 'left' ? 'self-start ps-4' : 
-          introPage.logo?.alignment === 'right' ? 'self-end pe-4' : 
+          introPage.logo?.alignment === 'left' ? 'self-start ps-4' :
+          introPage.logo?.alignment === 'right' ? 'self-end pe-4' :
           'self-center'
         }`}>
           <img
             src={instituteLogoUrl}
-            alt={domainRouting.instituteName || "Institute Logo"}
+            alt={domainRouting.instituteName || t("introPage.instituteLogo")}
             style={{ height: introPage.logo?.height || "80px" }}
             className={`object-contain${domainRouting.homeIconClickRoute ? " cursor-pointer" : ""}`}
             onClick={domainRouting.homeIconClickRoute ? handleInstituteLogoClick : undefined}
@@ -265,13 +272,15 @@ export const IntroPageComponent: React.FC<IntroPageComponentProps> = ({
             {/* Image Caption - Above the image with proper spacing */}
             <div className="absolute top-4 start-0 end-0 text-center px-4 z-10 mb-4">
               <p className="text-gray-800 text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold">
-                {image.caption}
+                {siteT(image.caption)}
               </p>
             </div>
             
             <img
               src={image.source}
-              alt={image.caption}
+              // No caption keeps the attribute absent, as before (siteT
+              // would turn it into alt="", marking the image decorative).
+              alt={image.caption ? siteT(image.caption) : image.caption}
               className="w-full h-full object-cover mt-16 md:mt-20"
               style={{
                 objectFit: introPage.imageSlider.styles.objectFit,
@@ -308,14 +317,14 @@ export const IntroPageComponent: React.FC<IntroPageComponentProps> = ({
                   ? 'text-gray-400 cursor-not-allowed' 
                   : 'text-gray-700 hover:text-gray-900 hover:bg-gray-200'
               }`}
-              title="Previous image"
+              title={t("introPage.previousImage")}
             >
               <CaretLeft className="w-8 h-8" />
             </button>
             <button
               onClick={nextImage}
               className="hidden md:block absolute end-4 top-1/2 transform -translate-y-1/2 transition-colors p-2 rounded-full text-gray-700 hover:text-gray-900 hover:bg-gray-200"
-              title="Next image"
+              title={t("introPage.nextImage")}
             >
               <CaretRight className="w-8 h-8" />
             </button>
@@ -328,15 +337,17 @@ export const IntroPageComponent: React.FC<IntroPageComponentProps> = ({
         <div className="relative w-full flex-1 bg-white flex items-center justify-center p-8">
           {leadCollectionSettings && leadCollectionSettings.enabled && instituteId && (
             <div className="w-full max-w-2xl">
-              <div className="bg-white rounded-lg shadow-lg p-6">
+              <div className="bg-white rounded-catalogue-md shadow-lg p-6">
                 <div className="flex justify-between items-center mb-6">
                   <h2 className="text-2xl font-bold text-gray-900">
-                    Get {getTerminology(ContentTerms.Course, SystemTerms.Course)} Details
+                    {t("common.getCourseDetails", {
+                      course: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                    })}
                   </h2>
                   <button
                     onClick={handleLeadFormClose}
                     className="text-gray-400 hover:text-gray-600 transition-colors"
-                    aria-label="Close"
+                    aria-label={t("common.close")}
                   >
                     <X className="w-6 h-6" aria-hidden="true" />
                   </button>
@@ -348,10 +359,10 @@ export const IntroPageComponent: React.FC<IntroPageComponentProps> = ({
                     <div>
                       {/* Progress Bar */}
                       {leadCollectionSettings.formStyle.showProgress && (
-                        <div className="mb-6">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-gray-700">Step 1 of {leadCollectionSettings.fields.length}</span>
-                            <span className="text-sm text-gray-500">Progress</span>
+                        <div className="mb-6 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-gray-700">{t("introPage.stepOfTotal", { total: leadCollectionSettings.fields.length })}</span>
+                            <span className="text-sm text-gray-500">{t("introPage.progress")}</span>
                           </div>
                           <div className="w-full bg-gray-200 rounded-full h-2">
                             <div 
@@ -367,15 +378,15 @@ export const IntroPageComponent: React.FC<IntroPageComponentProps> = ({
                         {leadCollectionSettings.fields.map((field: any, index: number) => (
                           <div key={field.name} className="space-y-2">
                             <label className="block text-sm font-medium text-gray-700">
-                              {field.label}
+                              {siteT(field.label)}
                               {field.required && <span className="text-red-500 ms-1">*</span>}
                             </label>
                             
                             {field.type === 'text' || field.type === 'email' || field.type === 'tel' ? (
                               <input
                                 type={field.type}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                placeholder={`Enter ${field.label.toLowerCase()}`}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-catalogue-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                placeholder={t("introPage.enterField", { field: siteT(field.label).toLowerCase() })}
                               />
                             ) : field.type === 'chips' && field.options ? (
                               <div className="flex flex-wrap gap-2">
@@ -384,7 +395,7 @@ export const IntroPageComponent: React.FC<IntroPageComponentProps> = ({
                                     key={optionIndex}
                                     className="px-4 py-2 border border-gray-300 rounded-full text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
                                   >
-                                    {option.label}
+                                    {siteT(option.label)}
                                   </button>
                                 ))}
                               </div>
@@ -397,15 +408,15 @@ export const IntroPageComponent: React.FC<IntroPageComponentProps> = ({
                       <div className="flex justify-end space-x-4 mt-8">
                         <button
                           onClick={handleLeadFormClose}
-                          className="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          className="px-6 py-2 border border-gray-300 rounded-catalogue-sm text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary-500"
                         >
-                          Cancel
+                          {t("common.cancel")}
                         </button>
                         <button
                           onClick={handleLeadFormSubmit}
-                          className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                          className="px-6 py-2 bg-primary-600 text-white rounded-catalogue-sm hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
                         >
-                          Submit
+                          {t("common.submit")}
                         </button>
                       </div>
                     </div>
@@ -429,7 +440,7 @@ export const IntroPageComponent: React.FC<IntroPageComponentProps> = ({
                   ? 'bg-primary-600'
                   : 'bg-gray-400'
               }`}
-              title={`Go to image ${index + 1}`}
+              title={t("introPage.goToImage", { index: index + 1 })}
             />
           ))}
         </div>
@@ -449,15 +460,15 @@ export const IntroPageComponent: React.FC<IntroPageComponentProps> = ({
                 <div className="flex flex-col gap-1 items-center">
                   <button
                     onClick={() => handleButtonClick('navigateToLogin')}
-                    className="px-6 py-3 rounded-lg font-semibold transition-colors duration-200 border hover:opacity-90"
+                    className="px-6 py-3 rounded-catalogue-md font-semibold transition-colors duration-200 border hover:opacity-90"
                     style={{
                       color: domainRouting.instituteThemeCode ? `hsl(var(--primary))` : '#3b82f6', // design-lint-ignore: page-builder default color
                       borderColor: domainRouting.instituteThemeCode ? `hsl(var(--primary))` : '#3b82f6' // design-lint-ignore: page-builder default color
                     }}
                   >
-                    Login
+                    {t("common.login")}
                   </button>
-                  <span className="text-xs text-gray-500">If already registered</span>
+                  <span className="text-xs text-gray-500">{t("introPage.ifAlreadyRegistered")}</span>
                 </div>
               )}
 
@@ -473,12 +484,12 @@ export const IntroPageComponent: React.FC<IntroPageComponentProps> = ({
                       setCurrentImageIndex(prev => prev + 1);
                     }
                   }}
-                  className="px-6 py-3 rounded-lg font-semibold transition-colors duration-200 text-white hover:opacity-90"
+                  className="px-6 py-3 rounded-catalogue-md font-semibold transition-colors duration-200 text-white hover:opacity-90"
                   style={{
                     backgroundColor: domainRouting.instituteThemeCode ? `hsl(var(--primary))` : '#3b82f6' // design-lint-ignore: page-builder default color
                   }}
                 >
-                  Next
+                  {t("common.next")}
                 </button>
               )}
             </div>
@@ -489,19 +500,19 @@ export const IntroPageComponent: React.FC<IntroPageComponentProps> = ({
       {/* Mobile Action Buttons - Fixed at bottom */}
       {!showLeadForm && (
         <div className={`md:hidden fixed bottom-0 start-0 end-0 z-60 bg-white border-t border-gray-200 p-4 ${isAndroid || isIOS ? 'mb-8' : ''}`}>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-stack">
             {/* Login Button - Mobile */}
             {introPage.actions.buttons.some(btn => btn.action === 'navigateToLogin') && (
               <div className="flex flex-col gap-1">
                 <button
                   onClick={() => handleButtonClick('navigateToLogin')}
-                  className="w-full px-4 py-2 font-medium hover:opacity-90 rounded-md border transition-colors"
+                  className="w-full px-4 py-2 font-medium hover:opacity-90 rounded-catalogue-sm border transition-colors"
                   style={{
                     color: domainRouting.instituteThemeCode ? `hsl(var(--primary))` : '#3b82f6', // design-lint-ignore: page-builder default color
                     borderColor: domainRouting.instituteThemeCode ? `hsl(var(--primary))` : '#3b82f6' // design-lint-ignore: page-builder default color
                   }}
                 >
-                  Login
+                  {t("common.login")}
                 </button>
               </div>
             )}
@@ -518,12 +529,12 @@ export const IntroPageComponent: React.FC<IntroPageComponentProps> = ({
                     setCurrentImageIndex(prev => prev + 1);
                   }
                 }}
-                className="w-full px-4 py-2 text-white font-medium hover:opacity-90 rounded-md transition-colors"
+                className="w-full px-4 py-2 text-white font-medium hover:opacity-90 rounded-catalogue-sm transition-colors"
                 style={{
                   backgroundColor: domainRouting.instituteThemeCode ? `hsl(var(--primary))` : '#3b82f6' // design-lint-ignore: page-builder default color
                 }}
               >
-                Next
+                {t("common.next")}
               </button>
             )}
           </div>

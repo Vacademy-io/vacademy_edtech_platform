@@ -1,0 +1,79 @@
+{
+    "dialog": {
+        "title": {
+            "add": "Ajouter une condition de diffusion",
+            "edit": "Modifier la condition de diffusion"
+        },
+        "description": "Configurez les règles de publication du contenu pour des packages, chapitres ou diapositives spécifiques."
+    },
+    "footer": {
+        "cancel": "Annuler",
+        "addCondition": "Ajouter la condition",
+        "saveChanges": "Enregistrer les modifications"
+    },
+    "basicSettings": {
+        "level": {
+            "label": "Niveau de contenu",
+            "placeholder": "Sélectionner un niveau",
+            "package": "Package (modèle)"
+        },
+        "levelId": {
+            "packageLabel": "Package",
+            "idLabel": "ID {{term}}",
+            "packagePlaceholder": "Sélectionner un package",
+            "idPlaceholder": "Saisir l'ID"
+        },
+        "target": {
+            "label": "Appliquer à",
+            "placeholder": "Sélectionner une cible",
+            "allItems": "Tous les {{term}}",
+            "hint": "Cette condition de diffusion s'appliquera comme modèle à tous les éléments de ce type dans le package."
+        },
+        "behavior": {
+            "label": "Comportement",
+            "placeholder": "Sélectionner un comportement",
+            "lock": "Verrouiller - visible mais inaccessible",
+            "hide": "Masquer - complètement caché",
+            "both": "Les deux - déverrouillage progressif"
+        },
+        "enabled": {
+            "label": "Activer la condition",
+            "hint": "Activer cette condition de diffusion"
+        }
+    },
+    "rules": {
+        "title": "Règles",
+        "hint": "Toutes les règles doivent être satisfaites pour déverrouiller le contenu",
+        "addPlaceholder": "Ajouter une règle",
+        "types": {
+            "dateBased": "Basée sur la date",
+            "completionBased": "Basée sur l'achèvement",
+            "prerequisite": "Prérequis",
+            "sequential": "Séquentielle"
+        },
+        "empty": "Aucune règle ajoutée pour le moment. Ajoutez au moins une règle pour continuer."
+    },
+    "ruleEditor": {
+        "dateBased": {
+            "label": "Date et heure de déverrouillage"
+        },
+        "completionBased": {
+            "metricLabel": "Type de métrique",
+            "averageOfAll": "Moyenne de tous les éléments",
+            "averageOfLastN": "Moyenne des N derniers éléments",
+            "countLabel": "Nombre d'éléments (N)",
+            "thresholdLabel": "Seuil (%)"
+        },
+        "prerequisite": {
+            "typeLabel": "Type de prérequis",
+            "requiredItems": "{{term}} requis",
+            "itemIdsLabel": "ID des éléments (séparés par des virgules)",
+            "itemIdsPlaceholder": "chapter-1, chapter-2, chapter-3",
+            "thresholdLabel": "Seuil d'achèvement (%)"
+        },
+        "sequential": {
+            "thresholdLabel": "Seuil d'achèvement (%)",
+            "hint": "L'élément précédent doit être complété jusqu'à ce seuil"
+        }
+    }
+}

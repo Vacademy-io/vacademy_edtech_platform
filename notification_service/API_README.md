@@ -527,6 +527,8 @@ Base path: `/notification-service/v1/message-replies`
 ## Institute Announcement Settings
 Base path: `/notification-service/v1/institute-settings`
 
+> Auth: create/update (`POST /institute-settings`) and `DELETE /institute-settings/institute/{id}` need a JWT (`Authorization: Bearer …`) plus a `clientId` header, and the caller must be an ADMIN of that institute. `GET …/all` is closed (403). `GET …/institute/{id}`, `…/permissions`, `/default-template` and `POST /validate` stay public. Responses never include the Firebase service-account key; `settings.firebase.configured` reports whether one is stored (absent when there is no firebase block). The curl examples below omit the auth headers.
+
 - Create/Update Settings
   - POST `/notification-service/v1/institute-settings`
   - Body: `InstituteAnnouncementSettingsRequest`

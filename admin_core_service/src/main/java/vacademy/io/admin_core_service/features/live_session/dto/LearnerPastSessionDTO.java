@@ -53,6 +53,12 @@ public class LearnerPastSessionDTO {
     private String linkType;
     private String thumbnailFileId;
 
+    /**
+     * Instructors / presenters of the class (V524). Omitted (not null) when it
+     * can't be resolved, per the class-level NON_NULL include.
+     */
+    private List<LiveSessionInstructorDTO> instructors;
+
     /** Only present when display_flags.show_recordings is true. */
     private List<LearnerRecordingDTO> recordings;
 

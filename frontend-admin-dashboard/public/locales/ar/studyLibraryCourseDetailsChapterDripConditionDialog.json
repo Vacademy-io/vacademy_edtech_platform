@@ -1,0 +1,59 @@
+{
+    "dialog": {
+        "heading": "شروط الإتاحة التدريجية - {{chapterName}}",
+        "defaultChapterName": "الفصل",
+        "chapterDripConditions": "شروط الإتاحة التدريجية للفصل",
+        "emptyState": "لا توجد شروط إتاحة تدريجية لهذا الفصل حتى الآن."
+    },
+    "packageConflict": {
+        "title": "شروط على مستوى الكورس نشطة",
+        "courseLevel": "مستوى الكورس",
+        "explanation": "تنطبق هذه الشروط على مستوى الكورس على جميع الفصول. يتم تعطيل الشروط الخاصة بالفصل عندما تستهدف شروط الكورس الفصول."
+    },
+    "behavior": {
+        "lock": "قفل"
+    },
+    "behaviorOptions": {
+        "lock": "قفل (إظهار مع منع الوصول)",
+        "hide": "إخفاء (مخفي تمامًا)"
+    },
+    "ruleTypes": {
+        "dateBased": "بناءً على التاريخ",
+        "completionBased": "بناءً على الإكمال",
+        "prerequisite": "متطلب أساسي",
+        "sequential": "تسلسلي"
+    },
+    "form": {
+        "releaseDate": "تاريخ الإتاحة",
+        "metric": "المقياس",
+        "averageOfAll": "متوسط الكل",
+        "averageOfLastN": "متوسط آخر N",
+        "count": "العدد",
+        "thresholdPercent": "نسبة الحد %",
+        "requiredChapters": "الفصول المطلوبة",
+        "selectChapters": "اختر الفصول",
+        "requiredChaptersHint": "اختر الفصول التي يجب إكمالها قبل إلغاء القفل",
+        "completionThresholdPercent": "نسبة حد الإكمال %",
+        "prerequisiteThresholdHint": "نسبة الإكمال المطلوبة للفصول المتطلَّبة مسبقًا",
+        "requiresPreviousCompletion": "يتطلب إكمال الفصل السابق",
+        "sequentialThresholdHint": "نسبة الإكمال المطلوبة للفصل السابق",
+        "behavior": "السلوك",
+        "unlockRule": "قاعدة إلغاء القفل",
+        "noRuleConfigured": "لم يتم تكوين أي قاعدة. يرجى تكوين قاعدة إلغاء قفل أدناه.",
+        "enableConditionLabel": "تفعيل شرط هذا الفصل",
+        "enableConditionHint": "يتحكم فيما إذا كان شرط الإتاحة التدريجية هذا نشطًا"
+    },
+    "actions": {
+        "addCondition": "إضافة شرط",
+        "edit": "تعديل",
+        "deleteConditionTitle": "حذف الشرط",
+        "close": "إغلاق",
+        "saving": "جارٍ الحفظ...",
+        "saveCondition": "حفظ الشرط"
+    },
+    "alerts": {
+        "cannotDeleteEnabled": "لا يمكن حذف شرط مفعّل. يرجى تعطيل شرط الإتاحة التدريجية للفصل أولًا.",
+        "confirmDelete": "هل أنت متأكد أنك تريد حذف شرط الإتاحة التدريجية هذا؟",
+        "fillRequiredFields": "يرجى ملء جميع الحقول المطلوبة"
+    }
+}

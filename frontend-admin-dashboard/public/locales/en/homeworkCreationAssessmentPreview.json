@@ -1,0 +1,22 @@
+{
+    "joinLink": {
+        "label": "Join Link:"
+    },
+    "announcement": {
+        "dialogTitle": "Live Homework Announcement",
+        "empty": "No Announcement Exists",
+        "postedTodayAt": "Today, 11:28 AM"
+    },
+    "actions": {
+        "save": "Save",
+        "exit": "Exit",
+        "addQuestion": "Add Question"
+    },
+    "questionType": {
+        "MCQS": "MCQ (Single Correct)",
+        "MCQM": "MCQ (Multiple Correct)"
+    },
+    "errors": {
+        "incompleteQuestions": "some of your questions are incomplete or needs attentions!"
+    }
+}

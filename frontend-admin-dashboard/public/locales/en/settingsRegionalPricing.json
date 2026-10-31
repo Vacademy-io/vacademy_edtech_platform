@@ -1,0 +1,93 @@
+{
+    "title": "Regional pricing — {{name}}",
+    "section": {
+        "title": "Regional pricing",
+        "afterSave": "After you save, the regional pricing panel opens. There you can check the automatic prices and set exact prices for specific countries."
+    },
+    "steps": {
+        "settings": "1. Turn on and choose currencies",
+        "prices": "2. Prices for each plan"
+    },
+    "settings": {
+        "enabledLabel": "Charge learners in their own country's price",
+        "enabledHelp": "We detect each learner's country from their internet connection. Learners in a country you have priced pay that price; everyone else pays this plan's normal price.",
+        "currenciesLabel": "Currencies to price automatically",
+        "currenciesHelp": "For each currency you pick, every plan gets a price converted from its normal price at today's exchange rate and rounded to a clean amount (for example ₹999 becomes $11.99). Learners in every country that uses that currency pay it.",
+        "currenciesPlaceholder": "Search and pick currencies, e.g. US Dollar",
+        "noCurrencies": "No currency picked yet, so only countries you give a fixed price will see a different price.",
+        "ratesFetched": "Exchange rates updated {{date}}",
+        "ratesNever": "Exchange rates have not been fetched yet",
+        "gatewayNote": "Learners are only charged in a currency your payment gateway accepts. PhonePe and Cashfree take INR only, and eWay takes AUD and NZD. Razorpay needs international payments switched on in your Razorpay account."
+    },
+    "plans": {
+        "explain": "Automatic prices follow the exchange rate. You can type over any of them, or add a fixed price for a single country. A country price always wins over the currency price.",
+        "offNote": "Regional pricing is off, so every learner pays the normal price. The prices below are kept for when you switch it on.",
+        "empty": "This payment option has no plans.",
+        "basePrice": "Normal price {{price}}",
+        "freePlan": "Free plans are free everywhere.",
+        "byCurrency": "Automatic prices by currency",
+        "byCountry": "Fixed prices for specific countries",
+        "noCurrencyPrices": "None yet. Pick currencies in step 1 to create them.",
+        "noCountryPrices": "None yet."
+    },
+    "row": {
+        "allCountries": "Everyone paying in {{currency}}",
+        "paidIn": "Paid in {{currency}}",
+        "reviewHint": "This plan's normal price changed after you set this. Check it still fits.",
+        "price": "Price ({{currency}})",
+        "strikePrice": "Strike-through price (optional)",
+        "priceInvalid": "Enter a price above 0"
+    },
+    "source": {
+        "auto": "Automatic",
+        "manual": "Set by you",
+        "review": "Check price"
+    },
+    "add": {
+        "button": "Add a price for a specific country",
+        "title": "Fixed price for one country",
+        "country": "Country",
+        "countryPlaceholder": "Choose a country",
+        "countrySearch": "Search countries…",
+        "countryEmpty": "No country found",
+        "currency": "Currency they pay in",
+        "currencyPlaceholder": "Choose a currency",
+        "currencySearch": "Search currencies…",
+        "currencyEmpty": "No currency found",
+        "currencyHint": "Filled in with the local currency of {{country}}. Change it if you want to charge in another one.",
+        "price": "Price {{currency}}",
+        "auto": "Work the price out from the exchange rate instead",
+        "save": "Add price"
+    },
+    "delete": {
+        "title": "Remove the price for {{region}}?",
+        "description": "Learners there will get the price for their currency, or the normal price."
+    },
+    "actions": {
+        "close": "Close",
+        "retry": "Try again",
+        "refresh": "Refresh rates now",
+        "refreshing": "Refreshing…",
+        "saveSettings": "Save",
+        "saving": "Saving…",
+        "save": "Save",
+        "keep": "Keep this price",
+        "resetToAuto": "Reset to automatic",
+        "delete": "Remove",
+        "cancel": "Cancel",
+        "openDialog": "Regional pricing"
+    },
+    "toast": {
+        "settingsSaved": "Regional pricing saved",
+        "refreshed": "Prices updated from today's exchange rates",
+        "refreshFailed": "Could not refresh exchange rates",
+        "priceSaved": "Price saved",
+        "kept": "Price kept",
+        "reset": "Price set back to automatic",
+        "deleted": "Price removed",
+        "saveFailed": "Could not save. Please try again."
+    },
+    "error": {
+        "load": "Could not load regional pricing."
+    }
+}

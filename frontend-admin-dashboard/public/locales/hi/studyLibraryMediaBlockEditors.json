@@ -1,0 +1,20 @@
+{
+    "uploading": "अपलोड हो रहा है…",
+    "noImage": "कोई छवि नहीं",
+    "uploadImage": "छवि अपलोड करें",
+    "imageUploadFailed": "छवि अपलोड करने में विफल",
+    "altTextPlaceholder": "Alt टेक्स्ट (वैकल्पिक)",
+    "noVideo": "कोई वीडियो नहीं",
+    "uploadVideo": "वीडियो अपलोड करें",
+    "videoUploadFailed": "वीडियो अपलोड करने में विफल",
+    "noFile": "कोई फ़ाइल नहीं",
+    "uploadFile": "फ़ाइल अपलोड करें",
+    "fileUploadFailed": "फ़ाइल अपलोड करने में विफल",
+    "downloadFile": "फ़ाइल डाउनलोड करें",
+    "noEmbed": "कोई एम्बेड नहीं",
+    "embedUrlPlaceholder": "YouTube / Vimeo / Loom / कोई भी URL पेस्ट करें",
+    "embed": "एम्बेड करें",
+    "embeddedContentTitle": "एम्बेडेड सामग्री",
+    "calloutPlaceholder": "एक कॉलआउट लिखें…",
+    "themeAriaLabel": "{{theme}} थीम"
+}

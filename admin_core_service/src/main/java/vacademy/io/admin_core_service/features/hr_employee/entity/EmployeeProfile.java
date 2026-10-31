@@ -92,17 +92,21 @@ public class EmployeeProfile {
     @Column(name = "marital_status", length = 20)
     private String maritalStatus;
 
-    @Column(name = "pan_number", length = 20)
+    @Convert(converter = vacademy.io.admin_core_service.core.crypto.EncryptedStringConverter.class)
+    @Column(name = "pan_number", length = 512)
     private String panNumber;
 
     @Column(name = "tax_id_number", length = 50)
     private String taxIdNumber;
 
-    @Column(name = "uan_number", length = 20)
+    @Convert(converter = vacademy.io.admin_core_service.core.crypto.EncryptedStringConverter.class)
+    @Column(name = "uan_number", length = 512)
     private String uanNumber;
 
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "statutory_info", columnDefinition = "jsonb")
+    // Encrypted at rest as TEXT (V480 converted jsonb -> text); legacy plaintext
+    // JSON rows read through the converter unchanged.
+    @Convert(converter = vacademy.io.admin_core_service.core.crypto.EncryptedJsonMapConverter.class)
+    @Column(name = "statutory_info", columnDefinition = "TEXT")
     private Map<String, Object> statutoryInfo;
 
     @JdbcTypeCode(SqlTypes.JSON)

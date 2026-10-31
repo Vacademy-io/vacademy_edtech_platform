@@ -7,6 +7,7 @@
  * data fetching, no business logic.
  */
 import * as React from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -78,12 +79,18 @@ export const ProfileFieldRow = ({
     value,
     copied,
     onCopy,
+    action,
 }: {
     label: string;
     value: React.ReactNode;
     copied?: boolean;
     onCopy?: () => void;
+    /** Optional control rendered after the copy button — e.g. the click-to-call
+     *  button on the mobile row. Shown only when the row has a real value, so a
+     *  blank field never offers an action that cannot work. */
+    action?: React.ReactNode;
 }) => {
+    const { t } = useTranslation('manageStudentsProfileUi');
     // A value counts as "empty" — rendered as an em-dash with NO copy icon — when
     // it's nullish or a blank/placeholder string (whitespace, N/A, null, a dash).
     // Non-string nodes (badges, links) are always treated as present.
@@ -111,7 +118,7 @@ export const ProfileFieldRow = ({
                     <button
                         type="button"
                         onClick={onCopy}
-                        aria-label={`Copy ${label}`}
+                        aria-label={t('fieldRow.copyAriaLabel', { label })}
                         className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-card-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
                     >
                         {copied ? (
@@ -121,6 +128,7 @@ export const ProfileFieldRow = ({
                         )}
                     </button>
                 )}
+                {action && !isEmpty && <span className="shrink-0">{action}</span>}
             </dd>
         </div>
     );
@@ -163,28 +171,33 @@ export const ProfileEmpty = ({
 // ── Error state ───────────────────────────────────────────────────────────────
 
 export const ProfileError = ({
-    title = "Couldn't load this section",
-    hint = 'Something went wrong. Please try again.',
+    title,
+    hint,
     onRetry,
 }: {
     title?: string;
     hint?: string;
     onRetry?: () => void;
-}) => (
-    <div className="flex flex-col items-center gap-3 rounded-lg border border-danger-200 bg-danger-50 px-4 py-8 text-center">
-        <Warning className="size-8 text-danger-500" weight="fill" />
-        <div>
-            <p className="text-sm font-semibold text-neutral-800">{title}</p>
-            <p className="mt-0.5 text-xs text-neutral-500">{hint}</p>
+}) => {
+    const { t } = useTranslation('manageStudentsProfileUi');
+    const resolvedTitle = title ?? t('error.defaultTitle');
+    const resolvedHint = hint ?? t('error.defaultHint');
+    return (
+        <div className="flex flex-col items-center gap-3 rounded-lg border border-danger-200 bg-danger-50 px-4 py-8 text-center">
+            <Warning className="size-8 text-danger-500" weight="fill" />
+            <div>
+                <p className="text-sm font-semibold text-neutral-800">{resolvedTitle}</p>
+                <p className="mt-0.5 text-xs text-neutral-500">{resolvedHint}</p>
+            </div>
+            {onRetry && (
+                <MyButton buttonType="secondary" scale="small" onClick={onRetry}>
+                    <ArrowClockwise className="size-4" />
+                    {t('error.retry')}
+                </MyButton>
+            )}
         </div>
-        {onRetry && (
-            <MyButton buttonType="secondary" scale="small" onClick={onRetry}>
-                <ArrowClockwise className="size-4" />
-                Retry
-            </MyButton>
-        )}
-    </div>
-);
+    );
+};
 
 // ── Circular progress ring ────────────────────────────────────────────────────
 
@@ -483,6 +496,7 @@ export const ProfileQuickContact = ({
     whatsapp?: string | null;
     className?: string;
 }) => {
+    const { t } = useTranslation('manageStudentsProfileUi');
     const items: Array<{
         key: 'email' | 'call' | 'whatsapp';
         href: string;
@@ -495,7 +509,7 @@ export const ProfileQuickContact = ({
         items.push({
             key: 'email',
             href: `mailto:${email.trim()}`,
-            label: 'Email',
+            label: t('quickContact.email'),
             title: email.trim(),
             Icon: Envelope,
         });
@@ -504,7 +518,7 @@ export const ProfileQuickContact = ({
         items.push({
             key: 'call',
             href: `tel:${phone.trim()}`,
-            label: 'Call',
+            label: t('quickContact.call'),
             title: phone.trim(),
             Icon: Phone,
         });
@@ -516,7 +530,7 @@ export const ProfileQuickContact = ({
             items.push({
                 key: 'whatsapp',
                 href: `https://wa.me/${digits}`,
-                label: 'WhatsApp',
+                label: t('quickContact.whatsapp'),
                 title: waSource.trim(),
                 Icon: WhatsappLogo,
                 external: true,

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStudentSubjectsProgressQuery } from '@/routes/manage-students/students-list/-services/getStudentSubjects';
 import { useStudentSidebar } from '@/routes/manage-students/students-list/-context/selected-student-sidebar-context';
 import { BatchPicker } from '../BatchPicker';
@@ -55,6 +56,7 @@ function calcSubjectPercentage(subject: SubjectWithDetails): number {
 }
 
 export const StudentLearningProgress = ({ isSubmissionTab }: { isSubmissionTab?: boolean }) => {
+    const { t } = useTranslation('manageStudentsLearningProgress');
     const [currentSubjectDetails, setCurrentSubjectDetails] = useState<SubjectWithDetails | null>(
         null
     );
@@ -153,7 +155,7 @@ export const StudentLearningProgress = ({ isSubmissionTab }: { isSubmissionTab?:
     };
 
     if (selectedStudent == null)
-        return <ProfileEmpty icon={GraduationCap} title="Learner details unavailable" />;
+        return <ProfileEmpty icon={GraduationCap} title={t('emptyState.learnerUnavailable')} />;
 
     // Picker stays visible across loading/error/empty so admin can still switch batches.
     const picker = !isSubmissionTab && (
@@ -161,7 +163,7 @@ export const StudentLearningProgress = ({ isSubmissionTab }: { isSubmissionTab?:
             packageSessionIds={enrollmentPsIds}
             value={selectedPsId}
             onChange={setSelectedPsId}
-            label="View progress for"
+            label={t('batchPicker.label')}
         />
     );
 
@@ -177,8 +179,8 @@ export const StudentLearningProgress = ({ isSubmissionTab }: { isSubmissionTab?:
             <div className="flex flex-col gap-3">
                 {picker}
                 <ProfileError
-                    title="Couldn't load learning progress"
-                    hint="Something went wrong while fetching this learner's progress."
+                    title={t('errorState.title')}
+                    hint={t('errorState.hint')}
                     onRetry={() => refetch()}
                 />
             </div>
@@ -194,8 +196,8 @@ export const StudentLearningProgress = ({ isSubmissionTab }: { isSubmissionTab?:
                 {picker}
                 <ProfileEmpty
                     icon={Stack}
-                    title="No course content yet"
-                    hint="No subjects have been created for this batch."
+                    title={t('emptyState.noCourseContent')}
+                    hint={t('emptyState.noCourseContentHint')}
                 />
             </div>
         );
@@ -270,8 +272,8 @@ export const StudentLearningProgress = ({ isSubmissionTab }: { isSubmissionTab?:
 
                 {/* ── Hero ─────────────────────────────────────────────── */}
                 <ProfileHero
-                    eyebrow={batch?.package_dto.package_name || 'Course'}
-                    title={`${Math.round(percentageCompleted)}% Complete`}
+                    eyebrow={batch?.package_dto.package_name || t('hero.courseFallback')}
+                    title={t('hero.percentComplete', { percent: Math.round(percentageCompleted) })}
                     subtitle={
                         batch
                             ? `${batch.session.session_name} · ${batch.level.level_name}`
@@ -286,11 +288,10 @@ export const StudentLearningProgress = ({ isSubmissionTab }: { isSubmissionTab?:
                             <StatusChip
                                 status="WARNING"
                                 textSize="text-caption"
-                                text={`Behind on ${behindCount} ${
-                                    behindCount === 1
-                                        ? subjectTermLabel.toLowerCase()
-                                        : `${subjectTermLabel.toLowerCase()}s`
-                                }`}
+                                text={t('hero.behindOn', {
+                                    count: behindCount,
+                                    term: subjectTermLabel.toLowerCase(),
+                                })}
                             />
                         )}
                     </div>
@@ -304,7 +305,7 @@ export const StudentLearningProgress = ({ isSubmissionTab }: { isSubmissionTab?:
                         onClick={handleLearningTimeLineClick}
                     >
                         <ClockCounterClockwise className="size-4" />
-                        Learning Timeline
+                        {t('actions.learningTimeline')}
                     </MyButton>
                     <MyButton
                         buttonType="secondary"
@@ -312,7 +313,7 @@ export const StudentLearningProgress = ({ isSubmissionTab }: { isSubmissionTab?:
                         onClick={handleLearningProgressClick}
                     >
                         <ChartLineUp className="size-4" />
-                        Learning Progress
+                        {t('actions.learningProgress')}
                     </MyButton>
                 </ProfileActionBar>
 
@@ -320,7 +321,7 @@ export const StudentLearningProgress = ({ isSubmissionTab }: { isSubmissionTab?:
                        modules to show; modules are an accordion stack. ─────── */}
                 <ProfileSectionCard
                     icon={Stack}
-                    heading="Course Content"
+                    heading={t('courseContent.heading')}
                     action={
                         subjectsWithChapters.length > 1 ? (
                             <MyDropdown
@@ -330,7 +331,9 @@ export const StudentLearningProgress = ({ isSubmissionTab }: { isSubmissionTab?:
                                 dropdownList={subjectsWithChapters.map(
                                     (s) => s.subject_dto.subject_name
                                 )}
-                                placeholder={`Select ${subjectTermLabel.toLowerCase()}`}
+                                placeholder={t('courseContent.selectSubject', {
+                                    term: subjectTermLabel.toLowerCase(),
+                                })}
                                 handleChange={(value: string) => {
                                     const next = subjectsWithChapters.find(
                                         (s) => s.subject_dto.subject_name === value
@@ -344,8 +347,10 @@ export const StudentLearningProgress = ({ isSubmissionTab }: { isSubmissionTab?:
                     {currentSubjectDetails == null ||
                     currentSubjectDetails.modules.length === 0 ? (
                         <p className="px-1 py-2 text-caption italic text-muted-foreground">
-                            No {moduleTermLabel.toLowerCase()}s for this{' '}
-                            {subjectTermLabel.toLowerCase()}.
+                            {t('courseContent.noModules', {
+                                moduleTerm: moduleTermLabel.toLowerCase(),
+                                subjectTerm: subjectTermLabel.toLowerCase(),
+                            })}
                         </p>
                     ) : (
                         <div className="flex flex-col gap-2.5">
@@ -390,7 +395,10 @@ export const StudentLearningProgress = ({ isSubmissionTab }: { isSubmissionTab?:
                                                 )}
                                             </span>
                                             <span className="min-w-0 flex-1 truncate text-body font-semibold text-card-foreground">
-                                                {moduleTermLabel}: {mod.module.module_name}
+                                                {t('courseContent.moduleLabel', {
+                                                    moduleTerm: moduleTermLabel,
+                                                    moduleName: mod.module.module_name,
+                                                })}
                                             </span>
                                             <div className="w-24 shrink-0">
                                                 <ProfileMiniBar value={modPct} label="" />
@@ -405,8 +413,10 @@ export const StudentLearningProgress = ({ isSubmissionTab }: { isSubmissionTab?:
                                             <div className="flex flex-col bg-card px-4 pb-3 pt-1.5">
                                                 {mod.chapters.length === 0 ? (
                                                     <p className="py-2 text-caption italic text-muted-foreground">
-                                                        No chapters in this{' '}
-                                                        {moduleTermLabel.toLowerCase()}.
+                                                        {t('courseContent.noChapters', {
+                                                            moduleTerm:
+                                                                moduleTermLabel.toLowerCase(),
+                                                        })}
                                                     </p>
                                                 ) : (
                                                     mod.chapters.map((chapter, idx) => {

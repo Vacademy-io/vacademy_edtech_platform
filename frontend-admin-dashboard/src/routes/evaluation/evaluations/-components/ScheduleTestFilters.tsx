@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils';
 import { MyFilterOption, MyFilterProps } from '@/types/assessments/my-filter';
 import { Check } from 'lucide-react';
 import { PlusCircle } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 
 export const ScheduleTestFilters = ({
     label,
@@ -20,6 +21,7 @@ export const ScheduleTestFilters = ({
     selectedItems,
     onSelectionChange,
 }: MyFilterProps) => {
+    const { t } = useTranslation('evaluationScheduleTestFilters');
     const toggleSelection = (option: MyFilterOption) => {
         const updatedItems = selectedItems.some((item) => item.id === option.id)
             ? selectedItems.filter((item) => item.id !== option.id)
@@ -43,7 +45,7 @@ export const ScheduleTestFilters = ({
                         <>
                             <Separator orientation="vertical" className="mx-2 bg-black" />
                             <span className="rounded-md bg-primary-200 px-3 py-1 text-xs">
-                                {selectedItems.length} selected
+                                {t('selectedCount', { count: selectedItems.length })}
                             </span>
                         </>
                     )}
@@ -51,9 +53,9 @@ export const ScheduleTestFilters = ({
             </PopoverTrigger>
             <PopoverContent className="w-[200px] p-0" align="start">
                 <Command>
-                    <CommandInput placeholder={`Search ${label}...`} />
+                    <CommandInput placeholder={t('searchPlaceholder', { label })} />
                     <CommandList>
-                        <CommandEmpty>No results found.</CommandEmpty>
+                        <CommandEmpty>{t('noResultsFound')}</CommandEmpty>
                         <CommandGroup heading={label}>
                             {data?.map((option, index) => {
                                 const isSelected = selectedItems.some(

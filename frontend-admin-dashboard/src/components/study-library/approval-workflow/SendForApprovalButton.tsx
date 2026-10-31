@@ -2,10 +2,16 @@ import React, { useState } from 'react';
 import { MyButton } from '@/components/design-system/button';
 import { CheckCircle, Eye, Spinner } from '@phosphor-icons/react';
 import { useMutation } from '@tanstack/react-query';
-import { submitForReview } from '@/routes/study-library/courses/-services/approval-services';
+import {
+    isCourseApprovalRequired,
+    publishCourse,
+    submitForReview,
+} from '@/routes/study-library/courses/-services/approval-services';
 import { toast } from 'sonner';
 import { useNavigate } from '@tanstack/react-router';
 import { ChangesPreviewModal } from './ChangesPreviewModal';
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 interface SendForApprovalButtonProps {
     courseId: string;
@@ -20,20 +26,34 @@ export function SendForApprovalButton({
 }: SendForApprovalButtonProps) {
     const [showPreview, setShowPreview] = useState(false);
     const navigate = useNavigate();
+    // Role toggle: off (default) publishes the draft directly; on routes it
+    // through Submit for Review -> admin approval.
+    const requireApproval = isCourseApprovalRequired();
+    const courseTerm = getTerminology(ContentTerms.Course, SystemTerms.Course);
 
-    // Submit for review mutation
+    // Submit for review / direct publish mutation
     const submitMutation = useMutation({
-        mutationFn: (courseId: string) => submitForReview(courseId),
+        mutationFn: (courseId: string) =>
+            requireApproval ? submitForReview(courseId) : publishCourse(courseId),
         onSuccess: () => {
-            toast.success('Course submitted for review successfully!');
-            // Navigate to courses page with "Courses In Review" tab
+            toast.success(
+                requireApproval
+                    ? `${courseTerm} submitted for review successfully!`
+                    : `${courseTerm} published successfully!`
+            );
+            // Land on the tab where the course now shows up
             navigate({
                 to: '/study-library/courses',
-                search: { selectedTab: 'CourseInReview' },
+                search: { selectedTab: requireApproval ? 'CourseInReview' : 'AuthoredCourses' },
             });
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to submit course for review');
+            toast.error(
+                error.message ||
+                    (requireApproval
+                        ? `Failed to submit ${courseTerm.toLocaleLowerCase()} for review`
+                        : `Failed to publish ${courseTerm.toLocaleLowerCase()}`)
+            );
         },
     });
 
@@ -74,12 +94,12 @@ export function SendForApprovalButton({
                         {submitMutation.isPending ? (
                             <>
                                 <Spinner size={16} className="mr-2 animate-spin" />
-                                Submitting...
+                                {requireApproval ? 'Submitting...' : 'Publishing...'}
                             </>
                         ) : (
                             <>
                                 <CheckCircle size={16} className="mr-2" />
-                                Send for Approval
+                                {requireApproval ? 'Send for Approval' : 'Publish'}
                             </>
                         )}
                     </MyButton>
@@ -93,6 +113,7 @@ export function SendForApprovalButton({
                 courseId={courseId}
                 onSubmitForApproval={handleSubmitForApproval}
                 isSubmitting={submitMutation.isPending}
+                requireApproval={requireApproval}
             />
         </>
     );

@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useFieldArray, UseFormReturn } from 'react-hook-form';
 import { AudienceCampaignForm } from '../../-schema/AudienceCampaignSchema';
 import { Sortable, SortableDragHandle, SortableItem } from '@/components/ui/sortable';
@@ -11,6 +12,7 @@ import {
     AddCustomFieldDialog as SharedAddCustomFieldDialog,
     type DropdownOption,
     type CustomFieldConfig,
+    type ParentFieldCandidate,
 } from '@/components/common/custom-fields/AddCustomFieldDialog';
 import { CustomFieldRenderer } from '@/components/common/custom-fields/CustomFieldRenderer';
 import {
@@ -20,6 +22,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { getCustomFieldUsages } from '@/services/custom-field-mappings';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
+import { isDropdownFieldType, savedFieldKeyOf } from '../../-utils/campaignFormFields';
 
 /**
  * Props interface for Campaign Custom Fields Card
@@ -88,6 +91,7 @@ const CampaignCustomFieldsCard = ({
     handleEditFieldAt,
     campaignId,
 }: CampaignCustomFieldsCardProps) => {
+    const { t } = useTranslation('audienceManagerCampaignCustomFieldsCard');
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const { control, getValues } = form;
     const { instituteDetails } = useInstituteDetailsStore();
@@ -121,13 +125,58 @@ const CampaignCustomFieldsCard = ({
     const otherFormNames = otherFormsUsingField
         .map((usage) => usage.type_display_name)
         .filter(Boolean) as string[];
+    const otherFormNamesList =
+        otherFormNames.length > 0
+            ? ` (${otherFormNames.slice(0, 3).join(', ')}${otherFormNames.length > 3 ? ', …' : ''})`
+            : '';
     const sharedFieldNotice =
         otherFormsUsingField.length === 0
             ? null
-            : `This field is shared with ${otherFormsUsingField.length} other form` +
-              `${otherFormsUsingField.length > 1 ? 's' : ''}` +
-              `${otherFormNames.length > 0 ? ` (${otherFormNames.slice(0, 3).join(', ')}${otherFormNames.length > 3 ? ', …' : ''})` : ''}` +
-              '. Its type, label and options are stored once, so changing them here changes them there too.';
+            : t('sharedFieldNotice', {
+                  count: otherFormsUsingField.length,
+                  names: otherFormNamesList,
+              });
+
+    /**
+     * The dropdowns a dropdown may depend on: every other live dropdown in this form,
+     * minus any that already depends on it (directly or further up), which would loop.
+     * Undefined without an institute, which hides "Depends on" altogether.
+     */
+    const parentCandidatesFor = (selfIndex: number | null): ParentFieldCandidate[] | undefined => {
+        if (!instituteId) return undefined;
+        const live = (customFields ?? [])
+            .map((field, index) => ({ field, index, key: savedFieldKeyOf(field, instituteId) }))
+            .filter(
+                ({ field, key }) =>
+                    key &&
+                    (field as unknown as { status?: string }).status !== 'DELETED' &&
+                    isDropdownFieldType(field.type)
+            );
+        const parentOf = new Map(
+            live.map(({ field, key }) => [key, field.config?.parentFieldKey as string | undefined])
+        );
+        const selfKey =
+            selfIndex !== null ? savedFieldKeyOf(customFields?.[selfIndex], instituteId) : '';
+        const dependsOnSelf = (key: string) => {
+            const seen = new Set<string>();
+            let cursor: string | undefined = key;
+            while (cursor && !seen.has(cursor)) {
+                if (cursor === selfKey) return true;
+                seen.add(cursor);
+                cursor = parentOf.get(cursor);
+            }
+            return false;
+        };
+        return live
+            .filter(({ index, key }) => index !== selfIndex && !(selfKey && dependsOnSelf(key)))
+            .map(({ field, key }) => ({
+                key,
+                label: field.name,
+                options: Array.from(
+                    new Set((field.options ?? []).map((o) => o.value.trim()).filter(Boolean))
+                ),
+            }));
+    };
 
     const previewFields = customFields?.filter(
         (field) => (field as unknown as { status?: string }).status !== 'DELETED'
@@ -137,10 +186,8 @@ const CampaignCustomFieldsCard = ({
         <Card className="mb-4">
             <CardHeader>
                 <CardTitle className="flex flex-col text-lg font-semibold">
-                    <span className="text-2xl font-bold">Customize Campaign Form</span>
-                    <span className="text-sm text-gray-600">
-                        Configure the fields students will fill out. Fields from settings are automatically loaded.
-                    </span>
+                    <span className="text-2xl font-bold">{t('header.title')}</span>
+                    <span className="text-sm text-gray-600">{t('header.description')}</span>
                 </CardTitle>
             </CardHeader>
             <CardContent>
@@ -172,7 +219,6 @@ const CampaignCustomFieldsCard = ({
                                                         name={field.name}
                                                         type={field.type}
                                                         isRequired={field.isRequired}
-                                                        locked={field.oldKey}
                                                         isEditing={isEditing}
                                                         onToggleRequired={() =>
                                                             toggleIsRequired(index)
@@ -215,7 +261,7 @@ const CampaignCustomFieldsCard = ({
                                         handleAddPhoneNumber('textfield', 'Phone Number', false);
                                     }}
                                 >
-                                    <Plus size={32} /> Add Phone Number
+                                    <Plus size={32} /> {t('actions.addPhoneNumber')}
                                 </MyButton>
                             )}
 
@@ -227,7 +273,7 @@ const CampaignCustomFieldsCard = ({
                                     scale="medium"
                                     buttonType="secondary"
                                 >
-                                    <Plus size={32} /> Add Custom Field
+                                    <Plus size={32} /> {t('actions.addCustomField')}
                                 </MyButton>
                             }
                             onAddField={(type, name, oldKey, options, config) =>
@@ -238,6 +284,7 @@ const CampaignCustomFieldsCard = ({
                                     ?.filter((f) => (f as any).status !== 'DELETED')
                                     .map((f) => f.name) ?? []
                             }
+                            parentCandidates={parentCandidatesFor(null)}
                         />
                         {/* Editing reuses the add dialog, prefilled. Keyed per row so opening a
                             different field re-runs the prefill. */}
@@ -262,7 +309,14 @@ const CampaignCustomFieldsCard = ({
                                     options: (customFieldsArray[editingIndex].options ?? []).map(
                                         (o) => o.value
                                     ),
+                                    optionParents: (
+                                        customFieldsArray[editingIndex].options ?? []
+                                    ).map((o) => o.parent),
                                     isRequired: customFieldsArray[editingIndex].isRequired,
+                                    // So editing opens on the help text / file limits /
+                                    // verification the field already carries, rather than
+                                    // silently resetting them on save.
+                                    config: customFieldsArray[editingIndex].config,
                                 }}
                                 onAddField={(type, name, _oldKey, options, config) => {
                                     handleEditFieldAt(
@@ -285,6 +339,7 @@ const CampaignCustomFieldsCard = ({
                                         )
                                         .map((f) => f.name) ?? []
                                 }
+                                parentCandidates={parentCandidatesFor(editingIndex)}
                             />
                         )}
                     </div>
@@ -298,12 +353,12 @@ const CampaignCustomFieldsCard = ({
                                 buttonType="secondary"
                                 className="mt-4 w-fit"
                             >
-                                Preview Registration Form
+                                {t('actions.previewForm')}
                             </MyButton>
                         </DialogTrigger>
-                        <DialogContent className="flex max-h-[80vh] flex-col p-0">
+                        <DialogContent className="flex max-h-dialog-tall flex-col p-0">
                             <h1 className="shrink-0 rounded-md bg-primary-50 p-4 font-semibold text-primary-500">
-                                Preview Registration Form
+                                {t('actions.previewForm')}
                             </h1>
                             <div className="flex-1 flex-col gap-4 overflow-y-auto px-4 py-2">
                                 {previewFields?.map((testInputFields, idx) => {
@@ -311,7 +366,7 @@ const CampaignCustomFieldsCard = ({
                                     const rendererOptions = testInputFields.options?.map((o) => o.value);
                                     return (
                                         <div className="flex flex-col items-start gap-4" key={idx}>
-                                            <div className="flex w-full flex-col gap-[0.4rem]">
+                                            <div className="flex w-full flex-col gap-1.5">
                                                 <h1 className="mt-3 text-sm">
                                                     {testInputFields.name}
                                                     {testInputFields.isRequired && (

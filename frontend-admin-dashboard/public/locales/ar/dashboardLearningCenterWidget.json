@@ -1,0 +1,19 @@
+{
+    "header": {
+        "title": "مركز التعلم",
+        "description": "إدارة {{courseTerm}} و{{sessionTerm}} والمواد الدراسية"
+    },
+    "features": {
+        "studyLibrary": {
+            "title": "مكتبة الدراسة",
+            "description": "الوصول إلى المواد والموارد الدراسية"
+        },
+        "liveSessions": {
+            "description": "إدارة الجلسات التعليمية المباشرة"
+        },
+        "batchManagement": {
+            "titleTemplate": "إدارة {{term}}",
+            "description": "تنظيم الطلاب في مجموعات"
+        }
+    }
+}

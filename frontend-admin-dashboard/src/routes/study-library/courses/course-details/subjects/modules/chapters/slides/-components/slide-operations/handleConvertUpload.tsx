@@ -1,6 +1,18 @@
 import { toast } from 'sonner';
+import type { TFunction } from 'i18next';
+import i18n from '@/i18n';
 
 import { convertHtmlToPdf } from '../../-helper/helper';
+
+const NAMESPACE = 'studyLibraryHandleConvertUpload';
+
+/**
+ * This handler runs outside a React render tree (it's a plain exported async
+ * function invoked from event handlers), so it can't use the `useTranslation`
+ * hook. Fall back to the shared i18next singleton directly.
+ */
+const globalT: TFunction = ((key: string, options?: Record<string, unknown>) =>
+    i18n.t(key, { ns: NAMESPACE, ...options })) as TFunction;
 
 export const handleConvertAndUpload = async (htmlString: string | null): Promise<string | null> => {
     if (htmlString == null) return null;
@@ -18,11 +30,11 @@ export const handleConvertAndUpload = async (htmlString: string | null): Promise
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
 
-        toast.success(`Document downloaded successfully)`);
+        toast.success(globalT('downloadSuccess'));
         return null;
     } catch (error) {
         console.error('Download Failed:', error);
-        toast.error('Failed to download document. Please try again.');
+        toast.error(globalT('downloadError'));
     }
     return null;
 };

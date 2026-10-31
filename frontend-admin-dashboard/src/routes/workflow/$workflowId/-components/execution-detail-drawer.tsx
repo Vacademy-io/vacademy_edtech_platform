@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ const statusBadgeColor: Record<string, string> = {
 };
 
 export function ExecutionDetailDrawer({ execution, open, onOpenChange, onViewOnDiagram }: Props) {
+    const { t, i18n } = useTranslation('workflowExecutionDetailDrawer');
     const { data: logs, isLoading } = useQuery({
         ...getExecutionLogsQuery(execution?.id ?? ''),
         enabled: open && !!execution?.id,
@@ -56,7 +58,7 @@ export function ExecutionDetailDrawer({ execution, open, onOpenChange, onViewOnD
             <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
                 <SheetHeader>
                     <SheetTitle className="flex items-center gap-2">
-                        Execution Details
+                        {t('title')}
                         <Badge className={statusBadgeColor[execution.status] ?? 'bg-gray-100'}>
                             {execution.status}
                         </Badge>
@@ -67,23 +69,27 @@ export function ExecutionDetailDrawer({ execution, open, onOpenChange, onViewOnD
                     {/* Metadata */}
                     <div className="grid grid-cols-2 gap-2 text-sm">
                         <div>
-                            <span className="text-muted-foreground">Started</span>
+                            <span className="text-muted-foreground">{t('started')}</span>
                             <div className="font-medium">
-                                {execution.started_at ? new Date(execution.started_at).toLocaleString() : '-'}
+                                {execution.started_at
+                                    ? new Date(execution.started_at).toLocaleString(i18n.language)
+                                    : '-'}
                             </div>
                         </div>
                         <div>
-                            <span className="text-muted-foreground">Completed</span>
+                            <span className="text-muted-foreground">{t('completed')}</span>
                             <div className="font-medium">
-                                {execution.completed_at ? new Date(execution.completed_at).toLocaleString() : '-'}
+                                {execution.completed_at
+                                    ? new Date(execution.completed_at).toLocaleString(i18n.language)
+                                    : '-'}
                             </div>
                         </div>
                         <div>
-                            <span className="text-muted-foreground">Duration</span>
+                            <span className="text-muted-foreground">{t('duration')}</span>
                             <div className="font-medium">{formatDuration(duration)}</div>
                         </div>
                         <div>
-                            <span className="text-muted-foreground">Idempotency Key</span>
+                            <span className="text-muted-foreground">{t('idempotencyKey')}</span>
                             <div className="font-medium text-xs truncate">{execution.idempotency_key}</div>
                         </div>
                     </div>
@@ -105,18 +111,18 @@ export function ExecutionDetailDrawer({ execution, open, onOpenChange, onViewOnD
                                 onOpenChange(false);
                             }}
                         >
-                            <Eye size={16} className="mr-2" />
-                            View on Diagram
+                            <Eye size={16} className="me-2" />
+                            {t('viewOnDiagram')}
                         </Button>
                     )}
 
                     {/* Node Logs */}
                     <div>
                         <h3 className="text-sm font-semibold mb-2">
-                            Node Execution Logs {logs && `(${logs.length})`}
+                            {logs ? t('nodeExecutionLogsCount', { count: logs.length }) : t('nodeExecutionLogs')}
                         </h3>
                         {isLoading ? (
-                            <div className="text-sm text-muted-foreground py-4 text-center">Loading logs...</div>
+                            <div className="text-sm text-muted-foreground py-4 text-center">{t('loadingLogs')}</div>
                         ) : logs && logs.length > 0 ? (
                             <div className="space-y-2">
                                 {logs.map((log) => (
@@ -124,7 +130,7 @@ export function ExecutionDetailDrawer({ execution, open, onOpenChange, onViewOnD
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-sm text-muted-foreground py-4 text-center">No node logs found</div>
+                            <div className="text-sm text-muted-foreground py-4 text-center">{t('noNodeLogsFound')}</div>
                         )}
                     </div>
                 </div>

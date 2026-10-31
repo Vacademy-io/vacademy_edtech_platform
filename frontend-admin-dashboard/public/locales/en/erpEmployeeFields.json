@@ -1,0 +1,18 @@
+{
+    "employmentType": {
+        "fullTime": "Full time",
+        "partTime": "Part time",
+        "contract": "Contract",
+        "intern": "Intern"
+    },
+    "employmentStatus": {
+        "active": "Active",
+        "probation": "Probation",
+        "noticePeriod": "Notice period",
+        "onLeave": "On leave",
+        "terminated": "Terminated",
+        "relieved": "Relieved",
+        "absconding": "Absconding"
+    },
+    "unchangedPlaceholder": "unchanged"
+}

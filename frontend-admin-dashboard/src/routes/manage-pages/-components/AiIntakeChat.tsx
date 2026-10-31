@@ -19,6 +19,8 @@ import {
     intakeAiTurn, IntakeTurn, IntakeResponse, AiPageImage, AiCourseSnapshotItem,
     MAX_INSPIRATION_IMAGES,
 } from '../-services/ai-page-service';
+import { findFigmaUrl } from '../-utils/figma-link';
+import { FigmaLinkNotice } from './FigmaLinkNotice';
 
 export interface IntakeResult {
     brief: string;
@@ -236,6 +238,9 @@ export const AiIntakeChat = ({
     };
 
     const askingUpload = !!last?.request_upload && !turnMutation.isPending;
+    // Said while the link is still in the box: the assistant cannot open Figma
+    // either (its reply repeats this and opens the screenshot uploader).
+    const typingFigmaLink = !!findFigmaUrl(input);
 
     return (
         <div className="flex h-dialog-chat flex-col">
@@ -299,6 +304,8 @@ export const AiIntakeChat = ({
                     ))}
                 </div>
             )}
+
+            {typingFigmaLink && <FigmaLinkNotice className="mt-2" />}
 
             {/* Composer */}
             <input

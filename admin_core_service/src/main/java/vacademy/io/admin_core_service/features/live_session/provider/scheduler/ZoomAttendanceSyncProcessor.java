@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.live_session.provider.scheduler;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import vacademy.io.admin_core_service.features.live_session.entity.SessionSchedule;
@@ -32,6 +33,7 @@ public class ZoomAttendanceSyncProcessor {
     private final ZoomAttendanceService zoomAttendanceService;
 
     /** Runs every 15 minutes (offset to minute :07 to avoid colliding with other jobs). */
+    @SchedulerLock(name = "ZoomAttendanceSync", lockAtMostFor = "PT14M", lockAtLeastFor = "PT30S")
     @Scheduled(cron = "${zoom.attendance.sync.cron:0 7/15 * * * ?}")
     public void syncZoomAttendance() {
         Date before = new Date(System.currentTimeMillis() - STALE_MILLIS);

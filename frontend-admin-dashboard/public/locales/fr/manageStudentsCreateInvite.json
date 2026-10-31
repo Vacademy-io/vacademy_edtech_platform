@@ -1,0 +1,27 @@
+{
+    "trigger": {
+        "createLink": "Créer un lien {{term}}"
+    },
+    "dialog": {
+        "title": "Sélectionner le cours et les groupes"
+    },
+    "courseSelect": {
+        "label": "Sélectionner {{term}}",
+        "placeholder": "Choisir un cours"
+    },
+    "addBatch": {
+        "heading": "Ajouter un groupe",
+        "sessionPlaceholder": "Sélectionner une session",
+        "levelPlaceholder": "Sélectionner un niveau",
+        "button": "Ajouter un groupe"
+    },
+    "selectedBatches": {
+        "heading": "Groupes sélectionnés",
+        "parentHint": "(Sélectionnez le groupe parent - les détails du groupe parent seront utilisés comme détails du lien d'invitation)",
+        "parentBadge": "Groupe parent"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "continue": "Continuer"
+    }
+}

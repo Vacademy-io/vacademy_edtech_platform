@@ -1,0 +1,19 @@
+{
+    "title": "Télécharger le PDF du quiz",
+    "description": "Choisissez vos options de téléchargement pour le PDF du quiz.",
+    "pdfType": "Type de PDF",
+    "showAnswers": "Afficher les réponses",
+    "showAnswersHint": "Inclure les bonnes réponses dans le PDF (pour le corrigé)",
+    "showExplanations": "Afficher les explications",
+    "showExplanationsHint": "Inclure des explications détaillées pour chaque réponse",
+    "answerKeyMode": "Mode corrigé",
+    "assessmentPaperMode": "Mode épreuve d'évaluation",
+    "answerKeyModeDescription": "Le PDF inclura les bonnes réponses surlignées en vert. Idéal pour les enseignants et les corrigés.",
+    "assessmentPaperModeDescription": "Le PDF sera mis en forme comme une épreuve d'évaluation propre sans réponses. Idéal à remettre aux élèves comme test écrit.",
+    "cancel": "Annuler",
+    "downloadPdf": "Télécharger le PDF",
+    "toast": {
+        "success": "PDF du quiz téléchargé avec succès !",
+        "error": "Échec de la génération du PDF du quiz"
+    }
+}

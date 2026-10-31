@@ -15,6 +15,7 @@ public class ChatReportResponse {
     private String id;
     private String instituteId;
     private String conversationId;
+    private String conversationType;  // DIRECT / BATCH_GROUP / COMMUNITY — gates moderation actions
     private String messageId;
     private String reporterId;
     private String reason;

@@ -1,0 +1,17 @@
+{
+    "audioDataNotFound": "Données de la diapositive audio introuvables",
+    "failedToLoadAudio": "Échec du chargement de l'audio",
+    "failedToPlayAudio": "Échec de la lecture de l'audio",
+    "playbackError": "Erreur de lecture audio",
+    "audioLabel": "Audio",
+    "deletedTag": "SUPPRIMÉ",
+    "audioDeletedTitle": "Cet audio a été supprimé",
+    "audioDeletedSubtitle": "Le contenu audio n'est plus disponible",
+    "loadingAudio": "Chargement de l'audio...",
+    "audioThumbnailAlt": "Vignette audio",
+    "untitledAudio": "Audio sans titre",
+    "durationLabel": "Durée : {{time}}",
+    "pauseAriaLabel": "Pause",
+    "playAriaLabel": "Lecture",
+    "transcriptLabel": "Transcription"
+}

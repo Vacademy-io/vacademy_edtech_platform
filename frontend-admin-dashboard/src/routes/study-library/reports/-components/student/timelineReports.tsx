@@ -1,37 +1,36 @@
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
-import { useState, useEffect } from 'react';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
-import { Command, CommandInput, CommandList } from '@/components/ui/command';
-import { LevelType } from '@/schemas/student/student-list/institute-schema';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { MyButton } from '@/components/design-system/button';
 import { SearchableSelect } from '@/components/design-system/searchable-select';
-import { CheckCircle, Clock, Brain, ChartLineUp, Export } from '@phosphor-icons/react';
-import { METRIC_INFO } from '../metricInfo';
+import {
+    CheckCircle,
+    Clock,
+    Brain,
+    ChartLineUp,
+    Export,
+    FileCsv,
+    Warning,
+} from '@phosphor-icons/react';
+import { buildMetricInfo } from '../metricInfo';
 import { ReportHeader, MetricCard, SectionCard } from '../reportUi';
 import ReportRecipientsDialogBox from './reportRecipientsDialogBox';
-import { useMutation } from '@tanstack/react-query';
+import { useQueries } from '@tanstack/react-query';
 import { fetchLearnersReport, fetchSlideWiseProgress } from '../../-services/utils';
 import { resolveInstituteLogoUrl } from '../live/-utils/instituteLogo';
 import { exportLearnerLearningPdf } from '../../-utils/exportLearningPdf';
-import { useLearnerDetails, UserResponse } from '../../-store/useLearnersDetails';
+import { useLearnerDetailsForBatches } from '../../-store/useLearnersDetails';
 import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
 import { TokenKey } from '@/constants/auth/tokens';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import {
     LearnersReportResponse,
-    LEARNERS_REPORTS_COLUMNS,
     learnersReportColumns,
     SlideData,
-    SLIDES_WIDTH,
     SlidesColumns,
 } from '../../-types/types';
 import { MyTable } from '@/components/design-system/table';
@@ -46,452 +45,463 @@ import dayjs from 'dayjs';
 import { useSearch } from '@tanstack/react-router';
 import { Route } from '@/routes/study-library/reports';
 import { toast } from 'sonner';
-import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import { ContentTerms, RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import DateRangeFilter from '@/components/design-system/date-range-filter';
+import BatchMultiSelect, { useBatchLookup, type BatchOption } from '../batchMultiSelect';
+import { buildReportCsv, csvFileName, downloadCsv, num, csvDate } from '../../-utils/reportCsv';
 
-const formSchema = z
-    .object({
-        course: z.string().min(1, 'Course is required'),
-        session: z.string().min(1, 'Session is required'),
-        level: z.string().min(1, 'Level is required'),
-        student: z.string().min(1, 'Student is required'),
-        startDate: z.string().min(1, 'Start Date is required'),
-        endDate: z.string().min(1, 'End Date is required'),
-    })
-    .refine(
-        (data) => {
-            const start = new Date(data.startDate);
-            const end = new Date(data.endDate);
-            const diffInDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
-            return diffInDays <= 30;
-        },
-        {
-            message:
-                'The difference between Start Date and End Date should be less than one month.',
-            path: ['startDate'],
-        }
+const buildFormSchema = (t: TFunction) =>
+    z
+        .object({
+            batches: z.array(z.string()).min(1, t('form.batchRequired')),
+            student: z.string().min(1, t('form.studentRequired')),
+            startDate: z.string().min(1, t('form.startDateRequired')),
+            endDate: z.string().min(1, t('form.endDateRequired')),
+        })
+        .refine(
+            (data) => {
+                const start = new Date(data.startDate);
+                const end = new Date(data.endDate);
+                const diffInDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+                return diffInDays <= 30;
+            },
+            {
+                message: t('form.dateRangeTooLong'),
+                path: ['startDate'],
+            }
+        );
+
+type FormValues = z.infer<ReturnType<typeof buildFormSchema>>;
+
+interface AppliedFilters {
+    userId: string;
+    learnerName: string;
+    /** Only the selected batches this learner is actually enrolled in. */
+    batchIds: string[];
+    startDate: string;
+    endDate: string;
+    /**
+     * Stamped per "Generate" click and part of every query key, so re-running the
+     * same batch + range always fetches fresh numbers (the mutation-based
+     * version fetched on every click) while paging within a run stays cached.
+     */
+    runId: number;
+}
+
+interface BatchResult {
+    batchId: string;
+    option: BatchOption | undefined;
+    report: LearnersReportResponse | undefined;
+    reportError: boolean;
+    slides: SlideData[] | undefined;
+}
+
+// Courses shallower than the full Subject → Module → Chapter structure come
+// back with the literal "DEFAULT" placeholder for the missing level(s).
+// Rather than showing a whole column of "DEFAULT" in the per-date slide
+// tables, hide any structural column whose every slide (across all dates) is
+// that placeholder, and apply the same visibility to each table.
+const isSlideColumnAllDefault = (
+    slides: SlideData[] | undefined,
+    key: 'subject_name' | 'module_name' | 'chapter_name'
+) => {
+    const all = (slides ?? []).flatMap((day) => day.slide_details ?? []);
+    return (
+        all.length > 0 &&
+        all.every((detail) => (detail[key] ?? '').toString().trim().toUpperCase() === 'DEFAULT')
     );
-
-type FormValues = z.infer<typeof formSchema>;
+};
 
 export default function TimelineReports() {
-    const {
-        getCourseFromPackage,
-        getSessionFromPackage,
-        getLevelsFromPackage2,
-        getPackageSessionId,
-    } = useInstituteDetailsStore();
+    const { t } = useTranslation([
+        'studyLibraryStudentTimelineReports',
+        'studyLibraryExportLearningPdf',
+        'studyLibraryReportsMetricInfo',
+    ]);
+    const METRIC_INFO = buildMetricInfo(t);
+    const { getPackageSessionId } = useInstituteDetailsStore();
     const accessToken = getTokenFromCookie(TokenKey.accessToken);
     const tokenData = getTokenDecodedData(accessToken);
     const INSTITUTE_ID = tokenData && Object.keys(tokenData.authorities)[0];
-    const courseList = getCourseFromPackage();
-    const [sessionList, setSessionList] = useState<{ id: string; name: string }[]>([]);
-    const [levelList, setLevelList] = useState<LevelType[]>([]);
-    const [studentList, setStudentList] = useState<UserResponse>([]);
-    const [reportData, setReportData] = useState<LearnersReportResponse>();
-    const [slideData, setSlideData] = useState<SlideData[]>();
-    const [appliedDateRange, setAppliedDateRange] = useState<{ start: string, end: string } | null>(null);
-    const [isExporting, setIsExporting] = useState(false);
     const instituteDetails = useInstituteDetailsStore((s) => s.instituteDetails);
-    const [searchTerm, setSearchTerm] = useState('');
-    // Match by name-start or any word-start (so "mo" finds "Dipti Mohile"),
-    // ranking whole-name prefixes first. Far more precise than a raw substring
-    // match, which surfaced everyone sharing a common letter.
-    const studentQuery = searchTerm.trim().toLowerCase();
-    const filteredStudents = studentList
-        .filter((student) => {
-            if (!studentQuery) return true;
-            const name = student.full_name.toLowerCase();
-            return (
-                name.startsWith(studentQuery) ||
-                name.split(/\s+/).some((word) => word.startsWith(studentQuery))
-            );
-        })
-        .sort((a, b) => {
-            if (!studentQuery) return 0;
-            const ap = a.full_name.toLowerCase().startsWith(studentQuery) ? 0 : 1;
-            const bp = b.full_name.toLowerCase().startsWith(studentQuery) ? 0 : 1;
-            return ap - bp || a.full_name.localeCompare(b.full_name);
-        });
+    const batchLookup = useBatchLookup();
+    const batchTerm = getTerminology(ContentTerms.Batch, SystemTerms.Batch);
+    const courseTerm = getTerminology(ContentTerms.Course, SystemTerms.Course);
+    const learnerTerm = getTerminology(RoleTerms.Learner, SystemTerms.Learner);
     const search = useSearch({ from: Route.id });
 
+    const [applied, setApplied] = useState<AppliedFilters | null>(null);
+    const [isExportingPdf, setIsExportingPdf] = useState<string | null>(null);
+    const [isExportingCsv, setIsExportingCsv] = useState(false);
+
     const {
-        register,
         handleSubmit,
         setValue,
         watch,
         clearErrors,
         formState: { errors },
     } = useForm<FormValues>({
-        resolver: zodResolver(formSchema),
-        defaultValues: {
-            course: '',
-            session: '',
-            level: '',
-            student: '',
-            startDate: '',
-            endDate: '',
-        },
+        resolver: zodResolver(buildFormSchema(t)),
+        defaultValues: { batches: [], student: '', startDate: '', endDate: '' },
     });
 
-    const selectedCourse = watch('course');
-    const selectedSession = watch('session');
-    const selectedLevel = watch('level');
+    const selectedBatches = watch('batches');
     const selectedStudent = watch('student');
-    const startDate = watch('startDate');
-    const endDate = watch('endDate');
 
-    useEffect(() => {
-        if (selectedCourse) {
-            const sessions = getSessionFromPackage({ courseId: selectedCourse });
-            setSessionList(sessions);
-            // Auto-select when the course has exactly one session.
-            setValue('session', sessions.length === 1 && sessions[0] ? sessions[0].id : '');
-        } else {
-            setSessionList([]);
-            setStudentList([]);
-        }
-    }, [selectedCourse]);
-
-    useEffect(() => {
-        if (selectedSession === '') {
-            setValue('level', '');
-            setLevelList([]);
-            setStudentList([]);
-        } else if (selectedCourse && selectedSession) {
-            const levels = getLevelsFromPackage2({
-                courseId: selectedCourse,
-                sessionId: selectedSession,
-            });
-            setLevelList(levels);
-            // Auto-select when the session exposes exactly one level.
-            if (levels.length === 1 && levels[0]) {
-                setValue('level', levels[0].id);
-            }
-        }
-    }, [selectedSession]);
-
-    // Fallbacks: auto-select the session/level as soon as its list resolves to a
-    // single option and nothing is chosen yet — so picking a course reliably
-    // prefills the whole form even if the cascade above misses on the first resolve.
-    useEffect(() => {
-        if (!selectedSession && sessionList.length === 1 && sessionList[0]) {
-            setValue('session', sessionList[0].id);
-        }
-    }, [sessionList, selectedSession]);
-    useEffect(() => {
-        if (!selectedLevel && levelList.length === 1 && levelList[0]) {
-            setValue('level', levelList[0].id);
-        }
-    }, [levelList, selectedLevel]);
-
-    const { data } = useLearnerDetails(
-        // const { data, isLoading, error } = useLearnerDetails(
-        getPackageSessionId({
-            courseId: selectedCourse || '',
-            sessionId: selectedSession || '',
-            levelId: selectedLevel || '',
-        }) || '',
+    // Learners across every selected batch, each knowing which batches it is in.
+    const { learners: studentList, isLoading: isLearnersLoading } = useLearnerDetailsForBatches(
+        selectedBatches,
         INSTITUTE_ID || ''
     );
+
+    // A learner that is no longer in any selected batch can't stay picked.
     useEffect(() => {
-        if (data) {
-            setStudentList(data);
+        if (
+            selectedStudent &&
+            !isLearnersLoading &&
+            !studentList.some((s) => s.user_id === selectedStudent)
+        ) {
+            setValue('student', '');
         }
-    }, [data]);
+    }, [studentList, isLearnersLoading, selectedStudent, setValue]);
 
     // ── Prefill from URL search param (?studentReport=…) ─────────────────────
     // When the user lands here from the learner profile's "Learning Timeline"
     // button, the URL carries the courseId / sessionId / levelId / userId so
-    // they don't have to re-pick. We prefill each field as soon as its
-    // dependent dropdown list resolves (course is available immediately;
-    // session list loads after course is set; level list after session;
-    // student list after level). Without this, the user lands on a blank
-    // form even though the URL has all the data.
+    // they don't have to re-pick. The batch resolves immediately from the
+    // institute store; the learner is set once that batch's list has loaded.
     const prefill = search.studentReport;
+    // Each half applies exactly once: the batch as soon as the institute store
+    // can resolve it, the learner as soon as that batch's list contains them.
+    // Without the guards an institute refetch (new `instituteDetails` identity)
+    // or a later list change would snap the admin's own picks back to the URL.
+    const prefillBatchDone = useRef(false);
+    const prefillLearnerDone = useRef(false);
     useEffect(() => {
-        if (prefill?.courseId) {
-            setValue('course', prefill.courseId);
+        if (prefillBatchDone.current) return;
+        if (prefill?.courseId && prefill.sessionId && prefill.levelId) {
+            const batchId = getPackageSessionId({
+                courseId: prefill.courseId,
+                sessionId: prefill.sessionId,
+                levelId: prefill.levelId,
+            });
+            if (batchId) {
+                setValue('batches', [batchId]);
+                prefillBatchDone.current = true;
+            }
+        } else {
+            prefillBatchDone.current = true;
         }
-        // Run once on mount; subsequent navigations within this page set the
-        // fields directly through user interaction.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [instituteDetails]);
     useEffect(() => {
-        if (
-            prefill?.sessionId &&
-            sessionList.some((s) => s.id === prefill.sessionId)
-        ) {
-            setValue('session', prefill.sessionId);
-        }
-    }, [sessionList, prefill?.sessionId, setValue]);
-    useEffect(() => {
-        if (prefill?.levelId && levelList.some((l) => l.id === prefill.levelId)) {
-            setValue('level', prefill.levelId);
-        }
-    }, [levelList, prefill?.levelId, setValue]);
-    useEffect(() => {
-        if (
-            prefill?.userId &&
-            studentList.some((s) => s.user_id === prefill.userId)
-        ) {
+        if (prefillLearnerDone.current) return;
+        if (prefill?.userId && studentList.some((s) => s.user_id === prefill.userId)) {
             setValue('student', prefill.userId);
+            prefillLearnerDone.current = true;
         }
     }, [studentList, prefill?.userId, setValue]);
 
     const onSubmit = (data: FormValues) => {
-        setAppliedDateRange({ start: data.startDate, end: data.endDate });
-        generateReportMutation.mutate(
-            {
-                start_date: data.startDate,
-                end_date: data.endDate,
-                package_session_id:
-                    getPackageSessionId({
-                        courseId: data.course || '',
-                        sessionId: data.session || '',
-                        levelId: data.level || '',
-                    }) || '',
-                user_id: data.student,
-            },
-            {
-                onSuccess: (data) => {
-                    setReportData(data);
-                },
-                onError: (error) => {
-                    console.error('Error:', error);
-                },
-            }
-        );
-        generateSlideMutation.mutate(
-            {
-                start_date: data.startDate,
-                end_date: data.endDate,
-                package_session_id:
-                    getPackageSessionId({
-                        courseId: data.course || '',
-                        sessionId: data.session || '',
-                        levelId: data.level || '',
-                    }) || '',
-                user_id: data.student,
-            },
-            {
-                onSuccess: (data) => {
-                    setSlideData(data);
-                },
-                onError: (error) => {
-                    console.error('Error:', error);
-                },
-            }
-        );
-        // api call
+        const learner = studentList.find((s) => s.user_id === data.student);
+        const batchIds = data.batches.filter((id) => learner?.batchIds.includes(id));
+        if (!batchIds.length) {
+            toast.error(t('toast.learnerNotInBatches'));
+            return;
+        }
+        setApplied({
+            userId: data.student,
+            learnerName: learner?.full_name ?? '',
+            batchIds,
+            startDate: data.startDate,
+            endDate: data.endDate,
+            runId: Date.now(),
+        });
     };
 
-    const handleExportPDF = async () => {
-        if (!reportData) return;
-        setIsExporting(true);
+    // ── Data: one learner report + one slide timeline per batch ──────────────
+    const reportQueries = useQueries({
+        queries: (applied?.batchIds ?? []).map((batchId) => ({
+            queryKey: [
+                'learnerTimelineReport',
+                applied?.userId,
+                batchId,
+                applied?.startDate,
+                applied?.endDate,
+                applied?.runId,
+            ],
+            queryFn: () =>
+                fetchLearnersReport({
+                    start_date: applied?.startDate ?? '',
+                    end_date: applied?.endDate ?? '',
+                    package_session_id: batchId,
+                    user_id: applied?.userId ?? '',
+                }) as Promise<LearnersReportResponse>,
+            staleTime: 5 * 60 * 1000,
+        })),
+    });
+    const slideQueries = useQueries({
+        queries: (applied?.batchIds ?? []).map((batchId) => ({
+            queryKey: [
+                'learnerSlideTimeline',
+                applied?.userId,
+                batchId,
+                applied?.startDate,
+                applied?.endDate,
+                applied?.runId,
+            ],
+            queryFn: () =>
+                fetchSlideWiseProgress({
+                    start_date: applied?.startDate ?? '',
+                    end_date: applied?.endDate ?? '',
+                    package_session_id: batchId,
+                    user_id: applied?.userId ?? '',
+                }) as Promise<SlideData[]>,
+            staleTime: 5 * 60 * 1000,
+        })),
+    });
+    const isPending = reportQueries.some((q) => q.isLoading);
+    const resultsKey = reportQueries
+        .map((q) => `${q.status}:${q.dataUpdatedAt}`)
+        .concat(slideQueries.map((q) => `${q.status}:${q.dataUpdatedAt}`))
+        .join('|');
+    const results = useMemo<BatchResult[]>(
+        () =>
+            (applied?.batchIds ?? []).map((batchId, index) => ({
+                batchId,
+                option: batchLookup.get(batchId),
+                report: reportQueries[index]?.data,
+                reportError: Boolean(reportQueries[index]?.isError),
+                slides: slideQueries[index]?.data,
+            })),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [applied, batchLookup, resultsKey]
+    );
+    const isMulti = (applied?.batchIds.length ?? 0) > 1;
+    const hasAnyReport = results.some((r) => r.report);
+    const blockTitle = (r: BatchResult) => r.option?.label || r.option?.courseName || '';
+    const dateRangeLabel = applied
+        ? `${dayjs(applied.startDate).format('DD MMM YYYY')} — ${dayjs(applied.endDate).format('DD MMM YYYY')}`
+        : '';
+
+    // ── Exports ──────────────────────────────────────────────────────────────
+    const handleExportPdf = async (result: BatchResult) => {
+        if (!result.report || !applied) return;
+        setIsExportingPdf(result.batchId);
         try {
             const logoUrl = await resolveInstituteLogoUrl(instituteDetails?.institute_logo_file_id);
             await exportLearnerLearningPdf(
                 {
                     instituteName: instituteDetails?.institute_name || 'Vacademy',
                     logoUrl,
-                    courseName: courseList.find((c) => c.id === selectedCourse)?.name || '',
-                    dateRange: `${dayjs(appliedDateRange?.start || startDate).format('DD MMM YYYY')} — ${dayjs(
-                        appliedDateRange?.end || endDate
-                    ).format('DD MMM YYYY')}`,
-                    learnerName: studentList.find((s) => s.user_id === selectedStudent)?.full_name,
+                    courseName: result.option?.label || '',
+                    dateRange: dateRangeLabel,
+                    learnerName: applied.learnerName,
                 },
-                reportData,
+                result.report,
+                t,
                 {
-                    slides: slideData ?? [],
-                    hideModule: isSlideColumnAllDefault('module_name'),
-                    hideChapter: isSlideColumnAllDefault('chapter_name'),
+                    slides: result.slides ?? [],
+                    hideModule: isSlideColumnAllDefault(result.slides, 'module_name'),
+                    hideChapter: isSlideColumnAllDefault(result.slides, 'chapter_name'),
                     moduleTerm: getTerminology(ContentTerms.Module, SystemTerms.Module),
                     chapterTerm: getTerminology(ContentTerms.Chapter, SystemTerms.Chapter),
                 }
             );
-            toast.success('Learner report exported');
+            toast.success(t('toast.exportSuccess'));
         } catch {
-            toast.error('Failed to export PDF');
+            toast.error(t('toast.exportFailed'));
         } finally {
-            setIsExporting(false);
+            setIsExportingPdf(null);
         }
     };
 
-    const tableData = {
-        content: reportData ? transformLearnersReport(reportData) : [],
-        total_pages: 0,
-        page_no: 0,
-        page_size: 10,
-        total_elements: 0,
-        last: true,
+    const handleExportCsv = () => {
+        if (!applied || !hasAnyReport) return;
+        setIsExportingCsv(true);
+        try {
+            const csv = buildReportCsv([
+                {
+                    title: t('csv.summaryTitle'),
+                    headers: [
+                        batchTerm,
+                        courseTerm,
+                        learnerTerm,
+                        t('csv.startDate'),
+                        t('csv.endDate'),
+                        t('csv.learnerCourseCompleted', { term: courseTerm }),
+                        t('csv.batchCourseCompleted', { term: courseTerm, batch: batchTerm }),
+                        t('csv.learnerDailyTimeMin'),
+                        t('csv.batchDailyTimeMin', { batch: batchTerm }),
+                        t('csv.learnerConcentration'),
+                        t('csv.batchConcentration', { batch: batchTerm }),
+                    ],
+                    rows: results
+                        .filter((r) => r.report)
+                        .map((r) => [
+                            blockTitle(r),
+                            r.option?.courseName ?? '',
+                            applied.learnerName,
+                            applied.startDate,
+                            applied.endDate,
+                            num(r.report?.learner_progress_report?.percentage_course_completed),
+                            num(r.report?.batch_progress_report?.percentage_course_completed),
+                            num(r.report?.learner_progress_report?.avg_time_spent_in_minutes),
+                            num(r.report?.batch_progress_report?.avg_time_spent_in_minutes),
+                            num(r.report?.learner_progress_report?.percentage_concentration_score),
+                            num(r.report?.batch_progress_report?.percentage_concentration_score),
+                        ]),
+                },
+                {
+                    title: t('csv.dailyTitle'),
+                    headers: [
+                        batchTerm,
+                        t('csv.date'),
+                        t('csv.learnerTimeMin'),
+                        t('csv.batchAvgTimeMin', { batch: batchTerm }),
+                    ],
+                    rows: results.flatMap((r) => {
+                        if (!r.report) return [];
+                        const byDate = new Map<string, { learner?: number; batch?: number }>();
+                        r.report.learner_progress_report.daily_time_spent.forEach((d) =>
+                            byDate.set(d.activity_date, {
+                                ...byDate.get(d.activity_date),
+                                learner: d.avg_daily_time_minutes,
+                            })
+                        );
+                        r.report.batch_progress_report.daily_time_spent.forEach((d) =>
+                            byDate.set(d.activity_date, {
+                                ...byDate.get(d.activity_date),
+                                batch: d.avg_daily_time_minutes,
+                            })
+                        );
+                        return Array.from(byDate.entries())
+                            .sort(([a], [b]) => a.localeCompare(b))
+                            .map(([date, v]) => [
+                                blockTitle(r),
+                                csvDate(date),
+                                num(v.learner ?? 0),
+                                num(v.batch ?? 0),
+                            ]);
+                    }),
+                },
+                {
+                    title: t('csv.slidesTitle'),
+                    headers: [
+                        batchTerm,
+                        t('csv.date'),
+                        t('csv.slide', {
+                            term: getTerminology(ContentTerms.Slides, SystemTerms.Slides),
+                        }),
+                        getTerminology(ContentTerms.Subjects, SystemTerms.Subjects),
+                        getTerminology(ContentTerms.Modules, SystemTerms.Modules),
+                        getTerminology(ContentTerms.Chapters, SystemTerms.Chapters),
+                        t('csv.concentration'),
+                        t('csv.timeSpentMin'),
+                    ],
+                    rows: results.flatMap((r) =>
+                        (r.slides ?? []).flatMap((day) =>
+                            (day.slide_details ?? []).map((slide) => [
+                                blockTitle(r),
+                                csvDate(day.date),
+                                slide.slide_title,
+                                slide.subject_name,
+                                slide.module_name,
+                                slide.chapter_name,
+                                num(slide.concentration_score),
+                                num(parseFloat(slide.time_spent)),
+                            ])
+                        )
+                    ),
+                },
+            ]);
+            downloadCsv(
+                csvFileName(
+                    t('csv.fileStem'),
+                    applied.learnerName,
+                    applied.startDate,
+                    applied.endDate
+                ),
+                csv
+            );
+            toast.success(t('toast.csvExportSuccess'));
+        } catch {
+            toast.error(t('toast.csvExportFailed'));
+        } finally {
+            setIsExportingCsv(false);
+        }
     };
-    const generateReportMutation = useMutation({ mutationFn: fetchLearnersReport });
-    const generateSlideMutation = useMutation({ mutationFn: fetchSlideWiseProgress });
-    const { isPending, error } = generateReportMutation;
 
-    // Courses shallower than the full Subject → Module → Chapter structure come
-    // back with the literal "DEFAULT" placeholder for the missing level(s).
-    // Rather than showing a whole column of "DEFAULT" in the per-date slide
-    // tables below, hide any structural column whose every slide (across all
-    // dates) is that placeholder, and apply the same visibility to each table.
-    const allSlideDetails = (slideData ?? []).flatMap((day) => day.slide_details ?? []);
-    const isSlideColumnAllDefault = (
-        key: 'subject_name' | 'module_name' | 'chapter_name'
-    ) =>
-        allSlideDetails.length > 0 &&
-        allSlideDetails.every(
-            (detail) => (detail[key] ?? '').toString().trim().toUpperCase() === 'DEFAULT'
-        );
-    const slidesTableState = {
-        columnVisibility: {
-            subject: !isSlideColumnAllDefault('subject_name'),
-            module: !isSlideColumnAllDefault('module_name'),
-            chapter: !isSlideColumnAllDefault('chapter_name'),
-        },
-    };
+    const exportPdfButton = (result: BatchResult) => (
+        <MyButton
+            buttonType="secondary"
+            onClick={() => handleExportPdf(result)}
+            disable={isExportingPdf === result.batchId}
+            className="h-9 px-4 text-body"
+        >
+            <Export className="me-1.5 size-4" />
+            {isExportingPdf === result.batchId ? t('actions.exporting') : t('actions.exportPdf')}
+        </MyButton>
+    );
 
     return (
         <div className="space-y-6">
-            {/* Modern Filter Card */}
-            <div className="bg-white rounded-lg border border-neutral-200 p-4 shadow-sm">
+            {/* Filter card */}
+            <div className="rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    {/* First Row - Course, Session, Level */}
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                        <div>
-                            <label className="text-xs font-medium text-neutral-700 mb-1 block">
-                                {getTerminology(ContentTerms.Course, SystemTerms.Course)}
-                                <span className="text-red-500 ml-1">*</span>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <BatchMultiSelect
+                            selected={selectedBatches}
+                            onChange={(ids) => {
+                                setValue('batches', ids);
+                                if (ids.length) clearErrors('batches');
+                            }}
+                            error={errors.batches?.message}
+                        />
+                        <div className="flex flex-col gap-1">
+                            <label className="text-caption font-medium text-neutral-700">
+                                {learnerTerm}
+                                <span className="ms-1 text-danger-600">*</span>
                             </label>
                             <SearchableSelect
-                                options={(courseList ?? []).map((course) => ({
-                                    label: course.name,
-                                    value: course.id,
+                                options={studentList.map((s) => ({
+                                    label: s.full_name,
+                                    value: s.user_id,
                                 }))}
-                                value={selectedCourse}
-                                onChange={(value) => setValue('course', value)}
-                                placeholder={`Select a ${getTerminology(
-                                    ContentTerms.Course,
-                                    SystemTerms.Course
-                                )}`}
-                                searchPlaceholder={`Search ${getTerminology(
-                                    ContentTerms.Course,
-                                    SystemTerms.Course
-                                )}...`}
-                                triggerClassName="h-9 text-sm"
+                                value={selectedStudent || ''}
+                                onChange={(value) => {
+                                    setValue('student', value);
+                                    clearErrors('student');
+                                }}
+                                placeholder={
+                                    isLearnersLoading
+                                        ? t('form.loadingStudents')
+                                        : t('form.selectStudent')
+                                }
+                                searchPlaceholder={t('form.searchStudent')}
+                                emptyText={t('form.noStudentsFound')}
+                                disabled={!selectedBatches.length || !studentList.length}
+                                triggerClassName="h-9 text-body"
                             />
+                            {errors.student ? (
+                                <span className="text-caption text-danger-600">
+                                    {errors.student.message}
+                                </span>
+                            ) : (
+                                <span className="text-caption text-neutral-500">
+                                    {selectedBatches.length
+                                        ? t('form.learnerHint', { count: studentList.length })
+                                        : t('form.pickBatchFirst', {
+                                              batch: batchTerm.toLowerCase(),
+                                          })}
+                                </span>
+                            )}
                         </div>
-
-                        <div>
-                            <label className="text-xs font-medium text-neutral-700 mb-1 block">
-                                {getTerminology(ContentTerms.Session, SystemTerms.Session)}
-                                <span className="text-red-500 ml-1">*</span>
-                            </label>
-                            <Select
-                                onValueChange={(value) => setValue('session', value)}
-                                {...register('session')}
-                                defaultValue={search.studentReport ? search.studentReport.sessionId : ''}
-                                disabled={!sessionList.length}
-                                value={selectedSession}
-                            >
-                                <SelectTrigger className="h-9 text-sm">
-                                    <SelectValue
-                                        placeholder={`Select a ${getTerminology(
-                                            ContentTerms.Session,
-                                            SystemTerms.Session
-                                        )}`}
-                                    />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {sessionList?.map((session) => (
-                                        <SelectItem key={session.id} value={session.id}>
-                                            {session.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        <div>
-                            <label className="text-xs font-medium text-neutral-700 mb-1 block">
-                                {getTerminology(ContentTerms.Level, SystemTerms.Level)}
-                                <span className="text-red-500 ml-1">*</span>
-                            </label>
-                            <Select
-                                onValueChange={(value) => setValue('level', value)}
-                                defaultValue={search.studentReport ? search.studentReport.levelId : ''}
-                                value={selectedLevel}
-                                disabled={!levelList.length}
-                                {...register('level')}
-                            >
-                                <SelectTrigger className="h-9 text-sm">
-                                    <SelectValue
-                                        placeholder={`Select a ${getTerminology(
-                                            ContentTerms.Level,
-                                            SystemTerms.Level
-                                        )}`}
-                                    />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {levelList?.map((level) => (
-                                        <SelectItem key={level.id} value={level.id}>
-                                            {level.level_name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-
-                    {/* Student Selection Row */}
-                    <div>
-                        <label className="text-xs font-medium text-neutral-700 mb-1 block">
-                            Name <span className="text-red-500 ml-1">*</span>
-                        </label>
-                        <Select
-                            onValueChange={(value) => setValue('student', value)}
-                            {...register('student')}
-                            // Controlled like the course/session/level selects above so
-                            // the ?studentReport= prefill (setValue('student', userId))
-                            // is reflected in the trigger, not just in form state.
-                            value={selectedStudent || ''}
-                            disabled={!studentList.length}
-                        >
-                            <SelectTrigger className="h-9 text-sm">
-                                <SelectValue placeholder="Select Student" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <Command>
-                                    <CommandInput
-                                        placeholder="Search Student..."
-                                        value={searchTerm}
-                                        onValueChange={setSearchTerm}
-                                    />
-                                    <CommandList>
-                                        {filteredStudents.length > 0 ? (
-                                            filteredStudents?.map((student, index) => (
-                                                <SelectItem
-                                                    key={index}
-                                                    value={student.user_id}
-                                                    onSelect={() =>
-                                                        setValue('student', student.user_id)
-                                                    }
-                                                >
-                                                    {student.full_name}
-                                                </SelectItem>
-                                            ))
-                                        ) : (
-                                            <div className="p-2 text-gray-500">No students found</div>
-                                        )}
-                                    </CommandList>
-                                </Command>
-                            </SelectContent>
-                        </Select>
                     </div>
 
                     {/* Date Selection and Generate Button Row */}
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-end w-full">
+                    <div className="flex w-full flex-col gap-4 sm:flex-row sm:items-end">
                         <div className="flex-1">
                             <DateRangeFilter
                                 onChange={(res) => {
@@ -513,22 +523,27 @@ export default function TimelineReports() {
                             <MyButton
                                 type="submit"
                                 buttonType="primary"
-                                className="h-9 px-4 text-sm font-medium focus:!bg-primary-600 focus:!border-primary-600 focus:!text-white active:!bg-primary-600 active:!border-primary-600 active:!text-white focus:!outline-none focus:!ring-0"
+                                className="h-9 px-4 text-body font-medium"
                             >
-                                Generate Report
+                                {t('actions.generateReport')}
                             </MyButton>
                         </div>
                     </div>
 
-                    {/* Error Messages */}
-                    {Object.keys(errors).length > 0 && (
-                        <div className="rounded-md bg-red-50 border border-red-200 p-3">
-                            <div className="text-sm text-red-800">
-                                <p className="font-medium mb-1">Please fix the following errors:</p>
+                    {/* Date errors (batch / learner errors sit under their own controls) */}
+                    {(errors.startDate || errors.endDate) && (
+                        <div className="rounded-md border border-danger-200 bg-danger-50 p-3">
+                            <div className="text-body text-danger-700">
+                                <p className="mb-1 font-medium">{t('form.errorsHeading')}</p>
                                 <ul className="space-y-1">
-                                    {Object.entries(errors)?.map(([key, error]) => (
-                                        <li key={key} className="text-xs">• {error.message}</li>
-                                    ))}
+                                    {errors.startDate && (
+                                        <li className="text-caption">
+                                            • {errors.startDate.message}
+                                        </li>
+                                    )}
+                                    {errors.endDate && (
+                                        <li className="text-caption">• {errors.endDate.message}</li>
+                                    )}
                                 </ul>
                             </div>
                         </div>
@@ -536,168 +551,255 @@ export default function TimelineReports() {
                 </form>
             </div>
 
-            
             {isPending && <DashboardLoader />}
-            
-            {reportData && (
+
+            {applied && !isPending && hasAnyReport && (
                 <div className="space-y-6">
                     {/* Report Header */}
                     <ReportHeader
-                        title={studentList.find((s) => s.user_id === selectedStudent)?.full_name || ''}
+                        title={applied.learnerName}
                         chips={
                             <>
-                                <span className="text-caption text-neutral-500">Duration:</span>
+                                {isMulti && (
+                                    <span className="rounded-md bg-primary-50 px-2 py-1 text-caption font-medium text-neutral-700">
+                                        {t('report.batchCount', {
+                                            count: results.length,
+                                            term: batchTerm,
+                                        })}
+                                    </span>
+                                )}
+                                <span className="text-caption text-neutral-500">
+                                    {t('report.duration')}
+                                </span>
                                 <span className="rounded-md bg-primary-50 px-2 py-1 text-caption font-medium text-neutral-700">
-                                    {dayjs(appliedDateRange?.start || startDate).format('DD MMM YYYY')}
+                                    {dayjs(applied.startDate).format('DD MMM YYYY')}
                                 </span>
                                 <span className="text-neutral-400">—</span>
                                 <span className="rounded-md bg-primary-50 px-2 py-1 text-caption font-medium text-neutral-700">
-                                    {dayjs(appliedDateRange?.end || endDate).format('DD MMM YYYY')}
+                                    {dayjs(applied.endDate).format('DD MMM YYYY')}
                                 </span>
                             </>
                         }
                         actions={
                             <>
-                                <ReportRecipientsDialogBox userId={selectedStudent || ''} />
+                                <ReportRecipientsDialogBox userId={applied.userId} />
+                                {!isMulti && results[0]?.report && exportPdfButton(results[0])}
                                 <MyButton
                                     buttonType="secondary"
-                                    onClick={handleExportPDF}
-                                    disable={isExporting}
+                                    onClick={handleExportCsv}
+                                    disable={isExportingCsv}
                                     className="h-9 px-4 text-body"
                                 >
-                                    <Export className="mr-1.5 size-4" />
-                                    {isExporting ? 'Exporting…' : 'Export PDF'}
+                                    <FileCsv className="me-1.5 size-4" />
+                                    {isExportingCsv
+                                        ? t('actions.exporting')
+                                        : t('actions.exportCsv')}
                                 </MyButton>
                             </>
                         }
                     />
-                    
-                    {/* KPI cards — learner with batch comparison */}
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        <MetricCard
-                            tone="success"
-                            label={`${getTerminology(ContentTerms.Course, SystemTerms.Course)} Completed`}
-                            value={`${formatToTwoDecimalPlaces(
-                                reportData?.learner_progress_report?.percentage_course_completed
-                            )}%`}
-                            sub={`Batch ${formatToTwoDecimalPlaces(
-                                reportData?.batch_progress_report?.percentage_course_completed
-                            )}%`}
-                            info={METRIC_INFO.courseCompleted}
-                            icon={<CheckCircle className="size-5" weight="duotone" />}
-                        />
-                        <MetricCard
-                            tone="primary"
-                            label="Daily Time Spent (Avg)"
-                            value={convertMinutesToTimeFormat(
-                                reportData?.learner_progress_report?.avg_time_spent_in_minutes ?? 0
-                            )}
-                            sub={`Batch ${convertMinutesToTimeFormat(
-                                reportData?.batch_progress_report?.avg_time_spent_in_minutes ?? 0
-                            )}`}
-                            info={METRIC_INFO.timeSpentAvg}
-                            icon={<Clock className="size-5" weight="duotone" />}
-                        />
-                        <MetricCard
-                            tone="warning"
-                            label="Concentration Score (Avg)"
-                            value={`${formatToTwoDecimalPlaces(
-                                reportData?.learner_progress_report?.percentage_concentration_score || 0
-                            )}%`}
-                            sub={`Batch ${formatToTwoDecimalPlaces(
-                                reportData?.batch_progress_report?.percentage_concentration_score || 0
-                            )}%`}
-                            info={METRIC_INFO.concentration}
-                            icon={<Brain className="size-5" weight="duotone" />}
-                        />
-                    </div>
-                    {/* Daily Learning Performance */}
-                    <SectionCard
-                        title="Daily Learning Performance"
-                        subtitle="Track daily progress and activity patterns"
-                        icon={<ChartLineUp className="size-4" />}
-                    >
-                        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                            <div className="lg:col-span-2">
-                                <div className="h-auto w-full overflow-visible rounded-lg border border-neutral-200 bg-white">
-                                    <div className="w-full p-4">
-                                        <LineChartComponent chartData={transformToChartData(reportData)} />
+
+                    {results.map((result) => {
+                        const slidesTableState = {
+                            columnVisibility: {
+                                subject: !isSlideColumnAllDefault(result.slides, 'subject_name'),
+                                module: !isSlideColumnAllDefault(result.slides, 'module_name'),
+                                chapter: !isSlideColumnAllDefault(result.slides, 'chapter_name'),
+                            },
+                        };
+                        return (
+                            <div key={result.batchId} className="space-y-6">
+                                {/* Per-batch heading (multi only) with its own PDF export */}
+                                {isMulti && (
+                                    <div className="flex flex-col gap-3 border-b border-neutral-200 pb-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <span className="rounded-md bg-primary-50 px-2 py-1 text-caption font-semibold uppercase tracking-wide text-primary-500">
+                                                {batchTerm}
+                                            </span>
+                                            <h3 className="text-subtitle font-semibold text-neutral-700">
+                                                {blockTitle(result)}
+                                            </h3>
+                                        </div>
+                                        {result.report && exportPdfButton(result)}
                                     </div>
-                                </div>
-                            </div>
-                            <div className="lg:col-span-1">
-                                <div className="h-full rounded-lg bg-neutral-50 p-4">
-                                    <h4 className="mb-4 text-caption font-semibold uppercase tracking-wide text-neutral-500">
-                                        Activity Summary
-                                    </h4>
-                                    <div className="h-96 overflow-auto">
-                                        <div className="!min-w-full [&_table]:!w-full [&_table]:!min-w-full [&_td]:!whitespace-nowrap [&_th]:!whitespace-nowrap">
-                                            <MyTable
-                                                data={tableData}
-                                                columns={learnersReportColumns}
-                                                isLoading={isPending}
-                                                error={error}
-                                                currentPage={0}
-                                                scrollable={true}
-                                                className="!h-full"
+                                )}
+
+                                {result.reportError || !result.report ? (
+                                    <div className="flex items-center gap-3 rounded-lg border border-danger-200 bg-danger-50 p-4 text-body text-danger-700">
+                                        <Warning className="size-5 shrink-0" />
+                                        {t('report.batchLoadFailed', { name: blockTitle(result) })}
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* KPI cards — learner with batch comparison */}
+                                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                            <MetricCard
+                                                tone="success"
+                                                label={t('report.courseCompletedLabel', {
+                                                    term: courseTerm,
+                                                })}
+                                                value={`${formatToTwoDecimalPlaces(
+                                                    result.report.learner_progress_report
+                                                        ?.percentage_course_completed
+                                                )}%`}
+                                                sub={`${batchTerm} ${formatToTwoDecimalPlaces(
+                                                    result.report.batch_progress_report
+                                                        ?.percentage_course_completed
+                                                )}%`}
+                                                info={METRIC_INFO.courseCompleted}
+                                                icon={
+                                                    <CheckCircle
+                                                        className="size-5"
+                                                        weight="duotone"
+                                                    />
+                                                }
+                                            />
+                                            <MetricCard
+                                                tone="primary"
+                                                label={t('report.dailyTimeSpentAvg')}
+                                                value={convertMinutesToTimeFormat(
+                                                    result.report.learner_progress_report
+                                                        ?.avg_time_spent_in_minutes ?? 0
+                                                )}
+                                                sub={`${batchTerm} ${convertMinutesToTimeFormat(
+                                                    result.report.batch_progress_report
+                                                        ?.avg_time_spent_in_minutes ?? 0
+                                                )}`}
+                                                info={METRIC_INFO.timeSpentAvg}
+                                                icon={<Clock className="size-5" weight="duotone" />}
+                                            />
+                                            <MetricCard
+                                                tone="warning"
+                                                label={t('report.concentrationScoreAvg')}
+                                                value={`${formatToTwoDecimalPlaces(
+                                                    result.report.learner_progress_report
+                                                        ?.percentage_concentration_score || 0
+                                                )}%`}
+                                                sub={`${batchTerm} ${formatToTwoDecimalPlaces(
+                                                    result.report.batch_progress_report
+                                                        ?.percentage_concentration_score || 0
+                                                )}%`}
+                                                info={METRIC_INFO.concentration}
+                                                icon={<Brain className="size-5" weight="duotone" />}
                                             />
                                         </div>
-                                    </div>
-                                </div>
+
+                                        {/* Daily Learning Performance */}
+                                        <SectionCard
+                                            title={t('report.dailyLearningPerformance')}
+                                            subtitle={t('report.trackDailyProgress')}
+                                            icon={<ChartLineUp className="size-4" />}
+                                        >
+                                            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                                                <div className="lg:col-span-2">
+                                                    <div className="h-auto w-full overflow-visible rounded-lg border border-neutral-200 bg-white">
+                                                        <div className="w-full p-4">
+                                                            <LineChartComponent
+                                                                chartData={transformToChartData(
+                                                                    result.report
+                                                                )}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="lg:col-span-1">
+                                                    <div className="h-full rounded-lg bg-neutral-50 p-4">
+                                                        <h4 className="mb-4 text-caption font-semibold uppercase tracking-wide text-neutral-500">
+                                                            {t('report.activitySummary')}
+                                                        </h4>
+                                                        <div className="h-96 overflow-auto">
+                                                            <div className="!min-w-full [&_table]:!w-full [&_table]:!min-w-full [&_td]:!whitespace-nowrap [&_th]:!whitespace-nowrap">
+                                                                <MyTable
+                                                                    data={{
+                                                                        content:
+                                                                            transformLearnersReport(
+                                                                                result.report
+                                                                            ),
+                                                                        total_pages: 0,
+                                                                        page_no: 0,
+                                                                        page_size: 10,
+                                                                        total_elements: 0,
+                                                                        last: true,
+                                                                    }}
+                                                                    columns={learnersReportColumns}
+                                                                    isLoading={false}
+                                                                    error={null}
+                                                                    currentPage={0}
+                                                                    scrollable={true}
+                                                                    className="!h-full"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </SectionCard>
+
+                                        {result.slides && (
+                                            <div className="flex flex-col gap-6">
+                                                <div className="text-h3 font-semibold text-primary-500">
+                                                    {t('report.learningTimeline')}
+                                                </div>
+                                                {result.slides.map((slide, idx) => (
+                                                    <div key={idx} className="flex flex-col gap-1">
+                                                        <div className="flex flex-row gap-1 font-semibold">
+                                                            {t('report.dateLabel')}{' '}
+                                                            <div className="text-primary-500">
+                                                                {dayjs(slide.date).format(
+                                                                    'DD-MM-YYYY'
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                        <div className="!min-w-full overflow-x-auto [&_table]:!w-full [&_table]:!min-w-full [&_td]:!whitespace-nowrap [&_th]:!whitespace-nowrap">
+                                                            <MyTable
+                                                                data={{
+                                                                    content: (
+                                                                        slide.slide_details ?? []
+                                                                    ).map((detail) => ({
+                                                                        study_slide:
+                                                                            detail.slide_title,
+                                                                        subject:
+                                                                            detail.subject_name,
+                                                                        module: detail.module_name,
+                                                                        chapter:
+                                                                            detail.chapter_name,
+                                                                        concentration_score: `${detail.concentration_score.toFixed(2)} %`,
+                                                                        time_spent:
+                                                                            convertMinutesToTimeFormat(
+                                                                                parseFloat(
+                                                                                    detail.time_spent
+                                                                                )
+                                                                            ),
+                                                                    })),
+                                                                    total_pages: 0,
+                                                                    page_no: 0,
+                                                                    page_size: 10,
+                                                                    total_elements: 0,
+                                                                    last: true,
+                                                                }}
+                                                                columns={SlidesColumns}
+                                                                isLoading={false}
+                                                                error={null}
+                                                                currentPage={0}
+                                                                tableState={slidesTableState}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                             </div>
-                        </div>
-                    </SectionCard>
-                    {slideData && (
-                        <div className="flex flex-col gap-6">
-                            <div className="text-h3 font-[600] text-primary-500">
-                                Learning Timeline
-                            </div>
-                            {slideData?.map((slide, idx) => (
-                                <div key={idx} className="flex flex-col gap-1">
-                                    <div className="flex flex-row gap-1 font-[600]">
-                                        Date:{' '}
-                                        <div className="text-primary-500">
-                                            {dayjs(slide.date).format('DD-MM-YYYY')}
-                                        </div>
-                                    </div>
-                                    <div className="!min-w-full overflow-x-auto [&_table]:!w-full [&_table]:!min-w-full [&_td]:!whitespace-nowrap [&_th]:!whitespace-nowrap">
-                                        <MyTable
-                                            data={{
-                                                content: slide.slide_details?.map((slide) => ({
-                                                    study_slide: slide.slide_title,
-                                                    subject: slide.subject_name,
-                                                    module: slide.module_name,
-                                                    chapter: slide.chapter_name,
-                                                    concentration_score: `${slide.concentration_score.toFixed(
-                                                        2
-                                                    )} %`, // Formatting as string
-                                                    time_spent: convertMinutesToTimeFormat(
-                                                        parseFloat(slide.time_spent)
-                                                    ),
-                                                })),
-                                                total_pages: 0,
-                                                page_no: 0,
-                                                page_size: 10,
-                                                total_elements: 0,
-                                                last: true,
-                                            }}
-                                            columns={SlidesColumns}
-                                            isLoading={isPending}
-                                            error={error}
-                                            currentPage={0}
-                                            tableState={slidesTableState}
-                                        // className="!h-full"
-                                        ></MyTable>
-                                    </div>
-                                </div>
-                            ))}
-                            {/* <MyPagination
-                                currentPage={currPage}
-                                totalPages={totalPage}
-                                onPageChange={setCurrPage}
-                            ></MyPagination> */}
-                        </div>
-                    )}
+                        );
+                    })}
+                </div>
+            )}
+
+            {applied && !isPending && !hasAnyReport && (
+                <div className="flex items-center gap-3 rounded-lg border border-danger-200 bg-danger-50 p-4 text-body text-danger-700">
+                    <Warning className="size-5 shrink-0" />
+                    {t('report.loadFailed')}
                 </div>
             )}
         </div>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { YooptaPlugin, useYooptaEditor, Elements, PluginElementRenderProps } from '@yoopta/editor';
 import { encodeBlockData, decodeBlockData } from './RichTextField';
 
@@ -11,10 +12,11 @@ interface TimelineStep {
 const DEFAULT_COLORS = ['#007acc', '#28a745', '#ff6b35', '#6f42c1', '#dc3545', '#17a2b8'];
 
 export function TimelineBlock({ element, attributes, children, blockId }: PluginElementRenderProps) {
+    const { t } = useTranslation('studyLibraryTimelineEditor');
     const editor = useYooptaEditor();
     const [steps, setSteps] = useState<TimelineStep[]>(
         element?.props?.steps || [
-            { title: 'Step 1', description: '', color: DEFAULT_COLORS[0]! },
+            { title: t('defaultStepTitle', { number: 1 }), description: '', color: DEFAULT_COLORS[0]! },
         ]
     );
     const [isEditing, setIsEditing] = useState(!element?.props?.steps?.length);
@@ -48,7 +50,7 @@ export function TimelineBlock({ element, attributes, children, blockId }: Plugin
         setSteps((prev) => [
             ...prev,
             {
-                title: `Step ${prev.length + 1}`,
+                title: t('defaultStepTitle', { number: prev.length + 1 }),
                 description: '',
                 color: DEFAULT_COLORS[prev.length % DEFAULT_COLORS.length]!,
             },
@@ -111,7 +113,7 @@ export function TimelineBlock({ element, attributes, children, blockId }: Plugin
                 }}
             >
                 <span style={{ fontSize: '14px', fontWeight: 600, color: '#333' }}>
-                    Timeline / Steps
+                    {t('blockLabel')}
                 </span>
                 <button
                     onClick={() => setIsEditing(!isEditing)}
@@ -125,7 +127,7 @@ export function TimelineBlock({ element, attributes, children, blockId }: Plugin
                         cursor: 'pointer',
                     }}
                 >
-                    {isEditing ? 'Preview' : 'Edit'}
+                    {isEditing ? t('preview') : t('edit')}
                 </button>
             </div>
 
@@ -181,7 +183,7 @@ export function TimelineBlock({ element, attributes, children, blockId }: Plugin
                                         value={step.title}
                                         onChange={(e) => updateStep(index, 'title', e.target.value)}
                                         onKeyDown={handleInputKeyDown}
-                                        placeholder="Step title"
+                                        placeholder={t('stepTitlePlaceholder')}
                                         style={{
                                             width: '100%',
                                             padding: '4px 8px',
@@ -196,7 +198,7 @@ export function TimelineBlock({ element, attributes, children, blockId }: Plugin
                                         value={step.description}
                                         onChange={(e) => updateStep(index, 'description', e.target.value)}
                                         onKeyDown={handleInputKeyDown}
-                                        placeholder="Step description (optional)"
+                                        placeholder={t('stepDescriptionPlaceholder')}
                                         rows={2}
                                         style={{
                                             width: '100%',
@@ -249,7 +251,7 @@ export function TimelineBlock({ element, attributes, children, blockId }: Plugin
                                 width: '100%',
                             }}
                         >
-                            + Add Step
+                            {t('addStep')}
                         </button>
                     </div>
                 ) : (

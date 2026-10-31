@@ -1,0 +1,18 @@
+{
+    "errors": {
+        "unknownCounsellorEmail": "Unknown counsellor email: {{email}}",
+        "ambiguousCounsellorName": "Multiple counsellors named \"{{name}}\" — use their email instead",
+        "unknownCounsellor": "Unknown counsellor: {{name}}",
+        "unknownLeadStatus": "Unknown lead status: {{status}}.",
+        "validStatuses": "Valid: {{statuses}}",
+        "fieldRequired": "{{field}} is required",
+        "invalidEmail": "Invalid email: {{email}}",
+        "invalidMobile": "Invalid mobile number: {{mobile}}"
+    },
+    "csvTemplate": {
+        "leadOwnerColumn": "Lead Owner (Counsellor Email)",
+        "leadStatusColumn": "Lead Status",
+        "sampleName": "John Doe",
+        "sampleStatus": "New"
+    }
+}

@@ -11,6 +11,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import vacademy.io.auth_service.feature.admin_core_service.dto.InstituteSignupPolicy;
+import vacademy.io.auth_service.feature.admin_core_service.service.InstitutePolicyService;
 import vacademy.io.auth_service.feature.auth.dto.JwtResponseDto;
 import vacademy.io.auth_service.feature.auth.dto.RegisterRequest;
 import vacademy.io.auth_service.feature.institute.InstituteInfoDTO;
@@ -30,6 +32,7 @@ import vacademy.io.common.auth.enums.UserRoleStatus;
 import vacademy.io.common.auth.repository.RoleRepository;
 import vacademy.io.common.auth.repository.UserPermissionRepository;
 import vacademy.io.common.auth.repository.UserRepository;
+import vacademy.io.common.core.utils.TextSanitizer;
 import vacademy.io.common.auth.repository.UserRoleRepository;
 import vacademy.io.common.auth.service.JwtService;
 import vacademy.io.common.auth.service.RefreshTokenService;
@@ -39,8 +42,10 @@ import vacademy.io.common.notification.dto.GenericEmailRequest;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -69,6 +74,8 @@ public class AuthService {
     private InstituteInternalService instituteInternalService;
     @Autowired
     private InstituteSettingsService instituteSettingsService;
+    @Autowired
+    private InstitutePolicyService institutePolicyService;
     @Value("${default.learner.portal.url}")
     private String defaultLearnerPortalUrl;
 
@@ -135,7 +142,15 @@ public class AuthService {
     @Transactional
     public User createUser(RegisterRequest registerRequest, Set<UserRole> roles) {
         boolean isAlreadyPresent = false;
-        String normalizedEmail = registerRequest.getEmail() != null ? registerRequest.getEmail().toLowerCase() : null;
+        // cleanIdentifier() first: an email pasted with an invisible character (ZWSP,
+        // BOM, NBSP) would otherwise be stored verbatim AND used as the dedupe key,
+        // so the account is created unfindable and the learner can never log in.
+        // The User entity repeats this on persist; doing it here keeps the lookup
+        // below matching what actually gets written.
+        String normalizedEmail = TextSanitizer.cleanIdentifier(registerRequest.getEmail());
+        normalizedEmail = normalizedEmail != null ? normalizedEmail.toLowerCase() : null;
+        registerRequest.setEmail(normalizedEmail);
+        registerRequest.setFullName(TextSanitizer.clean(registerRequest.getFullName()));
         Optional<User> optionalUser = userRepository.findFirstByEmailOrderByCreatedAtDesc(normalizedEmail);
         User user;
         if (optionalUser.isPresent()) {
@@ -167,7 +182,16 @@ public class AuthService {
 
     @Transactional
     public User createUser(UserDTO registerRequest, String instituteId, boolean sendWelcomeMail) {
-        String normalizedEmail = registerRequest.getEmail() != null ? registerRequest.getEmail().toLowerCase() : null;
+        // cleanIdentifier() first: an email pasted with an invisible character (ZWSP,
+        // BOM, NBSP) would otherwise be stored verbatim AND used as the dedupe key,
+        // so the account is created unfindable and the learner can never log in.
+        // The User entity repeats this on persist; doing it here keeps the lookup
+        // below matching what actually gets written.
+        String normalizedEmail = TextSanitizer.cleanIdentifier(registerRequest.getEmail());
+        normalizedEmail = normalizedEmail != null ? normalizedEmail.toLowerCase() : null;
+        registerRequest.setEmail(normalizedEmail);
+        registerRequest.setUsername(TextSanitizer.cleanIdentifier(registerRequest.getUsername()));
+        registerRequest.setFullName(TextSanitizer.clean(registerRequest.getFullName()));
         Optional<User> optionalUser = Optional.empty();
 
         if (StringUtils.hasText(registerRequest.getMobileNumber())) {
@@ -182,7 +206,21 @@ public class AuthService {
                 && StringUtils.hasText(registerRequest.getMobileNumber());
 
         if (usePhoneAsIdentifier) {
-            optionalUser = userRepository.findLatestUserByMobileNumber(registerRequest.getMobileNumber());
+            // Prefer the account that ALREADY belongs to this institute, exactly as phone
+            // login does (AuthManager ~L731). A number routinely fronts several accounts —
+            // at SuchBliss one number has fourteen — and resolving blind-latest here sent the
+            // enrolment to an account the learner was not signed into: login picked the one
+            // holding a role here, enrolment created the plan on the newest one, and the
+            // learner's own dashboard stayed empty while their membership lived elsewhere.
+            // Identity resolution has to agree between logging in and enrolling, or the two
+            // halves of the same person drift apart.
+            if (StringUtils.hasText(instituteId)) {
+                optionalUser = userRepository.findLatestUserByMobileNumberAndInstitute(
+                        registerRequest.getMobileNumber(), instituteId);
+            }
+            if (optionalUser.isEmpty()) {
+                optionalUser = userRepository.findLatestUserByMobileNumber(registerRequest.getMobileNumber());
+            }
         }
 
         if (!usePhoneAsIdentifier && optionalUser.isEmpty() && StringUtils.hasText(normalizedEmail)) {
@@ -223,8 +261,15 @@ public class AuthService {
                 user.setRootUser(true);
             user = userRepository.save(user);
         } else {
+            String fromStrategy = usernameFromInstituteStrategy(registerRequest, instituteId, false);
+            if (fromStrategy != null) {
+                registerRequest.setUsername(ensureUniqueUsername(fromStrategy));
+            }
             if (!StringUtils.hasText(registerRequest.getUsername())) {
-                registerRequest.setUsername(UsernameGenerator.generateUsername(registerRequest.getFullName()));
+                // A generated name can collide with an existing one; that used to fail
+                // the whole enrollment on the unique constraint.
+                registerRequest.setUsername(ensureUniqueUsername(
+                        UsernameGenerator.generateUsername(registerRequest.getFullName())));
             }
             if (!StringUtils.hasText(registerRequest.getPassword())) {
                 registerRequest.setPassword(UsernameGenerator.generatePassword(8));
@@ -276,6 +321,138 @@ public class AuthService {
             }
         }
         return user;
+    }
+
+    /**
+     * Username is the last dedupe key. A hit there is only the same person when nothing
+     * on record says otherwise: generated usernames (4 letters + 4 characters) collide,
+     * and learner signup sends the email prefix, so "john" from john@yahoo.com used to
+     * land on the account of john@gmail.com. Refuse the match only on positive evidence —
+     * both sides carry an email and they differ, or both carry a phone and they differ —
+     * so an account that has no email yet still matches as before.
+     */
+    private Optional<User> findSamePersonByUsername(UserDTO registerRequest, String normalizedEmail) {
+        String mobile = registerRequest.getMobileNumber();
+        return userRepository.findByUsername(registerRequest.getUsername())
+                .filter(existing -> !(StringUtils.hasText(normalizedEmail)
+                        && StringUtils.hasText(existing.getEmail())
+                        && !existing.getEmail().trim().equalsIgnoreCase(normalizedEmail)))
+                .filter(existing -> {
+                    String wanted = lastTenDigits(mobile);
+                    String onRecord = lastTenDigits(existing.getMobileNumber());
+                    return wanted.isEmpty() || onRecord.isEmpty() || wanted.equals(onRecord);
+                });
+    }
+
+    // Stored numbers mix "+91 98765 43210", "919876543210" and "9876543210" for one phone.
+    private static String lastTenDigits(String number) {
+        String digits = number == null ? "" : number.replaceAll("[^0-9]", "");
+        return digits.length() > 10 ? digits.substring(digits.length() - 10) : digits;
+    }
+
+    /**
+     * Username for a NEW user taken from the institute's username strategy
+     * (STUDENT_DISPLAY_SETTINGS.signup), or null to keep today's behaviour.
+     *
+     * <ul>
+     *   <li>Learner signup: only the newer strategies (phone, customField) act here.
+     *       "email" is already applied by LearnerAuthManager; random/manual are handled
+     *       by the signup page itself.</li>
+     *   <li>Everything else (admin add, CSV, invites, payments, forms): only when the
+     *       institute switched on usernameApplyToAll, and not over a username an
+     *       admin typed by hand unless usernameOverrideTyped is also on.</li>
+     * </ul>
+     * A missing value (no phone, field not filled) falls back to the old username.
+     */
+    private String usernameFromInstituteStrategy(UserDTO request, String instituteId, boolean selfSignup) {
+        if (!StringUtils.hasText(instituteId) || !isLearnerRequest(request.getRoles())) {
+            return null;
+        }
+        InstituteSignupPolicy policy;
+        try {
+            policy = institutePolicyService.fetchSignupPolicyCached(instituteId);
+        } catch (Exception e) {
+            log.warn("Username strategy lookup failed for institute {}: {}", instituteId, e.getMessage());
+            return null;
+        }
+        if (policy == null || !StringUtils.hasText(policy.getUserNameStrategy())) {
+            return null;
+        }
+        String strategy = policy.getUserNameStrategy().trim();
+        boolean valueStrategy = "phone".equalsIgnoreCase(strategy) || "customField".equalsIgnoreCase(strategy);
+        if (selfSignup ? !valueStrategy : !policy.isUsernameApplyToAll()) {
+            return null;
+        }
+        if (Boolean.TRUE.equals(request.getUsernameExplicit())
+                && (!policy.isUsernameOverrideTyped() || "random".equalsIgnoreCase(strategy))) {
+            return null;
+        }
+
+        String raw;
+        if ("email".equalsIgnoreCase(strategy)) {
+            raw = request.getEmail();
+        } else if ("phone".equalsIgnoreCase(strategy)) {
+            raw = request.getMobileNumber();
+        } else if ("customField".equalsIgnoreCase(strategy)) {
+            Map<String, String> values = request.getUsernameFieldValues();
+            raw = values == null || !StringUtils.hasText(policy.getUsernameCustomFieldId())
+                    ? null : values.get(policy.getUsernameCustomFieldId());
+        } else if ("random".equalsIgnoreCase(strategy)) {
+            raw = UsernameGenerator.generateUsername(request.getFullName());
+        } else {
+            return null; // manual: nothing to derive
+        }
+
+        String username = toUsernameValue(raw);
+        if (username.isEmpty()) {
+            return null;
+        }
+        if (valueStrategy && StringUtils.hasText(policy.getUsernamePrefix())) {
+            // Keep the prefix's own trailing separator ("TTS-" → "tts-").
+            String prefix = toUsernameValue(policy.getUsernamePrefix() + "x");
+            username = prefix.substring(0, prefix.length() - 1) + username;
+        }
+        return username;
+    }
+
+    // The same create calls also make staff (FacultyService sends TEACHER / ADMIN) and
+    // parents; the learner username strategy must leave those alone. Learner flows send
+    // STUDENT, or no roles at all (the paid invite form).
+    private static boolean isLearnerRequest(List<String> roles) {
+        return roles == null || roles.isEmpty()
+                || roles.stream().anyMatch(STUDENT_ROLE::equalsIgnoreCase);
+    }
+
+    // Lowercase, no spaces, and only characters that survive in a login form and in
+    // the /live-class/<username> link: letters and digits in any script plus . _ @ + -
+    private static String toUsernameValue(String raw) {
+        String cleaned = TextSanitizer.cleanIdentifier(raw);
+        if (!StringUtils.hasText(cleaned)) {
+            return "";
+        }
+        return cleaned.toLowerCase()
+                .replaceAll("\\s+", "")
+                .replaceAll("[^\\p{L}\\p{N}._@+-]", "-")
+                .replaceAll("-{2,}", "-")
+                .replaceAll("^-|-$", "");
+    }
+
+    /**
+     * users.username is unique across every institute. When the wanted name is already
+     * taken by someone else, keep it readable and add a short suffix instead of failing
+     * the enrollment on the constraint.
+     */
+    private String ensureUniqueUsername(String wanted) {
+        if (userRepository.findByUsername(wanted).isEmpty()) {
+            return wanted;
+        }
+        for (int attempt = 0; attempt < 10; attempt++) {
+            String candidate = wanted + "_" + UsernameGenerator.randomSuffix(4);
+            if (userRepository.findByUsername(candidate).isEmpty()) {
+                return candidate;
+            }
+        }
+        return wanted + "_" + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
     }
 
     private List<Role> getAllUserRoles(List<String> userRoles) {
@@ -450,7 +627,35 @@ public class AuthService {
 
     @Transactional
     public User createUserForLearnerEnrollment(UserDTO registerRequest, String instituteId, boolean sendWelcomeMail, String overrideLoginUrl) {
-        String normalizedEmail = registerRequest.getEmail() != null ? registerRequest.getEmail().toLowerCase() : null;
+        return createUserForLearnerEnrollment(registerRequest, instituteId, sendWelcomeMail, overrideLoginUrl, false);
+    }
+
+    /**
+     * Public learner signup (POST /learner/v1/register). The username here is the
+     * learner's own email prefix, a generated name or whatever they typed — never a
+     * reference to an account the caller is entitled to — so a username hit is only
+     * accepted when nothing on record contradicts it, and a taken name gets a suffix.
+     * Admin and internal callers keep the plain username match: they pass a known
+     * learner's username on purpose (re-enroll, CSV by username).
+     */
+    @Transactional
+    public User createUserForLearnerSelfSignup(UserDTO registerRequest, String instituteId, boolean sendWelcomeMail) {
+        return createUserForLearnerEnrollment(registerRequest, instituteId, sendWelcomeMail, null, true);
+    }
+
+    private User createUserForLearnerEnrollment(UserDTO registerRequest, String instituteId, boolean sendWelcomeMail,
+                                                String overrideLoginUrl, boolean selfSignup) {
+        boolean callerChoseUsername = StringUtils.hasText(registerRequest.getUsername());
+        // cleanIdentifier() first: an email pasted with an invisible character (ZWSP,
+        // BOM, NBSP) would otherwise be stored verbatim AND used as the dedupe key,
+        // so the account is created unfindable and the learner can never log in.
+        // The User entity repeats this on persist; doing it here keeps the lookup
+        // below matching what actually gets written.
+        String normalizedEmail = TextSanitizer.cleanIdentifier(registerRequest.getEmail());
+        normalizedEmail = normalizedEmail != null ? normalizedEmail.toLowerCase() : null;
+        registerRequest.setEmail(normalizedEmail);
+        registerRequest.setUsername(TextSanitizer.cleanIdentifier(registerRequest.getUsername()));
+        registerRequest.setFullName(TextSanitizer.clean(registerRequest.getFullName()));
         Optional<User> optionalUser = Optional.empty();
 
         if (StringUtils.hasText(registerRequest.getMobileNumber())) {
@@ -465,7 +670,21 @@ public class AuthService {
                 && StringUtils.hasText(registerRequest.getMobileNumber());
 
         if (usePhoneAsIdentifier) {
-            optionalUser = userRepository.findLatestUserByMobileNumber(registerRequest.getMobileNumber());
+            // Prefer the account that ALREADY belongs to this institute, exactly as phone
+            // login does (AuthManager ~L731). A number routinely fronts several accounts —
+            // at SuchBliss one number has fourteen — and resolving blind-latest here sent the
+            // enrolment to an account the learner was not signed into: login picked the one
+            // holding a role here, enrolment created the plan on the newest one, and the
+            // learner's own dashboard stayed empty while their membership lived elsewhere.
+            // Identity resolution has to agree between logging in and enrolling, or the two
+            // halves of the same person drift apart.
+            if (StringUtils.hasText(instituteId)) {
+                optionalUser = userRepository.findLatestUserByMobileNumberAndInstitute(
+                        registerRequest.getMobileNumber(), instituteId);
+            }
+            if (optionalUser.isEmpty()) {
+                optionalUser = userRepository.findLatestUserByMobileNumber(registerRequest.getMobileNumber());
+            }
         }
 
         if (!usePhoneAsIdentifier && optionalUser.isEmpty() && StringUtils.hasText(normalizedEmail)) {
@@ -473,7 +692,9 @@ public class AuthService {
         }
 
         if (!usePhoneAsIdentifier && optionalUser.isEmpty() && StringUtils.hasText(registerRequest.getUsername())) {
-            optionalUser = userRepository.findByUsername(registerRequest.getUsername());
+            optionalUser = selfSignup
+                    ? findSamePersonByUsername(registerRequest, normalizedEmail)
+                    : userRepository.findByUsername(registerRequest.getUsername());
         }
 
         boolean isAlreadyPresent = optionalUser.isPresent();
@@ -506,8 +727,15 @@ public class AuthService {
                 user.setRootUser(true);
             user = userRepository.save(user);
         } else {
+            String fromStrategy = usernameFromInstituteStrategy(registerRequest, instituteId, selfSignup);
+            if (fromStrategy != null) {
+                registerRequest.setUsername(ensureUniqueUsername(fromStrategy));
+            }
             if (!StringUtils.hasText(registerRequest.getUsername())) {
                 registerRequest.setUsername(UsernameGenerator.generateUsername(registerRequest.getFullName()));
+            }
+            if (selfSignup || !callerChoseUsername) {
+                registerRequest.setUsername(ensureUniqueUsername(registerRequest.getUsername()));
             }
             if (!StringUtils.hasText(registerRequest.getPassword())) {
                 registerRequest.setPassword(UsernameGenerator.generatePassword(8));

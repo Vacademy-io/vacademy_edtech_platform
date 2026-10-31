@@ -1,0 +1,34 @@
+{
+    "title": "Activity",
+    "empty": "No activity yet",
+    "failedToLoad": "Couldn't load activity",
+    "someone": "Someone",
+    "rule": "Auto-assignment rule",
+    "system": "System",
+    "ruleBadge": "Rule",
+    "defaultRouting": "Default routing: {{source}}",
+    "sources": {
+        "SUBJECT_TEACHER": "Subject teacher",
+        "BATCH_TEACHER": "Batch teachers",
+        "BOTH": "Subject + batch teachers",
+        "ROLE": "Role",
+        "SPECIFIC_USERS": "Specific staff",
+        "NONE": "Nobody",
+        "SUB_ORG": "Sub-organization staff",
+        "ADMIN_FALLBACK": "Admin fallback"
+    },
+    "lines": {
+        "created": "{{actor}} raised this doubt",
+        "assigned": "{{actor}} assigned {{target}}",
+        "autoAssigned": "{{target}} auto-assigned by rule: {{rule}}",
+        "unassigned": "{{actor}} removed {{target}}",
+        "removedDefault": "{{actor}} removed default assignee {{target}}",
+        "statusChanged": "{{actor}} changed status {{from}} → {{to}}",
+        "remark": "{{actor}} left a remark on {{status}}"
+    },
+    "remarkPlaceholder": "Add a remark for staff (learners never see this)",
+    "addRemark": "Add remark",
+    "saving": "Saving…",
+    "remarkAdded": "Remark added",
+    "remarkFailed": "Couldn't add the remark"
+}

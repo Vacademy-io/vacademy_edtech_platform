@@ -1,0 +1,74 @@
+{
+    "states": {
+        "loading": "Chargement des paramètres d'activité de l'apprenant…",
+        "error": "Impossible de charger les paramètres d'activité de l'apprenant. Veuillez actualiser la page et réessayer."
+    },
+    "toasts": {
+        "saveSuccess": "Paramètres d'activité de l'apprenant enregistrés",
+        "saveFailed": "Échec de l'enregistrement des paramètres d'activité de l'apprenant"
+    },
+    "completion": {
+        "title": "Seuil d'achèvement",
+        "description": "Détermine à partir de quand un(e) {{slide}} ou un chapitre s'affiche comme terminé (coche verte) dans l'application {{learner}}. Les pourcentages de progression eux-mêmes ne sont pas affectés — il s'agit uniquement du seuil d'affichage.",
+        "thresholdField": {
+            "label": "Marquer comme terminé à",
+            "suffix": "% de progression",
+            "help": "Par défaut 80 %. Les certificats utilisent leur propre seuil, défini dans les paramètres des certificats."
+        }
+    },
+    "reading": {
+        "title": "Lecture et documents",
+        "description": "Durée pendant laquelle un(e) {{learner}} doit réellement consulter le contenu d'un document avant qu'il ne soit considéré comme vu.",
+        "pageDwell": {
+            "label": "Temps minimum par page",
+            "suffix": "secondes",
+            "help": "Une page de PDF/document parcourue plus rapidement que ce délai n'est pas comptée comme vue. Par défaut 10 s."
+        },
+        "actionDwell": {
+            "label": "Temps minimum par action",
+            "suffix": "secondes",
+            "help": "S'applique aux diapositives interactives (Jupyter, Scratch, éditeur de code). Par défaut 5 s."
+        },
+        "readingTimeToggle": {
+            "label": "Temps de lecture adapté au contenu",
+            "help": "Les longs documents d'une seule page nécessitent un temps proportionnel à leur longueur avant d'être considérés comme lus — une page de 3 000 mots n'est plus \"terminée\" en 10 secondes. Activation recommandée."
+        },
+        "wpm": {
+            "label": "Vitesse de lecture",
+            "suffix": "mots/min",
+            "help": "Par défaut 200 mots/min."
+        },
+        "minSeconds": {
+            "label": "Minimum",
+            "suffix": "secondes",
+            "help": "Plancher pour les notes très courtes. Par défaut 10 s."
+        },
+        "maxSeconds": {
+            "label": "Maximum",
+            "suffix": "secondes",
+            "help": "Plafond pour les pages très longues. Par défaut 600 s (10 min)."
+        }
+    },
+    "focus": {
+        "title": "Concentration et détection d'inactivité",
+        "description": "La vérification \"êtes-vous toujours là ?\" et la pause automatique qui empêchent le temps d'inactivité de compter comme temps d'étude sur les diapositives de documents. La fréquence de vérification vidéo se configure dans Paramètres d'affichage → Concentration.",
+        "idlePopupToggle": {
+            "label": "Afficher la vérification d'attention en cas d'inactivité",
+            "help": "Lorsque c'est désactivé, aucune fenêtre contextuelle ne s'affiche ; le suivi se met tout de même en pause automatiquement après la pause forcée ci-dessous."
+        },
+        "idleDelay": {
+            "label": "Afficher la vérification après",
+            "suffix": "secondes d'inactivité",
+            "help": "L'absence d'activité de souris/clavier/tactile pendant ce délai déclenche la vérification. Par défaut 60 s."
+        },
+        "hardPause": {
+            "label": "Pause forcée après",
+            "suffix": "minutes d'inactivité",
+            "help": "Le suivi se met toujours en pause après cette durée d'inactivité, fenêtre contextuelle affichée ou non. Par défaut 5 min."
+        }
+    },
+    "footer": {
+        "saving": "Enregistrement…",
+        "save": "Enregistrer les paramètres d'activité de l'apprenant"
+    }
+}

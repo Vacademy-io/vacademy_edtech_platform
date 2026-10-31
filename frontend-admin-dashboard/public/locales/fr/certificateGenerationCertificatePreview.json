@@ -1,0 +1,40 @@
+{
+    "emptyState": {
+        "title": "Aucun champ mappé",
+        "description": "Ajoutez des champs à votre modèle de certificat pour voir un aperçu.",
+        "hint": "Faites glisser des champs de la palette vers votre modèle"
+    },
+    "header": {
+        "title": "Aperçu du certificat",
+        "subtitle": "Aperçu du rendu des certificats avec de vraies données d'élèves"
+    },
+    "studentNav": {
+        "position": "{{current}} sur {{total}}"
+    },
+    "actions": {
+        "downloadPreview": "Télécharger l'aperçu",
+        "retry": "Réessayer"
+    },
+    "studentInfo": {
+        "previewing": "Aperçu : {{name}}",
+        "idLabel": "ID :",
+        "emailLabel": "E-mail :",
+        "enrollmentLabel": "Inscription :",
+        "instituteLabel": "Établissement :"
+    },
+    "previewImage": {
+        "alt": "Aperçu du certificat",
+        "errorTitle": "Erreur d'aperçu",
+        "errorMessage": "Échec de la génération de l'aperçu du certificat. Veuillez vérifier vos mappages de champs.",
+        "generating": "Génération de l'aperçu du certificat...",
+        "empty": "Aucun aperçu disponible"
+    },
+    "fieldValues": {
+        "title": "Valeurs des champs pour {{name}}",
+        "noValue": "Aucune valeur",
+        "sampleValue": "Exemple {{field}}"
+    },
+    "download": {
+        "unnamedStudent": "sans nom"
+    }
+}

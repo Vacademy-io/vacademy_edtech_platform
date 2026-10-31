@@ -1,0 +1,88 @@
+{
+  "certificateDialog": {
+    "title": "اكتمال {{course}}",
+    "subtitle": "تهانينا! لقد حصلت على شهادة.",
+    "courseLabel": "{{course}}:",
+    "sessionLabel": "{{session}}:",
+    "levelLabel": "{{level}}:"
+  },
+  "videoPlayer": {
+    "vimeoTitle": "مشغل فيديو Vimeo",
+    "unsupported": "متصفحك لا يدعم علامة الفيديو."
+  },
+  "youtubePlayer": {
+    "title": "مشغل فيديو YouTube"
+  },
+  "contentSections": {
+    "whatYoullLearn": "ما ستتعلمه",
+    "aboutCourse": "حول هذا {{course}}",
+    "whoShouldJoin": "من ينبغي أن ينضم"
+  },
+  "enrollment": {
+    "configTitle": "إعدادات {{course}}",
+    "previewModeLabel": "وضع معاينة {{course}}",
+    "previewModeDescription": "تصفح هيكل {{course}}. سجّل للوصول إلى {{slides}} والمواد.",
+    "noSessionForCourse": "لا توجد {{session}} متاحة لهذا {{course}}",
+    "notEnrolledInSession": "أنت غير مسجل في أي {{session}} لهذا {{course}}",
+    "noActiveSessionsConfigured": "قد لا يحتوي هذا {{course}} على أي {{session}} نشطة تم تكوينها.",
+    "contactToEnroll": "يرجى التواصل مع {{teacher}} أو {{admin}} لإتمام التسجيل.",
+    "selectSessionPlaceholder": "اختر {{session}}",
+    "selectLevelPlaceholder": "اختر {{level}}",
+    "certificateAvailable": "الشهادة متاحة",
+    "certificateDescription": "يمكنك الآن عرض شهادتك أو تنزيلها.",
+    "enrollButton": "التسجيل"
+  },
+  "ratings": {
+    "heading": "التقييمات والمراجعات",
+    "subheading": "آراء المجتمع وتقييماته",
+    "feedbackLabel": "ملاحظاتك",
+    "feedbackPlaceholder": "اكتب ملاحظاتك...",
+    "ratingLabel": "التقييم",
+    "starCount_zero": "{{count}} نجمة",
+    "starCount_one": "{{count}} نجمة",
+    "starCount_two": "{{count}} نجمتان",
+    "starCount_few": "{{count}} نجوم",
+    "starCount_many": "{{count}} نجمة",
+    "starCount_other": "{{count}} نجمة",
+    "submitting": "جارٍ الإرسال...",
+    "submitFeedback": "إرسال الملاحظات",
+    "notAvailable": "غير متاح",
+    "totalReviews": "{{count}} مراجعة",
+    "noReviewsTitle": "لا توجد مراجعات بعد",
+    "noReviewsDescription": "كن أول من يشارك تجربته مع هذا {{course}}",
+    "noReviewText": "لم يتم تقديم نص المراجعة",
+    "toast": {
+      "failedToSubmit": "فشل إرسال التقييم",
+      "unexpectedError": "حدث خطأ غير متوقع",
+      "selectRatingRequired": "يرجى اختيار تقييم قبل الإرسال",
+      "thankYou": "شكرًا لك على ملاحظاتك!"
+    }
+  },
+  "errorPage": {
+    "title": "المحتوى غير متاح",
+    "description": "تعذّر علينا تحميل تفاصيل هذا المحتوى. ربما تمت إزالته، أو قد تكون هناك مشكلة في خوادمنا."
+  },
+  "subjectsRoute": {
+    "title": "مركز التعلم",
+    "metaDescription": "صفحة مركز التعلم"
+  },
+  "slideCounts": {
+    "video": "شرائح فيديو",
+    "code": "شرائح كود",
+    "pdf": "شرائح PDF",
+    "document": "شرائح مستند",
+    "question": "شرائح أسئلة",
+    "assignment": "شرائح واجبات",
+    "presentation": "شرائح عرض تقديمي",
+    "jupyterNotebook": "شرائح دفتر Jupyter",
+    "scratchProject": "شرائح مشروع Scratch",
+    "quiz": "شرائح اختبار قصير",
+    "codeEditor": "شرائح محرر الكود",
+    "genericFallback": "شرائح {{type}}"
+  },
+  "common": {
+    "close": "إغلاق",
+    "viewCertificate": "عرض الشهادة",
+    "goBack": "رجوع"
+  }
+}

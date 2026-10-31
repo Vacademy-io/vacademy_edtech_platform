@@ -55,10 +55,12 @@ import {
 } from './html-processor';
 import { initializeLibraries } from './library-loader';
 import { useCaptions } from './hooks/useCaptions';
+import { wordsUrlForTimeline } from './captions-source';
 import { useWebAudioMixer } from './hooks/useWebAudioMixer';
 import { useSoundScheduler, collectCuesFromEntries } from './hooks/useSoundScheduler';
 import { CaptionDisplay, CaptionSettingsPopover } from './components';
 import '@/components/ai-course-builder/components/styles/AIVideoComponents.css';
+import { canvasBackground, entryBoxStyle, fillSceneGaps } from './entry-layout';
 
 /**
  * ScaleCalculator - Calculates scale to fit video in container
@@ -186,6 +188,15 @@ export const AIContentPlayer: React.FC<AIContentPlayerProps> = ({
     // Extra compact for very small screens (phones in portrait)
     const isMini = containerWidth > 0 && containerWidth < 400;
 
+    // A lesson "board" layout reserves a caption band under the board.
+    const hasLessonBand = useMemo(
+        () => entries.some((e) => e.entry_meta?.kind === 'lesson_band'),
+        [entries]
+    );
+    // Callers that only pass the timeline (the slide preview) still get
+    // captions: the pipeline writes the words next to it.
+    const effectiveWordsUrl = wordsUrl ?? wordsUrlForTimeline(timelineUrl);
+
     // Captions hook (only for time-driven content with audio)
     const {
         words: allWords, // Get all words for range calculation
@@ -202,11 +213,12 @@ export const AIContentPlayer: React.FC<AIContentPlayerProps> = ({
             contentType === 'STORYBOOK' ||
             contentType === 'FLASHCARDS' ||
             contentType === 'TIMELINE'
-                ? wordsUrl
+                ? effectiveWordsUrl
                 : undefined,
         currentTime,
         audioStartAt: meta.audio_start_at,
         playbackRate,
+        lessonBand: hasLessonBand,
     });
 
     // Web Audio mixer for extra tracks (background music, SFX, etc.)
@@ -391,7 +403,11 @@ export const AIContentPlayer: React.FC<AIContentPlayerProps> = ({
                 await initializeLibraries(loadedMeta.content_type);
 
                 setMeta(loadedMeta);
-                setEntries(loadedEntries);
+                setEntries(
+                    loadedMeta.navigation === 'time_driven'
+                        ? fillSceneGaps(loadedEntries)
+                        : loadedEntries
+                );
 
                 // Set duration
                 if (loadedMeta.total_duration && loadedMeta.total_duration > 0) {
@@ -977,11 +993,20 @@ export const AIContentPlayer: React.FC<AIContentPlayerProps> = ({
 
         if (navigationMode === 'time_driven') {
             // For VIDEO: find all entries active at current time
-            const active = entries.filter((entry) => {
+            const endOf = (entry: (typeof entries)[number]) => entry.exitTime ?? entry.end ?? Infinity;
+            let active = entries.filter((entry) => {
                 const start = entry.inTime ?? entry.start ?? 0;
-                const end = entry.exitTime ?? entry.end ?? Infinity;
-                return currentTime >= start && currentTime < end;
+                return currentTime >= start && currentTime < endOf(entry);
             });
+            // At (or past) the very end every exitTime is <= currentTime, which
+            // left "No content available" as the last frame. Hold the entries
+            // that end last instead.
+            if (active.length === 0) {
+                const lastEnd = Math.max(...entries.map(endOf));
+                if (Number.isFinite(lastEnd) && currentTime >= lastEnd) {
+                    active = entries.filter((entry) => endOf(entry) === lastEnd);
+                }
+            }
 
             active.sort((a, b) => (a.z ?? 0) - (b.z ?? 0));
 
@@ -1370,6 +1395,7 @@ export const AIContentPlayer: React.FC<AIContentPlayerProps> = ({
                                 left: '50%',
                                 marginTop: `-${effectiveHeight / 2}px`,
                                 marginLeft: `-${effectiveWidth / 2}px`,
+                                background: canvasBackground(meta.palette),
                             }}
                             className="frame-wrapper"
                         >
@@ -1379,13 +1405,11 @@ export const AIContentPlayer: React.FC<AIContentPlayerProps> = ({
                                     ref={index === 0 ? contentIframeRef : undefined}
                                     srcDoc={entry.processedHtml}
                                     style={{
-                                        width: '100%',
-                                        height: '100%',
                                         border: 'none',
-                                        background: index === 0 ? '#ffffff' : 'transparent',
+                                        background:
+                                            index === 0 ? canvasBackground(meta.palette) : 'transparent',
                                         position: 'absolute',
-                                        top: 0,
-                                        left: 0,
+                                        ...entryBoxStyle(entry, effectiveWidth, effectiveHeight),
                                         zIndex: entry.z ?? 0,
                                         pointerEvents:
                                             entry.id?.startsWith('branding-watermark') ||
@@ -1756,7 +1780,7 @@ export const AIContentPlayer: React.FC<AIContentPlayerProps> = ({
                     contentType === 'STORYBOOK' ||
                     contentType === 'FLASHCARDS' ||
                     contentType === 'TIMELINE') &&
-                    wordsUrl && (
+                    effectiveWordsUrl && (
                         <CaptionDisplay
                             words={currentWords}
                             currentTime={currentTime}
@@ -2281,7 +2305,7 @@ export const AIContentPlayer: React.FC<AIContentPlayerProps> = ({
                                                 : 'not-allowed',
                                         }}
                                         title={
-                                            !wordsUrl
+                                            !effectiveWordsUrl
                                                 ? 'Narration unavailable (no audio words provided)'
                                                 : !pageAudioRanges.has(currentIndex)
                                                   ? 'No narration for this page'
@@ -2544,7 +2568,7 @@ export const AIContentPlayer: React.FC<AIContentPlayerProps> = ({
                         )}
 
                         {/* Captions toggle (CC button) - only for time-driven with words */}
-                        {navigationMode === 'time_driven' && wordsUrl && (
+                        {navigationMode === 'time_driven' && effectiveWordsUrl && (
                             <>
                                 <button
                                     onClick={(e) => {

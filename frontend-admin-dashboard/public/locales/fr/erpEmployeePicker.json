@@ -1,0 +1,14 @@
+{
+    "unnamedEmployee": "Employé sans nom",
+    "placeholder": {
+        "default": "Sélectionner un employé",
+        "loading": "Chargement des employés…",
+        "unavailable": "Employés indisponibles"
+    },
+    "searchPlaceholder": "Rechercher par code, nom ou poste",
+    "emptyText": "Aucun employé correspondant",
+    "errorHint": "Impossible de charger les employés. Rechargez la page et réessayez.",
+    "noneForStatus": "Aucun employé {{status}} pour l'instant — ajoutez-les d'abord dans ERP → Personnel.",
+    "noneAtAll": "Aucun employé pour l'instant — ajoutez-les d'abord dans ERP → Personnel.",
+    "truncatedHint": "Affichage des {{loadedCount}} premiers employés sur {{totalCount}}. La recherche ne porte que sur ceux-ci."
+}

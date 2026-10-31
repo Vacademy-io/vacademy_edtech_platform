@@ -1,0 +1,64 @@
+{
+    "toast": {
+        "bulkUpdateSuccess_one": "Updated {{count}} enquiry successfully",
+        "bulkUpdateSuccess_other": "Updated {{count}} enquiries successfully",
+        "bulkUpdateError": "Failed to update enquiry statuses",
+        "selectAtLeastOneStatus": "Please select at least one status to update",
+        "downloadStarting": "Starting download...",
+        "noDataToDownload": "No data to download",
+        "downloadSuccess": "Download completed successfully",
+        "downloadError": "Failed to download data"
+    },
+    "loading": {
+        "enquiryResponses": "Loading enquiry responses..."
+    },
+    "error": {
+        "loadingEnquiryResponses": "Error loading enquiry responses"
+    },
+    "empty": {
+        "noResponses": "No responses for this enquiry yet!",
+        "addNewEnquiryResponse": "Add New Enquiry Response"
+    },
+    "header": {
+        "totalResponses": "Total Responses:",
+        "rowsSelected_one": "{{count}} row selected",
+        "rowsSelected_other": "{{count}} rows selected",
+        "bulkImport": "Bulk Import",
+        "downloadCsv": "Download CSV",
+        "downloading": "Downloading..."
+    },
+    "pagination": {
+        "previous": "Previous",
+        "next": "Next",
+        "pageOf": "Page {{page}} of {{total}}"
+    },
+    "bulkActionBar": {
+        "selectedLabel": "selected",
+        "enquiryStatusLabel": "Enquiry Status",
+        "conversionLabel": "Conversion",
+        "selectPlaceholder": "Select…",
+        "apply": "Apply",
+        "applying": "Applying…",
+        "clear": "Clear"
+    },
+    "csv": {
+        "headers": {
+            "enquiryId": "Enquiry ID",
+            "class": "Class",
+            "studentName": "Student Name",
+            "gender": "Gender",
+            "dateOfBirth": "Date of Birth",
+            "parentName": "Parent Name",
+            "parentEmail": "Parent Email",
+            "parentMobile": "Parent Mobile",
+            "trackingId": "Tracking ID",
+            "status": "Status",
+            "source": "Source",
+            "counsellor": "Counsellor",
+            "submittedAt": "Submitted At"
+        },
+        "assigned": "Assigned",
+        "notAssigned": "Not Assigned",
+        "filenameFallback": "enquiries"
+    }
+}

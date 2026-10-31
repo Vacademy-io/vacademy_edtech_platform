@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { Handle, Position, type NodeProps } from 'reactflow';
+import { useTranslation } from 'react-i18next';
 import { PencilSimple, Trash, User } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { type OrgChartNode } from '../-services/org-team-services';
@@ -22,8 +23,9 @@ export interface PersonNodeData {
  * positions don't drift.
  */
 function PersonFlowNode({ data, selected }: NodeProps<PersonNodeData>) {
+    const { t } = useTranslation('manageInstitutePersonFlowNode');
     const { node, user, onEdit, onRemove } = data;
-    const name = user?.full_name || `User ${node.user_id.slice(0, 6)}`;
+    const name = user?.full_name || t('fallbackName', { id: node.user_id.slice(0, 6) });
 
     return (
         <div
@@ -66,8 +68,8 @@ function PersonFlowNode({ data, selected }: NodeProps<PersonNodeData>) {
                             onEdit(node);
                         }}
                         className="rounded p-1 text-neutral-400 opacity-0 transition-opacity hover:bg-primary-50 hover:text-primary-600 group-hover:opacity-100"
-                        title="Edit position label"
-                        aria-label="Edit position label"
+                        title={t('editPositionLabel')}
+                        aria-label={t('editPositionLabel')}
                     >
                         <PencilSimple size={14} />
                     </button>
@@ -78,8 +80,8 @@ function PersonFlowNode({ data, selected }: NodeProps<PersonNodeData>) {
                             onRemove(node);
                         }}
                         className="rounded p-1 text-neutral-400 opacity-0 transition-opacity hover:bg-danger-50 hover:text-danger-600 group-hover:opacity-100"
-                        title="Remove from this team"
-                        aria-label="Remove from this team"
+                        title={t('removeFromTeam')}
+                        aria-label={t('removeFromTeam')}
                     >
                         <Trash size={14} />
                     </button>

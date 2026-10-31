@@ -8,9 +8,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.domain_routing.dto.DomainRoutingUpsertRequest;
 import vacademy.io.admin_core_service.features.domain_routing.entity.InstituteDomainRouting;
+import vacademy.io.admin_core_service.features.domain_routing.enums.PhoneCountryGeoMode;
 import vacademy.io.admin_core_service.features.domain_routing.repository.InstituteDomainRoutingRepository;
 import vacademy.io.admin_core_service.features.domain_routing.service.DomainRoutingAdminService;
 import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
+import vacademy.io.admin_core_service.features.live_session.provider.manager.BbbMeetingManager;
 import vacademy.io.admin_core_service.features.white_label.dto.*;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.auth.repository.UserRoleRepository;
@@ -26,7 +28,21 @@ import java.util.stream.Collectors;
  * Supports multiple domain entries per role. E.g. "ADMIN" can have two
  * domains (admin.myschool.com AND manage.myschool.com). Each entry gets
  * its own Cloudflare CNAME and domain_routing row. Exactly one entry per
- * role may be is_primary = true — that URL is stored in the institute table.
+ * role may be is_primary = true — that host is the institute's portal URL.
+ *
+ * <p>The primary flag is persisted on the routing row and applied by
+ * {@link PortalUrlReconciler}, not written straight into the institute table
+ * here. Two things follow from that, and both are the point of the feature:
+ *
+ * <ul>
+ *   <li>A host reaches {@code institutes.<role>_portal_base_url} only once
+ *       Cloudflare reports it ACTIVE. Those columns are the origin of every
+ *       link the platform mails a learner, and a Pages custom domain is
+ *       {@code pending} — not serving — until the customer's CNAME lands.</li>
+ *   <li>Adoption is re-evaluated on every setup <em>and</em> every status read,
+ *       so a domain that goes live an hour after setup is picked up by itself,
+ *       and so is a portal added without anyone ticking the primary star.</li>
+ * </ul>
  */
 @Slf4j
 @Service
@@ -55,17 +71,6 @@ public class WhiteLabelService {
     @Value("${cloudflare.teacher.target:teacher.vacademy.io}")
     private String teacherCnameTarget;
 
-    // Cloudflare Pages project names (i.e. <project>.pages.dev) that serve the SPAs.
-    // Only two exist: the learner dashboard and the admin dashboard. ADMIN and
-    // TEACHER portals are both the admin dashboard SPA, so they share the admin
-    // project. Blank when Pages provisioning is not configured on this deployment —
-    // in that case the setup falls back to the legacy DNS-only path.
-    @Value("${cloudflare.learner.pages-project:}")
-    private String learnerPagesProject;
-
-    @Value("${cloudflare.admin.pages-project:}")
-    private String adminPagesProject;
-
     @Value("${vacademy.base.domain:vacademy.io}")
     private String vacademyBaseDomain;
 
@@ -76,6 +81,7 @@ public class WhiteLabelService {
     private final DomainRoutingAdminService domainRoutingAdminService;
     private final CloudflareService cloudflareService;
     private final UserRoleRepository userRoleRepository;
+    private final PortalUrlReconciler portalUrlReconciler;
 
     // ── Setup ─────────────────────────────────────────────────────────────────
 
@@ -135,10 +141,16 @@ public class WhiteLabelService {
         List<WhiteLabelSetupResponse.PagesDomainResult> pagesResults = new ArrayList<>();
         List<String> warnings = new ArrayList<>();
 
+        // Attaching a Pages custom domain already tells us its status, so seed the
+        // probe as we go. This method runs inside a transaction (it has routing rows
+        // to write), and every Cloudflare call it makes holds that connection open —
+        // so the reconcile below should not re-ask about hosts we just heard about.
+        PortalUrlReconciler.ActivationProbe probe = portalUrlReconciler.newProbe();
+
         for (WhiteLabelSetupRequest.DomainEntry entry : entries) {
             String host = entry.getDomain();
-            boolean inZone = isVacademySubdomain(host);
-            String pagesProject = pagesProjectForRole(entry.getRole());
+            boolean inZone = portalUrlReconciler.isVacademySubdomain(host);
+            String pagesProject = portalUrlReconciler.pagesProjectForRole(entry.getRole());
             boolean pagesEnabled = cloudflareService.isPagesEnabled() && StringUtils.hasText(pagesProject);
 
             // a) Wire the host into the serving layer.
@@ -153,6 +165,7 @@ public class WhiteLabelService {
                     WhiteLabelSetupResponse.PagesDomainResult pr =
                             cloudflareService.upsertPagesCustomDomain(pagesProject, host);
                     pagesResults.add(pr);
+                    probe.seed(host, entry.getRole(), pr.getStatus());
                     if (!inZone) {
                         warnings.add("Custom domain " + host + ": add a CNAME at your DNS provider pointing "
                                 + host + " → " + pr.getPagesCnameTarget()
@@ -184,69 +197,123 @@ public class WhiteLabelService {
                         + "), which is not set on this deployment. Nothing was provisioned for it.");
             }
 
-            // b) Upsert routing row (by exact domain+subdomain+role match)
-            upsertRoutingRow(instituteId, host, entry.getRole(), entry.getRoutingConfig());
+            // b) Upsert routing row (by exact domain+subdomain+role match). The
+            // primary flag is recorded here rather than applied to the institute
+            // row — it is an intent that outlives this request, and it is honoured
+            // only when the host actually serves.
+            upsertRoutingRow(instituteId, host, entry.getRole(), entry.isPrimary(), entry.getRoutingConfig());
         }
 
-        // 4) Update institute portal URLs for primary entries
+        // 4) Keep "at most one primary row per role token" true across ALL of the
+        // institute's rows, not just the ones in this request.
+        List<InstituteDomainRouting> routings = routingRepository.findByInstituteId(instituteId);
+        warnings.addAll(demoteSupersededPrimaries(routings, entries));
+
+        // 5) Adopt into the institute's portal-URL columns — the hosts that are
+        // live now; the rest on a later setup or status read, by themselves.
         Institute institute = instituteRepository.findById(instituteId)
                 .orElseThrow(() -> new VacademyException("Institute not found: " + instituteId));
 
-        String learnerUrl = null, adminUrl = null, teacherUrl = null;
-
-        // For each primary entry, iterate its role tokens and update the institute's
-        // matching portal URL columns. Custom-role tokens don't have dedicated columns,
-        // so they're silently skipped — their branding lives on the routing row only.
-        for (WhiteLabelSetupRequest.DomainEntry entry : entries) {
-            if (!entry.isPrimary())
-                continue;
-            String url = "https://" + entry.getDomain();
-            for (String token : splitRoleTokens(entry.getRole())) {
-                switch (token) {
-                    case ROLE_LEARNER -> {
-                        institute.setLearnerPortalBaseUrl(url);
-                        learnerUrl = url;
-                    }
-                    case ROLE_ADMIN -> {
-                        institute.setAdminPortalBaseUrl(url);
-                        adminUrl = url;
-                    }
-                    case ROLE_TEACHER -> {
-                        institute.setTeacherPortalBaseUrl(url);
-                        teacherUrl = url;
-                    }
-                    default -> {
-                        /* custom role: no institute column to update */ }
-                }
-            }
+        PortalUrlReconciler.ReconcileResult reconciled =
+                portalUrlReconciler.reconcile(institute, routings, probe);
+        if (reconciled.isChanged()) {
+            instituteRepository.save(institute);
         }
-        instituteRepository.save(institute);
+        warnings.addAll(reconciled.getWarnings());
 
-        // Use existing URLs if not explicitly set as primary in this request
-        if (learnerUrl == null)
-            learnerUrl = institute.getLearnerPortalBaseUrl();
-        if (adminUrl == null)
-            adminUrl = institute.getAdminPortalBaseUrl();
-        if (teacherUrl == null)
-            teacherUrl = institute.getTeacherPortalBaseUrl();
-
-        log.info("[WhiteLabel] Setup complete for instituteId={}, {} entries processed",
-                instituteId, entries.size());
+        log.info("[WhiteLabel] Setup complete for instituteId={}, {} entries processed, {} portal URL(s) adopted",
+                instituteId, entries.size(), reconciled.getAdoptedUrlByRole().size());
 
         return WhiteLabelSetupResponse.builder()
                 .setupComplete(true)
-                .learnerPortalUrl(learnerUrl)
-                .adminPortalUrl(adminUrl)
-                .teacherPortalUrl(teacherUrl)
+                .learnerPortalUrl(institute.getLearnerPortalBaseUrl())
+                .adminPortalUrl(institute.getAdminPortalBaseUrl())
+                .teacherPortalUrl(institute.getTeacherPortalBaseUrl())
                 .dnsRecordsConfigured(dnsResults)
                 .pagesDomainsConfigured(pagesResults)
                 .warnings(warnings)
                 .build();
     }
 
+    /**
+     * Clears {@code is_primary} on rows this request supersedes, so exactly one
+     * row stays primary per role token.
+     *
+     * <p>The flag is per-row while roles are per-token, so a row serving
+     * {@code "ADMIN,TEACHER"} that is superseded for ADMIN loses its TEACHER
+     * primacy too — there is no third state to demote it into. That is reported
+     * back rather than hidden; the fix is to give each role its own row.
+     *
+     * @return warnings to surface in the setup response
+     */
+    private List<String> demoteSupersededPrimaries(List<InstituteDomainRouting> routings,
+            List<WhiteLabelSetupRequest.DomainEntry> entries) {
+
+        Map<String, String> requestedPrimaryHost = new LinkedHashMap<>();
+        for (WhiteLabelSetupRequest.DomainEntry e : entries) {
+            if (!e.isPrimary())
+                continue;
+            for (String token : splitRoleTokens(e.getRole())) {
+                requestedPrimaryHost.put(token, e.getDomain());
+            }
+        }
+        if (requestedPrimaryHost.isEmpty()) {
+            return List.of();
+        }
+
+        List<String> warnings = new ArrayList<>();
+        for (InstituteDomainRouting routing : routings) {
+            if (!routing.isPrimary()) {
+                continue;
+            }
+            String host = PortalUrlReconciler.hostOf(routing);
+            List<String> tokens = splitRoleTokens(routing.getRole());
+            boolean superseded = tokens.stream().anyMatch(
+                    t -> requestedPrimaryHost.containsKey(t) && !requestedPrimaryHost.get(t).equals(host));
+            if (!superseded) {
+                continue;
+            }
+
+            routing.setPrimary(false);
+            routingRepository.save(routing);
+            log.info("[WhiteLabel] Demoted primary routing row id={} ({}) — superseded for {}",
+                    routing.getId(), host, routing.getRole());
+
+            List<String> collateral = tokens.stream()
+                    .filter(PortalUrlReconciler.PORTAL_ROLES::contains)
+                    .filter(t -> !requestedPrimaryHost.containsKey(t))
+                    .toList();
+            if (!collateral.isEmpty()) {
+                warnings.add(host + " was also the primary domain for " + String.join(", ", collateral)
+                        + ". It served several roles from one entry, so replacing it for "
+                        + String.join(", ", requestedPrimaryHost.keySet())
+                        + " cleared it for those too — add a separate entry if "
+                        + String.join(", ", collateral) + " should keep this domain.");
+            }
+        }
+        return warnings;
+    }
+
     // ── Status ────────────────────────────────────────────────────────────────
 
-    @Transactional(readOnly = true)
+    /**
+     * Deliberately carries NO transaction, unlike the rest of this class.
+     *
+     * <p>Two things had to be true at once. This is where a host that went active
+     * since setup gets adopted into the institute's portal-URL columns — Cloudflare
+     * has no webhook, the settings page already asks it for every row's live status
+     * on load, so the read is the only honest place to act on the answer. But it
+     * spends most of its time in Cloudflare HTTP calls, one per routing row, and
+     * wrapping that in a transaction would pin a connection for the whole of it.
+     * A writable transaction is served by the PRIMARY (see
+     * {@code ReplicationRoutingDataSource}), whose pool is small; a status page with
+     * eight domains would hold one of those connections for eight round trips.
+     *
+     * <p>So each repository call takes its own short transaction instead: the reads
+     * go to the replica, the Cloudflare probing happens with no connection held, and
+     * the adoption — which fires only on an actual transition, not on every load —
+     * is a single write against a freshly re-read row.
+     */
     public WhiteLabelStatusResponse getStatus(CustomUserDetails user, String instituteId) {
 
         if (!cloudflareService.isEnabled() && !cloudflareService.isPagesEnabled()) {
@@ -262,6 +329,23 @@ public class WhiteLabelService {
                 .orElseThrow(() -> new VacademyException("Institute not found: " + instituteId));
 
         List<InstituteDomainRouting> routings = routingRepository.findByInstituteId(instituteId);
+
+        // One probe for the whole request: the reconcile pass and the per-row status
+        // below ask Cloudflare about the same hosts, and every miss is an HTTP call.
+        PortalUrlReconciler.ActivationProbe probe = portalUrlReconciler.newProbe();
+
+        // Adopt anything that has become active since the last look. Gated on the
+        // same membership check as setup — the read below is left as permissive as
+        // it has always been, but a write must not be reachable by someone who only
+        // guessed an institute id.
+        List<String> adopted = List.of();
+        if (hasInstituteAccess(user, instituteId)) {
+            PortalUrlReconciler.ReconcileResult reconciled =
+                    portalUrlReconciler.reconcile(institute, routings, probe);
+            if (reconciled.isChanged()) {
+                adopted = persistAdoptedUrls(instituteId, reconciled.getAdoptedUrlByRole());
+            }
+        }
 
         boolean configured = StringUtils.hasText(institute.getLearnerPortalBaseUrl())
                 || !routings.isEmpty();
@@ -281,8 +365,15 @@ public class WhiteLabelService {
                         .domain(r.getDomain())
                         .subdomain(r.getSubdomain())
                         // Live Cloudflare Pages custom-domain status (active/pending/…)
-                        .pagesStatus(pagesStatusFor(r))
-                        .pagesCnameTarget(pagesCnameTargetFor(r))
+                        .pagesStatus(pagesStatusFor(r, probe))
+                        .pagesCnameTarget(portalUrlReconciler.pagesCnameTargetForRole(r.getRole()))
+                        // Whether the admin chose this host, and whether it is the one
+                        // actually in use. The two differ while a choice is pending.
+                        .isPrimary(r.isPrimary())
+                        .isPortalUrl(isCurrentPortalUrl(institute, r))
+                        // Which sub-org this portal belongs to, so the wizard can show
+                        // and re-send it rather than silently dropping it on save.
+                        .subOrgId(r.getSubOrgId())
                         // Branding
                         .tabText(r.getTabText())
                         .tabIconFileId(r.getTabIconFileId())
@@ -309,6 +400,16 @@ public class WhiteLabelService {
                         .windowsAppLink(r.getWindowsAppLink())
                         .macAppLink(r.getMacAppLink())
                         .commaSeparatedPreferredCountry(r.getCommaSeparatedPreferredCountry())
+                        // Raw, NOT resolved. This payload feeds an editor that posts
+                        // every field back verbatim, so resolving a null here would
+                        // stamp INSTITUTE_FIRST onto the column the first time an
+                        // admin saved an unrelated change — and "this portal never
+                        // chose a mode" would stop being distinguishable from "this
+                        // portal chose the default". The public resolve endpoint,
+                        // whose consumers need an answer rather than a round-trip,
+                        // does resolve it. The settings field treats absent as the
+                        // default on its own.
+                        .phoneCountryGeoMode(r.getPhoneCountryGeoMode())
                         // Logo / institute-name display
                         .hideInstituteName(r.getHideInstituteName())
                         .logoWidthPx(r.getLogoWidthPx())
@@ -324,22 +425,96 @@ public class WhiteLabelService {
                 .learnerPortalUrl(institute.getLearnerPortalBaseUrl())
                 .adminPortalUrl(institute.getAdminPortalBaseUrl())
                 .teacherPortalUrl(institute.getTeacherPortalBaseUrl())
+                .rolesAdoptedNow(adopted)
                 .routingEntries(entries)
                 .build();
+    }
+
+    // ── Live-class domain ─────────────────────────────────────────────────────
+
+    /**
+     * Current custom live-class host for the institute, or null when it uses the
+     * platform default.
+     */
+    @Transactional(readOnly = true)
+    public Map<String, String> getLiveSessionDomain(CustomUserDetails user, String instituteId) {
+        assertInstituteAccess(user, instituteId);
+        Institute institute = instituteRepository.findById(instituteId)
+                .orElseThrow(() -> new VacademyException("Institute not found: " + instituteId));
+
+        Map<String, String> out = new LinkedHashMap<>();
+        out.put("instituteId", instituteId);
+        out.put("liveSessionBaseUrl", institute.getLiveSessionBaseUrl());
+        return out;
+    }
+
+    /**
+     * Set (or clear, by passing null/blank) the institute's custom live-class host.
+     *
+     * Validation is strict rather than forgiving: this value becomes the origin of
+     * a URL learners are redirected into, so a malformed one is rejected outright
+     * instead of being coerced into something that merely looks plausible.
+     *
+     * Setting this row is only half the job — the host must also resolve to the
+     * PRIMARY BBB pool server and be present as a SAN on that server's
+     * certificate. Until both are true, participants sent to it will hit a DNS or
+     * TLS error.
+     */
+    @Transactional
+    public Map<String, String> setLiveSessionDomain(CustomUserDetails user, String instituteId,
+            String rawDomain) {
+        assertInstituteAccess(user, instituteId);
+        Institute institute = instituteRepository.findById(instituteId)
+                .orElseThrow(() -> new VacademyException("Institute not found: " + instituteId));
+
+        String normalized = null;
+        if (StringUtils.hasText(rawDomain)) {
+            normalized = BbbMeetingManager.normalizeLiveSessionHost(rawDomain);
+            if (normalized == null) {
+                throw new VacademyException("Invalid live-class domain '" + rawDomain
+                        + "'. Use a plain hostname such as meet.yourschool.com — no path, port or credentials.");
+            }
+        }
+
+        institute.setLiveSessionBaseUrl(normalized);
+        instituteRepository.save(institute);
+        log.info("[WhiteLabel] Live-class domain for institute {} set to {}", instituteId,
+                normalized == null ? "(default)" : normalized);
+
+        Map<String, String> out = new LinkedHashMap<>();
+        out.put("instituteId", instituteId);
+        out.put("liveSessionBaseUrl", normalized);
+        return out;
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
 
     private void assertInstituteAccess(CustomUserDetails user, String instituteId) {
+        if (!hasInstituteAccess(user, instituteId)) {
+            log.warn("[WhiteLabel] Unauthorized attempt by userId={} on instituteId={}",
+                    user == null ? "anonymous" : user.getUserId(), instituteId);
+            throw new VacademyException(user == null
+                    ? "Access denied: no authenticated user"
+                    : "Access denied: you are not a member of institute " + instituteId);
+        }
+    }
+
+    /**
+     * Whether {@code user} may configure {@code instituteId}. Split out from
+     * {@link #assertInstituteAccess} so the status read can gate its write on
+     * membership without turning a read into a 403 for callers that could always
+     * perform it.
+     */
+    private boolean hasInstituteAccess(CustomUserDetails user, String instituteId) {
         if (user == null) {
-            throw new VacademyException("Access denied: no authenticated user");
+            return false;
         }
 
         // 1) Root users bypass all institute membership checks. Matches the convention
         // used elsewhere in the codebase (e.g.
         // StudentListManager#applyFacultyAccessFilter).
         if (user.isRootUser()) {
-            return;
+            return true;
         }
 
         // 2) Users with an active ADMIN role on the *specific* target institute are
@@ -349,19 +524,14 @@ public class WhiteLabelService {
         // including admins who don't have a row in the `staff` table.
         if (userRoleRepository.existsByUserIdAndInstituteIdAndRoleName(
                 user.getUserId(), instituteId, ROLE_NAME_ADMIN)) {
-            return;
+            return true;
         }
 
         // 3) Fallback: legacy staff-table membership check, preserved for backward
         // compatibility with users who were granted access via that path.
-        boolean isStaff = instituteRepository.findInstitutesByUserId(user.getUserId())
+        return instituteRepository.findInstitutesByUserId(user.getUserId())
                 .stream()
                 .anyMatch(i -> i.getId().equals(instituteId));
-        if (!isStaff) {
-            log.warn("[WhiteLabel] Unauthorized attempt by userId={} on instituteId={}",
-                    user.getUserId(), instituteId);
-            throw new VacademyException("Access denied: you are not a member of institute " + instituteId);
-        }
     }
 
     /**
@@ -386,59 +556,59 @@ public class WhiteLabelService {
     }
 
     /**
-     * Returns the Cloudflare Pages project name that serves a role string, or null
-     * when it isn't configured. Only LEARNER is served by its own project; ADMIN,
-     * TEACHER and any institute custom role are all served by the admin dashboard
-     * SPA, so they share the admin project (there is no separate teacher project —
-     * teacher.vacademy.io is just another custom domain on the admin project).
+     * Writes the adopted portal URLs against a freshly re-read institute row.
+     *
+     * <p>The row this method is handed was loaded before the Cloudflare probing, so
+     * saving it would blindly re-write every other column with values that are by
+     * now seconds stale — this is a full-entity JPA save, not a targeted UPDATE.
+     * Re-reading first narrows that to the three columns actually being changed.
+     *
+     * @return the roles actually written, for the response
      */
-    private String pagesProjectForRole(String role) {
-        List<String> tokens = splitRoleTokens(role);
-        if (tokens.contains(ROLE_LEARNER))
-            return trimToNull(learnerPagesProject);
-        return trimToNull(adminPagesProject);
+    private List<String> persistAdoptedUrls(String instituteId, Map<String, String> adoptedUrlByRole) {
+        if (adoptedUrlByRole.isEmpty()) {
+            return List.of();
+        }
+        Institute fresh = instituteRepository.findById(instituteId).orElse(null);
+        if (fresh == null) {
+            return List.of();
+        }
+        adoptedUrlByRole.forEach((role, url) -> PortalUrlReconciler.setPortalUrl(fresh, role, url));
+        instituteRepository.save(fresh);
+        return List.copyOf(adoptedUrlByRole.keySet());
     }
 
     /**
-     * Looks up the live Cloudflare Pages custom-domain status for a routing row
-     * (active/pending/…), or null when Pages isn't configured or the host isn't
-     * attached. Failure-safe — used only for display.
+     * Live Cloudflare Pages custom-domain status for a routing row (active/pending/…),
+     * or null when Pages isn't configured or the host isn't attached. Failure-safe —
+     * used only for display, and served from {@code probe}'s memo so a status page
+     * asks Cloudflare about each host once.
      */
-    private String pagesStatusFor(InstituteDomainRouting r) {
+    private String pagesStatusFor(InstituteDomainRouting r, PortalUrlReconciler.ActivationProbe probe) {
         if (!cloudflareService.isPagesEnabled()) {
             return null;
         }
-        String project = pagesProjectForRole(r.getRole());
-        if (!StringUtils.hasText(project)) {
-            return null;
-        }
-        String host = (StringUtils.hasText(r.getSubdomain()) && !"*".equals(r.getSubdomain()))
-                ? r.getSubdomain() + "." + r.getDomain()
-                : r.getDomain();
-        return cloudflareService.getPagesCustomDomainStatus(project, host);
+        return probe.rawPagesStatus(PortalUrlReconciler.hostOf(r), r.getRole());
     }
 
     /**
-     * The {@code <project>.pages.dev} CNAME target for a routing row, so the UI
-     * can show an external domain the exact record to add. Null when Pages isn't
-     * configured for the role.
+     * True when this row's host is the one currently stored in the institute's
+     * portal-URL column for any role it serves — i.e. the domain outbound links
+     * actually use, which is not always the one flagged primary.
      */
-    private String pagesCnameTargetFor(InstituteDomainRouting r) {
-        String project = pagesProjectForRole(r.getRole());
-        return StringUtils.hasText(project) ? project + ".pages.dev" : null;
-    }
-
-    /** True when {@code host} is the base vacademy domain or a subdomain of it. */
-    private boolean isVacademySubdomain(String host) {
-        if (!StringUtils.hasText(host))
+    private boolean isCurrentPortalUrl(Institute institute, InstituteDomainRouting r) {
+        String host = PortalUrlReconciler.hostOf(r);
+        if (host == null) {
             return false;
-        String h = host.trim().toLowerCase();
-        String base = vacademyBaseDomain.trim().toLowerCase();
-        return h.equals(base) || h.endsWith("." + base);
-    }
-
-    private String trimToNull(String s) {
-        return StringUtils.hasText(s) ? s.trim() : null;
+        }
+        for (String token : splitRoleTokens(r.getRole())) {
+            String stored = PortalUrlReconciler.normalizeHost(
+                    PortalUrlReconciler.currentPortalUrl(institute, token));
+            if (host.equals(stored)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -447,13 +617,14 @@ public class WhiteLabelService {
      * are separate rows). Updates if found, creates otherwise.
      */
     private void upsertRoutingRow(String instituteId, String fullDomain,
-            String role, PortalRoutingConfig config) {
+            String role, boolean isPrimary, PortalRoutingConfig config) {
 
         String[] parts = splitDomain(fullDomain);
         String domain = parts[0];
         String subdomain = parts[1];
 
         DomainRoutingUpsertRequest req = buildUpsertRequest(instituteId, domain, subdomain, role, config);
+        req.setPrimary(isPrimary);
 
         Optional<InstituteDomainRouting> existing = routingRepository.findByInstituteIdAndDomainAndSubdomainAndRole(
                 instituteId, domain, subdomain, role);
@@ -560,6 +731,7 @@ public class WhiteLabelService {
             r.setTheme(cfg.getTheme());
             r.setTabText(cfg.getTabText());
             r.setAllowSignup(cfg.getAllowSignup());
+            r.setSubOrgId(cfg.getSubOrgId());
             r.setTabIconFileId(cfg.getTabIconFileId());
             r.setFontFamily(cfg.getFontFamily());
             r.setAllowGoogleAuth(cfg.getAllowGoogleAuth());
@@ -576,6 +748,7 @@ public class WhiteLabelService {
                             ? cfg.getConvertUsernamePasswordToLowercase()
                             : false);
             r.setCommaSeparatedPreferredCountry(cfg.getCommaSeparatedPreferredCountry());
+            r.setPhoneCountryGeoMode(PhoneCountryGeoMode.normalizeForStorage(cfg.getPhoneCountryGeoMode()));
             r.setHideInstituteName(cfg.getHideInstituteName());
             r.setLogoWidthPx(cfg.getLogoWidthPx());
             r.setLogoHeightPx(cfg.getLogoHeightPx());

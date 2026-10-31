@@ -1,0 +1,13 @@
+{
+    "heading": "Ajouter un prospect",
+    "description": "Choisissez le type de campagne et la {{audienceTerm}} de ce prospect. Son formulaire s’ouvre ensuite.",
+    "selectPlaceholder": "Sélectionner {{term}}",
+    "pickTypeFirst": "Sélectionnez d’abord {{term}}",
+    "searchPlaceholder": "Rechercher…",
+    "noResults": "Aucun résultat.",
+    "loading": "Chargement…",
+    "noCampaignType": "Sans type de campagne",
+    "emptyState": "Aucune {{audienceTerm}} active à laquelle ajouter un prospect.",
+    "cancel": "Annuler",
+    "continue": "Continuer"
+}

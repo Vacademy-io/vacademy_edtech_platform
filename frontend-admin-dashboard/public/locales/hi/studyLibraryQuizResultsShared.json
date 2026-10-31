@@ -1,0 +1,29 @@
+{
+    "never": "कभी नहीं",
+    "today": "आज",
+    "yesterday": "कल",
+    "daysAgo_one": "{{count}} दिन पहले",
+    "daysAgo_other": "{{count}} दिन पहले",
+    "questionType": {
+        "singleChoice": "एकल विकल्प",
+        "multipleChoice": "बहु विकल्प",
+        "trueFalse": "सही / गलत",
+        "numeric": "संख्यात्मक",
+        "oneWord": "एक शब्द",
+        "longAnswer": "दीर्घ उत्तर"
+    },
+    "learnerStatus": {
+        "passed": "उत्तीर्ण",
+        "failed": "अनुत्तीर्ण",
+        "completed": "पूर्ण",
+        "partlyDone": "आंशिक रूप से पूर्ण",
+        "notAttempted": "प्रयास नहीं किया"
+    },
+    "difficulty": {
+        "wellUnderstood": "अच्छी तरह समझा गया",
+        "mixed": "मिश्रित",
+        "struggling": "कठिनाई हो रही है",
+        "needsReteaching": "पुनः पढ़ाने की आवश्यकता है"
+    },
+    "noResponses": "कोई प्रतिक्रिया नहीं"
+}

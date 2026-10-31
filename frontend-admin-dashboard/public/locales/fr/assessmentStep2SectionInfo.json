@@ -1,0 +1,101 @@
+{
+    "header": {
+        "deleteSection": "Supprimer la section",
+        "mcqSingle": "QCM Simple",
+        "mcqMulti": "QCM Multiple",
+        "total": "Total"
+    },
+    "uploadSection": {
+        "title": "Téléverser le questionnaire",
+        "subtitle": "Choisissez comment vous souhaitez ajouter des questions à cette section.",
+        "manualCard": {
+            "title": "Créer manuellement",
+            "subtitle": "Rédigez les questions une par une"
+        },
+        "manualDialog": {
+            "title": "Créer un questionnaire manuellement"
+        },
+        "savedCard": {
+            "title": "Choisir un questionnaire enregistré",
+            "subtitle": "Réutiliser un questionnaire existant"
+        },
+        "savedDialog": {
+            "title": "Choisir un questionnaire enregistré dans la liste",
+            "description": "Sélectionnez un questionnaire précédemment enregistré à ajouter à cette section"
+        }
+    },
+    "criteria": {
+        "title": "Critères d'évaluation",
+        "subtitle": "Laissez l'IA rédiger des grilles d'évaluation pour chaque question.",
+        "generateAll": "Générer tous les critères",
+        "stopProgress": "Arrêter ({{current}}/{{total}})"
+    },
+    "dialogs": {
+        "confirmBulkGenerate_one": "Générer les critères IA pour la {{count}} question de cette section ?",
+        "confirmBulkGenerate_many": "Générer les critères IA pour les {{count}} questions de cette section ?",
+        "confirmBulkGenerate_other": "Générer les critères IA pour les {{count}} questions de cette section ?",
+        "cancel": "Annuler"
+    },
+    "toasts": {
+        "noQuestionsInSection": "Aucune question dans cette section",
+        "generationCancelled": "Génération annulée par l'utilisateur",
+        "questionAlreadyHasCriteria": "La question {{number}} a déjà des critères",
+        "questionZeroMarksSkip": "La question {{number}} vaut 0 point, ignorée",
+        "failedGenerateCriteriaForQuestion": "Échec de la génération des critères pour la question {{number}} : {{error}}",
+        "generatedCriteriaSuccess_one": "Critères générés pour {{count}} question !",
+        "generatedCriteriaSuccess_many": "Critères générés pour {{count}} questions !",
+        "generatedCriteriaSuccess_other": "Critères générés pour {{count}} questions !",
+        "failedGenerateCriteriaCount_one": "Échec de la génération des critères pour {{count}} question",
+        "failedGenerateCriteriaCount_many": "Échec de la génération des critères pour {{count}} questions",
+        "failedGenerateCriteriaCount_other": "Échec de la génération des critères pour {{count}} questions",
+        "questionUpdated": "Question mise à jour",
+        "questionUpdateFailed": "Impossible de mettre à jour la question",
+        "questionInvalid": "Renseignez la question et ses options avant d'enregistrer."
+    },
+    "sectionDescription": {
+        "title": "Description de la section",
+        "placeholder": "Décrivez cette section"
+    },
+    "duration": {
+        "questionDuration": "Durée par question",
+        "sectionDuration": "Durée de la section",
+        "hrs": "h",
+        "minutes": "minutes"
+    },
+    "markingScheme": {
+        "marksPerQuestion": {
+            "title": "Points par question",
+            "subtitle": "Points par défaut attribués pour une bonne réponse"
+        },
+        "negativeMarking": "Points négatifs",
+        "partialMarking": "Notation partielle"
+    },
+    "randomization": {
+        "problemRandomization": "Randomisation des questions"
+    },
+    "table": {
+        "surveyQuestionsTitle": "Questions du sondage",
+        "adaptiveMarkingRulesTitle": "Règles de notation adaptative",
+        "questionCount_one": "{{count}} question",
+        "questionCount_many": "{{count}} questions",
+        "questionCount_other": "{{count}} questions",
+        "headers": {
+            "qno": "N° Q.",
+            "question": "Question",
+            "surveyQuestion": "Question du sondage",
+            "questionType": "Type de question",
+            "marks": "Points",
+            "penalty": "Pénalité",
+            "time": "Durée",
+            "criteria": "Critères"
+        },
+        "editQuestion": "Modifier la question",
+        "editQuestionMissing": "Cette question n'a pas pu être chargée.",
+        "saveQuestion": "Enregistrer la question",
+        "savingQuestion": "Enregistrement…",
+        "correctOption": "Bonne réponse"
+    },
+    "totalMarks": {
+        "label": "Total des points"
+    }
+}

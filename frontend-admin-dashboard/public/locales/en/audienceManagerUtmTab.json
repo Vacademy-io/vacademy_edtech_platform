@@ -1,0 +1,64 @@
+{
+    "title": "Campaigns (UTM)",
+    "disabled": {
+        "body": "Campaign Links (UTM) are switched off for this institute. Turn them on to tag your links and see which campaigns bring people in.",
+        "cta": "Open Campaign Links settings"
+    },
+    "kpis": {
+        "people": {
+            "label": "People from campaigns",
+            "sub": "{{touches}} recorded touches"
+        },
+        "enrolled": {
+            "label": "Enrolled today",
+            "sub": "{{rate}} of campaign people",
+            "subNone": "No campaign people yet"
+        },
+        "campaigns": {
+            "label": "Campaigns",
+            "sub": "across {{sources}} sources"
+        },
+        "coverage": {
+            "label": "Attribution coverage",
+            "sub": "{{attributed}} of {{total}} leads tagged"
+        },
+        "topCampaign": {
+            "label": "Top campaign",
+            "sub": "{{people}} people",
+            "subNone": "No tagged campaign yet"
+        }
+    },
+    "empty": {
+        "title": "No campaign touches in this window",
+        "body": "Share a link generated with \"Generate UTM link\" (audience forms, live classes, assessments, enrol invites, product pages, catalogue sites) and the people who arrive through it will show up here."
+    },
+    "trend": {
+        "title": "Daily campaign arrivals",
+        "peopleLegend": "People",
+        "touchesLegend": "Touches",
+        "noData": "No data for this period",
+        "ariaLabel": "Daily campaign arrivals"
+    },
+    "breakdown": {
+        "empty": "Nothing recorded",
+        "none": "(no value)"
+    },
+    "table": {
+        "title": "Campaign performance",
+        "empty": "No campaign rows in this window",
+        "noValue": "no campaign",
+        "touchesInline": "({{touches}} touches)",
+        "columns": {
+            "campaign": "Campaign",
+            "source": "Source",
+            "medium": "Medium",
+            "channel": "Channel",
+            "people": "People",
+            "touches": "Touches",
+            "enrolled": "Enrolled",
+            "rate": "Enrol %",
+            "firstSeen": "First seen",
+            "lastSeen": "Last seen"
+        }
+    }
+}

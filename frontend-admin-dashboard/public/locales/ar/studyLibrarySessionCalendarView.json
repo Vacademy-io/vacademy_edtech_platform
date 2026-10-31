@@ -1,0 +1,43 @@
+{
+    "weekday": {
+        "sun": "أحد",
+        "mon": "إثن",
+        "tue": "ثلا",
+        "wed": "أرب",
+        "thu": "خمي",
+        "fri": "جمعة",
+        "sat": "سبت"
+    },
+    "today": "اليوم",
+    "moreSessions_zero": "+{{count}} أخرى",
+    "moreSessions_one": "+{{count}} أخرى",
+    "moreSessions_two": "+{{count}} أخريان",
+    "moreSessions_few": "+{{count}} أخرى",
+    "moreSessions_many": "+{{count}} أخرى",
+    "moreSessions_other": "+{{count}} أخرى",
+    "legend": {
+        "liveClass": "حصة مباشرة",
+        "upcomingClass": "حصة قادمة",
+        "pastClass": "حصة سابقة"
+    },
+    "sessionsFor": "جلسات {{date}}",
+    "defaultClassInformation": "معلومات الحصة الافتراضية",
+    "classNameLabel": "اسم الحصة:",
+    "linkLabel": "الرابط:",
+    "customButtonLabel": "زر مخصص:",
+    "durationMinutes_zero": "أقل من دقيقة",
+    "durationMinutes_one": "دقيقة واحدة",
+    "durationMinutes_two": "دقيقتان",
+    "durationMinutes_few": "{{count}} دقائق",
+    "durationMinutes_many": "{{count}} دقيقة",
+    "durationMinutes_other": "{{count}} دقيقة",
+    "status": {
+        "live": "مباشر",
+        "upcoming": "قادم",
+        "past": "سابق",
+        "scheduled": "مجدول"
+    },
+    "startAsHost": "البدء كمضيف",
+    "joinSession": "الانضمام إلى الجلسة",
+    "noSessionsFound": "لم يتم العثور على جلسات."
+}

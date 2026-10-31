@@ -1,0 +1,29 @@
+{
+    "dialog": {
+        "title": "रेफ़रल प्रोग्राम चुनें",
+        "description": "इस कोर्स के लिए एक रेफ़रल प्रोग्राम चुनें"
+    },
+    "badge": {
+        "default": "डिफ़ॉल्ट"
+    },
+    "refereeBenefit": {
+        "label": "रेफ़री का लाभ:",
+        "freeDays_one": "{{count}} मुफ़्त दिन",
+        "freeDays_other": "{{count}} मुफ़्त दिन",
+        "bonusContent": "बोनस सामग्री",
+        "genericOff": "{{value}} की छूट"
+    },
+    "referrerTiers": {
+        "label": "रेफ़रर स्तर:"
+    },
+    "programSettings": {
+        "label": "प्रोग्राम सेटिंग्स:",
+        "vestingPeriod": "वेस्टिंग अवधि",
+        "combineOffers": "ऑफ़र संयोजित करें",
+        "yes": "हां",
+        "no": "नहीं"
+    },
+    "actions": {
+        "addNewReferral": "+ नया रेफ़रल प्रोग्राम जोड़ें"
+    }
+}

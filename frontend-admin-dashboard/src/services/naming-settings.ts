@@ -1,7 +1,6 @@
 import { CREATE_NAMING_SETTINGS, UPDATE_NAMING_SETTINGS, GET_INSITITUTE_SETTINGS } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
-import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
-import { TokenKey } from '@/constants/auth/tokens';
+import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 
 export interface NamingSettingsRequest {
     Course: string;
@@ -29,16 +28,20 @@ export interface NamingSettingsRequest {
     [key: string]: string | undefined;
 }
 
-export const createNamingSettings = async (nameRequest: NamingSettingsRequest): Promise<void> => {
-    const accessToken = getTokenFromCookie(TokenKey.accessToken);
-    const tokenData = getTokenDecodedData(accessToken);
-    const instituteIds = Object.keys(tokenData?.authorities || {});
-
-    if (instituteIds.length === 0) {
+// The institute being worked in (selected institute; the token's first only when none is
+// selected) — not always the token's first institute. Otherwise a multi-institute admin read
+// and saved naming on the wrong institute, and the backend now rejects a setting save whose
+// clientId isn't the target instituteId.
+const resolveInstituteId = (): string => {
+    const instituteId = getCurrentInstituteId();
+    if (!instituteId) {
         throw new Error('No institute ID found in token');
     }
+    return instituteId;
+};
 
-    const instituteId = instituteIds[0];
+export const createNamingSettings = async (nameRequest: NamingSettingsRequest): Promise<void> => {
+    const instituteId = resolveInstituteId();
 
     const response = await authenticatedAxiosInstance.post(
         CREATE_NAMING_SETTINGS,
@@ -52,15 +55,7 @@ export const createNamingSettings = async (nameRequest: NamingSettingsRequest): 
 };
 
 export const updateNamingSettings = async (nameRequest: NamingSettingsRequest): Promise<void> => {
-    const accessToken = getTokenFromCookie(TokenKey.accessToken);
-    const tokenData = getTokenDecodedData(accessToken);
-    const instituteIds = Object.keys(tokenData?.authorities || {});
-
-    if (instituteIds.length === 0) {
-        throw new Error('No institute ID found in token');
-    }
-
-    const instituteId = instituteIds[0];
+    const instituteId = resolveInstituteId();
 
     const response = await authenticatedAxiosInstance.post(
         UPDATE_NAMING_SETTINGS,
@@ -80,15 +75,7 @@ interface NamingSettingResponseItem {
 }
 
 export const getNamingSettings = async (): Promise<NamingSettingResponseItem[] | null> => {
-    const accessToken = getTokenFromCookie(TokenKey.accessToken);
-    const tokenData = getTokenDecodedData(accessToken);
-    const instituteIds = Object.keys(tokenData?.authorities || {});
-
-    if (instituteIds.length === 0) {
-        throw new Error('No institute ID found in token');
-    }
-
-    const instituteId = instituteIds[0];
+    const instituteId = resolveInstituteId();
 
     try {
         const response = await authenticatedAxiosInstance.get(

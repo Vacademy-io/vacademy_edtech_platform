@@ -1,0 +1,99 @@
+{
+    "format": {
+        "title": "Format du numéro de facture",
+        "description": "Composez le format à partir des valeurs ci-dessous. Chaque numéro de facture doit inclure un numéro de séquence pour rester unique.",
+        "presets": {
+            "label": "Partir d'un format courant"
+        },
+        "formatField": {
+            "label": "Format",
+            "hint": "Tout ce qui se trouve en dehors de {{braces}} est utilisé tel quel. Les lettres, chiffres et - / _ . sont autorisés."
+        },
+        "preview": {
+            "title": "Prochains numéros de facture",
+            "checking": "Vérification…",
+            "unavailable": "Aucun aperçu disponible.",
+            "lengthHint_one": "Jusqu'à {{count}} caractère (limite 100). L'aperçu ne consomme pas de numéro.",
+            "lengthHint_other": "Jusqu'à {{count}} caractères (limite 100). L'aperçu ne consomme pas de numéro.",
+            "lengthHint_many": "Jusqu'à {{count}} de caractères (limite 100). L'aperçu ne consomme pas de numéro."
+        },
+        "tokenPalette": {
+            "label": "Insérer une valeur",
+            "tokenTitle": "{{label}} — ex. {{example}}",
+            "shortenHint": {
+                "part1": "Raccourcissez toute valeur avec ",
+                "part2": " (les 4 premiers caractères) ou ",
+                "part3": " — par exemple ",
+                "part4": ". Les valeurs surlignées en ambre rendent la numérotation non séquentielle."
+            }
+        },
+        "tokenGroups": {
+            "sequence": "Séquence",
+            "institute": "Établissement",
+            "learner": "Apprenant",
+            "date": "Date",
+            "transaction": "Paiement et cours"
+        }
+    },
+    "counter": {
+        "title": "Compteur",
+        "description": "Contrôle le numéro de séquence. Les factures existantes ne sont jamais renumérotées, et un numéro n'est jamais réutilisé.",
+        "scope": {
+            "label": "Réinitialiser le compteur",
+            "options": {
+                "never": {
+                    "label": "Jamais",
+                    "hint": "Un seul compteur qui continue de croître indéfiniment"
+                },
+                "yearly": {
+                    "label": "Chaque année",
+                    "hint": "Le compteur redémarre chaque mois de janvier"
+                },
+                "monthly": {
+                    "label": "Chaque mois",
+                    "hint": "Le compteur redémarre le 1er du mois"
+                },
+                "daily": {
+                    "label": "Chaque jour",
+                    "hint": "Le compteur redémarre à minuit"
+                }
+            }
+        },
+        "padding": {
+            "label": "Chiffres minimum",
+            "hint": "4 chiffres affichent la facture 42 sous la forme 0042."
+        },
+        "instituteCode": {
+            "label": "Code de l'établissement",
+            "placeholder": "Dérivé du nom de l'établissement",
+            "hint": "Renseigne la valeur du code de l'établissement."
+        },
+        "startFrom": {
+            "label": "Démarrer la prochaine facture à",
+            "placeholder": "Actuellement suivant : #{{count}}",
+            "hint": "Uniquement pour poursuivre une série provenant d'un autre système. Fait avancer la numérotation uniquement."
+        },
+        "fyStart": {
+            "label": "L'exercice financier commence en",
+            "hint": "Avril pour l'Inde et le Royaume-Uni, juillet pour l'Australie."
+        },
+        "months": {
+            "january": "Janvier",
+            "february": "Février",
+            "march": "Mars",
+            "april": "Avril",
+            "may": "Mai",
+            "june": "Juin",
+            "july": "Juillet",
+            "august": "Août",
+            "september": "Septembre",
+            "october": "Octobre",
+            "november": "Novembre",
+            "december": "Décembre"
+        },
+        "sanitize": {
+            "label": "Nettoyer les valeurs textuelles",
+            "hint": "Convertit les noms en majuscules et supprime les espaces, accents et ponctuations — « Rahul Sharma » devient RAHULSHARMA."
+        }
+    }
+}

@@ -9,12 +9,14 @@ import { Examination, Mock, Practice, Survey } from '@/svgs';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { cn } from '@/lib/utils';
 import { useAssessmentActionVisibility } from '@/lib/display-settings/assessment-actions';
+import { useTranslation } from 'react-i18next';
 
 export const ScheduleTestHeaderDescription = ({
     isCourseOutline = false,
 }: {
     isCourseOutline?: boolean;
 }) => {
+    const { t } = useTranslation('assessmentScheduleTestHeaderDescription');
     const isMobile = useIsMobile();
     const navigate = useNavigate();
     const { getCourseFromPackage } = useInstituteDetailsStore();
@@ -43,22 +45,19 @@ export const ScheduleTestHeaderDescription = ({
                 <h1
                     className={cn(
                         'font-semibold text-neutral-600',
-                        isCourseOutline ? 'text-base' : 'text-[1.25rem]'
+                        isCourseOutline ? 'text-base' : 'text-h3'
                     )}
                 >
-                    Comprehensive Test Management
+                    {t('heading')}
                 </h1>
                 <p className={cn('text-neutral-600', isCourseOutline && 'hidden')}>
-                    Effortlessly monitor and manage all assessments with a comprehensive view of
-                    ongoing, upcoming, and past exams. Gain easy access to each test&rsquo;s
-                    details, schedule, and status, ensuring organized oversight of the entire
-                    testing process from start to finish.
+                    {t('description')}
                 </p>
             </div>
             <div className="flex items-center gap-2">
                 <SettingsQuickAccessButton
                     settingsKey={SettingsTabs.Assessment}
-                    label="Assessment settings"
+                    label={t('assessmentSettingsLabel')}
                 />
                 {canCreate && (
                     <Dialog>
@@ -76,63 +75,63 @@ export const ScheduleTestHeaderDescription = ({
                                 id="create-assessment"
                             >
                                 <CalendarBlank size={32} />
-                                Create Assessment
+                                {t('createAssessmentButton')}
                             </MyButton>
                         </DialogTrigger>
                         <DialogContent className="no-scrollbar !m-0 flex h-screen !w-4/5 flex-col gap-8 overflow-y-auto !p-0">
                             <h1 className="rounded-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                                Create Assessment
+                                {t('createAssessmentDialogTitle')}
                             </h1>
                             <div className="mb-4 flex size-auto flex-col items-center justify-center gap-11">
                                 <div className="flex items-center gap-12">
                                     <div
                                         onClick={() => handleRedirectRoute('EXAM')}
-                                        className="flex size-[300px] cursor-pointer flex-col items-center rounded-xl border bg-neutral-50 p-8"
+                                        className="flex size-72 cursor-pointer flex-col items-center rounded-xl border bg-neutral-50 p-8"
                                     >
                                         <Examination />
-                                        <h1 className="text-[1.4rem] font-semibold">Examination</h1>
+                                        <h1 className="text-h2 font-semibold">
+                                            {t('examTypes.examination.title')}
+                                        </h1>
                                         <p className="text-center text-sm text-neutral-500">
-                                            A Fixed-time assessment that goes live for a specific
-                                            schedule, simulating real exam conditions.
+                                            {t('examTypes.examination.description')}
                                         </p>
                                     </div>
                                     <div
                                         onClick={() => handleRedirectRoute('MOCK')}
-                                        className="flex size-[300px] cursor-pointer flex-col items-center rounded-xl border bg-neutral-50 p-8"
+                                        className="flex size-72 cursor-pointer flex-col items-center rounded-xl border bg-neutral-50 p-8"
                                     >
                                         <Mock />
-                                        <h1 className="text-[1.4rem] font-semibold">
-                                            Mock Assessment
+                                        <h1 className="text-h2 font-semibold">
+                                            {t('examTypes.mock.title')}
                                         </h1>
                                         <p className="text-center text-sm text-neutral-500">
-                                            A practice assessment always available, with a fixed
-                                            duration to replicate exam scenarios.
+                                            {t('examTypes.mock.description')}
                                         </p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-12">
                                     <div
                                         onClick={() => handleRedirectRoute('PRACTICE')}
-                                        className="flex size-[300px] cursor-pointer flex-col items-center rounded-xl border bg-neutral-50 p-8"
+                                        className="flex size-72 cursor-pointer flex-col items-center rounded-xl border bg-neutral-50 p-8"
                                     >
                                         <Practice />
-                                        <h1 className="text-[1.4rem] font-semibold">
-                                            Practice Assessment
+                                        <h1 className="text-h2 font-semibold">
+                                            {t('examTypes.practice.title')}
                                         </h1>
                                         <p className="text-center text-sm text-neutral-500">
-                                            An on-demand assessment with no time limits, allowing
-                                            students to attempt it anytime.
+                                            {t('examTypes.practice.description')}
                                         </p>
                                     </div>
                                     <div
                                         onClick={() => handleRedirectRoute('SURVEY')}
-                                        className="flex size-[300px] cursor-pointer flex-col items-center rounded-xl border bg-neutral-50 p-8"
+                                        className="flex size-72 cursor-pointer flex-col items-center rounded-xl border bg-neutral-50 p-8"
                                     >
                                         <Survey />
-                                        <h1 className="text-[1.4rem] font-semibold">Survey</h1>
+                                        <h1 className="text-h2 font-semibold">
+                                            {t('examTypes.survey.title')}
+                                        </h1>
                                         <p className="text-center text-sm text-neutral-500">
-                                            A set of questions for feedback or opinions, with no
-                                            right or wrong answers.
+                                            {t('examTypes.survey.description')}
                                         </p>
                                     </div>
                                 </div>

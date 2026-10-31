@@ -1,0 +1,16 @@
+{
+    "steps": {
+        "before": {
+            "title": "Avant le cours",
+            "description": "Planifiez, programmez et préparez le matériel."
+        },
+        "in": {
+            "title": "Pendant le cours",
+            "description": "Enregistrez, importez ou présentez de manière interactive."
+        },
+        "after": {
+            "title": "Après le cours",
+            "description": "Analysez la performance et consultez les journaux."
+        }
+    }
+}

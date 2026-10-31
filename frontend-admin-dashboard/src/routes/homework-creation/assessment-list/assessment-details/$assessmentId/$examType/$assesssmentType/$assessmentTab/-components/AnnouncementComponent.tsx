@@ -7,6 +7,8 @@ import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 interface Announcement {
     id: string;
@@ -19,18 +21,21 @@ interface AnnouncementProps {
     setAnnouncementList: React.Dispatch<React.SetStateAction<Announcement[]>>;
 }
 
-const formSchema = z.object({
-    title: z.string().min(1, 'Title is required'), // Ensures title is a non-empty string
-    instructions: z.string().optional(), // Instructions are optional
-});
+const buildFormSchema = (t: TFunction) =>
+    z.object({
+        title: z.string().min(1, t('validation.titleRequired')), // Ensures title is a non-empty string
+        instructions: z.string().optional(), // Instructions are optional
+    });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<ReturnType<typeof buildFormSchema>>;
 
 export const AnnouncementComponent = ({
     announcementList,
     setAnnouncementList,
 }: AnnouncementProps) => {
+    const { t } = useTranslation('homeworkCreationAnnouncementComponent');
     const [isMakeAssessmentDialog, setIsMakeAssessmentDialog] = useState(false);
+    const formSchema = buildFormSchema(t);
     const form = useForm<FormValues>({
         resolver: zodResolver(formSchema),
         defaultValues: {
@@ -64,15 +69,15 @@ export const AnnouncementComponent = ({
                         layoutVariant="default"
                         className="text-sm"
                     >
-                        Make Announcement
+                        {t('trigger.makeAnnouncement')}
                     </MyButton>
                 </DialogTrigger>
-                <DialogContent className="!max-w-[50vw] p-0">
+                <DialogContent className="!w-dialog-md p-0">
                     <h1 className="h-14 rounded-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                        Make Announcement
+                        {t('dialog.heading')}
                     </h1>
                     <FormProvider {...form}>
-                        <form className="flex max-h-[40vh] flex-col gap-4 overflow-y-auto p-4 pt-0">
+                        <form className="flex max-h-[40vh] flex-col gap-4 overflow-y-auto p-4 pt-0">{/* design-lint-ignore: inner form scroll region distinct from dialog max-height, no vh token fits this sub-area */}
                             <FormField
                                 control={form.control}
                                 name="title"
@@ -81,12 +86,12 @@ export const AnnouncementComponent = ({
                                         <FormControl>
                                             <MyInput
                                                 inputType="text"
-                                                inputPlaceholder="Provide a concise title for the announcement (e.g., Time Remaining, Technical Issue Resolved)"
+                                                inputPlaceholder={t('dialog.titlePlaceholder')}
                                                 input={value}
                                                 onChangeFunction={onChange}
                                                 required={true}
                                                 size="large"
-                                                label="Announcement Title"
+                                                label={t('dialog.titleLabel')}
                                                 labelStyle="!text-sm"
                                                 {...field}
                                                 className="w-full"
@@ -96,7 +101,7 @@ export const AnnouncementComponent = ({
                                 )}
                             />
                             <div>
-                                <h1 className="mb-1 text-sm">Assessment Instructions</h1>
+                                <h1 className="mb-1 text-sm">{t('dialog.instructionsHeading')}</h1>
                                 <FormField
                                     control={form.control}
                                     name="instructions"
@@ -122,7 +127,7 @@ export const AnnouncementComponent = ({
                                     className="text-sm"
                                     onClick={form.handleSubmit(onSubmit)}
                                 >
-                                    Publish Announcement
+                                    {t('dialog.publishButton')}
                                 </MyButton>
                             </div>
                         </form>

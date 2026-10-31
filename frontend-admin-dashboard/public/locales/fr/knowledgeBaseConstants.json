@@ -1,0 +1,66 @@
+{
+    "purpose": {
+        "teaching": {
+            "label": "Matériel pédagogique",
+            "hint": "Manuels, notes et ouvrages de référence pour une classe ou une matière — par ex. « Sciences, classe 9 »."
+        },
+        "questionBank": {
+            "label": "Banque de questions",
+            "hint": "Anciens sujets et recueils de questions — par ex. « Questions des années précédentes du JEE Advanced »."
+        },
+        "general": {
+            "label": "Référence générale",
+            "hint": "Tout autre contenu dans lequel vous voulez que l'IA puisse chercher des informations."
+        }
+    },
+    "sourceKind": {
+        "pdf": "Document",
+        "url": "Page web",
+        "youtube": "Vidéo YouTube",
+        "text": "Note saisie"
+    },
+    "sourceStatus": {
+        "pending": {
+            "label": "En attente",
+            "hint": "En attente de démarrage."
+        },
+        "processing": {
+            "label": "Lecture en cours",
+            "hint": "En cours de lecture et d'indexation."
+        },
+        "ready": {
+            "label": "Prêt",
+            "hint": "Entièrement lisible et consultable."
+        },
+        "partial": {
+            "label": "Partiellement lisible",
+            "hint": "Indexé, mais certaines pages n'ont pas pu être lues correctement."
+        },
+        "failed": {
+            "label": "Échec",
+            "hint": "Rien n'a pu être indexé à partir de ce document."
+        },
+        "working": "En cours",
+        "gettingStarted": "Démarrage en cours"
+    },
+    "stage": {
+        "parsing": "Lecture des pages",
+        "figures": "Collecte des schémas et tableaux",
+        "chunking": "Organisation du texte",
+        "embedding": "Mise en place de la recherche",
+        "summarizing": "Résumé des chapitres"
+    },
+    "language": {
+        "en": "Anglais",
+        "hi": "Hindi",
+        "mr": "Marathi",
+        "ta": "Tamoul",
+        "te": "Télougou",
+        "kn": "Kannada",
+        "ml": "Malayalam",
+        "bn": "Bengali",
+        "gu": "Goujrati",
+        "pa": "Pendjabi",
+        "ur": "Ourdou"
+    }
+}

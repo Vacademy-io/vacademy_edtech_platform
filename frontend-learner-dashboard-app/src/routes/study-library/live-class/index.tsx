@@ -1,13 +1,14 @@
 import { LayoutContainer } from "@/components/common/layout-container/layout-container";
 import { createFileRoute } from "@tanstack/react-router";
 import { Helmet } from "react-helmet";
-import { useEffect, useState, useLayoutEffect, useCallback, useMemo } from "react";
+import { useEffect, useState, useLayoutEffect, useCallback, useMemo, type ReactNode } from "react";
 import { useNavHeadingStore } from "@/stores/layout-container/useNavHeadingStore";
 import { useLiveSessions } from "./-hooks/useLiveSessions";
 import { usePastSessions } from "./-hooks/usePastSessions";
 import { useCalendarPastSessions } from "./-hooks/useCalendarPastSessions";
 import { SessionDetails, PastSessionDetails } from "./-types/types";
 import { PastSessionCard } from "./-components/PastSessionCard";
+import { InstructorLine } from "./-components/InstructorLine";
 
 import { useNavigate } from "@tanstack/react-router";
 import { SessionStreamingServiceType } from "@/routes/register/live-class/-types/enum";
@@ -46,11 +47,61 @@ import { DefaultClassCard } from "./-components/DefaultClassCard";
 import { getTerminology, getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import { SessionFilter, FilterChangePayload } from "@/components/common/session-filter";
+import { useTranslation } from "react-i18next";
+import {
+  formatDate as formatDateIntl,
+  formatDateTime as formatDateTimeIntl,
+} from "@/lib/formatters";
+
+/**
+ * Calendar labels live in the lazily-loaded `study` catalog, so a render can land
+ * before that namespace resolves (or after its chunk fails to fetch) with t()
+ * still handing back the raw key. Reading `.map` off that string took the whole
+ * page down, so these stand in until the catalog is actually in.
+ */
+const FALLBACK_MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+const FALLBACK_DAY_NAMES_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+/** t(key, { returnObjects: true }) yields the key itself until the catalog loads. */
+const asStringArray = (value: unknown, fallback: string[]): string[] =>
+  Array.isArray(value) && value.length > 0 ? (value as string[]) : fallback;
+
 export const Route = createFileRoute("/study-library/live-class/")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
+  return <LiveClassView />;
+}
+
+const EmbeddedShell = ({ children }: { children: ReactNode }) => <>{children}</>;
+
+/**
+ * The learner's live/upcoming session list. `embedded` drops the page chrome
+ * (layout, nav heading, document title) so another screen can host it — the
+ * Courses page's "Live sessions" custom tab does.
+ */
+export function LiveClassView({ embedded = false }: { embedded?: boolean }) {
+  const Shell = embedded ? EmbeddedShell : LayoutContainer;
+  const { t } = useTranslation("study");
+  const liveSessionTerm = getTerminology(ContentTerms.LiveSession, SystemTerms.LiveSession);
+  const liveSessionsTerm = getTerminologyPlural(ContentTerms.LiveSession, SystemTerms.LiveSession);
+  const sessionTerm = getTerminology(ContentTerms.Session, SystemTerms.Session);
+  const sessionsTerm = getTerminologyPlural(ContentTerms.Session, SystemTerms.Session);
+  const batchTerm = getTerminology(ContentTerms.Batch, SystemTerms.Batch);
 
   const { setNavHeading } = useNavHeadingStore();
   const navigate = useNavigate();
@@ -170,8 +221,9 @@ function RouteComponent() {
 
 
   useLayoutEffect(() => {
+    if (embedded) return;
     setNavHeading(getTerminology(ContentTerms.LiveSession, SystemTerms.LiveSession));
-  }, [setNavHeading]);
+  }, [setNavHeading, embedded]);
   const hasNextPage = (sessions?.totalReturned ?? 0) === 10;
 
   const formatDateTime = (date: string, time: string, timezone?: string) => {
@@ -180,7 +232,7 @@ function RouteComponent() {
     }
     // Fallback to original logic for sessions without timezone
     const datetime = new Date(`${date}T${time}`);
-    return datetime.toLocaleString("en-US", {
+    return formatDateTimeIntl(datetime, {
       weekday: "short",
       month: "short",
       day: "numeric",
@@ -192,7 +244,7 @@ function RouteComponent() {
   };
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", {
+    return formatDateIntl(date, {
       weekday: "long",
       year: "numeric",
       month: "long",
@@ -214,7 +266,7 @@ function RouteComponent() {
     try {
       const payStatus = await fetchLiveSessionPaymentStatus(session.session_id);
       if (payStatus.payment_required && payStatus.payment_status !== "PAID") {
-        toast.info("This session requires payment. Complete your payment to join.");
+        toast.info(t("liveClass.toast.paymentRequired", { session: sessionTerm.toLowerCase() }));
         const registration = await registerAndPayForLiveSession(
           session.session_id
         );
@@ -295,7 +347,7 @@ function RouteComponent() {
     // If session has ended, show error — except for Zoom-ready sessions; the
     // SDK / backend will surface a real "meeting ended" if Zoom has ended it.
     if (hasSessionEnded && !isZoomReady) {
-      toast.error("This class has ended");
+      toast.error(t("liveClass.toast.classEnded", { liveClass: liveSessionTerm.toLowerCase() }));
       return;
     }
 
@@ -303,7 +355,7 @@ function RouteComponent() {
     // sessions so learners can join early.
     if (isBeforeWaitingRoom && !isZoomReady) {
       toast.error(
-        "Class has not started yet. Please wait for the waiting room to open."
+        t("liveClass.toast.classNotStartedYet")
       );
       return;
     }
@@ -362,7 +414,7 @@ function RouteComponent() {
         await openSession();
       } catch (error) {
         console.error("Failed to mark attendance:", error);
-        toast.error("Failed to mark attendance");
+        toast.error(t("liveClass.toast.markAttendanceFailed"));
 
         // Still proceed even if attendance marking fails — openSession() already
         // routes BBB / EMBED / external links correctly (BBB via the personalized
@@ -373,7 +425,7 @@ function RouteComponent() {
     } else {
       // This should not happen, but add a fallback
       console.warn("Unexpected timing state - no action taken");
-      toast.error("Unable to determine session status. Please try again.");
+      toast.error(t("liveClass.toast.statusUndetermined", { session: sessionTerm.toLowerCase() }));
     }
   };
 
@@ -513,10 +565,10 @@ function RouteComponent() {
                     }`}
                 >
                   {isInWaitingRoom
-                    ? "WAITING ROOM"
+                    ? t("liveClass.badge.waitingRoom")
                     : isLiveClassStarted
-                      ? "LIVE"
-                      : "STARTING SOON"}
+                      ? t("liveClass.badge.live")
+                      : t("liveClass.badge.startingSoon")}
                 </span>
               )}
             </div>
@@ -533,6 +585,8 @@ function RouteComponent() {
               </div>
             )}
 
+            <InstructorLine instructors={session.instructors} className="mb-2" />
+
             {/* Date - Display only for Upcoming sessions */}
             {!isLive && (
               <div className="flex items-center gap-1 text-sm text-neutral-600 mb-2">
@@ -541,7 +595,7 @@ function RouteComponent() {
                   className="text-neutral-500 dark:text-neutral-400"
                 />
                 <span className="capitalize dark:text-neutral-300">
-                  {new Date(session.meeting_date).toLocaleDateString("en-US", {
+                  {formatDateIntl(session.meeting_date, {
                     weekday: "short",
                     year: "numeric",
                     month: "short",
@@ -558,7 +612,7 @@ function RouteComponent() {
                   className="text-neutral-500 dark:text-neutral-400"
                 />
                 <span className="text-neutral-600 dark:text-neutral-300">
-                  <span className="font-medium">Starts:</span>{" "}
+                  <span className="font-medium">{t("liveClass.field.starts")}</span>{" "}
                   {formatDateTime(
                     session.meeting_date,
                     session.start_time,
@@ -577,7 +631,7 @@ function RouteComponent() {
                   className="text-neutral-500 dark:text-neutral-400"
                 />
                 <span className="text-neutral-600 dark:text-neutral-300">
-                  <span className="font-medium">Duration:</span>{" "}
+                  <span className="font-medium">{t("liveClass.field.duration")}</span>{" "}
                   {calculateDuration(session.start_time, session.last_entry_time)}
                 </span>
               </div>
@@ -589,29 +643,29 @@ function RouteComponent() {
                 variant="default"
                 size="sm"
                 disabled={zoomSettingUp}
-                title={zoomSettingUp ? "The Zoom meeting is still being set up. Check back shortly." : undefined}
+                title={zoomSettingUp ? t("liveClass.zoomSettingUpTooltip") : undefined}
                 className="shrink-0 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                 onClick={() => handleJoinSession(session)}
               >
                 <ArrowSquareOut size={16} className="me-1.5" />
                 {zoomSettingUp
-                  ? "Setting up…"
+                  ? t("liveClass.button.settingUp")
                   : !isLive && canJoinEarlyZoom
-                    ? "Join Early"
+                    ? t("liveClass.button.joinEarly")
                     : isBeforeWaitingRoom
-                      ? "Not Started"
+                      ? t("liveClass.button.notStarted")
                       : isInWaitingRoom
                         ? isPreJoining
-                          ? "Join Live Class"
-                          : "Join Waiting Room"
-                        : "Join Session"}
+                          ? t("liveClass.button.joinLiveClass")
+                          : t("liveClass.button.joinWaitingRoom")
+                        : t("liveClass.button.joinSession")}
               </Button>
             )}
           </div>
         </div>
 
         {/* Mobile Layout: Button at the bottom */}
-        <div className="flex flex-col gap-3 sm:hidden">
+        <div className="flex flex-col gap-stack sm:hidden">
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <h3 className="font-semibold text-lg text-neutral-800 dark:text-neutral-100 group-hover:text-primary-700 dark:group-hover:text-primary-300 transition-colors">
@@ -627,10 +681,10 @@ function RouteComponent() {
                     }`}
                 >
                   {isInWaitingRoom
-                    ? "WAITING ROOM"
+                    ? t("liveClass.badge.waitingRoom")
                     : isLiveClassStarted
-                      ? "LIVE"
-                      : "STARTING SOON"}
+                      ? t("liveClass.badge.live")
+                      : t("liveClass.badge.startingSoon")}
                 </span>
               )}
             </div>
@@ -647,6 +701,8 @@ function RouteComponent() {
               </div>
             )}
 
+            <InstructorLine instructors={session.instructors} className="mb-2" />
+
             {/* Date - Display only for Upcoming sessions */}
             {!isLive && (
               <div className="flex items-center gap-1 text-sm text-neutral-600 mb-2">
@@ -655,7 +711,7 @@ function RouteComponent() {
                   className="text-neutral-500 dark:text-neutral-400"
                 />
                 <span className="capitalize dark:text-neutral-300">
-                  {new Date(session.meeting_date).toLocaleDateString("en-US", {
+                  {formatDateIntl(session.meeting_date, {
                     weekday: "short",
                     year: "numeric",
                     month: "short",
@@ -673,7 +729,7 @@ function RouteComponent() {
                 className="text-neutral-500 dark:text-neutral-400"
               />
               <span className="text-neutral-600 dark:text-neutral-300">
-                <span className="font-medium">Starts:</span>{" "}
+                <span className="font-medium">{t("liveClass.field.starts")}</span>{" "}
                 {formatDateTime(
                   session.meeting_date,
                   session.start_time,
@@ -692,7 +748,7 @@ function RouteComponent() {
                 className="text-neutral-500 dark:text-neutral-400"
               />
               <span className="text-neutral-600 dark:text-neutral-300">
-                <span className="font-medium">Duration:</span>{" "}
+                <span className="font-medium">{t("liveClass.field.duration")}</span>{" "}
                 {calculateDuration(session.start_time, session.last_entry_time)}
               </span>
             </div>
@@ -703,22 +759,22 @@ function RouteComponent() {
                 variant="default"
                 size="sm"
                 disabled={zoomSettingUp}
-                title={zoomSettingUp ? "The Zoom meeting is still being set up. Check back shortly." : undefined}
+                title={zoomSettingUp ? t("liveClass.zoomSettingUpTooltip") : undefined}
                 className="w-full bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white shadow-sm hover:shadow-md transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
                 onClick={() => handleJoinSession(session)}
               >
                 <ArrowSquareOut size={16} className="me-1.5" />
                 {zoomSettingUp
-                  ? "Setting up…"
+                  ? t("liveClass.button.settingUp")
                   : !isLive && canJoinEarlyZoom
-                    ? "Join Early"
+                    ? t("liveClass.button.joinEarly")
                     : isBeforeWaitingRoom
-                      ? "Not Started"
+                      ? t("liveClass.button.notStarted")
                       : isInWaitingRoom
                         ? isPreJoining
-                          ? "Join Live Class"
-                          : "Join Waiting Room"
-                        : "Join Session"}
+                          ? t("liveClass.button.joinLiveClass")
+                          : t("liveClass.button.joinWaitingRoom")
+                        : t("liveClass.button.joinSession")}
               </Button>
             )}
           </div>
@@ -817,16 +873,16 @@ function RouteComponent() {
         <DialogContent className="max-w-2xl max-h-screen-80 overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold text-neutral-800 dark:text-neutral-100">
-              Classes on {formatDate(selectedDayData.date)}
+              {t("liveClass.dayModal.classesOn", { date: formatDate(selectedDayData.date) })}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-6 mt-4">
             {liveSessions.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100 mb-3 flex items-center gap-2">
+              <div className="space-y-stack">
+                <h3 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-danger-600 animate-pulse"></div>
-                  {getTerminology(ContentTerms.LiveSession, SystemTerms.LiveSession)}s
+                  {liveSessionsTerm}
                 </h3>
                 <div className="space-y-3">
                   {liveSessions
@@ -834,11 +890,11 @@ function RouteComponent() {
                     .map((session) => (
                       <div
                         key={session.schedule_id}
-                        className="p-4 border rounded-lg bg-gradient-to-r from-red-50/50 to-red-100/30 border-red-200 dark:from-red-950/30 dark:to-red-900/20 dark:border-red-900"
+                        className="p-4 border rounded-lg bg-gradient-to-r from-danger-50/50 to-danger-100/30 border-red-200 dark:from-red-950/30 dark:to-red-900/20 dark:border-red-900"
                       >
                         <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-neutral-800 dark:text-neutral-100 mb-1">
+                          <div className="flex-1 space-y-1">
+                            <h4 className="font-semibold text-neutral-800 dark:text-neutral-100">
                               {session.title}
                             </h4>
                             <div className="flex items-center gap-4 text-sm text-neutral-600 dark:text-neutral-300">
@@ -876,6 +932,10 @@ function RouteComponent() {
                                   </span>
                                 </div>
                               )}
+                              <InstructorLine
+                                instructors={session.instructors}
+                                iconSize={14}
+                              />
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-2 shrink-0 ms-4">
@@ -890,9 +950,9 @@ function RouteComponent() {
                               >
                                 <ArrowSquareOut size={14} className="me-1" />
                                 {(session.session_streaming_service_type?.toLowerCase() === SessionStreamingServiceType.EMBED.toLowerCase())
-                                  ? "Join"
-                                  : "Join"}
-                                Join
+                                  ? t("liveClass.button.join")
+                                  : t("liveClass.button.join")}
+                                {t("liveClass.button.join")}
                               </Button>
                             )}
                           </div>
@@ -904,10 +964,10 @@ function RouteComponent() {
             )}
 
             {upcomingSessions.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100 mb-3 flex items-center gap-2">
+              <div className="space-y-stack">
+                <h3 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-info-600"></div>
-                  Upcoming Sessions
+                  {t("liveClass.dayModal.upcomingSessions", { sessions: sessionsTerm })}
                 </h3>
                 <div className="space-y-3">
                   {upcomingSessions
@@ -918,8 +978,8 @@ function RouteComponent() {
                         className="p-4 border rounded-lg bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-900"
                       >
                         <div className="flex justify-between items-start">
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-neutral-800 dark:text-neutral-100 mb-1">
+                          <div className="flex-1 space-y-1">
+                            <h4 className="font-semibold text-neutral-800 dark:text-neutral-100">
                               {session.title}
                             </h4>
                             <div className="flex items-center gap-4 text-sm text-neutral-600 dark:text-neutral-300">
@@ -967,10 +1027,10 @@ function RouteComponent() {
             )}
 
             {pastSessionsForDay.length > 0 && (
-              <div>
-                <h3 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100 mb-3 flex items-center gap-2">
+              <div className="space-y-stack">
+                <h3 className="text-lg font-semibold text-neutral-800 dark:text-neutral-100 flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-neutral-400"></div>
-                  Past Sessions
+                  {t("liveClass.dayModal.pastSessions", { sessions: sessionsTerm })}
                 </h3>
                 <div className="space-y-3">
                   {pastSessionsForDay.map((session) => (
@@ -981,10 +1041,10 @@ function RouteComponent() {
             )}
 
             {selectedDayData.sessions.length === 0 && pastSessionsForDay.length === 0 && (
-              <div className="text-center py-8">
-                <Clock size={48} className="mx-auto text-neutral-400 mb-3" />
+              <div className="text-center py-8 space-y-stack">
+                <Clock size={48} className="mx-auto text-neutral-400" />
                 <p className="text-neutral-600 dark:text-neutral-300">
-                  No {getTerminologyPlural(ContentTerms.LiveSession, SystemTerms.LiveSession).toLowerCase()} scheduled for this day
+                  {t("liveClass.dayModal.noneScheduled", { liveSessions: liveSessionsTerm.toLowerCase() })}
                 </p>
               </div>
             )}
@@ -1000,22 +1060,15 @@ function RouteComponent() {
     const daysInMonth = getDaysInMonth(month, year);
     const firstDay = getFirstDayOfMonth(month, year);
 
-    const monthNames = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December",
-    ];
+    const monthNames = asStringArray(
+      t("liveClass.calendar.monthNames", { returnObjects: true }),
+      FALLBACK_MONTH_NAMES
+    );
 
-    const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const dayNames = asStringArray(
+      t("liveClass.calendar.dayNamesShort", { returnObjects: true }),
+      FALLBACK_DAY_NAMES_SHORT
+    );
 
     const days = [];
 
@@ -1141,7 +1194,7 @@ function RouteComponent() {
                     : "bg-neutral-100/80 text-neutral-600 border border-neutral-200 dark:bg-neutral-800/60 dark:text-neutral-300 dark:border-neutral-700"
                   }`}
               >
-                +{sessionCount - 1} more
+                {t("liveClass.calendar.moreCount", { count: sessionCount - 1 })}
               </div>
             )}
           </div>
@@ -1171,7 +1224,7 @@ function RouteComponent() {
               onClick={() => setSelectedDate(new Date())}
               className="border-neutral-300 dark:border-neutral-700 hover:border-primary-300 dark:hover:border-primary-600 hover:bg-primary-50 dark:hover:bg-primary-900/20"
             >
-              Today
+              {t("liveClass.button.today")}
             </Button>
             <Button
               variant="outline"
@@ -1202,27 +1255,27 @@ function RouteComponent() {
         {/* Legend */}
         <div className="flex items-center gap-4 mt-4 text-sm">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded bg-gradient-to-r from-red-500/20 to-red-600/20 border border-red-200 dark:from-red-900/40 dark:to-red-800/40 dark:border-red-900"></div>
+            <div className="w-3 h-3 rounded bg-gradient-to-r from-danger-500/20 to-danger-600/20 border border-red-200 dark:from-red-900/40 dark:to-red-800/40 dark:border-red-900"></div>
             <span className="text-neutral-600 dark:text-neutral-300">
-              {getTerminology(ContentTerms.LiveSession, SystemTerms.LiveSession)}s
+              {liveSessionsTerm}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-3 h-3 rounded bg-blue-100 border border-blue-200 dark:bg-blue-950/40 dark:border-blue-900"></div>
             <span className="text-neutral-600 dark:text-neutral-300">
-              Upcoming Sessions
+              {t("liveClass.dayModal.upcomingSessions", { sessions: sessionsTerm })}
             </span>
           </div>
           {pastDisplayFlags.show_past_sessions && (
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-neutral-100 border border-neutral-300 dark:bg-neutral-800 dark:border-neutral-600"></div>
               <span className="text-neutral-600 dark:text-neutral-300">
-                Past Sessions
+                {t("liveClass.dayModal.pastSessions", { sessions: sessionsTerm })}
               </span>
             </div>
           )}
           <div className="text-neutral-500 dark:text-neutral-400 text-xs italic">
-            Click on a day to view all classes
+            {t("liveClass.calendar.clickDayHint", { liveSessions: liveSessionsTerm.toLowerCase() })}
           </div>
         </div>
       </div>
@@ -1275,40 +1328,42 @@ function RouteComponent() {
 
   if (isLoading) {
     return (
-      <LayoutContainer>
+      <Shell>
         <div className="flex items-center justify-center min-h-52">
-          <div className="flex flex-col items-center gap-3">
+          <div className="flex flex-col items-center gap-stack">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
             <div className="text-neutral-600 dark:text-neutral-300">
-              Loading sessions...
+              {t("liveClass.state.loadingSessions")}
             </div>
           </div>
         </div>
-      </LayoutContainer>
+      </Shell>
     );
   }
 
   if (error) {
     return (
-      <LayoutContainer>
+      <Shell>
         <div className="p-4 border border-red-200 dark:border-red-900 rounded-lg bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300">
           <div className="flex items-center gap-2">
-            <span className="font-medium">Error loading sessions:</span>
+            <span className="font-medium">{t("liveClass.state.errorLoadingPrefix")}</span>
             <span>{(error as Error).message}</span>
           </div>
         </div>
-      </LayoutContainer>
+      </Shell>
     );
   }
 
   const liveSessions = selectedView === "list" ? derivedLiveSessions : [];
   const upcomingSessions = selectedView === "list" ? derivedUpcomingSessions : [];
   return (
-    <LayoutContainer>
-      <Helmet>
-        <title>{document?.title || "Live Classes"}</title>
-        <meta name="description" content="Live and upcoming class sessions" />
-      </Helmet>
+    <Shell>
+      {!embedded && (
+        <Helmet>
+          <title>{document?.title || t("liveClass.meta.pageTitle", { liveClasses: liveSessionsTerm })}</title>
+          <meta name="description" content={t("liveClass.meta.pageDescription", { liveClasses: liveSessionsTerm.toLowerCase() })} />
+        </Helmet>
+      )}
 
       <div className="space-y-6">
         {/* View Toggle */}
@@ -1320,17 +1375,17 @@ function RouteComponent() {
           <TabsList className="h-auto border-b border-neutral-200/80 dark:border-neutral-800 bg-transparent p-0">
             <TabsTrigger
               value="list"
-              className="data-[state=active]:text-primary data-[state=active]:border-primary hover:text-primary -mb-px px-4 py-2 text-sm font-medium transition-all duration-200 hover:bg-gradient-to-r hover:from-primary-50/60 hover:to-blue-50/40 dark:hover:from-primary-900/20 dark:hover:to-transparent focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-1 data-[state=active]:rounded-t-lg data-[state=active]:border-b-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-white data-[state=active]:to-primary-50/30 dark:data-[state=active]:from-neutral-900 dark:data-[state=active]:to-primary-900/20 data-[state=inactive]:text-neutral-500 dark:data-[state=inactive]:text-neutral-400 data-[state=inactive]:hover:rounded-t-lg"
+              className="data-[state=active]:text-primary data-[state=active]:border-primary hover:text-primary -mb-px px-4 py-2 text-sm font-medium transition-all duration-200 hover:bg-gradient-to-r hover:from-primary-50/60 hover:to-info-50/40 dark:hover:from-primary-900/20 dark:hover:to-transparent focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-1 data-[state=active]:rounded-t-lg data-[state=active]:border-b-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-white data-[state=active]:to-primary-50/30 dark:data-[state=active]:from-neutral-900 dark:data-[state=active]:to-primary-900/20 data-[state=inactive]:text-neutral-500 dark:data-[state=inactive]:text-neutral-400 data-[state=inactive]:hover:rounded-t-lg"
             >
               <List size={18} className="me-2" />
-              List View
+              {t("liveClass.tabs.list")}
             </TabsTrigger>
             <TabsTrigger
               value="calendar"
-              className="data-[state=active]:text-primary data-[state=active]:border-primary hover:text-primary -mb-px px-4 py-2 text-sm font-medium transition-all duration-200 hover:bg-gradient-to-r hover:from-primary-50/60 hover:to-blue-50/40 dark:hover:from-primary-900/20 dark:hover:to-transparent focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-1 data-[state=active]:rounded-t-lg data-[state=active]:border-b-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-white data-[state=active]:to-primary-50/30 dark:data-[state=active]:from-neutral-900 dark:data-[state=active]:to-primary-900/20 data-[state=inactive]:text-neutral-500 dark:data-[state=inactive]:text-neutral-400 data-[state=inactive]:hover:rounded-t-lg"
+              className="data-[state=active]:text-primary data-[state=active]:border-primary hover:text-primary -mb-px px-4 py-2 text-sm font-medium transition-all duration-200 hover:bg-gradient-to-r hover:from-primary-50/60 hover:to-info-50/40 dark:hover:from-primary-900/20 dark:hover:to-transparent focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-1 data-[state=active]:rounded-t-lg data-[state=active]:border-b-2 data-[state=active]:bg-gradient-to-r data-[state=active]:from-white data-[state=active]:to-primary-50/30 dark:data-[state=active]:from-neutral-900 dark:data-[state=active]:to-primary-900/20 data-[state=inactive]:text-neutral-500 dark:data-[state=inactive]:text-neutral-400 data-[state=inactive]:hover:rounded-t-lg"
             >
               <Calendar size={18} className="me-2" />
-              Calendar View
+              {t("liveClass.tabs.calendar")}
             </TabsTrigger>
           </TabsList>
           <TabsContent value="list" className="mt-6" key={`list-view-${apiPage}`}>
@@ -1339,12 +1394,11 @@ function RouteComponent() {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100">
-                    {getTerminology(ContentTerms.LiveSession, SystemTerms.LiveSession)}s - {getUserTimezone()}
+                    {t("liveClass.section.liveSessionsHeading", { liveSessions: liveSessionsTerm, timezone: getUserTimezone() })}
                   </h2>
                   {liveSessions.length > 0 && (
                     <span className="text-sm text-neutral-600 dark:text-neutral-300">
-                      {liveSessions.length} session
-                      {liveSessions.length !== 1 ? "s" : ""}
+                      {t("liveClass.section.sessionCount", { count: liveSessions.length })}
                     </span>
                   )}
                 </div>
@@ -1369,10 +1423,10 @@ function RouteComponent() {
                         className="mx-auto text-neutral-400 dark:text-neutral-500 mb-3"
                       />
                       <p className="font-medium">
-                        No {getTerminology(ContentTerms.LiveSession, SystemTerms.LiveSession).toLowerCase()}s at the moment
+                        {t("liveClass.section.noneAtTheMoment", { liveSessions: liveSessionsTerm.toLowerCase() })}
                       </p>
                       <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-                        Check back later or view upcoming {getTerminology(ContentTerms.Session, SystemTerms.Session).toLowerCase()}s
+                        {t("liveClass.section.checkBackLater", { sessions: sessionsTerm.toLowerCase() })}
                       </p>
                     </div>
                   </div>
@@ -1384,7 +1438,7 @@ function RouteComponent() {
                 {/* Row 1: Title + SessionFilter (reusable component) */}
                 <div className="flex items-center justify-between mb-1">
                   <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100">
-                    Upcoming {getTerminology(ContentTerms.Session, SystemTerms.Session)}s
+                    {t("liveClass.dayModal.upcomingSessions", { sessions: sessionsTerm })}
                   </h2>
 
                   {/* Drop-in SessionFilter — all state, dropdown, and animation live inside it */}
@@ -1400,16 +1454,22 @@ function RouteComponent() {
                   return (
                     <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
                       {filteredUpcomingSessions.length > 0
-                        ? `${filteredUpcomingSessions.length} ${getTerminology(ContentTerms.LiveSession, SystemTerms.LiveSession).toLowerCase()}${filteredUpcomingSessions.length !== 1 ? "s" : ""} found`
-                        : `No ${getTerminologyPlural(ContentTerms.LiveSession, SystemTerms.LiveSession).toLowerCase()} found`}
+                        ? t("liveClass.section.foundCount", {
+                            count: filteredUpcomingSessions.length,
+                            liveSessions:
+                              filteredUpcomingSessions.length === 1
+                                ? liveSessionTerm.toLowerCase()
+                                : liveSessionsTerm.toLowerCase(),
+                          })
+                        : t("liveClass.section.noneFound", { liveSessions: liveSessionsTerm.toLowerCase() })}
                       {activeFilterType !== "none" && (
                         <span className="ms-1 text-primary-500 font-medium">
                           · {activeFilterType === "custom" && startDateFilter && endDateFilter
                             ? `${startDateFilter.split("-").reverse().join("/")} - ${endDateFilter.split("-").reverse().join("/")}`
-                            : activeFilterType === "1day" ? "1 Day"
-                              : activeFilterType === "3days" ? "3 Days"
-                                : activeFilterType === "7days" ? "7 Days"
-                                  : activeFilterType === "15days" ? "15 Days"
+                            : activeFilterType === "1day" ? t("liveClass.filter.days", { count: 1 })
+                              : activeFilterType === "3days" ? t("liveClass.filter.days", { count: 3 })
+                                : activeFilterType === "7days" ? t("liveClass.filter.days", { count: 7 })
+                                  : activeFilterType === "15days" ? t("liveClass.filter.days", { count: 15 })
                                     : ""}
                         </span>
                       )}
@@ -1444,10 +1504,10 @@ function RouteComponent() {
                               onClick={() => setUpcomingPage(p => Math.max(0, p - 1))}
                               disabled={upcomingPage === 0}
                             >
-                              Previous
+                              {t("liveClass.button.previous")}
                             </Button>
                             <span className="text-sm text-neutral-600 dark:text-neutral-300">
-                              Page {upcomingPage + 1} of {totalPages}
+                              {t("liveClass.pagination.pageOf", { page: upcomingPage + 1, totalPages })}
                             </span>
                             <Button
                               variant="outline"
@@ -1455,7 +1515,7 @@ function RouteComponent() {
                               onClick={() => setUpcomingPage(p => Math.min(totalPages - 1, p + 1))}
                               disabled={upcomingPage >= totalPages - 1}
                             >
-                              Next
+                              {t("liveClass.button.next")}
                             </Button>
                           </div>
                         </>
@@ -1468,13 +1528,13 @@ function RouteComponent() {
                             />
                             <p className="font-medium">
                               {startDateFilter || endDateFilter
-                                ? `No upcoming ${getTerminology(ContentTerms.Session, SystemTerms.Session).toLowerCase()}s match your filters`
-                                : `No upcoming ${getTerminology(ContentTerms.Session, SystemTerms.Session).toLowerCase()}s scheduled`}
+                                ? t("liveClass.section.noUpcomingMatchFilters", { sessions: sessionsTerm.toLowerCase() })
+                                : t("liveClass.section.noUpcomingScheduled", { sessions: sessionsTerm.toLowerCase() })}
                             </p>
                             <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
                               {startDateFilter || endDateFilter
-                                ? "Try adjusting your filters or clear them to see all sessions"
-                                : `New ${getTerminology(ContentTerms.Session, SystemTerms.Session).toLowerCase()}s will appear here when scheduled`}
+                                ? t("liveClass.section.adjustFilters", { sessions: sessionsTerm.toLowerCase() })
+                                : t("liveClass.section.newSessionsWillAppear", { sessions: sessionsTerm.toLowerCase() })}
                             </p>
                           </div>
                         </div>
@@ -1490,11 +1550,11 @@ function RouteComponent() {
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <h2 className="text-xl font-semibold text-neutral-800 dark:text-neutral-100">
-                      Past {getTerminology(ContentTerms.Session, SystemTerms.Session)}s
+                      {t("liveClass.dayModal.pastSessions", { sessions: sessionsTerm })}
                     </h2>
                   </div>
                   <p className="text-sm text-neutral-500 dark:text-neutral-400 mb-4">
-                    Classes that already happened for your batch.
+                    {t("liveClass.section.pastSessionsSubtitle", { batch: batchTerm.toLowerCase() })}
                   </p>
 
                   {isPastLoading ? (
@@ -1520,10 +1580,10 @@ function RouteComponent() {
                             onClick={() => setPastPage((p) => Math.max(0, p - 1))}
                             disabled={pastPage === 0}
                           >
-                            Previous
+                            {t("liveClass.button.previous")}
                           </Button>
                           <span className="text-sm text-neutral-600 dark:text-neutral-300">
-                            Page {pastPage + 1} of {pastTotalPages}
+                            {t("liveClass.pagination.pageOf", { page: pastPage + 1, totalPages: pastTotalPages })}
                           </span>
                           <Button
                             variant="outline"
@@ -1531,7 +1591,7 @@ function RouteComponent() {
                             onClick={() => setPastPage((p) => Math.min(pastTotalPages - 1, p + 1))}
                             disabled={pastPage >= pastTotalPages - 1}
                           >
-                            Next
+                            {t("liveClass.button.next")}
                           </Button>
                         </div>
                       )}
@@ -1543,9 +1603,9 @@ function RouteComponent() {
                           size={48}
                           className="mx-auto text-neutral-400 dark:text-neutral-500 mb-3"
                         />
-                        <p className="font-medium">No past sessions yet</p>
+                        <p className="font-medium">{t("liveClass.section.noPastSessionsYet")}</p>
                         <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-                          Classes will show up here once they&apos;ve happened.
+                          {t("liveClass.section.classesWillShowUp")}
                         </p>
                       </div>
                     </div>
@@ -1557,7 +1617,7 @@ function RouteComponent() {
               {(sessions as any)?.totalReturned >= 500 || apiPage > 0 ? (
                 <div className="mt-12 flex flex-col items-center gap-4 border-t pt-8">
                   <div className="text-sm text-neutral-500">
-                    Viewing Page {apiPage + 1}
+                    {t("liveClass.pagination.viewingPage", { page: apiPage + 1 })}
                   </div>
                   <div className="flex items-center gap-4">
                     <Button
@@ -1569,7 +1629,7 @@ function RouteComponent() {
                       }}
                       disabled={apiPage === 0}
                     >
-                      Previous Sessions
+                      {t("liveClass.button.previousSessions", { sessions: sessionsTerm })}
                     </Button>
                     <Button
                       variant="outline"
@@ -1580,7 +1640,7 @@ function RouteComponent() {
                       disabled={!hasNextPage}
 
                     >
-                      Next Sessions
+                      {t("liveClass.button.nextSessions", { sessions: sessionsTerm })}
                     </Button>
                   </div>
                 </div>
@@ -1591,13 +1651,15 @@ function RouteComponent() {
           </TabsContent>
 
           <TabsContent value="calendar" className="mt-6">
-            {renderCalendarView()}
+            {/* Called eagerly by JSX, so keep it behind the same condition that
+                mounts this panel — the list tab paid for a full month render. */}
+            {selectedView === "calendar" && renderCalendarView()}
           </TabsContent>
         </Tabs >
 
         {/* Day Details Modal */}
         {renderDayModal()}
       </div >
-    </LayoutContainer >
+    </Shell>
   );
 }

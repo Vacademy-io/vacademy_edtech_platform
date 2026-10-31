@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FormProvider, useForm } from 'react-hook-form';
@@ -13,6 +13,8 @@ import { handleSignupInstitute } from '../../-services/signup-services';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import useOrganizationStore from '../-zustand-store/step1OrganizationZustand';
 import { handleLoginFlow, navigateFromLoginFlow } from '@/lib/auth/loginFlowHandler';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 export interface FormValuesStep1Signup {
     profilePictureUrl: string;
@@ -22,26 +24,33 @@ export interface FormValuesStep1Signup {
     instituteThemeCode?: string;
 }
 
-export const organizationDetailsSignupStep1 = z
-    .object({
-        name: z.string().min(1, 'Name is required'),
-        username: z
-            .string()
-            .min(1, 'Username is required')
-            .refine((value) => value === value.toLowerCase(), {
-                message: 'Username should not contain uppercase letters',
-            }),
-        email: z.string().min(1, 'Email is required').email('Invalid email format'),
-        password: z.string().min(6, 'Password must be at least 6 characters'),
-        confirmPassword: z.string().min(1, 'Confirm password is required'),
-        roleType: z.array(z.string()).min(1, 'At least one role type is required'),
-    })
-    .refine((data) => data.password === data.confirmPassword, {
-        message: 'Passwords do not match',
-        path: ['confirmPassword'],
-    });
+const buildOrganizationDetailsSignupStep1 = (t: TFunction) =>
+    z
+        .object({
+            name: z.string().min(1, t('schema.nameRequired')),
+            username: z
+                .string()
+                .min(1, t('schema.usernameRequired'))
+                .refine((value) => value === value.toLowerCase(), {
+                    message: t('schema.usernameNoUppercase'),
+                }),
+            email: z.string().min(1, t('schema.emailRequired')).email(t('schema.emailInvalid')),
+            password: z.string().min(6, t('schema.passwordMinLength')),
+            confirmPassword: z.string().min(1, t('schema.confirmPasswordRequired')),
+            roleType: z.array(z.string()).min(1, t('schema.roleTypeRequired')),
+        })
+        .refine((data) => data.password === data.confirmPassword, {
+            message: t('schema.passwordsMismatch'),
+            path: ['confirmPassword'],
+        });
 
-type FormValues = z.infer<typeof organizationDetailsSignupStep1>;
+type FormValues = z.infer<ReturnType<typeof buildOrganizationDetailsSignupStep1>>;
+
+// Type-only export for consumers (signup-services.ts, helper.ts) that need the shape
+// of this form's values but must not construct/parse against a translated schema
+// outside a component (organizationDetailsSignupStep1 used to be the schema value
+// itself; it is now a factory that requires a `t` from useTranslation()).
+export type OrganizationDetailsSignupStep1Values = FormValues;
 
 interface SignupData {
     full_name: string;
@@ -56,10 +65,16 @@ interface SignupData {
 }
 
 export function Step3AddOrgDetails() {
+    const { t } = useTranslation('signupOnboardingStep3AddOrgDetails');
     const queryClient = useQueryClient();
     const { setFormDataAddOrg, resetAddOrgForm } = useAddOrgStore();
     const { formData, resetForm } = useOrganizationStore();
     const [signupData, setSignupData] = useState<SignupData | null>(null);
+
+    const organizationDetailsSignupStep1 = useMemo(
+        () => buildOrganizationDetailsSignupStep1(t),
+        [t]
+    );
 
     const form = useForm<FormValues>({
         resolver: zodResolver(organizationDetailsSignupStep1),
@@ -195,9 +210,7 @@ export function Step3AddOrgDetails() {
         <FormProvider {...form}>
             <form>
                 <div className="my-6 flex flex-col items-center justify-center gap-4 lg:gap-8">
-                    <h1 className="text-xl lg:text-[1.6rem]">
-                        Create your profile in the organization
-                    </h1>
+                    <h1 className="text-xl lg:text-[1.6rem]">{t('heading')}</h1>
 
                     {/* Full Name */}
                     <FormField
@@ -208,13 +221,13 @@ export function Step3AddOrgDetails() {
                                 <FormControl>
                                     <MyInput
                                         inputType="text"
-                                        inputPlaceholder="Full name (First and Last)"
+                                        inputPlaceholder={t('fullNamePlaceholder')}
                                         input={value}
                                         onChangeFunction={onChange}
                                         required
                                         error={form.formState.errors.name?.message}
                                         size="large"
-                                        label="Full Name"
+                                        label={t('fullNameLabel')}
                                         {...field}
                                         className="w-full"
                                     />
@@ -232,13 +245,13 @@ export function Step3AddOrgDetails() {
                                 <FormControl>
                                     <MyInput
                                         inputType="text"
-                                        inputPlaceholder="Enter Username"
+                                        inputPlaceholder={t('usernamePlaceholder')}
                                         input={value}
                                         onChangeFunction={onChange}
                                         required
                                         error={form.formState.errors.username?.message}
                                         size="large"
-                                        label="Username"
+                                        label={t('usernameLabel')}
                                         {...field}
                                         className="w-full"
                                     />
@@ -256,13 +269,13 @@ export function Step3AddOrgDetails() {
                                 <FormControl>
                                     <MyInput
                                         inputType="email"
-                                        inputPlaceholder="Enter Email"
+                                        inputPlaceholder={t('emailPlaceholder')}
                                         input={value}
                                         onChangeFunction={onChange}
                                         required
                                         error={form.formState.errors.email?.message}
                                         size="large"
-                                        label="Email"
+                                        label={t('emailLabel')}
                                         {...field}
                                         className="w-full"
                                         disabled={!!signupData?.email}
@@ -287,7 +300,7 @@ export function Step3AddOrgDetails() {
                                         required
                                         error={form.formState.errors.password?.message}
                                         size="large"
-                                        label="Password"
+                                        label={t('passwordLabel')}
                                         {...field}
                                         className="w-full"
                                     />
@@ -311,7 +324,7 @@ export function Step3AddOrgDetails() {
                                         required
                                         error={form.formState.errors.confirmPassword?.message}
                                         size="large"
-                                        label="Confirm Password"
+                                        label={t('confirmPasswordLabel')}
                                         {...field}
                                         className="w-full"
                                     />
@@ -330,7 +343,7 @@ export function Step3AddOrgDetails() {
                         className="mt-4"
                         disable={!isValid}
                     >
-                        Finish
+                        {t('finish')}
                     </MyButton>
                 </div>
             </form>

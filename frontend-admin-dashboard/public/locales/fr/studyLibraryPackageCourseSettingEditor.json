@@ -1,0 +1,36 @@
+{
+    "advancedSettingsTitle": "Paramètres avancés (JSON)",
+    "actions": {
+        "format": "Formater",
+        "reset": "Réinitialiser",
+        "save": "Enregistrer",
+        "saving": "Enregistrement..."
+    },
+    "description": "Ces paramètres sont stockés sur ce cours et lus par les workflows (config LMS, rétention, seuils de complétion, etc.). Modifiez le JSON brut ci-dessous — il doit rester encapsulé dans une enveloppe <1>{ \"setting\": { ... } }</1>.",
+    "insertTemplate": "Insérer un modèle",
+    "loading": "Chargement…",
+    "invalidJson": "JSON invalide : {{message}}",
+    "validJson": "JSON valide",
+    "saveSuccess": "Paramètres JSON du cours enregistrés",
+    "errors": {
+        "loadFailed": "Échec du chargement des paramètres du cours",
+        "invalidJson": "JSON invalide",
+        "formatFailed": "Impossible de formater — corrigez d'abord l'erreur JSON",
+        "saveFailed": "Échec de l'enregistrement des paramètres du cours"
+    },
+    "confirmDialog": {
+        "title": "Remplacer les paramètres JSON du cours ?",
+        "description": "Cette action remplace le JSON des paramètres utilisé par les workflows de ce cours (LMS, rétention, complétion, etc.). Vérifiez que les clés sont correctes — cela prend effet immédiatement.",
+        "cancel": "Annuler",
+        "confirm": "Oui, enregistrer",
+        "saving": "Enregistrement…"
+    },
+    "snippets": {
+        "moodleLabel": "Moodle (MOODLE_SETTING)",
+        "moodleName": "Paramètres d'intégration Moodle",
+        "learnDashLabel": "LearnDash (LMS_SETTING)",
+        "learnDashName": "Paramètres LMS",
+        "courseSettingsLabel": "Paramètres du cours (COURSE_SETTING)",
+        "courseSettingsName": "Paramètres du cours"
+    }
+}

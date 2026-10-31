@@ -1,0 +1,104 @@
+# telleo-api-ingress: public host for the Telleo AI calling API v1
+# (docs/AI_CALLING_PUBLIC_API.md).
+#
+#   https://api.telleo.ai/v1/<rest>  ->  admin-core-service:8072
+#                                         /admin-core-service/open/ai-calling/v1/<rest>
+#   anything else on api.telleo.ai    ->  404 (ingress-nginx default backend)
+#
+# Same pattern as evalezy-api-ingress.yaml; read that file for the full
+# reasoning (path regex, ';' refusal, no per-IP limits behind Cloudflare, no
+# CORS, why an A record and not a cross-zone CNAME, Origin CA fallback). Only
+# the host, the TLS secret, the rewrite target and the backend differ.
+#
+# NOT part of the `vac` Helm release: nothing in CI applies this file, and
+# enabling it must never involve a `helm upgrade` of `vac`. Apply / roll back
+# by hand:
+#   kubectl apply  -f vacademy_devops/telleo-api-ingress.yaml
+#   kubectl delete -f vacademy_devops/telleo-api-ingress.yaml
+#   (then, optionally: kubectl delete secret telleo-api-tls)
+#
+# Safe to apply at any time once DNS exists: before the admin_core build with
+# PublicAiCallingApiController is live, /v1/* just gets Spring's 404.
+#
+# ---------------------------------------------------------------------------
+# Before apply
+# ---------------------------------------------------------------------------
+# 0. Read-only checks (expected results in brackets):
+#      kubectl get clusterissuer vacademy-stage-letsencrypt-prod-cert-issuer   [READY True]
+#      kubectl get ingress -A | grep -i telleo     [nothing: no other Ingress may claim api.telleo.ai]
+#      kubectl -n ingress-nginx get pods -o wide   [the NODE(s) running the controller]
+#
+# 1. Cloudflare DNS (zone telleo.ai):
+#      Type A, Name api, IPv4 = EXACTLY the A record content of
+#      backend-stage.vacademy.io in the vacademy.io zone (read it in the
+#      dashboard, not with dig: that record is proxied). TTL Auto.
+#      Proxy: DNS only (grey cloud) until the certificate is issued (step 2),
+#      then Proxied (step 3).
+#
+# 2. kubectl apply -f vacademy_devops/telleo-api-ingress.yaml
+#      kubectl get certificate telleo-api-tls -n default -w      [READY True, ~2 min]
+#    If it stays False: kubectl describe certificate telleo-api-tls;
+#    kubectl get challenges -A.
+#
+# 3. Once READY True, Cloudflare (zone telleo.ai):
+#    a. Switch the api record to Proxied (orange cloud).
+#    b. Configuration Rule, hostname equals api.telleo.ai:
+#         SSL: Full (strict); Browser Integrity Check: Off (CRMs call from
+#         servers, Zapier, n8n, curl, never a browser).
+#    c. Bot Fight Mode OFF for telleo.ai (zone-wide on Free; it challenges
+#       every non-browser client), or a WAF skip rule for api.telleo.ai on Pro+.
+#    d. Cache Rule, hostname equals api.telleo.ai: Bypass cache.
+#    The telleo.ai landing site is on Cloudflare Pages and is not affected by
+#    rules scoped to the api hostname.
+#
+# ---------------------------------------------------------------------------
+# Verify after apply (and again after step 3)
+# ---------------------------------------------------------------------------
+#   H=https://api.telleo.ai
+#   curl -s -w '\n%{http_code}\n' $H/v1/agents
+#     -> 401 {"error":{"code":"missing_api_key",...}}
+#   curl -s -w '\n%{http_code}\n' -H 'X-API-Key: vak_call_0000000000000000000000000000000000000000' $H/v1/agents
+#     -> 401 invalid_api_key
+#   # Everything else is 404 from nginx, never a backend:
+#   for p in / /v1 /v2/agents /admin-core-service/open/ai-calling/v1/agents \
+#            /admin-core-service/internal/api-keys/v1/verify '/v1/..;/..;/internal/x' \
+#            '/v1/x;/../../internal' /v1/%2e%2e/%2e%2e/admin-core-service/internal/x; do
+#     printf '%-60s %s\n' "$p" "$(curl -s -o /dev/null -w '%{http_code}' --path-as-is "$H$p")"
+#   done
+#     -> every line 404 (never 2xx)
+#   curl -sI $H/v1/agents | grep -i -E '^(server|cf-ray):'   -> server: cloudflare (after step 3)
+#   curl -s -o /dev/null -w '%{http_code}\n' https://backend-stage.vacademy.io/admin-core-service/actuator/health
+#     -> unchanged from before apply
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: telleo-api
+  namespace: default
+  labels:
+    app: telleo-api
+  annotations:
+    cert-manager.io/cluster-issuer: vacademy-stage-letsencrypt-prod-cert-issuer
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /admin-core-service/open/ai-calling/v1/$1
+    # A batch of 1000 contacts with variables stays well under 5 MB.
+    nginx.ingress.kubernetes.io/proxy-body-size: "5m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "10"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - api.telleo.ai
+      secretName: telleo-api-tls
+  rules:
+    - host: api.telleo.ai
+      http:
+        paths:
+          - path: /v1/([^;]*)$
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: admin-core-service
+                port:
+                  number: 8072

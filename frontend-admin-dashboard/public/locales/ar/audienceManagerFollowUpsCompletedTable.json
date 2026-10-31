@@ -1,0 +1,20 @@
+{
+    "headers": {
+        "lead": "العميل",
+        "contact": "الاتصال",
+        "createdAt": "تاريخ الإنشاء",
+        "wasDue": "كان مستحقًا",
+        "completedAt": "اكتمل في",
+        "completedBy": "أكمله",
+        "outcome": "النتيجة",
+        "interestLevel": "مستوى الاهتمام",
+        "studentResponse": "رد الطالب",
+        "followUpMode": "الوسيلة",
+        "nextAction": "الإجراء التالي"
+    },
+    "empty": {
+        "title": "لا توجد متابعات مكتملة",
+        "description": "ستظهر المتابعات هنا بمجرد أن يضعها المرشد كمكتملة."
+    },
+    "unnamedLead": "عميل بلا اسم"
+}

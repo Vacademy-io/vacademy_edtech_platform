@@ -1,0 +1,14 @@
+{
+    "sectionTitle": "Who receives this?",
+    "sectionDescription": "Add one or more audiences. Overlaps are de-duplicated, so nobody gets it twice.",
+    "addAudience": "Add audience",
+    "quickAdd": {
+        "allLearners": "All {{noun}}",
+        "allTeachers": "All {{noun}}",
+        "specificBatches": "Specific {{noun}}",
+        "byTag": "By tag",
+        "campaign": "A campaign"
+    },
+    "emptyTitle": "No audience yet",
+    "emptyDescription": "Pick one of the shortcuts above, or add an audience and choose exactly who it targets."
+}

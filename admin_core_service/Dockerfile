@@ -25,6 +25,9 @@ RUN mvn -s settings.xml clean package -DskipTests -Dsentry.authToken=$SENTRY_AUT
 
 # Stage 2: Package the application into the final image
 FROM amazoncorretto:17-alpine
+# Fonts + fontconfig for java.awt: Batik draws the text of the progress-report PDF's SVG charts
+# through java.awt.Font, which fails on bare Alpine with "Fontconfig head is null".
+RUN apk add --no-cache fontconfig ttf-dejavu
 WORKDIR /app
 
 COPY --from=build /build/target/admin_core_service.jar admin_core_service.jar

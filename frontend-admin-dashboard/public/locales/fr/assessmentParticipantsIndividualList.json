@@ -1,0 +1,8 @@
+{
+    "trigger": {
+        "viewList": "Voir la liste"
+    },
+    "dialog": {
+        "title": "Liste individuelle des apprenants"
+    }
+}

@@ -23,5 +23,10 @@ public enum AssessmentCreationEnum {
     ASSESSMENT_MODE,
     INSTRUCTIONS,
     REATTEMPT_COUNT,
-    RESULT_TYPE;
+    RESULT_TYPE,
+    // Automatic AI evaluation on submit (V43).
+    AI_EVALUATION_ENABLED,
+    AI_EVALUATION_MODEL,
+    // Proctoring tier + knobs (V50).
+    PROCTORING_CONFIG;
 }

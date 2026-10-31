@@ -1,0 +1,15 @@
+{
+    "dialog": {
+        "heading": "رفع Vsmart"
+    },
+    "fields": {
+        "prompt": {
+            "label": "أدخل الطلب الخاص بك",
+            "placeholder": "أدخل الطلب الخاص بك هنا..."
+        }
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "regenerate": "إعادة الإنشاء"
+    }
+}

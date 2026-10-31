@@ -69,6 +69,7 @@ public class SystemFieldMetadataService {
             createField("STUDENT", "city", "City", "TEXT"),
             createField("STUDENT", "region", "Region/State", "TEXT"),
             createField("STUDENT", "pin_code", "PIN Code", "TEXT"),
+            createField("STUDENT", "country", "Country", "TEXT"),
             createField("STUDENT", "date_of_birth", "Date of Birth", "DATE"),
             createField("STUDENT", "gender", "Gender", "TEXT"),
             createField("STUDENT", "fathers_name", "Father's Name", "TEXT"),

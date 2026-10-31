@@ -1,0 +1,21 @@
+{
+  "header": {
+    "title": "Bienvenue",
+    "description": "Vous avez accès aux fonctionnalités d'administration et d'apprenant. Choisissez comment vous souhaitez continuer :"
+  },
+  "options": {
+    "learner": {
+      "title": "Continuer en tant qu'apprenant",
+      "description": "Accédez à vos cours et supports d'apprentissage"
+    },
+    "admin": {
+      "title": "Continuer en tant qu'administrateur",
+      "description": "Gérez votre établissement et vos cours"
+    }
+  },
+  "actions": {
+    "goToLearnerPortal": "Aller au portail apprenant",
+    "stayAsAdmin": "Rester en tant qu'administrateur",
+    "dontShowAgain": "Ne plus afficher ce message"
+  }
+}

@@ -1,0 +1,16 @@
+{
+    "dialogs": {
+        "attentionLabel": "Attention",
+        "removeParticipant": {
+            "title": "Remove Participant",
+            "confirmMessagePrefix": "Are you sure you want remove",
+            "confirmMessageSuffix": "from this Assessment?",
+            "remove": "Remove"
+        }
+    },
+    "dropdown": {
+        "sendWhatsApp": "Send Reminder on WhatsApp",
+        "sendEmail": "Send Reminder on Email",
+        "removeParticipants": "Remove Participants"
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "heading": "Supprimer la session",
+    "confirm": {
+        "recurring": "Il s'agit d'une session récurrente. Que souhaitez-vous supprimer ?",
+        "single": "Voulez-vous vraiment supprimer cette session ?"
+    },
+    "options": {
+        "scheduleOnly": "Supprimer uniquement ce créneau",
+        "entireSession": "Supprimer toute la session (tous les créneaux)"
+    },
+    "notify": {
+        "label": "Avertir les apprenants de l'annulation",
+        "description": "Si décoché, aucun e-mail d'annulation ne sera envoyé aux apprenants inscrits."
+    },
+    "toast": {
+        "sessionDeleted": "Session supprimée avec succès",
+        "scheduleDeleted": "Créneau supprimé avec succès",
+        "deleteFailed": "Échec de la suppression. Veuillez réessayer."
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "delete": "Supprimer",
+        "deleting": "Suppression en cours..."
+    }
+}

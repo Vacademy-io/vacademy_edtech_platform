@@ -1,0 +1,13 @@
+{
+    "status": {
+        "active": "Actif",
+        "revoked": "Révoquée"
+    },
+    "created": "Créée le : {{date}}",
+    "revokeDialog": {
+        "title": "Révoquer la clé API",
+        "description": "Voulez-vous vraiment révoquer « {{name}} » ? Cette action est irréversible et toute application utilisant cette clé cessera de fonctionner.",
+        "cancel": "Annuler",
+        "confirm": "Révoquer la clé"
+    }
+}

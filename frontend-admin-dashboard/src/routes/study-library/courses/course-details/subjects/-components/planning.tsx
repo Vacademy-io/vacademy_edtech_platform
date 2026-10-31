@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useListPlanningLogs } from '@/routes/planning/-services/listPlanningLogs';
 import PlanningLogsTimeline from '@/routes/planning/-components/PlanningLogsTimeline';
 import CreatePlanningDialog from '@/routes/planning/-components/CreatePlanningDialog';
@@ -15,6 +16,7 @@ interface PlanningProps {
 }
 
 export default function Planning({ packageSessionId }: PlanningProps) {
+    const { t } = useTranslation('studyLibraryPlanning');
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [viewDialogOpen, setViewDialogOpen] = useState(false);
     const [selectedLog, setSelectedLog] = useState<PlanningLog | null>(null);
@@ -56,11 +58,11 @@ export default function Planning({ packageSessionId }: PlanningProps) {
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold">Plannings</h3>
+                <h3 className="text-lg font-semibold">{t('heading')}</h3>
                 <div className="flex items-center space-x-2">
                     <MyButton scale="small" onClick={() => setCreateDialogOpen(true)} size="sm">
                         <Plus className="h-4 w-4" />
-                        Create
+                        {t('actions.create')}
                     </MyButton>
                     <MyButton
                         buttonType="secondary"
@@ -70,14 +72,14 @@ export default function Planning({ packageSessionId }: PlanningProps) {
                         }
                         size="sm"
                     >
-                        View all
+                        {t('actions.viewAll')}
                     </MyButton>
                 </div>
             </div>
 
             {isLoading ? (
                 <div className="py-8 text-center">
-                    <p className="text-muted-foreground">Loading plannings...</p>
+                    <p className="text-muted-foreground">{t('loading')}</p>
                 </div>
             ) : (
                 <PlanningLogsTimeline

@@ -1,0 +1,25 @@
+{
+    "heading": "Campaign source",
+    "labels": {
+        "firstTouch": "First touch",
+        "latestTouch": "Most recent ({{count}} touches)"
+    },
+    "fields": {
+        "source": "Source",
+        "medium": "Medium",
+        "campaign": "Campaign",
+        "content": "Content",
+        "term": "Keyword",
+        "capturedOn": "Captured on",
+        "referrer": "Referrer",
+        "date": "Date"
+    },
+    "surface": {
+        "AUDIENCE": "Audience form",
+        "LIVE_SESSION": "Live session",
+        "ASSESSMENT": "Assessment",
+        "ENROLL_INVITE": "Enrolment invite",
+        "PRODUCT_PAGE": "Product page",
+        "CATALOGUE": "Catalogue site"
+    }
+}

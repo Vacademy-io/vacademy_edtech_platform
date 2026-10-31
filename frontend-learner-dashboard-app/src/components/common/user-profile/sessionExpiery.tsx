@@ -1,8 +1,10 @@
 // import { Progress } from "@/components/ui/progress"; // Assuming shadcn/ui
 import { format, differenceInMilliseconds } from "date-fns";
+import { useTranslation } from "react-i18next";
 import { Student } from "@/types/user/user-detail";
 
 const SessionExpiry = ({ studentData }: { studentData: Student }) => {
+  const { t } = useTranslation("userProfileExtra");
   const getExpiryDetails = (
     createdAtString: string,
     expiryDateString: string
@@ -47,7 +49,7 @@ const SessionExpiry = ({ studentData }: { studentData: Student }) => {
     <div className="mb-4">
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-medium">
-          Access Days ({remainingDays})
+          {t("sessionExpiry.accessDays", { count: remainingDays })}
         </span>
         <span className="text-sm font-medium">{formattedDate}</span>
       </div>

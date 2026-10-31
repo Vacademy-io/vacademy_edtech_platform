@@ -1,0 +1,5 @@
+{
+    "errors": {
+        "duplicateRun": "Une exécution {{runType}} existe déjà pour {{period}}. Ouvrez-la depuis la liste au lieu d'en créer une seconde."
+    }
+}

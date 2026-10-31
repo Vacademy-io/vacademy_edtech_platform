@@ -1,5 +1,6 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { CheckCircle, XCircle, MinusCircle } from '@phosphor-icons/react';
+import type { TFunction } from 'i18next';
 import { Checkbox } from '@/components/ui/checkbox';
 
 export interface AttendanceReportTableData {
@@ -11,6 +12,7 @@ export interface AttendanceReportTableData {
 }
 
 export const attendanceReportColumnsWithCheckbox = (
+    t: TFunction,
     selectedStudentIds: string[],
     onSelectStudent: (studentId: string, isSelected: boolean) => void,
     onSelectAll: () => void,
@@ -32,11 +34,11 @@ export const attendanceReportColumnsWithCheckbox = (
                         }
                     }}
                     ref={(el) => {
-                        if (el) (el as HTMLInputElement).indeterminate = isIndeterminate;
+                        if (el) (el as unknown as HTMLInputElement).indeterminate = isIndeterminate;
                     }}
                     onClick={(e) => e.stopPropagation()}
                 />
-                <span className="text-sm font-medium">Select</span>
+                <span className="text-sm font-medium">{t('select')}</span>
             </div>
         ),
         cell: ({ row }) => (
@@ -55,15 +57,15 @@ export const attendanceReportColumnsWithCheckbox = (
     },
     {
         accessorKey: 'index',
-        header: 'Sr. No.',
+        header: t('srNo'),
     },
     {
         accessorKey: 'username',
-        header: 'Members Name',
+        header: t('membersName'),
     },
     {
         accessorKey: 'attendanceStatus',
-        header: 'Attendance Status',
+        header: t('attendanceStatus'),
         cell: ({ row }) => {
             const raw = row.original.attendanceStatus;
             const status = raw ? raw.toString().toUpperCase() : '';
@@ -71,7 +73,7 @@ export const attendanceReportColumnsWithCheckbox = (
                 return (
                     <div className="flex items-center gap-2 text-success-600">
                         <CheckCircle size={20} weight="fill" />
-                        <span>Present</span>
+                        <span>{t('present')}</span>
                     </div>
                 );
             }
@@ -79,14 +81,14 @@ export const attendanceReportColumnsWithCheckbox = (
                 return (
                     <div className="flex items-center gap-2 text-danger-600">
                         <XCircle size={20} weight="fill" />
-                        <span>Absent</span>
+                        <span>{t('absent')}</span>
                     </div>
                 );
             }
             return (
                 <div className="flex items-center gap-2 text-gray-400">
                     <MinusCircle size={20} weight="fill" />
-                    <span>Unmarked</span>
+                    <span>{t('unmarked')}</span>
                 </div>
             );
         },

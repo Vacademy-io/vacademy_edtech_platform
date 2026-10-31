@@ -1,0 +1,120 @@
+{
+    "common": {
+        "home": "होम",
+        "logOut": "लॉग आउट",
+        "poweredBy": "इसके सहयोग से",
+        "notifications": "सूचनाएं"
+    },
+    "playBottomNav": {
+        "labels": {
+            "learningCenter": "सीखें",
+            "homework": "कार्य",
+            "assessmentCenter": "टेस्ट",
+            "referral": "रेफ़र करें",
+            "attendance": "उपस्थिति",
+            "planning": "योजना",
+            "subOrgLearners": "संगठन"
+        },
+        "more": "और",
+        "mainNavigation": "मुख्य नेविगेशन"
+    },
+    "sidebar": {
+        "tabs": {
+            "dashboard": "डैशबोर्ड",
+            "learningCenter": "लर्निंग सेंटर",
+            "homework": "होमवर्क",
+            "assessmentCentre": "असेसमेंट सेंटर",
+            "referral": "रेफ़रल",
+            "attendance": "उपस्थिति",
+            "inAppMessages": "इन-ऐप संदेश",
+            "myMentors": "मेरे मेंटर"
+        },
+        "mentorLabelWithName": "मेंटर · {{name}}",
+        "allMentors": "सभी मेंटर",
+        "chatWithMentorName": "चैट · {{name}}",
+        "mentorFallbackName": "मेंटर",
+        "hamburgerMenu": {
+            "viewProfileDetails": "प्रोफ़ाइल विवरण देखें",
+            "myFiles": "मेरी फ़ाइलें",
+            "downloads": "डाउनलोड",
+            "myReports": "मेरी रिपोर्ट",
+            "onboarding": "ऑनबोर्डिंग",
+            "changePassword": "पासवर्ड बदलें",
+            "logOut": "लॉग आउट",
+            "deleteAccount": "खाता हटाएं"
+        },
+        "logoAlt": "लोगो",
+        "closeSidebar": "साइडबार बंद करें",
+        "appsAndPortals": "ऐप्स और पोर्टल",
+        "webPortal": "वेब पोर्टल",
+        "androidApp": "एंड्रॉइड ऐप",
+        "iosApp": "iOS ऐप",
+        "windowsApp": "विंडोज़ ऐप",
+        "macApp": "मैक ऐप",
+        "openProfile": "प्रोफ़ाइल खोलें"
+    },
+    "logoutSidebar": {
+        "instituteLogoAlt": "संस्थान लोगो",
+        "profilePhotoAlt": "प्रोफ़ाइल फ़ोटो"
+    },
+    "navbar": {
+        "goBack": "वापस जाएं",
+        "instituteFallbackAlt": "संस्थान",
+        "switchToRole": "{{role}} पर स्विच करें",
+        "raiseQuery": "प्रश्न पूछें"
+    },
+    "userMenu": {
+        "profileLabel": "प्रोफ़ाइल",
+        "openAccountMenu": "अकाउंट मेनू खोलें",
+        "switchToParentPortal": "पेरेंट पोर्टल पर स्विच करें",
+        "language": "भाषा"
+    },
+    "notificationsBell": {
+        "ariaLabelWithCount_one": "{{count}} नई सूचना",
+        "ariaLabelWithCount_other": "{{count}} नई सूचनाएं",
+        "allCaughtUpTitle": "सब कुछ देखा जा चुका है",
+        "allCaughtUpDescription": "नई सूचनाएं यहां दिखेंगी।",
+        "fallbackNotificationTitle": "सूचना",
+        "viewAll": "सभी सूचनाएं"
+    },
+    "fullScreenLoader": {
+        "loadingFallback": "लोड हो रहा है"
+    },
+    "filePreview": {
+        "attachmentAlt": "अटैचमेंट"
+    },
+    "getAppBanner": {
+        "appLabelWithName": "{{name}} ऐप",
+        "appLabelGeneric": "हमारा ऐप",
+        "getRegionLabel": "{{appLabel}} प्राप्त करें",
+        "dismiss": "बंद करें",
+        "googlePlay": "इसे Google Play पर पाएं",
+        "appStore": "इसे App Store पर पाएं",
+        "getButton": "प्राप्त करें"
+    },
+    "priceWithMrp": {
+        "free": "मुफ़्त",
+        "percentOff": "{{percent}}% छूट",
+        "mrpLabel": "M.R.P.",
+        "freeRibbon": "मुफ़्त",
+        "percentOffRibbon": "{{percent}}% छूट"
+    },
+    "sessionFilter": {
+        "clearFilter": "फ़िल्टर हटाएं",
+        "filter": "फ़िल्टर",
+        "showSessionsInNext": "अगले इतने समय में {{sessions}} दिखाएं",
+        "presets": {
+            "oneDay": "1 दिन",
+            "threeDays": "3 दिन",
+            "sevenDays": "7 दिन",
+            "fifteenDays": "15 दिन"
+        },
+        "customRange": "कस्टम श्रेणी",
+        "fromLabel": "से",
+        "toLabel": "तक",
+        "applyRange": "श्रेणी लागू करें",
+        "custom": "कस्टम",
+        "fromDate": "{{date}} से",
+        "untilDate": "{{date}} तक"
+    }
+}

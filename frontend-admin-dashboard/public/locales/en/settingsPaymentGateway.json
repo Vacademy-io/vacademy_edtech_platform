@@ -1,0 +1,197 @@
+{
+    "header": {
+        "title": "Payment Gateways",
+        "description": "Configure the vendors (Stripe, Razorpay, PhonePe, Cashfree, Eway) that learners can pay with. Keys are stored per institute.",
+        "refresh": "Refresh",
+        "addGateway": "Add Gateway"
+    },
+    "list": {
+        "title": "Configured gateways",
+        "descriptionPre": "Secret values are masked. Click",
+        "descriptionEdit": "edit",
+        "descriptionPost": "to rotate keys, or leave masked fields as-is to keep the current secret.",
+        "loading": "Loading…",
+        "emptyTitle": "No payment gateways configured yet",
+        "emptyDescription": "Add Stripe, Razorpay, PhonePe, Cashfree, or Eway credentials so learners can pay through your portals.",
+        "addFirstGateway": "Add your first gateway"
+    },
+    "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+    },
+    "toast": {
+        "noInstituteSelected": "No institute selected",
+        "selectVendor": "Select a payment gateway vendor",
+        "missingRequiredFields": "Missing required fields: {{fields}}",
+        "gatewayConfigured": "{{vendor}} configured",
+        "gatewayUpdated": "{{vendor}} updated",
+        "saveFailed": "Failed to save gateway configuration",
+        "webhookUrlCopied": "Webhook URL copied",
+        "loadFailed": "Failed to load payment gateways",
+        "gatewayDeactivated": "{{vendor}} deactivated",
+        "deactivateFailed": "Failed to deactivate gateway"
+    },
+    "dialog": {
+        "createTitle": "Add payment gateway",
+        "editTitle": "Edit {{vendor}}",
+        "createDescription": "Select a vendor and paste the API credentials from their dashboard.",
+        "editDescription": "Update credentials. Leave masked fields untouched to keep the existing secret.",
+        "vendorLabel": "Vendor",
+        "vendorPlaceholder": "Choose a payment gateway",
+        "allConfigured": "All supported gateways are already configured.",
+        "findValuesPrefix": "Find these values in the",
+        "dashboardLinkText": "{{vendor}} dashboard",
+        "findValuesSuffix": ".",
+        "whereToFind": "Where to find these values",
+        "webhookUrlLabel": "Webhook URL — paste into the {{vendor}} dashboard",
+        "copyUrl": "Copy URL",
+        "hide": "Hide",
+        "show": "Show",
+        "maskedValueNote": "Showing masked value. Type a new secret to replace it, or leave as-is to keep the current one.",
+        "cancel": "Cancel",
+        "saving": "Saving…",
+        "addGatewayButton": "Add Gateway",
+        "saveChanges": "Save changes"
+    },
+    "mappingCard": {
+        "editCredentials": "Edit credentials",
+        "deactivateGateway": "Deactivate gateway",
+        "unknownVendor": "Unknown vendor — no schema available.",
+        "notSet": "Not set",
+        "webhookUrlLabel": "Webhook URL",
+        "copyWebhookUrl": "Copy webhook URL"
+    },
+    "deleteDialog": {
+        "title": "Deactivate gateway?",
+        "description": "{{vendor}} will be marked inactive and learners won't be able to pay through it. You can add it again later.",
+        "cancel": "Cancel",
+        "deactivating": "Deactivating…",
+        "deactivate": "Deactivate"
+    },
+    "vendors": {
+        "stripe": {
+            "label": "Stripe",
+            "description": "Global card payments and subscriptions.",
+            "fields": {
+                "apiKey": {
+                    "label": "Secret Key",
+                    "placeholder": "sk_live_…",
+                    "helper": "Stripe Secret API Key. Never shown again after saving."
+                },
+                "publishableKey": {
+                    "label": "Publishable Key",
+                    "placeholder": "pk_live_…",
+                    "helper": "Used by the learner checkout in the browser."
+                },
+                "webhookSecret": {
+                    "label": "Webhook Signing Secret",
+                    "placeholder": "whsec_…",
+                    "helper": "Optional. Used to verify incoming webhook callbacks."
+                }
+            }
+        },
+        "razorpay": {
+            "label": "Razorpay",
+            "description": "Card / UPI / netbanking for Indian businesses.",
+            "fields": {
+                "keyId": {
+                    "label": "Key ID",
+                    "placeholder": "rzp_live_…",
+                    "helper": "Razorpay Key ID (public; visible in checkout)."
+                },
+                "keySecret": {
+                    "label": "Key Secret",
+                    "placeholder": "Your Razorpay key secret"
+                },
+                "webhookSecret": {
+                    "label": "Webhook Secret",
+                    "placeholder": "Webhook signing secret",
+                    "helper": "Set this on the Razorpay Webhooks page. Without it, payment status callbacks are rejected with 404 and async confirmation never reaches the platform."
+                }
+            }
+        },
+        "phonepe": {
+            "label": "PhonePe",
+            "description": "PhonePe PG for Indian merchants (UPI, cards, wallets). V2 (OAuth) Standard Checkout. Settles in INR only.",
+            "setupSteps": {
+                "step1": "Sign in to the PhonePe Business dashboard (business.phonepe.com) with your PhonePe for Business merchant login.",
+                "step2": "Go to Developer Settings → API Keys. New (V2) merchants see a Client ID, Client Secret and Client Version — copy all three into the fields below.",
+                "step3": "Legacy merchants only: if you were instead given a Salt Key + Salt Index, put your Merchant ID in “Client ID”, your Salt Key (as KEY###INDEX) in “Client Secret”, and LEAVE “Client Version” blank.",
+                "step4": "Set “API Base URL”: V2 LIVE = https://api.phonepe.com/apis/pg, V2 UAT/Sandbox = https://api-preprod.phonepe.com/apis/pg-sandbox (legacy V1 = https://api.phonepe.com/apis/hermes).",
+                "step5": "Under Developer Settings → Webhooks, add the Webhook URL shown below and set a username + password. Enter the same username/password below to secure incoming callbacks."
+            },
+            "fields": {
+                "clientId": {
+                    "label": "Client ID",
+                    "placeholder": "V2 Client ID (or legacy Merchant ID)",
+                    "helper": "V2: Client ID from Developer Settings → API Keys. Legacy V1 merchants: your Merchant ID (MID)."
+                },
+                "clientSecret": {
+                    "label": "Client Secret",
+                    "placeholder": "V2 Client Secret (or legacy Salt Key###index)",
+                    "helper": "V2: your Client Secret. Legacy V1 merchants: your Salt Key, pasted as KEY###INDEX (index usually 1). Kept secret."
+                },
+                "clientVersion": {
+                    "label": "Client Version",
+                    "placeholder": "e.g. 1",
+                    "helper": "V2 only — the Client Version from the dashboard (usually 1). LEAVE BLANK if you are a legacy merchant using a Salt Key."
+                },
+                "baseUrl": {
+                    "label": "API Base URL",
+                    "placeholder": "https://api.phonepe.com/apis/pg",
+                    "helper": "V2 LIVE: https://api.phonepe.com/apis/pg • V2 UAT: https://api-preprod.phonepe.com/apis/pg-sandbox • Legacy V1: https://api.phonepe.com/apis/hermes"
+                },
+                "webhookUsername": {
+                    "label": "Webhook Username (optional)",
+                    "placeholder": "Same username you set on PhonePe → Webhooks",
+                    "helper": "Enables signature verification of incoming callbacks. Must match the username configured on the PhonePe dashboard."
+                },
+                "webhookPassword": {
+                    "label": "Webhook Password (optional)",
+                    "placeholder": "Same password you set on PhonePe → Webhooks",
+                    "helper": "Must match the password configured on the PhonePe dashboard. Leave both webhook fields blank to skip verification."
+                }
+            }
+        },
+        "cashfree": {
+            "label": "Cashfree",
+            "description": "Cashfree Payments for India.",
+            "fields": {
+                "clientId": {
+                    "label": "App ID",
+                    "placeholder": "TEST… or live app id"
+                },
+                "clientSecret": {
+                    "label": "Secret Key"
+                },
+                "baseUrl": {
+                    "label": "API Base URL",
+                    "placeholder": "https://api.cashfree.com/pg"
+                }
+            }
+        },
+        "eway": {
+            "label": "Eway",
+            "description": "Eway Payments (AU / NZ).",
+            "fields": {
+                "apiKey": {
+                    "label": "API Key"
+                },
+                "password": {
+                    "label": "Password"
+                },
+                "publicKey": {
+                    "label": "Public API Key",
+                    "helper": "Used by the learner checkout in the browser."
+                },
+                "encryptionKey": {
+                    "label": "Encryption Key"
+                },
+                "baseUrl": {
+                    "label": "API Base URL",
+                    "placeholder": "https://api.ewaypayments.com"
+                }
+            }
+        }
+    }
+}

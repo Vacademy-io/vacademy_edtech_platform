@@ -1,0 +1,21 @@
+{
+    "heading": "सत्र दर्ज करें",
+    "cancel": "रद्द करें",
+    "pickOutcomeFirst": "पहले परिणाम चुनें",
+    "saving": "सहेजा जा रहा है…",
+    "save": "सहेजें",
+    "sessionRecorded": "सत्र दर्ज किया गया",
+    "markedNoShow": "अनुपस्थित के रूप में चिह्नित किया गया",
+    "saveFailed": "यह सत्र सहेजा नहीं जा सका। कृपया पुनः प्रयास करें।",
+    "sessionFallback": "सत्र",
+    "menteeFallback": "आपके मेंटी",
+    "withMentee": "के साथ",
+    "whatHappened": "क्या हुआ?",
+    "outcomeWentAhead": "सत्र हुआ",
+    "outcomeNoShow": "वे नहीं आए",
+    "topicLabel": "कवर किया गया विषय (वैकल्पिक)",
+    "topicPlaceholder": "उदा. घूर्णी गति",
+    "notesLabel": "टिप्पणियां (वैकल्पिक)",
+    "notesPlaceholder": "प्रगति, बाधाएं, अगले सत्र से पहले क्या करना है…",
+    "notesHelp": "केवल आपको और आपके एडमिन को दिखाई देता है। शिक्षार्थी को कभी नहीं दिखाया जाता।"
+}

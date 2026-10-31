@@ -1,0 +1,21 @@
+{
+    "meta": {
+        "title": "Schedule Tests",
+        "description": "This page shows the list of all the schedules tests and also an assessment can be scheduled here."
+    },
+    "navHeading": "Homework Creation List",
+    "tabs": {
+        "liveEmpty": "No tests are currently live.",
+        "upcomingEmpty": "No upcoming tests scheduled.",
+        "previousEmpty": "No previous tests available.",
+        "draftEmpty": "No draft tests available."
+    },
+    "filters": {
+        "mode": "Mode",
+        "type": "Type",
+        "evaluation": "Evaluation"
+    },
+    "noCourseDialog": {
+        "type": "Creating assessment"
+    }
+}

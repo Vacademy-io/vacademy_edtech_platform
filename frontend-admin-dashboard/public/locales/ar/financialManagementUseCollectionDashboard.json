@@ -1,0 +1,36 @@
+{
+    "vendorLabels": {
+        "onlinePortal": "بوابة الدفع الإلكتروني",
+        "cash": "نقدًا",
+        "bankTransfer": "تحويل بنكي",
+        "other": "أخرى",
+        "offlineUnspecified": "دفع يدوي (الطريقة غير مسجلة)"
+    },
+    "summaryCards": {
+        "projectedRevenue": "الإيراد المتوقع",
+        "tillNowExpected": "المتوقع حتى الآن",
+        "tillNowCollected": "المُحصَّل حتى الآن",
+        "totalOverdue": "إجمالي المتأخرات",
+        "totalDue": "إجمالي المستحق"
+    },
+    "pipeline": {
+        "codes": {
+            "projectedRevenue": "إم",
+            "tillNowExpected": "مح",
+            "tillNowCollected": "صح",
+            "totalOverdue": "مت",
+            "totalDue": "مس"
+        },
+        "tooltips": {
+            "projectedRevenue": "الإيراد المتوقع",
+            "tillNowExpected": "المتوقع حتى الآن",
+            "tillNowCollected": "المُحصَّل حتى الآن",
+            "totalOverdue": "إجمالي المتأخرات",
+            "totalDue": "إجمالي المستحق"
+        }
+    },
+    "gauge": {
+        "collected": "المُحصَّل",
+        "remaining": "المتبقي"
+    }
+}

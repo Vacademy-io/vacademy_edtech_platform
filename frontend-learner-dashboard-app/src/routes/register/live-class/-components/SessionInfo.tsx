@@ -6,6 +6,7 @@ import { SessionDetailsResponse } from "@/routes/study-library/live-class/-types
 import { convertSessionTimeToUserTimezone } from "@/utils/timezone";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { useTranslation } from "react-i18next";
 
 interface SessionInfoProps {
   sessionTitle?: string;
@@ -19,8 +20,8 @@ interface SessionInfoProps {
   logoHeightPx?: number | null;
   /** institute_domain_routing.hide_institute_name — logos that embed the name. */
   hideInstituteName?: boolean | null;
-  /** Frosted panel styling for when the page renders a hero background. */
-  glass?: boolean;
+  /** Admin-uploaded session cover, shown whole in this column. */
+  coverImageUrl?: string;
 }
 
 export default function SessionInfo({
@@ -33,8 +34,9 @@ export default function SessionInfo({
   logoWidthPx,
   logoHeightPx,
   hideInstituteName,
-  glass,
+  coverImageUrl,
 }: SessionInfoProps) {
+  const { t } = useTranslation("registrationA");
   // Mirrors InstituteBrandingComponent: an explicit width/height from
   // institute_domain_routing replaces the default box entirely, rather than
   // fighting the h-9/h-10 utilities.
@@ -93,18 +95,13 @@ export default function SessionInfo({
   const convertedStartTime = getConvertedStartTime();
 
   return (
-    <div
-      className={cn(
-        "flex flex-col gap-6 h-full w-full lg:w-1/2 lg:max-w-reg-560 items-center",
-        glass && "rounded-2xl bg-white/90 backdrop-blur-md shadow-xl p-5 sm:p-8"
-      )}
-    >
+    <div className="flex flex-col gap-6 h-full w-full lg:w-1/2 lg:max-w-reg-560 items-center">
       {/* Institute Branding */}
       <div className="flex items-center gap-3">
         {instituteLogoUrl ? (
           <img
             src={instituteLogoUrl}
-            alt={instituteName || "Institute"}
+            alt={instituteName || t("liveClass.sessionInfo.instituteFallback")}
             className={cn(
               "object-contain",
               hasCustomLogoDims ? "" : "h-9 sm:h-10 w-auto"
@@ -143,11 +140,21 @@ export default function SessionInfo({
         <CountdownTimer startTime={convertedStartTime} />
       )}
 
-      {/* Description Card or Illustration */}
+      {/* Session cover, uncropped */}
+      {coverImageUrl && (
+        <img
+          src={coverImageUrl}
+          alt={sessionTitle || ""}
+          className="w-auto max-w-full h-auto max-h-96 object-contain rounded-2xl shadow-sm"
+        />
+      )}
+
+      {/* Description Card or Illustration (the illustration only fills the
+          slot when there is no cover) */}
       {sessionDetails?.descriptionHtml &&
       sessionDetails.descriptionHtml.trim() !== "" ? (
         <Card className="w-full border-primary-100/60 shadow-sm">
-          <CardContent className="p-4 sm:p-5">
+          <CardContent className="p-card sm:p-5">
             <div
               className="max-h-screen-28 sm:max-h-screen-35 overflow-auto prose prose-sm max-w-none text-gray-600 leading-relaxed"
               dangerouslySetInnerHTML={{
@@ -156,11 +163,11 @@ export default function SessionInfo({
             />
           </CardContent>
         </Card>
-      ) : (
+      ) : coverImageUrl ? null : (
         <div className="w-full flex items-center justify-center py-2">
           <img
             src={RegistrationLogo}
-            alt="Registration"
+            alt={t("liveClass.sessionInfo.registrationAlt")}
             className="max-w-reg-280 max-h-52 object-contain opacity-70"
           />
         </div>
@@ -168,7 +175,7 @@ export default function SessionInfo({
 
       {/* Session Details Bar */}
       <Card className="w-full border-primary-100/60 shadow-sm">
-        <CardContent className="p-4">
+        <CardContent className="p-card">
           <div className="flex items-center justify-center gap-3 sm:gap-5 text-sm flex-wrap">
             <div className="flex items-center gap-2">
               <svg
@@ -185,7 +192,7 @@ export default function SessionInfo({
                 />
                 <circle cx="12" cy="12" r="10" />
               </svg>
-              <span className="text-gray-500">Start</span>
+              <span className="text-gray-500">{t("liveClass.sessionInfo.start")}</span>
               <span className="font-semibold text-gray-800">
                 {formatDateTime(startTime)}
               </span>
@@ -208,7 +215,7 @@ export default function SessionInfo({
                 />
                 <circle cx="12" cy="12" r="10" />
               </svg>
-              <span className="text-gray-500">End</span>
+              <span className="text-gray-500">{t("liveClass.sessionInfo.end")}</span>
               <span className="font-semibold text-gray-800">
                 {formatDateTime(lastEntryTime)}
               </span>

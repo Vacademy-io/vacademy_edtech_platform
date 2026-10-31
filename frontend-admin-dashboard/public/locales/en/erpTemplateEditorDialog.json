@@ -1,0 +1,70 @@
+{
+    "dialog": {
+        "headingEdit": "Salary template",
+        "headingNew": "New salary template",
+        "close": "Close",
+        "cancel": "Cancel",
+        "saving": "Saving…",
+        "saveTemplate": "Save template",
+        "createTemplate": "Create template",
+        "loadError": "Could not load this template.",
+        "retrying": "Retrying…",
+        "retry": "Retry"
+    },
+    "toast": {
+        "updated": "Template updated",
+        "created": "Template created",
+        "saveError": "Could not save the salary template."
+    },
+    "info": "These components need not add up to the employee's CTC — payroll adds a balancing <bold1>Special Allowance</bold1> for whatever is left over. A template whose components <bold2>exceed</bold2> the CTC is rejected, so keep the fixed amounts and percentages inside it.",
+    "form": {
+        "nameLabel": "Template name",
+        "namePlaceholder": "Standard staff structure",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "Who this template is for.",
+        "defaultLabel": "Use as the default template for new assignments"
+    },
+    "components": {
+        "heading": "Components",
+        "rowCount_one": "{{count}} row",
+        "rowCount_other": "{{count}} rows",
+        "addRow": "Add component row",
+        "row": "Row {{number}}",
+        "removeRow": "Remove row {{number}}",
+        "componentLabel": "Component",
+        "componentLoading": "Loading components…",
+        "componentSelect": "Select component",
+        "componentSearchPlaceholder": "Search by code or name",
+        "componentEmpty": "No components found. Add one on the Components tab.",
+        "calculationLabel": "Calculation",
+        "monthlyAmountLabel": "Monthly amount",
+        "monthlyAmountPlaceholder": "25000",
+        "percentageLabel": "Percentage",
+        "percentagePlaceholder": "40",
+        "percentageDescription": "Percent of the base this calculation names.",
+        "formulaLabel": "Formula",
+        "formulaPlaceholder": "#BASIC * 0.1 + 1500",
+        "formulaHelp": "Available variables: #CTC (annual), #CTC_MONTHLY, #BASIC, #GROSS, and #<COMPONENT_CODE> for any component in this template. The result is the MONTHLY amount.",
+        "minLabel": "Minimum (optional)",
+        "minPlaceholder": "No floor",
+        "maxLabel": "Maximum (optional)",
+        "maxPlaceholder": "No cap",
+        "displayOrderLabel": "Display order"
+    },
+    "validation": {
+        "nameRequired": "Give the template a name",
+        "descriptionMax": "Keep the description under 500 characters",
+        "componentsMin": "A template needs at least one component",
+        "componentRequired": "Pick a component",
+        "amountNumber": "Amount must be a number",
+        "percentageNumber": "Percentage must be a number",
+        "minNumber": "Minimum must be a number",
+        "maxNumber": "Maximum must be a number",
+        "wholeNumbers": "Whole numbers only",
+        "enterAmount": "Enter the monthly amount",
+        "enterPercentage": "Enter a percentage",
+        "percentageRange": "Percentages run from 0 to 100",
+        "enterFormula": "Enter a formula",
+        "maxAtLeastMin": "Maximum must be at least the minimum"
+    }
+}

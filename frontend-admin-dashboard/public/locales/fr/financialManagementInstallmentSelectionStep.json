@@ -1,0 +1,90 @@
+{
+    "changeStudent": "Changer d'étudiant",
+    "refresh": "Actualiser",
+    "downloadReceiptTooltip": "Télécharger le reçu",
+    "filters": {
+        "all": "Tous",
+        "overdue": "En retard",
+        "due": "Dû",
+        "partial": "Partiel",
+        "paid": "Payé",
+        "from": "Du :",
+        "to": "Au :",
+        "clear": "Effacer"
+    },
+    "emptyState": {
+        "noDues": "Aucun montant dû trouvé.",
+        "noPendingInstallments": "Cet étudiant n'a aucun versement en attente."
+    },
+    "summaryCards": {
+        "totalFee": "Frais totaux",
+        "paid": "Payé",
+        "due": "Dû"
+    },
+    "selectAllBanner": {
+        "allSelectedOnPage_one": "{{count}} ligne sélectionnable sur cette page est sélectionnée.",
+        "allSelectedOnPage_many": "{{count}} ligne sélectionnable sur cette page est sélectionnée.",
+        "allSelectedOnPage_other": "Les {{count}} lignes sélectionnables sur cette page sont sélectionnées.",
+        "selecting": "Sélection…",
+        "selectAllFiltered_one": "Sélectionner {{count}} ligne filtrée",
+        "selectAllFiltered_many": "Sélectionner {{count}} ligne filtrée",
+        "selectAllFiltered_other": "Sélectionner les {{count}} lignes filtrées"
+    },
+    "resultsRange": {
+        "showing": "Affichage de",
+        "of": "sur"
+    },
+    "table": {
+        "feeType": "Type de frais",
+        "cpoPlan": "CPO / Plan",
+        "expected": "Attendu",
+        "adjustment": "Ajustement",
+        "paid": "Payé",
+        "due": "Dû",
+        "dueOverdue": "Dû / En retard",
+        "dueDate": "Date d'échéance",
+        "status": "Statut",
+        "noResults": "Aucun versement ne correspond aux filtres sélectionnés."
+    },
+    "adjustment": {
+        "pending": "En attente",
+        "adjustTooltip": "Ajuster"
+    },
+    "status": {
+        "overdue": "En retard",
+        "due": "Dû",
+        "daysOverdue_one": "({{count}}j)",
+        "daysOverdue_many": "({{count}}j)",
+        "daysOverdue_other": "({{count}}j)"
+    },
+    "pagination": {
+        "prev": "Précédent",
+        "next": "Suivant",
+        "page": "Page",
+        "of": "sur"
+    },
+    "bottomBar": {
+        "installmentsSelected_one": "versement sélectionné",
+        "installmentsSelected_many": "versement sélectionné",
+        "installmentsSelected_other": "versements sélectionnés",
+        "totalDue": "Total dû :",
+        "generateInvoice": "Générer la facture",
+        "proceedToPay": "Procéder au paiement"
+    },
+    "errors": {
+        "unableToLoad": "Impossible de charger les versements",
+        "tryAgain": "Veuillez réessayer."
+    },
+    "toast": {
+        "selectedInstallments_one": "{{count}} versement sélectionné",
+        "selectedInstallments_many": "{{count}} versement sélectionné",
+        "selectedInstallments_other": "{{count}} versements sélectionnés",
+        "selectAllFailed": "Échec de la sélection de tous les éléments",
+        "noReceiptFound": "Aucun reçu trouvé pour ce versement",
+        "invoiceDownloaded": "Facture téléchargée avec succès",
+        "invoiceDownloadUrlMissing": "Facture générée mais URL de téléchargement indisponible",
+        "invoiceGenerateFailed": "Échec de la génération de la facture",
+        "invoiceEmailed": "Facture envoyée par e-mail avec succès",
+        "invoiceEmailFailed": "Échec de l'envoi de la facture par e-mail"
+    }
+}

@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { format, isSameDay, isYesterday } from 'date-fns';
 import {
     ArrowClockwise as RefreshIcon,
@@ -42,7 +44,9 @@ interface PastPapersSectionProps {
 
 type ItemKind = 'assessment' | 'notes';
 
-const KIND: Record<
+const buildKind = (
+    t: TFunction
+): Record<
     ItemKind,
     {
         Icon: typeof ClipboardText;
@@ -50,50 +54,49 @@ const KIND: Record<
         chipFg: string;
         label: string;
     }
-> = {
+> => ({
     assessment: {
         Icon: ClipboardText,
         // primary tone mirrors the green Create Assessment card below
         chipBg: 'bg-primary-100',
         chipFg: 'text-primary-700',
-        label: 'Assessment',
+        label: t('kind.assessment'),
     },
     notes: {
         Icon: BookOpenText,
         // violet tone mirrors the purple Generate Notes card below
         chipBg: 'bg-violet-100',
         chipFg: 'text-violet-700',
-        label: 'Notes',
+        label: t('kind.notes'),
     },
-};
+});
 
 // --- Status ------------------------------------------------------------
 
-const STATUS: Record<
-    AssessmentArtifactStatus,
-    { label: string; text: string; pulse: boolean }
-> = {
+const buildStatus = (
+    t: TFunction
+): Record<AssessmentArtifactStatus, { label: string; text: string; pulse: boolean }> => ({
     IN_PROGRESS: {
-        label: 'Generating',
+        label: t('status.generating'),
         text: 'text-warning-700',
         pulse: true,
     },
     COMPLETED: {
-        label: 'Ready',
+        label: t('status.ready'),
         text: 'text-neutral-500',
         pulse: false,
     },
     PUBLISHED: {
-        label: 'Published',
+        label: t('status.published'),
         text: 'text-success-700',
         pulse: false,
     },
     FAILED: {
-        label: 'Failed',
+        label: t('status.failed'),
         text: 'text-danger-700',
         pulse: false,
     },
-};
+});
 
 const formatModelLabel = (slug: string): string => {
     const tail = slug.includes('/') ? (slug.split('/').pop() ?? slug) : slug;
@@ -126,12 +129,12 @@ type HistoryItem =
 
 type Bucket = 'today' | 'yesterday' | 'thisWeek' | 'older';
 
-const BUCKET_LABEL: Record<Bucket, string> = {
-    today: 'Today',
-    yesterday: 'Yesterday',
-    thisWeek: 'Earlier this week',
-    older: 'Older',
-};
+const buildBucketLabel = (t: TFunction): Record<Bucket, string> => ({
+    today: t('bucket.today'),
+    yesterday: t('bucket.yesterday'),
+    thisWeek: t('bucket.thisWeek'),
+    older: t('bucket.older'),
+});
 
 const bucketOf = (iso: string | null | undefined, now: Date): Bucket => {
     if (!iso) return 'older';
@@ -143,12 +146,12 @@ const bucketOf = (iso: string | null | undefined, now: Date): Bucket => {
     return ageDays < 7 ? 'thisWeek' : 'older';
 };
 
-const formatRowTime = (iso: string | null | undefined, now: Date): string => {
+const formatRowTime = (iso: string | null | undefined, now: Date, t: TFunction): string => {
     if (!iso) return '—';
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return '—';
-    if (isSameDay(d, now)) return `Today, ${format(d, 'h:mm a')}`;
-    if (isYesterday(d)) return `Yesterday, ${format(d, 'h:mm a')}`;
+    if (isSameDay(d, now)) return t('rowTime.today', { time: format(d, 'h:mm a') });
+    if (isYesterday(d)) return t('rowTime.yesterday', { time: format(d, 'h:mm a') });
     const ageDays = (now.getTime() - d.getTime()) / 86_400_000;
     if (ageDays < 7) return format(d, 'EEE, h:mm a');
     return format(d, 'd MMM, h:mm a');
@@ -177,6 +180,7 @@ export function PastPapersSection({
     savedNotesGeneratedAt,
     onOpenNotes,
 }: PastPapersSectionProps) {
+    const { t } = useTranslation('studyLibraryPastPapersSection');
     const [expanded, setExpanded] = useState(false);
 
     const { data, isLoading, isError, refetch, isRefetching } = useQuery({
@@ -255,7 +259,7 @@ export function PastPapersSection({
                 <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 text-sm text-danger-700">
                         <Warning className="size-4" weight="fill" />
-                        Couldn&apos;t load AI history.
+                        {t('error.couldNotLoad')}
                     </div>
                     <MyButton
                         type="button"
@@ -263,7 +267,7 @@ export function PastPapersSection({
                         onClick={() => void refetch()}
                     >
                         <RefreshIcon className="size-3.5" />
-                        Retry
+                        {t('error.retry')}
                     </MyButton>
                 </div>
             </section>
@@ -278,12 +282,10 @@ export function PastPapersSection({
                     weight="duotone"
                 />
                 <p className="text-sm font-medium text-neutral-700">
-                    No AI history yet
+                    {t('empty.heading')}
                 </p>
                 <p className="max-w-xs text-xs text-neutral-500">
-                    Generate an assessment or notes below — each run will show
-                    up here so you can re-export or re-publish without spending
-                    another generation.
+                    {t('empty.description')}
                 </p>
             </section>
         );
@@ -308,7 +310,7 @@ export function PastPapersSection({
                         return (
                             <div key={bucket}>
                                 <BucketHeader
-                                    label={BUCKET_LABEL[bucket]}
+                                    label={buildBucketLabel(t)[bucket]}
                                     count={rows.length}
                                 />
                                 <ul className="divide-y divide-neutral-100">
@@ -344,6 +346,7 @@ function HeaderBar({
     expanded?: boolean;
     onToggle?: () => void;
 }) {
+    const { t } = useTranslation('studyLibraryPastPapersSection');
     const isInteractive = !!onToggle;
     const showCount = typeof count === 'number' && count > 0;
 
@@ -371,7 +374,7 @@ function HeaderBar({
                     />
                 )}
                 <h3 className="text-sm font-semibold text-neutral-800">
-                    AI history
+                    {t('header.title')}
                 </h3>
                 {showCount && (
                     <span className="rounded-full bg-neutral-200 px-2 py-0.5 text-xs font-medium text-neutral-700">
@@ -379,7 +382,7 @@ function HeaderBar({
                     </span>
                 )}
                 <span className="text-xs text-neutral-400">
-                    Generated from this recording
+                    {t('header.subtitle')}
                 </span>
             </button>
             {onRefresh && (
@@ -397,7 +400,7 @@ function HeaderBar({
                     ) : (
                         <RefreshIcon className="size-3.5" />
                     )}
-                    Refresh
+                    {t('header.refresh')}
                 </button>
             )}
         </div>
@@ -414,7 +417,8 @@ function BucketHeader({ label, count }: { label: string; count: number }) {
 }
 
 function KindChip({ kind, pulse }: { kind: ItemKind; pulse?: boolean }) {
-    const meta = KIND[kind];
+    const { t } = useTranslation('studyLibraryPastPapersSection');
+    const meta = buildKind(t)[kind];
     const Icon = meta.Icon;
     return (
         <span
@@ -441,7 +445,8 @@ function Row({
     onOpenArtifact: (artifact: AssessmentArtifact) => void;
     onOpenNotes?: () => void;
 }) {
-    const time = formatRowTime(item.createdAt, now);
+    const { t } = useTranslation('studyLibraryPastPapersSection');
+    const time = formatRowTime(item.createdAt, now, t);
 
     if (item.kind === 'notes') {
         const isOpenable = !!onOpenNotes;
@@ -465,11 +470,11 @@ function Row({
                                 {time}
                             </span>
                             <span className="text-xs font-medium text-violet-700">
-                                {KIND.notes.label}
+                                {buildKind(t).notes.label}
                             </span>
                         </div>
                         <div className="mt-0.5 text-xs text-neutral-500">
-                            Lecture notes · {item.markdown.length.toLocaleString()} chars
+                            {t('row.lectureNotesChars', { count: item.markdown.length })}
                         </div>
                     </div>
                     {isOpenable && (
@@ -485,9 +490,11 @@ function Row({
 
     // Assessment row
     const artifact = item.artifact;
-    const status = STATUS[artifact.status];
+    const status = buildStatus(t)[artifact.status];
     const isOpenable =
         artifact.status === 'COMPLETED' || artifact.status === 'PUBLISHED';
+    // Sentinel string is emitted verbatim (in English) by the video-conferencing
+    // provider, not app UI copy — comparing against it must not be localized.
     const showTitle =
         !!artifact.title?.trim() &&
         artifact.title.trim() !==
@@ -519,12 +526,12 @@ function Row({
                                 status.text
                             )}
                         >
-                            {KIND.assessment.label} · {status.label}
+                            {buildKind(t).assessment.label} · {status.label}
                         </span>
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-neutral-500">
                         {typeof artifact.numQuestions === 'number' && (
-                            <span>{artifact.numQuestions} questions</span>
+                            <span>{t('row.questionsCount', { count: artifact.numQuestions })}</span>
                         )}
                         {artifact.modelUsed && (
                             <>
@@ -545,7 +552,7 @@ function Row({
                     </div>
                     {showTitle && (
                         <div className="mt-0.5 truncate text-xs italic text-neutral-400">
-                            &ldquo;{artifact.title}&rdquo;
+                            {t('row.quotedTitle', { title: artifact.title })}
                         </div>
                     )}
                     {artifact.status === 'FAILED' &&

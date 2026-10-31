@@ -1,0 +1,124 @@
+{
+    "common": {
+        "home": "الرئيسية",
+        "logOut": "تسجيل الخروج",
+        "poweredBy": "بدعم من",
+        "notifications": "الإشعارات"
+    },
+    "playBottomNav": {
+        "labels": {
+            "learningCenter": "تعلم",
+            "homework": "المهام",
+            "assessmentCenter": "الاختبارات",
+            "referral": "الإحالة",
+            "attendance": "الحضور",
+            "planning": "الخطة",
+            "subOrgLearners": "المؤسسات"
+        },
+        "more": "المزيد",
+        "mainNavigation": "التنقل الرئيسي"
+    },
+    "sidebar": {
+        "tabs": {
+            "dashboard": "لوحة التحكم",
+            "learningCenter": "مركز التعلّم",
+            "homework": "الواجبات",
+            "assessmentCentre": "مركز التقييم",
+            "referral": "الإحالة",
+            "attendance": "الحضور",
+            "inAppMessages": "الرسائل داخل التطبيق",
+            "myMentors": "مرشديّ"
+        },
+        "mentorLabelWithName": "مرشد · {{name}}",
+        "allMentors": "جميع المرشدين",
+        "chatWithMentorName": "محادثة · {{name}}",
+        "mentorFallbackName": "مرشد",
+        "hamburgerMenu": {
+            "viewProfileDetails": "عرض تفاصيل الملف الشخصي",
+            "myFiles": "ملفاتي",
+            "downloads": "التنزيلات",
+            "myReports": "تقاريري",
+            "onboarding": "التهيئة الأولية",
+            "changePassword": "تغيير كلمة المرور",
+            "logOut": "تسجيل الخروج",
+            "deleteAccount": "حذف الحساب"
+        },
+        "logoAlt": "الشعار",
+        "closeSidebar": "إغلاق الشريط الجانبي",
+        "appsAndPortals": "التطبيقات والبوابات",
+        "webPortal": "البوابة الإلكترونية",
+        "androidApp": "تطبيق أندرويد",
+        "iosApp": "تطبيق iOS",
+        "windowsApp": "تطبيق ويندوز",
+        "macApp": "تطبيق ماك",
+        "openProfile": "فتح الملف الشخصي"
+    },
+    "logoutSidebar": {
+        "instituteLogoAlt": "شعار المؤسسة",
+        "profilePhotoAlt": "صورة الملف الشخصي"
+    },
+    "navbar": {
+        "goBack": "رجوع",
+        "instituteFallbackAlt": "المؤسسة",
+        "switchToRole": "التبديل إلى {{role}}",
+        "raiseQuery": "إرسال استفسار"
+    },
+    "userMenu": {
+        "profileLabel": "الملف الشخصي",
+        "openAccountMenu": "فتح قائمة الحساب",
+        "switchToParentPortal": "التبديل إلى بوابة ولي الأمر",
+        "language": "اللغة"
+    },
+    "notificationsBell": {
+        "ariaLabelWithCount_zero": "{{count}} إشعار جديد",
+        "ariaLabelWithCount_one": "{{count}} إشعار جديد",
+        "ariaLabelWithCount_two": "{{count}} إشعاران جديدان",
+        "ariaLabelWithCount_few": "{{count}} إشعارات جديدة",
+        "ariaLabelWithCount_many": "{{count}} إشعارًا جديدًا",
+        "ariaLabelWithCount_other": "{{count}} إشعار جديد",
+        "allCaughtUpTitle": "لا توجد إشعارات جديدة",
+        "allCaughtUpDescription": "ستظهر الإشعارات الجديدة هنا.",
+        "fallbackNotificationTitle": "إشعار",
+        "viewAll": "جميع الإشعارات"
+    },
+    "fullScreenLoader": {
+        "loadingFallback": "جارٍ التحميل"
+    },
+    "filePreview": {
+        "attachmentAlt": "مرفق"
+    },
+    "getAppBanner": {
+        "appLabelWithName": "تطبيق {{name}}",
+        "appLabelGeneric": "تطبيقنا",
+        "getRegionLabel": "احصل على {{appLabel}}",
+        "dismiss": "إغلاق",
+        "googlePlay": "احصل عليه من Google Play",
+        "appStore": "احصل عليه من App Store",
+        "getButton": "احصل عليه"
+    },
+    "priceWithMrp": {
+        "free": "مجاني",
+        "percentOff": "خصم {{percent}}%",
+        "mrpLabel": "M.R.P.",
+        "freeRibbon": "مجاني",
+        "percentOffRibbon": "خصم {{percent}}%"
+    },
+    "sessionFilter": {
+        "clearFilter": "مسح التصفية",
+        "filter": "تصفية",
+        "showSessionsInNext": "عرض {{sessions}} خلال",
+        "presets": {
+            "oneDay": "يوم واحد",
+            "threeDays": "3 أيام",
+            "sevenDays": "7 أيام",
+            "fifteenDays": "15 يومًا"
+        },
+        "customRange": "نطاق مخصص",
+        "fromLabel": "من",
+        "toLabel": "إلى",
+        "applyRange": "تطبيق النطاق",
+        "custom": "مخصص",
+        "fromDate": "من {{date}}",
+        "untilDate": "حتى {{date}}"
+    }
+}

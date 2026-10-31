@@ -16,7 +16,9 @@ import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -26,6 +28,7 @@ public class BulkLiveSessionService {
     private final Step1Service step1Service;
     private final Step2Service step2Service;
     private final LiveSessionWorkflowAsyncHelper workflowAsyncHelper;
+    private final LiveSessionInstructorService instructorService;
 
     /**
      * Self-reference used to invoke {@link #createOneAtomically} through the
@@ -58,6 +61,13 @@ public class BulkLiveSessionService {
                     "step2_per_row length (" + step2PerRow.size() +
                             ") must match sessions length (" + sessions.size() + ")");
         }
+
+        // Resolve the CSV's instructor identifiers (ids / emails / usernames)
+        // BEFORE the row loop, so the whole import costs one staff-directory
+        // fetch instead of one per row, and so an identifier that matches
+        // nobody surfaces as a per-row warning rather than a failed row.
+        Map<Integer, List<String>> unresolvedInstructorsByRow =
+                resolveInstructorIdentifiers(sessions, step2Template, step2PerRow);
 
         List<BulkLiveSessionResponseDTO.RowResult> results = new ArrayList<>(sessions.size());
         // Collect (savedSession, instituteId) pairs and fire the workflow
@@ -96,12 +106,16 @@ public class BulkLiveSessionService {
 
                 sessionsToFireWorkflow.add(saved);
                 instituteIdsForWorkflow.add(saved.getInstituteId());
+                List<String> unresolved = unresolvedInstructorsByRow.get(i);
                 results.add(BulkLiveSessionResponseDTO.RowResult.builder()
                         .index(i)
                         .success(true)
                         .sessionId(saved.getId())
                         .title(title)
                         .step2Applied(step2Applied)
+                        .warnings(unresolved == null || unresolved.isEmpty() ? null
+                                : List.of("These instructors were not found in this institute and were skipped: "
+                                        + String.join(", ", unresolved)))
                         .build());
                 created++;
             } catch (Exception ex) {
@@ -197,7 +211,77 @@ public class BulkLiveSessionService {
         copy.setDeletedFieldIds(template.getDeletedFieldIds());
         copy.setInstituteCustomFields(template.getInstituteCustomFields());
         copy.setRecordingAutoLinkConfig(template.getRecordingAutoLinkConfig());
+        // Already resolved to ids by resolveInstructorIdentifiers, so the
+        // identifiers list is deliberately NOT carried over — re-resolving it
+        // per row would repeat the directory fetch for every row.
+        copy.setInstructorUserIds(template.getInstructorUserIds());
         return copy;
+    }
+
+    /**
+     * Turns each row's {@code instructor_identifiers} into user ids on the row's
+     * step-2 payload, and returns the identifiers that matched nobody, keyed by
+     * row index.
+     *
+     * <p>Mutates the request's step-2 payloads in place, which is safe because
+     * they are per-request deserialized objects. The shared template is handled
+     * once rather than per row, so a template-level instructor list costs a
+     * single lookup.
+     *
+     * @return unresolved identifiers per row index; empty when nothing needed resolving
+     */
+    private Map<Integer, List<String>> resolveInstructorIdentifiers(
+            List<LiveSessionStep1RequestDTO> sessions,
+            LiveSessionStep2RequestDTO step2Template,
+            List<LiveSessionStep2RequestDTO> step2PerRow) {
+
+        Map<Integer, List<String>> unresolvedByRow = new HashMap<>();
+
+        String instituteId = sessions.stream()
+                .filter(java.util.Objects::nonNull)
+                .map(LiveSessionStep1RequestDTO::getInstituteId)
+                .filter(id -> id != null && !id.isBlank())
+                .findFirst()
+                .orElse(null);
+        if (instituteId == null) {
+            return unresolvedByRow;
+        }
+
+        if (step2PerRow != null) {
+            for (int i = 0; i < step2PerRow.size(); i++) {
+                List<String> unresolved = applyResolvedInstructors(step2PerRow.get(i), instituteId);
+                if (!unresolved.isEmpty()) {
+                    unresolvedByRow.put(i, unresolved);
+                }
+            }
+        } else if (step2Template != null) {
+            List<String> unresolved = applyResolvedInstructors(step2Template, instituteId);
+            if (!unresolved.isEmpty()) {
+                for (int i = 0; i < sessions.size(); i++) {
+                    unresolvedByRow.put(i, unresolved);
+                }
+            }
+        }
+        return unresolvedByRow;
+    }
+
+    /** Folds resolved identifiers into {@code instructorUserIds} and clears the raw list. */
+    private List<String> applyResolvedInstructors(LiveSessionStep2RequestDTO step2, String instituteId) {
+        if (step2 == null || step2.getInstructorIdentifiers() == null
+                || step2.getInstructorIdentifiers().isEmpty()) {
+            return List.of();
+        }
+        LiveSessionInstructorService.ResolvedIdentifiers resolved =
+                instructorService.resolveIdentifiers(instituteId, step2.getInstructorIdentifiers());
+
+        List<String> merged = new ArrayList<>();
+        if (step2.getInstructorUserIds() != null) {
+            merged.addAll(step2.getInstructorUserIds());
+        }
+        resolved.userIds().stream().filter(id -> !merged.contains(id)).forEach(merged::add);
+        step2.setInstructorUserIds(merged);
+        step2.setInstructorIdentifiers(null);
+        return resolved.unresolved();
     }
 
     /**

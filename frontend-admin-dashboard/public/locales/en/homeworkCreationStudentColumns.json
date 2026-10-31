@@ -1,0 +1,27 @@
+{
+    "columns": {
+        "details": "Details",
+        "name": "Name",
+        "attemptDate": "Attempt Date",
+        "startTime": "Start Time",
+        "endTime": "End Time",
+        "duration": "Duration",
+        "score": "Score",
+        "evaluationStatus": "Evaluation Status",
+        "enrollmentNumber": "Enrollment Number",
+        "gender": "Gender",
+        "responseTime": "Response Time",
+        "phoneNumber": "Phone Number",
+        "emailId": "Email ID",
+        "city": "City",
+        "state": "State"
+    },
+    "status": {
+        "evaluated": "Evaluated",
+        "pending": "Pending"
+    },
+    "sort": {
+        "ascending": "Ascending",
+        "descending": "Descending"
+    }
+}

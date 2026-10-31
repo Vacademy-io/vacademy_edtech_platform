@@ -4,7 +4,17 @@
     "details": [
       {
         "appID": "35NLZB49QN.io.vacademy.student.app",
-        "paths": ["/assessment/examination", "/assessment/reports"]
+        "paths": [
+          "/assessment/examination",
+          "/assessment/reports"
+        ]
+      },
+      {
+        "appID": "7XKD5M7288.io.zoeedtech.app",
+        "paths": [
+          "/assessment/examination",
+          "/assessment/reports"
+        ]
       }
     ]
   }

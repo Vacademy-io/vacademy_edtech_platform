@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { Eye } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { StatusChip } from '@/components/design-system/status-chips';
@@ -23,6 +24,7 @@ export const SubmissionFileCell = ({
     attemptId: string;
     studentName?: string;
 }) => {
+    const { t } = useTranslation('assessmentSubmissionFileCell');
     const queryClient = useQueryClient();
     const instituteId = getInstituteId();
     const [uploadOpen, setUploadOpen] = useState(false);
@@ -48,24 +50,24 @@ export const SubmissionFileCell = ({
             setPreviewOpen(true);
         } catch (error) {
             console.error('Failed to load submission:', error);
-            toast.error('Failed to load the submission. Please try again.');
+            toast.error(t('loadFailedError'));
         }
     };
 
     if (fileQuery.isLoading) {
-        return <span className="text-caption text-neutral-400">Checking...</span>;
+        return <span className="text-caption text-neutral-400">{t('checking')}</span>;
     }
 
     if (fileQuery.data) {
         return (
             <div className="flex items-center gap-2">
-                <StatusChip text="Submitted" textSize="text-caption" status="SUCCESS" />
+                <StatusChip text={t('submitted')} textSize="text-caption" status="SUCCESS" />
                 <MyButton
                     type="button"
                     buttonType="secondary"
                     scale="small"
                     className="w-8 !min-w-8"
-                    title="View submission"
+                    title={t('viewSubmission')}
                     onClick={handleViewSubmission}
                 >
                     <Eye size={16} />
@@ -74,8 +76,8 @@ export const SubmissionFileCell = ({
                     open={previewOpen}
                     onOpenChange={setPreviewOpen}
                     fileUrl={previewUrl}
-                    heading="Submission"
-                    downloadName={`Submission-${studentName || attemptId}`}
+                    heading={t('submissionHeading')}
+                    downloadName={`${t('fileNamePrefix')}-${studentName || attemptId}`}
                 />
             </div>
         );
@@ -84,14 +86,14 @@ export const SubmissionFileCell = ({
     // No file (or the attempt data couldn't be read) — offer an on-behalf upload.
     return (
         <div className="flex items-center gap-2">
-            <StatusChip text="Not Submitted" textSize="text-caption" status="WARNING" />
+            <StatusChip text={t('notSubmitted')} textSize="text-caption" status="WARNING" />
             <MyButton
                 type="button"
                 buttonType="secondary"
                 scale="small"
                 onClick={() => setUploadOpen(true)}
             >
-                Upload
+                {t('upload')}
             </MyButton>
             <UploadAnswerSheetDialog
                 attemptId={attemptId}

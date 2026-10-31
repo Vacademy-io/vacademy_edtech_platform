@@ -4,6 +4,11 @@ import { cn } from '@/lib/utils';
 import { useMyQueries } from '@/services/my-queries';
 import { useDoubtManagementSetting } from '@/services/doubt-management-settings';
 import { Reply } from '@/components/common/study-library/level-material/subject-material/module-material/chapter-material/slide-material/doubt-resolution-sidebar/components/reply';
+import {
+    collectAuthorIds,
+    useDoubtAuthors,
+    type DoubtAuthorMap,
+} from '@/components/common/study-library/level-material/subject-material/module-material/chapter-material/slide-material/doubt-resolution-sidebar/hooks/useDoubtAuthors';
 import { Doubt } from '@/components/common/study-library/level-material/subject-material/module-material/chapter-material/slide-material/doubt-resolution-sidebar/types/get-doubts-type';
 
 const stripHtml = (html?: string): string => {
@@ -19,7 +24,15 @@ const formatWhen = (iso?: string): string => {
     return d.toLocaleDateString(undefined, { day: '2-digit', month: 'short' });
 };
 
-const QueryItem = ({ doubt, typeLabel }: { doubt: Doubt; typeLabel: string }) => {
+const QueryItem = ({
+    doubt,
+    typeLabel,
+    authors,
+}: {
+    doubt: Doubt;
+    typeLabel: string;
+    authors: DoubtAuthorMap;
+}) => {
     const [expanded, setExpanded] = useState(false);
     const isResolved = doubt.status === 'RESOLVED';
     const replyCount = doubt.replies?.length ?? 0;
@@ -64,7 +77,12 @@ const QueryItem = ({ doubt, typeLabel }: { doubt: Doubt; typeLabel: string }) =>
             {expanded && replyCount > 0 && (
                 <div className="flex flex-col gap-2 border-t border-neutral-100 bg-neutral-50 p-3">
                     {doubt.replies.map((reply) => (
-                        <Reply key={reply.id} reply={reply} raiserUserId={doubt.user_id} />
+                        <Reply
+                            key={reply.id}
+                            reply={reply}
+                            raiserUserId={doubt.user_id}
+                            authors={authors}
+                        />
                     ))}
                 </div>
             )}
@@ -80,6 +98,9 @@ const QueryItem = ({ doubt, typeLabel }: { doubt: Doubt; typeLabel: string }) =>
 export const MyQueriesList = () => {
     const { queries, isLoading, isError } = useMyQueries();
     const { selectableTypes } = useDoubtManagementSetting();
+    // Names + avatars for everyone in these threads, in one round trip — replies are answered by
+    // staff whose names the doubt payload does not always carry.
+    const authors = useDoubtAuthors(collectAuthorIds(queries));
 
     const typeLabel = (doubt: Doubt): string => {
         if (doubt.source === 'SLIDE') return 'Doubt';
@@ -122,7 +143,7 @@ export const MyQueriesList = () => {
     return (
         <div className="flex max-h-96 flex-col gap-2 overflow-y-auto pe-1">
             {queries.map((q) => (
-                <QueryItem key={q.id} doubt={q} typeLabel={typeLabel(q)} />
+                <QueryItem key={q.id} doubt={q} typeLabel={typeLabel(q)} authors={authors} />
             ))}
         </div>
     );

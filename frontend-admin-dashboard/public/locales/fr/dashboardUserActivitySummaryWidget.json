@@ -1,0 +1,22 @@
+{
+    "header": {
+        "title": "Activité du jour",
+        "subtitle": "Résumé en temps réel de l'engagement des utilisateurs"
+    },
+    "stats": {
+        "uniqueUsers": "Utilisateurs uniques",
+        "sessions": "Sessions",
+        "apiCalls": "Appels API",
+        "activityTime": "Temps d'activité",
+        "avgSession": "Session moy.",
+        "peakHour": "Heure de pointe"
+    },
+    "suffix": {
+        "hours": "h",
+        "minutes": "min",
+        "oclock": "h"
+    },
+    "error": {
+        "widgetName": "résumé de l'activité"
+    }
+}

@@ -1,0 +1,14 @@
+{
+    "header": {
+        "title": "Leaderboard"
+    },
+    "toasts": {
+        "pdfExportSuccess": "Leaderboard data for PDF exported successfully",
+        "csvExportSuccess": "Leaderboard data for CSV exported successfully"
+    },
+    "studentCard": {
+        "duration": "{{minutes}} min {{seconds}} sec",
+        "percentile": "Percentile",
+        "marks": "Marks"
+    }
+}

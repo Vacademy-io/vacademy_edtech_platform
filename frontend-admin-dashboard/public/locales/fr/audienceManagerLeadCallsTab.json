@@ -1,0 +1,76 @@
+{
+    "kpi": {
+        "leadsCalled": {
+            "label": "Leads appelés",
+            "sub": "Leads uniques avec ≥1 appel sortant"
+        },
+        "totalDials": {
+            "label": "Total des appels sortants",
+            "sub": "Toutes les tentatives d'appel sur cette période"
+        },
+        "connected": {
+            "label": "Connectés",
+            "sub": "Leads joints au moins une fois"
+        },
+        "callbackAsked": {
+            "label": "Rappel demandé",
+            "sub": "Leads avec un rappel enregistré"
+        },
+        "neverConnected": {
+            "label": "Jamais connectés",
+            "sub": "Tentatives faites mais jamais joints"
+        },
+        "newLeadsNotCalled": {
+            "label": "Nouveaux leads non appelés",
+            "sub": "Aucune tentative d'appel"
+        }
+    },
+    "section": {
+        "titleCalled": "Tentatives d'appel par lead",
+        "titleUncalled": "Nouveaux leads jamais appelés"
+    },
+    "search": {
+        "placeholder": "Rechercher un nom / téléphone",
+        "ariaLabel": "Rechercher des leads par nom ou téléphone"
+    },
+    "view": {
+        "called": "Appelés ({{count}})",
+        "uncalled": "Jamais appelés ({{count}})"
+    },
+    "empty": {
+        "noCalls": "Aucun appel aux leads sur cette période.",
+        "allCalled": "Chaque nouveau lead de cette période a été appelé au moins une fois. 🎉"
+    },
+    "pager": {
+        "summary_one": "{{formattedCount}} lead · page {{page}} sur {{pageCount}}",
+        "summary_many": "{{formattedCount}} leads · page {{page}} sur {{pageCount}}",
+        "summary_other": "{{formattedCount}} leads · page {{page}} sur {{pageCount}}",
+        "prev": "Précédent",
+        "next": "Suivant"
+    },
+    "footnote": {
+        "called": "Connectés / Rappel / N'a pas décroché sont comptés par appel et peuvent se chevaucher (un appel connecté peut aussi enregistrer un rappel), ils ne s'additionnent donc pas au nombre de tentatives.",
+        "uncalled": "Leads soumis sur cette période qui n'ont jamais été appelés — pas une seule fois, à aucun moment."
+    },
+    "field": {
+        "lead": "Lead",
+        "phone": "Téléphone",
+        "status": "Statut",
+        "counsellor": "Conseiller",
+        "attempts": "Tentatives",
+        "connected": "Connectés",
+        "callback": "Rappel",
+        "notPickedUp": "N'a pas décroché",
+        "failed": "Échoués",
+        "lastCall": "Dernier appel",
+        "lastOutcome": "Dernier résultat",
+        "nextCallback": "Prochain rappel",
+        "source": "Source",
+        "assignedCounsellor": "Conseiller assigné",
+        "submitted": "Soumis le"
+    },
+    "row": {
+        "unknownLead": "Lead inconnu",
+        "unassigned": "Non assigné"
+    }
+}

@@ -174,9 +174,16 @@ public class LiveAttendanceSection implements ReportSection {
             int invited = num(r.get("invited"));
             String rate;
             String attendedCell;
-            if (invited > 0) {
+            if (invited > 0 && a <= invited) {
                 attendedCell = a + " of " + invited;
                 rate = (int) Math.round(100.0 * a / invited) + "%";
+            } else if (invited > 0) {
+                // More attended than were invited — link joins, learners since
+                // deactivated, or people from another batch. Measured on real data:
+                // 39 of 1,018 classes, the worst rendering as 500%. A rate needs a
+                // denominator that actually contains the numerator.
+                attendedCell = a + " joined";
+                rate = "more than invited";
             } else {
                 // Attendance is real but nobody was formally invited — an open or
                 // link-joined class. A headcount is honest; a percentage is not.
@@ -367,15 +374,24 @@ public class LiveAttendanceSection implements ReportSection {
                    count(*) FILTER (WHERE a.schedule_id IS NOT NULL
                                        OR o.last_attendance_sync_at IS NOT NULL) AS known,
                    count(*) FILTER (WHERE a.schedule_id IS NOT NULL
-                                      AND COALESCE(i.invited, 0) > 0) AS rated,
+                                      AND COALESCE(i.invited, 0) > 0
+                                      AND a.attended <= i.invited) AS rated,
                    COALESCE(sum(a.attended) FILTER (
-                       WHERE COALESCE(i.invited, 0) > 0), 0) AS sum_attended,
+                       WHERE COALESCE(i.invited, 0) > 0
+                         AND a.attended <= i.invited), 0) AS sum_attended,
                    COALESCE(sum(i.invited) FILTER (
                        WHERE a.schedule_id IS NOT NULL
-                         AND COALESCE(i.invited, 0) > 0), 0) AS sum_invited,
+                         AND COALESCE(i.invited, 0) > 0
+                         AND a.attended <= i.invited), 0) AS sum_invited,
                    count(*) FILTER (WHERE a.schedule_id IS NOT NULL
                                       AND COALESCE(i.invited, 0) > 0
-                                      AND a.attended::numeric / i.invited < ?) AS poor
+                                      AND a.attended <= i.invited
+                                      AND a.attended::numeric / i.invited < ?) AS poor,
+                   -- More people joined than were invited: the invite list is not a
+                   -- valid population for this class, so it yields no percentage.
+                   count(*) FILTER (WHERE a.schedule_id IS NOT NULL
+                                      AND COALESCE(i.invited, 0) > 0
+                                      AND a.attended > i.invited) AS over_invited
             FROM occ o
             LEFT JOIN att a ON a.schedule_id = o.schedule_id
             LEFT JOIN inv i ON i.schedule_id = o.schedule_id

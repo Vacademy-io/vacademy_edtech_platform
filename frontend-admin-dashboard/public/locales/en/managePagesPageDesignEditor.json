@@ -1,0 +1,227 @@
+{
+    "palette": {
+        "header": { "label": "Header", "description": "Logo + navigation bar" },
+        "heroSection": { "label": "Hero Banner", "description": "Split layout with photo collage" },
+        "footer": { "label": "Footer", "description": "Links + copyright bar" },
+        "productCourseGrid": { "label": "Course Grid", "description": "Course listing with filters" },
+        "textBlock": { "label": "Text Block", "description": "Rich text paragraph" },
+        "imageBlock": { "label": "Image", "description": "Full-width clickable image" },
+        "videoEmbed": { "label": "Video Embed", "description": "YouTube / Vimeo embed" },
+        "htmlBlock": { "label": "HTML Block", "description": "Custom HTML / CSS (sandboxed, no scripts)" },
+        "statsHighlights": { "label": "Stats", "description": "Key numbers highlight" },
+        "testimonialSection": { "label": "Testimonials", "description": "Student reviews" },
+        "faqSection": { "label": "FAQ", "description": "Frequently asked questions" },
+        "ctaBanner": { "label": "CTA Banner", "description": "Call-to-action section" },
+        "featureGrid": { "label": "Feature Grid", "description": "Program highlights" },
+        "stepsProcess": { "label": "Steps / Process", "description": "How it works" },
+        "marquee": { "label": "Marquee", "description": "Scrolling ticker strip" }
+    },
+    "groups": {
+        "layout": "Layout",
+        "course": "Course",
+        "content": "Content",
+        "marketing": "Marketing"
+    },
+    "heroLayouts": {
+        "split": { "label": "Split", "description": "Text left, image right" },
+        "centered": { "label": "Centered", "description": "Text centered, full-width" }
+    },
+    "colorField": {
+        "reset": "reset"
+    },
+    "common": {
+        "sectionColors": "Section Colors",
+        "background": "Background",
+        "backgroundColor": "Background Color",
+        "textColor": "Text Color",
+        "heading": "Heading",
+        "subheading": "Subheading",
+        "description": "Description",
+        "content": "Content",
+        "title": "Title",
+        "image": "Image",
+        "alignment": "Alignment",
+        "alignLeft": "Left",
+        "alignCenter": "Center",
+        "alignRight": "Right",
+        "ctaButton": "CTA Button",
+        "buttonBackground": "Button Background",
+        "buttonTextColor": "Button Text Color",
+        "add": "Add",
+        "labelPlaceholder": "Label",
+        "urlPlaceholder": "URL",
+        "urlOrSectionPlaceholder": "URL or #section",
+        "enrollNowPlaceholder": "Enroll Now",
+        "descriptionEllipsisPlaceholder": "Description…",
+        "noEditorFor": "No editor for \"{{type}}\""
+    },
+    "heroEditor": {
+        "layoutLabel": "Layout",
+        "tags": "Tags",
+        "addTag": "Add tag",
+        "tagPlaceholder": "Tag",
+        "headingPlaceholder": "Building Strong Foundations…",
+        "subheadingPlaceholder": "A short supporting headline…",
+        "descriptionPlaceholder": "Add a supporting description…",
+        "ctaTextPlaceholder": "Explore Courses",
+        "ctaUrlPlaceholder": "URL or #courses",
+        "rightSideImage": "Right Side Image",
+        "singleImage": "Single Image",
+        "photoCollage": "Photo Collage (up to 5)",
+        "collageHint": "Appears as a mosaic grid on the right.",
+        "photoLabel": "Photo {{number}}",
+        "backgroundImageOptional": "Background Image (optional)",
+        "backgroundImageHint": "Shown as a full-width background behind the centered text."
+    },
+    "headerEditor": {
+        "navLinkColor": "Nav Link Color",
+        "siteTitle": "Site Title",
+        "siteTitlePlaceholder": "My Academy",
+        "logo": "Logo",
+        "navLinks": "Nav Links",
+        "addLink": "Add link"
+    },
+    "footerEditor": {
+        "brandName": "Brand Name",
+        "brandTagline": "Brand Tagline",
+        "brandTaglinePlaceholder": "Learn without limits.",
+        "linkSections": "Link Sections",
+        "sectionTitlePlaceholder": "Section title",
+        "addLink": "Add link",
+        "copyrightNote": "Copyright Note",
+        "copyrightPlaceholder": "© {{year}} My Academy"
+    },
+    "courseGridEditor": {
+        "sectionTitle": "Section Title",
+        "sectionTitlePlaceholder": "Our Courses",
+        "layoutPreset": "Layout Preset",
+        "layoutGrid3": "Grid 3",
+        "layoutGrid4": "Grid 4",
+        "layoutList": "List",
+        "showFilters": "Show Filters",
+        "showPrice": "Show Price",
+        "showBadge": "Show Badge"
+    },
+    "textBlockEditor": {
+        "contentPlaceholder": "Write your text here…"
+    },
+    "imageBlockEditor": {
+        "altText": "Alt Text",
+        "altTextPlaceholder": "Descriptive alt text",
+        "linkUrlOptional": "Link URL (optional)"
+    },
+    "htmlBlockEditor": {
+        "html": "HTML",
+        "cssScoped": "CSS (scoped to this section)"
+    },
+    "statsEditor": {
+        "headingPlaceholder": "Our Numbers",
+        "stats": "Stats",
+        "valuePlaceholder": "10,000+",
+        "labelPlaceholder": "Students"
+    },
+    "testimonialEditor": {
+        "headingPlaceholder": "What Our Learners Say",
+        "testimonials": "Testimonials",
+        "namePlaceholder": "Name",
+        "rolePlaceholder": "Role",
+        "feedbackPlaceholder": "Feedback…"
+    },
+    "faqEditor": {
+        "headingPlaceholder": "FAQ",
+        "questions": "Questions",
+        "questionPlaceholder": "Question?",
+        "answerPlaceholder": "Answer…"
+    },
+    "videoEmbedEditor": {
+        "videoUrl": "Video URL",
+        "caption": "Caption",
+        "aspectRatio": "Aspect Ratio"
+    },
+    "ctaBannerEditor": {
+        "showButton": "Show Button"
+    },
+    "featureGridEditor": {
+        "headingPlaceholder": "Why Choose Us",
+        "columns": "Columns",
+        "features": "Features",
+        "iconEmojiPlaceholder": "Icon/emoji"
+    },
+    "stepsEditor": {
+        "headingPlaceholder": "How It Works",
+        "layout": "Layout",
+        "horizontal": "Horizontal",
+        "vertical": "Vertical",
+        "steps": "Steps",
+        "stepTitlePlaceholder": "Step title"
+    },
+    "marqueeEditor": {
+        "icons": {
+            "none": "None",
+            "star": "Star",
+            "check": "Check",
+            "graduate": "Graduate",
+            "trophy": "Trophy",
+            "rocket": "Rocket",
+            "bulb": "Bulb",
+            "books": "Books",
+            "fire": "Fire",
+            "sparkle": "Sparkle",
+            "diamond": "Diamond",
+            "circle": "Circle",
+            "pipe": "Pipe"
+        },
+        "appearance": "Appearance",
+        "iconColor": "Icon Color",
+        "fontSize": "Font Size",
+        "motion": "Motion",
+        "speed": "Speed",
+        "speedSlow": "Slow",
+        "speedMedium": "Medium",
+        "speedFast": "Fast",
+        "direction": "Direction",
+        "directionLeft": "Left",
+        "directionRight": "Right",
+        "pauseOnHover": "Pause on hover",
+        "defaultSeparatorIcon": "Default separator icon",
+        "defaultItem1": "Item 1",
+        "defaultItem2": "Item 2",
+        "newItem": "New item",
+        "items": "Items",
+        "addItem": "Add item",
+        "itemTextPlaceholder": "Item text",
+        "noItemsYet": "No items yet. Add some above."
+    },
+    "layersPanel": {
+        "noComponentsYet": "No components yet"
+    },
+    "canvas": {
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "hideComponent": "Hide component",
+        "showComponent": "Show component",
+        "removeComponent": "Remove component",
+        "hiddenBadge": "hidden",
+        "viewportDesktop": "desktop",
+        "viewportTablet": "tablet",
+        "viewportMobile": "mobile",
+        "emptyHint": "Drag components here or click + to add",
+        "componentCountHint_one": "{{count}} component · click to select",
+        "componentCountHint_other": "{{count}} components · click to select",
+        "pageEmptyTitle": "This page is empty",
+        "pageEmptyHint": "Drag from the left panel or click + to add components"
+    },
+    "rightPanel": {
+        "pageSettings": "Page Settings",
+        "brandColor": "Brand Color",
+        "selectComponentHint": "Click any component on the canvas to edit its properties.",
+        "hide": "Hide",
+        "show": "Show",
+        "remove": "Remove",
+        "design": "Design"
+    },
+    "sidebar": {
+        "addTab": "Add",
+        "layersTab": "Layers"
+    }
+}

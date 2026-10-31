@@ -1,0 +1,4 @@
+{
+  "label": "Check if the referrer is a part of the same course and batch?",
+  "description": "Enable this to restrict referrals to students from the same batch"
+}

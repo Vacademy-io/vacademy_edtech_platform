@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { CaretLeft, ClipboardText } from "@phosphor-icons/react";
 import { useNavigate, useRouter } from "@tanstack/react-router";
 import { useLiveTestStore } from "@/stores/live-test-store";
@@ -16,6 +17,7 @@ interface AssessmentNavbarProps {
  * title on a phone ("Class 10 — Term 1 Mock…") while the H1 sat empty.
  */
 const AssessmentNavbar: React.FC<AssessmentNavbarProps> = ({ title }) => {
+  const { t } = useTranslation("layoutCommonB");
   const router = useRouter();
   const navigate = useNavigate();
   // The brief is a full-bleed fixed screen, so this bar carries the status-bar
@@ -45,7 +47,7 @@ const AssessmentNavbar: React.FC<AssessmentNavbarProps> = ({ title }) => {
       <button
         type="button"
         onClick={handleBack}
-        aria-label="Go back"
+        aria-label={t("instructionPage.navbar.goBack")}
         className="flex size-9 shrink-0 items-center justify-center rounded-full text-neutral-600 transition-colors hover:bg-neutral-100 hover:text-neutral-900"
       >
         <CaretLeft size={20} weight="bold" />
@@ -57,7 +59,7 @@ const AssessmentNavbar: React.FC<AssessmentNavbarProps> = ({ title }) => {
         className="truncate text-caption font-semibold uppercase tracking-wide text-neutral-500"
         title={title}
       >
-        Assessment brief
+        {t("instructionPage.navbar.assessmentBrief")}
       </p>
     </div>
   );

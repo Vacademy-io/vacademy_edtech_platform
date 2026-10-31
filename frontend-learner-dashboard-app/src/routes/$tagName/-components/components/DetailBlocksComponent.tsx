@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowUpRight } from "@phosphor-icons/react";
 import { CatalogueLink } from "../CatalogueLink";
 
@@ -68,6 +69,9 @@ export interface DetailBlocksProps {
   backgroundColor?: string;
   /** Admin canvas / learner preview passes this so the section shows guidance. */
   isPreviewMode?: boolean;
+  /** The untranslated props (JsonRenderer): anchor ids come from the authored
+   *  anchor or title, so a deep link (#new-program) works in every language. */
+  baseProps?: { blocks?: DetailBlock[] };
 }
 
 const slugify = (s: string): string =>
@@ -106,8 +110,17 @@ export const DetailBlocksComponent: React.FC<DetailBlocksProps> = ({
   anchorPrefix = "",
   backgroundColor,
   isPreviewMode = false,
+  baseProps,
 }) => {
-  const list = Array.isArray(blocks) ? blocks.filter((b) => b && b.title) : [];
+  const { t } = useTranslation("coursePlayerB");
+  // Each shown block with the authored block it was translated from (paired
+  // by position: a translation keeps the list's order and length).
+  const baseBlocks = baseProps?.blocks;
+  const authored =
+    Array.isArray(blocks) && Array.isArray(baseBlocks) && baseBlocks.length === blocks.length ? baseBlocks : null;
+  const list = Array.isArray(blocks)
+    ? blocks.map((b, i) => ({ b, base: authored?.[i] || b })).filter(({ b }) => b && b.title)
+    : [];
 
   const section = (children: React.ReactNode) => (
     <section
@@ -132,7 +145,7 @@ export const DetailBlocksComponent: React.FC<DetailBlocksProps> = ({
     if (!isPreviewMode) return null;
     return section(
       <div className="catalogue-card rounded-catalogue-lg border border-dashed border-catalogue-border p-8 text-center text-sm text-catalogue-text-muted">
-        Add a block for each programme you want to document.
+        {t("detailBlocks.emptyGuidance")}
       </div>
     );
   }
@@ -148,8 +161,8 @@ export const DetailBlocksComponent: React.FC<DetailBlocksProps> = ({
 
   return section(
     <div className="space-y-12">
-      {list.map((b, i) => {
-        let anchorId = `${anchorPrefix}${slugify(b.anchor || b.title)}` || `block-${i}`;
+      {list.map(({ b, base }, i) => {
+        let anchorId = `${anchorPrefix}${slugify(base.anchor || base.title)}` || `block-${i}`;
         while (used.has(anchorId)) anchorId = `${anchorId}-${i}`;
         used.add(anchorId);
 
@@ -217,8 +230,8 @@ export const DetailBlocksComponent: React.FC<DetailBlocksProps> = ({
               {specs.length > 0 && (
                 <dl className={`catalogue-hairline-grid ${specCols}`}>
                   {specs.map((s, j) => (
-                    <div key={j} className="px-6 py-4">
-                      <dt className="mb-1 text-xs font-semibold uppercase tracking-wide-08 text-catalogue-text-muted">
+                    <div key={j} className="px-6 py-4 space-y-1">
+                      <dt className="text-xs font-semibold uppercase tracking-wide-08 text-catalogue-text-muted">
                         {s.label}
                       </dt>
                       <dd className="text-sm font-medium text-catalogue-text-secondary">{s.value}</dd>

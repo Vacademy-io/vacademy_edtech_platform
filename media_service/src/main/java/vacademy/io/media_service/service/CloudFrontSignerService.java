@@ -92,6 +92,16 @@ public class CloudFrontSignerService {
     }
 
     /**
+     * True when a signed CDN URL for this key reaches the private bucket: signing is
+     * configured AND the distribution routes the key's prefix to the private origin.
+     * Any other private key would hit the public bucket and 404, so callers must fall
+     * back to an S3 presigned URL for it.
+     */
+    public boolean canSign(String objectKey) {
+        return isEnabled() && cdnUrlService.isRoutedToPrivateOrigin(objectKey);
+    }
+
+    /**
      * Signed CDN URL for a private object, valid until {@code expiresAt}.
      * Canned policy → the signature rides as query params, which the cache
      * policy excludes from the cache key, so every viewer's differently-signed

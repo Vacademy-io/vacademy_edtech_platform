@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import Editor from "@monaco-editor/react";
 import { Play, Check, X, SpinnerGap } from "@phosphor-icons/react";
 import { Preferences } from "@capacitor/preferences";
@@ -40,6 +41,7 @@ function localStorageKey(attemptId: string | undefined, questionId: string) {
 }
 
 export function CodingQuestionDisplay({ questionId, attemptId, config }: Props) {
+    const { t } = useTranslation("questionTest");
     const setCodingAnswer = useAssessmentStore((s) => s.setCodingAnswer);
     const incrementPaste = useAssessmentStore((s) => s.incrementCodingPasteAttempt);
     const existingAnswer = useAssessmentStore(
@@ -298,19 +300,27 @@ export function CodingQuestionDisplay({ questionId, attemptId, config }: Props) 
     );
 
     return (
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-stack md:grid-cols-2">
             {/* Problem panel */}
             <div className="rounded border bg-background p-3">
                 <div
                     className="prose max-w-none"
                     dangerouslySetInnerHTML={{
-                        __html: config.problemHtml || "<i>(No problem statement)</i>",
+                        __html:
+                            config.problemHtml ||
+                            `<i>${t("coding.problem.missing")}</i>`,
                     }}
                 />
                 <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                    <Badge variant="outline">Max points: {config.maxPoints ?? 10}</Badge>
-                    <Badge variant="outline">CPU {cpuSeconds}s</Badge>
-                    <Badge variant="outline">Tests: {config.testCases?.length || 0}</Badge>
+                    <Badge variant="outline">
+                        {t("coding.badges.maxPoints", { max: config.maxPoints ?? 10 })}
+                    </Badge>
+                    <Badge variant="outline">
+                        {t("coding.badges.cpu", { seconds: cpuSeconds })}
+                    </Badge>
+                    <Badge variant="outline">
+                        {t("coding.badges.tests", { count: config.testCases?.length || 0 })}
+                    </Badge>
                 </div>
             </div>
 
@@ -339,12 +349,12 @@ export function CodingQuestionDisplay({ questionId, attemptId, config }: Props) 
                         ) : (
                             <Play className="me-1 h-4 w-4" />
                         )}
-                        Run
+                        {t("coding.actions.run")}
                     </Button>
                     {pythonBlocked && (
                         <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                             <SpinnerGap className="h-3 w-3 animate-spin" />
-                            Loading Python runtime…
+                            {t("coding.loadingRuntime")}
                         </span>
                     )}
                     {verdict && (
@@ -383,14 +393,14 @@ export function CodingQuestionDisplay({ questionId, attemptId, config }: Props) 
 
                 <Tabs defaultValue="tests" className="w-full">
                     <TabsList>
-                        <TabsTrigger value="tests">Tests</TabsTrigger>
-                        <TabsTrigger value="output">Output</TabsTrigger>
+                        <TabsTrigger value="tests">{t("coding.tabs.tests")}</TabsTrigger>
+                        <TabsTrigger value="output">{t("coding.tabs.output")}</TabsTrigger>
                     </TabsList>
                     <TabsContent value="tests">
                         <div className="space-y-2">
                             {visibleTests.length === 0 && results.length === 0 && (
                                 <p className="text-xs text-muted-foreground">
-                                    No sample tests provided.
+                                    {t("coding.tests.noneProvided")}
                                 </p>
                             )}
                             {visibleTests.map((tc, i) => {
@@ -411,7 +421,8 @@ export function CodingQuestionDisplay({ questionId, attemptId, config }: Props) 
                                                 <span className="h-4 w-4" />
                                             )}
                                             <span className="font-medium">
-                                                {tc.label || `Sample ${i + 1}`}
+                                                {tc.label ||
+                                                    t("coding.tests.sampleFallback", { number: i + 1 })}
                                             </span>
                                             {r && typeof r.timeMs === "number" && (
                                                 <span className="text-muted-foreground">
@@ -427,18 +438,18 @@ export function CodingQuestionDisplay({ questionId, attemptId, config }: Props) 
                                         <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                                             <div>
                                                 <div className="text-muted-foreground">
-                                                    Input
+                                                    {t("coding.tests.input")}
                                                 </div>
                                                 <pre className="whitespace-pre-wrap rounded bg-muted/50 p-1">
-                                                    {tc.stdin || "(empty)"}
+                                                    {tc.stdin || t("coding.tests.empty")}
                                                 </pre>
                                             </div>
                                             <div>
                                                 <div className="text-muted-foreground">
-                                                    Expected
+                                                    {t("coding.tests.expected")}
                                                 </div>
                                                 <pre className="whitespace-pre-wrap rounded bg-muted/50 p-1">
-                                                    {tc.expectedStdout || "(empty)"}
+                                                    {tc.expectedStdout || t("coding.tests.empty")}
                                                 </pre>
                                             </div>
                                         </div>
@@ -447,7 +458,7 @@ export function CodingQuestionDisplay({ questionId, attemptId, config }: Props) 
                                                 {r.stderr && (
                                                     <div>
                                                         <div className="text-red-600">
-                                                            Compiler / runtime error
+                                                            {t("coding.tests.compilerError")}
                                                         </div>
                                                         <pre className="whitespace-pre-wrap rounded bg-red-50 p-2 text-2xs text-red-900">
                                                             {r.stderr}
@@ -456,7 +467,7 @@ export function CodingQuestionDisplay({ questionId, attemptId, config }: Props) 
                                                 )}
                                                 <div>
                                                     <div className="text-muted-foreground">
-                                                        Your output
+                                                        {t("coding.tests.yourOutput")}
                                                     </div>
                                                     <OutputDiff
                                                         actual={r.stdout ?? ""}
@@ -482,13 +493,14 @@ export function CodingQuestionDisplay({ questionId, attemptId, config }: Props) 
                                             <X className="h-4 w-4 text-red-600" />
                                         )}
                                         <span className="font-medium">
-                                            {r.label || `Hidden ${i + 1}`}
+                                            {r.label ||
+                                                t("coding.tests.hiddenFallback", { number: i + 1 })}
                                         </span>
                                         <Badge
                                             variant="outline"
                                             className="text-3xs"
                                         >
-                                            hidden
+                                            {t("coding.tests.hiddenBadge")}
                                         </Badge>
                                     </div>
                                 ))}
@@ -496,7 +508,7 @@ export function CodingQuestionDisplay({ questionId, attemptId, config }: Props) 
                     </TabsContent>
                     <TabsContent value="output">
                         {results.length === 0 ? (
-                            <p className="text-xs text-muted-foreground">No output yet.</p>
+                            <p className="text-xs text-muted-foreground">{t("coding.output.none")}</p>
                         ) : (
                             <div className="space-y-2">
                                 {results
@@ -504,18 +516,19 @@ export function CodingQuestionDisplay({ questionId, attemptId, config }: Props) 
                                     .map((r, i) => (
                                         <div key={r.id} className="rounded border p-2">
                                             <div className="text-xs font-medium">
-                                                {r.label || `Test ${i + 1}`}
+                                                {r.label ||
+                                                    t("coding.output.testFallback", { number: i + 1 })}
                                             </div>
                                             <div className="mt-1 text-2xs text-muted-foreground">
-                                                stdout
+                                                {t("coding.output.stdoutLabel")}
                                             </div>
                                             <pre className="whitespace-pre-wrap text-xs">
-                                                {r.stdout || "(empty)"}
+                                                {r.stdout || t("coding.tests.empty")}
                                             </pre>
                                             {r.stderr && (
                                                 <>
                                                     <div className="mt-1 text-2xs text-red-600">
-                                                        stderr / compiler
+                                                        {t("coding.output.stderrLabel")}
                                                     </div>
                                                     <pre className="whitespace-pre-wrap rounded bg-red-50 p-2 text-2xs text-red-900">
                                                         {r.stderr}

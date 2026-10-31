@@ -68,7 +68,7 @@ function AssessmentsScreen() {
     >
       <div className="flex flex-col gap-5">
         {assessmentsArr.length > 0 ? (
-          <ul className="flex flex-col gap-3">
+          <ul className="flex flex-col gap-stack">
             {assessmentsArr.map((a, i) => {
               const meta = metaLine(a);
               const marks = marksLabel(a);

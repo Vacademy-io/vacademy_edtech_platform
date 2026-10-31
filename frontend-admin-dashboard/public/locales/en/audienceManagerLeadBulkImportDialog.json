@@ -1,0 +1,111 @@
+{
+    "dialog": {
+        "title": "Bulk Import CSV — {{campaignName}}",
+        "description": "Upload a CSV file to import multiple leads at once."
+    },
+    "steps": {
+        "upload": "Upload",
+        "preview": "Preview",
+        "results": "Results"
+    },
+    "loading": {
+        "campaignFields": "Loading campaign fields..."
+    },
+    "noCustomFields": {
+        "title": "No custom fields configured",
+        "description": "Add custom fields to this campaign before importing leads."
+    },
+    "upload": {
+        "downloadTemplateButton": "Download Template",
+        "fieldsCount_one": "CSV with {{count}} field + sample row",
+        "fieldsCount_other": "CSV with {{count}} fields + sample row",
+        "dropzone": {
+            "cta": "Click to upload your CSV",
+            "maxRows": "Max {{count}} rows"
+        },
+        "expectedColumns": {
+            "title": "Expected columns",
+            "leadOwnerChip": "Lead Owner (Counsellor Email)",
+            "leadStatusChip": "Lead Status",
+            "leadOwnerLabel": "Lead Owner",
+            "leadStatusLabel": "Lead Status",
+            "andConnector": "and",
+            "hintSuffix": "are optional. Owner accepts a counsellor email (or unique name); status accepts a label like {{statusExamples}}. Blank status defaults to {{defaultStatus}}.",
+            "defaultStatusExamples": "New, Contacted, Interested",
+            "defaultStatusFallback": "your default status"
+        }
+    },
+    "preview": {
+        "statTiles": {
+            "totalRows": "Total rows",
+            "valid": "Valid",
+            "errors": "Errors",
+            "duplicates": "Duplicates"
+        },
+        "blocked": {
+            "reason_one": "missing mandatory column: {{columns}}",
+            "reason_other": "missing mandatory columns: {{columns}}",
+            "title": "Import blocked — {{reason}}",
+            "descriptionPrefix": "Your file has no column mapping to",
+            "descriptionSuffix_one": ". This affects every row, so nothing can be imported — each lead would be saved with that field empty. Add the column to your CSV (the header must match the field name) and upload again.",
+            "descriptionSuffix_other": ". This affects every row, so nothing can be imported — each lead would be saved with those fields empty. Add the column to your CSV (the header must match the field name) and upload again."
+        },
+        "invalidRows": {
+            "count_one": "{{formatted}} row won't import",
+            "count_other": "{{formatted}} rows won't import",
+            "downloadReportButton": "Download error report",
+            "note": "These rows are skipped — the remaining valid rows import normally. The report lists every skipped row with its reason, so you can fix just those and upload them separately.",
+            "duplicateReasonLabel": "Duplicate (same email earlier in file)",
+            "reportColumnHeader": "Import Error"
+        },
+        "columnMapping": {
+            "title": "Column mapping",
+            "mappedCount": "({{mapped}}/{{total}} mapped)"
+        },
+        "table": {
+            "rowNumberHeader": "#",
+            "statusHeader": "Status",
+            "ownerColumnHeader": "Owner →",
+            "statusColumnHeader": "Status →",
+            "duplicateEmailTooltip": "Duplicate email",
+            "showingFirst100_one": "Showing first {{shown}} of {{formatted}} row",
+            "showingFirst100_other": "Showing first {{shown}} of {{formatted}} rows"
+        },
+        "footer": {
+            "backButton": "Back",
+            "submittingBatch": "Submitting… batch {{done}}/{{total}}",
+            "submittingRows_one": "Submitting {{count}} row...",
+            "submittingRows_other": "Submitting {{count}} rows...",
+            "submitButton_one": "Submit {{count}} valid row",
+            "submitButton_other": "Submit {{count}} valid rows"
+        }
+    },
+    "results": {
+        "summary": {
+            "total": "Total",
+            "success": "Success",
+            "failed": "Failed",
+            "skipped": "Skipped"
+        },
+        "showDetailsButton": "Show details",
+        "hideDetailsButton": "Hide details",
+        "rowLabel": "Row {{number}}",
+        "statusLabel": {
+            "FAILED": "Failed",
+            "SKIPPED": "Skipped"
+        },
+        "doneButton": "Done"
+    },
+    "toasts": {
+        "csvEmpty": "CSV file is empty",
+        "tooManyRows": "CSV has {{count}} rows. Maximum allowed is {{max}}.",
+        "missingMandatoryColumns": "Missing mandatory columns: {{columns}}. Add them to the file and re-upload.",
+        "parseFailed": "Failed to parse CSV: {{message}}",
+        "cannotImport": "Cannot import — {{reason}}. Fix the file and re-upload.",
+        "noValidRows": "No valid rows to submit",
+        "allImportedSuccess_one": "All {{count}} lead imported successfully!",
+        "allImportedSuccess_other": "All {{count}} leads imported successfully!",
+        "importComplete": "Import complete: {{success}} success, {{failed}} failed, {{skipped}} skipped",
+        "submitFailed": "Failed to submit leads"
+    }
+}

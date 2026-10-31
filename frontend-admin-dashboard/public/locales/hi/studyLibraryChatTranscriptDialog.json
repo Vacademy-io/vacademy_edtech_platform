@@ -1,0 +1,14 @@
+{
+    "chatHeading": "चैट",
+    "chatWith": "{{name}} के साथ चैट",
+    "started": "{{time}} शुरू हुई",
+    "loadingTranscript": "ट्रांसक्रिप्ट लोड हो रही है…",
+    "loadFailed": "यह ट्रांसक्रिप्ट लोड नहीं हो सकी। कृपया फिर से कोशिश करें।",
+    "noMessages": "इस चैट में कोई संदेश नहीं है।",
+    "practiceQuiz": "अभ्यास क्विज़",
+    "quizResult": "क्विज़ परिणाम",
+    "usedTool": "टूल इस्तेमाल किया गया: {{tool}}",
+    "aiUsedTool": "AI ने एक टूल का इस्तेमाल किया",
+    "toolResultNamed": "{{tool}} परिणाम",
+    "toolResult": "टूल परिणाम"
+}

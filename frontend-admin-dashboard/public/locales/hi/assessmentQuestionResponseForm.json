@@ -1,0 +1,28 @@
+{
+    "header": {
+        "questionOf": "प्रश्न {{current}} / {{total}}",
+        "typeAndMaxMarks": "{{type}} | अधिकतम अंक: {{maxMarks}}"
+    },
+    "question": {
+        "noContent": "प्रश्न का पाठ उपलब्ध नहीं है"
+    },
+    "options": {
+        "selectOne": "एक विकल्प चुनें:",
+        "selectAll": "लागू होने वाले सभी विकल्प चुनें:",
+        "optionFallback": "विकल्प {{number}}"
+    },
+    "directMarks": {
+        "marksLabel": "अंक",
+        "statusLabel": "स्थिति",
+        "statusSelect": "चुनें",
+        "statusCorrect": "सही",
+        "statusIncorrect": "गलत",
+        "statusPartialCorrect": "आंशिक रूप से सही"
+    },
+    "navigation": {
+        "clearResponse": "उत्तर हटाएं",
+        "previous": "पिछला",
+        "submit": "सबमिट करें",
+        "next": "अगला"
+    }
+}

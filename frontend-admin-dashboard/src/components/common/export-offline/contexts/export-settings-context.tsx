@@ -47,7 +47,7 @@ export interface ExportSettings {
 
 const defaultSettings: ExportSettings = {
     exportQuestionPaper: true,
-    exportSolutionKey: true,
+    exportSolutionKey: false,
     exportFormat: 'pdf',
     columnsPerPage: 1,
     questionsPerPage: 3,
@@ -86,8 +86,18 @@ const ExportSettingsContext = createContext<{
     updateSettings: () => {},
 });
 
-export function ExportSettingsProvider({ children }: { children: React.ReactNode }) {
-    const [settings, setSettings] = useState<ExportSettings>(defaultSettings);
+export function ExportSettingsProvider({
+    children,
+    initialSettings,
+}: {
+    children: React.ReactNode;
+    /** Overrides applied on first render only (e.g. an OMR set's fixed single set + answer key). */
+    initialSettings?: Partial<ExportSettings>;
+}) {
+    const [settings, setSettings] = useState<ExportSettings>(() => ({
+        ...defaultSettings,
+        ...initialSettings,
+    }));
 
     const updateSettings = (newSettings: Partial<ExportSettings>) => {
         console.log('settings updated ');

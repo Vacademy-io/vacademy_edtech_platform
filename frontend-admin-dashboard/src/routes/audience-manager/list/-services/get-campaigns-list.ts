@@ -67,6 +67,8 @@ export interface CampaignItem {
     institute_custom_fields?: any[];
     default_initial_score?: number;
     sub_org_id?: string;
+    /** Key -> value tags on the list, e.g. `{ state: 'Maharashtra', course: 'MBA' }`. */
+    tags?: Record<string, string>;
 }
 
 const fetchCampaignsList = async (payload: CampaignListRequest): Promise<CampaignListResponse> => {

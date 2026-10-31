@@ -246,8 +246,7 @@ export const BulkContentUploadingWizard = ({
                 other.packageSessionId === packageSessionId
         );
     };
-    const DUPLICATE_TARGET_MESSAGE =
-        'Another folder in this zip already targets the same course and batch.';
+    const DUPLICATE_TARGET_MESSAGE = `Another folder in this zip already targets the same ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()} and batch.`;
 
     const sectionCallbacks: SectionCallbacks = {
         onCourseChange: (sectionId, courseId) => {

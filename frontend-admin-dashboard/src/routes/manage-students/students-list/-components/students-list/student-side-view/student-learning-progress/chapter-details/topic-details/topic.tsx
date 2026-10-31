@@ -3,6 +3,7 @@ import { MyButton } from '@/components/design-system/button';
 import { useActivityStatsStore } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-stores/activity-stats-store';
 import { SlideWithStatusType } from '@/routes/manage-students/students-list/-types/student-slides-progress-type';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ActivityLogDialog } from '../../../../../../../../../components/common/student-slide-tracking/activity-log-dialog';
 import { useStudentSidebar } from '@/routes/manage-students/students-list/-context/selected-student-sidebar-context';
 import { FileDoc } from '@phosphor-icons/react';
@@ -30,6 +31,7 @@ export const SlideIcon = ({ slideData, status }: TopicProps) => {
 };
 
 export const Topic = ({ slideData }: TopicProps) => {
+    const { t } = useTranslation('manageStudentsTopic');
     const store = useActivityStatsStore.getState();
     const [chapterCompletionStatus, setChapterCompletionStatus] = useState<'done' | 'pending'>(
         'pending'
@@ -58,10 +60,12 @@ export const Topic = ({ slideData }: TopicProps) => {
                     <div>{slideData.slide_title}</div>
                 </div>
                 <div>
-                    Last viewed on:{' '}
-                    {slideData.video_url == null
-                        ? slideData.document_last_updated
-                        : slideData.video_last_updated}
+                    {t('lastViewedOn', {
+                        date:
+                            slideData.video_url == null
+                                ? slideData.document_last_updated
+                                : slideData.video_last_updated,
+                    })}
                 </div>
             </div>
             <div className="flex items-center gap-3">
@@ -72,7 +76,7 @@ export const Topic = ({ slideData }: TopicProps) => {
                     scale="small"
                     onClick={handleOpenDialog}
                 >
-                    Activity Log
+                    {t('activityLog')}
                 </MyButton>
                 <ActivityLogDialog selectedUser={selectedStudent} slideData={slideData} />
             </div>

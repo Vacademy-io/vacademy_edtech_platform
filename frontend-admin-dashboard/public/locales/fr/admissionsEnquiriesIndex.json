@@ -1,0 +1,70 @@
+{
+    "pageTitle": "Demandes",
+    "selectEnquiryPlaceholder": "Sélectionner une demande",
+    "enquiryTypeLabel": "Type de demande : {{type}}",
+    "addNewEnquiryResponse": "Ajouter une nouvelle réponse",
+    "copyFormLink": "Copier le lien du formulaire",
+    "copyLinkTitle": "Copier le lien de la demande dans le presse-papiers",
+    "walkInRegister": "Inscription sur place",
+    "walkInRegisterTitle": "Ouvrir le formulaire d'inscription sur place",
+    "toast": {
+        "linkCopied": "Lien de la demande copié dans le presse-papiers !",
+        "copyFailed": "Échec de la copie du lien"
+    },
+    "filters": {
+        "status": "Statut",
+        "source": "Source",
+        "dateRange": "Plage de dates",
+        "class": "Classe"
+    },
+    "searchPlaceholder": "Rechercher par nom ou mobile...",
+    "sortBy": {
+        "placeholder": "Trier par...",
+        "defaultOrder": "Ordre par défaut",
+        "dateSubmitted": "Date de soumission",
+        "leadScore": "Score du prospect",
+        "parentName": "Nom du parent"
+    },
+    "showDuplicates": "Afficher les doublons",
+    "clearAll": "Tout effacer",
+    "selectEnquiryPrompt": "Veuillez sélectionner une demande pour voir les réponses",
+    "createNewEnquiryForm": "Créer un nouveau formulaire de demande",
+    "walkInRegistration": "Inscription sur place",
+    "walkInRegistrationFormTitle": "Formulaire d'inscription sur place",
+    "dateRanges": {
+        "today": "Aujourd'hui",
+        "last7Days": "7 derniers jours",
+        "last30Days": "30 derniers jours",
+        "last3Months": "3 derniers mois",
+        "last6Months": "6 derniers mois",
+        "lastYear": "Année dernière"
+    },
+    "enquiryStatuses": {
+        "new": "Nouveau",
+        "contacted": "Contacté",
+        "notEligible": "Non éligible",
+        "qualified": "Qualifié",
+        "followUp": "Suivi",
+        "closed": "Clôturé",
+        "converted": "Converti",
+        "admitted": "Admis"
+    },
+    "sourceTypes": {
+        "website": "Site web",
+        "googleAds": "Google Ads",
+        "facebook": "Facebook",
+        "instagram": "Instagram",
+        "referral": "Parrainage",
+        "other": "Autre"
+    },
+    "leadTiers": {
+        "hot": "CHAUD",
+        "warm": "TIÈDE",
+        "cold": "FROID"
+    },
+    "pageSubtitle": "Responses to your enquiry forms — follow up, then convert to an application or admission.",
+    "formStatus": "Form {{status}}",
+    "quickViews": {
+        "all": "All enquiries"
+    }
+}

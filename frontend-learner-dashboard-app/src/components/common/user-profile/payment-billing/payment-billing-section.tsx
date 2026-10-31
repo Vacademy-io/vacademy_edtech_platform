@@ -1,5 +1,6 @@
 import { Suspense, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import {
   CreditCard,
   CalendarBlank,
@@ -42,6 +43,7 @@ export const PaymentBillingSection = ({
   // early return never changes hook order between renders.
   if (shouldHidePaidPurchaseUI()) return null;
 
+  const { t } = useTranslation("userProfileExtra");
   const [isEditingCard, setIsEditingCard] = useState(false);
   const queryClient = useQueryClient();
 
@@ -68,7 +70,7 @@ export const PaymentBillingSection = ({
       return (
         <div className="flex items-center gap-2 py-4 text-sm text-gray-500">
           <SpinnerGap className="size-4 animate-spin" />
-          Loading payment details...
+          {t("paymentBillingSection.loadingPayment")}
         </div>
       );
     }
@@ -77,7 +79,7 @@ export const PaymentBillingSection = ({
       return (
         <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
           <Info className="size-4 shrink-0" />
-          Payment details are unavailable right now. Please try again later.
+          {t("paymentBillingSection.unavailable")}
         </div>
       );
     }
@@ -85,10 +87,10 @@ export const PaymentBillingSection = ({
     if (!summary.update_supported) {
       const message =
         summary.reason === "NO_CUSTOMER"
-          ? "No saved payment method on file yet. It will appear here after your first card payment."
+          ? t("paymentBillingSection.reason.noCustomer")
           : summary.reason === "GATEWAY_NOT_CONFIGURED"
-            ? "Online payments are not configured for your institute."
-            : "Your payment method is managed at checkout and cannot be changed here.";
+            ? t("paymentBillingSection.reason.gatewayNotConfigured")
+            : t("paymentBillingSection.reason.managedAtCheckout");
       return (
         <div className="flex items-center gap-2 rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
           <Info className="size-4 shrink-0" />
@@ -97,12 +99,18 @@ export const PaymentBillingSection = ({
       );
     }
 
+    const cardBrand = summary.card_brand
+      ? summary.card_brand.toUpperCase()
+      : t("paymentBillingSection.defaultCardBrand");
     const cardLabel = summary.has_saved_payment_method
-      ? `${summary.card_brand ? summary.card_brand.toUpperCase() : "Card"} •••• ${summary.card_last4 ?? "????"}`
-      : "No card on file";
+      ? `${cardBrand} •••• ${summary.card_last4 ?? "????"}`
+      : t("paymentBillingSection.noCardOnFile");
     const expiryLabel =
       summary.card_expiry_month && summary.card_expiry_year
-        ? `Expires ${String(summary.card_expiry_month).padStart(2, "0")}/${summary.card_expiry_year}`
+        ? t("paymentBillingSection.expires", {
+            month: String(summary.card_expiry_month).padStart(2, "0"),
+            year: summary.card_expiry_year,
+          })
         : null;
 
     return (
@@ -113,7 +121,7 @@ export const PaymentBillingSection = ({
             <div>
               <p className="text-sm font-medium text-gray-700">{cardLabel}</p>
               <p className="text-xs text-gray-500">
-                {expiryLabel ?? "Used for subscription renewals"}
+                {expiryLabel ?? t("paymentBillingSection.usedForRenewals")}
               </p>
             </div>
           </div>
@@ -125,7 +133,9 @@ export const PaymentBillingSection = ({
               layoutVariant="default"
               onClick={() => setIsEditingCard(true)}
             >
-              {summary.has_saved_payment_method ? "Update Card" : "Add Card"}
+              {summary.has_saved_payment_method
+                ? t("paymentBillingSection.updateCard")
+                : t("paymentBillingSection.addCard")}
             </MyButton>
           )}
         </div>
@@ -153,9 +163,9 @@ export const PaymentBillingSection = ({
           </Suspense>
         )}
 
-        <div className="border-t border-gray-100 pt-4">
-          <p className="mb-3 text-sm font-medium text-gray-700">
-            Billing Details
+        <div className="border-t border-gray-100 pt-4 space-y-stack">
+          <p className="text-sm font-medium text-gray-700">
+            {t("paymentBillingSection.billingDetailsLabel")}
           </p>
           <BillingDetailsForm
             instituteId={instituteId}
@@ -173,7 +183,7 @@ export const PaymentBillingSection = ({
       <div className="space-y-4">
         <div className="flex items-center gap-2 border-b pb-2 text-lg font-semibold text-gray-900">
           <CreditCard size={20} className="text-primary-500" weight="bold" />
-          <h3>Payment &amp; Billing</h3>
+          <h3>{t("paymentBillingSection.title")}</h3>
         </div>
         {renderCardArea()}
       </div>
@@ -186,7 +196,7 @@ export const PaymentBillingSection = ({
             className="text-primary-500"
             weight="bold"
           />
-          <h3>Subscriptions &amp; Autopay</h3>
+          <h3>{t("paymentBillingSection.subscriptionsTitle")}</h3>
         </div>
         <SubscriptionMandateList instituteId={instituteId} />
       </div>
@@ -199,7 +209,7 @@ export const PaymentBillingSection = ({
             className="text-secondary-500"
             weight="bold"
           />
-          <h3>Membership &amp; Access</h3>
+          <h3>{t("paymentBillingSection.membershipTitle")}</h3>
         </div>
         <EnrollmentExpiryList instituteId={instituteId} userId={userId} />
       </div>

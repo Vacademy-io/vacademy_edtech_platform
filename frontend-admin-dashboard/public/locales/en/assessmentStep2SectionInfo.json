@@ -1,0 +1,97 @@
+{
+    "header": {
+        "deleteSection": "Delete section",
+        "mcqSingle": "MCQ Single",
+        "mcqMulti": "MCQ Multi",
+        "total": "Total"
+    },
+    "uploadSection": {
+        "title": "Upload Question Paper",
+        "subtitle": "Choose how you want to populate this section with questions.",
+        "manualCard": {
+            "title": "Create Manually",
+            "subtitle": "Write questions one by one"
+        },
+        "manualDialog": {
+            "title": "Create Question Paper Manually"
+        },
+        "savedCard": {
+            "title": "Choose Saved Paper",
+            "subtitle": "Reuse an existing paper"
+        },
+        "savedDialog": {
+            "title": "Choose Saved Question Paper From List",
+            "description": "Select a previously saved question paper to add to this section"
+        }
+    },
+    "criteria": {
+        "title": "Evaluation Criteria",
+        "subtitle": "Let AI draft evaluation rubrics for every question.",
+        "generateAll": "Generate All Criteria",
+        "stopProgress": "Stop ({{current}}/{{total}})"
+    },
+    "dialogs": {
+        "confirmBulkGenerate_one": "Generate AI criteria for all {{count}} question in this section?",
+        "confirmBulkGenerate_other": "Generate AI criteria for all {{count}} questions in this section?",
+        "cancel": "Cancel"
+    },
+    "toasts": {
+        "noQuestionsInSection": "No questions in this section",
+        "generationCancelled": "Generation cancelled by user",
+        "questionAlreadyHasCriteria": "Question {{number}} already has criteria",
+        "questionZeroMarksSkip": "Question {{number}} has 0 marks, skipping",
+        "failedGenerateCriteriaForQuestion": "Failed to generate criteria for question {{number}}: {{error}}",
+        "generatedCriteriaSuccess_one": "Generated criteria for {{count}} question!",
+        "generatedCriteriaSuccess_other": "Generated criteria for {{count}} questions!",
+        "failedGenerateCriteriaCount_one": "Failed to generate criteria for {{count}} question",
+        "failedGenerateCriteriaCount_other": "Failed to generate criteria for {{count}} questions",
+        "questionUpdated": "Question updated",
+        "questionUpdateFailed": "Could not update the question",
+        "questionInvalid": "Fill in the question and its options before saving."
+    },
+    "sectionDescription": {
+        "title": "Section Description",
+        "placeholder": "Describe this section"
+    },
+    "duration": {
+        "questionDuration": "Question Duration",
+        "sectionDuration": "Section Duration",
+        "hrs": "hrs",
+        "minutes": "minutes"
+    },
+    "markingScheme": {
+        "marksPerQuestion": {
+            "title": "Marks Per Question",
+            "subtitle": "Default marks awarded for correct answers"
+        },
+        "negativeMarking": "Negative Marking",
+        "partialMarking": "Partial Marking"
+    },
+    "randomization": {
+        "problemRandomization": "Problem Randomization"
+    },
+    "table": {
+        "surveyQuestionsTitle": "Survey Questions",
+        "adaptiveMarkingRulesTitle": "Adaptive Marking Rules",
+        "questionCount_one": "{{count}} question",
+        "questionCount_other": "{{count}} questions",
+        "headers": {
+            "qno": "Q.No.",
+            "question": "Question",
+            "surveyQuestion": "Survey Question",
+            "questionType": "Question Type",
+            "marks": "Marks",
+            "penalty": "Penalty",
+            "time": "Time",
+            "criteria": "Criteria"
+        },
+        "editQuestion": "Edit question",
+        "editQuestionMissing": "This question could not be loaded.",
+        "saveQuestion": "Save question",
+        "savingQuestion": "Saving…",
+        "correctOption": "Correct option"
+    },
+    "totalMarks": {
+        "label": "Total Marks"
+    }
+}

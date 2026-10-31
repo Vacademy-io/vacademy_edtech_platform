@@ -1,0 +1,30 @@
+{
+    "noAssessmentLinked": "Aucune évaluation liée à cette diapositive.",
+    "status": {
+        "scheduled": "Planifiée",
+        "closed": "Fermée",
+        "open": "Ouverte"
+    },
+    "availability": {
+        "range": "{{opens}} → {{closes}}",
+        "from": "À partir du {{opens}}",
+        "until": "Jusqu'au {{closes}}",
+        "anytime": "À tout moment"
+    },
+    "linkedAssessment": "Évaluation liée",
+    "loadingEllipsis": "Chargement…",
+    "viewSubmissions": "Voir les soumissions",
+    "manageInAssessments": "Gérer dans Évaluations",
+    "couldNotLoadDetails": "Impossible de charger les détails de l'évaluation. Le lien peut encore fonctionner pour les apprenants.",
+    "totalMarks": "Note totale",
+    "availableToLearners": "Disponible pour les apprenants",
+    "lockedUntil": "Cette diapositive est verrouillée pour les apprenants jusqu'à {{date}}.",
+    "itOpens": "son ouverture",
+    "closedOnDate": "Cette diapositive s'est fermée le {{date}} — les apprenants ne peuvent plus la tenter.",
+    "closedNoDate": "Cette diapositive est fermée — les apprenants ne peuvent plus la tenter.",
+    "instructions": "Instructions",
+    "loadingInstructions": "Chargement des instructions…",
+    "noInstructionsProvided": "Aucune instruction fournie.",
+    "submitted": "soumis",
+    "enrolled": "inscrits"
+}

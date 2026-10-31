@@ -1,0 +1,92 @@
+{
+    "dialogTitle": "إرسال بريد إلكتروني إلى الطلاب",
+    "cancel": "إلغاء",
+    "sending": "جارٍ الإرسال...",
+    "sendButton_zero": "إرسال إلى {{count}} مستلم",
+    "sendButton_one": "إرسال إلى مستلم واحد ({{count}})",
+    "sendButton_two": "إرسال إلى مستلمَين ({{count}})",
+    "sendButton_few": "إرسال إلى {{count}} مستلمين",
+    "sendButton_many": "إرسال إلى {{count}} مستلمًا",
+    "sendButton_other": "إرسال إلى {{count}} مستلم",
+    "composeNotice_zero": "قم بتحرير رسالتك الإلكترونية أدناه. لن يستلمها أي طالب ({{count}}).",
+    "composeNotice_one": "قم بتحرير رسالتك الإلكترونية أدناه. سيستلمها طالب واحد ({{count}}) لديه عنوان بريد إلكتروني.",
+    "composeNotice_two": "قم بتحرير رسالتك الإلكترونية أدناه. سيستلمها طالبان ({{count}}) لديهما عنوان بريد إلكتروني.",
+    "composeNotice_few": "قم بتحرير رسالتك الإلكترونية أدناه. سيستلمها {{count}} طلاب لديهم عناوين بريد إلكتروني.",
+    "composeNotice_many": "قم بتحرير رسالتك الإلكترونية أدناه. سيستلمها {{count}} طالبًا لديهم عناوين بريد إلكتروني.",
+    "composeNotice_other": "قم بتحرير رسالتك الإلكترونية أدناه. سيستلمها {{count}} طالب لديهم عناوين بريد إلكتروني.",
+    "templateLabel": "قالب البريد الإلكتروني (اختياري)",
+    "selectTemplatePlaceholder": "اختر قالبًا",
+    "noTemplateOption": "بدون قالب - البدء من جديد",
+    "subjectLabel": "الموضوع *",
+    "showPreview": "عرض المعاينة",
+    "subjectPlaceholder": "موضوع البريد الإلكتروني",
+    "bodyLabel": "النص *",
+    "clickToInsertVariables": "انقر على الأزرار أدناه لإدراج المتغيرات:",
+    "bodyPlaceholder": "اكتب رسالة البريد الإلكتروني هنا... انقر على الأزرار أعلاه لإدراج المتغيرات.",
+    "customMessageLabel": "نص الرسالة المخصصة (لمتغير custom_message_text)",
+    "customMessagePlaceholder": "أدخل رسالتك المخصصة...",
+    "sendingProgress": "تقدم الإرسال ({{done}}/{{total}}):",
+    "status": {
+        "pending": "قيد الانتظار...",
+        "sent": "تم الإرسال",
+        "failed": "فشل"
+    },
+    "toasts": {
+        "templateLoaded": "تم تحميل القالب \"{{name}}\".",
+        "subjectBodyRequired": "الموضوع والنص مطلوبان.",
+        "noValidRecipients": "لا يوجد مستلمون صالحون لإرسال البريد الإلكتروني إليهم.",
+        "processingEmails": "جارٍ معالجة رسائل البريد الإلكتروني...",
+        "noPayloadPrepared": "تعذر إعداد البيانات لأي طالب.",
+        "sendSuccess_zero": "لم يتم إرسال أي بريد إلكتروني ({{count}}).",
+        "sendSuccess_one": "تم إرسال بريد إلكتروني واحد بنجاح ({{count}}).",
+        "sendSuccess_two": "تم إرسال بريدين إلكترونيين بنجاح ({{count}}).",
+        "sendSuccess_few": "تم إرسال {{count}} رسائل بريد إلكتروني بنجاح.",
+        "sendSuccess_many": "تم إرسال {{count}} رسالة بريد إلكتروني بنجاح.",
+        "sendSuccess_other": "تم إرسال {{count}} رسالة بريد إلكتروني بنجاح.",
+        "sendPartial": "تم إرسال {{sent}}، وفشل {{failed}} بريد إلكتروني.",
+        "sendFailed": "فشل إرسال رسائل البريد الإلكتروني.",
+        "errorPrefix": "خطأ: {{message}}",
+        "unexpectedError": "حدث خطأ غير متوقع."
+    },
+    "templates": {
+        "welcome": {
+            "name": "بريد الترحيب",
+            "subject": "مرحبًا بك في منصتنا التعليمية",
+            "content": "عزيزي {{name}}،\n\nمرحبًا بك في منصتنا التعليمية! يسعدنا انضمامك إلينا.\n\nبيانات تسجيل الدخول الخاصة بك:\nالبريد الإلكتروني: {{email}}\nرقم الجوال: {{mobile_number}}\n\nمع أطيب التحيات،\nفريق العمل"
+        },
+        "sessionUpdate": {
+            "name": "تحديث الجلسة",
+            "subject": "تحديث الجلسة - {{name}}",
+            "content": "مرحبًا {{name}}،\n\nهذا تحديث بخصوص جلستك الحالية.\n\nيرجى مراجعة لوحة التحكم الخاصة بك للاطلاع على أحدث المعلومات.\n\nمع أطيب التحيات،\nفريق العمل"
+        },
+        "custom": {
+            "name": "بريد مخصص",
+            "subject": "تحديث هام",
+            "content": "عزيزي {{name}}،\n\n{{custom_message_text}}\n\nمع أطيب التحيات،\nفريق العمل"
+        }
+    },
+    "placeholders": {
+        "studentName": "اسم الطالب",
+        "emailAddress": "عنوان البريد الإلكتروني",
+        "mobileNumber": "رقم الجوال",
+        "customMessage": "رسالة مخصصة",
+        "courseName": "اسم الدورة",
+        "batchName": "اسم الدفعة",
+        "loginUsername": "اسم المستخدم لتسجيل الدخول",
+        "registrationDate": "تاريخ التسجيل",
+        "currentDate": "التاريخ الحالي"
+    },
+    "previewSampleData": {
+        "name": "محمد أحمد",
+        "courseName": "دورة الرياضيات",
+        "batchName": "الدفعة أ"
+    },
+    "preview": {
+        "heading": "معاينة البريد الإلكتروني",
+        "close": "إغلاق",
+        "usingFirstStudent": "معاينة باستخدام بيانات أول طالب محدد",
+        "subjectLabel": "الموضوع:",
+        "bodyLabel": "نص البريد الإلكتروني:",
+        "emptyState": "لا يوجد محتوى للمعاينة. أضف موضوعًا أو نصًا لعرض المعاينة."
+    }
+}

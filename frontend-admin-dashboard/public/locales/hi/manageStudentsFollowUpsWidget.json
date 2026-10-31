@@ -1,0 +1,51 @@
+{
+    "status": {
+        "pending": "लंबित",
+        "ongoing": "जारी",
+        "overdue": "अतिदेय",
+        "completed": "पूर्ण"
+    },
+    "card": {
+        "closedReason": "बंद किया गया: {{reason}}",
+        "created": "बनाया गया {{date}}",
+        "edit": "फ़ॉलो-अप एडिट करें"
+    },
+    "widget": {
+        "title": "फ़ॉलो-अप",
+        "openCount_one": "{{count}} खुला",
+        "openCount_other": "{{count}} खुले"
+    },
+    "emptyState": {
+        "title": "कोई खुला फ़ॉलो-अप नहीं",
+        "description": "फ़ॉलो अप टैब का उपयोग करके नीचे एक शेड्यूल करें"
+    },
+    "history": {
+        "title": "फ़ॉलो-अप इतिहास",
+        "created": "बनाया गया",
+        "nextFollowUp": "अगला फ़ॉलो-अप",
+        "response": "प्रतिक्रिया",
+        "mode": "माध्यम",
+        "nextAction": "अगली कार्रवाई",
+        "closingNote": "क्लोज़िंग नोट",
+        "noComment": "कोई टिप्पणी नहीं",
+        "showAll": "सभी दिखाएँ ({{count}})",
+        "showLess": "कम दिखाएँ"
+    },
+    "edit": {
+        "title": "फ़ॉलो-अप एडिट करें",
+        "description": "टिप्पणी या रुचि का स्तर सुधारें। पुराना टेक्स्ट एक्टिविटी लॉग में रहता है।",
+        "interestLevel": "रुचि का स्तर",
+        "interestPlaceholder": "रुचि का स्तर चुनें",
+        "search": "खोजें…",
+        "comment": "टिप्पणी",
+        "commentPlaceholder": "इस फ़ॉलो-अप में क्या हुआ…",
+        "commentRequired": "आपके संस्थान में हर फ़ॉलो-अप पर नोट ज़रूरी है।",
+        "closingNote": "क्लोज़िंग नोट",
+        "closingNoteRequired": "पूरे हुए फ़ॉलो-अप पर क्लोज़िंग नोट ज़रूरी है।",
+        "cancel": "रद्द करें",
+        "save": "सेव करें",
+        "saving": "सेव हो रहा है…",
+        "saved": "फ़ॉलो-अप अपडेट हो गया",
+        "failed": "फ़ॉलो-अप अपडेट नहीं हो सका"
+    }
+}

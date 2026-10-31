@@ -1,0 +1,15 @@
+{
+    "heading": {
+        "title": "قائمة طلبات التسجيل"
+    },
+    "search": {
+        "placeholder": "البحث بالاسم أو رقم التسجيل..."
+    },
+    "filters": {
+        "gender": "الجنس",
+        "preferredBatch": "الدفعة المفضلة",
+        "paymentStatus": "حالة الدفع",
+        "approvalStatus": "حالة الموافقة",
+        "paymentOption": "خيار الدفع"
+    }
+}

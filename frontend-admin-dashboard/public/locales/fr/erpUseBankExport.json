@@ -1,0 +1,6 @@
+{
+    "blockedReasons": {
+        "cancelled": "Ce cycle a été annulé — il n'y a rien à payer.",
+        "notApproved": "Un fichier bancaire ne peut être créé qu'à partir d'un cycle approuvé, afin que les montants soient ceux validés par l'établissement. Approuvez d'abord le cycle."
+    }
+}

@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Trash2, GripVertical, ChevronDown } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import type { MappingRow, PaymentPlan } from '../-types/product-page-types';
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 interface InviteListItem {
     id: string;
@@ -187,7 +189,9 @@ export const CourseInviteRow = ({ row, onChange, onRemove, displayOrder }: Cours
             <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs text-gray-400">
                     <GripVertical className="size-4 cursor-grab text-gray-300" />
-                    <span>Course {displayOrder + 1}</span>
+                    <span>
+                        {getTerminology(ContentTerms.Course, SystemTerms.Course)} {displayOrder + 1}
+                    </span>
                 </div>
                 <Button
                     variant="ghost"

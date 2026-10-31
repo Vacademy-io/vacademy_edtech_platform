@@ -1,0 +1,16 @@
+{
+    "steps": {
+        "before": {
+            "title": "Before Lecture",
+            "description": "Plan, schedule, and prepare materials."
+        },
+        "in": {
+            "title": "In Lecture",
+            "description": "Record, upload, or present interactively."
+        },
+        "after": {
+            "title": "After Lecture",
+            "description": "Analyze performance and review logs."
+        }
+    }
+}

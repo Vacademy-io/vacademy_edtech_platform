@@ -1,0 +1,257 @@
+{
+    "hero": {
+        "title": "Laissez l'IA étudiante répondre à partir de ce cours",
+        "body": "L'IA étudiante lit vos leçons et répond aux apprenants avec des liens vers la page ou la minute exacte. Les leçons verrouillées le restent : l'IA indique seulement aux apprenants quand elles s'ouvrent.",
+        "turnOn": "Activer la connaissance du cours",
+        "turningOn": "Activation…",
+        "askAdmin": "Demandez à un administrateur de l'activer.",
+        "turnedOn": "La connaissance du cours est activée",
+        "turnOnFailed": "Impossible d'activer la connaissance du cours. Réessayez."
+    },
+    "states": {
+        "READY": "Prêt pour l'IA",
+        "NEEDS_PROCESSING": "À traiter",
+        "PROCESSING": "En traitement",
+        "NOT_SCANNED": "Non analysé",
+        "CANT_READ": "Illisible",
+        "FAILED": "Échec",
+        "EXCLUDED": "Évaluation (jamais utilisée)"
+    },
+    "summary": {
+        "title": "Connaissances IA",
+        "subtitle": "Ce que l'IA étudiante peut lire dans ce cours.",
+        "ready_one": "L'IA peut répondre à partir de {{ready}} leçon sur {{count}}.",
+        "ready_many": "L'IA peut répondre à partir de {{ready}} leçons sur {{count}}.",
+        "ready_other": "L'IA peut répondre à partir de {{ready}} leçons sur {{count}}.",
+        "needProcessing_one": "{{count}} leçon à traiter (≈ {{credits}} crédits).",
+        "needProcessing_many": "{{count}} leçons à traiter (≈ {{credits}} crédits).",
+        "needProcessing_other": "{{count}} leçons à traiter (≈ {{credits}} crédits).",
+        "cantRead_one": "{{count}} leçon illisible.",
+        "cantRead_many": "{{count}} leçons illisibles.",
+        "cantRead_other": "{{count}} leçons illisibles.",
+        "failed_one": "{{count}} échec : réessayez-la ci-dessous.",
+        "failed_many": "{{count}} échecs : réessayez-les ci-dessous.",
+        "failed_other": "{{count}} échecs : réessayez-les ci-dessous.",
+        "makeReady": "Préparer le cours pour l'IA",
+        "allSet": "Tout est prêt",
+        "refresh": "Actualiser"
+    },
+    "run": {
+        "scanning": "Lecture des leçons : {{done}} sur {{total}}",
+        "processing": "Traitement des scans et vidéos : {{done}} sur {{total}}",
+        "credits": "{{charged}} crédits utilisés sur {{quoted}}",
+        "progressAria": "Progression de cette exécution",
+        "stop": "Arrêter",
+        "stopped": "Arrêté. Les crédits non dépensés sont libérés.",
+        "stopFailed": "Impossible d'arrêter. Réessayez.",
+        "scanFinished": "Lecture des leçons de ce cours terminée.",
+        "processFinished": "Traitement terminé. Les connaissances IA de ce cours sont à jour."
+    },
+    "empty": {
+        "title": "Aucune leçon publiée pour le moment.",
+        "body": "Publiez des leçons dans ce cours et elles apparaîtront ici."
+    },
+    "errors": {
+        "load": "Impossible de charger les connaissances IA de ce cours.",
+        "retry": "Réessayer",
+        "generic": "Une erreur s'est produite. Réessayez.",
+        "limit": "Vous avez atteint une limite d'utilisation de l'IA. Réessayez plus tard.",
+        "notEnabled": "La connaissance du cours est désactivée pour votre établissement."
+    },
+    "dialog": {
+        "title": "Préparer le cours pour l'IA",
+        "close": "Fermer",
+        "step1": {
+            "title": "Étape 1 · Lire vos leçons",
+            "body": "Lecture du texte de vos leçons. C'est gratuit.",
+            "progress": "{{done}} leçons sur {{total}}",
+            "starting": "Démarrage…",
+            "start": "Commencer la lecture",
+            "done": "Vos leçons ont été lues.",
+            "nothing": "Aucune leçon de ce cours ne peut encore être lue.",
+            "rateLimited": "Les leçons ont été lues il y a quelques minutes. Réessayez bientôt."
+        },
+        "step2": {
+            "title": "Étape 2 · Traiter les scans et vidéos",
+            "waiting": "Le coût s'affichera ici une fois la lecture terminée.",
+            "nothing": "Aucun traitement payant n'est nécessaire. L'IA peut utiliser tout le texte gratuit de ce cours.",
+            "items": {
+                "ocr_pages": "PDF scannés : {{units}} pages · {{credits}} crédits",
+                "transcribe_minutes": "Vidéos et audio : {{duration}} · {{credits}} crédits",
+                "deck_images": "Images de diapositives : {{units}} diapositives · {{credits}} crédits"
+            },
+            "lessons_one": "{{count}} leçon",
+            "lessons_many": "{{count}} leçons",
+            "lessons_other": "{{count}} leçons",
+            "approx": "Certaines durées de vidéo sont estimées jusqu'à la lecture des fichiers.",
+            "total": "Total",
+            "totalCredits": "{{credits}} crédits",
+            "balance": "Solde {{before}} → {{after}} ensuite",
+            "promise": "Vous ne serez jamais facturé plus de {{credits}} crédits. Les fichiers déjà traités ailleurs sont gratuits.",
+            "paidUnavailable": "Le traitement payant n'est pas encore disponible pour votre établissement.",
+            "askAdmin": "Demandez à un administrateur d'approuver.",
+            "quoteChanged": "Le montant est passé à {{credits}} crédits.",
+            "insufficientTitle": "Crédits insuffisants",
+            "insufficient": "Il faut {{credits}} crédits. Rechargez pour continuer.",
+            "process": "Traiter pour {{credits}} crédits",
+            "starting": "Démarrage…",
+            "keepFree": "Garder uniquement le contenu gratuit",
+            "started": "Traitement lancé. Vous pouvez fermer cette fenêtre.",
+            "running": "Traitement : {{done}} leçons sur {{total}}"
+        },
+        "duration": {
+            "minutes": "{{minutes}} min",
+            "hours": "{{hours}} h",
+            "hoursMinutes": "{{hours}} h {{minutes}} min"
+        }
+    },
+    "table": {
+        "title": "Leçons",
+        "filterAria": "Filtrer les leçons par état",
+        "all": "Toutes ({{count}})",
+        "stateWithCount": "{{label}} ({{count}})",
+        "columns": {
+            "lesson": "Leçon",
+            "chapter": "Chapitre",
+            "type": "Type",
+            "state": "État",
+            "reason": "Raison",
+            "credits": "Crédits",
+            "action": "Action"
+        },
+        "untitled": "Leçon sans titre",
+        "creditsUsed": "{{credits}} utilisés",
+        "creditsQuoted": "≈ {{credits}}",
+        "retry": "Réessayer",
+        "retryQueued": "Mise en file pour une nouvelle lecture",
+        "retryFailed": "Impossible de réessayer. Réessayez.",
+        "noneInState": "Aucune leçon dans cet état.",
+        "types": {
+            "pdf": "PDF",
+            "word": "Fichier Word",
+            "slides": "Diapositives",
+            "text": "Texte",
+            "code": "Code",
+            "document": "Document",
+            "video": "Vidéo",
+            "audio": "Audio",
+            "quiz": "Quiz",
+            "question": "Question",
+            "assignment": "Devoir",
+            "scorm": "Module interactif",
+            "aiVideo": "Vidéo IA",
+            "assessment": "Évaluation",
+            "other": "Autre"
+        }
+    },
+    "search": {
+        "title": "Tester ce que l'IA trouve",
+        "label": "Tester ce que l'IA trouve",
+        "placeholder": "Posez une question qu'un apprenant pourrait poser",
+        "submit": "Rechercher",
+        "searching": "Recherche…",
+        "note": "L'aperçu cherche dans toutes les leçons publiées et ignore les verrous de diffusion.",
+        "empty": "Rien ne correspond encore dans ce cours. Les leçons qui ne sont pas prêtes pour l'IA sont introuvables.",
+        "error": "Impossible de rechercher. Réessayez.",
+        "required": "Saisissez une question pour rechercher.",
+        "tooLong": "Limitez la question à {{max}} caractères.",
+        "untitled": "Leçon sans titre",
+        "page": "p. {{page}}",
+        "results_one": "{{count}} passage trouvé",
+        "results_many": "{{count}} passages trouvés",
+        "results_other": "{{count}} passages trouvés"
+    },
+    "links": {
+        "title": "Connaissances liées",
+        "subtitle": "Les bases de connaissances que le tuteur et l'IA étudiante utilisent avec ce cours.",
+        "add": "Lier une base de connaissances",
+        "edit": "Modifier",
+        "remove": "Retirer",
+        "removing": "Retrait…",
+        "removeTitle": "Retirer ce lien ?",
+        "removeBody": "Le tuteur et l'IA étudiante cessent d'utiliser {{name}} pour ce cours. La base de connaissances elle-même n'est pas modifiée.",
+        "removed": "Lien retiré",
+        "added": "Base de connaissances liée",
+        "updated": "Lien mis à jour",
+        "keep": "Garder comme lien",
+        "keeping": "Enregistrement…",
+        "kept": "Enregistré comme lien",
+        "legacyNote": "Défini dans les réglages du mode Tuteur de ce cours. Gardez-le comme lien pour que l'IA étudiante puisse aussi l'utiliser.",
+        "empty": "Aucune base de connaissances n'est encore liée à ce cours.",
+        "unnamed": "Base de connaissances indisponible",
+        "topics_one": "{{count}} thème",
+        "topics_other": "{{count}} thèmes",
+        "allTopics": "Tous les thèmes",
+        "chapters_one": "{{count}} chapitre associé",
+        "chapters_other": "{{count}} chapitres associés",
+        "usedBy": "Utilisée par : {{list}}",
+        "useIn": {
+            "tutor": "Tuteur en direct",
+            "chatbot": "IA étudiante"
+        },
+        "provenance": {
+            "AI_COURSE_CREATOR": "Ajoutée par le créateur de cours IA",
+            "ADMIN": "Ajoutée par un administrateur",
+            "LEGACY_TUTOR_SETTING": "Issue du réglage du mode Tuteur"
+        },
+        "roles": {
+            "GROUNDING": {
+                "label": "Source",
+                "help": "Le cours a été construit à partir de ce contenu. Le tuteur enseigne à partir de lui."
+            },
+            "REFERENCE": {
+                "label": "Référence",
+                "help": "Lecture complémentaire que l'IA étudiante peut citer en plus des leçons."
+            }
+        },
+        "modes": {
+            "STRICT": {
+                "label": "Strict",
+                "help": "Les réponses restent dans ce contenu."
+            },
+            "BLENDED": {
+                "label": "Mixte",
+                "help": "Ce contenu d'abord, les connaissances générales comblent les manques."
+            }
+        },
+        "form": {
+            "addTitle": "Lier une base de connaissances",
+            "editTitle": "Modifier le lien",
+            "kb": "Base de connaissances",
+            "kbPlaceholder": "Choisir une base de connaissances",
+            "kbRequired": "Choisissez une base de connaissances.",
+            "noKbs": "Toutes les bases de connaissances sont déjà liées, ou aucune n'existe encore. Créez-en une dans Base de connaissances.",
+            "role": "Rôle",
+            "mode": "Degré de fidélité",
+            "useIn": "Utiliser dans",
+            "useInRequired": "Choisissez au moins un usage.",
+            "cancel": "Annuler",
+            "save": "Enregistrer",
+            "saving": "Enregistrement…"
+        },
+        "errors": {
+            "load": "Impossible de charger les bases de connaissances liées.",
+            "save": "Impossible d'enregistrer le lien. Réessayez.",
+            "locked": "Cette base de connaissances est verrouillée pour votre établissement. Déverrouillez-la avant de la lier.",
+            "kbNotFound": "Cette base de connaissances n'existe plus.",
+            "linkNotFound": "Ce lien a déjà été retiré.",
+            "conflict": "Cette base de connaissances est déjà liée au cours.",
+            "notEnabled": "Les liens de bases de connaissances ne sont pas encore disponibles."
+        }
+    },
+    "kept": {
+        "action": "Utiliser la transcription",
+        "title": "Utiliser quand même la transcription ?",
+        "body": "Nous avons transcrit « {{title}} », mais cela ressemblait à de la musique ou du silence : l'IA ne l'utilise pas et rien n'a été facturé. Si l'enregistrement contient bien de la parole (chant, discours sur fond musical), lisez le début ci-dessous et utilisez-la.",
+        "loading": "Chargement de la transcription…",
+        "failed": "Impossible d'utiliser la transcription. Réessayez.",
+        "minutes_one": "{{count}} minute",
+        "minutes_other": "{{count}} minutes",
+        "words_one": "{{count}} mot",
+        "words_other": "{{count}} mots",
+        "price": "Vous payez une seule fois le prix habituel de la transcription. La leçon n'est pas retranscrite.",
+        "use": "L'utiliser · {{credits}} crédits",
+        "using": "En cours…",
+        "queued": "L'IA lira cette leçon d'ici une minute"
+    }
+}

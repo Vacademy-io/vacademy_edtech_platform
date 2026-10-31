@@ -1,0 +1,29 @@
+{
+    "never": "Never",
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "daysAgo_one": "{{count}} day ago",
+    "daysAgo_other": "{{count}} days ago",
+    "questionType": {
+        "singleChoice": "Single choice",
+        "multipleChoice": "Multiple choice",
+        "trueFalse": "True / false",
+        "numeric": "Numeric",
+        "oneWord": "One word",
+        "longAnswer": "Long answer"
+    },
+    "learnerStatus": {
+        "passed": "Passed",
+        "failed": "Failed",
+        "completed": "Completed",
+        "partlyDone": "Partly done",
+        "notAttempted": "Not attempted"
+    },
+    "difficulty": {
+        "wellUnderstood": "Well understood",
+        "mixed": "Mixed",
+        "struggling": "Struggling",
+        "needsReteaching": "Needs re-teaching"
+    },
+    "noResponses": "No responses"
+}

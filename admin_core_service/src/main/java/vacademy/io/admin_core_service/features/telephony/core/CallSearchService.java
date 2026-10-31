@@ -11,9 +11,11 @@ import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.audience.service.LeadReportSettingService;
 import vacademy.io.admin_core_service.features.audience.service.ReportScopeResolver;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
+import vacademy.io.admin_core_service.features.telephony.core.dto.CallDispositionCatalogDTO;
 import vacademy.io.admin_core_service.features.telephony.core.dto.CallMetricsDTO;
 import vacademy.io.admin_core_service.features.telephony.core.dto.CallRowDTO;
 import vacademy.io.admin_core_service.features.telephony.core.dto.CallSearchFilterDTO;
+import vacademy.io.admin_core_service.features.telephony.core.dto.DispositionCountDTO;
 import vacademy.io.common.auth.dto.UserDTO;
 
 import java.sql.Timestamp;
@@ -50,6 +52,7 @@ public class CallSearchService {
 
     private final NamedParameterJdbcTemplate jdbc;
     private final ReportScopeResolver reportScopeResolver;
+    private final CallDispositionOptionsService callDispositionOptionsService;
     private final LeadReportSettingService leadReportSettingService;
     private final AuthService authService;
 
@@ -83,13 +86,28 @@ public class CallSearchService {
     private static final String AI_LATERAL = """
             LEFT JOIN LATERAL (
                 SELECT r.id AS acr_id, r.disposition AS ai_disposition, r.callback_at AS ai_callback_at,
-                       r.diag_health AS diag_health, r.diag_faults AS diag_faults
+                       r.callback AS ai_callback, r.transfer_triggered AS transfer_triggered,
+                       r.diag_health AS diag_health, r.diag_faults AS diag_faults,
+                       r.follow_up AS follow_up, r.follow_up_gist AS follow_up_gist
                 FROM ai_call_result r
                 WHERE r.call_log_id = tcl.id
                 ORDER BY r.received_at DESC NULLS LAST
                 LIMIT 1
             ) acr ON TRUE
             """;
+
+    /**
+     * The FROM clause every query here shares. Besides the AI result and the lead,
+     * the call log row now carries what the Call Log table shows inline (2026-09-11):
+     * the lead's pipeline status (editable in the table) and the call's intelligence
+     * verdict (two-line update, ratings, sentiment). Both joins are 1:1 on unique
+     * keys (ux on call_intelligence.call_log_id; lead_status.id), so the count
+     * queries pay nothing measurable for them.
+     */
+    private static final String FROM_TAIL = " FROM telephony_call_log tcl " + AI_LATERAL
+            + " LEFT JOIN audience_response ar ON ar.id = tcl.response_id"
+            + " LEFT JOIN lead_status ls ON ls.id = ar.lead_status_id"
+            + " LEFT JOIN call_intelligence ci ON ci.call_log_id = tcl.id ";
 
     /**
      * "No later connected call to this lead" — shared by the missed-inbound and
@@ -120,8 +138,7 @@ public class CallSearchService {
         String where = buildWhere(f, tz, settings, scopeCsv, params, true);
 
         Long total = jdbc.queryForObject(
-                "SELECT COUNT(*) FROM telephony_call_log tcl " + AI_LATERAL +
-                        " LEFT JOIN audience_response ar ON ar.id = tcl.response_id " + where,
+                "SELECT COUNT(*)" + FROM_TAIL + where,
                 params, Long.class);
         long count = total == null ? 0 : total;
 
@@ -133,9 +150,7 @@ public class CallSearchService {
         }
 
         params.addValue("limit", size).addValue("offset", (long) page * size);
-        String sql = ROW_SELECT + " FROM telephony_call_log tcl " + AI_LATERAL +
-                " LEFT JOIN audience_response ar ON ar.id = tcl.response_id " +
-                where + orderBy(f) + " LIMIT :limit OFFSET :offset";
+        String sql = ROW_SELECT + FROM_TAIL + where + orderBy(f) + " LIMIT :limit OFFSET :offset";
 
         List<CallRowDTO> rows = jdbc.query(sql, params, (rs, i) -> mapRow(rs, unmaskNumbers));
 
@@ -162,9 +177,7 @@ public class CallSearchService {
         String where = buildWhere(f, tz, settings, scopeCsv, params, true);
         params.addValue("cap", cap);
 
-        String sql = ROW_SELECT + " FROM telephony_call_log tcl " + AI_LATERAL +
-                " LEFT JOIN audience_response ar ON ar.id = tcl.response_id " +
-                where + orderBy(f) + " LIMIT :cap";
+        String sql = ROW_SELECT + FROM_TAIL + where + orderBy(f) + " LIMIT :cap";
 
         List<CallRowDTO> rows = jdbc.query(sql, params, (rs, i) -> mapRow(rs, unmaskNumbers));
         Map<String, String> names = fetchNames(rows.stream().map(CallRowDTO::getCounsellorUserId).toList());
@@ -201,8 +214,7 @@ public class CallSearchService {
         String where = buildWhere(f, tz, settings, scopeCsv, params, false);
 
         CallMetricsDTO m = jdbc.queryForObject(
-                METRICS_HEAD + " FROM telephony_call_log tcl " + AI_LATERAL +
-                        " LEFT JOIN audience_response ar ON ar.id = tcl.response_id " + where,
+                METRICS_HEAD + FROM_TAIL + where,
                 params, (rs, i) -> {
                     long total = rs.getLong("total");
                     long connected = rs.getLong("connected");
@@ -240,13 +252,14 @@ public class CallSearchService {
             chip.setInstituteId(src.getInstituteId());
             chip.setFromDate(src.getFromDate());
             chip.setToDate(src.getToDate());
+            chip.setFromTs(src.getFromTs());
+            chip.setToTs(src.getToTs());
             chip.setMissedInbound(missed);
             chip.setCallbacksDue(callbacks);
             MapSqlParameterSource p = new MapSqlParameterSource();
             String where = buildWhere(chip, tz, settings, scopeCsv, p, true);
             Long c = jdbc.queryForObject(
-                    "SELECT COUNT(*) FROM telephony_call_log tcl " + AI_LATERAL +
-                            " LEFT JOIN audience_response ar ON ar.id = tcl.response_id " + where,
+                    "SELECT COUNT(*)" + FROM_TAIL + where,
                     p, Long.class);
             return c == null ? 0 : c;
         } catch (Exception e) {
@@ -260,17 +273,37 @@ public class CallSearchService {
                    tcl.from_number, tcl.to_number, tcl.caller_id,
                    CASE WHEN tcl.direction = 'OUTBOUND' THEN tcl.to_number ELSE tcl.from_number END AS lead_number,
                    tcl.start_time, tcl.answer_time, tcl.end_time, tcl.duration_seconds,
-                   tcl.recording_storage_key, tcl.counsellor_user_id, tcl.response_id, tcl.user_id,
+                   tcl.recording_storage_key, tcl.counsellor_user_id, tcl.response_id,
+                   -- An API call's user id is a pseudo id that exists nowhere: hide it so the
+                   -- row offers no "View lead" / assign actions that would open an empty lead.
+                   CASE WHEN tcl.subject_type = 'API_CONTACT' THEN NULL ELSE tcl.user_id END AS user_id,
                    tcl.disposition_key, tcl.disposition_notes, tcl.dispositioned_at, tcl.created_at,
                    tcl.ivr_selection,
-                   ar.parent_name AS lead_name,
+                   COALESCE(ar.parent_name, CASE WHEN tcl.subject_type = 'API_CONTACT'
+                       THEN COALESCE((SELECT api.contact_name FROM ai_call_api_call api WHERE api.id = tcl.subject_id),
+                                     (SELECT h.contact_name FROM human_call_api_call h WHERE h.id = tcl.subject_id)) END)
+                       AS lead_name,
                    acr.ai_disposition AS ai_disposition,
                    acr.diag_health AS diag_health,
                    acr.diag_faults AS diag_faults,
+                   acr.follow_up AS follow_up,
+                   acr.follow_up_gist AS follow_up_gist,
                    CASE WHEN (acr.acr_id IS NOT NULL
                               OR tcl.provider_type IN ('AAVTAAR', 'VACADEMY_AI', 'MOCK'))
                         THEN 'AI' ELSE 'HUMAN' END AS call_type,
-                   COALESCE(tcl.callback_at, acr.ai_callback_at AT TIME ZONE 'UTC') AS callback_at_eff
+                   COALESCE(tcl.callback_at, acr.ai_callback_at AT TIME ZONE 'UTC') AS callback_at_eff,
+                   ar.lead_status_id, ls.status_key AS lead_status_key, ls.label AS lead_status_label,
+                   ls.color AS lead_status_color,
+                   ci.status AS ci_status, ci.short_update AS ci_short_update,
+                   ci.caller_self_goal_rating AS ci_caller_rating, ci.call_output_rating AS ci_outcome_rating,
+                   ci.lead_sentiment AS ci_lead_sentiment, ci.conversion_likelihood AS ci_conversion,
+                   acr.ai_callback AS ai_callback, acr.transfer_triggered AS transfer_triggered,
+                   (SELECT COUNT(*) FROM engagement_action ea
+                     WHERE ea.institute_id = tcl.institute_id AND ea.source = 'AI_CALL'
+                       AND ea.source_ref LIKE tcl.id || ':%') AS sends_total,
+                   (SELECT COUNT(*) FROM engagement_action ea
+                     WHERE ea.institute_id = tcl.institute_id AND ea.source = 'AI_CALL'
+                       AND ea.source_ref LIKE tcl.id || ':%' AND ea.status = 'SENT') AS sends_sent
             """;
 
     /** Shared row projection mapper for the search page and the live panel. */
@@ -306,16 +339,97 @@ public class CallSearchService {
                 // OTHER feature had already fetched detail for.
                 .diagHealth(rs.getString("diag_health"))
                 .diagFaults(splitDiagFaults(rs.getString("diag_faults")))
+                // The follow-up gist rides the list for the same reason health does:
+                // the counsellor reads it in the row to decide whether to call, not
+                // only in the detail drawer.
+                .followUp(rs.getString("follow_up"))
+                .followUpGist(rs.getString("follow_up_gist"))
                 .callbackAt(rs.getTimestamp("callback_at_eff"))
                 .createdAt(rs.getTimestamp("created_at"))
+                .leadStatusId(rs.getString("lead_status_id"))
+                .leadStatusKey(rs.getString("lead_status_key"))
+                .leadStatusLabel(rs.getString("lead_status_label"))
+                .leadStatusColor(rs.getString("lead_status_color"))
+                .ciStatus(rs.getString("ci_status"))
+                .ciShortUpdate(rs.getString("ci_short_update"))
+                .ciCallerRating(getNullableDouble(rs, "ci_caller_rating"))
+                .ciOutcomeRating(getNullableDouble(rs, "ci_outcome_rating"))
+                .ciLeadSentiment(rs.getString("ci_lead_sentiment"))
+                .ciConversionLikelihood(rs.getString("ci_conversion"))
+                .aiCallback(rs.getBoolean("ai_callback") && !rs.wasNull())
+                .transferred(notBlank(rs.getString("transfer_triggered")))
+                .sendsTotal(rs.getInt("sends_total"))
+                .sendsSent(rs.getInt("sends_sent"))
                 .build();
+    }
+
+    // ── Disposition strip ─────────────────────────────────────────────────────
+
+    /**
+     * Every distinct effective outcome in the current filter window with its
+     * count — the chip strip above the table (2026-09-11). Grouped on the same
+     * normalized key the disposition FILTER matches on, so clicking a chip and
+     * filtering by it agree exactly. Rows with no outcome at all are reported
+     * under the empty key so the strip can show "Not set".
+     */
+    public List<DispositionCountDTO> dispositionCounts(CallSearchFilterDTO f, String callerUserId) {
+        LeadReportSettingService.ReportSettings settings = leadReportSettingService.get(f.getInstituteId());
+        ZoneId tz = safeZone(settings);
+        String scopeCsv = reportScopeResolver.resolveScopeUsersCsv(
+                f.getInstituteId(), callerUserId, trimToNull(f.getTeamId()), trimToNull(f.getCounsellorUserId()));
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        // Chips excluded and the disposition filter itself excluded: the strip is
+        // the menu of outcomes the current window holds, not the current selection.
+        CallSearchFilterDTO base = new CallSearchFilterDTO();
+        base.setInstituteId(f.getInstituteId());
+        base.setFromDate(f.getFromDate()); base.setToDate(f.getToDate());
+        base.setFromTs(f.getFromTs()); base.setToTs(f.getToTs());
+        base.setDirection(f.getDirection()); base.setStatuses(f.getStatuses());
+        base.setProviderType(f.getProviderType()); base.setCallType(f.getCallType());
+        base.setCounsellorUserId(f.getCounsellorUserId()); base.setTeamId(f.getTeamId());
+        base.setFromNumber(f.getFromNumber()); base.setToNumber(f.getToNumber());
+        base.setLeadName(f.getLeadName()); base.setHasRecording(f.getHasRecording());
+        String where = buildWhere(base, tz, settings, scopeCsv, params, false);
+
+        Map<String, CallDispositionCatalogDTO> catalog = new HashMap<>();
+        try {
+            for (CallDispositionCatalogDTO o : callDispositionOptionsService.filterOptions(f.getInstituteId())) {
+                catalog.putIfAbsent(CallDispositionOptionsService.normalizeKey(o.getDispositionKey()), o);
+            }
+        } catch (Exception e) {
+            log.warn("[CallSearch] disposition catalog unavailable for chips: {}", e.getMessage());
+        }
+        String sql = """
+                SELECT UPPER(REGEXP_REPLACE(COALESCE(NULLIF(tcl.disposition_key, ''), acr.ai_disposition, ''),
+                                            '[^A-Za-z0-9]', '', 'g')) AS k,
+                       MIN(COALESCE(NULLIF(tcl.disposition_key, ''), acr.ai_disposition)) AS raw,
+                       COUNT(*) AS n
+                """ + FROM_TAIL + where + " GROUP BY 1 ORDER BY n DESC";
+        return jdbc.query(sql, params, (rs, i) -> {
+            String k = rs.getString("k");
+            String raw = rs.getString("raw");
+            CallDispositionCatalogDTO o = k == null || k.isEmpty() ? null : catalog.get(k);
+            return DispositionCountDTO.builder()
+                    .key(k == null ? "" : k)
+                    .label(o != null ? o.getLabel() : raw)
+                    .color(o != null ? o.getColor() : null)
+                    .category(o != null ? o.getCategory() : null)
+                    .settable(o != null && o.isSettable())
+                    .count(rs.getLong("n"))
+                    .build();
+        });
+    }
+
+    private static Double getNullableDouble(java.sql.ResultSet rs, String col) throws java.sql.SQLException {
+        double v = rs.getDouble(col);
+        return rs.wasNull() ? null : v;
     }
 
     /** Builds the shared FROM-tail WHERE (binds into {@code params}) for both count and page. */
     private String buildWhere(CallSearchFilterDTO f, ZoneId tz,
                               LeadReportSettingService.ReportSettings settings,
                               String scopeCsv, MapSqlParameterSource params, boolean includeChips) {
-        Window w = resolveWindow(f.getFromDate(), f.getToDate(), tz);
+        Window w = resolveWindow(f, tz);
         params.addValue("instituteId", f.getInstituteId())
                 .addValue("connectedCsv", connectedCsv(settings))
                 .addValue("scopeCsv", scopeCsv, Types.VARCHAR)
@@ -366,8 +480,13 @@ public class CallSearchService {
                 sb.append(" AND (acr.acr_id IS NOT NULL"
                         + " OR tcl.provider_type IN ('AAVTAAR', 'VACADEMY_AI', 'MOCK'))");
             } else if ("HUMAN".equalsIgnoreCase(f.getCallType().trim())) {
+                // COALESCE: `NULL NOT IN (...)` is NULL, so a row with no provider
+                // matched NEITHER filter while the call_type column in the SELECT
+                // rendered it HUMAN — it showed in the unfiltered list and vanished
+                // the moment Type = Human was chosen. Keep the filter and the column
+                // on the same rule.
                 sb.append(" AND (acr.acr_id IS NULL"
-                        + " AND tcl.provider_type NOT IN ('AAVTAAR', 'VACADEMY_AI', 'MOCK'))");
+                        + " AND COALESCE(tcl.provider_type, '') NOT IN ('AAVTAAR', 'VACADEMY_AI', 'MOCK'))");
             }
         }
         // Disposition filter matches the EFFECTIVE outcome — the same value the
@@ -395,7 +514,12 @@ public class CallSearchService {
             params.addValue("toNumber", f.getToNumber().trim());
         }
         if (notBlank(f.getLeadName())) {
-            sb.append(" AND ar.parent_name ILIKE :leadName");
+            // API contacts (AI calls and human click-to-calls placed through the public API)
+            // carry their name on the API row, not on a lead.
+            sb.append(" AND (ar.parent_name ILIKE :leadName OR (tcl.subject_type = 'API_CONTACT' AND (EXISTS ("
+                    + "SELECT 1 FROM ai_call_api_call api WHERE api.id = tcl.subject_id AND api.contact_name ILIKE :leadName)"
+                    + " OR EXISTS (SELECT 1 FROM human_call_api_call h WHERE h.id = tcl.subject_id"
+                    + " AND h.contact_name ILIKE :leadName))))");
             params.addValue("leadName", "%" + f.getLeadName().trim() + "%");
         }
         if (f.getHasRecording() != null) {
@@ -446,6 +570,22 @@ public class CallSearchService {
     // ── helpers (mirrors CallingReportService) ──────────────────────────────────
 
     private record Window(LocalDateTime fromUtc, LocalDateTime toUtc) {
+    }
+
+    /**
+     * Instant bounds win over calendar dates when given: the "last 1 h / 3 h / 24 h"
+     * presets (2026-09-11) are wall-clock windows, which day-granular dates cannot
+     * express. Both are UTC epoch millis; a missing toTs means "now".
+     */
+    private Window resolveWindow(CallSearchFilterDTO f, ZoneId tz) {
+        if (f.getFromTs() != null) {
+            LocalDateTime from = LocalDateTime.ofEpochSecond(Math.floorDiv(f.getFromTs(), 1000L), 0, ZoneOffset.UTC);
+            LocalDateTime to = f.getToTs() != null
+                    ? LocalDateTime.ofEpochSecond(Math.floorDiv(f.getToTs(), 1000L), 0, ZoneOffset.UTC)
+                    : LocalDateTime.now(ZoneOffset.UTC).plusMinutes(1);
+            return new Window(from, to);
+        }
+        return resolveWindow(f.getFromDate(), f.getToDate(), tz);
     }
 
     private Window resolveWindow(String fromDate, String toDate, ZoneId tz) {

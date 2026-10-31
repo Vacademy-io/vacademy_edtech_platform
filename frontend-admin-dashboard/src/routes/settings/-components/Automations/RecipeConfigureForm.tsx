@@ -12,9 +12,11 @@
  * English throughout.
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Sparkle } from '@phosphor-icons/react';
+import { Trans, useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { MyButton } from '@/components/design-system/button';
@@ -26,7 +28,10 @@ import { getMessageTemplates } from '@/services/message-template-service';
 import { createWorkflow } from '@/services/workflow-service';
 import { getInstituteId } from '@/constants/helper';
 import { getUserId } from '@/utils/userDetails';
-import { SAMPLE_TEMPLATES } from '@/routes/workflow/create/-components/sample-email-templates';
+import {
+    buildSampleTemplates,
+    type SampleEmailTemplate,
+} from '@/routes/workflow/create/-components/sample-email-templates';
 import type { AutomationRecipe } from './automation-recipes';
 import { buildRecipeWorkflow, type RecipeFormAnswers, type ScheduleFrequency } from './buildRecipeWorkflow';
 
@@ -73,8 +78,11 @@ function useEmailTemplateOptions() {
  * returns its name so the dropdown can auto-select it. Mirrors
  * use-case-wizard-step.tsx:216-309.
  */
-async function ensureSampleTemplate(sampleKey: string): Promise<string | null> {
-    const sample = SAMPLE_TEMPLATES[sampleKey];
+async function ensureSampleTemplate(
+    sampleKey: string,
+    sampleTemplates: Record<string, SampleEmailTemplate>
+): Promise<string | null> {
+    const sample = sampleTemplates[sampleKey];
     if (!sample) return null;
     const instId = getInstituteId();
     let alreadyExists = false;
@@ -127,28 +135,42 @@ interface Props {
     onSaved: () => void;
 }
 
-const DAY_OPTIONS: Array<{ value: string; label: string }> = [
-    { value: 'MON', label: 'Monday' },
-    { value: 'TUE', label: 'Tuesday' },
-    { value: 'WED', label: 'Wednesday' },
-    { value: 'THU', label: 'Thursday' },
-    { value: 'FRI', label: 'Friday' },
-    { value: 'SAT', label: 'Saturday' },
-    { value: 'SUN', label: 'Sunday' },
-];
+function buildDayOptions(t: TFunction): Array<{ value: string; label: string }> {
+    return [
+        { value: 'MON', label: t('dayOptions.monday') },
+        { value: 'TUE', label: t('dayOptions.tuesday') },
+        { value: 'WED', label: t('dayOptions.wednesday') },
+        { value: 'THU', label: t('dayOptions.thursday') },
+        { value: 'FRI', label: t('dayOptions.friday') },
+        { value: 'SAT', label: t('dayOptions.saturday') },
+        { value: 'SUN', label: t('dayOptions.sunday') },
+    ];
+}
 
-const HOUR_OPTIONS: Array<{ value: string; label: string }> = Array.from({ length: 24 }, (_, i) => {
-    const h = String(i).padStart(2, '0');
-    const label =
-        i === 0 ? '12:00 AM'
-            : i < 12 ? `${i}:00 AM`
-                : i === 12 ? '12:00 PM'
-                    : `${i - 12}:00 PM`;
-    return { value: `${h}:00`, label };
-});
+function buildHourOptions(t: TFunction): Array<{ value: string; label: string }> {
+    return Array.from({ length: 24 }, (_, i) => {
+        const h = String(i).padStart(2, '0');
+        const am = t('schedule.am');
+        const pm = t('schedule.pm');
+        const label =
+            i === 0 ? `12:00 ${am}`
+                : i < 12 ? `${i}:00 ${am}`
+                    : i === 12 ? `12:00 ${pm}`
+                        : `${i - 12}:00 ${pm}`;
+        return { value: `${h}:00`, label };
+    });
+}
 
 export function RecipeConfigureForm({ recipe, onCancel, onSaved }: Props) {
+    const { t } = useTranslation('settingsRecipeConfigureForm');
+    const { t: tSampleTemplate } = useTranslation('workflowSampleEmailTemplates');
+    const sampleTemplates = useMemo(
+        () => buildSampleTemplates(tSampleTemplate),
+        [tSampleTemplate]
+    );
     const queryClient = useQueryClient();
+    const dayOptions = buildDayOptions(t);
+    const hourOptions = buildHourOptions(t);
     const instituteIdForBatches = getInstituteId() ?? '';
     const {
         data: templateOptions = [],
@@ -173,17 +195,17 @@ export function RecipeConfigureForm({ recipe, onCancel, onSaved }: Props) {
     const handleUseSample = async (sampleKey: string, target: 'primary' | string) => {
         setCreatingSampleKey(target);
         try {
-            const name = await ensureSampleTemplate(sampleKey);
+            const name = await ensureSampleTemplate(sampleKey, sampleTemplates);
             await queryClient.invalidateQueries({ queryKey: ['wizard-email-templates'] });
             if (!name) {
-                toast.error('No sample template available for this recipe yet.');
+                toast.error(t('toasts.noSampleTemplate'));
                 return;
             }
             if (target === 'primary') setPrimaryTemplate(name);
             else setSlotAnswers((prev) => ({ ...prev, [target]: name }));
-            toast.success(`Added "${name}" to your template library.`);
+            toast.success(t('toasts.sampleAdded', { name }));
         } catch {
-            toast.error('Could not add the sample template. Please try again.');
+            toast.error(t('toasts.sampleAddFailed'));
         } finally {
             setCreatingSampleKey(null);
         }
@@ -202,7 +224,7 @@ export function RecipeConfigureForm({ recipe, onCancel, onSaved }: Props) {
         if (!isValid) return;
         const instituteId = getInstituteId();
         if (!instituteId) {
-            toast.error('Could not determine your institute. Please reload and try again.');
+            toast.error(t('toasts.noInstitute'));
             return;
         }
         const form: RecipeFormAnswers = {
@@ -228,11 +250,11 @@ export function RecipeConfigureForm({ recipe, onCancel, onSaved }: Props) {
                 queryKey: ['GET_ACTIVE_WORKFLOWS_WITH_SCHEDULES'],
                 refetchType: 'all',
             });
-            toast.success('Automation turned on.');
+            toast.success(t('toasts.automationOn'));
             onSaved();
         } catch (err) {
             const msg = err instanceof Error ? err.message : 'Unknown error';
-            toast.error(`Could not turn on the automation: ${msg}`);
+            toast.error(t('toasts.saveFailed', { message: msg }));
         } finally {
             setSaving(false);
         }
@@ -244,7 +266,7 @@ export function RecipeConfigureForm({ recipe, onCancel, onSaved }: Props) {
         sampleKey: string | undefined,
         targetKey: 'primary' | string,
     ) => {
-        const hasSample = !!(sampleKey && SAMPLE_TEMPLATES[sampleKey]);
+        const hasSample = !!(sampleKey && sampleTemplates[sampleKey]);
         const isEmpty = !templateLoading && !templateError && templateOptions.length === 0;
 
         return (
@@ -253,16 +275,16 @@ export function RecipeConfigureForm({ recipe, onCancel, onSaved }: Props) {
                     // Fetch failed — surface the error and give a retry button so
                     // the user isn't left wondering why the dropdown is blank.
                     <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2.5 text-xs text-red-700">
-                        <div className="font-semibold">Couldn’t load your email templates.</div>
+                        <div className="font-semibold">{t('templateDropdown.loadFailedTitle')}</div>
                         <div className="mt-0.5 text-red-500">
-                            This might be a network issue or your session has expired.
+                            {t('templateDropdown.loadFailedHint')}
                         </div>
                         <button
                             type="button"
-                            className="mt-2 rounded border border-red-300 bg-white px-2 py-1 text-[11px] font-medium text-red-700 hover:bg-red-100"
+                            className="mt-2 rounded border border-red-300 bg-white px-2 py-1 text-2xs font-medium text-red-700 hover:bg-red-100"
                             onClick={() => refetchTemplates()}
                         >
-                            Try again
+                            {t('templateDropdown.tryAgain')}
                         </button>
                     </div>
                 ) : (
@@ -274,10 +296,10 @@ export function RecipeConfigureForm({ recipe, onCancel, onSaved }: Props) {
                     >
                         <option value="">
                             {templateLoading
-                                ? 'Loading your messages…'
+                                ? t('templateDropdown.loading')
                                 : isEmpty
-                                    ? 'No messages yet — use the sample below'
-                                    : '— Pick a message —'}
+                                    ? t('templateDropdown.emptyOption')
+                                    : t('templateDropdown.pickOption')}
                         </option>
                         {templateOptions.map((opt) => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -288,9 +310,8 @@ export function RecipeConfigureForm({ recipe, onCancel, onSaved }: Props) {
                 {/* Empty-state hint: when the user has no templates AND a sample
                     exists, make it obvious the sample button is the next step. */}
                 {isEmpty && hasSample && (
-                    <p className="text-[11px] text-gray-500">
-                        You haven’t created any email messages yet — that’s fine, click below to
-                        add a ready-made one to your library.
+                    <p className="text-2xs text-gray-500">
+                        {t('templateDropdown.emptyHint')}
                     </p>
                 )}
 
@@ -309,13 +330,13 @@ export function RecipeConfigureForm({ recipe, onCancel, onSaved }: Props) {
                         <div className="flex-1">
                             <div className="text-xs font-semibold text-primary-700">
                                 {creatingSampleKey === targetKey
-                                    ? 'Adding…'
+                                    ? t('templateDropdown.sample.adding')
                                     : isEmpty
-                                        ? `Add sample message: "${SAMPLE_TEMPLATES[sampleKey!]!.name}"`
-                                        : `Don’t have one? Use our sample: "${SAMPLE_TEMPLATES[sampleKey!]!.name}"`}
+                                        ? t('templateDropdown.sample.addWhenEmpty', { name: sampleTemplates[sampleKey!]!.name })
+                                        : t('templateDropdown.sample.addWhenExists', { name: sampleTemplates[sampleKey!]!.name })}
                             </div>
-                            <div className="mt-0.5 text-[10px] text-primary-400">
-                                We’ll add it to your template library — you can edit it later.
+                            <div className="mt-0.5 text-2xs text-primary-400">
+                                {t('templateDropdown.sample.hint')}
                             </div>
                         </div>
                     </button>
@@ -324,12 +345,8 @@ export function RecipeConfigureForm({ recipe, onCancel, onSaved }: Props) {
                 {/* No sample available and no templates — tell the user where to
                     create one so they aren't stuck. */}
                 {isEmpty && !hasSample && (
-                    <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-700">
-                        You have no email messages saved yet. Go to{' '}
-                        <a href="/settings?selectedTab=templates" className="font-semibold underline">
-                            Settings → Template Settings
-                        </a>{' '}
-                        to create one, then come back here.
+                    <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-2xs text-amber-700">
+                        <Trans i18nKey="settingsRecipeConfigureForm:templateDropdown.noTemplatesNoSample">You have no email messages saved yet. Go to <a href="/settings?selectedTab=templates" className="font-semibold underline">Settings → Template Settings</a> to create one, then come back here.</Trans>
                     </p>
                 )}
             </div>
@@ -339,22 +356,22 @@ export function RecipeConfigureForm({ recipe, onCancel, onSaved }: Props) {
     return (
         <div className="rounded-lg border border-primary-200 bg-primary-50/40 p-4 space-y-4">
             <div className="text-sm font-semibold text-gray-800">
-                Configure: {recipe.label}
+                {t('header.configureTitle', { label: recipe.label })}
             </div>
 
             {/* Batch picker — only when the recipe actually needs a target */}
             {recipe.target === 'batch_single' && (
                 <div className="space-y-1.5">
                     <Label className="text-xs font-medium text-gray-700">
-                        Which batch should this apply to?
+                        {t('batchPicker.singleLabel')}
                     </Label>
                     <select
                         className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         value={selectedBatches[0] ?? ''}
                         onChange={(e) => setSelectedBatches(e.target.value ? [e.target.value] : [])}
                     >
-                        <option value="">— Pick a batch —</option>
-                        {batchLoading && <option disabled>Loading batches…</option>}
+                        <option value="">{t('batchPicker.pickOption')}</option>
+                        {batchLoading && <option disabled>{t('batchPicker.loading')}</option>}
                         {batchOptions.map((opt) => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
                         ))}
@@ -365,12 +382,12 @@ export function RecipeConfigureForm({ recipe, onCancel, onSaved }: Props) {
             {recipe.target === 'batch_multi' && (
                 <div className="space-y-1.5">
                     <Label className="text-xs font-medium text-gray-700">
-                        Which batches should this apply to? (Pick one or more)
+                        {t('batchPicker.multiLabel')}
                     </Label>
                     <div className="max-h-40 overflow-y-auto rounded-lg border border-gray-300 bg-white p-2">
-                        {batchLoading && <p className="px-2 py-1 text-xs text-gray-400">Loading batches…</p>}
+                        {batchLoading && <p className="px-2 py-1 text-xs text-gray-400">{t('batchPicker.loading')}</p>}
                         {!batchLoading && batchOptions.length === 0 && (
-                            <p className="px-2 py-1 text-xs text-gray-400">No batches found yet.</p>
+                            <p className="px-2 py-1 text-xs text-gray-400">{t('batchPicker.empty')}</p>
                         )}
                         {batchOptions.map((opt) => {
                             const checked = selectedBatches.includes(opt.value);
@@ -391,7 +408,7 @@ export function RecipeConfigureForm({ recipe, onCancel, onSaved }: Props) {
                                             )
                                         }
                                     />
-                                    <span className="text-gray-700">{opt.label || 'Untitled batch'}</span>
+                                    <span className="text-gray-700">{opt.label || t('batchPicker.untitled')}</span>
                                 </label>
                             );
                         })}
@@ -417,7 +434,7 @@ export function RecipeConfigureForm({ recipe, onCancel, onSaved }: Props) {
             ) : (
                 <div className="space-y-1.5">
                     <Label className="text-xs font-medium text-gray-700">
-                        Which message to send?
+                        {t('templateQuestion.label')}
                     </Label>
                     {renderTemplateDropdown(
                         primaryTemplate,
@@ -432,7 +449,7 @@ export function RecipeConfigureForm({ recipe, onCancel, onSaved }: Props) {
             {recipe.extraQuestions?.includes('days_after_submission') && (
                 <div className="space-y-1.5">
                     <Label className="text-xs font-medium text-gray-700">
-                        Send the follow-up how many days after someone fills the form?
+                        {t('daysAfter.label')}
                     </Label>
                     <div className="flex items-center gap-2">
                         <Input
@@ -443,7 +460,7 @@ export function RecipeConfigureForm({ recipe, onCancel, onSaved }: Props) {
                             onChange={(e) => setDaysAfter(Math.max(1, parseInt(e.target.value) || 1))}
                             className="w-24"
                         />
-                        <span className="text-xs text-gray-500">day(s) later</span>
+                        <span className="text-xs text-gray-500">{t('daysAfter.suffix')}</span>
                     </div>
                 </div>
             )}
@@ -452,7 +469,7 @@ export function RecipeConfigureForm({ recipe, onCancel, onSaved }: Props) {
             {recipe.extraQuestions?.includes('days_before_expiry') && (
                 <div className="space-y-1.5">
                     <Label className="text-xs font-medium text-gray-700">
-                        How many days before expiry should we send the reminder?
+                        {t('daysBefore.label')}
                     </Label>
                     <div className="flex items-center gap-2">
                         <Input
@@ -463,7 +480,7 @@ export function RecipeConfigureForm({ recipe, onCancel, onSaved }: Props) {
                             onChange={(e) => setDaysBefore(Math.max(1, parseInt(e.target.value) || 1))}
                             className="w-24"
                         />
-                        <span className="text-xs text-gray-500">day(s) before</span>
+                        <span className="text-xs text-gray-500">{t('daysBefore.suffix')}</span>
                     </div>
                 </div>
             )}
@@ -472,50 +489,50 @@ export function RecipeConfigureForm({ recipe, onCancel, onSaved }: Props) {
             {recipe.mode === 'scheduled' && (
                 <div className="space-y-1.5">
                     <Label className="text-xs font-medium text-gray-700">
-                        When should this run?
+                        {t('schedule.label')}
                     </Label>
                     <div className="flex flex-wrap items-center gap-2 text-sm">
-                        <span className="text-gray-600">Every</span>
+                        <span className="text-gray-600">{t('schedule.every')}</span>
                         <select
                             className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm shadow-sm"
                             value={frequency}
                             onChange={(e) => setFrequency(e.target.value as ScheduleFrequency)}
                         >
-                            <option value="daily">day</option>
-                            <option value="weekly">week</option>
+                            <option value="daily">{t('schedule.day')}</option>
+                            <option value="weekly">{t('schedule.week')}</option>
                         </select>
                         {frequency === 'weekly' && (
                             <>
-                                <span className="text-gray-600">on</span>
+                                <span className="text-gray-600">{t('schedule.on')}</span>
                                 <select
                                     className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm shadow-sm"
                                     value={dayOfWeek}
                                     onChange={(e) => setDayOfWeek(e.target.value)}
                                 >
-                                    {DAY_OPTIONS.map((d) => (
+                                    {dayOptions.map((d) => (
                                         <option key={d.value} value={d.value}>{d.label}</option>
                                     ))}
                                 </select>
                             </>
                         )}
-                        <span className="text-gray-600">at</span>
+                        <span className="text-gray-600">{t('schedule.at')}</span>
                         <select
                             className="rounded-md border border-gray-300 bg-white px-2 py-1.5 text-sm shadow-sm"
                             value={timeOfDay}
                             onChange={(e) => setTimeOfDay(e.target.value)}
                         >
-                            {HOUR_OPTIONS.map((t) => (
-                                <option key={t.value} value={t.value}>{t.label}</option>
+                            {hourOptions.map((hr) => (
+                                <option key={hr.value} value={hr.value}>{hr.label}</option>
                             ))}
                         </select>
                     </div>
-                    <p className="text-[11px] text-gray-400">Time zone: India Standard Time (IST)</p>
+                    <p className="text-2xs text-gray-400">{t('schedule.timezoneNote')}</p>
                 </div>
             )}
 
             <div className="flex items-center justify-end gap-2 pt-1">
                 <Button variant="ghost" size="sm" onClick={onCancel} disabled={saving}>
-                    Cancel
+                    {t('actions.cancel')}
                 </Button>
                 <MyButton
                     buttonType="primary"
@@ -523,7 +540,7 @@ export function RecipeConfigureForm({ recipe, onCancel, onSaved }: Props) {
                     disabled={!isValid || saving}
                     onClick={handleSave}
                 >
-                    {saving ? 'Turning on…' : 'Turn on automation'}
+                    {saving ? t('actions.turningOn') : t('actions.turnOn')}
                 </MyButton>
             </div>
         </div>

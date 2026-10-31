@@ -1,0 +1,92 @@
+{
+    "dialogTitle": "Attribuer à {{term}}",
+    "selectCourses": {
+        "description": "Attribuer <strong>{{name}}</strong> à un ou plusieurs cours.",
+        "searchPlaceholder": "Rechercher des cours...",
+        "selectedCount": "{{selected}} sur {{total}} sélectionné(s)",
+        "selectAll": "Tout sélectionner",
+        "deselectAll": "Tout désélectionner",
+        "noCoursesFound": "Aucun cours trouvé"
+    },
+    "configure": {
+        "description": "Configurez les paramètres d'inscription pour chaque cours. Vous pouvez tout laisser sur <strong>« Auto (par défaut) »</strong> pour une inscription gratuite rapide, ou choisir une invitation spécifique par cours.",
+        "optionsLabel": "Options",
+        "duplicateHandlingLabel": "Si déjà inscrit :",
+        "duplicateOptions": {
+            "skip": "Ignorer",
+            "error": "Erreur",
+            "reEnroll": "Réinscrire"
+        },
+        "notifyLabel": "Notifier l'apprenant par e-mail"
+    },
+    "preview": {
+        "title": "Aperçu — Résultats de l'essai à blanc",
+        "willSucceed_one": "{{count}} réussira",
+        "willSucceed_many": "{{count}} réussiront",
+        "willSucceed_other": "{{count}} réussiront",
+        "skipped_one": "{{count}} ignoré",
+        "skipped_many": "{{count}} ignorés",
+        "skipped_other": "{{count}} ignorés",
+        "failed_one": "{{count}} échoué",
+        "failed_many": "{{count}} échoués",
+        "failed_other": "{{count}} échoués",
+        "inviteConfigTitle": "Configuration de l'invitation",
+        "autoDefault": "Auto (par défaut)",
+        "cpoBadge": "CPO",
+        "installments_one": "{{count}} échéance",
+        "installments_many": "{{count}} échéances",
+        "installments_other": "{{count}} échéances",
+        "totalAmount": "total ₹{{amount}}",
+        "recordingNow": "encaissement de ₹{{amount}} maintenant",
+        "noInitialPayment": "aucun paiement initial",
+        "tableHeaders": {
+            "course": "Cours",
+            "action": "Action",
+            "status": "Statut"
+        }
+    },
+    "results": {
+        "title": "Attribution terminée",
+        "assigned_one": "{{count}} attribué",
+        "assigned_many": "{{count}} attribués",
+        "assigned_other": "{{count}} attribués",
+        "skipped_one": "{{count}} ignoré",
+        "skipped_many": "{{count}} ignorés",
+        "skipped_other": "{{count}} ignorés",
+        "failed_one": "{{count}} échoué",
+        "failed_many": "{{count}} échoués",
+        "failed_other": "{{count}} échoués",
+        "tableHeaders": {
+            "course": "Cours",
+            "status": "Statut",
+            "message": "Message"
+        }
+    },
+    "stepper": {
+        "select": "Sélectionner",
+        "configure": "Configurer",
+        "preview": "Aperçu",
+        "done": "Terminé"
+    },
+    "footer": {
+        "cancel": "Annuler",
+        "nextConfigure_one": "Suivant → Configurer ({{count}})",
+        "nextConfigure_many": "Suivant → Configurer ({{count}})",
+        "nextConfigure_other": "Suivant → Configurer ({{count}})",
+        "back": "← Retour",
+        "loading": "Chargement...",
+        "previewButton": "Aperçu →",
+        "assigning": "Attribution en cours...",
+        "confirmAssignment": "✓ Confirmer l'attribution",
+        "done": "Terminé"
+    },
+    "toasts": {
+        "loadCoursesFailed": "Échec du chargement des cours",
+        "previewFailed": "Échec de l'aperçu",
+        "assignFailed": "Échec de l'attribution",
+        "assignSuccess_one": "{{count}} cours attribué avec succès !",
+        "assignSuccess_many": "{{count}} cours attribués avec succès !",
+        "assignSuccess_other": "{{count}} cours attribués avec succès !",
+        "assignPartial": "{{successful}} attribué(s), {{failed}} échoué(s)."
+    }
+}

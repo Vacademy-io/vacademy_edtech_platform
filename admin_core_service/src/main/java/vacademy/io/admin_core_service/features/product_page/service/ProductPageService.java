@@ -2,17 +2,23 @@ package vacademy.io.admin_core_service.features.product_page.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.features.common.dto.CustomFieldDTO;
 import vacademy.io.admin_core_service.features.common.dto.InstituteCustomFieldDTO;
 import vacademy.io.admin_core_service.features.common.enums.CustomFieldTypeEnum;
 import vacademy.io.admin_core_service.features.common.service.InstituteCustomFiledService;
+import vacademy.io.admin_core_service.features.domain_routing.service.LearnerPortalUrlResolver;
+import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
 import vacademy.io.admin_core_service.features.institute.service.setting.InstituteSettingService;
 import vacademy.io.admin_core_service.features.product_page.dto.*;
 import vacademy.io.admin_core_service.features.product_page.entity.ProductPage;
 import vacademy.io.admin_core_service.features.product_page.entity.ProductPageInviteMapping;
 import vacademy.io.admin_core_service.features.product_page.repository.ProductPageInviteMappingRepository;
+import vacademy.io.admin_core_service.features.product_page.repository.ProductPageReadRepository;
 import vacademy.io.admin_core_service.features.product_page.repository.ProductPageRepository;
 import vacademy.io.admin_core_service.features.enroll_invite.entity.EnrollInvite;
 import vacademy.io.admin_core_service.features.enroll_invite.entity.PackageSessionLearnerInvitationToPaymentOption;
@@ -25,9 +31,9 @@ import vacademy.io.admin_core_service.features.user_subscription.entity.CouponCo
 import vacademy.io.admin_core_service.features.user_subscription.repository.AppliedCouponDiscountRepository;
 import vacademy.io.admin_core_service.features.user_subscription.repository.CouponCodeRepository;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan;
-import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentPlanRepository;
 import vacademy.io.admin_core_service.features.user_subscription.service.coupon.CouponValidationService;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.institute.entity.Institute;
 
 import org.springframework.util.StringUtils;
 
@@ -54,9 +60,6 @@ public class ProductPageService {
     private PackageSessionLearnerInvitationToPaymentOptionRepository psInvitePoRepository;
 
     @Autowired
-    private PaymentPlanRepository paymentPlanRepository;
-
-    @Autowired
     private InstituteCustomFiledService customFieldService;
 
     @Autowired
@@ -70,7 +73,24 @@ public class ProductPageService {
 
     @Autowired
     private InstituteSettingService instituteSettingService;
+
+    // Lost its @Autowired in a 2026-05-29 merge, which left it null: every coupon
+    // check (/open/v1/product-page/validate-coupon and any enroll carrying a
+    // coupon) threw a NullPointerException.
+    @Autowired
     private CouponValidationService couponValidationService;
+
+    @Autowired
+    private InstituteRepository instituteRepository;
+
+    @Autowired
+    private LearnerPortalUrlResolver learnerPortalUrlResolver;
+
+    @Autowired
+    private ProductPageReadRepository readRepository;
+
+    @Autowired
+    private ProductPageCustomFieldLoader customFieldLoader;
 
     // -------------------------------------------------------------------------
     // Admin CRUD
@@ -90,7 +110,7 @@ public class ProductPageService {
         saveMappings(page, request.getMappings());
 
         String shortUrl = shortUrlManagementService.createShortUrl(
-                buildLearnerUrl(page.getCode()), SOURCE_TYPE, page.getId(), instituteId);
+                buildLearnerUrl(page.getCode(), instituteId), SOURCE_TYPE, page.getId(), instituteId);
         page.setShortUrl(shortUrl);
         page = coursePageRepository.save(page);
 
@@ -100,7 +120,9 @@ public class ProductPageService {
 
     @Transactional
     public ProductPageResponse updateProductPage(String coursePageId, ProductPageRequest request) {
-        ProductPage page = coursePageRepository.findById(coursePageId)
+        // Locked: a catalogue sync running at the same time would otherwise add
+        // courses next to the ones this save re-inserts (see lockById).
+        ProductPage page = coursePageRepository.lockById(coursePageId)
                 .orElseThrow(() -> new VacademyException("Course page not found: " + coursePageId));
 
         page.setName(request.getName());
@@ -135,6 +157,80 @@ public class ProductPageService {
         return pages.stream().map(this::buildAdminResponse).collect(Collectors.toList());
     }
 
+    /**
+     * One page of the admin list, lightweight: no page JSON and no mappings,
+     * only their count. search matches name or code (case-insensitive);
+     * status is ACTIVE, DRAFT or blank for both; sort is LATEST (default),
+     * OLDEST, NAME_ASC or NAME_DESC.
+     */
+    public ProductPageListResponse listProductPages(String instituteId, String search, String status,
+                                                    String sort, int page, int size) {
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), 100);
+        List<String> allStatuses = List.of(STATUS_ACTIVE, STATUS_DRAFT);
+        List<String> statuses = StringUtils.hasText(status) && allStatuses.contains(status.trim().toUpperCase())
+                ? List.of(status.trim().toUpperCase())
+                : allStatuses;
+        String pattern = likePattern(search);
+
+        Page<ProductPage> result = coursePageRepository.searchForAdmin(
+                instituteId, statuses, pattern, PageRequest.of(safePage, safeSize, listSort(sort)));
+
+        List<String> ids = result.getContent().stream().map(ProductPage::getId).collect(Collectors.toList());
+        Map<String, Long> mappingCounts = new HashMap<>();
+        if (!ids.isEmpty()) {
+            for (Object[] row : mappingRepository.countByProductPageIds(ids, List.of(STATUS_ACTIVE))) {
+                mappingCounts.put((String) row[0], ((Number) row[1]).longValue());
+            }
+        }
+
+        Map<String, Long> statusCounts = new HashMap<>();
+        for (Object[] row : coursePageRepository.countByStatusForAdmin(instituteId, allStatuses, pattern)) {
+            statusCounts.put((String) row[0], ((Number) row[1]).longValue());
+        }
+
+        ProductPageListResponse resp = new ProductPageListResponse();
+        resp.setContent(result.getContent().stream()
+                .map(p -> new ProductPageSummaryResponse(p.getId(), p.getName(), p.getCode(), p.getStatus(),
+                        p.getShortUrl(), mappingCounts.getOrDefault(p.getId(), 0L),
+                        p.getCreatedAt(), p.getUpdatedAt()))
+                .collect(Collectors.toList()));
+        resp.setPage(safePage);
+        resp.setSize(safeSize);
+        resp.setTotalElements(result.getTotalElements());
+        resp.setTotalPages(result.getTotalPages());
+        resp.setActiveCount(statusCounts.getOrDefault(STATUS_ACTIVE, 0L));
+        resp.setDraftCount(statusCounts.getOrDefault(STATUS_DRAFT, 0L));
+        return resp;
+    }
+
+    /** Lower-cased contains-pattern for the list search, with % _ and ! escaped by !. */
+    static String likePattern(String search) {
+        if (!StringUtils.hasText(search)) {
+            return "%";
+        }
+        String escaped = search.trim().toLowerCase(Locale.ROOT)
+                .replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_");
+        return "%" + escaped + "%";
+    }
+
+    /** id breaks ties, so a page never shows up on two list pages. */
+    static Sort listSort(String sort) {
+        String key = sort == null ? "" : sort.trim().toUpperCase(Locale.ROOT);
+        switch (key) {
+            case "OLDEST":
+                return Sort.by(Sort.Order.asc("createdAt"), Sort.Order.asc("id"));
+            case "NAME_ASC":
+                return Sort.by(Sort.Order.asc("name").ignoreCase(), Sort.Order.asc("id"));
+            case "NAME_DESC":
+                return Sort.by(Sort.Order.desc("name").ignoreCase(), Sort.Order.asc("id"));
+            default:
+                return Sort.by(Sort.Order.desc("createdAt"), Sort.Order.asc("id"));
+        }
+    }
+
     public ProductPageResponse getProductPageById(String coursePageId) {
         ProductPage page = coursePageRepository.findById(coursePageId)
                 .orElseThrow(() -> new VacademyException("Course page not found: " + coursePageId));
@@ -149,8 +245,7 @@ public class ProductPageService {
     public ProductPageResponse addCustomFieldToPage(String productPageId, String customFieldId, String instituteId) {
         ProductPage page = loadPageForInstitute(productPageId, instituteId);
 
-        List<ProductPageInviteMapping> activeMappings = mappingRepository
-                .findByProductPageIdAndStatusIn(productPageId, List.of(STATUS_ACTIVE));
+        List<ProductPageInviteMapping> activeMappings = activeMappings(productPageId);
         if (activeMappings.isEmpty()) {
             throw new VacademyException("No active course mappings on this page — add courses and save first");
         }
@@ -173,6 +268,106 @@ public class ProductPageService {
         return buildAdminResponseWithCustomFields(page, activeMappings);
     }
 
+    /**
+     * Edits a field already on this page's form — its label, input type,
+     * whether it is required, and its config (which now carries the
+     * verification block that gates submission behind a WhatsApp OTP).
+     *
+     * All four live on the shared `custom_fields` row, NOT on the mapping, so
+     * the edit reaches every form in the institute using this field. That is
+     * the existing model — required-ness and input type have always been read
+     * from the master row — and the admin dialog says so rather than pretending
+     * the change is page-local.
+     *
+     * The page is still the authorisation scope: a field that is not on it is
+     * rejected, so this endpoint cannot be used to edit arbitrary fields of
+     * another institute.
+     */
+    @Transactional
+    public ProductPageResponse updateCustomFieldOnPage(
+            String productPageId, String customFieldId,
+            ProductPageCustomFieldUpdateRequest request, String instituteId) {
+        ProductPage page = loadPageForInstitute(productPageId, instituteId);
+
+        List<ProductPageInviteMapping> activeMappings = activeMappings(productPageId);
+
+        boolean onThisPage = activeMappings.stream().anyMatch(mapping -> customFieldService
+                .getByInstituteIdAndFieldIdAndTypeAndTypeId(
+                        instituteId, customFieldId,
+                        CustomFieldTypeEnum.ENROLL_INVITE.name(),
+                        mapping.getPsInvitePaymentOption().getEnrollInvite().getId())
+                .isPresent());
+
+        if (!onThisPage) {
+            throw new VacademyException("That field is not on this product page");
+        }
+
+        CustomFieldDTO update = new CustomFieldDTO();
+        update.setFieldName(request.getFieldName());
+        update.setFieldType(request.getFieldType());
+        update.setIsMandatory(request.getIsMandatory());
+        update.setConfig(request.getConfig());
+        customFieldService.updateCustomField(update, customFieldId);
+
+        return buildAdminResponseWithCustomFields(page, activeMappings);
+    }
+
+    /**
+     * Sets the order the page's form asks for its fields in.
+     *
+     * The order lives on the mapping (`individual_order`), and there is one
+     * mapping per enroll invite — so a page selling 28 courses stores the same
+     * position 28 times. Nothing set it before, which left every field on 999
+     * and the form's order down to whatever order the rows came back in: a
+     * checkout collecting both "Full Name" and "School Name" could ask for them
+     * either way round on consecutive loads.
+     *
+     * Ids not on the page are ignored rather than rejected: an admin reordering
+     * a stale tab should not lose the whole save over one field somebody else
+     * removed in the meantime.
+     */
+    @Transactional
+    public ProductPageResponse reorderCustomFieldsOnPage(
+            String productPageId, List<String> orderedCustomFieldIds, String instituteId) {
+        ProductPage page = loadPageForInstitute(productPageId, instituteId);
+
+        List<ProductPageInviteMapping> activeMappings = activeMappings(productPageId);
+
+        if (orderedCustomFieldIds != null) {
+            for (ProductPageInviteMapping mapping : activeMappings) {
+                String enrollInviteId = mapping.getPsInvitePaymentOption().getEnrollInvite().getId();
+
+                for (int position = 0; position < orderedCustomFieldIds.size(); position++) {
+                    String customFieldId = orderedCustomFieldIds.get(position);
+                    if (customFieldId == null || customFieldId.isBlank()) {
+                        continue;
+                    }
+                    // Only touch fields this invite already carries — addOrUpdate
+                    // would otherwise ATTACH a field that was never on the page.
+                    if (customFieldService.getByInstituteIdAndFieldIdAndTypeAndTypeId(
+                            instituteId, customFieldId,
+                            CustomFieldTypeEnum.ENROLL_INVITE.name(), enrollInviteId).isEmpty()) {
+                        continue;
+                    }
+
+                    CustomFieldDTO cfDto = new CustomFieldDTO();
+                    cfDto.setId(customFieldId);
+
+                    InstituteCustomFieldDTO dto = new InstituteCustomFieldDTO();
+                    dto.setInstituteId(instituteId);
+                    dto.setType(CustomFieldTypeEnum.ENROLL_INVITE.name());
+                    dto.setTypeId(enrollInviteId);
+                    dto.setCustomField(cfDto);
+                    dto.setIndividualOrder(position);
+
+                    customFieldService.addOrUpdateCustomField(List.of(dto));
+                }
+            }
+        }
+
+        return buildAdminResponseWithCustomFields(page, activeMappings);
+    }
+
     @Transactional
     public ProductPageResponse createAndLinkCustomFieldToPage(
             String productPageId, ProductPageCustomFieldCreateRequest request, String instituteId) {
@@ -186,8 +381,7 @@ public class ProductPageService {
 
         ProductPage page = loadPageForInstitute(productPageId, instituteId);
 
-        List<ProductPageInviteMapping> activeMappings = mappingRepository
-                .findByProductPageIdAndStatusIn(productPageId, List.of(STATUS_ACTIVE));
+        List<ProductPageInviteMapping> activeMappings = activeMappings(productPageId);
         if (activeMappings.isEmpty()) {
             throw new VacademyException("No active course mappings on this page — add courses and save first");
         }
@@ -219,8 +413,7 @@ public class ProductPageService {
             String instituteId) {
         ProductPage page = loadPageForInstitute(productPageId, instituteId);
 
-        List<ProductPageInviteMapping> activeMappings = mappingRepository
-                .findByProductPageIdAndStatusIn(productPageId, List.of(STATUS_ACTIVE));
+        List<ProductPageInviteMapping> activeMappings = activeMappings(productPageId);
 
         List<String> mappingIdsToDelete = new ArrayList<>();
         for (ProductPageInviteMapping mapping : activeMappings) {
@@ -294,6 +487,10 @@ public class ProductPageService {
                 : null);
         if (request.getMaxUses() != null)
             couponCode.setUsageLimit(request.getMaxUses().longValue());
+        // Quantity condition — "₹99 off when you take 2 or more". Only stored when
+        // it is a real condition; 1 or less is no condition at all.
+        if (request.getMinItems() != null && request.getMinItems() > 1)
+            couponCode.setMinItems(request.getMinItems());
         couponCode = couponCodeRepository.save(couponCode);
 
         AppliedCouponDiscount discount = new AppliedCouponDiscount();
@@ -325,6 +522,15 @@ public class ProductPageService {
 
     public ProductPageCouponValidateResponse validateCoupon(String coursePageCode, String couponCode,
             double totalAmount) {
+        return validateCoupon(coursePageCode, couponCode, totalAmount, null);
+    }
+
+    /**
+     * @param itemCount how many courses are in the basket, for coupons carrying a
+     *                  minimum. Null reads as one item.
+     */
+    public ProductPageCouponValidateResponse validateCoupon(String coursePageCode, String couponCode,
+            double totalAmount, Integer itemCount) {
         ProductPage page = coursePageRepository.findByCode(coursePageCode)
                 .orElseThrow(() -> new VacademyException("Course page not found"));
 
@@ -336,6 +542,7 @@ public class ProductPageService {
                 .instituteId(page.getInstituteId())
                 .productPageCode(coursePageCode)
                 .totalAmount(totalAmount)
+                .itemCount(itemCount)
                 .build();
         CouponValidateResponseDTO resp = couponValidationService.validate(req);
 
@@ -376,8 +583,55 @@ public class ProductPageService {
         }
     }
 
+    /**
+     * The page's ACTIVE mappings in display order (display_order, created_at,
+     * id), each with its bridge row, invite, package session and payment
+     * option already loaded. Every read of a page's courses goes through here,
+     * so the learner page, the editor and checkout all see one order.
+     */
+    public List<ProductPageInviteMapping> activeMappings(String productPageId) {
+        return mappingRepository.findOrderedWithBridge(productPageId, List.of(STATUS_ACTIVE));
+    }
+
+    /** The mappings' locked plans by id, in one query. Missing plans are simply absent. */
+    public Map<String, PaymentPlan> loadPlans(Collection<ProductPageInviteMapping> mappings) {
+        Set<String> ids = new LinkedHashSet<>();
+        for (ProductPageInviteMapping m : mappings) {
+            if (m.getPaymentPlanId() != null) ids.add(m.getPaymentPlanId());
+        }
+        return loadPlansById(ids);
+    }
+
+    public Map<String, PaymentPlan> loadPlansById(Collection<String> planIds) {
+        Map<String, PaymentPlan> out = new HashMap<>();
+        List<String> ids = new ArrayList<>(new LinkedHashSet<>(planIds));
+        ids.removeIf(Objects::isNull);
+        for (int from = 0; from < ids.size(); from += ProductPageCustomFieldLoader.CHUNK) {
+            List<String> chunk = ids.subList(from, Math.min(ids.size(), from + ProductPageCustomFieldLoader.CHUNK));
+            for (PaymentPlan plan : readRepository.findPlansWithOptionByIdIn(chunk)) {
+                out.put(plan.getId(), plan);
+            }
+        }
+        return out;
+    }
+
     ProductPageResponse buildAdminResponse(ProductPage page) {
+        return buildAdminResponse(page, activeMappings(page.getId()));
+    }
+
+    ProductPageResponse buildAdminResponse(ProductPage page, List<ProductPageInviteMapping> activeMappings) {
         ProductPageResponse resp = new ProductPageResponse();
+        fillAdminResponse(resp, page, activeMappings);
+        return resp;
+    }
+
+    /**
+     * Page fields and its mappings, into a response object the caller
+     * supplies. Returns the mappings' locked plans by id, read for the
+     * mappings' prices.
+     */
+    Map<String, PaymentPlan> fillAdminResponse(ProductPageResponse resp, ProductPage page,
+                                               List<ProductPageInviteMapping> activeMappings) {
         resp.setId(page.getId());
         resp.setName(page.getName());
         resp.setCode(page.getCode());
@@ -387,30 +641,44 @@ public class ProductPageService {
         resp.setSettingsJson(page.getSettingsJson());
         resp.setShortUrl(page.getShortUrl());
 
-        List<ProductPageInviteMapping> activeMappings = mappingRepository
-                .findByProductPageIdAndStatusIn(page.getId(), List.of(STATUS_ACTIVE));
-        resp.setMappings(activeMappings.stream().map(this::toMappingResponse).collect(Collectors.toList()));
-
-        return resp;
+        Map<String, PaymentPlan> plans = loadPlans(activeMappings);
+        resp.setMappings(activeMappings.stream()
+                .map(m -> toMappingResponse(m, plans))
+                .collect(Collectors.toList()));
+        return plans;
     }
 
     private ProductPageResponse buildAdminResponseWithCustomFields(ProductPage page) {
-        List<ProductPageInviteMapping> activeMappings = mappingRepository
-                .findByProductPageIdAndStatusIn(page.getId(), List.of(STATUS_ACTIVE));
-        return buildAdminResponseWithCustomFields(page, activeMappings);
+        return buildAdminResponseWithCustomFields(page, activeMappings(page.getId()));
     }
 
-    /** Overload accepting pre-fetched mappings to avoid a redundant query. */
+    /**
+     * Overload accepting pre-fetched mappings. The mappings are read once and
+     * used for both the course list and the form, where they used to be
+     * fetched a second time for the course list.
+     */
     private ProductPageResponse buildAdminResponseWithCustomFields(
             ProductPage page, List<ProductPageInviteMapping> activeMappings) {
-        ProductPageResponse resp = buildAdminResponse(page);
+        ProductPageResponse resp = new ProductPageResponse();
+        fillAdminResponseWithCustomFields(resp, page, activeMappings);
+        return resp;
+    }
+
+    /**
+     * {@link #fillAdminResponse} plus the checkout form, vendor, currency
+     * (both from {@link #gatewayMapping}) and GTM container.
+     */
+    public void fillAdminResponseWithCustomFields(ProductPageResponse resp, ProductPage page,
+                                                  List<ProductPageInviteMapping> activeMappings) {
+        Map<String, PaymentPlan> plans = fillAdminResponse(resp, page, activeMappings);
 
         resp.setAggregatedCustomFields(aggregateCustomFields(page.getInstituteId(), activeMappings));
 
-        if (!activeMappings.isEmpty()) {
-            EnrollInvite firstInvite = activeMappings.get(0).getPsInvitePaymentOption().getEnrollInvite();
-            resp.setVendor(firstInvite.getVendor());
-            resp.setCurrency(firstInvite.getCurrency());
+        ProductPageInviteMapping gatewayMapping = gatewayMapping(activeMappings, plans);
+        if (gatewayMapping != null) {
+            EnrollInvite gatewayInvite = gatewayMapping.getPsInvitePaymentOption().getEnrollInvite();
+            resp.setVendor(gatewayInvite.getVendor());
+            resp.setCurrency(gatewayInvite.getCurrency());
         }
 
         // Populate GTM container ID from institute settings
@@ -428,8 +696,34 @@ public class ProductPageService {
         } catch (Exception e) {
             log.debug("GTM setting not found for institute {}: {}", page.getInstituteId(), e.getMessage());
         }
+    }
 
-        return resp;
+    /**
+     * The mapping whose invite gives the page its gateway and currency: the
+     * first one, in display order, whose locked plan costs something, else
+     * the first one. A free course is charged nothing; its currency is often
+     * only a default label (free plans are created in INR) and its gateway a
+     * fallback set before the institute configured one, so it heads the
+     * page's prices and payment widget only when nothing on the page is
+     * priced. Checkout charges a cart the same way: through its first priced
+     * course's gateway (ProductPageEnrollmentService.gatewayInvite), in its
+     * priced courses' currency (checkoutCurrency). A mapping whose plan is
+     * gone counts as free. Null for a page with no mappings.
+     *
+     * Visible for testing.
+     */
+    static ProductPageInviteMapping gatewayMapping(List<ProductPageInviteMapping> activeMappings,
+                                                   Map<String, PaymentPlan> plans) {
+        if (activeMappings.isEmpty()) {
+            return null;
+        }
+        for (ProductPageInviteMapping mapping : activeMappings) {
+            PaymentPlan plan = mapping.getPaymentPlanId() != null ? plans.get(mapping.getPaymentPlanId()) : null;
+            if (plan != null && plan.getActualPrice() > 0) {
+                return mapping;
+            }
+        }
+        return activeMappings.get(0);
     }
 
     /**
@@ -437,19 +731,26 @@ public class ProductPageService {
      * fieldId.
      * Tracks which enrollInviteIds own each field so the frontend can filter
      * dynamically.
+     *
+     * Every invite's fields are read in ONE query (they used to cost one query
+     * per course); the per-invite lists and the aggregation are unchanged.
      */
     List<ProductPageAggregatedFieldDTO> aggregateCustomFields(
             String instituteId, List<ProductPageInviteMapping> activeMappings) {
+
+        List<String> inviteIds = activeMappings.stream()
+                .map(mapping -> mapping.getPsInvitePaymentOption().getEnrollInvite().getId())
+                .collect(Collectors.toList());
+        Map<String, List<InstituteCustomFieldDTO>> fieldsByInvite = inviteIds.isEmpty()
+                ? Map.of()
+                : customFieldLoader.fieldsByInvite(instituteId, inviteIds);
 
         // fieldId → aggregated DTO (preserving insertion order = first invite's config
         // wins)
         Map<String, ProductPageAggregatedFieldDTO> deduped = new LinkedHashMap<>();
 
-        for (ProductPageInviteMapping mapping : activeMappings) {
-            String enrollInviteId = mapping.getPsInvitePaymentOption().getEnrollInvite().getId();
-
-            List<InstituteCustomFieldDTO> fields = customFieldService.findCustomFieldsAsJson(
-                    instituteId, CustomFieldTypeEnum.ENROLL_INVITE.name(), enrollInviteId);
+        for (String enrollInviteId : inviteIds) {
+            List<InstituteCustomFieldDTO> fields = fieldsByInvite.getOrDefault(enrollInviteId, List.of());
 
             for (InstituteCustomFieldDTO field : fields) {
                 // fieldId = CustomFields PK; fall back to InstituteCustomField PK if missing
@@ -467,7 +768,8 @@ public class ProductPageService {
         return new ArrayList<>(deduped.values());
     }
 
-    private ProductPageInviteMappingResponse toMappingResponse(ProductPageInviteMapping m) {
+    private ProductPageInviteMappingResponse toMappingResponse(ProductPageInviteMapping m,
+                                                               Map<String, PaymentPlan> plans) {
         ProductPageInviteMappingResponse r = new ProductPageInviteMappingResponse();
         r.setId(m.getId());
         r.setPsInvitePaymentOptionId(m.getPsInvitePaymentOption().getId());
@@ -479,11 +781,15 @@ public class ProductPageService {
         r.setDisplayOrder(m.getDisplayOrder());
         r.setStatus(m.getStatus());
 
-        paymentPlanRepository.findById(m.getPaymentPlanId())
-                .ifPresent(plan -> r.setPaymentPlan(plan.mapToPaymentPlanDTO()));
+        PaymentPlan plan = plans.get(m.getPaymentPlanId());
+        if (plan != null) {
+            r.setPaymentPlan(plan.mapToPaymentPlanDTO());
+        }
 
         if (m.getPsInvitePaymentOption().getPaymentOption() != null) {
             r.setPaymentOptionType(m.getPsInvitePaymentOption().getPaymentOption().getType());
+            r.setRegionalPricingEnabled(Boolean.TRUE.equals(
+                    m.getPsInvitePaymentOption().getPaymentOption().getRegionalPricingEnabled()));
         }
 
         vacademy.io.common.institute.entity.session.PackageSession ps = m.getPsInvitePaymentOption()
@@ -562,10 +868,15 @@ public class ProductPageService {
         return code;
     }
 
-    private String buildLearnerUrl(String code) {
-        // Resolved at runtime; placeholder value — ShortUrlManagementService fetches
-        // institute base URL
-        return "/product-pages/" + code;
+    /**
+     * Where the page's short link sends people. Must be absolute: a bare "/product-pages/x" is
+     * resolved against the short-link host (u.vacademy.io) and 404s. instituteId is always
+     * appended — the shared learner.vacademy.io portal can't tell institutes apart by host.
+     */
+    private String buildLearnerUrl(String code, String instituteId) {
+        Institute institute = instituteRepository.findById(instituteId).orElse(null);
+        return learnerPortalUrlResolver.resolveBaseUrl(instituteId, institute)
+                + "/product-pages/" + code + "?instituteId=" + instituteId;
     }
 
     double computeDiscount(AppliedCouponDiscount discount, double totalAmount) {

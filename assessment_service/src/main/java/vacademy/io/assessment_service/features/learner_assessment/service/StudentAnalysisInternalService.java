@@ -1,5 +1,6 @@
 package vacademy.io.assessment_service.features.learner_assessment.service;
 
+import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.StudentReportDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -39,7 +40,7 @@ import java.util.Set;
  *   <li>Read-only — no writes anywhere.
  *   <li>Reuses existing {@link StudentAttemptRepository} queries and
  *       {@link LearnerReportService#buildComparisonData} — no duplicated query logic.
- *   <li>Comparison is capped at {@link #MAX_ASSESSMENTS_PER_REPORT} (default 25) to bound
+ *   <li>Comparison is capped at {@link #MAX_ASSESSMENTS_PER_REPORT} (default 50) to bound
  *       per-request work.  A truncation warning is logged so operators can tune the cap.
  *   <li>Per-assessment comparison failures are isolated: a single failure marks that entry
  *       with null comparison fields but never aborts the whole request.
@@ -51,10 +52,11 @@ public class StudentAnalysisInternalService {
 
     /**
      * Maximum number of assessments that will have full comparison data computed.
-     * The most recent N attempts are processed; older ones are silently omitted.
-     * Configurable via a constant here; could be externalised to application properties.
+     * The most recent N attempts (by exam date) are processed; older ones are silently omitted.
+     * 25 was too tight: a school term of weekly offline tests passes it (26 in a Sep 2026
+     * Elevate report), and the newest test was the one that got dropped.
      */
-    static final int MAX_ASSESSMENTS_PER_REPORT = 25;
+    static final int MAX_ASSESSMENTS_PER_REPORT = 50;
 
     /** Maximum cohort size accepted by the batch endpoint; larger requests are rejected with 400. */
     static final int MAX_BATCH_USERS = 500;
@@ -231,14 +233,43 @@ public class StudentAnalysisInternalService {
                         .resultStatus(row.getResultStatus())
                         .sections(Collections.emptyList());
 
+        enrichWithComparison(builder, userId, row.getAssessmentId(), row.getAttemptId(),
+                row.getTotalMarks(), instituteId);
+        return builder.build();
+    }
+
+    /**
+     * One history item from a learner-visible report row (learner chatbot). The caller has
+     * already applied the learner app's release gating; enrichment is the same as above.
+     */
+    AssessmentHistoryItemDto buildHistoryItemFromReport(
+            StudentReportDto row, String userId, String instituteId) {
+        AssessmentHistoryItemDto.AssessmentHistoryItemDtoBuilder builder =
+                AssessmentHistoryItemDto.builder()
+                        .assessmentId(row.getAssessmentId())
+                        .assessmentName(row.getAssessmentName())
+                        .attemptId(row.getAttemptId())
+                        .attemptDate(row.getAttemptDate())
+                        .marks(row.getTotalMarks())
+                        .durationSeconds(row.getDurationInSeconds())
+                        .resultStatus(row.getReportReleaseStatus())
+                        .sections(Collections.emptyList());
+        enrichWithComparison(builder, userId, row.getAssessmentId(), row.getAttemptId(),
+                row.getTotalMarks(), instituteId);
+        return builder.build();
+    }
+
+    private void enrichWithComparison(
+            AssessmentHistoryItemDto.AssessmentHistoryItemDtoBuilder builder,
+            String userId, String assessmentId, String attemptId, Double earnedMarks,
+            String instituteId) {
         // Attempt to enrich with comparison data; never let a failure abort the whole request.
         try {
             StudentComparisonDto comparison = learnerReportService
-                    .buildComparisonData(userId, row.getAssessmentId(), row.getAttemptId(), instituteId);
+                    .buildComparisonData(userId, assessmentId, attemptId, instituteId);
 
             if (comparison != null) {
                 Double totalMarks = comparison.getTotalMarks();
-                Double earnedMarks = row.getTotalMarks();
                 double percentage = (totalMarks != null && totalMarks > 0 && earnedMarks != null)
                         ? Math.round((earnedMarks / totalMarks) * 1000.0) / 10.0
                         : 0.0;
@@ -255,10 +286,8 @@ public class StudentAnalysisInternalService {
         } catch (Exception ex) {
             log.warn("student-analysis: failed to build comparison for " +
                      "assessmentId={} attemptId={} userId={}: {}",
-                     row.getAssessmentId(), row.getAttemptId(), userId, ex.getMessage());
+                     assessmentId, attemptId, userId, ex.getMessage());
         }
-
-        return builder.build();
     }
 
     private List<AssessmentSectionSummaryDto> mapSections(List<SectionComparisonDto> sectionComparisons) {

@@ -1,0 +1,21 @@
+{
+    "heading": {
+        "linkList": "{{term}} Link List"
+    },
+    "search": {
+        "placeholder": "Search by name"
+    },
+    "filters": {
+        "apply": "Apply Filters",
+        "resetAll": "Reset All"
+    },
+    "state": {
+        "error": "Error fetching invitation links",
+        "empty": "No invite link has been created yet!"
+    },
+    "card": {
+        "createdOn": "Created on: {{date}}",
+        "acceptedBy": "Invites accepted by: {{count}}",
+        "inviteLink": "Invite Link: "
+    }
+}

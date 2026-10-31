@@ -1,0 +1,16 @@
+---
+title: "Billing"
+description: "What an API call costs."
+---
+
+Calls made through the API are billed exactly like calls started from the dashboard:
+
+- **Per connected minute**, at your plan's per-minute rate, in 30-second pulses. See [telleo.ai/pricing](https://telleo.ai/pricing/).
+- Calls that **do not connect** (`no_answer`, `busy`, `failed`, `canceled`, `expired`) are not billed.
+- The **outcome** (summary, answers, rating, transcript) is included at no extra cost.
+- **Test calls** (`"test": true`) are free and work even before your first top-up.
+- API requests themselves are free.
+
+Your balance is checked before each call. When it runs out, new calls get `402 insufficient_credits`, and calls already queued wait until you top up.
+
+Check the balance, daily usage and each call's cost from your systems with [Credits and usage](/platform/credits-and-usage). In the dashboard, the **AI Credits** badge in the top bar shows the balance, every deduction (**History**), usage over time (**Analytics**) and invoices (**Billing**).

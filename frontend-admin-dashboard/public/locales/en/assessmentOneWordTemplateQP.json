@@ -1,0 +1,16 @@
+{
+    "emptyState": {
+        "noQuestions": "Please add a question to show question details"
+    },
+    "label": {
+        "comprehensionText": "Comprehension Text",
+        "question": "Question",
+        "answer": "Answer"
+    },
+    "placeholder": {
+        "correctAnswer": "Enter the correct answer"
+    },
+    "explanation": {
+        "defaultLabel": "Explanation:"
+    }
+}

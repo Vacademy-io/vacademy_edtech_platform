@@ -1,0 +1,21 @@
+{
+    "next": "التالي",
+    "addQuestion": "إضافة سؤال",
+    "quickAccess": "وصول سريع",
+    "optionBased": "قائم على الخيارات",
+    "mathBased": "قائم على الرياضيات",
+    "writingSkills": "مهارات الكتابة",
+    "readingSkills": "مهارات القراءة",
+    "invalidTimestamp": "طابع زمني غير صالح. يرجى إدخال وقت صالح بصيغة MM:SS أو بالثواني، ويجب أن يكون الطابع الزمني الحالي أقل من مدة الفيديو",
+    "questionTypes": {
+        "mcqSingle": "أسئلة اختيار من متعدد (إجابة صحيحة واحدة)",
+        "mcqMultiple": "أسئلة اختيار من متعدد (إجابات صحيحة متعددة)",
+        "numerical": "عددي",
+        "trueFalse": "صح خطأ",
+        "longAnswer": "إجابة طويلة",
+        "singleWord": "كلمة واحدة",
+        "comprehensionMcqSingle": "أسئلة اختيار من متعدد للفهم (إجابة صحيحة واحدة)",
+        "comprehensionMcqMultiple": "أسئلة اختيار من متعدد للفهم (إجابات صحيحة متعددة)",
+        "comprehensionNumeric": "فهم عددي"
+    }
+}

@@ -3,7 +3,9 @@
         "tab": {
             "all": "सभी {{courses}}",
             "inProgress": "जारी",
-            "completed": "पूर्ण"
+            "completed": "पूर्ण",
+            "scrollStart": "टैब पीछे स्क्रॉल करें",
+            "scrollEnd": "टैब आगे स्क्रॉल करें"
         },
         "toast": {
             "loadError": "{{courses}} लोड करते समय कुछ गलत हो गया। कृपया पुनः प्रयास करें।",
@@ -31,6 +33,11 @@
         },
         "card": {
             "untitledPackage": "बिना शीर्षक का पैकेज"
+        },
+        "customTab": {
+            "open": "खोलें",
+            "coursesCount": "{{count}} कोर्स",
+            "productPagesEmpty": "यहाँ अभी दिखाने को कुछ नहीं है"
         }
     },
     "filters": {
@@ -144,5 +151,295 @@
         "nextSlide": "अगला: {{title}}",
         "overview": "अवलोकन",
         "overviewAriaLabel": "{{course}} अवलोकन देखें"
+    },
+    "liveClass": {
+        "badge": {
+            "live": "लाइव",
+            "liveNow": "अभी लाइव",
+            "session": "सत्र",
+            "startingSoon": "जल्द शुरू होगा",
+            "waitingRoom": "प्रतीक्षा कक्ष"
+        },
+        "button": {
+            "join": "शामिल हों",
+            "joinEarly": "जल्दी शामिल हों",
+            "joinLiveClass": "लाइव क्लास में शामिल हों",
+            "joinSession": "सत्र में शामिल हों",
+            "joinWaitingRoom": "प्रतीक्षा कक्ष में जाएँ",
+            "next": "अगला",
+            "nextSessions": "अगला: {{sessions}}",
+            "notStarted": "शुरू नहीं हुआ",
+            "previous": "पिछला",
+            "previousSessions": "पिछला: {{sessions}}",
+            "settingUp": "सेट हो रहा है…",
+            "today": "आज"
+        },
+        "calendar": {
+            "clickDayHint": "सभी {{liveSessions}} देखने के लिए किसी दिन पर क्लिक करें",
+            "dayNamesShort": [
+                "रवि",
+                "सोम",
+                "मंगल",
+                "बुध",
+                "गुरु",
+                "शुक्र",
+                "शनि"
+            ],
+            "monthNames": [
+                "जनवरी",
+                "फ़रवरी",
+                "मार्च",
+                "अप्रैल",
+                "मई",
+                "जून",
+                "जुलाई",
+                "अगस्त",
+                "सितंबर",
+                "अक्टूबर",
+                "नवंबर",
+                "दिसंबर"
+            ],
+            "moreCount": "+{{count}} और"
+        },
+        "countdown": {
+            "hours": "घंटे",
+            "minutes": "मिनट",
+            "seconds": "सेकंड"
+        },
+        "dayModal": {
+            "classesOn": "{{date}} की कक्षाएं",
+            "noneScheduled": "इस दिन के लिए कोई {{liveSessions}} निर्धारित नहीं है",
+            "pastSessions": "बीते हुए: {{sessions}}",
+            "upcomingSessions": "आगामी: {{sessions}}"
+        },
+        "defaultClassCard": {
+            "defaultTitle": "डिफ़ॉल्ट: {{session}}",
+            "description": "अभी कोई {{liveSession}} नहीं है। आप देख सकते हैं: {{session}}.",
+            "noLiveSession": "कोई {{liveSession}} नहीं",
+            "viewSession": "देखें: {{session}}"
+        },
+        "disclaimer": {
+            "continue": "क्लास पर जाएँ",
+            "description": "कृपया यह छोटा वीडियो देखें।",
+            "iframeTitle": "अस्वीकरण",
+            "title": "शामिल होने से पहले"
+        },
+        "embed": {
+            "back": "← वापस",
+            "classReady": "तैयार है: {{liveClass}}",
+            "clickToJoinNewWindow": "नई विंडो में {{liveClass}} से जुड़ने के लिए नीचे क्लिक करें।",
+            "clickToViewLive": "लाइव देखने के लिए यहाँ क्लिक करें",
+            "errorLoadingSessionDetails": "{{session}} विवरण लोड करने में त्रुटि: {{message}}",
+            "goToLogin": "लॉगिन पर जाएँ",
+            "invalidYoutubeUrl": "अमान्य YouTube URL फ़ॉर्मैट",
+            "loginRequired": "लॉगिन आवश्यक",
+            "loginRequiredDescription": "इस {{session}} में शामिल होने के लिए कृपया लॉगिन करें। यह एक निजी {{session}} है और इसके लिए प्रमाणीकरण आवश्यक है।",
+            "noMeetingLink": "इस {{session}} के लिए कोई मीटिंग लिंक उपलब्ध नहीं है।",
+            "openingInNewTab": "नए टैब में मीटिंग लिंक खोला जा रहा है...",
+            "rec": "रिकॉर्ड",
+            "recording": "रिकॉर्डिंग",
+            "tapToJoin": "{{liveClass}} से जुड़ने के लिए नीचे टैप करें।",
+            "toast": {
+                "classNotStarted": "आपके {{instructor}} ने अभी तक {{liveClass}} शुरू नहीं की है। कृपया थोड़ी देर रुकें और पुनः प्रयास करें।",
+                "joinFailed": "{{liveClass}} में शामिल होने में विफल। कृपया पुनः प्रयास करें।",
+                "liveSessionStarted": "एक {{liveSession}} शुरू हो गया है!"
+            },
+            "unsupportedSessionType": "असमर्थित {{session}} प्रकार: {{linkType}}"
+        },
+        "feedback": {
+            "backToLiveClasses": "{{liveSessions}} पर वापस जाएँ",
+            "fieldRequired": "यह फ़ील्ड आवश्यक है",
+            "hopeFoundGeneric": "उम्मीद है आपको यह {{session}} उपयोगी लगा होगा।",
+            "hopeFoundTitled": "उम्मीद है आपको \"{{title}}\" उपयोगी लगा होगा।",
+            "instituteLogoAlt": "संस्थान लोगो",
+            "loadingForm": "फ़ीडबैक फ़ॉर्म लोड हो रहा है…",
+            "rating": {
+                "excellent": "उत्कृष्ट",
+                "fair": "ठीक-ठाक",
+                "good": "अच्छा",
+                "poor": "खराब",
+                "starAriaLabel_one": "{{count}} स्टार",
+                "starAriaLabel_other": "{{count}} स्टार",
+                "veryGood": "बहुत अच्छा"
+            },
+            "requiredBody": "आपके {{instructor}} ने इस {{session}} के लिए फ़ीडबैक अनिवार्य किया है — जारी रखने के लिए कृपया सभी आवश्यक प्रश्न पूरे करें।",
+            "requiredLabel": "फ़ीडबैक आवश्यक है।",
+            "responsePlaceholder": "अपना उत्तर यहाँ लिखें…",
+            "responsesRecorded": "आपके उत्तर दर्ज कर लिए गए हैं। आपको वापस भेजा जा रहा है…",
+            "sessionFeedbackTitle": "{{session}} फ़ीडबैक",
+            "skip": "छोड़ें",
+            "submitFeedback": "फ़ीडबैक भेजें",
+            "submitting": "भेजा जा रहा है…",
+            "thankYouTitle": "आपके फ़ीडबैक के लिए धन्यवाद!",
+            "thanksForAttending": "शामिल होने के लिए धन्यवाद!"
+        },
+        "field": {
+            "duration": "अवधि:",
+            "starts": "शुरुआत:"
+        },
+        "filter": {
+            "days_one": "{{count}} दिन",
+            "days_other": "{{count}} दिन"
+        },
+        "loginForm": {
+            "continue": "जारी रखें",
+            "enterOtp": "OTP दर्ज करें",
+            "findingUser": "उपयोगकर्ता खोजा जा रहा है...",
+            "findingUserDetails": "उपयोगकर्ता विवरण खोजा जा रहा है...",
+            "heading": "सत्र देखने के लिए लॉगिन करें",
+            "loadingUserDetails": "उपयोगकर्ता विवरण लोड हो रहा है...",
+            "otpSentTo": "हमने 6 अंकों का कोड भेजा है",
+            "quickLoginDescription": "आपको ईमेल सत्यापन के बिना सीधे लॉगिन कर दिया जाएगा।",
+            "quickLoginTitle": "क्विक लॉगिन मोड",
+            "subtitle": "{{liveSession}} तक पहुँचने के लिए अपना उपयोगकर्ता नाम दर्ज करें",
+            "toast": {
+                "emailServiceUnavailable": "ईमेल सेवा अस्थायी रूप से अनुपलब्ध है।",
+                "invalidUserData": "अमान्य उपयोगकर्ता डेटा प्राप्त हुआ",
+                "loggingIn": "लॉगिन हो रहा है...",
+                "linkExpired": "यह लॉगिन लिंक समाप्त हो गया है",
+                "linkExpiredDescription": "नया लिंक माँगें, या अपने यूज़रनेम और पासवर्ड से साइन इन करें।",
+                "loginFailedLater": "लॉगिन विफल रहा। कृपया बाद में पुनः प्रयास करें।",
+                "loginFailedRetry": "लॉगिन विफल रहा। कृपया पुनः प्रयास करें।",
+                "loginSuccessTitle": "लॉगिन सफल! रीडायरेक्ट किया जा रहा है...",
+                "otpIncomplete": "कृपया पूरा 6 अंकों का OTP दर्ज करें",
+                "otpInvalid": "अमान्य OTP। कृपया पुनः प्रयास करें।",
+                "otpSendFailed": "OTP भेजने में विफल",
+                "otpSent": "हमने OTP भेज दिया है! कृपया अपना ईमेल जाँचें।",
+                "otpVerified": "OTP सफलतापूर्वक सत्यापित हुआ!",
+                "studentDetailsFailed": "छात्र विवरण प्राप्त करने में विफल",
+                "tryAgain": "कृपया पुनः प्रयास करें",
+                "userLookupFailed": "उपयोगकर्ता नहीं मिला",
+                "userNotFound": "उपयोगकर्ता नहीं मिला",
+                "welcome": "आपके {{liveSession}} में आपका स्वागत है"
+            },
+            "usernameLabel": "उपयोगकर्ता नाम",
+            "usernamePlaceholder": "अपना उपयोगकर्ता नाम दर्ज करें",
+            "verifyAndContinue": "सत्यापित करें और जारी रखें",
+            "verifying": "सत्यापित हो रहा है..."
+        },
+        "meta": {
+            "pageDescription": "{{liveClasses}} और आगामी सत्र",
+            "pageTitle": "{{liveClasses}}"
+        },
+        "pagination": {
+            "pageOf": "पृष्ठ {{page}} / {{totalPages}}",
+            "viewingPage": "पृष्ठ {{page}} देखा जा रहा है"
+        },
+        "pastSession": {
+            "activity": {
+                "attended": "{{minutes}} मिनट उपस्थित रहे",
+                "chats": "{{count}} चैट",
+                "handRaises": "{{count}} बार हाथ उठाया",
+                "pollVotes": "{{count}} पोल वोट",
+                "reactions": "{{count}} रिएक्शन"
+            },
+            "attendance": {
+                "absent": "अनुपस्थित",
+                "notMarked": "चिह्नित नहीं",
+                "present": "उपस्थित"
+            },
+            "materialFallback": "सामग्री",
+            "materialsLabel": "क्लास सामग्री",
+            "recording": {
+                "expired": "रिकॉर्डिंग समाप्त हो गई",
+                "part": "भाग {{number}}",
+                "watch": "रिकॉर्डिंग देखें"
+            },
+            "toast": {
+                "materialOpenFailed": "यह सामग्री खोली नहीं जा सकी।"
+            }
+        },
+        "recordingDialog": {
+            "copy": "कॉपी करें",
+            "expiresAround": "यह लिंक लगभग {{date}} को समाप्त हो सकता है।",
+            "loading": "रिकॉर्डिंग लोड हो रही है…",
+            "openRecording": "रिकॉर्डिंग खोलें",
+            "passcodeLabel": "पासकोड:",
+            "toast": {
+                "loadFailed": "रिकॉर्डिंग लोड करने में विफल।",
+                "passcodeCopied": "पासकोड कॉपी हो गया"
+            },
+            "unableToEmbed": "यह वीडियो एम्बेड नहीं किया जा सका।",
+            "zoomCloudHosted": "यह रिकॉर्डिंग Zoom Cloud पर होस्ट है। देखने के लिए इसे नए टैब में खोलें।"
+        },
+        "section": {
+            "adjustFilters": "अपने फ़िल्टर समायोजित करें या सभी {{sessions}} देखने के लिए उन्हें हटाएँ",
+            "checkBackLater": "बाद में देखें या आगामी {{sessions}} देखें",
+            "classesWillShowUp": "क्लासेस होने के बाद यहाँ दिखाई देंगी।",
+            "foundCount_one": "{{count}} {{liveSessions}} मिला",
+            "foundCount_other": "{{count}} {{liveSessions}} मिले",
+            "liveSessionsHeading": "{{liveSessions}} - {{timezone}}",
+            "newSessionsWillAppear": "नए {{sessions}} शेड्यूल होने पर यहाँ दिखाई देंगे",
+            "noPastSessionsYet": "अभी तक कोई पिछला सत्र नहीं है",
+            "noUpcomingMatchFilters": "आपके फ़िल्टर से मेल खाने वाला कोई आगामी {{sessions}} नहीं है",
+            "noUpcomingScheduled": "कोई आगामी {{sessions}} निर्धारित नहीं है",
+            "noneAtTheMoment": "फ़िलहाल कोई {{liveSessions}} नहीं है",
+            "noneFound": "कोई {{liveSessions}} नहीं मिला",
+            "pastSessionsSubtitle": "आपके {{batch}} में हो चुकी क्लासेस।",
+            "sessionCount_one": "{{count}} सत्र",
+            "sessionCount_other": "{{count}} सत्र"
+        },
+        "sessionSelection": {
+            "description": "अभी {{count}} सक्रिय {{sessions}} हैं। कृपया चुनें कि आप किसमें शामिल होना चाहते हैं:",
+            "tipBody": "आप एक बार में केवल एक {{session}} में शामिल हो सकते हैं। जिस {{session}} में जाना है उसे चुनें।",
+            "tipLabel": "सुझाव:",
+            "title": "कई सक्रिय सत्र"
+        },
+        "state": {
+            "errorLoadingPrefix": "सत्र लोड करने में त्रुटि:",
+            "loadingSessions": "सत्र लोड हो रहे हैं..."
+        },
+        "tabs": {
+            "calendar": "कैलेंडर व्यू",
+            "list": "लिस्ट व्यू"
+        },
+        "toast": {
+            "classEnded": "यह {{liveClass}} समाप्त हो चुकी है",
+            "classNotStartedYet": "क्लास अभी शुरू नहीं हुई है। कृपया प्रतीक्षा कक्ष खुलने का इंतज़ार करें।",
+            "markAttendanceFailed": "उपस्थिति दर्ज करने में विफल",
+            "paymentRequired": "इस {{session}} के लिए भुगतान आवश्यक है। शामिल होने के लिए भुगतान पूरा करें।",
+            "statusUndetermined": "{{session}} की स्थिति निर्धारित नहीं हो सकी। कृपया पुनः प्रयास करें।"
+        },
+        "usernameLogin": {
+            "footerHelp": "मदद चाहिए? अपने {{liveSession}} तक पहुँचने में सहायता के लिए सहायता टीम से संपर्क करें।"
+        },
+        "zoomSdk": {
+            "couldNotInit": "Zoom मीटिंग शुरू नहीं की जा सकी ({{code}})।",
+            "couldNotJoin": "Zoom मीटिंग में शामिल नहीं हुआ जा सका ({{code}})।",
+            "couldNotLoad": "हम यह {{liveClass}} लोड नहीं कर सके। कृपया रीफ़्रेश करें, या अपने शिक्षक से संपर्क करें।",
+            "couldNotLoadCheckConnection": "Zoom मीटिंग लोड नहीं की जा सकी। अपना कनेक्शन जाँचें और पुनः प्रयास करें।",
+            "failedToLoad": "Zoom मीटिंग लोड करने में विफल।",
+            "initError": "इनिशियलाइज़ेशन त्रुटि",
+            "joinError": "जॉइन त्रुटि",
+            "joiningMeeting": "मीटिंग में शामिल हो रहे हैं…",
+            "notReadyToJoin": "यह {{liveClass}} अभी शामिल होने के लिए तैयार नहीं है — हो सकता है यह अभी भी सेट हो रही हो। कृपया थोड़ी देर बाद रीफ़्रेश करें, या समस्या बनी रहने पर अपने शिक्षक से संपर्क करें।",
+            "openInZoomApp": "Zoom ऐप में खोलें",
+            "preparingMeeting": "मीटिंग तैयार की जा रही है…",
+            "refreshOrRejoin": "कृपया पेज रीफ़्रेश करें या दोबारा शामिल होने की कोशिश करें।",
+            "stillSettingUp": "यह {{liveClass}} अभी भी सेट हो रही है। कृपया थोड़ी देर बाद रीफ़्रेश करें।"
+        },
+        "zoomSettingUpTooltip": "Zoom मीटिंग अभी भी सेट हो रही है। थोड़ी देर बाद जाँचें।"
+    },
+    "supportersSection": {
+        "headingPrefix": "हमारे",
+        "headingHighlight": "समर्थक"
+    },
+    "courseCatalogBanner": {
+        "alt": "{{course}} कैटलॉग बैनर"
+    },
+    "instructorCta": {
+        "headingBefore": "अपना खुद का",
+        "headingAfter": " बनाना चाहते हैं?",
+        "subtitle": "अपना ज्ञान दुनिया के साथ साझा करें!",
+        "description": "लॉगिन करें और दूसरों के देखने और सीखने के लिए अपने खुद के {{courses}} बनाना शुरू करें।",
+        "login": "लॉगिन"
+    },
+    "legacyNav": {
+        "brandName": "लर्निंग सेंटर",
+        "logoAlt": "लर्निंग सेंटर लोगो",
+        "userProfileAlt": "उपयोगकर्ता प्रोफ़ाइल"
+    },
+    "studyCourseCatalog": {
+        "heading": "स्टडी {{course}} कैटलॉग"
     }
 }

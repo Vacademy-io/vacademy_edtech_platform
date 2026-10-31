@@ -1,0 +1,61 @@
+{
+    "card": {
+        "title": "Course Preview",
+        "bundleBadge_one": "Bundle ({{count}} batch)",
+        "bundleBadge_other": "Bundle ({{count}} batches)"
+    },
+    "courseName": {
+        "placeholder": "Enter course name"
+    },
+    "description": {
+        "label": "Description",
+        "placeholder": "Enter course description (max 30 words)",
+        "maxWordsHint": "*Max 30 words allowed"
+    },
+    "tags": {
+        "sectionLabel": "{{term}} Tags",
+        "helperText": "Add tags to help categorize and find your course easily",
+        "inputPlaceholder": "Enter a tag",
+        "addButton": "Add"
+    },
+    "learningOutcome": {
+        "label": "What learners will gain?"
+    },
+    "aboutCourse": {
+        "label": "About the course"
+    },
+    "targetAudience": {
+        "label": "Who should join?"
+    },
+    "placeholders": {
+        "courseOverview": "Provide a detailed overview of the course. Include learning objectives, topics covered, format (video, quizzes, projects), and who this course is for."
+    },
+    "media": {
+        "coursePreview": {
+            "label": "Course Preview Image",
+            "helperText": "This is the thumbnail that appears on the course card. Recommended size: 2:1 ratio",
+            "alt": "Course Preview"
+        },
+        "courseBanner": {
+            "label": "Course Banner Image",
+            "helperText": "A wide background image displayed on top of the course detail page. Recommended size: 2.64:1 ratio",
+            "alt": "Course Banner"
+        },
+        "courseMedia": {
+            "label": "Course Media (Image or Video)",
+            "helperText": "A featured media block within the course page; this can visually represent the content or offer a teaser. For videos, recommended format: MP4",
+            "alt": "Course Media",
+            "videoUnsupported": "Your browser does not support the video tag.",
+            "uploadOption": "Upload Image/Video",
+            "youtubeOption": "YouTube Link"
+        }
+    },
+    "youtube": {
+        "pasteLinkLabel": "Paste YouTube Link",
+        "playerTitle": "YouTube video player",
+        "saveButton": "Save YouTube Link"
+    },
+    "errors": {
+        "invalidYoutubeLink": "Invalid YouTube link"
+    }
+}

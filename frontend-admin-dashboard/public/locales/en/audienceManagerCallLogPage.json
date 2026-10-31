@@ -1,0 +1,27 @@
+{
+    "header": {
+        "navTitle": "Call Log",
+        "title": "Call Log",
+        "subtitle": "Every call across your team — AI & human, inbound & outbound, all providers. Filter, disposition and export.",
+        "callingSettings": "Calling settings",
+        "refresh": "Refresh"
+    },
+    "filters": {
+        "presetLabel": "{{days}}d",
+        "from": "From",
+        "to": "To",
+        "apply": "Apply",
+        "reset": "Reset",
+        "noInstitute": "Pick an institute to view the call log.",
+        "presetHours": "{{hours}}h",
+        "customHoursPlaceholder": "Last N hrs",
+        "customHoursLabel": "Last N hours"
+    },
+    "counsellorPicker": {
+        "ariaLabel": "Filter by counsellor",
+        "allCounsellors": "All counsellors"
+    },
+    "callIntelligence": {
+        "heading": "Call Intelligence"
+    }
+}

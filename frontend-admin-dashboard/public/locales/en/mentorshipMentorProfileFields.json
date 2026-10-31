@@ -1,0 +1,22 @@
+{
+    "tagSuggestions": {
+        "careerGuidance": "Career guidance",
+        "examStrategy": "Exam strategy",
+        "doubtSolving": "Doubt solving",
+        "interviewPrep": "Interview prep",
+        "studyPlanning": "Study planning"
+    },
+    "maxMenteesPlaceholder": "Leave blank for no limit",
+    "maxMenteesLabel": "Max mentees",
+    "maxMenteesHelp": "Assignment and round-robin stop adding students once a mentor hits this number. Blank means no limit.",
+    "capBelowCurrentWarning_one": "They already have {{count}} mentee — existing ones stay, but no new students can be assigned.",
+    "capBelowCurrentWarning_other": "They already have {{count}} mentees — existing ones stay, but no new students can be assigned.",
+    "listInFindAMentorLabel": "List in Find a mentor",
+    "listInFindAMentorHelp": "Learners can see this mentor's profile and request them. Requests come to you for approval — nobody is paired automatically.",
+    "listInFindAMentorAriaLabel": "List this mentor in Find a mentor",
+    "expertisePlaceholder": "e.g. JEE Physics — press Enter to add",
+    "expertiseLabel": "Expertise",
+    "expertiseHelp": "What this mentor helps with. Learners search the directory by these.",
+    "removeTagAriaLabel": "Remove {{tag}}",
+    "tryLabel": "Try:"
+}

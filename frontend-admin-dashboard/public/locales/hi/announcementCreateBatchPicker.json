@@ -1,0 +1,15 @@
+{
+    "emptyState": "इस इंस्टिट्यूट के लिए अभी कोई {{nounPlural}} मौजूद नहीं है। पहले एक बनाएं, फिर यहाँ वापस आएं।",
+    "selectNoun": "{{noun}} चुनें",
+    "countSelected": "{{count}} {{noun}} चुने गए",
+    "searchPlaceholder": "{{nounPlural}}, लेवल या सेशन खोजें…",
+    "noMatch": "कोई {{nounPlural}} “{{query}}” से मेल नहीं खाता।",
+    "selectAll": "सभी चुनें",
+    "clearGroup": "हटाएं",
+    "orgSuffix": " · सब-ऑर्गनाइज़ेशन",
+    "footerSelectedCount_one": "{{count}} चुना गया",
+    "footerSelectedCount_other": "{{count}} चुने गए",
+    "clearAll": "सभी हटाएं",
+    "done": "हो गया",
+    "removeAria": "{{label}} हटाएं"
+}

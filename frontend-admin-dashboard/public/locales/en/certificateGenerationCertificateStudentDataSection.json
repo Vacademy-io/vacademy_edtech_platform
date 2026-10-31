@@ -1,0 +1,11 @@
+{
+    "certificateGeneration": "Certificate Generation",
+    "backTo": "Back to {{term}}s",
+    "studentsSelected_one": "{{count}} {{term}} selected",
+    "studentsSelected_other": "{{count}} {{term}}s selected",
+    "certificateSettings": "Certificate settings",
+    "steps": {
+        "studentData": "Student Data & CSV Upload",
+        "pdfAnnotation": "PDF Annotation"
+    }
+}

@@ -1,0 +1,27 @@
+{
+    "sections": {
+        "currentStatus": {
+            "title": "Current status by counsellor",
+            "emptyHint": "No leads in this range.",
+            "description": "Leads received in the selected date range, by the status they hold right now. Total = all of the counsellor's leads from this range; No status = leads never given a status."
+        },
+        "statusChanges": {
+            "title": "Status changes by counsellor",
+            "emptyHint": "No status changes in this range.",
+            "description": "Each cell counts transitions into that status made by the counsellor in this range. Pending = assigned leads with no status change recorded at any time (never worked on)."
+        },
+        "callOutcomes": {
+            "title": "Call outcomes by counsellor",
+            "emptyHint": "No logged call outcomes in this range.",
+            "description": "Counts of logged call outcomes per counsellor, by your telephony call statuses."
+        }
+    },
+    "table": {
+        "counsellor": "Counsellor",
+        "noStatus": "No status",
+        "total": "Total",
+        "totalLeads": "Total leads",
+        "pending": "Pending",
+        "totalRowLabel": "TOTAL"
+    }
+}

@@ -1,0 +1,251 @@
+{
+    "tab": "Plan & billing",
+    "heading": "AI plan & billing",
+    "subheadingCatalog": "A fixed monthly price for everyday AI use. Anything a plan doesn't cover keeps using your credits.",
+    "subheadingManage": "Your AI plan, renewals, autopay and tax invoices.",
+    "brand": {
+        "neutral": "your platform team",
+        "neutralTitle": "Your platform team",
+        "neutralWord": "Platform"
+    },
+    "mode": {
+        "INCLUDED": "Unlimited",
+        "ALLOWANCE": "From allowance",
+        "CHARGED": "Uses credits"
+    },
+    "period": {
+        "month": "month",
+        "quarter": "quarter",
+        "halfYear": "6 months",
+        "year": "year",
+        "months": "{{months}} months"
+    },
+    "price": {
+        "perPeriodPlusGst": "{{price}} / {{period}} + GST",
+        "perPeriod": "{{price}} / {{period}}",
+        "inclusiveRate": "{{total}} incl. {{rate}}% GST",
+        "inclusive": "{{total}} incl. GST",
+        "noTax": "{{total}} in total"
+    },
+    "status": {
+        "pending": "Waiting for payment",
+        "active": "Active",
+        "trial": "Trial",
+        "cancels": "Cancels on {{date}}",
+        "paymentDue": "Payment due",
+        "overdue": "Payment overdue",
+        "ended": "Ended"
+    },
+    "actions": {
+        "subscribe": "Subscribe",
+        "upgrade": "Upgrade now",
+        "downgrade": "Switch at renewal",
+        "current": "Current plan",
+        "contact": "Talk to {{brand}}",
+        "changePlan": "Change plan",
+        "choosePlan": "Choose a different plan",
+        "cancelPlan": "Cancel plan",
+        "resume": "Keep my plan",
+        "keep": "Go back",
+        "editBilling": "Billing details",
+        "payNow": "Pay now",
+        "cancel": "Cancel",
+        "close": "Close",
+        "save": "Save",
+        "done": "Done",
+        "ok": "OK"
+    },
+    "catalog": {
+        "title": "Choose an AI plan",
+        "compareTitle": "Compare plans",
+        "empty": "No plans are available for your institute right now."
+    },
+    "card": {
+        "yourPlan": "Your plan",
+        "allowance": "{{credits}} credits every {{period}} for allowance features.",
+        "details": "See what's included"
+    },
+    "detail": {
+        "allowanceNoCarry": "Unused credits don't carry over.",
+        "group": {
+            "INCLUDED": "Unlimited within fair use",
+            "ALLOWANCE": "Paid from the plan allowance",
+            "CHARGED": "Uses your credits"
+        }
+    },
+    "compare": {
+        "show": "Compare plans side by side",
+        "hide": "Hide comparison",
+        "caption": "What each plan includes",
+        "feature": "Feature",
+        "price": "Price",
+        "allowance": "Allowance",
+        "allowanceValue": "{{credits}} credits",
+        "none": "None"
+    },
+    "footnotes": {
+        "fairUse": "Unlimited means unlimited within fair use. Beyond a fair-use limit, or with a model outside the plan, use is charged from your credits.",
+        "uncovered": "Anything a plan doesn't cover keeps using your credits. Prices are shown before GST; the total includes GST."
+    },
+    "checkout": {
+        "title": "Subscribe to {{plan}}",
+        "upgradeTitle": "Upgrade to {{plan}}",
+        "confirmTitle": "Confirming your payment",
+        "startsOnPayment": "Starts when your payment is received and renews every {{period}}.",
+        "anchorNote": "Paying late never shortens a period: your renewal date is set when the first payment clears.",
+        "upgradeToday": "Pay {{amount}} today for the rest of this period (until {{date}}). The new plan starts as soon as the payment clears.",
+        "quoteLoading": "Working out the amount for the rest of this period…",
+        "quoteFailed": "We couldn't work out the upgrade amount. Please try again in a moment.",
+        "base": "Plan price",
+        "gst": "GST",
+        "gstRate": "GST ({{rate}}%)",
+        "total": "Total",
+        "pay": "Pay {{amount}}",
+        "payPending": "Pay",
+        "supplierLine": "You'll pay {{supplier}} securely via Razorpay. Your tax invoice will be issued by {{legal}}.",
+        "supplierFallback": "the platform",
+        "launching": "Opening the secure payment page…",
+        "confirming": "Confirming your payment…",
+        "confirmingHint": "This usually takes a few seconds.",
+        "slow": "This is taking longer than usual. You can close this window: we'll email you when the payment is confirmed, and the plan will show here.",
+        "successTitle": "Payment received",
+        "successBody": "Your AI plan is active. The tax invoice is below and has been emailed to your billing address.",
+        "errorTitle": "Couldn't complete the payment"
+    },
+    "autopay": {
+        "title": "Autopay",
+        "explain": "Renew automatically with UPI Autopay or a card mandate. You'll get a notice at least 24 hours before each charge, and you can turn autopay off at any time.",
+        "ceilingNote": "Autopay works for renewals up to {{amount}} per payment. Without autopay you'll get a payment link before each renewal.",
+        "aboveCeiling": "This plan costs more than {{amount}} per renewal, so renewals use a payment link instead of autopay.",
+        "methodLabel": "Autopay method",
+        "method": {
+            "UPI": "UPI Autopay",
+            "CARD": "Card",
+            "EMANDATE": "Bank mandate"
+        },
+        "mobile": "Mobile number for autopay",
+        "mobileHint": "Your bank or UPI app sends autopay notices to this number.",
+        "mobileInvalid": "Enter a valid 10-digit Indian mobile number.",
+        "on": "On",
+        "onWithMethod": "On · {{method}}",
+        "off": "Off",
+        "pending": "Being set up",
+        "paused": "Paused",
+        "setUp": "Set up autopay",
+        "setUpTitle": "Set up autopay",
+        "setUpNote": "You'll authorise a refundable ₹1 payment to register the mandate. Future renewals are then charged automatically.",
+        "continue": "Continue",
+        "turnOff": "Turn off autopay",
+        "turnedOff": "Autopay is off. You'll get a payment link before your next renewal.",
+        "returned": "Thanks. Autopay can take a minute to show as active."
+    },
+    "billing": {
+        "title": "GST details for your tax invoice",
+        "description": "Add your GSTIN to claim input tax credit. Leave it blank if your institute isn’t GST registered.",
+        "legalName": "Legal name on the invoice",
+        "legalNamePlaceholder": "Registered name of your institute",
+        "gstin": "GSTIN",
+        "optional": "(optional)",
+        "state": "State",
+        "placeOfSupply": "(place of supply)",
+        "placeOfSupplyRequired": "(place of supply, required)",
+        "selectState": "Select state",
+        "address": "Billing address",
+        "email": "Billing email",
+        "emailPlaceholder": "accounts@your-institute.com",
+        "savedHint": "Saved from your last purchase. Edit if it has changed.",
+        "editTitle": "Billing details",
+        "futureOnly": "Changes apply to future invoices only. Invoices already issued keep the details they were issued with.",
+        "saved": "Billing details saved",
+        "errors": {
+            "gstinInvalid": "Enter a valid 15-character GSTIN, e.g. 27AAAAA0000A1Z5",
+            "stateRequired": "Select your state so the correct GST (CGST/SGST or IGST) is applied",
+            "legalNameRequired": "Enter the legal name to print on the tax invoice",
+            "emailInvalid": "Enter a valid billing email"
+        }
+    },
+    "manage": {
+        "currentPeriod": "Current period",
+        "periodRange": "{{start}} – {{end}}",
+        "renewsOn": "Renews on",
+        "endsOn": "Ends on",
+        "pendingBody": "Your plan starts as soon as the payment is received.",
+        "dueBody": "Your renewal of {{amount}} is due on {{date}}.",
+        "overdueBody": "Payment of {{amount}} is overdue. Plan benefits are paused and AI use is charged from your credits until you pay. The plan ends on {{date}} if it stays unpaid.",
+        "debitScheduled": "{{amount}} will be charged by autopay on {{date}}.",
+        "pendingSwitch": "Switching to {{plan}} on {{date}}.",
+        "cancelledNote": "Your plan won't renew. You keep it until {{date}}; after that AI use is charged from your credits.",
+        "linkRenewalNote": "Autopay is off, so we'll email a payment link 7 days before each renewal.",
+        "anchorNote": "Paying a renewal late doesn't move your renewal date.",
+        "cancelDone": "Your plan will end on {{date}}.",
+        "resumeDone": "Your plan will renew as usual.",
+        "alreadyPaid": "This payment is already complete."
+    },
+    "confirm": {
+        "cancelTitle": "Cancel your AI plan?",
+        "cancelBody": "You keep {{plan}} until {{date}}. After that, AI use is charged from your credits. There are no refunds for the current period.",
+        "resumeTitle": "Keep your AI plan?",
+        "resumeBody": "Your plan will renew on {{date}} as usual.",
+        "autopayOffTitle": "Turn off autopay?",
+        "autopayOffBody": "Renewals will no longer be charged automatically. We'll email a payment link before each renewal instead."
+    },
+    "downgrade": {
+        "title": "Switch to {{plan}} at renewal?",
+        "body": "You keep your current plan until {{date}}. {{plan}} starts from your next renewal, at its price. Nothing is charged or refunded now.",
+        "confirm": "Switch at renewal",
+        "done": "Switching to {{plan}} on {{date}}."
+    },
+    "contact": {
+        "title": "Talk to {{brand}}",
+        "body": "This plan change has to be set up by {{brand}}. Get in touch with them and they'll arrange it.",
+        "bodyEmail": "This plan change has to be set up by {{brand}}. Write to {{email}} and they'll arrange it."
+    },
+    "invoices": {
+        "title": "Tax invoices and credit notes",
+        "popoverTitle": "AI plan invoices and credit notes",
+        "empty": "Tax invoices for your AI plan will appear here.",
+        "loadFailed": "Could not load invoices. Please try again later.",
+        "invoice": "Tax invoice",
+        "creditNote": "Credit note",
+        "creditNoteBadge": "Credit note",
+        "period": "{{start}} – {{end}}",
+        "inclGst": "incl. GST {{tax}}",
+        "downloadInvoice": "Download tax invoice",
+        "downloadAria": "Download {{number}} (PDF)",
+        "downloadFailed": "Could not download the PDF. Please try again."
+    },
+    "entry": {
+        "seePlans": "See AI plans",
+        "comparePlans": "Compare plans",
+        "plansLink": "Plans",
+        "manage": "Manage plan",
+        "payNow": "Payment due · pay now",
+        "paymentDue": "Payment due",
+        "promoTitle": "Use AI every day?",
+        "promoFrom": "Plans from {{price}} / {{period}} + GST.",
+        "promoBody": "A fixed monthly price for everyday AI use.",
+        "lowCredit": "Running low on credits? An AI plan covers everyday AI use for a fixed monthly price."
+    },
+    "errors": {
+        "generic": "Something went wrong. Nothing was charged. Please try again.",
+        "paymentFailed": "The payment was not completed. Nothing was charged.",
+        "linkUnavailable": "We couldn't start the payment. Nothing was charged. Please try again.",
+        "ALREADY_SUBSCRIBED": "You already have an AI plan. Change it from the plan details instead.",
+        "NOT_OFFERED": "This plan is no longer available.",
+        "BUYER_STATE_REQUIRED": "Select your state so the correct GST is applied.",
+        "INVALID_GSTIN": "Enter a valid 15-character GSTIN, e.g. 27AAAAA0000A1Z5",
+        "CURRENCY_NOT_SUPPORTED": "AI plans can only be bought in Indian rupees right now.",
+        "RETURN_URL_NOT_ALLOWED": "Payments can't be started from this address. Open the admin from your usual address and try again.",
+        "CONTACT_SALES": "This change has to be set up by {{brand}}. Get in touch with them.",
+        "PAY_RENEWAL_FIRST": "Pay your renewal first, then you can upgrade.",
+        "OPEN_UPGRADE_EXISTS": "An upgrade payment is already open. Complete it or wait for it to expire.",
+        "STOREFRONT_OFF": "AI plans aren't available for your institute right now.",
+        "PAYMENTS_DISABLED": "Plan payments are paused right now. Please try again later.",
+        "AUTOPAY_DISABLED": "Autopay isn't available right now. Turn it off to pay by link.",
+        "AUTOPAY_UNAVAILABLE": "Autopay isn't available for this payment. Turn it off to pay by link, or check the billing email and mobile number.",
+        "NO_SUBSCRIPTION": "There is no AI plan to change.",
+        "CONFLICT": "Something changed in the meantime. Refresh the page and try again.",
+        "DEBIT_IN_PROGRESS": "An autopay payment for this renewal is in progress. Try again once it has gone through (usually within a day).",
+        "BUYER_ADDRESS_REQUIRED": "Add the billing name and address: they are printed on the GST invoice."
+    }
+}

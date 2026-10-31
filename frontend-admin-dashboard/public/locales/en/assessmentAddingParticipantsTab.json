@@ -1,0 +1,19 @@
+{
+    "header": {
+        "title": "Participant Selection",
+        "description": "Pick entire batches or hand-select individual learners."
+    },
+    "tabs": {
+        "selectBatch": "Select Batch",
+        "selectIndividually": "Select Individually"
+    },
+    "batchList": {
+        "sectionPlaceholder": "Select Section",
+        "searchPlaceholder": "Search by course or level",
+        "clearSearchAriaLabel": "Clear search",
+        "emptyState": {
+            "message": "No courses or levels match \"{{query}}\"",
+            "clearSearch": "Clear search"
+        }
+    }
+}

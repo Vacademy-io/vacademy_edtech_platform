@@ -23,8 +23,14 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.auth_service.feature.institute_oauth.service.InstituteOAuthClientService;
+import vacademy.io.auth_service.feature.login_link.auth.AdminCoreLoginLinksKeyVerifier;
+import vacademy.io.auth_service.feature.login_link.controller.LoginCodeOpenController;
+import vacademy.io.common.auth.apikey.ApiKeyAuthFilter;
 import vacademy.io.common.auth.filter.InternalAuthFilter;
+import vacademy.io.common.institute.OriginInstituteResolver;
 import vacademy.io.common.auth.filter.JwtAuthFilter;
+import vacademy.io.common.auth.config.JsonAuthEntryPoint;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizationRequestRepository;
@@ -98,6 +104,11 @@ public class ApplicationSecurityConfig {
 
     @Autowired
     JwtAuthFilter jwtAuthFilter;
+
+    // Replaces the default bodyless 403 (re-dispatched to a secured /error and
+    // returned empty) with a JSON body naming the actual reason.
+    @Autowired
+    private JsonAuthEntryPoint jsonAuthEntryPoint;
     @Autowired
     UserDetailsService userDetailsService;
 
@@ -112,6 +123,15 @@ public class ApplicationSecurityConfig {
 
     @Autowired
     private AuthenticationFailureHandler customOAuth2FailureHandler;
+
+    @Autowired
+    private InstituteOAuthClientService instituteOAuthClientService;
+
+    @Autowired
+    private OriginInstituteResolver originInstituteResolver;
+
+    @Autowired
+    private AdminCoreLoginLinksKeyVerifier loginLinksKeyVerifier;
 
     /**
      * Security filter chain for OAuth2 flows - Sessions enabled for OAuth2 state
@@ -130,6 +150,9 @@ public class ApplicationSecurityConfig {
     @Bean
     @Order(1)
     public SecurityFilterChain oAuth2SecurityFilterChain(HttpSecurity http) throws Exception {
+        // Platform registrations plus white-label institutes' own clients (brand name on Google's screen).
+        InstituteAwareClientRegistrationRepository registrations =
+                new InstituteAwareClientRegistrationRepository(clientRegistrationRepository, instituteOAuthClientService);
         http
                 // Match OAuth2 paths - both with and without /auth-service prefix
                 // The authorization starts at /auth-service/oauth2/authorization/google
@@ -143,12 +166,13 @@ public class ApplicationSecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         .anyRequest().permitAll())
                 .oauth2Login(oauth2 -> oauth2
+                        .clientRegistrationRepository(registrations)
                         .authorizationEndpoint(auth -> auth
                                 .baseUri("/auth-service/oauth2/authorization")
                                 .authorizationRequestRepository(authorizationRequestRepository())
                                 .authorizationRequestResolver(
-                                        new CustomAuthorizationRequestResolver(clientRegistrationRepository,
-                                                "/auth-service/oauth2/authorization")))
+                                        new CustomAuthorizationRequestResolver(registrations,
+                                                "/auth-service/oauth2/authorization", originInstituteResolver)))
                         .successHandler(customOAuth2SuccessHandler)
                         .failureHandler(customOAuth2FailureHandler));
 
@@ -169,6 +193,15 @@ public class ApplicationSecurityConfig {
     @Bean
     @Order(2)
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        // Institute API key (vak_login_…) on the login-code mint route only. Built here, not a
+        // bean: a Filter bean is registered by Spring Boot for every path, outside this chain.
+        ApiKeyAuthFilter loginLinksKeyFilter = new ApiKeyAuthFilter(loginLinksKeyVerifier,
+                ApiKeyAuthFilter.Settings.builder()
+                        .pathPrefixes(java.util.List.of(LoginCodeOpenController.PATH))
+                        .requiredKeyPathPrefixes(java.util.List.of(LoginCodeOpenController.PATH))
+                        .requiredProduct("login_links")
+                        .build());
+
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(Customizer.withDefaults())
@@ -187,7 +220,11 @@ public class ApplicationSecurityConfig {
                 })
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(internalAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(loginLinksKeyFilter, UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(jsonAuthEntryPoint)
+                        .accessDeniedHandler(jsonAuthEntryPoint));
 
         return http.build();
     }

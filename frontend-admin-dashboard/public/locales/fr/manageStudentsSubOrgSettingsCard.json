@@ -1,0 +1,31 @@
+{
+    "title": "Paramètres de la sous-organisation",
+    "toggle": {
+        "label": "Invitation sous-organisation",
+        "description": "S'inscrire via cette invitation à un lot associé à une sous-organisation crée une sous-organisation. Configurez ci-dessous ses rôles d'administration, ses autorisations et sa limite de sièges."
+    },
+    "authRoles": {
+        "label": "Rôles d'administration (service d'authentification)",
+        "description": "Rôles attribués à l'utilisateur qui rejoint via cette invitation."
+    },
+    "allowedTeamRoles": {
+        "label": "Rôles d'équipe autorisés",
+        "description": "Rôles que l'administrateur de la sous-organisation peut attribuer à sa propre équipe. Laissez vide pour autoriser tout rôle personnalisé."
+    },
+    "adminPermissions": {
+        "label": "Autorisations administrateur",
+        "description": "Ce que l'administrateur de la sous-organisation peut faire. Laissez vide pour accorder un accès complet.",
+        "options": {
+            "FULL": "Accès complet",
+            "CREATE_COURSE": "Créer un cours"
+        }
+    },
+    "seatLimit": {
+        "label": "Limite de sièges",
+        "placeholder": "ex. 10",
+        "description": "Nombre maximal de membres dans la sous-organisation. Laissez vide pour ne fixer aucune limite."
+    },
+    "common": {
+        "noRolesFound": "Aucun rôle trouvé"
+    }
+}

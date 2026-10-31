@@ -1,0 +1,51 @@
+{
+    "heading": {
+        "createHomework": "Create Homework",
+        "updateHomework": "Update Homework"
+    },
+    "page": {
+        "title": "Basic Information",
+        "nextButton": "Next",
+        "updateButton": "Update"
+    },
+    "toast": {
+        "updateSuccess": "Step 1 data has been updated successfully!",
+        "saveSuccess": "Step 1 data has been saved successfully!"
+    },
+    "errors": {
+        "saveFailed": "Failed to save basic info."
+    },
+    "fields": {
+        "assessmentName": {
+            "label": "Assessment Name",
+            "placeholder": "Add Title"
+        },
+        "assessmentInstructions": {
+            "sectionTitle": "Assessment Instructions",
+            "placeholder": "Write the homework instructions"
+        },
+        "liveDateRange": {
+            "sectionTitle": "Live Date Range",
+            "startDateLabel": "Start Date & Time",
+            "endDateLabel": "End Date & Time"
+        },
+        "attemptSettings": {
+            "sectionTitle": "Attempt Settings",
+            "reattemptCountLabel": "Reattempt Count",
+            "reattemptCountPlaceholder": "Reattempt Count"
+        },
+        "evaluationType": {
+            "label": "Evaluation Type"
+        },
+        "submissionType": {
+            "label": "Submission Type"
+        },
+        "assessmentPreview": {
+            "allowLabel": "Allow Assessment Preview",
+            "previewTimeLimitLabel": "Preview Time Limit"
+        },
+        "switchSections": {
+            "label": "Allow {{term}}s to switch between sections"
+        }
+    }
+}

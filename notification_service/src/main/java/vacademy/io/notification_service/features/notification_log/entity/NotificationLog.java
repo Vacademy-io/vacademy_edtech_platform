@@ -23,7 +23,10 @@ public class NotificationLog {
     @UuidGenerator
     private String id;
 
-    @Column(name = "notification_type", length = 20, nullable = false)
+    // 50, matching the column: the real values are longer than the 20 this used to declare
+    // ("WHATSAPP_MESSAGE_OUTGOING" is 25), so any schema generated from the entity rejected the
+    // service's own writes.
+    @Column(name = "notification_type", length = 50, nullable = false)
     private String notificationType;
 
     @Column(name = "channel_id", length = 255, nullable = false)
@@ -72,4 +75,55 @@ public class NotificationLog {
      */
     @Column(name = "correlation_id", length = 255)
     private String correlationId;
+
+    /**
+     * What the provider actually DID with an outbound message — SENT, DELIVERED, READ or FAILED —
+     * copied onto this row by the status webhook via source_id (wamid). Distinct from the send-time
+     * record in {@link #body}, which only says the provider accepted the request: a 2xx from Meta is
+     * a queue receipt, not a delivery.
+     * <p>
+     * NULL means no status webhook has been seen for this message (not yet, never subscribed, or a
+     * provider that does not report). Readers must keep their pre-V33 behaviour for NULL instead of
+     * treating it as a failure. Added V33.
+     */
+    @Column(name = "delivery_status", length = 20)
+    private String deliveryStatus;
+
+    /**
+     * Provider error code when deliveryStatus is FAILED (e.g. Meta 131042). 50, not 6: WATI reports
+     * codes as free text, and a value that overflowed would abort the whole reconciliation. Added V33.
+     */
+    @Column(name = "delivery_error_code", length = 50)
+    private String deliveryErrorCode;
+
+    /** Human-readable provider failure reason when deliveryStatus is FAILED. Added V33. */
+    @Column(name = "delivery_error_message", length = 500)
+    private String deliveryErrorMessage;
+
+    /** When the status webhook that set deliveryStatus was reported by the provider. Added V33. */
+    @Column(name = "delivery_updated_at")
+    private Instant deliveryUpdatedAt;
+
+    /*
+     * Meta's pricing for an outbound WhatsApp message, copied from the `pricing` object on its
+     * status webhook by WhatsAppPricingRecorder (matched by wamid in source_id). Meta sends no
+     * amount: type is regular / free_customer_service / free_entry_point / ..., category is
+     * marketing / utility / authentication / service / ..., model is CBP or PMP. NULL = no pricing
+     * seen. Read-only here (insertable/updatable = false): only that recorder's UPDATE writes them,
+     * so an entity loaded before the webhook and saved after it can never wipe them. Added V39.
+     */
+    @Column(name = "pricing_billable", insertable = false, updatable = false)
+    private Boolean pricingBillable;
+
+    @Column(name = "pricing_type", length = 40, insertable = false, updatable = false)
+    private String pricingType;
+
+    @Column(name = "pricing_category", length = 40, insertable = false, updatable = false)
+    private String pricingCategory;
+
+    @Column(name = "pricing_model", length = 10, insertable = false, updatable = false)
+    private String pricingModel;
+
+    @Column(name = "pricing_updated_at", insertable = false, updatable = false)
+    private Instant pricingUpdatedAt;
 }

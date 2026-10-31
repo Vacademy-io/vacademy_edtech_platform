@@ -1,0 +1,29 @@
+{
+    "columns": {
+        "details": "Détails",
+        "name": "Nom",
+        "attemptDate": "Date de tentative",
+        "startTime": "Heure de début",
+        "endTime": "Heure de fin",
+        "duration": "Durée",
+        "score": "Score",
+        "evaluationStatus": "Statut d'évaluation",
+        "resultStatus": "Statut du résultat",
+        "enrollmentNumber": "Numéro d'inscription",
+        "gender": "Genre",
+        "responseTime": "Temps de réponse",
+        "phoneNumber": "Numéro de téléphone",
+        "emailId": "Adresse e-mail",
+        "city": "Ville",
+        "state": "État",
+        "submission": "Soumission"
+    },
+    "status": {
+        "released": "Publié",
+        "pending": "En attente",
+        "notAvailable": "N/A"
+    },
+    "tooltip": {
+        "instantSubmit": "Soumission instantanée — aucun temps mesurable passé. Non-tentative ou soumission automatique possible."
+    }
+}

@@ -16,6 +16,7 @@
  * use-slides' cleaning pipeline.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useRouter } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
@@ -85,6 +86,7 @@ export const ChapterNavigator = ({
     subjectId,
     sessionId,
 }: ChapterNavigatorProps) => {
+    const { t } = useTranslation('studyLibraryChapterNavigator');
     const navigate = useNavigate();
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
@@ -153,7 +155,7 @@ export const ChapterNavigator = ({
                                 s.document_slide?.title ||
                                 s.video_slide?.title ||
                                 s.title ||
-                                'Untitled',
+                                t('untitledSlide'),
                             sourceType: s.source_type ?? '',
                             docType: s.document_slide?.type,
                         })
@@ -392,8 +394,13 @@ export const ChapterNavigator = ({
                 )}
                 title={
                     previous
-                        ? `Previous: ${previous.entry.chapter.chapter_name}`
-                        : `No previous ${getTerminology(ContentTerms.Chapter, SystemTerms.Chapter).toLowerCase()}`
+                        ? t('previousChapterTitle', { name: previous.entry.chapter.chapter_name })
+                        : t('noPreviousChapter', {
+                              term: getTerminology(
+                                  ContentTerms.Chapter,
+                                  SystemTerms.Chapter
+                              ).toLowerCase(),
+                          })
                 }
             >
                 <CaretLeft className="size-4" weight="bold" />
@@ -426,7 +433,12 @@ export const ChapterNavigator = ({
                             <File className="size-3.5 shrink-0 text-primary-500" weight="duotone" />
                             <span className="truncate text-xs">
                                 {currentChapter?.entry.chapter.chapter_name ||
-                                    `Select ${getTerminology(ContentTerms.Chapter, SystemTerms.Chapter)}`}
+                                    t('selectChapter', {
+                                        term: getTerminology(
+                                            ContentTerms.Chapter,
+                                            SystemTerms.Chapter
+                                        ),
+                                    })}
                             </span>
                         </div>
                         <div className="flex shrink-0 items-center gap-1">
@@ -452,7 +464,9 @@ export const ChapterNavigator = ({
                             <div className="relative">
                                 <MagnifyingGlass className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
                                 <Input
-                                    placeholder={`Search all ${chapterTermPlural.toLowerCase()}...`}
+                                    placeholder={t('searchAllPlaceholder', {
+                                        term: chapterTermPlural.toLowerCase(),
+                                    })}
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     className="h-8 pl-8 text-sm"
@@ -520,13 +534,15 @@ export const ChapterNavigator = ({
                         <div className="max-h-72 overflow-y-auto overscroll-contain p-1">
                             {isBrowsingOtherSubject && browsedTreeQuery.isLoading ? (
                                 <div className="px-3 py-6 text-center text-sm text-neutral-400">
-                                    Loading…
+                                    {t('loading')}
                                 </div>
                             ) : isBrowsingOtherSubject &&
                               (browsedTreeQuery.isError || !packageSessionId) ? (
                                 <div className="flex flex-col items-center gap-1 px-3 py-6">
                                     <p className="text-sm text-neutral-400">
-                                        {`Couldn't load this ${subjectTerm.toLowerCase()}`}
+                                        {t('couldNotLoadSubject', {
+                                            term: subjectTerm.toLowerCase(),
+                                        })}
                                     </p>
                                     {/* Retry only helps a failed request — a missing
                                         packageSessionId won't resolve on a refetch. */}
@@ -535,13 +551,13 @@ export const ChapterNavigator = ({
                                             onClick={() => browsedTreeQuery.refetch()}
                                             className="text-xs font-medium text-primary-600 hover:underline"
                                         >
-                                            Retry
+                                            {t('retry')}
                                         </button>
                                     )}
                                 </div>
                             ) : visibleGroups.length === 0 ? (
                                 <div className="px-3 py-6 text-center text-sm text-neutral-400">
-                                    {`No ${chapterTermPlural.toLowerCase()} found`}
+                                    {t('noChaptersFound', { term: chapterTermPlural.toLowerCase() })}
                                 </div>
                             ) : (
                                 visibleGroups.map((group) => {
@@ -584,7 +600,7 @@ export const ChapterNavigator = ({
                                                 </span>
                                                 {moduleDirtyCount > 0 && (
                                                     <span className="shrink-0 rounded-full border border-warning-300 bg-warning-50 px-1.5 py-0.5 text-2xs font-semibold text-warning-600">
-                                                        {moduleDirtyCount} unsaved
+                                                        {t('unsavedCount', { count: moduleDirtyCount })}
                                                     </span>
                                                 )}
                                                 <span className="shrink-0 text-2xs text-neutral-400">
@@ -628,7 +644,12 @@ export const ChapterNavigator = ({
                                                                                 entry.chapter.id
                                                                             )
                                                                         }
-                                                                        title={`Show ${getTerminologyPlural(ContentTerms.Slide, SystemTerms.Slide).toLowerCase()}`}
+                                                                        title={t('showSlidesTitle', {
+                                                                            term: getTerminologyPlural(
+                                                                                ContentTerms.Slide,
+                                                                                SystemTerms.Slide
+                                                                            ).toLowerCase(),
+                                                                        })}
                                                                         className="flex size-7 shrink-0 items-center justify-center rounded-md text-neutral-400 hover:text-primary-600"
                                                                     >
                                                                         <CaretDown
@@ -691,13 +712,13 @@ export const ChapterNavigator = ({
                                                                                       ).toLowerCase()}
                                                                                 {chapterDirtyCount >
                                                                                     0 &&
-                                                                                    ` · ${chapterDirtyCount} unsaved`}
+                                                                                    ` · ${t('unsavedCount', { count: chapterDirtyCount })}`}
                                                                             </p>
                                                                         </div>
                                                                         {chapterDirtyCount > 0 && (
                                                                             <span
                                                                                 className="size-2 shrink-0 rounded-full bg-warning-500 ring-2 ring-warning-100"
-                                                                                title="Unsaved changes"
+                                                                                title={t('unsavedChangesTitle')}
                                                                             />
                                                                         )}
                                                                         {isActive && (
@@ -715,7 +736,7 @@ export const ChapterNavigator = ({
                                                                         {chapterSlides ===
                                                                             'loading' && (
                                                                             <p className="px-2 py-1.5 text-xs text-neutral-400">
-                                                                                Loading…
+                                                                                {t('loading')}
                                                                             </p>
                                                                         )}
                                                                         {chapterSlides ===
@@ -729,8 +750,7 @@ export const ChapterNavigator = ({
                                                                                 }
                                                                                 className="px-2 py-1.5 text-left text-xs text-danger-600 hover:underline"
                                                                             >
-                                                                                Couldn&apos;t load —
-                                                                                retry
+                                                                                {t('couldNotLoadRetry')}
                                                                             </button>
                                                                         )}
                                                                         {Array.isArray(
@@ -739,7 +759,12 @@ export const ChapterNavigator = ({
                                                                             chapterSlides.length ===
                                                                                 0 && (
                                                                                 <p className="px-2 py-1.5 text-xs text-neutral-400">
-                                                                                    {`No ${getTerminologyPlural(ContentTerms.Slide, SystemTerms.Slide).toLowerCase()} yet`}
+                                                                                    {t('noSlidesYet', {
+                                                                                        term: getTerminologyPlural(
+                                                                                            ContentTerms.Slide,
+                                                                                            SystemTerms.Slide
+                                                                                        ).toLowerCase(),
+                                                                                    })}
                                                                                 </p>
                                                                             )}
                                                                         {Array.isArray(
@@ -790,7 +815,7 @@ export const ChapterNavigator = ({
                                                                                             ) && (
                                                                                                 <span
                                                                                                     className="size-1.5 shrink-0 rounded-full bg-warning-500 ring-2 ring-warning-100"
-                                                                                                    title="Unsaved changes"
+                                                                                                    title={t('unsavedChangesTitle')}
                                                                                                 />
                                                                                             )}
                                                                                             {isSlideActive && (
@@ -831,8 +856,13 @@ export const ChapterNavigator = ({
                 )}
                 title={
                     next
-                        ? `Next: ${next.entry.chapter.chapter_name}`
-                        : `No next ${getTerminology(ContentTerms.Chapter, SystemTerms.Chapter).toLowerCase()}`
+                        ? t('nextChapterTitle', { name: next.entry.chapter.chapter_name })
+                        : t('noNextChapter', {
+                              term: getTerminology(
+                                  ContentTerms.Chapter,
+                                  SystemTerms.Chapter
+                              ).toLowerCase(),
+                          })
                 }
             >
                 <CaretRight className="size-4" weight="bold" />

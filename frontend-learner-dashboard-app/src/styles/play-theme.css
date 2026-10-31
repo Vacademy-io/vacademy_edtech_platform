@@ -15,17 +15,25 @@
   --play-purple: 271 76% 53%;     /* #8E44AD — achievements */
   --play-blue: 217 89% 61%;       /* #5B9BD5 — info / levels */
   --play-pink: 340 82% 52%;       /* #E91E63 — legacy; live-class borders only */
-  --play-radius-card: 20px;
-  --play-radius-btn: 14px;
+  /* --play-radius-card / -card-sm / -btn are NOT declared here any more.
+     They live in styles/ui-axes.css, expressed as offsets from --radius
+     (card = --radius + 12, card-sm = --radius + 4, btn = --radius + 6).
+     At the default --radius: 8px that yields 20 / 12 / 14px — byte-identical
+     to the literals this block used to hold — but it also lets the Play skin
+     FOLLOW the institute's corners axis instead of pinning itself, which
+     matters because the 35 `border-radius: !important` rules below would
+     otherwise override any global roundness setting.
+
+     -badge stays a literal: a pill badge should read as a pill at every
+     corner setting, exactly like rounded-full elsewhere. */
   --play-radius-badge: 999px;
   /* Tighter, quieter radius for the Dashboard's hand-built pastel widgets —
-     additive only. The base --play-radius-card (20px) stays untouched since
+     additive only. The base --play-radius-card stays untouched since
      non-Dashboard Play surfaces consume it directly via rounded-play-card
      classes (course details, assessment cards, profile, PlayBottomNav...);
      only Dashboard-scoped components opt into this smaller value via
      rounded-play-card-sm. (Note: the .ui-play .card/.Card rule below does
      NOT match shadcn Cards — they emit no literal "card" class token.) */
-  --play-radius-card-sm: 12px;
 
   /* Duolingo-style play palette (role -> base + deep "3D" shade). Promoted from
      scattered arbitrary hex; exposed to Tailwind as the `play-*` color + shadow tokens. */

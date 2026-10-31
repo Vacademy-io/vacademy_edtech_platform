@@ -26,6 +26,7 @@ import { QuestionsFromTextDialog } from '../ai-tools/vsmart-prompt/-components/Q
 import { QuestionsFromTextData } from '../ai-tools/vsmart-prompt/-components/GenerateQuestionsFromText';
 import { useAICenter } from '../-contexts/useAICenterContext';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
+import { useTranslation } from 'react-i18next';
 // Infer the form type from the schema
 type GenerateCompleteAssessmentFormType = z.infer<typeof generateCompleteAssessmentFormSchema>;
 
@@ -79,9 +80,12 @@ const GenerateCompleteAssessment = ({
     dialogForm,
     keyProp,
 }: GenerateCompleteAssessmentProps) => {
+    const { t } = useTranslation('aiCenterGenerateCompleteAssessment');
+    const { t: tHelper } = useTranslation('aiCenterHelper');
     const { instituteLogo } = useInstituteLogoStore();
     const transformQuestionsData = transformQuestionsToGenerateAssessmentAI(
-        assessmentData?.questions
+        assessmentData?.questions,
+        tHelper
     );
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const { loader, key: keyContext } = useAICenter();
@@ -151,7 +155,7 @@ const GenerateCompleteAssessment = ({
                                     <div className="flex items-center gap-3">
                                         <img
                                             src={instituteLogo}
-                                            alt="logo"
+                                            alt={t('header.logoAlt')}
                                             className="size-9 rounded-full border bg-muted object-contain"
                                         />
                                         <span className="text-sm font-bold leading-tight text-foreground/90">
@@ -178,7 +182,7 @@ const GenerateCompleteAssessment = ({
                                                         setIsMoreQuestionsDialog(true);
                                                     }}
                                                 >
-                                                    Generate More
+                                                    {t('generateMore.triggerButton')}
                                                 </MyButton>
                                             }
                                             onSubmitSuccess={handleSubmitSuccessForText}
@@ -199,18 +203,18 @@ const GenerateCompleteAssessment = ({
                                                     buttonType="secondary"
                                                     className="text-primary hover:text-primary/80"
                                                 >
-                                                    Generate More
+                                                    {t('generateMore.triggerButton')}
                                                 </MyButton>
                                             </DialogTrigger>
                                             <DialogContent className="p-0 sm:max-w-md overflow-hidden rounded-lg">
                                                 <div className="bg-primary/5 p-4 border-b">
                                                     <h1 className="font-semibold text-primary">
-                                                        Generate more questions
+                                                        {t('generateMore.dialogTitle')}
                                                     </h1>
                                                 </div>
                                                 <div className="flex flex-col gap-4 p-6">
                                                     <Input
-                                                        placeholder="Enter topics to generate questions"
+                                                        placeholder={t('generateMore.topicsPlaceholder')}
                                                         value={propmtInput}
                                                         onChange={(e) =>
                                                             setPropmtInput(e.target.value)
@@ -220,7 +224,7 @@ const GenerateCompleteAssessment = ({
                                                     {setNumQuestions && (
                                                         <Input
                                                             type="number"
-                                                            placeholder="Number of questions (e.g. 5)"
+                                                            placeholder={t('generateMore.numQuestionsPlaceholder')}
                                                             value={numQuestions || ''}
                                                             onChange={(e) =>
                                                                 setNumQuestions(
@@ -232,7 +236,7 @@ const GenerateCompleteAssessment = ({
                                                     )}
                                                     {setDifficulty && (
                                                         <Input
-                                                            placeholder="Difficulty (Easy, Medium, Hard)"
+                                                            placeholder={t('generateMore.difficultyPlaceholder')}
                                                             value={difficulty || ''}
                                                             onChange={(e) =>
                                                                 setDifficulty(e.target.value)
@@ -242,7 +246,7 @@ const GenerateCompleteAssessment = ({
                                                     )}
                                                     {setLanguage && (
                                                         <Input
-                                                            placeholder="Language (English, Hindi, etc.)"
+                                                            placeholder={t('generateMore.languagePlaceholder')}
                                                             value={language || ''}
                                                             onChange={(e) =>
                                                                 setLanguage(e.target.value)
@@ -271,7 +275,7 @@ const GenerateCompleteAssessment = ({
                                                                     )
                                                                 }
                                                             >
-                                                                Generate Questions
+                                                                {t('generateMore.submitButton')}
                                                             </MyButton>
                                                         )}
                                                     </div>
@@ -288,7 +292,7 @@ const GenerateCompleteAssessment = ({
                                         type="button"
                                         scale="small"
                                         buttonType="secondary"
-                                        className="text-muted-foreground hover:text-foreground md:min-w-[80px]"
+                                        className="text-muted-foreground hover:text-foreground md:min-w-20"
                                         onClick={() => {
                                             setNumQuestions && setNumQuestions(null);
                                             setDifficulty && setDifficulty(null);
@@ -296,7 +300,7 @@ const GenerateCompleteAssessment = ({
                                             setOpenCompleteAssessmentDialog(false);
                                         }}
                                     >
-                                        Close
+                                        {t('closeButton')}
                                     </MyButton>
                                 </div>
                             </div>
@@ -313,7 +317,7 @@ const GenerateCompleteAssessment = ({
                                             }
                                         >
                                             <div style={{ height: containerHeight, overflow: 'hidden' }}>
-                                                <div ref={contentRef} className="origin-top-left scale-[0.28] w-[350%] flex flex-col gap-6 pb-20">
+                                                <div ref={contentRef} className="origin-top-left scale-[0.28] w-[350%] flex flex-col gap-6 pb-20"> {/* design-lint-ignore: scale/width pair computed to fit a fixed thumbnail strip container, no fixed token exists */}
                                                     {fields.map((field, index) => {
                                                         const isSelected = currentQuestionIndex === index;
                                                         return (
@@ -339,7 +343,7 @@ const GenerateCompleteAssessment = ({
                                                                                 <h1 className={`text-5xl font-bold ${isSelected ? 'text-blue-600' : 'text-gray-400'}`}>
                                                                                     {index + 1}
                                                                                 </h1>
-                                                                                <span className="text-3xl font-medium text-gray-500 truncate max-w-[400px]">
+                                                                                <span className="text-3xl font-medium text-gray-500 truncate max-w-96">
                                                                                     {getPPTViewTitle(
                                                                                         getValues(
                                                                                             `questions.${index}.questionType`
@@ -369,7 +373,7 @@ const GenerateCompleteAssessment = ({
                                                                                             }}
                                                                                         >
                                                                                             <Copy className="mr-3 size-5" />
-                                                                                            Duplicate
+                                                                                            {t('questionCard.duplicate')}
                                                                                         </DropdownMenuItem>
                                                                                         <DropdownMenuItem
                                                                                             className="py-3 text-lg text-destructive focus:text-destructive"
@@ -382,7 +386,7 @@ const GenerateCompleteAssessment = ({
                                                                                             }}
                                                                                         >
                                                                                             <Trash className="mr-3 size-5" />
-                                                                                            Delete
+                                                                                            {t('questionCard.delete')}
                                                                                         </DropdownMenuItem>
                                                                                     </DropdownMenuContent>
                                                                                 </DropdownMenu>
@@ -428,11 +432,11 @@ const GenerateCompleteAssessment = ({
                                 <div className="flex-1 h-full w-full bg-muted/10 relative overflow-hidden">
                                     {questions && questions.length === 0 ? (
                                         <div className="flex h-full w-full items-center justify-center">
-                                            <h1 className="text-muted-foreground font-medium">No Question Exists.</h1>
+                                            <h1 className="text-muted-foreground font-medium">{t('noQuestions')}</h1>
                                         </div>
                                     ) : (
                                         <div className="h-full w-full overflow-y-auto p-8">
-                                            <div className="mx-auto w-full max-w-5xl rounded-xl bg-background border shadow-sm min-h-[600px] p-10">
+                                            <div className="mx-auto w-full max-w-5xl rounded-xl bg-background border shadow-sm min-h-[600px] p-10"> {/* design-lint-ignore: 600px canvas min-height has no matching standard scale step (min-h-96=384px too small), pixel-exact value needed for the question preview surface */}
                                                 <MainViewComponentFactory
                                                     key={currentQuestionIndex}
                                                     type={

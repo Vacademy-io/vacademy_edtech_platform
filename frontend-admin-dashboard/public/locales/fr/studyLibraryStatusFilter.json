@@ -1,0 +1,10 @@
+{
+    "label": {
+        "status": "Statut"
+    },
+    "options": {
+        "all": "Tous",
+        "resolved": "Résolu",
+        "unresolved": "Non résolu"
+    }
+}

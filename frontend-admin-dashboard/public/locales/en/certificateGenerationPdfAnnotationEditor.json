@@ -1,0 +1,65 @@
+{
+    "toolbar": {
+        "title": "Image Editor",
+        "fieldsMapped_one": "{{count}} field mapped",
+        "fieldsMapped_other": "{{count}} fields mapped",
+        "hint": "• Click to select • Double-click to edit",
+        "save": "Save",
+        "clearAll": "Clear All"
+    },
+    "canvas": {
+        "imageAlt": "Certificate template",
+        "editingTitle": "Press Enter or Escape to finish editing",
+        "selectTitle": "Click to select, double-click to edit text",
+        "deleteFieldTitle": "Delete field",
+        "loading": "Loading template...",
+        "dropHere": "Drop field here",
+        "dropHint": "Position the field on your certificate template"
+    },
+    "summary": {
+        "title": "Field Mappings ({{count}})",
+        "position": "x:{{x}}, y:{{y}}"
+    },
+    "properties": {
+        "title": "Field Properties",
+        "removeButton": "Remove",
+        "closeTitle": "Close properties",
+        "fontSize": {
+            "label": "Font Size",
+            "pxValue": "{{value}}px"
+        },
+        "fontFamily": {
+            "label": "Font Family"
+        },
+        "fontWeight": {
+            "label": "Font Weight",
+            "normal": "Normal",
+            "bold": "Bold"
+        },
+        "textColor": {
+            "label": "Text Color"
+        },
+        "textAlignment": {
+            "label": "Text Alignment",
+            "left": "Left",
+            "center": "Center",
+            "right": "Right"
+        },
+        "backgroundColor": {
+            "label": "Background Color",
+            "clear": "Clear",
+            "current": "Current: {{value}}",
+            "transparent": "transparent"
+        },
+        "position": {
+            "label": "Position",
+            "x": "X Position",
+            "y": "Y Position"
+        },
+        "size": {
+            "label": "Field Size",
+            "width": "Width",
+            "height": "Height"
+        }
+    }
+}

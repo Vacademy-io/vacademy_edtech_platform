@@ -1,7 +1,7 @@
 /**
  * CategoryRail — The narrow left vertical bar (Gmail-style)
  *
- * Shows category icons (CRM, LMS, AI) + Recent tabs + Settings (admin-only).
+ * Shows category icons (CRM, LMS, AI, ERP) + Recent tabs + Settings (admin-only).
  * Each category has icon + small label below.
  * Active category gets a pill-shaped indicator.
  *
@@ -10,6 +10,7 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Briefcase,
     GraduationCap,
@@ -18,8 +19,7 @@ import {
     GearSix,
     MagnifyingGlass,
     LockKey,
-    Heartbeat,
-} from '@phosphor-icons/react';
+    Heartbeat, Bank } from '@phosphor-icons/react';
 import { SidebarSearch } from './sidebar-search';
 import { cn } from '@/lib/utils';
 import { CATEGORY_COLORS } from './sidebar-colors';
@@ -33,11 +33,13 @@ import {
 import type { DisplaySettingsData } from '@/types/display-settings';
 import { useNavigate, useRouter } from '@tanstack/react-router';
 import { useSidebar } from '@/components/ui/sidebar';
-import { SidebarItemsType } from '@/types/layout-container/layout-container-types';
+import { SidebarItemsType, SidebarCategory } from '@/types/layout-container/layout-container-types';
 import { CategoryFlyoutMenu } from './collapsed-category-flyout';
 import { useIsMobile } from '@/hooks/use-mobile';
+import type { TFunction } from 'i18next';
+import { categoriesWithItems } from '@/lib/capabilities/nav-access';
 
-export type CategoryId = 'CRM' | 'LMS' | 'AI' | 'RECENT' | 'SETTINGS';
+export type CategoryId = SidebarCategory | 'RECENT' | 'SETTINGS';
 
 interface CategoryRailProps {
     activeCategory: CategoryId;
@@ -47,6 +49,12 @@ interface CategoryRailProps {
     sidebarItems?: SidebarItemsType[];
     /** Institute ID for filtering */
     instituteId?: string;
+    /**
+     * Drop categories with no tab to show. On only for MANAGED institutes (a
+     * module switched off can empty a whole category); LEGACY keeps every
+     * category as before.
+     */
+    hideEmptyCategories?: boolean;
 }
 
 interface CategoryConfig {
@@ -55,10 +63,11 @@ interface CategoryConfig {
     icon: React.FC<any>;
 }
 
-const BASE_CATEGORIES: CategoryConfig[] = [
-    { id: 'CRM', label: 'CRM', icon: Briefcase },
-    { id: 'LMS', label: 'LMS', icon: GraduationCap },
-    { id: 'AI', label: 'AI', icon: Sparkle },
+const buildBaseCategories = (t: TFunction): CategoryConfig[] => [
+    { id: 'CRM', label: t('categories.crm'), icon: Briefcase },
+    { id: 'LMS', label: t('categories.lms'), icon: GraduationCap },
+    { id: 'AI', label: t('categories.ai'), icon: Sparkle },
+    { id: 'ERP', label: t('categories.erp'), icon: Bank },
 ];
 
 export const CategoryRail: React.FC<CategoryRailProps> = ({
@@ -67,6 +76,7 @@ export const CategoryRail: React.FC<CategoryRailProps> = ({
     roleDisplay,
     sidebarItems = [],
     instituteId,
+    hideEmptyCategories = false,
 }) => {
     const navigate = useNavigate();
     const router = useRouter();
@@ -75,6 +85,7 @@ export const CategoryRail: React.FC<CategoryRailProps> = ({
     const isMobile = useIsMobile();
     const isPanelCollapsed = state === 'collapsed' && !isMobile;
     const [searchOpen, setSearchOpen] = useState(false);
+    const { t } = useTranslation('categoryRail');
 
     // Check if Settings should be shown (it exists in finalSidebarItems only for admins)
     const hasSettings = sidebarItems.some((item) => item.id === 'settings');
@@ -95,21 +106,27 @@ export const CategoryRail: React.FC<CategoryRailProps> = ({
         : roleDisplay?.ui?.showSettings === true;
 
     // Sort categories by display settings order
-    const sortedCategories = [...BASE_CATEGORIES].sort((a, b) => {
+    const sortedCategories = [...buildBaseCategories(t)].sort((a, b) => {
         const cfgA = roleDisplay?.sidebarCategories?.find((c) => c.id === a.id);
         const cfgB = roleDisplay?.sidebarCategories?.find((c) => c.id === b.id);
         return (cfgA?.order ?? 0) - (cfgB?.order ?? 0);
     });
 
     // Filter by visibility
+    const nonEmptyCategories = hideEmptyCategories
+        ? categoriesWithItems(sidebarItems, instituteId)
+        : null;
     const visibleCategories = sortedCategories.filter((cat) => {
         if (cat.id === 'RECENT') return true;
+        if (nonEmptyCategories && !nonEmptyCategories.has(cat.id as SidebarCategory)) {
+            return false;
+        }
         const cfg = roleDisplay?.sidebarCategories?.find((c) => c.id === cat.id);
         return cfg ? cfg.visible !== false : true;
     });
 
     // Get items for a specific category (excluding settings from CRM)
-    const getItemsForCategory = (catId: 'CRM' | 'LMS' | 'AI') => {
+    const getItemsForCategory = (catId: SidebarCategory) => {
         return sidebarItems.filter((item) => {
             if (item.id === 'settings') return false; // Settings is rendered separately
             const show = item.showForInstitute;
@@ -124,7 +141,7 @@ export const CategoryRail: React.FC<CategoryRailProps> = ({
         const isActive = activeCategory === cat.id && !isSettingsActive;
         const colors =
             cat.id !== 'RECENT'
-                ? CATEGORY_COLORS[cat.id as 'CRM' | 'LMS' | 'AI']
+                ? CATEGORY_COLORS[cat.id as SidebarCategory]
                 : null;
         const isLocked =
             cat.id !== 'RECENT' &&
@@ -141,7 +158,7 @@ export const CategoryRail: React.FC<CategoryRailProps> = ({
                     if (isLocked) {
                         navigate({
                             to: '/locked-feature',
-                            search: { feature: `${cat.label} Category` },
+                            search: { feature: t('categoryFeatureLabel', { category: cat.label }) },
                         });
                         return;
                     }
@@ -189,7 +206,7 @@ export const CategoryRail: React.FC<CategoryRailProps> = ({
                 {/* Label */}
                 <span
                     className={cn(
-                        'relative z-10 text-[10px] font-medium leading-tight transition-colors duration-200',
+                        'relative z-10 text-2xs font-medium leading-tight transition-colors duration-200',
                         isActive
                             ? colors?.text || 'text-white'
                             : 'text-white/70'
@@ -202,11 +219,11 @@ export const CategoryRail: React.FC<CategoryRailProps> = ({
 
         // When collapsed, wrap category buttons with flyout menus
         if (isPanelCollapsed && cat.id !== 'RECENT' && !isLocked) {
-            const catItems = getItemsForCategory(cat.id as 'CRM' | 'LMS' | 'AI');
+            const catItems = getItemsForCategory(cat.id as SidebarCategory);
             return (
                 <CategoryFlyoutMenu
                     key={cat.id}
-                    category={cat.id as 'CRM' | 'LMS' | 'AI'}
+                    category={cat.id as SidebarCategory}
                     items={catItems}
                 >
                     {buttonContent}
@@ -234,8 +251,8 @@ export const CategoryRail: React.FC<CategoryRailProps> = ({
                 </TooltipTrigger>
                 {!isMobile && (
                     <TooltipContent side="right" className="flex items-center gap-2 font-medium">
-                        Search
-                        <kbd className="rounded border border-primary-400 bg-primary-500 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                        {t('search')}
+                        <kbd className="rounded border border-primary-400 bg-primary-500 px-1.5 py-0.5 text-2xs font-medium text-white">
                             ⌘K
                         </kbd>
                     </TooltipContent>
@@ -285,13 +302,13 @@ export const CategoryRail: React.FC<CategoryRailProps> = ({
                             </span>
                             <span
                                 className={cn(
-                                    'relative z-10 text-[10px] font-medium leading-tight transition-colors duration-200',
+                                    'relative z-10 text-2xs font-medium leading-tight transition-colors duration-200',
                                     activeCategory === 'RECENT' && !isSettingsActive
                                         ? 'text-neutral-900'
                                         : 'text-white/70'
                                 )}
                             >
-                                Recent
+                                {t('recent')}
                             </span>
                         </button>
             </div>
@@ -309,8 +326,8 @@ export const CategoryRail: React.FC<CategoryRailProps> = ({
                         'relative flex w-14 flex-col items-center gap-0.5 rounded-xl px-1 py-2.5 transition-all duration-200',
                         'hover:bg-white/10'
                     )}
-                    aria-label="Service status"
-                    title="Service status"
+                    aria-label={t('serviceStatus')}
+                    title={t('serviceStatus')}
                 >
                     <span className="relative z-10">
                         <Heartbeat
@@ -318,8 +335,8 @@ export const CategoryRail: React.FC<CategoryRailProps> = ({
                             className="text-white/70 transition-colors duration-200"
                         />
                     </span>
-                    <span className="relative z-10 text-[10px] font-medium leading-tight text-white/70 transition-colors duration-200">
-                        Status
+                    <span className="relative z-10 text-2xs font-medium leading-tight text-white/70 transition-colors duration-200">
+                        {t('status')}
                     </span>
                 </a>
             )}
@@ -363,13 +380,13 @@ export const CategoryRail: React.FC<CategoryRailProps> = ({
                         </span>
                         <span
                             className={cn(
-                                'relative z-10 text-[10px] font-medium leading-tight transition-colors duration-200',
+                                'relative z-10 text-2xs font-medium leading-tight transition-colors duration-200',
                                 isSettingsActive
                                     ? 'text-neutral-900'
                                     : 'text-white/70'
                             )}
                         >
-                            Settings
+                            {t('settings')}
                         </span>
                     </button>
                 </>

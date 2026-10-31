@@ -1,0 +1,48 @@
+{
+    "heading": "AI के साथ कोडिंग प्रश्न बनाएं",
+    "errors": {
+        "generationFailed": "जनरेशन विफल रहा। कृपया पुनः प्रयास करें।"
+    },
+    "working": {
+        "generating": "प्रश्न बनाया जा रहा है…",
+        "verifying": "संदर्भ समाधान के विरुद्ध परीक्षण मामलों की जांच की जा रही है…",
+        "etaHint": "इसमें आमतौर पर 10–30 सेकंड लगते हैं।"
+    },
+    "review": {
+        "testFallbackLabel": "परीक्षण",
+        "summaryLine_one": "{{languages}} · {{count}} परीक्षण मामला · मॉडल {{model}}",
+        "summaryLine_other": "{{languages}} · {{count}} परीक्षण मामले · मॉडल {{model}}",
+        "verifySummary_one": "संदर्भ समाधान को {{count}} परीक्षण पर चलाया गया: {{passed}} मेल खाए",
+        "verifySummary_other": "संदर्भ समाधान को सभी {{count}} परीक्षणों पर चलाया गया: {{passed}} मेल खाए",
+        "autoCorrectSuffix_one": " · {{count}} को संदर्भ आउटपुट में स्वतः सुधारा जाएगा",
+        "autoCorrectSuffix_other": " · {{count}} को संदर्भ आउटपुट में स्वतः सुधारा जाएगा",
+        "status": {
+            "verified": "(सत्यापित)",
+            "errored": "(समाधान में त्रुटि — AI आउटपुट रखा गया)",
+            "mismatch": "(बेमेल — संदर्भ आउटपुट का उपयोग किया जा रहा है)"
+        },
+        "aiExpected": "AI अपेक्षित",
+        "referenceOutput": "संदर्भ आउटपुट",
+        "empty": "(खाली)",
+        "applyHint": "इसे प्रश्न / परीक्षण मामले / सेटिंग्स / स्टार्टर कोड टैब में लोड करने के लिए लागू करें, जहाँ आप सहेजने से पहले समीक्षा और संपादन कर सकते हैं।"
+    },
+    "input": {
+        "describeLabel": "समस्या का वर्णन करें",
+        "describePlaceholder": "जैसे, एक सरणी और एक लक्ष्य दिया गया है, उन दो संख्याओं के सूचकांक लौटाएं जो लक्ष्य के बराबर हों। अस्पष्ट होना ठीक है — AI I/O प्रारूप, परीक्षण और स्टार्टर कोड भर देगा।",
+        "languagesLabel": "भाषाएं",
+        "difficultyLabel": "कठिनाई",
+        "difficulties": {
+            "easy": "आसान",
+            "medium": "मध्यम",
+            "hard": "कठिन"
+        },
+        "testCasesLabel": "परीक्षण मामले",
+        "insufficientCredits": "इस क्रिया के लिए पर्याप्त AI क्रेडिट नहीं हैं।"
+    },
+    "footer": {
+        "startOver": "फिर से शुरू करें",
+        "applyToQuestion": "प्रश्न पर लागू करें",
+        "cancel": "रद्द करें",
+        "generate": "बनाएं"
+    }
+}

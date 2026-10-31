@@ -1,0 +1,19 @@
+{
+    "heading": "Remove from {{term}}",
+    "descriptionPrefix": "Remove",
+    "descriptionSuffix": "from this {{term}}. Their account stays intact; access to other {{termPlural}} (if any) is unaffected.",
+    "removalMode": {
+        "label": "Removal Mode",
+        "hardTitle": "Remove now",
+        "hardDescription": "— Access is revoked immediately.",
+        "softTitle": "Keep until date",
+        "softDescription": "— Access continues until the last access date below, then ends automatically."
+    },
+    "lastAccessDate": {
+        "label": "Last access date",
+        "missing": "Pick a date to keep access until."
+    },
+    "cancel": "Cancel",
+    "removing": "Removing...",
+    "remove": "Remove"
+}

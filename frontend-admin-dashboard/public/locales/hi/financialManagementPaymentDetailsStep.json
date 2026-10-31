@@ -1,0 +1,60 @@
+{
+    "backToInstallments": "किश्तों पर वापस जाएँ",
+    "selectedInstallments_one": "चयनित किश्त ({{count}})",
+    "selectedInstallments_other": "चयनित किश्तें ({{count}})",
+    "paymentDetails": "भुगतान विवरण",
+    "paymentModeLabel": "भुगतान का तरीका",
+    "transactionId": "लेनदेन आईडी",
+    "optional": "वैकल्पिक",
+    "amount": "राशि",
+    "amountExceedsDue": "राशि कुल बकाया से अधिक है। अतिरिक्त राशि आवंटित नहीं होगी।",
+    "remarksLabel": "टिप्पणी",
+    "processing": "प्रोसेस हो रहा है...",
+    "submitPayment": "भुगतान सबमिट करें",
+    "paymentMode": {
+        "cash": "नकद",
+        "online": "ऑनलाइन",
+        "upi": "यूपीआई",
+        "card": "कार्ड",
+        "cheque": "चेक"
+    },
+    "placeholders": {
+        "transactionId": "जैसे TXN123456",
+        "remarks": "जैसे काउंटर पर नकद प्राप्त हुआ"
+    },
+    "table": {
+        "feeType": "शुल्क प्रकार",
+        "cpoPlan": "सीपीओ / योजना",
+        "expected": "अपेक्षित",
+        "adjustment": "समायोजन",
+        "paid": "भुगतान किया गया",
+        "outstanding": "बकाया",
+        "dueDate": "देय तिथि",
+        "status": "स्थिति"
+    },
+    "adjustmentType": {
+        "concession": "रियायत",
+        "penalty": "जुर्माना"
+    },
+    "status": {
+        "overdue": "अतिदेय",
+        "partial": "आंशिक",
+        "pending": "लंबित"
+    },
+    "totals": {
+        "totalConcession": "कुल रियायत",
+        "totalPenalty": "कुल जुर्माना",
+        "totalOutstanding": "कुल बकाया:"
+    },
+    "remarks": {
+        "modePrefix": "तरीका",
+        "txnIdPrefix": "लेनदेन आईडी"
+    },
+    "errors": {
+        "instituteIdNotFound": "संस्थान आईडी नहीं मिली"
+    },
+    "toast": {
+        "paymentSubmitted": "भुगतान सफलतापूर्वक सबमिट किया गया",
+        "paymentFailed": "भुगतान विफल रहा"
+    }
+}

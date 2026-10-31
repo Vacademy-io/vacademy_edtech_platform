@@ -1,0 +1,25 @@
+{
+    "heading": "Source de campagne",
+    "labels": {
+        "firstTouch": "Premier contact",
+        "latestTouch": "Plus récent ({{count}} contacts)"
+    },
+    "fields": {
+        "source": "Source",
+        "medium": "Support",
+        "campaign": "Campagne",
+        "content": "Contenu",
+        "term": "Mot-clé",
+        "capturedOn": "Capturé sur",
+        "referrer": "Référent",
+        "date": "Date"
+    },
+    "surface": {
+        "AUDIENCE": "Formulaire d’audience",
+        "LIVE_SESSION": "Session en direct",
+        "ASSESSMENT": "Évaluation",
+        "ENROLL_INVITE": "Invitation d’inscription",
+        "PRODUCT_PAGE": "Page produit",
+        "CATALOGUE": "Site catalogue"
+    }
+}

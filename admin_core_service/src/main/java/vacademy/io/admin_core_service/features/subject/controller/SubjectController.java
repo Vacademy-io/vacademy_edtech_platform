@@ -16,6 +16,17 @@ import java.util.List;
 public class SubjectController {
     private final SubjectService subjectService;
 
+    /**
+     * Names for a set of subject ids the caller already has (an assessment stores a raw
+     * subject id). POST, not a query param, so a page resolving a full list of ids does
+     * not have to encode them into the URL.
+     */
+    @PostMapping("/subjects-by-ids")
+    public ResponseEntity<List<SubjectDTO>> getSubjectsByIds(@RequestBody List<String> subjectIds,
+                                                            @RequestAttribute("user") CustomUserDetails user) {
+        return ResponseEntity.ok(subjectService.getSubjectsByIds(subjectIds));
+    }
+
     @PostMapping("/add-subject")
     public ResponseEntity<SubjectDTO> addSubject(@RequestBody SubjectDTO subjectDTO, String commaSeparatedPackageSessionIds, @RequestAttribute("user") CustomUserDetails user) {
         return ResponseEntity.ok(subjectService.addSubject(subjectDTO, commaSeparatedPackageSessionIds, user));

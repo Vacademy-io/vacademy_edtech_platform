@@ -27,7 +27,7 @@ function ModalOAuthRedirectHandler() {
   }, [navigate, setPrimaryColor]);
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-gradient-to-br from-emerald-50 via-white to-teal-50">
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-gradient-to-br from-success-50 via-white to-teal-50">
       <DashboardLoader />
     </div>
   );

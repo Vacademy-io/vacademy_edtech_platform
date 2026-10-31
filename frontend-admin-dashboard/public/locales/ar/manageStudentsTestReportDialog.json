@@ -1,0 +1,49 @@
+{
+    "title": "تقرير اختبار الطالب",
+    "toast": {
+        "exportPdfSuccess": "تم تصدير بيانات تقرير الاختبار بصيغة PDF بنجاح!"
+    },
+    "info": {
+        "subject": "المادة:",
+        "attemptDate": "تاريخ المحاولة:",
+        "marks": "الدرجات:",
+        "completionTime": "وقت الإنجاز:",
+        "minutes": "{{value}} دقيقة",
+        "startTime": "وقت البدء:",
+        "endTime": "وقت الانتهاء:"
+    },
+    "score": {
+        "heading": "تقرير النتيجة",
+        "rank": "الترتيب",
+        "percentile": "المئين",
+        "marks": "الدرجات"
+    },
+    "response": {
+        "heading": "توزيع الإجابات",
+        "attempted": "تمت الإجابة عليها:",
+        "skipped": "تم تخطيها:"
+    },
+    "marksBreakdown": {
+        "heading": "توزيع الدرجات",
+        "correctRespondents": "الإجابات الصحيحة:",
+        "partiallyCorrectRespondents": "الإجابات الصحيحة جزئيًا:",
+        "wrongRespondents": "الإجابات الخاطئة:",
+        "skipped": "تم تخطيها:"
+    },
+    "review": {
+        "heading": "مراجعة الإجابات",
+        "question": "السؤال ({{number}}.)",
+        "timeTakenSeconds_zero": "{{count}} ثانية",
+        "timeTakenSeconds_one": "{{count}} ثانية واحدة",
+        "timeTakenSeconds_two": "{{count}} ثانيتان",
+        "timeTakenSeconds_few": "{{count}} ثوانٍ",
+        "timeTakenSeconds_many": "{{count}} ثانية",
+        "timeTakenSeconds_other": "{{count}} ثانية",
+        "studentAnswer": "إجابة الطالب:",
+        "marksLabel": "{{marks}} درجة",
+        "correctAnswer": "الإجابة الصحيحة:",
+        "explanation": "التوضيح:",
+        "noResponse": "لا توجد إجابة",
+        "empty": "لا توجد مراجعة إجابات متاحة"
+    }
+}

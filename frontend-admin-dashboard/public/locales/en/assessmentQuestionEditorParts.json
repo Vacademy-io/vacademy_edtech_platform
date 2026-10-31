@@ -1,0 +1,21 @@
+{
+    "answerOptions": {
+        "addOption": "Add option",
+        "hint": {
+            "survey": "Respondents pick one option — survey questions have no correct answer.",
+            "single": "Mark exactly one option as correct.",
+            "multiple": "Mark every option that counts as correct."
+        },
+        "ariaLabel": "Answer options",
+        "markCorrect": {
+            "ariaLabel": "Mark option {{letter}} as correct",
+            "titleCorrect": "Correct answer",
+            "titleMark": "Mark as correct"
+        },
+        "optionPlaceholder": "Option {{letter}}",
+        "removeOption": {
+            "ariaLabel": "Remove option {{letter}}",
+            "title": "Remove option"
+        }
+    }
+}

@@ -33,10 +33,26 @@
 6. **The call objective is inferred, not configured.** The LLM infers what the
    caller was trying to achieve from the conversation; an optional per-institute
    `objectiveHint` only nudges it. The rubric *qualities* are tunable. ✅
-7. **Flat credit charge, DB-tunable, idempotent.** A fixed per-call charge
-   (`request_type='call_intelligence'`, seeded at 5 in `credit_pricing`,
-   changeable with one `UPDATE`), with an optional per-institute override, charged
-   only on success and keyed on `call_log_id` so a retry never double-bills. ✅
+7. **Charging (revised 2026-09-11).** AI-agent calls (VACADEMY_AI / AAVTAAR / MOCK)
+   are analysed **by default and free** — the call is already billed per minute,
+   and the institute's CRM Intelligence switch governs human calls only. Human /
+   telephony calls stay manual and are charged **0.15 credits per minute of
+   recording** (`credit_pricing.call_intelligence`, V506; was 0.5, originally a
+   flat 5). Charged only on success, keyed on `call_log_id` so a retry never
+   double-bills. ✅
+8. **Models (2026-09-11).** Transcription through OpenRouter's audio endpoint —
+   `CALL_INTEL_STT_MODEL`, default `openai/gpt-4o-mini-transcribe` ($0.0017/min;
+   `whisper-large-v3-turbo` was 9× cheaper but rendered a Hindi call as garbled
+   English once the English screener fixed its language guess). Analysis with
+   `CALL_INTEL_LLM_MODEL`, default `z-ai/glm-5.3-flash` (~$0.0004/call), falling
+   back to `LLM_DEFAULT_MODEL`. All-in ≈ **$0.002 (₹0.17) per minute**. The
+   render-worker Whisper (which answered "at capacity" on 45% of runs) remains only
+   as a fallback via `CALL_INTEL_STT_BACKEND=render`. Both legs now write
+   `ai_token_usage` rows (request_type `call_intelligence`, `metadata.leg`
+   stt/llm) with the vendor cost, so the AI Usage page shows the margin. ✅
+9. **Two-line update (schema 1.1).** `call_intelligence.short_update` (≤200 chars,
+   "what happened / what's next") is on every Call Log row; the transcript itself
+   is kept in `analysis_json.transcript` (no S3 artifact any more). ✅
 
 ---
 

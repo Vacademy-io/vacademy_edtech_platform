@@ -149,9 +149,21 @@ function renderChapterGroups(
         const chapterNode = nodes[chapterNodeId];
         return (
             <div key={chapterNodeId} className="border-b border-neutral-100 last:border-b-0">
-                <div className="bg-neutral-50 px-4 py-2 text-caption font-semibold text-neutral-600">
+                <div className="flex items-center gap-2 bg-neutral-50 px-4 py-2 text-caption font-semibold text-neutral-600">
                     {chapterNode?.displayName ??
                         getTerminology(ContentTerms.Chapter, SystemTerms.Chapter)}
+                    {chapterNode?.status === 'creating' && (
+                        <span className="flex items-center gap-1 font-normal text-primary-500">
+                            <CircleNotch className="size-3.5 animate-spin" />
+                            Creating…
+                        </span>
+                    )}
+                    {chapterNode?.status === 'failed' && (
+                        <span className="flex items-center gap-1 font-normal text-danger-600">
+                            <XCircle className="size-3.5" />
+                            {chapterNode.error ?? 'Could not be created'}
+                        </span>
+                    )}
                 </div>
                 <ul className="divide-y divide-neutral-100">
                     {chapterItems.map((item) => (

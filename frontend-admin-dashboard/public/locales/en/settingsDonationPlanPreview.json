@@ -1,0 +1,10 @@
+{
+    "title": "Support free education",
+    "chooseAmount": "Choose an amount to donate",
+    "customAmount": {
+        "label": "{{currency}} {{symbol}} Other",
+        "placeholder": "Enter custom amount",
+        "minimumAmount": "Minimum amount: {{symbol}}{{amount}}"
+    },
+    "continueButton": "Continue"
+}

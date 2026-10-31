@@ -1,0 +1,177 @@
+{
+  "scheduleTest": {
+    "header": {
+      "title": "Stay Assessment Ready",
+      "description": "View all the Assessments created by the {{admin}}, along with their schedules and statuses to stay on track."
+    },
+    "search": {
+      "placeholder": "Search Question Paper"
+    },
+    "tabs": {
+      "live": "Live",
+      "upcoming": "Upcoming",
+      "past": "Past"
+    },
+    "navHeading": {
+      "assessment": "Assessment",
+      "homework": "Homework"
+    },
+    "empty": {
+      "live": {
+        "title": "Nothing live right now",
+        "description": "When a test opens for your batch, it appears here with a Join button.",
+        "action": "See upcoming"
+      },
+      "upcoming": {
+        "title": "Nothing scheduled yet",
+        "description": "Tests scheduled by your institute will show up here with their start time."
+      },
+      "past": {
+        "title": "No past attempts yet",
+        "description": "Once a test you attempted closes, it appears here with its report."
+      }
+    },
+    "loading": {
+      "assessments": "Loading assessments...",
+      "more": "Loading more..."
+    },
+    "folders": {
+      "title": "Your assessment folders",
+      "subtitle": "Open a folder to see its live, upcoming and past tests.",
+      "others": "Others",
+      "othersDescription": "Tests that are not in a folder",
+      "count_one": "{{count}} test",
+      "count_other": "{{count}} tests",
+      "back": "Back to folders",
+      "fallbackName": "Folder",
+      "otherTests": "Other tests"
+    }
+  },
+  "card": {
+    "playMode": {
+      "exam": "Exam",
+      "mock": "Mock",
+      "practice": "Practice",
+      "survey": "Survey",
+      "offlineExam": "Offline exam"
+    },
+    "toast": {
+      "surveyStartFailed": "Failed to start survey. Please try again.",
+      "resumeFailed": "Failed to resume the assessment. Assessment already Ended.",
+      "resumeError": "An error occurred while resuming the assessment."
+    },
+    "button": {
+      "resume": "Resume",
+      "ended": "Ended",
+      "startSurvey": "Start survey",
+      "start": "Start",
+      "joinNow": "Join now",
+      "showReport": "Show Report",
+      "showAiReport": "Show AI Report"
+    },
+    "meta": {
+      "starts": "Starts {{date}}",
+      "closes": "Closes {{date}}",
+      "noExpiry": "No expiry",
+      "validTill": "Valid till {{date}}",
+      "attempt": "Attempt {{used}} of {{max}}",
+      "endedOn": "Ended {{date}}",
+      "resultsPending": "Results pending",
+      "notAttempted": "Not attempted",
+      "liveNow": "Live now",
+      "closesIn": "Closes in {{time}}",
+      "startsIn": "Starts in {{time}}",
+      "surveySubmitted": "Response submitted"
+    },
+    "common": {
+      "cancel": "Cancel"
+    },
+    "dialog": {
+      "unavailable": {
+        "title": "Assessment Unavailable",
+        "description": "The assessment is not live currently. You can appear for the assessment when it goes live."
+      },
+      "resume": {
+        "title": "Resume Assessment",
+        "description": "Would you like to continue the assessment from your last saved progress?",
+        "resuming": "Resuming..."
+      },
+      "survey": {
+        "title": "Start Survey",
+        "description": "Are you ready to start filling out the survey? Once you begin, you can complete it at your own pace."
+      }
+    }
+  },
+  "util": {
+    "toast": {
+      "missingDetails": "Missing student or institute details.",
+      "studentDetailsNotFound": "Student details not found.",
+      "startFailed": "Unable to start the assessment. Please try again."
+    }
+  },
+  "reportList": {
+    "navHeading": "Reports",
+    "toast": {
+      "evaluatedNotAvailable": "Evaluated copy is not available yet.",
+      "evaluatedOpenFailed": "Could not open the evaluated copy."
+    },
+    "evaluatedFileName": "{{name}} - evaluated",
+    "fallback": {
+      "assessmentName": "assessment",
+      "evaluatedCopy": "Evaluated copy"
+    },
+    "error": {
+      "loadFailed": "Failed to load reports. Please try again later.",
+      "loadTitle": "Could not load reports"
+    },
+    "status": {
+      "manual": "Manual",
+      "auto": "Auto",
+      "released": "Released",
+      "pendingEvaluation": "Pending evaluation"
+    },
+    "button": {
+      "viewAiReport": "View AI Report",
+      "report": "Report",
+      "opening": "Opening…",
+      "viewEvaluated": "View Evaluated",
+      "viewReport": "View report"
+    },
+    "meta": {
+      "marksLabel": "marks",
+      "noMore": "No more reports to load"
+    },
+    "empty": {
+      "title": "No reports yet",
+      "description": "Reports appear here once you finish a test and its results are released.",
+      "actionHomework": "Go to homework",
+      "actionAssessment": "Go to tests"
+    }
+  },
+  "aiReport": {
+    "generating": {
+      "title": "Generating your AI report",
+      "description": "We're analyzing your assessment. This can take up to a minute — please don't close this page."
+    },
+    "unavailable": {
+      "title": "Report Not Available",
+      "description": "We couldn't generate the AI report for this assessment right now.",
+      "checkBack": "Please check back after {{time}}."
+    },
+    "tabs": {
+      "analysis": "AI analysis",
+      "questions": "Questions & marks"
+    }
+  },
+  "comparison": {
+    "navHeading": "Performance Comparison",
+    "defaultAssessmentName": "Assessment",
+    "error": "Failed to load comparison data. Please try again later."
+  },
+  "assignment": {
+    "notFound": "Assignment not found",
+    "notAssignmentSlide": "This is not an assignment slide",
+    "defaultTitle": "Assignment",
+    "uploadFailed": "Upload failed"
+  }
+}

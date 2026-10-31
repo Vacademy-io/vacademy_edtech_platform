@@ -1,0 +1,22 @@
+{
+    "title": "Employment",
+    "changeStatus": "Change status",
+    "fields": {
+        "currentStatus": "Current status",
+        "employmentType": "Employment type",
+        "noticePeriod": "Notice period"
+    },
+    "noticePeriodDays_one": "{{count}} day",
+    "noticePeriodDays_other": "{{count}} days",
+    "milestones": {
+        "joined": "Joined",
+        "probationEnds": "Probation ends",
+        "confirmed": "Confirmed",
+        "resigned": "Resigned",
+        "lastWorkingDay": "Last working day"
+    },
+    "notRecorded": "Not recorded",
+    "employmentEnded": "Employment ended · {{status}}",
+    "noExitReason": "No exit reason recorded.",
+    "settlementHint": "Prepare their full & final settlement from ERP → Payroll."
+}

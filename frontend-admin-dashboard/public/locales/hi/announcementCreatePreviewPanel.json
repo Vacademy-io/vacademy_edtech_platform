@@ -1,0 +1,35 @@
+{
+    "tabs": {
+        "inApp": "इन-ऐप",
+        "push": "पुश",
+        "email": "ईमेल",
+        "whatsapp": "व्हाट्सएप"
+    },
+    "device": {
+        "mobile": "मोबाइल",
+        "desktop": "डेस्कटॉप"
+    },
+    "inApp": {
+        "badge": "घोषणा",
+        "pinned": "पिन किया गया",
+        "titlePlaceholder": "आपकी घोषणा का शीर्षक",
+        "contentPlaceholder": "आपका संदेश यहाँ वैसा दिखेगा जैसा शिक्षार्थी पढ़ेंगे।"
+    },
+    "push": {
+        "senderPlaceholder": "आपका ऐप",
+        "titlePlaceholder": "पुश शीर्षक",
+        "bodyPlaceholder": "पुश का मुख्य भाग यहाँ दिखेगा।"
+    },
+    "whatsapp": {
+        "noTemplate": "इसे यहाँ देखने के लिए डिलिवरी चरण में एक स्वीकृत व्हाट्सएप टेम्पलेट चुनें।",
+        "titleFallback": "घोषणा का शीर्षक",
+        "contentFallback": "घोषणा की सामग्री",
+        "senderFallback": "प्रेषक"
+    },
+    "email": {
+        "fromPrefix": "किससे: {{sender}}",
+        "senderPlaceholder": "आपका इंस्टिट्यूट",
+        "noSubject": "(कोई विषय नहीं)",
+        "iframeTitle": "ईमेल पूर्वावलोकन"
+    }
+}

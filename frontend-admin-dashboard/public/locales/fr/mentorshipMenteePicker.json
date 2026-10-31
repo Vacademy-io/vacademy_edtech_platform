@@ -1,0 +1,55 @@
+{
+    "toast": {
+        "allAlreadySelected": "Tout le monde correspondant à ce filtre était déjà sélectionné",
+        "selectedMore_one": "{{count}} étudiant de plus sélectionné",
+        "selectedMore_many": "{{count}} étudiants de plus sélectionnés",
+        "selectedMore_other": "{{count}} étudiants de plus sélectionnés",
+        "selectAllFailed": "Impossible de charger tous les étudiants correspondants"
+    },
+    "searchPlaceholder": "Rechercher par nom",
+    "batchFilter": {
+        "label": "Groupe",
+        "placeholder": "Rechercher des groupes…"
+    },
+    "selectedSummary": {
+        "count_one": "{{count}} étudiant sélectionné",
+        "count_many": "{{count}} étudiants sélectionnés",
+        "count_other": "{{count}} étudiants sélectionnés",
+        "clearAll": "Tout effacer",
+        "removeAria": "Retirer {{name}}",
+        "more_one": "+{{count}} de plus",
+        "more_many": "+{{count}} de plus",
+        "more_other": "+{{count}} de plus"
+    },
+    "pageSelection": {
+        "selectAllAria": "Sélectionner tous les étudiants de cette page",
+        "selectAll": "Sélectionner tout sur cette page",
+        "deselectAll": "Désélectionner tout sur cette page",
+        "selectAllCount": "Sélectionner tout sur cette page ({{count}})",
+        "deselectAllCount": "Désélectionner tout sur cette page ({{count}})"
+    },
+    "selectAllMatching": {
+        "selecting": "Sélection en cours…",
+        "button_one": "Sélectionner les {{count}} correspondant(s)",
+        "button_many": "Sélectionner les {{count}} correspondants",
+        "button_other": "Sélectionner les {{count}} correspondants",
+        "blocked_one": "{{count}} correspondance — filtrez par groupe pour tous les sélectionner à la fois (max {{max}})",
+        "blocked_many": "{{count}} correspondances — filtrez par groupe pour tous les sélectionner à la fois (max {{max}})",
+        "blocked_other": "{{count}} correspondances — filtrez par groupe pour tous les sélectionner à la fois (max {{max}})"
+    },
+    "results": {
+        "loading": "Chargement des étudiants…",
+        "loadError": "Impossible de charger les étudiants.",
+        "retry": "Réessayer",
+        "emptyFiltered": "Aucun étudiant inscrit ne correspond à ce filtre",
+        "emptyAll": "Aucun étudiant inscrit pour le moment",
+        "selectRowAria": "Sélectionner {{name}}"
+    },
+    "pagination": {
+        "range": "{{start}}–{{end}} sur {{total}}",
+        "updating": "mise à jour…",
+        "previousAria": "Page précédente",
+        "nextAria": "Page suivante",
+        "pageOf": "{{page}} / {{total}}"
+    }
+}

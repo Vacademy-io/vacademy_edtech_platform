@@ -1,0 +1,130 @@
+{
+    "common": {
+        "notAvailable": "غير متاح",
+        "remove": "إزالة",
+        "generateButton": "إنشاء",
+        "confirmPaymentButton": "تأكيد الدفع",
+        "recordingEllipsis": "جارٍ التسجيل…",
+        "optionalLabel": "(اختياري)"
+    },
+    "defaults": {
+        "feeName": "رسوم التقديم / التسجيل",
+        "recipientName": "ولي الأمر"
+    },
+    "paymentMethodLabel": {
+        "online": "الدفع الإلكتروني",
+        "upi": "الدفع عبر UPI"
+    },
+    "paymentModeLabels": {
+        "upi": "UPI",
+        "cash": "نقدًا",
+        "card": "بطاقة",
+        "cheque": "شيك",
+        "online": "إلكتروني",
+        "sendLink": "رابط الدفع",
+        "manual": "يدوي"
+    },
+    "upiDeepLink": {
+        "paymentNote": "دفعة {{feeName}}"
+    },
+    "toast": {
+        "linkRequiresApplication": "يرجى تقديم الطلب أولاً لإنشاء رابط دفع.",
+        "paymentOptionNotConfigured": "لم يتم تكوين خيار الدفع.",
+        "linkCopied": "تم نسخ رابط {{method}} إلى الحافظة!",
+        "upiNotConfigured": "لم يتم تكوين معرّف UPI لمرحلة الدفع هذه.",
+        "upiLinkCopied": "تم نسخ رابط UPI! أرسله لولي الأمر لفتحه في أي تطبيق UPI.",
+        "linkEmailSent": "تم إرسال رابط الدفع بالبريد الإلكتروني بنجاح",
+        "linkEmailFailed": "فشل إرسال البريد الإلكتروني. يرجى المحاولة مرة أخرى.",
+        "proofUploaded": "تم رفع الإثبات",
+        "proofUploadFailed": "فشل رفع الإثبات",
+        "applicationNotSubmitted": "لم يتم تقديم الطلب بعد. يرجى تقديم النموذج أولاً.",
+        "enterTransactionId": "يرجى إدخال أو إنشاء رقم المعاملة",
+        "paymentRecorded": "تم تسجيل الدفعة بنجاح!",
+        "paymentRecordFailed": "فشل تسجيل الدفعة. يرجى المحاولة مرة أخرى."
+    },
+    "paid": {
+        "title": "تم استلام الدفعة",
+        "summaryLine": "{{amount}} • الطريقة: {{mode}} • التاريخ: {{date}}",
+        "todayFallback": "اليوم",
+        "refLabel": "المرجع: {{transactionId}}",
+        "undoButton": "↩ تراجع — وضع علامة غير مدفوع"
+    },
+    "receipt": {
+        "receiptNoLabel": "رقم الإيصال",
+        "dateLabel": "التاريخ",
+        "studentLabel": "الطالب",
+        "feeDescriptionLabel": "وصف الرسوم",
+        "paymentModeLabel": "طريقة الدفع",
+        "transactionIdLabel": "رقم المعاملة",
+        "amountPaidLabel": "المبلغ المدفوع",
+        "downloadButton": "تنزيل الإيصال"
+    },
+    "header": {
+        "title": "أكمل عملية الدفع",
+        "subtitle": "رسوم لمرة واحدة لتقديم الطلب"
+    },
+    "invoice": {
+        "title": "دفع الرسوم",
+        "gstLabel": "ضريبة السلع والخدمات",
+        "processingChargeLabel": "رسوم المعالجة",
+        "waivedLabel": "معفاة",
+        "totalDueLabel": "إجمالي المبلغ المستحق"
+    },
+    "tabs": {
+        "payNow": "ادفع الآن",
+        "generateLink": "إنشاء رابط"
+    },
+    "methods": {
+        "sectionTitle": "ادفع الآن",
+        "upi": {
+            "label": "UPI / رمز QR",
+            "desc": "امسح وادفع فورًا"
+        },
+        "cash": {
+            "label": "تم استلام النقد",
+            "desc": "تسجيل دفعة نقدية"
+        }
+    },
+    "cashPanel": {
+        "title": "دفع نقدي",
+        "amountToReceiveLabel": "المبلغ المطلوب استلامه",
+        "proofLabel": "إثبات الدفع",
+        "proofHintCheque": "صورة الشيك",
+        "proofHintReceipt": "إيصال / لقطة شاشة",
+        "uploadProofButton": "📎 رفع الإيصال / لقطة الشاشة",
+        "txnLabelCheque": "رقم الشيك / الحوالة المصرفية",
+        "txnLabelReceipt": "رقم المعاملة / الإيصال",
+        "placeholderCheque": "رقم الشيك / الحوالة المصرفية",
+        "placeholderCash": "إنشاء تلقائي أو إدخال رقم إيصال",
+        "placeholderDefault": "أدخل رقم المعاملة"
+    },
+    "upiPanel": {
+        "title": "الدفع عبر UPI",
+        "clickToEnlargeTitle": "انقر للتكبير",
+        "openHoverLabel": "فتح",
+        "openLargeQrTitle": "فتح رمز QR الكبير",
+        "qrCodeLabel": "رمز QR",
+        "notConfiguredLabel": "غير مُهيأ",
+        "proofLabel": "صورة الدفع",
+        "uploadImageButton": "رفع صورة",
+        "transactionIdLabel": "رقم المعاملة",
+        "transactionIdPlaceholder": "مثال: 312345678901"
+    },
+    "linkTab": {
+        "title": "إنشاء رابط دفع للسداد",
+        "subtitle": "شارك رابطًا مع أولياء الأمور لإتمام الدفع من أجهزتهم",
+        "onlineLinkButton": "رابط إلكتروني",
+        "upiAppLinkButton": "رابط تطبيق UPI",
+        "configureUpiTitle": "قم بتكوين معرّف UPI في إعدادات المرحلة",
+        "scanQrLabel": "امسح رمز QR لفتح رابط الدفع",
+        "sendViaEmailButton": "إرسال الرابط عبر البريد الإلكتروني",
+        "emailPlaceholder": "parent@example.com",
+        "sendingEllipsis": "جارٍ الإرسال...",
+        "sendButton": "إرسال"
+    },
+    "qrDialog": {
+        "scanToPayLabel": "امسح للدفع — {{amount}}",
+        "upiIdLabel": "معرّف UPI: {{upiId}}",
+        "closeHint": "انقر خارج النافذة أو اضغط Escape للإغلاق"
+    }
+}

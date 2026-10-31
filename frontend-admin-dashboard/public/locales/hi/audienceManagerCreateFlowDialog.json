@@ -1,0 +1,27 @@
+{
+    "heading": "ऑनबोर्डिंग फ़्लो बनाएं",
+    "fields": {
+        "name": {
+            "label": "फ़्लो का नाम",
+            "placeholder": "उदाहरण: नए छात्र की ऑनबोर्डिंग"
+        },
+        "description": {
+            "label": "विवरण",
+            "placeholder": "यह फ़्लो किसके लिए है (वैकल्पिक)"
+        }
+    },
+    "actions": {
+        "cancel": "रद्द करें",
+        "createFlow": "फ़्लो बनाएं",
+        "creating": "बनाया जा रहा है…"
+    },
+    "validation": {
+        "nameRequired": "फ़्लो का नाम आवश्यक है",
+        "nameMaxLength": "इसे 150 अक्षरों से कम रखें",
+        "descriptionMaxLength": "इसे 1000 अक्षरों से कम रखें"
+    },
+    "toasts": {
+        "created": "ऑनबोर्डिंग फ़्लो बनाया गया",
+        "createError": "फ़्लो नहीं बनाया जा सका। कृपया पुनः प्रयास करें।"
+    }
+}

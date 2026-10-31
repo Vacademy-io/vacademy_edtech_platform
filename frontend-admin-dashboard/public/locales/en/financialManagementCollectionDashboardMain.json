@@ -1,0 +1,6 @@
+{
+    "errorTitle": "Something went wrong",
+    "errorMessage": "We couldn't load the collection data at this time.",
+    "retryLoading": "Retry Loading",
+    "analyzingData": "Analyzing Financial Data..."
+}

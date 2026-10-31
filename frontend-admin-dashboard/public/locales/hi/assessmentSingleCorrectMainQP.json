@@ -1,0 +1,13 @@
+{
+    "emptyState": "प्रश्न का विवरण दिखाने के लिए कृपया एक प्रश्न जोड़ें",
+    "comprehensionText": "गद्यांश पाठ",
+    "question": "प्रश्न",
+    "questionLabel": "प्रश्न {{number}}",
+    "writeQuestionPlaceholder": "प्रश्न लिखें",
+    "explanationHint": "परिणाम के साथ शिक्षार्थियों को दिखाया जाता है।",
+    "explanationPlaceholder": "स्पष्टीकरण",
+    "defaults": {
+        "answer": "उत्तर",
+        "explanation": "स्पष्टीकरण"
+    }
+}

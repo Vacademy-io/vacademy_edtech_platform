@@ -1,0 +1,28 @@
+{
+    "basicInfo": {
+        "assessmentName": "Assessment Name",
+        "untitled": "Untitled",
+        "notAvailable": "N/A"
+    },
+    "instructions": {
+        "title": "Assessment Instructions",
+        "description": "Shown to participants before they begin the assessment",
+        "empty": "No instructions provided."
+    },
+    "liveDateRange": {
+        "title": "Live Date Range",
+        "startDateTime": "Start Date & Time",
+        "endDateTime": "End Date & Time"
+    },
+    "attemptSettings": {
+        "title": "Attempt Settings",
+        "description": "Controls how participants can take the assessment",
+        "reattemptCount": "Reattempt Count",
+        "totalDuration": "Total Duration",
+        "durationNotSet": "—",
+        "durationMinutes_one": "{{count}} min",
+        "durationMinutes_other": "{{count}} min",
+        "assessmentPreview": "Assessment Preview",
+        "allowSwitchingSections": "Allow switching between sections"
+    }
+}

@@ -1,0 +1,37 @@
+{
+    "dialog": {
+        "editHeading": "ड्रिप कंडीशन संपादित करें",
+        "addHeading": "ड्रिप कंडीशन जोड़ें",
+        "course": "कोर्स: {{packageName}}",
+        "enableTargetCondition": "{{target}} ड्रिप कंडीशन सक्षम करें",
+        "enableTargetConditionHint": "नियंत्रित करता है कि यह विशिष्ट {{target}} ड्रिप कंडीशन सक्रिय है या नहीं"
+    },
+    "form": {
+        "targetContent": "लक्षित सामग्री",
+        "selectTarget": "लक्ष्य चुनें",
+        "appliesToAll": "यह कंडीशन इस पैकेज के सभी {{level}} पर लागू होगी",
+        "behavior": "व्यवहार",
+        "selectBehavior": "व्यवहार चुनें",
+        "unlockRule": "अनलॉक नियम",
+        "noRuleConfigured": "कोई नियम कॉन्फ़िगर नहीं किया गया है। कृपया नीचे एक अनलॉक नियम कॉन्फ़िगर करें।",
+        "releaseDate": "रिलीज़ तिथि",
+        "metric": "मीट्रिक",
+        "averageOfAll": "सभी का औसत",
+        "averageOfLastN": "अंतिम N का औसत",
+        "count": "संख्या",
+        "thresholdPercent": "थ्रेशोल्ड %"
+    },
+    "behaviorOptions": {
+        "lock": "लॉक करें (दिखाएं लेकिन पहुंच रोकें)",
+        "hide": "छिपाएं (पूरी तरह से छिपा हुआ)"
+    },
+    "ruleTypes": {
+        "dateBased": "तिथि-आधारित",
+        "completionBased": "पूर्णता-आधारित"
+    },
+    "actions": {
+        "cancel": "रद्द करें",
+        "updateCondition": "कंडीशन अपडेट करें",
+        "addCondition": "कंडीशन जोड़ें"
+    }
+}

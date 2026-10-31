@@ -1,17 +1,37 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, keepPreviousData } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { COURSE_CATALOG_URL, GET_INVITE_LINKS, GET_SINGLE_INVITE_DETAILS } from '@/constants/urls';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { getInstituteId } from '@/constants/helper';
 import { MyButton } from '@/components/design-system/button';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, X, ChevronDown, Loader2, CheckCircle2, RefreshCw, Network } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import {
+    MagnifyingGlass,
+    Plus,
+    X,
+    CaretDown,
+    CircleNotch,
+    CheckCircle,
+    ArrowsClockwise,
+    Network,
+    ArrowUp,
+    ArrowDown,
+    SortAscending,
+    SortDescending,
+} from '@phosphor-icons/react';
 import type { MappingRow } from '../-types/product-page-types';
 import { SuggestionsPanel } from './SuggestionsPanel';
 
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 400;
+// Well above the largest page today (296 invites). For staff limited to certain
+// invites the server filters after paging and reports that page as the last,
+// so for them nothing past the first page is fetched.
+const INVITE_BATCH_PAGE_SIZE = 1000;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -37,7 +57,11 @@ interface EnrollInvite {
     id: string;
     name: string;
     invite_code: string;
+    /** Only the sessions that were asked for, not every session on the invite. */
+    package_session_ids?: string[];
 }
+
+const NO_INVITES: EnrollInvite[] = [];
 
 interface PackageSessionPaymentOption {
     id: string; // ps_invite_payment_option_id
@@ -61,20 +85,22 @@ interface InviteDetails extends EnrollInvite {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function sessionLabel(s: CourseSearchItem) {
-    const level = s.level_name;
-    const session = s.session_name || s.package_session_name;
-    if (level && session) return `${level} · ${session}`;
-    if (level) return level;
-    if (session) return session;
-    return 'Default';
+function buildSessionLabel(t: TFunction) {
+    return (s: CourseSearchItem) => {
+        const level = s.level_name;
+        const session = s.session_name || s.package_session_name;
+        if (level && session) return `${level} · ${session}`;
+        if (level) return level;
+        if (session) return session;
+        return t('sessionLabelDefault');
+    };
 }
 
 function useDebounce<T>(value: T, delay: number): T {
     const [debounced, setDebounced] = useState(value);
     useEffect(() => {
-        const t = setTimeout(() => setDebounced(value), delay);
-        return () => clearTimeout(t);
+        const timeoutId = setTimeout(() => setDebounced(value), delay);
+        return () => clearTimeout(timeoutId);
     }, [value, delay]);
     return debounced;
 }
@@ -84,40 +110,41 @@ function useDebounce<T>(value: T, delay: number): T {
 interface SelectedRowProps {
     row: MappingRow;
     session: CourseSearchItem | undefined;
+    /** This session's invites, from the parent's single batched list call. */
+    invites: EnrollInvite[];
+    invitesLoading: boolean;
     onChange: (updated: MappingRow) => void;
     onRemove: () => void;
     index: number;
+    /** Step up (-1) / down (+1). Absent = no reorder arrows. */
+    onMove?: (direction: -1 | 1) => void;
+    isFirst?: boolean;
+    isLast?: boolean;
 }
 
 const SelectedRow = ({
-    row, session, onChange, onRemove, index,
+    row,
+    session,
+    invites,
+    invitesLoading,
+    onChange,
+    onRemove,
+    index,
+    onMove,
+    isFirst = false,
+    isLast = false,
 }: SelectedRowProps) => {
+    const { t } = useTranslation('managePagesCourseSessionSelector');
+    const sessionLabel = useMemo(() => buildSessionLabel(t), [t]);
     const instituteId = getCurrentInstituteId() || getInstituteId() || '';
     const [showInviteDropdown, setShowInviteDropdown] = useState(false);
 
-    // Fetch invites for this session
-    const { data: inviteListData, isLoading: invitesLoading } = useQuery({
-        queryKey: ['PP_SESSION_INVITES', row.packageSessionId, instituteId],
-        queryFn: async () => {
-            const res = await authenticatedAxiosInstance.post(
-                `${GET_INVITE_LINKS}?instituteId=${instituteId}&pageNo=0&pageSize=100`,
-                {
-                    search_name: '',
-                    package_session_ids: [row.packageSessionId],
-                    payment_option_ids: [],
-                    sort_columns: {},
-                    tags: [],
-                }
-            );
-            return (res.data?.content || []) as EnrollInvite[];
-        },
-        enabled: !!row.packageSessionId && !!instituteId,
-        staleTime: 5 * 60 * 1000,
-    });
+    // Saved rows arrive without a name; the batched list already has it.
+    const inviteName = row.inviteName || invites.find((i) => i.id === row.inviteId)?.name;
 
-    const invites = inviteListData || [];
-
-    // Fetch details of the currently selected invite
+    // Full invite details are only needed to resolve a row that has no payment
+    // option yet (a new row, or one whose invite was just changed). Saved rows
+    // already carry option, plan and price from the product page response.
     const { data: inviteDetails, isLoading: detailsLoading } = useQuery({
         queryKey: ['PP_INVITE_DETAILS', row.inviteId, instituteId],
         queryFn: async () => {
@@ -128,7 +155,7 @@ const SelectedRow = ({
             const res = await authenticatedAxiosInstance.get(url);
             return res.data as InviteDetails;
         },
-        enabled: !!row.inviteId && !!instituteId,
+        enabled: !!row.inviteId && !row.psInvitePaymentOptionId && !!instituteId,
         staleTime: 5 * 60 * 1000,
     });
 
@@ -200,16 +227,40 @@ const SelectedRow = ({
                                 : row.packageSessionId.slice(0, 16) + '…'}
                         </p>
                         {isLoading && (
-                            <span className="flex items-center gap-1 text-[11px] text-neutral-400">
-                                <Loader2 className="size-3 animate-spin" />
-                                Loading invite…
+                            <span className="flex items-center gap-1 text-2xs text-neutral-400">
+                                <CircleNotch className="size-3 animate-spin" />
+                                {t('selectedRow.loadingInvite')}
                             </span>
                         )}
                     </div>
                 </div>
 
                 <div className="flex shrink-0 items-center gap-2">
-                    {isReady && !isLoading && <CheckCircle2 className="size-4 text-success-500" />}
+                    {isReady && !isLoading && <CheckCircle className="size-4 text-success-500" />}
+                    {onMove && (
+                        <div className="flex items-center">
+                            <button
+                                type="button"
+                                onClick={() => onMove(-1)}
+                                disabled={isFirst}
+                                aria-label={t('selectedRow.moveUp', 'Move up')}
+                                title={t('selectedRow.moveUp', 'Move up')}
+                                className="flex size-6 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent"
+                            >
+                                <ArrowUp className="size-3.5" />
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => onMove(1)}
+                                disabled={isLast}
+                                aria-label={t('selectedRow.moveDown', 'Move down')}
+                                title={t('selectedRow.moveDown', 'Move down')}
+                                className="flex size-6 items-center justify-center rounded-full text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 disabled:cursor-default disabled:opacity-30 disabled:hover:bg-transparent"
+                            >
+                                <ArrowDown className="size-3.5" />
+                            </button>
+                        </div>
+                    )}
                     <button
                         type="button"
                         onClick={onRemove}
@@ -230,16 +281,16 @@ const SelectedRow = ({
                         onClick={() => setShowInviteDropdown((v) => !v)}
                         className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-xs text-neutral-600 transition-colors hover:bg-neutral-100 disabled:cursor-default disabled:opacity-70"
                     >
-                        <span className="max-w-[180px] truncate font-medium">
-                            {row.inviteName || 'Selecting invite…'}
+                        <span className="max-w-44 truncate font-medium">
+                            {inviteName || t('selectedRow.selectingInvite')}
                         </span>
                         {invites.length > 1 && (
                             <>
                                 <span className="text-neutral-300">·</span>
-                                <span className="text-[10px] text-primary-500">
-                                    {invites.length} invites
+                                <span className="text-2xs text-primary-500">
+                                    {t('selectedRow.invitesCount', { count: invites.length })}
                                 </span>
-                                <ChevronDown className="size-3 text-neutral-400" />
+                                <CaretDown className="size-3 text-neutral-400" />
                             </>
                         )}
                     </button>
@@ -273,7 +324,7 @@ const SelectedRow = ({
                     </span>
                 ) : row.paymentPlanId ? (
                     <span className="rounded-lg bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-500">
-                        Free
+                        {t('selectedRow.free')}
                     </span>
                 ) : null}
 
@@ -285,19 +336,19 @@ const SelectedRow = ({
                         onChange={(e) => onChange({ ...row, preselected: e.target.checked })}
                         className="size-3.5 accent-primary-500"
                     />
-                    <span className="text-xs text-neutral-500">Pre-selected</span>
+                    <span className="text-xs text-neutral-500">{t('selectedRow.preselected')}</span>
                 </label>
             </div>
 
             {/* Not-ready warning */}
             {!isReady && !isLoading && row.inviteId && (
-                <p className="mt-2 text-[11px] text-warning-600">
-                    No matching payment option found for this invite and session.
+                <p className="mt-2 text-2xs text-warning-600">
+                    {t('selectedRow.noMatchingPaymentOption')}
                 </p>
             )}
             {!isReady && !isLoading && !row.inviteId && invites.length === 0 && (
-                <p className="mt-2 text-[11px] text-danger-600">
-                    No active invite found for this session. Create an invite first.
+                <p className="mt-2 text-2xs text-danger-600">
+                    {t('selectedRow.noActiveInvite')}
                 </p>
             )}
         </div>
@@ -313,6 +364,10 @@ interface CourseSessionSelectorProps {
     onRemove: (rowId: string) => void;
     suggestions: Record<string, string[]>;
     onUpdateSuggestions: (s: Record<string, string[]>) => void;
+    /** Moves a row one step; the row order is the order saved (and a learning path's step order). */
+    onMove?: (rowId: string, direction: -1 | 1) => void;
+    /** Puts the rows in this order (row ids); the newest/oldest-first buttons use it. */
+    onReorder?: (orderedRowIds: string[]) => void;
 }
 
 export const CourseSessionSelector = ({
@@ -322,7 +377,13 @@ export const CourseSessionSelector = ({
     onRemove,
     suggestions,
     onUpdateSuggestions,
+    onMove,
+    onReorder,
 }: CourseSessionSelectorProps) => {
+    const { t } = useTranslation('managePagesCourseSessionSelector');
+    const { toast } = useToast();
+    const [sorting, setSorting] = useState<'newest' | 'oldest' | null>(null);
+    const sessionLabel = useMemo(() => buildSessionLabel(t), [t]);
     const instituteId = getCurrentInstituteId() || getInstituteId() || '';
     const [view, setView] = useState<'list' | 'suggestions'>('list');
     const [search, setSearch] = useState('');
@@ -330,6 +391,46 @@ export const CourseSessionSelector = ({
 
     const debouncedSearch = useDebounce(search, SEARCH_DEBOUNCE_MS);
     const selectedSessionIds = new Set(mappingRows.map((r) => r.packageSessionId));
+
+    // One invite-list call for every selected session, split per session here.
+    // Each row used to fetch its own list plus its invite's full details, so
+    // opening this tab on a 163-course page fired ~326 requests at once.
+    const rowSessionIds = useMemo(
+        () =>
+            Array.from(new Set(mappingRows.map((r) => r.packageSessionId).filter(Boolean))).sort(),
+        [mappingRows]
+    );
+    const { data: invitesBySession, isError: invitesError } = useQuery({
+        queryKey: ['PP_SESSION_INVITES', instituteId, rowSessionIds.join(',')],
+        queryFn: async () => {
+            const bySession = new Map<string, EnrollInvite[]>(rowSessionIds.map((id) => [id, []]));
+            for (let pageNo = 0; ; pageNo++) {
+                const res = await authenticatedAxiosInstance.post(
+                    `${GET_INVITE_LINKS}?instituteId=${instituteId}&pageNo=${pageNo}&pageSize=${INVITE_BATCH_PAGE_SIZE}`,
+                    {
+                        search_name: '',
+                        package_session_ids: rowSessionIds,
+                        payment_option_ids: [],
+                        sort_columns: {},
+                        tags: [],
+                    }
+                );
+                const content = (res.data?.content || []) as EnrollInvite[];
+                for (const invite of content) {
+                    for (const psId of invite.package_session_ids ?? []) {
+                        bySession.get(psId)?.push(invite);
+                    }
+                }
+                if (res.data?.last !== false || content.length === 0) break;
+            }
+            return bySession;
+        },
+        enabled: !!instituteId && rowSessionIds.length > 0,
+        staleTime: 5 * 60 * 1000,
+        // Adding or removing a course changes the key; keep the other rows'
+        // invites on screen while the new batch loads.
+        placeholderData: keepPreviousData,
+    });
 
     // Paginated sessions fetch — server-side search via search_by_name
     const {
@@ -428,7 +529,7 @@ export const CourseSessionSelector = ({
     const getRowLabel = useCallback((row: MappingRow) => {
         const s = sessionLookup.get(row.packageSessionId);
         return s ? `${s.package_name} · ${sessionLabel(s)}` : row.inviteName || '…';
-    }, [sessionLookup]);
+    }, [sessionLookup, sessionLabel]);
 
     // Sentinel ref for "load more" at bottom of list
     const loadMoreRef = useRef<HTMLDivElement | null>(null);
@@ -447,7 +548,7 @@ export const CourseSessionSelector = ({
     // Search is server-side — just group whatever is loaded
     const grouped: Record<string, CourseSearchItem[]> = {};
     for (const s of allSessions) {
-        const key = s.package_name || 'Other';
+        const key = s.package_name || t('browser.otherGroup');
         if (!grouped[key]) grouped[key] = [];
         grouped[key]!.push(s);
     }
@@ -465,13 +566,14 @@ export const CourseSessionSelector = ({
             paymentPlanPrice: 0,
             currency: '',
             preselected: false,
-            displayOrder: mappingRows.length,
+            displayOrder: 0,
         });
     };
 
     const handleSelectAll = () => {
         const unselected = allSessions.filter((s) => !selectedSessionIds.has(s.package_session_id));
-        unselected.forEach((session, i) => {
+        // onAdd puts each row first, so add in reverse to keep the list's order at the top.
+        [...unselected].reverse().forEach((session, i) => {
             onAdd({
                 rowId: `new-${Date.now()}-${i}-${session.package_session_id}`,
                 packageSessionId: session.package_session_id,
@@ -483,7 +585,7 @@ export const CourseSessionSelector = ({
                 paymentPlanPrice: 0,
                 currency: '',
                 preselected: false,
-                displayOrder: mappingRows.length + i,
+                displayOrder: 0,
             });
         });
     };
@@ -499,6 +601,53 @@ export const CourseSessionSelector = ({
     ).length;
     const totalPrice = mappingRows.reduce((sum, r) => sum + (r.paymentPlanPrice || 0), 0);
     const currency = mappingRows.find((r) => r.currency)?.currency || '';
+
+    // The search API has no created_at in its response, but sorts by it: ask it for
+    // this page's courses newest first and take that order (reversed for oldest).
+    const handleSortByCreated = async (direction: 'newest' | 'oldest') => {
+        if (!onReorder || sorting) return;
+        const sessionIds = Array.from(new Set(mappingRows.map((r) => r.packageSessionId).filter(Boolean)));
+        if (sessionIds.length === 0) return;
+        setSorting(direction);
+        try {
+            const res = await authenticatedAxiosInstance.post(
+                COURSE_CATALOG_URL,
+                {
+                    status: ['ACTIVE'],
+                    level_ids: [],
+                    faculty_ids: [],
+                    package_types: [],
+                    search_by_name: null,
+                    tag: [],
+                    created_by_user_id: null,
+                    min_percentage_completed: 0,
+                    max_percentage_completed: 100,
+                    sort_columns: { created_at: 'DESC' },
+                    type: null,
+                    package_ids: [],
+                    package_session_ids: sessionIds,
+                    session_ids: [],
+                    package_view: true,
+                },
+                { params: { instituteId, page: 0, size: sessionIds.length } }
+            );
+            const newestFirst = ((res.data?.content ?? []) as CourseSearchItem[]).map(
+                (s) => s.package_session_id
+            );
+            const ordered = direction === 'newest' ? newestFirst : [...newestFirst].reverse();
+            const rank = new Map(ordered.map((id, i) => [id, i]));
+            // Stable: rows of the same course (or one the search didn't return) keep their order.
+            const rowIds = mappingRows
+                .map((r, i) => ({ id: r.rowId, i, rank: rank.get(r.packageSessionId) ?? Infinity }))
+                .sort((a, b) => a.rank - b.rank || a.i - b.i)
+                .map((r) => r.id);
+            onReorder(rowIds);
+        } catch {
+            toast({ title: t('selectedCourses.sortFailed'), variant: 'destructive' });
+        } finally {
+            setSorting(null);
+        }
+    };
 
     const handleRemoveRow = (rowId: string) => {
         const row = mappingRows.find((r) => r.rowId === rowId);
@@ -528,8 +677,8 @@ export const CourseSessionSelector = ({
                                 : 'text-neutral-500 hover:text-neutral-700'
                         }`}
                     >
-                        Courses
-                        <span className={`rounded-full px-1.5 text-[10px] font-semibold ${view === 'list' ? 'bg-primary-100 text-primary-700' : 'bg-neutral-200 text-neutral-500'}`}>
+                        {t('tabs.courses')}
+                        <span className={`rounded-full px-1.5 text-2xs font-semibold ${view === 'list' ? 'bg-primary-100 text-primary-700' : 'bg-neutral-200 text-neutral-500'}`}>
                             {readyCount}/{mappingRows.length}
                         </span>
                     </button>
@@ -543,7 +692,7 @@ export const CourseSessionSelector = ({
                         }`}
                     >
                         <Network className="size-3.5" />
-                        Suggestions
+                        {t('tabs.suggestions')}
                     </button>
                 </div>
             )}
@@ -564,36 +713,80 @@ export const CourseSessionSelector = ({
                     <div className="mb-3 flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <h3 className="text-sm font-semibold text-neutral-800">
-                                Selected Courses
+                                {t('selectedCourses.heading')}
                             </h3>
                         </div>
-                        <MyButton
-                            scale="small"
-                            buttonType="secondary"
-                            onClick={() => setShowBrowser((v) => !v)}
-                        >
-                            <Plus className="size-3.5" />
-                            Add More
-                        </MyButton>
+                        <div className="flex flex-wrap items-center gap-2">
+                            {onReorder && mappingRows.length > 1 && (
+                                <>
+                                    <MyButton
+                                        scale="small"
+                                        buttonType="secondary"
+                                        disable={!!sorting}
+                                        onClick={() => handleSortByCreated('newest')}
+                                        title={t('selectedCourses.newestFirstHint')}
+                                    >
+                                        {sorting === 'newest' ? (
+                                            <CircleNotch className="size-3.5 animate-spin" />
+                                        ) : (
+                                            <SortDescending className="size-3.5" />
+                                        )}
+                                        {t('selectedCourses.newestFirst')}
+                                    </MyButton>
+                                    <MyButton
+                                        scale="small"
+                                        buttonType="secondary"
+                                        disable={!!sorting}
+                                        onClick={() => handleSortByCreated('oldest')}
+                                        title={t('selectedCourses.oldestFirstHint')}
+                                    >
+                                        {sorting === 'oldest' ? (
+                                            <CircleNotch className="size-3.5 animate-spin" />
+                                        ) : (
+                                            <SortAscending className="size-3.5" />
+                                        )}
+                                        {t('selectedCourses.oldestFirst')}
+                                    </MyButton>
+                                </>
+                            )}
+                            <MyButton
+                                scale="small"
+                                buttonType="secondary"
+                                onClick={() => setShowBrowser((v) => !v)}
+                            >
+                                <Plus className="size-3.5" />
+                                {t('selectedCourses.addMore')}
+                            </MyButton>
+                        </div>
                     </div>
 
                     <div className="space-y-3">
-                        {mappingRows.map((row, idx) => (
-                            <SelectedRow
-                                key={row.rowId}
-                                row={row}
-                                session={getSession(row.packageSessionId)}
-                                index={idx}
-                                onChange={(updated) => onUpdate(row.rowId, updated)}
-                                onRemove={() => handleRemoveRow(row.rowId)}
-                            />
-                        ))}
+                        {mappingRows.map((row, idx) => {
+                            const rowInvites = invitesBySession?.get(row.packageSessionId);
+                            return (
+                                <SelectedRow
+                                    key={row.rowId}
+                                    row={row}
+                                    session={getSession(row.packageSessionId)}
+                                    invites={rowInvites ?? NO_INVITES}
+                                    invitesLoading={
+                                        !!row.packageSessionId && !invitesError && !rowInvites
+                                    }
+                                    index={idx}
+                                    onChange={(updated) => onUpdate(row.rowId, updated)}
+                                    onRemove={() => handleRemoveRow(row.rowId)}
+                                    onMove={onMove ? (direction) => onMove(row.rowId, direction) : undefined}
+                                    isFirst={idx === 0}
+                                    isLast={idx === mappingRows.length - 1}
+                                />
+                            );
+                        })}
                     </div>
 
                     {/* Total price summary */}
                     {totalPrice > 0 && (
                         <div className="mt-3 flex items-center justify-end rounded-xl border border-neutral-100 bg-white px-4 py-3">
-                            <span className="text-sm text-neutral-500">Combined total:</span>
+                            <span className="text-sm text-neutral-500">{t('selectedCourses.combinedTotal')}</span>
                             <span className="ml-2 text-base font-bold text-neutral-900">
                                 {currency} {totalPrice.toLocaleString()}
                             </span>
@@ -607,15 +800,15 @@ export const CourseSessionSelector = ({
                 <div className="rounded-xl border border-neutral-200 bg-white shadow-sm">
                     {/* Browser header */}
                     <div className="flex items-center gap-2 border-b border-neutral-100 px-4 py-3">
-                        <Search className="size-4 shrink-0 text-neutral-400" />
+                        <MagnifyingGlass className="size-4 shrink-0 text-neutral-400" />
                         <Input
-                            placeholder="Search courses or batches…"
+                            placeholder={t('browser.searchPlaceholder')}
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             className="h-8 flex-1 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
                         />
                         {sessionsLoading && (
-                            <Loader2 className="size-4 shrink-0 animate-spin text-neutral-300" />
+                            <CircleNotch className="size-4 shrink-0 animate-spin text-neutral-300" />
                         )}
                         {!sessionsLoading && unselectedCount > 0 && (
                             <button
@@ -623,16 +816,16 @@ export const CourseSessionSelector = ({
                                 onClick={handleSelectAll}
                                 className="shrink-0 rounded-md border border-neutral-200 bg-white px-2.5 py-1 text-xs font-medium text-neutral-600 transition-colors hover:border-primary-300 hover:bg-primary-50 hover:text-primary-600"
                             >
-                                + Select all ({unselectedCount})
+                                {t('browser.selectAll', { count: unselectedCount })}
                             </button>
                         )}
                         <button
                             type="button"
                             onClick={() => refetchSessions()}
-                            title="Refresh"
+                            title={t('browser.refresh')}
                             className="text-neutral-300 transition-colors hover:text-neutral-500"
                         >
-                            <RefreshCw className="size-3.5" />
+                            <ArrowsClockwise className="size-3.5" />
                         </button>
                         {mappingRows.length > 0 && (
                             <button
@@ -649,21 +842,21 @@ export const CourseSessionSelector = ({
                     <div className="max-h-96 overflow-y-auto">
                         {sessionsLoading ? (
                             <div className="flex items-center justify-center py-10 text-sm text-neutral-400">
-                                <Loader2 className="mr-2 size-4 animate-spin" />
-                                Loading sessions…
+                                <CircleNotch className="me-2 size-4 animate-spin" />
+                                {t('browser.loadingSessions')}
                             </div>
                         ) : allSessions.length === 0 ? (
                             <div className="py-10 text-center text-sm text-neutral-400">
                                 {debouncedSearch
-                                    ? `No sessions match "${debouncedSearch}"`
-                                    : 'No active sessions found.'}
+                                    ? t('browser.noSessionsMatch', { query: debouncedSearch })
+                                    : t('browser.noActiveSessions')}
                             </div>
                         ) : (
                             <>
                                 {Object.entries(grouped).map(([courseName, sessions]) => (
                                     <div key={courseName}>
                                         {/* Course group header */}
-                                        <div className="sticky top-0 border-b border-neutral-100 bg-neutral-50 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-neutral-400">
+                                        <div className="sticky top-0 border-b border-neutral-100 bg-neutral-50 px-4 py-2 text-2xs font-semibold uppercase tracking-wider text-neutral-400">
                                             {courseName}
                                         </div>
 
@@ -690,9 +883,9 @@ export const CourseSessionSelector = ({
                                                         </p>
                                                     </div>
                                                     {isAdded ? (
-                                                        <span className="ml-3 flex shrink-0 items-center gap-1 rounded-full bg-primary-100 px-2 py-0.5 text-[11px] font-semibold text-primary-600">
-                                                            <CheckCircle2 className="size-3" />
-                                                            Added
+                                                        <span className="ms-3 flex shrink-0 items-center gap-1 rounded-full bg-primary-100 px-2 py-0.5 text-2xs font-semibold text-primary-600">
+                                                            <CheckCircle className="size-3" />
+                                                            {t('browser.added')}
                                                         </span>
                                                     ) : (
                                                         <button
@@ -701,10 +894,10 @@ export const CourseSessionSelector = ({
                                                                 e.stopPropagation();
                                                                 handleAddSession(session);
                                                             }}
-                                                            className="ml-3 flex shrink-0 items-center gap-1 rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-[11px] font-medium text-neutral-600 transition-colors hover:border-primary-300 hover:bg-primary-50 hover:text-primary-600"
+                                                            className="ms-3 flex shrink-0 items-center gap-1 rounded-full border border-neutral-200 bg-white px-2.5 py-1 text-2xs font-medium text-neutral-600 transition-colors hover:border-primary-300 hover:bg-primary-50 hover:text-primary-600"
                                                         >
                                                             <Plus className="size-3" />
-                                                            Add
+                                                            {t('browser.add')}
                                                         </button>
                                                     )}
                                                 </div>
@@ -717,8 +910,8 @@ export const CourseSessionSelector = ({
                                 <div ref={loadMoreRef} className="px-4 py-3">
                                     {isFetchingNextPage && (
                                         <div className="flex items-center justify-center gap-2 text-xs text-neutral-400">
-                                            <Loader2 className="size-3.5 animate-spin" />
-                                            Loading more…
+                                            <CircleNotch className="size-3.5 animate-spin" />
+                                            {t('browser.loadingMore')}
                                         </div>
                                     )}
                                     {!isFetchingNextPage && hasNextPage && (
@@ -727,8 +920,9 @@ export const CourseSessionSelector = ({
                                             onClick={() => fetchNextPage()}
                                             className="w-full rounded-lg border border-neutral-200 py-1.5 text-xs text-neutral-500 transition-colors hover:bg-neutral-50"
                                         >
-                                            Load more ({totalElements - allSessions.length}{' '}
-                                            remaining)
+                                            {t('browser.loadMore', {
+                                                count: totalElements - allSessions.length,
+                                            })}
                                         </button>
                                     )}
                                 </div>
@@ -738,9 +932,12 @@ export const CourseSessionSelector = ({
 
                     {/* Footer hint */}
                     {allSessions.length > 0 && (
-                        <div className="border-t border-neutral-100 px-4 py-2 text-[11px] text-neutral-400">
-                            {allSessions.length} of {totalElements} sessions loaded ·{' '}
-                            {selectedSessionIds.size} selected
+                        <div className="border-t border-neutral-100 px-4 py-2 text-2xs text-neutral-400">
+                            {t('browser.footerHint', {
+                                loaded: allSessions.length,
+                                total: totalElements,
+                                selected: selectedSessionIds.size,
+                            })}
                         </div>
                     )}
                 </div>

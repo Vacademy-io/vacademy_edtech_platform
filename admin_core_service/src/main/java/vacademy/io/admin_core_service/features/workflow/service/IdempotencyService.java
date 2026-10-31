@@ -30,6 +30,22 @@ public class IdempotencyService {
     private final WorkflowScheduleRepository workflowScheduleRepository;
     private final WorkflowTriggerRepository workflowTriggerRepository;
 
+    /**
+     * Insert a new execution row NOW rather than at the next flush.
+     *
+     * <p>Node logs reference the execution only by a plain {@code workflow_execution_id} column,
+     * so Hibernate (order_inserts=true) does not know a log depends on its execution. It groups
+     * pending inserts by entity in first-seen order, so when a log from an earlier run in the same
+     * transaction is still pending (handleTriggerEvents runs every trigger in one transaction),
+     * ALL pending logs are inserted before this execution → FK violation on
+     * fk_workflow_execution_log_execution and the whole trigger batch rolls back. Flushing here
+     * guarantees the row exists before any log for it is written, and makes a duplicate
+     * idempotency key fail inside the try below instead of at some later flush.</p>
+     */
+    private WorkflowExecution insertExecution(WorkflowExecution execution) {
+        return workflowExecutionRepository.saveAndFlush(execution);
+    }
+
     @Transactional
     public WorkflowExecution markAsProcessing(String idempotencyKey, String workflowId, String scheduleId) {
         try {
@@ -50,7 +66,7 @@ public class IdempotencyService {
                     .startedAt(Instant.now())
                     .build();
 
-            WorkflowExecution saved = workflowExecutionRepository.save(execution);
+            WorkflowExecution saved = insertExecution(execution);
             log.debug("Created new SCHEDULED execution record with status PROCESSING: {}", idempotencyKey);
             return saved;
 
@@ -92,7 +108,7 @@ public class IdempotencyService {
                     .startedAt(Instant.now())
                     .build();
 
-            WorkflowExecution saved = workflowExecutionRepository.save(execution);
+            WorkflowExecution saved = insertExecution(execution);
             log.debug("Created new EVENT_DRIVEN execution record with status PROCESSING: {}", idempotencyKey);
             return saved;
 
@@ -101,6 +117,65 @@ public class IdempotencyService {
             log.error("Duplicate idempotency key detected (DB constraint violation): {}", idempotencyKey, e);
             throw e; // rethrow as-is (so transaction rolls back)
         }
+    }
+
+    /**
+     * Attach the subject (the learner this run is FOR) and a storable snapshot of the seed
+     * context to an execution that was just marked PROCESSING.
+     *
+     * <p>Split from {@code markAsProcessing*} because the seed context is only assembled
+     * afterwards — it has to carry the execution's own id. Best-effort by design: this is
+     * bookkeeping for the learner-profile Workflows tab and its Retry button, and a failure
+     * to record it must never stop the workflow from running. The cost of a failure is one
+     * run missing from one tab.</p>
+     */
+    @Transactional
+    public void recordSubjectAndContext(String executionId, String subjectUserId,
+            Map<String, Object> storableSeedContext) {
+        if (executionId == null || executionId.isBlank()) {
+            return;
+        }
+        try {
+            workflowExecutionRepository.findById(executionId).ifPresent(execution -> {
+                execution.setSubjectUserId(subjectUserId);
+                execution.setSeedContext(storableSeedContext);
+                workflowExecutionRepository.save(execution);
+            });
+        } catch (Exception e) {
+            log.warn("Could not record subject/context on execution {}: {}", executionId, e.getMessage());
+        }
+    }
+
+    /**
+     * Create the execution row for a manual retry of {@code original}. Carries the original's
+     * workflow, trigger, schedule, type, subject and seed context across so the retry appears
+     * on the same learner's tab and is itself retryable, while
+     * {@code retryOfExecutionId}/{@code retriedByUserId} record where it came from.
+     *
+     * <p>A fresh {@code idempotencyKey} is mandatory: the column is UNIQUE, and reusing the
+     * original's would be the dedup mechanism refusing the very thing the admin asked for.</p>
+     */
+    @Transactional
+    public WorkflowExecution createRetryExecution(WorkflowExecution original, String idempotencyKey,
+            String retriedByUserId) {
+        WorkflowExecution retry = WorkflowExecution.builder()
+                .idempotencyKey(idempotencyKey)
+                .workflow(original.getWorkflow())
+                .workflowSchedule(original.getWorkflowSchedule())
+                .workflowTrigger(original.getWorkflowTrigger())
+                .workflowType(original.getWorkflowType())
+                .status(WorkflowExecutionStatus.PROCESSING)
+                .startedAt(Instant.now())
+                .subjectUserId(original.getSubjectUserId())
+                .seedContext(original.getSeedContext())
+                .retryOfExecutionId(original.getId())
+                .retriedByUserId(retriedByUserId)
+                .build();
+
+        WorkflowExecution saved = insertExecution(retry);
+        log.info("Created RETRY execution {} for original execution {} (by user {})",
+                saved.getId(), original.getId(), retriedByUserId);
+        return saved;
     }
 
     @Transactional

@@ -1,0 +1,16 @@
+{
+    "anonymous": "Anonymous",
+    "resolved": "Resolved",
+    "unresolved": "Unresolved",
+    "guest": "Guest",
+    "noDescription": "No description",
+    "now": "now",
+    "minutesAgo_one": "{{count}}m",
+    "minutesAgo_other": "{{count}}m",
+    "hoursAgo_one": "{{count}}h",
+    "hoursAgo_other": "{{count}}h",
+    "daysAgo_one": "{{count}}d",
+    "daysAgo_other": "{{count}}d",
+    "weeksAgo_one": "{{count}}w",
+    "weeksAgo_other": "{{count}}w"
+}

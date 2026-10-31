@@ -1,0 +1,71 @@
+{
+    "previousSchool": {
+        "heading": "تفاصيل المدرسة السابقة",
+        "schoolName": {
+            "label": "اسم المدرسة",
+            "placeholder": "أدخل اسم المدرسة السابقة"
+        },
+        "previousClass": {
+            "label": "الصف السابق",
+            "placeholder": "اختر الصف"
+        },
+        "board": {
+            "label": "المجلس التعليمي",
+            "placeholder": "اختر المجلس التعليمي"
+        },
+        "yearOfPassing": {
+            "label": "سنة النجاح",
+            "placeholder": "YYYY"
+        },
+        "percentage": {
+            "label": "النسبة المئوية",
+            "placeholder": "%"
+        },
+        "percentageScience": {
+            "label": "النسبة المئوية في العلوم",
+            "placeholder": "%"
+        },
+        "percentageMaths": {
+            "label": "النسبة المئوية في الرياضيات",
+            "placeholder": "%"
+        },
+        "previousAdmissionNo": {
+            "label": "رقم القبول السابق",
+            "placeholder": "أدخل الرقم"
+        }
+    },
+    "otherDetails": {
+        "heading": "تفاصيل أخرى",
+        "religion": {
+            "label": "الديانة",
+            "placeholder": "أدخل الديانة"
+        },
+        "caste": {
+            "label": "الطائفة",
+            "placeholder": "أدخل الطائفة"
+        },
+        "motherTongue": {
+            "label": "اللغة الأم",
+            "placeholder": "أدخل اللغة الأم"
+        },
+        "bloodGroup": {
+            "label": "فصيلة الدم",
+            "placeholder": "اختر الفصيلة"
+        },
+        "nationality": {
+            "label": "الجنسية",
+            "placeholder": "مثال: هندي"
+        },
+        "howDidYouKnow": {
+            "label": "كيف تعرفت علينا",
+            "placeholder": "اختر خيارًا",
+            "options": {
+                "socialMedia": "وسائل التواصل الاجتماعي",
+                "friendsFamily": "الأصدقاء/العائلة",
+                "advertisement": "إعلان",
+                "website": "الموقع الإلكتروني",
+                "other": "أخرى"
+            }
+        }
+    }
+}

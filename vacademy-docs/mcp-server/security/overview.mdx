@@ -1,0 +1,96 @@
+---
+title: "Security overview"
+sidebarTitle: "Overview"
+description: "The checks every request passes before an AI app can see or change anything in your institute."
+icon: "shield-halved"
+---
+
+The MCP server lets your staff use their own AI app with your institute's data. That is useful, and it is also sensitive. So the server is built around one idea:
+
+<Note>
+**A connection always acts as the person who approved it, inside one institute, and only within what your admin allows.** Each request is checked again, from the start, at the moment it arrives.
+</Note>
+
+This page explains those checks in plain language. The other pages in this section go deeper:
+
+<CardGroup cols={2}>
+  <Card title="Data and privacy" icon="user-lock" href="/mcp-server/security/data-and-pii">
+    What data reaches the AI app, and what never does.
+  </Card>
+  <Card title="Audit log" icon="list-check" href="/mcp-server/security/audit-log">
+    What is recorded for each tool call.
+  </Card>
+  <Card title="Prompt injection" icon="triangle-exclamation" href="/mcp-server/security/prompt-injection">
+    Why text written by outsiders is treated as data.
+  </Card>
+  <Card title="Guardrails" icon="lock" href="/mcp-server/security/guardrails">
+    The full list of built-in safety limits.
+  </Card>
+</CardGroup>
+
+## The gates
+
+Every request passes three gates. If any gate is shut, the request stops there.
+
+<Steps>
+  <Step title="Gate 1: a valid sign-in for this institute's URL">
+    The request carries a token issued to one person, for the institute in the server URL. A token used on another URL is refused.
+  </Step>
+  <Step title="Gate 2: server on and role allowed">
+    The MCP server is **off** until an admin turns it on in **Settings → MCP Server** in your admin portal. While it is off, nobody can connect and existing connections stop working. Your admin also picks which roles may connect. By default only **Admin** can. Learners and parents can **never** connect, whatever is selected.
+  </Step>
+  <Step title="Gate 3: the area or edit is on for your role">
+    Each area (Website, Courses, Learners, Lead forms, the CRM areas and so on) is set to **Off**, **View** or **Edit**, for everyone or per role. An AI app only sees the tools for areas that are on. Edits that change live data or contact people, such as publishing a website, enrolling learners, or calling and messaging leads, are **turned on separately** (opt-in). Setting an area to Edit, or pressing **Turn everything on**, never switches them on.
+  </Step>
+  <Step title="Your own access">
+    On top of the gates, the AI app acts as the person who approved the connection. In the CRM, it sees only the leads that person's admin portal shows them.
+  </Step>
+</Steps>
+
+## Who the AI app is acting as
+
+When someone connects an AI app, they sign in on **your institute's own admin portal** and approve the connection. From then on:
+
+- **Identity is fixed on the server.** The AI app cannot choose which user or which institute it acts for. On every call, the server sets the user and the institute from the approved connection and ignores any user or institute the AI app puts in its request.
+- **A connection belongs to one institute.** The server URL contains your institute's ID. A connection approved for that URL only works on that URL.
+- **Keep connections tidy.** When someone changes role or leaves, revoke their rows in **Active connections**. Removing a role from **Who can connect** applies on the next request.
+
+## Every call is checked again
+
+Every time the AI app lists its tools or calls one, the server re-checks all the gates above. Changes therefore take effect on the **next request**:
+
+| What the admin changes | What happens |
+|---|---|
+| Turns the MCP server off | Every connection stops working on its next request. |
+| Removes a role from "Who can connect" | People with only that role are refused on their next request. |
+| Turns an area or an edit off | The tool disappears from the AI app's list, and a call to it is refused. |
+| Revokes a connection in **Active connections** | That connection stops working at once. The person has to connect and approve again. |
+
+<Tip>
+If you are unsure whether someone still needs access, revoke their connection. It costs them one sign-in to reconnect.
+</Tip>
+
+## Changes need a clear yes
+
+Tools that only read data run directly. Tools that change data are built so that nothing important happens by surprise:
+
+- **Drafts.** Many edits only save drafts, such as website pages, blog posts, automations and new courses. Nothing goes live until a person publishes it in your admin portal.
+- **Preview first.** Live edits that are turned on separately (publishing a website, changing a course's structure, enrolling learners, editing learner details) and, in the CRM, changes to existing leads and calling or messaging a lead, show a preview first. The AI app shows you what will happen, and only applies it after you say yes in the chat. The preview expires after a short time, and if anything changes, the AI app has to preview again. A few edits apply directly, such as course invite-page edits; see [Risk levels](/mcp-server/settings/risk-levels).
+- **Labelled on the settings page.** Every edit carries a label such as **Drafts only**, **Adds only** or **Changes live**, so an admin knows what it can touch before turning it on.
+- **One send per yes.** In the CRM, a confirmation for a call or a message can be used **once**. Calls and messages also have hourly limits per person.
+
+See [Guardrails](/mcp-server/security/guardrails) for the details.
+
+## What is stored
+
+- **No passwords for the AI app.** The AI app gets its own access token, not the person's password or admin portal session. Access tokens last one hour and are renewed in the background. A connection left unused for 30 days, or whose admin portal sign-in has expired, asks the person to sign in and approve again. See [Tokens and expiry](/mcp-server/oauth/tokens-and-expiry).
+- **Encrypted at rest.** The server needs the approving person's admin portal session to act for them. It stores that session encrypted.
+- **A record of each tool call.** See [Audit log](/mcp-server/security/audit-log).
+
+## Who manages it
+
+The MCP settings live in **Settings → MCP Server** in your admin portal. Only **institute admins** can create client IDs for other apps or revoke connections, and they can do so even while the server is switched off.
+
+<Warning>
+Data the AI app reads is sent to that AI app's provider (for example Anthropic, OpenAI or Cursor) and handled under that provider's terms. Read [Data and privacy](/mcp-server/security/data-and-pii) before turning on areas with personal data, such as Learners or the CRM.
+</Warning>

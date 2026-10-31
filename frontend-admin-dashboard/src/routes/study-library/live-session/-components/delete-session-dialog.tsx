@@ -6,6 +6,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { deleteLiveSession } from '../schedule/-services/utils';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 interface DeleteSessionDialogProps {
     open: boolean;
@@ -24,6 +25,7 @@ export default function DeleteSessionDialog({
     isRecurring = false,
     onSuccess,
 }: DeleteSessionDialogProps) {
+    const { t } = useTranslation('studyLibraryDeleteSessionDialog');
     const [isDeleting, setIsDeleting] = useState(false);
     const [selectedOption, setSelectedOption] = useState<'session' | 'schedule'>('schedule');
     const [notifyStudents, setNotifyStudents] = useState(false);
@@ -62,15 +64,15 @@ export default function DeleteSessionDialog({
 
             toast.success(
                 selectedOption === 'session'
-                    ? 'Session deleted successfully'
-                    : 'Schedule deleted successfully'
+                    ? t('toast.sessionDeleted')
+                    : t('toast.scheduleDeleted')
             );
 
             onOpenChange(false);
             if (onSuccess) onSuccess();
         } catch (error) {
             console.error('Error deleting:', error);
-            toast.error('Failed to delete. Please try again.');
+            toast.error(t('toast.deleteFailed'));
         } finally {
             setIsDeleting(false);
         }
@@ -86,16 +88,16 @@ export default function DeleteSessionDialog({
         <MyDialog
             open={open}
             onOpenChange={onOpenChange}
-            heading="Delete Session"
+            heading={t('heading')}
             className="w-fit max-w-md"
         >
             <div className="flex flex-col gap-4 p-4">
                 {isRecurring ? (
                     <div className="text-lg">
-                        This is a recurring session. What would you like to delete?
+                        {t('confirm.recurring')}
                     </div>
                 ) : (
-                    <div className="text-lg">Are you sure you want to delete this session?</div>
+                    <div className="text-lg">{t('confirm.single')}</div>
                 )}
                 {isRecurring && (
                     <MyRadioButton
@@ -103,9 +105,9 @@ export default function DeleteSessionDialog({
                         value={selectedOption}
                         onChange={(val) => setSelectedOption(val as 'session' | 'schedule')}
                         options={[
-                            { label: 'Delete only this schedule', value: 'schedule' },
+                            { label: t('options.scheduleOnly'), value: 'schedule' },
                             {
-                                label: 'Delete entire session (all schedules)',
+                                label: t('options.entireSession'),
                                 value: 'session',
                             },
                         ]}
@@ -124,10 +126,10 @@ export default function DeleteSessionDialog({
                     />
                     <span>
                         <span className="font-medium text-neutral-800">
-                            Notify learners about the cancellation
+                            {t('notify.label')}
                         </span>
                         <span className="block text-xs text-neutral-500">
-                            When unchecked, no cancellation email is sent to enrolled learners.
+                            {t('notify.description')}
                         </span>
                     </span>
                 </label>
@@ -138,7 +140,7 @@ export default function DeleteSessionDialog({
                         onClick={handleCancel}
                         disabled={isDeleting}
                     >
-                        Cancel
+                        {t('actions.cancel')}
                     </MyButton>
                     <MyButton
                         type="button"
@@ -146,7 +148,7 @@ export default function DeleteSessionDialog({
                         onClick={handleDelete}
                         disabled={isDeleting}
                     >
-                        {isDeleting ? 'Deleting...' : 'Delete'}
+                        {isDeleting ? t('actions.deleting') : t('actions.delete')}
                     </MyButton>
                 </div>
             </div>

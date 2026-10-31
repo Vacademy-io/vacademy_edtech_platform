@@ -1,0 +1,44 @@
+{
+    "dialog": {
+        "headingEdit": "वेतन घटक संपादित करें",
+        "headingNew": "वेतन घटक जोड़ें",
+        "cancel": "रद्द करें",
+        "saving": "सहेजा जा रहा है…",
+        "saveChanges": "परिवर्तन सहेजें",
+        "createComponent": "घटक बनाएं"
+    },
+    "toast": {
+        "updated": "घटक अपडेट किया गया",
+        "created": "घटक बनाया गया",
+        "saveError": "वेतन घटक सहेजा नहीं जा सका।"
+    },
+    "info": "TDS, PF, ESI और PT सिस्टम घटक हैं — पेरोल इन्हें चलते समय अपने आप बना देता है। इन्हें यहां न जोड़ें, वरना कर्मचारी की कटौती दो बार हो जाएगी।",
+    "form": {
+        "nameLabel": "नाम",
+        "namePlaceholder": "मकान किराया भत्ता",
+        "codeLabel": "कोड",
+        "codePlaceholder": "HRA",
+        "codeDescription": "पेरोल इंजन इसी से मिलान करता है — जैसे BASIC, HRA।",
+        "typeLabel": "प्रकार",
+        "categoryLabel": "श्रेणी",
+        "displayOrderLabel": "प्रदर्शन क्रम",
+        "displayOrderPlaceholder": "10",
+        "displayOrderDescription": "छोटी संख्याएं पेस्लिप में ऊपर दिखाई देती हैं।",
+        "glAccountLabel": "GL खाता कोड",
+        "glAccountPlaceholder": "5100",
+        "glAccountDescription": "यह घटक लेखा जर्नल में कहां दर्ज होता है। खाली छोड़ने पर इसके प्रकार का डिफ़ॉल्ट उपयोग होता है।",
+        "taxableLabel": "कर योग्य",
+        "statutoryLabel": "सांविधिक",
+        "descriptionLabel": "विवरण",
+        "descriptionPlaceholder": "यह घटक किसलिए है, ताकि अगले एडमिन को अनुमान न लगाना पड़े।"
+    },
+    "validation": {
+        "nameRequired": "घटक को एक नाम दें",
+        "codeMin": "कोड कम से कम 2 अक्षर का होना चाहिए",
+        "codePattern": "केवल बड़े अक्षर, अंक और अंडरस्कोर — कोई स्पेस नहीं (जैसे BASIC, HRA, SPECIAL_ALLOWANCE)",
+        "descriptionMax": "विवरण 500 अक्षरों से कम रखें",
+        "wholeNumbers": "केवल पूर्ण संख्याएं",
+        "glAccountMax": "यह खाता कोड के लिए बहुत लंबा लगता है",
+        "codeDuplicate": "यह कोड पहले से किसी अन्य घटक द्वारा उपयोग किया जा रहा है"
+    }
+}

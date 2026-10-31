@@ -17,6 +17,8 @@ export interface LeadReportTotals {
     conversion_rate: number | null;
     responded_leads: number | null;
     avg_response_minutes: number | null;
+    /** Median of the same — not dragged up by a few very late replies. */
+    median_response_minutes?: number | null;
     tat_met_count: number | null;
     tat_met_rate: number | null;
     overdue_leads: number;
@@ -31,6 +33,8 @@ export interface StatusBreakdown {
 
 export interface SourceBreakdown {
     source_type: string;
+    /** Set when source_type is the leads' campaign type. */
+    campaign_type?: string | null;
     total: number;
     converted: number;
 }
@@ -54,6 +58,8 @@ export interface LeadReportSummary {
     by_source: SourceBreakdown[];
     by_tier: TierBreakdown[];
     trend_by_day: DailyTrendPoint[];
+    /** Counsellors a team filter resolved to (absent without one) — carried into drill-throughs. */
+    scope_counsellor_ids?: string[] | null;
 }
 
 export async function fetchLeadReportSummary(
@@ -89,6 +95,9 @@ export interface CounselorRow {
 export interface CounselorPerformance {
     from_date: string;
     to_date: string;
+    /** TAT threshold in minutes used for tat_met (null when TAT is disabled). */
+    tat_minutes?: number | null;
+    /** Same threshold in whole hours, rounded up — prefer tat_minutes. */
     tat_hours: number | null;
     rows: CounselorRow[];
     summary: {

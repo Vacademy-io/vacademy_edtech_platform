@@ -78,6 +78,19 @@ data:
   AUTH_SERVICE_BASE_URL: http://auth-service:{{ .Values.services.auth_service.port }}
   CLIENT_NAME: {{ .Values.secrets.ai.clientName | quote }}
 
+  # --- MCP server (ai-service) ---
+  # Off unless mcp.enabled. MCP_ISSUER_URL is both the OAuth issuer and the RFC
+  # 8707 resource identifier, so it must be the PUBLIC https URL of the endpoint.
+  MCP_SERVER_ENABLED: {{ .Values.services.ai_service.mcp.enabled | default false | quote }}
+  MCP_ISSUER_URL: {{ .Values.services.ai_service.mcp.issuerUrl | default (printf "%s/ai-service/mcp" (trimSuffix "/" .Values.env.aiServicePublicUrl)) | quote }}
+  ADMIN_DASHBOARD_URL: {{ .Values.env.adminDashboardUrl | quote }}
+
+  # --- Platform staff: ai-service (global writes: /super-admin/v1, credit rate,
+  # credit grants, model registry, per-institute pricing) and the Java services'
+  # SuperAdminAuthUtil (admin-core /super-admin/v1, incl. Evaluation API access
+  # and keys). Comma-separated auth user ids; blank = nobody.
+  SUPER_ADMIN_USER_IDS: {{ .Values.env.superAdminUserIds | default "" | quote }}
+
   # --- Whisper (ai forced-alignment) ---
   WHISPER_CPU_THREADS: {{ .Values.services.ai_service.whisper.cpuThreads | quote }}
   WHISPER_NUM_WORKERS: {{ .Values.services.ai_service.whisper.numWorkers | quote }}

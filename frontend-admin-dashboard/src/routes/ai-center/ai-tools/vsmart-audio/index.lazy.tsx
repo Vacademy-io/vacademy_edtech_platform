@@ -4,6 +4,7 @@ import { AICenterProvider } from "@/routes/ai-center/-contexts/useAICenterContex
 import { LayoutContainer } from "@/components/common/layout-container/layout-container"
 import { CaretLeft } from "@phosphor-icons/react"
 import { useEffect } from "react"
+import { useTranslation } from "react-i18next"
 import { useNavHeadingStore } from "@/stores/layout-container/useNavHeadingStore"
 
 export const Route = createLazyFileRoute("/ai-center/ai-tools/vsmart-audio/")({
@@ -11,6 +12,7 @@ export const Route = createLazyFileRoute("/ai-center/ai-tools/vsmart-audio/")({
 })
 
 function RouteComponent() {
+  const { t } = useTranslation("aiCenterVsmartAudioIndex")
   const { setNavHeading } = useNavHeadingStore()
   useEffect(() => {
     const heading = (
@@ -19,12 +21,12 @@ function RouteComponent() {
           onClick={() => window.history.back()}
           className="cursor-pointer"
         />
-        <div>Questions from Audio</div>
+        <div>{t("navHeading")}</div>
       </div>
     )
 
     setNavHeading(heading)
-  }, [])
+  }, [t])
   return (
     <LayoutContainer>
       <AICenterProvider>

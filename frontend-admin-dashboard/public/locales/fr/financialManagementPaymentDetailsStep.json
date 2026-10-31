@@ -1,0 +1,61 @@
+{
+    "backToInstallments": "Retour aux échéances",
+    "selectedInstallments_one": "Échéance sélectionnée ({{count}})",
+    "selectedInstallments_many": "Échéances sélectionnées ({{count}})",
+    "selectedInstallments_other": "Échéances sélectionnées ({{count}})",
+    "paymentDetails": "Détails du paiement",
+    "paymentModeLabel": "Mode de paiement",
+    "transactionId": "ID de transaction",
+    "optional": "facultatif",
+    "amount": "Montant",
+    "amountExceedsDue": "Le montant dépasse le total dû. L'excédent restera non affecté.",
+    "remarksLabel": "Remarques",
+    "processing": "Traitement en cours...",
+    "submitPayment": "Soumettre le paiement",
+    "paymentMode": {
+        "cash": "Espèces",
+        "online": "En ligne",
+        "upi": "UPI",
+        "card": "Carte",
+        "cheque": "Chèque"
+    },
+    "placeholders": {
+        "transactionId": "ex. TXN123456",
+        "remarks": "ex. Espèces perçues au comptoir"
+    },
+    "table": {
+        "feeType": "Type de frais",
+        "cpoPlan": "CPO / Plan",
+        "expected": "Attendu",
+        "adjustment": "Ajustement",
+        "paid": "Payé",
+        "outstanding": "Restant dû",
+        "dueDate": "Date d'échéance",
+        "status": "Statut"
+    },
+    "adjustmentType": {
+        "concession": "Concession",
+        "penalty": "Pénalité"
+    },
+    "status": {
+        "overdue": "En retard",
+        "partial": "Partiel",
+        "pending": "En attente"
+    },
+    "totals": {
+        "totalConcession": "Total des concessions",
+        "totalPenalty": "Total des pénalités",
+        "totalOutstanding": "Total restant dû :"
+    },
+    "remarks": {
+        "modePrefix": "Mode",
+        "txnIdPrefix": "ID de transaction"
+    },
+    "errors": {
+        "instituteIdNotFound": "ID de l'établissement introuvable"
+    },
+    "toast": {
+        "paymentSubmitted": "Paiement soumis avec succès",
+        "paymentFailed": "Échec du paiement"
+    }
+}

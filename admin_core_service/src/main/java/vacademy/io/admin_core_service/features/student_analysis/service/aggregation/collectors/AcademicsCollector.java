@@ -107,10 +107,14 @@ public class AcademicsCollector {
             // whenever the assessment service didn't provide it, so grade/status/averages
             // are never blank just because the "percentage" field was absent.
             Double pct = derivePercentage(a.getPercentage(), a.getMarks(), a.getTotalMarks());
-            // Resolve subject from DB hint → keyword inference on the name, so the assessment
-            // list, subject-performance rollup, and marks-by-subject all agree. Stays null when
-            // genuinely unresolvable (callers omit it rather than showing "Unknown").
-            String resolvedSubject = subjectResolver.resolve(a.getSubject(), a.getName());
+            // Resolve subject from DB hint → keyword inference on the name → the paper's single
+            // section name, so the assessment list, subject-performance rollup, and
+            // marks-by-subject all agree. Stays null when genuinely unresolvable (callers omit it
+            // rather than showing "Unknown").
+            List<String> sectionNames = a.getSections() == null ? null : a.getSections().stream()
+                    .map(AcademicsSection.SectionItem::getSectionName)
+                    .collect(Collectors.toList());
+            String resolvedSubject = subjectResolver.resolve(a.getSubject(), a.getName(), sectionNames);
             return AcademicsSection.AssessmentItem.builder()
                 .assessmentId(a.getAssessmentId())
                 .name(a.getName() != null ? a.getName() : a.getAssessmentId())
@@ -130,7 +134,12 @@ public class AcademicsCollector {
                 .durationSeconds(a.getDurationSeconds())
                 .sections(a.getSections())
                 .build();
-        }).collect(Collectors.toList());
+        })
+        // Chronological (oldest first) — the natural order for a progress report. The service
+        // returns newest-first, and ties on the date otherwise leave the order arbitrary.
+        .sorted(Comparator.comparing(AcademicsSection.AssessmentItem::getDate,
+                Comparator.nullsLast(Comparator.naturalOrder())))
+        .collect(Collectors.toList());
     }
 
     /** Uses the given percentage, else derives it from marks/totalMarks (marks are the source of truth). */

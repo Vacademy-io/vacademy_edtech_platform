@@ -5,6 +5,8 @@ import {
     convertFieldsToPayload,
     mapApiFieldTypeToUi,
     mapFieldTypeToPayload,
+    nextFieldId,
+    withUniqueFieldIds,
 } from './campaignFormFields';
 
 const INSTITUTE = 'inst-1';
@@ -257,5 +259,45 @@ describe('convertFieldsToPayload', () => {
         const [payload] = convertFieldsToPayload([{ ...field, isRequired: false }], INSTITUTE);
         expect(payload.is_mandatory).toBe(false);
         expect(payload.custom_field.isMandatory).toBe(false);
+    });
+});
+
+describe('withUniqueFieldIds — every editor row needs its own id', () => {
+    it('leaves already-unique ids, and the row objects, untouched', () => {
+        const rows = [{ id: 'map-1' }, { id: 'map-2' }, { id: '7' }];
+        const out = withUniqueFieldIds(rows);
+        expect(out.map((row) => row.id)).toEqual(['map-1', 'map-2', '7']);
+        out.forEach((row, index) => expect(row).toBe(rows[index]));
+    });
+
+    it('re-ids a repeat, keeping the first holder', () => {
+        // A default field at list index 0 and the Full Name seed both carry '0'.
+        const out = withUniqueFieldIds([
+            { id: '0', name: 'Course' },
+            { id: '0', name: 'Full Name' },
+            { id: '2', name: 'Phone Number' },
+        ]);
+        expect(out.map((row) => row.name)).toEqual(['Course', 'Full Name', 'Phone Number']);
+        expect(out.map((row) => row.id).slice(0, 1)).toEqual(['0']);
+        expect(new Set(out.map((row) => row.id)).size).toBe(3);
+    });
+
+    it('fills blank ids and never reuses one already taken', () => {
+        const out = withUniqueFieldIds([{ id: 'local-0' }, { id: '' }, {}, { id: 'local-0' }]);
+        expect(out.map((row) => row.id).slice(0, 1)).toEqual(['local-0']);
+        expect(new Set(out.map((row) => row.id)).size).toBe(4);
+    });
+});
+
+describe('nextFieldId', () => {
+    it('is the list length when that is free — the old behaviour', () => {
+        expect(nextFieldId([{ id: '0' }, { id: '1' }])).toBe('2');
+        expect(nextFieldId([])).toBe('0');
+        expect(nextFieldId(undefined)).toBe('0');
+    });
+
+    it('skips past an id a row already holds', () => {
+        expect(nextFieldId([{ id: '0' }, { id: '2' }])).toBe('3');
+        expect(nextFieldId([{ id: '2' }, { id: '3' }])).toBe('4');
     });
 });

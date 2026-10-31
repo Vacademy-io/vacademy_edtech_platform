@@ -1,0 +1,18 @@
+{
+    "export": {
+        "exporting": "निर्यात हो रहा है...",
+        "button": "{{format}} निर्यात करें"
+    },
+    "setLabel": " (सेट {{letter}})",
+    "fileName": {
+        "base": "प्रश्नपत्र",
+        "withSet": "प्रश्नपत्र {{letter}}",
+        "answerKeySuffix": "(उत्तर कुंजी)"
+    },
+    "progress": {
+        "title": "PDF तैयार किया जा रहा है",
+        "subtitle": "इसमें कुछ समय लग सकता है",
+        "cancelAriaLabel": "PDF निर्माण रद्द करें",
+        "percentComplete": "{{progress}}% पूर्ण"
+    }
+}

@@ -1,0 +1,50 @@
+{
+    "header": {
+        "title": "इनपुट वीडियो",
+        "subtitle": "AI इंडेक्सिंग के लिए वीडियो अपलोड करें (ट्रांसक्रिप्ट, विज़ुअल मेटाडेटा, स्पीकर एक्सट्रैक्शन)",
+        "refreshButton": "रीफ़्रेश करें"
+    },
+    "uploadVideoButton": "वीडियो अपलोड करें",
+    "noApiKey": {
+        "message": "कोई API कुंजी नहीं मिली। पहले Video API Studio में एक बनाएं।",
+        "goToApiKeysButton": "API कुंजियों पर जाएं"
+    },
+    "table": {
+        "columnName": "नाम",
+        "columnMode": "मोड",
+        "columnStatus": "स्थिति",
+        "columnDuration": "अवधि",
+        "columnCreated": "बनाया गया",
+        "columnOutputs": "आउटपुट",
+        "deleteTooltip": "हटाएं",
+        "noValue": "-",
+        "processingProgress": "{{percent}}%",
+        "durationSeconds_one": "{{count}} सेकंड",
+        "durationSeconds_other": "{{count}} सेकंड"
+    },
+    "empty": {
+        "loading": "लोड हो रहा है...",
+        "title": "अभी तक कोई इनपुट वीडियो नहीं",
+        "subtitle": "शुरू करने के लिए एक पॉडकास्ट या डेमो रिकॉर्डिंग अपलोड करें"
+    },
+    "status": {
+        "PENDING": "लंबित",
+        "QUEUED": "कतार में",
+        "PROCESSING": "प्रोसेस हो रहा है",
+        "COMPLETED": "पूर्ण",
+        "FAILED": "विफल"
+    },
+    "mode": {
+        "podcast": "पॉडकास्ट",
+        "demo": "डेमो"
+    },
+    "deleteConfirm": {
+        "message": "\"{{name}}\" हटाएं? इसे पूर्ववत नहीं किया जा सकता।"
+    },
+    "toast": {
+        "apiKeysLoadError": "API कुंजियां लोड करने में विफल",
+        "videosLoadError": "इनपुट वीडियो लोड करने में विफल",
+        "deleteSuccess": "हटा दिया गया",
+        "deleteError": "हटाना विफल रहा"
+    }
+}

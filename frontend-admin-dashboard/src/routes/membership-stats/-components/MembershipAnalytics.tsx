@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Legend } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -10,16 +12,16 @@ interface MembershipAnalyticsProps {
     onCardClick?: (range: { start: Date; end: Date }) => void;
 }
 
-const chartConfig = {
+const buildChartConfig = (t: TFunction) => ({
     newUsers: {
-        label: "New Users",
-        color: "#6366f1",
+        label: t('newUsers'),
+        color: 'hsl(var(--chart-1))',
     },
     retainers: {
-        label: "Retainers",
-        color: "#f59e0b",
+        label: t('retainers'),
+        color: 'hsl(var(--chart-2))',
     },
-};
+});
 
 interface StatBreakdown {
     total: number;
@@ -27,21 +29,21 @@ interface StatBreakdown {
     retainers: number;
 }
 
-function StatsCardContent({ stats }: { stats: StatBreakdown }) {
+function StatsCardContent({ stats, t }: { stats: StatBreakdown; t: TFunction }) {
     return (
         <div>
             <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="mb-2 text-xs text-gray-500">Total users</p>
+            <p className="mb-2 text-xs text-gray-500">{t('totalUsers', { count: stats.total })}</p>
             <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1.5">
                     <UserPlus size={14} className="text-indigo-500" />
                     <span className="text-sm font-semibold text-indigo-600">{stats.newUsers}</span>
-                    <span className="text-xs text-gray-500">New</span>
+                    <span className="text-xs text-gray-500">{t('new')}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                     <ArrowsClockwise size={14} className="text-amber-500" />
                     <span className="text-sm font-semibold text-amber-600">{stats.retainers}</span>
-                    <span className="text-xs text-gray-500">Retainer</span>
+                    <span className="text-xs text-gray-500">{t('retainer')}</span>
                 </div>
             </div>
         </div>
@@ -49,6 +51,8 @@ function StatsCardContent({ stats }: { stats: StatBreakdown }) {
 }
 
 export function MembershipAnalytics({ packageSessionIds, onCardClick }: MembershipAnalyticsProps) {
+    const { t } = useTranslation('membershipStatsMembershipAnalytics');
+    const chartConfig = buildChartConfig(t);
     const { stats, graphData, dateRanges, isLoading } = useMembershipAnalytics(packageSessionIds);
 
     if (isLoading) {
@@ -69,12 +73,12 @@ export function MembershipAnalytics({ packageSessionIds, onCardClick }: Membersh
                 >
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">
-                            Last 24 Hours
+                            {t('last24Hours')}
                         </CardTitle>
                         <Clock className="h-4 w-4 text-gray-400" />
                     </CardHeader>
                     <CardContent>
-                        <StatsCardContent stats={stats.last24Hours} />
+                        <StatsCardContent stats={stats.last24Hours} t={t} />
                     </CardContent>
                 </Card>
                 <Card
@@ -83,12 +87,12 @@ export function MembershipAnalytics({ packageSessionIds, onCardClick }: Membersh
                 >
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">
-                            Last 7 Days
+                            {t('last7Days')}
                         </CardTitle>
                         <Calendar className="h-4 w-4 text-gray-400" />
                     </CardHeader>
                     <CardContent>
-                        <StatsCardContent stats={stats.last7Days} />
+                        <StatsCardContent stats={stats.last7Days} t={t} />
                     </CardContent>
                 </Card>
                 <Card
@@ -97,12 +101,12 @@ export function MembershipAnalytics({ packageSessionIds, onCardClick }: Membersh
                 >
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium text-gray-500">
-                            Last 30 Days
+                            {t('last30Days')}
                         </CardTitle>
                         <Users className="h-4 w-4 text-gray-400" />
                     </CardHeader>
                     <CardContent>
-                        <StatsCardContent stats={stats.last30Days} />
+                        <StatsCardContent stats={stats.last30Days} t={t} />
                     </CardContent>
                 </Card>
             </div>
@@ -110,20 +114,20 @@ export function MembershipAnalytics({ packageSessionIds, onCardClick }: Membersh
             {/* Weekly Stats Chart — Stacked Bar */}
             <Card className="shadow-sm">
                 <CardHeader className="pb-2">
-                    <CardTitle className="text-base font-semibold">Weekly User Trends</CardTitle>
-                    <p className="text-xs text-gray-500">User registrations over the last 7 days</p>
+                    <CardTitle className="text-base font-semibold">{t('weeklyUserTrends')}</CardTitle>
+                    <p className="text-xs text-gray-500">{t('userRegistrationsLast7Days')}</p>
                 </CardHeader>
                 <CardContent>
-                    <div className="h-[220px] w-full">
+                    <div className="h-56 w-full">
                         <ChartContainer config={chartConfig} className="h-full w-full">
                             <BarChart data={graphData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" />
                                 <XAxis
                                     dataKey="date"
                                     tickLine={false}
                                     axisLine={false}
                                     tickMargin={10}
-                                    tick={{ fontSize: 12, fill: '#888' }}
+                                    tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                                 />
                                 <ChartTooltip
                                     cursor={{ fill: 'rgba(0,0,0,0.05)' }}
@@ -136,17 +140,17 @@ export function MembershipAnalytics({ packageSessionIds, onCardClick }: Membersh
                                 />
                                 <Bar
                                     dataKey="newUsers"
-                                    name="New Users"
+                                    name={t('newUsers')}
                                     stackId="a"
-                                    fill="#6366f1"
+                                    fill="var(--color-newUsers)"
                                     radius={[0, 0, 0, 0]}
                                     barSize={40}
                                 />
                                 <Bar
                                     dataKey="retainers"
-                                    name="Retainers"
+                                    name={t('retainers')}
                                     stackId="a"
-                                    fill="#f59e0b"
+                                    fill="var(--color-retainers)"
                                     radius={[4, 4, 0, 0]}
                                     barSize={40}
                                 />

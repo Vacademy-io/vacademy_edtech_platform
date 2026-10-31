@@ -72,6 +72,13 @@ html.ui-cleaner-play {
   box-shadow: var(--cp-shadow-card);
 }
 
+/* Dashboard hero band: a faint brand tint so the greeting + CTA read as the
+   page's lead block, not one more white card above the course list. */
+.ui-cleaner-play .cp-card.cp-hero-card {
+  background: hsl(var(--primary-50));
+  border-color: hsl(var(--primary-100));
+}
+
 .ui-cleaner-play .cp-heading {
   font-weight: 800;
   letter-spacing: -0.01em;

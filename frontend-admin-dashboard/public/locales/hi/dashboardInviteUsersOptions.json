@@ -1,0 +1,45 @@
+{
+  "menu": {
+    "editUser": "संपादित करें",
+    "resendInvite": "आमंत्रण फिर से भेजें",
+    "cancelInvite": "आमंत्रण रद्द करें"
+  },
+  "editUser": {
+    "title": "संपादित करें",
+    "nameLabel": "पूरा नाम",
+    "namePlaceholder": "पूरा नाम (पहला और अंतिम)",
+    "emailLabel": "ईमेल",
+    "emailPlaceholder": "ईमेल दर्ज करें",
+    "roleTypeLabel": "भूमिका प्रकार",
+    "submit": "उपयोगकर्ता संपादित करें",
+    "validation": {
+      "nameRequired": "पूरा नाम आवश्यक है",
+      "emailRequired": "ईमेल आवश्यक है",
+      "emailInvalid": "अमान्य ईमेल प्रारूप",
+      "roleRequired": "कम से कम एक भूमिका प्रकार आवश्यक है"
+    },
+    "toast": {
+      "success": "इस उपयोगकर्ता का आमंत्रण सफलतापूर्वक अपडेट कर दिया गया है!"
+    }
+  },
+  "resendInvite": {
+    "title": "आमंत्रण फिर से भेजें",
+    "attention": "ध्यान दें",
+    "confirmPrefix": "क्या आप वाकई इन्हें आमंत्रण फिर से भेजना चाहते हैं",
+    "confirmSuffix": "?",
+    "confirmButton": "हां",
+    "toast": {
+      "success": "इस उपयोगकर्ता का आमंत्रण सफलतापूर्वक फिर से भेज दिया गया है!"
+    }
+  },
+  "cancelInvite": {
+    "title": "आमंत्रण रद्द करें",
+    "attention": "ध्यान दें",
+    "confirmPrefix": "क्या आप वाकई इनका आमंत्रण रद्द करना चाहते हैं",
+    "confirmSuffix": "?",
+    "confirmButton": "हां",
+    "toast": {
+      "success": "इस उपयोगकर्ता का आमंत्रण सफलतापूर्वक रद्द कर दिया गया है!"
+    }
+  }
+}

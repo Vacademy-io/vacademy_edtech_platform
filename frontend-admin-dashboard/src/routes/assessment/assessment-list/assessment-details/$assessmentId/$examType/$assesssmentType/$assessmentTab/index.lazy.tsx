@@ -1,9 +1,9 @@
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { MyButton } from '@/components/design-system/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { Separator } from '@/components/ui/separator';
 import {
     getAssessmentDetails,
     getQuestionDataForSection,
@@ -17,6 +17,8 @@ import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
 import {
     CaretLeft,
     CheckCircle,
+    Export,
+    Eye,
     LockSimple,
     PauseCircle,
     PencilSimpleLine,
@@ -24,6 +26,8 @@ import {
 import { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import AssessmentPreview from './-components/AssessmentPreview';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ReattemptRequestsTab } from './-components/ReattemptRequestsTab';
@@ -36,6 +40,7 @@ import AssessmentParticipantsTab from './-components/AssessmentParticipantsTab';
 import AssessmentAccessControlTab from './-components/AssessmentAccessControlTab';
 import { SurveyMainOverviewTab } from './-components/survey/SurveyMainOverviewTab';
 import { SurveyIndividualRespondentsTab } from './-components/survey/SurveyIndividualRespondentsTab';
+import { OmrTab } from './-components/omr/OmrTab';
 
 export const Route = createLazyFileRoute(
     '/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/'
@@ -47,10 +52,10 @@ export const Route = createLazyFileRoute(
     ),
 });
 
-const heading = (
+const buildHeading = (t: TFunction) => (
     <div className="flex items-center gap-4">
         <CaretLeft onClick={() => window.history.back()} className="cursor-pointer" />
-        <h1 className="text-lg">Assessment Details</h1>
+        <h1 className="text-lg">{t('heading.title')}</h1>
     </div>
 );
 
@@ -70,49 +75,51 @@ const AssessmentHeader = ({ assessmentDetails }: { assessmentDetails: any }) => 
 
     const getStatusIcon = (status: string) => {
         return status === 'COMPLETED' ? (
-            <CheckCircle size={16} weight="fill" className="mr-2 text-success-600" />
+            <CheckCircle size={14} weight="fill" className="text-success-600" />
         ) : (
-            <PauseCircle size={16} weight="fill" className="mr-2 text-neutral-400" />
+            <PauseCircle size={14} weight="fill" className="text-neutral-400" />
         );
     };
 
     const getModeIcon = (mode: string) => {
-        return mode === 'EXAM' ? <DotIcon className="mr-2" /> : <DotIconOffline className="mr-2" />;
+        return mode === 'EXAM' ? <DotIcon /> : <DotIconOffline />;
     };
 
+    // One shared chip style, so the three facts read as a single meta line rather than
+    // three unrelated badges.
+    const chipClass =
+        'gap-1.5 rounded-md border border-neutral-200 px-2 py-1 text-caption font-medium capitalize text-neutral-600 shadow-none';
+
     return (
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-            <h1 className="text-lg font-semibold sm:text-xl">
+        <div className="flex min-w-0 flex-col gap-2.5">
+            <h1 className="line-clamp-2 text-h3 font-semibold leading-tight text-neutral-700 sm:text-h2">
                 {assessmentDetails[0]?.saved_data.name}
             </h1>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-4">
+            {/* Meta sits under the title rather than beside it. Full-size badges on the
+                same line as the name had three secondary facts competing with the one
+                thing that actually identifies the page. */}
+            <div className="flex flex-wrap items-center gap-2">
                 <Badge
-                    className={`rounded-md border border-neutral-300 ${getVisibilityBadgeClass(
-                        assessmentDetails[0]?.saved_data.assessment_visibility
-                    )} py-1.5 shadow-none`}
-                >
-                    <LockSimple size={16} className="mr-2" />
-                    {assessmentDetails[0]?.saved_data.assessment_visibility}
-                </Badge>
-                <Badge
-                    className={`rounded-md border border-neutral-300 ${getModeBadgeClass(
+                    className={`${chipClass} ${getModeBadgeClass(
                         assessmentDetails[0]?.saved_data.assessment_mode
-                    )} py-1.5 shadow-none`}
+                    )}`}
                 >
                     {getModeIcon(assessmentDetails[0]?.saved_data.assessment_mode)}
-                    {assessmentDetails[0]?.saved_data.assessment_mode}
+                    {assessmentDetails[0]?.saved_data.assessment_mode?.toLowerCase()}
                 </Badge>
-                <Separator
-                    orientation="vertical"
-                    className="hidden h-8 w-px bg-neutral-300 sm:block"
-                />
                 <Badge
-                    className={`rounded-md border ${getStatusBadgeClass(
-                        assessmentDetails?.[0]?.status
-                    )} border-neutral-300 py-1.5 shadow-none`}
+                    className={`${chipClass} ${getVisibilityBadgeClass(
+                        assessmentDetails[0]?.saved_data.assessment_visibility
+                    )}`}
+                >
+                    <LockSimple size={14} />
+                    {assessmentDetails[0]?.saved_data.assessment_visibility?.toLowerCase()}
+                </Badge>
+                <Badge
+                    className={`${chipClass} ${getStatusBadgeClass(assessmentDetails?.[0]?.status)}`}
                 >
                     {getStatusIcon(assessmentDetails?.[0]?.status)}
-                    {assessmentDetails?.[0]?.status}
+                    {assessmentDetails?.[0]?.status?.toLowerCase()}
                 </Badge>
             </div>
         </div>
@@ -130,11 +137,12 @@ const AssessmentActions = ({
     questionsDataSectionWise: any;
     assessmentId: string;
 }) => {
+    const { t } = useTranslation('assessmentTabIndex');
     const navigate = useNavigate();
 
     const handleOpenDialog = () => {
         if (Object.keys(questionsDataSectionWise).length === 0) {
-            toast.error('No sections have been added for this assessment.');
+            toast.error(t('actions.noSectionsError'));
         } else {
             setIsPreviewAssessmentDialogOpen(true);
         }
@@ -142,7 +150,7 @@ const AssessmentActions = ({
 
     const handleExportAssessment = () => {
         if (Object.keys(questionsDataSectionWise).length === 0) {
-            toast.error('No sections have been added for this assessment.');
+            toast.error(t('actions.noSectionsError'));
         } else {
             navigate({
                 to: '/assessment/export/$assessmentId',
@@ -154,46 +162,59 @@ const AssessmentActions = ({
     };
 
     return (
-        <div className="flex flex-col items-center gap-y-2">
+        <div className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto">
             <Dialog
                 open={isPreviewAssessmentDialogOpen}
                 onOpenChange={setIsPreviewAssessmentDialogOpen}
             >
-                <DialogTrigger>
+                {/* asChild: DialogTrigger renders its own <button>, so wrapping MyButton
+                    without it nested a button inside a button — invalid DOM, and React
+                    warns about exactly this elsewhere on the dashboard. */}
+                <DialogTrigger asChild>
                     <MyButton
                         type="button"
-                        scale="large"
+                        scale="medium"
                         buttonType="secondary"
                         onClick={handleOpenDialog}
+                        className="gap-2 sm:min-w-fit"
                     >
-                        Preview Assessment
+                        <Eye size={18} />
+                        {t('actions.preview')}
                     </MyButton>
                 </DialogTrigger>
                 {Object.keys(questionsDataSectionWise).length > 0 && (
-                    <DialogContent className="no-scrollbar !m-0 h-[90vh] !w-[95vw] !max-w-full !gap-0 overflow-y-auto !p-0 sm:!w-[90vw] [&>button]:hidden">
+                    <DialogContent className="no-scrollbar !m-0 flex max-h-dialog-tall !w-dialog-xl !max-w-full flex-col !gap-0 overflow-hidden !p-0 [&>button]:hidden">
                         <AssessmentPreview
                             handleCloseDialog={() => setIsPreviewAssessmentDialogOpen(false)}
                         />
                     </DialogContent>
                 )}
             </Dialog>
-            <MyButton scale="large" onClick={handleExportAssessment} className="py-4">
-                Export Offline
+            <MyButton
+                scale="medium"
+                onClick={handleExportAssessment}
+                className="gap-2 sm:min-w-fit"
+            >
+                <Export size={18} />
+                {t('actions.exportOffline')}
             </MyButton>
         </div>
     );
 };
 
 const AssessmentDetailsComponent = () => {
+    const { t } = useTranslation('assessmentTabIndex');
     const { assessmentId, examType, assesssmentType, assessmentTab } = Route.useParams();
     const { canEdit } = useAssessmentActionVisibility();
     const { data: instituteDetails } = useSuspenseQuery(useInstituteQuery());
-    // Pending learner reattempt requests, shown as a badge on the tab. Polled rather than
-    // fetched once: an admin sitting on this page during a live exam is exactly who needs to
-    // see a request arrive, and that is when they come in.
+    // Pending learner reattempt requests for THIS assessment, shown as a badge on the tab.
+    // Scoped by assessmentId to match the list the tab renders — the institute-wide count is the
+    // same number on every assessment's page, which badged exams that had no request of their own.
+    // Polled rather than fetched once: an admin sitting on this page during a live exam is
+    // exactly who needs to see a request arrive, and that is when they come in.
     const { data: pendingReattemptCount = 0 } = useQuery({
-        queryKey: ['reattempt-requests-pending-count', instituteDetails?.id],
-        queryFn: () => getPendingReattemptRequestCount(instituteDetails?.id ?? ''),
+        queryKey: ['reattempt-requests-pending-count', instituteDetails?.id, assessmentId],
+        queryFn: () => getPendingReattemptRequestCount(instituteDetails?.id ?? '', assessmentId),
         enabled: Boolean(instituteDetails?.id),
         refetchInterval: 60_000,
     });
@@ -215,6 +236,8 @@ const AssessmentDetailsComponent = () => {
     );
 
     const navigate = useNavigate();
+    // Pen-and-paper MCQ exams get an extra tab for their sets, sheets and scans.
+    const isOmrMode = assessmentDetails[0]?.saved_data?.omr_mode === true;
     // Honor the details tab requested in the route (e.g. the slide's "View
     // Submissions" deep-links with assessmentTab='submissions'). List-page entry
     // points pass a list-tab name (liveTests/upcomingTests/…) which isn't a
@@ -226,6 +249,7 @@ const AssessmentDetailsComponent = () => {
         'questions',
         'participants',
         'accessControl',
+        ...(isOmrMode ? ['omr'] : []),
     ];
     const [selectedTab, setSelectedTab] = useState(
         detailsTabs.includes(assessmentTab) ? assessmentTab : 'overview'
@@ -255,22 +279,29 @@ const AssessmentDetailsComponent = () => {
     const [isPreviewAssessmentDialogOpen, setIsPreviewAssessmentDialogOpen] = useState(false);
 
     useEffect(() => {
-        setNavHeading(heading);
+        setNavHeading(buildHeading(t));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
+
+    // Underline tabs. The previous folder-tab treatment (rounded top, tinted fill, border
+    // on three sides) fought with the card the whole page sits in.
+    const mainTabClass = (value: string) =>
+        `relative flex items-center rounded-none border-b-2 px-4 py-2.5 text-body !shadow-none transition-colors ${
+            selectedTab === value
+                ? 'border-primary-500 !bg-transparent font-medium text-primary-500'
+                : 'border-transparent !bg-transparent text-neutral-600 hover:text-neutral-700'
+        }`;
 
     if (isLoading || isQuestionsLoading) return <DashboardLoader />;
 
     return (
         <>
             <Helmet>
-                <title>Assessment Details</title>
-                <meta
-                    name="description"
-                    content="This page shows all details related to an assessment."
-                />
+                <title>{t('helmet.title')}</title>
+                <meta name="description" content={t('helmet.description')} />
             </Helmet>
             <div>
-                <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+                <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
                     <AssessmentHeader assessmentDetails={assessmentDetails} />
                     <AssessmentActions
                         isPreviewAssessmentDialogOpen={isPreviewAssessmentDialogOpen}
@@ -279,147 +310,93 @@ const AssessmentDetailsComponent = () => {
                         assessmentId={assessmentId}
                     />
                 </div>
-                <Separator className="mt-4" />
                 <Tabs value={selectedTab} onValueChange={setSelectedTab}>
                     <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
-                        <TabsList className="scrollbar-hide mb-2 mt-6 inline-flex h-auto justify-start gap-0 overflow-x-auto rounded-none border-b !bg-transparent p-0">
-                            <TabsTrigger
-                                value="overview"
-                                className={`flex gap-1.5 whitespace-nowrap rounded-none px-4 py-2 !shadow-none sm:px-12 ${
-                                    selectedTab === 'overview'
-                                        ? 'rounded-t-sm border !border-b-0 border-primary-200 !bg-primary-50'
-                                        : 'border-none bg-transparent'
-                                }`}
-                            >
-                                <span
-                                    className={`${
-                                        selectedTab === 'overview' ? 'text-primary-500' : ''
-                                    }`}
-                                >
-                                    Overview
-                                </span>
+                        {/* The five primary tabs stay on the bar; the three configuration
+                            tabs move into a Settings menu. With all seven inline the bar
+                            scrolled sideways and clipped "Access Control" off the edge. The
+                            pending-reattempt badge rides the Settings trigger, so a learner
+                            waiting on a request is still visible while the tab is collapsed. */}
+                        <TabsList className="mt-6 flex h-auto w-full flex-wrap justify-start gap-0 rounded-none border-b border-neutral-200 !bg-transparent p-0">
+                            <TabsTrigger value="overview" className={mainTabClass('overview')}>
+                                {t('tabs.overview')}
                             </TabsTrigger>
                             {assessmentTab !== 'upcomingTests' && (
                                 <TabsTrigger
                                     value="submissions"
-                                    className={`flex gap-1.5 whitespace-nowrap rounded-none px-4 py-2 !shadow-none sm:px-12 ${
-                                        selectedTab === 'submissions'
-                                            ? 'rounded-t-sm border !border-b-0 border-primary-200 !bg-primary-50'
-                                            : 'border-none bg-transparent'
-                                    }`}
+                                    className={mainTabClass('submissions')}
                                 >
-                                    <span
-                                        className={`${
-                                            selectedTab === 'submissions' ? 'text-primary-500' : ''
-                                        }`}
-                                    >
-                                        {examType === 'SURVEY'
-                                            ? 'Individual Respondents'
-                                            : 'Submissions'}
-                                    </span>
+                                    {examType === 'SURVEY'
+                                        ? t('tabs.individualRespondents')
+                                        : t('tabs.submissions')}
                                 </TabsTrigger>
                             )}
-                            <TabsTrigger
-                                value="basicInfo"
-                                className={`flex gap-1.5 whitespace-nowrap rounded-none px-4 py-2 !shadow-none sm:px-12 ${
-                                    selectedTab === 'basicInfo'
-                                        ? 'rounded-t-sm border !border-b-0 border-primary-200 !bg-primary-50'
-                                        : 'border-none bg-transparent'
-                                }`}
-                            >
-                                <span
-                                    className={`${
-                                        selectedTab === 'basicInfo' ? 'text-primary-500' : ''
-                                    }`}
-                                >
-                                    Basic Info
-                                </span>
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="questions"
-                                className={`flex gap-1.5 whitespace-nowrap rounded-none px-4 py-2 !shadow-none sm:px-12 ${
-                                    selectedTab === 'questions'
-                                        ? 'rounded-t-sm border !border-b-0 border-primary-200 !bg-primary-50'
-                                        : 'border-none bg-transparent'
-                                }`}
-                            >
-                                <span
-                                    className={`${
-                                        selectedTab === 'questions' ? 'text-primary-500' : ''
-                                    }`}
-                                >
-                                    Questions
-                                </span>
+                            <TabsTrigger value="questions" className={mainTabClass('questions')}>
+                                {t('tabs.questions')}
                             </TabsTrigger>
                             <TabsTrigger
                                 value="participants"
-                                className={`flex gap-1.5 whitespace-nowrap rounded-none px-4 py-2 !shadow-none sm:px-12 ${
-                                    selectedTab === 'participants'
-                                        ? 'rounded-t-sm border !border-b-0 border-primary-200 !bg-primary-50'
-                                        : 'border-none bg-transparent'
-                                }`}
+                                className={mainTabClass('participants')}
                             >
-                                <span
-                                    className={`${
-                                        selectedTab === 'participants' ? 'text-primary-500' : ''
-                                    }`}
-                                >
-                                    Participants
-                                </span>
+                                {t('tabs.participants')}
+                            </TabsTrigger>
+                            <TabsTrigger value="basicInfo" className={mainTabClass('basicInfo')}>
+                                {t('tabs.basicInfo')}
                             </TabsTrigger>
                             <TabsTrigger
                                 value="accessControl"
-                                className={`flex gap-1.5 whitespace-nowrap rounded-none px-4 py-2 !shadow-none sm:px-12 ${
-                                    selectedTab === 'accessControl'
-                                        ? 'rounded-t-sm border !border-b-0 border-primary-200 !bg-primary-50'
-                                        : 'border-none bg-transparent'
-                                }`}
+                                className={mainTabClass('accessControl')}
                             >
-                                <span
-                                    className={`${
-                                        selectedTab === 'accessControl' ? 'text-primary-500' : ''
-                                    }`}
-                                >
-                                    Access Control
-                                </span>
+                                {t('tabs.accessControl')}
                             </TabsTrigger>
+                            {isOmrMode && (
+                                <TabsTrigger value="omr" className={mainTabClass('omr')}>
+                                    {t('tabs.omr')}
+                                </TabsTrigger>
+                            )}
                             <TabsTrigger
                                 value="reattemptRequests"
-                                className={`flex gap-1.5 whitespace-nowrap rounded-none px-4 py-2 !shadow-none sm:px-12 ${
-                                    selectedTab === 'reattemptRequests'
-                                        ? 'rounded-t-sm border !border-b-0 border-primary-200 !bg-primary-50'
-                                        : 'border-none bg-transparent'
-                                }`}
+                                className={`${mainTabClass('reattemptRequests')} gap-1.5`}
                             >
-                                <span
-                                    className={`${
-                                        selectedTab === 'reattemptRequests' ? 'text-primary-500' : ''
-                                    }`}
-                                >
-                                    Reattempt Requests
-                                </span>
+                                {t('tabs.reattemptRequests')}
                                 {/* The in-app alert that learners are waiting. Without it an
                                     admin only finds out via whatever the workflow emails them. */}
                                 {pendingReattemptCount > 0 && (
-                                    <span className="rounded-full bg-danger-500 px-2 py-0.5 text-caption font-semibold text-white">
+                                    <span className="rounded-full bg-danger-500 px-1.5 py-0.5 text-2xs font-semibold text-white">
                                         {pendingReattemptCount}
                                     </span>
                                 )}
                             </TabsTrigger>
                         </TabsList>
-                        {canEdit && selectedTab !== 'overview' && selectedTab !== 'submissions' && (
-                            <MyButton
-                                type="button"
-                                scale="large"
-                                buttonType="secondary"
-                                className="mt-4 w-10 min-w-10 font-medium"
-                                onClick={handleNavigateToSteps}
-                            >
-                                <PencilSimpleLine size={32} />
-                            </MyButton>
+                        {canEdit &&
+                            selectedTab !== 'overview' &&
+                            selectedTab !== 'submissions' &&
+                            selectedTab !== 'omr' && (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <MyButton
+                                        type="button"
+                                        scale="medium"
+                                        layoutVariant="icon"
+                                        buttonType="secondary"
+                                        className="shrink-0 self-start sm:self-center"
+                                        aria-label={t('actions.editAssessment')}
+                                        onClick={handleNavigateToSteps}
+                                    >
+                                        <PencilSimpleLine size={18} />
+                                    </MyButton>
+                                </TooltipTrigger>
+                                <TooltipContent side="bottom">
+                                    {t('actions.editAssessment')}
+                                </TooltipContent>
+                            </Tooltip>
                         )}
                     </div>
-                    <div className="scrollbar-hide max-h-[72vh] overflow-y-auto pr-8">
+                    {/* No height cap and no scroller of its own: capping tab content at
+                        72vh and hiding its scrollbar left a dead white band between the
+                        end of the content and the bottom of the page, and chained the
+                        wheel across two nested scrollers. The page scrolls normally. */}
+                    <div className="pe-8">
                         <TabsContent value="overview">
                             {examType === 'SURVEY' ? (
                                 <SurveyMainOverviewTab
@@ -476,6 +453,14 @@ const AssessmentDetailsComponent = () => {
                         <TabsContent value="accessControl">
                             <AssessmentAccessControlTab />
                         </TabsContent>
+                        {isOmrMode && (
+                            <TabsContent value="omr">
+                                <OmrTab
+                                    assessmentId={assessmentId}
+                                    instituteId={instituteDetails?.id ?? ''}
+                                />
+                            </TabsContent>
+                        )}
                         <TabsContent value="reattemptRequests">
                             <ReattemptRequestsTab />
                         </TabsContent>

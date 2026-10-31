@@ -32,6 +32,15 @@ public class WhiteLabelStatusResponse {
     @JsonProperty("teacher_portal_url")
     private String teacherPortalUrl;
 
+    /**
+     * Roles whose portal URL was adopted into the institute row by THIS read,
+     * because the chosen host had just gone active. Lets the settings page say
+     * "your learner portal is now live on …" at the moment it becomes true,
+     * instead of the change appearing silently.
+     */
+    @JsonProperty("roles_adopted_now")
+    private List<String> rolesAdoptedNow;
+
     @JsonProperty("routing_entries")
     private List<RoutingEntry> routingEntries;
 
@@ -65,6 +74,30 @@ public class WhiteLabelStatusResponse {
          */
         @JsonProperty("pages_cname_target")
         private String pagesCnameTarget;
+
+        /**
+         * The admin picked this host as the portal URL for the roles it serves.
+         * An intent, not a fact — see {@code is_portal_url}.
+         */
+        @JsonProperty("is_primary")
+        private boolean isPrimary;
+
+        /**
+         * This host is what {@code institutes.<role>_portal_base_url} actually
+         * holds right now, i.e. the domain outbound learner links use. Differs
+         * from {@code is_primary} while a chosen host is still pending — that is
+         * the state worth showing an admin, because it is the one they cannot
+         * otherwise explain.
+         */
+        @JsonProperty("is_portal_url")
+        private boolean isPortalUrl;
+
+        /**
+         * Sub-organisation this domain serves, or null for a parent-institute
+         * portal. See {@code PortalRoutingConfig#subOrgId} for why it matters.
+         */
+        @JsonProperty("sub_org_id")
+        private String subOrgId;
 
         // ── Branding ──────────────────────────────────────────────────────
         @JsonProperty("tab_text")
@@ -136,6 +169,9 @@ public class WhiteLabelStatusResponse {
         // ── Phone input preferences ───────────────────────────────────────
         @JsonProperty("comma_separated_preferred_country")
         private String commaSeparatedPreferredCountry;
+
+        @JsonProperty("phone_country_geo_mode")
+        private String phoneCountryGeoMode;
 
         // ── Logo / institute-name display ─────────────────────────────────
         @JsonProperty("hide_institute_name")

@@ -1,0 +1,11 @@
+{
+    "categoryAiTools": "Outils IA",
+    "categoryCrm": "CRM",
+    "categoryErp": "ERP",
+    "categoryLms": "LMS",
+    "locked": "Verrouillé",
+    "noResultsFound": "Aucun résultat trouvé",
+    "searchPlaceholder": "Rechercher des onglets, fonctionnalités...",
+    "settingsDomainHeading": "Paramètres · {{domain}}",
+    "tryDifferentSearchTerm": "Essayez un autre terme de recherche"
+}

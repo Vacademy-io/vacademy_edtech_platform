@@ -7,6 +7,7 @@
  * it never fetches — the parent passes data + callbacks.
  */
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   CaretLeft,
   CaretRight,
@@ -126,6 +127,7 @@ export function ChapterPathView({
   onSlideClick,
   onEnsureChapterSlides,
 }: ChapterPathViewProps): JSX.Element {
+  const { t } = useTranslation("courseDetailsB");
   const moduleTerm = getTerminology(ContentTerms.Modules, SystemTerms.Modules);
   const chapterTerm = getTerminology(
     ContentTerms.Chapters,
@@ -269,7 +271,7 @@ export function ChapterPathView({
           aria-hidden="true"
         />
         <p className="text-body font-bold text-play-ink">
-          Nothing to learn here yet. Check back soon!
+          {t("chapterPath.emptyModule")}
         </p>
       </div>
     );
@@ -288,16 +290,16 @@ export function ChapterPathView({
     const inert = !clickable || state === "locked";
     const stateLabel =
       state === "completed"
-        ? "completed"
+        ? t("chapterPath.slideState.completed")
         : state === "current"
-          ? "up next"
+          ? t("chapterPath.slideState.current")
           : state === "locked"
-            ? "locked"
-            : "not started";
+            ? t("chapterPath.slideState.locked")
+            : t("chapterPath.slideState.upcoming");
     const title = !clickable
-      ? "Enroll to start learning"
+      ? t("chapterPath.enrollToStart")
       : state === "locked"
-        ? node.lockMessage || "Locked"
+        ? node.lockMessage || t("chapterPath.locked")
         : slide.title;
 
     return (
@@ -307,7 +309,10 @@ export function ChapterPathView({
       >
         <button
           type="button"
-          aria-label={`${slide.title} — ${stateLabel}`}
+          aria-label={t("chapterPath.slideAriaLabel", {
+            title: slide.title,
+            state: stateLabel,
+          })}
           aria-disabled={inert}
           title={title}
           onClick={
@@ -351,7 +356,7 @@ export function ChapterPathView({
         </button>
         {state === "current" && (
           <span className="mt-1.5 rounded-full border-2 border-play-surface bg-white px-3 py-0.5 text-caption font-black uppercase tracking-wide text-play-ink shadow-play-badge">
-            Start
+            {t("chapterPath.start")}
           </span>
         )}
       </div>
@@ -367,7 +372,10 @@ export function ChapterPathView({
     >
       <span
         className="inline-flex max-w-xs items-center gap-2 truncate rounded-full border-2 border-play-surface bg-white px-4 py-1.5 text-body font-black text-play-ink shadow-play-badge"
-        title={`${chapterTerm}: ${toTitleCase(node.chapter.chapter_name)}`}
+        title={t("chapterPath.chapterTitle", {
+          chapter: chapterTerm,
+          name: toTitleCase(node.chapter.chapter_name),
+        })}
       >
         {node.complete && (
           <Check weight="bold" size={16} className="shrink-0 text-play-success" />
@@ -400,7 +408,9 @@ export function ChapterPathView({
         aria-hidden="true"
       />
       <span className="rounded-full border-2 border-play-surface bg-white px-4 py-1 text-caption font-black uppercase tracking-wide text-play-ink shadow-play-badge">
-        {node.complete ? `${moduleTerm} complete!` : "Finish line"}
+        {node.complete
+          ? t("chapterPath.moduleComplete", { module: moduleTerm })
+          : t("chapterPath.finishLine")}
       </span>
     </div>
   );
@@ -410,13 +420,13 @@ export function ChapterPathView({
   let windCounter = 0;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-stack">
       {/* Module switcher (quiet prev/next chips around the module name) */}
       {entries.length > 1 && (
         <div className="flex items-center justify-between gap-2">
           <button
             type="button"
-            aria-label={`Previous ${moduleTerm}`}
+            aria-label={t("chapterPath.previousModule", { module: moduleTerm })}
             disabled={currentIndex === 0}
             onClick={() =>
               setPickedModuleId(
@@ -443,12 +453,16 @@ export function ChapterPathView({
               {moduleName}
             </p>
             <p className="text-caption font-bold text-play-ink/70">
-              {moduleTerm} {currentIndex + 1} of {entries.length}
+              {t("chapterPath.moduleProgress", {
+                module: moduleTerm,
+                current: currentIndex + 1,
+                total: entries.length,
+              })}
             </p>
           </div>
           <button
             type="button"
-            aria-label={`Next ${moduleTerm}`}
+            aria-label={t("chapterPath.nextModule", { module: moduleTerm })}
             disabled={currentIndex >= entries.length - 1}
             onClick={() =>
               setPickedModuleId(
@@ -502,18 +516,19 @@ export function ChapterPathView({
         })}
         {!hasAnySlide &&
           nodes.every((n) => n.kind !== "chapter-loading") && (
-            <div className="relative flex flex-col items-center gap-3 py-6 text-center">
+            <div className="relative flex flex-col items-center gap-stack py-6 text-center">
               <playIllustrations.BookLover
                 className="h-28 w-auto text-play-muted"
                 aria-hidden="true"
               />
               <p className="text-body font-bold text-play-ink">
-                This {moduleTerm.toLowerCase()} has no{" "}
-                {getTerminologyPlural(
-                  ContentTerms.Slides,
-                  SystemTerms.Slides
-                ).toLowerCase()}{" "}
-                yet.
+                {t("chapterPath.noSlidesYet", {
+                  module: moduleTerm.toLowerCase(),
+                  slides: getTerminologyPlural(
+                    ContentTerms.Slides,
+                    SystemTerms.Slides
+                  ).toLowerCase(),
+                })}
               </p>
             </div>
           )}

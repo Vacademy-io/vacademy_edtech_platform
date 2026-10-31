@@ -1,0 +1,23 @@
+{
+    "title": "Emploi",
+    "changeStatus": "Changer le statut",
+    "fields": {
+        "currentStatus": "Statut actuel",
+        "employmentType": "Type d'emploi",
+        "noticePeriod": "Préavis"
+    },
+    "noticePeriodDays_one": "{{count}} jour",
+    "noticePeriodDays_many": "{{count}} de jours",
+    "noticePeriodDays_other": "{{count}} jours",
+    "milestones": {
+        "joined": "Date d'entrée",
+        "probationEnds": "Fin de la période d'essai",
+        "confirmed": "Confirmé",
+        "resigned": "Démission",
+        "lastWorkingDay": "Dernier jour de travail"
+    },
+    "notRecorded": "Non enregistré",
+    "employmentEnded": "Emploi terminé · {{status}}",
+    "noExitReason": "Aucune raison de départ enregistrée.",
+    "settlementHint": "Préparez son solde de tout compte final depuis ERP → Paie."
+}

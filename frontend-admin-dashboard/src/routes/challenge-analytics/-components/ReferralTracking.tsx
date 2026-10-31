@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -37,6 +38,7 @@ export function ReferralTracking({
     startDate,
     endDate,
 }: ReferralTrackingProps) {
+    const { t, i18n } = useTranslation('challengeAnalyticsReferralTracking');
     // Get REFERRAL type campaigns only for the leads
     const referralCampaigns = useMemo(() => {
         return referralData?.content?.filter((c) => c.campaign_type === 'REFERRAL') || [];
@@ -104,13 +106,15 @@ export function ReferralTracking({
     const exportToCSV = () => {
         if (!leadsData?.content) return;
 
-        const headers = ['Name', 'Email', 'Phone', 'Source', 'Submitted At'];
+        const headers = [t('csv.name'), t('csv.email'), t('csv.phone'), t('csv.source'), t('csv.submittedAt')];
         const rows = leadsData.content.map((lead) => [
-            getLeadName(lead) || 'N/A',
-            getLeadEmail(lead) || 'N/A',
-            getLeadPhone(lead) || 'N/A',
-            lead.source_type || 'N/A',
-            lead.submitted_at_local ? new Date(lead.submitted_at_local).toLocaleString() : 'N/A',
+            getLeadName(lead) || t('csv.notAvailable'),
+            getLeadEmail(lead) || t('csv.notAvailable'),
+            getLeadPhone(lead) || t('csv.notAvailable'),
+            lead.source_type || t('csv.notAvailable'),
+            lead.submitted_at_local
+                ? new Date(lead.submitted_at_local).toLocaleString(i18n.language)
+                : t('csv.notAvailable'),
         ]);
 
         const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
@@ -145,22 +149,22 @@ export function ReferralTracking({
                         </div>
                         <div>
                             <CardTitle className="text-base font-semibold">
-                                Referral Leads
+                                {t('title')}
                             </CardTitle>
                             <p className="text-xs text-gray-500">
-                                Leads acquired through referral campaigns
+                                {t('subtitle')}
                             </p>
                         </div>
                     </div>
                     <div className="flex items-center gap-4 text-sm">
                         <div className="rounded-lg bg-emerald-50 px-3 py-2">
-                            <span className="text-xs text-gray-500">Referral Users</span>
+                            <span className="text-xs text-gray-500">{t('referralUsers')}</span>
                             <p className="font-bold text-emerald-700">
-                                {referralUsers.toLocaleString()}
+                                {referralUsers.toLocaleString(i18n.language)}
                             </p>
                         </div>
                         <div className="rounded-lg bg-blue-50 px-3 py-2">
-                            <span className="text-xs text-gray-500">Referral Rate</span>
+                            <span className="text-xs text-gray-500">{t('referralRate')}</span>
                             <p className="font-bold text-blue-700">{referralPercentage}%</p>
                         </div>
                     </div>
@@ -170,7 +174,7 @@ export function ReferralTracking({
                 {/* Campaign Selector */}
                 <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-gray-700">Select Campaign:</span>
+                        <span className="text-sm font-medium text-gray-700">{t('selectCampaign')}</span>
                         <Select
                             value={selectedCampaignId}
                             onValueChange={(val) => {
@@ -179,12 +183,12 @@ export function ReferralTracking({
                             }}
                         >
                             <SelectTrigger className="w-[250px]">
-                                <SelectValue placeholder="Select a referral campaign" />
+                                <SelectValue placeholder={t('selectCampaignPlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
                                 {referralCampaigns.map((campaign) => (
                                     <SelectItem key={campaign.id} value={campaign.id}>
-                                        {campaign.campaign_name} ({campaign.total_users || 0} users)
+                                        {t('campaignUsers', { name: campaign.campaign_name, count: campaign.total_users || 0 })}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -193,7 +197,7 @@ export function ReferralTracking({
                     {leadsData?.content && leadsData.content.length > 0 && (
                         <Button variant="outline" size="sm" onClick={exportToCSV} className="gap-2">
                             <Download className="size-4" />
-                            Export CSV
+                            {t('exportCsv')}
                         </Button>
                     )}
                 </div>
@@ -201,18 +205,18 @@ export function ReferralTracking({
                 {/* Leads Table */}
                 {referralCampaigns.length === 0 ? (
                     <div className="flex h-[200px] items-center justify-center text-gray-500">
-                        No referral campaigns found
+                        {t('noCampaigns')}
                     </div>
                 ) : leadsLoading ? (
                     <div className="flex h-[200px] items-center justify-center">
                         <div className="text-center">
                             <div className="border-primary mx-auto size-8 animate-spin rounded-full border-2 border-t-transparent"></div>
-                            <p className="mt-2 text-sm text-gray-500">Loading leads...</p>
+                            <p className="mt-2 text-sm text-gray-500">{t('loadingLeads')}</p>
                         </div>
                     </div>
                 ) : !leadsData?.content || leadsData.content.length === 0 ? (
                     <div className="flex h-[200px] items-center justify-center text-gray-500">
-                        No leads found for the selected campaign and date range
+                        {t('noLeads')}
                     </div>
                 ) : (
                     <>
@@ -221,19 +225,19 @@ export function ReferralTracking({
                                 <thead className="bg-gray-50">
                                     <tr>
                                         <th className="px-4 py-3 text-left font-medium text-gray-700">
-                                            #
+                                            {t('table.index')}
                                         </th>
                                         <th className="px-4 py-3 text-left font-medium text-gray-700">
-                                            User
+                                            {t('table.user')}
                                         </th>
                                         <th className="px-4 py-3 text-left font-medium text-gray-700">
-                                            Contact
+                                            {t('table.contact')}
                                         </th>
                                         <th className="px-4 py-3 text-left font-medium text-gray-700">
-                                            Source
+                                            {t('table.source')}
                                         </th>
                                         <th className="px-4 py-3 text-left font-medium text-gray-700">
-                                            Submitted
+                                            {t('table.submitted')}
                                         </th>
                                     </tr>
                                 </thead>
@@ -253,10 +257,10 @@ export function ReferralTracking({
                                                     </div>
                                                     <div>
                                                         <p className="font-medium text-gray-800">
-                                                            {getLeadName(lead) || 'Anonymous'}
+                                                            {getLeadName(lead) || t('table.anonymous')}
                                                         </p>
                                                         <p className="text-xs text-gray-500">
-                                                            ID: {lead.user_id?.substring(0, 8)}...
+                                                            {t('table.idLabel', { id: lead.user_id?.substring(0, 8) })}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -293,7 +297,7 @@ export function ReferralTracking({
                                                                   new Date(lead.submitted_at_local),
                                                                   'MMM dd, yyyy HH:mm'
                                                               )
-                                                            : 'N/A'}
+                                                            : t('csv.notAvailable')}
                                                     </span>
                                                 </div>
                                             </td>
@@ -307,9 +311,11 @@ export function ReferralTracking({
                         {leadsData.totalPages > 1 && (
                             <div className="mt-4 flex items-center justify-between">
                                 <span className="text-sm text-gray-500">
-                                    Showing {page * pageSize + 1} -{' '}
-                                    {Math.min((page + 1) * pageSize, leadsData.totalElements)} of{' '}
-                                    {leadsData.totalElements} leads
+                                    {t('pagination.showing', {
+                                        from: page * pageSize + 1,
+                                        to: Math.min((page + 1) * pageSize, leadsData.totalElements),
+                                        count: leadsData.totalElements,
+                                    })}
                                 </span>
                                 <div className="flex gap-2">
                                     <Button
@@ -319,7 +325,7 @@ export function ReferralTracking({
                                         disabled={page === 0}
                                     >
                                         <CaretLeft className="size-4" />
-                                        Previous
+                                        {t('pagination.previous')}
                                     </Button>
                                     <Button
                                         variant="outline"
@@ -327,7 +333,7 @@ export function ReferralTracking({
                                         onClick={() => setPage(page + 1)}
                                         disabled={leadsData.last}
                                     >
-                                        Next
+                                        {t('pagination.next')}
                                         <CaretRight className="size-4" />
                                     </Button>
                                 </div>

@@ -1,0 +1,12 @@
+{
+    "addToCourse": "Ajouter au cours",
+    "titleLabel": "Titre",
+    "savingEllipsis": "Enregistrement…",
+    "saveToLibraryAndAdd": "Enregistrer dans la bibliothèque et ajouter",
+    "add": "Ajouter",
+    "sessionFallback": "Session",
+    "defaultTitle": "{{label}} – Enregistrement ({{formatted}})",
+    "defaultTitleNoDate": "{{label}} – Enregistrement",
+    "saveRecordingFirst": "Enregistrez d'abord la vidéo dans la bibliothèque, puis réessayez.",
+    "couldNotAdd": "Impossible d'ajouter cet enregistrement au cours."
+}

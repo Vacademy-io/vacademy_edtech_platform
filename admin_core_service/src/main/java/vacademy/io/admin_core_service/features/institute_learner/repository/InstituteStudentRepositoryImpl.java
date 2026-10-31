@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
+import vacademy.io.admin_core_service.features.common.util.CustomFieldValueSql;
 import vacademy.io.admin_core_service.features.institute_learner.dto.projection.StudentListV2Projection;
 
 import java.time.LocalDate;
@@ -24,6 +25,13 @@ public class InstituteStudentRepositoryImpl implements InstituteStudentRepositor
     @PersistenceContext
     private EntityManager entityManager;
 
+    // Custom-field values: start from the rows this enrollment actually has (SSIGM- or
+    // USER-scoped, non-null) and keep those whose field is mapped to the enrollment's
+    // institute. Joining the institute's field definitions per learner first multiplied every
+    // row by thousands of fields (mostly per-session / per-invite copies) and hit the statement
+    // timeout. institute_custom_fields also carries duplicate mapping rows per
+    // (institute_id, custom_field_id), so the mapping side is deduped. Null values are skipped;
+    // parseCustomFields drops them anyway.
     private static final String BASE_SELECT = """
             SELECT
                 s.full_name         AS fullName,
@@ -37,10 +45,10 @@ public class InstituteStudentRepositoryImpl implements InstituteStudentRepositor
                   COALESCE(
                     json_agg(
                       DISTINCT jsonb_build_object(
-                        'custom_field_id', cf.id,
+                        'custom_field_id', icf.custom_field_id,
                         'value', cfv.value
                       )
-                    ) FILTER (WHERE cf.id IS NOT NULL), '[]'
+                    ) FILTER (WHERE icf.custom_field_id IS NOT NULL), '[]'
                   ) AS text
                 ) AS customFieldsJson,
                 s.user_id AS userId,
@@ -48,6 +56,7 @@ public class InstituteStudentRepositoryImpl implements InstituteStudentRepositor
                 s.address_line AS addressLine,
                 s.region AS region,
                 s.city AS city,
+                s.country AS country,
                 s.pin_code AS pinCode,
                 s.date_of_birth AS dateOfBirth,
                 s.gender AS gender,
@@ -85,31 +94,20 @@ public class InstituteStudentRepositoryImpl implements InstituteStudentRepositor
             FROM student s
             JOIN student_session_institute_group_mapping ssigm
                 ON s.user_id = ssigm.user_id
-            LEFT JOIN (
-                -- institute_custom_fields can carry multiple duplicate mapping
-                -- rows for the same (institute_id, custom_field_id) — some
-                -- institutes have 80+ duplicates for a single field. Joining
-                -- the raw table multiplies every learner row by every
-                -- duplicate (turning e.g. 465 learners into 470k+ intermediate
-                -- rows before the GROUP BY collapses them back down), which is
-                -- what made any filter that routes through this query (custom
-                -- field filters in particular) painfully slow. Dedup to one
-                -- row per (institute_id, custom_field_id) — the most recent —
-                -- before joining.
-                SELECT DISTINCT ON (institute_id, custom_field_id) *
-                FROM institute_custom_fields
-                WHERE (:customFieldStatus IS NULL OR status IN :customFieldStatus)
-                ORDER BY institute_id, custom_field_id, created_at DESC
-            ) icf
-                ON icf.institute_id = ssigm.institute_id
-            LEFT JOIN custom_fields cf
-                ON cf.id = icf.custom_field_id
             LEFT JOIN custom_field_values cfv
-                ON cfv.custom_field_id = cf.id
+                ON cfv.value IS NOT NULL
                 AND (
                     (cfv.source_type IN ('STUDENT_SESSION_INSTITUTE_GROUP_MAPPING', 'STUDENT_SESSION_MAPPING') AND cfv.source_id = ssigm.id)
                     OR (cfv.source_type = 'USER' AND cfv.source_id = ssigm.user_id)
                 )
+            LEFT JOIN (
+                SELECT DISTINCT icf.institute_id, icf.custom_field_id
+                FROM institute_custom_fields icf
+                JOIN custom_fields cf ON cf.id = icf.custom_field_id
+                WHERE (:customFieldStatus IS NULL OR icf.status IN :customFieldStatus)
+            ) icf
+                ON icf.institute_id = ssigm.institute_id
+                AND icf.custom_field_id = cfv.custom_field_id
             LEFT JOIN user_plan up
                 ON up.id = ssigm.user_plan_id
             LEFT JOIN enroll_invite ei
@@ -144,7 +142,7 @@ public class InstituteStudentRepositoryImpl implements InstituteStudentRepositor
     private static final String GROUP_BY = """
             GROUP BY s.id, s.username, s.full_name, s.email, s.mobile_number,
                      ssigm.package_session_id, ssigm.enrolled_date, ssigm.expiry_date,
-                     last_pl.payment_status, s.user_id, s.address_line, s.region, s.city,
+                     last_pl.payment_status, s.user_id, s.address_line, s.region, s.city, s.country,
                      s.pin_code, s.date_of_birth, s.gender, s.fathers_name, s.mothers_name,
                      s.parents_mobile_number, s.parents_email, s.linked_institute_name,
                      s.created_at, s.updated_at, s.face_file_id, s.parents_to_mother_mobile_number,
@@ -338,7 +336,9 @@ public class InstituteStudentRepositoryImpl implements InstituteStudentRepositor
                 whereClause.append("  WHERE cfv_filter").append(filterIndex).append(".source_type = 'USER' ");
                 whereClause.append("    AND cfv_filter").append(filterIndex).append(".source_id = ssigm.user_id ");
                 whereClause.append("    AND cfv_filter").append(filterIndex).append(".custom_field_id = :").append(paramFieldId).append(" ");
-                whereClause.append("    AND cfv_filter").append(filterIndex).append(".value IN (:").append(paramValues).append(") ");
+                whereClause.append("    AND ")
+                        .append(CustomFieldValueSql.matchesAnyOf("cfv_filter" + filterIndex + ".value", paramValues))
+                        .append(" ");
                 whereClause.append(") ");
                 
                 parameters.put(paramFieldId, fieldId);
@@ -415,7 +415,16 @@ public class InstituteStudentRepositoryImpl implements InstituteStudentRepositor
         addListFilter(whereClause, parameters, "gender", "s.gender", gender);
         addListFilter(whereClause, parameters, "instituteIds", "ssigm.institute_id", instituteIds);
         addListFilter(whereClause, parameters, "groupIds", "ssigm.group_id", groupIds);
-        addListFilter(whereClause, parameters, "packageSessionIds", "ssigm.package_session_id", packageSessionIds);
+        if (paymentStatuses != null && !paymentStatuses.isEmpty()
+                && packageSessionIds != null && !packageSessionIds.isEmpty()) {
+            // Failed / pending checkouts sit in the INVITED session with the real batch in
+            // destination_package_session_id, so a payment-status filter matches either column.
+            whereClause.append("AND (ssigm.package_session_id IN (:packageSessionIds) ");
+            whereClause.append("OR ssigm.destination_package_session_id IN (:packageSessionIds)) ");
+            parameters.put("packageSessionIds", packageSessionIds);
+        } else {
+            addListFilter(whereClause, parameters, "packageSessionIds", "ssigm.package_session_id", packageSessionIds);
+        }
         addListFilter(whereClause, parameters, "paymentStatuses", "last_pl.payment_status", paymentStatuses);
         addListFilter(whereClause, parameters, "sources", "ssigm.source", sources);
         addListFilter(whereClause, parameters, "types", "ssigm.type", types);
@@ -453,7 +462,9 @@ public class InstituteStudentRepositoryImpl implements InstituteStudentRepositor
                 whereClause.append("  WHERE cfv_filter").append(filterIndex).append(".source_type = 'USER' ");
                 whereClause.append("    AND cfv_filter").append(filterIndex).append(".source_id = ssigm.user_id ");
                 whereClause.append("    AND cfv_filter").append(filterIndex).append(".custom_field_id = :").append(paramFieldId).append(" ");
-                whereClause.append("    AND cfv_filter").append(filterIndex).append(".value IN (:").append(paramValues).append(") ");
+                whereClause.append("    AND ")
+                        .append(CustomFieldValueSql.matchesAnyOf("cfv_filter" + filterIndex + ".value", paramValues))
+                        .append(" ");
                 whereClause.append(") ");
                 
                 parameters.put(paramFieldId, fieldId);
@@ -515,6 +526,7 @@ public class InstituteStudentRepositoryImpl implements InstituteStudentRepositor
             public String getAddressLine() { return str("addressline"); }
             public String getRegion() { return str("region"); }
             public String getCity() { return str("city"); }
+            public String getCountry() { return str("country"); }
             public String getPinCode() { return str("pincode"); }
             public String getDateOfBirth() { return str("dateofbirth"); }
             public String getGender() { return str("gender"); }
@@ -527,6 +539,9 @@ public class InstituteStudentRepositoryImpl implements InstituteStudentRepositor
             public String getUpdatedAt() { return str("updatedat"); }
             public String getFaceFileId() { return str("facefileid"); }
             public String getExpiryDate() { return str("expirydate"); }
+            public String getEnrolledDate() { return str("enrolleddate"); }
+            public String getPlanEndDate() { return str("planenddate"); }
+            public Boolean getIsTrial() { try { Object v = t.get("istrial"); return v == null ? null : (Boolean) v; } catch (Exception e) { return null; } }
             public String getParentsToMotherMobileNumber() { return str("parentstomothermobilenumber"); }
             public String getParentsToMotherEmail() { return str("parentstomotheremail"); }
             public String getBillingContactName() { return str("billingcontactname"); }

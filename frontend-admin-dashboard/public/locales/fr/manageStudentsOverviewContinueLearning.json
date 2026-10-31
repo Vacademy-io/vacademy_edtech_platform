@@ -1,0 +1,16 @@
+{
+    "heading": "Poursuivre l'apprentissage",
+    "action": {
+        "viewProgress": "Voir la progression"
+    },
+    "course": {
+        "fallbackName": "Cours actif",
+        "session": "Session {{session}}"
+    },
+    "behindBadge_one": "En retard sur {{count}} cours",
+    "behindBadge_many": "En retard sur {{count}} cours",
+    "behindBadge_other": "En retard sur {{count}} cours",
+    "ring": {
+        "complete": "Terminé"
+    }
+}

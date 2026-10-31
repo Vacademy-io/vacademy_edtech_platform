@@ -1,0 +1,26 @@
+{
+    "trigger": {
+        "createBatch": "बैच बनाएं"
+    },
+    "toast": {
+        "studyMaterialCopiedSuccess": "अध्ययन सामग्री सफलतापूर्वक कॉपी की गई",
+        "studyMaterialCopyFailed": "अध्ययन सामग्री कॉपी करने में विफल",
+        "batchCreatedSuccess": "बैच सफलतापूर्वक बनाया गया",
+        "batchCreateFailed": "बैच बनाने में विफल"
+    },
+    "button": {
+        "back": "वापस",
+        "nextStep": "अगला चरण"
+    },
+    "step": {
+        "selectTerm": "{{term}} चुनें"
+    },
+    "dialog": {
+        "heading": "{{batchTerm}} बनाएं - चरण {{step}}: {{title}}"
+    },
+    "review": {
+        "batchName": "{{batchTerm}} का नाम",
+        "batchNameHint": "वैकल्पिक। खाली छोड़ने पर लेवल और कोर्स का नाम दिखेगा।",
+        "defaultValue": "डिफ़ॉल्ट"
+    }
+}

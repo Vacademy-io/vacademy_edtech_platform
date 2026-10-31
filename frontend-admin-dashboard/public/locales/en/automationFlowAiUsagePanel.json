@@ -1,0 +1,39 @@
+{
+    "windows": {
+        "days_one": "{{count}} day",
+        "days_other": "{{count}} days"
+    },
+    "loading": "Loading AI usage…",
+    "loadFailed": "Couldn't load AI usage right now.",
+    "retry": "Retry",
+    "heading": "AI credit usage",
+    "refresh": "Refresh",
+    "aiPaused": {
+        "title": "AI replies are paused — no AI credits left.",
+        "body": "Flows keep running, but AI Reply steps stop calling the model and hand those conversations to a human in the WhatsApp Inbox. Top up AI credits to switch them back on."
+    },
+    "stats": {
+        "creditsUsed": "Credits used",
+        "aiReplies": "AI replies",
+        "peopleRepliedTo": "People replied to",
+        "balance": "Balance"
+    },
+    "table": {
+        "flow": "Flow",
+        "credits": "Credits",
+        "replies": "Replies",
+        "people": "People",
+        "lastUsed": "Last used",
+        "unattributed": "Unattributed"
+    },
+    "recentReplies": {
+        "heading": "Recent AI replies",
+        "empty": "No AI replies charged in this window.",
+        "when": "When",
+        "repliedTo": "Replied to",
+        "model": "Model",
+        "credits": "Credits",
+        "unidentifiedContact": "Unidentified contact"
+    },
+    "notAvailable": "—"
+}

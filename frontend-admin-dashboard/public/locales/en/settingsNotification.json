@@ -1,0 +1,319 @@
+{
+    "subTabs": {
+        "ariaLabel": "Notification settings sections",
+        "general": "General",
+        "chat": "Chat & Community",
+        "push": "Push Notifications",
+        "email": "Email"
+    },
+    "header": {
+        "title": "Notification Settings",
+        "subtitle": "Configure institute-wide announcement permissions",
+        "saveSettings": "Save Settings"
+    },
+    "loading": "Loading...",
+    "errors": {
+        "loadSettings": "Failed to load settings",
+        "loadEmailConfigurations": "Failed to load email configurations",
+        "saveSettings": "Failed to save notification settings"
+    },
+    "toasts": {
+        "settingsSaved": "Notification settings saved"
+    },
+    "footer": {
+        "save": "Save"
+    },
+    "general": {
+        "title": "General",
+        "approvalRequired": {
+            "label": "Approval required",
+            "hint": "Require admin approval before announcements are visible"
+        },
+        "maxAnnouncementsPerDay": {
+            "label": "Max announcements/day",
+            "hint": "Limit per user"
+        },
+        "retentionDays": {
+            "label": "Retention (days)",
+            "hint": "Auto cleanup period"
+        },
+        "defaultTimezone": {
+            "label": "Default timezone",
+            "hint": "Used for scheduling and reminders"
+        }
+    },
+    "community": {
+        "title": "Community",
+        "studentsCanSend": "Students can send",
+        "adminsCanModerate": "Admins can moderate",
+        "allowReplies": "Allow replies",
+        "allowedTags": "Allowed tags"
+    },
+    "systemAlerts": {
+        "title": "System Alerts",
+        "teachersCanSend": "Teachers can send",
+        "adminsCanSend": "Admins can send",
+        "autoDismissHours": {
+            "label": "Auto dismiss (hours)",
+            "hint": "Auto clear after"
+        }
+    },
+    "appOverlays": {
+        "title": "App Overlays",
+        "description": "Full-screen announcements {{role}} see when they open the app",
+        "canSend": "{{role}} can send"
+    },
+    "dashboardPins": {
+        "title": "Dashboard Pins",
+        "studentsCanCreate": "Students can create",
+        "teachersCanCreate": "Teachers can create",
+        "adminsCanCreate": "Admins can create",
+        "maxDurationHours": {
+            "label": "Max duration (hours)",
+            "hint": "Pin lifetime"
+        },
+        "maxPinsPerUser": {
+            "label": "Max pins per user",
+            "hint": "Creation limit"
+        },
+        "requireApproval": "Require approval"
+    },
+    "directMessages": {
+        "title": "Direct Messages",
+        "studentsCanSend": "Students can send",
+        "allowReplies": "Allow replies",
+        "moderationEnabled": "Moderation enabled"
+    },
+    "push": {
+        "title": "Push Notifications (Firebase)",
+        "enable": {
+            "label": "Enable Push Notifications",
+            "hint": "Requires valid Firebase service account JSON"
+        },
+        "base64Label": "Or paste Base64-encoded JSON",
+        "base64Placeholder": "Base64 string",
+        "validateAndSave": "Validate & Save",
+        "keyConfigured": "A service account key is saved for this institute. It is never shown again; paste a new key only to replace it."
+    },
+    "streams": {
+        "title": "Streams",
+        "teachersCanSend": "Teachers can send",
+        "allowDuringClass": "Allow during class",
+        "autoArchiveHours": {
+            "label": "Auto archive (hours)",
+            "hint": "Auto move to archive"
+        }
+    },
+    "resources": {
+        "title": "Resources",
+        "studentsCanUpload": "Students can upload",
+        "maxFileSizeMb": {
+            "label": "Max file size (MB)",
+            "hint": "Upload limit"
+        }
+    },
+    "chat": {
+        "title": "In-App Messages",
+        "enabled": "In-App Messages enabled",
+        "ownMessagesTitle": "{{role}} — own messages",
+        "ownMessagesDescription": "Applies everywhere {{studentRoleLower}} can chat. {{teacherRole}} and admins always keep both actions.",
+        "canEditOwn": "{{role}} can edit their own messages",
+        "canDeleteOwn": "{{role}} can delete their own messages",
+        "batchGroupsTitle": "{{batch}} groups",
+        "canPost": "{{role}} can post",
+        "communityTitle": "Community",
+        "communityChannelEnabled": "Community channel enabled",
+        "communityRulesTitle": "Community rules",
+        "guidelinesTitle": "Guidelines title",
+        "guidelinesTitlePlaceholder": "e.g., Community Guidelines",
+        "guidelineItems": "Guideline items",
+        "guidelineItemPlaceholder": "Add a guideline and press Enter",
+        "acknowledgementRequired": "Acknowledgement required",
+        "slowModeSeconds": {
+            "label": "Slow mode (seconds)",
+            "hint": "Delay between posts"
+        },
+        "newMemberReadonlyMinutes": {
+            "label": "New member read-only (minutes)",
+            "hint": "Mute new members initially"
+        },
+        "allowLinks": "Allow links",
+        "allowAttachments": "Allow attachments",
+        "bannedKeywords": "Banned keywords",
+        "bannedKeywordPlaceholder": "Add a keyword and press Enter",
+        "autoModerationAction": "Auto-moderation action",
+        "selectActionPlaceholder": "Select action",
+        "actionBlock": "Block",
+        "actionFlag": "Flag",
+        "directMessagesTitle": "Direct messages",
+        "directMessagesEnabled": "Direct messages enabled",
+        "senderCanMessage": "Sender \\ Can message",
+        "attachmentsTitle": "Attachments",
+        "imagesEnabled": "Images enabled",
+        "filesEnabled": "Files enabled",
+        "maxFileSizeMb": {
+            "label": "Max file size (MB)",
+            "hint": "Upload limit"
+        }
+    },
+    "email": {
+        "addressesTitle": "Email Addresses",
+        "addressesDescription": "These are the email addresses your institute uses to send messages to learners and staff. Each address has a purpose — for example, one for marketing campaigns, another for support replies.",
+        "toastAddFailed": "Couldn't add this email address. Please try again.",
+        "toastUpdateSuccess": "Saved. New emails sent from this address will use the updated details.",
+        "toastUpdateFailed": "Couldn't save your changes. Please try again.",
+        "toastDeleteSuccess": "Email address removed.",
+        "toastDeleteFailed": "Couldn't remove this email address. Please try again."
+    },
+    "emailCc": {
+        "title": "Email Copies (CC / BCC)",
+        "description": "Send a copy of transactional emails to your own team — for example, every invoice to your accounts inbox. Copies are off unless you turn on both this setting and the individual emails below.",
+        "sendCopies": "Send copies of transactional emails",
+        "noneSelected": "No emails are selected below, so no copies will be sent.",
+        "noAddresses": "No addresses have been added, so no copies will be sent. Type an address and press Enter to add it.",
+        "copyType": "Copy type",
+        "copyTypeHint": "BCC keeps your team's addresses hidden. CC shows them to the learner on the email — only use CC if the learner should see who else received it.",
+        "alwaysCopy": "Always copy these addresses",
+        "alwaysCopyHint": "Added to every email you switch on below. Leave empty to set addresses per email instead.",
+        "emailPlaceholder": "name@example.com — press Enter to add",
+        "whichEmails": "Which emails to copy",
+        "alsoCopyTo": "Also copy to — in addition to the addresses above",
+        "notRecorded": "Copies are not recorded against the recipient in email reports, and replies from a copied address are not tracked.",
+        "invalidEmail": "\"{{value}}\" is not a valid email address."
+    },
+    "stringListEditor": {
+        "defaultPlaceholder": "Add and press Enter"
+    },
+    "tagEditor": {
+        "placeholder": "Add tag and press Enter"
+    },
+    "emailPurposes": {
+        "utility": {
+            "label": "System notifications & updates",
+            "hint": "Account alerts, password resets, reminders"
+        },
+        "info": {
+            "label": "Announcements & general info",
+            "hint": "News, newsletters, broadcast updates"
+        },
+        "transactional": {
+            "label": "Receipts & confirmations",
+            "hint": "Payment receipts, enrollment confirmations"
+        },
+        "marketing": {
+            "label": "Marketing & promotions",
+            "hint": "Campaigns, offers, promotional content"
+        },
+        "support": {
+            "label": "Support & help",
+            "hint": "Replies to learners or staff who need help"
+        },
+        "other": "Other (custom purpose)…",
+        "customHint": "A custom purpose for emails that don't fit the categories above."
+    },
+    "emailList": {
+        "verifiedNotice": {
+            "part1": "Each address must be",
+            "verifiedWithService": "verified with the email service",
+            "part2": "before it can send. Adding an address emails a confirmation link to it — click that link, then press",
+            "refreshStatus": "Refresh status",
+            "part3": ". Until an address is verified, its messages are sent from the platform's default address."
+        },
+        "unverifiedNotice": {
+            "part1": "Before any address here can send emails,",
+            "needsVerification": "our team needs to verify it with the email service",
+            "part2": ". Until that's done, messages from a new address won't reach recipients. If you've just added or changed an address, please",
+            "contactSupport": "contact support",
+            "part3": "so we can verify it for you."
+        },
+        "loadingAddresses": "Loading your email addresses…",
+        "addNewTitle": "Add a new email address",
+        "fields": {
+            "email": "Email address",
+            "emailPlaceholder": "e.g., support@yourschool.com",
+            "displayName": "Display name",
+            "displayNamePlaceholder": "e.g., \"Acme Academy Support\"",
+            "displayNameHint": "Shown to recipients next to the email address.",
+            "purpose": "What is this email for?",
+            "purposePlaceholder": "Choose a purpose",
+            "customPurposePlaceholder": "e.g., \"Newsletter\" or \"Alumni\"",
+            "customPurposeHint": "Use a short name. We'll save it as {{code}} internally.",
+            "customPurposeDefaultCode": "YOUR_PURPOSE",
+            "notes": "Notes (optional)",
+            "notesPlaceholder": "For your team's reference"
+        },
+        "addButton": "Add email address",
+        "yourAddresses": "Your email addresses ({{count}})",
+        "emptyState": "You haven't added any email addresses yet. Use the form above to add one.",
+        "toasts": {
+            "emailExists": "This email address is already added.",
+            "purposeExists": "You already have an address for this purpose. Edit the existing one or pick a different purpose.",
+            "addedVerificationStarted": "Email address added — verification started.",
+            "addedVerificationStartedDescription": "AWS sent a confirmation email to {{email}}. Open it and click the link, then refresh the address below.",
+            "added": "Email address added.",
+            "addedVerificationFailedDescription": "Couldn't start verification automatically. Use the “Verify sender” button on the address below.",
+            "addedNoVerificationDescription": "Before this address can send emails, our team needs to verify it. Please contact support to get it verified — emails sent before verification won't reach recipients."
+        }
+    },
+    "verificationBadge": {
+        "verified": "Verified",
+        "pending": "Pending verification",
+        "failed": "Verification failed",
+        "notVerified": "Not verified"
+    },
+    "dnsTable": {
+        "toastCopied": "Copied",
+        "toastCopyFailed": "Could not copy",
+        "instructions": "Add these DNS records to your domain, then press Refresh status:",
+        "columnType": "Type",
+        "columnName": "Name / Host",
+        "columnValue": "Value",
+        "copyButton": "Copy"
+    },
+    "emailRow": {
+        "purposeLockedTitle": "The purpose can't be changed after the address is added. To use a different purpose, remove this address and add a new one.",
+        "purposeLocked": "Purpose can't be changed",
+        "sendingStatus": "Sending status:",
+        "working": "Working…",
+        "verifySender": "Verify sender",
+        "checking": "Checking…",
+        "refreshStatus": "Refresh status",
+        "verifyDomainInstead": "Verify your whole domain instead (better deliverability)",
+        "cancel": "Cancel",
+        "saving": "Saving…",
+        "saveChanges": "Save changes",
+        "removing": "Removing…",
+        "remove": "Remove",
+        "genericError": "Please try again.",
+        "confirmDelete": "Remove \"{{email}}\"?\n\nIt will no longer be used for {{purpose}}.\nYou can add it back later if needed.",
+        "toasts": {
+            "domainVerificationStarted": "Domain verification started",
+            "verificationEmailSent": "Verification email sent",
+            "verificationStartFailed": "Could not start verification",
+            "refreshFailed": "Could not refresh status"
+        },
+        "controls": {
+            "controlsTitle": "Sending controls",
+            "controlsHint": "Optional. Cap how many emails this sender may send per day (overflow is queued for the next day) and add the unsubscribe footer required for commercial email.",
+            "maxPerDay": "Max emails per day",
+            "maxPerDayPlaceholder": "0 = unlimited",
+            "timezone": "Day boundary time zone",
+            "timezonePlaceholder": "e.g. America/New_York",
+            "sendAfterHour": "Next day's window opens at (hour, 0–23)",
+            "postalAddress": "Postal address for the footer",
+            "postalAddressPlaceholder": "Required by CAN-SPAM for commercial email",
+            "listUnsubscribe": "Add unsubscribe link and headers to every email from this sender",
+            "listUnsubscribeHint": "Promotional emails always get them; turn this on to add them to other purposes too.",
+            "rampEnabled": "Warm up gradually (recommended for a new domain)",
+            "rampEnabledHint": "Start small and raise the daily limit on a schedule. Mailbox providers judge a new sending domain on how its volume grows; anything over the day's limit is queued for the next window, not dropped.",
+            "rampStartPerDay": "Start at (emails/day)",
+            "rampStep": "Increase by",
+            "rampEveryDays": "Every (days)",
+            "rampCeiling": "Stop increasing at",
+            "rampStartedOn": "Warm-up started {{date}}. The schedule follows the calendar, so pausing does not bank extra volume.",
+            "skipWeekends": "Don't send on Saturday or Sunday",
+            "maxPerDayManaged": "Max emails per day (set by the warm-up schedule)"
+        },
+        "verifyDomainUpgrade": "Verify the whole domain for better deliverability (DKIM) — sending keeps working while DNS propagates"
+    }
+}

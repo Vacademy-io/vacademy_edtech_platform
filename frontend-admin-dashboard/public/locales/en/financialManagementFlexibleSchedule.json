@@ -1,0 +1,35 @@
+{
+    "heading": "When are installments due?",
+    "fixed": {
+        "title": "Fixed dates for every learner",
+        "description": "Set the installments and their due dates here. Everyone on this plan pays on the same dates."
+    },
+    "flexible": {
+        "title": "Chosen for each learner at enrollment",
+        "description": "Set only the fees here. When enrolling, choose how many installments and how far apart.",
+        "feesHint": "Fees marked “Split into installments” are spread over the learner’s schedule; other fees are due on the first due date."
+    },
+    "defaults": {
+        "count": "Default installments",
+        "every": "Every",
+        "maxCount": "Most installments allowed",
+        "maxCountPlaceholder": "Up to {{max}}"
+    },
+    "units": {
+        "days": "days",
+        "months": "months"
+    },
+    "fee": {
+        "splitToggle": "Split into installments",
+        "split": "split per learner",
+        "upfront": "paid upfront"
+    },
+    "perLearner": "Per learner",
+    "badge": "Installments chosen at enrollment",
+    "errors": {
+        "count": "Default installments must be between 1 and the maximum ({{max}} at most).",
+        "value": "The gap must be between 1 and {{gap}}.",
+        "maxCount": "Most installments allowed must be between 1 and {{max}}.",
+        "noSplitFee": "Turn on “Split into installments” for at least one fee."
+    }
+}

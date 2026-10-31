@@ -1,0 +1,20 @@
+{
+    "heading": "Conditions de diffusion progressive",
+    "add": "Ajouter",
+    "emptyTitle": "Aucune condition de diffusion progressive",
+    "emptyHint": "Ajoutez des conditions pour contrôler quand le contenu devient disponible pour les apprenants.",
+    "target": {
+        "chapter": "chapitre",
+        "slide": "diapositive"
+    },
+    "behavior": {
+        "lock": "verrouiller",
+        "hide": "masquer"
+    },
+    "disabled": "Désactivée",
+    "deleteCondition": "Supprimer la condition",
+    "alerts": {
+        "cannotDeleteEnabled": "Impossible de supprimer une condition active. Veuillez d'abord désactiver la condition de diffusion progressive du {{target}}.",
+        "confirmDelete": "Voulez-vous vraiment supprimer cette condition de diffusion progressive du {{target}} ?"
+    }
+}

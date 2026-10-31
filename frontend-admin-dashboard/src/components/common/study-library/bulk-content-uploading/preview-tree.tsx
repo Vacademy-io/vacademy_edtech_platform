@@ -1,7 +1,8 @@
 // Bulk Content Uploading — preview tree with match badges and remap dropdowns.
 //
 // Match-only: folders map to EXISTING subjects/modules/chapters or get skipped.
-// Bulk upload never creates new structure (that stays in the course editor).
+// Folders with no existing match are created on commit when "create missing" is
+// on; with it off they must be remapped or skipped before Confirm unlocks.
 
 import { useMemo } from 'react';
 import {
@@ -10,6 +11,7 @@ import {
     Folder,
     Image as ImageIcon,
     LinkSimple,
+    Package,
     PresentationChart,
     Video,
     Warning,
@@ -26,7 +28,10 @@ import {
     scopeEntitiesForNode,
 } from './matching';
 import type { NodeMapping } from './types';
-import { getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
+import {
+    getTerminologyPlural,
+    getTerminology,
+} from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import {
     groupItemsByChapter,
@@ -49,6 +54,8 @@ const kindIcon = (kind: BulkItemKind) => {
             return <ImageIcon className={cls} />;
         case 'VIDEO_FILE':
             return <Video className={cls} />;
+        case 'SCORM':
+            return <Package className={cls} />;
         case 'YOUTUBE':
             return <YoutubeLogo className={cls} />;
         case 'EXTERNAL_LINK':
@@ -56,7 +63,10 @@ const kindIcon = (kind: BulkItemKind) => {
     }
 };
 
-const MappingBadge = ({ node }: { node: BulkNode }) => {
+const MappingBadge = ({ node, createMissing }: { node: BulkNode; createMissing: boolean }) => {
+    // The synthetic depth-2 root is not a real folder and has no remap dropdown;
+    // Phase 0 always resolves it, so any badge here would just confuse.
+    if (isSyntheticRootNode(node)) return null;
     if (node.mapping.action === 'match') {
         return (
             <span className="rounded-sm bg-success-50 px-2 py-0.5 text-caption text-success-700">
@@ -71,7 +81,15 @@ const MappingBadge = ({ node }: { node: BulkNode }) => {
             </span>
         );
     }
-    // action 'create' = no existing match — must be remapped or skipped.
+    // action 'create' = no existing match. Auto-create makes that actionable;
+    // with it off the user must remap or skip the folder.
+    if (createMissing) {
+        return (
+            <span className="rounded-sm bg-primary-50 px-2 py-0.5 text-caption text-primary-600">
+                Will create
+            </span>
+        );
+    }
     return (
         <span className="rounded-sm bg-warning-50 px-2 py-0.5 text-caption text-warning-700">
             No match — select or skip
@@ -85,6 +103,7 @@ const NodeRow = ({ node, depth }: { node: BulkNode; depth: number }) => {
     const context = useBulkContentUploadingStore((state) => state.context);
     const courseSections = useBulkContentUploadingStore((state) => state.courseSections);
     const sectionSnapshots = useBulkContentUploadingStore((state) => state.sectionSnapshots);
+    const createMissing = useBulkContentUploadingStore((state) => state.options.createMissing);
     const { remapNode } = useBulkContentUploadingStore();
 
     // Multi-course: snapshot/depth come from this node's section, not the
@@ -202,9 +221,11 @@ const NodeRow = ({ node, depth }: { node: BulkNode; depth: number }) => {
                     node.mapping.action === 'skip' && 'text-neutral-400 line-through'
                 )}
             >
-                {isSyntheticRoot ? 'Course content (flat zip)' : node.displayName}
+                {isSyntheticRoot
+                    ? `${getTerminology(ContentTerms.Course, SystemTerms.Course)} content (flat zip)`
+                    : node.displayName}
             </span>
-            <MappingBadge node={node} />
+            <MappingBadge node={node} createMissing={createMissing} />
             {existingSlideCount > 0 && (
                 <span className="rounded-sm bg-neutral-100 px-2 py-0.5 text-caption text-neutral-500">
                     new {getTerminologyPlural(ContentTerms.Slide, SystemTerms.Slide).toLowerCase()}{' '}

@@ -1,0 +1,59 @@
+{
+    "hero": {
+        "eyebrow": "सक्रिय सदस्यता",
+        "noActiveMembership": "कोई सक्रिय सदस्यता नहीं",
+        "statusExpiry": "{{status}} · समाप्ति {{date}}",
+        "noExpiry": "कोई समाप्ति तिथि नहीं",
+        "status": {
+            "active": "सक्रिय",
+            "pending": "लंबित"
+        }
+    },
+    "newEnrollment": {
+        "heading": "किसी नई चीज़ में नामांकन करें",
+        "purchaseMembership": "सदस्यता खरीदें",
+        "rentBook": "किताब किराए पर लें",
+        "buyBook": "किताब खरीदें"
+    },
+    "cancelMembership": {
+        "heading": "सदस्यता रद्द करें",
+        "dateLabel": "इस तारीख़ से सक्रिय",
+        "actionLabel": "रद्द करें",
+        "dialogLabel": "सदस्यता रद्द करें",
+        "empty": {
+            "title": "कोई सक्रिय सदस्यता नहीं",
+            "hint": "इस शिक्षार्थी की कोई मौजूदा सदस्यता नहीं है।"
+        }
+    },
+    "returnBook": {
+        "heading": "किराए की किताब वापस करें",
+        "dateLabel": "किराए पर ली गई",
+        "actionLabel": "वापस करें",
+        "dialogLabel": "किराए की किताब वापस करें",
+        "empty": {
+            "title": "कोई किराए की किताब नहीं",
+            "hint": "इस शिक्षार्थी ने कोई किताब किराए पर नहीं ली है।"
+        }
+    },
+    "planRow": {
+        "activeBadge": "सक्रिय",
+        "defaultPlanName": "सक्रिय योजना"
+    },
+    "compliance": {
+        "heading": "अनुपालन",
+        "note": "यह कार्रवाई ऑडिट-सुरक्षित है। सभी नामांकन परिवर्तन अनुपालन ट्रैकिंग के लिए टाइमस्टैंप और व्यवस्थापक विवरण के साथ लॉग किए जाते हैं।"
+    },
+    "dialog": {
+        "aboutToProceed": "आप आगे बढ़ने वाले हैं",
+        "forStudent": "के लिए",
+        "terminationNote": "समाप्ति तुरंत होगी और पहुँच रद्द कर दी जाएगी।",
+        "cancel": "रद्द करें",
+        "confirmAction": "कार्रवाई की पुष्टि करें",
+        "processing": "प्रक्रिया जारी है…"
+    },
+    "toasts": {
+        "actionSuccess": "कार्रवाई सफलतापूर्वक पूर्ण हुई",
+        "cancelFailed": "योजना रद्द करने में विफल",
+        "noStudentSelected": "कोई छात्र चयनित नहीं"
+    }
+}

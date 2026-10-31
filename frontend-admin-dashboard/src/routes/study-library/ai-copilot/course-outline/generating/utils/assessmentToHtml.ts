@@ -2,6 +2,15 @@
  * Convert assessment JSON content to HTML format for TipTapEditor
  * This matches the format expected by the existing quiz display logic
  */
+import i18n from '@/i18n';
+
+// This module builds HTML strings outside any React render tree (called from
+// plain conversion functions, not a component/hook), so useTranslation() isn't
+// available. Use the shared i18next singleton directly with a fixed namespace
+// — same pattern as studyLibraryScheduleSchema (see -schema/schema.ts).
+const NAMESPACE = 'studyLibraryAssessmentToHtml';
+const t = (key: string, options?: Record<string, unknown>) =>
+    i18n.t(key, { ns: NAMESPACE, ...options });
 
 export interface AssessmentQuestion {
     question_number: string;
@@ -31,13 +40,13 @@ export interface AssessmentContentData {
  */
 export function convertAssessmentToHTML(assessmentData: AssessmentContentData): string {
     if (!assessmentData.questions || assessmentData.questions.length === 0) {
-        return '<p>No questions available.</p>';
+        return `<p>${t('noQuestionsAvailable')}</p>`;
     }
 
     let html = '';
 
     assessmentData.questions.forEach((q, index) => {
-        const questionNum = q.question_number || `Question ${index + 1}`;
+        const questionNum = q.question_number || t('questionFallback', { number: index + 1 });
         html += `<h3>${questionNum}</h3>`;
 
         // Add question content - ensure it's properly formatted HTML
@@ -77,14 +86,20 @@ export function convertAssessmentToHTML(assessmentData: AssessmentContentData): 
                 .map((ans) => ans.replace(/<\/?p>/g, '').trim()); // Clean answer text
 
             if (correctAnswers.length > 0) {
-                html += `<p><strong style="color: #10b981;">Correct Answer${correctAnswers.length > 1 ? 's' : ''}: ${correctAnswers.join(', ')}</strong></p>`;
+                html += `<p><strong style="color: #10b981;">${t('correctAnswer', {
+                    count: correctAnswers.length,
+                    answers: correctAnswers.join(', '),
+                })}</strong></p>`;
             }
         } else if (q.ans) {
             // Fallback to ans field if correct_options is not available
             const cleanAns = String(q.ans)
                 .replace(/<\/?p>/g, '')
                 .trim();
-            html += `<p><strong style="color: #10b981;">Correct Answer: ${cleanAns}</strong></p>`;
+            html += `<p><strong style="color: #10b981;">${t('correctAnswer', {
+                count: 1,
+                answers: cleanAns,
+            })}</strong></p>`;
         }
 
         // Add explanation if available
@@ -93,7 +108,7 @@ export function convertAssessmentToHTML(assessmentData: AssessmentContentData): 
                 .replace(/<\/?p>/g, '')
                 .trim();
             if (cleanExp) {
-                html += `<p><em>Explanation: ${cleanExp}</em></p>`;
+                html += `<p><em>${t('explanation', { text: cleanExp })}</em></p>`;
             }
         }
 
@@ -136,7 +151,7 @@ export function convertAssessmentToJSON(assessmentData: AssessmentContentData): 
                 // Ensure question structure is valid
                 if (!sanitizedQ.question) {
                     console.warn(`Question ${index} has missing question, sanitizing`);
-                    sanitizedQ.question = { type: 'HTML', content: 'Invalid question' };
+                    sanitizedQ.question = { type: 'HTML', content: t('invalidQuestion') };
                 }
 
                 // Ensure options is an array
@@ -222,11 +237,11 @@ export function convertAssessmentToJSON(assessmentData: AssessmentContentData): 
                 // Return a minimal valid question
                 return {
                     question_number: `Q${index + 1}`,
-                    question: 'Question parsing failed',
-                    options: ['Option A'],
+                    question: t('questionParsingFailed'),
+                    options: [t('optionA')],
                     correctAnswerIndex: 0,
-                    ans: 'Option A',
-                    exp: 'Question could not be parsed',
+                    ans: t('optionA'),
+                    exp: t('questionCouldNotBeParsed'),
                     question_type: 'MCQS',
                     tags: [],
                     level: 'easy',
@@ -239,7 +254,7 @@ export function convertAssessmentToJSON(assessmentData: AssessmentContentData): 
             ...assessmentData,
             // Ensure only essential fields are included
             questions: assessmentData.questions,
-            title: assessmentData.title || 'Assessment',
+            title: assessmentData.title || t('defaultTitle'),
             tags: Array.isArray(assessmentData.tags) ? assessmentData.tags : [],
             difficulty: assessmentData.difficulty || 'medium',
             subjects: Array.isArray(assessmentData.subjects) ? assessmentData.subjects : [],

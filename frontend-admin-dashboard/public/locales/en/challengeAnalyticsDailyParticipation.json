@@ -1,0 +1,51 @@
+{
+    "title": "Daily Participation Metrics",
+    "subtitle": "Message activity and response rates by day",
+    "emptyState": "No participation data available for the selected period",
+    "kpi": {
+        "days": "Days",
+        "sent": "Sent",
+        "received": "Received",
+        "response": "Response"
+    },
+    "tabs": {
+        "chart": "Charts",
+        "table": "Day Details"
+    },
+    "charts": {
+        "responseRateTrend": "Response Rate Trend",
+        "messagesByDay": "Messages by Day",
+        "completeOverview": "Complete Overview",
+        "outgoingLabel": "Outgoing",
+        "incomingLabel": "Incoming",
+        "outgoingMessagesLabel": "Outgoing Messages",
+        "incomingMessagesLabel": "Incoming Messages",
+        "responseRateLabel": "Response Rate",
+        "responseRateValue": "Response Rate: {{value}}%",
+        "responseValue": "Response: {{value}}%",
+        "messagesCount_one": "{{count}} msg",
+        "messagesCount_other": "{{count}} msgs",
+        "usersCount_one": "{{count}} user",
+        "usersCount_other": "{{count}} users"
+    },
+    "table": {
+        "day": "Day",
+        "label": "Label",
+        "outgoing": "Outgoing",
+        "incoming": "Incoming",
+        "responseRate": "Response Rate",
+        "trend": "Trend",
+        "status": "Status"
+    },
+    "status": {
+        "noMessages": "No messages",
+        "lowEngagement": "Low engagement",
+        "good": "Good"
+    },
+    "templates": {
+        "breakdown": "Template Breakdown",
+        "dayHeading": "Day {{day}} - {{label}}",
+        "outgoing": "Outgoing Templates:",
+        "incoming": "Incoming Templates:"
+    }
+}

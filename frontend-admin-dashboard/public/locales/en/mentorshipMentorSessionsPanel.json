@@ -1,0 +1,81 @@
+{
+    "filters": {
+        "all": "All",
+        "upcoming": "Upcoming",
+        "awaitingReview": "Awaiting review",
+        "completed": "Completed",
+        "noShows": "No-shows",
+        "cancelled": "Cancelled"
+    },
+    "fallback": {
+        "mentor": "Mentor",
+        "learner": "Learner",
+        "mentorLower": "the mentor",
+        "learnerLower": "the learner"
+    },
+    "columns": {
+        "mentor": "Mentor",
+        "mentee": "Mentee",
+        "when": "When",
+        "duration": "Duration",
+        "topic": "Topic",
+        "status": "Status",
+        "rating": "Rating",
+        "actions": "Actions"
+    },
+    "openSessionDetails": "Open session details",
+    "durationMinutes_one": "{{count}} minute",
+    "durationMinutes_other": "{{count}} minutes",
+    "durationMinutesShort_one": "{{count}} min",
+    "durationMinutesShort_other": "{{count}} min",
+    "whoAndTemplate": "{{mentor}} with {{student}}",
+    "viewSessionAria": "View session details for {{who}}",
+    "viewSessionDetailsTitle": "View session details",
+    "joinSessionAria": "Join session with {{who}}",
+    "noMeetingLinkAria": "No meeting link yet for {{who}}",
+    "joinMeetingTitle": "Join meeting",
+    "noMeetingLinkTitle": "No meeting link yet",
+    "rescheduleAria": "Reschedule this session",
+    "rescheduleTitle": "Reschedule",
+    "cancelAria": "Cancel this session",
+    "cancelTitle": "Cancel",
+    "mentorsFilterLabel": "Mentor",
+    "mentorsSearchPlaceholder": "Search mentors",
+    "loadError": "Couldn't load sessions.",
+    "retry": "Retry",
+    "emptyStateFiltered": "No sessions match this filter",
+    "emptyStateAll": "No sessions yet",
+    "emptyStateHint": "Sessions booked through mentor booking pages will show up here.",
+    "lifecycle": {
+        "completed": "Completed",
+        "noShow": "No-show",
+        "cancelled": "Cancelled",
+        "rescheduled": "Rescheduled",
+        "upcoming": "Upcoming",
+        "awaitingReview": "Awaiting review"
+    },
+    "detailDialog": {
+        "heading": "Session details",
+        "defaultTitle": "Mentor session",
+        "openMeetingLink": "Open meeting link",
+        "mentorNotesLabel": "Mentor's notes",
+        "learnerFeedbackLabel": "Learner feedback",
+        "ratingOutOfFive": "{{rating}}/5"
+    },
+    "fieldLabels": {
+        "mentor": "Mentor",
+        "learner": "Learner",
+        "when": "When",
+        "duration": "Duration",
+        "topic": "Topic",
+        "bookingStatus": "Booking status"
+    },
+    "searchPlaceholder": "Search by mentor, {{learner}} or topic",
+    "shownCount_one": "{{count}} session shown",
+    "shownCount_other": "{{count}} sessions shown",
+    "week": {
+        "title": "This week",
+        "subtitle": "Today and the next six days · click a session for details",
+        "more": "+{{count}} more"
+    }
+}

@@ -171,13 +171,47 @@ public class CertificateTextFitService {
         // the flat two-line budget they were designed against.
         double height = parsePositiveDouble(element.attr("data-fit-height"));
 
-        double fitted = fitFontSize(text, width, fontSize, height);
+        // data-fit-strict: the box height is a hard limit, with no two-line
+        // allowance. For layouts where the text sits between printed lines of
+        // artwork and spilling past the box would draw over them.
+        double fitted = element.hasAttr("data-fit-strict") && height > 0
+                ? fitFontSizeStrict(text, width, fontSize, height)
+                : fitFontSize(text, width, fontSize, height);
         if (fitted >= fontSize) {
             // Already fits. Leave the style attribute untouched rather than
             // rewriting it to the same value.
             return;
         }
-        element.attr("style", replaceFontSize(element.attr("style"), fitted));
+        // data-fit-scale-var: the field's sizes are in design pixels scaled by a
+        // CSS variable (a page that resizes with the screen), so the fitted size
+        // has to be written in that unit rather than as fixed pixels.
+        String scaleVar = element.attr("data-fit-scale-var");
+        element.attr("style", isCssVariableName(scaleVar)
+                ? replaceFontSize(element.attr("style"), fitted, scaleVar)
+                : replaceFontSize(element.attr("style"), fitted));
+    }
+
+    /**
+     * Largest size at or below {@code fontSizePx} whose wrapped text fits inside
+     * {@code heightPx} — at least one line, never the two-line allowance
+     * {@link #linesAllowed} grants. The floor still applies, so a value too long
+     * for any readable size keeps the floor size rather than vanishing.
+     */
+    static double fitFontSizeStrict(String text, double widthPx, double fontSizePx, double heightPx) {
+        double floor = Math.max(MIN_FONT_PX, fontSizePx * MIN_SCALE);
+        double size = fontSizePx;
+        while (size > floor) {
+            int lines = Math.max(1, (int) Math.floor(heightPx / (size * LINE_HEIGHT) + 0.02));
+            if (linesNeeded(text, widthPx, size) <= lines) {
+                return size;
+            }
+            size *= STEP;
+        }
+        return Math.min(fontSizePx, floor);
+    }
+
+    private static boolean isCssVariableName(String name) {
+        return name != null && name.matches("--[A-Za-z0-9_-]+");
     }
 
     /**
@@ -319,7 +353,16 @@ public class CertificateTextFitService {
      * declaration is appended rather than silently dropped.
      */
     static String replaceFontSize(String style, double fontSizePx) {
-        String size = String.format(java.util.Locale.ROOT, "font-size:%.2fpx", fontSizePx);
+        return replaceFontSizeWith(style, String.format(java.util.Locale.ROOT, "font-size:%.2fpx", fontSizePx));
+    }
+
+    /** As above, written as {@code calc(var(--x) * size)} for a scaled layout. */
+    static String replaceFontSize(String style, double fontSize, String cssVariable) {
+        return replaceFontSizeWith(style,
+                String.format(java.util.Locale.ROOT, "font-size:calc(var(%s) * %.2f)", cssVariable, fontSize));
+    }
+
+    private static String replaceFontSizeWith(String style, String size) {
         if (!StringUtils.hasText(style)) {
             return size;
         }

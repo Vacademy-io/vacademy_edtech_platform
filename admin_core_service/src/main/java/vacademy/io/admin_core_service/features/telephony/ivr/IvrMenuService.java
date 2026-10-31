@@ -11,7 +11,9 @@ import vacademy.io.admin_core_service.features.telephony.controller.dto.IvrMenuD
 import vacademy.io.admin_core_service.features.telephony.controller.dto.IvrNodeDTO;
 import vacademy.io.admin_core_service.features.telephony.enums.IvrNodeType;
 import vacademy.io.admin_core_service.features.telephony.persistence.entity.IvrMenu;
+import vacademy.io.admin_core_service.features.telephony.persistence.entity.AiAgent;
 import vacademy.io.admin_core_service.features.telephony.persistence.entity.IvrNode;
+import vacademy.io.admin_core_service.features.telephony.persistence.repository.AiAgentRepository;
 import vacademy.io.admin_core_service.features.telephony.persistence.repository.IvrMenuRepository;
 import vacademy.io.admin_core_service.features.telephony.persistence.repository.IvrNodeRepository;
 import vacademy.io.common.exceptions.VacademyException;
@@ -36,6 +38,7 @@ public class IvrMenuService {
     private final IvrMenuRepository menuRepo;
     private final IvrNodeRepository nodeRepo;
     private final IvrPromptWarmer promptWarmer;
+    private final AiAgentRepository agentRepo;
     private final ObjectMapper mapper = new ObjectMapper();
 
     // ── Runtime (inbound call flow) ──────────────────────────────────────────
@@ -137,12 +140,23 @@ public class IvrMenuService {
                 ? dto.getId() : UUID.randomUUID().toString();
 
         IvrMenu menu = menuRepo.findById(menuId).orElseGet(IvrMenu::new);
+        // A menu id belongs to one institute: never re-home another institute's menu.
+        if (menu.getInstituteId() != null && !menu.getInstituteId().equals(dto.getInstituteId())) {
+            throw new VacademyException("IVR menu not found");
+        }
         menu.setId(menuId);
         menu.setInstituteId(dto.getInstituteId());
         menu.setName(dto.getName().trim());
         menu.setDialedNumber(blankToNull(dto.getDialedNumber()));
         menu.setRootNodeId(blankToNull(dto.getRootNodeId()));
         menu.setEnabled(dto.getEnabled() == null ? Boolean.TRUE : dto.getEnabled());
+        // Node ids come from the client. One that already belongs to ANOTHER menu would be
+        // overwritten (and moved into this one) by the saveAll below.
+        List<String> nodeIds = safe(dto.getNodes()).stream().map(IvrNodeDTO::getId).toList();
+        if (!nodeIds.isEmpty() && nodeRepo.findAllById(nodeIds).stream()
+                .anyMatch(existing -> !menuId.equals(existing.getMenuId()))) {
+            throw new VacademyException("IVR node ids must be new or belong to this menu");
+        }
         menuRepo.save(menu);
 
         // Atomic full-tree replace (bulk delete executes immediately).
@@ -200,9 +214,11 @@ public class IvrMenuService {
             if (IvrNodeType.parseOrNull(n.getNodeType()) == null) {
                 throw new VacademyException("Unknown IVR node type: " + n.getNodeType());
             }
-            if (IvrNodeType.parseOrNull(n.getNodeType()) == IvrNodeType.AI_AGENT
-                    && (n.getAiAgentId() == null || n.getAiAgentId().isBlank())) {
-                throw new VacademyException("AI agent node needs an agent selected");
+            if (IvrNodeType.parseOrNull(n.getNodeType()) == IvrNodeType.AI_AGENT) {
+                if (n.getAiAgentId() == null || n.getAiAgentId().isBlank()) {
+                    throw new VacademyException("AI agent node needs an agent selected");
+                }
+                requireUsableAgent(dto.getInstituteId(), n.getAiAgentId().trim(), n.getLabel());
             }
         }
         // Referenced ids (root, digit targets, next) must exist in the tree.
@@ -222,6 +238,30 @@ public class IvrMenuService {
                 }
             }
         }
+    }
+
+    /**
+     * An AI_AGENT step must name an agent of THIS institute that is turned on. Without the
+     * check a menu could hand callers to another institute's agent (its prompt, its voice, its
+     * billing), or to a deleted / disabled one, which the voice bot answers with the generic
+     * built-in persona.
+     */
+    private void requireUsableAgent(String instituteId, String agentId, String nodeLabel) {
+        String where = nodeLabel == null || nodeLabel.isBlank() ? "an AI agent step" : "\"" + nodeLabel.trim() + "\"";
+        AiAgent agent = agentRepo.findByIdAndInstituteId(agentId, instituteId)
+                .orElseThrow(() -> new VacademyException("The AI agent chosen for " + where
+                        + " is not an agent of this institute. Pick one from your AI agents."));
+        if (!Boolean.TRUE.equals(agent.getEnabled())) {
+            throw new VacademyException("The AI agent \"" + agent.getName() + "\" chosen for " + where
+                    + " is turned off. Turn it on, or pick another agent.");
+        }
+    }
+
+    /** The institute a menu belongs to, for access checks on routes that only carry the menu id. */
+    @Transactional(readOnly = true)
+    public Optional<String> menuInstitute(String menuId) {
+        if (menuId == null || menuId.isBlank()) return Optional.empty();
+        return menuRepo.findById(menuId).map(IvrMenu::getInstituteId);
     }
 
     private IvrMenuDTO toDto(IvrMenu menu, List<IvrNode> nodes) {

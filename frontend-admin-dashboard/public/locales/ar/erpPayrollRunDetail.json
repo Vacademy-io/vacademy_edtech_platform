@@ -1,0 +1,19 @@
+{
+    "backToRuns": "جميع دورات الرواتب",
+    "fallbackHeading": "دورة الرواتب",
+    "fallbackRunType": "عادية",
+    "errors": {
+        "loadFailed": "تعذّر تحميل دورة الرواتب هذه."
+    },
+    "tabs": {
+        "entries_zero": "لا إدخالات ({{count}})",
+        "entries_one": "إدخال واحد ({{count}})",
+        "entries_two": "إدخالان ({{count}})",
+        "entries_few": "{{count}} إدخالات",
+        "entries_many": "{{count}} إدخالًا",
+        "entries_other": "{{count}} إدخال",
+        "errors": "الأخطاء",
+        "payslips": "قسائم الرواتب",
+        "bankFile": "ملف البنك"
+    }
+}

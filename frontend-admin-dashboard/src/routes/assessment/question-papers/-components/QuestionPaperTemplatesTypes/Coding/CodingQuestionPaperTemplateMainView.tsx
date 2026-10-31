@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FormField, FormItem, FormControl, FormMessage } from '@/components/ui/form';
 import { QuestionPaperTemplateFormProps } from '../../../-utils/question-paper-template-form';
 import { QuestionEditor } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-components/coding-question/QuestionEditor';
@@ -39,6 +40,7 @@ export const CodingQuestionPaperTemplateMainView = ({
     className,
     examType,
 }: QuestionPaperTemplateFormProps) => {
+    const { t } = useTranslation('assessmentCodingMainQP');
     const allQuestions = form.getValues('questions') || [];
     const fieldName = `questions.${currentQuestionIndex}.codingConfig` as const;
 
@@ -67,7 +69,7 @@ export const CodingQuestionPaperTemplateMainView = ({
     if (allQuestions.length === 0) {
         return (
             <div className="flex h-screen w-full items-center justify-center">
-                <h1>Please add a question to show question details</h1>
+                <h1>{t('emptyState.noQuestions')}</h1>
             </div>
         );
     }
@@ -76,7 +78,7 @@ export const CodingQuestionPaperTemplateMainView = ({
         return (
             <div className={className}>
                 <p className="text-sm text-muted-foreground">
-                    Coding questions are not supported in surveys.
+                    {t('survey.notSupported')}
                 </p>
             </div>
         );

@@ -1,0 +1,44 @@
+{
+    "options": {
+        "text": {
+            "title": "टेक्स्ट",
+            "description": "सामान्य टेक्स्ट लिखना शुरू करें।"
+        },
+        "heading1": {
+            "title": "हेडिंग 1",
+            "description": "बड़ा सेक्शन हेडिंग"
+        },
+        "heading2": {
+            "title": "हेडिंग 2",
+            "description": "मध्यम सेक्शन हेडिंग"
+        },
+        "heading3": {
+            "title": "हेडिंग 3",
+            "description": "छोटा सेक्शन हेडिंग"
+        },
+        "quote": {
+            "title": "उद्धरण",
+            "description": "एक उद्धरण जोड़ें"
+        },
+        "bulletedList": {
+            "title": "बुलेटेड सूची",
+            "description": "सरल बुलेटेड सूची"
+        },
+        "numberedList": {
+            "title": "क्रमांकित सूची",
+            "description": "क्रमांकित सूची"
+        },
+        "todoList": {
+            "title": "टू-डू सूची",
+            "description": "चेकबॉक्स वाली सूची"
+        },
+        "table": {
+            "title": "तालिका",
+            "description": "सरल तालिका जोड़ें"
+        },
+        "divider": {
+            "title": "विभाजक",
+            "description": "अपने ब्लॉक अलग करें"
+        }
+    }
+}

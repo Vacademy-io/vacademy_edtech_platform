@@ -15,6 +15,7 @@ import vacademy.io.admin_core_service.features.chapter.repository.ChapterReposit
 import vacademy.io.admin_core_service.features.chapter.service.ChapterManager;
 import vacademy.io.admin_core_service.features.common.enums.StatusEnum;
 import vacademy.io.admin_core_service.features.course.dto.TeacherCourseDetailDTO;
+import vacademy.io.admin_core_service.features.course_knowledge.service.ContentIndexMarker;
 import vacademy.io.admin_core_service.features.enroll_invite.enums.EnrollInviteTag;
 import vacademy.io.admin_core_service.features.enroll_invite.repository.EnrollInviteRepository;
 import vacademy.io.admin_core_service.features.enroll_invite.service.DefaultEnrollInviteService;
@@ -33,6 +34,7 @@ import vacademy.io.admin_core_service.features.packages.enums.PackageSessionStat
 import vacademy.io.admin_core_service.features.packages.repository.PackageRepository;
 import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
 import vacademy.io.admin_core_service.features.packages.repository.PackageInstituteRepository;
+import vacademy.io.admin_core_service.features.packages.service.PackagePageContentService;
 import vacademy.io.admin_core_service.features.institute.repository.InstituteRepository;
 import vacademy.io.admin_core_service.features.slide.entity.Slide;
 import vacademy.io.admin_core_service.features.slide.repository.SlideRepository;
@@ -82,6 +84,8 @@ public class CourseApprovalService {
     private final DefaultEnrollInviteService defaultEnrollInviteService;
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final EnrollInviteService enrollInviteService;
+    private final PackagePageContentService packagePageContentService;
+    private final ContentIndexMarker contentIndexMarker;
     /**
      * Create a temporary copy of a published course for teacher editing
      */
@@ -103,6 +107,9 @@ public class CourseApprovalService {
 
         // Copy package-institute linkages
         copyPackageInstituteLinkages(originalPackage, tempPackage);
+
+        // Course page content (FAQs, mode) lives in its own table, not on the package row
+        packagePageContentService.copy(originalPackage.getId(), tempPackage.getId());
 
         appendAuditLog(tempPackage, "ADD", teacher.getUserId(),
                 "Created editable copy from original " + originalCourseId, null);
@@ -134,6 +141,42 @@ public class CourseApprovalService {
 
         log.info("Course {} submitted for review by teacher {}", courseId, teacher.getUserId());
         return "Course submitted for review successfully";
+    }
+
+    /**
+     * Teacher publishes their own DRAFT course directly, skipping the
+     * IN_REVIEW -> admin-approve step. Used when the role's display settings
+     * have "Require approval before publishing" switched off. Runs the same
+     * publish / merge logic as admin approval, with the teacher as the actor.
+     */
+    @Transactional
+    public String publishByTeacher(String courseId, CustomUserDetails teacher) {
+        PackageEntity course = packageRepository.findById(courseId)
+                .orElseThrow(() -> new VacademyException("Course not found"));
+
+        if (!PackageStatusEnum.DRAFT.name().equals(course.getStatus())) {
+            throw new VacademyException("Only draft courses can be published");
+        }
+
+        if (!teacher.getUserId().equals(course.getCreatedByUserId())) {
+            throw new VacademyException("Only the course creator can publish this course");
+        }
+
+        validateCourseContent(course);
+        PackageInstitute packageInstitute = packageInstituteRepository.findTopByPackageEntity_IdOrderByCreatedAtDesc(courseId).orElse(null);
+        String result;
+        if (course.getOriginalCourseId() != null) {
+            // Editable copy of a published course - merge changes back
+            result = mergeChangesIntoOriginal(course, packageInstitute);
+            deleteTempCourse(course);
+        } else {
+            // Brand-new course - publish as active
+            result = publishNewCourse(course, packageInstitute);
+        }
+
+        log.info("Course {} published directly by teacher {}", courseId, teacher.getUserId());
+        appendAuditLog(course, "SELF_PUBLISH", teacher.getUserId(), "Published course without admin review", null);
+        return result;
     }
 
     /**
@@ -865,6 +908,7 @@ public class CourseApprovalService {
         // Update slides with source IDs and save ChapterToSlides
         slideRepository.saveAll(persistedSlides);
         chapterToSlidesRepository.saveAll(newChapterToSlides);
+        contentIndexMarker.markChapter(tempChapter.getId(), "COURSE_EDIT_COPY");
         
         log.info("Copied {} slides from chapter {} to chapter {}", 
                 newSlides.size(), originalChapter.getId(), tempChapter.getId());
@@ -937,6 +981,7 @@ public class CourseApprovalService {
             copy.setSubjectId(original.getSubjectId()); // Keep same subject reference
             copy.setName(original.getName());
             copy.setStatus(original.getStatus());
+            copy.setRoleLabel(original.getRoleLabel());
             // Carry the access/linkage fields across verbatim. Dropping suborg_id in particular
             // would turn a sub-org access grant into a row indistinguishable from a real teacher
             // of the temp package session, which is exactly what the faculty listings filter on.
@@ -970,6 +1015,8 @@ public class CourseApprovalService {
         // Update original course with changes from temp course
         updatePackageFields(originalCourse, tempCourse);
         packageRepository.save(originalCourse);
+        // Course page content (FAQs, mode) is merged like the other package fields: temp wins
+        packagePageContentService.copy(tempCourse.getId(), originalCourse.getId());
 
         // Merge hierarchy changes (subjects, modules, chapters, slides)
         mergeHierarchyChanges(tempCourse, originalCourse);
@@ -1204,6 +1251,7 @@ public class CourseApprovalService {
                     
                     // Update slide source content based on type
                     mergeSlideSource(tempSlide, originalSlide);
+                    contentIndexMarker.mark(originalSlide.getId(), originalChapter.getId(), "COURSE_APPROVAL_MERGE");
                 }
             } else {
                 // Add new slide to original chapter
@@ -1364,6 +1412,7 @@ public class CourseApprovalService {
 
         // Save ChapterToSlides mappings
         chapterToSlidesRepository.saveAll(newChapterToSlides);
+        contentIndexMarker.markChapter(newChapter.getId(), "COURSE_APPROVAL_NEW_CHAPTER");
         
         log.info("Copied {} slides from temp chapter {} to new chapter {}", 
                 newSlides.size(), tempChapter.getId(), newChapter.getId());
@@ -1411,6 +1460,7 @@ public class CourseApprovalService {
         // Create chapter-to-slides mapping
         ChapterToSlides mapping = new ChapterToSlides(originalChapter, newSlide, null, tempSlide.getStatus());
         chapterToSlidesRepository.save(mapping);
+        contentIndexMarker.mark(newSlide.getId(), originalChapter.getId(), "COURSE_APPROVAL_NEW_SLIDE");
         
         log.info("Added new slide {} to original chapter {}", 
                 newSlide.getTitle(), originalChapter.getId());

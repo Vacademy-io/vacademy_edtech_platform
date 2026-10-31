@@ -1,0 +1,44 @@
+{
+    "sessionLabelDefault": "Default",
+    "selectedRow": {
+        "loadingInvite": "Loading invite…",
+        "selectingInvite": "Selecting invite…",
+        "invitesCount_one": "{{count}} invite",
+        "invitesCount_other": "{{count}} invites",
+        "free": "Free",
+        "preselected": "Pre-selected",
+        "noMatchingPaymentOption": "No matching payment option found for this invite and session.",
+        "noActiveInvite": "No active invite found for this session. Create an invite first.",
+        "moveDown": "Move down",
+        "moveUp": "Move up"
+    },
+    "tabs": {
+        "courses": "Courses",
+        "suggestions": "Suggestions"
+    },
+    "selectedCourses": {
+        "heading": "Selected Courses",
+        "addMore": "Add More",
+        "combinedTotal": "Combined total:",
+        "newestFirst": "Newest first",
+        "oldestFirst": "Oldest first",
+        "newestFirstHint": "Put the newest uploaded course on top",
+        "oldestFirstHint": "Put the oldest uploaded course on top",
+        "sortFailed": "Couldn't sort the courses. Please try again."
+    },
+    "browser": {
+        "searchPlaceholder": "Search courses or batches…",
+        "selectAll": "+ Select all ({{count}})",
+        "refresh": "Refresh",
+        "loadingSessions": "Loading sessions…",
+        "noSessionsMatch": "No sessions match \"{{query}}\"",
+        "noActiveSessions": "No active sessions found.",
+        "otherGroup": "Other",
+        "added": "Added",
+        "add": "Add",
+        "loadingMore": "Loading more…",
+        "loadMore_one": "Load more ({{count}} remaining)",
+        "loadMore_other": "Load more ({{count}} remaining)",
+        "footerHint": "{{loaded}} of {{total}} sessions loaded · {{selected}} selected"
+    }
+}

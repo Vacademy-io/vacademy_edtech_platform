@@ -72,10 +72,13 @@ class KbRetrievalService:
         self.db = db
         self.repo = KbRepository(db)
 
-    async def _embed_query(self, query: str, institute_id: str) -> Optional[List[float]]:
+    async def _embed_query(
+        self, query: str, institute_id: str, model: Optional[str] = None
+    ) -> Optional[List[float]]:
+        """Embed a query WITH THE MODEL THE TARGET KB WAS INDEXED WITH."""
         embedder = EmbeddingService(ApiKeyResolver(self.db))
         try:
-            return await embedder.embed_query(query, institute_id)
+            return await embedder.embed_query(query, institute_id, model=model)
         finally:
             await embedder.close()
 
@@ -87,13 +90,17 @@ class KbRetrievalService:
         query: str,
         top_k: int = DEFAULT_TOP_K,
         similarity_threshold: float = DEFAULT_THRESHOLD,
+        source_ids: Optional[List[str]] = None,
     ) -> List[Dict[str, Any]]:
-        """Ranked chunks from one KB, each with page anchors and real figures."""
+        """Ranked chunks from one KB, each with page anchors and real figures.
+
+        `source_ids` pins the search to particular sources (the chapters a
+        teacher ticked in a textbook library)."""
         kb = self.repo.get_kb(kb_id, institute_id)
         if not kb:
             return []
 
-        embedding = await self._embed_query(query, institute_id)
+        embedding = await self._embed_query(query, institute_id, model=kb.get("embedding_model"))
         if not embedding:
             logger.warning("KB search: query embedding failed for kb=%s", kb_id)
             return []
@@ -119,6 +126,7 @@ class KbRetrievalService:
             embedding_dim=kb["embedding_dim"],
             top_k=top_k,
             similarity_threshold=similarity_threshold,
+            source_ids=source_ids,
         )
 
         # Hydrate figures in one query rather than per hit.
@@ -146,12 +154,12 @@ class KbRetrievalService:
         embedder: chunks written under a different one are skipped rather than
         cross-ranked, which is the correct failure mode.
         """
-        embedding = await self._embed_query(query, institute_id)
+        spec = self.repo.get_default_embedding_model()
+        embedding = await self._embed_query(query, institute_id, model=spec.model_id)
         # Same NaN trap as search(): a zero-norm vector would match every chunk
         # across every knowledge base the institute owns.
         if not embedding or not any(embedding):
             return []
-        spec = self.repo.get_default_embedding_model()
         return self.repo.search_institute_wide(
             institute_id=institute_id,
             query_embedding=embedding,
@@ -159,6 +167,7 @@ class KbRetrievalService:
             top_k=top_k,
             similarity_threshold=similarity_threshold,
             purposes=purposes,
+            embedding_model=spec.model_id,
         )
 
     # ------------------------------------------------------------------

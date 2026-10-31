@@ -73,6 +73,9 @@ public class RazorpayWebHookService {
     private RenewalPaymentService renewalPaymentService;
 
     @Autowired
+    private vacademy.io.admin_core_service.features.plan_change.service.PlanChangeService planChangeService;
+
+    @Autowired
     private FeeLedgerAllocationService feeLedgerAllocationService;
 
     @Autowired
@@ -99,6 +102,14 @@ public class RazorpayWebHookService {
     @Autowired
     private vacademy.io.admin_core_service.features.platform_billing.service.PlatformRazorpayWebHookService platformRazorpayWebHookService;
 
+    /** Present once AI-plan autopay ships; recognises the platform's mandate tokens. */
+    @Autowired
+    private org.springframework.beans.factory.ObjectProvider<vacademy.io.admin_core_service.features.platform_billing.service.SubscriptionPaymentHandler> subscriptionPaymentHandler;
+
+    /** Finds platform orders whose payments carry no notes (autopay registration links). */
+    @Autowired
+    private vacademy.io.admin_core_service.features.platform_billing.repository.PlatformPaymentRepository platformPaymentRepository;
+
     @Autowired
     private vacademy.io.admin_core_service.features.user_account.service.UserAccountLedgerService userAccountLedgerService;
 
@@ -118,9 +129,10 @@ public class RazorpayWebHookService {
             // against the institute's secret 100% of the time. Hand them to the
             // platform handler, which verifies against the right secret and grants
             // the credits. Routed before persistence — the platform handler saves its
-            // own web_hook row with vendor='RAZORPAY_PLATFORM'.
+            // own web_hook row with vendor='RAZORPAY_PLATFORM'. AI_SUBSCRIPTION payments and
+            // the platform's autopay token.* events (no notes, matched by token id) go the same way.
             if (isPlatformCreditPackEvent(payload)) {
-                log.info("Razorpay webhook is an AI_CREDIT_PACK event — delegating to platform handler.");
+                log.info("Razorpay webhook is a platform (AI credit pack / AI plan) event — delegating to platform handler.");
                 return platformRazorpayWebHookService.handleWebhook(payload, signature);
             }
 
@@ -285,6 +297,9 @@ public class RazorpayWebHookService {
         } else if (paymentType != null && PaymentType.APPLICATION_FEE.name().equals(paymentType)) {
             log.info("Processing APPLICATION_FEE payment webhook for orderId: {}", orderId);
             handleApplicationFeePayment(eventType, orderId, instituteId, paymentEntity);
+        } else if (paymentType != null && PaymentType.PLAN_CHANGE.name().equals(paymentType)) {
+            log.info("Processing PLAN_CHANGE payment webhook for orderId: {}", orderId);
+            handlePlanChangePayment(eventType, orderId, instituteId);
         } else {
             // Handle initial payment events
             handleRazorpayEvent(eventType, orderId, instituteId, paymentEntity);
@@ -589,7 +604,7 @@ public class RazorpayWebHookService {
      * Never throws: a payload we cannot parse is simply "not a platform event"
      * and falls through to the normal (signature-verified) institute path.
      */
-    private boolean isPlatformCreditPackEvent(String payload) {
+    boolean isPlatformCreditPackEvent(String payload) {
         try {
             JsonNode root = objectMapper.readTree(payload);
             JsonNode entity = extractPaymentEntity(root);
@@ -598,7 +613,31 @@ public class RazorpayWebHookService {
                 JsonNode orderEntity = root.get("payload").get("order").get("entity");
                 paymentType = orderEntity != null ? extractPaymentType(orderEntity) : null;
             }
-            return PaymentType.AI_CREDIT_PACK.name().equals(paymentType);
+            if (PaymentType.AI_CREDIT_PACK.name().equals(paymentType)
+                    || PaymentType.AI_SUBSCRIPTION.name().equals(paymentType)) {
+                return true;
+            }
+            // token.* carries only the token entity: ours when the platform handler knows the id.
+            String event = root.has("event") ? root.get("event").asText() : null;
+            if (event != null && event.startsWith("token.") && subscriptionPaymentHandler != null) {
+                JsonNode token = root.path("payload").path("token").path("entity");
+                String tokenId = token.has("id") ? token.get("id").asText() : null;
+                var handler = subscriptionPaymentHandler.getIfAvailable();
+                return tokenId != null && handler != null && handler.ownsToken(tokenId);
+            }
+            // No payment_type in the notes (a registration-link payment keeps its notes on the
+            // invoice): ours when its order / invoice id is a platform_payment's vendor_order_id.
+            // Razorpay ids are globally unique, so an institute's payment can never match.
+            if (paymentType == null && entity != null && platformPaymentRepository != null) {
+                for (String key : new String[] {"order_id", "invoice_id"}) {
+                    JsonNode ref = entity.get(key);
+                    if (ref != null && !ref.isNull() && !ref.asText().isBlank()
+                            && platformPaymentRepository.findByVendorOrderId(ref.asText()).isPresent()) {
+                        return true;
+                    }
+                }
+            }
+            return false;
         } catch (Exception e) {
             log.warn("Could not determine payment_type for webhook routing: {}", e.getMessage());
             return false;
@@ -1213,6 +1252,25 @@ public class RazorpayWebHookService {
 
         } catch (Exception e) {
             log.error("Error processing renewal payment webhook", e);
+        }
+    }
+
+    /**
+     * An upgrade payment settled. Applying the change is idempotent inside
+     * PlanChangeService (it claims the payment log atomically), which matters here because
+     * Razorpay delivers both payment.captured and order.paid for one payment and prod runs
+     * several replicas.
+     */
+    private void handlePlanChangePayment(String eventType, String orderId, String instituteId) {
+        try {
+            PaymentStatusEnum paymentStatus = determinePaymentStatus(eventType);
+            if (paymentStatus == null) {
+                log.info("Event {} is not relevant for plan-change payment status. Skipping.", eventType);
+                return;
+            }
+            planChangeService.handlePlanChangePaymentConfirmation(orderId, instituteId, paymentStatus);
+        } catch (Exception e) {
+            log.error("Error processing plan-change payment webhook for orderId {}", orderId, e);
         }
     }
 

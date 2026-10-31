@@ -1,0 +1,191 @@
+{
+    "status": {
+        "paid": "Payé",
+        "partialPaid": "Partiellement payé",
+        "overdue": "En retard",
+        "waived": "Exonéré",
+        "cancelled": "Annulée",
+        "stopped": "Arrêtée"
+    },
+    "row": {
+        "updateSuccessToast": "Échéance mise à jour",
+        "updateErrorToast": "Échec de la mise à jour",
+        "discountOptionNone": "aucune",
+        "discountOptionPercentage": "%",
+        "discountOptionFlat": "₹",
+        "reasonPlaceholder": "Motif",
+        "save": "Enregistrer",
+        "split": "Scinder",
+        "splitTitle": "Déplacer une partie du montant impayé vers une nouvelle échéance avec sa propre date"
+    },
+    "cpoDiscount": {
+        "heading": "Remise",
+        "typeLabel": "Type",
+        "discountOptionNone": "aucune",
+        "discountOptionPercentage": "% du total",
+        "discountOptionFlat": "remise fixe ₹",
+        "valueLabel": "Valeur",
+        "reasonLabel": "Motif",
+        "reasonPlaceholder": "ex. Remise fratrie",
+        "removeSuccessToast": "Remise CPO supprimée",
+        "applySuccessToast": "Remise CPO appliquée",
+        "applyErrorToast": "Échec de l'application de la remise CPO",
+        "applying": "Application en cours…",
+        "apply": "Appliquer",
+        "remove": "Supprimer",
+        "currentSummary": "Actuellement : {{amount}} de remise · {{how}}",
+        "howLabel": "Appliquer la remise",
+        "previewError": "Impossible de calculer cette remise",
+        "customOff": "Remise sur l’échéance {{n}}",
+        "paidRow": "payée",
+        "paidRowKeeps": "−{{amount}} conservé",
+        "totalOff": "Remise totale : {{amount}}",
+        "capped": "(vous avez saisi {{requested}} ; seul le reste à payer peut être remisé)"
+    },
+    "offlinePayment": {
+        "amountRequiredError": "Saisissez un montant positif",
+        "recordedSuccessToast": "Paiement hors ligne de {{amount}} enregistré",
+        "recordErrorToast": "Échec de l'enregistrement du paiement",
+        "addPaymentButton": "+ Ajouter un paiement",
+        "heading": "Ajouter un paiement",
+        "amountLabel": "Montant (₹)",
+        "nextDue": "Prochaine échéance {{amount}}",
+        "allDues": "Tout le solde {{amount}}",
+        "dateLabel": "Date",
+        "referenceLabel": "Référence",
+        "referencePlaceholder": "n° de chèque, réf. UPI…",
+        "generateInvoiceLabel": "Générer une facture",
+        "saving": "Enregistrement…",
+        "saveAndAllocate": "Enregistrer et répartir (FIFO)",
+        "cancel": "Annuler"
+    },
+    "card": {
+        "installmentCount_one": "{{count}} échéance",
+        "installmentCount_many": "{{count}} échéances",
+        "installmentCount_other": "{{count}} échéances",
+        "net": "Net {{amount}}",
+        "paid": "Payé {{amount}}",
+        "outstanding": "Solde restant {{amount}}",
+        "loadingInstallments": "Chargement des échéances…",
+        "loadInstallmentsError": "Impossible de charger les échéances.",
+        "tableHeaders": {
+            "index": "#",
+            "startDate": "Date de début",
+            "dueDate": "Date d'échéance",
+            "default": "Défaut",
+            "amount": "Montant",
+            "discount": "Remise",
+            "paid": "Payé",
+            "status": "Statut"
+        },
+        "inPackage": "Fait partie du forfait d’inscription — enregistrez les paiements sur le forfait ci-dessus.",
+        "packageManaged": "Fait partie d'un forfait d'admission : payez, reprogrammez ou scindez ses échéances sur le forfait ci-dessus, pour que tous les cours suivent un seul calendrier."
+    },
+    "loadingPlans": "Chargement des plans CPO…",
+    "loadPlansError": "Impossible de charger les plans CPO.",
+    "split": {
+        "heading": "Nouvelle échéance à partir des {{unpaid}} impayés",
+        "hint": "Le total du plan ne change pas — seule la date d'échéance de cette partie change.",
+        "amountLabel": "Montant à déplacer",
+        "startDateLabel": "Date de début",
+        "dueDateLabel": "Date d'échéance",
+        "save": "Créer l'échéance",
+        "saving": "Enregistrement…",
+        "cancel": "Annuler",
+        "amountError": "Saisissez un montant supérieur à 0 et jusqu'à {{unpaid}}",
+        "dueDateError": "Choisissez une date d'échéance pour la nouvelle échéance",
+        "successToast": "Nouvelle échéance de {{amount}} due le {{date}} ajoutée",
+        "errorToast": "Impossible de scinder cette échéance"
+    },
+    "item": {
+        "due": "Échéance {{date}}",
+        "paid": "Payé {{amount}}",
+        "left": "Reste {{amount}}",
+        "overpaid": "Trop-perçu {{amount}}",
+        "planDiscount": "Remise du plan −{{amount}}",
+        "ownDiscount": "Remise −{{amount}}",
+        "was": "Avant remises {{amount}}",
+        "recordPayment": "Enregistrer un paiement",
+        "edit": "Modifier"
+    },
+    "pay": {
+        "heading": "Enregistrer un paiement · échéance {{n}}",
+        "coversEarlier_one": "Les paiements soldent d’abord les échéances les plus anciennes ; celui-ci couvre donc aussi 1 échéance précédente.",
+        "coversEarlier_other": "Les paiements soldent d’abord les échéances les plus anciennes ; celui-ci couvre donc aussi {{count}} échéances précédentes.",
+        "coversEarlier_many": "Les paiements soldent d’abord les échéances les plus anciennes ; celui-ci couvre donc aussi {{count}} échéances précédentes.",
+        "submit": "Enregistrer {{amount}}",
+        "anyAmountNote": "Tout montant ; il solde d’abord les échéances les plus anciennes."
+    },
+    "edit": {
+        "startDate": "Date de début",
+        "dueDate": "Date d’échéance",
+        "amount": "Montant",
+        "amountHint": "Laissez vide pour garder le montant du plan ({{amount}}).",
+        "discount": "Remise sur cette échéance",
+        "reason": "Motif"
+    },
+    "allocation": {
+        "UNPAID_PROPORTIONAL": {
+            "label": "Échéances impayées, au prorata",
+            "short": "répartie sur les échéances impayées",
+            "hint": "Chaque échéance impayée reçoit une part proportionnelle à ce qui reste dû. Les échéances payées ne changent pas."
+        },
+        "UNPAID_EQUAL": {
+            "label": "Échéances impayées, à parts égales",
+            "short": "à parts égales sur les impayées",
+            "hint": "Le même montant est retiré de chaque échéance impayée."
+        },
+        "LAST_FIRST": {
+            "label": "À partir de la dernière échéance",
+            "short": "à partir de la dernière échéance",
+            "hint": "Retirée d’abord de la dernière échéance, puis de la précédente, jusqu’à épuisement."
+        },
+        "NEXT_FIRST": {
+            "label": "À partir de la prochaine échéance",
+            "short": "à partir de la prochaine échéance",
+            "hint": "Retirée d’abord de la prochaine échéance, puis de la suivante."
+        },
+        "CUSTOM": {
+            "label": "Montant personnalisé par échéance",
+            "short": "montants personnalisés",
+            "hint": "Saisissez la remise de chaque échéance impayée. La remise totale est leur somme."
+        },
+        "ALL_PROPORTIONAL": {
+            "label": "Toutes les échéances, payées comprises",
+            "short": "répartie sur toutes les échéances",
+            "hint": "L’ancienne méthode : chaque échéance, payée ou non, prend une part. Une échéance payée peut se retrouver en trop-perçu."
+        }
+    },
+    "stopDues": {
+        "action": "Arrêter les échéances",
+        "heading": "Arrêter les échéances",
+        "hint": "Pour un apprenant qui a abandonné ou a cessé de payer. Ce que vous arrêtez n'est plus dû, en retard ni relancé. L'argent déjà payé et ses reçus restent. Vous pouvez rouvrir tant que l'apprenant est inscrit.",
+        "onlyThis": "Seulement cette échéance ({{amount}} impayés)",
+        "thisAndLater_one": "Celle-ci et {{count}} échéance suivante ({{amount}})",
+        "thisAndLater_many": "Celle-ci et les {{count}} échéances suivantes ({{amount}})",
+        "thisAndLater_other": "Celle-ci et les {{count}} échéances suivantes ({{amount}})",
+        "reason": "Motif",
+        "reasonPlaceholder": "ex. Abandon après la première échéance",
+        "removeCourse": "Retirer aussi l'apprenant de ce cours",
+        "removePackage_one": "Retirer aussi l'apprenant du cours du forfait",
+        "removePackage_many": "Retirer aussi l'apprenant des {{count}} cours du forfait",
+        "removePackage_other": "Retirer aussi l'apprenant des {{count}} cours du forfait",
+        "removeWarning": "L'accès prend fin maintenant, et les échéances arrêtées ne pourront plus être rouvertes.",
+        "cancel": "Annuler",
+        "saving": "Enregistrement…",
+        "submit": "Arrêter {{amount}}",
+        "success": "Échéances de {{amount}} arrêtées",
+        "successRemoved_one": "Échéances de {{amount}} arrêtées ; retiré de {{count}} cours",
+        "successRemoved_many": "Échéances de {{amount}} arrêtées ; retiré de {{count}} cours",
+        "successRemoved_other": "Échéances de {{amount}} arrêtées ; retiré de {{count}} cours",
+        "removalError": "Échéances arrêtées, mais l'apprenant n'a pas pu être retiré : {{errors}}",
+        "error": "Impossible d'arrêter les échéances",
+        "reasonError": "Indiquez pourquoi les échéances sont arrêtées",
+        "reopen": "Rouvrir",
+        "reopened_one": "{{count}} échéance rouverte",
+        "reopened_many": "{{count}} échéances rouvertes",
+        "reopened_other": "{{count}} échéances rouvertes",
+        "reopenError": "Impossible de rouvrir",
+        "stoppedFact": "{{amount}} arrêtés · {{reason}}"
+    }
+}

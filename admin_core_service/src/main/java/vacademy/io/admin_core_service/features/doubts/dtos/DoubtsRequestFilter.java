@@ -35,5 +35,14 @@ public class DoubtsRequestFilter {
      * inbox no longer requires at least one batch — GENERAL queries have no batch.
      */
     private String instituteId;
+    /** Only doubts with an ACTIVE explicit assignee among these user ids. Empty ⇒ no assignee filter. */
+    private List<String> assigneeUserIds;
+    /** When true, only doubts with NO active explicit assignee. Combined with assigneeUserIds as OR. */
+    private Boolean unassignedOnly;
+    /**
+     * Configurable workflow status keys (PENDING, IN_PROGRESS, RESOLVED, …). Legacy rows without a
+     * stored key match via their coarse status (RESOLVED → RESOLVED, else PENDING).
+     */
+    private List<String> workflowStatuses;
     Map<String, String> sortColumns;
 }

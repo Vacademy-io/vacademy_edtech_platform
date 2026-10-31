@@ -1,0 +1,92 @@
+{
+    "empty": {
+        "pickInstitute": "कॉलिंग रिपोर्ट देखने के लिए एक इंस्टीट्यूट चुनें।",
+        "noCallsInRange": "इस अवधि में कोई कॉल नहीं है।",
+        "noCounsellorActivity": "इस अवधि में काउंसलर की कोई कॉल गतिविधि नहीं है।"
+    },
+    "deployPending": {
+        "title": "कॉलिंग रिपोर्ट अभी इस सर्वर पर उपलब्ध नहीं हैं",
+        "description": "रिपोर्टिंग एंडपॉइंट अभी इस एनवायरनमेंट में डिप्लॉय नहीं किए गए हैं। अगले बैकएंड रिलीज़ के बाद फिर से जाँचें।"
+    },
+    "error": {
+        "loadFailed": "यह रिपोर्ट लोड नहीं हो सकी।",
+        "retry": "पुनः प्रयास करें"
+    },
+    "kpi": {
+        "totalDials": {
+            "label": "कुल डायल",
+            "sub_one": "{{count}} दिन में",
+            "sub_other": "{{count}} दिनों में"
+        },
+        "connected": {
+            "label": "कनेक्टेड",
+            "sub_one": "{{dials}} डायल में से",
+            "sub_other": "{{dials}} डायल में से"
+        },
+        "connectRate": {
+            "label": "कनेक्ट दर",
+            "sub": "कनेक्टेड ÷ डायल"
+        },
+        "talkTime": {
+            "label": "बातचीत का समय",
+            "sub": "घंटे : मिनट"
+        }
+    },
+    "dailyChart": {
+        "heading": "दैनिक कॉल गतिविधि",
+        "legendDials": "डायल",
+        "legendConnected": "कनेक्टेड",
+        "ariaLabel": "दैनिक डायल और कनेक्टेड कॉल",
+        "exportCsv": "CSV निर्यात करें"
+    },
+    "counsellorTable": {
+        "heading": "काउंसलर कॉल प्रदर्शन",
+        "exportCsv": "CSV निर्यात करें",
+        "headers": {
+            "counsellor": "काउंसलर",
+            "dials": "डायल",
+            "connected": "कनेक्टेड",
+            "connectRate": "कनेक्ट %",
+            "talkTime": "बातचीत का समय",
+            "avgCall": "औसत कॉल",
+            "outcomes": "परिणाम"
+        }
+    },
+    "heatmap": {
+        "heading": "कॉलिंग घंटों का हीटमैप",
+        "timezoneNote": "दिन × घंटा, आपके इंस्टीट्यूट के रिपोर्ट टाइमज़ोन में",
+        "legendFewer": "कम",
+        "legendMore": "अधिक",
+        "days": {
+            "mon": "सोम",
+            "tue": "मंगल",
+            "wed": "बुध",
+            "thu": "गुरु",
+            "fri": "शुक्र",
+            "sat": "शनि",
+            "sun": "रवि"
+        },
+        "tooltip": {
+            "noDials": "{{day}} {{hour}} — कोई डायल नहीं",
+            "withDials_one": "{{day}} {{hour}} — {{count}} डायल · {{pct}}% कनेक्टेड",
+            "withDials_other": "{{day}} {{hour}} — {{count}} डायल · {{pct}}% कनेक्टेड"
+        }
+    },
+    "csv": {
+        "daily": {
+            "date": "तारीख़",
+            "dials": "डायल",
+            "connected": "कनेक्टेड",
+            "connectRate": "कनेक्ट दर (%)",
+            "talkTime": "बातचीत का समय (सेकंड)"
+        },
+        "counsellor": {
+            "counsellor": "काउंसलर",
+            "dials": "डायल",
+            "connected": "कनेक्टेड",
+            "connectRate": "कनेक्ट दर (%)",
+            "talkTime": "बातचीत का समय (सेकंड)",
+            "avgCall": "औसत कॉल (सेकंड)"
+        }
+    }
+}

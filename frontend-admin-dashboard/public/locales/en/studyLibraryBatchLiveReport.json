@@ -1,0 +1,104 @@
+{
+    "duration": {
+        "none": "—",
+        "minutes_one": "{{count}}m",
+        "minutes_other": "{{count}}m",
+        "hours_one": "{{count}}h",
+        "hours_other": "{{count}}h",
+        "hoursMinutes": "{{h}}h {{m}}m"
+    },
+    "engagement": {
+        "talkTime_one": "{{count}}m talk",
+        "talkTime_other": "{{count}}m talk",
+        "chats_one": "{{count}} chat",
+        "chats_other": "{{count}} chats",
+        "polls_one": "{{count}} poll",
+        "polls_other": "{{count}} polls",
+        "raiseHand_one": "{{count}} hand",
+        "raiseHand_other": "{{count}} hands",
+        "emojis_one": "{{count}} emoji",
+        "emojis_other": "{{count}} emojis",
+        "none": "no interaction"
+    },
+    "table": {
+        "date": "Date",
+        "class": "Class",
+        "present": "Present",
+        "absent": "Absent",
+        "attendance": "Attendance",
+        "avgDuration": "Avg Duration",
+        "engagement": "Engagement",
+        "rank": "Rank",
+        "name": "Name",
+        "classesAttended": "Classes Attended"
+    },
+    "export": {
+        "generatedOn": "Generated {{date}}",
+        "exportSuccess": "Live class report exported",
+        "exportFailed": "Failed to export PDF",
+        "csvExportSuccess": "CSV exported",
+        "csvExportFailed": "Failed to export CSV"
+    },
+    "errors": {
+        "loadFailed": "Something went wrong loading the report. Please try again.",
+        "batchLoadFailed": "Could not load the report for {{name}}."
+    },
+    "emptyState": {
+        "title": "No live classes found",
+        "description": "No live classes were held for this batch in the selected period."
+    },
+    "actions": {
+        "attendanceTracker": "Attendance Tracker",
+        "exporting": "Exporting…",
+        "exportPdf": "Export PDF",
+        "exportCsv": "Export CSV"
+    },
+    "metrics": {
+        "avgAttendance": "Avg Attendance",
+        "learnersCount_one": "{{count}} learner",
+        "learnersCount_other": "{{count}} learners",
+        "classesHeld": "Classes Held",
+        "avgDurationPerClass": "Avg Duration / Class",
+        "presentLearners": "present learners",
+        "avgEngagement": "Avg Engagement",
+        "participationPoints": "participation points",
+        "engagementInfo": "Engagement points — a weighted total of in-class participation (talk time counts most, then polls, chats and raise-hands), summed across all classes in the period. Higher = more engaged; there is no upper limit. Only available for provider-synced (Zoom/BBB) classes."
+    },
+    "sections": {
+        "attendanceTrendTitle": "Attendance Trend",
+        "attendanceTrendSubtitle": "Class-by-class attendance rate over the selected period",
+        "classBreakdownTitle": "Class-wise Breakdown",
+        "classBreakdownSubtitle": "Attendance, duration and engagement for every class held",
+        "leaderboardTitle": "Leaderboard",
+        "leaderboardSubtitle": "Ranked by attendance, then engagement. Interaction totals are summed across all classes in the selected period."
+    },
+    "multiBatchTitle": "{{term}} report · {{count}} selected",
+    "comparison": {
+        "title": "{{term}} comparison",
+        "subtitle": "Attendance, duration and engagement for every selected batch side by side",
+        "learners": "Learners"
+    },
+    "csv": {
+        "fileStem": "live-class-report",
+        "summaryTitle": "Summary",
+        "startDate": "Start date",
+        "endDate": "End date",
+        "avgAttendancePct": "Avg attendance (%)",
+        "avgDurationMin": "Avg duration (min)",
+        "avgEngagementIndex": "Avg engagement (points)",
+        "classesTitle": "Class-wise breakdown",
+        "unmarked": "Unmarked",
+        "invited": "Invited",
+        "attendancePct": "Attendance (%)",
+        "leaderboardTitle": "Leaderboard",
+        "attended": "Classes attended",
+        "totalClasses": "Classes total",
+        "engagementIndex": "Engagement (points)",
+        "engagementScore": "Engagement score (0-100)",
+        "talkTimeMin": "Talk time (min)",
+        "chats": "Chats",
+        "polls": "Poll votes",
+        "raiseHands": "Raise hands",
+        "emojis": "Emojis"
+    }
+}

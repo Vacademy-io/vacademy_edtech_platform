@@ -3,7 +3,9 @@
         "tab": {
             "all": "All {{courses}}",
             "inProgress": "In Progress",
-            "completed": "Completed"
+            "completed": "Completed",
+            "scrollStart": "Scroll tabs back",
+            "scrollEnd": "Scroll tabs forward"
         },
         "toast": {
             "loadError": "Something went wrong while loading {{courses}}. Please try again.",
@@ -31,6 +33,11 @@
         },
         "card": {
             "untitledPackage": "Untitled Package"
+        },
+        "customTab": {
+            "open": "Open",
+            "coursesCount": "{{count}} courses",
+            "productPagesEmpty": "Nothing to show here yet"
         }
     },
     "filters": {
@@ -144,5 +151,295 @@
         "nextSlide": "Next: {{title}}",
         "overview": "Overview",
         "overviewAriaLabel": "View {{course}} overview"
+    },
+    "liveClass": {
+        "badge": {
+            "live": "LIVE",
+            "liveNow": "LIVE NOW",
+            "session": "SESSION",
+            "startingSoon": "STARTING SOON",
+            "waitingRoom": "WAITING ROOM"
+        },
+        "button": {
+            "join": "Join",
+            "joinEarly": "Join Early",
+            "joinLiveClass": "Join Live Class",
+            "joinSession": "Join Session",
+            "joinWaitingRoom": "Join Waiting Room",
+            "next": "Next",
+            "nextSessions": "Next {{sessions}}",
+            "notStarted": "Not Started",
+            "previous": "Previous",
+            "previousSessions": "Previous {{sessions}}",
+            "settingUp": "Setting up…",
+            "today": "Today"
+        },
+        "calendar": {
+            "clickDayHint": "Click on a day to view all {{liveSessions}}",
+            "dayNamesShort": [
+                "Sun",
+                "Mon",
+                "Tue",
+                "Wed",
+                "Thu",
+                "Fri",
+                "Sat"
+            ],
+            "monthNames": [
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December"
+            ],
+            "moreCount": "+{{count}} more"
+        },
+        "countdown": {
+            "hours": "Hours",
+            "minutes": "Minutes",
+            "seconds": "Seconds"
+        },
+        "dayModal": {
+            "classesOn": "Classes on {{date}}",
+            "noneScheduled": "No {{liveSessions}} scheduled for this day",
+            "pastSessions": "Past {{sessions}}",
+            "upcomingSessions": "Upcoming {{sessions}}"
+        },
+        "defaultClassCard": {
+            "defaultTitle": "Default {{session}}",
+            "description": "There is no {{liveSession}} currently. You can watch this {{session}}.",
+            "noLiveSession": "No {{liveSession}}",
+            "viewSession": "View {{session}}"
+        },
+        "disclaimer": {
+            "continue": "Continue to class",
+            "description": "Please watch this short video.",
+            "iframeTitle": "Disclaimer",
+            "title": "Before you join"
+        },
+        "embed": {
+            "back": "← Back",
+            "classReady": "{{liveClass}} is Ready",
+            "clickToJoinNewWindow": "Click below to join the {{liveClass}} in a new window.",
+            "clickToViewLive": "Click here to view the live",
+            "errorLoadingSessionDetails": "Error loading {{session}} details: {{message}}",
+            "goToLogin": "Go to Login",
+            "invalidYoutubeUrl": "Invalid YouTube URL format",
+            "loginRequired": "Login Required",
+            "loginRequiredDescription": "Please log in to attend this {{session}}. This is a private {{session}} and requires authentication.",
+            "noMeetingLink": "No meeting link available for this {{session}}.",
+            "openingInNewTab": "Opening meeting link in a new tab...",
+            "rec": "Rec",
+            "recording": "Recording",
+            "tapToJoin": "Tap below to join the {{liveClass}}.",
+            "toast": {
+                "classNotStarted": "Your {{instructor}} hasn't started this {{liveClass}} yet. Please wait a moment and try again.",
+                "joinFailed": "Failed to join {{liveClass}}. Please try again.",
+                "liveSessionStarted": "A {{liveSession}} has started!"
+            },
+            "unsupportedSessionType": "Unsupported {{session}} type: {{linkType}}"
+        },
+        "feedback": {
+            "backToLiveClasses": "Back to {{liveSessions}}",
+            "fieldRequired": "This field is required",
+            "hopeFoundGeneric": "Hope you found the {{session}} useful.",
+            "hopeFoundTitled": "Hope you found \"{{title}}\" useful.",
+            "instituteLogoAlt": "Institute logo",
+            "loadingForm": "Loading feedback form…",
+            "rating": {
+                "excellent": "Excellent",
+                "fair": "Fair",
+                "good": "Good",
+                "poor": "Poor",
+                "starAriaLabel_one": "{{count}} star",
+                "starAriaLabel_other": "{{count}} stars",
+                "veryGood": "Very good"
+            },
+            "requiredBody": "Your {{instructor}} has marked feedback as compulsory for this {{session}} — please complete all required questions to continue.",
+            "requiredLabel": "Feedback required.",
+            "responsePlaceholder": "Type your response here…",
+            "responsesRecorded": "Your responses have been recorded. Redirecting you back…",
+            "sessionFeedbackTitle": "{{session}} Feedback",
+            "skip": "Skip",
+            "submitFeedback": "Submit Feedback",
+            "submitting": "Submitting…",
+            "thankYouTitle": "Thank you for your feedback!",
+            "thanksForAttending": "Thanks for attending!"
+        },
+        "field": {
+            "duration": "Duration:",
+            "starts": "Starts:"
+        },
+        "filter": {
+            "days_one": "{{count}} Day",
+            "days_other": "{{count}} Days"
+        },
+        "loginForm": {
+            "continue": "Continue",
+            "enterOtp": "Enter OTP",
+            "findingUser": "Finding User...",
+            "findingUserDetails": "Finding user details...",
+            "heading": "Login to View Sessions",
+            "loadingUserDetails": "Loading user details...",
+            "otpSentTo": "We've sent a 6-digit code to",
+            "quickLoginDescription": "You'll be logged in directly without email verification.",
+            "quickLoginTitle": "Quick Login Mode",
+            "subtitle": "Enter your username to access the {{liveSession}}",
+            "toast": {
+                "emailServiceUnavailable": "Email service is temporarily unavailable.",
+                "invalidUserData": "Invalid user data received",
+                "loggingIn": "Logging in...",
+                "linkExpired": "This login link has expired",
+                "linkExpiredDescription": "Ask for a new link, or sign in with your username and password.",
+                "loginFailedLater": "Login failed. Please try again later.",
+                "loginFailedRetry": "Login failed. Please try again.",
+                "loginSuccessTitle": "Login successful! Redirecting...",
+                "otpIncomplete": "Please enter the complete 6-digit OTP",
+                "otpInvalid": "Invalid OTP. Please try again.",
+                "otpSendFailed": "Failed to send OTP",
+                "otpSent": "We have sent an OTP! Please check your email.",
+                "otpVerified": "OTP verified successfully!",
+                "studentDetailsFailed": "Failed to fetch student details",
+                "tryAgain": "Please try again",
+                "userLookupFailed": "Failed to find user",
+                "userNotFound": "User not found",
+                "welcome": "Welcome to your {{liveSession}}"
+            },
+            "usernameLabel": "Username",
+            "usernamePlaceholder": "Enter your username",
+            "verifyAndContinue": "Verify & Continue",
+            "verifying": "Verifying..."
+        },
+        "meta": {
+            "pageDescription": "{{liveClasses}} and upcoming sessions",
+            "pageTitle": "{{liveClasses}}"
+        },
+        "pagination": {
+            "pageOf": "Page {{page}} of {{totalPages}}",
+            "viewingPage": "Viewing Page {{page}}"
+        },
+        "pastSession": {
+            "activity": {
+                "attended": "Attended {{minutes}} min",
+                "chats": "{{count}} chats",
+                "handRaises": "{{count}} hand raises",
+                "pollVotes": "{{count}} poll votes",
+                "reactions": "{{count}} reactions"
+            },
+            "attendance": {
+                "absent": "Absent",
+                "notMarked": "Not marked",
+                "present": "Present"
+            },
+            "materialFallback": "Material",
+            "materialsLabel": "Class materials",
+            "recording": {
+                "expired": "Recording expired",
+                "part": "Part {{number}}",
+                "watch": "Watch Recording"
+            },
+            "toast": {
+                "materialOpenFailed": "Could not open this material."
+            }
+        },
+        "recordingDialog": {
+            "copy": "Copy",
+            "expiresAround": "This link may expire around {{date}}.",
+            "loading": "Loading recording…",
+            "openRecording": "Open recording",
+            "passcodeLabel": "Passcode:",
+            "toast": {
+                "loadFailed": "Failed to load the recording.",
+                "passcodeCopied": "Passcode copied"
+            },
+            "unableToEmbed": "Unable to embed this video.",
+            "zoomCloudHosted": "This recording is hosted on Zoom Cloud. Open it in a new tab to watch."
+        },
+        "section": {
+            "adjustFilters": "Try adjusting your filters or clear them to see all {{sessions}}",
+            "checkBackLater": "Check back later or view upcoming {{sessions}}",
+            "classesWillShowUp": "Classes will show up here once they've happened.",
+            "foundCount_one": "{{count}} {{liveSessions}} found",
+            "foundCount_other": "{{count}} {{liveSessions}} found",
+            "liveSessionsHeading": "{{liveSessions}} - {{timezone}}",
+            "newSessionsWillAppear": "New {{sessions}} will appear here when scheduled",
+            "noPastSessionsYet": "No past sessions yet",
+            "noUpcomingMatchFilters": "No upcoming {{sessions}} match your filters",
+            "noUpcomingScheduled": "No upcoming {{sessions}} scheduled",
+            "noneAtTheMoment": "No {{liveSessions}} at the moment",
+            "noneFound": "No {{liveSessions}} found",
+            "pastSessionsSubtitle": "Classes that already happened for your {{batch}}.",
+            "sessionCount_one": "{{count}} session",
+            "sessionCount_other": "{{count}} sessions"
+        },
+        "sessionSelection": {
+            "description": "There are {{count}} active {{sessions}} right now. Please select which one you'd like to join:",
+            "tipBody": "You can only join one {{session}} at a time. Choose the {{session}} you want to attend.",
+            "tipLabel": "Tip:",
+            "title": "Multiple Active Sessions"
+        },
+        "state": {
+            "errorLoadingPrefix": "Error loading sessions:",
+            "loadingSessions": "Loading sessions..."
+        },
+        "tabs": {
+            "calendar": "Calendar View",
+            "list": "List View"
+        },
+        "toast": {
+            "classEnded": "This {{liveClass}} has ended",
+            "classNotStartedYet": "Class has not started yet. Please wait for the waiting room to open.",
+            "markAttendanceFailed": "Failed to mark attendance",
+            "paymentRequired": "This {{session}} requires payment. Complete your payment to join.",
+            "statusUndetermined": "Unable to determine {{session}} status. Please try again."
+        },
+        "usernameLogin": {
+            "footerHelp": "Need help? Contact support for assistance with accessing your {{liveSession}}."
+        },
+        "zoomSdk": {
+            "couldNotInit": "Could not initialise the Zoom meeting ({{code}}).",
+            "couldNotJoin": "Could not join the Zoom meeting ({{code}}).",
+            "couldNotLoad": "We couldn't load this {{liveClass}}. Please refresh, or contact your instructor.",
+            "couldNotLoadCheckConnection": "Could not load the Zoom meeting. Check your connection and try again.",
+            "failedToLoad": "Failed to load the Zoom meeting.",
+            "initError": "init error",
+            "joinError": "join error",
+            "joiningMeeting": "Joining meeting…",
+            "notReadyToJoin": "This {{liveClass}} is not ready to join yet — it may still be getting set up. Please refresh in a moment, or contact your instructor if it continues.",
+            "openInZoomApp": "Open in Zoom app",
+            "preparingMeeting": "Preparing meeting…",
+            "refreshOrRejoin": "Please refresh the page or try rejoining.",
+            "stillSettingUp": "This {{liveClass}} is still being set up. Please refresh in a moment."
+        },
+        "zoomSettingUpTooltip": "The Zoom meeting is still being set up. Check back shortly."
+    },
+    "supportersSection": {
+        "headingPrefix": "Our",
+        "headingHighlight": "Supporters"
+    },
+    "courseCatalogBanner": {
+        "alt": "{{course}} catalog banner"
+    },
+    "instructorCta": {
+        "headingBefore": "Want to Create Your Own",
+        "headingAfter": "?",
+        "subtitle": "Share your knowledge with the world!",
+        "description": "Log in and start building your own {{courses}} for others to explore and learn from.",
+        "login": "Login"
+    },
+    "legacyNav": {
+        "brandName": "Learning Center",
+        "logoAlt": "Learning Center Logo",
+        "userProfileAlt": "User Profile"
+    },
+    "studyCourseCatalog": {
+        "heading": "Study {{course}} Catalog"
     }
 }

@@ -1,0 +1,82 @@
+{
+    "linkForm": {
+        "cancel": "रद्द करें",
+        "linking": "लिंक किया जा रहा है…",
+        "linkButton": "{{person}} को लिंक करें"
+    },
+    "backTrail": {
+        "label": "वापस — {{name}} देखा जा रहा है"
+    },
+    "roles": {
+        "guardian": "अभिभावक",
+        "student": "छात्र"
+    },
+    "fallback": {
+        "thisLearner": "इस शिक्षार्थी",
+        "thisGuardian": "इस अभिभावक"
+    },
+    "toast": {
+        "copiedToClipboard": "{{field}} क्लिपबोर्ड पर कॉपी हो गया!",
+        "copyFailed": "{{field}} कॉपी करने में विफल",
+        "guardianLinked": "अभिभावक लिंक हो गया",
+        "studentLinked": "छात्र लिंक हो गया",
+        "guardianCredentialsSentTo": "अभिभावक के लॉगिन विवरण {{email}} पर भेज दिए गए",
+        "guardianCredentialsSent": "अभिभावक के लॉगिन विवरण भेज दिए गए",
+        "guardianCredentialsNotSent": "अभिभावक के लॉगिन विवरण नहीं भेजे जा सके",
+        "guardianCredentialsSendFailed": "अभिभावक के लॉगिन विवरण भेजने में विफल",
+        "linkGuardianFailedDefault": "अभिभावक को लिंक करने में विफल।"
+    },
+    "toastFields": {
+        "studentUsername": "छात्र उपयोगकर्ता नाम",
+        "studentPassword": "छात्र पासवर्ड",
+        "username": "उपयोगकर्ता नाम",
+        "email": "ईमेल",
+        "password": "पासवर्ड"
+    },
+    "fields": {
+        "username": "उपयोगकर्ता नाम",
+        "password": "पासवर्ड",
+        "name": "नाम",
+        "email": "ईमेल",
+        "mobile": "मोबाइल"
+    },
+    "status": {
+        "loading": "लोड हो रहा है…",
+        "notFound": "नहीं मिला",
+        "passwordNotFound": "पासवर्ड नहीं मिला"
+    },
+    "ownLogin": {
+        "passwordHidden": "इस संस्थान के लिए पासवर्ड दृश्यता बंद है — इस छात्र का लॉगिन यहाँ देखने के लिए सेटिंग्स → भूमिका प्रदर्शन में इसे सक्षम करें।",
+        "heading": "इस छात्र का लॉगिन"
+    },
+    "errors": {
+        "loadGuardianInfo": "अभिभावक की जानकारी लोड नहीं हो सकी"
+    },
+    "guardianHero": {
+        "eyebrow": "अभिभावक प्रोफ़ाइल",
+        "title": "यह एक अभिभावक प्रोफ़ाइल है",
+        "linkedToChildren_one": "{{count}} बच्चे से लिंक",
+        "linkedToChildren_other": "{{count}} बच्चों से लिंक"
+    },
+    "linkedChildren": {
+        "heading": "लिंक किए गए बच्चे",
+        "addChild": "बच्चा जोड़ें",
+        "viewLearnerTooltip": "इस शिक्षार्थी की अभिभावक जानकारी देखें"
+    },
+    "noGuardian": {
+        "title": "अभी तक कोई अभिभावक लिंक नहीं है",
+        "hint": "किसी मौजूदा अभिभावक को लिंक करें, या यहीं से एक नया जोड़ें।"
+    },
+    "linkGuardianSection": {
+        "heading": "अभिभावक लिंक करें",
+        "addGuardian": "अभिभावक जोड़ें"
+    },
+    "guardianSection": {
+        "heading": "अभिभावक",
+        "shareCredentialsTooltip": "ये लॉगिन विवरण ईमेल करें ताकि अभिभावक पेरेंट पोर्टल में लॉगिन कर सकें",
+        "shareCredentials": "लॉगिन विवरण साझा करें",
+        "sending": "भेजा जा रहा है…",
+        "viewProfileTooltip": "इस अभिभावक की अपनी प्रोफ़ाइल देखें",
+        "viewProfileLink": "अभिभावक की प्रोफ़ाइल देखें →"
+    }
+}

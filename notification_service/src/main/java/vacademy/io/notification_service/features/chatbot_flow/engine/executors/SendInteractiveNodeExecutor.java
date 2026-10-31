@@ -59,8 +59,11 @@ public class SendInteractiveNodeExecutor implements ChatbotNodeExecutor {
                         .build();
             }
 
-            provider.sendInteractive(context.getPhoneNumber(), config,
-                    context.getInstituteId(), context.getBusinessChannelId());
+            // Keep the provider's message id — the engine stamps it on the outgoing row, and it
+            // is the only key the delivered/read webhooks can join on.
+            context.setLastProviderMessageId(
+                    provider.sendInteractive(context.getPhoneNumber(), config,
+                            context.getInstituteId(), context.getBusinessChannelId()));
 
             log.info("Interactive message sent: type={}, phone={}",
                     config.get("interactiveType"), context.getPhoneNumber());
@@ -79,9 +82,10 @@ public class SendInteractiveNodeExecutor implements ChatbotNodeExecutor {
                             .filter(p -> p.supports(context.getChannelType()))
                             .findFirst().orElse(null);
                     if (provider != null) {
-                        provider.sendTemplate(context.getPhoneNumber(),
-                                Map.of("templateName", fallbackTemplate, "languageCode", "en", "bodyParams", List.of()),
-                                context.getInstituteId(), context.getBusinessChannelId());
+                        context.setLastProviderMessageId(
+                                provider.sendTemplate(context.getPhoneNumber(),
+                                        Map.of("templateName", fallbackTemplate, "languageCode", "en", "bodyParams", List.of()),
+                                        context.getInstituteId(), context.getBusinessChannelId()));
                         return NodeExecutionResult.builder().success(true).build();
                     }
                 } catch (Exception fallbackEx) {

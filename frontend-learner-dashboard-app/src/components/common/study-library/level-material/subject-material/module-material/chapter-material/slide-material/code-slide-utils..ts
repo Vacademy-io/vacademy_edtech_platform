@@ -1,3 +1,4 @@
+import i18n from "@/i18n";
 import { CodeEditorData } from "./code-editor-slide";
 import {
   DEFAULT_CODE_SAMPLES,
@@ -48,7 +49,7 @@ const loadPyodideInstance = async (): Promise<any> => {
     const timeoutId = setTimeout(() => {
       reject(
         new Error(
-          "Pyodide loading timed out after 30 seconds. Please refresh the page and try again."
+          i18n.t("libraryCommonA:codeExecution.pyodideTimeoutError")
         )
       );
     }, PYODIDE_LOAD_TIMEOUT);
@@ -190,7 +191,7 @@ export const executePythonWithPyodide = async (
     const hasError = output.includes("Error:") || output.includes("Traceback");
 
     return {
-      output: output.trim() || "Code executed successfully (no output)",
+      output: output.trim() || i18n.t("libraryCommonA:codeExecution.executedNoOutput"),
       needsInput: false,
       hasError,
     };
@@ -198,24 +199,22 @@ export const executePythonWithPyodide = async (
     console.error("[CodeEditor] Error loading or initializing Pyodide:", error);
 
     // Provide more specific error messages
-    let errorMessage = "Unknown error occurred while loading Pyodide.";
+    let errorMessage = i18n.t("libraryCommonA:codeExecution.unknownPyodideError");
 
     if (error instanceof Error) {
       if (error.message.includes("timed out")) {
-        errorMessage =
-          "Pyodide loading timed out. This might be due to slow internet connection or CDN issues. Please refresh the page and try again.";
+        errorMessage = i18n.t("libraryCommonA:codeExecution.pyodideTimeoutHint");
       } else if (error.message.includes("Failed to fetch")) {
-        errorMessage =
-          "Failed to download Pyodide. Please check your internet connection and try again.";
+        errorMessage = i18n.t("libraryCommonA:codeExecution.pyodideDownloadFailed");
       } else if (error.message.includes("pyodide")) {
-        errorMessage = `Pyodide error: ${error.message}`;
+        errorMessage = i18n.t("libraryCommonA:codeExecution.pyodideErrorPrefix", { message: error.message });
       } else {
-        errorMessage = `Loading error: ${error.message}`;
+        errorMessage = i18n.t("libraryCommonA:codeExecution.loadingErrorPrefix", { message: error.message });
       }
     }
 
     return {
-      output: `Pyodide Loading Error:\n${errorMessage}\n\nPlease try:\n1. Refresh the page\n2. Check your internet connection\n3. Try again in a few moments`,
+      output: i18n.t("libraryCommonA:codeExecution.pyodideLoadingErrorFull", { errorMessage }),
       needsInput: false,
       hasError: true,
     };
@@ -238,7 +237,7 @@ export const executeCode = async (
 ): Promise<CodeExecutionResult> => {
   if (!code.trim()) {
     return {
-      output: "No code to execute. Please write some code first.",
+      output: i18n.t("libraryCommonA:codeExecution.noCodeToExecute"),
       needsInput: false,
     };
   }
@@ -248,7 +247,7 @@ export const executeCode = async (
     return await executePythonWithPyodide(code);
   } else {
     return {
-      output: `Language '${language}' is not supported yet. Only Python execution is available.`,
+      output: i18n.t("libraryCommonA:codeExecution.languageNotSupported", { language }),
       needsInput: false,
     };
   }

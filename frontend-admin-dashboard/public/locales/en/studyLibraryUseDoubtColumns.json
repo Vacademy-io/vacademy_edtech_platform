@@ -1,0 +1,16 @@
+{
+    "columns": {
+        "doubt": "Doubt",
+        "status": "Status",
+        "category": "Category",
+        "format": "Format",
+        "assignedTo": "Assigned To",
+        "raised": "Raised",
+        "resolved": "Resolved",
+        "actions": "Actions"
+    },
+    "learner": {
+        "unknown": "Unknown",
+        "guest": "Guest"
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "previewButton": "Aperçu de l'invitation",
+    "instituteLogoAlt": "Logo de l'établissement",
+    "courseBannerAlt": "Bannière du cours",
+    "coursePreviewAlt": "Image d'aperçu du cours",
+    "levelLabel": "Niveau",
+    "learnersGainHeading": "Ce que les apprenants vont acquérir",
+    "aboutCourseHeading": "À propos du cours",
+    "youtubePlayerTitle": "Lecteur vidéo YouTube",
+    "videoNotSupported": "Votre navigateur ne prend pas en charge la balise vidéo.",
+    "registrationHeading": "Détails d'inscription",
+    "registrationSubheading": "Renseignez vos informations pour vous inscrire au cours",
+    "phoneNumberLabel": "Numéro de téléphone",
+    "phoneNumberPlaceholder": "123 456 7890",
+    "registerButton": "S'inscrire",
+    "resetFormButton": "Réinitialiser le formulaire"
+}

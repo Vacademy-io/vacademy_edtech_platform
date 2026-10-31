@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     UsersThree,
     CalendarPlus,
@@ -49,14 +51,14 @@ import {
 } from '@/components/templates/TemplateSearchableSelect';
 
 /** Mentorship fields an admin can map a WhatsApp template variable to. '' = auto-match by name. */
-const WA_FIELD_OPTIONS: { value: string; label: string }[] = [
-    { value: '', label: 'Auto (match by name)' },
-    { value: 'name', label: "Recipient's name" },
-    { value: 'mentor_name', label: "Mentor's name" },
-    { value: 'student_name', label: "Student's name" },
-    { value: 'session_title', label: 'Session title' },
-    { value: 'session_datetime', label: 'Session date & time' },
-    { value: 'decision_note', label: 'Decline reason (mentor request)' },
+const getWaFieldOptions = (t: TFunction): { value: string; label: string }[] => [
+    { value: '', label: t('waFieldOptions.auto') },
+    { value: 'name', label: t('waFieldOptions.recipientName') },
+    { value: 'mentor_name', label: t('waFieldOptions.mentorName') },
+    { value: 'student_name', label: t('waFieldOptions.studentName') },
+    { value: 'session_title', label: t('waFieldOptions.sessionTitle') },
+    { value: 'session_datetime', label: t('waFieldOptions.sessionDatetime') },
+    { value: 'decision_note', label: t('waFieldOptions.declineReason') },
 ];
 
 /** Extract {{tokens}} from an approved template's BODY text. */
@@ -67,9 +69,11 @@ const templateBodyTokens = (template: MetaWhatsAppTemplate | undefined): string[
     return Array.from(new Set(tokens));
 };
 
-const PlaceholderHint = () => (
+const PlaceholderHint = () => {
+    const { t } = useTranslation('settingsMentorship');
+    return (
     <div className="mt-2 flex flex-wrap items-center gap-1.5">
-        <span className="text-xs text-neutral-400">Placeholders:</span>
+        <span className="text-xs text-neutral-400">{t('placeholderHint.label')}</span>
         {MENTORSHIP_PLACEHOLDERS.map((p) => (
             <code
                 key={p.token}
@@ -80,7 +84,8 @@ const PlaceholderHint = () => (
             </code>
         ))}
     </div>
-);
+    );
+};
 
 /**
  * Email or in-app/push channel: just the toggle. The message itself uses the
@@ -117,6 +122,7 @@ const InlineTemplateBlock = ({
     defaultBody: string;
     idPrefix: string;
 }) => {
+    const { t } = useTranslation('settingsMentorship');
     const [customizing, setCustomizing] = useState(false);
     const isDefault = primaryValue === defaultPrimary && bodyValue === defaultBody;
     const showEditors = enabled && (customizing || !isDefault);
@@ -138,14 +144,14 @@ const InlineTemplateBlock = ({
             {enabled && !showEditors && (
                 <div className="ml-9 mt-2 flex items-center gap-2">
                     <span className="text-xs text-neutral-400">
-                        Uses the system default message.
+                        {t('channel.usesDefault')}
                     </span>
                     <button
                         type="button"
                         onClick={() => setCustomizing(true)}
                         className="text-xs font-medium text-primary-500 hover:text-primary-600"
                     >
-                        Customize
+                        {t('channel.customize')}
                     </button>
                 </div>
             )}
@@ -164,7 +170,7 @@ const InlineTemplateBlock = ({
                     </div>
                     <div>
                         <Label htmlFor={`${idPrefix}-body`} className="text-xs text-neutral-600">
-                            Message
+                            {t('channel.messageLabel')}
                         </Label>
                         <Textarea
                             id={`${idPrefix}-body`}
@@ -183,7 +189,7 @@ const InlineTemplateBlock = ({
                         }}
                         className="text-xs font-medium text-neutral-500 hover:text-neutral-700"
                     >
-                        Reset to system default
+                        {t('channel.resetToDefault')}
                     </button>
                 </div>
             )}
@@ -203,8 +209,10 @@ const WhatsappBlock = ({
     templates: MetaWhatsAppTemplate[];
     loading: boolean;
 }) => {
+    const { t } = useTranslation('settingsMentorship');
+    const waFieldOptions = useMemo(() => getWaFieldOptions(t), [t]);
     const selected = useMemo(
-        () => templates.find((t) => t.name === value.template_name),
+        () => templates.find((tpl) => tpl.name === value.template_name),
         [templates, value.template_name]
     );
     const tokens = useMemo(() => templateBodyTokens(selected), [selected]);
@@ -224,9 +232,9 @@ const WhatsappBlock = ({
                         <WhatsappLogo size={18} />
                     </div>
                     <div className="flex-1">
-                        <div className="text-sm font-medium text-neutral-800">WhatsApp</div>
+                        <div className="text-sm font-medium text-neutral-800">{t('whatsapp.label')}</div>
                         <div className="mt-0.5 text-xs text-neutral-500">
-                            Requires an approved Meta template.
+                            {t('whatsapp.requiresTemplate')}
                         </div>
                     </div>
                 </div>
@@ -235,25 +243,25 @@ const WhatsappBlock = ({
             {value.enabled && (
                 <div className="ml-9 mt-3 space-y-3">
                     <div>
-                        <Label className="text-xs text-neutral-600">Approved template</Label>
+                        <Label className="text-xs text-neutral-600">{t('whatsapp.approvedTemplateLabel')}</Label>
                         <TemplateSearchableSelect
                             className="mt-1"
                             options={toTemplateOptions(templates)}
                             value={value.template_name || undefined}
                             onChange={(name) => {
-                                const t = templates.find((x) => x.name === name);
+                                const tpl = templates.find((x) => x.name === name);
                                 onChange({
                                     template_name: name,
-                                    language_code: t?.language || value.language_code || 'en',
+                                    language_code: tpl?.language || value.language_code || 'en',
                                     variable_mapping: {},
                                 });
                             }}
                             loading={loading}
-                            placeholder="Select an approved template"
+                            placeholder={t('whatsapp.selectTemplatePlaceholder')}
                             emptyText={
                                 templates.length === 0
-                                    ? 'No approved WhatsApp templates found.'
-                                    : 'No approved template matches your search.'
+                                    ? t('whatsapp.noTemplatesFound')
+                                    : t('whatsapp.noTemplateMatchesSearch')
                             }
                         />
                     </div>
@@ -261,11 +269,10 @@ const WhatsappBlock = ({
                     {selected && tokens.length > 0 && (
                         <div className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
                             <div className="text-xs font-medium text-neutral-600">
-                                Map template variables
+                                {t('whatsapp.mapVariables')}
                             </div>
                             <div className="mt-0.5 text-xs text-neutral-400">
-                                Leave as “Auto” when the template variable name already matches a
-                                mentorship field.
+                                {t('whatsapp.mapVariablesHint')}
                             </div>
                             <div className="mt-2 space-y-2">
                                 {tokens.map((token) => (
@@ -281,7 +288,7 @@ const WhatsappBlock = ({
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {WA_FIELD_OPTIONS.map((o) => (
+                                                {waFieldOptions.map((o) => (
                                                     <SelectItem key={o.value || 'auto'} value={o.value}>
                                                         {o.label}
                                                     </SelectItem>
@@ -326,7 +333,9 @@ const TriggerCard = ({
     waTemplates: MetaWhatsAppTemplate[];
     waLoading: boolean;
     children?: React.ReactNode;
-}) => (
+}) => {
+    const { t } = useTranslation('settingsMentorship');
+    return (
     <Card>
         <CardHeader className="flex-row items-start gap-3 space-y-0 p-5 pb-2">
             <div className="mt-0.5 rounded-md bg-primary-50 p-2 text-primary-500">{icon}</div>
@@ -339,10 +348,10 @@ const TriggerCard = ({
             {children}
             <InlineTemplateBlock
                 icon={<EnvelopeSimple size={18} />}
-                label="Email"
+                label={t('channel.email.label')}
                 enabled={trigger.email.enabled}
                 onToggle={(v) => onChannelChange('email', { enabled: v })}
-                primaryLabel="Subject"
+                primaryLabel={t('channel.email.subjectLabel')}
                 primaryValue={trigger.email.subject}
                 onPrimaryChange={(v) => onChannelChange('email', { subject: v })}
                 bodyValue={trigger.email.body}
@@ -354,10 +363,10 @@ const TriggerCard = ({
             <Separator />
             <InlineTemplateBlock
                 icon={<BellRinging size={18} />}
-                label="In-app alert"
+                label={t('channel.inAppAlert.label')}
                 enabled={trigger.system_alert.enabled}
                 onToggle={(v) => onChannelChange('system_alert', { enabled: v })}
-                primaryLabel="Title"
+                primaryLabel={t('channel.inAppAlert.titleLabel')}
                 primaryValue={trigger.system_alert.title}
                 onPrimaryChange={(v) => onChannelChange('system_alert', { title: v })}
                 bodyValue={trigger.system_alert.body}
@@ -369,10 +378,10 @@ const TriggerCard = ({
             <Separator />
             <InlineTemplateBlock
                 icon={<DeviceMobile size={18} />}
-                label="Push notification"
+                label={t('channel.push.label')}
                 enabled={trigger.push.enabled}
                 onToggle={(v) => onChannelChange('push', { enabled: v })}
-                primaryLabel="Title"
+                primaryLabel={t('channel.push.titleLabel')}
                 primaryValue={trigger.push.title}
                 onPrimaryChange={(v) => onChannelChange('push', { title: v })}
                 bodyValue={trigger.push.body}
@@ -391,7 +400,8 @@ const TriggerCard = ({
             <PlaceholderHint />
         </CardContent>
     </Card>
-);
+    );
+};
 
 interface MentorshipSettingsProps {
     /** Rendered inside the quick-access popup rather than the full /settings page. */
@@ -399,6 +409,7 @@ interface MentorshipSettingsProps {
 }
 
 export default function MentorshipSettings({ embedded = false }: MentorshipSettingsProps = {}) {
+    const { t } = useTranslation('settingsMentorship');
     const [settings, setSettings] = useState<MentorshipSettingsType>(DEFAULT_MENTORSHIP_SETTINGS);
     const [initial, setInitial] = useState<MentorshipSettingsType>(DEFAULT_MENTORSHIP_SETTINGS);
     const [loading, setLoading] = useState(true);
@@ -423,7 +434,7 @@ export default function MentorshipSettings({ embedded = false }: MentorshipSetti
         (async () => {
             try {
                 const list = await whatsappTemplateService.getMetaTemplates();
-                if (!cancelled) setWaTemplates(list.filter((t) => t.status === 'APPROVED'));
+                if (!cancelled) setWaTemplates(list.filter((tpl) => tpl.status === 'APPROVED'));
             } catch {
                 if (!cancelled) setWaTemplates([]);
             } finally {
@@ -481,10 +492,10 @@ export default function MentorshipSettings({ embedded = false }: MentorshipSetti
             setSaving(true);
             await saveMentorshipSettings(settings);
             setInitial(settings);
-            toast.success('Mentorship settings saved');
+            toast.success(t('toasts.saveSuccess'));
         } catch (err) {
             console.error(err);
-            toast.error('Failed to save mentorship settings.');
+            toast.error(t('toasts.saveError'));
         } finally {
             setSaving(false);
         }
@@ -509,16 +520,16 @@ export default function MentorshipSettings({ embedded = false }: MentorshipSetti
                 {!embedded && (
                     <div>
                         <h2 className="text-xl font-semibold text-neutral-800">
-                            Mentorship Settings
+                            {t('header.title')}
                         </h2>
                         <p className="text-sm text-neutral-500">
-                            Choose how learners are notified for each mentorship event.
+                            {t('header.subtitle')}
                         </p>
                     </div>
                 )}
                 <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={reset} disabled={!dirty || saving}>
-                        Reset
+                        {t('actions.reset')}
                     </Button>
                     <Button
                         size="sm"
@@ -526,15 +537,15 @@ export default function MentorshipSettings({ embedded = false }: MentorshipSetti
                         disabled={!dirty || saving}
                         className="bg-primary-500 hover:bg-primary-600"
                     >
-                        {saving ? 'Saving…' : 'Save changes'}
+                        {saving ? t('actions.saving') : t('actions.save')}
                     </Button>
                 </div>
             </div>
 
             <TriggerCard
                 icon={<UsersThree size={20} />}
-                title="Mentor Assigned"
-                description="When a mentor is assigned to a student."
+                title={t('assignment.title')}
+                description={t('assignment.description')}
                 idPrefix="assignment"
                 defaults={DEFAULT_MENTORSHIP_SETTINGS.assignment}
                 trigger={settings.assignment}
@@ -544,17 +555,17 @@ export default function MentorshipSettings({ embedded = false }: MentorshipSetti
             >
                 <div className="pb-1">
                     <div className="text-xs font-medium uppercase tracking-wide text-neutral-400">
-                        Who to notify
+                        {t('whoToNotify')}
                     </div>
                     <div className="flex items-center justify-between py-2">
-                        <span className="text-sm text-neutral-700">Notify the student</span>
+                        <span className="text-sm text-neutral-700">{t('assignment.notifyStudent')}</span>
                         <Switch
                             checked={settings.assignment.notify_student}
                             onCheckedChange={(v) => setAssignmentFlag('notify_student', v)}
                         />
                     </div>
                     <div className="flex items-center justify-between py-2">
-                        <span className="text-sm text-neutral-700">Notify the mentor</span>
+                        <span className="text-sm text-neutral-700">{t('assignment.notifyMentor')}</span>
                         <Switch
                             checked={settings.assignment.notify_mentor}
                             onCheckedChange={(v) => setAssignmentFlag('notify_mentor', v)}
@@ -562,15 +573,15 @@ export default function MentorshipSettings({ embedded = false }: MentorshipSetti
                     </div>
                     <Separator />
                     <div className="mt-3 text-xs font-medium uppercase tracking-wide text-neutral-400">
-                        Learner message &amp; channels
+                        {t('learnerMessageAndChannels')}
                     </div>
                 </div>
             </TriggerCard>
 
             <TriggerCard
                 icon={<UserPlus size={20} />}
-                title="Mentor Request"
-                description="When a learner asks for a mentor from Find a mentor."
+                title={t('request.title')}
+                description={t('request.description')}
                 idPrefix="request"
                 defaults={DEFAULT_MENTORSHIP_SETTINGS.request}
                 trigger={settings.request}
@@ -580,11 +591,11 @@ export default function MentorshipSettings({ embedded = false }: MentorshipSetti
             >
                 <div className="pb-1">
                     <div className="text-xs font-medium uppercase tracking-wide text-neutral-400">
-                        Who to notify
+                        {t('whoToNotify')}
                     </div>
                     <div className="flex items-center justify-between py-2">
                         <span className="text-sm text-neutral-700">
-                            Tell the mentor someone requested them
+                            {t('request.notifyMentorRequested')}
                         </span>
                         <Switch
                             checked={settings.request.notify_mentor}
@@ -593,7 +604,7 @@ export default function MentorshipSettings({ embedded = false }: MentorshipSetti
                     </div>
                     <div className="flex items-center justify-between py-2">
                         <span className="text-sm text-neutral-700">
-                            Tell the learner when you decline
+                            {t('request.notifyStudentDeclined')}
                         </span>
                         <Switch
                             checked={settings.request.notify_student}
@@ -601,20 +612,19 @@ export default function MentorshipSettings({ embedded = false }: MentorshipSetti
                         />
                     </div>
                     <p className="pb-1 text-xs text-neutral-400">
-                        Approving sends nothing extra — the learner already gets &ldquo;You have a
-                        new mentor&rdquo; from the pairing itself.
+                        {t('request.approvalNote')}
                     </p>
                     <Separator />
                     <div className="mt-3 text-xs font-medium uppercase tracking-wide text-neutral-400">
-                        Decline message &amp; channels
+                        {t('request.declineMessageAndChannels')}
                     </div>
                 </div>
             </TriggerCard>
 
             <TriggerCard
                 icon={<CalendarPlus size={20} />}
-                title="Session Booked"
-                description="When a learner books a 1:1 session."
+                title={t('booking.title')}
+                description={t('booking.description')}
                 idPrefix="booking"
                 defaults={DEFAULT_MENTORSHIP_SETTINGS.booking}
                 trigger={settings.booking}
@@ -625,8 +635,8 @@ export default function MentorshipSettings({ embedded = false }: MentorshipSetti
 
             <TriggerCard
                 icon={<CalendarX size={20} />}
-                title="Session Cancelled"
-                description="When a session is cancelled."
+                title={t('cancellation.title')}
+                description={t('cancellation.description')}
                 idPrefix="cancellation"
                 defaults={DEFAULT_MENTORSHIP_SETTINGS.cancellation}
                 trigger={settings.cancellation}
@@ -637,8 +647,8 @@ export default function MentorshipSettings({ embedded = false }: MentorshipSetti
 
             <TriggerCard
                 icon={<Alarm size={20} />}
-                title="Session Reminder"
-                description="Before an upcoming session."
+                title={t('sessionReminder.title')}
+                description={t('sessionReminder.description')}
                 idPrefix="session-reminder"
                 defaults={DEFAULT_MENTORSHIP_SETTINGS.session_reminder}
                 trigger={settings.session_reminder}
@@ -650,7 +660,7 @@ export default function MentorshipSettings({ embedded = false }: MentorshipSetti
             >
                 <div className="pb-1">
                     <div className="flex items-center justify-between py-2">
-                        <span className="text-sm text-neutral-700">Send session reminders</span>
+                        <span className="text-sm text-neutral-700">{t('sessionReminder.sendReminders')}</span>
                         <Switch
                             checked={settings.session_reminder.enabled}
                             onCheckedChange={(v) => setReminderField('enabled', v)}
@@ -662,7 +672,7 @@ export default function MentorshipSettings({ embedded = false }: MentorshipSetti
                                 htmlFor="session-reminder-hours"
                                 className="text-sm font-normal text-neutral-700"
                             >
-                                Hours before the session
+                                {t('sessionReminder.hoursBeforeSession')}
                             </Label>
                             <Input
                                 id="session-reminder-hours"
@@ -684,15 +694,15 @@ export default function MentorshipSettings({ embedded = false }: MentorshipSetti
                     )}
                     <Separator />
                     <div className="mt-3 text-xs font-medium uppercase tracking-wide text-neutral-400">
-                        Learner message &amp; channels
+                        {t('learnerMessageAndChannels')}
                     </div>
                 </div>
             </TriggerCard>
 
             <TriggerCard
                 icon={<HandWaving size={20} />}
-                title="Check-in Nudge"
-                description="When a learner hasn't met their mentor for a while."
+                title={t('checkinReminder.title')}
+                description={t('checkinReminder.description')}
                 idPrefix="checkin-reminder"
                 defaults={DEFAULT_MENTORSHIP_SETTINGS.checkin_reminder}
                 trigger={settings.checkin_reminder}
@@ -704,7 +714,7 @@ export default function MentorshipSettings({ embedded = false }: MentorshipSetti
             >
                 <div className="pb-1">
                     <div className="flex items-center justify-between py-2">
-                        <span className="text-sm text-neutral-700">Send check-in nudges</span>
+                        <span className="text-sm text-neutral-700">{t('checkinReminder.sendNudges')}</span>
                         <Switch
                             checked={settings.checkin_reminder.enabled}
                             onCheckedChange={(v) => setCheckinField('enabled', v)}
@@ -716,7 +726,7 @@ export default function MentorshipSettings({ embedded = false }: MentorshipSetti
                                 htmlFor="checkin-days"
                                 className="text-sm font-normal text-neutral-700"
                             >
-                                Days without a session
+                                {t('checkinReminder.daysWithoutSession')}
                             </Label>
                             <Input
                                 id="checkin-days"
@@ -737,7 +747,7 @@ export default function MentorshipSettings({ embedded = false }: MentorshipSetti
                     )}
                     <Separator />
                     <div className="mt-3 text-xs font-medium uppercase tracking-wide text-neutral-400">
-                        Learner message &amp; channels
+                        {t('learnerMessageAndChannels')}
                     </div>
                 </div>
             </TriggerCard>

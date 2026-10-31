@@ -22,6 +22,9 @@ export interface SendAudienceMessageRequest {
     email_type?: string;
     variable_mapping?: Record<string, string>;
     filters?: AudienceFilterConfig;
+    // Explicit recipient subset — audience_response ids ticked in the lead table.
+    // Omitted/empty means every active lead in the audience.
+    response_ids?: string[];
     created_by?: string;
 }
 

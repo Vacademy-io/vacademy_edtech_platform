@@ -1,0 +1,34 @@
+{
+    "urlInputPlaceholder": "लाइव क्लास का URL दर्ज करें",
+    "defaultDayName": "इस दिन",
+    "actions": {
+        "apply": "लागू करें",
+        "cancel": "रद्द करें",
+        "confirmAndApply": "पुष्टि करें और लागू करें"
+    },
+    "dialog": {
+        "heading": "आप यह नया लिंक कहाँ लागू करना चाहते हैं?"
+    },
+    "options": {
+        "onlyThis": {
+            "title": "केवल यह सेशन",
+            "description": "नया लिंक केवल इसी विशेष सेशन पर लागू करें",
+            "example": "उदाहरण: केवल {{dayName}} के इस सेशन में नया लिंक होगा"
+        },
+        "currentDayAllSessions": {
+            "title": "वर्तमान {{dayName}} के सभी सेशन",
+            "description": "नया लिंक इस {{dayName}} के सभी सेशन पर लागू करें",
+            "example": "उदाहरण: इस {{dayName}} के सभी सेशन में नया लिंक होगा"
+        },
+        "allFuture": {
+            "title": "सभी आगामी सेशन",
+            "description": "नया लिंक आज और इस समय-स्लॉट के सभी भविष्य के सेशन पर लागू करें",
+            "example": "उदाहरण: इस सेशन समय पर आने वाले सभी {{dayName}} में नया लिंक होगा"
+        },
+        "allFutureAllSessions": {
+            "title": "आगामी {{dayName}} के सभी सेशन",
+            "description": "नया लिंक सभी आगामी {{dayName}} के सभी सेशन पर लागू करें",
+            "example": "उदाहरण: हर आगामी {{dayName}} के सभी सेशन में नया लिंक होगा"
+        }
+    }
+}

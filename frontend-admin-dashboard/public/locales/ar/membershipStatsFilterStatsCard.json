@@ -1,0 +1,13 @@
+{
+    "title": "إحصائيات النطاق المحدد",
+    "subtitle": "استنادًا إلى عوامل التصفية الحالية",
+    "usersFound_zero": "لم يتم العثور على أي مستخدمين",
+    "usersFound_one": "تم العثور على مستخدم واحد",
+    "usersFound_two": "تم العثور على مستخدمين اثنين",
+    "usersFound_few": "تم العثور على {{count}} مستخدمين",
+    "usersFound_many": "تم العثور على {{count}} مستخدمًا",
+    "usersFound_other": "تم العثور على {{count}} مستخدم",
+    "new": "جديد",
+    "retainer": "محتفظ به",
+    "viewMembers": "عرض الأعضاء"
+}

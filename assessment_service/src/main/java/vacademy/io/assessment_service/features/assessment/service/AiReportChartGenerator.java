@@ -3,13 +3,21 @@ package vacademy.io.assessment_service.features.assessment.service;
 import lombok.extern.slf4j.Slf4j;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
+import org.jfree.chart.labels.StandardCategoryItemLabelGenerator;
+import org.jfree.chart.labels.StandardPieSectionLabelGenerator;
 import org.jfree.chart.plot.SpiderWebPlot;
 import org.jfree.chart.plot.CategoryPlot;
+import org.jfree.chart.plot.PiePlot;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.RingPlot;
 import org.jfree.chart.renderer.category.BarRenderer;
 import org.jfree.chart.renderer.category.StandardBarPainter;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.axis.NumberTickUnit;
 import org.jfree.chart.title.LegendTitle;
+import org.jfree.chart.ui.RectangleInsets;
 import org.jfree.data.category.DefaultCategoryDataset;
+import org.jfree.data.general.DefaultPieDataset;
 import org.springframework.stereotype.Service;
 
 import javax.imageio.ImageIO;
@@ -241,6 +249,295 @@ public class AiReportChartGenerator {
         } catch (Exception e) {
             log.warn("Failed to generate confidence grid: {}", e.getMessage());
             return null;
+        }
+    }
+
+    // ==================================================================
+    // Teacher diagnostic report charts
+    //
+    // The four below are consumed by TeacherAiReportHtmlBuilder. They are kept
+    // deliberately generic (ordered maps in, data URI out) because the teacher
+    // report decides its own ordering and banding — e.g. topics are handed over
+    // weakest-first so the chart reads top-down as a remediation queue.
+    // ==================================================================
+
+    /**
+     * Donut (ring) chart for the response breakdown — correct / partial /
+     * incorrect / unattempted.
+     *
+     * @param slices ordered slice label -> count; zero-valued slices are dropped
+     *               so an all-correct attempt does not render four empty legend
+     *               entries
+     * @param hexColors per-slice colors, parallel to {@code slices}' iteration order
+     * @return Base64-encoded PNG data URI, or null if the chart could not be built
+     */
+    public String generateDonutChart(Map<String, Double> slices, String[] hexColors) {
+        try {
+            DefaultPieDataset<String> dataset = new DefaultPieDataset<>();
+            java.util.List<Color> used = new java.util.ArrayList<>();
+            int i = 0;
+            for (Map.Entry<String, Double> e : slices.entrySet()) {
+                double v = e.getValue() != null ? e.getValue() : 0.0;
+                if (v > 0) {
+                    dataset.setValue(e.getKey(), v);
+                    used.add(hex(hexColors != null && i < hexColors.length ? hexColors[i] : "#888888"));
+                }
+                i++;
+            }
+            if (dataset.getItemCount() == 0) return null;
+
+            JFreeChart chart = ChartFactory.createRingChart("", dataset, true, false, false);
+            chart.setBackgroundPaint(BG);
+            chart.setPadding(new RectangleInsets(2, 2, 2, 2));
+
+            RingPlot plot = (RingPlot) chart.getPlot();
+            plot.setBackgroundPaint(BG);
+            plot.setOutlinePaint(null);
+            plot.setShadowPaint(null);
+            plot.setSectionDepth(0.42);
+            plot.setSeparatorsVisible(false);
+            plot.setLabelGenerator(new StandardPieSectionLabelGenerator("{1} ({2})"));
+            plot.setLabelFont(LABEL_FONT);
+            plot.setLabelBackgroundPaint(BG);
+            plot.setLabelOutlinePaint(null);
+            plot.setLabelShadowPaint(null);
+            plot.setSimpleLabels(false);
+
+            int idx = 0;
+            for (String key : dataset.getKeys()) {
+                plot.setSectionPaint(key, used.get(idx++));
+            }
+
+            LegendTitle legend = chart.getLegend();
+            if (legend != null) legend.setItemFont(LABEL_FONT);
+
+            return chartToBase64(chart, 520, 300);
+        } catch (Exception e) {
+            log.warn("Failed to generate donut chart: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Pie chart — used for "where the marks were lost", i.e. each section's share
+     * of the total marks the student did not score. Slices are labelled with the
+     * percentage so a teacher can read it without the legend.
+     */
+    public String generatePieChart(Map<String, Double> slices, String[] hexColors) {
+        try {
+            DefaultPieDataset<String> dataset = new DefaultPieDataset<>();
+            java.util.List<Color> used = new java.util.ArrayList<>();
+            int i = 0;
+            for (Map.Entry<String, Double> e : slices.entrySet()) {
+                double v = e.getValue() != null ? e.getValue() : 0.0;
+                if (v > 0) {
+                    dataset.setValue(e.getKey(), v);
+                    used.add(hex(hexColors != null && i < hexColors.length ? hexColors[i % hexColors.length] : "#888888"));
+                }
+                i++;
+            }
+            if (dataset.getItemCount() == 0) return null;
+
+            JFreeChart chart = ChartFactory.createPieChart("", dataset, true, false, false);
+            chart.setBackgroundPaint(BG);
+            chart.setPadding(new RectangleInsets(2, 2, 2, 2));
+
+            @SuppressWarnings("unchecked")
+            PiePlot<String> plot = (PiePlot<String>) chart.getPlot();
+            plot.setBackgroundPaint(BG);
+            plot.setOutlinePaint(null);
+            plot.setShadowPaint(null);
+            plot.setLabelFont(LABEL_FONT);
+            plot.setLabelBackgroundPaint(BG);
+            plot.setLabelOutlinePaint(null);
+            plot.setLabelShadowPaint(null);
+            plot.setLabelGenerator(new StandardPieSectionLabelGenerator("{0} \u2014 {2}"));
+
+            int idx = 0;
+            for (String key : dataset.getKeys()) {
+                plot.setSectionPaint(key, used.get(idx++));
+            }
+
+            LegendTitle legend = chart.getLegend();
+            if (legend != null) legend.setItemFont(LABEL_FONT);
+
+            return chartToBase64(chart, 520, 300);
+        } catch (Exception e) {
+            log.warn("Failed to generate pie chart: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Grouped vertical bar chart comparing the student against the class on the
+     * same categories (sections, typically). {@code classValues} may be null, in
+     * which case only the student series is drawn.
+     */
+    public String generateComparisonBarChart(String valueAxisLabel,
+                                             Map<String, Double> studentValues,
+                                             Map<String, Double> classValues,
+                                             String studentSeriesLabel,
+                                             String classSeriesLabel,
+                                             String studentHexColor,
+                                             int width, int height) {
+        try {
+            if (studentValues == null || studentValues.isEmpty()) return null;
+            DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+            for (Map.Entry<String, Double> e : studentValues.entrySet()) {
+                dataset.addValue(e.getValue() != null ? e.getValue() : 0.0, studentSeriesLabel, e.getKey());
+                if (classValues != null) {
+                    Double cv = classValues.get(e.getKey());
+                    dataset.addValue(cv != null ? cv : 0.0, classSeriesLabel, e.getKey());
+                }
+            }
+
+            JFreeChart chart = ChartFactory.createBarChart(
+                    "", "", valueAxisLabel, dataset, PlotOrientation.VERTICAL,
+                    classValues != null, false, false);
+            // Headroom above 100: the value label sits ON TOP of the bar, so a
+            // 97% bar against a 0-100 axis has its label clipped by the plot edge.
+            // Ticks stay on the 20s so the extra range is invisible.
+            styleCategoryChart(chart, 0, 112);
+            ((NumberAxis) chart.getCategoryPlot().getRangeAxis()).setTickUnit(new NumberTickUnit(20));
+
+            BarRenderer renderer = (BarRenderer) chart.getCategoryPlot().getRenderer();
+            renderer.setSeriesPaint(0, hex(studentHexColor));
+            if (classValues != null) renderer.setSeriesPaint(1, new Color(0xA9, 0x84, 0x67));
+            renderer.setDefaultItemLabelGenerator(new StandardCategoryItemLabelGenerator());
+            renderer.setDefaultItemLabelFont(new Font("SansSerif", Font.BOLD, 9));
+            renderer.setDefaultItemLabelsVisible(true);
+
+            LegendTitle legend = chart.getLegend();
+            if (legend != null) legend.setItemFont(LABEL_FONT);
+
+            return chartToBase64(chart, width, height);
+        } catch (Exception e) {
+            log.warn("Failed to generate comparison bar chart: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Horizontal bar chart for topic accuracy, each bar coloured by its own
+     * band (weak / borderline / strong) so the weakest topics are visually
+     * obvious. Pass topics in the order they should be drawn — weakest first
+     * reads best on a diagnostic report.
+     *
+     * <p>Colouring goes through a {@link BarRenderer} that overrides
+     * {@code getItemPaint} rather than one-series-per-topic: with N series the
+     * renderer reserves a slot per series inside every category, which would
+     * stagger the bars and shrink each one to 1/N of its category.
+     */
+    public String generateBandedHorizontalBarChart(Map<String, Double> values, int height) {
+        try {
+            if (values == null || values.isEmpty()) return null;
+
+            DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+            final java.util.List<Color> colors = new java.util.ArrayList<>();
+            // Categories render top-down in insertion order on a horizontal plot,
+            // so the caller's "weakest first" ordering lands as "weakest at top".
+            for (Map.Entry<String, Double> e : values.entrySet()) {
+                double v = e.getValue() != null ? e.getValue() : 0.0;
+                dataset.addValue(v, "Accuracy", e.getKey());
+                colors.add(bandColor(v));
+            }
+
+            JFreeChart chart = ChartFactory.createBarChart(
+                    "", "", "Accuracy %", dataset, PlotOrientation.HORIZONTAL, false, false, false);
+
+            BarRenderer renderer = new BarRenderer() {
+                @Override
+                public Paint getItemPaint(int row, int column) {
+                    return column >= 0 && column < colors.size() ? colors.get(column) : PRIMARY;
+                }
+            };
+            chart.getCategoryPlot().setRenderer(renderer);
+            styleCategoryChart(chart, 0, 112);
+            ((NumberAxis) chart.getCategoryPlot().getRangeAxis()).setTickUnit(new NumberTickUnit(20));
+
+            renderer.setDefaultItemLabelGenerator(new StandardCategoryItemLabelGenerator());
+            renderer.setDefaultItemLabelFont(new Font("SansSerif", Font.BOLD, 9));
+            renderer.setDefaultItemLabelsVisible(true);
+            renderer.setMaximumBarWidth(0.16);
+
+            return chartToBase64(chart, 520, height);
+        } catch (Exception e) {
+            log.warn("Failed to generate banded bar chart: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Vertical bar chart of raw counts with an auto-scaled axis — the class
+     * score distribution ("how many students in each mark band"), where the
+     * value is a headcount, not a percentage, so the 0-100 axis the other
+     * charts share would be meaningless.
+     */
+    public String generateCountBarChart(String valueAxisLabel, Map<String, Double> counts,
+                                        String hexColor, int width, int height) {
+        try {
+            if (counts == null || counts.isEmpty()) return null;
+            DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+            double max = 0;
+            for (Map.Entry<String, Double> e : counts.entrySet()) {
+                double v = e.getValue() != null ? e.getValue() : 0.0;
+                dataset.addValue(v, "Students", e.getKey());
+                max = Math.max(max, v);
+            }
+
+            JFreeChart chart = ChartFactory.createBarChart(
+                    "", "", valueAxisLabel, dataset, PlotOrientation.VERTICAL, false, false, false);
+            // Headroom so the value labels above the tallest bar are not clipped.
+            styleCategoryChart(chart, 0, Math.max(1, Math.ceil(max * 1.25)));
+
+            BarRenderer renderer = (BarRenderer) chart.getCategoryPlot().getRenderer();
+            renderer.setSeriesPaint(0, hex(hexColor));
+            renderer.setDefaultItemLabelGenerator(new StandardCategoryItemLabelGenerator());
+            renderer.setDefaultItemLabelFont(new Font("SansSerif", Font.BOLD, 9));
+            renderer.setDefaultItemLabelsVisible(true);
+            renderer.setMaximumBarWidth(0.12);
+
+            return chartToBase64(chart, width, height);
+        } catch (Exception e) {
+            log.warn("Failed to generate count bar chart: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /** Red below 40%, amber below 70%, green at or above — the report's one weakness banding. */
+    private static Color bandColor(double accuracyPercent) {
+        if (accuracyPercent < 40) return new Color(0xC6, 0x28, 0x28);
+        if (accuracyPercent < 70) return new Color(0xF5, 0x7F, 0x17);
+        return new Color(0x2E, 0x7D, 0x32);
+    }
+
+    /** Shared axis/grid/bar styling so every teacher-report chart looks like one family. */
+    private void styleCategoryChart(JFreeChart chart, double axisMin, double axisMax) {
+        chart.setBackgroundPaint(BG);
+        chart.setPadding(new RectangleInsets(2, 2, 2, 2));
+        CategoryPlot plot = chart.getCategoryPlot();
+        plot.setBackgroundPaint(BG);
+        plot.setOutlinePaint(null);
+        plot.setRangeGridlinePaint(GRID_COLOR);
+        plot.getRangeAxis().setRange(axisMin, axisMax);
+        plot.getRangeAxis().setLabelFont(LABEL_FONT);
+        plot.getRangeAxis().setTickLabelFont(LABEL_FONT);
+        plot.getDomainAxis().setTickLabelFont(LABEL_FONT);
+        plot.getDomainAxis().setMaximumCategoryLabelWidthRatio(2.2f);
+
+        BarRenderer renderer = (BarRenderer) plot.getRenderer();
+        renderer.setBarPainter(new StandardBarPainter());
+        renderer.setShadowVisible(false);
+        renderer.setItemMargin(0.06);
+        renderer.setMaximumBarWidth(0.18);
+    }
+
+    /** Parse a #rrggbb string, falling back to grey rather than throwing mid-render. */
+    private static Color hex(String value) {
+        try {
+            return Color.decode(value.trim());
+        } catch (Exception e) {
+            return new Color(0x88, 0x88, 0x88);
         }
     }
 

@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Plus } from '@phosphor-icons/react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { ScheduleTestFilters } from '@/routes/assessment/assessment-list/-components/ScheduleTestFilters';
 import { MyFilterOption } from '@/types/assessments/my-filter';
@@ -41,6 +42,7 @@ interface RoleTypeProps {
 }
 
 const RoleTypeComponent = ({ setRoleTypeCount }: RoleTypeProps) => {
+    const { t } = useTranslation('dashboardRoleTypeComponent');
     const setHandleRefetchUsersData = useRefetchUsersStore(
         (state) => state.setHandleRefetchUsersData
     );
@@ -298,17 +300,17 @@ const RoleTypeComponent = ({ setRoleTypeCount }: RoleTypeProps) => {
                     className="text-sm"
                 >
                     <Plus size={32} />
-                    Manage Users
+                    {t('dialog.triggerButton')}
                 </MyButton>
             </DialogTrigger>
-            <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col !gap-4 overflow-y-auto !p-0">
+            <DialogContent className={`no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-7xl flex-col !gap-4 overflow-y-auto !p-0` /* design-lint-ignore: full-height management dialog, no fixed-height token matches this near-viewport-height layout */}>
                 <h1 className="sticky left-0 top-0 bg-primary-50 p-4 font-semibold text-primary-500">
-                    Manage Role Types Users
+                    {t('dialog.title')}
                 </h1>
                 <Tabs
                     value={selectedTab}
                     onValueChange={handleTabChange}
-                    className="flex h-[90vh] flex-col overflow-auto px-4"
+                    className={`flex h-[90vh] flex-col overflow-auto px-4` /* design-lint-ignore: matches the DialogContent's viewport-height layout above, no fixed-height token exists */}
                 >
                     <div className="sticky top-0 z-10 flex items-start justify-between gap-8 bg-white pb-4">
                         <div className="sticky top-0 flex flex-wrap items-center gap-4">
@@ -328,10 +330,10 @@ const RoleTypeComponent = ({ setRoleTypeCount }: RoleTypeProps) => {
                                                 : ''
                                         }`}
                                     >
-                                        Institute Users
+                                        {t('tabs.instituteUsers')}
                                     </span>
                                     <Badge
-                                        className="rounded-[10px] bg-primary-500 p-0 px-2 text-[9px] text-white"
+                                        className="rounded-lg bg-primary-500 p-0 px-2 text-2xs text-white"
                                         variant="outline"
                                     >
                                         {dashboardUsers['instituteUsers'].length}
@@ -350,10 +352,10 @@ const RoleTypeComponent = ({ setRoleTypeCount }: RoleTypeProps) => {
                                             selectedTab === 'invites' ? 'text-primary-500' : ''
                                         }`}
                                     >
-                                        Invites
+                                        {t('tabs.invites')}
                                     </span>
                                     <Badge
-                                        className="rounded-[10px] bg-primary-500 p-0 px-2 text-[9px] text-white"
+                                        className="rounded-lg bg-primary-500 p-0 px-2 text-2xs text-white"
                                         variant="outline"
                                     >
                                         {dashboardUsers['invites'].length}
@@ -361,14 +363,14 @@ const RoleTypeComponent = ({ setRoleTypeCount }: RoleTypeProps) => {
                                 </TabsTrigger>
                             </TabsList>
                             <ScheduleTestFilters
-                                label="Role Type"
+                                label={t('filters.roleTypeLabel')}
                                 data={roleTypeWithCustomNames}
                                 selectedItems={selectedFilter['roles'] || []}
                                 onSelectionChange={(items) => handleFilterChange('roles', items)}
                             />
                             {selectedTab === 'instituteUsers' && (
                                 <ScheduleTestFilters
-                                    label="Status"
+                                    label={t('filters.statusLabel')}
                                     data={RoleTypeUserStatus}
                                     selectedItems={selectedFilter['status'] || []}
                                     onSelectionChange={(items) =>

@@ -1,0 +1,30 @@
+{
+    "never": "Jamais",
+    "today": "Aujourd'hui",
+    "yesterday": "Hier",
+    "daysAgo_one": "il y a {{count}} jour",
+    "daysAgo_many": "il y a {{count}} jours",
+    "daysAgo_other": "il y a {{count}} jours",
+    "questionType": {
+        "singleChoice": "Choix unique",
+        "multipleChoice": "Choix multiple",
+        "trueFalse": "Vrai / faux",
+        "numeric": "Numérique",
+        "oneWord": "Un mot",
+        "longAnswer": "Réponse longue"
+    },
+    "learnerStatus": {
+        "passed": "Réussi",
+        "failed": "Échoué",
+        "completed": "Terminé",
+        "partlyDone": "Partiellement fait",
+        "notAttempted": "Non tenté"
+    },
+    "difficulty": {
+        "wellUnderstood": "Bien compris",
+        "mixed": "Mitigé",
+        "struggling": "En difficulté",
+        "needsReteaching": "Nécessite une reprise"
+    },
+    "noResponses": "Aucune réponse"
+}

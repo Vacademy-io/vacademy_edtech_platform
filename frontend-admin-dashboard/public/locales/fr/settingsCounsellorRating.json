@@ -1,0 +1,84 @@
+{
+    "header": {
+        "title": "Comment les conseillers sont notés",
+        "subtitle": "Le score est celui qui apparaît sur chaque fiche conseiller et menu déroulant. Choisissez un préréglage, ou utilisez le mode avancé pour l’ajuster vous-même."
+    },
+    "loading": "Chargement…",
+    "actions": {
+        "refreshScores": "Actualiser les scores",
+        "refreshing": "Actualisation…",
+        "save": "Enregistrer",
+        "saving": "Enregistrement…",
+        "showAdvanced": "Afficher les valeurs avancées",
+        "hideAdvanced": "Masquer les valeurs avancées"
+    },
+    "toasts": {
+        "saved": "Enregistré",
+        "saveFailed": "Échec de l’enregistrement",
+        "recomputed_one": "Scores actualisés pour {{count}} conseiller",
+        "recomputed_many": "Scores actualisés pour {{count}} conseillers",
+        "recomputed_other": "Scores actualisés pour {{count}} conseillers",
+        "recomputeFailed": "Échec du recalcul"
+    },
+    "strategy": {
+        "automatic": {
+            "title": "Les noter automatiquement en fonction de la performance",
+            "description": "Le système observe le nombre de leads qu’ils concluent et la rapidité avec laquelle ils le font, puis leur attribue un score de 0 à 100. Recalculé chaque nuit et après chaque conversion."
+        },
+        "manual": {
+            "title": "Je définirai moi-même le score de chaque conseiller",
+            "description": "Aucun calcul automatique. Utilisez les champs de Paramètres → Équipe Workbench pour définir ou mettre à jour les scores manuellement."
+        }
+    },
+    "presets": {
+        "heading": "Préréglages rapides",
+        "balanced": {
+            "label": "Équilibré",
+            "description": "Taux de conclusion et rapidité pondérés de façon égale."
+        },
+        "closers": {
+            "label": "Favoriser les conclusions",
+            "description": "Le taux de conclusion compte plus que la rapidité."
+        },
+        "fast": {
+            "label": "Favoriser la rapidité",
+            "description": "La rapidité de conclusion compte plus que le taux de conclusion."
+        }
+    },
+    "fields": {
+        "startingScore": {
+            "label": "Tout le monde commence avec le score"
+        },
+        "windowDays": {
+            "label": "Regarder les derniers",
+            "suffix": "jours de travail"
+        },
+        "minSample": {
+            "label": "Un conseiller a besoin d’au moins",
+            "suffix": "leads assignés avant d’obtenir un score réel"
+        },
+        "fastHeading": "Qu’est-ce qui compte comme « rapide » dans votre équipe ?",
+        "idealVelocity": {
+            "label": "Conclut en moins de",
+            "suffix": "heures = crédit de rapidité complet"
+        },
+        "worstVelocity": {
+            "label": "Plus lent que",
+            "suffix": "jours = aucun crédit de rapidité"
+        }
+    },
+    "balance": {
+        "heading": "Qu’est-ce qui compte le plus pour votre équipe ?",
+        "closing": "Conclusion",
+        "speed": "Rapidité",
+        "ariaLabel": "Équilibre conclusion / rapidité",
+        "closingLower": "conclusion",
+        "speedLower": "rapidité"
+    },
+    "advanced": {
+        "wConversion": "w_conversion (0–1)",
+        "wVelocity": "w_velocity (0–1)",
+        "idealVelocityHours": "ideal_velocity_hours",
+        "worstVelocityHours": "worst_velocity_hours"
+    }
+}

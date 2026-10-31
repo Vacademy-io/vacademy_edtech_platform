@@ -1,0 +1,63 @@
+{
+    "errors": {
+        "build": "تعذر إعداد هذا الإقرار."
+    },
+    "empty": {
+        "nothingToFile": "لا يوجد شيء لتقديمه"
+    },
+    "ecr": {
+        "emptyText": "لم تُسجَّل أي اشتراكات صندوق التوفير (PF) هذا الشهر."
+    },
+    "esi": {
+        "emptyText": "لم يكن أي موظف ضمن سقف أجور ESI هذا الشهر."
+    },
+    "pt": {
+        "emptyText": "لم يُخصم أي ضريبة مهنية هذا الشهر.",
+        "slabSummary": "ملخص الشرائح"
+    },
+    "wps": {
+        "emptyText": "لا توجد إدخالات رواتب معتمدة لهذا الشهر."
+    },
+    "stats": {
+        "members": "الأعضاء",
+        "epfWages": "أجور EPF",
+        "epfContribution": "اشتراك EPF",
+        "epsContribution": "اشتراك EPS",
+        "insuredPersons": "الأشخاص المؤمَّن عليهم",
+        "totalWages": "إجمالي الأجور",
+        "ipContribution": "اشتراك المؤمَّن",
+        "employerContribution": "اشتراك صاحب العمل",
+        "state": "الولاية",
+        "employees": "الموظفون",
+        "totalPt": "إجمالي الضريبة المهنية",
+        "totalNetPay": "إجمالي صافي الراتب",
+        "establishment": "المنشأة"
+    },
+    "table": {
+        "member": "العضو",
+        "uan": "UAN",
+        "epfWages": "أجور EPF",
+        "employeeShare": "الموظف",
+        "eps": "EPS",
+        "diff": "الفرق",
+        "ncp": "NCP",
+        "employee": "الموظف",
+        "ipNumber": "رقم المؤمَّن",
+        "days": "الأيام",
+        "wage": "الأجر",
+        "ip": "المؤمَّن",
+        "employer": "صاحب العمل",
+        "slabAmount": "قيمة الشريحة",
+        "employees": "الموظفون",
+        "total": "الإجمالي",
+        "gross": "الإجمالي قبل الخصم",
+        "pt": "الضريبة المهنية",
+        "iban": "IBAN",
+        "basic": "الأساسي",
+        "other": "أخرى",
+        "deductions": "الخصومات",
+        "net": "الصافي",
+        "fixed": "ثابت",
+        "variable": "متغير"
+    }
+}

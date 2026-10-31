@@ -1,0 +1,141 @@
+{
+    "heading": {
+        "activeMemberships": "Active Memberships",
+        "viewHistory": "View History",
+        "membershipHistory": "Membership History",
+        "lapsedMemberships": "Lapsed Memberships"
+    },
+    "emptyState": {
+        "noActivePlans": "No active membership for this learner.",
+        "noPlansFound": "No plans found."
+    },
+    "planStatus": {
+        "active": "Plan Active",
+        "expired": "Plan Expired",
+        "unknown": "Unknown",
+        "canceled": "Plan Cancelled",
+        "paymentFailed": "Payment Failed"
+    },
+    "enrollmentStatus": {
+        "active": "Enrollment Active",
+        "inactive": "Course Inactive"
+    },
+    "fallback": {
+        "planName": "Unknown Plan",
+        "paymentOption": "Unknown Payment Option"
+    },
+    "coupon": {
+        "defaultLabel": "Coupon",
+        "percentageOff": "{{point}}% off",
+        "percentageOffWithCap": "{{point}}% off · max {{amount}}",
+        "amountOff": "{{amount}} off"
+    },
+    "autoRenewal": {
+        "enabled": "Auto-Renewal",
+        "disabled": "No Auto-Renewal",
+        "paymentAttemptOn": "Payment attempt on {{date}}",
+        "scheduledDate": "scheduled date",
+        "disabledTooltip": "Auto-renewal is disabled"
+    },
+    "policy": {
+        "expiryPolicy": "Expiry Policy",
+        "finalDate": "Final: {{date}}",
+        "gracePeriod_one": "{{count}} day grace",
+        "gracePeriod_other": "{{count}} days grace",
+        "actionsCount": "Policy Actions ({{count}})",
+        "reenrollmentFrom": "Re-enrollment from {{date}}",
+        "reenrollmentAvailable": "Re-enrollment available",
+        "gapDays_one": "({{count}} day gap)",
+        "gapDays_other": "({{count}} days gap)",
+        "reenrollmentNotAllowed": "Re-enrollment not allowed"
+    },
+    "daysLeft": {
+        "label": "days left",
+        "noExpiry": "No expiry",
+        "activeSession": "Active session",
+        "renewalDueSoon": "Renewal due soon",
+        "urgentRenewal": "Urgent renewal required"
+    },
+    "dates": {
+        "started": "Started {{date}}",
+        "ends": "Ends {{date}}"
+    },
+    "pagination": {
+        "pageOf": "Page {{current}} of {{total}}",
+        "previous": "Previous",
+        "next": "Next"
+    },
+    "toast": {
+        "loadHistoryFailed": "Failed to load plan history",
+        "loadPageFailed": "Failed to load plans"
+    },
+    "changePlan": {
+        "button": "Change plan",
+        "title": "Change payment plan",
+        "noChargeWarning": "This applies immediately and takes no payment. The member keeps their current access window; the new price starts billing at their next renewal.",
+        "loadFailed": "We couldn't load the available plans. Please try again.",
+        "noOptions": "No other plan is marked switchable for this member. Turn on plan switching for a payment option in Settings → Payment Settings.",
+        "alreadyInProgress": "A plan change is already in progress for this membership.",
+        "planNotActive": "This membership isn't active, so its plan can't be changed.",
+        "currentlyOn": "Currently on {{plan}} ({{price}}).",
+        "upgrade": "Upgrade",
+        "downgrade": "Downgrade",
+        "cadence": "{{price}} every {{days}} days",
+        "crossOptionNote": "Also moves them onto the {{option}} enrolment invite — gateway, currency and auto-pay settings come from it.",
+        "reasonLabel": "Reason (optional)",
+        "reasonPlaceholder": "e.g. negotiated downgrade, billing correction",
+        "notifyLearner": "Notify the member about this change",
+        "cancel": "Cancel",
+        "apply": "Apply change",
+        "applying": "Applying…",
+        "successToast": "Moved to {{plan}}",
+        "failedToast": "Couldn't change the plan"
+    },
+    "manualRenewal": {
+        "button": "Renew manually",
+        "title": "Record manual renewal",
+        "explainer": "Record a renewal the member paid outside the platform. The membership (now {{status}}, ending {{date}}) becomes active again and its course access is extended to the date below.",
+        "amount": "Amount received ({{symbol}})",
+        "accessUntil": "Access until",
+        "suggestedHint": "Suggested: one full plan period ({{days}} days), from the current end date if it's still ahead, otherwise from today.",
+        "remarks": "Remarks",
+        "remarksPlaceholder": "e.g. Paid by bank transfer on 20 Oct, ref 7781",
+        "remarksHint": "Required. Visible to every admin in this membership's remarks history, with your name.",
+        "generateInvoice": "Generate an invoice for this payment",
+        "sendEmail": "Email the invoice / payment confirmation to the member",
+        "noAutopay": "Autopay is not turned on and nothing is charged automatically. The member is only emailed if you tick the box above.",
+        "submit": "Record renewal",
+        "saving": "Saving…",
+        "cancel": "Cancel",
+        "success": "Membership renewed until {{date}}",
+        "failed": "Could not record the renewal",
+        "loadFailed": "We couldn't load this membership. Please try again."
+    },
+    "remarks": {
+        "button": "Remarks",
+        "title": "Membership remarks",
+        "history": "Remarks history",
+        "placeholder": "Add a remark for other admins…",
+        "add": "Add remark",
+        "saving": "Saving…",
+        "empty": "No remarks yet.",
+        "loadFailed": "Could not load remarks.",
+        "saveFailed": "Could not save the remark",
+        "addedBy": "Added by {{name}}",
+        "unknownAdmin": "an admin"
+    },
+    "endDate": {
+        "button": "Change end date",
+        "title": "Change membership end date",
+        "explainer": "Moves when this membership ends (now {{date}}) without recording a payment. The member's course access moves to the same date. To bring back a lapsed membership, use Renew manually instead.",
+        "newEndDate": "New end date",
+        "remarks": "Reason",
+        "remarksPlaceholder": "e.g. Paid on 7 Oct but enrolled on 23 Oct, so the year runs from 7 Oct",
+        "remarksHint": "Required. Saved in this membership's remarks history with your name and the time.",
+        "submit": "Save end date",
+        "saving": "Saving…",
+        "cancel": "Cancel",
+        "success": "Membership now ends on {{date}}",
+        "failed": "Could not change the end date"
+    }
+}

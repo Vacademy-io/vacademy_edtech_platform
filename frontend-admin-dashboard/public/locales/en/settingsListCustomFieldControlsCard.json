@@ -1,0 +1,39 @@
+{
+    "header": {
+        "title": "List Filters & Sorting — Custom Fields",
+        "description": "Choose which custom fields appear as filters on each list page (applies to everyone). Each enabled field adds a searchable multi-select to that page's filter bar; turning it off hides the filter and stops loading its values. Sortable applies where custom-field column sorting is available."
+    },
+    "surfaces": {
+        "leads": {
+            "label": "Leads",
+            "pages": "Lead List + Recent Leads"
+        },
+        "contacts": {
+            "label": "All Contacts",
+            "pages": "Manage Students → All Contacts"
+        },
+        "students": {
+            "label": "Students",
+            "pages": "Manage Students → Student List"
+        }
+    },
+    "appliesTo": "Applies to: {{pages}}",
+    "loading": "Loading custom fields…",
+    "emptyState": "No custom fields configured for this institute yet.",
+    "columns": {
+        "filter": "Filter",
+        "sort": "Sort"
+    },
+    "utm": {
+        "title": "Campaign (UTM) filters",
+        "description": "Filter this list by the campaign, source, medium and channel that brought each person in. Switches on automatically when Campaign Links (UTM) are enabled in Settings; turn it off here for lists that don't need it.",
+        "disabledHint": "Campaign Links (UTM) are switched off for this institute, so no campaign filters can be shown.",
+        "openSettings": "Open Campaign Links settings",
+        "autoHint": "(auto — shown once data exists)"
+    },
+    "builtIn": {
+        "title": "Built-in filters",
+        "description": "Turn off the filters this institute doesn't use. They disappear from the list's filter bar.",
+        "counsellor": "Counsellor"
+    }
+}

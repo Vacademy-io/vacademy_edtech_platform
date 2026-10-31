@@ -1,0 +1,58 @@
+{
+    "dialog": {
+        "heading": "समायोजन जोड़ें — {{month}}"
+    },
+    "actions": {
+        "cancel": "रद्द करें",
+        "adding": "जोड़ा जा रहा है…",
+        "addAdjustment": "समायोजन जोड़ें"
+    },
+    "fields": {
+        "employee": {
+            "label": "कर्मचारी"
+        },
+        "type": {
+            "label": "प्रकार"
+        },
+        "code": {
+            "label": "कोड",
+            "placeholder": "INCENTIVE",
+            "description": "यह पेस्लिप लाइन का घटक कोड बन जाता है।"
+        },
+        "label": {
+            "label": "लेबल",
+            "placeholder": "Q2 प्रदर्शन प्रोत्साहन",
+            "description": "कर्मचारी अपनी पेस्लिप पर यही देखता है।"
+        },
+        "amount": {
+            "label": "राशि",
+            "placeholder": "5000",
+            "description": "हमेशा एक सकारात्मक संख्या — प्रकार दिशा तय करता है।"
+        },
+        "currency": {
+            "label": "मुद्रा"
+        },
+        "runScope": {
+            "label": "रन स्कोप"
+        },
+        "notes": {
+            "label": "नोट्स",
+            "placeholder": "आंतरिक संदर्भ — यह क्यों दिया या वसूला गया।"
+        }
+    },
+    "toast": {
+        "added": "समायोजन जोड़ा गया"
+    },
+    "errors": {
+        "addFailed": "समायोजन जोड़ा नहीं जा सका।"
+    },
+    "validation": {
+        "employeeRequired": "एक कर्मचारी चुनें",
+        "codeMinLength": "कोड कम से कम 2 अक्षरों का होना चाहिए",
+        "codeFormat": "केवल बड़े अक्षर, अंक और अंडरस्कोर — कोई स्पेस नहीं (जैसे INCENTIVE, ARREARS)",
+        "labelRequired": "एक लेबल दें जिसे कर्मचारी पहचान सके",
+        "amountRequired": "राशि दर्ज करें",
+        "amountPositive": "शून्य से अधिक राशि दर्ज करें",
+        "notesMaxLength": "नोट्स को 500 अक्षरों के भीतर रखें"
+    }
+}

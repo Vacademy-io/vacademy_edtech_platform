@@ -1,0 +1,131 @@
+{
+    "dialogs": {
+        "attentionLabel": "Attention",
+        "yes": "Oui",
+        "cancel": "Annuler",
+        "continue": "Continuer",
+        "provideReattempt": {
+            "title": "Accorder une nouvelle tentative",
+            "confirmMessagePrefix": "Voulez-vous vraiment accorder une nouvelle tentative à",
+            "providing": "Attribution en cours..."
+        },
+        "releaseResult": {
+            "title": "Publier le résultat",
+            "confirmMessagePrefix": "Voulez-vous vraiment publier le résultat pour"
+        },
+        "manualReEvaluate": {
+            "title": "Réévaluer la tentative",
+            "evaluatingLabel": "En cours d’évaluation",
+            "messagePart1": "a déjà une tentative évaluée. La réévaluer la fera repasser à l’état",
+            "messagePart2": "jusqu’à ce que vous soumettiez de nouvelles notes. Voulez-vous continuer ?"
+        },
+        "evaluateWithAI": {
+            "title": "Évaluer l’évaluation avec l’IA",
+            "evaluatingLabel": "En cours d’évaluation",
+            "reEvaluationWarningPart1": "Cette tentative a déjà été évaluée. La réévaluer la fera repasser à l’état",
+            "reEvaluationWarningPart2": "jusqu’à ce que le nouveau résultat soit prêt.",
+            "selectModelLabel": "Sélectionner le modèle d’IA",
+            "selectModelPlaceholder": "Sélectionner un modèle",
+            "chooseModelPrefix": "Choisissez le modèle d’IA pour évaluer la soumission de",
+            "chooseModelSuffix": "",
+            "rubricInfo": "Pour toute question sans grille de notation, l’IA génère des critères de notation la première fois et les réutilise pour chaque étudiant, afin que tout le monde soit noté de la même façon. Définissez des grilles de notation sur l’évaluation pour garder un contrôle total sur l’attribution des notes.",
+            "estimatedCostLabel": "Coût estimé :",
+            "creditsCount_one": "{{count}} crédit",
+            "creditsCount_many": "{{count}} crédits",
+            "creditsCount_other": "{{count}} crédits",
+            "balance_one": "Solde : {{count}}",
+            "balance_many": "Solde : {{count}}",
+            "balance_other": "Solde : {{count}}",
+            "insufficientCredits": "Crédits insuffisants pour cette évaluation. Ajoutez des crédits à votre établissement pour continuer.",
+            "starting": "Démarrage...",
+            "start": "Démarrer"
+        },
+        "revaluateEntireAssessment": {
+            "title": "Réévaluer l’ensemble de l’évaluation",
+            "confirmMessagePrefix": "Voulez-vous vraiment effectuer la réévaluation pour",
+            "confirmMessageSuffix": "pour l’ensemble de l’évaluation ?"
+        },
+        "aiReport": {
+            "title": "Télécharger le rapport IA",
+            "intro": "Le même rapport IA que voit l’élève, pour",
+            "bulletWeakness": "Note, rang et notes par section comparés à la classe",
+            "bulletCharts": "Graphiques par thème, niveaux cognitifs (Bloom) et manière de composer",
+            "bulletActions": "Chaque question avec la réponse de l’élève, la bonne réponse et une explication, plus un plan de travail",
+            "checking": "Vérification de la disponibilité de l’analyse…",
+            "usesCredits": "L’analyse de cette tentative n’a pas encore été générée. Le téléchargement consommera les crédits IA de votre établissement. Les téléchargements suivants de la même tentative sont gratuits.",
+            "alreadyGenerated": "L’analyse de cette tentative est prête — le téléchargement ne consommera aucun crédit IA.",
+            "unsupported": "Cette tentative ne peut pas être analysée ; aucun rapport IA n’est disponible.",
+            "balance_one": "Solde : {{count}} crédit",
+            "balance_other": "Solde : {{count}} crédits",
+            "generateAndDownload": "Générer et télécharger",
+            "download": "Télécharger",
+            "generating": "Génération…",
+            "downloaded": "Rapport IA téléchargé."
+        }
+    },
+    "dropdown": {
+        "checkingSubmission": "Vérification de la soumission...",
+        "viewSubmission": "Voir la soumission",
+        "loadingSubmission": "Chargement de la soumission...",
+        "uploadSubmission": "Importer la soumission",
+        "provideReattempt": "Accorder une nouvelle tentative",
+        "evaluate": "Évaluer",
+        "revaluate": "Réévaluer",
+        "questionWise": "Par question",
+        "entireAssessment": "Évaluation entière",
+        "manual": "Manuel",
+        "evaluateWithAI": "Évaluer avec l’IA",
+        "checkingEvaluatedCopy": "Vérification de la copie évaluée...",
+        "viewEvaluatedCopy": "Voir la copie évaluée",
+        "loadingEvaluatedCopy": "Chargement de la copie évaluée...",
+        "generatingReport": "Génération du rapport...",
+        "downloadReport": "Télécharger le rapport",
+        "releaseResult": "Publier le résultat",
+        "downloadAiReport": "Télécharger le rapport IA",
+        "proctoring": "Surveillance"
+    },
+    "toasts": {
+        "reattemptProvided": "Une nouvelle tentative a été accordée à {{name}}.",
+        "reattemptError": "Échec de l’attribution de la nouvelle tentative. Veuillez réessayer.",
+        "reattemptRegistrationError": "Impossible de résoudre l’inscription de ce participant. Veuillez réessayer.",
+        "resultReleased": "Résultat publié avec succès. L’apprenant a été notifié par e-mail.",
+        "revaluateSuccess": "Votre tentative pour cette évaluation a été réévaluée. Veuillez vérifier votre e-mail !",
+        "evaluationStarted": "L’évaluation par IA a démarré avec succès !",
+        "evaluationError": "Échec du démarrage de l’évaluation par IA. Veuillez réessayer.",
+        "noEvaluatedCopy": "Aucune copie évaluée trouvée pour cette tentative.",
+        "evaluatedCopyLoadError": "Échec du chargement de la copie évaluée. Veuillez réessayer.",
+        "noSubmissionFile": "Aucun fichier de soumission trouvé pour cette tentative.",
+        "popupBlocked": "Veuillez autoriser les fenêtres pop-up pour voir la soumission.",
+        "submissionLoadError": "Échec du chargement de la soumission. Veuillez réessayer.",
+        "reportGenerateError": "Échec de la génération du rapport. Veuillez réessayer.",
+        "aiReportError": "Impossible de télécharger le rapport IA. Veuillez réessayer."
+    },
+    "proctoring": {
+        "title": "Surveillance — {{name}}",
+        "loadError": "Impossible de charger le journal de surveillance.",
+        "flags": "{{count}} signalements",
+        "warnings": "{{count}} avertissements",
+        "snapshots": "{{count}} captures",
+        "tier": "Niveau : {{tier}}",
+        "filter": {
+            "flagsOnly": "Signalements et avertissements",
+            "everything": "Tout"
+        },
+        "empty": "Aucune donnée de surveillance pour cette tentative. La surveillance était désactivée ou l'appareil n'a rien envoyé.",
+        "noFlags": "Rien n'a été signalé.",
+        "viewSnapshot": "Voir la capture",
+        "snapshotMissing": "Capture indisponible",
+        "snapshotAlt": "Capture de surveillance",
+        "events": {
+            "CHECK_IN": "Vérification caméra",
+            "SNAPSHOT": "Capture",
+            "CAMERA_DENIED": "Caméra refusée",
+            "CAMERA_LOST": "Caméra coupée",
+            "NO_FACE": "Aucun visage dans le cadre",
+            "MULTIPLE_FACES": "Plusieurs visages",
+            "TAB_SWITCH": "A quitté la fenêtre du test",
+            "FULLSCREEN_EXIT": "A quitté le plein écran",
+            "AUTO_SUBMITTED": "Soumis automatiquement après trop de signalements"
+        }
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "tabs": {
+        "instituteWide": {
+            "label": "Institute-wide",
+            "description": "Any {{learner}} enrolling in this institute can apply this coupon."
+        },
+        "specificBatches": {
+            "label": "Specific {{batch}}",
+            "description": "Only {{learner}} enrolling into the selected {{batch}} can apply this coupon."
+        },
+        "specificInvites": {
+            "label": "Specific {{invite}}",
+            "description": "Only {{learner}} enrolling through the listed invite links can apply this coupon."
+        }
+    },
+    "sessions": {
+        "pickLabel": "Pick one or more {{sessions}}"
+    },
+    "invites": {
+        "pasteLabel": "Paste {{invite}} IDs",
+        "placeholder": "Comma- or newline-separated invite IDs",
+        "captured_one": "{{count}} ID captured",
+        "captured_other": "{{count}} IDs captured"
+    }
+}

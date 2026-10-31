@@ -1,0 +1,225 @@
+{
+    "helmet": {
+        "title": "{{aiName}} के साथ बनाएं",
+        "description": "प्राकृतिक भाषा प्रॉम्प्ट का उपयोग करके {{aiName}} के साथ पाठ्यक्रम बनाएं।"
+    },
+    "header": {
+        "title": "{{aiName}} के साथ बनाएं",
+        "subtitle": "अपने पाठ्यक्रम का विचार बताएं और {{aiName}} को एक संपूर्ण शिक्षण अनुभव बनाने दें"
+    },
+    "examplePrompts": {
+        "python": "उभरते डेवलपर्स के लिए एक शुरुआती स्तर का पायथन प्रोग्रामिंग कोर्स बनाएं",
+        "ml": "पायथन और Scikit-Learn का उपयोग करके एक एंड-टू-एंड मशीन लर्निंग पाठ्यक्रम डिज़ाइन करें",
+        "cloud": "AWS, Azure और GCP की बुनियादी बातों को कवर करने वाला क्लाउड कंप्यूटिंग फंडामेंटल्स कोर्स बनाएं",
+        "dataEngineering": "ETL पाइपलाइन और SQL अवधारणाओं पर केंद्रित एक डेटा इंजीनियरिंग पाठ्यक्रम विकसित करें"
+    },
+    "draftBanner": {
+        "untitled": "शीर्षकहीन पाठ्यक्रम",
+        "savedOn": "ड्राफ्ट सहेजा गया {{date}}",
+        "discard": "हटाएं",
+        "resume": "जारी रखें"
+    },
+    "form": {
+        "courseGoalPlaceholder": "अपने पाठ्यक्रम का लक्ष्य बताएं... जैसे, 'शुरुआती लोगों के लिए बुनियादी से उन्नत विषयों को कवर करने वाला एक व्यापक पायथन प्रोग्रामिंग कोर्स बनाएं'",
+        "courseSettings": "पाठ्यक्रम सेटिंग्स",
+        "skillLevelPlaceholder": "कौशल स्तर",
+        "skillLevels": {
+            "beginner": "शुरुआती",
+            "intermediate": "मध्यवर्ती",
+            "advanced": "उन्नत"
+        },
+        "aiModelPlaceholder": "AI मॉडल",
+        "autoSmart": "ऑटो (स्मार्ट)",
+        "loading": "लोड हो रहा है...",
+        "structureFollowsKb": "संरचना ज्ञान आधार का अनुसरण करती है",
+        "custom": "कस्टम...",
+        "durationPlaceholder": "अवधि",
+        "durationCustomMinutes": "{{minutes}} मिनट",
+        "durationOptions": {
+            "min30": "30 मिनट",
+            "min45": "45 मिनट",
+            "min60": "60 मिनट",
+            "min90": "90 मिनट",
+            "hours2": "2 घंटे"
+        },
+        "durationInputPlaceholder": "अवधि (मिनट)",
+        "numberOfChapters": "{{chapters}} की संख्या",
+        "slidesPerChapterInputPlaceholder": "प्रति {{chapter}} {{slides}}",
+        "additionalOptions": "अतिरिक्त विकल्प",
+        "contentOptionsLabel": "सामग्री विकल्प",
+        "selectedCount_one": "{{count}} चयनित",
+        "selectedCount_other": "{{count}} चयनित",
+        "structureLabel": "संरचना",
+        "configured": "कॉन्फ़िगर किया गया",
+        "referencesLabel": "संदर्भ",
+        "apiKeysLabel": "API कुंजियाँ",
+        "documentContent": {
+            "title": "दस्तावेज़ सामग्री",
+            "caption": "हर बनाए गए दस्तावेज़ स्लाइड में शामिल किया गया।",
+            "customButton": "कस्टम",
+            "standardFlowButton": "मानक शिक्षण प्रवाह",
+            "standardFlowTooltip": "यह क्यों महत्वपूर्ण है → संक्षिप्त नोट्स → उच्च-मूल्य बिंदु → दृश्य/प्रक्रिया → अनुप्रयोग → फ्लैशकार्ड → मिनी क्विज़ → सारांश",
+            "types": {
+                "whyItMatters": "यह क्यों महत्वपूर्ण है",
+                "notes": "संक्षिप्त नोट्स",
+                "highYield": "उच्च-मूल्य बिंदु",
+                "visualProcess": "दृश्य / प्रक्रिया",
+                "application": "अनुप्रयोग",
+                "flashcards": "फ्लैशकार्ड",
+                "quiz": "क्विज़",
+                "summary": "सारांश",
+                "practicalExamples": "व्यावहारिक उदाहरण",
+                "interactiveGames": "इंटरैक्टिव गेम्स"
+            }
+        },
+        "courseStructure": {
+            "title": "पाठ्यक्रम संरचना",
+            "quizzesCaption": "क्विज़",
+            "quizPlacement": {
+                "perTopic": "प्रति विषय मिनी क्विज़",
+                "chapter": "एक अध्याय क्विज़",
+                "both": "दोनों",
+                "none": "कोई क्विज़ नहीं"
+            },
+            "chapterDeliverablesCaption": "अध्याय डिलिवरेबल्स",
+            "chapterAssignment": {
+                "auto": "असाइनमेंट: स्वतः",
+                "withSolution": "असाइनमेंट + समाधान",
+                "none": "कोई असाइनमेंट नहीं"
+            },
+            "chapterVideo": "अध्याय वीडियो",
+            "aiTeacher": "AI शिक्षक",
+            "aiTeacherTooltip": "पाठ्यक्रम बनने के बाद हर स्लाइड को वन-टू-वन AI शिक्षक के लिए तैयार करें: प्रति दस्तावेज़ या वीडियो स्लाइड लगभग 2 क्रेडिट, साथ ही जब Settings → Course settings → Tutor Mode में इमेज सक्षम हों तो प्रति AI इमेज लगभग 1 क्रेडिट।",
+            "reduceRepetition": "पुनरावृत्ति कम करें (दूसरा पास)",
+            "reduceRepetitionTooltip": "सभी स्लाइड बनने के बाद, जो स्लाइड अध्याय की किसी अन्य स्लाइड में पहले से शामिल सामग्री दोहराती हैं, उन्हें एक बार फिर से लिखा जाता है।",
+            "figuresCaption": "आरेख और आकृतियाँ",
+            "figuresPolicy": {
+                "prefer": "स्रोत आकृतियों को प्राथमिकता दें",
+                "require": "स्रोत आकृतियाँ आवश्यक हैं",
+                "generatedOnly": "केवल जनरेट की गई"
+            }
+        },
+        "generateButton": "पाठ्यक्रम रूपरेखा बनाएं"
+    },
+    "contentDialog": {
+        "title": "सामग्री विकल्प",
+        "description": "अपने पाठ्यक्रम में शामिल करने के लिए चुनें",
+        "options": {
+            "diagrams": "आरेख",
+            "codeSnippets": "कोड स्निपेट",
+            "practiceProblems": "अभ्यास प्रश्न",
+            "quizzes": "क्विज़",
+            "assignments": "असाइनमेंट",
+            "solutions": "समाधान",
+            "youtubeVideos": "YouTube वीडियो",
+            "aiVideos": "AI वीडियो",
+            "aiSlides": "AI स्लाइड",
+            "aiStorybook": "AI स्टोरीबुक"
+        },
+        "programmingLanguage": "प्रोग्रामिंग भाषा",
+        "selectLanguagePlaceholder": "भाषा चुनें",
+        "done": "हो गया"
+    },
+    "structureDialog": {
+        "title": "पाठ्यक्रम संरचना",
+        "description": "उन्नत पाठ्यक्रम पदानुक्रम कॉन्फ़िगर करें",
+        "selectPlaceholder": "{{term}} चुनें",
+        "numberOf": "{{term}} की संख्या",
+        "done": "हो गया"
+    },
+    "referencesDialog": {
+        "title": "संदर्भ",
+        "description": "AI के संदर्भ के लिए URL या फ़ाइलें जोड़ें",
+        "addUrlLabel": "URL जोड़ें",
+        "urlPlaceholder": "https://example.com",
+        "clickToView": "सामग्री देखने के लिए क्लिक करें",
+        "noContentFetched": "कोई सामग्री प्राप्त नहीं हुई",
+        "uploadFilesLabel": "फ़ाइलें अपलोड करें",
+        "dropzoneHint": "फ़ाइलें छोड़ें या क्लिक करें (PDF, DOC, CSV, XLSX)",
+        "done": "हो गया"
+    },
+    "referenceContentDialog": {
+        "titleFallback": "संदर्भ सामग्री",
+        "close": "बंद करें"
+    },
+    "keysDialog": {
+        "title": "API कुंजियाँ",
+        "description": "AI जनरेशन के लिए अपनी API कुंजियाँ जोड़ें",
+        "openRouterLabel": "OpenRouter API कुंजी",
+        "geminiLabel": "Gemini API कुंजी",
+        "added": "जोड़ा गया",
+        "openRouterPlaceholder": "sk-...",
+        "geminiPlaceholder": "AIza...",
+        "infoHow": "कुंजियाँ कैसे प्राप्त करें:",
+        "infoVisit": "पर जाएं",
+        "infoOr": "या",
+        "googleAiStudio": "Google AI Studio",
+        "done": "हो गया"
+    },
+    "confirmDialog": {
+        "title": "पाठ्यक्रम विवरण की समीक्षा करें",
+        "description": "कृपया नीचे अपने पाठ्यक्रम की कॉन्फ़िगरेशन की समीक्षा करें। आगे बढ़ने के बाद, आप वापस जाकर इस जानकारी को संपादित नहीं कर पाएंगे।",
+        "courseGoal": "पाठ्यक्रम लक्ष्य",
+        "notProvided": "प्रदान नहीं किया गया",
+        "sourceMaterial": "स्रोत सामग्री",
+        "sourceKb": "आपके चयनित ज्ञान आधार से बनाया गया — रूपरेखा उसके अनुभागों को दर्शाती है और हर पृष्ठ उसकी सामग्री से लिखा जाता है।",
+        "sourceFiles_one": "{{count}} अपलोड किए गए संदर्भ दस्तावेज़ पर आधारित।",
+        "sourceFiles_other": "{{count}} अपलोड किए गए संदर्भ दस्तावेज़ों पर आधारित।",
+        "sourceNone": "कोई स्रोत सामग्री चयनित नहीं है — AI इस पाठ्यक्रम को अपने सामान्य ज्ञान से लिखेगा। इसे अपनी सामग्री से बनाने के लिए, वापस जाएं और ज्ञान आधार चुनें या संदर्भ दस्तावेज़ अपलोड करें।",
+        "learningOutcome": "शिक्षण परिणाम",
+        "skillLevel": "कौशल स्तर",
+        "numberOf": "{{term}} की संख्या",
+        "structure": "संरचना",
+        "structureFollowsKbDetail": "ज्ञान आधार का अनुसरण करता है: प्रति चयनित विषय एक {{chapter}}, प्रति अनुभाग एक या अधिक {{slides}}।",
+        "courseLength": "पाठ्यक्रम की अवधि",
+        "minutes_one": "{{count}} मिनट",
+        "minutes_other": "{{count}} मिनट",
+        "slidesPerChapter": "प्रति {{chapter}} {{slides}}",
+        "whatToInclude": "क्या शामिल करें",
+        "options": {
+            "diagrams": "आरेख",
+            "codeSnippets": "कोड स्निपेट",
+            "codeSnippetsWithLang": "कोड स्निपेट ({{language}})",
+            "practiceProblems": "अभ्यास प्रश्न",
+            "quizzes": "क्विज़",
+            "assignments": "असाइनमेंट",
+            "solutions": "समाधान",
+            "youtubeVideo": "YouTube वीडियो",
+            "aiGeneratedVideo": "AI जनरेटेड वीडियो",
+            "aiSlides": "AI स्लाइड",
+            "aiStorybook": "AI स्टोरीबुक"
+        },
+        "references": "संदर्भ",
+        "urlsAdded_one": "{{count}} URL जोड़ा गया",
+        "urlsAdded_other": "{{count}} URL जोड़े गए",
+        "filesUploaded_one": "{{count}} फ़ाइल अपलोड की गई",
+        "filesUploaded_other": "{{count}} फ़ाइलें अपलोड की गईं",
+        "goBack": "वापस जाएं और संपादित करें",
+        "uploadingReferences": "संदर्भ अपलोड हो रहे हैं…",
+        "continue": "जारी रखें"
+    },
+    "toasts": {
+        "keySaved": "{{keyType}} कुंजी सहेजी गई!",
+        "keySaveFailed": "कुंजी सहेजने में विफल",
+        "deleteKeyConfirm": "क्या आप वाकई {{keyType}} कुंजी हटाना चाहते हैं?",
+        "keyDeleted": "{{keyType}} कुंजी हटा दी गई",
+        "noKeysFound": "हटाने के लिए कोई कुंजी नहीं मिली",
+        "keyDeleteFailed": "कुंजी हटाने में विफल",
+        "enterCourseGoal": "कृपया एक पाठ्यक्रम लक्ष्य दर्ज करें",
+        "selectProgrammingLanguage": "कोड स्निपेट सक्षम होने पर कृपया एक प्रोग्रामिंग भाषा चुनें",
+        "fileTooLarge": "फ़ाइल \"{{fileName}}\" 512 MB की अधिकतम सीमा से अधिक है",
+        "fileInvalidType": "फ़ाइल \"{{fileName}}\" मान्य प्रकार की नहीं है। केवल PDF, DOC, DOCX, CSV और XLSX फ़ाइलों की अनुमति है।",
+        "fileError": "फ़ाइल \"{{fileName}}\" में त्रुटि: {{message}}",
+        "fileLimitPartial": "आप अधिकतम 5 फ़ाइलें ही अपलोड कर सकते हैं। {{remaining}} स्लॉट शेष हैं। केवल पहली {{remaining}} फ़ाइलें ही जोड़ी जाएंगी।",
+        "fileLimitReached": "आप पहले ही 5 फ़ाइलों की अधिकतम सीमा तक पहुँच चुके हैं। नई फ़ाइलें जोड़ने से पहले कृपया कुछ फ़ाइलें हटाएं।",
+        "onlyPdfUsed": "पाठ्यक्रम बनाने के लिए केवल PDF संदर्भों का उपयोग किया जाता है; अन्य फ़ाइलों को अनदेखा कर दिया गया।",
+        "somePdfUploadFailed": "कुछ संदर्भ PDF अपलोड नहीं हो सकीं और उन्हें छोड़ दिया गया।",
+        "pdfUploadMissingUser": "संदर्भ PDF अपलोड नहीं की जा सकीं (उपयोगकर्ता ID गुम है); उनके बिना जारी रखा जा रहा है।",
+        "urlAddedSuccess": "URL सफलतापूर्वक जोड़ा गया और सामग्री प्राप्त की गई",
+        "urlFetchFailed": "URL की सामग्री प्राप्त नहीं की जा सकी, लेकिन संदर्भ के रूप में जोड़ दिया गया"
+    },
+    "keyTypes": {
+        "openai": "OpenRouter",
+        "gemini": "Gemini"
+    }
+}

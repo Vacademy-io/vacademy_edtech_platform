@@ -1,0 +1,136 @@
+{
+    "pageTitle": "Présence aux cours en direct",
+    "pageDescription": "Suivez et gérez la présence des apprenants aux cours en direct",
+    "navHeading": "Suivi de présence",
+    "duration": {
+        "minutes": "{{count}} min",
+        "hoursOnly": "{{count}} h",
+        "hoursMinutes": "{{hours}} h {{minutes}} min"
+    },
+    "time": {
+        "am": "AM",
+        "pm": "PM"
+    },
+    "sessionColumns": {
+        "class": "Cours",
+        "date": "Date",
+        "time": "Heure",
+        "status": "Statut"
+    },
+    "status": {
+        "present": "Présent",
+        "absent": "Absent"
+    },
+    "modal": {
+        "loadingAttendance": "Chargement de la présence…",
+        "classAttendanceTitle": "{{name}} - Présence aux cours",
+        "attendanceLabel": "Présence",
+        "totalClasses": "Total des cours",
+        "noSessions": "Aucune séance trouvée pour cet apprenant",
+        "classCount_one": "{{count}} cours",
+        "classCount_many": "{{count}} cours",
+        "classCount_other": "{{count}} cours"
+    },
+    "exportButton": {
+        "exporting": "Exportation...",
+        "export": "Exporter en CSV"
+    },
+    "filters": {
+        "searchLabel": "Recherche",
+        "searchPlaceholder": "Rechercher des apprenants...",
+        "clearFilters": "Effacer les filtres",
+        "allBatches": "Tous les groupes",
+        "selectLabel": "Sélectionner {{term}}"
+    },
+    "studentsCount": {
+        "loading": "Chargement des apprenants...",
+        "showing": "Affichage de",
+        "of": "sur",
+        "students_one": "apprenant",
+        "students_many": "apprenants",
+        "students_other": "apprenants"
+    },
+    "errors": {
+        "title": "Erreur lors du chargement des données de présence",
+        "description": "Veuillez actualiser la page ou ajuster vos filtres"
+    },
+    "empty": {
+        "title": "Aucun apprenant trouvé",
+        "description": "Essayez d'ajuster votre recherche ou vos critères de filtre",
+        "clearAll": "Effacer tous les filtres"
+    },
+    "bulk": {
+        "selected": "Sélectionné(s)",
+        "reset": "Réinitialiser",
+        "exportAccountDetails": "Exporter les détails du compte",
+        "exportData": "Exporter les données",
+        "bulkActions": "Actions groupées"
+    },
+    "exportDialog": {
+        "heading": "Exporter la présence en CSV",
+        "cancel": "Annuler",
+        "downloadCsv": "Télécharger le CSV",
+        "description": "Choisissez les enregistrements de présence à inclure dans l'export.",
+        "scope": {
+            "both": {
+                "label": "Présents et absents",
+                "desc": "Inclure les cours suivis et manqués (par défaut)"
+            },
+            "present": {
+                "label": "Présents uniquement",
+                "desc": "Uniquement les cours suivis par l'apprenant"
+            },
+            "absent": {
+                "label": "Absents uniquement",
+                "desc": "Uniquement les cours manqués par l'apprenant"
+            }
+        }
+    },
+    "table": {
+        "detailsHeader": "Détails",
+        "viewDetails": "Voir les détails de l'apprenant",
+        "learnerName": "Nom de l'apprenant",
+        "sortLearnerName": "Trier par nom de l'apprenant",
+        "username": "Nom d'utilisateur",
+        "mobileNumber": "Numéro de mobile",
+        "email": "E-mail",
+        "avgDuration": "Durée moyenne",
+        "liveClassesAttendance": "Cours en direct et présence",
+        "attended": "Suivi(s)",
+        "viewMore": "Voir plus"
+    },
+    "toasts": {
+        "accountDetailsSuccess": "Détails du compte exportés avec succès",
+        "accountDetailsFailure": "Échec de l'export des détails du compte",
+        "fullDataSuccess": "Données de présence exportées avec succès",
+        "fullDataFailure": "Échec de l'export des données de présence"
+    },
+    "csv": {
+        "name": "Nom",
+        "email": "E-mail",
+        "mobileNumber": "Numéro de mobile",
+        "enrollmentNumber": "Numéro d'inscription",
+        "course": "Cours",
+        "gender": "Genre",
+        "enrollmentStatus": "Statut d'inscription",
+        "attendancePercent": "Taux de présence %",
+        "classesAttended": "Cours suivis",
+        "avgDuration": "Durée moyenne"
+    },
+    "dateFilter": {
+        "label": "Plage de dates",
+        "custom": "Personnalisé",
+        "pickCustomRange": "Choisir une plage personnalisée",
+        "days_one": "{{count}} jour",
+        "days_many": "{{count}} jours",
+        "days_other": "{{count}} jours"
+    },
+    "batchDropdown": {
+        "clearCount": "Effacer ({{count}})",
+        "searchPlaceholder": "Rechercher...",
+        "noBatchesFound": "Aucun groupe trouvé",
+        "batchesSelected_one": "{{count}} groupe sélectionné",
+        "batchesSelected_many": "{{count}} groupes sélectionnés",
+        "batchesSelected_other": "{{count}} groupes sélectionnés"
+    }
+}

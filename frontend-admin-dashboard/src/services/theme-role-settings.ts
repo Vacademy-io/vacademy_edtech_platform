@@ -1,17 +1,18 @@
 import { GET_INSTITUTE_SETTING_DATA, SAVE_INSTITUTE_SETTING } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
-import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
-import { TokenKey } from '@/constants/auth/tokens';
+import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
 import { THEME_ROLE_SETTINGS_KEY, type ThemeRoleSettings } from '@/types/theme-role-settings';
 
 export const SETTING_KEY_THEME = 'THEME_SETTING';
 
+// The institute being worked in (selected institute, falling back to the token's first only
+// when none is selected) — NOT always the token's first institute. A multi-institute user
+// otherwise read and saved this setting on the wrong institute, and the backend now rejects
+// a setting save whose clientId isn't the target instituteId.
 const getInstituteId = (): string => {
-    const accessToken = getTokenFromCookie(TokenKey.accessToken);
-    const tokenData = getTokenDecodedData(accessToken);
-    const instituteIds = Object.keys(tokenData?.authorities || {});
-    if (instituteIds.length === 0) throw new Error('No institute ID found in token');
-    return instituteIds[0]!;
+    const instituteId = getCurrentInstituteId();
+    if (!instituteId) throw new Error('No institute ID found in token');
+    return instituteId;
 };
 
 export const getThemeRoleSettings = async (): Promise<ThemeRoleSettings | null> => {

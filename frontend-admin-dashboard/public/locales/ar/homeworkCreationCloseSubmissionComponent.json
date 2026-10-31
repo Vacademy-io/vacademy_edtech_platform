@@ -1,0 +1,7 @@
+{
+    "dialog": {
+        "heading": "إغلاق التسليم",
+        "confirmMessage": "هل أنت متأكد أنك تريد إغلاق التسليم لـ <highlight>{{name}}</highlight>؟"
+    },
+    "doneButton": "تم"
+}

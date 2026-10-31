@@ -1,0 +1,58 @@
+{
+    "errors": {
+        "couldNotLoad": "Could not load this learner's results"
+    },
+    "actions": {
+        "retry": "Retry"
+    },
+    "unnamedLearner": "Unnamed learner",
+    "header": {
+        "quizzesDone": "Quizzes done",
+        "average": "Average",
+        "marksSoFar": "Marks so far",
+        "outOfAcrossAllQuizzes": "Out of {{total}} across all quizzes",
+        "attempts": "Attempts",
+        "passedFraction": "{{passed}}/{{total}} passed"
+    },
+    "empty": {
+        "noQuizzesTitle": "This course has no quizzes yet",
+        "noQuizzesSubtitle": "Add a quiz slide to a chapter and this learner's results will appear here."
+    },
+    "untitledQuiz": "Untitled quiz",
+    "notMappedToChapter": "Not mapped to a chapter",
+    "notAttempted": "Not attempted",
+    "tries_one": "{{count}} try",
+    "tries_other": "{{count}} tries",
+    "couldNotLoadAnswers": "Could not load this learner's answers.",
+    "noRecordedAttempts": "No recorded attempts.",
+    "attemptNumber": "Attempt {{number}}",
+    "ofTotal": "of {{total}}",
+    "countsAsScoreTitle": "This is the attempt their score is taken from",
+    "countsAsScore": "counts as their score",
+    "correctCount_one": "{{count}} correct",
+    "correctCount_other": "{{count}} correct",
+    "wrongCount_one": "{{count}} wrong",
+    "wrongCount_other": "{{count}} wrong",
+    "skippedCount_one": "{{count}} skipped",
+    "skippedCount_other": "{{count}} skipped",
+    "notAnsweredCount_one": "{{count}} not answered",
+    "notAnsweredCount_other": "{{count}} not answered",
+    "needManualMarkingCount_one": "{{count}} need manual marking",
+    "needManualMarkingCount_other": "{{count}} need manual marking",
+    "verdict": {
+        "correct": "Correct",
+        "wrong": "Wrong",
+        "partial": "Partial",
+        "skipped": "Skipped",
+        "needsMarking": "Needs marking",
+        "notAnswered": "Not answered"
+    },
+    "questionNumber": "Q{{number}}.",
+    "untitledQuestion": "Untitled question",
+    "correctAnswerAriaLabel": "Correct answer",
+    "learnerAnswerAriaLabel": "Learner's answer",
+    "untitledOption": "Untitled option",
+    "theirAnswer": "their answer",
+    "answeredLabel": "Answered:",
+    "expectedLabel": "Expected:"
+}

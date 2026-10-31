@@ -1,0 +1,40 @@
+{
+    "loading": "Loading pools…",
+    "header": {
+        "title": "Counselor Pools",
+        "description": "A pool groups counselors and decides how leads from its campaigns get auto-assigned. Each campaign can belong to only one pool.",
+        "createPool": "+ Create Pool"
+    },
+    "emptyState": {
+        "message": "No pools yet. Create your first pool to start auto-assigning leads.",
+        "createPool": "Create Pool"
+    },
+    "modes": {
+        "manual": "Manual",
+        "roundRobin": "Round-robin",
+        "timeBased": "Time-based"
+    },
+    "card": {
+        "campaignsCount_one": "{{count}} campaign",
+        "campaignsCount_other": "{{count}} campaigns",
+        "counselorsCount_one": "{{count}} counselor",
+        "counselorsCount_other": "{{count}} counselors",
+        "actionsAriaLabel": "Pool actions",
+        "edit": "Edit",
+        "triggerWorkflow": "Trigger workflow",
+        "delete": "Delete"
+    },
+    "deleteDialog": {
+        "title": "Delete pool \"{{name}}\"?",
+        "description": "This permanently removes the pool, its shift schedule, and all member configuration. Counselors assigned to existing leads are not affected; new leads on this pool's campaigns will no longer be auto-assigned.",
+        "campaignsAttachedWarning_one": "This pool still has {{count}} campaign attached. You must remove all campaigns from the pool first.",
+        "campaignsAttachedWarning_other": "This pool still has {{count}} campaigns attached. You must remove all campaigns from the pool first.",
+        "cancel": "Cancel",
+        "deleting": "Deleting…",
+        "delete": "Delete"
+    },
+    "toasts": {
+        "deleted": "Pool \"{{name}}\" deleted",
+        "deleteFailed": "Failed to delete pool"
+    }
+}

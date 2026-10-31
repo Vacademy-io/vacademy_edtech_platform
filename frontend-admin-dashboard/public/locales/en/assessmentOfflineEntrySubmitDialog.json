@@ -1,0 +1,16 @@
+{
+    "title": "Confirm Submission",
+    "studentLabel": "Student:",
+    "scoringModeLabel": "Scoring Mode:",
+    "scoringModeAutoCalculate": "Auto-Calculate",
+    "scoringModeDirectMarks": "Direct Marks",
+    "answeredCount_one": "{{count}} answered",
+    "answeredCount_other": "{{count}} answered",
+    "unansweredCount_one": "{{count}} unanswered",
+    "unansweredCount_other": "{{count}} unanswered",
+    "unansweredWarning": "Unanswered questions will be scored as 0 marks.",
+    "attachmentsHeading": "Attachments ({{count}})",
+    "cancel": "Cancel",
+    "submitting": "Submitting...",
+    "submit": "Submit"
+}

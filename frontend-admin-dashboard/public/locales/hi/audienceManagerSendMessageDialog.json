@@ -1,0 +1,137 @@
+{
+    "dialogTitle": "संदेश भेजें",
+    "dialogDescription": "“{{campaignName}}” के लीड्स को संदेश भेजें",
+    "stepTitles": {
+        "selectChannel": "चैनल चुनें",
+        "composeContent": "सामग्री तैयार करें",
+        "mapVariables": "वेरिएबल मैप करें",
+        "reviewSend": "समीक्षा करें और भेजें"
+    },
+    "systemFields": {
+        "fullName": "पूरा नाम",
+        "email": "ईमेल",
+        "mobileNumber": "मोबाइल नंबर",
+        "city": "शहर",
+        "region": "क्षेत्र",
+        "campaignName": "अभियान का नाम",
+        "submittedAt": "सबमिट तिथि",
+        "sourceType": "स्रोत प्रकार"
+    },
+    "channels": {
+        "whatsapp": {
+            "label": "व्हाट्सएप",
+            "description": "व्हाट्सएप बिजनेस एपीआई के ज़रिए टेम्पलेट संदेश भेजें"
+        },
+        "email": {
+            "label": "ईमेल",
+            "description": "कस्टम विषय और HTML बॉडी के साथ ईमेल भेजें"
+        },
+        "push": {
+            "label": "पुश नोटिफिकेशन",
+            "description": "मोबाइल और वेब उपयोगकर्ताओं को पुश नोटिफिकेशन भेजें"
+        },
+        "systemAlert": {
+            "label": "सिस्टम अलर्ट",
+            "description": "नोटिफिकेशन सेंटर में दिखने वाले इन-ऐप अलर्ट भेजें"
+        }
+    },
+    "toasts": {
+        "loadWhatsappTemplatesFailed": "व्हाट्सएप टेम्पलेट लोड करने में विफल",
+        "loadEmailTemplatesFailed": "ईमेल टेम्पलेट लोड करने में विफल",
+        "loadTemplateContentFailed": "टेम्पलेट सामग्री लोड करने में विफल",
+        "noneSent": "कोई संदेश नहीं भेजा जा सका। नीचे विवरण देखें।",
+        "partialSuccess": "{{total}} में से {{accepted}} स्वीकार किए गए — {{failed}} विफल। नीचे विवरण देखें।",
+        "sendSuccess_one": "{{count}} प्राप्तकर्ता के लिए संदेश स्वीकार किया गया",
+        "sendSuccess_other": "{{count}} प्राप्तकर्ताओं के लिए संदेश स्वीकार किया गया",
+        "sendFailed": "संदेश भेजने में विफल"
+    },
+    "whatsappStep": {
+        "templateLabel": "टेम्पलेट",
+        "loadingTemplates": "टेम्पलेट लोड हो रहे हैं...",
+        "selectPlaceholder": "एक स्वीकृत टेम्पलेट चुनें",
+        "emptyText": "आपकी खोज से मेल खाने वाला कोई स्वीकृत टेम्पलेट नहीं है।",
+        "languageCodeLabel": "भाषा कोड",
+        "templatePreviewLabel": "टेम्पलेट पूर्वावलोकन"
+    },
+    "emailStep": {
+        "templateLabel": "टेम्पलेट",
+        "loadingTemplates": "टेम्पलेट लोड हो रहे हैं...",
+        "selectPlaceholder": "एक टेम्पलेट चुनें",
+        "emptyText": "आपकी खोज से मेल खाने वाला कोई टेम्पलेट नहीं है।",
+        "customOption": "कस्टम — शुरुआत से लिखें",
+        "loadingTemplateContent": "टेम्पलेट सामग्री लोड हो रही है...",
+        "emailTypeLabel": "ईमेल प्रकार",
+        "utilityEmail": "यूटिलिटी ईमेल",
+        "promotionalEmail": "प्रचार ईमेल",
+        "subjectLabel": "विषय",
+        "subjectPlaceholder": "ईमेल का विषय दर्ज करें...",
+        "bodyLabel": "बॉडी",
+        "previewTab": "पूर्वावलोकन",
+        "editTab": "HTML संपादित करें",
+        "previewEmptyState": "सामग्री लिखने के लिए कोई टेम्पलेट चुनें या 'HTML संपादित करें' पर जाएं।",
+        "bodyPlaceholder": "ईमेल बॉडी का HTML दर्ज करें... प्लेसहोल्डर के लिए {{token}} का उपयोग करें",
+        "placeholderHintPrefix": "इस तरह के प्लेसहोल्डर",
+        "placeholderHintSuffix": "भेजते समय प्रत्येक प्राप्तकर्ता के लिए बदल दिए जाते हैं। इन्हें अगले चरण में मैप करें।",
+        "emailTypeHint": "Sent from this address. Manage senders and their daily limits in Settings → Notifications."
+    },
+    "pushStep": {
+        "titleLabel": "शीर्षक",
+        "titlePlaceholder": "नोटिफिकेशन का शीर्षक...",
+        "bodyLabel": "बॉडी",
+        "bodyPlaceholder": "नोटिफिकेशन की बॉडी..."
+    },
+    "headerMedia": {
+        "label": "हेडर {{kind}} URL",
+        "hint": "इस टेम्पलेट में {{kind}} हेडर है, जिसे व्हाट्सएप हर भेजने पर अनिवार्य मानता है — इसके बिना हर प्राप्तकर्ता के लिए भेजना विफल हो जाएगा। टेम्पलेट के साथ स्वीकृत मीडिया से पहले से भरा गया है।",
+        "imagePreviewAlt": "हेडर पूर्वावलोकन",
+        "kindLabels": {
+            "image": "छवि",
+            "video": "वीडियो",
+            "document": "दस्तावेज़"
+        }
+    },
+    "variableMapping": {
+        "noVariables": "मैप करने के लिए कोई वेरिएबल नहीं है। आप आगे बढ़ सकते हैं।",
+        "mapHint": "हर टेम्पलेट वेरिएबल को एक लीड फ़ील्ड से मैप करें।",
+        "columnVariable": "वेरिएबल",
+        "columnMappedField": "मैप किया गया फ़ील्ड",
+        "selectFieldPlaceholder": "फ़ील्ड चुनें...",
+        "staticValueOption": "स्थिर मान…",
+        "staticValuePlaceholder": "जैसे \"छात्र\""
+    },
+    "review": {
+        "messageSent": "संदेश भेजा गया",
+        "sendCompleted": "भेजना पूर्ण हुआ",
+        "statusLabel": "स्थिति",
+        "recipientsLabel": "प्राप्तकर्ता",
+        "acceptedLabel": "स्वीकृत",
+        "failedLabel": "विफल",
+        "processingNotice": "बैकग्राउंड में प्रोसेस हो रहा है (बैच: {{batchId}})",
+        "close": "बंद करें",
+        "channelHeading": "चैनल",
+        "whatsappContentLabel": "टेम्पलेट",
+        "otherContentLabel": "विषय / शीर्षक",
+        "contentFallback": "-",
+        "recipientsAllKnown_one": "इस समूह के सभी {{count}} सदस्य",
+        "recipientsAllKnown_other": "इस समूह के सभी {{count}} सदस्य",
+        "recipientsAllUnknown": "इस समूह के सभी सदस्य",
+        "variableMappingsLabel": "वेरिएबल मैपिंग",
+        "staticValueLabel": "स्थिर: \"{{value}}\"",
+        "sending": "भेजा जा रहा है...",
+        "sendButtonKnown_one": "{{count}} सदस्य को भेजें",
+        "sendButtonKnown_other": "{{count}} सदस्यों को भेजें",
+        "sendButtonUnknown": "सभी सदस्यों को भेजें",
+        "statusValues": {
+            "success": "सफल",
+            "failed": "विफल"
+        },
+        "recipientsSelected_one": "{{count}} चयनित लीड",
+        "recipientsSelected_other": "{{count}} चयनित लीड्स"
+    },
+    "footer": {
+        "back": "पीछे",
+        "next": "आगे"
+    },
+    "dialogDescriptionSelected_one": "चयनित {{count}} लीड को संदेश भेजें",
+    "dialogDescriptionSelected_other": "चयनित {{count}} लीड्स को संदेश भेजें"
+}

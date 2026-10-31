@@ -1,0 +1,872 @@
+{
+  "aiReportDetails": {
+    "areasOfImprovement": {
+      "title": "📝 सुधार के क्षेत्र"
+    },
+    "behavioralInsights": {
+      "difficultyResponse": "📈 कठिनाई पर प्रतिक्रिया",
+      "fatigueIndicator": "😴 थकान संकेतक",
+      "skipPattern": "⏭️ छोड़े गए प्रश्नों का पैटर्न",
+      "timeManagement": "⏱️ समय प्रबंधन",
+      "title": "🧩 व्यवहार संबंधी जानकारी"
+    },
+    "bloomLevels": {
+      "analyze": "विश्लेषण",
+      "apply": "प्रयोग",
+      "create": "सृजन",
+      "evaluate": "मूल्यांकन",
+      "remember": "याद रखना",
+      "understand": "समझना"
+    },
+    "bloomsTaxonomy": {
+      "caption": "अलग-अलग सोच स्तरों पर प्रदर्शन — बुनियादी याद रखने से लेकर उच्च-स्तरीय विश्लेषण और समस्या समाधान तक।",
+      "performanceByLevel": "संज्ञानात्मक स्तर के अनुसार प्रदर्शन",
+      "title": "🎓 ब्लूम वर्गीकरण"
+    },
+    "confidence": {
+      "aiInsight": "AI इनसाइट:",
+      "caption": "प्रतिक्रिया समय, उत्तर पैटर्न और प्रश्न कठिनाई के आधार पर अनुमानित आत्मविश्वास।",
+      "high": "उच्च",
+      "highConfCorrect": "उच्च आत्मविश्वास व सही",
+      "highConfWrong": "उच्च आत्मविश्वास व गलत",
+      "likelyGuessed": "अनुमान से दिया गया",
+      "low": "कम",
+      "lowConfCorrect": "कम आत्मविश्वास व सही",
+      "medium": "मध्यम",
+      "perQuestion": "प्रत्येक प्रश्न पर आत्मविश्वास",
+      "title": "🎯 आत्मविश्वास अनुमान"
+    },
+    "defaultSubtitle": "व्यक्तिगत प्रदर्शन विश्लेषण",
+    "downloadPdf": "PDF डाउनलोड करें",
+    "failed": "विफल",
+    "flashcards": {
+      "answer": "उत्तर",
+      "flip": "पलटें",
+      "question": "प्रश्न",
+      "title": "🃏 फ्लैशकार्ड"
+    },
+    "generating": "तैयार हो रहा है...",
+    "improvementPath": {
+      "title": "🚀 अनुशंसित सीखने का मार्ग"
+    },
+    "leaderboard": {
+      "marks": "अंक",
+      "ofNStudents": "{{total}} में से",
+      "percentile": "पर्सेंटाइल",
+      "rank": "रैंक",
+      "student": "छात्र",
+      "title": "🏅 लीडरबोर्ड (आपकी स्थिति)",
+      "youMarker": ">> {{name}} (आप)",
+      "yourRankPrefix": "आपकी रैंक:"
+    },
+    "learningPath": {
+      "title": "🗺️ अनुशंसित सीखने का मार्ग"
+    },
+    "misconceptions": {
+      "caption": "जिन सवालों में आपने गलती की, उनके पीछे की खास भ्रांतियाँ।",
+      "correct": "सही उत्तर:",
+      "misconceptionLabel": "भ्रांति:",
+      "title": "🔍 भ्रांति विश्लेषण",
+      "yourAnswer": "आपका उत्तर:"
+    },
+    "performanceAnalysis": {
+      "title": "📊 प्रदर्शन विश्लेषण"
+    },
+    "scoreOverview": {
+      "marksObtained": "प्राप्त अंक",
+      "percentile": "पर्सेंटाइल",
+      "rankOf": "रैंक ({{total}} में से)"
+    },
+    "strengths": {
+      "title": "💪 मजबूत पक्ष"
+    },
+    "topicAnalysis": {
+      "caption": "इस मूल्यांकन में शामिल विभिन्न विषयों पर आपका प्रदर्शन।",
+      "table": {
+        "accuracy": "सटीकता",
+        "avgTime": "औसत समय",
+        "correct": "सही",
+        "mastery": "निपुणता",
+        "questions": "प्रश्न",
+        "topic": "विषय"
+      },
+      "title": "🧠 विषय विश्लेषण"
+    },
+    "vsClass": {
+      "accuracyCaption": "सटीकता (आप बनाम कक्षा औसत)",
+      "avg": "औसत: {{value}}",
+      "highest": "सर्वाधिक:",
+      "lowest": "न्यूनतम:",
+      "marksCaption": "अंक (आप बनाम कक्षा औसत)",
+      "participants": "प्रतिभागी:",
+      "title": "📊 आपका प्रदर्शन बनाम कक्षा",
+      "you": "आप: {{value}}"
+    },
+    "weaknesses": {
+      "title": "🎯 कमजोर पक्ष"
+    }
+  },
+  "attendanceReport": {
+    "attendanceRate": "उपस्थिति दर",
+    "bestRegards": "शुभकामनाओं सहित,",
+    "closingNote": "नियमित उपस्थिति ही सफलता की कुंजी है।",
+    "downloadPdf": "PDF डाउनलोड करें",
+    "engagement": {
+      "attendanceLabel": "उपस्थिति:",
+      "attendancePts": "80 अंक",
+      "breakdownTitle": "सहभागिता स्कोर का विवरण",
+      "chats_one": "{{count}} चैट",
+      "chats_other": "{{count}} चैट",
+      "emojis_one": "{{count}} इमोजी",
+      "emojis_other": "{{count}} इमोजी",
+      "explanationMiddle": "उपस्थिति समय बनाम कुल सत्र अवधि के आधार पर, साथ ही",
+      "explanationPrefix": "प्रत्येक सत्र का स्कोर इस तरह तय होता है:",
+      "explanationSuffix": "सत्र के दौरान की गई सहभागिता से। कुल स्कोर अधिकतम 100 तक सीमित है।",
+      "interactionPts": "20 अंक",
+      "interactionsLabel": "सहभागिता:",
+      "joinedOf": "({{total}} मिनट में से {{joined}} में शामिल हुए)",
+      "polls_one": "{{count}} पोल",
+      "polls_other": "{{count}} पोल",
+      "raises_one": "{{count}} हाथ उठाया",
+      "raises_other": "{{count}} बार हाथ उठाया",
+      "talkTime": "{{count}} बोलने का समय (सेकंड में)",
+      "total": "कुल: {{score}}/100"
+    },
+    "generated": "जनरेट किया गया",
+    "generating": "तैयार हो रहा है...",
+    "greeting": {
+      "middle": ", यह रही आपकी उपस्थिति का सारांश",
+      "prefix": "नमस्ते",
+      "to": "से"
+    },
+    "loadFailed": "रिपोर्ट लोड करने में विफल।",
+    "minutesTotal": "कुल {{count}} मिनट",
+    "noData": "इस अवधि के लिए कोई उपस्थिति डेटा उपलब्ध नहीं है।",
+    "pdfGenerationFailed": "PDF बनाने में विफल। कृपया फिर से प्रयास करें।",
+    "sessionDetails": "सत्र विवरण",
+    "sessionsAttended": "{{count}} सत्रों में उपस्थित हुए",
+    "title": "उपस्थिति रिपोर्ट",
+    "unknownError": "अज्ञात त्रुटि"
+  },
+  "comprehensiveReportCard": {
+    "academics": {
+      "average": "औसत",
+      "best": "सर्वश्रेष्ठ:",
+      "needsWork": "सुधार आवश्यक:",
+      "subjectPerformanceVsClass": "{{subject}} में प्रदर्शन बनाम कक्षा",
+      "table": {
+        "assessment": "मूल्यांकन",
+        "needsWorkBadge": "सुधार आवश्यक",
+        "rank": "रैंक",
+        "score": "स्कोर",
+        "status": "स्थिति"
+      },
+      "title": "शैक्षणिक प्रदर्शन",
+      "vsClassAverage": "बनाम कक्षा औसत {{percent}}%"
+    },
+    "achievements": {
+      "title": "उपलब्धियाँ"
+    },
+    "aiInsights": {
+      "recommendedNextSteps": "अनुशंसित अगले कदम",
+      "whatWeNoticed": "हमने क्या देखा"
+    },
+    "assignments": {
+      "assigned": "सौंपे गए",
+      "avgScore": "औसत स्कोर",
+      "late": "देरी से",
+      "onTime": "समय पर",
+      "pending": "लंबित",
+      "submitted": "जमा किए गए",
+      "title": "असाइनमेंट"
+    },
+    "attendance": {
+      "absent": "अनुपस्थित",
+      "late": "देरी से",
+      "present": "उपस्थित",
+      "presentOfTotal": "{{total}} में से {{present}} उपस्थित",
+      "title": "उपस्थिति",
+      "weeklyTrend": "साप्ताहिक रुझान"
+    },
+    "courseProgress": {
+      "title": "{{course}} प्रगति — {{percent}}% पूर्ण"
+    },
+    "footer": "{{institute}} द्वारा {{date}} को जनरेट किया गया · यह रिपोर्ट {{period}} की अवधि को कवर करती है।",
+    "header": {
+      "classBatch": "कक्षा / बैच",
+      "downloadPdf": "PDF डाउनलोड करें",
+      "enrollmentNo": "नामांकन संख्या",
+      "periodGenerated": "{{period}} · {{date}} को जनरेट किया गया",
+      "preparing": "तैयार हो रहा है…",
+      "rollNo": "रोल नंबर",
+      "statusGrade": "● {{status}} · ग्रेड {{grade}}",
+      "student": "छात्र",
+      "title": "छात्र प्रगति रिपोर्ट"
+    },
+    "liveClasses": {
+      "attendance": "उपस्थिति",
+      "attended": "उपस्थित हुए",
+      "missed": "छूटे",
+      "notMarked": "अंकित नहीं",
+      "total": "कुल कक्षाएं"
+    },
+    "parentSummary": {
+      "title": "अभिभावकों के लिए सारांश"
+    },
+    "strengths": {
+      "areasToImproveTitle": "सुधार के क्षेत्र",
+      "strengthsTitle": "मजबूत पक्ष"
+    },
+    "studyHabits": {
+      "activeDays": "सक्रिय दिन",
+      "contentExplored": "देखी गई सामग्री:",
+      "dailyStudyTime": "दैनिक अध्ययन समय (मिनट) · {{count}} दिन",
+      "dayN": "दिन {{day}}",
+      "days": "दिन",
+      "documents": "दस्तावेज़",
+      "focusScore": "एकाग्रता स्कोर",
+      "longestStreak": "सबसे लंबी लगातार अवधि",
+      "mostActive": "सबसे सक्रिय समय",
+      "quizzes": "क्विज़",
+      "title": "अध्ययन आदतें और दैनिक सहभागिता",
+      "videos": "वीडियो"
+    },
+    "subjectMarks": {
+      "caption": "मूल्यांकन, असाइनमेंट, क्विज़ और अभ्यास प्रश्नों में कुल मिलाकर।",
+      "title": "{{subject}} के अनुसार अंक"
+    }
+  },
+  "couponInput": {
+    "apply": "लागू करें",
+    "applying": "लागू हो रहा है...",
+    "couponCode": "कूपन कोड",
+    "discountOff": "— {{amount}} की छूट",
+    "errors": {
+      "applyFailed": "कूपन लागू नहीं हो सका। कृपया फिर से प्रयास करें।",
+      "enterCodeFirst": "पहले एक कूपन कोड दर्ज करें।",
+      "notApplicable": "यह कूपन इस {{course}} के लिए मान्य नहीं है।"
+    },
+    "heading": "कूपन कोड",
+    "placeholder": "कूपन कोड दर्ज करें",
+    "removeCoupon": "कूपन हटाएं"
+  },
+  "customFields": {
+    "enterField": "{{name}} दर्ज करें",
+    "file": {
+      "allowedTypes": "स्वीकार्य: {{allowed}}",
+      "maxSize": " · अधिकतम {{maxSizeMB}}MB",
+      "tooLarge": "फ़ाइल का आकार {{maxSizeMB}}MB से कम होना चाहिए",
+      "typeNotAllowed": ".{{ext}} फ़ाइल प्रकार की अनुमति नहीं है। स्वीकार्य: {{allowed}}",
+      "uploadFailed": "फ़ाइल अपलोड विफल रही। कृपया फिर से प्रयास करें।",
+      "uploaded": "अपलोड किया गया: {{fileName}}",
+      "uploading": "अपलोड हो रहा है...",
+      "viewCurrentFile": "वर्तमान फ़ाइल देखें"
+    },
+    "pickDate": "एक तारीख चुनें",
+    "selectField": "{{name}} चुनें"
+  },
+  "donation": {
+    "amountSelector": {
+      "customAmountPlaceholder": "{{symbol}} (न्यूनतम {{minAmount}})",
+      "other": "अन्य"
+    },
+    "dialog": {
+      "chooseAmount": "दान करने के लिए एक राशि चुनें",
+      "close": "बंद करें",
+      "continue": "जारी रखें",
+      "loadingOptions": "दान विकल्प लोड हो रहे हैं...",
+      "processing": "प्रक्रिया जारी है...",
+      "skip": "छोड़ें",
+      "supportFreeLearning": "निःशुल्क शिक्षा का समर्थन करें",
+      "tryAgain": "फिर से प्रयास करें"
+    },
+    "emailForm": {
+      "emailPlaceholder": "you@example.com",
+      "receiptNotice": "हम आपकी रसीद इसी ईमेल पते पर भेजेंगे",
+      "yourEmail": "आपका ईमेल"
+    },
+    "hook": {
+      "errors": {
+        "accessDenied": "पहुंच अस्वीकृत। कृपया अपनी अनुमतियां जांचें और फिर से प्रयास करें।",
+        "alreadyEnrolled": "आप पहले से ही इस {{course}} में नामांकित हैं। कृपया अपने नामांकित {{courses}} देखें।",
+        "cardMountFailed": "कार्ड इनपुट लोड करने में विफल। कृपया पेज रीफ्रेश करके फिर से प्रयास करें।",
+        "courseConfigError": "{{course}} कॉन्फ़िगरेशन त्रुटि। कृपया पेज रीफ्रेश करके फिर से प्रयास करें।",
+        "courseDataError": "{{course}} डेटा त्रुटि। कृपया पेज रीफ्रेश करके फिर से प्रयास करें।",
+        "enrollmentError": "नामांकन त्रुटि। कृपया फिर से प्रयास करें या सहायता से संपर्क करें।",
+        "enrollmentFailed": "नामांकन विफल रहा। कृपया फिर से प्रयास करें।",
+        "enterAmount": "कृपया एक दान राशि दर्ज करें",
+        "enterEmail": "कृपया अपना ईमेल पता दर्ज करें",
+        "invalidAmount": "कृपया एक मान्य दान राशि दर्ज करें",
+        "invalidEmail": "कृपया एक मान्य ईमेल पता दर्ज करें",
+        "invalidEmailFormat": "अमान्य ईमेल प्रारूप",
+        "loginAgain": "कृपया फिर से लॉग इन करें और प्रयास करें।",
+        "minimumAmount": "न्यूनतम दान राशि {{amount}} है",
+        "paymentFailed": "भुगतान विफल रहा। कृपया फिर से प्रयास करें।",
+        "paymentFormLoadFailed": "भुगतान फ़ॉर्म लोड करने में विफल। कृपया पेज रीफ्रेश करके फिर से प्रयास करें।",
+        "paymentFormNotLoaded": "भुगतान फ़ॉर्म लोड नहीं हुआ है। कृपया पेज रीफ्रेश करके फिर से प्रयास करें।",
+        "paymentGatewayError": "भुगतान सिस्टम त्रुटि। कृपया फिर से प्रयास करें या सहायता से संपर्क करें।",
+        "selectAmount": "⚠️ जारी रखने के लिए कृपया एक दान राशि चुनें या दर्ज करें",
+        "somethingWentWrong": "कुछ गड़बड़ हो गई। कृपया फिर से प्रयास करें या सहायता से संपर्क करें।",
+        "systemError": "सिस्टम त्रुटि। कृपया फिर से प्रयास करें या सहायता से संपर्क करें।",
+        "unableToFetchUserData": "उपयोगकर्ता डेटा प्राप्त नहीं हो सका। कृपया फिर से प्रयास करें।"
+      }
+    },
+    "paymentForm": {
+      "cardDetails": "कार्ड विवरण",
+      "donateNow": "अभी दान करें",
+      "loadingPaymentForm": "भुगतान फ़ॉर्म लोड हो रहा है...",
+      "processing": "प्रक्रिया जारी है...",
+      "securePaymentPoweredBy": "सुरक्षित भुगतान संचालित",
+      "skip": "छोड़ें",
+      "stripe": "Stripe"
+    },
+    "summary": {
+      "amount": "राशि:",
+      "edit": "संपादित करें",
+      "email": "ईमेल:",
+      "plan": "योजना:",
+      "title": "दान सारांश"
+    }
+  },
+  "instructionPage": {
+    "assessmentInstructions": {
+      "attachment": "अटैचमेंट",
+      "attemptOf": "प्रयास {{used}} / {{max}}",
+      "instructionsFromInstitute": "आपके संस्थान से निर्देश",
+      "no": "नहीं",
+      "noAdditionalInstructions": "इस मूल्यांकन के लिए कोई अतिरिक्त निर्देश नहीं दिए गए हैं।",
+      "readBeforeYouBegin": "शुरू करने से पहले इन्हें पढ़ें। टेस्ट में प्रवेश करते ही टाइमर शुरू हो जाता है।",
+      "rules": {
+        "attempts": {
+          "bodyFirst": "यह इस पेपर पर आपका पहला प्रयास है।",
+          "bodyUsed_one": "आप इस पेपर पर पहले ही {{count}} प्रयास कर चुके हैं।",
+          "bodyUsed_other": "आप इस पेपर पर पहले ही {{count}} प्रयास कर चुके हैं।"
+        },
+        "autoSave": {
+          "body": "हर उत्तर अपने आप सिंक होता रहता है। यदि आपका कनेक्शन टूट जाए, तो उत्तर इस डिवाइस पर सुरक्षित रहते हैं और वापस ऑनलाइन आने पर भेज दिए जाते हैं।",
+          "title": "आपके उत्तर अपने आप सेव होते हैं"
+        },
+        "clock": {
+          "bodyFixed": "सेक्शन क्रम से खुलते हैं। एक बार किसी सेक्शन का समय समाप्त हो जाए, तो आप उसमें वापस नहीं जा सकते।",
+          "bodySwitchable": "कुल टाइमर खत्म होने तक आप सेक्शन के बीच स्वतंत्र रूप से आ-जा सकते हैं।",
+          "title": "घड़ी पर {{duration}}"
+        },
+        "fullScreen": {
+          "body": "टेस्ट फुल स्क्रीन में चलता है। इसे छोड़ना, टैब बदलना या कोई अन्य विंडो खोलना दर्ज किया जाता है। तीन चेतावनियों के बाद आपका पेपर अपने आप सबमिट हो जाएगा।",
+          "title": "फुल स्क्रीन में रहें"
+        },
+        "preview": {
+          "body": "उत्तर देने का समय शुरू होने से पहले आपको पेपर का केवल-पढ़ने योग्य पूर्वावलोकन मिलता है।",
+          "title": "शुरू करने से पहले पूर्वावलोकन"
+        },
+        "questionPalette": {
+          "body": "पैलेट दिखाता है कि क्या उत्तर दिया गया, छोड़ा गया या समीक्षा के लिए चिह्नित किया गया है। समीक्षा के लिए चिह्नित करने पर भी आपका चुना गया उत्तर सबमिट होता रहेगा।",
+          "title": "प्रश्न पैलेट का उपयोग करें"
+        },
+        "tools": {
+          "and": " और ",
+          "body": "यह टेस्ट आपको {{tools}} देता है। इन्हें टेस्ट के दौरान टूलबार से खोलें।",
+          "title": "उपयोग करने योग्य टूल"
+        }
+      },
+      "stats": {
+        "duration": "अवधि",
+        "preview": "पूर्वावलोकन",
+        "switching": "स्विचिंग"
+      },
+      "tools": {
+        "calculator": "एक कैलकुलेटर",
+        "scientificCalculator": "एक वैज्ञानिक कैलकुलेटर",
+        "scratchpad": "रफ काम के लिए एक स्क्रैचपैड"
+      },
+      "yes": "हाँ"
+    },
+    "instructionPage": {
+      "acknowledgement": "मैंने निर्देश पढ़ लिए हैं और समझता/समझती हूं कि फुल स्क्रीन छोड़ना दर्ज किया जाता है और इससे मेरा पेपर अपने आप सबमिट हो सकता है।",
+      "detailsUnavailable": "मूल्यांकन विवरण उपलब्ध नहीं है",
+      "loadFailed": "हम इस मूल्यांकन को लोड नहीं कर सके। कृपया वापस जाकर फिर से प्रयास करें।",
+      "loadingDetails": "मूल्यांकन विवरण लोड हो रहा है…",
+      "tickToBegin": "शुरू करने के लिए ऊपर दी गई स्वीकृति पर टिक करें।"
+    },
+    "navbar": {
+      "assessmentBrief": "मूल्यांकन जानकारी",
+      "goBack": "वापस जाएं"
+    },
+    "sectionDetails": {
+      "cutoffMarks": "कटऑफ अंक:",
+      "description": "सेक्शन विवरण:",
+      "duration": "सेक्शन अवधि:",
+      "notApplicable": "लागू नहीं",
+      "totalMarks": "कुल अंक:"
+    },
+    "startAssessment": {
+      "cancel": "रद्द करें",
+      "close": "बंद करें",
+      "confirmBody": "एक बार मूल्यांकन शुरू करने के बाद, आपको इसे बिना रुके पूरा करना होगा। तभी शुरू करें जब आप तैयार हों।",
+      "loading": "लोड हो रहा है...",
+      "proceed": "आगे बढ़ें",
+      "startAssessment": "मूल्यांकन शुरू करें",
+      "uploadAnswer": "उत्तर अपलोड करें"
+    }
+  },
+  "languageDropdown": {
+    "changeLanguage": "भाषा बदलें"
+  },
+  "myFilesPage": {
+    "actions": {
+      "download": "डाउनलोड करें",
+      "downloadFile": "फ़ाइल डाउनलोड करें",
+      "edit": "संपादित करें",
+      "editFile": "फ़ाइल संपादित करें",
+      "openUrl": "URL खोलें",
+      "view": "देखें",
+      "viewNote": "नोट देखें"
+    },
+    "backToDashboard": "डैशबोर्ड पर वापस जाएं",
+    "empty": {
+      "message": "आपके पास अभी तक कोई रिपोर्ट नहीं है।",
+      "title": "कोई रिपोर्ट नहीं मिली"
+    },
+    "errorLoading": {
+      "message": "कृपया बाद में फिर से प्रयास करें।",
+      "title": "फ़ाइलें लोड करने में त्रुटि"
+    },
+    "fileType": {
+      "note": "नोट",
+      "text": "टेक्स्ट"
+    },
+    "table": {
+      "actions": "कार्रवाई",
+      "addedBy": "द्वारा जोड़ा गया",
+      "dateAdded": "जोड़ने की तिथि",
+      "mediaType": "मीडिया प्रकार",
+      "name": "नाम",
+      "type": "प्रकार"
+    },
+    "title": "मेरी फ़ाइलें"
+  },
+  "myReportsPage": {
+    "activity": {
+      "viewInsights": "जानकारी देखें"
+    },
+    "emptyActivity": {
+      "message": "कोई क्विज़, प्रश्न या असाइनमेंट पूरा करने के बाद यहां जानकारी दिखाई देती है। सबमिट करने के तुरंत बाद इन्हें तैयार किया जाता है।",
+      "title": "अभी तक कोई गतिविधि जानकारी नहीं है"
+    },
+    "emptyTerm": {
+      "message": "आपके पास अभी तक कोई रिपोर्ट नहीं है।",
+      "title": "कोई रिपोर्ट नहीं मिली"
+    },
+    "errorLoading": {
+      "message": "कृपया बाद में फिर से प्रयास करें।",
+      "title": "रिपोर्ट लोड करने में त्रुटि"
+    },
+    "header": {
+      "activityInsightsTab": "गतिविधि जानकारी",
+      "backToDashboard": "डैशबोर्ड पर वापस जाएं",
+      "progressReportsTab": "प्रगति रिपोर्ट",
+      "title": "मेरी रिपोर्टें"
+    },
+    "term": {
+      "comprehensive": "व्यापक",
+      "created": "बनाया गया: {{date}}",
+      "viewDetails": "विवरण देखें"
+    }
+  },
+  "notificationSettings": {
+    "categories": {
+      "announcements": {
+        "description": "आपके संस्थान से महत्वपूर्ण घोषणाएं",
+        "label": "घोषणाएं"
+      },
+      "assignments": {
+        "description": "नए असाइनमेंट और सबमिशन रिमाइंडर",
+        "label": "असाइनमेंट"
+      },
+      "description": "चुनें कि आपको किस प्रकार की सामग्री के बारे में सूचित किया जाए",
+      "general": {
+        "description": "सामान्य ऐप अपडेट और जानकारी",
+        "label": "सामान्य"
+      },
+      "liveClasses": {
+        "description": "{{liveClasses}} रिमाइंडर और अपडेट",
+        "label": "{{liveClasses}}"
+      },
+      "title": "सूचना श्रेणियां"
+    },
+    "helpText": {
+      "body": "पुश सूचनाएं प्राप्त करने के लिए, आपको अनुमति देनी होगी। शुरू करने के लिए ऊपर \"सूचनाएं सक्षम करें\" पर क्लिक करें। आप बाद में अपने डिवाइस की सूचना सेटिंग्स में इन्हें कभी भी बदल सकते हैं।",
+      "title": "सूचनाएं सक्षम करें"
+    },
+    "preferences": {
+      "appBadge": {
+        "description": "ऐप आइकन पर सूचना संख्या दिखाएं",
+        "label": "ऐप बैज"
+      },
+      "description": "चुनें कि आपको किस प्रकार की सूचनाएं प्राप्त करनी हैं",
+      "enableNotifications": {
+        "description": "सभी सूचनाओं को चालू या बंद करें",
+        "label": "सूचनाएं सक्षम करें"
+      },
+      "sound": {
+        "description": "सूचना आने पर ध्वनि बजाएं",
+        "label": "ध्वनि"
+      },
+      "title": "सूचना प्राथमिकताएं"
+    },
+    "status": {
+      "description": "सभी डिवाइस पर अपनी पुश सूचना प्राथमिकताएं प्रबंधित करें",
+      "enableNotifications": "सूचनाएं सक्षम करें",
+      "enabled": "सक्षम",
+      "notSupported": "समर्थित नहीं",
+      "notificationsDisabled": "सूचनाएं अक्षम हैं",
+      "notificationsEnabled": "सूचनाएं सक्षम हैं",
+      "permissionStatus": "अनुमति स्थिति",
+      "platform": "प्लेटफ़ॉर्म",
+      "sendTest": "परीक्षण भेजें",
+      "supported": "समर्थित",
+      "testNotifications": "परीक्षण सूचनाएं",
+      "testNotificationsDescription": "सब कुछ ठीक से काम कर रहा है यह जांचने के लिए एक परीक्षण सूचना भेजें",
+      "title": "सूचना स्थिति",
+      "unreadBadge": "{{count}} अपठित"
+    },
+    "testNotification": {
+      "body": "यह Vacademy Learner की ओर से एक परीक्षण सूचना है!",
+      "title": "परीक्षण सूचना"
+    },
+    "toasts": {
+      "disableViaDeviceSettings": "सूचनाएं फिलहाल सक्षम हैं। इन्हें अक्षम करने के लिए कृपया अपनी डिवाइस सेटिंग्स का उपयोग करें।"
+    }
+  },
+  "offline": {
+    "deviceLimitDialog": {
+      "heading": "ऑफ़लाइन डिवाइस सीमा पूरी हो गई",
+      "remove": "हटाएं",
+      "removed": "हटा दिया गया",
+      "retryDownload": "डाउनलोड फिर से प्रयास करें",
+      "toasts": {
+        "removeFailed": "उस डिवाइस को हटाया नहीं जा सका। कृपया फिर से प्रयास करें।",
+        "removed": "डिवाइस हटा दिया गया। अब आप इस डिवाइस को पंजीकृत कर सकते हैं।"
+      },
+      "unknownPlatform": "अज्ञात",
+      "unnamedDevice": "अनाम डिवाइस"
+    },
+    "downloadNodeButton": {
+      "cancelDownload": "डाउनलोड रद्द करें",
+      "confirmDelete": {
+        "cancel": "रद्द करें",
+        "confirm": "हटाएं",
+        "description": "यह सामग्री इस डिवाइस से हटा दी जाएगी। इसे फिर से डाउनलोड करने के लिए आपको इंटरनेट कनेक्शन की आवश्यकता होगी।",
+        "title": "डाउनलोड की गई सामग्री हटाएं?"
+      },
+      "removeDownload": "डाउनलोड हटाएं",
+      "status": {
+        "downloaded": "डाउनलोड हो गया — ऑफ़लाइन उपलब्ध",
+        "downloading": "डाउनलोड हो रहा है…",
+        "error": "डाउनलोड विफल — फिर से प्रयास करने के लिए टैप करें",
+        "notDownloaded": "ऑफ़लाइन उपयोग के लिए डाउनलोड करें",
+        "partial": "आंशिक रूप से सेव किया गया — बाकी डाउनलोड करने के लिए टैप करें",
+        "removedByAdmin": "एडमिन द्वारा हटाया गया",
+        "savedWithOnlineOnly": "ऑफ़लाइन के लिए सेव किया गया — इसमें कुछ सामग्री को अभी भी इंटरनेट की आवश्यकता है",
+        "updateAvailable": "अपडेट उपलब्ध है — रीफ्रेश करने के लिए टैप करें"
+      },
+      "toasts": {
+        "changeSettings": "सेटिंग्स बदलें",
+        "downloadStarted": "डाउनलोड शुरू हुआ",
+        "networkError": "सर्वर तक नहीं पहुंच सके — अपना कनेक्शन जांचें और फिर से प्रयास करें",
+        "startFailed": "डाउनलोड शुरू नहीं हो सका — कृपया फिर से प्रयास करें",
+        "wifiOnlyDescription": "आप मोबाइल डेटा पर हैं।",
+        "wifiOnlyTitle": "केवल वाई-फाई पर डाउनलोड करें"
+      }
+    },
+    "downloadsPage": {
+      "confirmDialog": {
+        "cancel": "रद्द करें",
+        "clearAllConfirm": "सभी साफ़ करें",
+        "clearAllDescription": "इस डिवाइस पर सेव किया गया सब कुछ हटा दिया जाएगा। इसे फिर से डाउनलोड करने के लिए आपको इंटरनेट कनेक्शन की आवश्यकता होगी।",
+        "clearAllTitle": "सभी डाउनलोड साफ़ करें?",
+        "removeConfirm": "हटाएं",
+        "removeContentDescription": "यह सामग्री इस डिवाइस से हटा दी जाएगी। इसे फिर से डाउनलोड करने के लिए आपको इंटरनेट कनेक्शन की आवश्यकता होगी।",
+        "removeNamedTitle": "\"{{label}}\" हटाएं?",
+        "removeOtherDeviceDescription": "उस डिवाइस की ऑफ़लाइन पहुंच समाप्त हो जाएगी और अगली बार कनेक्ट होने पर उसकी डाउनलोड की गई सामग्री हटा दी जाएगी।",
+        "removeThisDeviceDescription": "इस डिवाइस की ऑफ़लाइन पहुंच समाप्त हो जाएगी और इस पर डाउनलोड की गई सारी सामग्री हटा दी जाएगी। आप बाद में फिर से डाउनलोड कर सकते हैं।",
+        "removeThisDeviceTitle": "इस डिवाइस को हटाएं?"
+      },
+      "content": {
+        "clearAll": "सभी डाउनलोड साफ़ करें",
+        "delete": "हटाएं",
+        "emptyDescription": "एक {{course}} खोलें और उसे ऑफ़लाइन सेव करने के लिए डाउनलोड आइकन पर टैप करें।",
+        "emptyTitle": "अभी तक कुछ भी डाउनलोड नहीं किया गया",
+        "newContentInPrefix": "इसमें नई सामग्री है",
+        "open": "खोलें",
+        "update": "अपडेट करें",
+        "updateAvailable": "अपडेट उपलब्ध है",
+        "updating": "अपडेट हो रहा है…"
+      },
+      "devices": {
+        "loading": "लोड हो रहा है…",
+        "none": "ऑफ़लाइन पहुंच के लिए कोई डिवाइस पंजीकृत नहीं है।",
+        "remove": "हटाएं",
+        "thisDeviceFallbackLabel": "यह डिवाइस",
+        "thisDeviceSuffix": "(यह डिवाइस)",
+        "title": "ऑफ़लाइन डिवाइस",
+        "unknownPlatform": "अज्ञात",
+        "unnamedDevice": "अनाम डिवाइस"
+      },
+      "dismiss": "खारिज करें",
+      "downloadSettings": {
+        "mobileDataAllowed": "मोबाइल डेटा का उपयोग किया जा सकता है",
+        "title": "डाउनलोड सेटिंग्स",
+        "waitsForWifi": "डाउनलोड वाई-फाई का इंतज़ार करते हैं",
+        "wifiOnly": "केवल वाई-फाई पर डाउनलोड करें"
+      },
+      "downloadedContent": "डाउनलोड की गई सामग्री",
+      "heading": "डाउनलोड",
+      "lease": {
+        "expired": "नवीनीकरण के लिए ऑफ़लाइन पहुंच को फिर से कनेक्ट करना होगा।",
+        "none": "अभी तक कोई ऑफ़लाइन डिवाइस पंजीकृत नहीं है।",
+        "revoked": "इस डिवाइस के लिए ऑफ़लाइन पहुंच बंद कर दी गई है।",
+        "validUntil": "ऑफ़लाइन पहुंच {{date}} तक मान्य है"
+      },
+      "offlineAccess": {
+        "title": "ऑफ़लाइन पहुंच"
+      },
+      "storage": {
+        "availableOnDevice": "डिवाइस पर उपलब्ध",
+        "lowSpace": "स्टोरेज कम हो रहा है — नए डाउनलोड विफल हो सकते हैं।",
+        "title": "स्टोरेज",
+        "usedByDownloads": "डाउनलोड द्वारा उपयोग किया गया"
+      },
+      "subheading": "ऑफ़लाइन उपयोग के लिए इस डिवाइस पर सेव की गई सामग्री प्रबंधित करें।",
+      "tabs": {
+        "content": "सामग्री",
+        "contentWithCount": "सामग्री ({{count}})",
+        "settings": "सेटिंग्स"
+      },
+      "toasts": {
+        "allCleared": "सभी डाउनलोड साफ़ कर दिए गए",
+        "clearFailed": "डाउनलोड साफ़ नहीं हो सके — कृपया फिर से प्रयास करें",
+        "deviceRemoveFailed": "उस डिवाइस को हटाया नहीं जा सका। कृपया फिर से प्रयास करें।",
+        "deviceRemoved": "डिवाइस को ऑफ़लाइन पहुंच से हटा दिया गया।",
+        "openChapterFailed": "यह अध्याय नहीं खुल सका — इसे {{course}} से खोलने का प्रयास करें",
+        "removeDownloadFailed": "उस डाउनलोड को हटाया नहीं जा सका — कृपया फिर से प्रयास करें",
+        "removedFromDownloads": "डाउनलोड से हटाया गया",
+        "thisDeviceRemoved": "इस डिवाइस को हटा दिया गया है। डाउनलोड की गई सामग्री मिटा दी गई है।",
+        "updateFetchFailed": "अपडेट नहीं मिल सका — कृपया फिर से प्रयास करें",
+        "updateStarted": "अपडेट हो रहा है — नई सामग्री डाउनलोड हो रही है"
+      },
+      "unavailable": {
+        "description": "ऑफ़लाइन पहुंच मोबाइल ऐप में काम करती है, और केवल तभी जब आपके संस्थान ने इसे सक्षम किया हो।",
+        "title": "यहां ऑफ़लाइन डाउनलोड उपलब्ध नहीं हैं"
+      }
+    },
+    "revokedDeviceDialog": {
+      "body": "आपके संस्थान ने इस डिवाइस के लिए ऑफ़लाइन पहुंच रद्द कर दी है। इस डिवाइस पर डाउनलोड की गई सारी सामग्री हटा दी गई है। आप अभी भी ऑनलाइन सब कुछ एक्सेस कर सकते हैं, और ऑफ़लाइन उपयोग के लिए किसी अन्य डिवाइस को पंजीकृत कर सकते हैं।",
+      "gotIt": "समझ गया",
+      "heading": "ऑफ़लाइन पहुंच हटाई गई"
+    }
+  },
+  "reportDetailsDialog": {
+    "generatedOn": "{{date}} को जनरेट किया गया",
+    "heading": "रिपोर्ट: {{start}} - {{end}}",
+    "sections": {
+      "areasForImprovement": "सुधार के क्षेत्र",
+      "learningFrequency": "सीखने की आवृत्ति",
+      "overallProgress": "समग्र प्रगति",
+      "recommendedRemedialActions": "अनुशंसित सुधारात्मक कार्रवाई",
+      "strengths": "मजबूत पक्ष",
+      "topicsNeedingAttention": "ध्यान देने योग्य विषय",
+      "topicsOfImprovement": "सुधार के विषय"
+    }
+  },
+  "reportDetailsPage": {
+    "generatedOn": "{{date}} को जनरेट किया गया",
+    "reportSections": "रिपोर्ट सेक्शन",
+    "sections": {
+      "learningPattern": "सीखने का पैटर्न",
+      "overallProgress": "समग्र प्रगति",
+      "recommendedRemedialActions": "अनुशंसित सुधारात्मक कार्रवाई",
+      "strengths": "मजबूत पक्ष",
+      "studentEfforts": "छात्र के प्रयास",
+      "topicsNeedingAttention": "ध्यान देने योग्य विषय",
+      "topicsOfImprovement": "सुधार के विषय",
+      "weaknesses": "कमजोर पक्ष"
+    }
+  },
+  "reviewItem": {
+    "actions": {
+      "delete": "हटाएं"
+    },
+    "deleteDialog": {
+      "cancel": "रद्द करें",
+      "confirm": "हटाएं",
+      "description": "क्या आप वाकई इस समीक्षा को हटाना चाहते हैं? यह कार्रवाई पूर्ववत नहीं की जा सकती।",
+      "title": "समीक्षा हटाएं"
+    },
+    "timeAgo": {
+      "days": "{{count}} दिन पहले",
+      "hours": "{{count}} घंटे पहले",
+      "minutes": "{{count}} मिनट पहले",
+      "seconds": "{{count}} सेकंड पहले"
+    }
+  },
+  "safetyWarningModal": {
+    "adultVerification": {
+      "body": "सामाजिक सुविधाओं (जैसे चैट या लाइव सेशन) तक पहुंचने के लिए, एक वयस्क को इस कार्रवाई की पुष्टि करनी होगी।",
+      "challengeLabel": "12 + 7 कितना होता है?",
+      "placeholder": "संख्या दर्ज करें",
+      "title": "वयस्क सत्यापन आवश्यक"
+    },
+    "agreeAndProceed": "मैं सहमत हूं और आगे बढ़ता/बढ़ती हूं",
+    "goBack": "वापस जाएं",
+    "incorrectAnswer": "गलत उत्तर। कृपया फिर से प्रयास करें।",
+    "readCarefully": "आगे बढ़ने से पहले कृपया ध्यान से पढ़ें:",
+    "rules": {
+      "beSafeOnline": {
+        "body": "अजनबियों के साथ कभी भी व्यक्तिगत जानकारी (जैसे आपका फोन नंबर, पता या स्कूल) साझा न करें।",
+        "title": "ऑनलाइन सुरक्षित रहें:"
+      },
+      "chatWithCaution": {
+        "body": "केवल उन्हीं लोगों के साथ बातचीत करें जिन्हें आप जानते और भरोसा करते हैं।",
+        "title": "सावधानी से चैट करें:"
+      },
+      "respectOthers": {
+        "body": "सभी ऑनलाइन बातचीत में दयालु और सम्मानजनक रहें।",
+        "title": "दूसरों का सम्मान करें:"
+      }
+    },
+    "title": "सुरक्षा सबसे पहले"
+  },
+  "studentReportCard": {
+    "charts": {
+      "confidence": "आत्मविश्वास",
+      "confidenceDonutAriaLabel": "आत्मविश्वास अंशांकन डोनट",
+      "radarAriaLabel": "सोच-कौशल रडार चार्ट"
+    },
+    "fallbacks": {
+      "institute": "संस्थान",
+      "progressReport": "प्रगति रिपोर्ट",
+      "student": "छात्र"
+    },
+    "masthead": {
+      "enrolment": "नामांकन {{enrollment}}",
+      "generated": "{{date}} को जनरेट किया गया",
+      "roll": "रोल {{roll}}"
+    },
+    "sections": {
+      "achievements": {
+        "caption": "अर्जित बैज और प्रमाणपत्र",
+        "title": "उपलब्धियाँ"
+      },
+      "aiInsights": {
+        "aiSummary": "AI सारांश",
+        "mediumPriority": "मध्यम",
+        "recommendedNextSteps": "अनुशंसित अगले कदम",
+        "whatWeNoticed": "हमने क्या देखा"
+      },
+      "assessments": {
+        "title": "मूल्यांकन",
+        "caption": "इस अवधि में {{count}}",
+        "rank": "रैंक {{rank}}"
+      },
+      "assignments": {
+        "assigned": "सौंपे गए",
+        "avgScore": "औसत स्कोर",
+        "late": "देरी से",
+        "onTime": "समय पर",
+        "pending": "लंबित",
+        "submitted": "जमा किए गए",
+        "title": "असाइनमेंट"
+      },
+      "attendance": {
+        "absent": "अनुपस्थित",
+        "late": "देरी से",
+        "present": "उपस्थित",
+        "title": "उपस्थिति",
+        "totalSessions": "कुल सत्र",
+        "vsLastPeriod": "पिछली अवधि की तुलना में {{change}}"
+      },
+      "courseProgress": {
+        "percentComplete": "कुल मिलाकर {{percent}}% पूर्ण",
+        "title": "{{course}} प्रगति"
+      },
+      "doubts": {
+        "avgResolutionTime": "औसत समाधान समय",
+        "hours": "{{count}} घंटे",
+        "questionsAsked": "पूछे गए प्रश्न",
+        "resolved": "हल किए गए",
+        "title": "शंकाएं और सहभागिता"
+      },
+      "gradeMix": {
+        "title": "प्राप्त ग्रेड",
+        "summary": "{{total}} में से {{good}} टेस्ट में ग्रेड B या उससे ऊपर",
+        "testCount": "{{count}} टेस्ट",
+        "range": {
+          "ap": "90% और अधिक",
+          "a": "80–89%",
+          "bp": "70–79%",
+          "b": "60–69%",
+          "c": "50–59%",
+          "d": "50% से कम"
+        }
+      },
+      "liveClasses": {
+        "attendance": "उपस्थिति",
+        "attended": "उपस्थित हुए",
+        "missed": "छूटे",
+        "title": "{{liveClasses}}",
+        "total": "कुल कक्षाएं"
+      },
+      "marksBySubject": {
+        "note": "मूल्यांकन, असाइनमेंट, क्विज़ और प्रश्नों में",
+        "title": "{{subject}} के अनुसार अंक",
+        "vsClassAverage": "{{subject}} में प्रदर्शन बनाम कक्षा औसत"
+      },
+      "misconceptions": {
+        "note": "खास भ्रांतियां + उन्हें कैसे ठीक करें",
+        "title": "आगे किस पर काम करें"
+      },
+      "narrative": {
+        "actionChecklist": "कार्य सूची",
+        "detailedAnalysis": "विस्तृत विश्लेषण",
+        "effortVsOutput": "प्रयास बनाम परिणाम",
+        "learningFrequency": "सीखने की आवृत्ति",
+        "progress": "प्रगति",
+        "topicsImproving": "सुधर रहे विषय",
+        "topicsNeedingAttention": "ध्यान देने योग्य विषय"
+      },
+      "strengthsAreas": {
+        "areasToImprove": "सुधार के क्षेत्र",
+        "strengths": "मजबूत पक्ष"
+      },
+      "studyHabits": {
+        "activeDaysOf": "सक्रिय दिन / {{total}}",
+        "caption": "इस अवधि में दैनिक अध्ययन मिनट",
+        "consistency": "निरंतरता",
+        "days": "दिन",
+        "longestStreak": "सबसे लंबी लगातार अवधि",
+        "title": "अध्ययन आदतें"
+      },
+      "thinking": {
+        "confidenceCaption": "उत्तर दिए गए प्रश्नों पर आत्मविश्वास अंशांकन",
+        "confidenceTitle": "जानना बनाम अनुमान लगाना",
+        "confidentlyRight": "आत्मविश्वास से सही",
+        "confidentlyWrong": "आत्मविश्वास से गलत",
+        "note": "{{count}} हालिया प्रयासों के AI विश्लेषण से",
+        "radarCaption": "संज्ञानात्मक स्तरों पर सटीकता (ब्लूम वर्गीकरण)",
+        "radarTitle": "सोच-कौशल प्रोफ़ाइल",
+        "rightButUnsure": "सही लेकिन अनिश्चित",
+        "title": "{{firstName}} कैसे सोचता/सोचती है"
+      },
+      "topicMastery": {
+        "note": "इस अवधि के सभी प्रयासों में विषयवार सटीकता",
+        "title": "विषय निपुणता"
+      },
+      "trend": {
+        "title": "समय के साथ अंक",
+        "classAverage": "कक्षा औसत",
+        "ariaLabel": "हर मूल्यांकन में अंक, कक्षा औसत के साथ"
+      }
+    }
+  }
+}

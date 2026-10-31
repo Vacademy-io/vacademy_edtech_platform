@@ -5,6 +5,7 @@ import {
     type CopyMovePlacement,
 } from '@/components/common/study-library/copy-move/copy-move-destination-picker';
 import { Dispatch, SetStateAction, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useRouter } from '@tanstack/react-router';
 import { useContentStore } from '../../-stores/chapter-sidebar-store';
 import { useMoveSlide } from '../../-services/moveSlides';
@@ -20,6 +21,7 @@ interface MoveTo {
 }
 
 export const MoveToDialog = ({ openDialog, setOpenDialog }: MoveTo) => {
+    const { t } = useTranslation('studyLibraryMoveDialog');
     const router = useRouter();
     const { chapterId, courseId, levelId, subjectId, moduleId, sessionId } =
         router.state.location.search;
@@ -93,10 +95,8 @@ export const MoveToDialog = ({ openDialog, setOpenDialog }: MoveTo) => {
         if (failed.length === 0) {
             toast.success(
                 destinations.length === 1
-                    ? 'Slide moved successfully'
-                    : `Slide moved, with copies in ${destinations.length - 1} more ${
-                          destinations.length === 2 ? 'location' : 'locations'
-                      }`
+                    ? t('slideMovedSuccess')
+                    : t('slideMovedWithCopies', { count: destinations.length - 1 })
             );
             setOpenDialog(null);
             return;
@@ -105,9 +105,10 @@ export const MoveToDialog = ({ openDialog, setOpenDialog }: MoveTo) => {
             // The slide has left its original chapter, so this dialog's source is
             // stale — close instead of offering a retry that would move it again.
             toast.warning(
-                `Slide moved, but ${failed.length} ${
-                    failed.length === 1 ? 'copy' : 'copies'
-                } failed: ${failed.map((d) => d.label).join(', ')}`
+                t('slideMovedButCopiesFailed', {
+                    count: failed.length,
+                    labels: failed.map((d) => d.label).join(', '),
+                })
             );
             setOpenDialog(null);
             return;
@@ -115,16 +116,16 @@ export const MoveToDialog = ({ openDialog, setOpenDialog }: MoveTo) => {
         // Nothing moved — the slide is still in its chapter, so retrying the
         // failed destinations from here is safe.
         if (done === 0) {
-            toast.error('Failed to move the slide');
+            toast.error(t('failedToMoveSlide'));
         } else {
-            toast.warning(`${done} of ${destinations.length} locations done. Retry the rest below.`);
+            toast.warning(t('locationsDoneRetryRest', { done, total: destinations.length }));
         }
         return failed;
     };
 
     return (
         <MyDialog
-            heading="Move to"
+            heading={t('moveTo')}
             dialogWidth="max-w-2xl"
             open={openDialog == 'move'}
             onOpenChange={() => setOpenDialog(null)}
@@ -132,11 +133,11 @@ export const MoveToDialog = ({ openDialog, setOpenDialog }: MoveTo) => {
             <CopyMoveDestinationPicker
                 leaf="chapter"
                 showPlacementOptions
-                submitLabel="Move"
-                busyLabel="Moving…"
+                submitLabel={t('move')}
+                busyLabel={t('movingEllipsis')}
                 isSubmitting={isSubmitting}
                 onSubmit={handleMoveSlide}
-                multiHint="A slide lives in one place: the extra locations get a copy, and the slide is removed from its current chapter."
+                multiHint={t('multiHint')}
             />
         </MyDialog>
     );

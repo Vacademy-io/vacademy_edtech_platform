@@ -29,7 +29,8 @@ public class EmployeeBankDetail {
     @Column(name = "account_holder_name")
     private String accountHolderName;
 
-    @Column(name = "account_number", nullable = false, length = 50)
+    @Convert(converter = vacademy.io.admin_core_service.core.crypto.EncryptedStringConverter.class)
+    @Column(name = "account_number", nullable = false, length = 512)
     private String accountNumber;
 
     @Column(name = "bank_name")

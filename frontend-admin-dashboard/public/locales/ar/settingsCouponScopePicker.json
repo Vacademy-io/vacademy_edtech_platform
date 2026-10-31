@@ -1,0 +1,29 @@
+{
+    "tabs": {
+        "instituteWide": {
+            "label": "على مستوى المؤسسة",
+            "description": "يمكن لأي {{learner}} يلتحق بهذه المؤسسة استخدام هذا الكوبون."
+        },
+        "specificBatches": {
+            "label": "{{batch}} محددة",
+            "description": "يمكن فقط لـ {{learner}} الذين يلتحقون بـ {{batch}} المحددة استخدام هذا الكوبون."
+        },
+        "specificInvites": {
+            "label": "{{invite}} محددة",
+            "description": "يمكن فقط لـ {{learner}} الذين يلتحقون عبر روابط الدعوة المدرجة استخدام هذا الكوبون."
+        }
+    },
+    "sessions": {
+        "pickLabel": "اختر واحدًا أو أكثر من {{sessions}}"
+    },
+    "invites": {
+        "pasteLabel": "الصق معرّفات {{invite}}",
+        "placeholder": "معرّفات دعوة مفصولة بفواصل أو أسطر جديدة",
+        "captured_zero": "لم يتم تسجيل أي معرّف ({{count}})",
+        "captured_one": "تم تسجيل معرّف واحد ({{count}})",
+        "captured_two": "تم تسجيل معرّفين ({{count}})",
+        "captured_few": "تم تسجيل {{count}} معرّفات",
+        "captured_many": "تم تسجيل {{count}} معرّفًا",
+        "captured_other": "تم تسجيل {{count}} معرّف"
+    }
+}

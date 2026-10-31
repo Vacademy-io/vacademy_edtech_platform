@@ -46,6 +46,11 @@ public class CombinedUserAudienceRequestDTO {
     // (AUDIENCE_RESPONSE) answers holds one of the values.
     private List<vacademy.io.admin_core_service.features.common.dto.CustomFieldListFilterDTO> customFieldFilters;
 
+    // Campaign (UTM) attribution filter — same shape on every list surface.
+    // A contact matches when any of their recorded touches (by user id, or by
+    // the email / mobile a form captured) satisfies every dimension sent.
+    private vacademy.io.admin_core_service.features.utm_attribution.dto.UtmListFilterDTO utmFilters;
+
     // Pagination
     private Integer page;
     private Integer size;

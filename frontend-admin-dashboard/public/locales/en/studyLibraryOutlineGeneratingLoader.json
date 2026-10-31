@@ -1,0 +1,20 @@
+{
+    "title": {
+        "generatingOutline": "{{aiName}} is generating your outline"
+    },
+    "steps": {
+        "analyzingTopic": "Analyzing your topic...",
+        "structuringOutline": "Structuring the outline...",
+        "organizing": "Organizing {{terms}} and topics...",
+        "creatingObjectives": "Creating learning objectives...",
+        "finalizingOutline": "Finalizing your outline..."
+    },
+    "description": {
+        "estimatedTimeMinutes_one": "Estimated time: {{minutes}}m {{seconds}}s",
+        "estimatedTimeMinutes_other": "Estimated time: {{minutes}}m {{seconds}}s",
+        "estimatedTimeSeconds_one": "Estimated time: {{seconds}}s",
+        "estimatedTimeSeconds_other": "Estimated time: {{seconds}}s",
+        "stillWorking": "Still working — almost there...",
+        "craftingStructure": "{{aiName}} is crafting your course structure. This may take a moment."
+    }
+}

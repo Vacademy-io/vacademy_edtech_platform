@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Copy, ExternalLink, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +22,7 @@ interface InviteLinkSectionProps {
  * so opening the modal after viewing the deep page is instant.
  */
 export function InviteLinkSection({ subOrgId }: InviteLinkSectionProps) {
+    const { t } = useTranslation('manageCustomTeamsInviteLinkSection');
     const { data: status, isLoading } = useQuery<SubOrgSubscriptionStatus>({
         queryKey: ['sub-org-subscription-status', subOrgId],
         queryFn: () => getSubscriptionStatus(subOrgId),
@@ -38,22 +40,22 @@ export function InviteLinkSection({ subOrgId }: InviteLinkSectionProps) {
 
     const copyToClipboard = (text: string, label: string) => {
         navigator.clipboard.writeText(text);
-        toast.success(`${label} copied`);
+        toast.success(t('copied', { label }));
     };
 
     return (
         <div className="space-y-2">
             <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-700">
                 <Link2 className="h-4 w-4" />
-                Invite Link
+                {t('heading')}
             </h3>
             {isLoading ? (
-                <p className="text-sm text-muted-foreground">Loading invite link…</p>
+                <p className="text-sm text-muted-foreground">{t('loading')}</p>
             ) : status?.invite_code ? (
                 <div className="space-y-2 rounded-md border bg-muted/50 p-3">
                     <div className="flex items-center justify-between">
                         <span className="text-xs font-medium text-muted-foreground">
-                            Invite Link
+                            {t('heading')}
                         </span>
                         {status.org_user_plan_status && (
                             <Badge
@@ -76,10 +78,10 @@ export function InviteLinkSection({ subOrgId }: InviteLinkSectionProps) {
                             variant="ghost"
                             size="sm"
                             className="h-7 shrink-0 gap-1 px-2"
-                            onClick={() => copyToClipboard(inviteUrl, 'Invite link')}
+                            onClick={() => copyToClipboard(inviteUrl, t('inviteLink'))}
                         >
                             <Copy className="h-3 w-3" />
-                            Copy
+                            {t('copy')}
                         </Button>
                         <Button
                             type="button"
@@ -89,11 +91,11 @@ export function InviteLinkSection({ subOrgId }: InviteLinkSectionProps) {
                             onClick={() => window.open(inviteUrl, '_blank')}
                         >
                             <ExternalLink className="h-3 w-3" />
-                            Open
+                            {t('open')}
                         </Button>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>Code:</span>
+                        <span>{t('code')}</span>
                         <code className="rounded bg-white px-1.5 py-0.5 font-mono text-xs">
                             {status.invite_code}
                         </code>
@@ -102,16 +104,14 @@ export function InviteLinkSection({ subOrgId }: InviteLinkSectionProps) {
                             variant="ghost"
                             size="sm"
                             className="h-5 w-5 p-0"
-                            onClick={() => copyToClipboard(status.invite_code, 'Invite code')}
+                            onClick={() => copyToClipboard(status.invite_code, t('inviteCode'))}
                         >
                             <Copy className="h-3 w-3" />
                         </Button>
                     </div>
                 </div>
             ) : (
-                <p className="text-sm text-muted-foreground">
-                    No invite link configured. Create a subscription to generate one.
-                </p>
+                <p className="text-sm text-muted-foreground">{t('noInviteLink')}</p>
             )}
         </div>
     );

@@ -1,0 +1,42 @@
+{
+    "header": {
+        "quizBlock": "كتلة الاختبار",
+        "mcq": "اختيار من متعدد",
+        "trueFalse": "صح/خطأ",
+        "preview": "معاينة",
+        "edit": "تعديل"
+    },
+    "toolbar": {
+        "bold": "عريض",
+        "italic": "مائل",
+        "underline": "تسطير",
+        "bulletList": "قائمة نقطية",
+        "numberedList": "قائمة مرقمة",
+        "insertLink": "إدراج رابط",
+        "insertImage": "إدراج صورة"
+    },
+    "prompts": {
+        "linkUrl": "رابط URL:"
+    },
+    "labels": {
+        "question": "السؤال",
+        "options": "الخيارات (انقر على الدائرة لتحديد الإجابة الصحيحة)",
+        "explanation": "الشرح (يظهر بعد الإجابة)"
+    },
+    "actions": {
+        "markCorrect": "تحديد كإجابة صحيحة",
+        "removeOption": "إزالة الخيار",
+        "addOption": "+ إضافة خيار"
+    },
+    "placeholders": {
+        "question": "أدخل سؤالك…",
+        "option": "الخيار {{label}}",
+        "explanation": "اشرح الإجابة الصحيحة…"
+    },
+    "preview": {
+        "noQuestion": "لم يتم تعيين سؤال",
+        "checkAnswer": "تحقق من الإجابة",
+        "tryAgain": "حاول مرة أخرى",
+        "explanationLabel": "الشرح:"
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "addNodes": "नोड्स जोड़ें",
+    "searchPlaceholder": "नोड्स खोजें...",
+    "categories": {
+        "Triggers": "ट्रिगर्स",
+        "Data": "डेटा",
+        "Actions": "क्रियाएं",
+        "Notifications": "सूचनाएं",
+        "Integrations": "इंटीग्रेशन",
+        "Logic": "लॉजिक"
+    }
+}

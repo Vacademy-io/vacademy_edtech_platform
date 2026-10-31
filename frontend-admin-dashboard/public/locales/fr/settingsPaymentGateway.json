@@ -1,0 +1,197 @@
+{
+    "header": {
+        "title": "Passerelles de paiement",
+        "description": "Configurez les prestataires (Stripe, Razorpay, PhonePe, Cashfree, Eway) avec lesquels les apprenants peuvent payer. Les clés sont stockées par établissement.",
+        "refresh": "Actualiser",
+        "addGateway": "Ajouter une passerelle"
+    },
+    "list": {
+        "title": "Passerelles configurées",
+        "descriptionPre": "Les valeurs secrètes sont masquées. Cliquez sur",
+        "descriptionEdit": "modifier",
+        "descriptionPost": "pour renouveler les clés, ou laissez les champs masqués tels quels pour conserver le secret actuel.",
+        "loading": "Chargement…",
+        "emptyTitle": "Aucune passerelle de paiement configurée pour le moment",
+        "emptyDescription": "Ajoutez des identifiants Stripe, Razorpay, PhonePe, Cashfree ou Eway pour que les apprenants puissent payer via vos portails.",
+        "addFirstGateway": "Ajouter votre première passerelle"
+    },
+    "status": {
+        "active": "Active",
+        "inactive": "Inactive"
+    },
+    "toast": {
+        "noInstituteSelected": "Aucun établissement sélectionné",
+        "selectVendor": "Sélectionnez un prestataire de paiement",
+        "missingRequiredFields": "Champs obligatoires manquants : {{fields}}",
+        "gatewayConfigured": "{{vendor}} configuré",
+        "gatewayUpdated": "{{vendor}} mis à jour",
+        "saveFailed": "Échec de l'enregistrement de la configuration de la passerelle",
+        "webhookUrlCopied": "URL du webhook copiée",
+        "loadFailed": "Échec du chargement des passerelles de paiement",
+        "gatewayDeactivated": "{{vendor}} désactivé",
+        "deactivateFailed": "Échec de la désactivation de la passerelle"
+    },
+    "dialog": {
+        "createTitle": "Ajouter une passerelle de paiement",
+        "editTitle": "Modifier {{vendor}}",
+        "createDescription": "Sélectionnez un prestataire et collez les identifiants API depuis son tableau de bord.",
+        "editDescription": "Mettez à jour les identifiants. Laissez les champs masqués inchangés pour conserver le secret existant.",
+        "vendorLabel": "Prestataire",
+        "vendorPlaceholder": "Choisissez une passerelle de paiement",
+        "allConfigured": "Toutes les passerelles prises en charge sont déjà configurées.",
+        "findValuesPrefix": "Retrouvez ces valeurs sur le",
+        "dashboardLinkText": "tableau de bord {{vendor}}",
+        "findValuesSuffix": ".",
+        "whereToFind": "Où trouver ces valeurs",
+        "webhookUrlLabel": "URL du webhook — à coller dans le tableau de bord {{vendor}}",
+        "copyUrl": "Copier l'URL",
+        "hide": "Masquer",
+        "show": "Afficher",
+        "maskedValueNote": "Valeur masquée affichée. Saisissez un nouveau secret pour le remplacer, ou laissez tel quel pour conserver l'actuel.",
+        "cancel": "Annuler",
+        "saving": "Enregistrement…",
+        "addGatewayButton": "Ajouter la passerelle",
+        "saveChanges": "Enregistrer les modifications"
+    },
+    "mappingCard": {
+        "editCredentials": "Modifier les identifiants",
+        "deactivateGateway": "Désactiver la passerelle",
+        "unknownVendor": "Prestataire inconnu — aucun modèle disponible.",
+        "notSet": "Non défini",
+        "webhookUrlLabel": "URL du webhook",
+        "copyWebhookUrl": "Copier l'URL du webhook"
+    },
+    "deleteDialog": {
+        "title": "Désactiver la passerelle ?",
+        "description": "{{vendor}} sera marqué comme inactif et les apprenants ne pourront plus payer via cette passerelle. Vous pourrez l'ajouter à nouveau plus tard.",
+        "cancel": "Annuler",
+        "deactivating": "Désactivation…",
+        "deactivate": "Désactiver"
+    },
+    "vendors": {
+        "stripe": {
+            "label": "Stripe",
+            "description": "Paiements par carte et abonnements à l'international.",
+            "fields": {
+                "apiKey": {
+                    "label": "Clé secrète",
+                    "placeholder": "sk_live_…",
+                    "helper": "Clé API secrète Stripe. Ne sera plus jamais affichée après l'enregistrement."
+                },
+                "publishableKey": {
+                    "label": "Clé publiable",
+                    "placeholder": "pk_live_…",
+                    "helper": "Utilisée par le paiement apprenant dans le navigateur."
+                },
+                "webhookSecret": {
+                    "label": "Secret de signature du webhook",
+                    "placeholder": "whsec_…",
+                    "helper": "Facultatif. Utilisé pour vérifier les rappels de webhook entrants."
+                }
+            }
+        },
+        "razorpay": {
+            "label": "Razorpay",
+            "description": "Carte / UPI / virement bancaire pour les entreprises indiennes.",
+            "fields": {
+                "keyId": {
+                    "label": "ID de clé",
+                    "placeholder": "rzp_live_…",
+                    "helper": "ID de clé Razorpay (public ; visible lors du paiement)."
+                },
+                "keySecret": {
+                    "label": "Clé secrète",
+                    "placeholder": "Votre clé secrète Razorpay"
+                },
+                "webhookSecret": {
+                    "label": "Secret du webhook",
+                    "placeholder": "Secret de signature du webhook",
+                    "helper": "Définissez-le sur la page Webhooks de Razorpay. Sans cela, les rappels de statut de paiement sont rejetés avec une erreur 404 et la confirmation asynchrone n'atteint jamais la plateforme."
+                }
+            }
+        },
+        "phonepe": {
+            "label": "PhonePe",
+            "description": "PG PhonePe pour les marchands indiens (UPI, cartes, portefeuilles). Paiement standard V2 (OAuth). Règlement en INR uniquement.",
+            "setupSteps": {
+                "step1": "Connectez-vous au tableau de bord PhonePe Business (business.phonepe.com) avec vos identifiants marchand PhonePe for Business.",
+                "step2": "Allez dans Paramètres développeur → Clés API. Les nouveaux marchands (V2) voient un Client ID, un Client Secret et une Client Version — copiez les trois dans les champs ci-dessous.",
+                "step3": "Marchands historiques uniquement : si l'on vous a plutôt donné une Salt Key + un Salt Index, indiquez votre Merchant ID dans « Client ID », votre Salt Key (sous la forme KEY###INDEX) dans « Client Secret », et LAISSEZ « Client Version » vide.",
+                "step4": "Définissez « URL de base de l'API » : V2 LIVE = https://api.phonepe.com/apis/pg, V2 UAT/Sandbox = https://api-preprod.phonepe.com/apis/pg-sandbox (V1 historique = https://api.phonepe.com/apis/hermes).",
+                "step5": "Dans Paramètres développeur → Webhooks, ajoutez l'URL du webhook indiquée ci-dessous et définissez un nom d'utilisateur + un mot de passe. Saisissez le même nom d'utilisateur/mot de passe ci-dessous pour sécuriser les rappels entrants."
+            },
+            "fields": {
+                "clientId": {
+                    "label": "Client ID",
+                    "placeholder": "Client ID V2 (ou Merchant ID historique)",
+                    "helper": "V2 : Client ID depuis Paramètres développeur → Clés API. Marchands V1 historiques : votre Merchant ID (MID)."
+                },
+                "clientSecret": {
+                    "label": "Client Secret",
+                    "placeholder": "Client Secret V2 (ou Salt Key###index historique)",
+                    "helper": "V2 : votre Client Secret. Marchands V1 historiques : votre Salt Key, collée sous la forme KEY###INDEX (index généralement 1). Reste secret."
+                },
+                "clientVersion": {
+                    "label": "Client Version",
+                    "placeholder": "ex. 1",
+                    "helper": "V2 uniquement — la Client Version indiquée sur le tableau de bord (généralement 1). LAISSEZ VIDE si vous êtes un marchand historique utilisant une Salt Key."
+                },
+                "baseUrl": {
+                    "label": "URL de base de l'API",
+                    "placeholder": "https://api.phonepe.com/apis/pg",
+                    "helper": "V2 LIVE : https://api.phonepe.com/apis/pg • V2 UAT : https://api-preprod.phonepe.com/apis/pg-sandbox • V1 historique : https://api.phonepe.com/apis/hermes"
+                },
+                "webhookUsername": {
+                    "label": "Nom d'utilisateur du webhook (facultatif)",
+                    "placeholder": "Le même nom d'utilisateur défini sur PhonePe → Webhooks",
+                    "helper": "Active la vérification de signature des rappels entrants. Doit correspondre au nom d'utilisateur configuré sur le tableau de bord PhonePe."
+                },
+                "webhookPassword": {
+                    "label": "Mot de passe du webhook (facultatif)",
+                    "placeholder": "Le même mot de passe défini sur PhonePe → Webhooks",
+                    "helper": "Doit correspondre au mot de passe configuré sur le tableau de bord PhonePe. Laissez les deux champs webhook vides pour ignorer la vérification."
+                }
+            }
+        },
+        "cashfree": {
+            "label": "Cashfree",
+            "description": "Cashfree Payments pour l'Inde.",
+            "fields": {
+                "clientId": {
+                    "label": "App ID",
+                    "placeholder": "TEST… ou app id de production"
+                },
+                "clientSecret": {
+                    "label": "Clé secrète"
+                },
+                "baseUrl": {
+                    "label": "URL de base de l'API",
+                    "placeholder": "https://api.cashfree.com/pg"
+                }
+            }
+        },
+        "eway": {
+            "label": "Eway",
+            "description": "Eway Payments (AU / NZ).",
+            "fields": {
+                "apiKey": {
+                    "label": "Clé API"
+                },
+                "password": {
+                    "label": "Mot de passe"
+                },
+                "publicKey": {
+                    "label": "Clé API publique",
+                    "helper": "Utilisée par le paiement apprenant dans le navigateur."
+                },
+                "encryptionKey": {
+                    "label": "Clé de chiffrement"
+                },
+                "baseUrl": {
+                    "label": "URL de base de l'API",
+                    "placeholder": "https://api.ewaypayments.com"
+                }
+            }
+        }
+    }
+}

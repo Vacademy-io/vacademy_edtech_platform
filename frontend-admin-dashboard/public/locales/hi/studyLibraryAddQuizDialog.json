@@ -1,0 +1,32 @@
+{
+    "quizTitle": "क्विज़ {{number}}",
+    "quizQuestionVariantTitle": "क्विज़ प्रश्न",
+    "sections": {
+        "quickAccess": "क्विक एक्सेस",
+        "writingSkills": "लेखन कौशल",
+        "readingSkills": "पठन कौशल"
+    },
+    "questionTypes": {
+        "mcqSingle": "MCQ (एक सही)",
+        "mcqMultiple": "MCQ (एक से अधिक सही)",
+        "numerical": "संख्यात्मक",
+        "trueFalse": "सही गलत",
+        "longAnswer": "दीर्घ उत्तर",
+        "singleWord": "एक शब्द",
+        "comprehensionMcqSingle": "बोध MCQ (एक सही)",
+        "comprehensionMcqMultiple": "बोध MCQ (एक से अधिक सही)",
+        "comprehensionNumeric": "बोध संख्यात्मक"
+    },
+    "errors": {
+        "noQuestions": "क्विज़ बनाने के लिए कोई प्रश्न नहीं दिए गए हैं।",
+        "addFailed": "क्विज़ जोड़ने में विफल",
+        "addAtLeastOneQuestion": "क्विज़ बनाने से पहले कृपया कम से कम एक प्रश्न जोड़ें।",
+        "questionNameRequired": "सभी प्रश्नों का एक प्रश्न नाम होना आवश्यक है।",
+        "slideCreationFailed": "क्विज़ स्लाइड बनाना विफल रहा।"
+    },
+    "toasts": {
+        "quizAdded": "क्विज़ सफलतापूर्वक जोड़ा गया!",
+        "quizCreated": "क्विज़ सफलतापूर्वक बनाया गया!",
+        "previewUpdateIssue": "क्विज़ बन गया है, लेकिन पूर्वावलोकन अपडेट करने में समस्या हुई। कृपया पेज रीफ्रेश करें।"
+    }
+}

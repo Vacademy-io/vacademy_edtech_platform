@@ -1,0 +1,49 @@
+{
+    "toast": {
+        "linkCopied": "تم نسخ رابط الحجز",
+        "copyFailed": "تعذر نسخ الرابط",
+        "deleted": "تم حذف صفحة الحجز",
+        "deleteFailed": "فشل حذف صفحة الحجز",
+        "createdForOtherHost": "تم الإنشاء — يستضيفها {{hostName}}؛ ستظهر في قائمتهم.",
+        "anotherUser": "مستخدم آخر"
+    },
+    "heading": {
+        "create": "صفحة حجز جديدة",
+        "edit": "تعديل صفحة الحجز",
+        "list": "صفحات الحجز"
+    },
+    "missingInstitute": "سياق المؤسسة مفقود.",
+    "loading": "جارٍ تحميل صفحات الحجز الخاصة بك…",
+    "error": {
+        "title": "تعذر تحميل صفحات الحجز الخاصة بك",
+        "description": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+        "retry": "إعادة المحاولة"
+    },
+    "list": {
+        "title": "صفحات الحجز الخاصة بك",
+        "description": "لكل صفحة رابطها الخاص الذي يستخدمه الأشخاص لاختيار موعد في تقويمك. عدّل الصفحة أو انسخها أو افتحها أدناه.",
+        "newBookingPage": "صفحة حجز جديدة",
+        "emptyTitle": "لا توجد صفحات حجز بعد",
+        "emptyDescription": "أنشئ واحدة للحصول على رابط حجز قابل للمشاركة.",
+        "audienceLabel": "{{term}}: {{label}}",
+        "durationMin_zero": "{{count}} دقيقة",
+        "durationMin_one": "دقيقة واحدة",
+        "durationMin_two": "دقيقتان",
+        "durationMin_few": "{{count}} دقائق",
+        "durationMin_many": "{{count}} دقيقة",
+        "durationMin_other": "{{count}} دقيقة"
+    },
+    "actions": {
+        "open": "فتح صفحة الحجز",
+        "copy": "نسخ رابط الحجز",
+        "edit": "تعديل صفحة الحجز",
+        "delete": "حذف صفحة الحجز"
+    },
+    "deleteDialog": {
+        "title": "حذف صفحة الحجز",
+        "description": "هل أنت متأكد أنك تريد حذف \"{{title}}\"؟ سيتوقف رابط الحجز الخاص بها عن العمل. لا يمكن التراجع عن هذا الإجراء.",
+        "cancel": "إلغاء",
+        "deleting": "جارٍ الحذف...",
+        "delete": "حذف"
+    }
+}

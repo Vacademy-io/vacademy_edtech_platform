@@ -1,0 +1,7 @@
+{
+    "failedToNavigateInitial": "تعذّر الانتقال إلى الصفحة الأولى",
+    "navigatedToPage": "تم الانتقال إلى الصفحة {{page}}",
+    "failedToNavigate": "تعذّر الانتقال إلى الصفحة",
+    "noPdfUploaded": "لم يتم رفع أي ملف PDF لهذه الشريحة بعد.",
+    "loadingEllipsis": "جارٍ التحميل…"
+}

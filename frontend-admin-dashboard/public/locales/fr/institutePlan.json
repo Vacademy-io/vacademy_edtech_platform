@@ -1,0 +1,10 @@
+{
+    "notInPlan": {
+        "title": "Cette fonctionnalité ne fait pas partie de l'offre de votre établissement",
+        "description": "Elle n'est pas incluse dans l'offre actuelle de votre établissement. Contactez votre administrateur si vous en avez besoin.",
+        "cta": "Aller au tableau de bord"
+    },
+    "displaySettings": {
+        "managedNote": "Certains éléments sont gérés par votre équipe plateforme et ne sont pas affichés ici."
+    }
+}

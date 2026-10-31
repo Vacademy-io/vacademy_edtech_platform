@@ -1,0 +1,105 @@
+{
+    "header": {
+        "title": "Fee Configuration",
+        "totalLabel": "Total:",
+        "afterDiscountLabel": "After discount:"
+    },
+    "loading": "Loading installments…",
+    "loadError": "Could not load CPO details.",
+    "table": {
+        "index": "#",
+        "feeType": "Fee Type",
+        "startDate": "Start Date",
+        "dueDate": "Due Date",
+        "default": "Default",
+        "amount": "Amount (₹)",
+        "discount": "Discount",
+        "amountOverrideTitle": "Manual amount override",
+        "effectiveTitle": "Effective: {{effective}} (template {{template}} after discounts)",
+        "discountOptions": {
+            "none": "none",
+            "percentage": "%",
+            "flat": "₹"
+        }
+    },
+    "cpoDiscount": {
+        "heading": "Discount (optional)",
+        "typeLabel": "Type",
+        "options": {
+            "none": "none",
+            "percentage": "% of total",
+            "flat": "flat ₹ off"
+        },
+        "valueLabel": "Value",
+        "reasonLabel": "Reason",
+        "reasonPlaceholder": "e.g. Sibling discount",
+        "offSuffix": "= {{amount}} off",
+        "splitLabel": "Split the discount",
+        "split": {
+            "EVEN": "Equally",
+            "FIRST": "First installment",
+            "LAST": "Last installment",
+            "CUSTOM": "Custom"
+        },
+        "splitHint": {
+            "EVEN": "The same amount comes off each installment.",
+            "FIRST": "It all comes off the first installment (any rest off the next).",
+            "LAST": "It all comes off the last installment (any rest off the one before).",
+            "CUSTOM": "Type the discount on each installment in the table below."
+        },
+        "cappedToInstallments": "Only {{amount}} can come off the installments; fees paid upfront are not discounted."
+    },
+    "payment": {
+        "heading": "Initial Payment (optional)",
+        "skipLabelBold": "Don't record any payment now.",
+        "skipLabelRest": "Learner pays each installment online later.",
+        "offlineLabelBold": "Record an offline payment.",
+        "offlineLabelRest": "Applied across installments earliest first.",
+        "amountLabel": "Amount (₹)",
+        "firstDue": "First installment: {{amount}}",
+        "netDues": "Net dues: {{amount}}",
+        "referenceLabel": "Reference (optional)",
+        "referencePlaceholder": "e.g. cheque #1234"
+    },
+    "schedule": {
+        "modeLabel": "Installment schedule",
+        "usePlan": "Use the plan’s schedule",
+        "useCustom": "Choose a schedule for this enrollment",
+        "flexibleIntro": "This fee plan has no fixed dates. Choose how many installments and how far apart.",
+        "oneTimeIntro": "The course price is split into installments for the learners in this enrollment.",
+        "courseFee": "Course fee",
+        "countLabel": "Installments",
+        "everyLabel": "Every",
+        "firstDueLabel": "First due date",
+        "units": {
+            "days": "days",
+            "months": "months"
+        },
+        "reset": "Reset to even split",
+        "rebalance": "Spread changes over the other installments",
+        "monthsHint": "Same date each month; short months use their last day.",
+        "afterDiscount": "After discount",
+        "multiFeeHint": "This plan splits more than one fee, so only the dates can be changed here. Edit single installments from the student’s Fee Plan after enrolling.",
+        "upfront": "Paid upfront on the first due date: {{fees}}",
+        "errors": {
+            "nothingToSplit": "This fee plan has no fee that can be paid in installments.",
+            "countRange": "Choose between 1 and {{max}} installments.",
+            "missingDueDate": "Installment {{n}} has no due date.",
+            "datesOutOfOrder": "Installment {{n}} is due before installment {{prev}}.",
+            "mixedAmounts": "Give an amount for every installment, or reset to the even split.",
+            "negativeAmount": "Every installment needs an amount above zero.",
+            "amountMismatch": "Installments add up to {{given}} but the fee is {{total}}. Use the discount below to change the price.",
+            "gapRange": "The gap must be between 1 and {{max}}.",
+            "tooSmall": "{{fee}} is too small to split into {{count}} installments.",
+            "decimals": "Amounts can have at most 2 decimal places.",
+            "negativeDiscount": "Installment {{n}} has a negative discount.",
+            "discountTooBig": "Installment {{n}} has more discount than its amount."
+        },
+        "discountColumn": "Discount",
+        "toPay": "To pay",
+        "discountFor": "Discount on installment {{n}}",
+        "toPayFor": "To pay for installment {{n}}",
+        "toPayHint": "{{gross}} − {{off}} discount = {{net}} to pay. Type what the learner pays in To pay; the amount follows and the discount stays.",
+        "sameDayWarning": "Installments {{a}} and {{b}} are due on the same day. A payment goes to installment {{a}} first."
+    }
+}

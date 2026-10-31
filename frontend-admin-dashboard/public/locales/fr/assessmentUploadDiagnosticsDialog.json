@@ -1,0 +1,34 @@
+{
+    "header": {
+        "title": "Vérifier les questions importées",
+        "summary_one": "{{grouped}} question sur {{count}} nécessite votre attention",
+        "summary_many": "{{grouped}} questions sur {{count}} nécessitent votre attention",
+        "summary_other": "{{grouped}} questions sur {{count}} nécessitent votre attention",
+        "errorsCount_one": "— {{count}} avec des erreurs",
+        "errorsCount_many": "— {{count}} avec des erreurs",
+        "errorsCount_other": "— {{count}} avec des erreurs",
+        "warningsCount_one": ", {{count}} avec des avertissements",
+        "warningsCount_many": ", {{count}} avec des avertissements",
+        "warningsCount_other": ", {{count}} avec des avertissements"
+    },
+    "actionsBar": {
+        "summary": "{{skipCount}} marquée(s) à ignorer · {{proceedCount}} seront ajoutées au formulaire",
+        "skipAll": "Tout ignorer",
+        "skipNone": "Ne rien ignorer"
+    },
+    "listItem": {
+        "questionNumber": "Q{{number}}",
+        "errorBadge": "Erreur",
+        "warningBadge": "Avertissement"
+    },
+    "footer": {
+        "copyDiagnostics": "Copier le JSON de diagnostic",
+        "cancel": "Annuler",
+        "keepAllAndEdit": "Tout conserver et modifier",
+        "skipAndProceed": "Ignorer et continuer ({{count}})"
+    },
+    "toasts": {
+        "copySuccess": "Informations de diagnostic copiées dans le presse-papiers",
+        "copyFailed": "Impossible de copier dans le presse-papiers"
+    }
+}

@@ -1,0 +1,73 @@
+{
+    "header": {
+        "configureTitle": "Configure: {{label}}"
+    },
+    "batchPicker": {
+        "singleLabel": "Which batch should this apply to?",
+        "multiLabel": "Which batches should this apply to? (Pick one or more)",
+        "pickOption": "— Pick a batch —",
+        "loading": "Loading batches…",
+        "empty": "No batches found yet.",
+        "untitled": "Untitled batch"
+    },
+    "templateQuestion": {
+        "label": "Which message to send?"
+    },
+    "templateDropdown": {
+        "loadFailedTitle": "Couldn't load your email templates.",
+        "loadFailedHint": "This might be a network issue or your session has expired.",
+        "tryAgain": "Try again",
+        "loading": "Loading your messages…",
+        "emptyOption": "No messages yet — use the sample below",
+        "pickOption": "— Pick a message —",
+        "emptyHint": "You haven't created any email messages yet — that's fine, click below to add a ready-made one to your library.",
+        "sample": {
+            "adding": "Adding…",
+            "addWhenEmpty": "Add sample message: \"{{name}}\"",
+            "addWhenExists": "Don't have one? Use our sample: \"{{name}}\"",
+            "hint": "We'll add it to your template library — you can edit it later."
+        },
+        "noTemplatesNoSample": "You have no email messages saved yet. Go to <1>Settings → Template Settings</1> to create one, then come back here."
+    },
+    "daysAfter": {
+        "label": "Send the follow-up how many days after someone fills the form?",
+        "suffix": "day(s) later"
+    },
+    "daysBefore": {
+        "label": "How many days before expiry should we send the reminder?",
+        "suffix": "day(s) before"
+    },
+    "schedule": {
+        "label": "When should this run?",
+        "every": "Every",
+        "day": "day",
+        "week": "week",
+        "on": "on",
+        "at": "at",
+        "am": "AM",
+        "pm": "PM",
+        "timezoneNote": "Time zone: India Standard Time (IST)"
+    },
+    "dayOptions": {
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday"
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "turningOn": "Turning on…",
+        "turnOn": "Turn on automation"
+    },
+    "toasts": {
+        "noSampleTemplate": "No sample template available for this recipe yet.",
+        "sampleAdded": "Added \"{{name}}\" to your template library.",
+        "sampleAddFailed": "Could not add the sample template. Please try again.",
+        "noInstitute": "Could not determine your institute. Please reload and try again.",
+        "automationOn": "Automation turned on.",
+        "saveFailed": "Could not turn on the automation: {{message}}"
+    }
+}

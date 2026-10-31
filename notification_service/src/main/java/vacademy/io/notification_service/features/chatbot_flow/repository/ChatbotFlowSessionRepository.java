@@ -16,4 +16,7 @@ public interface ChatbotFlowSessionRepository extends JpaRepository<ChatbotFlowS
     List<ChatbotFlowSession> findByFlowIdAndStatus(String flowId, String status);
 
     List<ChatbotFlowSession> findByFlowIdOrderByStartedAtDesc(String flowId);
+
+    /** Every bot session a phone has had with an institute — to tell which flow sent an old message. */
+    List<ChatbotFlowSession> findByInstituteIdAndUserPhone(String instituteId, String userPhone);
 }

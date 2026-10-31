@@ -164,8 +164,12 @@ public class AssessmentsSection implements ReportSection {
                         : "—");
 
         if (attempts > 0) {
-            // A third of a cohort waiting on a mark is a backlog, not a statistic.
+            // A third of a cohort waiting on a mark is a backlog worth reddening — but
+            // NOT on a daily report, where the attempts were sat hours ago and nobody
+            // could reasonably have marked them yet. Same figure, different meaning
+            // depending on how long the window has had to clear.
             facts.tone("Awaiting evaluation", awaiting == 0 ? "good"
+                    : ctx.isDailyCadence() ? "warn"
                     : awaiting * 4 >= attempts ? "bad" : "warn");
         }
 

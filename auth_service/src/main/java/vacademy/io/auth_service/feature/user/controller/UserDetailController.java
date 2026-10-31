@@ -7,12 +7,15 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import vacademy.io.auth_service.feature.admin_core_service.service.InstitutePolicyService;
 import vacademy.io.auth_service.feature.user.dto.UserBasicDetailsDto;
+import vacademy.io.auth_service.feature.user.service.AdminRoleGrantGuard;
+import vacademy.io.auth_service.feature.user.service.UserAccountAccessGuard;
 import vacademy.io.common.auth.dto.UserJwtUpdateDetail;
 import vacademy.io.auth_service.feature.user.service.UserCredentialUpdateService;
 import vacademy.io.auth_service.feature.user.service.UserDetailService;
 import vacademy.io.auth_service.feature.user.service.UserOperationService;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.auth.dto.UserTopLevelDto;
+import vacademy.io.common.auth.entity.User;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.auth.service.UserService;
 import vacademy.io.common.exceptions.VacademyException;
@@ -38,6 +41,12 @@ public class UserDetailController {
     @Autowired
     private InstitutePolicyService institutePolicyService;
 
+    @Autowired
+    private UserAccountAccessGuard userAccountAccessGuard;
+
+    @Autowired
+    private AdminRoleGrantGuard adminRoleGrantGuard;
+
     @GetMapping("/by-user-id")
     public ResponseEntity<UserDTO> getUserDetailByUserId(String userId, @RequestAttribute("user") CustomUserDetails customUserDetails) {
         return ResponseEntity.ok(userService.getUserDetailsById(userId));
@@ -48,7 +57,35 @@ public class UserDetailController {
                                                     @RequestBody UserTopLevelDto request,
                                                     @RequestParam("userId") String userId,
                                                     @RequestParam("instituteId") String instituteId) {
+        // Target, institute and role rows all come from the request, and the shared
+        // UserService method checks none of them: without this anyone could set anyone's
+        // email or mobile number (both log in by OTP) or make themselves ADMIN of any institute.
+        userAccountAccessGuard.requireCanUpdateDetails(userDetails, instituteId, userId,
+                () -> loginIdentityChanges(request, userId),
+                request.getAddUserRoleRequest(), request.getDeleteUserRoleRequest());
+        adminRoleGrantGuard.requireAdminToGrantAdmin(userDetails, instituteId, request.getAddUserRoleRequest());
         return ResponseEntity.ok(userService.updateUserDetails(userDetails,request,userId, instituteId));
+    }
+
+    /** Mirrors UserService.updateUserDetails, which writes any non-null email and mobile number. */
+    private boolean loginIdentityChanges(UserTopLevelDto request, String userId) {
+        if (request.getEmail() == null && request.getMobileNumber() == null) {
+            return false;
+        }
+        User current = userService.getOptionalUserById(userId).orElse(null);
+        if (current == null) {
+            return false;
+        }
+        return differs(request.getEmail(), current.getEmail())
+                || differs(request.getMobileNumber(), current.getMobileNumber());
+    }
+
+    private static boolean differs(String requested, String current) {
+        if (requested == null) {
+            return false;
+        }
+        String now = current == null ? "" : current.trim();
+        return !requested.trim().equalsIgnoreCase(now);
     }
 
     @GetMapping("/get")
@@ -69,7 +106,11 @@ public class UserDetailController {
     }
 
     @PutMapping("/update-user")
-    public ResponseEntity<UserDTO> updateUser(@RequestBody UserDTO userDTO, @RequestParam("userId") String userId) {
+    public ResponseEntity<UserDTO> updateUser(@RequestBody UserDTO userDTO, @RequestParam("userId") String userId,
+                                              @RequestAttribute("user") CustomUserDetails customUserDetails) {
+        // userId comes from the query: without this anyone could set anyone's username and
+        // password. Both UIs only ever send the caller's own id.
+        userAccountAccessGuard.requireCanEditAccount(customUserDetails, userId);
         try {
             userDTO.setId(userId);
 

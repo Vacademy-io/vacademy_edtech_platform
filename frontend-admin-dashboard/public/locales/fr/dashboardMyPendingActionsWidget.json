@@ -1,0 +1,23 @@
+{
+    "heading": {
+        "title": "Actions en attente",
+        "description": "Éléments qui vous attendent en ce moment"
+    },
+    "error": "Impossible de charger les actions en attente.",
+    "partialError": "Certains éléments n'ont pas pu être chargés.",
+    "empty": {
+        "title": "Tout est en ordre",
+        "description": "Rien ne requiert votre attention pour le moment."
+    },
+    "actionType": {
+        "overduePayment": "Paiement en retard",
+        "pendingApproval": "Approbation en attente",
+        "unreadAlert": "Alerte non lue"
+    },
+    "age": {
+        "now": "maintenant",
+        "lessThanHour": "<1h",
+        "hoursFormat": "{{hours}} h",
+        "daysFormat": "{{days}} j"
+    }
+}

@@ -1,0 +1,50 @@
+{
+    "sectionInfo": {
+        "descriptionTitle": "وصف القسم"
+    },
+    "stats": {
+        "sectionDuration": {
+            "label": "مدة القسم",
+            "value": "{{duration}} دقيقة"
+        },
+        "avgMarksPerQuestion": "متوسط الدرجات / سؤال",
+        "totalMarks": "إجمالي الدرجات",
+        "negativeMarking": "الدرجات السلبية"
+    },
+    "badges": {
+        "partialMarking": "تقدير جزئي",
+        "cutoffMarks": "درجة القطع",
+        "problemRandomization": "عشوائية الأسئلة"
+    },
+    "table": {
+        "heading": {
+            "survey": "أسئلة الاستبيان",
+            "adaptiveMarking": "قواعد التقدير التكيفي"
+        },
+        "columns": {
+            "index": "#",
+            "question": "السؤال",
+            "type": "النوع",
+            "marks": "الدرجات",
+            "penalty": "الخصم",
+            "criteria": "المعايير",
+            "time": "الوقت"
+        },
+        "criteriaNotSet": "غير محدد"
+    },
+    "toasts": {
+        "invalidCriteriaFormat": "تعذر معاينة المعايير. تنسيق البيانات غير صالح."
+    },
+    "accordion": {
+        "questionCount_zero": "لا أسئلة ({{count}})",
+        "questionCount_one": "سؤال واحد ({{count}})",
+        "questionCount_two": "سؤالان ({{count}})",
+        "questionCount_few": "{{count}} أسئلة",
+        "questionCount_many": "{{count}} سؤالًا",
+        "questionCount_other": "{{count}} سؤال",
+        "mcqSingle": "اختيار من متعدد · فردي {{count}}",
+        "mcqMultiple": "اختيار من متعدد · متعدد {{count}}",
+        "total": "الإجمالي {{count}}"
+    },
+    "sectionTotal": "إجمالي القسم"
+}

@@ -1,0 +1,17 @@
+{
+    "title": "Assigner un conseiller",
+    "description": "Recherchez et sélectionnez un conseiller à assigner à cette demande",
+    "searchLabel": "Rechercher un conseiller",
+    "searchPlaceholder": "Tapez pour rechercher par nom...",
+    "searching": "Recherche en cours...",
+    "noCounsellorsFound": "Aucun conseiller trouvé",
+    "selectedCounsellorLabel": "Conseiller sélectionné",
+    "cancel": "Annuler",
+    "assign": "Assigner",
+    "assigning": "Attribution en cours...",
+    "toast": {
+        "assignSuccess": "Conseiller assigné avec succès",
+        "assignFailed": "Échec de l'attribution du conseiller",
+        "selectCounsellor": "Veuillez sélectionner un conseiller"
+    }
+}

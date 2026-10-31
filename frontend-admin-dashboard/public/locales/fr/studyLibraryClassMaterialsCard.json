@@ -1,0 +1,19 @@
+{
+    "classMaterials": "Supports de cours",
+    "uploadPdf": "Téléverser un PDF",
+    "addVideo": "Ajouter une vidéo",
+    "noMaterialsYet": "Aucun support de cours ajouté pour l'instant. Téléversez un PDF ou ajoutez une vidéo pour la lier à un chapitre.",
+    "titleLabel": "Titre",
+    "uploadFile": "Téléverser un fichier",
+    "youtubeUrl": "URL YouTube",
+    "invalidYoutubeUrl": "Saisissez une URL YouTube valide",
+    "uploadingEllipsis": "Téléversement…",
+    "add": "Ajouter",
+    "cancel": "Annuler",
+    "couldNotResolveInstitute": "Impossible de déterminer votre établissement.",
+    "couldNotUploadPdf": "Impossible de téléverser le PDF.",
+    "couldNotUploadVideo": "Impossible de téléverser la vidéo.",
+    "couldNotAddMaterial": "Impossible d'ajouter ce support.",
+    "sessionFallback": "Session",
+    "defaultTitle": "{{label}} – Notes ({{formatted}})"
+}

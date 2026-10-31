@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { CheckCircle } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
+import { CheckCircle, ListChecks } from "@phosphor-icons/react";
 import QuizTimer from "./QuizTimer";
 import QuizTimeWarning from "./QuizTimeWarning";
 import { MyInput } from "@/components/design-system/input";
@@ -12,6 +14,7 @@ import { v4 as uuidv4 } from "uuid";
 import { toast } from "sonner";
 import { trackOrQueue, isNetworkError } from "@/lib/offline/events/track-or-queue";
 import QuizReview from "./QuizReview";
+import { isMultiSelectQuestion, partialCreditFraction } from "./quiz-scoring";
 import { useGetQuizSlideActivityLogs } from "@/services/study-library/tracking-api/get-quiz-slide-activity-logs";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
 import confetti from "canvas-confetti";
@@ -56,6 +59,8 @@ export interface ScoreCard {
   earned: number;
   totalMarks: number;
   correct: number;
+  /** Not fully correct, but earned a share of the marks (partial-marking quizzes). */
+  partial?: number;
   wrong: number;
   skipped: number;
 }
@@ -67,24 +72,26 @@ interface QuizViewerProps {
   timeLimitMinutes?: number | null;
   marksPerQuestion?: number;
   defaultNegativeMarking?: number;
+  /** Multiple-correct questions earn a share of their marks for a subset of the key. */
+  partialMarking?: boolean;
   passPercentage?: number | null;
   reAttemptCount?: number | null;
 }
 
-const BASE_QUESTION_TYPE_DESCRIPTIONS: Record<string, string> = {
-  MCQS: "Multiple Choice Questions - Single Correct Option",
-  MCQM: "Multiple Choice Questions - Multiple Correct Option",
-  NUMERIC: "Numeric Answer",
-  ONE_WORD: "One Word Answer",
-  TEXT: "Short Answer - Text Response",
-  LONG_ANSWER: "Long Answer - Detailed Response",
-  TRUE_FALSE: "True or False",
-  MATCH: "Match the Following",
-  FILL_IN_THE_BLANK: "Fill in the Blank",
-};
+const getBaseQuestionTypeDescriptions = (t: TFunction): Record<string, string> => ({
+  MCQS: t("quizViewer.questionTypeDescriptions.mcqs"),
+  MCQM: t("quizViewer.questionTypeDescriptions.mcqm"),
+  NUMERIC: t("quizViewer.questionTypeDescriptions.numeric"),
+  ONE_WORD: t("quizViewer.questionTypeDescriptions.oneWord"),
+  TEXT: t("quizViewer.questionTypeDescriptions.text"),
+  LONG_ANSWER: t("quizViewer.questionTypeDescriptions.longAnswer"),
+  TRUE_FALSE: t("quizViewer.questionTypeDescriptions.trueFalse"),
+  MATCH: t("quizViewer.questionTypeDescriptions.match"),
+  FILL_IN_THE_BLANK: t("quizViewer.questionTypeDescriptions.fillInTheBlank"),
+});
 
-const formatQuestionTypeLabel = (type?: string) => {
-  if (!type) return "Question";
+const formatQuestionTypeLabel = (type: string | undefined, t: TFunction) => {
+  if (!type) return t("quizViewer.questionTypeDescriptions.genericQuestion");
   return type
     .split("_")
     .filter(Boolean)
@@ -139,28 +146,39 @@ const isAnswerCorrect = (q: Question, answer: AnswerValue): boolean => {
     const ans = answer.map(String);
     return ans.length === correct.length && correct.every((c) => ans.includes(c));
   }
-  return correct.includes(String(answer));
+  return isSingleAnswerCorrect(q, String(answer), correct);
 };
 
-const getQuestionTypeDescription = (type?: string): string => {
+// On a multiple-correct question a lone option id must match the WHOLE key: picking
+// one of two correct options is not a correct answer. Single-select questions keep
+// accepting any keyed option (an author may key two options as both acceptable).
+const isSingleAnswerCorrect = (q: Question, answer: string, correct: string[]): boolean =>
+  isMultiSelectQuestion(q.question_type)
+    ? correct.length === 1 && correct[0] === answer
+    : correct.includes(answer);
+
+const getQuestionTypeDescription = (type: string | undefined, t: TFunction): string => {
+  const baseDescriptions = getBaseQuestionTypeDescriptions(t);
   if (!type) {
-    return BASE_QUESTION_TYPE_DESCRIPTIONS.MCQS;
+    return baseDescriptions.MCQS;
   }
 
-  const directMatch = BASE_QUESTION_TYPE_DESCRIPTIONS[type];
+  const directMatch = baseDescriptions[type];
   if (directMatch) {
     return directMatch;
   }
 
   if (type.startsWith("C")) {
     const baseType = type.slice(1);
-    const baseDescription = BASE_QUESTION_TYPE_DESCRIPTIONS[baseType];
+    const baseDescription = baseDescriptions[baseType];
     if (baseDescription) {
-      return `Comprehension ${baseDescription}`;
+      return t("quizViewer.questionTypeDescriptions.comprehensionPrefix", {
+        description: baseDescription,
+      });
     }
   }
 
-  return formatQuestionTypeLabel(type);
+  return formatQuestionTypeLabel(type, t);
 };
 
 
@@ -174,9 +192,11 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
   timeLimitMinutes,
   marksPerQuestion = 1,
   defaultNegativeMarking = 0,
+  partialMarking = false,
   passPercentage,
   reAttemptCount,
 }) => {
+  const { t } = useTranslation("libraryCommonB");
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<{ [questionId: string]: string | number | string[] }>({});
   const [numericErrors, setNumericErrors] = useState<{ [questionId: string]: string }>({});
@@ -448,7 +468,15 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         const isAnswered =
           answer != null && !(typeof answer === "string" && answer.trim() === "");
         const correct = isAnswered && isAnswerCorrect(q, answer);
-        const earnedMarks = correct ? qMaxMarks : isAnswered ? -qNeg : 0;
+        const partial =
+          !correct && isAnswered && partialMarking ? partialCreditFraction(answer, correctIds) : 0;
+        const earnedMarks = correct
+          ? qMaxMarks
+          : partial > 0
+            ? qMaxMarks * partial
+            : isAnswered
+              ? -qNeg
+              : 0;
         const responseStatus = !isAnswered ? "SKIPPED" : correct ? "CORRECT" : "WRONG";
         return {
           id: uuidv4(),
@@ -459,6 +487,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
             marks: earnedMarks,
             maxMarks: qMaxMarks,
             isCorrect: correct,
+            isPartial: partial > 0,
             questionType: q.question_type ?? "",
           }),
           response_status: responseStatus,
@@ -473,8 +502,8 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
   const total = questions?.length || 0;
   const questionType = currentQuestion?.question_type || "MCQS";
   const questionTypeDescription = useMemo(
-    () => getQuestionTypeDescription(questionType),
-    [questionType]
+    () => getQuestionTypeDescription(questionType, t),
+    [questionType, t]
   );
   // Derive correct answers from auto_evaluation_json
   const correctAnswers = useMemo<(string | number)[]>(() => {
@@ -530,11 +559,11 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
   if (!questions || questions.length === 0) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
             <div className="w-8 h-8 text-gray-400 text-2xl font-bold">?</div>
           </div>
-          <p className="text-gray-500">No quiz questions available.</p>
+          <p className="text-gray-500">{t("quizViewer.noQuestionsAvailable")}</p>
         </div>
       </div>
     );
@@ -545,6 +574,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     let earned = 0;
     let totalMarks = 0;
     let correct = 0;
+    let partial = 0;
     let wrong = 0;
     let skipped = 0;
 
@@ -564,7 +594,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
           const corrStr = correctAnswers.map(String);
           return asStr.length === corrStr.length && corrStr.every((c) => asStr.includes(c));
         }
-        return correctAnswers.map(String).includes(String(userAns));
+        return isSingleAnswerCorrect(q, String(userAns), correctAnswers.map(String));
       } catch {
         return false;
       }
@@ -576,9 +606,16 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       totalMarks += qMarks;
       const isAnswered = finalAnswers[q.id] != null;
       const isCorrect = isAnswered && checkAnswerCorrect(q, finalAnswers[q.id]);
+      const partialShare =
+        !isCorrect && isAnswered && partialMarking
+          ? partialCreditFraction(finalAnswers[q.id], getCorrectOptionIds(q))
+          : 0;
       if (isCorrect) {
         earned += qMarks;
         correct++;
+      } else if (partialShare > 0) {
+        earned += qMarks * partialShare;
+        partial++;
       } else if (isAnswered) {
         earned -= qNeg;
         wrong++;
@@ -587,7 +624,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       }
     });
 
-    return { earned: Math.max(0, earned), totalMarks, correct, wrong, skipped };
+    return { earned: Math.max(0, earned), totalMarks, correct, partial, wrong, skipped };
   };
 
   // Show review whenever we have answers OR the user has exhausted attempts
@@ -676,13 +713,16 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       showCorrectAnswers={showReportAndCorrectAnswers}
       passed={effectivePassed}
       passPercentage={passPercentage}
+      partialMarking={partialMarking}
+      marksPerQuestion={marksPerQuestion}
+      defaultNegativeMarking={defaultNegativeMarking}
       attemptNumber={displayedAttemptNumber}
       maxAttempts={reAttemptCount}
       canReattempt={canReattempt}
       attemptLogs={displayedAttemptLogs}
       onRestart={() => {
         if (attemptsExhausted) {
-          toast.error("No attempts remaining for this quiz.");
+          toast.error(t("quizViewer.toast.noAttemptsRemaining"));
           return;
         }
         const { slideId, chapterId } = getUrlParams();
@@ -709,7 +749,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
 
   const handleQuizSubmit = async (finalAnswers: typeof answers) => {
     if (attemptsExhausted) {
-      toast.error("No attempts remaining for this quiz.");
+      toast.error(t("quizViewer.toast.noAttemptsRemaining"));
       setShowReview(true);
       return;
     }
@@ -719,7 +759,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       const userId = (await getUserId()) || "";
 
       if (!slideId || !chapterId || !moduleId || !subjectId || !packageSessionId || !userId) {
-        toast.error("Cannot submit quiz — missing context. Please reopen this slide.");
+        toast.error(t("quizViewer.toast.missingContext"));
         return;
       }
 
@@ -754,7 +794,9 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       }
 
       toast.success(
-        offlineQueued ? "Saved — will sync when online" : "Quiz submitted!",
+        offlineQueued
+          ? t("quizViewer.toast.savedOffline")
+          : t("quizViewer.toast.quizSubmitted"),
         { className: "text-center" }
       );
 
@@ -790,7 +832,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       setShowReview(true);
       if (onComplete) onComplete();
     } catch {
-      toast.error("Failed to submit quiz. Please try again.");
+      toast.error(t("quizViewer.toast.submitFailed"));
     } finally {
       setIsSubmitting(false);
     }
@@ -819,7 +861,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       setAnswers((prev) => ({ ...prev, [currentQuestion.id]: "" }));
       onAnswer(currentQuestion.id, "");
     } else if (!isNumeric) {
-      setNumericErrors((prev) => ({ ...prev, [currentQuestion.id]: "Please enter a valid number" }));
+      setNumericErrors((prev) => ({ ...prev, [currentQuestion.id]: t("quizViewer.invalidNumber") }));
       setAnswers((prev) => ({ ...prev, [currentQuestion.id]: value }));
       onAnswer(currentQuestion.id, value);
     } else {
@@ -853,7 +895,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
     // correct answers will be shown in the final report after the quiz.
     if (!showReportAndCorrectAnswers && moveOnlyOnCorrectAnswer && !isCurrentAnswerCorrect) {
       setShowIncorrectNotice(true);
-      toast.error("Incorrect answer. Please try again.");
+      toast.error(t("quizViewer.toast.incorrectAnswer"));
       return;
     }
 
@@ -876,7 +918,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
             packageSessionId: packageSessionId,
             userId,
           });
-          toast.error("Cannot submit quiz — missing context. Please reopen this slide.");
+          toast.error(t("quizViewer.toast.missingContext"));
           return;
         }
 
@@ -925,7 +967,9 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         console.groupEnd();
         console.log("Quiz submitted successfully");
         toast.success(
-          offlineQueued ? "Saved — will sync when online" : "Quiz submitted successfully!",
+          offlineQueued
+            ? t("quizViewer.toast.savedOffline")
+            : t("quizViewer.toast.quizSubmittedSuccessfully"),
           { className: "text-center" }
         );
         queryClient.invalidateQueries({ queryKey: ["quiz-slide-activity-logs", currentUserId, currentSlideIdForAttempts] });
@@ -1045,7 +1089,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         if (onComplete) onComplete();
       } catch (err) {
         console.error("❌ [QuizViewer] Quiz submission failed", err);
-        toast.error("Failed to submit quiz. Please try again.");
+        toast.error(t("quizViewer.toast.submitFailed"));
       } finally {
         setIsSubmitting(false);
       }
@@ -1111,7 +1155,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
               inputType="text"
               input={String(currentAnswer || "")}
               onChangeFunction={(e) => handleNumericInput(e.target.value)}
-              inputPlaceholder="Enter numeric value"
+              inputPlaceholder={t("quizViewer.placeholders.numeric")}
               inputMode="numeric"
               className={`text-sm py-3 font-normal w-full border-primary-100 focus:border-primary-500 focus:ring-primary-500 ${
                 numericErrors[currentQuestion.id] ? "border-danger-600 focus:border-danger-600 focus:ring-danger-600" : ""
@@ -1134,7 +1178,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
               inputType="text"
               input={String(currentAnswer || "")}
               onChangeFunction={(e) => handleTextInput(e.target.value)}
-              inputPlaceholder="Type your answer"
+              inputPlaceholder={t("quizViewer.placeholders.text")}
               className="text-sm py-3 font-normal w-full border-primary-100 focus:border-primary-500 focus:ring-primary-500"
               onCopy={(e) => e.preventDefault()}
               onCut={(e) => e.preventDefault()}
@@ -1149,7 +1193,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
             <Textarea
               value={currentAnswer || ""}
               onChange={(e) => handleTextInput(e.target.value)}
-              placeholder="Type your answer..."
+              placeholder={t("quizViewer.placeholders.longAnswer")}
               className="min-h-reg-150 sm:min-h-reg-200 text-sm w-full border-primary-100 focus:border-primary-500 focus:ring-primary-500"
               onCopy={(e) => e.preventDefault()}
               onCut={(e) => e.preventDefault()}
@@ -1161,7 +1205,14 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       case "CMCQM":
       case "MCQM":
         return (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
+          <>
+          {/* Single- and multiple-correct options used to look identical, so learners
+              ticked one box on a multi-answer question. Say it where they are looking. */}
+          <div className="mt-4 flex items-center gap-2 rounded-md border border-primary-200 bg-primary-50 px-3 py-2 text-sm font-medium text-primary-500">
+            <ListChecks size={18} weight="bold" className="shrink-0" />
+            <span>{t("quizViewer.selectAllThatApply")}</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-stack sm:gap-4 mt-4">
             {currentQuestion.options.map((option, index) => {
               const selected = Array.isArray(currentAnswer) && currentAnswer.includes(option.id);
               return (
@@ -1194,13 +1245,14 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
               );
             })}
           </div>
+          </>
         );
       case "CMCQS":
       case "MCQS":
       case "TRUE_FALSE":
       default:
         return (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-stack sm:gap-4 mt-4">
             {currentQuestion.options.map((option, index) => {
               const selected = currentAnswer === option.id;
               return (
@@ -1214,13 +1266,14 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
                   `}
                   style={{ userSelect: "none" }}
                 >
+                  {/* Round radio = pick one; the multi-answer case keeps square checkboxes. */}
                   <div className="relative flex items-center">
                     <div
-                      className={`w-5 h-5 border rounded-md flex items-center justify-center transition-colors
-                        ${selected ? "bg-primary-500 border-primary-500" : "border-primary-200 bg-white"}
+                      className={`w-5 h-5 border-2 rounded-full flex items-center justify-center transition-colors
+                        ${selected ? "border-primary-500" : "border-primary-200 bg-white"}
                       `}
                     >
-                      {selected && <span className="text-white text-sm">✓</span>}
+                      {selected && <span className="w-2.5 h-2.5 rounded-full bg-primary-500" />}
                     </div>
                   </div>
                   <label
@@ -1267,9 +1320,9 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       {showWarning && <QuizTimeWarning onDismiss={() => setShowWarning(false)} />}
 
       {/* Question X of Y and Progress bar */}
-      <div className="mb-8">
-        <div className="mb-2 flex items-center justify-between">
-          <span className="text-sm text-gray-700 font-medium">Question {current + 1} of {total}</span>
+      <div className="mb-8 space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-gray-700 font-medium">{t("quizViewer.questionOf", { current: current + 1, total })}</span>
           <div className="ms-auto flex items-center gap-3">
             {timeLimitMinutes && timeLimitMinutes > 0 && (
               <QuizTimer
@@ -1297,8 +1350,8 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
         {/* Render passage and question together if passage exists */}
         {hasPassage ? (
           <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Passage:</h3>
-            <div 
+            <h3 className="text-sm font-semibold text-gray-700 mb-2">{t("quizViewer.passageLabel")}</h3>
+            <div
               className="text-sm text-gray-800 leading-relaxed rich-text-content"
               dangerouslySetInnerHTML={{ __html: showFullPassage || !isPassageLong ? renderHtmlWithMath(passageHtml) : renderHtmlWithMath(passageToShow) }}
             />
@@ -1308,25 +1361,25 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
                 onClick={() => setShowFullPassage((prev) => !prev)}
                 type="button"
               >
-                {showFullPassage ? "Show less" : "Show more"}
+                {showFullPassage ? t("quizViewer.showLess") : t("quizViewer.showMore")}
               </button>
             )}
             {/* Question text inside the same box */}
-            <div className="mt-4">
-              <h3 className="text-sm font-semibold text-gray-700 mb-2">Question:</h3>
-              <div 
+            <div className="mt-4 space-y-2">
+              <h3 className="text-sm font-semibold text-gray-700">{t("quizViewer.questionLabel")}</h3>
+              <div
                 className="text-sm font-medium text-gray-900 leading-relaxed rich-text-content"
-                dangerouslySetInnerHTML={{ __html: renderHtmlWithMath(getQuestionText() || "Question text not available") }}
+                dangerouslySetInnerHTML={{ __html: renderHtmlWithMath(getQuestionText() || t("quizViewer.questionTextUnavailable")) }}
               />
             </div>
           </div>
         ) : (
           // No passage, just show question text as before
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold text-gray-700 mb-2">Question:</h3>
+          <div className="mb-6 space-y-2">
+            <h3 className="text-sm font-semibold text-gray-700">{t("quizViewer.questionLabel")}</h3>
             <div
               className="text-sm font-medium text-gray-900 leading-relaxed rich-text-content"
-              dangerouslySetInnerHTML={{ __html: renderHtmlWithMath(getQuestionText() || "Question text not available") }}
+              dangerouslySetInnerHTML={{ __html: renderHtmlWithMath(getQuestionText() || t("quizViewer.questionTextUnavailable")) }}
             />
           </div>
         )}
@@ -1344,7 +1397,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
           className="flex items-center justify-center min-w-reg-120 space-x-2"
         >
           <span>←</span>
-          <span>Previous</span>
+          <span>{t("quizViewer.buttons.previous")}</span>
         </MyButton>
 
         <div className="flex items-center space-x-2">
@@ -1352,10 +1405,10 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
             <CheckCircle className="w-5 h-5 text-green-500" />
           )}
           <span className="text-sm text-gray-500">
-            {isAnswered() ? "Answered" : "Not answered"}
+            {isAnswered() ? t("quizViewer.answered") : t("quizViewer.notAnswered")}
           </span>
           {showIncorrectNotice && (
-            <span className="text-sm text-danger-600 ms-2">Incorrect. Try again.</span>
+            <span className="text-sm text-danger-600 ms-2">{t("quizViewer.incorrectTryAgain")}</span>
           )}
         </div>
 
@@ -1366,7 +1419,7 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
           onClick={handleNext}
           className="flex items-center justify-center min-w-reg-120 space-x-2"
         >
-          <span>{isSubmitting ? "Submitting..." : current === total - 1 ? "Finish" : "Next"}</span>
+          <span>{isSubmitting ? t("quizViewer.buttons.submitting") : current === total - 1 ? t("quizViewer.buttons.finish") : t("quizViewer.buttons.next")}</span>
           {current !== total - 1 && !isSubmitting && <span>→</span>}
         </MyButton>
       </div>

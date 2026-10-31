@@ -1,0 +1,32 @@
+{
+    "trigger": {
+        "inviteUsers": "Invite Users"
+    },
+    "dialog": {
+        "title": "Add Team Member"
+    },
+    "tabs": {
+        "existingMembers": "Existing Members",
+        "inviteNew": "Invite New"
+    },
+    "existing": {
+        "searchPlaceholder": "Search team members...",
+        "noMatchingMembers": "No matching members found",
+        "noMembersAvailable": "No team members available",
+        "assignButton": "Assign {{name}}"
+    },
+    "invite": {
+        "form": {
+            "namePlaceholder": "Full name (First and Last)",
+            "nameLabel": "Full Name",
+            "emailPlaceholder": "Enter Email",
+            "emailLabel": "Email"
+        },
+        "inviteButton": "Invite User"
+    },
+    "validation": {
+        "nameRequired": "Full name is required",
+        "emailRequired": "Email is required",
+        "emailInvalid": "Invalid email format"
+    }
+}

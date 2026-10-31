@@ -1,0 +1,30 @@
+{
+    "heading": "تغيير حالة التوظيف",
+    "fallbackEmployeeLabel": "هذا الموظف",
+    "notSet": "غير محددة",
+    "currentStatus": "الحالة الحالية {{status}} لـ <1>{{name}}</1>.",
+    "actions": {
+        "cancel": "إلغاء",
+        "updating": "جارٍ التحديث…",
+        "updateStatus": "تحديث الحالة"
+    },
+    "fields": {
+        "newStatus": "الحالة الجديدة",
+        "lastWorkingDate": "آخر يوم عمل",
+        "exitReason": "سبب المغادرة",
+        "exitReasonPlaceholder": "مثال: استقال لدور جديد"
+    },
+    "exitNotice": "هذا ينهي التوظيف. يُستخدم آخر يوم عمل والسبب في حساب التسوية النهائية الكاملة، لذا كلاهما مطلوب.",
+    "toast": {
+        "exitStatusUpdated": "أصبح {{name}} الآن {{status}}. يمكن إعداد التسوية النهائية الكاملة في الرواتب.",
+        "statusUpdated": "تم تحديث الحالة إلى {{status}}"
+    },
+    "errors": {
+        "updateFailed": "تعذّر تغيير حالة التوظيف"
+    },
+    "validation": {
+        "pickStatus": "اختر حالة",
+        "lastWorkingDateRequired": "آخر يوم عمل مطلوب لتسوية المستحقات",
+        "exitReasonRequired": "سجّل سبب انتهاء التوظيف"
+    }
+}

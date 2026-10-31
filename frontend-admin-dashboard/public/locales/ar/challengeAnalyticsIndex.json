@@ -1,0 +1,17 @@
+{
+    "pageHeading": "لوحة تحليلات التحديات",
+    "pageTitle": "لوحة تحليلات التحديات | Vacademy",
+    "metaDescription": "تتبّع تفاعل أولياء الأمور عبر برامج التحدي من خلال رؤى قابلة للتنفيذ",
+    "loadingTemplates": "جارٍ تحميل قوالب التحليلات...",
+    "centerFilterLabel": "المركز",
+    "tabs": {
+        "overview": "نظرة عامة",
+        "centers": "المراكز",
+        "participation": "المشاركة",
+        "churn": "التسرب",
+        "referrals": "الإحالات",
+        "leaderboard": "لوحة الصدارة",
+        "completions": "الإكمالات",
+        "templates": "القوالب"
+    }
+}

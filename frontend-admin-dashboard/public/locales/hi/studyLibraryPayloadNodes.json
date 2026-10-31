@@ -1,0 +1,13 @@
+{
+    "flashcard": {
+        "front": "आगे",
+        "back": "पीछे"
+    },
+    "quiz": {
+        "label": "क्विज़"
+    },
+    "multiLangCode": {
+        "editorHeading": "{{language}} कोड एडिटर",
+        "outputLabel": "आउटपुट:"
+    }
+}

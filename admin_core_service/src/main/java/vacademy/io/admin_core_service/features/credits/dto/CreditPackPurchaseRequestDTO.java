@@ -17,4 +17,17 @@ public class CreditPackPurchaseRequestDTO {
      * resume polling. Optional; falls back to a configured default.
      */
     private String returnUrl;
+
+    /**
+     * Buyer's 15-char GSTIN. Optional — omit for unregistered (B2C) buyers.
+     * When present it is validated, persisted onto the institute and
+     * snapshotted onto the invoice so the buyer can claim input tax credit.
+     */
+    private String buyerGstin;
+
+    /**
+     * Buyer's 2-digit GST state code. Drives CGST/SGST vs IGST and the
+     * invoice's place of supply. Derived from the GSTIN prefix when omitted.
+     */
+    private String buyerStateCode;
 }

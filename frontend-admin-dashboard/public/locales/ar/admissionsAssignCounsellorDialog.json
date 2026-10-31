@@ -1,0 +1,17 @@
+{
+    "title": "تعيين مستشار",
+    "description": "ابحث عن مستشار وحدده لتعيينه لهذا الاستفسار",
+    "searchLabel": "البحث عن مستشار",
+    "searchPlaceholder": "اكتب للبحث بالاسم...",
+    "searching": "جارٍ البحث...",
+    "noCounsellorsFound": "لم يتم العثور على مستشارين",
+    "selectedCounsellorLabel": "المستشار المحدد",
+    "cancel": "إلغاء",
+    "assign": "تعيين",
+    "assigning": "جارٍ التعيين...",
+    "toast": {
+        "assignSuccess": "تم تعيين المستشار بنجاح",
+        "assignFailed": "فشل تعيين المستشار",
+        "selectCounsellor": "يرجى اختيار مستشار"
+    }
+}

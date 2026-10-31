@@ -1,0 +1,47 @@
+{
+    "cards": {
+        "total": "Total"
+    },
+    "status": {
+        "willEnroll": "Will Enroll",
+        "willSkip": "Will Skip",
+        "willFail": "Will Fail"
+    },
+    "reenrolledBanner_one": "{{term}} will be re-enrolled (previously expired/terminated access).",
+    "reenrolledBanner_other": "{{term}} will be re-enrolled (previously expired/terminated access).",
+    "subOrg": {
+        "heading": "Sub-organisation assignment",
+        "noLink": "No organisation link",
+        "newSuffix": "{{name}} (new)",
+        "notSelected": "Not selected",
+        "role": {
+            "adminOnly": "Admin only",
+            "admin": "Admin + {{term}}",
+            "staff": "Staff — {{term}}"
+        }
+    },
+    "emptyState": "No {{term}} will be newly enrolled. Review your selections or change the duplicate handling option.",
+    "table": {
+        "headers": {
+            "action": "Action",
+            "status": "Status",
+            "note": "Note"
+        },
+        "emptyValue": "—",
+        "actionTaken": {
+            "created": "Enrolled",
+            "reEnrolled": "Re-enrolled"
+        },
+        "cpo": {
+            "badge": "CPO",
+            "installments_one": " · {{count}} installment",
+            "installments_other": " · {{count}} installments",
+            "totalAmount": " · total ₹{{amount}}",
+            "recordingNow": "Recording ₹{{amount}} now",
+            "noInitialPayment": "No initial payment recorded",
+            "schedule_one": "{{count}} installment, due {{first}}",
+            "schedule_other": "{{count}} installments, {{first}} → {{last}}"
+        }
+    },
+    "noPlanConfigured": "No price set for this invite yet — pick Auto (Default) for a free enrolment, or set its price in Payment Settings first."
+}

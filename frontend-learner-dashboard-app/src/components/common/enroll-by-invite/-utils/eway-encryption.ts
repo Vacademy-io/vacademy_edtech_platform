@@ -34,6 +34,7 @@
  * - All API calls must use HTTPS
  * - PCI-DSS compliance is reduced with client-side encryption
  */
+import i18n from "@/i18n";
 
 /**
  * Card data interface for encryption
@@ -206,14 +207,14 @@ export const createEwayTransactionRequest = (
 export const formatEncryptionError = (error: unknown): string => {
   if (error instanceof Error) {
     if (error.message.includes("eCrypt")) {
-      return "Encryption library not available. Please refresh the page and try again.";
+      return i18n.t("enrollmentB:ewayEncryption.libraryUnavailable");
     }
     if (error.message.includes("encrypt")) {
-      return "Failed to encrypt payment information. Please try again.";
+      return i18n.t("enrollmentB:ewayEncryption.encryptFailed");
     }
     return error.message;
   }
-  return "An unexpected error occurred. Please try again.";
+  return i18n.t("enrollmentB:ewayEncryption.unexpectedError");
 };
 
 /**

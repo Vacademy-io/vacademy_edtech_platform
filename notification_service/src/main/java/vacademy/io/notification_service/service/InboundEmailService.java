@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import vacademy.io.notification_service.features.email_inbox.service.InboundMimeParts;
 import vacademy.io.notification_service.features.notification_log.entity.EmailAddressMapping;
 import vacademy.io.notification_service.features.notification_log.entity.NotificationLog;
 import vacademy.io.notification_service.features.notification_log.repository.EmailAddressMappingRepository;
@@ -81,6 +82,7 @@ public class InboundEmailService {
             String messageId = extractHeader(mimeMessage, "Message-ID");
             String inReplyTo = extractHeader(mimeMessage, "In-Reply-To");
             String fromAddress = extractFrom(mimeMessage);
+            String fromName = extractFromName(mimeMessage);
             List<String> toAddresses = extractRecipients(mimeMessage);
             String subject = safeGetSubject(mimeMessage);
             String body = extractBody(mimeMessage);
@@ -158,6 +160,16 @@ public class InboundEmailService {
             payloadMap.put("to", toAddress);
             payloadMap.put("body", truncatedBody);
             payloadMap.put("instituteId", instituteId);
+            // Where the raw email lives, plus its attachment index: the inbox lists attachments
+            // from this and streams a file from S3 only when an admin opens it.
+            payloadMap.put(InboundMimeParts.S3_BUCKET_KEY, bucket);
+            payloadMap.put(InboundMimeParts.S3_KEY_KEY, key);
+            try {
+                payloadMap.putAll(InboundMimeParts.indexFields(mimeMessage));
+            } catch (Exception e) {
+                // Left unindexed: InboundEmailContentService.indexPending() retries it.
+                log.warn("Could not index attachments of inbound {}/{}: {}", bucket, key, e.getMessage());
+            }
             String messagePayload = objectMapper.writeValueAsString(payloadMap);
 
             // 9. Persist
@@ -170,6 +182,8 @@ public class InboundEmailService {
             inboundLog.setSourceId(messageId);
             inboundLog.setSource(parentLogId);
             inboundLog.setUserId(userId);
+            // "Neeraj Hariyale <x@y>" → the inbox shows the person, not just the bare address.
+            inboundLog.setSenderName(fromName);
             // email_address_mapping rows are already canonical lowercase emails, but route through
             // the shared normalizer for consistency with EmailService / AnnouncementDeliveryService.
             String normalizedInbox = EmailService.normalizeFromAddress(matchedInstituteAddress);
@@ -224,6 +238,23 @@ public class InboundEmailService {
             }
         } catch (Exception e) {
             log.debug("Could not extract From: {}", e.getMessage());
+        }
+        return null;
+    }
+
+    /** From: display name ("Personal" part), trimmed and capped to the column; null when absent. */
+    static String extractFromName(MimeMessage msg) {
+        try {
+            Address[] froms = msg.getFrom();
+            if (froms != null && froms.length > 0 && froms[0] instanceof InternetAddress ia) {
+                String personal = ia.getPersonal();
+                if (personal == null) return null;
+                String trimmed = personal.trim();
+                if (trimmed.isEmpty()) return null;
+                return trimmed.length() > 255 ? trimmed.substring(0, 255) : trimmed;
+            }
+        } catch (Exception e) {
+            log.debug("Could not extract From display name: {}", e.getMessage());
         }
         return null;
     }

@@ -1,0 +1,22 @@
+{
+  "_comment": "PLACEHOLDER — replace this file with attempt-template.json containing a REAL attempt_data dump (RUNBOOK step 4). Shape shown here matches what AttemptDataParserService reads; a wrong shape makes scoring exit early and the test under-reports load.",
+  "clientLastSync": "2026-08-27T10:00:00.000Z",
+  "assessment": {
+    "timeElapsedInSeconds": 0
+  },
+  "sections": [
+    {
+      "sectionId": "<real-section-uuid>",
+      "questions": [
+        {
+          "questionId": "<real-question-uuid>",
+          "timeTakenInSeconds": 0,
+          "responseData": {
+            "type": "MCQS",
+            "optionIds": ["<real-option-uuid>"]
+          }
+        }
+      ]
+    }
+  ]
+}

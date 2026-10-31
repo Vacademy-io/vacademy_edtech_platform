@@ -72,8 +72,39 @@ public class CallRowDTO {
 
     /** Fault codes behind {@link #diagHealth}; null when not measured. */
     private java.util.List<String> diagFaults;
+
+    /**
+     * The counsellor's one-sentence answer to "do I call this lead myself?", shown
+     * under the AI disposition. {@code followUpGist} is the sentence — the
+     * recommendation and the concrete reason from the call. {@code followUp} is
+     * CALL / CALL_LATER / SKIP and only colours it; it is never shown as a word.
+     * NULL = NOT ASSESSED and must never be read as CALL.
+     */
+    private String followUp;
+    private String followUpGist;
     /** Effective promised call-back time (human callback_at or AI callback_at). */
     private Timestamp callbackAt;
 
     private Timestamp createdAt;
+
+    // ── Inline on the Call Log table since 2026-09-11 ────────────────────────
+    /** The lead's pipeline status (audience_response.lead_status_id → lead_status); editable in the table. */
+    private String leadStatusId;
+    private String leadStatusKey;
+    private String leadStatusLabel;
+    private String leadStatusColor;
+    /** call_intelligence.status (PENDING/TRANSCRIBING/ANALYZING/COMPLETED/FAILED/SKIPPED); null = never queued. */
+    private String ciStatus;
+    /** The analysis' two-line "what happened / what's next". */
+    private String ciShortUpdate;
+    private Double ciCallerRating;
+    private Double ciOutcomeRating;
+    private String ciLeadSentiment;
+    private String ciConversionLikelihood;
+    /** In-call actions: the agent promised a call-back / triggered a transfer. */
+    private boolean aiCallback;
+    private boolean transferred;
+    /** Sends (WhatsApp/email) the AI call created, and how many actually went out. */
+    private int sendsTotal;
+    private int sendsSent;
 }

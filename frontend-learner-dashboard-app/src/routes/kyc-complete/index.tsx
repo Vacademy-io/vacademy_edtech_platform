@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CheckCircle } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { ModernCard } from "@/components/design-system/modern-card";
 
 export const Route = createFileRoute("/kyc-complete/")({
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/kyc-complete/")({
  * automatically, so this page only needs to say "go back".
  */
 function KycCompletePage() {
+  const { t } = useTranslation("miscRoutesB");
   return (
     <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-neutral-50 to-primary-50 px-4 py-8">
       <ModernCard
@@ -26,11 +28,10 @@ function KycCompletePage() {
             <CheckCircle weight="fill" className="size-8 text-success-600" />
           </div>
           <h1 className="text-xl font-semibold text-neutral-700">
-            Verification Submitted
+            {t("kycComplete.title")}
           </h1>
           <p className="text-sm text-neutral-500">
-            You can close this tab and return to your registration. The status
-            there updates automatically.
+            {t("kycComplete.description")}
           </p>
         </div>
       </ModernCard>

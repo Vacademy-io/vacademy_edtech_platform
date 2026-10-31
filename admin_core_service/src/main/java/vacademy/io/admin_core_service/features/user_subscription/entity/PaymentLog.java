@@ -95,6 +95,28 @@ public class PaymentLog {
     @Column(name = "order_status")
     private String orderStatus;
 
+    // ─── How an offline payment was made (V577, docs/OFFLINE_PAYMENT_RECORDING.md) ───
+    // Set by OfflinePaymentDetailsService when an admin records a payment; null on gateway payments.
+
+    /** Mode code from the institute's offline payment modes, e.g. CASH, UPI, CHEQUE. */
+    @Column(name = "payment_mode")
+    private String paymentMode;
+
+    /** Sub-option code within the mode, e.g. PHONEPE under UPI, an account under BANK_TRANSFER. */
+    @Column(name = "payment_sub_mode")
+    private String paymentSubMode;
+
+    /** UPI ref / UTR / cheque number / approval code the admin typed. */
+    @Column(name = "payment_reference")
+    private String paymentReference;
+
+    /** Labels as shown when recorded, mode-specific extras, notes, proof file id (JSON). */
+    @Column(name = "payment_details_json", columnDefinition = "TEXT")
+    private String paymentDetailsJson;
+
+    @Column(name = "recorded_by_user_id")
+    private String recordedByUserId;
+
     public PaymentLogDTO mapToDTO() {
         PaymentLogDTO paymentLogDTO = new PaymentLogDTO();
         paymentLogDTO.setId(id);
@@ -113,6 +135,11 @@ public class PaymentLog {
         paymentLogDTO.setTrackingId(trackingId);
         paymentLogDTO.setTrackingSource(trackingSource);
         paymentLogDTO.setOrderStatus(orderStatus);
+        paymentLogDTO.setPaymentMode(paymentMode);
+        paymentLogDTO.setPaymentSubMode(paymentSubMode);
+        paymentLogDTO.setPaymentReference(paymentReference);
+        paymentLogDTO.setPaymentDetailsJson(paymentDetailsJson);
+        paymentLogDTO.setRecordedByUserId(recordedByUserId);
 
         // Safely parse transactionId if possible
         if (paymentSpecificData != null) {
@@ -134,13 +161,17 @@ public class PaymentLog {
                             .asText(null);
                 }
 
+                // Offline payments: the reference the admin typed.
+                if (txnId == null) {
+                    txnId = paymentReference != null ? paymentReference : root.path("transaction_id").asText(null);
+                }
                 paymentLogDTO.setTransactionId(txnId);
             } catch (Exception e) {
                 // Parsing failed: maybe log a warning, but do not throw
                 paymentLogDTO.setTransactionId(null);
             }
         } else {
-            paymentLogDTO.setTransactionId(null);
+            paymentLogDTO.setTransactionId(paymentReference);
         }
 
         return paymentLogDTO;

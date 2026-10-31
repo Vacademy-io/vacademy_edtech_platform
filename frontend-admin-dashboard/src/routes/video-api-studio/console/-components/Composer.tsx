@@ -3,16 +3,17 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Link } from '@tanstack/react-router';
 import {
-    Send,
-    Sparkles,
+    PaperPlaneRight as Send,
+    Sparkle as Sparkles,
     ArrowRight,
     Eye,
-    EyeOff,
+    EyeSlash as EyeOff,
     Paperclip,
-    Loader2,
+    CircleNotch as Loader2,
     FileText,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { useFileUpload } from '@/hooks/use-file-upload';
 import { getUserId } from '@/utils/userDetails';
 import { getInstituteId } from '@/constants/helper';
@@ -85,6 +86,9 @@ interface ComposerProps {
     vimMode?: boolean;
 }
 
+// Set once the model saved by the retired tier auto-select has been cleared.
+const MODEL_AUTOPICK_CLEARED_KEY = 'video-studio-model-autopick-cleared-v1';
+
 export function Composer({
     onGenerate,
     isGenerating,
@@ -111,6 +115,7 @@ export function Composer({
     onRoutingOverridesChange,
     vimMode = false,
 }: ComposerProps) {
+    const { t } = useTranslation('videoApiStudioComposer');
     const isDocked = variant === 'docked';
     const [showPreview, setShowPreview] = useState(false);
     const [isPdfProcessing, setIsPdfProcessing] = useState(false);
@@ -226,7 +231,7 @@ export function Composer({
         for (const id of currentIds) {
             if (!prevCompletedIds.current.has(id) && prevCompletedIds.current.size > 0) {
                 onSelectedInputVideoIdsChange((prev) => {
-                    if (prev.includes(id) || prev.length >= 10) return prev;
+                    if (prev.includes(id) || prev.length >= MAX_INPUT_ASSETS) return prev;
                     const next = [...prev, id];
                     // Multi-source auto-forces TTS — original audio is single-clip only.
                     if (next.length > 1) onInputVideoAudioChange('tts');
@@ -238,35 +243,37 @@ export function Composer({
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [indexedVideos]);
 
-    // Auto-select model: prefer an LLM matching the current quality tier;
-    // otherwise fall back to whatever the BE marks is_default.
+    // No model auto-select. `options.model` is a whole-run override, so it is
+    // only sent when the user picks one in Settings; left empty, the BE
+    // resolves every stage from the stage matrix (`ai_model_stage_assignments`)
+    // for the chosen `quality_tier`. This used to pin the first model of the
+    // tier, which overrode the matrix on every console video.
     //
-    // Skipped entirely in vimMode (P2-12): the legacy top-level `model` field
-    // is admin-only — Vimotion users rely on the V200 stage-routing matrix
-    // (`ai_model_stage_assignments`) which the BE resolves from `quality_tier`
-    // alone. Auto-populating `options.model` here would ship a "ghost knob"
-    // the user can't see (we hide both override panels in vimMode via P0-5).
+    // Clean-up for options persisted by that old auto-select: a saved model is
+    // cleared once per browser (a marker key records it, on the first render
+    // whether or not a model is saved, so a later explicit pick survives), and
+    // a model the registry no longer lists is dropped so a retired id is never
+    // sent. vimMode never carries a model (VideoConsoleWorkspace strips it, P2-12).
     useEffect(() => {
         if (vimMode) return;
-        const available = modelsList?.models ?? [];
-        if (available.length === 0) return;
-        const tier = options.quality_tier || 'ultra';
-
-        if (options.model && available.some((m) => m.model_id === options.model)) {
-            return;
+        let staleAutoPick = false;
+        try {
+            if (!localStorage.getItem(MODEL_AUTOPICK_CLEARED_KEY)) {
+                localStorage.setItem(MODEL_AUTOPICK_CLEARED_KEY, '1');
+                staleAutoPick = true;
+            }
+        } catch {
+            // Storage blocked: skip the one-time clean-up.
         }
-
-        const tierModels = available.filter((m) => m.tier === tier);
-        const pick =
-            tierModels.find((m) => m.is_default) ??
-            tierModels[0] ??
-            available.find((m) => m.is_default) ??
-            available[0];
-        if (pick) {
-            onOptionsChange({ ...options, model: pick.model_id });
+        if (!options.model) return;
+        const available = modelsList?.models ?? [];
+        const retired =
+            available.length > 0 && !available.some((m) => m.model_id === options.model);
+        if (staleAutoPick || retired) {
+            onOptionsChange({ ...options, model: '' });
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [modelsList, options.quality_tier, vimMode]);
+    }, [modelsList, vimMode]);
 
     // Fetch video style + branding + templates (institute-wide config).
     useEffect(() => {
@@ -321,11 +328,11 @@ export function Composer({
         audio.onended = () => setPlayingVoiceId(null);
         audio.onerror = () => {
             setPlayingVoiceId(null);
-            toast.error('Sample audio not available yet');
+            toast.error(t('toasts.sampleAudioUnavailable'));
         };
         audio.play().catch(() => {
             setPlayingVoiceId(null);
-            toast.error('Sample audio not available yet');
+            toast.error(t('toasts.sampleAudioUnavailable'));
         });
         previewAudioRef.current = audio;
         setPlayingVoiceId(voice.id);
@@ -377,7 +384,7 @@ export function Composer({
     const isToolEnabled = (name: RoutingToolName): boolean => {
         const ovr = routingOverrides.tools?.[name];
         if (typeof ovr === 'boolean') return ovr;
-        const plan = routerPlan?.tools?.find((t) => t.name === name);
+        const plan = routerPlan?.tools?.find((tool) => tool.name === name);
         return !!plan?.enabled;
     };
     const isToolOverridden = (name: RoutingToolName): boolean =>
@@ -396,7 +403,7 @@ export function Composer({
         onRoutingOverridesChange((prev) => {
             const currentResolved = isToolEnabled(name);
             const newVal = !currentResolved;
-            const planEnabled = !!routerPlan?.tools?.find((t) => t.name === name)?.enabled;
+            const planEnabled = !!routerPlan?.tools?.find((tool) => tool.name === name)?.enabled;
             const next = { ...prev, tools: { ...(prev.tools || {}) } };
             if (newVal === planEnabled) {
                 delete next.tools![name];
@@ -502,9 +509,8 @@ export function Composer({
     const handleSubmit = () => {
         if (!prompt.trim() || isGenerating || disabled) return;
         if (vimAvatarMissing) {
-            toast.error('Pick a host first', {
-                description:
-                    'Open the ⚙ Settings → Host tab and pick a saved avatar, or save one in the Avatars tab.',
+            toast.error(t('toasts.hostMissingTitle'), {
+                description: t('toasts.hostMissingDescription'),
             });
             return;
         }
@@ -558,16 +564,22 @@ export function Composer({
             if (!html) throw new Error('Failed to extract content from PDF');
 
             onPromptChange(html);
-            toast.success('PDF content extracted successfully');
+            toast.success(t('toasts.pdfExtractSuccess'));
         } catch (error) {
             console.error('PDF upload error:', error);
-            toast.error('Failed to extract content from PDF');
+            toast.error(t('toasts.pdfExtractFailed'));
         } finally {
             setIsPdfProcessing(false);
         }
     };
 
     const MAX_ATTACHMENTS = 10;
+    // Mirrors the server caps (MAX_INPUT_ASSETS / MAX_INPUT_VIDEOS). Videos are
+    // the expensive kind — a large download plus an index job each — while
+    // images cost one metadata JSON, so a screenshot-led walkthrough is allowed
+    // the wider ceiling. A flat cap of 5 here silently truncated exactly that.
+    const MAX_INPUT_ASSETS = 20;
+    const MAX_INPUT_VIDEOS = 5;
     const MAX_FILE_SIZE_MB = 50;
     const ACCEPTED_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'webp'];
     const [isDraggingOver, setIsDraggingOver] = useState(false);
@@ -580,13 +592,13 @@ export function Composer({
         });
         if (validFiles.length < fileList.length) {
             const rejected = fileList.length - validFiles.length;
-            toast.warning(`${rejected} file(s) skipped (only images and PDFs accepted)`);
+            toast.warning(t('toasts.filesSkipped', { count: rejected }));
         }
         if (validFiles.length === 0) return;
 
         const remaining = MAX_ATTACHMENTS - attachments.length;
         if (remaining <= 0) {
-            toast.error(`Maximum ${MAX_ATTACHMENTS} files allowed`);
+            toast.error(t('toasts.maxFilesAllowed', { count: MAX_ATTACHMENTS }));
             return;
         }
 
@@ -598,7 +610,12 @@ export function Composer({
         try {
             for (const file of filesToProcess) {
                 if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
-                    toast.error(`${file.name} exceeds ${MAX_FILE_SIZE_MB}MB limit`);
+                    toast.error(
+                        t('toasts.fileSizeExceeded', {
+                            fileName: file.name,
+                            maxSizeMb: MAX_FILE_SIZE_MB,
+                        })
+                    );
                     failCount++;
                     continue;
                 }
@@ -634,15 +651,17 @@ export function Composer({
             }
 
             if (successCount > 0 && failCount === 0) {
-                toast.success(`${successCount} file(s) attached`);
+                toast.success(t('toasts.filesAttached', { count: successCount }));
             } else if (successCount > 0 && failCount > 0) {
-                toast.warning(`${successCount} attached, ${failCount} failed`);
+                toast.warning(
+                    t('toasts.filesAttachedPartial', { success: successCount, failed: failCount })
+                );
             } else if (failCount > 0) {
-                toast.error(`Failed to upload ${failCount} file(s)`);
+                toast.error(t('toasts.filesUploadFailed', { count: failCount }));
             }
         } catch (error) {
             console.error('Attachment upload error:', error);
-            toast.error('Failed to upload attachments');
+            toast.error(t('toasts.attachmentsUploadFailed'));
         } finally {
             setIsUploadingAttachment(false);
         }
@@ -715,7 +734,7 @@ export function Composer({
                     <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center rounded-2xl border-2 border-dashed border-blue-400 bg-blue-50/80">
                         <div className="flex flex-col items-center gap-1 text-blue-600">
                             <Paperclip className="size-5" />
-                            <span className="text-xs font-medium">Drop images or PDFs here</span>
+                            <span className="text-xs font-medium">{t('dropzone.hint')}</span>
                         </div>
                     </div>
                 )}
@@ -761,7 +780,7 @@ export function Composer({
                 {/* Textarea / preview row */}
                 <div data-tour="vim-composer-prompt" className="px-1.5">
                     {showPreview ? (
-                        <div className="max-h-[240px] min-h-[44px] overflow-y-auto py-2">
+                        <div className="max-h-60 min-h-11 overflow-y-auto py-2">
                             {prompt ? (
                                 <LatexRenderer
                                     text={prompt}
@@ -769,7 +788,7 @@ export function Composer({
                                 />
                             ) : (
                                 <span className="italic text-muted-foreground">
-                                    Nothing to preview
+                                    {t('preview.empty')}
                                 </span>
                             )}
                         </div>
@@ -779,8 +798,8 @@ export function Composer({
                             value={prompt}
                             onChange={(e) => onPromptChange(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            placeholder="Describe what you want to create…"
-                            className="max-h-[240px] min-h-[44px] resize-none border-0 bg-transparent p-0 text-sm placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
+                            placeholder={t('textarea.placeholder')}
+                            className="max-h-60 min-h-11 resize-none border-0 bg-transparent p-0 text-sm placeholder:text-muted-foreground/70 focus-visible:ring-0 focus-visible:ring-offset-0"
                             disabled={isGenerating || disabled}
                             rows={1}
                         />
@@ -816,8 +835,8 @@ export function Composer({
                         className="size-8 text-muted-foreground hover:text-blue-600"
                         onClick={() => attachmentInputRef.current?.click()}
                         disabled={isUploadingAttachment || isGenerating || disabled}
-                        title="Attach reference images or PDFs"
-                        aria-label="Attach reference files"
+                        title={t('attach.title')}
+                        aria-label={t('attach.ariaLabel')}
                     >
                         {isUploadingAttachment ? (
                             <Loader2 className="size-4 animate-spin" />
@@ -833,8 +852,8 @@ export function Composer({
                         className="size-8 text-muted-foreground hover:text-orange-600"
                         onClick={() => pdfInputRef.current?.click()}
                         disabled={isPdfProcessing || isGenerating || disabled}
-                        title="Extract PDF text and use as prompt (replaces current text)"
-                        aria-label="Extract PDF as prompt"
+                        title={t('pdfExtract.title')}
+                        aria-label={t('pdfExtract.ariaLabel')}
                     >
                         {isPdfProcessing ? (
                             <Loader2 className="size-4 animate-spin" />
@@ -852,7 +871,18 @@ export function Composer({
                             selectedIds={selectedInputVideoIds}
                             onAddVideo={(id) => {
                                 onSelectedInputVideoIdsChange((prev) => {
-                                    if (prev.includes(id) || prev.length >= 5) return prev;
+                                    if (prev.includes(id) || prev.length >= MAX_INPUT_ASSETS)
+                                        return prev;
+                                    const isVideo =
+                                        indexedVideos.find((v) => v.id === id)?.kind !== 'image';
+                                    if (isVideo) {
+                                        const videoCount = prev.filter(
+                                            (p) =>
+                                                indexedVideos.find((v) => v.id === p)?.kind !==
+                                                'image'
+                                        ).length;
+                                        if (videoCount >= MAX_INPUT_VIDEOS) return prev;
+                                    }
                                     const next = [...prev, id];
                                     if (next.length > 1) onInputVideoAudioChange('tts');
                                     return next;
@@ -869,8 +899,8 @@ export function Composer({
                         size="icon"
                         className="size-8 text-muted-foreground hover:text-violet-600"
                         onClick={() => setShowPreview(!showPreview)}
-                        title="Toggle Markdown/LaTeX preview"
-                        aria-label="Toggle preview"
+                        title={t('previewToggle.title')}
+                        aria-label={t('previewToggle.ariaLabel')}
                     >
                         {showPreview ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                     </Button>
@@ -884,22 +914,22 @@ export function Composer({
                                 {options.dialogue_scenes_enabled && (
                                     <span
                                         className="rounded-full border border-violet-200 bg-violet-50 px-2 py-0.5 text-xs font-medium text-violet-700"
-                                        title="Story dialogue scenes are ON (set in Settings)"
+                                        title={t('dialogueChip.title')}
                                     >
                                         {(options.dialogue_mode ?? 'storybook') === 'drama'
-                                            ? 'Drama'
-                                            : 'Storybook'}
+                                            ? t('dialogueChip.modeDrama')
+                                            : t('dialogueChip.modeStorybook')}
                                         {' · '}
                                         {(options.dialogue_clip_model ?? 'seedance-2.0') ===
                                         'omni-flash'
-                                            ? 'Omni'
-                                            : 'Seedance'}
+                                            ? t('dialogueChip.modelOmni')
+                                            : t('dialogueChip.modelSeedance')}
                                     </span>
                                 )}
                                 {options.target_duration && (
                                     <span
                                         className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground"
-                                        title="Target duration (set in Settings)"
+                                        title={t('durationChip.title')}
                                     >
                                         {options.target_duration}
                                     </span>
@@ -943,11 +973,11 @@ export function Composer({
                             className="size-9 rounded-md shadow-sm"
                             title={
                                 vimAvatarMissing
-                                    ? 'Pick a host in ⚙ Settings → Host before generating'
-                                    : 'Generate (Enter)'
+                                    ? t('send.titleAvatarMissing')
+                                    : t('send.titleReady')
                             }
                             aria-label={
-                                vimAvatarMissing ? 'Pick a host before generating' : 'Generate'
+                                vimAvatarMissing ? t('send.ariaAvatarMissing') : t('send.ariaReady')
                             }
                         >
                             <Send className="size-4" />
@@ -969,16 +999,19 @@ export function Composer({
                 <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 px-2 pb-1">
                     <Link
                         to="/study-library/ai-copilot"
-                        className="group flex items-center gap-1.5 text-[10px] text-muted-foreground transition-colors hover:text-violet-600"
+                        className="group flex items-center gap-1.5 text-2xs text-muted-foreground transition-colors hover:text-violet-600"
                     >
                         <Sparkles className="size-3 transition-colors group-hover:text-violet-600" />
-                        <span>Want to create an entire course via AI?</span>
+                        <span>{t('footer.courseCta')}</span>
                         <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
                     </Link>
                     <div className="flex items-center gap-2">
                         {credits && (
-                            <span className="text-[11px] tabular-nums text-muted-foreground">
-                                {parseFloat(credits.current_balance).toFixed(1)} credits
+                            <span className="text-2xs tabular-nums text-muted-foreground">
+                                {t('footer.credits', {
+                                    count: parseFloat(credits.current_balance),
+                                    value: parseFloat(credits.current_balance).toFixed(1),
+                                })}
                             </span>
                         )}
                         <CostPreviewInline data={costPreview.data} loading={costPreview.loading} />

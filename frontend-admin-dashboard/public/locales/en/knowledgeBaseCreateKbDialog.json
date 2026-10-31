@@ -1,0 +1,33 @@
+{
+    "heading": "New knowledge base",
+    "intro": "A knowledge base is a collection of your own material — books, notes, past papers — that the AI reads from. Group it the way you already think about it, usually one per class and subject.",
+    "fields": {
+        "name": {
+            "label": "Name",
+            "placeholder": "e.g. Class 9 Science"
+        },
+        "purpose": {
+            "label": "What is this for?"
+        },
+        "language": {
+            "label": "Main language of the material",
+            "hint": "Only a hint for reading the documents. You can still ask questions and generate content in any language."
+        },
+        "description": {
+            "label": "Description",
+            "placeholder": "Optional — what's inside and who it's for"
+        }
+    },
+    "actions": {
+        "cancel": "Cancel",
+        "create": "Create",
+        "creating": "Creating…"
+    },
+    "validation": {
+        "nameRequired": "Give this knowledge base a name"
+    },
+    "toast": {
+        "created": "\"{{name}}\" created. Add your first document to get started.",
+        "createFailed": "Could not create the knowledge base"
+    }
+}

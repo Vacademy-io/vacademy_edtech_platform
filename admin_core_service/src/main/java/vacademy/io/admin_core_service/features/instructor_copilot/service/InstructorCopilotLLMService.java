@@ -7,11 +7,7 @@ import io.sentry.SentryEvent;
 import io.sentry.SentryLevel;
 import io.sentry.protocol.Message;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
@@ -22,30 +18,29 @@ import vacademy.io.admin_core_service.features.ai_usage.enums.ApiProvider;
 import vacademy.io.admin_core_service.features.ai_usage.enums.RequestType;
 import vacademy.io.admin_core_service.features.ai_usage.service.AiTokenUsageService;
 import vacademy.io.admin_core_service.features.ai_models.service.AIModelRegistryService;
+import vacademy.io.admin_core_service.features.ai_models.service.LlmGatewayRouter;
 
 @Slf4j
 @Service
 public class InstructorCopilotLLMService {
 
-  private static final String API_URL = "https://openrouter.ai";
-  private final WebClient webClient;
+  /** Per attempt. There was no ceiling before; a hung call must not hold the job forever. */
+  private static final Duration RESPONSE_TIMEOUT = Duration.ofSeconds(180);
+
   private final ObjectMapper objectMapper;
   private final AiTokenUsageService aiTokenUsageService;
   private final AIModelRegistryService aiModelRegistryService;
+  private final LlmGatewayRouter gatewayRouter;
 
   public InstructorCopilotLLMService(
-      @Value("${openrouter.api.key}") String apiKey,
       ObjectMapper objectMapper,
       AiTokenUsageService aiTokenUsageService,
-      AIModelRegistryService aiModelRegistryService) {
+      AIModelRegistryService aiModelRegistryService,
+      LlmGatewayRouter gatewayRouter) {
     this.objectMapper = objectMapper;
     this.aiTokenUsageService = aiTokenUsageService;
     this.aiModelRegistryService = aiModelRegistryService;
-    this.webClient = WebClient.builder()
-        .baseUrl(API_URL)
-        .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
-        .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-        .build();
+    this.gatewayRouter = gatewayRouter;
   }
 
   public Mono<JsonNode> generateContentFromTranscript(String transcript) {
@@ -98,11 +93,9 @@ public class InstructorCopilotLLMService {
             Map.of("role", "user", "content", prompt)),
         "response_format", Map.of("type", "json_object"));
 
-    return webClient.post()
-        .uri("/api/v1/chat/completions")
-        .bodyValue(payload)
-        .retrieve()
-        .bodyToMono(String.class)
+    // Isoquant for routed models (one OpenRouter try on a gateway failure); GLM gets
+    // reasoning headroom + effort low. Usage is recorded under the registry id.
+    return gatewayRouter.callModel(model, payload, RESPONSE_TIMEOUT, null)
         .retryWhen(Retry.fixedDelay(maxRetries, Duration.ofSeconds(2)))
         .doOnNext(response -> logTokenUsage(response, model))
         .flatMap(this::parseResponse);

@@ -1,0 +1,84 @@
+{
+    "heading": "التوفر",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "saving": "جارٍ الحفظ…",
+    "loading": "جارٍ تحميل توفرك…",
+    "intro": "حدد متى وكيف يمكن للمتعلمين حجز جلسات فردية معك.",
+    "to": "إلى",
+    "unavailable": "غير متاح",
+    "savedToast": "تم حفظ التوفر",
+    "saveFailed": "فشل حفظ التوفر",
+    "timezoneNote": {
+        "prefix": "الأوقات أدناه بتوقيت",
+        "suffix": "."
+    },
+    "days": {
+        "monday": "الإثنين",
+        "tuesday": "الثلاثاء",
+        "wednesday": "الأربعاء",
+        "thursday": "الخميس",
+        "friday": "الجمعة",
+        "saturday": "السبت",
+        "sunday": "الأحد"
+    },
+    "location": {
+        "heading": "مكان الاجتماع",
+        "description": "أين تحدث مكالمة الفيديو عند حجز المتعلم لجلسة.",
+        "googleMeetOption": "Google Meet (يُنشأ تلقائيًا لكل حجز)",
+        "customLinkOption": "Zoom / BigBlueButton / رابط مخصص",
+        "meetingLinkLabel": "رابط الاجتماع",
+        "meetingLinkPlaceholder": "https://zoom.us/j/… أو رابط غرفة BigBlueButton الخاصة بك"
+    },
+    "weeklyHours": {
+        "heading": "الساعات الأسبوعية",
+        "description": "فعّل الأيام التي تكون فيها متاحًا، وحدد الساعات التي يمكن للمتعلمين الحجز خلالها."
+    },
+    "overrides": {
+        "heading": "إجازات وتواريخ محددة",
+        "addDate": "إضافة تاريخ",
+        "addDateTitle": "أضف تاريخًا لحجبه أو لتحديد ساعات مخصصة له",
+        "description": "احجب يومًا كاملاً، أو حدد لتاريخ معين ساعات مختلفة — تتجاوز هذه ساعاتك الأسبوعية أعلاه.",
+        "empty": "لا توجد تواريخ استثناء بعد.",
+        "unavailable": "غير متاح",
+        "customHours": "ساعات مخصصة",
+        "removeAriaLabel": "إزالة هذا الاستثناء",
+        "removeTitle": "إزالة هذا الاستثناء"
+    },
+    "sessionSettings": {
+        "heading": "إعدادات الجلسة",
+        "description": "مدة الجلسة الافتراضية وقواعد الجدولة المحيطة بها — الإشعار المسبق، الفواصل الزمنية، ومدى إمكانية الحجز مسبقًا.",
+        "defaultDuration": "المدة الافتراضية",
+        "minimumNotice": "الحد الأدنى للإشعار (ساعات)",
+        "bufferBefore": "فاصل قبل (دقائق)",
+        "bufferAfter": "فاصل بعد (دقائق)",
+        "bookingHorizon": "أفق الحجز (أيام)",
+        "minutesOption_zero": "لا شيء ({{count}} دقيقة)",
+        "minutesOption_one": "دقيقة واحدة",
+        "minutesOption_two": "دقيقتان",
+        "minutesOption_few": "{{count}} دقائق",
+        "minutesOption_many": "{{count}} دقيقة",
+        "minutesOption_other": "{{count}} دقيقة"
+    },
+    "sessionTypes": {
+        "heading": "أنواع الجلسات",
+        "addType": "إضافة نوع",
+        "addTypeTitle": "قدّم مدة قابلة للحجز أخرى",
+        "description": "اختياري. قدّم أكثر من مدة قابلة للحجز (مثل «محادثة سريعة» 15 دقيقة، «جلسة معمّقة» 60 دقيقة) — يختار المتعلم واحدة عند الحجز. اتركه فارغًا لاستخدام المدة الافتراضية أعلاه.",
+        "empty": "لا توجد أنواع جلسات بعد.",
+        "namePlaceholder": "الاسم (مثل: محادثة مهنية)",
+        "minutesShortOption_zero": "{{count}} د",
+        "minutesShortOption_one": "دقيقة",
+        "minutesShortOption_two": "دقيقتان",
+        "minutesShortOption_few": "{{count}} د",
+        "minutesShortOption_many": "{{count}} د",
+        "minutesShortOption_other": "{{count}} د",
+        "removeAriaLabel": "إزالة نوع الجلسة هذا",
+        "removeTitle": "إزالة نوع الجلسة هذا"
+    },
+    "validation": {
+        "endAfterStart": "{{day}}: يجب أن يكون وقت الانتهاء بعد وقت البدء.",
+        "enableOneDay": "فعّل يومًا واحدًا على الأقل حتى يتمكن المتعلمون من الحجز.",
+        "addMeetingLink": "أضف رابط اجتماعك (Zoom أو BigBlueButton أو غيره)."
+    }
+}

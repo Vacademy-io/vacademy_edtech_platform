@@ -1,0 +1,18 @@
+{
+    "mathLatex": "Math / LaTeX",
+    "display": "Bloc",
+    "inline": "En ligne",
+    "preview": "Aperçu",
+    "edit": "Modifier",
+    "latexPlaceholder": "Saisissez une expression LaTeX, par ex. \\frac{a}{b} ou \\int_0^1 f(x)\\,dx",
+    "clickToAddEquation": "Cliquez pour ajouter une équation mathématique",
+    "invalidLatex": "LaTeX invalide : {{latex}}",
+    "shortcutFraction": "Fraction",
+    "shortcutSquareRoot": "Racine carrée",
+    "shortcutPower": "Puissance",
+    "shortcutSubscript": "Indice",
+    "shortcutIntegral": "Intégrale",
+    "shortcutSum": "Somme",
+    "shortcutGreek": "Grec",
+    "shortcutMatrix": "Matrice"
+}

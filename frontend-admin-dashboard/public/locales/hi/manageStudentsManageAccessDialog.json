@@ -1,0 +1,83 @@
+{
+    "dialogTitle": "कोर्स एक्सेस प्रबंधित करें",
+    "unlimitedLabel": "असीमित",
+    "modes": {
+        "extend": {
+            "label": "दिनों के हिसाब से बढ़ाएँ",
+            "hint": "मौजूदा एक्सपायरी में दिन जोड़ता है। जिन शिक्षार्थियों की एक्सपायरी पहले ही हो चुकी है, उनकी गिनती आज से की जाती है ताकि उन्हें पूरा विस्तार मिले।"
+        },
+        "setFromEnrollment": {
+            "label": "नामांकन से कुल दिन निर्धारित करें",
+            "hint": "एक्सपायरी को नामांकन तिथि + इतने दिनों के रूप में फिर से गणना करता है, मौजूदा मान को नज़रअंदाज़ करते हुए।"
+        },
+        "setDate": {
+            "label": "एक सटीक एक्सपायरी तिथि निर्धारित करें",
+            "hint": "एक्सपायरी को इस सटीक तिथि से बदल देता है।"
+        },
+        "unlimited": {
+            "label": "असीमित एक्सेस दें",
+            "hint": "एक्सपायरी को पूरी तरह हटा देता है — शिक्षार्थी को हमेशा के लिए एक्सेस मिलता रहता है।"
+        }
+    },
+    "config": {
+        "changePrompt": "<strong>{{name}}</strong> के चुने हुए कोर्स का एक्सेस कितने समय तक रहेगा, इसे बदलें।",
+        "noEnrollments": "प्रबंधित करने के लिए कोई नामांकन नहीं",
+        "unnamedCourse": "अनाम कोर्स",
+        "expiresExpired": "{{date}} को एक्सपायर हुआ — एक्सपायर हो चुका",
+        "expiresRemaining_one": "{{date}} को एक्सपायर होगा — {{count}} दिन शेष",
+        "expiresRemaining_other": "{{date}} को एक्सपायर होगा — {{count}} दिन शेष",
+        "unlimitedAccess": "असीमित एक्सेस",
+        "whatToChange": "क्या बदलना है",
+        "daysToAdd": "जोड़े जाने वाले दिन",
+        "totalDaysOfAccess": "एक्सेस के कुल दिन",
+        "negativeHint": "एक्सेस कम करने के लिए ऋणात्मक संख्या का उपयोग करें।",
+        "newExpiryDate": "नई एक्सपायरी तिथि",
+        "reasonLabel": "कारण (वैकल्पिक)",
+        "reasonPlaceholder": "उदा. बैच के पुनर्निर्धारण की भरपाई",
+        "reasonHint": "परिवर्तन के साथ सहेजा जाता है ताकि इतिहास देखने वाला कोई भी व्यक्ति कारण जान सके।"
+    },
+    "resultList": {
+        "enrollmentFallback": "नामांकन",
+        "daysDelta_one": "({{sign}}{{count}} दिन)",
+        "daysDelta_other": "({{sign}}{{count}} दिन)"
+    },
+    "preview": {
+        "willChange_one": "{{count}} नामांकन बदलेगा",
+        "willChange_other": "{{count}} नामांकन बदलेंगे",
+        "skippedCount_one": "{{count}} छोड़ा गया",
+        "skippedCount_other": "{{count}} छोड़े गए",
+        "notSaved": "अभी तक कुछ भी सहेजा नहीं गया है।"
+    },
+    "results": {
+        "updatedCount_one": "{{count}} अपडेट किया गया",
+        "updatedCount_other": "{{count}} अपडेट किए गए",
+        "skippedCount_one": "{{count}} छोड़ा गया",
+        "skippedCount_other": "{{count}} छोड़े गए",
+        "failedCount_one": "{{count}} विफल",
+        "failedCount_other": "{{count}} विफल"
+    },
+    "history": {
+        "loading": "इतिहास लोड हो रहा है…",
+        "empty": "अभी तक कोई एक्सेस परिवर्तन दर्ज नहीं हुआ है।",
+        "byActor": " · द्वारा {{name}}",
+        "reasonQuote": "“{{reason}}”"
+    },
+    "footer": {
+        "backToChanges": "परिवर्तनों पर वापस जाएँ",
+        "viewHistory": "इतिहास देखें",
+        "checking": "जाँच हो रही है…",
+        "previewChanges": "परिवर्तनों का पूर्वावलोकन करें",
+        "back": "वापस",
+        "applying": "लागू किया जा रहा है…",
+        "applyChanges": "परिवर्तन लागू करें",
+        "done": "पूर्ण"
+    },
+    "toasts": {
+        "previewFailed": "पूर्वावलोकन विफल रहा",
+        "accessChangeFailed": "एक्सेस परिवर्तन विफल रहा",
+        "accessUpdated_one": "{{count}} नामांकन के लिए एक्सेस अपडेट किया गया",
+        "accessUpdated_other": "{{count}} नामांकनों के लिए एक्सेस अपडेट किया गया",
+        "partialUpdate": "{{updated}} अपडेट किए गए, {{failed}} विफल रहे।",
+        "noChanges": "कोई भी नामांकन नहीं बदला गया।"
+    }
+}

@@ -1,0 +1,64 @@
+{
+    "roleTabs": {
+        "admin": "Admin",
+        "teacher": "Teacher",
+        "custom": "Custom Role"
+    },
+    "tabs": {
+        "ariaLabel": "Select role to configure"
+    },
+    "title": {
+        "admin": "Admin Display Settings",
+        "teacher": "Teacher Display Settings",
+        "customNamed": "{{name}} Display Settings",
+        "customDefault": "Custom Role Display Settings"
+    },
+    "description": "Control what this role sees and can do — courses, sidebar, dashboard, permissions and more.",
+    "customRole": {
+        "label": "Custom role to configure",
+        "newRoleInput": {
+            "placeholder": "Enter role name",
+            "create": "Create",
+            "cancel": "Cancel"
+        },
+        "select": {
+            "placeholder": "Choose a custom role…",
+            "empty": "No custom roles yet. Create one with the + button.",
+            "addAriaLabel": "Add new role"
+        },
+        "emptyState": "Select a custom role above to view or edit its display settings."
+    },
+    "toasts": {
+        "roleCreated": "Role created successfully",
+        "roleCreateFailed": "Failed to create role",
+        "roleNameRequired": "Role name is required"
+    },
+    "copyToRoles": {
+        "button": "Copy to other roles",
+        "disabled": {
+            "noRoleSelected": "Select a custom role first",
+            "unsavedChanges": "Save your changes before copying"
+        },
+        "dialog": {
+            "title": "Copy display settings",
+            "description": "Apply {{role}}'s display settings to the roles you pick below.",
+            "allRoles": "All roles",
+            "roleCount": "{{count}} role",
+            "roleCount_other": "{{count}} roles",
+            "noTargets": "There are no other roles to copy to yet.",
+            "overwriteWarning": "This replaces the display settings of {{count}} role. Their current configuration is lost.",
+            "overwriteWarning_other": "This replaces the display settings of {{count}} roles. Their current configuration is lost.",
+            "cancel": "Cancel",
+            "copying": "Copying…",
+            "confirm": "Copy to {{count}} role",
+            "confirm_other": "Copy to {{count}} roles"
+        },
+        "toast": {
+            "success": "Display settings copied to {{count}} role",
+            "success_other": "Display settings copied to {{count}} roles",
+            "partial": "Copied to {{succeeded}} role(s). Failed: {{failedRoles}}",
+            "allFailed": "Could not copy the display settings. {{message}}",
+            "readFailed": "Could not read the current display settings. {{message}}"
+        }
+    }
+}

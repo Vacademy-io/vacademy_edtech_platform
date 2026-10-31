@@ -1,0 +1,46 @@
+{
+    "description": "Congés demandés par vos employés. Approuver une demande consomme le solde de l'employé pour ce type de congé et écrit un enregistrement de présence ON_LEAVE pour chaque jour, afin que la paie et la présence restent alignées sur la décision.",
+    "filterAriaLabel": "Filtrer les demandes de congé par statut",
+    "requestCount_one": "{{count}} demande",
+    "requestCount_many": "{{count}} de demandes",
+    "requestCount_other": "{{count}} demandes",
+    "table": {
+        "columns": {
+            "employee": "Employé",
+            "leaveType": "Type de congé",
+            "dates": "Du → au",
+            "days": "Jours",
+            "halfDay": "Demi-journée",
+            "reason": "Motif",
+            "status": "Statut"
+        },
+        "halfDayFallback": "Demi-journée"
+    },
+    "actions": {
+        "review": "Examiner",
+        "cancel": "Annuler"
+    },
+    "errors": {
+        "loadFailed": "Impossible de charger les demandes de congé."
+    },
+    "empty": {
+        "pendingTitle": "Rien ne vous attend",
+        "pendingDescription": "Toutes les demandes de congé ont été traitées. Les nouvelles arriveront ici dès que les employés en feront la demande depuis leur application.",
+        "otherTitle": "Aucune demande {{status}}",
+        "otherDescription": "Essayez un autre statut — les demandes n'apparaissent qu'une fois qu'un employé a fait une demande."
+    },
+    "cancelHint": "Annuler un congé approuvé restitue les jours au solde et supprime la présence ON_LEAVE qu'il avait créée.",
+    "toast": {
+        "cancelled": "Congé annulé"
+    },
+    "errorsToast": {
+        "cancelFailed": "Impossible d'annuler ce congé."
+    },
+    "cancelDialog": {
+        "title": "Annuler ce congé approuvé ?",
+        "description": "{{employee}} récupère les jours dans son solde de {{leaveType}}, et la présence ON_LEAVE pour ces dates est supprimée. Si la paie a déjà verrouillé le mois, le serveur refusera et vous en informera.",
+        "leaveTypeFallback": "congé",
+        "keepApproved": "Garder approuvé",
+        "confirmCancel": "Annuler le congé"
+    }
+}

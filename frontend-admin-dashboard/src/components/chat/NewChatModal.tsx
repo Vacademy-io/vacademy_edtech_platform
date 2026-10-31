@@ -185,7 +185,7 @@ export function NewChatModal({ open, onOpenChange, onConversationReady }: NewCha
                                         size="sm"
                                         disabled={startingId === person.userId}
                                         onClick={() => handleStartDm(person)}
-                                        className="bg-primary-500 hover:bg-primary-600"
+                                        className="bg-primary-500 text-white hover:opacity-90"
                                     >
                                         {startingId === person.userId ? (
                                             <SpinnerGap size={14} className="animate-spin" />

@@ -1,0 +1,37 @@
+{
+    "toast": {
+        "reorderFailed": "Diapositive créée mais la réorganisation a échoué",
+        "fileSelected": "Fichier PPT sélectionné avec succès",
+        "selectFileFirst": "Veuillez d'abord sélectionner un fichier",
+        "uploadSuccess": "PPT téléversé avec succès !"
+    },
+    "errors": {
+        "onlyPptOrPptx": "Veuillez téléverser uniquement des fichiers PPT ou PPTX",
+        "uploadFailed": "Échec du téléversement de la présentation pour la conversion.",
+        "resolveUrlFailed": "Échec de la résolution de l'URL de la présentation téléversée.",
+        "conversionDidNotStart": "La conversion n'a pas démarré.",
+        "lostContact": "Contact perdu avec le service de conversion.",
+        "serviceNotResponding": "Le service de conversion ne répond pas.",
+        "conversionFailed": "La conversion de la présentation a échoué.",
+        "conversionTimedOut": "La conversion de la présentation a expiré.",
+        "uploadConvertedPdfFailed": "Échec du téléversement du PDF converti.",
+        "uploadFailedRetry": "Échec du téléversement. Veuillez réessayer."
+    },
+    "status": {
+        "uploadingPresentation": "Téléversement de la présentation…",
+        "convertingAnimated": "Conversion en cours (animations préservées)…",
+        "creatingSlide": "Création de la diapositive…",
+        "convertingToPdf": "Conversion du PPT en PDF…",
+        "analyzingPdfPages": "Analyse des pages du PDF…",
+        "uploadingConvertedPdf": "Téléversement du PDF converti…",
+        "fallingBackToPdf": "Retour au PDF…",
+        "processing": "Traitement en cours..."
+    },
+    "dropzone": {
+        "title": "Déposez votre fichier PPT ici, ou cliquez pour parcourir",
+        "subtitle": "Prend en charge les fichiers .ppt et .pptx (jusqu'à 20 Mo)"
+    },
+    "actions": {
+        "uploadPpt": "Téléverser le PPT"
+    }
+}

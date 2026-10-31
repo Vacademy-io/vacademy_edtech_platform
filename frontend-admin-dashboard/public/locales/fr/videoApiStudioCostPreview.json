@@ -1,0 +1,75 @@
+{
+    "hook": {
+        "previewFailedFallback": "Échec de l’aperçu"
+    },
+    "avatarRow": {
+        "presetAvatar": "Avatar prédéfini",
+        "customAvatar": "Avatar personnalisé",
+        "labelWithName": "{{label}} — {{name}}",
+        "perShotIdentityImages": "Images d’identité par plan"
+    },
+    "inline": {
+        "expectedCredits_one": "~{{value}} crédit",
+        "expectedCredits_many": "~{{value}} crédits",
+        "expectedCredits_other": "~{{value}} crédits",
+        "range": "({{low}}–{{high}})",
+        "balanceAvailable": "{{value}} disponible"
+    },
+    "modal": {
+        "title": "Confirmer la génération",
+        "estimating": "Estimation du coût…",
+        "loadFailed": "Impossible de charger l’estimation : {{error}}. Vous pouvez tout de même continuer.",
+        "selections": {
+            "heading": "Vos sélections",
+            "quality": "Qualité",
+            "model": "Modèle",
+            "modelDefault": "par défaut",
+            "duration": "Durée",
+            "orientation": "Orientation",
+            "orientationLandscape": "Paysage",
+            "orientationPortrait": "Portrait",
+            "audience": "Public",
+            "language": "Langue",
+            "voice": "Voix",
+            "captions": "Sous-titres",
+            "backgroundMusic": "Musique de fond",
+            "soundEffects": "Effets sonores",
+            "reviewMode": "Mode révision",
+            "reviewModeOn": "activé (s’arrête au script)",
+            "attachments": "Pièces jointes",
+            "attachmentsValue_one": "{{count}} fichier",
+            "attachmentsValue_many": "{{count}} fichiers",
+            "attachmentsValue_other": "{{count}} fichiers"
+        },
+        "cost": {
+            "heading": "Coût estimé",
+            "component": "Composant",
+            "credits": "Crédits",
+            "expectedTotal": "Total prévu",
+            "range": "Plage : {{low}}–{{high}} crédits"
+        },
+        "balance": {
+            "current": "Solde actuel",
+            "currentValue": "{{value}} crédits",
+            "afterExpected": "Après le débit prévu",
+            "afterHigh": "Pire cas (élevé)",
+            "insufficient": "Crédits insuffisants pour couvrir l’estimation la plus élevée."
+        },
+        "assumptions": {
+            "summary": "Hypothèses"
+        },
+        "footer": {
+            "cancel": "Annuler",
+            "insufficientTopUp": "Crédits insuffisants — recharger",
+            "confirm": "Confirmer et générer",
+            "confirmCredits_one": " · {{value}} crédit",
+            "confirmCredits_many": " · {{value}} crédits",
+            "confirmCredits_other": " · {{value}} crédits"
+        }
+    },
+    "common": {
+        "on": "activé",
+        "off": "désactivé",
+        "emptyValue": "—"
+    }
+}

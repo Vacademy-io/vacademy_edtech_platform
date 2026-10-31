@@ -1,0 +1,14 @@
+{
+    "activeUsers": "Active Users",
+    "reachedSuffix": "of {{total}} reached",
+    "usersReached": "Users Reached",
+    "totalUniqueUsers": "Total unique users",
+    "totalMessages": "Total Messages",
+    "sentAndReceived": "Sent & received",
+    "responseRate": "Response Rate",
+    "overallEngagement": "Overall engagement",
+    "completionRate": "Completion Rate",
+    "challengeCompleted": "Challenge completed",
+    "totalDays": "Total Days",
+    "challengeDuration": "Challenge duration"
+}

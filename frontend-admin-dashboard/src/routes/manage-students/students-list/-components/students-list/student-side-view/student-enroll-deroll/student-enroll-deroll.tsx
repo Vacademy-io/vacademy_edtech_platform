@@ -15,6 +15,7 @@ import {
 } from '@phosphor-icons/react';
 import { useStudentSidebar } from '@/routes/manage-students/students-list/-context/selected-student-sidebar-context';
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getUserPlans } from '@/services/user-plan';
 import { cancelUserPlan } from '@/services/enrollment-actions';
@@ -52,15 +53,24 @@ const deriveTone = (status: string): PlanTone => {
 };
 
 // ── Action icon resolver (Phosphor only) ──────────────────────────────────────
-
-const resolveActionIcon = (label: string): React.ReactElement => {
-    if (label.includes('Return'))
-        return <ArrowCounterClockwise className="size-4 text-warning-600" />;
-    if (label.includes('Rent')) return <BookOpen className="size-4 text-primary-600" />;
-    if (label.includes('Buy')) return <ShoppingCart className="size-4 text-success-600" />;
-    if (label.includes('Membership')) return <UserMinus className="size-4 text-danger-600" />;
-    if (label.includes('Purchase')) return <CreditCard className="size-4 text-primary-600" />;
-    return <Package className="size-4 text-neutral-500" />;
+// NOTE: dispatches on the stable `actionType` enum, never on the (translated,
+// locale-dependent) display label — matching against a translated string
+// silently breaks icon selection for every non-English locale.
+const resolveActionIcon = (
+    actionType?: 'RENT' | 'BUY' | 'MEMBERSHIP' | 'RETURN'
+): React.ReactElement => {
+    switch (actionType) {
+        case 'RETURN':
+            return <ArrowCounterClockwise className="size-4 text-warning-600" />;
+        case 'RENT':
+            return <BookOpen className="size-4 text-primary-600" />;
+        case 'BUY':
+            return <ShoppingCart className="size-4 text-success-600" />;
+        case 'MEMBERSHIP':
+            return <UserMinus className="size-4 text-danger-600" />;
+        default:
+            return <Package className="size-4 text-neutral-500" />;
+    }
 };
 
 // ── Plan item row inside a section card ───────────────────────────────────────
@@ -79,7 +89,9 @@ const PlanRow = ({
     onAction: () => void;
     actionLabel: string;
     isActing?: boolean;
-}) => (
+}) => {
+    const { t } = useTranslation('manageStudentsEnrollDeroll');
+    return (
     <div className="flex items-start justify-between gap-3 py-2">
         <div className="min-w-0 flex-1">
             <p
@@ -95,7 +107,7 @@ const PlanRow = ({
         </div>
         <div className="flex shrink-0 items-center gap-2">
             <span className="inline-flex items-center rounded-full bg-success-50 px-2 py-0.5 text-xs font-semibold text-success-700 ring-1 ring-success-200">
-                Active
+                {t('planRow.activeBadge')}
             </span>
             <MyButton
                 buttonType="secondary"
@@ -110,11 +122,13 @@ const PlanRow = ({
             </MyButton>
         </div>
     </div>
-);
+    );
+};
 
 // ── Main component ────────────────────────────────────────────────────────────
 
 export const StudentEnrollDeroll = () => {
+    const { t } = useTranslation('manageStudentsEnrollDeroll');
     const { selectedStudent } = useStudentSidebar();
     const queryClient = useQueryClient();
 
@@ -126,7 +140,7 @@ export const StudentEnrollDeroll = () => {
     const [currentAction, setCurrentAction] = useState<{
         type: 'ENROLL' | 'CANCEL';
         label: string;
-        actionType?: 'RENT' | 'BUY' | 'MEMBERSHIP';
+        actionType?: 'RENT' | 'BUY' | 'MEMBERSHIP' | 'RETURN';
         user_plan_id?: string;
     } | null>(null);
 
@@ -144,18 +158,18 @@ export const StudentEnrollDeroll = () => {
         mutationFn: ({ user_plan_id }: { user_plan_id: string }) =>
             cancelUserPlan(user_plan_id, true),
         onSuccess: () => {
-            toast.success('Action completed successfully');
+            toast.success(t('toasts.actionSuccess'));
             queryClient.invalidateQueries({ queryKey: ['user-plans', userId] });
             setIsActionModalOpen(false);
         },
         onError: (error) => {
-            toast.error(error instanceof Error ? error.message : 'Failed to cancel plan');
+            toast.error(error instanceof Error ? error.message : t('toasts.cancelFailed'));
         },
     });
 
     const handleNewEnrollmentClick = (label: string, type: 'RENT' | 'BUY' | 'MEMBERSHIP') => {
         if (!userId) {
-            toast.error('No student selected');
+            toast.error(t('toasts.noStudentSelected'));
             return;
         }
         // Open the new simplified wizard
@@ -188,7 +202,7 @@ export const StudentEnrollDeroll = () => {
 
         // Helper to get display name
         const getDisplayName = (plan: any) => {
-            return plan.enroll_invite?.name || plan.payment_plan?.name || 'Active Plan';
+            return plan.enroll_invite?.name || plan.payment_plan?.name || t('planRow.defaultPlanName');
         };
 
         const getUniqueByName = (items: typeof plans) => {
@@ -211,18 +225,30 @@ export const StudentEnrollDeroll = () => {
                 displayName: getDisplayName(plan),
             })),
         };
-    }, [plansData]);
+    }, [plansData, t]);
 
     // Determine hero content from the first active membership (or a fallback)
     const heroMembership = activeMemberships[0]?.plan ?? null;
     const heroName = activeMemberships[0]?.displayName ?? null;
     const heroTone = heroMembership ? deriveTone(heroMembership.status ?? 'ACTIVE') : 'neutral';
+
+    // Translate the raw backend status enum into a display label instead of
+    // rendering it verbatim — an unrecognized status still falls back to the
+    // raw value rather than breaking.
+    const getStatusLabel = (status?: string): string => {
+        const s = (status ?? '').toUpperCase();
+        if (s === 'ACTIVE') return t('hero.status.active');
+        if (s === 'PENDING') return t('hero.status.pending');
+        return status || t('hero.status.active');
+    };
+
     const heroSubtitle = heroMembership
-        ? `${heroMembership.status ?? 'Active'} · Expires ${
-              heroMembership.end_date
+        ? t('hero.statusExpiry', {
+              status: getStatusLabel(heroMembership.status),
+              date: heroMembership.end_date
                   ? new Date(heroMembership.end_date).toLocaleDateString()
-                  : 'No expiry'
-          }`
+                  : t('hero.noExpiry'),
+          })
         : undefined;
 
     return (
@@ -232,8 +258,8 @@ export const StudentEnrollDeroll = () => {
                 <ProfileSkeleton blocks={1} />
             ) : (
                 <ProfileHero
-                    eyebrow="ACTIVE MEMBERSHIP"
-                    title={heroName ?? 'No active membership'}
+                    eyebrow={t('hero.eyebrow')}
+                    title={heroName ?? t('hero.noActiveMembership')}
                     subtitle={heroSubtitle}
                     icon={IdentificationCard}
                     tone={heroTone}
@@ -241,39 +267,46 @@ export const StudentEnrollDeroll = () => {
             )}
 
             {/* ── New enrollment: compact button row instead of 3 big tiles ── */}
-            <ProfileSectionCard icon={CreditCard} heading="Enroll in something new">
+            <ProfileSectionCard icon={CreditCard} heading={t('newEnrollment.heading')}>
                 <div className="flex flex-wrap gap-2">
                     <MyButton
                         buttonType="primary"
                         scale="medium"
                         onClick={() =>
-                            handleNewEnrollmentClick('Purchase membership', 'MEMBERSHIP')
+                            handleNewEnrollmentClick(
+                                t('newEnrollment.purchaseMembership'),
+                                'MEMBERSHIP'
+                            )
                         }
                     >
                         <CreditCard className="size-4" />
-                        Purchase Membership
+                        {t('newEnrollment.purchaseMembership')}
                     </MyButton>
                     <MyButton
                         buttonType="secondary"
                         scale="medium"
-                        onClick={() => handleNewEnrollmentClick('Rent a book', 'RENT')}
+                        onClick={() =>
+                            handleNewEnrollmentClick(t('newEnrollment.rentBook'), 'RENT')
+                        }
                     >
                         <BookOpen className="size-4" />
-                        Rent Book
+                        {t('newEnrollment.rentBook')}
                     </MyButton>
                     <MyButton
                         buttonType="secondary"
                         scale="medium"
-                        onClick={() => handleNewEnrollmentClick('Buy a book', 'BUY')}
+                        onClick={() =>
+                            handleNewEnrollmentClick(t('newEnrollment.buyBook'), 'BUY')
+                        }
                     >
                         <ShoppingCart className="size-4" />
-                        Buy Book
+                        {t('newEnrollment.buyBook')}
                     </MyButton>
                 </div>
             </ProfileSectionCard>
 
             {/* ── BODY: Cancel active membership ── */}
-            <ProfileSectionCard icon={UserMinus} heading="Cancel Membership">
+            <ProfileSectionCard icon={UserMinus} heading={t('cancelMembership.heading')}>
                 {isLoadingPlans ? (
                     <ProfileSkeleton blocks={1} />
                 ) : activeMemberships.length > 0 ? (
@@ -282,11 +315,11 @@ export const StudentEnrollDeroll = () => {
                             <PlanRow
                                 key={plan.id}
                                 displayName={displayName}
-                                dateLabel="Active since"
+                                dateLabel={t('cancelMembership.dateLabel')}
                                 dateValue={new Date(
                                     plan.start_date || plan.created_at
                                 ).toLocaleDateString()}
-                                actionLabel="Cancel"
+                                actionLabel={t('cancelMembership.actionLabel')}
                                 isActing={
                                     cancelMutation.isPending &&
                                     currentAction?.user_plan_id === plan.id
@@ -294,7 +327,8 @@ export const StudentEnrollDeroll = () => {
                                 onAction={() => {
                                     setCurrentAction({
                                         type: 'CANCEL',
-                                        label: 'Cancel Membership',
+                                        label: t('cancelMembership.dialogLabel'),
+                                        actionType: 'MEMBERSHIP',
                                         user_plan_id: plan.id,
                                     });
                                     setIsActionModalOpen(true);
@@ -305,14 +339,14 @@ export const StudentEnrollDeroll = () => {
                 ) : (
                     <ProfileEmpty
                         icon={Package}
-                        title="No active membership"
-                        hint="This learner has no current subscription."
+                        title={t('cancelMembership.empty.title')}
+                        hint={t('cancelMembership.empty.hint')}
                     />
                 )}
             </ProfileSectionCard>
 
             {/* ── BODY: Return rented books ── */}
-            <ProfileSectionCard icon={Book} heading="Return a Rent Book">
+            <ProfileSectionCard icon={Book} heading={t('returnBook.heading')}>
                 {isLoadingPlans ? (
                     <ProfileSkeleton blocks={1} />
                 ) : rentedBooks.length > 0 ? (
@@ -321,9 +355,9 @@ export const StudentEnrollDeroll = () => {
                             <PlanRow
                                 key={plan.id}
                                 displayName={displayName}
-                                dateLabel="Rented on"
+                                dateLabel={t('returnBook.dateLabel')}
                                 dateValue={new Date(plan.created_at).toLocaleDateString()}
-                                actionLabel="Return"
+                                actionLabel={t('returnBook.actionLabel')}
                                 isActing={
                                     cancelMutation.isPending &&
                                     currentAction?.user_plan_id === plan.id
@@ -331,7 +365,8 @@ export const StudentEnrollDeroll = () => {
                                 onAction={() => {
                                     setCurrentAction({
                                         type: 'CANCEL',
-                                        label: 'Return Rent Book',
+                                        label: t('returnBook.dialogLabel'),
+                                        actionType: 'RETURN',
                                         user_plan_id: plan.id,
                                     });
                                     setIsActionModalOpen(true);
@@ -342,17 +377,16 @@ export const StudentEnrollDeroll = () => {
                 ) : (
                     <ProfileEmpty
                         icon={BookOpen}
-                        title="No rented books"
-                        hint="This learner has not rented any books."
+                        title={t('returnBook.empty.title')}
+                        hint={t('returnBook.empty.hint')}
                     />
                 )}
             </ProfileSectionCard>
 
             {/* ── Compliance note ── */}
-            <ProfileSectionCard icon={ShieldCheck} heading="Compliance">
+            <ProfileSectionCard icon={ShieldCheck} heading={t('compliance.heading')}>
                 <p className="text-xs text-neutral-500 leading-relaxed">
-                    This action is audit-protected. All enrollment changes are logged with timestamps
-                    and administrator details for compliance tracking.
+                    {t('compliance.note')}
                 </p>
             </ProfileSectionCard>
 
@@ -364,18 +398,18 @@ export const StudentEnrollDeroll = () => {
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle className="flex items-center gap-2 text-sm font-semibold text-neutral-800">
-                            {resolveActionIcon(currentAction?.label || '')}
+                            {resolveActionIcon(currentAction?.actionType)}
                             {currentAction?.label}
                         </AlertDialogTitle>
                         <AlertDialogDescription className="text-sm text-neutral-500">
-                            You are about to proceed with{' '}
-                            <strong>{currentAction?.label}</strong> for{' '}
-                            <strong>{selectedStudent?.full_name}</strong>. Termination is
-                            immediate and access will be revoked.
+                            {t('dialog.aboutToProceed')}{' '}
+                            <strong>{currentAction?.label}</strong> {t('dialog.forStudent')}{' '}
+                            <strong>{selectedStudent?.full_name}</strong>.{' '}
+                            {t('dialog.terminationNote')}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel>{t('dialog.cancel')}</AlertDialogCancel>
                         <AlertDialogAction
                             onClick={(e) => {
                                 e.preventDefault();
@@ -387,10 +421,10 @@ export const StudentEnrollDeroll = () => {
                             {cancelMutation.isPending ? (
                                 <span className="flex items-center gap-2">
                                     <CircleNotch className="size-4 animate-spin" />
-                                    Processing…
+                                    {t('dialog.processing')}
                                 </span>
                             ) : (
-                                'Confirm Action'
+                                t('dialog.confirmAction')
                             )}
                         </AlertDialogAction>
                     </AlertDialogFooter>

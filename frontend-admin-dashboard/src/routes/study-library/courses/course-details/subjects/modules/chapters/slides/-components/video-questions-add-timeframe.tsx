@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { Dialog, DialogClose, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { FormProvider } from 'react-hook-form';
@@ -49,6 +50,7 @@ const VideoQuestionsTimeFrameAddDialog = ({
     isAddQuestionTypeRef,
     videoDuration,
 }: VideoQuestionsTimeFrameDialogProps) => {
+    const { t } = useTranslation('studyLibraryVideoQuestionsAddTimeframe');
     // Per-role Display Setting (Settings → Display Settings → Course Permission).
     // Hide the entire "Add Question" affordance when disabled for this role.
     // Fail-open: if settings aren't cached yet, the button stays visible.
@@ -65,12 +67,12 @@ const VideoQuestionsTimeFrameAddDialog = ({
                     layoutVariant="default"
                     className="mt-4"
                 >
-                    Add Question
+                    {t('addQuestion')}
                 </MyButton>
             </DialogTrigger>
             <DialogContent className="w-full max-w-md p-0">
                 <h1 className="rounded-t-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                    Time Stamp
+                    {t('timeStamp')}
                 </h1>
                 <FormProvider {...videoPlayerTimeFrameForm}>
                     <form className="flex flex-col items-center gap-2 p-3 sm:p-4">
@@ -106,7 +108,7 @@ const VideoQuestionsTimeFrameAddDialog = ({
                                     </FormItem>
                                 )}
                             />
-                            <span>hrs</span>
+                            <span>{t('hrs')}</span>
                             <span>:</span>
                             <FormField
                                 control={videoPlayerTimeFrameForm.control}
@@ -139,7 +141,7 @@ const VideoQuestionsTimeFrameAddDialog = ({
                                     </FormItem>
                                 )}
                             />
-                            <span>min</span>
+                            <span>{t('min')}</span>
                             <span>:</span>
                             <FormField
                                 control={videoPlayerTimeFrameForm.control}
@@ -172,7 +174,7 @@ const VideoQuestionsTimeFrameAddDialog = ({
                                     </FormItem>
                                 )}
                             />
-                            <span>sec</span>
+                            <span>{t('sec')}</span>
                             <MyButton
                                 type="button"
                                 buttonType="secondary"
@@ -181,7 +183,7 @@ const VideoQuestionsTimeFrameAddDialog = ({
                                 className="mt-2 w-full sm:mt-0 sm:w-auto"
                                 onClick={handleSetCurrentTimeStamp}
                             >
-                                Use Current Position
+                                {t('useCurrentPosition')}
                             </MyButton>
                         </div>
                         <div className="mb-2 w-full px-2 sm:px-4">
@@ -191,7 +193,7 @@ const VideoQuestionsTimeFrameAddDialog = ({
                                 render={({ field }) => (
                                     <FormItem className="flex w-full items-center justify-between gap-4">
                                         <FormLabel>
-                                            Allow students to skip this question
+                                            {t('allowSkip')}
                                             <span className="text-subtitle text-danger-600">*</span>
                                         </FormLabel>
                                         <FormControl>

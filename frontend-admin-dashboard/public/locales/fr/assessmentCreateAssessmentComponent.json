@@ -1,0 +1,41 @@
+{
+    "sidebar": {
+        "stepLabel": "Étape {{number}}",
+        "done": "· Terminé"
+    },
+    "steps": {
+        "basicInfo": {
+            "label": "Infos de base",
+            "description": "Nom, planning et paramètres"
+        },
+        "addQuestions": {
+            "label": "Ajouter des questions",
+            "description": "Importer ou créer des questions"
+        },
+        "addParticipants": {
+            "label": "Ajouter des participants",
+            "description": "Choisissez qui peut y participer"
+        },
+        "accessControl": {
+            "label": "Contrôle d'accès",
+            "description": "Autorisations de gestion"
+        }
+    },
+    "examTypeLabel": {
+        "exam": "Examen",
+        "mock": "Évaluation blanche",
+        "practice": "Évaluation d'entraînement",
+        "survey": "Sondage",
+        "manualUploadExam": "Examen à import manuel"
+    },
+    "header": {
+        "stepOf": "Étape {{current}} sur {{total}}",
+        "completed": "{{count}} / {{total}} terminées"
+    },
+    "helmet": {
+        "titleSurvey": "Créer un sondage",
+        "titleAssessment": "Créer une évaluation",
+        "descriptionSurvey": "Cette page permet de créer un sondage pour les étudiants via l'administration.",
+        "descriptionAssessment": "Cette page permet de créer une évaluation pour les étudiants via l'administration."
+    }
+}

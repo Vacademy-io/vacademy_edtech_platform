@@ -1,0 +1,43 @@
+{
+    "validation": {
+        "batchRequired": "Select at least one batch"
+    },
+    "toast": {
+        "noDataToExport": "No data to export yet",
+        "exportSuccess": "Report exported",
+        "exportFailed": "Failed to export PDF",
+        "csvExportSuccess": "CSV exported",
+        "csvExportFailed": "Failed to export CSV"
+    },
+    "form": {
+        "generateReport": "Generate Report"
+    },
+    "report": {
+        "exporting": "Exporting...",
+        "exportPdf": "Export PDF",
+        "subjectWiseOverview": "{{term}}-wise Overview",
+        "exportCsv": "Export CSV",
+        "multiBatchTitle": "{{term}} report · {{count}} selected",
+        "batchLoadFailed": "Could not load the report for {{name}}."
+    },
+    "pdf": {
+        "batchSubjectWiseProgress": "{{batchTerm}} {{subjectTerm}}-wise Progress",
+        "learnerProgressReport": "Learner Progress Report",
+        "learnerLabel": "Learner",
+        "termCompleted": "{{term}} Completed",
+        "termsTracked": "{{term}}s Tracked",
+        "termWiseProgress": "{{term}}-wise Progress",
+        "termColonName": "{{term}}: {{name}}",
+        "completed": "Completed",
+        "dailyTimeAvg": "Daily Time (Avg)",
+        "termDailyTimeAvg": "{{term}} Daily Time (Avg)",
+        "termWiseProgressReport": "{{term}}-wise Progress Report",
+        "learningProgressReport": "Learning Progress Report"
+    },
+    "csv": {
+        "fileStem": "learning-progress",
+        "title": "{{term}}-wise progress",
+        "moduleCompletedByBatch": "{{module}} completed by {{batch}} (%)",
+        "dailyTimeByBatchMin": "Daily time spent by {{batch}} avg (min)"
+    }
+}

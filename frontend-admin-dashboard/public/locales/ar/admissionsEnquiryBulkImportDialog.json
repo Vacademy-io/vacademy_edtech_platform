@@ -1,0 +1,63 @@
+{
+  "dialog": {
+    "title": "استيراد ردود الاستفسارات بالجملة",
+    "description": "قم بتحميل ملف CSV، واختر الفصل اختياريًا، ثم عاين وأكد الاستيراد"
+  },
+  "steps": {
+    "stepLabel": "الخطوة {{step}}"
+  },
+  "upload": {
+    "templateHint": "قم بتنزيل قالب CSV وتحميل ردود المتعلمين المعبأة",
+    "downloadTemplateButton": "تنزيل القالب",
+    "dropzoneHint": "انقر لتحميل ملف `.csv`",
+    "validSummary": "الصفوف الصالحة: {{valid}} | الصفوف المتجاوزة: {{skipped}}",
+    "onlyCsvSupported": "يتم دعم ملفات .csv فقط",
+    "missingColumns_zero": "لا توجد أعمدة مطلوبة مفقودة: {{columns}}",
+    "missingColumns_one": "عمود مطلوب واحد مفقود: {{columns}}",
+    "missingColumns_two": "عمودان مطلوبان مفقودان: {{columns}}",
+    "missingColumns_few": "أعمدة مطلوبة مفقودة: {{columns}}",
+    "missingColumns_many": "أعمدة مطلوبة مفقودة كثيرة: {{columns}}",
+    "missingColumns_other": "أعمدة مطلوبة مفقودة: {{columns}}",
+    "parseFailed": "فشل تحليل ملف CSV"
+  },
+  "classStep": {
+    "selectClassHint": "اختر الفصل (اختياري). إذا لم يتم التحديد، لن يتم إرسال الفصل ضمن البيانات.",
+    "noClassOption": "لم يتم تحديد فصل"
+  },
+  "preview": {
+    "previewingRows_zero": "لا توجد صفوف صالحة للمعاينة ({{count}})",
+    "previewingRows_one": "معاينة صف صالح واحد ({{count}})",
+    "previewingRows_two": "معاينة صفين صالحين ({{count}})",
+    "previewingRows_few": "معاينة {{count}} صفوف صالحة",
+    "previewingRows_many": "معاينة {{count}} صفًا صالحًا",
+    "previewingRows_other": "معاينة {{count}} صف صالح"
+  },
+  "columns": {
+    "studentName": "اسم الطالب",
+    "gender": "الجنس",
+    "dateOfBirth": "تاريخ الميلاد",
+    "parentName": "اسم ولي الأمر",
+    "parentEmail": "البريد الإلكتروني لولي الأمر",
+    "parentMobile": "رقم جوال ولي الأمر",
+    "relationWithChild": "صلة القرابة بالطفل",
+    "relation": "الصلة",
+    "status": "الحالة",
+    "source": "المصدر"
+  },
+  "actions": {
+    "back": "رجوع",
+    "cancel": "إلغاء",
+    "next": "التالي",
+    "importing": "جارٍ الاستيراد...",
+    "confirmImport": "تأكيد الاستيراد"
+  },
+  "toasts": {
+    "importResult_zero": "لم يتم استيراد أي استجابات استفسار ({{success}}) ({{failed}} فشلت)",
+    "importResult_one": "تم استيراد استجابة استفسار واحدة ({{success}}) ({{failed}} فشلت)",
+    "importResult_two": "تم استيراد استجابتي استفسار ({{success}}) ({{failed}} فشلت)",
+    "importResult_few": "تم استيراد {{success}} استجابات استفسار ({{failed}} فشلت)",
+    "importResult_many": "تم استيراد {{success}} استجابةً استفسار ({{failed}} فشلت)",
+    "importResult_other": "تم استيراد {{success}} استجابة استفسار ({{failed}} فشلت)",
+    "importFailed": "فشل استيراد الاستفسارات"
+  }
+}

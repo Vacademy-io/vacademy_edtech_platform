@@ -1,0 +1,24 @@
+{
+    "tutorPreparing": "Préparation de l’enseignant IA pour ce cours en arrière-plan…",
+    "tutorReady_one": "Enseignant IA prêt : {{count}} diapositive préparée.",
+    "tutorReady_many": "Enseignant IA prêt : {{count}} diapositives préparées.",
+    "tutorReady_other": "Enseignant IA prêt : {{count}} diapositives préparées.",
+    "tutorPartial": "Enseignant IA : {{ready}} préparée(s), {{failed}} échouée(s) — voir l’onglet Mode Tuteur du cours.",
+    "unknownError": "erreur inconnue",
+    "tutorPrepFailed": "L’enseignant IA n’a pas pu être préparé ({{msg}}). Ouvrez l’onglet Mode Tuteur du cours pour réessayer.",
+    "metadataMissing": "Métadonnées du cours introuvables. Veuillez régénérer le plan du cours.",
+    "noSessions": "Aucune séance trouvée. Veuillez d’abord générer du contenu.",
+    "progress": {
+        "initializing": "Initialisation de la création du cours...",
+        "creating": "Création du cours...",
+        "created": "Cours créé avec succès !",
+        "submitting": "Envoi pour révision...",
+        "publishing": "Publication du cours..."
+    },
+    "defaultCourseName": "Nouveau cours",
+    "reviewSubmitted": "Cours envoyé pour révision !",
+    "reviewSubmitFailed": "Le cours a été créé mais n’a pas pu être envoyé pour révision.",
+    "createFailed": "Échec de la création du cours",
+    "coursePublished": "Cours publié !",
+    "publishFailed": "Cours créé mais échec de la publication."
+}

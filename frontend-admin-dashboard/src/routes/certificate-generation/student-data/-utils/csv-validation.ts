@@ -1,3 +1,4 @@
+import i18n from '@/i18n';
 import {
     CsvValidationResult,
     CsvTemplateRow,
@@ -6,6 +7,8 @@ import {
     CsvValidationWarning,
     ColumnDataType,
 } from '@/types/certificate/certificate-types';
+
+const NS = 'certificateGenerationCsvValidation';
 
 /**
  * Validates CSV data against requirements:
@@ -29,8 +32,12 @@ export function validateCsvData(
         if (i >= headers.length || headers[i] !== requiredHeaders[i]) {
             errors.push({
                 row: 0,
-                column: `Column ${i + 1}`,
-                message: `Column ${i + 1} must be '${requiredHeaders[i]}', found '${headers[i] || 'missing'}'`,
+                column: i18n.t(`${NS}:errors.columnLabel`, { position: i + 1 }),
+                message: i18n.t(`${NS}:errors.invalidHeader`, {
+                    position: i + 1,
+                    expected: requiredHeaders[i],
+                    found: headers[i] || i18n.t(`${NS}:errors.missingValue`),
+                }),
                 type: 'invalid_header',
             });
         }
@@ -46,7 +53,7 @@ export function validateCsvData(
             errors.push({
                 row: 0,
                 column: header,
-                message: `Duplicate header '${header}' found. All headers after the 3rd column must be unique.`,
+                message: i18n.t(`${NS}:errors.duplicateHeader`, { header }),
                 type: 'invalid_header',
             });
         } else if (header) {
@@ -63,17 +70,23 @@ export function validateCsvData(
     missingStudents.forEach((student) => {
         errors.push({
             row: 0,
-            message: `Selected student '${student.full_name || student.user_id}' (ID: ${student.user_id}) is missing from CSV`,
+            message: i18n.t(`${NS}:errors.missingStudent`, {
+                name: student.full_name || student.user_id,
+                id: student.user_id,
+            }),
             type: 'missing_student',
         });
     });
 
     // 5. Check for extra students (in CSV but not selected)
     const extraStudents = csvData.filter((row) => !selectedStudentIds.has(row.user_id));
-    extraStudents.forEach((student, index) => {
+    extraStudents.forEach((student) => {
         errors.push({
             row: csvData.indexOf(student) + 2, // +2 because 1-indexed and header row
-            message: `Student '${student.student_name}' (ID: ${student.user_id}) was not selected for certificate generation`,
+            message: i18n.t(`${NS}:errors.extraStudent`, {
+                name: student.student_name,
+                id: student.user_id,
+            }),
             type: 'extra_student',
         });
     });
@@ -97,7 +110,12 @@ export function validateCsvData(
                         warnings.push({
                             row: rowIndex + 2,
                             column: header,
-                            message: `Value '${value}' in column '${header}' appears to be ${actualType} but column is mostly ${columnType}`,
+                            message: i18n.t(`${NS}:warnings.dataTypeMismatch`, {
+                                value,
+                                column: header,
+                                actualType,
+                                expectedType: columnType,
+                            }),
                             type: 'data_type_mismatch',
                         });
                     }
@@ -114,7 +132,7 @@ export function validateCsvData(
                 warnings.push({
                     row: rowIndex + 2,
                     column: header,
-                    message: `Required field '${header}' is empty`,
+                    message: i18n.t(`${NS}:warnings.emptyCell`, { field: header }),
                     type: 'empty_cell',
                 });
             }
@@ -214,8 +232,8 @@ function getValueType(value: string | number): ColumnDataType {
  * Formats validation errors for display
  */
 export function formatValidationError(error: CsvValidationError): string {
-    const rowText = error.row > 0 ? ` (Row ${error.row})` : '';
-    const columnText = error.column ? ` in ${error.column}` : '';
+    const rowText = error.row > 0 ? i18n.t(`${NS}:format.row`, { row: error.row }) : '';
+    const columnText = error.column ? i18n.t(`${NS}:format.inColumn`, { column: error.column }) : '';
     return `${error.message}${columnText}${rowText}`;
 }
 
@@ -223,7 +241,9 @@ export function formatValidationError(error: CsvValidationError): string {
  * Formats validation warnings for display
  */
 export function formatValidationWarning(warning: CsvValidationWarning): string {
-    const rowText = warning.row > 0 ? ` (Row ${warning.row})` : '';
-    const columnText = warning.column ? ` in ${warning.column}` : '';
+    const rowText = warning.row > 0 ? i18n.t(`${NS}:format.row`, { row: warning.row }) : '';
+    const columnText = warning.column
+        ? i18n.t(`${NS}:format.inColumn`, { column: warning.column })
+        : '';
     return `${warning.message}${columnText}${rowText}`;
 }

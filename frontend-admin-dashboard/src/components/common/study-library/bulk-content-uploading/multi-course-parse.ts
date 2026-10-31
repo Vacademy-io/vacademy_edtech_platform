@@ -34,6 +34,8 @@ import type {
     ExistingSnapshot,
     ParseResult,
 } from './types';
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 export const MAX_COURSE_SECTIONS = 25;
 
@@ -71,7 +73,7 @@ const splitAtPrefix = (
             rootIssues.push({
                 level: 'error',
                 path: entry.path,
-                message: 'Not inside a course folder — skipped.',
+                message: `Not inside a ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()} folder — skipped.`,
             });
             continue;
         }
@@ -337,7 +339,7 @@ export const resolveSectionForCourse = (
             return {
                 ...section,
                 status: 'error',
-                error: 'Another folder in this zip already targets the same course and batch.',
+                error: `Another folder in this zip already targets the same ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()} and batch.`,
             };
         }
         claimed?.add(key);
@@ -442,7 +444,9 @@ export const prepareSection = async (sectionId: string, instituteId: string): Pr
     } catch (error) {
         if (raceTokens.get(sectionId) !== token) return;
         const message =
-            error instanceof Error ? error.message : 'Could not read this course structure';
+            error instanceof Error
+                ? error.message
+                : `Could not read this ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()} structure`;
         state().updateSection(sectionId, { status: 'error', error: message });
     }
 };

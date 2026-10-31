@@ -1007,8 +1007,12 @@ export function ModularDynamicSignupContainer({
       </SignupStep>
       )}
 
-      {/* Divider */}
-      {effectiveSettings.providers.emailOtp && (
+      {/* Divider — only meaningful when there is something above it to
+          "continue with" instead of; an email-only institute would otherwise
+          open on a stray "or continue with" line. */}
+      {effectiveSettings.providers.emailOtp &&
+        (effectiveSettings.providers.google ||
+          effectiveSettings.providers.github) && (
         <SignupStep delay={0.4}>
           <div className="relative my-5">
             <div className="absolute inset-0 flex items-center">

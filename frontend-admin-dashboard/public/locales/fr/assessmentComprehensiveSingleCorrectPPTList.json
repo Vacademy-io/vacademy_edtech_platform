@@ -1,0 +1,29 @@
+{
+    "header": {
+        "questionsSettings": "Paramètres des questions",
+        "questionTypeLabel": "Type de question",
+        "marksLabel": "Points",
+        "negativeMarkingLabel": "Pénalité négative"
+    },
+    "timeLimit": {
+        "title": "Durée limite",
+        "hrs": "h",
+        "min": "min"
+    },
+    "comprehensionText": "Texte de compréhension",
+    "question": {
+        "label": "Question"
+    },
+    "answer": {
+        "label": "Réponse :"
+    },
+    "explanation": {
+        "label": "Explication :"
+    },
+    "optionLabels": {
+        "a": "(a.)",
+        "b": "(b.)",
+        "c": "(c.)",
+        "d": "(d.)"
+    }
+}

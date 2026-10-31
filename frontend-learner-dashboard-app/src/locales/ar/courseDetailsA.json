@@ -1,0 +1,178 @@
+{
+  "leaderboard": {
+    "trigger": {
+      "compactAriaLabel": "لوحة صدارة {{course}}",
+      "compactTitle": "لوحة الصدارة",
+      "cardTitle": "لوحة الصدارة",
+      "cardSubtitleRanked_zero": "ترتيبك {{rank}} · {{count}} شارة",
+      "cardSubtitleRanked_one": "ترتيبك {{rank}} · {{count}} شارة",
+      "cardSubtitleRanked_two": "ترتيبك {{rank}} · {{count}} شارتان",
+      "cardSubtitleRanked_few": "ترتيبك {{rank}} · {{count}} شارات",
+      "cardSubtitleRanked_many": "ترتيبك {{rank}} · {{count}} شارة",
+      "cardSubtitleRanked_other": "ترتيبك {{rank}} · {{count}} شارة",
+      "cardSubtitleDefault": "شاهد ترتيبك في هذا {{course}}",
+      "unranked": "غير مصنف"
+    },
+    "dialog": {
+      "title": "لوحة صدارة {{course}}",
+      "copyLinkTitle": "نسخ الرابط العام",
+      "shareTitle": "مشاركة",
+      "shareAriaLabel": "مشاركة لوحة الصدارة",
+      "loading": "جارٍ تحميل لوحة الصدارة…",
+      "emptyText": "لا يوجد نشاط في لوحة الصدارة بعد — ابدأ التعلم لتتصدر الترتيب!",
+      "rankingLabel": "الترتيب",
+      "learnersCount": "{{count}} {{learners}}",
+      "footer": "الترتيب حسب النشاط التعليمي • يرتفع كلما تعلمت"
+    },
+    "standing": {
+      "label": "ترتيبك",
+      "unranked": "غير مصنف",
+      "badgesEarned_zero": "شارة مكتسبة",
+      "badgesEarned_one": "شارة مكتسبة",
+      "badgesEarned_two": "شارتان مكتسبتان",
+      "badgesEarned_few": "شارات مكتسبة",
+      "badgesEarned_many": "شارة مكتسبة",
+      "badgesEarned_other": "شارة مكتسبة",
+      "viewYourBadgesTitle": "عرض شاراتك"
+    },
+    "row": {
+      "viewBadgesTitle": "عرض الشارات"
+    },
+    "badgesDialog": {
+      "yourBadges": "شاراتك",
+      "othersBadges": "شارات {{name}}",
+      "defaultName": "المتعلم",
+      "empty": "لا توجد شارات مكتسبة بعد."
+    },
+    "toast": {
+      "linkCopied": "تم نسخ رابط لوحة الصدارة"
+    }
+  },
+  "subscriptionCancel": {
+    "autoRenewing": "اشتراك متجدد تلقائيًا",
+    "renewsOn": "يتجدد في {{date}}",
+    "recurringActive": "الاشتراك المتكرر نشط",
+    "cancelButton": "إلغاء الاشتراك",
+    "cancelling": "جارٍ الإلغاء...",
+    "confirmTitle": "هل تريد إلغاء هذا الاشتراك؟",
+    "confirmDescription": "سيتوقف التجديد التلقائي. ستحتفظ بإمكانية الوصول حتى {{endDate}}، ولن يتم خصم أي مبلغ بعد ذلك.",
+    "endOfCurrentPeriod": "نهاية الفترة الحالية",
+    "keepButton": "الاحتفاظ بالاشتراك",
+    "toast": {
+      "successTitle": "تم إلغاء الدفع التلقائي",
+      "successDescription": "ستحتفظ بإمكانية الوصول حتى نهاية فترتك الحالية.",
+      "errorTitle": "تعذّر إلغاء الدفع التلقائي",
+      "errorDescription": "يرجى المحاولة مرة أخرى بعد قليل."
+    }
+  },
+  "certificate": {
+    "completedTitle": "اكتمل {{course}}!",
+    "congratsMessage": "تهانينا! لقد حصلت على شهادة.",
+    "viewCertificate": "عرض الشهادة",
+    "downloadCertificate": "تنزيل الشهادة",
+    "previewAriaLabel": "معاينة الشهادة",
+    "previewTitle": "معاينة الشهادة",
+    "previewHeading": "{{courseTitle}} — معاينة الشهادة",
+    "refreshAriaLabel": "تحديث الشهادة",
+    "refreshTitle": "إعادة الإصدار وفق أحدث نموذج",
+    "refreshing": "جارٍ التحديث",
+    "refresh": "تحديث",
+    "closePreviewAriaLabel": "إغلاق المعاينة",
+    "close": "إغلاق",
+    "courseFieldLabel": "{{course}}:",
+    "sessionFieldLabel": "الجلسة:",
+    "levelFieldLabel": "المستوى:"
+  },
+  "contentSections": {
+    "aboutThisCourse": "عن هذا {{course}}",
+    "whatYoullLearn": "ماذا ستتعلم",
+    "whoShouldJoin": "لمن هذا المحتوى"
+  },
+  "detailsCollapsible": {
+    "highlights": "أبرز ما يميز هذا {{course}}"
+  },
+  "detailsPage": {
+    "heading": "تفاصيل {{course}}"
+  },
+  "ratings": {
+    "heading": "التقييمات والمراجعات",
+    "subheading": "آراء المجتمع وتقييماته",
+    "form": {
+      "feedbackLabel": "رأيك",
+      "feedbackPlaceholder": "اكتب رأيك...",
+      "ratingLabel": "التقييم",
+      "starCount_zero": "{{count}} نجمة",
+      "starCount_one": "{{count}} نجمة",
+      "starCount_two": "{{count}} نجمتان",
+      "starCount_few": "{{count}} نجوم",
+      "starCount_many": "{{count}} نجمة",
+      "starCount_other": "{{count}} نجمة",
+      "submitting": "جارٍ الإرسال...",
+      "submit": "إرسال الرأي"
+    },
+    "reviewsCount": "{{count}} مراجعة",
+    "empty": {
+      "title": "لا توجد مراجعات بعد",
+      "description": "كن أول من يشارك تجربته مع هذا {{course}}"
+    },
+    "toast": {
+      "submitFailed": "تعذّر إرسال التقييم",
+      "unexpectedError": "حدث خطأ غير متوقع",
+      "thankYou": "شكرًا لك على رأيك!",
+      "selectRatingFirst": "يرجى اختيار تقييم قبل الإرسال"
+    }
+  },
+  "detailsSkeleton": {
+    "loadingAriaLabel": "جارٍ تحميل محتوى {{course}}"
+  },
+  "enrollment": {
+    "configurationTitle": "إعدادات {{course}}",
+    "previewMode": "وضع معاينة {{course}}",
+    "previewNotice": "تصفّح الهيكل. سجّل للوصول إلى {{slides}} والمواد.",
+    "classSection": "الصف / الشعبة",
+    "classSectionPlaceholder": "اختر الصف أو الشعبة",
+    "noActiveSessions": "لا يوجد {{sessions}} نشطة",
+    "notEnrolled": "غير مسجَّل",
+    "requiresConfiguration": "يتطلب هذا {{course}} إعدادًا.",
+    "contactTeacherToEnroll": "يرجى التواصل مع {{teacher}} للتسجيل.",
+    "enrollNow": "سجّل الآن"
+  },
+  "header": {
+    "viewLess": "عرض أقل",
+    "viewMore": "عرض المزيد",
+    "courseMediaAlt": "وسائط {{course}}",
+    "courseBannerAlt": "بانر {{course}}"
+  },
+  "sidebar": {
+    "overview": "نظرة عامة على {{course}}",
+    "author": "المؤلف",
+    "courseTime": "مدة {{course}}",
+    "enrollNow": "سجّل الآن",
+    "courseProgress": "تقدّم {{course}}",
+    "completion": "الإنجاز",
+    "certificateOnCompletion": "سيتم إصدار الشهادة عند الإكمال",
+    "unknownInstructor": "{{teacher}} غير معروف"
+  },
+  "statsSidebar": {
+    "overview": "نظرة عامة على {{course}}",
+    "author": "المؤلف",
+    "courseTime": "مدة {{course}}"
+  },
+  "schema": {
+    "invalidEmail": "عنوان البريد الإلكتروني غير صالح.",
+    "instructorNameRequired": "اسم المدرّس مطلوب.",
+    "levelNameRequired": "اسم المستوى مطلوب.",
+    "durationNonNegative": "يجب أن تكون المدة رقمًا صحيحًا غير سالب.",
+    "sessionNameRequired": "اسم الجلسة مطلوب.",
+    "statusNameRequired": "اسم الحالة مطلوب.",
+    "startDateFormat": "يجب أن يكون تاريخ البدء بصيغة YYYY-MM-DD.",
+    "levelDetailRequired": "مطلوب تفصيل مستوى واحد على الأقل لكل جلسة.",
+    "titleRequired": "العنوان مطلوب.",
+    "descriptionMinLength": "يجب أن يتكون الوصف من 10 أحرف على الأقل.",
+    "tagRequired": "مطلوب وسم واحد على الأقل.",
+    "invalidImageUrl": "يجب أن يكون رابطًا صالحًا للصورة.",
+    "instructorRequired": "مطلوب مدرّس واحد على الأقل.",
+    "sessionRequired": "مطلوبة جلسة واحدة على الأقل.",
+    "mockCourseTitleRequired": "عنوان {{course}} التجريبي مطلوب."
+  }
+}

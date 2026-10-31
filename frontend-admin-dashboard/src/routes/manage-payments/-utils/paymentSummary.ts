@@ -1,4 +1,5 @@
 import type { PaymentLogEntry } from '@/types/payment-logs';
+import type { PaymentStatusTotal } from '@/services/payment-logs';
 import { formatMoney, isRealCurrency, resolveEntryCurrency } from '@/utils/payment-currency';
 
 /** A single KPI bucket: how many payments and their total amount, split by currency. */
@@ -10,8 +11,24 @@ export interface StatBucket {
 export interface PaymentSummary {
     total: StatBucket;
     paid: StatBucket;
+    /**
+     * Unsettled records on a LIVE enrolment that are still young enough to complete — money
+     * genuinely in flight at the gateway. Backs the "Payment pending" card.
+     */
     pending: StatBucket;
+    /**
+     * Checkouts opened and never finished: PAYMENT_PENDING rows older than the gateway's order
+     * TTL (the server reports them as ABANDONED). Nobody got access and nothing is owed, so they
+     * sit in neither Pending nor Due — they are a leads signal, not a finance one.
+     */
+    abandoned: StatBucket;
     failed: StatBucket;
+    /**
+     * Unsettled records on a cancelled / terminated / expired enrolment. Deliberately in NO card:
+     * this money will never arrive, so showing it as pending or due overstated both. The rows stay
+     * in the table under "All" for audit.
+     */
+    notCounted: StatBucket;
 }
 
 const emptyBucket = (): StatBucket => ({ count: 0, amountByCurrency: {} });
@@ -20,7 +37,9 @@ export const emptyPaymentSummary = (): PaymentSummary => ({
     total: emptyBucket(),
     paid: emptyBucket(),
     pending: emptyBucket(),
+    abandoned: emptyBucket(),
     failed: emptyBucket(),
+    notCounted: emptyBucket(),
 });
 
 const addToBucket = (bucket: StatBucket, amount: number, currency: string) => {
@@ -32,19 +51,49 @@ const addToBucket = (bucket: StatBucket, amount: number, currency: string) => {
 };
 
 /** Which KPI bucket a single payment falls into. */
-export type PaymentBucketKey = 'paid' | 'pending' | 'failed';
+export type PaymentBucketKey = 'paid' | 'pending' | 'abandoned' | 'failed';
 
 /**
- * A voided (REJECTED) invoice. It stays visible in the table for audit, but is deliberately
- * absent from every total: cancelled money was never collected and is no longer owed.
+ * Enrolment statuses on which an unfinished payment can still complete. ACTIVE (a renewal or
+ * instalment on a live plan) and PENDING_FOR_PAYMENT (the checkout that would activate it) — the
+ * server's ABANDONED rule handles the age; this handles the plan.
+ *
+ * A whitelist of the live statuses, deliberately not a blacklist of the dead ones: production
+ * carries CANCELED *and* CANCELLED, plus TERMINATED, EXPIRED, DELETED, INACTIVE, PAYMENT_FAILED
+ * and the typo PENDING_FOR_PAYMNET, so a blacklist would quietly start counting whichever status
+ * somebody adds next.
+ */
+const LIVE_PLAN_STATUSES = new Set(['ACTIVE', 'PENDING_FOR_PAYMENT']);
+
+/**
+ * Can this unsettled row still turn into money?
+ *
+ * On a cancelled, terminated or expired enrolment it cannot: nobody will complete a checkout for
+ * access they no longer have, and counting it reported a gateway backlog that would never clear
+ * (Suchbliss showed ₹19,201 of them against ₹7,241 of real pending). Rows with no user_plan stay
+ * eligible — they are admin-raised invoices, which the server tracks as obligations of their own.
+ */
+export const isDueEligibleEntry = (entry: PaymentLogEntry): boolean => {
+    const status = entry.user_plan?.status;
+    if (!status) return true;
+    return LIVE_PLAN_STATUSES.has(status.trim().toUpperCase());
+};
+
+/**
+ * A voided (REJECTED) invoice, or a payment an admin voided because it was recorded by mistake
+ * (the server reports those as CANCELLED too). Either stays visible in the table for audit, but
+ * is deliberately absent from every total: cancelled money was never collected and is no longer
+ * owed.
  */
 export const isCancelledEntry = (entry: PaymentLogEntry): boolean =>
-    (entry.current_payment_status || '').toUpperCase() === 'CANCELLED';
+    (entry.current_payment_status || '').toUpperCase() === 'CANCELLED' ||
+    (entry.payment_log?.payment_status || '').toUpperCase() === 'VOIDED';
 
 /**
- * Classify one payment. "pending" (the money still due) absorbs PAYMENT_PENDING, NOT_INITIATED,
- * null and any other non-paid/non-failed status — which is why selecting the Due tile filters the
- * table here rather than through the API: `payment_status IN (...)` can never match a NULL row.
+ * Classify one payment record. "pending" absorbs PAYMENT_PENDING, NOT_INITIATED, null and any
+ * other non-paid/non-failed status — which is why the Pending tile filters the table here rather
+ * than through the API: `payment_status IN (...)` can never match a NULL row. ABANDONED is the
+ * server's verdict on a PAYMENT_PENDING row too old to complete.
  */
 export const classifyEntry = (entry: PaymentLogEntry): PaymentBucketKey => {
     const status = (
@@ -54,10 +103,11 @@ export const classifyEntry = (entry: PaymentLogEntry): PaymentBucketKey => {
     ).toUpperCase();
     if (status === 'PAID') return 'paid';
     if (status === 'FAILED') return 'failed';
+    if (status === 'ABANDONED') return 'abandoned';
     return 'pending';
 };
 
-/** Aggregate a set of payment entries into Total / Paid / Pending(Due) / Failed buckets. */
+/** Aggregate a set of payment entries into Total / Paid / Pending / Abandoned / Failed buckets. */
 export const computePaymentSummary = (entries: PaymentLogEntry[]): PaymentSummary => {
     const summary = emptyPaymentSummary();
 
@@ -67,8 +117,65 @@ export const computePaymentSummary = (entries: PaymentLogEntry[]): PaymentSummar
         const amount = entry.payment_log?.payment_amount || 0;
         const currency = resolveEntryCurrency(entry);
 
+        const bucket = classifyEntry(entry);
         addToBucket(summary.total, amount, currency);
-        addToBucket(summary[classifyEntry(entry)], amount, currency);
+
+        // An unsettled record on a dead enrolment is money that will never arrive. It belongs in
+        // no card — counting it as "pending" overstated the gateway backlog.
+        if (bucket === 'pending' && !isDueEligibleEntry(entry)) {
+            addToBucket(summary.notCounted, amount, currency);
+            continue;
+        }
+
+        addToBucket(summary[bucket], amount, currency);
+    }
+
+    return summary;
+};
+
+/**
+ * The same aggregation as {@link computePaymentSummary}, but from the server's pre-grouped totals
+ * instead of the rows themselves — so the tiles describe every row matching the filters while the
+ * table only ever downloads one page.
+ *
+ * The server classifies each row exactly as the row mapper does (a FAILED payment superseded by an
+ * ACTIVE plan reads PAID, a stale PAYMENT_PENDING reads ABANDONED, a voided one reads CANCELLED),
+ * so the bucket rules below are the row-level rules applied to whole groups.
+ */
+export const summaryFromStatusTotals = (totals: PaymentStatusTotal[]): PaymentSummary => {
+    const summary = emptyPaymentSummary();
+
+    for (const group of totals) {
+        const status = (group.status || '').toUpperCase();
+        // Cancelled money was never collected and is no longer owed: it sits in no card.
+        if (status === 'CANCELLED') continue;
+
+        const add = (bucket: StatBucket) => {
+            bucket.count += group.count;
+            if (group.amount) {
+                const key = group.currency || 'N/A';
+                bucket.amountByCurrency[key] = (bucket.amountByCurrency[key] || 0) + group.amount;
+            }
+        };
+
+        const bucket: PaymentBucketKey =
+            status === 'PAID'
+                ? 'paid'
+                : status === 'FAILED'
+                  ? 'failed'
+                  : status === 'ABANDONED'
+                    ? 'abandoned'
+                    : 'pending';
+
+        add(summary.total);
+
+        // An unsettled record on a dead enrolment is money that will never arrive.
+        if (bucket === 'pending' && !group.due_eligible) {
+            add(summary.notCounted);
+            continue;
+        }
+
+        add(summary[bucket]);
     }
 
     return summary;
@@ -113,87 +220,4 @@ export const summarizeBucketAmount = (
         .map(([currency, amount]) => formatBucketMoney(amount, currency))
         .join(' + ');
     return { display, full };
-};
-
-/** Billing view of a set of payment rows: billed vs collected vs the balance still owed. */
-export interface EntryBilling {
-    totalBilled: number;
-    collected: number;
-    due: number;
-    currency: string;
-    planCount: number;
-    settledPlanCount: number;
-}
-
-/**
- * Billing figures derived from the rows already on screen, for when the billing-summary endpoint
- * isn't available (older backend, or the request failed).
- *
- * Groups by enrolment and takes the plan price ONCE per plan, so a ₹50,000 course paid in five
- * instalments is billed at ₹50,000 rather than five times over. GREATEST(price, paid) guards the
- * plans priced at 0 — free enrolments and CPO plans whose amount lives on a fee schedule — which
- * would otherwise report a negative balance as payments land against them.
- *
- * Blind spot worth knowing: enrolments that have never paid anything have no payment rows, so they
- * cannot appear here at all. Only the server-side summary sees those, and it is the one that makes
- * "Due" complete.
- */
-export const computeBillingFromEntries = (entries: PaymentLogEntry[]): EntryBilling => {
-    // Most common real currency in the set; amounts in anything else are left out of the totals
-    // rather than added to a number carrying a different symbol.
-    const counts: Record<string, number> = {};
-    for (const entry of entries) {
-        const c = resolveEntryCurrency(entry);
-        if (isRealCurrency(c)) counts[c] = (counts[c] || 0) + 1;
-    }
-    const primary = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '';
-
-    const countsTowardsAmount = (entry: PaymentLogEntry): boolean => {
-        if (!primary) return true;
-        const c = resolveEntryCurrency(entry);
-        return !isRealCurrency(c) || c === primary;
-    };
-
-    /** One learner: the plans they are enrolled on (priced once each) and everything they paid. */
-    const learners = new Map<string, { plans: Map<string, number>; paid: number }>();
-    let collected = 0;
-
-    for (const entry of entries) {
-        const amount = countsTowardsAmount(entry) ? entry.payment_log?.payment_amount || 0 : 0;
-        const isPaid = classifyEntry(entry) === 'paid';
-        if (isPaid) collected += amount;
-
-        const planId = entry.user_plan?.id;
-        // Group by learner, not by plan: an admin-raised invoice carries no user_plan at all, and
-        // crediting it only to a plan left learners who paid by invoice owing their whole fee.
-        const key = entry.user?.id || entry.user_plan?.user_id || planId;
-        if (!key) continue;
-
-        const learner = learners.get(key) ?? { plans: new Map(), paid: 0 };
-        if (planId) {
-            // The price belongs to the plan, not to the row — record it once, don't accumulate.
-            learner.plans.set(planId, entry.user_plan?.payment_plan_dto?.actual_price || 0);
-        }
-        if (isPaid) learner.paid += amount;
-        learners.set(key, learner);
-    }
-
-    let due = 0;
-    let planCount = 0;
-    let settledPlanCount = 0;
-    for (const learner of learners.values()) {
-        const billed = [...learner.plans.values()].reduce((sum, price) => sum + price, 0);
-        planCount += learner.plans.size;
-        due += Math.max(0, billed - learner.paid);
-        if (billed > 0 && learner.paid >= billed) settledPlanCount += 1;
-    }
-
-    return {
-        totalBilled: collected + due,
-        collected,
-        due,
-        currency: primary,
-        planCount,
-        settledPlanCount,
-    };
 };

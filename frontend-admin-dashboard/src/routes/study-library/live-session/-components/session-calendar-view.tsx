@@ -1,5 +1,6 @@
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     addMonths,
     eachDayOfInterval,
@@ -42,6 +43,8 @@ interface Session {
         text_color: string;
         visible: boolean;
     } | null;
+    /** Per-schedule platform ('zoom', 'google meet', …) — decides the host entry point. */
+    linkType?: string | null;
 }
 
 interface DaySchedule {
@@ -51,9 +54,17 @@ interface DaySchedule {
 
 interface SessionCalendarViewProps {
     schedules: DaySchedule[];
+    /**
+     * Returns the "Start as Host" handler for a schedule, or null when that
+     * platform has no host entry point. Without it the calendar would only
+     * offer the participant Join link, which is how a recurring Zoom class
+     * left its host with no way to start the meeting.
+     */
+    getHostAction?: (session: Session) => (() => void) | null;
 }
 
-export function SessionCalendarView({ schedules }: SessionCalendarViewProps) {
+export function SessionCalendarView({ schedules, getHostAction }: SessionCalendarViewProps) {
+    const { t } = useTranslation('studyLibrarySessionCalendarView');
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState<Date | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -95,7 +106,15 @@ export function SessionCalendarView({ schedules }: SessionCalendarViewProps) {
         }
     };
 
-    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const weekDays = [
+        t('weekday.sun'),
+        t('weekday.mon'),
+        t('weekday.tue'),
+        t('weekday.wed'),
+        t('weekday.thu'),
+        t('weekday.fri'),
+        t('weekday.sat'),
+    ];
 
     return (
         <div className="flex flex-col gap-4">
@@ -118,7 +137,7 @@ export function SessionCalendarView({ schedules }: SessionCalendarViewProps) {
                         scale="small"
                         className="h-8 px-3"
                     >
-                        Today
+                        {t('today')}
                     </MyButton>
                     <MyButton
                         onClick={onNextMonth}
@@ -201,7 +220,7 @@ export function SessionCalendarView({ schedules }: SessionCalendarViewProps) {
                                     ))}
                                     {sessions.length > 2 && (
                                         <div className="text-[10px] font-medium text-muted-foreground pl-1">
-                                            +{sessions.length - 2} more
+                                            {t('moreSessions', { count: sessions.length - 2 })}
                                         </div>
                                     )}
                                 </div>
@@ -215,15 +234,15 @@ export function SessionCalendarView({ schedules }: SessionCalendarViewProps) {
             <div className="flex items-center justify-end gap-6 px-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
                     <span className="h-3 w-3 rounded-sm bg-red-50 border border-red-200 dark:bg-red-900/20 dark:border-red-800"></span>
-                    <span>Live Class</span>
+                    <span>{t('legend.liveClass')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <span className="h-3 w-3 rounded-sm bg-blue-50 border border-blue-200 dark:bg-blue-900/20 dark:border-blue-800"></span>
-                    <span>Upcoming Class</span>
+                    <span>{t('legend.upcomingClass')}</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <span className="h-3 w-3 rounded-sm bg-gray-50 border border-gray-200 dark:bg-gray-900/20 dark:border-gray-800"></span>
-                    <span>Past Class</span>
+                    <span>{t('legend.pastClass')}</span>
                 </div>
             </div>
 
@@ -231,7 +250,9 @@ export function SessionCalendarView({ schedules }: SessionCalendarViewProps) {
                 <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>
-                            Sessions for {selectedDate && format(selectedDate, 'MMMM d, yyyy')}
+                            {t('sessionsFor', {
+                                date: selectedDate ? format(selectedDate, 'MMMM d, yyyy') : '',
+                            })}
                         </DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 pt-2">
@@ -251,7 +272,7 @@ export function SessionCalendarView({ schedules }: SessionCalendarViewProps) {
                                                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                                                 </svg>
                                             </div>
-                                            <h5 className="text-sm font-semibold text-gray-900">Default Class Information</h5>
+                                            <h5 className="text-sm font-semibold text-gray-900">{t('defaultClassInformation')}</h5>
                                         </div>
                                         <div className="space-y-2.5 text-sm">
                                             {defaultClassName && (
@@ -260,7 +281,7 @@ export function SessionCalendarView({ schedules }: SessionCalendarViewProps) {
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                                                     </svg>
                                                     <div className="flex-1">
-                                                        <span className="font-medium text-gray-700">Class Name: </span>
+                                                        <span className="font-medium text-gray-700">{t('classNameLabel')} </span>
                                                         <span className="font-semibold text-gray-900">{defaultClassName}</span>
                                                     </div>
                                                 </div>
@@ -271,7 +292,7 @@ export function SessionCalendarView({ schedules }: SessionCalendarViewProps) {
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                                                     </svg>
                                                     <div className="flex-1">
-                                                        <span className="font-medium text-gray-700">Link: </span>
+                                                        <span className="font-medium text-gray-700">{t('linkLabel')} </span>
                                                         <a
                                                             href={defaultLink}
                                                             target="_blank"
@@ -292,7 +313,7 @@ export function SessionCalendarView({ schedules }: SessionCalendarViewProps) {
                                                         <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
                                                     </svg>
                                                     <div className="flex-1">
-                                                        <span className="font-medium text-gray-700">Custom Button: </span>
+                                                        <span className="font-medium text-gray-700">{t('customButtonLabel')} </span>
                                                         <span
                                                             style={{
                                                                 backgroundColor: learnerButton.background_color,
@@ -339,7 +360,14 @@ export function SessionCalendarView({ schedules }: SessionCalendarViewProps) {
                                         </div>
                                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <Clock className="size-3.5" />
-                                            <span>{session.duration} minutes</span>
+                                            <span>
+                                                {t('durationMinutes', {
+                                                    count:
+                                                        typeof session.duration === 'number'
+                                                            ? session.duration
+                                                            : Number(session.duration) || 0,
+                                                })}
+                                            </span>
                                         </div>
                                     </div>
 
@@ -351,11 +379,31 @@ export function SessionCalendarView({ schedules }: SessionCalendarViewProps) {
                                             session.status === 'past' && "bg-gray-100 text-gray-600 hover:bg-gray-200"
                                         )}
                                     >
-                                        {session.status || 'Scheduled'}
+                                        {session.status === 'live'
+                                            ? t('status.live')
+                                            : session.status === 'upcoming'
+                                              ? t('status.upcoming')
+                                              : session.status === 'past'
+                                                ? t('status.past')
+                                                : t('status.scheduled')}
                                     </Badge>
                                 </div>
 
-                                <div className="mt-1 pt-3 border-t">
+                                <div className="mt-1 flex flex-col gap-2 border-t pt-3">
+                                    {(() => {
+                                        const startAsHost = getHostAction?.(session);
+                                        if (!startAsHost) return null;
+                                        return (
+                                            <button
+                                                type="button"
+                                                onClick={startAsHost}
+                                                className="flex w-full items-center justify-center gap-2 rounded-md bg-primary-500 px-4 py-2.5 text-sm font-semibold text-white shadow transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                                            >
+                                                <span>{t('startAsHost')}</span>
+                                                <ArrowUpRight className="size-3.5" />
+                                            </button>
+                                        );
+                                    })()}
                                     <a
                                         href={session.link}
                                         target="_blank"
@@ -369,14 +417,14 @@ export function SessionCalendarView({ schedules }: SessionCalendarViewProps) {
                                                     : "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80"
                                         )}
                                     >
-                                        <span>Join Session</span>
+                                        <span>{t('joinSession')}</span>
                                         <ExternalLink className="size-3.5" />
                                     </a>
                                 </div>
                             </div>
                         ))}
                         {selectedDate && getSessionsForDate(selectedDate).length === 0 && (
-                            <div className="py-4 text-center text-muted-foreground">No sessions found.</div>
+                            <div className="py-4 text-center text-muted-foreground">{t('noSessionsFound')}</div>
                         )}
                     </div>
                 </DialogContent>

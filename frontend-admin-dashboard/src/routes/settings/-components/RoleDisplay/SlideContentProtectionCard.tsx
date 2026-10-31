@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -61,6 +62,7 @@ export default function SlideContentProtectionCard({
     roleKey,
     roleLabel,
 }: SlideContentProtectionCardProps) {
+    const { t } = useTranslation('settingsSlideContentProtectionCard');
     const queryClient = useQueryClient();
     const [enabled, setEnabled] = useState(false);
     const [dirty, setDirty] = useState(false);
@@ -86,12 +88,12 @@ export default function SlideContentProtectionCard({
             return saveData({ version: 1, roles });
         },
         onSuccess: () => {
-            toast.success('Slide content protection saved');
+            toast.success(t('toasts.saveSuccess'));
             setDirty(false);
             queryClient.invalidateQueries({ queryKey: ['slide-content-protection'] });
         },
         onError: () => {
-            toast.error('Failed to save slide content protection');
+            toast.error(t('toasts.saveFailed'));
         },
     });
 
@@ -100,14 +102,12 @@ export default function SlideContentProtectionCard({
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Copy &amp; Screen Protection</CardTitle>
+                <CardTitle>{t('card.title')}</CardTitle>
                 <CardDescription>
-                    Disable right-click and the common developer / view-source shortcuts (F12,
-                    Ctrl/Cmd+Shift+I/J/C, Ctrl+U) on slides for {roleLabel} in the learner app. This
-                    is a best-effort deterrent — it does not fully prevent inspection (developer
-                    tools can still be opened from the browser menu). Append{' '}
-                    <code className="rounded bg-neutral-100 px-1 text-xs">?access=dev</code> to the
-                    URL to bypass it while testing.
+                    {t('card.description.part1')} {roleLabel}{' '}
+                    {t('card.description.part2')}{' '}
+                    <code className="rounded bg-neutral-100 px-1 text-xs">?access=dev</code>{' '}
+                    {t('card.description.part3')}
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -116,7 +116,7 @@ export default function SlideContentProtectionCard({
                         htmlFor={`slide-content-protection-${roleKey}`}
                         className="cursor-pointer text-sm font-medium text-neutral-800"
                     >
-                        Disable right-click &amp; inspect shortcuts on slides
+                        {t('toggle.label')}
                     </Label>
                     <Switch
                         id={`slide-content-protection-${roleKey}`}
@@ -133,7 +133,7 @@ export default function SlideContentProtectionCard({
                         onClick={() => save()}
                         disable={saving || !dirty}
                     >
-                        {saving ? 'Saving…' : 'Save'}
+                        {saving ? t('button.saving') : t('button.save')}
                     </MyButton>
                 </div>
             </CardContent>

@@ -1,0 +1,13 @@
+{
+    "title": "Confirm Payment",
+    "description": "Please review the payment details before confirming.",
+    "student": "Student",
+    "installments": "Installments",
+    "paymentMode": "Payment Mode",
+    "transactionId": "Transaction ID",
+    "amount": "Amount",
+    "distributionNote": "The amount will be distributed across the selected installments by fee-type priority order.",
+    "cancel": "Cancel",
+    "processing": "Processing...",
+    "confirmPayment": "Confirm Payment"
+}

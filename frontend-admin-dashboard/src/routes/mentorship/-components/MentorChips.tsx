@@ -1,4 +1,5 @@
 import { Star } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 import type { MentorDTO } from '../-types/mentorship-types';
 
@@ -7,6 +8,7 @@ import type { MentorDTO } from '../-types/mentorship-types';
  * opens the feedback list — the number is only useful next to what learners said.
  */
 export function RatingChip({ mentor, onClick }: { mentor: MentorDTO; onClick: () => void }) {
+    const { t } = useTranslation('mentorshipMentorChips');
     const avg = mentor.average_rating;
     const count = mentor.rating_count ?? 0;
 
@@ -17,7 +19,7 @@ export function RatingChip({ mentor, onClick }: { mentor: MentorDTO; onClick: ()
         <button
             type="button"
             onClick={onClick}
-            title={`Average of ${count} rated session${count === 1 ? '' : 's'} — click to read the feedback`}
+            title={t('ratingTooltip', { count })}
             className="flex items-center gap-1 rounded-full bg-warning-50 px-2.5 py-1 text-caption text-warning-700 hover:bg-warning-100"
         >
             <Star size={13} weight="fill" className="text-warning-500" />
@@ -33,6 +35,7 @@ export function RatingChip({ mentor, onClick }: { mentor: MentorDTO; onClick: ()
  * can see who has room before opening the assign dialog.
  */
 export function CapacityChip({ mentor }: { mentor: MentorDTO }) {
+    const { t } = useTranslation('mentorshipMentorChips');
     const count = mentor.assigned_student_count ?? 0;
     const cap = mentor.max_mentees ?? null;
 
@@ -40,9 +43,9 @@ export function CapacityChip({ mentor }: { mentor: MentorDTO }) {
         return (
             <span
                 className="shrink-0 rounded-full bg-neutral-100 px-2.5 py-1 text-caption text-neutral-500"
-                title="Students currently assigned to this mentor (no limit set)"
+                title={t('noCapTooltip')}
             >
-                {count} students
+                {count} {t('studentsSuffix', { count })}
             </span>
         );
     }
@@ -60,12 +63,12 @@ export function CapacityChip({ mentor }: { mentor: MentorDTO }) {
             className={`shrink-0 rounded-full px-2.5 py-1 text-caption ${tone}`}
             title={
                 full
-                    ? `At capacity — no new students can be assigned until the limit is raised or a mentee is unassigned`
-                    : `${cap - count} of ${cap} places still open`
+                    ? t('atCapacityTooltip')
+                    : t('placesOpenTooltip', { count: cap - count, cap })
             }
         >
             {count}/{cap}
-            {full ? ' · full' : ' students'}
+            {full ? ` · ${t('fullSuffix')}` : ` ${t('studentsSuffix', { count })}`}
         </span>
     );
 }
@@ -76,6 +79,7 @@ export function CapacityChip({ mentor }: { mentor: MentorDTO }) {
  * they scan the list looking for someone to assign to.
  */
 export function CapacityMeter({ mentor }: { mentor: MentorDTO }) {
+    const { t } = useTranslation('mentorshipMentorChips');
     const count = mentor.assigned_student_count ?? 0;
     const cap = mentor.max_mentees ?? null;
     const full = cap != null && (mentor.at_capacity ?? count >= cap);
@@ -89,7 +93,7 @@ export function CapacityMeter({ mentor }: { mentor: MentorDTO }) {
                 )}
             >
                 {count} / {cap ?? '∞'}
-                {full ? ' · full' : ''}
+                {full ? ` · ${t('fullSuffix')}` : ''}
             </span>
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-neutral-100">
                 <div

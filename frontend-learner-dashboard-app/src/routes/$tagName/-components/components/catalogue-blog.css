@@ -1,0 +1,275 @@
+/* Blog article body — extends .catalogue-rich-text (catalogue-animations.css)
+   with what an article carries and a marketing text block does not: images,
+   figures, tables, code and video embeds. Kept out of the byte-synced
+   catalogue-*.css files because only the learner renders post bodies. */
+
+.catalogue-blog-article {
+    font-size: 1.0625rem;
+    color: hsl(var(--catalogue-text-secondary, 215 16% 30%));
+}
+.catalogue-blog-article h1,
+.catalogue-blog-article h2,
+.catalogue-blog-article h3,
+.catalogue-blog-article h4 {
+    color: hsl(var(--catalogue-text-primary, 222 47% 11%));
+    font-family: var(--catalogue-heading-font, inherit);
+}
+.catalogue-blog-article h2 { margin-top: 2rem; }
+.catalogue-blog-article h3 { margin-top: 1.5rem; }
+.catalogue-blog-article img,
+.catalogue-blog-article video {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 1.5rem auto;
+    border-radius: var(--catalogue-radius-lg, 12px);
+}
+.catalogue-blog-article figure { margin: 1.5rem 0; }
+.catalogue-blog-article figure img { margin: 0 auto; }
+.catalogue-blog-article figcaption {
+    margin-top: 0.5rem;
+    text-align: center;
+    font-size: 0.875rem;
+    color: hsl(var(--catalogue-text-muted, 215 14% 46%));
+}
+.catalogue-blog-article iframe {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    height: auto;
+    margin: 1.5rem 0;
+    border: 0;
+    border-radius: var(--catalogue-radius-lg, 12px);
+}
+.catalogue-blog-article pre {
+    overflow-x: auto;
+    padding: 1rem 1.25rem;
+    margin: 1.25rem 0;
+    border-radius: var(--catalogue-radius-md, 8px);
+    background: hsl(var(--catalogue-text-primary, 222 47% 11%));
+    color: #f8fafc;
+    font-size: 0.875rem;
+    line-height: 1.6;
+}
+.catalogue-blog-article code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.9em;
+}
+.catalogue-blog-article :not(pre) > code {
+    padding: 0.1em 0.35em;
+    border-radius: 4px;
+    background: hsl(var(--catalogue-bg-muted, 210 40% 96%));
+}
+.catalogue-blog-article table {
+    width: 100%;
+    margin: 1.25rem 0;
+    border-collapse: collapse;
+    font-size: 0.9375rem;
+}
+.catalogue-blog-article th,
+.catalogue-blog-article td {
+    padding: 0.6rem 0.75rem;
+    border: 1px solid hsl(var(--catalogue-border, 214 32% 91%));
+    text-align: start;
+    vertical-align: top;
+}
+.catalogue-blog-article th {
+    background: hsl(var(--catalogue-bg-muted, 210 40% 96%));
+    font-weight: 600;
+}
+
+/* Imported posts (WordPress/Elementor) arrive with their desktop CSS inlined
+   and their media queries lost: fixed multi-column grids, image-beside-text
+   flex cards and wide tables then push the page sideways on a phone or clip
+   the text. Inline styles only lose to !important, so these phone rules use it,
+   scoped to the article body. */
+@media (max-width: 640px) {
+    .catalogue-blog-article {
+        overflow-wrap: anywhere;
+    }
+    .catalogue-blog-article table {
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .catalogue-blog-article [style*="grid-template-columns"] {
+        grid-template-columns: minmax(0, 1fr) !important;
+    }
+    .catalogue-blog-article [style*="display:flex"]:not([style*="flex-direction:column"]),
+    .catalogue-blog-article [style*="display: flex"]:not([style*="flex-direction: column"]) {
+        flex-wrap: wrap !important;
+    }
+    .catalogue-blog-article [style*="flex-shrink:0"][style*="width:"],
+    .catalogue-blog-article [style*="flex-shrink: 0"][style*="width:"] {
+        width: 100% !important;
+        border-right: 0 !important;
+    }
+    .catalogue-blog-article [style*="display:flex"] > *,
+    .catalogue-blog-article [style*="display: flex"] > *,
+    .catalogue-blog-article [style*="display:grid"] > *,
+    .catalogue-blog-article [style*="display: grid"] > * {
+        min-width: 0;
+    }
+}
+.catalogue-blog-article hr {
+    margin: 2rem 0;
+    border: 0;
+    border-top: 1px solid hsl(var(--catalogue-border, 214 32% 91%));
+}
+.catalogue-blog-article blockquote {
+    border-left-color: hsl(var(--primary-500, 217 91% 60%));
+}
+
+/* ─── Article layouts (post.template) ───────────────────────────────── */
+
+/* Headings the contents link to stop below the sticky site header. */
+.catalogue-blog-article :is(h2, h3)[id] {
+    scroll-margin-top: calc(var(--catalogue-header-height, 64px) + 1.5rem);
+}
+
+/* Reading width inside the wider sidebar layout. */
+.catalogue-blog-measure {
+    max-width: var(--catalogue-content-prose, 48rem);
+}
+
+/* Top-of-viewport reading progress (Focus; Sidebar on small screens). */
+.catalogue-blog-progress {
+    position: fixed;
+    inset-inline: 0;
+    top: 0;
+    z-index: 70;
+    height: 3px;
+    background: hsl(var(--catalogue-border, 214 32% 91%) / 0.6);
+    pointer-events: none;
+}
+.catalogue-blog-progress-fill {
+    height: 100%;
+    background: hsl(var(--primary-500, 217 91% 60%));
+    transform-origin: left center;
+    transition: transform 80ms linear;
+}
+[dir="rtl"] .catalogue-blog-progress-fill { transform-origin: right center; }
+
+/* Sidebar contents: fixed beside the article while it scrolls. */
+.catalogue-blog-toc {
+    position: sticky;
+    top: calc(var(--catalogue-header-height, 64px) + 2.5rem);
+    max-height: calc(100vh - var(--catalogue-header-height, 64px) - 3rem);
+    overflow-y: auto;
+    padding-bottom: 1rem;
+}
+.catalogue-blog-toc-rail {
+    position: absolute;
+    inset-block: 0.25rem;
+    inset-inline-start: 0.375rem;
+    width: 2px;
+    border-radius: 999px;
+    background: hsl(var(--catalogue-border, 214 32% 91%));
+    overflow: hidden;
+}
+.catalogue-blog-toc-rail-fill {
+    width: 100%;
+    height: 100%;
+    background: hsl(var(--primary-500, 217 91% 60%));
+    transform-origin: top center;
+    transition: transform 80ms linear;
+}
+.catalogue-blog-toc-link {
+    display: block;
+    padding: 0.35rem 0.5rem;
+    border-radius: var(--catalogue-radius-md, 8px);
+    font-size: 0.875rem;
+    line-height: 1.35;
+    color: hsl(var(--catalogue-text-muted, 215 14% 46%));
+    transition: color 150ms ease, background-color 150ms ease;
+}
+.catalogue-blog-toc-link:hover { color: hsl(var(--catalogue-text-primary, 222 47% 11%)); }
+.catalogue-blog-toc-link.is-read { color: hsl(var(--catalogue-text-secondary, 215 16% 30%)); }
+.catalogue-blog-toc-link.is-active {
+    color: hsl(var(--primary-500, 217 91% 60%));
+    background: hsl(var(--primary-500, 217 91% 60%) / 0.08);
+    font-weight: 600;
+}
+.catalogue-blog-mobile-toc {
+    border: 1px solid hsl(var(--catalogue-border, 214 32% 91%));
+    border-radius: var(--catalogue-radius-lg, 12px);
+    background: hsl(var(--catalogue-bg-muted, 210 40% 96%));
+}
+.catalogue-blog-mobile-toc summary::-webkit-details-marker { display: none; }
+.catalogue-blog-mobile-toc[open] .catalogue-blog-mobile-toc-caret { transform: rotate(180deg); }
+
+/* Magazine: cover across the page with the title over it. */
+.catalogue-blog-hero { min-height: 26rem; color: #fff; }
+@media (min-width: 1024px) { .catalogue-blog-hero { min-height: 32rem; } }
+.catalogue-blog-hero--plain {
+    min-height: 20rem;
+    background: linear-gradient(135deg, hsl(var(--primary-500, 217 91% 60%)), hsl(var(--catalogue-text-primary, 222 47% 11%)));
+}
+.catalogue-blog-hero-scrim {
+    background: linear-gradient(to top, rgb(0 0 0 / 0.78), rgb(0 0 0 / 0.35) 55%, rgb(0 0 0 / 0.15));
+}
+.catalogue-blog-article--magazine { font-size: 1.125rem; }
+/* Keep the drop cap inside its own paragraph when that paragraph is short. */
+.catalogue-blog-article--magazine > p:first-of-type { display: flow-root; }
+.catalogue-blog-article--magazine > p:first-of-type::first-letter {
+    float: inline-start;
+    margin: 0.3rem 0.6rem 0 0;
+    font-family: var(--catalogue-heading-font, inherit);
+    font-size: 3.6em;
+    font-weight: 700;
+    line-height: 0.8;
+    color: hsl(var(--primary-500, 217 91% 60%));
+}
+.catalogue-blog-article--magazine blockquote {
+    margin: 2.5rem 0;
+    padding: 0.5rem 0 0.5rem 1.5rem;
+    border-left-width: 4px;
+    font-family: var(--catalogue-heading-font, inherit);
+    font-size: 1.5rem;
+    line-height: 1.4;
+    color: hsl(var(--catalogue-text-primary, 222 47% 11%));
+}
+
+/* Focus: a narrow, airy column. */
+.catalogue-blog-focus {
+    width: 100%;
+    max-width: 42rem;
+    margin-inline: auto;
+    padding-inline: var(--space-4, 1rem);
+}
+.catalogue-blog-article--focus { font-size: 1.1875rem; line-height: 1.85; }
+.catalogue-blog-article--focus p { margin-block: 1.25em; }
+.catalogue-blog-share-rail { display: none; }
+@media (min-width: 1280px) {
+    .catalogue-blog-share-rail {
+        position: fixed;
+        top: 50%;
+        inset-inline-start: max(1.5rem, calc(50vw - 21rem - 6rem));
+        z-index: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        transform: translateY(-50%);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .catalogue-blog-progress-fill,
+    .catalogue-blog-toc-rail-fill,
+    .catalogue-blog-toc-link { transition: none; }
+}
+
+/* Card list */
+.catalogue-blog-card-title {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.catalogue-blog-card-excerpt {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}

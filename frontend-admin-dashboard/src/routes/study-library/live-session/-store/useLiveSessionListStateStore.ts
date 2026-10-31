@@ -1,6 +1,14 @@
 import { create } from 'zustand';
 import { SessionStatus } from '../-constants/enums';
 import { type SelectOption } from '@/components/design-system/SelectChips';
+import i18n from '@/i18n';
+
+// This store is created outside any React render tree, so useTranslation()
+// isn't available here — use the shared i18next singleton directly with a
+// fixed namespace (same pattern as studyLibraryAssessmentToHtml). Not
+// reactive to a runtime language switch without a remount of whatever reads
+// ALL_BATCHES_OPTION's label — accepted tradeoff for this module-scope value.
+const NAMESPACE = 'studyLibraryUseLiveSessionListStateStore';
 
 /**
  * In-memory cache of the Live-Session list page's browsing state — tab,
@@ -21,7 +29,7 @@ import { type SelectOption } from '@/components/design-system/SelectChips';
  */
 
 export const ALL_BATCHES_OPTION: SelectOption = {
-    label: 'All Batches',
+    label: i18n.t('allBatches', { ns: NAMESPACE }),
     value: 'all',
 };
 

@@ -1,0 +1,63 @@
+{
+    "errors": {
+        "build": "Impossible de préparer cette déclaration."
+    },
+    "empty": {
+        "nothingToFile": "Rien à déclarer"
+    },
+    "ecr": {
+        "emptyText": "Aucune cotisation PF n'a été enregistrée ce mois-ci."
+    },
+    "esi": {
+        "emptyText": "Aucun employé n'était sous le plafond de salaire ESI ce mois-ci."
+    },
+    "pt": {
+        "emptyText": "Aucune taxe professionnelle n'a été prélevée ce mois-ci.",
+        "slabSummary": "Récapitulatif des tranches"
+    },
+    "wps": {
+        "emptyText": "Aucune entrée de paie approuvée pour ce mois."
+    },
+    "stats": {
+        "members": "Membres",
+        "epfWages": "Salaires EPF",
+        "epfContribution": "Cotisation EPF",
+        "epsContribution": "Cotisation EPS",
+        "insuredPersons": "Personnes assurées",
+        "totalWages": "Total des salaires",
+        "ipContribution": "Cotisation assuré",
+        "employerContribution": "Cotisation employeur",
+        "state": "État",
+        "employees": "Employés",
+        "totalPt": "Total taxe professionnelle",
+        "totalNetPay": "Total net à payer",
+        "establishment": "Établissement"
+    },
+    "table": {
+        "member": "Membre",
+        "uan": "UAN",
+        "epfWages": "Salaires EPF",
+        "employeeShare": "Employé",
+        "eps": "EPS",
+        "diff": "Écart",
+        "ncp": "NCP",
+        "employee": "Employé",
+        "ipNumber": "N° d'assuré",
+        "days": "Jours",
+        "wage": "Salaire",
+        "ip": "Assuré",
+        "employer": "Employeur",
+        "slabAmount": "Montant de la tranche",
+        "employees": "Employés",
+        "total": "Total",
+        "gross": "Brut",
+        "pt": "Taxe professionnelle",
+        "iban": "IBAN",
+        "basic": "Base",
+        "other": "Autres",
+        "deductions": "Déductions",
+        "net": "Net",
+        "fixed": "Fixe",
+        "variable": "Variable"
+    }
+}

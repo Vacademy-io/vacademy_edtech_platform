@@ -1,0 +1,157 @@
+{
+    "dialogTitle": "إرسال رسالة",
+    "dialogDescription": "أرسل رسالة إلى العملاء المحتملين في «{{campaignName}}»",
+    "stepTitles": {
+        "selectChannel": "اختيار القناة",
+        "composeContent": "إنشاء المحتوى",
+        "mapVariables": "ربط المتغيرات",
+        "reviewSend": "مراجعة وإرسال"
+    },
+    "systemFields": {
+        "fullName": "الاسم الكامل",
+        "email": "البريد الإلكتروني",
+        "mobileNumber": "رقم الجوال",
+        "city": "المدينة",
+        "region": "المنطقة",
+        "campaignName": "اسم الحملة",
+        "submittedAt": "تاريخ الإرسال",
+        "sourceType": "نوع المصدر"
+    },
+    "channels": {
+        "whatsapp": {
+            "label": "واتساب",
+            "description": "إرسال رسائل بقوالب عبر واجهة واتساب بيزنس"
+        },
+        "email": {
+            "label": "البريد الإلكتروني",
+            "description": "إرسال رسائل بريد إلكتروني بموضوع ونص HTML قابلين للتخصيص"
+        },
+        "push": {
+            "label": "إشعار فوري",
+            "description": "إرسال إشعارات فورية إلى مستخدمي الجوال والويب"
+        },
+        "systemAlert": {
+            "label": "تنبيه داخل النظام",
+            "description": "إرسال تنبيهات داخل التطبيق تظهر في مركز الإشعارات"
+        }
+    },
+    "toasts": {
+        "loadWhatsappTemplatesFailed": "فشل تحميل قوالب واتساب",
+        "loadEmailTemplatesFailed": "فشل تحميل قوالب البريد الإلكتروني",
+        "loadTemplateContentFailed": "فشل تحميل محتوى القالب",
+        "noneSent": "تعذّر إرسال أي رسالة. راجع التفاصيل أدناه.",
+        "partialSuccess": "تم القبول لـ {{accepted}} من {{total}} — فشل {{failed}}. راجع التفاصيل أدناه.",
+        "sendSuccess_zero": "لم تُقبل الرسالة لأي مستلم ({{count}})",
+        "sendSuccess_one": "تم قبول الرسالة لمستلم واحد ({{count}})",
+        "sendSuccess_two": "تم قبول الرسالة لمستلمين اثنين ({{count}})",
+        "sendSuccess_few": "تم قبول الرسالة لـ {{count}} مستلمين",
+        "sendSuccess_many": "تم قبول الرسالة لـ {{count}} مستلمًا",
+        "sendSuccess_other": "تم قبول الرسالة لـ {{count}} مستلم",
+        "sendFailed": "فشل إرسال الرسالة"
+    },
+    "whatsappStep": {
+        "templateLabel": "القالب",
+        "loadingTemplates": "جارٍ تحميل القوالب...",
+        "selectPlaceholder": "اختر قالبًا معتمدًا",
+        "emptyText": "لا يوجد قالب معتمد مطابق لبحثك.",
+        "languageCodeLabel": "رمز اللغة",
+        "templatePreviewLabel": "معاينة القالب"
+    },
+    "emailStep": {
+        "templateLabel": "القالب",
+        "loadingTemplates": "جارٍ تحميل القوالب...",
+        "selectPlaceholder": "اختر قالبًا",
+        "emptyText": "لا يوجد قالب مطابق لبحثك.",
+        "customOption": "مخصص — الكتابة من الصفر",
+        "loadingTemplateContent": "جارٍ تحميل محتوى القالب...",
+        "emailTypeLabel": "نوع البريد الإلكتروني",
+        "utilityEmail": "بريد وظيفي",
+        "promotionalEmail": "بريد ترويجي",
+        "subjectLabel": "الموضوع",
+        "subjectPlaceholder": "أدخل موضوع البريد الإلكتروني...",
+        "bodyLabel": "النص",
+        "previewTab": "معاينة",
+        "editTab": "تحرير HTML",
+        "previewEmptyState": "اختر قالبًا أو انتقل إلى تحرير HTML لكتابة المحتوى.",
+        "bodyPlaceholder": "أدخل نص HTML للبريد الإلكتروني... استخدم {{token}} للمتغيرات",
+        "placeholderHintPrefix": "المتغيرات مثل",
+        "placeholderHintSuffix": "يتم استبدالها لكل مستلم عند الإرسال. اربطها في الخطوة التالية.",
+        "emailTypeHint": "Sent from this address. Manage senders and their daily limits in Settings → Notifications."
+    },
+    "pushStep": {
+        "titleLabel": "العنوان",
+        "titlePlaceholder": "عنوان الإشعار...",
+        "bodyLabel": "النص",
+        "bodyPlaceholder": "نص الإشعار..."
+    },
+    "headerMedia": {
+        "label": "رابط رأس {{kind}}",
+        "hint": "يحتوي هذا القالب على رأس من نوع {{kind}}، ويشترطه واتساب في كل إرسال — بدونه يفشل الإرسال لجميع المستلمين. تم تعبئته مسبقًا بالوسائط المعتمدة مع القالب.",
+        "imagePreviewAlt": "معاينة الرأس",
+        "kindLabels": {
+            "image": "صورة",
+            "video": "فيديو",
+            "document": "مستند"
+        }
+    },
+    "variableMapping": {
+        "noVariables": "لا توجد متغيرات لربطها. يمكنك المتابعة.",
+        "mapHint": "اربط كل متغير في القالب بحقل بيانات العميل المحتمل.",
+        "columnVariable": "المتغير",
+        "columnMappedField": "الحقل المرتبط",
+        "selectFieldPlaceholder": "اختر حقلاً...",
+        "staticValueOption": "قيمة ثابتة…",
+        "staticValuePlaceholder": "مثال: \"طالب\""
+    },
+    "review": {
+        "messageSent": "تم إرسال الرسالة",
+        "sendCompleted": "اكتمل الإرسال",
+        "statusLabel": "الحالة",
+        "recipientsLabel": "المستلمون",
+        "acceptedLabel": "مقبول",
+        "failedLabel": "فشل",
+        "processingNotice": "قيد المعالجة في الخلفية (الدفعة: {{batchId}})",
+        "close": "إغلاق",
+        "channelHeading": "القناة",
+        "whatsappContentLabel": "القالب",
+        "otherContentLabel": "الموضوع / العنوان",
+        "contentFallback": "-",
+        "recipientsAllKnown_zero": "لا يوجد أعضاء في هذه الجمهور ({{count}})",
+        "recipientsAllKnown_one": "جميع أعضاء هذه الجمهور (عضو واحد) ({{count}})",
+        "recipientsAllKnown_two": "جميع أعضاء هذه الجمهور (عضوان) ({{count}})",
+        "recipientsAllKnown_few": "جميع أعضاء هذه الجمهور ({{count}} أعضاء)",
+        "recipientsAllKnown_many": "جميع أعضاء هذه الجمهور ({{count}} عضوًا)",
+        "recipientsAllKnown_other": "جميع أعضاء هذه الجمهور ({{count}} عضو)",
+        "recipientsAllUnknown": "جميع أعضاء هذه الجمهور",
+        "variableMappingsLabel": "ربط المتغيرات",
+        "staticValueLabel": "ثابت: \"{{value}}\"",
+        "sending": "جارٍ الإرسال...",
+        "sendButtonKnown_zero": "إرسال إلى لا أحد ({{count}})",
+        "sendButtonKnown_one": "إرسال إلى عضو واحد ({{count}})",
+        "sendButtonKnown_two": "إرسال إلى عضوين ({{count}})",
+        "sendButtonKnown_few": "إرسال إلى {{count}} أعضاء",
+        "sendButtonKnown_many": "إرسال إلى {{count}} عضوًا",
+        "sendButtonKnown_other": "إرسال إلى {{count}} عضو",
+        "sendButtonUnknown": "إرسال إلى جميع الأعضاء",
+        "statusValues": {
+            "success": "ناجح",
+            "failed": "فشل"
+        },
+        "recipientsSelected_zero": "لا عملاء محتملين محددين ({{count}})",
+        "recipientsSelected_one": "عميل محتمل محدد واحد ({{count}})",
+        "recipientsSelected_two": "عميلان محتملان محددان ({{count}})",
+        "recipientsSelected_few": "{{count}} عملاء محتملين محددين",
+        "recipientsSelected_many": "{{count}} عميلًا محتملًا محددًا",
+        "recipientsSelected_other": "{{count}} عميل محتمل محدد"
+    },
+    "footer": {
+        "back": "رجوع",
+        "next": "التالي"
+    },
+    "dialogDescriptionSelected_zero": "إرسال رسالة إلى العملاء المحتملين المحددين ({{count}})",
+    "dialogDescriptionSelected_one": "إرسال رسالة إلى عميل محتمل محدد واحد ({{count}})",
+    "dialogDescriptionSelected_two": "إرسال رسالة إلى عميلين محتملين محددين ({{count}})",
+    "dialogDescriptionSelected_few": "إرسال رسالة إلى {{count}} عملاء محتملين محددين",
+    "dialogDescriptionSelected_many": "إرسال رسالة إلى {{count}} عميلًا محتملًا محددًا",
+    "dialogDescriptionSelected_other": "إرسال رسالة إلى {{count}} عميل محتمل محدد"
+}

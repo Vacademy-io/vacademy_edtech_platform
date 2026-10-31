@@ -1,0 +1,43 @@
+{
+    "description": "What every employee has left, per leave type. The closing balance is the opening balance plus what has accrued and been carried forward, less what has been used or encashed, plus any manual adjustment.",
+    "runAccrual": "Run accrual",
+    "yearEndProcess": "Year-end process",
+    "tabs": {
+        "balances": "Balances",
+        "compOff": "Comp-off"
+    },
+    "yearLabel": "Year",
+    "employeeLabel": "Employee",
+    "allEmployeesPlaceholder": "All employees",
+    "showEveryone": "Show everyone",
+    "loadError": "Couldn't load leave balances.",
+    "noBalancesTitle": "No balances for {{year}}",
+    "noBalancesForEmployeeDescription": "This employee has no balance row for the selected year. Balances are created by the accrual run once a policy applies to them.",
+    "noBalancesDescription": "Balances appear once a leave policy is in force and the accrual has run for the period. Set the policies up under Types & Policies first.",
+    "accrualFinished": "Accrual run finished",
+    "yearEndFinished": "Year-end process finished",
+    "accrualError": "Could not run the accrual.",
+    "yearEndError": "Could not run the year-end process.",
+    "notNow": "Not now",
+    "runYearEnd": "Run year-end",
+    "accrualDialog": {
+        "title": "Run the leave accrual now?",
+        "description": "This credits this period's leave to every eligible employee, following each leave type's policy. It is safe to run more than once — the accrual ledger makes a repeat for the same period a no-op, so nobody gets credited twice."
+    },
+    "yearEndDialog": {
+        "title": "Run the year-end process?",
+        "description": "This closes the leave year: each balance is carried forward or encashed according to its leave type's policy, up to the carry-forward cap. Run it once the closing year is genuinely finished — balances that lapse are not recoverable from here."
+    },
+    "columns": {
+        "employee": "Employee",
+        "leaveType": "Leave type",
+        "opening": "Opening",
+        "accrued": "Accrued",
+        "used": "Used",
+        "adjustment": "Adjustment",
+        "carriedForward": "Carried fwd",
+        "encashed": "Encashed",
+        "closing": "Closing",
+        "adjust": "Adjust"
+    }
+}

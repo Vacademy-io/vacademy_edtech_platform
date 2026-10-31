@@ -1,0 +1,66 @@
+{
+    "kindLabel": {
+        "document": "Document",
+        "pdf": "PDF",
+        "quiz": "Quiz",
+        "aiVideo": "AI video",
+        "youtube": "YouTube video",
+        "videoUpload": "Uploaded video",
+        "videoLink": "Video link",
+        "scorm": "SCORM",
+        "notSupported": "Not supported"
+    },
+    "actionLabel": {
+        "willPrepare": "Will prepare",
+        "alreadyPrepared": "Already prepared",
+        "needsDetails": "Needs details",
+        "free": "Free",
+        "skipped": "Skipped",
+        "notSupported": "Not supported",
+        "notPublished": "Not published"
+    },
+    "prepareThisSlide": "Prepare this slide",
+    "prepareForTeaching": "Prepare for teaching",
+    "intro": "Documents, PDFs, YouTube videos and AI videos are prepared from their own text for free apart from the compile. Uploaded videos are transcribed first (speech-to-text, charged per minute) and scanned PDFs are read with OCR (charged per page). Nothing is charged until you confirm.",
+    "couldNotEstimate": "Could not estimate the cost",
+    "transcribeSwitchLabel": "Transcribe uploaded videos ({{perMinute}} credits per minute, minimum {{minimum}}). Off: they need a written description instead.",
+    "ocrSwitchLabel": "Read scanned PDFs with OCR ({{perPage}} credits per page). Off: they need a written description instead.",
+    "table": {
+        "slide": "Slide",
+        "kind": "Kind",
+        "whatHappens": "What happens",
+        "credits": "Credits"
+    },
+    "row": {
+        "minutesSuffix_one": " · {{count}} min",
+        "minutesSuffix_other": " · {{count}} min",
+        "ocrSuffix": " · {{credits}} credits OCR",
+        "voiceSuffix": " · {{credits}} voice",
+        "upToImages_one": "+ up to {{count}} image",
+        "upToImages_other": "+ up to {{count}} images"
+    },
+    "nothingToPrepare": "Nothing to prepare.",
+    "summary": {
+        "slidesToPrepare_one": "{{count}} slide to prepare",
+        "slidesToPrepare_other": "{{count}} slides to prepare",
+        "alreadyPreparedSuffix_one": ", {{count}} already prepared",
+        "alreadyPreparedSuffix_other": ", {{count}} already prepared",
+        "needDetailsSuffix_one": ", {{count}} need details",
+        "needDetailsSuffix_other": ", {{count}} need details",
+        "approxCredits": "≈ {{credits}} credits",
+        "toCompile": "{{credits}} to compile",
+        "transcriptionSuffix_one": " + {{credits}} for {{count}} min of transcription",
+        "transcriptionSuffix_other": " + {{credits}} for {{count}} min of transcription",
+        "ocrSuffix_one": " + {{credits}} for OCR of {{count}} page",
+        "ocrSuffix_other": " + {{credits}} for OCR of {{count}} pages",
+        "voiceSuffix_one": " + {{credits}} to prepare the teacher's voice once ({{count}} language; lessons then play it without per-minute voice cost)",
+        "voiceSuffix_other": " + {{credits}} to prepare the teacher's voice once ({{count}} languages; lessons then play it without per-minute voice cost)",
+        "imagesSuffix": " + up to {{credits}} for AI images (charged per image made)",
+        "compileCost": ". Compiling a slide costs {{credits}} credits.",
+        "balance": "Balance: {{credits}} credits",
+        "insufficientSuffix": " — not enough for this compile."
+    },
+    "cancel": "Cancel",
+    "prepare": "Prepare",
+    "prepareWithCredits": "Prepare (≈ {{credits}} credits)"
+}

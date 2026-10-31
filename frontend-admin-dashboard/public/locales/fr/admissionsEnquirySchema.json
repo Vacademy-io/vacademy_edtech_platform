@@ -1,0 +1,10 @@
+{
+    "validation": {
+        "campaignNameRequired": "Le nom de la demande est requis",
+        "campaignNameMinLength": "Le nom doit comporter au moins 3 caractères",
+        "campaignTypeRequired": "Le type de demande est requis",
+        "sessionRequired": "La session est requise",
+        "startDateRequired": "La date de début est requise",
+        "endDateRequired": "La date de fin est requise"
+    }
+}

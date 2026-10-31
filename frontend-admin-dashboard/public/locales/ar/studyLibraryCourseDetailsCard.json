@@ -1,0 +1,8 @@
+{
+    "duration_zero": "المدة: لا توجد أيام",
+    "duration_one": "المدة: يوم واحد",
+    "duration_two": "المدة: يومان",
+    "duration_few": "المدة: {{count}} أيام",
+    "duration_many": "المدة: {{count}} يومًا",
+    "duration_other": "المدة: {{count}} يوم"
+}

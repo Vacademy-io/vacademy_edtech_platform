@@ -1,0 +1,14 @@
+{
+    "chart": {
+        "markLabel": "note",
+        "rankAxis": "Rang",
+        "marksObtainedAxis": "Notes obtenues"
+    },
+    "header": {
+        "title": "Graphique notes-rang"
+    },
+    "toasts": {
+        "pdfExportSuccess": "Données de rang et de notes des étudiants exportées avec succès au format PDF",
+        "csvExportSuccess": "Données de rang et de notes des étudiants exportées avec succès au format CSV"
+    }
+}

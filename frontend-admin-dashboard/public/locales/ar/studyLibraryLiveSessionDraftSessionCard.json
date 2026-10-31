@@ -1,0 +1,10 @@
+{
+    "viewDetails": "عرض التفاصيل",
+    "editLiveSession": "تعديل الجلسة المباشرة",
+    "deleteLiveSession": "حذف الجلسة المباشرة",
+    "startDateTime": "تاريخ ووقت البدء:",
+    "lastEntry": "آخر وقت للدخول:",
+    "meetingType": "نوع الاجتماع:",
+    "joinLink": "رابط الانضمام:",
+    "notAvailable": "غير متوفر"
+}

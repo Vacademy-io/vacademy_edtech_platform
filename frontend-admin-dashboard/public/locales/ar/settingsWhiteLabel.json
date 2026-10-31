@@ -1,0 +1,234 @@
+{
+    "roles": {
+        "learnerPortal": "بوابة المتعلم",
+        "adminPortal": "بوابة المسؤول",
+        "teacherPortal": "بوابة المعلم"
+    },
+    "status": {
+        "configured": "مُهيَّأ",
+        "notConfigured": "غير مُهيَّأ"
+    },
+    "configValue": {
+        "yes": "✓ نعم",
+        "no": "✗ لا"
+    },
+    "imageUpload": {
+        "uploadFailed": "فشل تحميل الصورة",
+        "changeImage": "تغيير الصورة",
+        "removeImage": "إزالة الصورة",
+        "iconPreviewAlt": "معاينة الأيقونة",
+        "fileUuidPlaceholder": "أو أدخل معرّف الملف UUID"
+    },
+    "pagesDomain": {
+        "cnameHint": "إذا كان هذا نطاقًا مخصصًا (غير vacademy.io)، أضف سجل CNAME لدى مزود DNS الخاص بك:",
+        "sslHint": "يُفعَّل SSL تلقائيًا بمجرد أن يتحقق Cloudflare منه."
+    },
+    "configForm": {
+        "branding": {
+            "heading": "الهوية البصرية",
+            "tabTitleLabel": "عنوان التبويب",
+            "tabTitlePlaceholder": "مدرستي",
+            "tabIconLabel": "معرّف ملف أيقونة التبويب",
+            "themeLabel": "السمة / اللون",
+            "themePlaceholder": "#4F46E5 أو theme-name",
+            "fontFamilyLabel": "نوع الخط",
+            "fontFamilyPlaceholder": "Inter، Roboto، إلخ",
+            "hideNameLabel": "إخفاء اسم المؤسسة",
+            "hideNameHint": "فعّل هذا الخيار إذا كان شعارك يتضمن بالفعل اسم المؤسسة. يُخفي الاسم في الشريط الجانبي وصفحة تسجيل الدخول.",
+            "stackNameLabel": "وضع الاسم أسفل الشعار",
+            "stackNameHint": "يعرض اسم المؤسسة في المنتصف أسفل الشعار بدلاً من جانبه، في رأس الشريط الجانبي.",
+            "logoWidthLabel": "عرض الشعار (بكسل)",
+            "logoWidthHint": "اتركه فارغًا لاستخدام القيمة الافتراضية. عيّن 250 أو أكثر واترك الارتفاع فارغًا ليمتد شعار الشريط الجانبي على كامل العرض من حافة إلى حافة.",
+            "logoHeightLabel": "ارتفاع الشعار (بكسل)",
+            "logoHeightHint": "اتركه فارغًا للتحجيم بما يتناسب مع العرض (مطلوب لشعار بعرض كامل). حدد قيمة لملاءمة الشعار داخل إطار ثابت بدلاً من ذلك."
+        },
+        "auth": {
+            "heading": "المصادقة",
+            "allowSignup": "السماح بالتسجيل",
+            "googleAuth": "مصادقة Google",
+            "githubAuth": "مصادقة GitHub",
+            "emailOtpAuth": "مصادقة رمز التحقق عبر البريد الإلكتروني",
+            "phoneAuth": "مصادقة الهاتف",
+            "usernamePasswordAuth": "مصادقة اسم المستخدم/كلمة المرور",
+            "convertUsernameLowercase": "تحويل اسم المستخدم إلى أحرف صغيرة"
+        },
+        "phone": {
+            "heading": "تفضيلات إدخال الهاتف",
+            "preferredCountriesLabel": "الدول المفضلة",
+            "preferredCountriesHint": "يتم تحديد أول دولة مختارة مسبقًا في حقول الهاتف عبر بوابتي المتعلم والمسؤول. تحدد القائمة الكاملة ترتيب قائمة اختيار الدول. استخدم السهمين ↑ / ↓ على كل شريحة لإعادة الترتيب.",
+            "geoModeLabel": "عند فتح النموذج من دولة أخرى",
+            "geoModePreview": "أنت في {{detected}}. بهذه الإعدادات سيبدأ حقل الهاتف في هذه البوابة من {{resolved}}. أضف ?phoneCountry=ru إلى رابط أي نموذج لمعاينة دولة أخرى.",
+            "geoModePreviewUnknown": "تعذّر تحديد منطقتك من هذا المتصفح، لذا يُطبّق الخيار الاحتياطي: سيبدأ حقل الهاتف من {{resolved}}.",
+            "geoModes": {
+                "INSTITUTE_FIRST": {
+                    "label": "الأولوية للدول المفضّلة",
+                    "hint": "القائمة أعلاه هي الحاسمة. لا تُستخدم الدولة التي فُتح منها النموذج إلا إذا لم تختر أي دولة مفضّلة — عندها يبدأ نموذج فُتح في روسيا من +7 بدل الهند."
+                },
+                "GEO_FIRST": {
+                    "label": "اتّباع دولة الزائر",
+                    "hint": "تُحدّد مسبقًا الدولة التي فُتح منها النموذج، وتظل دولك المفضّلة ترتّب بقية القائمة. الأنسب عند استقبال تسجيلات من عدة دول."
+                },
+                "INSTITUTE_ONLY": {
+                    "label": "الدول المفضّلة فقط",
+                    "hint": "لا تنظر أبدًا إلى مكان فتح النموذج. اختر هذا إذا كانت كل الأرقام التي تجمعها تعود إلى دولة واحدة."
+                }
+            }
+        },
+        "routes": {
+            "heading": "المسارات",
+            "redirectLabel": "رابط إعادة التوجيه",
+            "redirectPlaceholder": "/dashboard",
+            "afterLoginLabel": "المسار بعد تسجيل الدخول",
+            "afterLoginPlaceholder": "/dashboard",
+            "afterLogoutLabel": "المسار بعد تسجيل الخروج",
+            "afterLogoutPlaceholder": "/login",
+            "homeClickLabel": "مسار النقر على أيقونة الصفحة الرئيسية",
+            "homeClickPlaceholder": "/"
+        },
+        "links": {
+            "heading": "الروابط",
+            "privacyPolicyLabel": "رابط سياسة الخصوصية",
+            "privacyPolicyPlaceholder": "https://myschool.com/privacy",
+            "termsLabel": "رابط الشروط والأحكام",
+            "termsPlaceholder": "https://myschool.com/terms",
+            "playStoreLabel": "رابط متجر Play",
+            "playStorePlaceholder": "https://play.google.com/...",
+            "appStoreLabel": "رابط App Store",
+            "appStorePlaceholder": "https://apps.apple.com/...",
+            "windowsLabel": "رابط تطبيق Windows",
+            "macLabel": "رابط تطبيق Mac",
+            "genericUrlPlaceholder": "https://..."
+        }
+    },
+    "notAvailable": {
+        "strong": "غير متاح في هذا النشر.",
+        "description": "بيانات اعتماد Cloudflare API غير مُهيَّأة. تواصل مع مسؤول المنصة لديك."
+    },
+    "header": {
+        "title": "إعداد نطاق العلامة البيضاء",
+        "description": "قم بتهيئة النطاقات المخصصة والهوية البصرية وإعدادات المصادقة والمزيد لكل بوابة.",
+        "refreshStatus": "تحديث الحالة"
+    },
+    "currentConfig": {
+        "title": "الإعداد الحالي",
+        "primaryUrlsLabel": "روابط البوابات الأساسية (افتراضي المؤسسة)",
+        "noPortalUrls": "لم يتم تعيين أي روابط للبوابات.",
+        "domainRoutingEntries": "إدخالات توجيه النطاقات",
+        "totalBadge": "{{count}} إجمالاً"
+    },
+    "setupCard": {
+        "titleUpdate": "إضافة / تحديث النطاقات",
+        "titleNew": "إعداد جديد",
+        "descriptionPart1": "أضف إدخالات النطاق أدناه. انقر فوق",
+        "settingsLabel": "⚙ الإعدادات",
+        "descriptionPart2": "على كل إدخال لتهيئة الهوية البصرية والمصادقة والمسارات والروابط.",
+        "tip": {
+            "label": "نصيحة:",
+            "enterPrefix": "أدخل",
+            "vacademySuffix": "للنطاقات الفرعية لـ Vacademy، أو",
+            "customSuffix": "للنطاقات المخصصة. حدد نطاقًا واحدًا لكل دور كنطاق ⭐ أساسي."
+        },
+        "roleLabel": "الدور",
+        "domainLabel": "النطاق",
+        "domainPlaceholder": "learn.myschool.com",
+        "primary": "أساسي",
+        "setPrimary": "تعيين كأساسي",
+        "primaryTooltip": "رابط البوابة لهذا الدور — يُستخدم في رسائل البريد بمجرد أن يصبح النطاق نشطًا",
+        "setPrimaryTooltip": "استخدام هذا النطاق كرابط للبوابة لهذا الدور",
+        "settingsToggle": "الإعدادات",
+        "toggleSettingsTooltip": "إظهار/إخفاء الإعدادات",
+        "removeTooltip": "إزالة",
+        "addAnotherDomain": "إضافة نطاق آخر",
+        "configuring": "جارٍ الإعداد…",
+        "updateButton": "تحديث إعداد العلامة البيضاء",
+        "applyButton": "تطبيق إعداد العلامة البيضاء",
+        "preservedHint": "يتم الاحتفاظ بالإدخالات الحالية. يتم إنشاء أو تحديث النطاقات المدرجة فقط.",
+        "draftRestored": "تمت استعادة النطاقات التي كنت تضيفها قبل مغادرة هذه التبويبة. لا شيء يصبح فعّالاً حتى تطبّق الإعداد.",
+        "discardDraft": "تجاهل وإعادة تحميل النطاقات المحفوظة",
+        "unsavedChanges": "تغييرات غير محفوظة — اضغط «تطبيق» لحفظها."
+    },
+    "toast": {
+        "noInstituteSelected": "لم يتم تحديد مؤسسة",
+        "addAtLeastOneDomain": "أضف إدخال نطاق واحدًا على الأقل",
+        "setupCompleted": "اكتمل إعداد العلامة البيضاء! 🎉",
+        "setupFailed": "فشل الإعداد.",
+        "portalUrlAdopted": "رابط بوابة {{roles}} أصبح نشطًا وتم حفظه."
+    },
+    "setupResult": {
+        "title": "اكتمل الإعداد",
+        "pagesCustomDomains": "نطاقات Pages المخصصة",
+        "pagesHint": "تربط هذه النطاقات المضيف بالتطبيق ليتم تقديمه بالفعل. سجل DNS وحده لا يكفي.",
+        "dnsRecordsConfigured": "سجلات DNS التي تم تكوينها"
+    },
+    "routingEntryCard": {
+        "cloudflareStatusTooltip": "حالة النطاق المخصص في Cloudflare",
+        "tabPrefix": "التبويب: {{value}}",
+        "themePrefix": "السمة: {{value}}",
+        "showDetailsTooltip": "عرض التفاصيل",
+        "cnameInstructionPrefix": "أضف سجل DNS هذا لدى مزودك من أجل",
+        "cnameInstructionSuffix": "لتفعيل هذا النطاق:",
+        "dnsType": "النوع",
+        "dnsName": "الاسم",
+        "dnsValue": "القيمة",
+        "sslAutoActivate": "يُفعَّل SSL تلقائيًا بمجرد أن يتحقق Cloudflare من السجل.",
+        "defaultCountryTooltip": "الدولة المختارة افتراضيًا",
+        "preferredCountries": "الدول المفضلة",
+        "fields": {
+            "domain": "النطاق",
+            "subdomain": "النطاق الفرعي",
+            "tabTitle": "عنوان التبويب",
+            "tabIcon": "أيقونة التبويب",
+            "theme": "السمة",
+            "font": "الخط",
+            "redirect": "إعادة التوجيه",
+            "afterLogin": "بعد تسجيل الدخول",
+            "afterLogout": "بعد تسجيل الخروج",
+            "homeClick": "النقر على الصفحة الرئيسية",
+            "signUp": "التسجيل",
+            "googleAuth": "مصادقة Google",
+            "githubAuth": "مصادقة GitHub",
+            "emailOtp": "رمز التحقق عبر البريد",
+            "phoneAuth": "مصادقة الهاتف",
+            "userPassAuth": "مصادقة المستخدم/كلمة المرور",
+            "privacyPolicy": "سياسة الخصوصية",
+            "terms": "الشروط",
+            "playStore": "متجر Play",
+            "appStore": "App Store",
+            "windows": "Windows",
+            "mac": "Mac",
+            "hideInstituteName": "إخفاء اسم المؤسسة",
+            "logoWidth": "عرض الشعار (بكسل)",
+            "logoHeight": "ارتفاع الشعار (بكسل)",
+            "stackNameBelowLogo": "الاسم أسفل الشعار"
+        },
+        "portalUrl": "رابط البوابة",
+        "portalUrlTooltip": "تستخدم رسائل البريد والروابط المشتركة هذا النطاق حاليًا",
+        "primaryPending": "أساسي · قيد الانتظار",
+        "primaryPendingTooltip": "تم اختياره كرابط للبوابة — سيُحفظ بمجرد أن يصبح النطاق نشطًا",
+        "willBeAdoptedOnceActive": "تم اختياره كرابط للبوابة. سيُحفظ تلقائيًا بمجرد أن يصبح هذا النطاق نشطًا — وحتى ذلك الحين ستستمر رسائل البريد والروابط في استخدام رابط البوابة الحالي."
+    },
+    "subOrg": {
+        "label": "المؤسسة الفرعية",
+        "none": "المؤسسة الأم",
+        "untitled": "مؤسسة فرعية بلا اسم",
+        "badgeTooltip": "هذه البوابة تحمل هوية هذه المؤسسة الفرعية وهي مقصورة عليها",
+        "searchPlaceholder": "ابحث عن مؤسسة فرعية…",
+        "searchEmpty": "لا توجد مؤسسة فرعية بهذا الاسم."
+    },
+    "shortLinkDns": {
+        "title": "نطاق الروابط المختصرة",
+        "description": "أرسل هذا السجل إلى العميل مع سجلات CNAME الخاصة بالبوابات، حتى تعمل روابطه المختصرة على نطاقه الخاص بدلاً من u.vacademy.io.",
+        "hostLabel": "سيتم تقديم الروابط المختصرة من",
+        "dnsType": "النوع",
+        "dnsName": "الاسم",
+        "dnsValue": "القيمة",
+        "dnsTtl": "TTL",
+        "dnsProxy": "الوكيل",
+        "ttlAuto": "تلقائي",
+        "proxyOff": "DNS فقط — بدون وكيل",
+        "copy": "نسخ السجل",
+        "copied": "تم نسخ سجل DNS",
+        "copyFailed": "تعذّر النسخ — حدّد القيم يدويًا",
+        "platformNote": "السجل وحده لا يكفي: يجب على فريق المنصة أيضًا إضافة هذا المضيف إلى ingress وتسجيل النطاق لهذه المؤسسة. تسجيل النطاق قبل أن يصبح السجل فعّالاً سيؤدي إلى تعطّل الروابط المختصرة بدلاً من العودة إلى u.vacademy.io."
+    }
+}

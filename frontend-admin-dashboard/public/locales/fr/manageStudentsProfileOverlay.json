@@ -1,0 +1,26 @@
+{
+    "header": {
+        "title": "Profil {{term}}",
+        "unknownName": "Inconnu",
+        "photoAlt": "Photo de profil"
+    },
+    "leadTier": {
+        "hot": "Chaud",
+        "warm": "Tiède",
+        "cold": "Froid",
+        "titleSimple": "Niveau de prospect {{tier}}",
+        "titleWithScore": "Niveau de prospect {{tier}} · score {{score}}"
+    },
+    "nav": {
+        "prevLearner": "Apprenant précédent (←)",
+        "nextLearner": "Apprenant suivant (→)",
+        "close": "Fermer (Échap)"
+    },
+    "contextStrip": {
+        "enrollmentNo": "N° d'inscription",
+        "joined": "Inscrit le",
+        "city": "Ville",
+        "email": "E-mail",
+        "phone": "Téléphone"
+    }
+}

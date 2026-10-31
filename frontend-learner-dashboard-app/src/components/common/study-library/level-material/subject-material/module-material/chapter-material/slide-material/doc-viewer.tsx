@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { Trans, useTranslation } from "react-i18next";
 import { getLearnerTrackingSettings, getRequiredReadSeconds } from "@/services/learner-tracking-settings";
 import { v4 as uuidv4 } from "uuid";
 import { useTrackingStore } from "@/stores/study-library/pdf-tracking-store";
@@ -47,6 +48,7 @@ export const DocViewer: React.FC<DocViewerProps> = ({
     isHtml = false,
     creativeHtml = false,
 }) => {
+    const { t } = useTranslation("libraryCommonA");
     const { addActivity } = useTrackingStore();
     const { activeItem } = useContentStore();
     const { setCurrentPdfPage, navigationTrigger } = useMediaRefsStore();
@@ -631,26 +633,28 @@ export const DocViewer: React.FC<DocViewerProps> = ({
                         <div className="p-2">
                             <div className="mt-1">
                                 <p className="text-xs text-neutral-600">
-                                    Just ensuring that you are actively
-                                    learning, please click the number{" "}
-                                    <span className="text-primary-500">
-                                        {Math.max(
-                                            ...verificationNumbers.filter(
-                                                (n) =>
-                                                    n !==
-                                                        verificationNumbers[0] ||
-                                                    (verificationNumbers[0] !==
-                                                        verificationNumbers[1] &&
-                                                        verificationNumbers[0] !==
-                                                            verificationNumbers[2])
-                                            )
-                                        )}
-                                    </span>{" "}
-                                    within{" "}
-                                    <span className="text-primary-500">
-                                        {verificationCountdown}{" "}
-                                    </span>
-                                    seconds.
+                                    <Trans
+                                        t={t}
+                                        i18nKey="verification.focusPrompt"
+                                        values={{
+                                            number: Math.max(
+                                                ...verificationNumbers.filter(
+                                                    (n) =>
+                                                        n !==
+                                                            verificationNumbers[0] ||
+                                                        (verificationNumbers[0] !==
+                                                            verificationNumbers[1] &&
+                                                            verificationNumbers[0] !==
+                                                                verificationNumbers[2])
+                                                )
+                                            ),
+                                            seconds: verificationCountdown,
+                                        }}
+                                        components={{
+                                            1: <span className="text-primary-500" />,
+                                            2: <span className="text-primary-500" />,
+                                        }}
+                                    />
                                 </p>
                             </div>
                             <div className="mt-2 flex justify-center space-x-2">
@@ -674,19 +678,18 @@ export const DocViewer: React.FC<DocViewerProps> = ({
             {/* Pause overlay */}
             {isPaused && (
                 <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50">
-                    <div className="rounded-lg bg-white p-6 text-center">
-                        <h3 className="mb-4 text-lg font-semibold">
-                            Reading Paused
+                    <div className="rounded-lg bg-white p-6 text-center space-y-4">
+                        <h3 className="text-lg font-semibold">
+                            {t("docViewer.pausedHeading")}
                         </h3>
-                        <p className="mb-4 text-sm text-gray-600">
-                            You've switched tabs {tabSwitchCount} times. Please
-                            click below to resume reading.
+                        <p className="text-sm text-gray-600">
+                            {t("docViewer.pausedMessage", { count: tabSwitchCount })}
                         </p>
                         <button
                             onClick={handleResumeReading}
                             className="rounded bg-primary-500 px-4 py-2 text-white hover:bg-primary-600"
                         >
-                            Resume Reading
+                            {t("docViewer.resumeReading")}
                         </button>
                     </div>
                 </div>
@@ -708,6 +711,7 @@ export const DocViewer: React.FC<DocViewerProps> = ({
                 creativeHtml={creativeHtml}
                 onSlideProgress={handleSlideProgress}
                 onSlideComplete={handleSlideComplete}
+                scormSlideId={documentId}
             />
         </div>
     );

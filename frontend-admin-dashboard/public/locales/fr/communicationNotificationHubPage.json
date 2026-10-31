@@ -1,0 +1,9 @@
+{
+    "title": "Centre de notifications",
+    "subtitle": "Statistiques, activité récente des apprenants et conversations de la boîte de réception",
+    "tabs": {
+        "overview": "Aperçu",
+        "whatsapp": "Boîte de réception WhatsApp",
+        "email": "Boîte de réception e-mail"
+    }
+}

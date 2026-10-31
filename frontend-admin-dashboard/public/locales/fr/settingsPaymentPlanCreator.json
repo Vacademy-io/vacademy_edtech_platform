@@ -1,0 +1,10 @@
+{
+    "dialog": {
+        "editTitle": "Modifier le forfait de paiement",
+        "createTitle": "Créer un forfait de paiement"
+    },
+    "step2": {
+        "planCurrencyLabel": "Devise du forfait",
+        "defaultCurrencyHint": "Par défaut : {{currency}} ({{symbol}})"
+    }
+}

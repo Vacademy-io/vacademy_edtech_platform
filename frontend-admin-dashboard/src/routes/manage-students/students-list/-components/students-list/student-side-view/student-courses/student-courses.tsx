@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStudentSidebar } from '@/routes/manage-students/students-list/-context/selected-student-sidebar-context';
 import {
     useLearnerPackagesQuery,
@@ -12,7 +13,7 @@ import {
     DropdownMenuContent,
     DropdownMenuCheckboxItem,
 } from '@/components/ui/dropdown-menu';
-import { AssignCourseDialog } from './assign-course-dialog';
+import { BulkAssignDialog } from '@/routes/manage-students/students-list/-components/enroll-bulk/bulk-assign-dialog/BulkAssignDialog';
 import { DeassignCourseDialog } from './deassign-course-dialog';
 import { ManageAccessDialog } from './manage-access-dialog';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
@@ -45,9 +46,17 @@ import { EnrollmentWorkflowStatus } from '@/components/shared/workflow/enrollmen
 const ITEMS_PER_PAGE = 20;
 
 export const StudentCourses = ({ isSubmissionTab, packageSessionId }: { isSubmissionTab?: boolean; packageSessionId?: string }) => {
+    const { t } = useTranslation('manageStudentsCourses');
     const { selectedStudent } = useStudentSidebar();
     const instituteId = getInstituteId();
     const userId = isSubmissionTab ? selectedStudent?.id || '' : selectedStudent?.user_id || '';
+    // The side view already knows who this is, so the enrolment wizard can skip its
+    // learner step and go straight to picking the course and invite.
+    const assignLearner = {
+        userId,
+        email: selectedStudent?.email || '',
+        name: selectedStudent?.full_name || '',
+    };
     const { getDetailsFromPackageSessionId } = useInstituteDetailsStore();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
@@ -119,8 +128,8 @@ export const StudentCourses = ({ isSubmissionTab, packageSessionId }: { isSubmis
         return (
             <ProfileEmpty
                 icon={GraduationCap}
-                title="Student details unavailable"
-                hint="No learner is selected or the institute could not be determined."
+                title={t('noStudentSelected.title')}
+                hint={t('noStudentSelected.hint')}
             />
         );
     }
@@ -229,8 +238,8 @@ export const StudentCourses = ({ isSubmissionTab, packageSessionId }: { isSubmis
             <div className="flex flex-col gap-3">
                 <ProfileEmpty
                     icon={BookOpen}
-                    title={`No ${courseTermPlural.toLowerCase()} assigned`}
-                    hint="Assign a program to get started."
+                    title={t('emptyState.title', { term: courseTermPlural.toLowerCase() })}
+                    hint={t('emptyState.hint')}
                     action={
                         <>
                             <MyButton
@@ -238,14 +247,13 @@ export const StudentCourses = ({ isSubmissionTab, packageSessionId }: { isSubmis
                                 scale="small"
                                 onClick={() => setAssignOpen(true)}
                             >
-                                + Assign to {courseTermSingular}
+                                {t('actions.assignToCourse', { term: courseTermSingular })}
                             </MyButton>
-                            <AssignCourseDialog
-                                userId={userId}
-                                userName={selectedStudent?.full_name || 'Student'}
+                            <BulkAssignDialog
                                 open={assignOpen}
                                 onOpenChange={setAssignOpen}
                                 onSuccess={handleRefresh}
+                                initialLearner={assignLearner}
                             />
                         </>
                     }
@@ -261,19 +269,19 @@ export const StudentCourses = ({ isSubmissionTab, packageSessionId }: { isSubmis
                 render, so these tiles are purely orientation/status read-outs. */}
             <div className="grid grid-cols-3 gap-2">
                 <ProfileHeroStat
-                    label="In Progress"
+                    label={t('heroStats.inProgress')}
                     value={progressCount}
                     tone="primary"
                     icon={BookOpen}
                 />
                 <ProfileHeroStat
-                    label="Completed"
+                    label={t('heroStats.completed')}
                     value={completedCount}
                     tone="success"
                     icon={CheckCircle}
                 />
                 <ProfileHeroStat
-                    label="Past"
+                    label={t('heroStats.past')}
                     value={pastCount}
                     tone="neutral"
                     icon={ClockCounterClockwise}
@@ -289,7 +297,7 @@ export const StudentCourses = ({ isSubmissionTab, packageSessionId }: { isSubmis
                     scale="small"
                     onClick={() => setAssignOpen(true)}
                 >
-                    + Assign to {courseTermSingular}
+                    {t('actions.assignToCourse', { term: courseTermSingular })}
                 </MyButton>
                 <MyButton
                     buttonType="secondary"
@@ -297,7 +305,7 @@ export const StudentCourses = ({ isSubmissionTab, packageSessionId }: { isSubmis
                     onClick={() => setDeassignOpen(true)}
                     disable={allActiveCourses.length === 0}
                 >
-                    Remove from {courseTermSingular}
+                    {t('actions.removeFromCourse', { term: courseTermSingular })}
                 </MyButton>
                 <MyButton
                     buttonType="secondary"
@@ -305,7 +313,7 @@ export const StudentCourses = ({ isSubmissionTab, packageSessionId }: { isSubmis
                     onClick={() => setManageAccessOpen(true)}
                     disable={accessManageableCourses.length === 0}
                 >
-                    Manage access
+                    {t('actions.manageAccess')}
                 </MyButton>
                 {availableLevels.length > 0 && (
                     // Collapsed by default into a Filter button; the level list
@@ -325,8 +333,8 @@ export const StudentCourses = ({ isSubmissionTab, packageSessionId }: { isSubmis
                             <MyButton buttonType="secondary" scale="small" className="ml-auto">
                                 <Funnel className="size-3.5" />
                                 {selectedLevelIds.length > 0
-                                    ? `Filter (${selectedLevelIds.length})`
-                                    : 'Filter'}
+                                    ? t('actions.filterCount', { count: selectedLevelIds.length })
+                                    : t('actions.filter')}
                             </MyButton>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
@@ -338,7 +346,7 @@ export const StudentCourses = ({ isSubmissionTab, packageSessionId }: { isSubmis
                                 onCheckedChange={() => clearLevels()}
                                 onSelect={(e) => e.preventDefault()}
                             >
-                                All
+                                {t('actions.allLevels')}
                             </DropdownMenuCheckboxItem>
                             {availableLevels.map((level) => (
                                 <DropdownMenuCheckboxItem
@@ -372,10 +380,10 @@ export const StudentCourses = ({ isSubmissionTab, packageSessionId }: { isSubmis
             />
 
             <CourseSection
-                title={`Completed ${courseTermPlural}`}
+                title={t('sections.completedTitle', { term: courseTermPlural })}
                 icon={CheckCircle}
                 courses={completedCourses?.content || []}
-                emptyMessage={`No completed ${courseTermPlural.toLowerCase()}`}
+                emptyMessage={t('sections.noneCompleted', { term: courseTermPlural.toLowerCase() })}
                 onCourseClick={handleCourseClick}
                 getSessionName={(course) => {
                     if (!course.package_session_id) return null;
@@ -390,7 +398,7 @@ export const StudentCourses = ({ isSubmissionTab, packageSessionId }: { isSubmis
                             </span>
                         )}
                         <span className="rounded-full bg-success-50 px-2 py-0.5 text-xs font-medium text-success-700">
-                            Completed
+                            {t('sections.completedBadge')}
                         </span>
                     </div>
                 )}
@@ -400,10 +408,10 @@ export const StudentCourses = ({ isSubmissionTab, packageSessionId }: { isSubmis
             />
 
             <CourseSection
-                title={`Past ${courseTermPlural}`}
+                title={t('sections.pastTitle', { term: courseTermPlural })}
                 icon={GraduationCap}
                 courses={pastCourses?.content || []}
-                emptyMessage={`No past ${courseTermPlural.toLowerCase()}`}
+                emptyMessage={t('sections.nonePast', { term: courseTermPlural.toLowerCase() })}
                 onCourseClick={handleCourseClick}
                 getSessionName={(course) => {
                     if (!course.package_session_id) return null;
@@ -431,16 +439,15 @@ export const StudentCourses = ({ isSubmissionTab, packageSessionId }: { isSubmis
             />
 
             {/* Dialogs */}
-            <AssignCourseDialog
-                userId={userId}
-                userName={selectedStudent?.full_name || 'Student'}
+            <BulkAssignDialog
                 open={assignOpen}
                 onOpenChange={setAssignOpen}
                 onSuccess={handleRefresh}
+                initialLearner={assignLearner}
             />
             <DeassignCourseDialog
                 userId={userId}
-                userName={selectedStudent?.full_name || 'Student'}
+                userName={selectedStudent?.full_name || t('fallbackStudentName')}
                 courses={allActiveCourses}
                 open={deassignOpen}
                 onOpenChange={setDeassignOpen}
@@ -448,7 +455,7 @@ export const StudentCourses = ({ isSubmissionTab, packageSessionId }: { isSubmis
             />
             <ManageAccessDialog
                 userId={userId}
-                userName={selectedStudent?.full_name || 'Student'}
+                userName={selectedStudent?.full_name || t('fallbackStudentName')}
                 courses={accessManageableCourses}
                 open={manageAccessOpen}
                 onOpenChange={setManageAccessOpen}
@@ -459,13 +466,33 @@ export const StudentCourses = ({ isSubmissionTab, packageSessionId }: { isSubmis
 };
 
 /**
+ * When the learner was enrolled in this course, from ssigm.enrolled_date. Nothing is shown
+ * when the date is missing or unreadable, so older rows never print "Invalid Date".
+ */
+const EnrolledOnLabel = ({ enrolledDate }: { enrolledDate?: string | null }) => {
+    const { t, i18n } = useTranslation('manageStudentsCourses');
+
+    if (!enrolledDate) return null;
+    const enrolled = new Date(enrolledDate);
+    if (Number.isNaN(enrolled.getTime())) return null;
+
+    return (
+        <span className="text-xs text-neutral-500">
+            {t('enrolledOn', { date: enrolled.toLocaleDateString(i18n.language) })}
+        </span>
+    );
+};
+
+/**
  * How much course access is left, from ssigm.expiry_date. Absent expiry means the plan
  * granted unlimited access, which is a real state worth naming — a blank row would read
  * as "not loaded yet".
  */
 const AccessWindowLabel = ({ expiryDate }: { expiryDate?: string | null }) => {
+    const { t, i18n } = useTranslation('manageStudentsCourses');
+
     if (!expiryDate) {
-        return <span className="text-xs text-neutral-500">Access: unlimited</span>;
+        return <span className="text-xs text-neutral-500">{t('accessWindow.unlimited')}</span>;
     }
 
     const expiry = new Date(expiryDate);
@@ -489,8 +516,8 @@ const AccessWindowLabel = ({ expiryDate }: { expiryDate?: string | null }) => {
             )}
         >
             {expired
-                ? `Access expired ${expiry.toLocaleDateString()}`
-                : `Access till ${expiry.toLocaleDateString()} · ${daysLeft} day(s) left`}
+                ? t('accessWindow.expired', { date: expiry.toLocaleDateString(i18n.language) })
+                : t('accessWindow.daysLeft', { date: expiry.toLocaleDateString(i18n.language), count: daysLeft })}
         </span>
     );
 };
@@ -514,10 +541,11 @@ const InProgressSection = ({
     onCourseClick: (course: PackageDetailDTO) => void;
     getSessionName: (course: PackageDetailDTO) => string | null;
 }) => {
+    const { t } = useTranslation('manageStudentsCourses');
     const sessionTermSingular = getTerminology(ContentTerms.Session, SystemTerms.Session);
 
     return (
-        <ProfileSectionCard icon={BookOpen} heading={`In Progress ${courseTermPlural}`}>
+        <ProfileSectionCard icon={BookOpen} heading={t('sections.inProgressTitle', { term: courseTermPlural })}>
             {courses.length > 0 ? (
                 <div className="flex flex-col gap-2">
                     {courses.map((course) => {
@@ -530,16 +558,16 @@ const InProgressSection = ({
                                 onClick={() => onCourseClick(course)}
                                 className="flex w-full flex-col gap-2 rounded-lg border border-neutral-200 bg-white p-3 text-left transition-shadow hover:border-primary-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
                             >
-                                {/* Single-line summary per handoff: name (flex-1)
-                                    + level badge + percentage chip. Per-row
+                                {/* Summary per handoff: name (flex-1, wraps so a long name
+                                    is never cut off) + level badge + percentage chip. Per-row
                                     Trash removed — Remove from {course} lives
                                     in the top action bar. */}
-                                <div className="flex min-w-0 items-center gap-2">
+                                <div className="flex min-w-0 items-start gap-2">
                                     <p
-                                        className="min-w-0 flex-1 truncate text-sm font-semibold text-neutral-800"
-                                        title={course.package_name || 'Unnamed Course'}
+                                        className="min-w-0 flex-1 break-words text-sm font-semibold text-neutral-800"
+                                        title={course.package_name || t('course.unnamed')}
                                     >
-                                        {course.package_name || 'Unnamed Course'}
+                                        {course.package_name || t('course.unnamed')}
                                     </p>
                                     {course.level_name && (
                                         <span className="shrink-0 rounded-full bg-primary-50 px-2 py-0.5 text-xs font-medium capitalize text-primary-700">
@@ -552,10 +580,13 @@ const InProgressSection = ({
                                 </div>
                                 {sessionName && (
                                     <span className="text-xs text-neutral-500">
-                                        {sessionTermSingular}: {sessionName}
+                                        {t('course.sessionLabel', { term: sessionTermSingular, name: sessionName })}
                                     </span>
                                 )}
-                                <AccessWindowLabel expiryDate={course.expiry_date} />
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 empty:hidden">
+                                    <EnrolledOnLabel enrolledDate={course.enrolled_date} />
+                                    <AccessWindowLabel expiryDate={course.expiry_date} />
+                                </div>
                                 {/* Progress mini-bar */}
                                 <ProfileMiniBar value={pct} />
                             </button>
@@ -571,7 +602,7 @@ const InProgressSection = ({
                                 disable={page === 0}
                             >
                                 <CaretLeft className="size-3.5" />
-                                Prev
+                                {t('pagination.prev')}
                             </MyButton>
                             <span className="text-xs text-neutral-500">
                                 {page + 1} / {totalPages}
@@ -582,7 +613,7 @@ const InProgressSection = ({
                                 onClick={() => onPageChange(page + 1)}
                                 disable={page >= totalPages - 1}
                             >
-                                Next
+                                {t('pagination.next')}
                                 <CaretRight className="size-3.5" />
                             </MyButton>
                         </div>
@@ -591,7 +622,7 @@ const InProgressSection = ({
             ) : (
                 <ProfileEmpty
                     icon={BookOpen}
-                    title={`No ${courseTermPlural.toLowerCase()} in progress`}
+                    title={t('sections.noneInProgress', { term: courseTermPlural.toLowerCase() })}
                 />
             )}
         </ProfileSectionCard>
@@ -623,6 +654,7 @@ const CourseSection = ({
     onCourseClick?: (course: PackageDetailDTO) => void;
     getSessionName?: (course: PackageDetailDTO) => string | null;
 }) => {
+    const { t } = useTranslation('manageStudentsCourses');
     const sessionTermSingular = getTerminology(ContentTerms.Session, SystemTerms.Session);
 
     return (
@@ -644,16 +676,19 @@ const CourseSection = ({
                                 <div className="flex min-w-0 items-start justify-between gap-2">
                                     <div className="min-w-0">
                                         <p
-                                            className="truncate text-sm font-semibold text-neutral-800"
-                                            title={course.package_name || 'Unnamed Course'}
+                                            className="break-words text-sm font-semibold text-neutral-800"
+                                            title={course.package_name || t('course.unnamed')}
                                         >
-                                            {course.package_name || 'Unnamed Course'}
+                                            {course.package_name || t('course.unnamed')}
                                         </p>
                                         {sessionName && (
                                             <p className="mt-0.5 truncate text-xs text-neutral-500">
-                                                {sessionTermSingular}: {sessionName}
+                                                {t('course.sessionLabel', { term: sessionTermSingular, name: sessionName })}
                                             </p>
                                         )}
+                                        <div className="mt-0.5 empty:hidden">
+                                            <EnrolledOnLabel enrolledDate={course.enrolled_date} />
+                                        </div>
                                     </div>
                                     {renderBadge(course)}
                                 </div>
@@ -670,7 +705,7 @@ const CourseSection = ({
                                 disable={page === 0}
                             >
                                 <CaretLeft className="size-3.5" />
-                                Prev
+                                {t('pagination.prev')}
                             </MyButton>
                             <span className="text-xs text-neutral-500">
                                 {page + 1} / {totalPages}
@@ -681,7 +716,7 @@ const CourseSection = ({
                                 onClick={() => onPageChange(page + 1)}
                                 disable={page >= totalPages - 1}
                             >
-                                Next
+                                {t('pagination.next')}
                                 <CaretRight className="size-3.5" />
                             </MyButton>
                         </div>

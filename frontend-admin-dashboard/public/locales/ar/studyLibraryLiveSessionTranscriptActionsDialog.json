@@ -1,0 +1,75 @@
+{
+    "dialogHeading": "النص المكتوب",
+    "statusPill": {
+        "transcriptReady": "النص المكتوب جاهز",
+        "wordCount_zero": "لا كلمات",
+        "wordCount_one": "كلمة واحدة",
+        "wordCount_two": "كلمتان",
+        "wordCount_few": "{{formattedCount}} كلمات",
+        "wordCount_many": "{{formattedCount}} كلمة",
+        "wordCount_other": "{{formattedCount}} كلمة"
+    },
+    "languages": {
+        "en": "الإنجليزية",
+        "hi": "الهندية",
+        "bn": "البنغالية",
+        "ta": "التاميلية",
+        "te": "التيلوغوية",
+        "mr": "الماراثية",
+        "gu": "الغوجاراتية",
+        "kn": "الكانادية",
+        "ml": "المالايالامية",
+        "pa": "البنجابية",
+        "ur": "الأردية",
+        "source": "المصدر"
+    },
+    "reader": {
+        "transcriptLabel": "نص {{language}}",
+        "emptyTranscript": "النص المكتوب فارغ لهذا التسجيل.",
+        "loadingTranscript": "جارٍ تحميل النص المكتوب…"
+    },
+    "buttons": {
+        "copy": "نسخ",
+        "back": "رجوع",
+        "retry": "إعادة المحاولة"
+    },
+    "actions": {
+        "createAssessment": {
+            "title": "إنشاء تقييم",
+            "description": "أنشئ تلقائيًا تقييم اختيار من متعدد من هذه المحاضرة وانشره لدفعاتك.",
+            "cta": "إنشاء تقييم"
+        },
+        "generateNotes": {
+            "title": "إنشاء ملاحظات المحاضرة",
+            "description": "حوّل هذا النص إلى ملاحظات دراسية منظمة وواضحة يمكنك مشاركتها مع المتعلمين.",
+            "cta": "إنشاء الملاحظات"
+        }
+    },
+    "loading": {
+        "generatingNotes": "جارٍ إنشاء ملاحظات المحاضرة…",
+        "usuallyTakes": "يستغرق عادةً 5-15 ثانية."
+    },
+    "errors": {
+        "couldNotGenerateNotes": "تعذّر إنشاء الملاحظات.",
+        "transcriptTooShort": "النص المكتوب فارغ أو قصير جدًا لإنشاء الملاحظات",
+        "cachingFailed": "تم إنشاء الملاحظات، لكن التخزين المؤقت فشل — أعد الإنشاء للمحاولة مجددًا.",
+        "generateFailed": "فشل إنشاء الملاحظات",
+        "pdfGenerationFailed": "تعذّر إنشاء ملف PDF",
+        "notesNotReady": "الملاحظات ليست جاهزة للتصدير بعد."
+    },
+    "toasts": {
+        "copied": "تم نسخ {{label}}",
+        "clipboardError": "تعذّر الوصول إلى الحافظة",
+        "notesGenerated": "تم إنشاء ملاحظات المحاضرة",
+        "pdfDownloaded": "تم تنزيل PDF"
+    },
+    "loaded": {
+        "backToActions": "← الرجوع إلى الإجراءات",
+        "generated": "أُنشئ {{timeAgo}}",
+        "addToCourse": "إضافة إلى الدورة",
+        "lectureNotes": "ملاحظات المحاضرة",
+        "preparing": "جارٍ التحضير…",
+        "downloadPdf": "تنزيل PDF",
+        "regenerate": "إعادة الإنشاء"
+    }
+}

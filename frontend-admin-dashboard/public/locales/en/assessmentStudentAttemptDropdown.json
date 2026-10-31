@@ -1,0 +1,129 @@
+{
+    "dialogs": {
+        "attentionLabel": "Attention",
+        "yes": "Yes",
+        "cancel": "Cancel",
+        "continue": "Continue",
+        "provideReattempt": {
+            "title": "Provide Reattempt",
+            "confirmMessagePrefix": "Are you sure you want to provide a reattempt opportunity to",
+            "providing": "Providing..."
+        },
+        "releaseResult": {
+            "title": "Release Result",
+            "confirmMessagePrefix": "Are you sure you want to release result for"
+        },
+        "manualReEvaluate": {
+            "title": "Re-evaluate Attempt",
+            "evaluatingLabel": "Evaluating",
+            "messagePart1": "’s attempt has already been evaluated. Re-evaluating will move it back to",
+            "messagePart2": "until you submit new marks. Do you want to continue?"
+        },
+        "evaluateWithAI": {
+            "title": "Evaluate Assessment with AI",
+            "evaluatingLabel": "Evaluating",
+            "reEvaluationWarningPart1": "This attempt has already been evaluated. Re-evaluating will move it back to",
+            "reEvaluationWarningPart2": "until the new result is ready.",
+            "selectModelLabel": "Select AI Model",
+            "selectModelPlaceholder": "Select a model",
+            "chooseModelPrefix": "Choose the AI model to evaluate",
+            "chooseModelSuffix": "’s submission",
+            "rubricInfo": "For any question without a rubric, the AI generates grading criteria the first time and reuses them for every student, so everyone is graded the same way. Set rubrics on the assessment for full control over how marks are awarded.",
+            "estimatedCostLabel": "Estimated cost:",
+            "creditsCount_one": "{{count}} credit",
+            "creditsCount_other": "{{count}} credits",
+            "balance_one": "Balance: {{count}}",
+            "balance_other": "Balance: {{count}}",
+            "insufficientCredits": "Not enough credits for this evaluation. Add credits to your institute to continue.",
+            "starting": "Starting...",
+            "start": "Start"
+        },
+        "revaluateEntireAssessment": {
+            "title": "Revaluate Entire Assessment",
+            "confirmMessagePrefix": "Are you sure you want to revaluate for",
+            "confirmMessageSuffix": "for the entire assessment?"
+        },
+        "aiReport": {
+            "title": "Download AI Report",
+            "intro": "The same AI report the student sees, for",
+            "bulletWeakness": "Score, rank and marks by section against the class",
+            "bulletCharts": "Charts for topics, thinking skills (Bloom's) and how the test was taken",
+            "bulletActions": "Every question with the student's answer, the right answer and an explanation, plus a study plan",
+            "checking": "Checking whether the analysis is ready…",
+            "usesCredits": "The analysis for this attempt has not been generated yet. Downloading it will use your institute’s AI credits. Later downloads of the same attempt are free.",
+            "alreadyGenerated": "The analysis for this attempt is ready — downloading it will not use any AI credits.",
+            "unsupported": "This attempt cannot be analysed, so no AI report is available for it.",
+            "balance_one": "Balance: {{count}} credit",
+            "balance_other": "Balance: {{count}} credits",
+            "generateAndDownload": "Generate & Download",
+            "download": "Download",
+            "generating": "Generating…",
+            "downloaded": "AI report downloaded."
+        }
+    },
+    "dropdown": {
+        "checkingSubmission": "Checking Submission...",
+        "viewSubmission": "View Submission",
+        "loadingSubmission": "Loading Submission...",
+        "uploadSubmission": "Upload Submission",
+        "provideReattempt": "Provide Reattempt",
+        "evaluate": "Evaluate",
+        "revaluate": "Revaluate",
+        "questionWise": "Question Wise",
+        "entireAssessment": "Entire Assessment",
+        "manual": "Manual",
+        "evaluateWithAI": "Evaluate with AI",
+        "checkingEvaluatedCopy": "Checking Evaluated Copy...",
+        "viewEvaluatedCopy": "View Evaluated Copy",
+        "loadingEvaluatedCopy": "Loading Evaluated Copy...",
+        "generatingReport": "Generating Report...",
+        "downloadReport": "Download Report",
+        "releaseResult": "Release Result",
+        "downloadAiReport": "Download AI Report",
+        "proctoring": "Proctoring"
+    },
+    "toasts": {
+        "reattemptProvided": "Reattempt has been provided to {{name}}.",
+        "reattemptError": "Failed to provide reattempt. Please try again.",
+        "reattemptRegistrationError": "Could not resolve this participant’s registration. Please try again.",
+        "resultReleased": "Result released successfully. The learner has been notified by email.",
+        "revaluateSuccess": "Your attempt for this assessment has been revaluated. Please check your email!",
+        "evaluationStarted": "AI evaluation started successfully!",
+        "evaluationError": "Failed to start AI evaluation. Please try again.",
+        "noEvaluatedCopy": "No evaluated copy found for this attempt.",
+        "evaluatedCopyLoadError": "Failed to load the evaluated copy. Please try again.",
+        "noSubmissionFile": "No submission file found for this attempt.",
+        "popupBlocked": "Please allow pop-ups to view the submission.",
+        "submissionLoadError": "Failed to load submission. Please try again.",
+        "reportGenerateError": "Failed to generate the report. Please try again.",
+        "aiReportError": "Could not download the AI report. Please try again."
+    },
+    "proctoring": {
+        "title": "Proctoring — {{name}}",
+        "loadError": "Could not load the proctoring log.",
+        "flags": "{{count}} flags",
+        "warnings": "{{count}} warnings",
+        "snapshots": "{{count}} snapshots",
+        "tier": "Tier: {{tier}}",
+        "filter": {
+            "flagsOnly": "Flags & warnings",
+            "everything": "Everything"
+        },
+        "empty": "No proctoring data for this attempt. Proctoring was off, or the learner's device sent nothing.",
+        "noFlags": "Nothing was flagged.",
+        "viewSnapshot": "View snapshot",
+        "snapshotMissing": "Snapshot unavailable",
+        "snapshotAlt": "Proctoring snapshot",
+        "events": {
+            "CHECK_IN": "Camera check-in",
+            "SNAPSHOT": "Snapshot",
+            "CAMERA_DENIED": "Camera permission denied",
+            "CAMERA_LOST": "Camera turned off",
+            "NO_FACE": "No face in frame",
+            "MULTIPLE_FACES": "More than one face",
+            "TAB_SWITCH": "Left the test window",
+            "FULLSCREEN_EXIT": "Exited fullscreen",
+            "AUTO_SUBMITTED": "Auto-submitted after too many flags"
+        }
+    }
+}

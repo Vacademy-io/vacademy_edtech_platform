@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Slide } from '../-hooks/use-slides';
 import { getPublicUrl } from '@/services/upload_file';
 import { toast } from 'sonner';
@@ -12,6 +13,7 @@ interface AudioSlidePreviewProps {
 }
 
 const AudioSlidePreview = ({ activeItem, isLearnerView = false }: AudioSlidePreviewProps) => {
+    const { t } = useTranslation('studyLibraryAudioSlidePreview');
     const audioRef = useRef<HTMLAudioElement>(null);
     const [audioUrl, setAudioUrl] = useState<string>('');
     const [thumbnailUrl, setThumbnailUrl] = useState<string>('');
@@ -45,7 +47,7 @@ const AudioSlidePreview = ({ activeItem, isLearnerView = false }: AudioSlidePrev
     useEffect(() => {
         const fetchUrls = async () => {
             if (!audioSlide) {
-                setError('Audio slide data not found');
+                setError(t('audioDataNotFound'));
                 setIsLoading(false);
                 return;
             }
@@ -66,7 +68,7 @@ const AudioSlidePreview = ({ activeItem, isLearnerView = false }: AudioSlidePrev
                 }
             } catch (err) {
                 console.error('Error fetching audio URLs:', err);
-                setError('Failed to load audio');
+                setError(t('failedToLoadAudio'));
             } finally {
                 setIsLoading(false);
             }
@@ -116,8 +118,8 @@ const AudioSlidePreview = ({ activeItem, isLearnerView = false }: AudioSlidePrev
     };
 
     const handleAudioError = () => {
-        setError('Failed to play audio');
-        toast.error('Audio playback error');
+        setError(t('failedToPlayAudio'));
+        toast.error(t('playbackError'));
     };
 
     const handleAudioEnded = () => {
@@ -150,9 +152,9 @@ const AudioSlidePreview = ({ activeItem, isLearnerView = false }: AudioSlidePrev
         return (
             <div className="flex size-full flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
                 <div className="flex items-center justify-between border-b bg-red-50 px-6 py-4">
-                    <h2 className="text-lg font-semibold text-red-700">Audio</h2>
+                    <h2 className="text-lg font-semibold text-red-700">{t('audioLabel')}</h2>
                     <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-600">
-                        DELETED
+                        {t('deletedTag')}
                     </span>
                 </div>
                 <div className="flex flex-1 flex-col items-center justify-center bg-white px-6 py-12">
@@ -161,11 +163,9 @@ const AudioSlidePreview = ({ activeItem, isLearnerView = false }: AudioSlidePrev
                             <Trash size={24} className="text-red-500" />
                         </div>
                         <h3 className="mb-2 text-lg font-medium text-slate-600">
-                            This audio has been deleted
+                            {t('audioDeletedTitle')}
                         </h3>
-                        <p className="text-sm text-slate-400">
-                            The audio content is no longer available
-                        </p>
+                        <p className="text-sm text-slate-400">{t('audioDeletedSubtitle')}</p>
                     </div>
                 </div>
             </div>
@@ -178,7 +178,7 @@ const AudioSlidePreview = ({ activeItem, isLearnerView = false }: AudioSlidePrev
             <div className="flex h-64 items-center justify-center rounded-lg bg-gray-100">
                 <div className="flex flex-col items-center gap-3">
                     <div className="size-12 animate-spin rounded-full border-y-2 border-primary-500"></div>
-                    <p className="text-sm text-gray-600">Loading audio...</p>
+                    <p className="text-sm text-gray-600">{t('loadingAudio')}</p>
                 </div>
             </div>
         );
@@ -207,7 +207,7 @@ const AudioSlidePreview = ({ activeItem, isLearnerView = false }: AudioSlidePrev
                         {thumbnailUrl ? (
                             <img
                                 src={thumbnailUrl}
-                                alt={activeItem.title || 'Audio thumbnail'}
+                                alt={activeItem.title || t('audioThumbnailAlt')}
                                 className="size-full object-cover"
                             />
                         ) : (
@@ -218,7 +218,7 @@ const AudioSlidePreview = ({ activeItem, isLearnerView = false }: AudioSlidePrev
                     {/* Title and Description */}
                     <div className="flex flex-1 flex-col">
                         <h3 className="text-lg font-semibold text-neutral-800">
-                            {activeItem.title || 'Untitled Audio'}
+                            {activeItem.title || t('untitledAudio')}
                         </h3>
                         {activeItem.description && (
                             <p className="mt-1 line-clamp-2 text-sm text-neutral-500">
@@ -227,7 +227,9 @@ const AudioSlidePreview = ({ activeItem, isLearnerView = false }: AudioSlidePrev
                         )}
                         {effectiveDuration > 0 && (
                             <p className="mt-1 text-xs text-neutral-400">
-                                Duration: {formatTime(effectiveDuration)}
+                                {t('durationLabel', {
+                                    time: formatTime(effectiveDuration),
+                                })}
                             </p>
                         )}
                     </div>
@@ -270,7 +272,7 @@ const AudioSlidePreview = ({ activeItem, isLearnerView = false }: AudioSlidePrev
                         <button
                             onClick={handlePlayPause}
                             className="flex size-14 items-center justify-center rounded-full bg-primary-500 text-white shadow-lg transition-all hover:scale-105 hover:bg-primary-600 active:scale-95"
-                            aria-label={isPlaying ? 'Pause' : 'Play'}
+                            aria-label={isPlaying ? t('pauseAriaLabel') : t('playAriaLabel')}
                         >
                             {isPlaying ? (
                                 <Pause size={28} weight="fill" />
@@ -285,7 +287,9 @@ const AudioSlidePreview = ({ activeItem, isLearnerView = false }: AudioSlidePrev
             {/* Transcript Section (if available) */}
             {audioSlide?.transcript && !isLearnerView && (
                 <div className="border-t border-neutral-100 bg-neutral-50 p-4">
-                    <h4 className="mb-2 text-sm font-medium text-neutral-700">Transcript</h4>
+                    <h4 className="mb-2 text-sm font-medium text-neutral-700">
+                        {t('transcriptLabel')}
+                    </h4>
                     <div className="max-h-48 overflow-y-auto rounded-lg bg-white p-3 text-sm text-neutral-600 shadow-inner">
                         {audioSlide.transcript}
                     </div>

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     Select,
     SelectContent,
@@ -28,11 +30,13 @@ import OfflineAccessSettings from './OfflineAccessSettings';
 
 // Roles offered directly. `key` is the canonical stored role key; `label` is the
 // dropdown label; `cardLabel` is the (plural) noun used in each card's copy.
-const SYSTEM_ROLES = [
-    { key: 'ADMIN', label: 'Admin', cardLabel: 'admins' },
-    { key: 'TEACHER', label: 'Teacher', cardLabel: 'teachers' },
-    { key: 'LEARNER', label: 'Learner', cardLabel: 'learners' },
-];
+function buildSystemRoles(t: TFunction) {
+    return [
+        { key: 'ADMIN', label: t('roles.admin.label'), cardLabel: t('roles.admin.cardLabel') },
+        { key: 'TEACHER', label: t('roles.teacher.label'), cardLabel: t('roles.teacher.cardLabel') },
+        { key: 'LEARNER', label: t('roles.learner.label'), cardLabel: t('roles.learner.cardLabel') },
+    ];
+}
 
 // System roles already covered above (or not configured here) — excluded from
 // the custom-role list so the dropdown doesn't show duplicates.
@@ -54,12 +58,15 @@ interface ContentProtectionSettingsProps {
 export default function ContentProtectionSettings({
     embedded = false,
 }: ContentProtectionSettingsProps = {}) {
+    const { t } = useTranslation('settingsContentProtection');
     const [selectedKey, setSelectedKey] = useState<string>('ADMIN');
 
     const { data: customRoles } = useQuery({
         queryKey: ['custom-roles'],
         queryFn: getAllRoles,
     });
+
+    const systemRoles = buildSystemRoles(t);
 
     const customRoleEntries = (customRoles || [])
         .filter((r: CustomRole) => !SYSTEM_ROLE_NAMES.has(r.name.toUpperCase()))
@@ -69,26 +76,28 @@ export default function ContentProtectionSettings({
             cardLabel: r.name,
         }));
 
-    const roleOptions = [...SYSTEM_ROLES, ...customRoleEntries];
-    const selected = roleOptions.find((r) => r.key === selectedKey) ?? SYSTEM_ROLES[0];
+    const roleOptions = [...systemRoles, ...customRoleEntries];
+    const selected = roleOptions.find((r) => r.key === selectedKey) ?? systemRoles[0];
 
     return (
         <SettingsPageShell
-            title="Content Protection"
-            description="Control, per role, which slide types can be downloaded and whether right-click, copy and view-source are blocked on slides. These are best-effort, client-side deterrents — they hide our own controls and cannot stop every browser-level save."
+            title={t('header.title')}
+            description={t('header.description')}
             maxWidth="max-w-3xl"
             embedded={embedded}
             actions={
                 <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-neutral-700">Role</span>
+                    <span className="text-sm font-semibold text-neutral-700">
+                        {t('actions.roleLabel')}
+                    </span>
                     <Select value={selectedKey} onValueChange={setSelectedKey}>
                         <SelectTrigger className="h-9 w-48">
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            {roleOptions.map((r) => (
-                                <SelectItem key={r.key} value={r.key}>
-                                    {r.label}
+                            {roleOptions.map((opt) => (
+                                <SelectItem key={opt.key} value={opt.key}>
+                                    {opt.label}
                                 </SelectItem>
                             ))}
                         </SelectContent>

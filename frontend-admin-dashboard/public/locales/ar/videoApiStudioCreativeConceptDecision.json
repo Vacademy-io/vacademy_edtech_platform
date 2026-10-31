@@ -1,0 +1,37 @@
+{
+    "header": {
+        "title": "التوجه الإبداعي"
+    },
+    "fields": {
+        "controlling_idea": {
+            "label": "الفكرة المحورية",
+            "hint": "الحجة الوحيدة التي يطرحها الفيديو"
+        },
+        "tonal_register": {
+            "label": "النبرة",
+            "hint": "مثال: واثقة، مرحة، وثائقية"
+        },
+        "emotional_arc": {
+            "label": "المسار العاطفي",
+            "hint": "من ← إلى"
+        },
+        "visual_metaphor": {
+            "label": "الاستعارة البصرية",
+            "hint": "الفكرة القابلة للتحريك"
+        },
+        "signature_device": {
+            "label": "العنصر المميز",
+            "hint": "لفتة بصرية متكررة"
+        }
+    },
+    "directions": {
+        "draftLabel": "التوجه {{letter}} · المسودة",
+        "label": "التوجه {{letter}}",
+        "draftWhyThisWorks": "توجه المسودة."
+    },
+    "actions": {
+        "letAiDecide": "دع الذكاء الاصطناعي يقرر",
+        "saveAndContinue": "حفظ ومتابعة",
+        "approveDirection": "اعتماد التوجه"
+    }
+}

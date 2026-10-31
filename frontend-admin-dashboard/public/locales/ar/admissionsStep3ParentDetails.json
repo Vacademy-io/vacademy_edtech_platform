@@ -1,0 +1,65 @@
+{
+    "father": {
+        "sectionLabel": "الأب",
+        "sectionHeading": "التفاصيل",
+        "name": {
+            "label": "اسم الأب",
+            "placeholder": "أدخل اسم الأب"
+        },
+        "mobile": {
+            "label": "رقم الجوال"
+        },
+        "email": {
+            "label": "البريد الإلكتروني",
+            "placeholder": "أدخل البريد الإلكتروني"
+        },
+        "aadhaar": {
+            "label": "رقم آدهار"
+        },
+        "qualification": {
+            "label": "المؤهل الدراسي",
+            "placeholder": "أدخل المؤهل الدراسي"
+        },
+        "occupation": {
+            "label": "المهنة",
+            "placeholder": "أدخل المهنة"
+        }
+    },
+    "mother": {
+        "sectionLabel": "الأم",
+        "sectionHeading": "التفاصيل",
+        "name": {
+            "label": "اسم الأم",
+            "placeholder": "أدخل اسم الأم"
+        },
+        "mobile": {
+            "label": "رقم الجوال"
+        },
+        "email": {
+            "label": "البريد الإلكتروني",
+            "placeholder": "أدخل البريد الإلكتروني"
+        },
+        "aadhaar": {
+            "label": "رقم آدهار"
+        },
+        "qualification": {
+            "label": "المؤهل الدراسي",
+            "placeholder": "أدخل المؤهل الدراسي"
+        },
+        "occupation": {
+            "label": "المهنة",
+            "placeholder": "أدخل المهنة"
+        }
+    },
+    "guardian": {
+        "sectionLabel": "ولي الأمر",
+        "sectionHeading": "التفاصيل",
+        "name": {
+            "label": "اسم ولي الأمر",
+            "placeholder": "أدخل اسم ولي الأمر"
+        },
+        "mobile": {
+            "label": "رقم جوال ولي الأمر"
+        }
+    }
+}

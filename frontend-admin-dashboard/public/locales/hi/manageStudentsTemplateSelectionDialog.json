@@ -1,0 +1,36 @@
+{
+    "dialog": {
+        "heading": "अपने ईमेल के लिए मौजूदा टेम्पलेट चुनें या नया बनाएं",
+        "cancel": "रद्द करें"
+    },
+    "search": {
+        "placeholder": "टेम्पलेट खोजें..."
+    },
+    "actions": {
+        "createNewTemplate": "नया टेम्पलेट बनाएं"
+    },
+    "loading": {
+        "templates": "टेम्पलेट लोड हो रहे हैं..."
+    },
+    "empty": {
+        "noSearchResults": "आपकी खोज से मेल खाता कोई टेम्पलेट नहीं मिला।",
+        "noTemplates": "कोई ईमेल टेम्पलेट नहीं मिला।",
+        "getStarted": "शुरू करने के लिए अपना पहला टेम्पलेट बनाएं।"
+    },
+    "table": {
+        "templateName": "टेम्पलेट नाम",
+        "subject": "विषय",
+        "contentPreview": "सामग्री पूर्वावलोकन",
+        "noSubject": "कोई विषय नहीं",
+        "noContent": "कोई सामग्री नहीं"
+    },
+    "pagination": {
+        "showingRange": "{{total}} में से {{start}} से {{end}} तक टेम्पलेट दिखाए जा रहे हैं",
+        "rowsPerPage": "प्रति पृष्ठ पंक्तियाँ:",
+        "pageOf": "पृष्ठ {{current}} / {{total}}"
+    },
+    "errors": {
+        "loadTemplatesFailed": "ईमेल टेम्पलेट लोड करने में विफल",
+        "loadTemplateContentFailed": "टेम्पलेट सामग्री लोड करने में विफल। कैश्ड संस्करण का उपयोग किया जा रहा है।"
+    }
+}

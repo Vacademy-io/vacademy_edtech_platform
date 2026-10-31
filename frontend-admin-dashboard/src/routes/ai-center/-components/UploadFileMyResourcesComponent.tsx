@@ -9,8 +9,10 @@ import { toast } from 'sonner';
 import { handleStartProcessUploadedFile } from '../-services/ai-center-service';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 
 const UploadFileMyResourcesComponent = () => {
+    const { t } = useTranslation('aiCenterUploadFileMyResourcesComponent');
     const queryClient = useQueryClient();
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const { uploadFile } = useFileUpload();
@@ -32,7 +34,7 @@ const UploadFileMyResourcesComponent = () => {
             });
             if (fileId) {
                 await handleStartProcessUploadedFile(fileId);
-                toast.success('File uploaded successfully!');
+                toast.success(t('toast.success'));
                 setTimeout(() => {
                     queryClient.invalidateQueries({ queryKey: ['GET_INDIVIDUAL_AI_LIST_DATA'] });
                 }, 100);
@@ -46,12 +48,12 @@ const UploadFileMyResourcesComponent = () => {
             <DialogTrigger>
                 <MyButton type="button" scale="large" buttonType="primary" className="font-medium">
                     <UploadSimple size={32} />
-                    Upload
+                    {t('trigger.uploadButton')}
                 </MyButton>
             </DialogTrigger>
             <DialogContent className="flex flex-col p-0">
                 <h1 className="rounded-t-lg bg-primary-50 p-4 font-semibold text-primary-500">
-                    Upload File
+                    {t('dialog.title')}
                 </h1>
                 <div className="flex flex-col items-center justify-center gap-4 p-4">
                     {fileUploading ? (
@@ -71,7 +73,7 @@ const UploadFileMyResourcesComponent = () => {
                             className="font-medium"
                             onClick={handleUploadClick}
                         >
-                            Upload PDF/DOCX/PPT
+                            {t('dialog.uploadButton')}
                         </MyButton>
                     )}
                     <Input

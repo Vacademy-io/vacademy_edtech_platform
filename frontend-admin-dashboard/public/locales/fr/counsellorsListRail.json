@@ -1,0 +1,15 @@
+{
+    "empty": "Aucun conseiller dans cette équipe.",
+    "toast": {
+        "reactivated": "Conseiller réactivé",
+        "markedInactive": "Conseiller marqué inactif",
+        "updateFailed": "Échec de la mise à jour du statut"
+    },
+    "assignedCount_one": "{{count}} assigné",
+    "assignedCount_many": "{{count}} assignés",
+    "assignedCount_other": "{{count}} assignés",
+    "markInactive": "Marquer comme inactif",
+    "markActive": "Marquer comme actif",
+    "active": "Actif",
+    "inactive": "Inactif"
+}

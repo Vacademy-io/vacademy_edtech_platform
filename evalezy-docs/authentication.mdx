@@ -1,0 +1,227 @@
+---
+title: "Authentication"
+description: "Authenticate with an API key in the X-API-Key header, choose its scopes and keep it safe."
+icon: "key"
+---
+
+Every request to the Evalezy API is authenticated with an **API key** sent in the `X-API-Key` header. A key belongs to one institute and can act only for that institute.
+
+<ParamField header="X-API-Key" type="string" required>
+  Your institute's Evaluation API key, for example `vak_eval_3f9a1c…`. Send it as a header on every request. Keys sent as a query parameter are ignored.
+</ParamField>
+
+```bash
+curl https://api.evalezy.com/v1/me \
+  -H "X-API-Key: $EVALEZY_API_KEY"
+```
+
+The only endpoint that needs no key is the OpenAPI document at `https://api.evalezy.com/v1/openapi.json`.
+
+<Warning>
+  **Server-to-server only.** Anyone who has the key can create exams, read results and spend your credits. Never put a key in a web page, a mobile app, a desktop client or anywhere else a user can read it. Call Evalezy from your backend, and have your frontend talk to your backend.
+</Warning>
+
+## Key format
+
+Evaluation keys look like this:
+
+```text
+vak_eval_<48 lowercase hexadecimal characters>
+```
+
+The `vak_eval_` prefix makes keys easy to spot in code reviews and secret scanners. The dashboard shows the first 16 characters (`vak_eval_3f9a1c0`) so you can tell your keys apart. Evalezy stores only a hash of each key, so a lost key cannot be shown again. Revoke it and create a new one.
+
+## Get a key
+
+<Steps>
+  <Step title="Get the Evaluation API enabled for your institute">
+    Evalezy turns the API on per institute. Contact [hello@evalezy.com](mailto:hello@evalezy.com) to get started. Until it is on, every key gets `403 product_not_enabled`.
+  </Step>
+  <Step title="An institute admin creates the key">
+    In the Vacademy admin dashboard, go to **Settings → Integrations → API keys** and click **Create key**. Only institute admins can create and revoke keys.
+
+    | Field | Notes |
+    | --- | --- |
+    | **Key name** | Who uses the key, for example "School ERP" or "OSM vendor - staging". Up to 120 characters. |
+    | **Permissions** | The scopes the key gets (see below). Read and write are ticked by default. |
+    | **Expires on** | Optional. Leave it empty for a key that does not expire. |
+    | **Daily copy limit** | Optional. Caps how many copies this key can submit per day, within your institute's own daily limit. |
+  </Step>
+  <Step title="Copy the key">
+    The full key is shown **once**, right after you create it. Copy it into your secret manager before you close the dialog.
+  </Step>
+</Steps>
+
+An institute can have up to **50** active keys. Use a separate key for each system and environment (for example "ERP production" and "ERP staging"), so you can revoke one without breaking the others.
+
+## Scopes
+
+A scope is a permission on a key. When you create a key, pick only the scopes the calling system needs.
+
+| Scope | In the dashboard | Allows |
+| --- | --- | --- |
+| `evaluation:read` | Read exams, submissions, results and credits | Get and list exams, questions, rubrics, candidates, uploads and submissions; read results and checked copies; read the credit balance and get quotes |
+| `evaluation:write` | Create exams, questions, rubrics, candidates, uploads and submissions | Create, edit, open and delete exams; add and edit questions and rubrics; add, register and unregister candidates; create uploads; submit, re-evaluate, cancel and delete submissions |
+| `evaluation:review` | Override AI marks and approve them | Change a question's marks and feedback (`PATCH /submissions/{id}/questions/{question_id}`); approve the AI's marks as they are (`POST /submissions/{id}/approve`) |
+| `evaluation:finalize` | Finalize and unfinalize results | Finalize results (`POST /exams/{id}/finalize`); put a finalized result back on hold (`POST /submissions/{id}/unfinalize`) |
+
+New keys get `evaluation:read` and `evaluation:write` by default. Review and finalize must be ticked on purpose, because they change marks that candidates may see.
+
+`GET /me` works with any valid key and needs no scope.
+
+<Tip>
+  **Common setups**
+
+  - **ERP or test-series backend that grades and publishes on its own:** all four scopes.
+  - **System that sends copies, while teachers review and publish in the Vacademy dashboard:** `evaluation:read` + `evaluation:write`.
+  - **Reporting or results-sync job:** `evaluation:read` only.
+  - **Your own teacher review screen:** add `evaluation:review`, and `evaluation:finalize` if teachers publish from it.
+</Tip>
+
+A call without the scope it needs gets `403 insufficient_scope`, and the scope it was missing is in `error.details.required_scope`. You can't add scopes to an existing key. Create a new key with the scopes you need, switch to it, then revoke the old one.
+
+## Check a key
+
+`GET /me` tells you which institute a key belongs to, what it can do and how much of today's quota it has used. Call it when you set up an integration, or as a health check.
+
+<CodeGroup>
+
+```bash curl
+curl https://api.evalezy.com/v1/me \
+  -H "X-API-Key: $EVALEZY_API_KEY"
+```
+
+```python Python
+import os
+import requests
+
+r = requests.get(
+    "https://api.evalezy.com/v1/me",
+    headers={"X-API-Key": os.environ["EVALEZY_API_KEY"]},
+    timeout=10,
+)
+r.raise_for_status()
+print(r.json())
+```
+
+```javascript Node
+const res = await fetch("https://api.evalezy.com/v1/me", {
+  headers: { "X-API-Key": process.env.EVALEZY_API_KEY },
+});
+if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+console.log(await res.json());
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "key_id": "5b0c8f2e-6d3a-4a51-9a5e-0f7b1c2d3e4f",
+  "name": "School ERP",
+  "institute_id": "c1a2b3d4-0000-4e5f-8a9b-1234567890ab",
+  "institute_name": "Green Valley Public School",
+  "scopes": ["evaluation:read", "evaluation:write"],
+  "rate_tier": "standard",
+  "daily_copy_quota": 2000,
+  "daily_copy_cap": null,
+  "quota_used_today": 37,
+  "quota_resets_at": "2026-10-03T00:00:00Z"
+}
+```
+
+<ResponseField name="key_id" type="string">The key's id. It is safe to log, unlike the key itself.</ResponseField>
+<ResponseField name="name" type="string">The name given when the key was created.</ResponseField>
+<ResponseField name="institute_id" type="string">The institute the key acts for.</ResponseField>
+<ResponseField name="institute_name" type="string | null">The institute's name. It may be missing or `null` if it can't be looked up at that moment.</ResponseField>
+<ResponseField name="scopes" type="string[]">The scopes on this key.</ResponseField>
+<ResponseField name="rate_tier" type="string">The key's rate-limit tier, usually `standard`. See [Rate limits](/platform/rate-limits).</ResponseField>
+<ResponseField name="daily_copy_quota" type="integer">How many copies the institute can submit per day.</ResponseField>
+<ResponseField name="daily_copy_cap" type="integer | null">This key's own daily copy limit, or `null` if it has none.</ResponseField>
+<ResponseField name="quota_used_today" type="integer">Copies submitted today.</ResponseField>
+<ResponseField name="quota_resets_at" type="string">When the daily counters reset (00:00 UTC).</ResponseField>
+
+## What a key can see
+
+- A key acts for **its own institute only**. Ids that belong to another institute return `404`, exactly as if they did not exist.
+- A key sees exams created **through the API** by any key of the same institute. It does not see exams that teachers created directly in the Vacademy dashboard.
+- Exams created through the API also appear in the dashboard, tagged **Source: API**, so the institute's teachers can review them there.
+
+## Revocation and expiry
+
+An admin can revoke a key at any time from **Settings → Integrations → API keys**. Revocation can't be undone.
+
+<Info>
+  A revoked key stops working **within about a minute**. Requests made in that window may still succeed, so plan for it when you rotate keys.
+</Info>
+
+A key with an expiry date stops working when that date passes. Revoked and expired keys both get `401 invalid_api_key`.
+
+To rotate a key without downtime:
+
+1. Create a new key with the same scopes.
+2. Deploy the new key to your servers.
+3. Check that traffic is using it: `GET /me` returns the new `key_id`, and the dashboard shows when each key was last used.
+4. Revoke the old key.
+
+## Keep your key safe
+
+<AccordionGroup>
+  <Accordion title="Store it as a secret" icon="lock">
+    Keep the key in a secret manager or an environment variable on your server. Never commit it to git, paste it into tickets or chat, or put it in client-side configuration.
+  </Accordion>
+  <Accordion title="Never log it" icon="eye-slash">
+    Strip the `X-API-Key` header from request logs, error trackers and proxy logs. To refer to a key in your own logs, use its `key_id` from `GET /me` or the 16-character prefix shown in the dashboard.
+  </Accordion>
+  <Accordion title="Only call from your backend" icon="server">
+    Browsers, mobile apps and desktop apps can be taken apart, so any key inside them is exposed. If your app collects typed answers, send them to your own server first and call Evalezy from there.
+  </Accordion>
+  <Accordion title="One key per system and environment" icon="layer-group">
+    Separate keys keep a leak or a misbehaving job contained. Revoking a staging key should never take production down.
+  </Accordion>
+  <Accordion title="If a key leaks" icon="triangle-exclamation">
+    Revoke it in the dashboard straight away, create a replacement, and check the institute's recent API exams and credit use for anything you don't recognise.
+  </Accordion>
+</AccordionGroup>
+
+## Errors
+
+Authentication errors use the same error format as every other endpoint:
+
+```json
+{
+  "error": {
+    "code": "invalid_api_key",
+    "message": "The API key is not valid.",
+    "request_id": "req_7c3e9a1b0d2f4e6a8b9c1d3e5f7a9b0c"
+  }
+}
+```
+
+Every response also carries the request id in the `X-Request-Id` header. Include it when you contact support.
+
+| Status | `code` | Meaning | What to do |
+| --- | --- | --- | --- |
+| `401` | `missing_api_key` | No `X-API-Key` header was sent. | Add the header. |
+| `401` | `invalid_api_key` | The key is malformed, unknown, revoked or expired. All four get the same code on purpose. | Check for typos and stray characters; make sure the key hasn't been revoked or expired. Don't retry with the same key. |
+| `403` | `product_not_enabled` | The key is valid, but the Evaluation API is not enabled for the institute. | Contact [hello@evalezy.com](mailto:hello@evalezy.com). |
+| `403` | `insufficient_scope` | The key is valid but lacks the scope this endpoint needs. `error.details.required_scope` names it. | Use a key that has that scope. |
+| `503` | `auth_unavailable` | The key could not be checked just then. This is temporary. | Retry after the number of seconds in the `Retry-After` header (5). |
+
+```json 403 insufficient_scope
+{
+  "error": {
+    "code": "insufficient_scope",
+    "message": "This API key lacks the evaluation:finalize scope.",
+    "request_id": "req_2b4d6f8a0c1e3a5b7d9f1a3c5e7b9d0f",
+    "details": { "required_scope": "evaluation:finalize" }
+  }
+}
+```
+
+<Note>
+  Don't retry a `401` or `403` automatically, because the same request will fail again. Only `503 auth_unavailable` (and `429`, see [Rate limits](/platform/rate-limits)) are worth retrying. The full list of error codes is on the [Errors](/platform/errors) page.
+</Note>
+
+## HTTP clients
+
+The API works with any standard HTTP client: `curl`, Python `requests` or `urllib`, Node `fetch`, Java `HttpClient`, Go `net/http` and so on. You don't need a special user agent or cookies. Always use `https://`.

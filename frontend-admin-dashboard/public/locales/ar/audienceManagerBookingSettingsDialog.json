@@ -1,0 +1,39 @@
+{
+    "dialog": {
+        "heading": "إعدادات الحجز"
+    },
+    "states": {
+        "loadError": "تعذّر تحميل إعدادات الحجز. حاول مرة أخرى."
+    },
+    "empty": {
+        "description": "فعّل الحجوزات لـ \"{{audienceName}}\" — يحصل العملاء المحتملون في هذه القائمة على صفحة عامة يمكنهم من خلالها اختيار موعد في تقويم المضيف.",
+        "defaultTitle": "اجتماع {{audienceName}}"
+    },
+    "active": {
+        "linkLabel": "رابط الحجز العام",
+        "statusActive": "نشط",
+        "statusInactive": "غير نشط",
+        "linkPlaceholder": "سيتوفر الرابط بمجرد أن يحصل على معرّف رابط",
+        "copy": "نسخ",
+        "activate": "تفعيل",
+        "deactivate": "تعطيل",
+        "delete": "حذف"
+    },
+    "deleteDialog": {
+        "title": "حذف صفحة الحجز",
+        "description": "هل أنت متأكد أنك تريد حذف صفحة الحجز الخاصة بـ \"{{audienceName}}\"؟ سيتوقف رابطها العام عن العمل. لا يمكن التراجع عن هذا الإجراء.",
+        "cancel": "إلغاء",
+        "deleting": "جارٍ الحذف...",
+        "confirm": "حذف"
+    },
+    "toast": {
+        "copySuccess": "تم نسخ رابط الحجز",
+        "copyError": "تعذّر نسخ الرابط",
+        "deactivateSuccess": "تم تعطيل صفحة الحجز",
+        "activateSuccess": "تم تفعيل صفحة الحجز",
+        "statusUpdateError": "فشل تحديث حالة صفحة الحجز",
+        "deleteSuccess": "تم حذف صفحة الحجز",
+        "deleteError": "فشل حذف صفحة الحجز",
+        "enableSuccess": "تم تفعيل الحجوزات الآن لهذه القائمة"
+    }
+}

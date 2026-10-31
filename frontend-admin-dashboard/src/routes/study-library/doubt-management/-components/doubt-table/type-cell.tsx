@@ -9,7 +9,9 @@ export const TypeCell = ({ doubt }: { doubt: Doubt }) => {
     }
 
     const iconName =
-        doubt.content_type === 'PDF' || doubt.content_type === 'DOC'
+        doubt.content_type === 'PDF' ||
+        doubt.content_type === 'DOC' ||
+        doubt.content_type === 'HTML'
             ? 'DOCUMENT'
             : doubt.content_type;
 

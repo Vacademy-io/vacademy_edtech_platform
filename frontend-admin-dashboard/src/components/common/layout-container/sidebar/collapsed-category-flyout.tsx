@@ -17,18 +17,21 @@
  */
 
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
-import { SidebarItemsType } from '@/types/layout-container/layout-container-types';
-import { Link, useNavigate, useRouter } from '@tanstack/react-router';
+import {
+    SidebarItemsType,
+    type SidebarCategory,
+} from '@/types/layout-container/layout-container-types';
+import { Link, useLocation, useNavigate } from '@tanstack/react-router';
 import { getCategoryColors } from './sidebar-colors';
 import type { CategoryId } from './category-rail';
 import type { DisplaySettingsData } from '@/types/display-settings';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { LockKey } from '@phosphor-icons/react';
+import { CaretDown, LockKey } from '@phosphor-icons/react';
 import { recordRecentTab } from './recent-tabs-store';
-import { parseSidebarLink } from './helper';
+import { isSidebarLinkActive, parseSidebarLink, pickActiveSidebarLink } from './helper';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
-import { ChevronDown } from 'lucide-react';
 
 interface CollapsedCategoryFlyoutProps {
     activeCategory: CategoryId;
@@ -60,12 +63,19 @@ export const CollapsedCategoryFlyout: React.FC<CollapsedCategoryFlyoutProps> = (
     return null;
 };
 
+const CATEGORY_LABEL_KEYS: Record<SidebarCategory, string> = {
+    CRM: 'categoryLabels.crm',
+    LMS: 'categoryLabels.lms',
+    AI: 'categoryLabels.aiTools',
+    ERP: 'categoryLabels.erp',
+};
+
 /**
  * CategoryFlyoutMenu — Used by the category rail in collapsed mode
  * to show a flyout popover with all tabs for a category.
  */
 interface CategoryFlyoutMenuProps {
-    category: 'CRM' | 'LMS' | 'AI';
+    category: SidebarCategory;
     items: SidebarItemsType[];
     children: React.ReactNode;
 }
@@ -76,10 +86,9 @@ export const CategoryFlyoutMenu: React.FC<CategoryFlyoutMenuProps> = ({
     children,
 }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const router = useRouter();
     const navigate = useNavigate();
-    const currentRoute = router.state.location.pathname;
     const colors = getCategoryColors(category);
+    const { t } = useTranslation('collapsedCategoryFlyout');
 
     return (
         <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -91,7 +100,7 @@ export const CategoryFlyoutMenu: React.FC<CategoryFlyoutMenuProps> = ({
             <PopoverContent
                 side="right"
                 align="start"
-                className="ml-0.5 w-auto min-w-[220px] max-w-[280px] p-0"
+                className="ml-0.5 w-auto min-w-[220px] max-w-[280px] p-0" // design-lint-ignore: flyout width bounds, no size token
                 onMouseEnter={() => setIsOpen(true)}
                 onMouseLeave={() => setIsOpen(false)}
                 onOpenAutoFocus={(e) => e.preventDefault()}
@@ -99,18 +108,19 @@ export const CategoryFlyoutMenu: React.FC<CategoryFlyoutMenuProps> = ({
                 {/* Category header */}
                 <div className={cn('border-b px-3 py-2')}>
                     <p className={cn('text-sm font-semibold', colors.text)}>
-                        {category === 'AI' ? 'AI Tools' : category}
+                        {t(CATEGORY_LABEL_KEYS[category] ?? 'categoryLabels.crm')}
                     </p>
                 </div>
 
                 {/* Menu items */}
-                <div className="max-h-[60vh] overflow-y-auto p-1">
+                <div
+                    className="max-h-[60vh] overflow-y-auto p-1" // design-lint-ignore: viewport-relative flyout scroll height
+                >
                     {items.map((item, idx) => (
                         <FlyoutMenuItem
                             key={item.id}
                             item={item}
                             category={category}
-                            currentRoute={currentRoute}
                             onClose={() => setIsOpen(false)}
                             showDividerAfter={
                                 idx < items.length - 1 && shouldShowDivider(items, idx)
@@ -127,8 +137,7 @@ export const CategoryFlyoutMenu: React.FC<CategoryFlyoutMenuProps> = ({
 
 interface FlyoutMenuItemProps {
     item: SidebarItemsType;
-    category: 'CRM' | 'LMS' | 'AI';
-    currentRoute: string;
+    category: SidebarCategory;
     onClose: () => void;
     showDividerAfter?: boolean;
 }
@@ -136,7 +145,6 @@ interface FlyoutMenuItemProps {
 const FlyoutMenuItem: React.FC<FlyoutMenuItemProps> = ({
     item,
     category,
-    currentRoute,
     onClose,
     showDividerAfter,
 }) => {
@@ -144,9 +152,18 @@ const FlyoutMenuItem: React.FC<FlyoutMenuItemProps> = ({
     const colors = getCategoryColors(category);
     const navigate = useNavigate();
 
+    // Same matching as the expanded panel: links carry a query (?bucket=…,
+    // ?status=…&lock=status) that a plain pathname check never sees.
+    const { pathname, search } = useLocation();
+    const currentSearch = search as Record<string, unknown>;
+    const activeSubLink = pickActiveSidebarLink(
+        item.subItems?.map((s) => s.subItemLink) ?? [],
+        pathname,
+        currentSearch
+    );
     const isActive = item.to
-        ? currentRoute.includes(item.to)
-        : item.subItems?.some((s) => s.subItemLink && currentRoute.includes(s.subItemLink));
+        ? isSidebarLinkActive(item.to, pathname, currentSearch)
+        : !!activeSubLink;
 
     if (item.locked) {
         return (
@@ -229,7 +246,7 @@ const FlyoutMenuItem: React.FC<FlyoutMenuItemProps> = ({
                                 ),
                             })}
                         <span className="flex-1 truncate text-left">{item.title}</span>
-                        <ChevronDown
+                        <CaretDown
                             className={cn(
                                 'size-3 flex-shrink-0 transition-transform',
                                 (subOpen || isActive) && 'rotate-180',
@@ -242,7 +259,7 @@ const FlyoutMenuItem: React.FC<FlyoutMenuItemProps> = ({
                     <div className="ml-4 flex flex-col gap-0.5 border-l border-primary-100 py-0.5 pl-3">
                         {item.subItems.map((sub, idx) => {
                             const isSubActive =
-                                sub.subItemLink && currentRoute.includes(sub.subItemLink);
+                                !!sub.subItemLink && sub.subItemLink === activeSubLink;
                             // A query in the link ("/settings?selectedTab=…") has to
                             // travel in `search` — the router won't parse it out of `to`.
                             const { to: subTo, search: subSearch } = parseSidebarLink(
@@ -254,7 +271,7 @@ const FlyoutMenuItem: React.FC<FlyoutMenuItemProps> = ({
                                     to={subTo}
                                     search={subSearch}
                                     className={cn(
-                                        'flex items-center rounded-md px-2 py-1 text-[13px] transition-colors',
+                                        'flex items-center rounded-md px-2 py-1 text-[13px] transition-colors', // design-lint-ignore: matches the expanded panel's sub-item size
                                         isSubActive
                                             ? cn(colors.pillBg, colors.pillText, 'font-medium')
                                             : 'text-neutral-500 hover:bg-primary-50 hover:text-neutral-700'

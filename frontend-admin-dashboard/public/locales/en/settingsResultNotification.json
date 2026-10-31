@@ -1,0 +1,21 @@
+{
+    "title": "Result email & WhatsApp",
+    "description": "What learners receive when you release results. The report PDF is attached to both.",
+    "email": {
+        "label": "Result email",
+        "description": "Leave empty to send the default result email.",
+        "placeholder": "Default result email"
+    },
+    "whatsapp": {
+        "label": "Result WhatsApp",
+        "description": "Sent only when a template is chosen. It must be approved by WhatsApp with a Document header, which carries the report PDF.",
+        "placeholder": "No WhatsApp message"
+    },
+    "variablesHelp": "Values you can use in templates:",
+    "loading": "Loading…",
+    "toasts": {
+        "updated": "{{label}} updated",
+        "updateFailed": "Could not update the {{label}}"
+    },
+    "variablesProfile": "Also any value from the assessment's report profile, for example:"
+}

@@ -1,0 +1,15 @@
+{
+    "unpublishSuccess": "تم إلغاء نشر الشريحة بنجاح!",
+    "errorUnpublishQuestion": "خطأ في إلغاء نشر شريحة السؤال",
+    "errorUnpublishGeneric": "خطأ في إلغاء نشر الشريحة",
+    "errorVideoDataMissing": "بيانات شريحة الفيديو مفقودة.",
+    "quizUnpublishSuccess": "تم إلغاء نشر الاختبار بنجاح!",
+    "errorUnpublishQuiz": "فشل إلغاء نشر الاختبار",
+    "errorAudioDataMissing": "بيانات شريحة الصوت مفقودة.",
+    "errorScormDataMissing": "بيانات شريحة SCORM مفقودة.",
+    "scormUnpublishSuccess": "تم إلغاء نشر شريحة SCORM بنجاح!",
+    "errorUnpublishScorm": "خطأ في إلغاء نشر شريحة SCORM",
+    "errorAssessmentDataMissing": "بيانات شريحة التقييم مفقودة.",
+    "assessmentUnpublishSuccess": "تم إلغاء نشر شريحة التقييم بنجاح!",
+    "errorUnpublishAssessment": "خطأ في إلغاء نشر شريحة التقييم"
+}

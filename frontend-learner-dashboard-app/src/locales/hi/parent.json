@@ -1,217 +1,721 @@
 {
-  "common": {
-    "yourChild": "your child",
-    "back": "Back",
-    "errorTitle": "We couldn't load this",
-    "errorBody": "Please check your connection and try again.",
-    "emptyTitle": "Nothing here yet"
-  },
-  "picker": {
-    "hello": "Hello, {{name}}",
-    "parent": "there",
-    "choose": "Choose a child to see how they're doing",
-    "disabledTitle": "Not available yet",
-    "disabledBody": "Your school hasn't turned on the parent view yet. Please check back later.",
-    "emptyTitle": "No children linked",
-    "emptyBody": "No students are linked to your account yet. Please contact your school office."
-  },
-  "home": {
-    "title": "My Child",
-    "greeting": "Here's how {{name}} is doing",
-    "greetingLabel": "Here's how",
-    "hiParent": "Hi {{name}} 👋",
-    "allClear": "Nothing needs your attention right now.",
-    "attentionTitle": "Needs your attention"
-  },
-  "stats": {
-    "badges": "Badges",
-    "certificates": "Certificates",
-    "feesDue": "Fees due"
-  },
-  "info": {
-    "attendance": "Attendance overview",
-    "tests": "टेस्ट अवलोकन",
-    "liveClasses": "आगामी कक्षाएँ",
-    "fees": "Fees"
-  },
-  "nav": {
-    "home": "होम",
-    "ask": "पूछें",
-    "studentView": "छात्र दृश्य"
-  },
-  "tiles": {
-    "progress": "Progress",
-    "attendance": "Attendance",
-    "assessments": "Tests",
-    "liveClasses": "Live Classes",
-    "payments": "Fees",
-    "rewards": "Rewards",
-    "sub": {
-      "badges": "{{count}} earned",
-      "feesDue": "{{count}} due",
-      "feesPaid": "All paid",
-      "tests": "{{count}} taken",
-      "seeTests": "See results",
-      "attendance": "{{percent}}% present",
-      "seeAttendance": "See attendance",
-      "progress": "{{percent}}% complete",
-      "seeProgress": "See lessons",
-      "upcoming": "{{count}} coming up",
-      "seeClasses": "See schedule"
-    }
-  },
-  "account": {
-    "logout": "Log out",
-    "menu": "Account",
-    "signedInAs": "Signed in as {{name}}",
-    "switchChild": "Switch child",
-    "viewAsChild": "View {{name}}'s screen"
-  },
-  "search": {
-    "placeholder": "Search — try 'attendance'"
-  },
-  "tour": {
-    "help": "Help & tour",
-    "search": {
-      "title": "Quick find",
-      "body": "Type a few letters — like 'at' — to jump straight to Attendance, Tests, and more."
+    "common": {
+        "yourChild": "your child",
+        "back": "Back",
+        "errorTitle": "We couldn't load this",
+        "errorBody": "Please check your connection and try again.",
+        "emptyTitle": "Nothing here yet"
     },
-    "attention": {
-      "title": "What needs you",
-      "body": "Anything that needs your attention — like a fee due — shows here first."
+    "picker": {
+        "hello": "Hello, {{name}}",
+        "parent": "there",
+        "choose": "Choose a child to see how they're doing",
+        "disabledTitle": "Not available yet",
+        "disabledBody": "Your school hasn't turned on the parent view yet. Please check back later.",
+        "emptyTitle": "No children linked",
+        "emptyBody": "No students are linked to your account yet. Please contact your school office."
+    },
+    "home": {
+        "title": "My Child",
+        "greeting": "Here's how {{name}} is doing",
+        "greetingLabel": "Here's how",
+        "hiParent": "Hi {{name}} 👋",
+        "allClear": "Nothing needs your attention right now.",
+        "attentionTitle": "Needs your attention"
+    },
+    "stats": {
+        "badges": "Badges",
+        "certificates": "Certificates",
+        "feesDue": "Fees due"
+    },
+    "info": {
+        "attendance": "Attendance overview",
+        "tests": "टेस्ट अवलोकन",
+        "liveClasses": "आगामी कक्षाएँ",
+        "fees": "Fees"
+    },
+    "nav": {
+        "home": "होम",
+        "ask": "पूछें",
+        "studentView": "छात्र दृश्य"
     },
     "tiles": {
-      "title": "Everything in one place",
-      "body": "Tap any card to see your child's progress, attendance, tests, classes, fees and rewards."
+        "progress": "Progress",
+        "attendance": "Attendance",
+        "assessments": "Tests",
+        "liveClasses": "Live Classes",
+        "payments": "Fees",
+        "rewards": "Rewards",
+        "sub": {
+            "badges": "{{count}} earned",
+            "feesDue": "{{count}} due",
+            "feesPaid": "All paid",
+            "tests": "{{count}} taken",
+            "seeTests": "See results",
+            "attendance": "{{percent}}% present",
+            "seeAttendance": "See attendance",
+            "progress": "{{percent}}% complete",
+            "seeProgress": "See lessons",
+            "upcoming": "{{count}} coming up",
+            "seeClasses": "See schedule"
+        }
+    },
+    "account": {
+        "logout": "Log out",
+        "menu": "Account",
+        "signedInAs": "Signed in as {{name}}",
+        "switchChild": "Switch child",
+        "viewAsChild": "View {{name}}'s screen"
+    },
+    "search": {
+        "placeholder": "Search — try 'attendance'"
+    },
+    "tour": {
+        "help": "Help & tour",
+        "search": {
+            "title": "Quick find",
+            "body": "Type a few letters — like 'at' — to jump straight to Attendance, Tests, and more."
+        },
+        "attention": {
+            "title": "What needs you",
+            "body": "Anything that needs your attention — like a fee due — shows here first."
+        },
+        "tiles": {
+            "title": "Everything in one place",
+            "body": "Tap any card to see your child's progress, attendance, tests, classes, fees and rewards."
+        },
+        "chat": {
+            "title": "Ask a quick question",
+            "body": "Tap here any time to ask how your child is doing — type your question or tap the mic to ask by voice."
+        },
+        "driver": {
+            "progress": "{{total}} में से {{current}}",
+            "next": "अगला",
+            "back": "वापस",
+            "gotIt": "समझ गया"
+        }
     },
     "chat": {
-      "title": "Ask a quick question",
-      "body": "Tap here any time to ask how your child is doing — type your question or tap the mic to ask by voice."
+        "open": "Ask about your child",
+        "title": "Quick answers",
+        "greeting": "Hi! Tap a question to learn about {{name}}.",
+        "askTitle": "{{name}} के बारे में कुछ भी पूछें",
+        "askSubtitle": "बटन दबाएँ और अपनी भाषा में बोलें।",
+        "view": "View",
+        "q": {
+            "attendance": "How is attendance?",
+            "fees": "Any fees due?",
+            "rewards": "What has {{name}} earned?",
+            "tests": "How many tests?",
+            "progress": "How is progress?"
+        },
+        "a": {
+            "attendance": "{{name}} has attended {{percent}}% of classes.",
+            "attendanceNone": "I don't have attendance for {{name}} yet.",
+            "feesDue": "There are {{count}} fee payment(s) due.",
+            "feesPaid": "All fees are paid. Thank you!",
+            "rewards": "{{name}} has earned {{badges}} badges and {{certs}} certificates.",
+            "tests": "{{name}} has taken {{count}} test(s).",
+            "testsNone": "No test results yet.",
+            "progress": "{{name}} has completed {{percent}}% of lessons.",
+            "progressNone": "See the Progress section for details."
+        },
+        "placeholder": "Ask about your child…",
+        "send": "Send",
+        "fallback": "I can help with attendance, fees, tests, progress and rewards — try asking about one of those.",
+        "thinking": "Thinking…",
+        "mic": "Ask by voice",
+        "listening": "Listening…",
+        "micCta": "Tap to speak",
+        "speak": "Listen",
+        "mute": "Mute voice",
+        "unmute": "Turn on voice"
+    },
+    "tone": {
+        "good": "Going well",
+        "watch": "Keep an eye on this",
+        "action": "Needs your attention",
+        "neutral": "Coming up"
+    },
+    "attention": {
+        "pendingFees": "{{count}} शुल्क भुगतान बकाया है",
+        "pendingFees_other": "{{count}} शुल्क भुगतान बकाया हैं",
+        "pendingFees_one": "{{count}} शुल्क भुगतान बकाया है"
+    },
+    "attendance": {
+        "summary": "{{name}} has attended {{percent}}% of classes.",
+        "noData": "We don't have attendance for {{name}} yet.",
+        "attended": "{{present}} of {{total}} classes attended",
+        "recentTitle": "Recent classes",
+        "present": "Present",
+        "absent": "Absent",
+        "late": "Late",
+        "notMarked": "Not marked",
+        "statusGood": "Good",
+        "statusOkay": "Okay",
+        "statusLow": "Low",
+        "emptyTitle": "No attendance yet",
+        "emptyBody": "Attendance will show here once classes begin.",
+        "daysAttended": "{{present}} of {{total}} days",
+        "graphTitle": "Attendance breakdown",
+        "presentDays": "Present",
+        "absentDays": "Absent",
+        "unmarkedDays": "Unmarked",
+        "streak": "Day streak",
+        "timeInClassTitle": "कक्षा में बिताया गया समय",
+        "upcomingChip": "आगामी",
+        "attendedFor": "{{duration}} उपस्थित रहे"
+    },
+    "progress": {
+        "summary": "{{name}} has completed {{percent}}% of their lessons.",
+        "summaryGeneric": "How {{name}} is doing across their courses.",
+        "subject": "Subject",
+        "noCourseData": "No lessons here yet.",
+        "emptyTitle": "No lessons yet",
+        "emptyBody": "Course progress will appear here as {{name}} starts learning."
+    },
+    "assessments": {
+        "summary": "{{name}} ने {{count}} टेस्ट दिया है।",
+        "summary_other": "{{name}} ने {{count}} टेस्ट दिए हैं।",
+        "test": "Test",
+        "report": "Report card",
+        "fullReports": "Detailed report cards",
+        "reportPendingTitle": "Report not ready yet",
+        "reportPendingBody": "This detailed report is still being prepared. Please check back soon.",
+        "emptyTitle": "No tests yet",
+        "emptyBody": "Test results will show here once {{name}} takes a test.",
+        "classAvg": "Class average {{value}}%",
+        "rank": "Rank {{value}}",
+        "percentile": "{{value}} percentile",
+        "accuracy": "{{value}}% accuracy",
+        "summary_one": "{{name}} ने {{count}} टेस्ट दिया है।"
+    },
+    "liveClasses": {
+        "summary": "{{name}} की {{count}} क्लास आने वाली है।",
+        "summary_other": "{{name}} की {{count}} क्लासें आने वाली हैं।",
+        "session": "Class",
+        "emptyTitle": "No upcoming classes",
+        "emptyBody": "Scheduled live classes will show here.",
+        "summary_one": "{{name}} की {{count}} क्लास आने वाली है।"
+    },
+    "payments": {
+        "allPaid": "All fees for {{name}} are paid. Thank you!",
+        "duesSummary": "{{name}} पर {{count}} शुल्क भुगतान बकाया है।",
+        "duesSummary_other": "{{name}} पर {{count}} शुल्क भुगतान बकाया हैं।",
+        "invoice": "Fee",
+        "paid": "Paid",
+        "due": "Due",
+        "payNow": "Pay now",
+        "emptyTitle": "No fees yet",
+        "emptyBody": "Fee details will appear here.",
+        "duesSummary_one": "{{name}} पर {{count}} शुल्क भुगतान बकाया है।"
+    },
+    "rewards": {
+        "summary": "{{name}} ने {{count}} बैज अर्जित किया है।",
+        "summary_other": "{{name}} ने {{count}} बैज अर्जित किए हैं।",
+        "badge": "Badge",
+        "emptyTitle": "No rewards yet",
+        "emptyBody": "Badges and points will show here as {{name}} learns.",
+        "points": "Points earned",
+        "rank": "Rank #{{value}}",
+        "badgesTitle": "बैज",
+        "certificatesTitle": "प्रमाणपत्र",
+        "certificate": "प्रमाणपत्र",
+        "earnedOn": "{{date}} को अर्जित",
+        "completed": "{{percent}}% पूर्ण",
+        "summary_one": "{{name}} ने {{count}} बैज अर्जित किया है।",
+        "awardedByInstitute": "संस्थान द्वारा प्रदान किया गया",
+        "awardReason": "“{{reason}}”"
+    },
+    "childView": {
+        "exiting": "स्टूडेंट व्यू से बाहर निकल रहे हैं…",
+        "banner": "स्टूडेंट व्यू · {{name}} · केवल पढ़ने के लिए",
+        "exit": "स्टूडेंट व्यू से बाहर निकलें"
+    },
+    "admissionPortal": {
+        "noChildSelected": "कोई बच्चा नहीं चुना गया",
+        "noChildSelectedGoToDashboard": "कोई बच्चा नहीं चुना गया। कृपया पेरेंट डैशबोर्ड पर जाएं और एक लर्नर चुनें।",
+        "notAvailable": "उपलब्ध नहीं",
+        "loading": "लोड हो रहा है...",
+        "parentFallbackName": "अभिभावक",
+        "status": {
+            "pending": "लंबित",
+            "paymentPending": "भुगतान लंबित",
+            "paid": "भुगतान हो गया",
+            "approved": "स्वीकृत",
+            "rejected": "अस्वीकृत",
+            "enrolled": "नामांकित"
+        },
+        "payment": {
+            "heading": "भुगतान",
+            "noApplication": "{{name}} के लिए कोई एडमिशन आवेदन नहीं मिला।",
+            "submitFirstPrefix": "पहले ",
+            "submitFirstTab": "एडमिशन",
+            "submitFirstSuffix": " टैब से एडमिशन जमा करें।",
+            "applicant": "आवेदक: {{id}}",
+            "statusLabel": "स्थिति:",
+            "admissionFee": "एडमिशन शुल्क",
+            "requiredToContinue": "जारी रखने के लिए भुगतान आवश्यक है",
+            "processing": "प्रोसेस हो रहा है…",
+            "payNow": "अभी भुगतान करें",
+            "complete": "भुगतान पूरा हुआ — सब कुछ तैयार है!",
+            "notDueYet": "इस चरण में कोई भुगतान देय नहीं है। समय आने पर हम आपको सूचित करेंगे।",
+            "rejectedNotice": "यह आवेदन अस्वीकृत कर दिया गया है। अधिक जानकारी के लिए कृपया संस्थान से संपर्क करें।",
+            "courseDescription": "स्कूल एडमिशन के लिए भुगतान",
+            "toast": {
+                "noPlan": "कोई भुगतान योजना कॉन्फ़िगर नहीं है। कृपया संस्थान से संपर्क करें।",
+                "redirecting": "भुगतान पेज पर भेजा जा रहा है…",
+                "detailsFailed": "सर्वर से भुगतान विवरण प्राप्त नहीं हो सका। कृपया फिर से प्रयास करें।",
+                "initiateFailed": "भुगतान शुरू करने में विफल",
+                "submitted": "भुगतान सबमिट हो गया! आपकी स्थिति जल्द ही अपडेट होगी।"
+            }
+        },
+        "tracker": {
+            "heading": "एडमिशन ट्रैकर",
+            "subheading": "{{name}} की पूरी यात्रा की समयरेखा",
+            "overallProgress": "कुल प्रगति",
+            "stepsCount": "{{completed}} / {{total}} चरण",
+            "percentComplete": "{{percent}}% पूर्ण",
+            "process": "एडमिशन प्रक्रिया",
+            "step": "चरण {{number}}",
+            "completed": "पूर्ण",
+            "inProgress": "प्रगति पर",
+            "congratulations": "बधाई हो!",
+            "enrolledNotice": "{{name}} का नामांकन सफलतापूर्वक हो गया है।",
+            "welcomeToBatch": "{{batch}} में आपका स्वागत है!"
+        },
+        "childSelect": {
+            "hello": "नमस्ते, {{name}}",
+            "subtitle": "एडमिशन प्रक्रिया प्रबंधित करने के लिए एक छात्र चुनें",
+            "footerHint": "छात्र प्रोफ़ाइल आपके रजिस्टर्ड ईमेल से जुड़ी हैं। सहायता के लिए स्कूल कार्यालय से संपर्क करें।"
+        },
+        "documents": {
+            "toast": {
+                "fileExceeds": "फ़ाइल {{size}}MB की सीमा से बड़ी है"
+            },
+            "confirmDelete": "क्या आप वाकई इस दस्तावेज़ को हटाना चाहते हैं?",
+            "heading": "आवश्यक दस्तावेज़",
+            "subheading": "{{name}} के एडमिशन के लिए आवश्यक दस्तावेज़",
+            "submissionProgress": "सबमिशन प्रगति: {{percent}}%",
+            "verifiedOfTotal": "{{total}} में से {{approved}} सत्यापित",
+            "verifiedCount": "{{count}} सत्यापित",
+            "underReviewCount": "{{count}} समीक्षाधीन",
+            "rejectedCount": "{{count}} अस्वीकृत",
+            "emptyTitle": "कोई दस्तावेज़ आवश्यक नहीं",
+            "emptyBody": "इस समय आपके पास कोई लंबित दस्तावेज़ अनुरोध नहीं है।",
+            "required": "आवश्यक",
+            "uploadedOn": "{{date}} को अपलोड किया गया",
+            "reupload": "फिर से अपलोड करें",
+            "upload": "अपलोड करें",
+            "camera": "कैमरा",
+            "maxSizeAndFormats": "अधिकतम {{size}}MB • {{formats}}",
+            "status": {
+                "notUploaded": "अपलोड नहीं हुआ",
+                "uploaded": "अपलोड हो गया",
+                "underReview": "समीक्षाधीन",
+                "verified": "सत्यापित",
+                "rejected": "अस्वीकृत"
+            }
+        },
+        "interview": {
+            "heading": "इंटरव्यू और असेसमेंट",
+            "subheading": "{{name}} के लिए निर्धारित सत्र",
+            "emptyTitle": "अभी तक कोई {{liveSession}} शेड्यूल नहीं है",
+            "emptyBody": "एडमिशन टीम द्वारा इंटरव्यू या असेसमेंट शेड्यूल किए जाने पर विवरण यहां दिखाई देगा।",
+            "interviewType": "इंटरव्यू",
+            "assessmentType": "असेसमेंट",
+            "completed": "पूर्ण",
+            "cancelled": "रद्द",
+            "upcoming": "आगामी",
+            "durationMin": "{{duration}} मिनट",
+            "online": "ऑनलाइन",
+            "hybrid": "हाइब्रिड",
+            "onCampus": "कैंपस में",
+            "joinOnlineSession": "ऑनलाइन सत्र से जुड़ें",
+            "feedback": "फ़ीडबैक"
+        },
+        "dashboard": {
+            "title": "{{name}} का एडमिशन",
+            "applyingFor": "{{grade}} के लिए आवेदन",
+            "inProgress": "एडमिशन प्रगति पर है",
+            "progressTitle": "एडमिशन प्रगति",
+            "progressSubtitle": "एडमिशन यात्रा के हर चरण को ट्रैक करें",
+            "noStagesConfigured": "कोई एडमिशन चरण कॉन्फ़िगर नहीं है",
+            "stepInProgress": "प्रगति पर",
+            "completedOn": "{{date}} को पूर्ण हुआ",
+            "statusInfo": {
+                "enquiry": {
+                    "label": "इन्क्वायरी सबमिट हुई",
+                    "bannerTitle": "इन्क्वायरी समीक्षाधीन",
+                    "bannerDescription": "आपकी इन्क्वायरी प्राप्त हो गई है और एडमिशन टीम द्वारा इसकी समीक्षा की जा रही है। रजिस्ट्रेशन खुलते ही आपको सूचित किया जाएगा।"
+                },
+                "registrationPending": {
+                    "label": "आवेदन खुला है",
+                    "bannerTitle": "रजिस्ट्रेशन आवश्यक है",
+                    "bannerDescription": "एडमिशन प्रक्रिया आगे बढ़ाने के लिए रजिस्ट्रेशन फॉर्म पूरा करें। सभी सेक्शन भरना अनिवार्य है।",
+                    "actionLabel": "रजिस्ट्रेशन शुरू करें"
+                },
+                "application": {
+                    "label": "आवेदन प्रगति पर है",
+                    "bannerTitle": "आवेदन जारी रखें",
+                    "bannerDescription": "आपके पास एक ड्राफ्ट रजिस्ट्रेशन है। फॉर्म भरना जारी रखें और तैयार होने पर सबमिट करें।",
+                    "actionLabel": "जारी रखें"
+                },
+                "paymentPending": {
+                    "label": "भुगतान आवश्यक है",
+                    "bannerTitle": "भुगतान लंबित",
+                    "bannerDescription": "एडमिशन प्रक्रिया पूरी करने के लिए अपना शुल्क भुगतान पूरा करें।",
+                    "actionLabel": "देखें और भुगतान करें"
+                },
+                "admitted": {
+                    "label": "नामांकित",
+                    "bannerTitle": "एडमिशन पूर्ण!",
+                    "bannerDescription": "बधाई हो! आपके बच्चे का सफलतापूर्वक नामांकन हो गया है।"
+                },
+                "default": {
+                    "bannerTitle": "प्रगति पर",
+                    "bannerDescription": "आपका एडमिशन प्रोसेस किया जा रहा है।"
+                }
+            }
+        },
+        "fees": {
+            "toast": {
+                "loadFailed": "शुल्क डेटा लोड करने में विफल। कृपया फिर से प्रयास करें।",
+                "receiptNotAvailable": "रसीद PDF अभी उपलब्ध नहीं है",
+                "receiptRef": "रसीद: {{number}}",
+                "downloadStarted": "डाउनलोड शुरू हुआ",
+                "downloadFailed": "रसीद डाउनलोड करने में विफल",
+                "tryAgainLater": "कृपया बाद में फिर से प्रयास करें।"
+            },
+            "selectInstitute": "कृपया एक संस्थान चुनें",
+            "heading": "पेरेंट भुगतान",
+            "subheading": "{{name}} के लिए शुल्क विवरण और भुगतान इतिहास",
+            "totalDues": "कुल बकाया",
+            "overdueAmount": "अतिदेय राशि",
+            "totalPaid": "कुल भुगतान",
+            "totalFees": "कुल शुल्क",
+            "tabs": {
+                "installments": "किश्तें",
+                "overdues": "अतिदेय",
+                "dues": "बकाया",
+                "history": "भुगतान इतिहास"
+            },
+            "filters": {
+                "status": "स्थिति",
+                "all": "सभी",
+                "pending": "लंबित",
+                "partialPaid": "आंशिक भुगतान",
+                "startDate": "प्रारंभ तिथि",
+                "endDate": "अंतिम तिथि",
+                "apply": "लागू करें"
+            },
+            "noInstallmentsFound": "कोई किश्त नहीं मिली",
+            "overdueSummary": "आपकी {{count}} किश्तें अतिदेय हैं, कुल {{amount}}",
+            "overdueSummary_one": "आपकी {{count}} किश्त अतिदेय है, कुल {{amount}}",
+            "overdueSummary_other": "आपकी {{count}} किश्तें अतिदेय हैं, कुल {{amount}}",
+            "noOverdueInstallments": "कोई अतिदेय किश्त नहीं",
+            "noDueInstallments": "कोई बकाया किश्त नहीं",
+            "noPaymentHistory": "कोई भुगतान इतिहास नहीं",
+            "installmentCount": "{{count}} किश्तें",
+            "installmentCount_one": "{{count}} किश्त",
+            "installmentCount_other": "{{count}} किश्तें",
+            "totalAmount": "कुल राशि",
+            "duesCount": "{{count}} बकाया",
+            "duesCount_one": "{{count}} बकाया",
+            "duesCount_other": "{{count}} बकाया",
+            "pendingCount": "{{count}} लंबित",
+            "paidCount": "{{count}} भुगतान",
+            "table": {
+                "fees": "शुल्क",
+                "dueDate": "देय तिथि",
+                "expected": "अपेक्षित",
+                "discount": "छूट",
+                "paid": "भुगतान",
+                "amtDue": "बकाया राशि",
+                "status": "स्थिति",
+                "showingPrefix": "दिखा रहे हैं",
+                "showingOfPrefix": "में से",
+                "prev": "पिछला",
+                "pagePrefix": "पेज",
+                "pageOfPrefix": "में से",
+                "next": "अगला",
+                "partialPaid": "आंशिक भुगतान",
+                "daysOverdue": "{{count}} दिन अतिदेय",
+                "daysOverdue_one": "{{count}} दिन अतिदेय",
+                "daysOverdue_other": "{{count}} दिन अतिदेय",
+                "upcoming": "आगामी",
+                "date": "तिथि",
+                "amount": "राशि",
+                "type": "प्रकार",
+                "receiptNo": "रसीद नंबर",
+                "action": "कार्रवाई",
+                "paymentBadge": "भुगतान",
+                "downloadReceipt": "रसीद डाउनलोड करें",
+                "pdfNotAvailable": "PDF उपलब्ध नहीं",
+                "generating": "जनरेट हो रहा है...",
+                "downloading": "डाउनलोड हो रहा है...",
+                "download": "डाउनलोड करें",
+                "amountPaidNow": "अभी भुगतान की गई राशि",
+                "totalPaid": "कुल भुगतान",
+                "balanceDue": "शेष बकाया",
+                "totalExpected": "कुल अपेक्षित",
+                "installmentsCovered": "शामिल किश्तें:",
+                "description": "विवरण",
+                "feeType": "शुल्क प्रकार"
+            }
+        },
+        "registration": {
+            "draftSaved": "ड्राफ्ट सेव हुआ",
+            "fieldRequired": "{{label}} आवश्यक है",
+            "fillRequiredFields": "कृपया सभी आवश्यक फ़ील्ड भरें",
+            "submitSuccess": "रजिस्ट्रेशन सफलतापूर्वक सबमिट हुआ!",
+            "paymentInitiated": "भुगतान शुरू हुआ। रीडायरेक्ट हो रहा है...",
+            "unavailable": "रजिस्ट्रेशन उपलब्ध नहीं है",
+            "unavailableBody": "इन्क्वायरी समीक्षा पूर्ण होने के बाद आपका रजिस्ट्रेशन फॉर्म उपलब्ध होगा।",
+            "heading": "छात्र रजिस्ट्रेशन",
+            "subheading": "कृपया नीचे दिए गए सभी आवश्यक सेक्शन पूरे करें।",
+            "previous": "पिछला",
+            "saveProgress": "प्रगति सेव करें",
+            "continue": "जारी रखें",
+            "submitApplication": "आवेदन सबमिट करें",
+            "feePendingTitle": "रजिस्ट्रेशन शुल्क लंबित है",
+            "feePendingBody": "अपना आवेदन पूरा करने के लिए कृपया रजिस्ट्रेशन शुल्क का भुगतान करें।",
+            "amountDue": "देय राशि",
+            "payFeeNow": "अभी शुल्क भुगतान करें",
+            "autoSaving": "ऑटो-सेव हो रहा है...",
+            "selectOption": "चुनें..."
+        },
+        "applicationForm": {
+            "selectedSession": "चयनित सत्र",
+            "enquiryLoaded": "इन्क्वायरी डेटा लोड हो गया",
+            "instituteNotFound": "संस्थान संदर्भ नहीं मिला",
+            "submitSuccess": "आवेदन सबमिट हो गया। शुल्क पूरा करने के लिए भुगतान पर जाएं।",
+            "heading": "आवेदन फॉर्म",
+            "sessionLabel": "सत्र: {{session}}",
+            "trackingIdPlaceholder": "इन्क्वायरी / ट्रैकिंग आईडी (वैकल्पिक)",
+            "enterTrackingId": "ट्रैकिंग आईडी दर्ज करें",
+            "loading": "लोड हो रहा है...",
+            "loadEnquiry": "इन्क्वायरी लोड करें",
+            "parentTypePrompt": "क्या इन्क्वायरी करने वाले अभिभावक पिता हैं या माता?",
+            "father": "पिता",
+            "mother": "माता",
+            "sections": {
+                "student": "छात्र जानकारी",
+                "parent": "अभिभावक जानकारी",
+                "academic": "शैक्षणिक जानकारी",
+                "address": "पता जानकारी",
+                "identityDocuments": "पहचान दस्तावेज़",
+                "transferCertificate": "स्थानांतरण प्रमाण पत्र (TC)",
+                "medical": "चिकित्सा एवं विशेष आवश्यकताएं"
+            },
+            "fields": {
+                "studentName": "छात्र का नाम",
+                "dateOfBirth": "जन्म तिथि",
+                "gender": "लिंग",
+                "selectGender": "लिंग चुनें",
+                "bloodGroup": "ब्लड ग्रुप",
+                "motherTongue": "मातृभाषा",
+                "languagesKnown": "ज्ञात भाषाएं",
+                "category": "श्रेणी",
+                "nationality": "राष्ट्रीयता",
+                "fatherName": "पिता का नाम",
+                "fatherPhone": "पिता का फोन नंबर",
+                "fatherEmail": "पिता का ईमेल",
+                "motherName": "माता का नाम",
+                "motherPhone": "माता का फोन नंबर",
+                "motherEmail": "माता का ईमेल",
+                "previousSchoolName": "पिछले स्कूल का नाम",
+                "previousSchoolBoard": "पिछले स्कूल का बोर्ड",
+                "lastClassAttended": "पिछली कक्षा",
+                "lastExamResult": "पिछली परीक्षा का परिणाम",
+                "subjectsStudied": "पढ़े गए विषय",
+                "applyingForClass": "जिस कक्षा के लिए आवेदन कर रहे हैं",
+                "academicYear": "शैक्षणिक वर्ष",
+                "boardPreference": "बोर्ड प्राथमिकता",
+                "addressLine": "पता",
+                "city": "शहर",
+                "pinCode": "पिन कोड",
+                "idNumber": "आईडी नंबर",
+                "idType": "आईडी प्रकार",
+                "tcNumber": "TC नंबर",
+                "tcIssueDate": "TC जारी होने की तिथि",
+                "tcPending": "TC लंबित है",
+                "hasSpecialNeeds": "विशेष शिक्षा आवश्यकताएं हैं",
+                "physicallyChallenged": "शारीरिक रूप से अक्षम हैं",
+                "medicalConditions": "चिकित्सीय स्थितियां",
+                "dietaryRestrictions": "आहार संबंधी प्रतिबंध"
+            },
+            "genderOptions": {
+                "male": "पुरुष",
+                "female": "महिला",
+                "other": "अन्य"
+            },
+            "submitting": "सबमिट हो रहा है...",
+            "submit": "आवेदन सबमिट करें",
+            "reset": "रीसेट करें"
+        },
+        "admissionForm": {
+            "enterApplicationId": "आवेदन आईडी दर्ज करें",
+            "applicationLoaded": "आवेदन डेटा लोड हो गया",
+            "applicationLoadFailed": "आवेदन डेटा लोड नहीं हो सका। कृपया मैन्युअल रूप से भरें।",
+            "submitSuccess": "एडमिशन सफलतापूर्वक सबमिट हुआ!",
+            "submitFailed": "एडमिशन सबमिट करने में विफल",
+            "heading": "एडमिशन फॉर्म",
+            "submitForPrefix": "इसके लिए नया एडमिशन सबमिट करें:",
+            "theStudent": "छात्र",
+            "applyingFrom": "इस माध्यम से आवेदन कर रहे हैं",
+            "selectSource": "स्रोत चुनें…",
+            "enquiryTrackingId": "इन्क्वायरी ट्रैकिंग आईडी",
+            "applicationIdOption": "आवेदन आईडी",
+            "directManualEntry": "सीधे (मैन्युअल एंट्री)",
+            "enterEnquiryTrackingId": "इन्क्वायरी ट्रैकिंग आईडी दर्ज करें",
+            "enquiryTrackingIdPlaceholder": "जैसे ENQ-2024-00123",
+            "enterTrackingId": "ट्रैकिंग आईडी दर्ज करें",
+            "load": "लोड करें",
+            "applicationIdPlaceholder": "जैसे APP-2024-00456",
+            "notAssigned": "निर्धारित नहीं",
+            "fields": {
+                "applyingForClass": "जिस कक्षा के लिए आवेदन कर रहे हैं",
+                "firstName": "पहला नाम",
+                "lastName": "अंतिम नाम",
+                "gender": "लिंग",
+                "dateOfBirth": "जन्म तिथि",
+                "mobileNumber": "मोबाइल नंबर",
+                "studentAadhaar": "छात्र आधार",
+                "bloodGroup": "ब्लड ग्रुप",
+                "motherTongue": "मातृभाषा",
+                "nationality": "राष्ट्रीयता",
+                "religion": "धर्म",
+                "caste": "जाति",
+                "howDidYouKnow": "आपको कैसे पता चला",
+                "section": "सेक्शन",
+                "admissionNo": "एडमिशन नंबर",
+                "dateOfAdmission": "एडमिशन की तिथि",
+                "studentType": "छात्र प्रकार",
+                "classGroup": "क्लास ग्रुप",
+                "admissionType": "एडमिशन प्रकार",
+                "hasTransport": "ट्रांसपोर्ट सुविधा है",
+                "schoolName": "स्कूल का नाम",
+                "previousClass": "पिछली कक्षा",
+                "previousBoard": "पिछला बोर्ड",
+                "yearOfPassing": "उत्तीर्ण होने का वर्ष",
+                "percentage": "प्रतिशत",
+                "previousAdmissionNo": "पिछला एडमिशन नंबर",
+                "fatherMobile": "पिता का मोबाइल",
+                "fatherAadhaar": "पिता का आधार",
+                "fatherQualification": "पिता की योग्यता",
+                "fatherOccupation": "पिता का व्यवसाय",
+                "motherMobile": "माता का मोबाइल",
+                "motherAadhaar": "माता का आधार",
+                "motherQualification": "माता की योग्यता",
+                "motherOccupation": "माता का व्यवसाय",
+                "guardianName": "अभिभावक का नाम",
+                "guardianMobile": "अभिभावक का मोबाइल",
+                "currentAddress": "वर्तमान पता",
+                "currentLocality": "वर्तमान क्षेत्र",
+                "currentPinCode": "वर्तमान पिन कोड",
+                "permanentAddress": "स्थायी पता",
+                "permanentLocality": "स्थायी क्षेत्र"
+            },
+            "sections": {
+                "student": "छात्र जानकारी",
+                "admission": "एडमिशन विवरण",
+                "previousSchool": "पिछला स्कूल",
+                "father": "पिता की जानकारी",
+                "mother": "माता की जानकारी",
+                "guardian": "अभिभावक (वैकल्पिक)",
+                "address": "पता"
+            },
+            "submitting": "सबमिट हो रहा है…",
+            "submitAdmission": "एडमिशन सबमिट करें"
+        },
+        "nav": {
+            "dashboard": "डैशबोर्ड",
+            "home": "होम",
+            "application": "आवेदन",
+            "apply": "आवेदन करें",
+            "interviewAndTests": "इंटरव्यू और टेस्ट",
+            "tests": "टेस्ट",
+            "admissions": "एडमिशन",
+            "admission": "एडमिशन",
+            "verification": "सत्यापन",
+            "verify": "सत्यापित करें",
+            "payment": "भुगतान",
+            "pay": "भुगतान करें",
+            "status": "स्थिति"
+        },
+        "sidebar": {
+            "logoAlt": "लोगो",
+            "admissionPortal": "एडमिशन पोर्टल"
+        },
+        "navbar": {
+            "goBack": "वापस जाएं",
+            "switchChild": "बच्चा बदलें"
+        },
+        "index": {
+            "loadChildrenFailed": "बच्चों का डेटा लोड करने में विफल",
+            "noChildrenFound": "कोई बच्चा नहीं मिला",
+            "noChildrenFoundBody": "आपके खाते से कोई बच्चा जुड़ा नहीं है। बच्चे जोड़ने के लिए कृपया सहायता टीम से संपर्क करें।",
+            "selectAChild": "एक बच्चा चुनें",
+            "selectAChildBody": "उनकी एडमिशन स्थिति देखने और आवेदन प्रबंधित करने के लिए एक बच्चा चुनें।"
+        },
+        "demo": {
+            "nav": {
+                "registration": "रजिस्ट्रेशन",
+                "register": "रजिस्टर करें",
+                "interviewAndAssessment": "इंटरव्यू और असेसमेंट",
+                "schedule": "शेड्यूल",
+                "documents": "दस्तावेज़",
+                "docs": "दस्तावेज़",
+                "tracker": "ट्रैकर"
+            },
+            "banner": "🎨 डेमो मोड — मॉक डेटा के साथ देख रहे हैं",
+            "switch": "बदलें",
+            "registrationInProgress": "रजिस्ट्रेशन प्रगति पर है",
+            "trackEachStep": "यात्रा के हर चरण को ट्रैक करें",
+            "tiles": {
+                "registrationDesc": "फॉर्म और भुगतान",
+                "scheduleDesc": "शेड्यूल और परिणाम",
+                "admissionForm": "एडमिशन फॉर्म",
+                "admissionFormDesc": "एडमिशन विवरण",
+                "verificationDesc": "अपलोड और सत्यापन",
+                "feePayment": "शुल्क भुगतान",
+                "feePaymentDesc": "शुल्क और रसीदें"
+            },
+            "recentActivity": "हाल की गतिविधि",
+            "latestUpdates": "नवीनतम अपडेट",
+            "viewAll": "सभी देखें",
+            "steps": {
+                "enquirySubmitted": "इन्क्वायरी सबमिट हुई",
+                "applicationFormFilled": "आवेदन फॉर्म भरा गया",
+                "documentsVerification": "दस्तावेज़ सत्यापन"
+            },
+            "documentsFor": "{{name}} के लिए आवश्यक दस्तावेज़",
+            "percentComplete": "{{percent}}% पूर्ण",
+            "deleteDemo": "हटाएं (डेमो)",
+            "fileSelectedDemo": "फ़ाइल चुनी गई (डेमो)",
+            "cameraCaptureDemo": "कैमरा कैप्चर (डेमो)",
+            "joinMeeting": "मीटिंग में शामिल हों",
+            "feeDetailsFor": "{{name}} के लिए शुल्क विवरण",
+            "feeBreakdown": "शुल्क विवरण",
+            "selectItemsToPay": "भुगतान के लिए आइटम चुनें",
+            "overduePrefix": "⚠ अतिदेय — ",
+            "duePrefix": "देय ",
+            "discountOff": "{{currency}}{{amount}} की छूट",
+            "itemsCount": "{{count}} आइटम",
+            "itemsCount_one": "{{count}} आइटम",
+            "itemsCount_other": "{{count}} आइटम",
+            "paymentInitiatedDemo": "भुगतान शुरू हुआ! (डेमो)",
+            "success": "सफल",
+            "receiptDownloadDemo": "रसीद डाउनलोड (डेमो)",
+            "draftSavedDemo": "ड्राफ्ट सेव हुआ (डेमो)",
+            "saveDraft": "ड्राफ्ट सेव करें",
+            "next": "अगला",
+            "registrationSubmittedDemo": "रजिस्ट्रेशन सबमिट हुआ! (डेमो)",
+            "submit": "सबमिट करें",
+            "fullJourneyFor": "{{name}} की पूरी यात्रा",
+            "journeyTimeline": "यात्रा समयरेखा",
+            "current": "वर्तमान"
+        }
     }
-  },
-  "chat": {
-    "open": "Ask about your child",
-    "title": "Quick answers",
-    "greeting": "Hi! Tap a question to learn about {{name}}.",
-    "askTitle": "{{name}} के बारे में कुछ भी पूछें",
-    "askSubtitle": "बटन दबाएँ और अपनी भाषा में बोलें।",
-    "view": "View",
-    "q": {
-      "attendance": "How is attendance?",
-      "fees": "Any fees due?",
-      "rewards": "What has {{name}} earned?",
-      "tests": "How many tests?",
-      "progress": "How is progress?"
-    },
-    "a": {
-      "attendance": "{{name}} has attended {{percent}}% of classes.",
-      "attendanceNone": "I don't have attendance for {{name}} yet.",
-      "feesDue": "There are {{count}} fee payment(s) due.",
-      "feesPaid": "All fees are paid. Thank you!",
-      "rewards": "{{name}} has earned {{badges}} badges and {{certs}} certificates.",
-      "tests": "{{name}} has taken {{count}} test(s).",
-      "testsNone": "No test results yet.",
-      "progress": "{{name}} has completed {{percent}}% of lessons.",
-      "progressNone": "See the Progress section for details."
-    },
-    "placeholder": "Ask about your child…",
-    "send": "Send",
-    "fallback": "I can help with attendance, fees, tests, progress and rewards — try asking about one of those.",
-    "thinking": "Thinking…",
-    "mic": "Ask by voice",
-    "listening": "Listening…",
-    "micCta": "Tap to speak",
-    "speak": "Listen",
-    "mute": "Mute voice",
-    "unmute": "Turn on voice"
-  },
-  "tone": {
-    "good": "Going well",
-    "watch": "Keep an eye on this",
-    "action": "Needs your attention",
-    "neutral": "Coming up"
-  },
-  "attention": {
-    "pendingFees": "{{count}} fee payment is due",
-    "pendingFees_other": "{{count}} fee payments are due"
-  },
-  "attendance": {
-    "summary": "{{name}} has attended {{percent}}% of classes.",
-    "noData": "We don't have attendance for {{name}} yet.",
-    "attended": "{{present}} of {{total}} classes attended",
-    "recentTitle": "Recent classes",
-    "present": "Present",
-    "absent": "Absent",
-    "late": "Late",
-    "notMarked": "Not marked",
-    "statusGood": "Good",
-    "statusOkay": "Okay",
-    "statusLow": "Low",
-    "emptyTitle": "No attendance yet",
-    "emptyBody": "Attendance will show here once classes begin.",
-    "daysAttended": "{{present}} of {{total}} days",
-    "graphTitle": "Attendance breakdown",
-    "presentDays": "Present",
-    "absentDays": "Absent",
-    "unmarkedDays": "Unmarked",
-    "streak": "Day streak",
-    "timeInClassTitle": "कक्षा में बिताया गया समय",
-    "upcomingChip": "आगामी",
-    "attendedFor": "{{duration}} उपस्थित रहे"
-  },
-  "progress": {
-    "summary": "{{name}} has completed {{percent}}% of their lessons.",
-    "summaryGeneric": "How {{name}} is doing across their courses.",
-    "subject": "Subject",
-    "noCourseData": "No lessons here yet.",
-    "emptyTitle": "No lessons yet",
-    "emptyBody": "Course progress will appear here as {{name}} starts learning."
-  },
-  "assessments": {
-    "summary": "{{name}} has taken {{count}} test.",
-    "summary_other": "{{name}} has taken {{count}} tests.",
-    "test": "Test",
-    "report": "Report card",
-    "fullReports": "Detailed report cards",
-    "reportPendingTitle": "Report not ready yet",
-    "reportPendingBody": "This detailed report is still being prepared. Please check back soon.",
-    "emptyTitle": "No tests yet",
-    "emptyBody": "Test results will show here once {{name}} takes a test.",
-    "classAvg": "Class average {{value}}%",
-    "rank": "Rank {{value}}",
-    "percentile": "{{value}} percentile",
-    "accuracy": "{{value}}% accuracy"
-  },
-  "liveClasses": {
-    "summary": "{{name}} has {{count}} class coming up.",
-    "summary_other": "{{name}} has {{count}} classes coming up.",
-    "session": "Class",
-    "emptyTitle": "No upcoming classes",
-    "emptyBody": "Scheduled live classes will show here."
-  },
-  "payments": {
-    "allPaid": "All fees for {{name}} are paid. Thank you!",
-    "duesSummary": "{{name}} has {{count}} fee payment due.",
-    "duesSummary_other": "{{name}} has {{count}} fee payments due.",
-    "invoice": "Fee",
-    "paid": "Paid",
-    "due": "Due",
-    "payNow": "Pay now",
-    "emptyTitle": "No fees yet",
-    "emptyBody": "Fee details will appear here."
-  },
-  "rewards": {
-    "summary": "{{name}} has earned {{count}} badge.",
-    "summary_other": "{{name}} has earned {{count}} badges.",
-    "badge": "Badge",
-    "emptyTitle": "No rewards yet",
-    "emptyBody": "Badges and points will show here as {{name}} learns.",
-    "points": "Points earned",
-    "rank": "Rank #{{value}}",
-    "badgesTitle": "बैज",
-    "certificatesTitle": "प्रमाणपत्र",
-    "certificate": "प्रमाणपत्र",
-    "earnedOn": "{{date}} को अर्जित",
-    "completed": "{{percent}}% पूर्ण"
-  }
 }

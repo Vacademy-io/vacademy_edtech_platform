@@ -16,6 +16,8 @@ export type DateRangePresetKey =
     | '90d'
     | 'this_month'
     | 'last_month'
+    | 'this_year'
+    | 'last_year'
     | 'all'
     | 'custom';
 
@@ -37,6 +39,8 @@ export const PRESET_OPTIONS: { key: Exclude<DateRangePresetKey, 'custom'>; label
     { key: '90d', label: 'Last 90 days' },
     { key: 'this_month', label: 'This month' },
     { key: 'last_month', label: 'Last month' },
+    { key: 'this_year', label: 'This year' },
+    { key: 'last_year', label: 'Last year' },
     { key: 'all', label: 'All time' },
 ];
 
@@ -92,6 +96,16 @@ export const resolvePreset = (key: Exclude<DateRangePresetKey, 'custom'>): DateR
             const last = new Date(now.getFullYear(), now.getMonth(), 0);
             return { start: iso(first), end: iso(endOfDay(last)), preset: key };
         }
+        case 'this_year':
+            return { start: iso(new Date(now.getFullYear(), 0, 1)), end: iso(now), preset: key };
+        case 'last_year': {
+            const year = now.getFullYear() - 1;
+            return {
+                start: iso(new Date(year, 0, 1)),
+                end: iso(endOfDay(new Date(year, 11, 31))),
+                preset: key,
+            };
+        }
         case 'all':
         default:
             return { ...ALL_TIME_RANGE };
@@ -106,6 +120,35 @@ export const customRange = (from: Date, to: Date): DateRangeValue => {
         end: endOfDay(later).toISOString(),
         preset: 'custom',
     };
+};
+
+/** One whole calendar year, 1 Jan to 31 Dec — what an admin means by "2019". */
+export const yearRange = (year: number): DateRangeValue =>
+    customRange(new Date(year, 0, 1), new Date(year, 11, 31));
+
+/**
+ * The years offered as one-click chips, newest first. Ten years back covers institutes whose
+ * migrated records go back to 2018, in two rows of five.
+ */
+export const recentYears = (count = 10): number[] => {
+    const current = new Date().getFullYear();
+    return Array.from({ length: count }, (_, i) => current - i);
+};
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/** A local day as the `YYYY-MM-DD` a native date input reads and writes. */
+export const toDateInputValue = (d: Date | undefined): string =>
+    d ? `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` : '';
+
+/** The local day a native date input holds, or undefined while it is empty or half-typed. */
+export const fromDateInputValue = (value: string): Date | undefined => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    // A browser date field reports the year digit by digit while it is typed (0002, 0020, 0201,
+    // 2019), and `new Date` reads 0002 as 1902, so anything before 1900 is still being typed.
+    if (!match || Number(match[1]) < 1900) return undefined;
+    const d = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    return Number.isNaN(d.getTime()) ? undefined : d;
 };
 
 const parse = (iso: string): Date | null => {
@@ -138,6 +181,13 @@ export const formatRangeLabel = (value: DateRangeValue): string => {
     const from = parse(value.start);
     const to = parse(value.end);
     if (from && to) {
+        const wholeYear =
+            from.getFullYear() === to.getFullYear() &&
+            from.getMonth() === 0 &&
+            from.getDate() === 1 &&
+            to.getMonth() === 11 &&
+            to.getDate() === 31;
+        if (wholeYear) return String(from.getFullYear());
         const sameDay = from.toDateString() === to.toDateString();
         if (sameDay) return dayLabel(from, true);
         const sameYear = from.getFullYear() === to.getFullYear();

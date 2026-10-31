@@ -20,6 +20,7 @@ import {
     clearEvalReturnUrl,
 } from '@/routes/evaluation/evaluation-tool/-utils/eval-return';
 import { UploadAnswerSheetDialog } from './-components/UploadAnswerSheetDialog';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createLazyFileRoute('/evaluation/evaluate/$assessmentId/$attemptId/$examType/')({
     component: () => (
@@ -44,6 +45,7 @@ const goBack = () => {
 };
 
 const EvaluateAttemptComponent = () => {
+    const { t } = useTranslation('evaluationAttemptIndex');
     const { attemptId, assessmentId, examType } = Route.useParams();
     const { data: instituteDetails } = useSuspenseQuery(useInstituteQuery());
     const [file, setFile] = useState<File | null>(null);
@@ -107,7 +109,7 @@ const EvaluateAttemptComponent = () => {
         setNavHeading(
             <div className="flex items-center gap-2">
                 <CaretLeft onClick={goBack} className="cursor-pointer" />
-                <h1 className="text-lg">Evaluate Response</h1>
+                <h1 className="text-lg">{t('evaluateResponse')}</h1>
             </div>
         );
         if (!isAttemptLoading) {
@@ -129,19 +131,15 @@ const EvaluateAttemptComponent = () => {
         return (
             <div className="flex min-h-screen flex-col items-center justify-center gap-y-3 p-6 text-center">
                 <h1 className="text-base font-semibold text-neutral-800">
-                    Couldn&apos;t load the answer sheet
+                    {t('couldNotLoadAnswerSheet')}
                 </h1>
-                <p className="max-w-md text-sm text-neutral-500">
-                    The student&apos;s uploaded response could not be loaded. It may not have been
-                    submitted yet, or the file is temporarily unavailable. If the student shared their
-                    answer sheet another way, you can upload it on their behalf.
-                </p>
+                <p className="max-w-md text-sm text-neutral-500">{t('couldNotLoadAnswerSheetBody')}</p>
                 <div className="mt-1 flex flex-wrap items-center justify-center gap-2">
                     <MyButton buttonType="secondary" scale="medium" onClick={goBack}>
-                        Back
+                        {t('back')}
                     </MyButton>
                     <MyButton buttonType="secondary" scale="medium" onClick={() => loadFile()}>
-                        Retry
+                        {t('retry')}
                     </MyButton>
                     <UploadAnswerSheetDialog
                         attemptId={attemptId}
@@ -149,7 +147,7 @@ const EvaluateAttemptComponent = () => {
                         onUploaded={handleAnswerSheetUploaded}
                         trigger={
                             <MyButton buttonType="primary" scale="medium">
-                                Upload Answer Sheet
+                                {t('uploadAnswerSheet')}
                             </MyButton>
                         }
                     />
@@ -161,7 +159,7 @@ const EvaluateAttemptComponent = () => {
     if (isLoading || isQuestionsLoading || isAttemptLoading || !file)
         return (
             <div className="flex min-h-screen flex-col items-center justify-center gap-y-2">
-                <h1>Getting response file please wait...</h1>
+                <h1>{t('gettingResponseFile')}</h1>
                 <DashboardLoader />
             </div>
         );
@@ -169,11 +167,8 @@ const EvaluateAttemptComponent = () => {
     return (
         <>
             <Helmet>
-                <title>Evaluate Response</title>
-                <meta
-                    name="description"
-                    content="This page shows all details related to an assessment."
-                />
+                <title>{t('evaluateResponse')}</title>
+                <meta name="description" content={t('pageDescription')} />
             </Helmet>
             {file && (
                 <PDFEvaluator

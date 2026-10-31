@@ -17,6 +17,7 @@ import vacademy.io.admin_core_service.features.packages.enums.PackageStatusEnum;
 import vacademy.io.admin_core_service.features.packages.repository.PackageInstituteRepository;
 import vacademy.io.admin_core_service.features.packages.repository.PackageRepository;
 import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
+import vacademy.io.admin_core_service.features.packages.service.PackagePageContentService;
 import vacademy.io.admin_core_service.features.packages.service.PackageService;
 import vacademy.io.admin_core_service.features.packages.service.PackageSessionService;
 import vacademy.io.admin_core_service.features.session.dto.AddNewSessionDTO;
@@ -61,10 +62,14 @@ public class CourseService {
     private final vacademy.io.admin_core_service.features.enroll_invite.repository.EnrollInviteRepository enrollInviteRepository;
     private final DefaultEnrollInviteService defaultEnrollInviteService;
     private final vacademy.io.admin_core_service.features.workflow.service.WorkflowTriggerService workflowTriggerService;
+    private final PackagePageContentService packagePageContentService;
 
     @Transactional
     public String addCourse(AddCourseDTO addCourseDTO, CustomUserDetails user, String instituteId) {
         PackageEntity savedPackage;
+
+        // Reject a malformed course_page_json (HTTP 400) before anything is written.
+        PackagePageContentService.validate(addCourseDTO.getCoursePageJson());
 
         // Set created_by_user_id from user context if not already set in DTO
         if (!StringUtils.hasText(addCourseDTO.getCreatedByUserId()) && user != null) {
@@ -81,6 +86,12 @@ public class CourseService {
 
         savedPackage = packageRepository.save(savedPackage);
         createPackageInstitute(savedPackage, instituteId);
+
+        if (Boolean.TRUE.equals(addCourseDTO.getNewCourse())) {
+            packagePageContentService.applyOnCreate(savedPackage.getId(), addCourseDTO.getCoursePageJson());
+        } else {
+            packagePageContentService.applyOnUpdate(savedPackage.getId(), addCourseDTO.getCoursePageJson());
+        }
 
         if (addCourseDTO.getContainLevels()) {
             createPackageSession(savedPackage, addCourseDTO.getSessions(), user, instituteId);

@@ -1,0 +1,43 @@
+{
+    "dialogTitle": "व्हाट्सएप संदेश भेजें",
+    "cancel": "रद्द करें",
+    "sending": "भेजा जा रहा है...",
+    "sendButton_one": "{{count}} को भेजें",
+    "sendButton_other": "{{count}} को भेजें",
+    "selectTemplateNotice_one": "{{count}} छात्र को भेजने के लिए एक टेम्पलेट चुनें।",
+    "selectTemplateNotice_other": "{{count}} छात्रों को भेजने के लिए एक टेम्पलेट चुनें।",
+    "templateLabel": "संदेश टेम्पलेट",
+    "selectTemplatePlaceholder": "एक टेम्पलेट चुनें",
+    "previewLabel": "पूर्वावलोकन:",
+    "sendingProgress": "भेजने की प्रगति ({{done}}/{{total}}):",
+    "defaultCustomMessage": "कृपया अपडेट के लिए अपना डैशबोर्ड देखें।",
+    "status": {
+        "pending": "लंबित...",
+        "sent": "भेजा गया",
+        "failed": "विफल"
+    },
+    "toasts": {
+        "noTemplateOrStudents": "कोई टेम्पलेट चयनित नहीं है या कोई छात्र उपलब्ध नहीं है।",
+        "templateNotFound": "चयनित टेम्पलेट नहीं मिला।",
+        "startingSend": "संदेश भेजना शुरू हो रहा है...",
+        "finished": "समाप्त: {{sent}} भेजे गए, {{failed}} विफल।"
+    },
+    "templates": {
+        "welcome": {
+            "name": "स्वागत संदेश",
+            "content": "नमस्ते {{name}}! हमारे लर्निंग प्लेटफ़ॉर्म पर आपका स्वागत है।"
+        },
+        "sessionReminder": {
+            "name": "सत्र अनुस्मारक",
+            "content": "नमस्ते {{name}}, यह आपके आगामी सत्र के बारे में एक अनुस्मारक है।"
+        },
+        "assignmentDue": {
+            "name": "असाइनमेंट देय",
+            "content": "नमस्ते {{name}}, आपका असाइनमेंट जल्द ही देय है। कृपया इसे समय पर पूरा करें।"
+        },
+        "custom": {
+            "name": "कस्टम संदेश",
+            "content": "नमस्ते {{name}}, {{custom_message_text}}"
+        }
+    }
+}

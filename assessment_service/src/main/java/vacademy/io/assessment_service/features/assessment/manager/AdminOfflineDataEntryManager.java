@@ -19,6 +19,7 @@ import static vacademy.io.common.auth.enums.CompanyStatus.ACTIVE;
 import vacademy.io.assessment_service.features.learner_assessment.dto.status_json.*;
 import vacademy.io.assessment_service.features.learner_assessment.enums.AssessmentAttemptEnum;
 import vacademy.io.assessment_service.features.learner_assessment.service.AssessmentLLMAnalyticsService;
+import vacademy.io.assessment_service.features.open_evaluation.policy.ResultLockGuard;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.core.utils.DateUtil;
 import vacademy.io.common.exceptions.VacademyException;
@@ -46,6 +47,9 @@ public class AdminOfflineDataEntryManager {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired(required = false)
+    private ResultLockGuard resultLockGuard;
+
     public ResponseEntity<OfflineAttemptCreateResponse> createOfflineAttempt(
             CustomUserDetails userDetails,
             String assessmentId,
@@ -67,8 +71,10 @@ public class AdminOfflineDataEntryManager {
                     throw new VacademyException("Registration does not belong to the specified assessment");
                 }
             } else if (request != null && StringUtils.hasText(request.getUserId())) {
-                // Case 2: Batch student — no registrationId, create AssessmentUserRegistration
-                Optional<Assessment> assessmentOptional = assessmentRepository.findById(assessmentId);
+                // Case 2: Batch student — no registrationId, create AssessmentUserRegistration.
+                // Tenant check: the assessment must belong to the institute in the request.
+                Optional<Assessment> assessmentOptional =
+                        assessmentRepository.findByAssessmentIdAndInstituteId(assessmentId, instituteId);
                 if (assessmentOptional.isEmpty()) {
                     throw new VacademyException("Assessment Not Found");
                 }
@@ -120,6 +126,20 @@ public class AdminOfflineDataEntryManager {
             attempt.setMaxTime(assessment.getDuration() != null ? assessment.getDuration() : 0);
             attempt.setStatus(AssessmentAttemptEnum.ENDED.name());
             attempt.setResultStatus(AttemptResultStatusEnum.PENDING.name());
+            // Hold the report explicitly. Every copy uploaded for a student —
+            // the single offline entry and each copy of a bulk AI intake come
+            // through here — used to start with a NULL release status. NULL is
+            // a dead zone: the learner's Reports list filters on
+            // report_release_status IN ('RELEASED','PENDING'), so the copy
+            // simply vanished for the student (no "pending" row) even after the
+            // AI had graded it, the admin's Result Status column read "Not
+            // available", and any client that omits that filter would treat the
+            // row as released. PENDING is the state every other submission path
+            // already uses: it shows "Pending evaluation" to the learner and
+            // "Not released" to the admin until "Release Result" is pressed.
+            // Manual evaluation and the bulk marks import still set RELEASED
+            // themselves, and the auto-release cron matches NULL and PENDING.
+            attempt.setReportReleaseStatus(ReleaseResultStatusEnum.PENDING.name());
             // Seed empty JSON so downstream attempt_data readers/updaters (manual
             // evaluation upload, set assignment) don't trip on a NULL column.
             attempt.setAttemptData("{}");
@@ -164,15 +184,7 @@ public class AdminOfflineDataEntryManager {
                 throw new VacademyException("Attempt does not belong to the specified assessment");
             }
 
-            // Build the attemptData JSON in the format expected by AttemptDataParserService
-            String attemptDataJson = buildAttemptDataJson(attempt.getId(), assessment.getId(), request);
-
-            attempt.setAttemptData(attemptDataJson);
-            attempt.setSubmitData(attemptDataJson);
-            studentAttemptService.updateStudentAttempt(attempt);
-
-            // Trigger auto-evaluation (synchronous - needed for marks)
-            studentAttemptService.updateStudentAttemptWithResultAfterMarksCalculation(Optional.of(attempt));
+            attempt = applyResponses(attempt, assessment, request);
 
             // Send activity log asynchronously (don't block the response)
             final StudentAttempt finalAttempt = attempt;
@@ -191,6 +203,29 @@ public class AdminOfflineDataEntryManager {
         } catch (Exception e) {
             throw new VacademyException("Failed to submit offline responses: " + e.getMessage());
         }
+    }
+
+    /**
+     * Writes the responses as the attempt's attempt_data / submit_data and runs the marks
+     * calculation (objective questions scored, written answers held for the AI when the
+     * assessment has AI evaluation on). No analytics, no notification and no workflow
+     * event: the marks calculation is called with {@code endSource = null} and the attempt
+     * is already ENDED. Shared by the offline entry above and the partner API's typed
+     * submissions ({@code ApiSubmissionWriter.writeTyped}).
+     *
+     * @return the saved attempt
+     */
+    public StudentAttempt applyResponses(StudentAttempt attempt, Assessment assessment,
+            OfflineResponseSubmitRequest request) {
+        // Build the attemptData JSON in the format expected by AttemptDataParserService
+        String attemptDataJson = buildAttemptDataJson(attempt.getId(), assessment.getId(), request);
+
+        attempt.setAttemptData(attemptDataJson);
+        attempt.setSubmitData(attemptDataJson);
+        studentAttemptService.updateStudentAttempt(attempt);
+
+        // Trigger auto-evaluation (synchronous - needed for marks)
+        return studentAttemptService.updateStudentAttemptWithResultAfterMarksCalculation(Optional.of(attempt));
     }
 
     /**
@@ -343,6 +378,8 @@ public class AdminOfflineDataEntryManager {
             String instituteId,
             OfflineBulkImportRequest.OfflineBulkImportEntry entry) {
 
+        requireNotFinalizedForApiExam(assessmentId, entry);
+
         OfflineAttemptCreateRequest createRequest = OfflineAttemptCreateRequest.builder()
                 .userId(entry.getUserId())
                 .fullName(entry.getFullName())
@@ -363,6 +400,28 @@ public class AdminOfflineDataEntryManager {
         studentAttemptService.updateStudentAttempt(attempt);
 
         return attempt.getId();
+    }
+
+    /**
+     * A bulk marks import creates and releases a new attempt. On a partner-API exam whose
+     * candidate already has a released (finalized) result that would publish a second
+     * result over it, so the row is refused until the result is unfinalized (gate G8).
+     * Dashboard exams are unaffected.
+     */
+    private void requireNotFinalizedForApiExam(String assessmentId,
+            OfflineBulkImportRequest.OfflineBulkImportEntry entry) {
+        if (resultLockGuard == null) {
+            return;
+        }
+        Optional<AssessmentUserRegistration> registration = Optional.empty();
+        if (StringUtils.hasText(entry.getRegistrationId())) {
+            registration = assessmentUserRegistrationRepository.findById(entry.getRegistrationId());
+        } else if (StringUtils.hasText(entry.getUserId())) {
+            registration = assessmentUserRegistrationRepository.findTopByUserIdAndAssessmentId(entry.getUserId(),
+                    assessmentId);
+        }
+        registration.filter(r -> r.getAssessment() != null && assessmentId.equals(r.getAssessment().getId()))
+                .ifPresent(resultLockGuard::requireNoFinalizedAttemptForApiExam);
     }
 
     private void applyBulkMarksAndFiles(StudentAttempt attempt, OfflineBulkImportRequest.OfflineBulkImportEntry entry) {
@@ -458,6 +517,10 @@ public class AdminOfflineDataEntryManager {
                 .responseData(QuestionAttemptData.OptionsJson.builder()
                         .type(questionResponse.getType())
                         .optionIds(questionResponse.getOptionIds() != null ? questionResponse.getOptionIds() : new ArrayList<>())
+                        // Typed answers (partner API): null for the dashboard's option-only
+                        // entry, and then left out of the JSON.
+                        .answer(questionResponse.getAnswer())
+                        .validAnswer(questionResponse.getValidAnswer())
                         .build())
                 .build();
     }

@@ -1,0 +1,7 @@
+{
+    "toast": {
+        "uploadSuccess": "CSV uploaded successfully",
+        "uploadFailed": "Failed to upload students",
+        "unexpectedError": "An unexpected error occurred"
+    }
+}

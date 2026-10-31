@@ -230,6 +230,9 @@ public class CouponManagementService {
                 throw new VacademyException("redeemEndDate may only be extended after the first redemption");
             }
             coupon.setRedeemEndDate(request.getRedeemEndDate());
+        } else if (Boolean.TRUE.equals(request.getClearRedeemEndDate())) {
+            // Removing the end date only ever extends validity, so it is allowed after redemption too.
+            coupon.setRedeemEndDate(null);
         }
         if (request.getUsageLimit() != null) {
             // Usage limit may only be increased after the first redemption.
@@ -260,8 +263,9 @@ public class CouponManagementService {
             if (d.getDiscountPoint() > 100) {
                 throw new VacademyException("percentage discountPoint must be <= 100");
             }
-            if (d.getMaxDiscountPoint() == null || d.getMaxDiscountPoint() <= 0) {
-                throw new VacademyException("maxDiscountPoint is required for PERCENTAGE discounts");
+            // null = no cap; a value, when sent, must be a real cap.
+            if (d.getMaxDiscountPoint() != null && d.getMaxDiscountPoint() <= 0) {
+                throw new VacademyException("maxDiscountPoint must be > 0 when set");
             }
         }
     }

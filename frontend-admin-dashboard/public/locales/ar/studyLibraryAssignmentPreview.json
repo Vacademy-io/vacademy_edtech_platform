@@ -1,0 +1,69 @@
+{
+    "questionTypes": {
+        "mcqs": "اختيار واحد",
+        "mcqm": "اختيار متعدد",
+        "trueFalse": "صواب / خطأ",
+        "oneWord": "كلمة واحدة",
+        "longAnswer": "إجابة طويلة",
+        "numeric": "رقمي",
+        "cmcqs": "استيعاب المقروء (اختيار واحد)",
+        "cmcqm": "استيعاب المقروء (اختيار متعدد)"
+    },
+    "toasts": {
+        "linkCopied": "تم نسخ الرابط إلى الحافظة",
+        "copyFailed": "فشل نسخ الرابط"
+    },
+    "shareAssignment": {
+        "heading": "مشاركة الواجب",
+        "copyLinkTitle": "نسخ الرابط"
+    },
+    "taskDescription": {
+        "heading": "وصف المهمة"
+    },
+    "liveDateRange": {
+        "heading": "نطاق تاريخ الإتاحة",
+        "description": "يتم تفسير الأوقات بتوقيتك المحلي. تُحظر عمليات الإرسال قبل وقت البدء؛ وتُقبل بعد وقت الانتهاء لكن تُوسم بأنها متأخرة.",
+        "startDateLabel": "تاريخ ووقت البدء",
+        "endDateLabel": "تاريخ ووقت الانتهاء"
+    },
+    "reattemptCount": {
+        "label": "عدد المحاولات"
+    },
+    "allowedFileTypes": {
+        "heading": "أنواع الملفات المسموح بإرسالها",
+        "description": "اختر أنواع الملفات التي يمكن للمتعلمين رفعها، أو اختر جميع الملفات لقبول أي ملف (بما في ذلك صيغ مثل مشاريع PictoBlox/Scratch بامتداد .sb3)."
+    },
+    "marks": {
+        "heading": "الدرجات",
+        "totalMarksLabel": "الدرجة الكلية",
+        "totalMarksPlaceholder": "مثال: 100",
+        "passingMarksLabel": "درجة النجاح (اختياري)",
+        "passingMarksPlaceholder": "مثال: 40"
+    },
+    "uploadQuestionPaper": {
+        "heading": "رفع ورقة الأسئلة",
+        "uploadFromDevice": "الرفع من الجهاز",
+        "uploadFromDeviceDialogTitle": "رفع ورقة الأسئلة من الجهاز",
+        "createManually": "إنشاء يدويًا",
+        "createManuallyDialogTitle": "إنشاء ورقة الأسئلة يدويًا",
+        "chooseSavedPaper": "اختيار ورقة محفوظة",
+        "chooseSavedPaperDialogTitle": "اختيار ورقة أسئلة محفوظة من القائمة"
+    },
+    "questionsList": {
+        "heading_zero": "الأسئلة ({{count}})",
+        "heading_one": "سؤال واحد ({{count}})",
+        "heading_two": "سؤالان ({{count}})",
+        "heading_few": "أسئلة ({{count}})",
+        "heading_many": "سؤالًا ({{count}})",
+        "heading_other": "سؤال ({{count}})"
+    },
+    "responses": {
+        "heading": "الردود",
+        "totalParticipants_zero": "إجمالي المشاركين: {{count}}",
+        "totalParticipants_one": "إجمالي المشاركين: مشارك واحد ({{count}})",
+        "totalParticipants_two": "إجمالي المشاركين: مشاركان ({{count}})",
+        "totalParticipants_few": "إجمالي المشاركين: {{count}}",
+        "totalParticipants_many": "إجمالي المشاركين: {{count}}",
+        "totalParticipants_other": "إجمالي المشاركين: {{count}}"
+    }
+}

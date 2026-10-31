@@ -1,0 +1,15 @@
+{
+    "validation": {
+        "subjectNameRequired": "اسم المادة مطلوب"
+    },
+    "nameLabel": "اسم {{subject}}",
+    "namePlaceholder": "أدخل اسم {{subject}}",
+    "imageLabel": "صورة {{subject}} (اختياري)",
+    "clickToUpload": "انقر لرفع صورة",
+    "uploadHint": "PNG أو JPG أو GIF حتى 10 ميجابايت · يُفضّل 16:9",
+    "previewAlt": "معاينة",
+    "uploading": "جارٍ الرفع...",
+    "saveChanges": "حفظ التغييرات",
+    "add": "إضافة",
+    "cropTitle": "قص صورة المادة المصغّرة"
+}

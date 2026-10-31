@@ -1,0 +1,22 @@
+{
+    "errors": {
+        "unknownPyodideError": "Pyodide लोड करते समय अज्ञात त्रुटि हुई।",
+        "pyodideTimedOut": "Pyodide लोड होने का समय समाप्त हो गया। यह धीमे इंटरनेट कनेक्शन या CDN समस्याओं के कारण हो सकता है। कृपया पेज को रीफ्रेश करें और फिर से कोशिश करें।",
+        "pyodideDownloadFailed": "Pyodide डाउनलोड करने में विफल। कृपया अपना इंटरनेट कनेक्शन जांचें और फिर से कोशिश करें।",
+        "pyodideError": "Pyodide त्रुटि: {{message}}",
+        "loadingError": "लोडिंग त्रुटि: {{message}}",
+        "pyodideLoadingErrorBlock": "Pyodide लोडिंग त्रुटि:\n{{errorMessage}}\n\nकृपया यह आज़माएं:\n1. पेज को रीफ्रेश करें\n2. अपना इंटरनेट कनेक्शन जांचें\n3. कुछ देर बाद फिर से कोशिश करें",
+        "noCodeToExecute": "चलाने के लिए कोई कोड नहीं है। कृपया पहले कुछ कोड लिखें।",
+        "judge0Error": "Judge0 त्रुटि: {{message}}\n\nनोट: ce.judge0.com की दर सीमित है; यदि आपको 429 त्रुटि मिले, तो प्रतीक्षा करें और फिर से कोशिश करें।",
+        "genericError": "त्रुटि: {{message}}"
+    },
+    "output": {
+        "codeExecutedNoOutput": "कोड सफलतापूर्वक निष्पादित हुआ (कोई आउटपुट नहीं)",
+        "noOutputParen": "(कोई आउटपुट नहीं)",
+        "interactiveInputNotSupported": "\nनोट: इस वातावरण में इंटरैक्टिव इनपुट (input()) समर्थित नहीं है।",
+        "errorLabel": "त्रुटि: {{message}}"
+    },
+    "simulation": {
+        "pythonWelcome": "नमस्ते, {{name}}! कोडिंग में आपका स्वागत है!\nसंख्याओं का योग: 15\n\nनोट: यह एक Python सिमुलेशन है। वास्तविक Python निष्पादन के लिए, आपको एक Python इंटरप्रेटर की आवश्यकता होगी।"
+    }
+}

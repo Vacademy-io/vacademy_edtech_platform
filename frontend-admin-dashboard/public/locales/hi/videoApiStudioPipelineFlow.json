@@ -1,0 +1,13 @@
+{
+    "errors": {
+        "talentCutFromProduction": "टैलेंट को निर्माण से हटा दिया गया",
+        "scoreCutFromProduction": "स्कोर को निर्माण से हटा दिया गया"
+    },
+    "hint": {
+        "clickAnyStageForDetails": "विवरण के लिए किसी भी चरण पर क्लिक करें"
+    },
+    "directorTicker": {
+        "label": "निर्देशक:",
+        "workingOn": "{{stage}} पर काम हो रहा है…"
+    }
+}

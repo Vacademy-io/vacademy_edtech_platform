@@ -1,0 +1,35 @@
+{
+    "placeholder": "Click to start writing here...",
+    "customBlocks": {
+        "image": { "title": "Image", "description": "Upload an image" },
+        "video": { "title": "Video", "description": "Upload a video file" },
+        "embed": { "title": "Embed", "description": "YouTube, Vimeo, Loom or any URL" },
+        "file": { "title": "File", "description": "Attach a downloadable file" },
+        "callout": { "title": "Callout", "description": "Highlighted note box" },
+        "audio": { "title": "Audio", "description": "Upload an audio clip" },
+        "pdfViewer": { "title": "PDF viewer", "description": "Inline PDF for learners" },
+        "math": { "title": "Math (LaTeX)", "description": "KaTeX-rendered formula" },
+        "mermaid": { "title": "Mermaid diagram", "description": "Flowcharts, sequences & more" },
+        "fillBlanks": {
+            "title": "Fill in the blanks",
+            "description": "Interactive cloze exercise"
+        },
+        "toc": { "title": "Table of contents", "description": "Auto-generated from headings" },
+        "jupyter": { "title": "Jupyter notebook", "description": "Embed a notebook from GitHub" },
+        "scratch": { "title": "Scratch project", "description": "Embed a Scratch project" },
+        "flashcard": { "title": "Flashcard", "description": "Front/back flip card" },
+        "tabs": { "title": "Tabs", "description": "Tabbed content sections" },
+        "quiz": { "title": "Quiz", "description": "Inline MCQ or true/false" },
+        "timeline": { "title": "Timeline", "description": "Step-by-step timeline" },
+        "columns": { "title": "Columns", "description": "Side-by-side layout" },
+        "accordion": {
+            "title": "Accordion",
+            "description": "Collapsible sections — each supports rich content"
+        },
+        "code": { "title": "Code", "description": "Syntax-highlighted code snippet" },
+        "codeEditor": {
+            "title": "Code editor (runnable)",
+            "description": "Interactive runner for learners"
+        }
+    }
+}

@@ -1,0 +1,77 @@
+{
+    "toast": {
+        "attendanceDownloaded": "Attendance report downloaded successfully.",
+        "selectAtLeastOneStudent": "Please select at least one student"
+    },
+    "studentsCount_one": "{{count}} student",
+    "studentsCount_other": "{{count}} students",
+    "labels": {
+        "startDateTime": "Start Date & Time:",
+        "endTime": "End Time:",
+        "batches": "Batches:"
+    },
+    "actions": {
+        "viewDetails": "View {{term}} Details",
+        "viewAttendanceReport": "View Attendance Report",
+        "viewRecordings": "View Recordings",
+        "exporting": "Exporting...",
+        "csv": "CSV"
+    },
+    "dialog": {
+        "heading": "Attendance Report",
+        "basicClassDetails": "Basic Class Details",
+        "session": "Session:",
+        "paidMembers": "Paid Members",
+        "openSession": "Open Session",
+        "occurrence": "Occurrence:",
+        "type": "Type:",
+        "duration": "Duration:",
+        "description": "Description",
+        "noDescriptionAvailable": "No description available.",
+        "participantsInsights": "Participants Insights",
+        "totalParticipants_one": "Total Participants: {{count}}",
+        "totalParticipants_other": "Total Participants: {{count}}",
+        "attendees": "Attendees:",
+        "notAttendees": "Not Attendees:",
+        "attendancePercentage": "Attendance Percentage",
+        "attendance": "Attendance"
+    },
+    "csv": {
+        "number": "#",
+        "name": "Name",
+        "email": "Email",
+        "batch": "Batch",
+        "course": "Course",
+        "status": "Status",
+        "mode": "Mode",
+        "durationMin": "Duration (min)",
+        "activePoints": "Active Points",
+        "talkTimeMin": "Talk Time (min)",
+        "talkSegments": "Talk Segments",
+        "raiseHands": "Raise Hands",
+        "emojis": "Emojis",
+        "chats": "Chats",
+        "pollVotes": "Poll Votes",
+        "activeness": "Activeness %",
+        "activenessOnScreen": "On screen %",
+        "activenessAttention": "Attention %",
+        "activenessStatus": "Activeness status"
+    },
+    "status": {
+        "present": "Present",
+        "absent": "Absent",
+        "unmarked": "Unmarked"
+    },
+    "activenessState": {
+        "1": "Measured",
+        "2": "Turned off by the learner",
+        "3": "Phone/tablet — not measured",
+        "4": "Camera blocked",
+        "5": "No camera",
+        "6": "Camera in use by another app",
+        "7": "Device too slow",
+        "8": "Couldn't load",
+        "9": "Camera stopped",
+        "10": "Camera not allowed"
+    }
+}

@@ -1,17 +1,18 @@
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import {
     Video,
-    Trash2,
+    Trash,
     Clock,
-    CheckCircle2,
-    Loader2,
-    AlertCircle,
-    History as HistoryIcon,
-    ChevronRight,
-    ChevronLeft,
+    CheckCircle,
+    CircleNotch,
+    WarningCircle,
+    ClockCounterClockwise as HistoryIcon,
+    CaretRight,
+    CaretLeft,
     Plus,
-    RefreshCw,
-} from 'lucide-react';
+    ArrowsClockwise,
+} from '@phosphor-icons/react';
 import { HistoryItem } from '../-services/video-generation';
 import { useEffectiveCreditRatio } from '@/services/ai-credits/use-credit-rate';
 import { formatCredits, usdToCredits } from '../-utils/credits';
@@ -57,6 +58,7 @@ export function HistorySidebar({
     onPageChange,
     isLoadingHistory,
 }: HistorySidebarProps) {
+    const { t } = useTranslation(['videoApiStudioHistorySidebar', 'videoApiStudioCredits']);
     // History badges show the run's USD cost in credit form using the
     // live USD→credits rate. Falls back to the seed 150× when offline.
     const ratio = useEffectiveCreditRatio();
@@ -65,11 +67,11 @@ export function HistorySidebar({
             case 'pending':
                 return <Clock className="size-4 text-muted-foreground" />;
             case 'generating':
-                return <Loader2 className="size-4 animate-spin text-blue-500" />;
+                return <CircleNotch className="size-4 animate-spin text-blue-500" />;
             case 'completed':
-                return <CheckCircle2 className="size-4 text-green-500" />;
+                return <CheckCircle className="size-4 text-green-500" />;
             case 'failed':
-                return <AlertCircle className="size-4 text-red-500" />;
+                return <WarningCircle className="size-4 text-red-500" />;
         }
     };
 
@@ -81,10 +83,10 @@ export function HistorySidebar({
         const diffHours = Math.floor(diffMs / 3600000);
         const diffDays = Math.floor(diffMs / 86400000);
 
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return `${diffMins}m ago`;
-        if (diffHours < 24) return `${diffHours}h ago`;
-        if (diffDays < 7) return `${diffDays}d ago`;
+        if (diffMins < 1) return t('relativeTime.justNow');
+        if (diffMins < 60) return t('relativeTime.minutesAgo', { count: diffMins });
+        if (diffHours < 24) return t('relativeTime.hoursAgo', { count: diffHours });
+        if (diffDays < 7) return t('relativeTime.daysAgo', { count: diffDays });
         return date.toLocaleDateString();
     };
 
@@ -95,16 +97,16 @@ export function HistorySidebar({
                 {/* Expand toggle */}
                 <button
                     onClick={onToggleCollapse}
-                    title="Expand history"
+                    title={t('collapsed.expandHistory')}
                     className="flex size-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
-                    <ChevronRight className="size-4" />
+                    <CaretRight className="size-4" />
                 </button>
 
                 {/* New video */}
                 <button
                     onClick={onNewVideo}
-                    title="New Video"
+                    title={t('collapsed.newVideo')}
                     className="flex size-9 items-center justify-center rounded-md text-violet-600 transition-colors hover:bg-violet-50"
                 >
                     <Plus className="size-4" />
@@ -138,15 +140,15 @@ export function HistorySidebar({
             <div className="flex items-center justify-between border-b border-primary-100 p-4">
                 <div className="flex items-center gap-2">
                     <HistoryIcon className="size-4 text-muted-foreground" />
-                    <h2 className="text-sm font-semibold text-foreground">History</h2>
+                    <h2 className="text-sm font-semibold text-foreground">{t('header.title')}</h2>
                 </div>
                 {/* Collapse toggle */}
                 <button
                     onClick={onToggleCollapse}
-                    title="Collapse history"
+                    title={t('header.collapseHistory')}
                     className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
-                    <ChevronLeft className="size-4" />
+                    <CaretLeft className="size-4" />
                 </button>
             </div>
 
@@ -157,7 +159,7 @@ export function HistorySidebar({
                     size="sm"
                 >
                     <Video className="size-4" />
-                    New Video
+                    {t('newVideoButton')}
                 </Button>
             </div>
 
@@ -165,16 +167,18 @@ export function HistorySidebar({
                 <div className="space-y-1 p-2">
                     {isLoadingHistory ? (
                         <div className="flex items-center justify-center py-12">
-                            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+                            <CircleNotch className="size-5 animate-spin text-muted-foreground" />
                         </div>
                     ) : history.length === 0 ? (
                         <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
                             <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-muted/50">
                                 <Video className="size-5 text-muted-foreground/50" />
                             </div>
-                            <p className="text-sm font-medium text-foreground">No videos yet</p>
-                            <p className="mt-1 max-w-[150px] text-xs text-muted-foreground">
-                                Your generated videos will appear here
+                            <p className="text-sm font-medium text-foreground">
+                                {t('empty.title')}
+                            </p>
+                            <p className="mt-1 max-w-36 text-xs text-muted-foreground">
+                                {t('empty.subtitle')}
                             </p>
                         </div>
                     ) : (
@@ -203,23 +207,24 @@ export function HistorySidebar({
                                             {item.prompt}
                                         </p>
                                         <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                                            <span className="flex items-center gap-1 rounded-sm bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                                            <span className="flex items-center gap-1 rounded-sm bg-muted px-1.5 py-0.5 text-2xs text-muted-foreground">
                                                 <Clock className="size-3" />
                                                 {formatDate(item.created_at)}
                                             </span>
                                             {item.options?.model && (
-                                                <span className="rounded-sm border px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                                                <span className="rounded-sm border px-1.5 py-0.5 text-2xs text-muted-foreground">
                                                     {item.options.model.split('-')[0]}
                                                 </span>
                                             )}
                                             {item.status === 'completed' &&
                                                 item.token_usage?.estimated_cost_usd != null && (
-                                                    <span className="rounded-sm bg-emerald-50 px-1.5 py-0.5 text-[10px] text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
+                                                    <span className="rounded-sm bg-emerald-50 px-1.5 py-0.5 text-2xs text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
                                                         {formatCredits(
                                                             usdToCredits(
                                                                 item.token_usage.estimated_cost_usd,
                                                                 ratio
-                                                            )
+                                                            ),
+                                                            { t }
                                                         )}
                                                     </span>
                                                 )}
@@ -228,14 +233,14 @@ export function HistorySidebar({
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                className="mt-2 h-6 gap-1 px-2 text-[10px] text-amber-600 hover:bg-amber-50 hover:text-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                                                className="mt-2 h-6 gap-1 px-2 text-2xs text-amber-600 hover:bg-amber-50 hover:text-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/30"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     onRetry(item.video_id);
                                                 }}
                                             >
-                                                <RefreshCw className="size-3" />
-                                                Retry
+                                                <ArrowsClockwise className="size-3" />
+                                                {t('item.retry')}
                                             </Button>
                                         )}
                                     </div>
@@ -249,29 +254,34 @@ export function HistorySidebar({
                                             className="absolute right-2 top-2 size-6 opacity-0 transition-all duration-200 hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
                                             onClick={(e) => e.stopPropagation()}
                                         >
-                                            <Trash2 className="size-3.5" />
+                                            <Trash className="size-3.5" />
                                         </Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent onClick={(e) => e.stopPropagation()}>
                                         <AlertDialogHeader>
-                                            <AlertDialogTitle>Delete video?</AlertDialogTitle>
+                                            <AlertDialogTitle>
+                                                {t('deleteDialog.title')}
+                                            </AlertDialogTitle>
                                             <AlertDialogDescription>
-                                                This will permanently remove &quot;
-                                                {item.prompt.length > 30
-                                                    ? item.prompt.substring(0, 30) + '...'
-                                                    : item.prompt}
-                                                &quot; from your history.
+                                                {t('deleteDialog.description', {
+                                                    name:
+                                                        item.prompt.length > 30
+                                                            ? item.prompt.substring(0, 30) + '...'
+                                                            : item.prompt,
+                                                })}
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
                                         <AlertDialogFooter>
-                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogCancel>
+                                                {t('deleteDialog.cancel')}
+                                            </AlertDialogCancel>
                                             <AlertDialogAction
                                                 onClick={() => {
                                                     onDelete(item.video_id);
                                                 }}
                                                 className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                                             >
-                                                Delete
+                                                {t('deleteDialog.confirm')}
                                             </AlertDialogAction>
                                         </AlertDialogFooter>
                                     </AlertDialogContent>
@@ -292,11 +302,14 @@ export function HistorySidebar({
                         disabled={currentPage === 0 || isLoadingHistory}
                         onClick={() => onPageChange(currentPage - 1)}
                     >
-                        <ChevronLeft className="size-3.5" />
-                        Prev
+                        <CaretLeft className="size-3.5" />
+                        {t('pagination.prev')}
                     </Button>
-                    <span className="text-[10px] text-muted-foreground">
-                        {currentPage + 1} / {totalPages}
+                    <span className="text-2xs text-muted-foreground">
+                        {t('pagination.pageIndicator', {
+                            current: currentPage + 1,
+                            total: totalPages,
+                        })}
                     </span>
                     <Button
                         variant="ghost"
@@ -305,8 +318,8 @@ export function HistorySidebar({
                         disabled={currentPage >= totalPages - 1 || isLoadingHistory}
                         onClick={() => onPageChange(currentPage + 1)}
                     >
-                        Next
-                        <ChevronRight className="size-3.5" />
+                        {t('pagination.next')}
+                        <CaretRight className="size-3.5" />
                     </Button>
                 </div>
             )}

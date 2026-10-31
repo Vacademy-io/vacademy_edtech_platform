@@ -1,0 +1,44 @@
+{
+    "dialog": {
+        "headingEdit": "Modifier le composant de salaire",
+        "headingNew": "Ajouter un composant de salaire",
+        "cancel": "Annuler",
+        "saving": "Enregistrement…",
+        "saveChanges": "Enregistrer les modifications",
+        "createComponent": "Créer le composant"
+    },
+    "toast": {
+        "updated": "Composant mis à jour",
+        "created": "Composant créé",
+        "saveError": "Impossible d'enregistrer le composant de salaire."
+    },
+    "info": "TDS, PF, ESI et PT sont des composants système — la paie les crée automatiquement lors de son exécution. Ne les ajoutez pas ici, sinon la retenue sera comptée deux fois pour un employé.",
+    "form": {
+        "nameLabel": "Nom",
+        "namePlaceholder": "Indemnité de logement",
+        "codeLabel": "Code",
+        "codePlaceholder": "HRA",
+        "codeDescription": "Le moteur de paie s'appuie sur ce code — par ex. BASIC, HRA.",
+        "typeLabel": "Type",
+        "categoryLabel": "Catégorie",
+        "displayOrderLabel": "Ordre d'affichage",
+        "displayOrderPlaceholder": "10",
+        "displayOrderDescription": "Les nombres les plus bas apparaissent en premier sur le bulletin de paie.",
+        "glAccountLabel": "Code de compte comptable",
+        "glAccountPlaceholder": "5100",
+        "glAccountDescription": "Où ce composant est comptabilisé dans le journal. Laissez vide pour utiliser le compte par défaut de son type.",
+        "taxableLabel": "Imposable",
+        "statutoryLabel": "Statutaire",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "À quoi sert ce composant, pour que le prochain administrateur n'ait pas à deviner."
+    },
+    "validation": {
+        "nameRequired": "Donnez un nom au composant",
+        "codeMin": "Le code doit compter au moins 2 caractères",
+        "codePattern": "Lettres majuscules, chiffres et underscores uniquement — pas d'espaces (ex. BASIC, HRA, SPECIAL_ALLOWANCE)",
+        "descriptionMax": "Limitez la description à 500 caractères",
+        "wholeNumbers": "Nombres entiers uniquement",
+        "glAccountMax": "Cela semble trop long pour un code de compte",
+        "codeDuplicate": "Un autre composant utilise déjà ce code"
+    }
+}

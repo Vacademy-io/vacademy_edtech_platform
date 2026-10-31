@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.hr_attendance.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vacademy.io.admin_core_service.core.security.HrAccessGuard;
 import vacademy.io.admin_core_service.features.hr_attendance.dto.ShiftAssignDTO;
 import vacademy.io.admin_core_service.features.hr_attendance.dto.ShiftDTO;
 import vacademy.io.admin_core_service.features.hr_attendance.entity.EmployeeShiftMapping;
@@ -13,7 +14,9 @@ import vacademy.io.admin_core_service.features.hr_employee.entity.EmployeeProfil
 import vacademy.io.admin_core_service.features.hr_employee.repository.EmployeeProfileRepository;
 import vacademy.io.common.exceptions.VacademyException;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,10 +31,13 @@ public class ShiftService {
     @Autowired
     private EmployeeProfileRepository employeeProfileRepository;
 
+    @Autowired
+    private HrAccessGuard hrAccessGuard;
+
     @Transactional
-    public String createShift(ShiftDTO dto) {
+    public String createShift(ShiftDTO dto, String instituteId) {
         Shift shift = new Shift();
-        shift.setInstituteId(dto.getInstituteId());
+        shift.setInstituteId(instituteId);
         shift.setName(dto.getName());
         shift.setCode(dto.getCode());
         shift.setStartTime(dto.getStartTime());
@@ -49,9 +55,10 @@ public class ShiftService {
     }
 
     @Transactional
-    public String updateShift(String id, ShiftDTO dto) {
+    public String updateShift(String id, ShiftDTO dto, String instituteId) {
         Shift shift = shiftRepository.findById(id)
                 .orElseThrow(() -> new VacademyException("Shift not found with id: " + id));
+        hrAccessGuard.requireInstituteMatch(shift.getInstituteId(), instituteId, "Shift");
 
         if (dto.getName() != null) shift.setName(dto.getName());
         if (dto.getCode() != null) shift.setCode(dto.getCode());
@@ -76,24 +83,51 @@ public class ShiftService {
     }
 
     @Transactional
-    public String assignShiftToEmployees(ShiftAssignDTO assignDTO) {
+    public String assignShiftToEmployees(ShiftAssignDTO assignDTO, String instituteId) {
+        if (assignDTO.getEmployeeIds() == null || assignDTO.getEmployeeIds().isEmpty()) {
+            throw new VacademyException("No employees provided for shift assignment");
+        }
+        LocalDate effectiveFrom = assignDTO.getEffectiveFrom();
+        if (effectiveFrom == null) {
+            throw new VacademyException("Effective from date is required for shift assignment");
+        }
+
         Shift shift = shiftRepository.findById(assignDTO.getShiftId())
                 .orElseThrow(() -> new VacademyException("Shift not found with id: " + assignDTO.getShiftId()));
+        hrAccessGuard.requireInstituteMatch(shift.getInstituteId(), instituteId, "Shift");
 
-        for (String employeeId : assignDTO.getEmployeeIds()) {
-            EmployeeProfile employee = employeeProfileRepository.findById(employeeId)
-                    .orElseThrow(() -> new VacademyException("Employee not found with id: " + employeeId));
+        // Batch-fetch and institute-check every employee before writing anything
+        List<String> employeeIds = assignDTO.getEmployeeIds().stream().distinct().collect(Collectors.toList());
+        Map<String, EmployeeProfile> employeeMap = employeeProfileRepository.findAllById(employeeIds).stream()
+                .filter(e -> instituteId.equals(e.getInstituteId()))
+                .collect(Collectors.toMap(EmployeeProfile::getId, e -> e));
+
+        for (String employeeId : employeeIds) {
+            EmployeeProfile employee = employeeMap.get(employeeId);
+            if (employee == null) {
+                throw new VacademyException("Employee not found with id: " + employeeId);
+            }
+
+            // Close any mapping still open on/after the new effective date, so exactly
+            // one mapping is active per day (findActiveMapping expects a single row;
+            // overlaps made check-in fail with a NonUniqueResultException).
+            List<EmployeeShiftMapping> openMappings = employeeShiftMappingRepository
+                    .findMappingsOpenOnOrAfter(employeeId, effectiveFrom);
+            for (EmployeeShiftMapping openMapping : openMappings) {
+                openMapping.setEffectiveTo(effectiveFrom.minusDays(1));
+                employeeShiftMappingRepository.save(openMapping);
+            }
 
             EmployeeShiftMapping mapping = new EmployeeShiftMapping();
             mapping.setEmployee(employee);
             mapping.setShift(shift);
-            mapping.setEffectiveFrom(assignDTO.getEffectiveFrom());
+            mapping.setEffectiveFrom(effectiveFrom);
             mapping.setEffectiveTo(assignDTO.getEffectiveTo());
 
             employeeShiftMappingRepository.save(mapping);
         }
 
-        return "Shift assigned to " + assignDTO.getEmployeeIds().size() + " employee(s) successfully";
+        return "Shift assigned to " + employeeIds.size() + " employee(s) successfully";
     }
 
     private ShiftDTO toDTO(Shift shift) {

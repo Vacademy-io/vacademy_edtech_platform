@@ -12,6 +12,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAnimationStore } from '@/stores/login/animationStore';
 import { toast } from 'sonner';
 import { z } from 'zod';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem } from '@/components/ui/form';
@@ -75,6 +76,7 @@ function resolveAuthProviderFlags(branding: Partial<DomainResolveResponse> | nul
 }
 
 export function LoginForm() {
+    const { t } = useTranslation('loginLoginForm');
     const queryClient = useQueryClient();
     const { hasSeenAnimation, setHasSeenAnimation } = useAnimationStore();
     const navigate = useNavigate();
@@ -152,9 +154,8 @@ export function LoginForm() {
         const showSubOrgSelection = urlParams.get('showSubOrgSelection');
 
         if (error === 'student_access_denied') {
-            toast.error('Access Denied', {
-                description:
-                    'Students are not allowed to access the admin portal. Please contact your administrator.',
+            toast.error(t('errors.accessDeniedTitle'), {
+                description: t('errors.studentAccessDenied'),
                 className: 'error-toast',
                 duration: 5000,
             });
@@ -162,9 +163,8 @@ export function LoginForm() {
         }
 
         if (error === 'admin_role_required') {
-            toast.error('Access Denied', {
-                description:
-                    'This portal requires ADMIN privileges. Please contact your administrator.',
+            toast.error(t('errors.accessDeniedTitle'), {
+                description: t('errors.adminRoleRequired'),
                 className: 'error-toast',
                 duration: 5000,
             });
@@ -212,9 +212,8 @@ export function LoginForm() {
                             // handleLoginFlow already toasts its own rejection reasons —
                             // don't stack a second (previously wrong) toast on top.
                             if (!isHandledLoginError(result.error)) {
-                                toast.error('Access Denied', {
-                                    description:
-                                        'You are not allowed to access this portal. Please contact your administrator.',
+                                toast.error(t('errors.accessDeniedTitle'), {
+                                    description: t('errors.notAllowedPortal'),
                                     className: 'error-toast',
                                     duration: 5000,
                                 });
@@ -236,7 +235,7 @@ export function LoginForm() {
                         navigate({ to: redirectUrl });
                     } catch (error) {
                         console.error('SSO login flow error:', error);
-                        toast.error('Login failed. Please try again.');
+                        toast.error(t('errors.loginFailedRetry'));
                     }
                 }, 100);
             }
@@ -261,9 +260,8 @@ export function LoginForm() {
                         // handleLoginFlow already toasts its own rejection reasons —
                         // don't stack a second (previously wrong) toast on top.
                         if (!isHandledLoginError(result.error)) {
-                            toast.error('Access Denied', {
-                                description:
-                                    'You are not allowed to access this portal. Please contact your administrator.',
+                            toast.error(t('errors.accessDeniedTitle'), {
+                                description: t('errors.notAllowedPortal'),
                                 className: 'error-toast',
                                 duration: 5000,
                             });
@@ -285,7 +283,7 @@ export function LoginForm() {
                     navigate({ to: redirectUrl });
                 } catch (error) {
                     console.error('OAuth login flow error:', error);
-                    toast.error('Login failed. Please try again.');
+                    toast.error(t('errors.loginFailedRetry'));
                 }
             }, 100);
         } else {
@@ -403,9 +401,8 @@ export function LoginForm() {
                 // second — and previously wrong ("Students are not allowed") — toast on
                 // top. Only surface a generic message for an unexpected error code.
                 if (!isHandledLoginError(result.error)) {
-                    toast.error('Access Denied', {
-                        description:
-                            'You are not allowed to access this portal. Please contact your administrator.',
+                    toast.error(t('errors.accessDeniedTitle'), {
+                        description: t('errors.notAllowedPortal'),
                         className: 'error-toast',
                         duration: 5000,
                     });
@@ -428,7 +425,7 @@ export function LoginForm() {
             navigate({ to: redirectUrl });
         } catch (error) {
             console.error('Login flow error:', error);
-            toast.error('Login failed. Please try again.');
+            toast.error(t('errors.loginFailedRetry'));
         }
     };
 
@@ -451,8 +448,8 @@ export function LoginForm() {
                     timestamp: new Date().toISOString(),
                 });
 
-                toast.error('Login Error', {
-                    description: 'Invalid credentials',
+                toast.error(t('errors.loginErrorTitle'), {
+                    description: t('errors.invalidCredentials'),
                     className: 'error-toast',
                     duration: 3000,
                 });
@@ -467,8 +464,8 @@ export function LoginForm() {
                 timestamp: new Date().toISOString(),
             });
 
-            toast.error('Login Error', {
-                description: 'Invalid username or password',
+            toast.error(t('errors.loginErrorTitle'), {
+                description: t('errors.invalidUsernamePassword'),
                 className: 'error-toast',
                 duration: 3000,
             });
@@ -510,10 +507,6 @@ export function LoginForm() {
     const handleNavigateSignup = () => {
         navigate({ to: '/signup' });
     };
-
-    // const handleNavigateAiEvaluator = () => {
-    //     navigate({ to: '/evaluator-ai' });
-    // };
 
     const handleSwitchToEmail = () => {
         setAuthMethod('EMAIL');
@@ -605,7 +598,7 @@ export function LoginForm() {
                             {instituteLogo ? (
                                 <img
                                     src={instituteLogo}
-                                    alt="institute logo"
+                                    alt={t('instituteLogoAlt')}
                                     className="mb-4 max-h-16 max-w-40 object-contain sm:mb-6 sm:max-h-20 sm:max-w-52"
                                 />
                             ) : null}
@@ -633,7 +626,7 @@ export function LoginForm() {
                                         type="button"
                                     >
                                         <GoogleIcon size={20} />
-                                        Continue with Google
+                                        {t('continueWithGoogle')}
                                     </button>
                                 )}
                                 {providerFlags.allowGithubAuth && (
@@ -650,7 +643,7 @@ export function LoginForm() {
                                         type="button"
                                     >
                                         <GitHubIcon className="size-5" />
-                                        Continue with GitHub
+                                        {t('continueWithGithub')}
                                     </button>
                                 )}
 
@@ -661,7 +654,7 @@ export function LoginForm() {
                                                 <span className="w-full border-t border-neutral-300" />
                                             </div>
                                             <div className="relative bg-white px-3 text-xs font-medium text-neutral-600">
-                                                or continue with
+                                                {t('orContinueWith')}
                                             </div>
                                         </div>
                                     )}
@@ -717,7 +710,7 @@ export function LoginForm() {
                                                                 <FormControl>
                                                                     <MyInput
                                                                         inputType="text"
-                                                                        inputPlaceholder="Enter your username"
+                                                                        inputPlaceholder={t('usernamePlaceholder')}
                                                                         input={value}
                                                                         onChangeFunction={onChange}
                                                                         error={
@@ -726,7 +719,7 @@ export function LoginForm() {
                                                                         }
                                                                         required={true}
                                                                         size="large"
-                                                                        label="Username"
+                                                                        label={t('usernameLabel')}
                                                                         autoCapitalize="none"
                                                                         autoCorrect="off"
                                                                         spellCheck={false}
@@ -763,7 +756,7 @@ export function LoginForm() {
                                                                             }
                                                                             required={true}
                                                                             size="large"
-                                                                            label="Password"
+                                                                            label={t('passwordLabel')}
                                                                             autoComplete="current-password"
                                                                             {...field}
                                                                             className="w-full sm:w-full"
@@ -775,7 +768,7 @@ export function LoginForm() {
                                                         <div className="flex items-center justify-end">
                                                             <Link to="/login/forgot-password">
                                                                 <div className="hover:text-primary-700 cursor-pointer text-xs font-medium text-primary-600 transition-colors">
-                                                                    Forgot Password?
+                                                                    {t('forgotPassword')}
                                                                 </div>
                                                             </Link>
                                                         </div>
@@ -788,7 +781,7 @@ export function LoginForm() {
                                                                 onClick={handleSwitchToEmail}
                                                                 className="hover:text-primary-700 cursor-pointer text-xs font-medium text-primary-600 transition-colors"
                                                             >
-                                                                Use Email OTP
+                                                                {t('useEmailOtp')}
                                                             </button>
                                                         )}
 
@@ -798,7 +791,7 @@ export function LoginForm() {
                                                                 onClick={handleSwitchToPhone}
                                                                 className="hover:text-primary-700 cursor-pointer text-xs font-medium text-primary-600 transition-colors"
                                                             >
-                                                                Use Phone OTP
+                                                                {t('usePhoneOtp')}
                                                             </button>
                                                         )}
                                                     </div>
@@ -811,16 +804,16 @@ export function LoginForm() {
                                                             layoutVariant="default"
                                                             disabled={mutation.isPending}
                                                         >
-                                                            {mutation.isPending ? 'Logging in...' : 'Login'}
+                                                            {mutation.isPending ? t('loggingIn') : t('login')}
                                                         </MyButton>
                                                         {allowSignup && (
                                                             <p className="text-xs text-neutral-700">
-                                                                Don&apos;t have an account?&nbsp;&nbsp;
+                                                                {t('noAccount')}&nbsp;&nbsp;
                                                                 <span
                                                                     className="hover:text-primary-700 cursor-pointer font-medium text-primary-600 transition-colors"
                                                                     onClick={handleNavigateSignup}
                                                                 >
-                                                                    Create One
+                                                                    {t('createOne')}
                                                                 </span>
                                                             </p>
                                                         )}
@@ -847,7 +840,7 @@ export function LoginForm() {
                                 rel="noreferrer"
                                 className="font-medium transition-colors hover:text-primary-600"
                             >
-                                Terms & Conditions
+                                {t('termsAndConditions')}
                             </a>
                         ) : null}
                         {cachedBranding?.termsAndConditionUrl &&
@@ -861,7 +854,7 @@ export function LoginForm() {
                                 rel="noreferrer"
                                 className="font-medium transition-colors hover:text-primary-600"
                             >
-                                Privacy Policy
+                                {t('privacyPolicy')}
                             </a>
                         ) : null}
                     </div>

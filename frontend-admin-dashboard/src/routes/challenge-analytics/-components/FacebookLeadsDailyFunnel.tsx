@@ -9,6 +9,7 @@ import {
     ChartTooltipContent,
 } from '@/components/ui/chart';
 import { CalendarBlank, ChartLineUp, ChatCircle, PaperPlaneTilt } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { LeadJourneyFunnelResponse } from '@/types/challenge-analytics';
 
 /**
@@ -37,6 +38,7 @@ export function FacebookLeadsDailyFunnel({
     funnel?: LeadJourneyFunnelResponse;
     loading?: boolean;
 }) {
+    const { t } = useTranslation('challengeAnalyticsFacebookLeadsDailyFunnel');
     const chartData = useMemo(
         () =>
             (funnel?.days ?? []).map((d) => ({
@@ -51,25 +53,25 @@ export function FacebookLeadsDailyFunnel({
     const summary = funnel?.summary;
     const kpis: KpiPill[] = [
         {
-            label: 'Days',
+            label: t('kpis.days'),
             value: `${funnel?.days?.length ?? 0}`,
             icon: CalendarBlank,
             tone: 'bg-info-50 text-info-600',
         },
         {
-            label: 'Sent',
+            label: t('kpis.sent'),
             value: `${summary?.total_sends ?? 0}`,
             icon: PaperPlaneTilt,
             tone: 'bg-primary-50 text-primary-500',
         },
         {
-            label: 'Replied',
+            label: t('kpis.replied'),
             value: `${summary?.replied_recipients ?? 0}`,
             icon: ChatCircle,
             tone: 'bg-success-50 text-success-600',
         },
         {
-            label: 'Response',
+            label: t('kpis.response'),
             value: `${summary?.reply_rate != null ? `${summary.reply_rate}%` : '0%'}`,
             icon: ChartLineUp,
             tone: 'bg-warning-50 text-warning-600',
@@ -87,10 +89,10 @@ export function FacebookLeadsDailyFunnel({
                     </div>
                     <div>
                         <h3 className="text-subtitle font-semibold text-neutral-700">
-                            Daily Message Funnel — Facebook Leads
+                            {t('title')}
                         </h3>
                         <p className="mt-0.5 text-caption text-neutral-500">
-                            Per-day sends &amp; replies across the lead drip
+                            {t('subtitle')}
                         </p>
                     </div>
                 </div>
@@ -115,20 +117,20 @@ export function FacebookLeadsDailyFunnel({
             <div className="p-5">
                 {loading ? (
                     <div className="flex h-72 items-center justify-center text-body text-neutral-500">
-                        Loading…
+                        {t('loading')}
                     </div>
                 ) : !hasData ? (
                     <div className="flex h-72 flex-col items-center justify-center gap-1 text-center">
-                        <p className="text-subtitle font-semibold text-neutral-700">No drip messages yet</p>
+                        <p className="text-subtitle font-semibold text-neutral-700">{t('emptyTitle')}</p>
                         <p className="text-body text-neutral-500">
-                            No lead-journey WhatsApp messages were sent to Facebook leads in this period.
+                            {t('emptyDescription')}
                         </p>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                         <div>
                             <h4 className="mb-3 text-caption font-semibold uppercase tracking-wide text-neutral-500">
-                                Messages by Day
+                                {t('messagesByDayHeading')}
                             </h4>
                             <ChartContainer config={chartConfig} className="h-72 w-full">
                                 <BarChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
@@ -144,7 +146,7 @@ export function FacebookLeadsDailyFunnel({
                         </div>
                         <div>
                             <h4 className="mb-3 text-caption font-semibold uppercase tracking-wide text-neutral-500">
-                                Response Rate Trend
+                                {t('responseRateTrendHeading')}
                             </h4>
                             <ChartContainer config={chartConfig} className="h-72 w-full">
                                 <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>

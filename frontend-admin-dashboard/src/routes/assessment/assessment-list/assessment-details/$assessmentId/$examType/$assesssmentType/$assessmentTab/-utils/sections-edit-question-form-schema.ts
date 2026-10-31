@@ -70,7 +70,16 @@ export const sectionsEditQuestionFormSchema = z.object({
                         parentRichTextContent: z.union([z.string(), z.null()]).optional(),
                         decimals: z.number().optional(),
                         numericType: z.string().optional(),
-                        validAnswers: z.union([z.array(z.number()), z.null()]).optional(),
+                        // An answer box left empty is null in the form; drop it before validating.
+                        validAnswers: z
+                            .preprocess(
+                                (value) =>
+                                    Array.isArray(value)
+                                        ? value.filter((answer) => answer !== null)
+                                        : value,
+                                z.union([z.array(z.number()), z.null()])
+                            )
+                            .optional(),
                         questionResponseType: z.union([z.string(), z.null()]).optional(),
                         subjectiveAnswerText: z.string().optional(),
                         codingConfig: z

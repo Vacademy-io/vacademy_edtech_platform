@@ -1,0 +1,10 @@
+{
+    "evaluated": "تم التقييم",
+    "evaluating": "جارٍ التقييم",
+    "pending": "قيد الانتظار",
+    "viewEvaluatedCopy": "عرض النسخة المقيَّمة",
+    "noEvaluatedCopyError": "لم يتم العثور على نسخة مقيَّمة لهذه المحاولة.",
+    "loadFailedError": "تعذر تحميل النسخة المقيَّمة. يرجى المحاولة مرة أخرى.",
+    "evaluatedCopyHeading": "النسخة المقيَّمة",
+    "fileNamePrefix": "نسخة-مقيّمة"
+}

@@ -18,6 +18,7 @@ import { getCachedInstituteBranding } from '@/services/domain-routing';
 import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
 import { TokenKey } from '@/constants/auth/tokens';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
+import { getComponentStack } from '@/lib/error-component-stack';
 import { MyButton } from '../design-system/button';
 
 interface ErrorFeedbackDialogProps {
@@ -88,6 +89,36 @@ async function completeSlackUploads(
     });
 }
 
+// Top frames are what locate the bug; Slack also rejects section text over 3000 chars.
+const MAX_TRACE_LINES = 12;
+const MAX_TRACE_CHARS = 1500;
+
+/** A stack trimmed to its top frames, as a Slack code-block section (null when absent). */
+function traceSection(title: string, trace: string | undefined) {
+    if (!trace) return null;
+    const text = trace
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean)
+        .slice(0, MAX_TRACE_LINES)
+        .join('\n')
+        // Same-origin URLs are noise — the chunk name and line:col are what find the code.
+        .split(window.location.origin)
+        .join('')
+        .replace(/```/g, "'''")
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        // Cap AFTER escaping (entities lengthen the text); an over-long section makes
+        // Slack reject the whole report. Drop an entity the cut split in half.
+        .slice(0, MAX_TRACE_CHARS)
+        .replace(/&[a-z]*$/, '');
+    return {
+        type: 'section',
+        text: { type: 'mrkdwn', text: `*${title}:*\n\`\`\`${text}\`\`\`` },
+    };
+}
+
 async function sendToSlack({
     instituteName,
     timezone,
@@ -142,6 +173,10 @@ async function sendToSlack({
                 },
             ],
         },
+        ...[
+            traceSection('Stack', error instanceof Error ? error.stack : undefined),
+            traceSection('Component stack', getComponentStack(error)),
+        ].filter((block) => block !== null),
     ];
 
     const msgRes = await fetch(`${SLACK_API}/chat.postMessage`, {

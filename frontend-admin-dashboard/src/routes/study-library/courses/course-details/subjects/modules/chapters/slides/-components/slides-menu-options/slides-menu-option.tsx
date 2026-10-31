@@ -1,6 +1,7 @@
 import { MyButton } from '@/components/design-system/button';
 import { MyDropdown } from '@/components/design-system/dropdown';
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getSlidesMenuOptions } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-constants/slides-menu-options';
 import { DotsThree } from '@phosphor-icons/react';
 import { CopyToDialog } from './copy-dialog';
@@ -10,7 +11,7 @@ import { useContentStore } from '../../-stores/chapter-sidebar-store';
 import { useRouter } from '@tanstack/react-router';
 import { SlideDripConditionDialog } from '@/routes/study-library/courses/course-details/-components/SlideDripConditionDialog';
 import { OfflineAvailabilityDialog } from '@/routes/study-library/courses/course-details/-components/OfflineAvailabilityDialog';
-import { getCourseSettings, saveCourseSettings } from '@/services/course-settings';
+import { getCourseSettings, saveDripConditionChanges } from '@/services/course-settings';
 import type { DripCondition } from '@/types/course-settings';
 import { toast } from 'sonner';
 import type { DropdownItem } from '@/components/design-system/utils/types/dropdown-types';
@@ -28,6 +29,7 @@ export const SlidesMenuOption = ({
     extraOptions?: DropdownItem[];
     onExtraSelect?: (value: string) => void;
 } = {}) => {
+    const { t } = useTranslation('studyLibrarySlidesMenuOption');
     const [openDialog, setOpenDialog] = useState<
         'copy' | 'move' | 'delete' | 'drip-conditions' | 'offline-availability' | null
     >(null);
@@ -41,7 +43,7 @@ export const SlidesMenuOption = ({
     const searchParams = router.state.location.search;
     const courseId: string = searchParams.courseId || '';
     const slideId: string = activeItem?.id || '';
-    const slideName: string = activeItem?.title || 'Slide';
+    const slideName: string = activeItem?.title || t('slide');
     const { getPackageSessionId } = useInstituteDetailsStore();
     const packageSessionId =
         getPackageSessionId({
@@ -53,7 +55,7 @@ export const SlidesMenuOption = ({
     // Get all slides in the current chapter for prerequisite selection
     const allSlides = items.map((slide) => ({
         id: slide.id,
-        heading: slide.title || 'Untitled Slide',
+        heading: slide.title || t('untitledSlide'),
     }));
 
     // Load course settings to check if drip conditions are enabled
@@ -76,13 +78,13 @@ export const SlidesMenuOption = ({
     // master switch (with it off the resolver denies every node, so a slide rule
     // saved here could never take effect).
     const menuOptions = useMemo<DropdownItem[]>(() => {
-        const filtered = getSlidesMenuOptions().filter((item) => {
+        const filtered = getSlidesMenuOptions(t).filter((item) => {
             if (item.value === 'drip-conditions') return dripConditionsEnabled;
             if (item.value === 'offline-availability') return offlineAccessEnabled;
             return true;
         });
         return [...extraOptions, ...filtered];
-    }, [dripConditionsEnabled, offlineAccessEnabled, extraOptions]);
+    }, [dripConditionsEnabled, offlineAccessEnabled, extraOptions, t]);
 
     const handleSelect = async (value: string) => {
         switch (value) {
@@ -111,11 +113,12 @@ export const SlidesMenuOption = ({
     const loadDripConditions = async () => {
         try {
             setLoadingDripConditions(true);
-            const settings = await getCourseSettings();
+            // Fresh from the server — the cached copy can hide rules saved elsewhere.
+            const settings = await getCourseSettings(true);
             setDripConditions(settings.dripConditions.conditions || []);
         } catch (error) {
             console.error('Failed to load drip conditions:', error);
-            toast.error('Failed to load drip conditions');
+            toast.error(t('loadDripConditionsFailed'));
             setDripConditions([]);
         } finally {
             setLoadingDripConditions(false);
@@ -124,20 +127,11 @@ export const SlidesMenuOption = ({
 
     const handleSaveDripConditions = async (updatedConditions: DripCondition[]) => {
         try {
-            const settings = await getCourseSettings();
-            const updatedSettings = {
-                ...settings,
-                dripConditions: {
-                    ...settings.dripConditions,
-                    conditions: updatedConditions,
-                },
-            };
-            await saveCourseSettings(updatedSettings);
-            setDripConditions(updatedConditions);
-            toast.success('Drip conditions saved successfully');
+            setDripConditions(await saveDripConditionChanges(dripConditions, updatedConditions));
+            toast.success(t('dripConditionsSaved'));
         } catch (error) {
             console.error('Failed to save drip conditions:', error);
-            toast.error('Failed to save drip conditions');
+            toast.error(t('saveDripConditionsFailed'));
             throw error;
         }
     };

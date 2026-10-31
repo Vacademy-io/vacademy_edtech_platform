@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import i18n from '@/i18n';
 import {
     ImageTemplate,
     FieldMapping,
@@ -9,6 +10,8 @@ import {
     CanvasRenderingContext,
 } from '@/types/certificate/certificate-types';
 
+const NS = 'certificateGenerationPdfGenerationService';
+
 export class ImageCertificateGenerationService {
     // Create canvas rendering context
     private createCanvas(width: number, height: number): CanvasRenderingContext {
@@ -16,7 +19,7 @@ export class ImageCertificateGenerationService {
         const ctx = canvas.getContext('2d');
 
         if (!ctx) {
-            throw new Error('Failed to get canvas 2D context');
+            throw new Error(i18n.t(`${NS}:errors.canvasContextFailed`));
         }
 
         canvas.width = width;
@@ -30,7 +33,7 @@ export class ImageCertificateGenerationService {
         return new Promise((resolve, reject) => {
             const img = document.createElement('img');
             img.onload = () => resolve(img);
-            img.onerror = (error) => reject(new Error('Failed to load image'));
+            img.onerror = () => reject(new Error(i18n.t(`${NS}:errors.imageLoadFailed`)));
             img.src = dataUrl;
         });
     }
@@ -165,7 +168,8 @@ export class ImageCertificateGenerationService {
                     value = student.mobile_number || '';
                     break;
                 case 'institute_name':
-                    value = student.linked_institute_name || 'University of Technology';
+                    value =
+                        student.linked_institute_name || i18n.t(`${NS}:defaults.instituteName`);
                     break;
                 case 'completion_date':
                     value = new Date().toLocaleDateString();
@@ -181,7 +185,9 @@ export class ImageCertificateGenerationService {
                         value = student.dynamicFields[mapping.fieldName]!.toString();
                     } else {
                         // Fallback to a default value
-                        value = `Sample ${mapping.displayName}`;
+                        value = i18n.t(`${NS}:defaults.sampleValue`, {
+                            field: mapping.displayName,
+                        });
                     }
             }
 
@@ -250,7 +256,13 @@ export class ImageCertificateGenerationService {
         } catch (error) {
             console.error('Error generating single certificate:', error);
             throw new Error(
-                `Failed to generate certificate for ${student.full_name}: ${error instanceof Error ? error.message : 'Unknown error'}`
+                i18n.t(`${NS}:errors.certificateGenerationFailed`, {
+                    name: student.full_name,
+                    message:
+                        error instanceof Error
+                            ? error.message
+                            : i18n.t(`${NS}:errors.unknownError`),
+                })
             );
         }
     }
@@ -366,7 +378,10 @@ export class ImageCertificateGenerationService {
 
             // Draw each field with sample data
             fieldMappings.forEach((mapping) => {
-                const value = sampleData[mapping.id] || mapping.displayName || 'Sample Text';
+                const value =
+                    sampleData[mapping.id] ||
+                    mapping.displayName ||
+                    i18n.t(`${NS}:defaults.sampleText`);
                 this.drawTextField(ctx, value, mapping, 1);
             });
 
@@ -375,7 +390,12 @@ export class ImageCertificateGenerationService {
         } catch (error) {
             console.error('Error generating preview certificate:', error);
             throw new Error(
-                `Failed to generate preview: ${error instanceof Error ? error.message : 'Unknown error'}`
+                i18n.t(`${NS}:errors.previewGenerationFailed`, {
+                    message:
+                        error instanceof Error
+                            ? error.message
+                            : i18n.t(`${NS}:errors.unknownError`),
+                })
             );
         }
     }

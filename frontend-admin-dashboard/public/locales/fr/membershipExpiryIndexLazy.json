@@ -1,0 +1,10 @@
+{
+    "title": "Expiration de l'adhésion",
+    "subtitle": "Suivez et gérez les expirations d'adhésion des étudiants.",
+    "exportCsv": "Exporter en CSV",
+    "exporting": "Exportation...",
+    "exportSuccess_one": "{{count}} adhésion exportée",
+    "exportSuccess_other": "{{count}} adhésions exportées",
+    "exportEmpty": "Aucune adhésion ne correspond aux filtres sélectionnés",
+    "exportFailed": "Échec de l'exportation des adhésions"
+}

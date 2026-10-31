@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { UseFormReturn } from 'react-hook-form';
-import { sectionsEditQuestionFormSchema } from './sections-edit-question-form-schema';
+import { buildSectionsEditQuestionFormSchema } from './sections-edit-question-form-schema';
 
 // Infer the form type from the schema
-type sectionQuestionPaperForm = z.infer<typeof sectionsEditQuestionFormSchema>;
+type sectionQuestionPaperForm = z.infer<ReturnType<typeof buildSectionsEditQuestionFormSchema>>;
 
 interface QuestionIndexes {
     [sectionId: string]: number;

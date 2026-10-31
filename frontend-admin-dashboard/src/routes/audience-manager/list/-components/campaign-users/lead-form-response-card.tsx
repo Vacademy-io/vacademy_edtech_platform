@@ -2,19 +2,28 @@
  * LeadFormResponseCard — surfaces the audience-form answers of a lead in the
  * side-view, stitched alongside the existing Overview content.
  *
- * Only renders when {@code selectedStudent._response_fields} is populated
- * (which campaign-users-table.tsx attaches when a lead row is clicked). For
- * users coming from manage-students / manage-contacts the prop is absent and
- * the card is silently skipped.
+ * Opened from a lead row, it renders {@code selectedStudent._response_fields}
+ * (attached by the lead lists). Rows from manage-students carry no answers, so
+ * the card loads the learner's saved list responses itself — otherwise answers
+ * captured on the lead form vanish from the profile once the lead is enrolled.
  *
  * Each field is rendered with its display name, a type-aware formatted value,
  * and (for {@code multi_select}) a row of chips so multiple selections read
  * cleanly instead of as raw JSON.
  */
 
-import { useState } from 'react';
-import { ListChecks, FileText, ExternalLink } from 'lucide-react';
-import { Phone, Robot } from '@phosphor-icons/react';
+import { useMemo, useState } from 'react';
+import { useQueries, useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
+import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
+import { GET_USER_AUDIENCES } from '@/constants/urls';
+import { recentLeadResponseFields } from '@/components/shared/leads/lead-view-model';
+import {
+    audienceLeadKey,
+    fetchAudienceLeadByResponseId,
+} from '@/routes/audience-manager/list/-services/get-recent-leads';
+import { ListChecks, FileText, ArrowSquareOut, Phone, Robot } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -34,6 +43,13 @@ import {
     useAiCallButtonEnabled,
 } from '@/components/shared/leads';
 import { cn } from '@/lib/utils';
+import { useLeadActionVisibility } from '@/lib/display-settings/lead-actions';
+import {
+    EditFormResponseDialog,
+    isPhoneField,
+    type FormResponseSaved,
+} from './edit-form-response-dialog';
+import type { StudentTable } from '@/types/student-table-types';
 
 export interface LeadResponseField {
     id: string;
@@ -44,19 +60,6 @@ export interface LeadResponseField {
 
 const isUrlValue = (value: string | null) =>
     !!value && (value.startsWith('http://') || value.startsWith('https://'));
-
-/**
- * Returns true when this form-response row holds the lead's phone number —
- * either by field type or by a name that looks like phone/mobile. We accept
- * the loose name match because campaign authors sometimes pick a generic
- * "text" field for the phone column.
- */
-const isPhoneField = (field: LeadResponseField): boolean => {
-    const t = (field.type ?? '').toLowerCase().trim();
-    if (t === 'phone' || t === 'mobile' || t === 'telephone') return true;
-    const n = (field.name ?? '').toLowerCase();
-    return /\bphone\b|\bmobile\b|\btelephone\b/.test(n);
-};
 
 interface CallAction {
     /** Called when the counsellor picks an ExoPhone and clicks "Call now". */
@@ -75,6 +78,7 @@ interface CallAction {
  * recognise it as the "place a call" affordance.
  */
 const CallButton = ({ call }: { call: CallAction }) => {
+    const { t } = useTranslation('audienceManagerLeadFormResponseCard');
     const muted = call.disabled || call.isPending;
     return (
         <CallPickerPopover
@@ -85,8 +89,8 @@ const CallButton = ({ call }: { call: CallAction }) => {
             trigger={
                 <button
                     type="button"
-                    title={call.reason ?? 'Call this lead'}
-                    aria-label="Call lead"
+                    title={call.reason ?? t('callButton.title')}
+                    aria-label={t('callButton.ariaLabel')}
                     disabled={muted}
                     className={cn(
                         'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors',
@@ -96,7 +100,7 @@ const CallButton = ({ call }: { call: CallAction }) => {
                     )}
                 >
                     <Phone weight="fill" className="size-3.5" />
-                    {call.isPending ? 'Connecting…' : 'Call now'}
+                    {call.isPending ? t('callButton.connecting') : t('callButton.callNow')}
                 </button>
             }
         />
@@ -123,6 +127,7 @@ const AI_PILL_ACTIVE = 'border-primary-200 bg-primary-50 text-primary-700 hover:
  * away with the defaults. Rendered only when AI calling's lead-list surface is enabled.
  */
 const AiCallButton = ({ ai }: { ai: AiCallAction }) => {
+    const { t } = useTranslation('audienceManagerLeadFormResponseCard');
     const muted = ai.disabled || ai.isPending;
     const { needsChooser } = useAiCallChooser();
     const [open, setOpen] = useState(false);
@@ -132,7 +137,7 @@ const AiCallButton = ({ ai }: { ai: AiCallAction }) => {
     const label = (
         <>
             <Robot weight="fill" className="size-3.5" />
-            {ai.isPending ? 'Calling…' : 'AI call'}
+            {ai.isPending ? t('aiCallButton.calling') : t('aiCallButton.aiCall')}
         </>
     );
 
@@ -140,8 +145,8 @@ const AiCallButton = ({ ai }: { ai: AiCallAction }) => {
         return (
             <button
                 type="button"
-                title={ai.reason ?? 'Place an AI voice-agent call to this lead'}
-                aria-label="AI call lead"
+                title={ai.reason ?? t('aiCallButton.title')}
+                aria-label={t('aiCallButton.ariaLabel')}
                 disabled={muted}
                 onClick={() => ai.onCall()}
                 className={cn(AI_PILL, muted ? AI_PILL_MUTED : AI_PILL_ACTIVE)}
@@ -165,8 +170,8 @@ const AiCallButton = ({ ai }: { ai: AiCallAction }) => {
             <PopoverTrigger asChild>
                 <button
                     type="button"
-                    title="Place an AI voice-agent call to this lead"
-                    aria-label="AI call lead"
+                    title={t('aiCallButton.title')}
+                    aria-label={t('aiCallButton.ariaLabel')}
                     disabled={ai.disabled}
                     className={cn(AI_PILL, ai.disabled ? AI_PILL_MUTED : AI_PILL_ACTIVE)}
                 >
@@ -175,7 +180,9 @@ const AiCallButton = ({ ai }: { ai: AiCallAction }) => {
             </PopoverTrigger>
             <PopoverContent align="end" className="w-72">
                 <div className="flex flex-col gap-3">
-                    <p className="text-caption font-medium text-neutral-700">AI call options</p>
+                    <p className="text-caption font-medium text-neutral-700">
+                        {t('aiCallButton.optionsHeading')}
+                    </p>
                     <AiCallChooserFields
                         agentId={agentId}
                         onAgentChange={setAgentId}
@@ -191,7 +198,7 @@ const AiCallButton = ({ ai }: { ai: AiCallAction }) => {
                             setOpen(false);
                         }}
                     >
-                        {ai.isPending ? 'Calling…' : 'Place AI call'}
+                        {ai.isPending ? t('aiCallButton.calling') : t('aiCallButton.placeAiCall')}
                     </MyButton>
                 </div>
             </PopoverContent>
@@ -208,6 +215,8 @@ const Row = ({
     call?: CallAction;
     aiCall?: AiCallAction;
 }) => {
+    const { t } = useTranslation('audienceManagerLeadFormResponseCard');
+    const { t: tFormat } = useTranslation('audienceManagerFormatCustomFieldValue');
     const { name, type, rawValue } = field;
     const normalized = (type ?? '').toLowerCase();
 
@@ -219,7 +228,7 @@ const Row = ({
                     <ListChecks className="size-3.5" />
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-500">
+                    <p className="text-2xs font-medium uppercase tracking-wider text-neutral-500">
                         {name}
                     </p>
                     {items.length > 0 ? (
@@ -235,7 +244,7 @@ const Row = ({
                             ))}
                         </div>
                     ) : (
-                        <p className="text-sm italic text-neutral-400">Not provided</p>
+                        <p className="text-sm italic text-neutral-400">{t('row.notProvided')}</p>
                     )}
                 </div>
             </div>
@@ -249,7 +258,7 @@ const Row = ({
                     <FileText className="size-3.5" />
                 </div>
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-500">
+                    <p className="text-2xs font-medium uppercase tracking-wider text-neutral-500">
                         {name}
                     </p>
                     <a
@@ -258,15 +267,15 @@ const Row = ({
                         rel="noopener noreferrer"
                         className="inline-flex max-w-full items-center gap-1.5 truncate text-sm font-medium text-primary-600 hover:underline"
                     >
-                        <span className="truncate">View attachment</span>
-                        <ExternalLink className="size-3.5 shrink-0" />
+                        <span className="truncate">{t('row.viewAttachment')}</span>
+                        <ArrowSquareOut className="size-3.5 shrink-0" />
                     </a>
                 </div>
             </div>
         );
     }
 
-    const display = formatCustomFieldValue(rawValue, type);
+    const display = formatCustomFieldValue(rawValue, type, tFormat);
     const showCall = !!call && isPhoneField(field) && display !== '-';
     return (
         <div className="flex items-start gap-3 px-3 py-2.5">
@@ -274,14 +283,14 @@ const Row = ({
                 <FileText className="size-3.5" />
             </div>
             <div className="flex min-w-0 flex-1 flex-col gap-1">
-                <p className="text-[11px] font-medium uppercase tracking-wider text-neutral-500">
+                <p className="text-2xs font-medium uppercase tracking-wider text-neutral-500">
                     {name}
                 </p>
                 <div className="flex items-center gap-2">
                     <p className="min-w-0 flex-1 break-words text-sm font-medium text-neutral-900">
                         {display === '-' ? (
                             <span className="font-normal italic text-neutral-400">
-                                Not provided
+                                {t('row.notProvided')}
                             </span>
                         ) : (
                             display
@@ -299,36 +308,33 @@ const Row = ({
     );
 };
 
-export const LeadFormResponseCard = () => {
-    const { selectedStudent } = useStudentSidebar();
-    // Loose access — `_response_fields` / `_audience_campaign_name` /
-    // `_response_id` are attached by audience-list flows only and aren't part
-    // of the canonical StudentTable shape. `user_id` IS canonical, so we
-    // read it off the typed object directly.
-    //
-    // `selectedStudent` is nullable: this card renders whenever the side view's
-    // active tab is `lead`, which a tenant can configure as the *default* tab —
-    // so it mounts before any lead is selected (selectedStudent === null).
-    // Optional-chain every read so that case renders nothing instead of
-    // throwing "Cannot read properties of null (reading '_response_fields')".
-    const ext = selectedStudent as unknown as {
-        _response_fields?: LeadResponseField[];
-        _audience_campaign_name?: string;
-        _response_id?: string | null;
-    } | null;
-    const fields = ext?._response_fields;
-    const responseId = ext?._response_id ?? null;
-    const leadUserId = selectedStudent?.user_id ?? null;
+interface LeadFormResponseCardViewProps {
+    fields: LeadResponseField[];
+    campaignName?: string | null;
+    campaignType?: string | null;
+    responseId: string | null;
+    leadUserId: string | null;
+    /** Called after the answers were edited, with the identity copies that followed. */
+    onAnswersSaved?: (saved: FormResponseSaved) => void;
+}
 
-    // Hooks must run unconditionally — set up the mutations before the
-    // empty-fields short-circuit so React's hook order stays stable.
+const LeadFormResponseCardView = ({
+    fields,
+    campaignName,
+    campaignType,
+    responseId,
+    leadUserId,
+    onAnswersSaved,
+}: LeadFormResponseCardViewProps) => {
+    const { t } = useTranslation('audienceManagerLeadFormResponseCard');
+    // Display Settings → Lead Actions: on for admin, opt-in for other roles.
+    const { canEditFormResponses } = useLeadActionVisibility();
     const placeCallMutation = usePlaceCall();
     const aiEnabled = useAiCallButtonEnabled();
     const placeAiCallMutation = usePlaceAiCall({ invalidateKeys: [['telephony-call-history']] });
 
-    if (!fields || fields.length === 0) return null;
-
-    const campaignName = ext?._audience_campaign_name;
+    // Channel › list, so the side view reads the same hierarchy as the leads table.
+    const campaignTrail = [campaignType, campaignName].filter(Boolean).join(' › ');
 
     // The Call button shows on the phone-number row only (see {@link isPhoneField}).
     // We disable it pre-emptively when we don't have a response id (the backend
@@ -336,9 +342,7 @@ export const LeadFormResponseCard = () => {
     const call: CallAction = {
         leadUserId,
         disabled: !responseId,
-        reason: !responseId
-            ? 'No campaign response linked — cannot place a call from here.'
-            : undefined,
+        reason: !responseId ? t('errors.noResponseForCall') : undefined,
         isPending: placeCallMutation.isPending,
         onCall: (preferredNumberId) => {
             if (!responseId) return;
@@ -355,9 +359,7 @@ export const LeadFormResponseCard = () => {
     const aiCall: AiCallAction | undefined = aiEnabled
         ? {
               disabled: !responseId,
-              reason: !responseId
-                  ? 'No campaign response linked — cannot place an AI call from here.'
-                  : undefined,
+              reason: !responseId ? t('errors.noResponseForAiCall') : undefined,
               isPending: placeAiCallMutation.isPending,
               onCall: (campaignId, preferredNumberId) => {
                   if (!responseId) return;
@@ -373,16 +375,24 @@ export const LeadFormResponseCard = () => {
 
     return (
         <Card className="border-neutral-200 shadow-none">
-            <CardHeader className="px-4 pb-3 pt-4">
-                <CardTitle className="flex items-center gap-2 text-sm font-semibold text-neutral-800">
-                    <ListChecks className="size-4 text-primary-500" />
-                    Form Response
-                    {campaignName && (
-                        <span className="text-xs font-normal text-neutral-500">
-                            · {campaignName}
+            <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 px-4 pb-3 pt-4">
+                <CardTitle className="flex min-w-0 items-center gap-2 text-sm font-semibold text-neutral-800">
+                    <ListChecks className="size-4 shrink-0 text-primary-500" />
+                    {t('card.title')}
+                    {campaignTrail && (
+                        <span className="truncate text-xs font-normal text-neutral-500">
+                            · {campaignTrail}
                         </span>
                     )}
                 </CardTitle>
+                {canEditFormResponses && responseId && (
+                    <EditFormResponseDialog
+                        responseId={responseId}
+                        leadUserId={leadUserId}
+                        fields={fields}
+                        onSaved={onAnswersSaved}
+                    />
+                )}
             </CardHeader>
             <CardContent className="px-1 pb-3 pt-0">
                 {fields.map((field, idx) => (
@@ -393,6 +403,187 @@ export const LeadFormResponseCard = () => {
                 ))}
             </CardContent>
         </Card>
+    );
+};
+
+// A learner can sit in several lists (repeat enquiries); answers from older ones
+// still matter, but a handful is plenty for the side view.
+const MAX_SAVED_RESPONSES = 5;
+
+interface UserAudienceMembership {
+    response_id: string;
+    submitted_at: string | null;
+    audience_status?: string | null;
+}
+
+/**
+ * Form answers for a learner opened from a surface that carries no lead row —
+ * manage-students, once the lead has been admitted. Loads the person's own list
+ * responses (newest first) and renders one card per response that has answers,
+ * so fields captured on the lead form (e.g. a referrer's name and number) stay
+ * visible after enrolment.
+ */
+const SavedLeadFormResponses = ({
+    userId,
+    onAnswersSaved,
+}: {
+    userId: string;
+    onAnswersSaved?: (saved: FormResponseSaved) => void;
+}) => {
+    const instituteId = getCurrentInstituteId() ?? '';
+
+    // Same key + payload as the Lead Profile tab's audience list, so TanStack dedupes.
+    const { data: audiences } = useQuery({
+        queryKey: ['user-audiences', userId, instituteId],
+        queryFn: async () => {
+            const response = await authenticatedAxiosInstance({
+                method: 'GET',
+                url: GET_USER_AUDIENCES,
+                params: { userId, instituteId },
+            });
+            return response.data as UserAudienceMembership[];
+        },
+        enabled: !!userId && !!instituteId,
+        staleTime: 2 * 60 * 1000,
+    });
+
+    const responseIds = useMemo(
+        () =>
+            [...(audiences ?? [])]
+                // The endpoint returns deleted leads too (audience_status INACTIVE) — skip them.
+                .filter(
+                    (a) =>
+                        !!a.response_id &&
+                        (a.audience_status ?? 'ACTIVE').toUpperCase() !== 'INACTIVE'
+                )
+                .sort((a, b) => {
+                    const ta = a.submitted_at ? Date.parse(a.submitted_at) : 0;
+                    const tb = b.submitted_at ? Date.parse(b.submitted_at) : 0;
+                    return tb - ta;
+                })
+                .slice(0, MAX_SAVED_RESPONSES)
+                .map((a) => a.response_id),
+        [audiences]
+    );
+
+    const leads = useQueries({
+        queries: responseIds.map((responseId) => ({
+            queryKey: audienceLeadKey(responseId),
+            queryFn: () => fetchAudienceLeadByResponseId(responseId),
+            staleTime: 2 * 60 * 1000,
+        })),
+    });
+
+    return (
+        <>
+            {leads.map((q, idx) => {
+                const lead = q.data;
+                if (!lead) return null;
+                const fields = recentLeadResponseFields(lead);
+                if (fields.length === 0) return null;
+                return (
+                    <div key={responseIds[idx]} className={cn(idx > 0 && 'mt-3')}>
+                        <LeadFormResponseCardView
+                            fields={fields}
+                            campaignName={lead.campaign_name ?? lead.source_audience_name}
+                            campaignType={lead.campaign_type}
+                            responseId={lead.response_id ?? responseIds[idx] ?? null}
+                            leadUserId={userId}
+                            onAnswersSaved={onAnswersSaved}
+                        />
+                    </div>
+                );
+            })}
+        </>
+    );
+};
+
+/** The selected row with the identity fields that followed a form-answer edit. */
+const withIdentity = (row: StudentTable, sync: FormResponseSaved['sync']): StudentTable => ({
+    ...row,
+    ...(sync.userDetails.full_name && { full_name: sync.userDetails.full_name }),
+    ...(sync.userDetails.email && { email: sync.userDetails.email }),
+    ...(sync.userDetails.mobile_number && { mobile_number: sync.userDetails.mobile_number }),
+});
+
+interface LeadFormResponseCardProps {
+    /**
+     * Load the learner's saved answers when the selected row carries none (a learner
+     * opened from manage-students). Callers pass the same gate as their Lead Profile
+     * tab, so nothing is fetched where the lead system is off.
+     */
+    loadSavedResponses?: boolean;
+}
+
+export const LeadFormResponseCard = ({ loadSavedResponses = false }: LeadFormResponseCardProps) => {
+    const { selectedStudent, setSelectedStudent } = useStudentSidebar();
+    // Loose access — `_response_fields` / `_audience_campaign_name` /
+    // `_response_id` are attached by audience-list flows only and aren't part
+    // of the canonical StudentTable shape. `user_id` IS canonical, so we
+    // read it off the typed object directly.
+    //
+    // `selectedStudent` is nullable: this card renders whenever the side view's
+    // active tab is `lead`, which a tenant can configure as the *default* tab —
+    // so it mounts before any lead is selected (selectedStudent === null).
+    // Optional-chain every read so that case renders nothing instead of
+    // throwing "Cannot read properties of null (reading '_response_fields')".
+    const ext = selectedStudent as unknown as {
+        _response_fields?: LeadResponseField[];
+        _audience_campaign_name?: string;
+        _audience_campaign_type?: string;
+        _response_id?: string | null;
+    } | null;
+    const fields = ext?._response_fields;
+    const leadUserId = selectedStudent?.user_id ?? null;
+
+    // Opened from a lead row: the row already carries this response's answers.
+    if (fields) {
+        if (fields.length === 0) return null;
+        return (
+            <LeadFormResponseCardView
+                fields={fields}
+                campaignName={ext?._audience_campaign_name}
+                campaignType={ext?._audience_campaign_type}
+                responseId={ext?._response_id ?? null}
+                leadUserId={leadUserId}
+                // The answers live on the selected row, so patch it in place —
+                // the list refetch alone would not reach the open side view.
+                onAnswersSaved={({ changed, sync }) => {
+                    if (!selectedStudent) return;
+                    setSelectedStudent(
+                        {
+                            ...withIdentity(selectedStudent, sync),
+                            // A lead row's guardian number IS this enquiry's parent_mobile.
+                            ...(sync.parentMobile && {
+                                father_mobile_number: sync.parentMobile,
+                            }),
+                            _response_fields: fields.map((f) =>
+                                f.id in changed ? { ...f, rawValue: changed[f.id] ?? '' } : f
+                            ),
+                        } as StudentTable,
+                        { openOverlay: false }
+                    );
+                }}
+            />
+        );
+    }
+
+    // A row that carries `_response_id` came from a lead surface (e.g. a Call Log seed
+    // still hydrating) — its own answers arrive with the row, so don't load others.
+    const fromLeadSurface = !!ext && '_response_id' in ext;
+
+    // Opened from manage-students (an admitted learner): load their saved answers.
+    if (!loadSavedResponses || fromLeadSurface || !leadUserId) return null;
+    return (
+        <SavedLeadFormResponses
+            userId={leadUserId}
+            // A learner row keeps its own name/email/mobile copy (backend syncs the
+            // student rows); its guardian fields are unrelated to parent_mobile.
+            onAnswersSaved={({ sync }) => {
+                if (!selectedStudent) return;
+                setSelectedStudent(withIdentity(selectedStudent, sync), { openOverlay: false });
+            }}
+        />
     );
 };
 

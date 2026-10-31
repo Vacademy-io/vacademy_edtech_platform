@@ -1,0 +1,14 @@
+{
+    "emptyTitle": "Aucun contenu de cours pour le moment",
+    "emptyHint": "Aucun·e {{term}} n'a été créé·e pour ce groupe.",
+    "subjectProgressHeading": "Progression de {{term}}",
+    "moduleCount_one": "{{count}} {{term}}",
+    "moduleCount_many": "{{count}} {{term}}s",
+    "moduleCount_other": "{{count}} {{term}}s",
+    "moduleChapterBreakdownHeading": "Détail des {{term}}s et chapitres",
+    "selectSubjectPlaceholder": "Sélectionner {{term}}",
+    "noModulesForSubject": "Aucun {{moduleTerm}} pour ce·tte {{subjectTerm}}.",
+    "moduleLabel": "{{term}} : {{name}}",
+    "noChaptersInModule": "Aucun chapitre dans ce·tte {{term}}.",
+    "done": "Terminé"
+}

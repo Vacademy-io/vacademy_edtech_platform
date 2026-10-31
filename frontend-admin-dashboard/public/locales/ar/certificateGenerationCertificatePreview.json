@@ -1,0 +1,40 @@
+{
+    "emptyState": {
+        "title": "لا توجد حقول معينة",
+        "description": "أضف حقولاً إلى قالب الشهادة لمشاهدة معاينة.",
+        "hint": "اسحب الحقول من اللوحة إلى القالب الخاص بك"
+    },
+    "header": {
+        "title": "معاينة الشهادة",
+        "subtitle": "معاينة شكل الشهادات ببيانات طلاب حقيقية"
+    },
+    "studentNav": {
+        "position": "{{current}} من {{total}}"
+    },
+    "actions": {
+        "downloadPreview": "تنزيل المعاينة",
+        "retry": "إعادة المحاولة"
+    },
+    "studentInfo": {
+        "previewing": "معاينة: {{name}}",
+        "idLabel": "المعرّف:",
+        "emailLabel": "البريد الإلكتروني:",
+        "enrollmentLabel": "رقم التسجيل:",
+        "instituteLabel": "المؤسسة:"
+    },
+    "previewImage": {
+        "alt": "معاينة الشهادة",
+        "errorTitle": "خطأ في المعاينة",
+        "errorMessage": "تعذّر إنشاء معاينة الشهادة. يرجى التحقق من ربط الحقول.",
+        "generating": "جارٍ إنشاء معاينة الشهادة...",
+        "empty": "لا تتوفر معاينة"
+    },
+    "fieldValues": {
+        "title": "قيم الحقول لـ {{name}}",
+        "noValue": "لا توجد قيمة",
+        "sampleValue": "نموذج {{field}}"
+    },
+    "download": {
+        "unnamedStudent": "غير مسمى"
+    }
+}

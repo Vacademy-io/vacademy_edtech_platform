@@ -6,6 +6,7 @@
  * conversion took. Pick a wider date range (90d / custom) to see more cohorts.
  */
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { ChartLineUp, Stack } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import { fetchCohortAnalysis, cohortQueryKey } from '../-services/get-revenue-reports';
@@ -23,7 +24,7 @@ import {
     type ReportTabProps,
 } from './report-shared';
 
-/** "2026-06" → "Jun 2026". */
+/** "2026-06" → "Jun 2026" (locale-aware month/year formatting). */
 function fmtCohortLabel(cohort: string): string {
     const [y, m] = cohort.split('-').map(Number);
     if (!y || !m) return cohort;
@@ -38,6 +39,7 @@ export function CohortTab({
     teamId,
     counsellorUserId,
 }: ReportTabProps) {
+    const { t } = useTranslation('audienceManagerCohortTab');
     const params = { instituteId, fromDate, toDate, teamId, counsellorUserId };
     const query = useQuery({
         queryKey: cohortQueryKey(params),
@@ -57,7 +59,7 @@ export function CohortTab({
 
     return (
         <ReportSection
-            title="Cohort analysis"
+            title={t('section.title')}
             icon={<Stack size={18} />}
             actions={
                 <ExportWithColumnPickerButton
@@ -65,14 +67,14 @@ export function CohortTab({
                     disabled={cohorts.length === 0}
                     getHeadersAndRows={() => ({
                         headers: [
-                            'Cohort',
-                            'Leads',
-                            'Converted',
-                            'Conv %',
-                            'Revenue',
-                            'Avg deal value',
-                            'Revenue / lead',
-                            'Median days to convert',
+                            t('csv.headers.cohort'),
+                            t('csv.headers.leads'),
+                            t('csv.headers.converted'),
+                            t('csv.headers.convPct'),
+                            t('csv.headers.revenue'),
+                            t('csv.headers.avgDealValue'),
+                            t('csv.headers.revenuePerLead'),
+                            t('csv.headers.medianDaysToConvert'),
                         ],
                         rows: cohorts.map((c) => [
                             c.cohort,
@@ -89,20 +91,32 @@ export function CohortTab({
             }
         >
             {cohorts.length === 0 ? (
-                <EmptyHint message="No acquisition cohorts in this range. Try a wider date range." />
+                <EmptyHint message={t('emptyHint')} />
             ) : (
                 <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
-                                <th className="py-2 pr-3">Cohort</th>
-                                <th className="py-2 pr-3 text-right">Leads</th>
-                                <th className="py-2 pr-3 text-right">Converted</th>
-                                <th className="py-2 pr-3 text-right">Conv %</th>
-                                <th className="py-2 pr-3 text-right">Revenue</th>
-                                <th className="py-2 pr-3 text-right">Avg deal</th>
-                                <th className="py-2 pr-3 text-right">Rev / lead</th>
-                                <th className="py-2 pr-3 text-right">Median days</th>
+                                <th className="py-2 pe-3">{t('table.headers.cohort')}</th>
+                                <th className="py-2 pe-3 text-end">{t('table.headers.leads')}</th>
+                                <th className="py-2 pe-3 text-end">
+                                    {t('table.headers.converted')}
+                                </th>
+                                <th className="py-2 pe-3 text-end">
+                                    {t('table.headers.convPct')}
+                                </th>
+                                <th className="py-2 pe-3 text-end">
+                                    {t('table.headers.revenue')}
+                                </th>
+                                <th className="py-2 pe-3 text-end">
+                                    {t('table.headers.avgDeal')}
+                                </th>
+                                <th className="py-2 pe-3 text-end">
+                                    {t('table.headers.revPerLead')}
+                                </th>
+                                <th className="py-2 pe-3 text-end">
+                                    {t('table.headers.medianDays')}
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -160,8 +174,7 @@ export function CohortTab({
             )}
             <p className="flex items-center gap-1.5 text-xs text-neutral-400">
                 <ChartLineUp size={13} />
-                Each cohort is the leads acquired in that month; revenue is the lifetime collected
-                revenue from those that converted.
+                {t('footnote')}
             </p>
         </ReportSection>
     );

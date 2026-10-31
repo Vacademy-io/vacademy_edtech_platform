@@ -1,0 +1,52 @@
+{
+    "description": "Jours où l'établissement est fermé. La présence les marque HOLIDAY automatiquement, donc un jour manquant dans ce calendrier compte comme un jour ouvré où personne ne s'est présenté.",
+    "actions": {
+        "addSeveral": "Ajouter plusieurs",
+        "addHoliday": "Ajouter un jour férié",
+        "addYearsHolidays": "Ajouter les jours fériés de l'année",
+        "edit": "Modifier {{name}}",
+        "remove": "Supprimer {{name}}",
+        "editFallback": "le jour férié",
+        "keepIt": "Conserver",
+        "removeConfirm": "Supprimer"
+    },
+    "count_one": "{{count}} jour férié en {{year}}",
+    "count_many": "{{count}} de jours fériés en {{year}}",
+    "count_other": "{{count}} jours fériés en {{year}}",
+    "errors": {
+        "loadFailed": "Impossible de charger le calendrier des jours fériés.",
+        "removeFailed": "Impossible de supprimer le jour férié."
+    },
+    "empty": {
+        "title": "Aucun jour férié défini pour {{year}}",
+        "description": "Publiez ici le calendrier de l'année — la présence et la paie le consultent tous deux."
+    },
+    "months": {
+        "unknown": "Mois {{month}}",
+        "january": "Janvier",
+        "february": "Février",
+        "march": "Mars",
+        "april": "Avril",
+        "may": "Mai",
+        "june": "Juin",
+        "july": "Juillet",
+        "august": "Août",
+        "september": "Septembre",
+        "october": "Octobre",
+        "november": "Novembre",
+        "december": "Décembre"
+    },
+    "holiday": {
+        "defaultName": "Jour férié",
+        "optional": "Optionnel"
+    },
+    "toast": {
+        "removed": "Jour férié supprimé"
+    },
+    "deleteDialog": {
+        "title": "Supprimer ce jour férié ?",
+        "description": "{{name}} le {{date}} devient un jour ouvré ordinaire. La présence déjà enregistrée pour ce jour n'est pas modifiée.",
+        "defaultName": "Ce jour férié",
+        "unknownDate": "une date inconnue"
+    }
+}

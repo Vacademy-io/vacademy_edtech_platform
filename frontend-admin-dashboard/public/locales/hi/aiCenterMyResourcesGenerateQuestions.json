@@ -1,0 +1,14 @@
+{
+    "trigger": {
+        "label": "प्रश्न बनाएं"
+    },
+    "dialog": {
+        "title": "प्रश्न बनाएं",
+        "promptLabel": "प्रॉम्प्ट",
+        "promptPlaceholder": "अपना प्रॉम्प्ट यहाँ लिखें",
+        "generateButton": "बनाएं"
+    },
+    "tasksList": {
+        "heading": "Vsmart Upload"
+    }
+}

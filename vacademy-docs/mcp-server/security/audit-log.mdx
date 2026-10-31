@@ -1,0 +1,71 @@
+---
+title: "Audit log"
+description: "What the server records for each tool call, what it leaves out, and how admins see who is connected."
+icon: "list-check"
+---
+
+The MCP server keeps a record of the tool calls AI apps make. It answers questions like "who used which tool, from which app, and did it work?"
+
+## What is recorded for each call
+
+| Field | What it holds |
+|---|---|
+| Person | The user the connection acts for: the person who approved it. |
+| Institute | The institute in the connection. |
+| AI app | The app's client ID and the name it registered with, for example "Claude" or "Cursor". |
+| Tool | The tool that was called, for example `learners` or `website_edit`. |
+| Arguments | What the AI app asked the tool to do: the action, the IDs it named and the options it chose. See the limits below. |
+| Outcome | Whether the call worked, and the error code when it didn't (for example `tool_not_permitted` or `confirm_token_expired`). |
+| Duration | How long the call took. |
+| Time | When the call happened. |
+
+Calls that a tool refuses are recorded too, with their error code. So a refused attempt to use a tool that is switched off still leaves a trace.
+
+A request turned away before it reaches any tool, for example because the server is switched off or the person's role may not connect, gets an error message in the AI app but no tool-call record.
+
+## What is left out of the record
+
+The record is meant to show **what was done**, not to keep a second copy of your data.
+
+<Tabs>
+  <Tab title="CRM tools">
+    For CRM tools, the server keeps only the **shape** of each request:
+
+    - the action, for example `get`, `set_status` or `send`
+    - lead, call, meeting and other record IDs
+    - fixed choices (a status, a tier, yes/no options), numbers and dates
+
+    Free text is **not stored**. Notes, phone numbers, email addresses, names you searched for and message text are each replaced by a marker that says only that a value was removed and how long it was.
+  </Tab>
+  <Tab title="Other tools">
+    For the other tools (Website, Courses, Learners and so on), the arguments are stored, with these exceptions. This includes details you ask the tool to use, such as the names and emails of learners to enrol.
+
+    - **Secrets are removed.** Any argument whose name suggests a credential, such as a password, token, key or cookie, is stored only as `[redacted]`.
+    - **Large files are not copied.** Uploaded images and design files are stored only as their size and a fingerprint.
+    - **Very large requests are trimmed.** Long values are replaced by their size and a fingerprint, so the record stays small.
+  </Tab>
+</Tabs>
+
+The record never contains the AI app's answer to you, or the conversation in the AI app. Those stay in the AI app, under its provider's terms.
+
+## How admins see connections
+
+Admins can see who is connected in **Settings → MCP Server → Active connections**. Each row shows:
+
+- the AI app's name
+- **Connected by**: the person who approved it
+- **Last used**, or "Never used"
+
+Press **Revoke** to end a connection. It stops working at once, and that person has to connect and approve again to use it.
+
+<Tip>
+When someone changes role or leaves, revoke their rows in **Active connections**. Removing a role from **Who can connect** applies on the next request.
+</Tip>
+
+## Getting the call records
+
+The settings page shows connections, not the per-call record. If you need the tool-call records for a review or an investigation, contact your platform support team with the time range and the people involved.
+
+## The AI app's own history
+
+Your AI app keeps its own history of each conversation, including the tool calls and their answers. That history is governed by the AI app's settings and its provider's data policy, not by your institute. See [Data and privacy](/mcp-server/security/data-and-pii).

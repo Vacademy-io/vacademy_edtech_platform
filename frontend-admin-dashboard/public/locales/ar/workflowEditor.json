@@ -1,0 +1,4 @@
+{
+    "loadingWorkflow": "جارٍ تحميل سير العمل...",
+    "failedToLoad": "فشل تحميل سير العمل: {{message}}"
+}

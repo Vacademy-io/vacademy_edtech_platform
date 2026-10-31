@@ -1,0 +1,28 @@
+{
+    "header": {
+        "title": "Rushes — regardez vos scènes tournées",
+        "count": "· {{count}}"
+    },
+    "empty": "Aucun rush à examiner — validez pour continuer.",
+    "qc": {
+        "passed": "Contrôle qualité réussi",
+        "flagged": "Problème signalé au contrôle qualité",
+        "flaggedWithIssue": "Problème signalé au contrôle qualité : {{issue}}"
+    },
+    "clip": {
+        "keepIt": "Conserver",
+        "redo": "Retourner",
+        "notePlaceholder": "Que doit corriger la reprise ? ex. elle doit paraître plus en colère, mauvais accessoire sur le bureau…",
+        "durationSeconds": "{{value}} s"
+    },
+    "footer": {
+        "reTakeNote": "Une reprise est facturée comme la prise originale.",
+        "reFilmSummary_one": "{{count}} scène sera retournée — une reprise est facturée comme la prise originale.",
+        "reFilmSummary_many": "{{count}} scènes seront retournées — une reprise est facturée comme la prise originale.",
+        "reFilmSummary_other": "{{count}} scènes seront retournées — une reprise est facturée comme la prise originale.",
+        "approveAll": "Tout valider et continuer",
+        "reFilmSubmit_one": "Retourner {{count}} scène et continuer",
+        "reFilmSubmit_many": "Retourner {{count}} scènes et continuer",
+        "reFilmSubmit_other": "Retourner {{count}} scènes et continuer"
+    }
+}

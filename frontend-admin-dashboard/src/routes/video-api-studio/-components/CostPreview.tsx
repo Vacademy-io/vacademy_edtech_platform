@@ -1,5 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     Dialog,
     DialogContent,
@@ -8,9 +10,13 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, Coins, Loader2 } from 'lucide-react';
+import { Warning, Coins, CircleNotch } from '@phosphor-icons/react';
 import {
     previewVideoCost,
+    buildQualityTiers,
+    buildVoiceGenders,
+    getTargetAudienceLabel,
+    getTargetDurationLabel,
     type GenerateVideoRequest,
     type VideoCostPreviewRequest,
     type VideoCostPreviewResponse,
@@ -67,6 +73,8 @@ function buildPreviewPayload(
         // synthesis + reference-image cost lines. BE silently ignores `host`
         // for tiers below ultra (matches the API-edge tier gate).
         host: options.host,
+        // Lesson mode — the BE adds the Spatius teacher row when a teacher is set.
+        lesson: options.lesson,
         // Forward AI video opt-in so the BE adds a worst-case Veo row to
         // the breakdown. Same tier-gate as host above — BE ignores on
         // sub-ultra tiers.
@@ -95,7 +103,8 @@ const _AVATAR_REF_COMPONENT = 'Avatar reference images (host)';
 
 function rewriteAvatarRow(
     row: VideoCostPreviewBreakdownRow,
-    pickedAvatar: StudioAvatar | undefined
+    pickedAvatar: StudioAvatar | undefined,
+    t: TFunction
 ): VideoCostPreviewBreakdownRow | null {
     if (row.component === _AVATAR_SYNTH_COMPONENT) {
         // Always rewrite to drop the technical endpoint string. Use the
@@ -103,14 +112,16 @@ function rewriteAvatarRow(
         // for admin (free-form upload, no studio_avatar row).
         if (pickedAvatar) {
             const isBuiltin = pickedAvatar.provider !== 'custom';
-            const label = isBuiltin ? 'Preset avatar' : 'Custom avatar';
+            const label = isBuiltin
+                ? t('avatarRow.presetAvatar')
+                : t('avatarRow.customAvatar');
             const name = (pickedAvatar.name || '').trim();
             return {
                 ...row,
-                detail: name ? `${label} — ${name}` : label,
+                detail: name ? t('avatarRow.labelWithName', { label, name }) : label,
             };
         }
-        return { ...row, detail: 'Custom avatar' };
+        return { ...row, detail: t('avatarRow.customAvatar') };
     }
     if (row.component === _AVATAR_REF_COMPONENT) {
         // Built-in catalog avatars skip Seedream entirely — drop this row
@@ -120,9 +131,18 @@ function rewriteAvatarRow(
             return null;
         }
         // Custom path — keep the row but simplify the detail.
-        return { ...row, detail: 'Per-shot identity images' };
+        return { ...row, detail: t('avatarRow.perShotIdentityImages') };
     }
     return row;
+}
+
+/** Bound credits formatter — factored so components can supply their own
+ *  `t` for the null-value placeholder. */
+function buildFmtCredits(t: TFunction, locale: string) {
+    return (n: number | null | undefined): string => {
+        if (n == null) return t('common.emptyValue');
+        return Math.round(n).toLocaleString(locale);
+    };
 }
 
 // ---------------------------------------------------------------------------
@@ -137,6 +157,7 @@ export function useCostPreview(args: {
     enabled?: boolean;
 }) {
     const { apiKey, options, reviewMode, attachmentsCount, enabled = true } = args;
+    const { t } = useTranslation('videoApiStudioCostPreview');
     const [data, setData] = useState<VideoCostPreviewResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -150,7 +171,7 @@ export function useCostPreview(args: {
     useEffect(() => {
         if (!enabled || !apiKey) return;
         let cancelled = false;
-        const t = setTimeout(() => {
+        const timer = setTimeout(() => {
             setLoading(true);
             setError(null);
             previewVideoCost(payload, apiKey)
@@ -158,7 +179,10 @@ export function useCostPreview(args: {
                     if (!cancelled) setData(res);
                 })
                 .catch((err) => {
-                    if (!cancelled) setError(err instanceof Error ? err.message : 'Preview failed');
+                    if (!cancelled)
+                        setError(
+                            err instanceof Error ? err.message : t('hook.previewFailedFallback')
+                        );
                 })
                 .finally(() => {
                     if (!cancelled) setLoading(false);
@@ -166,7 +190,7 @@ export function useCostPreview(args: {
         }, 300);
         return () => {
             cancelled = true;
-            clearTimeout(t);
+            clearTimeout(timer);
         };
     }, [payloadKey, apiKey, enabled]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -177,11 +201,6 @@ export function useCostPreview(args: {
 // Inline summary — sits below PromptInput, auto-updates.
 // ---------------------------------------------------------------------------
 
-function fmtCredits(n: number | null | undefined): string {
-    if (n == null) return '—';
-    return Math.round(n).toLocaleString();
-}
-
 export function CostPreviewInline({
     data,
     loading,
@@ -189,6 +208,8 @@ export function CostPreviewInline({
     data: VideoCostPreviewResponse | null;
     loading: boolean;
 }) {
+    const { t, i18n } = useTranslation('videoApiStudioCostPreview');
+    const fmtCredits = useMemo(() => buildFmtCredits(t, i18n.language), [t, i18n.language]);
     if (!data && !loading) return null;
     const est = data?.estimate;
     const bal = data?.balance;
@@ -199,19 +220,25 @@ export function CostPreviewInline({
     // so we only render the cost + balance summary here.
     if (!est && !bal && !loading) return null;
 
-    // Visual weight bumped intentionally — the previous neutral `text-[11px]`
+    // Visual weight bumped intentionally — the previous neutral `text-2xs`
     // strip was being missed by users who only discovered the cost at the
     // confirmation modal. Amber pill makes "this is the price tag" obvious
     // at a glance; insufficient balance flips to red.
     return (
         <div className="flex flex-wrap items-center justify-end gap-2 text-xs">
-            {loading && <Loader2 className="size-3.5 animate-spin text-muted-foreground" />}
+            {loading && <CircleNotch className="size-3.5 animate-spin text-muted-foreground" />}
             {est && (
                 <span className="inline-flex items-center gap-1.5 rounded-md bg-amber-50 px-2 py-0.5 font-semibold text-amber-900 ring-1 ring-amber-200">
-                    <Coins className="size-3.5 text-amber-600" />~{fmtCredits(est.expected_credits)}{' '}
-                    credits
+                    <Coins className="size-3.5 text-amber-600" />
+                    {t('inline.expectedCredits', {
+                        count: est.expected_credits,
+                        value: fmtCredits(est.expected_credits),
+                    })}
                     <span className="font-normal text-amber-700">
-                        ({fmtCredits(est.low_credits)}–{fmtCredits(est.high_credits)})
+                        {t('inline.range', {
+                            low: fmtCredits(est.low_credits),
+                            high: fmtCredits(est.high_credits),
+                        })}
                     </span>
                 </span>
             )}
@@ -224,7 +251,7 @@ export function CostPreviewInline({
                     }
                 >
                     {insufficient ? '⚠ ' : '✓ '}
-                    {fmtCredits(bal.current)} available
+                    {t('inline.balanceAvailable', { value: fmtCredits(bal.current) })}
                 </span>
             )}
         </div>
@@ -260,6 +287,8 @@ export function CostPreviewModal({
      */
     savedAvatarId?: string;
 }) {
+    const { t, i18n } = useTranslation('videoApiStudioCostPreview');
+    const fmtCredits = useMemo(() => buildFmtCredits(t, i18n.language), [t, i18n.language]);
     const sel = data?.selections;
     const est = data?.estimate;
     const bal = data?.balance;
@@ -279,31 +308,46 @@ export function CostPreviewModal({
     const visibleBreakdown = useMemo(() => {
         if (!est) return [];
         return est.breakdown
-            .map((row) => rewriteAvatarRow(row, pickedAvatar))
+            .map((row) => rewriteAvatarRow(row, pickedAvatar, t))
             .filter((row): row is VideoCostPreviewBreakdownRow => row !== null);
-    }, [est, pickedAvatar]);
+    }, [est, pickedAvatar, t]);
+
+    // Backend echoes these selections back as plain strings, but they're
+    // drawn from small closed sets the FE owns — render the translated
+    // label, not the raw enum value (bug: raw enum was shown verbatim).
+    const qualityTierLabel = sel
+        ? (buildQualityTiers(t).find((tier) => tier.value === sel.quality_tier)?.label ??
+          sel.quality_tier)
+        : '';
+    const orientationLabel = sel
+        ? sel.orientation === 'portrait'
+            ? t('modal.selections.orientationPortrait')
+            : t('modal.selections.orientationLandscape')
+        : '';
+    const voiceGenderLabel = sel
+        ? (buildVoiceGenders(t).find((g) => g.value === sel.voice.gender)?.label ??
+          sel.voice.gender)
+        : '';
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="flex max-h-[85vh] w-[92vw] max-w-3xl flex-col overflow-hidden sm:max-w-4xl">
+            <DialogContent className="flex max-h-dialog-tall w-dialog-lg flex-col overflow-hidden">
                 <DialogHeader>
-                    <DialogTitle>Confirm generation</DialogTitle>
+                    <DialogTitle>{t('modal.title')}</DialogTitle>
                 </DialogHeader>
 
                 <div className="-mx-6 flex-1 overflow-y-auto px-6">
                     {loading && !data && (
                         <div className="flex items-center justify-center py-10 text-muted-foreground">
-                            <Loader2 className="mr-2 size-4 animate-spin" />
-                            Estimating cost…
+                            <CircleNotch className="me-2 size-4 animate-spin" />
+                            {t('modal.estimating')}
                         </div>
                     )}
 
                     {error && !data && (
                         <div className="flex items-start gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                            <AlertTriangle className="mt-0.5 size-4 shrink-0" />
-                            <span>
-                                Couldn&rsquo;t load estimate: {error}. You can still proceed.
-                            </span>
+                            <Warning className="mt-0.5 size-4 shrink-0" />
+                            <span>{t('modal.loadFailed', { error })}</span>
                         </div>
                     )}
 
@@ -312,53 +356,80 @@ export function CostPreviewModal({
                             {/* Selections summary */}
                             <section>
                                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                    Your selections
+                                    {t('modal.selections.heading')}
                                 </h3>
                                 <dl className="grid grid-cols-2 gap-x-6 gap-y-1.5">
                                     <SelectionRow
-                                        label="Quality"
-                                        value={sel.quality_tier}
+                                        label={t('modal.selections.quality')}
+                                        value={qualityTierLabel}
                                         highlight
                                     />
                                     <SelectionRow
-                                        label="Model"
-                                        value={sel.model || 'default'}
+                                        label={t('modal.selections.model')}
+                                        value={sel.model || t('modal.selections.modelDefault')}
                                         highlight
                                     />
-                                    <SelectionRow label="Duration" value={sel.target_duration} />
                                     <SelectionRow
-                                        label="Orientation"
-                                        value={sel.orientation}
+                                        label={t('modal.selections.duration')}
+                                        value={getTargetDurationLabel(sel.target_duration, t)}
+                                    />
+                                    <SelectionRow
+                                        label={t('modal.selections.orientation')}
+                                        value={orientationLabel}
                                         highlight
                                     />
-                                    <SelectionRow label="Audience" value={sel.target_audience} />
-                                    <SelectionRow label="Language" value={sel.language} />
                                     <SelectionRow
-                                        label="Voice"
-                                        value={`${sel.voice.provider} · ${sel.voice.gender}${
+                                        label={t('modal.selections.audience')}
+                                        value={getTargetAudienceLabel(sel.target_audience, t)}
+                                    />
+                                    <SelectionRow
+                                        label={t('modal.selections.language')}
+                                        value={sel.language}
+                                    />
+                                    <SelectionRow
+                                        label={t('modal.selections.voice')}
+                                        value={`${sel.voice.provider} · ${voiceGenderLabel}${
                                             sel.voice.voice_id ? ` (${sel.voice.voice_id})` : ''
                                         }`}
                                     />
                                     <SelectionRow
-                                        label="Captions"
-                                        value={sel.captions_enabled ? 'on' : 'off'}
+                                        label={t('modal.selections.captions')}
+                                        value={
+                                            sel.captions_enabled
+                                                ? t('common.on')
+                                                : t('common.off')
+                                        }
                                     />
                                     <SelectionRow
-                                        label="Background music"
-                                        value={sel.background_music_enabled ? 'on' : 'off'}
+                                        label={t('modal.selections.backgroundMusic')}
+                                        value={
+                                            sel.background_music_enabled
+                                                ? t('common.on')
+                                                : t('common.off')
+                                        }
                                     />
                                     <SelectionRow
-                                        label="Sound effects"
-                                        value={sel.sound_effects_enabled ? 'on' : 'off'}
+                                        label={t('modal.selections.soundEffects')}
+                                        value={
+                                            sel.sound_effects_enabled
+                                                ? t('common.on')
+                                                : t('common.off')
+                                        }
                                     />
                                     <SelectionRow
-                                        label="Review mode"
-                                        value={sel.review_mode ? 'on (stop at script)' : 'off'}
+                                        label={t('modal.selections.reviewMode')}
+                                        value={
+                                            sel.review_mode
+                                                ? t('modal.selections.reviewModeOn')
+                                                : t('common.off')
+                                        }
                                     />
                                     {sel.attachments_count > 0 && (
                                         <SelectionRow
-                                            label="Attachments"
-                                            value={`${sel.attachments_count} file(s)`}
+                                            label={t('modal.selections.attachments')}
+                                            value={t('modal.selections.attachmentsValue', {
+                                                count: sel.attachments_count,
+                                            })}
                                         />
                                     )}
                                 </dl>
@@ -367,13 +438,17 @@ export function CostPreviewModal({
                             {/* Cost breakdown */}
                             <section>
                                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                    Estimated cost
+                                    {t('modal.cost.heading')}
                                 </h3>
                                 <table className="w-full border-separate border-spacing-y-1 text-xs">
                                     <thead className="text-muted-foreground">
                                         <tr>
-                                            <th className="text-left font-normal">Component</th>
-                                            <th className="text-right font-normal">Credits</th>
+                                            <th className="text-start font-normal">
+                                                {t('modal.cost.component')}
+                                            </th>
+                                            <th className="text-end font-normal">
+                                                {t('modal.cost.credits')}
+                                            </th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -383,7 +458,7 @@ export function CostPreviewModal({
                                                     <div className="font-medium">
                                                         {row.component}
                                                     </div>
-                                                    <div className="text-[11px] text-muted-foreground">
+                                                    <div className="text-2xs text-muted-foreground">
                                                         {row.detail}
                                                     </div>
                                                 </td>
@@ -394,10 +469,12 @@ export function CostPreviewModal({
                                         ))}
                                         <tr className="border-t font-semibold">
                                             <td>
-                                                Expected total
-                                                <div className="text-[11px] font-normal text-muted-foreground">
-                                                    Range: {fmtCredits(est.low_credits)}–
-                                                    {fmtCredits(est.high_credits)} credits
+                                                {t('modal.cost.expectedTotal')}
+                                                <div className="text-2xs font-normal text-muted-foreground">
+                                                    {t('modal.cost.range', {
+                                                        low: fmtCredits(est.low_credits),
+                                                        high: fmtCredits(est.high_credits),
+                                                    })}
                                                 </div>
                                             </td>
                                             <td className="text-right tabular-nums">
@@ -416,35 +493,39 @@ export function CostPreviewModal({
                                     }`}
                                 >
                                     <div className="flex items-center justify-between">
-                                        <span>Current balance</span>
+                                        <span>{t('modal.balance.current')}</span>
                                         <span className="font-medium tabular-nums">
-                                            {fmtCredits(bal.current)} credits
+                                            {t('modal.balance.currentValue', {
+                                                value: fmtCredits(bal.current),
+                                            })}
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between text-muted-foreground">
-                                        <span>After expected charge</span>
+                                        <span>{t('modal.balance.afterExpected')}</span>
                                         <span className="tabular-nums">
                                             {fmtCredits(bal.after_expected)}
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between text-muted-foreground">
-                                        <span>Worst case (high)</span>
+                                        <span>{t('modal.balance.afterHigh')}</span>
                                         <span className="tabular-nums">
                                             {fmtCredits(bal.after_high)}
                                         </span>
                                     </div>
                                     {insufficient && (
                                         <div className="mt-2 flex items-center gap-1.5 font-medium text-red-700">
-                                            <AlertTriangle className="size-3.5" />
-                                            Insufficient credits to cover the worst-case estimate.
+                                            <Warning className="size-3.5" />
+                                            {t('modal.balance.insufficient')}
                                         </div>
                                     )}
                                 </section>
                             )}
 
                             {est.assumptions.length > 0 && (
-                                <details className="text-[11px] text-muted-foreground">
-                                    <summary className="cursor-pointer">Assumptions</summary>
+                                <details className="text-2xs text-muted-foreground">
+                                    <summary className="cursor-pointer">
+                                        {t('modal.assumptions.summary')}
+                                    </summary>
                                     <ul className="mt-1 list-disc space-y-0.5 pl-4">
                                         {est.assumptions.map((a, i) => (
                                             <li key={i}>{a}</li>
@@ -458,16 +539,20 @@ export function CostPreviewModal({
 
                 <DialogFooter className="gap-2">
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
-                        Cancel
+                        {t('modal.footer.cancel')}
                     </Button>
                     {insufficient ? (
                         <Button disabled className="bg-red-600 text-white hover:bg-red-700">
-                            Insufficient credits — top up
+                            {t('modal.footer.insufficientTopUp')}
                         </Button>
                     ) : (
                         <Button onClick={onConfirm} disabled={loading && !data}>
-                            Confirm & generate
-                            {est && ` · ${fmtCredits(est.expected_credits)} credits`}
+                            {t('modal.footer.confirm')}
+                            {est &&
+                                t('modal.footer.confirmCredits', {
+                                    count: est.expected_credits,
+                                    value: fmtCredits(est.expected_credits),
+                                })}
                         </Button>
                     )}
                 </DialogFooter>

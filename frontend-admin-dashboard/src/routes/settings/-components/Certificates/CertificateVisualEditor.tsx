@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useDroppable } from '@dnd-kit/core';
 import { Trash2, ImagePlus } from 'lucide-react';
 import { Palette, Trash } from '@phosphor-icons/react';
@@ -139,6 +140,7 @@ export const CertificateVisualEditor = ({
     autoStampNumber = true,
     onAutoStampChange,
 }: Props) => {
+    const { t } = useTranslation('settingsCertificateVisualEditor');
     const containerRef = useRef<HTMLDivElement | null>(null);
     const customImageInputRef = useRef<HTMLInputElement | null>(null);
     const ghostCodeRef = useRef<HTMLImageElement | null>(null);
@@ -419,7 +421,7 @@ export const CertificateVisualEditor = ({
                 adopted.push({
                     id: nanoid(),
                     fieldName: 'certificate_id',
-                    displayName: 'Certificate ID',
+                    displayName: t('badge.certificateIdFieldLabel'),
                     type: 'text',
                     position: rect,
                     style: {
@@ -454,8 +456,12 @@ export const CertificateVisualEditor = ({
             {/* Toolbar */}
             <div className="flex items-center justify-between rounded border bg-card px-3 py-2 text-sm">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                    <span>{fieldMappings.length} fields placed</span>
-                    {isOver && <span className="text-purple-600">— drop to add</span>}
+                    <span>
+                        {t('toolbar.fieldsPlaced', { count: fieldMappings.length })}
+                    </span>
+                    {isOver && (
+                        <span className="text-purple-600">{t('toolbar.dropToAdd')}</span>
+                    )}
                 </div>
                 <div className="flex items-center gap-2">
                     <input
@@ -474,7 +480,7 @@ export const CertificateVisualEditor = ({
                         onClick={() => customImageInputRef.current?.click()}
                         className="flex items-center gap-1 rounded border px-2 py-1 text-xs hover:bg-muted"
                     >
-                        <ImagePlus className="size-3.5" /> Upload custom image
+                        <ImagePlus className="size-3.5" /> {t('toolbar.uploadCustomImage')}
                     </button>
                 </div>
             </div>
@@ -627,7 +633,7 @@ export const CertificateVisualEditor = ({
                                                     removeField(f.id);
                                                 }}
                                                 className="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full bg-red-500 text-white shadow"
-                                                title="Remove"
+                                                title={t('canvas.removeFieldTitle')}
                                             >
                                                 <Trash2 className="size-3" />
                                             </button>
@@ -645,7 +651,7 @@ export const CertificateVisualEditor = ({
                             <div
                                 onPointerDown={adoptAutoBadge}
                                 onClick={(e) => e.stopPropagation()}
-                                title="Stamped automatically on every certificate — drag to position it yourself"
+                                title={t('badge.autoStampTitle')}
                                 className="group absolute cursor-grab outline-dashed outline-2 outline-offset-2 outline-purple-400/70"
                                 style={{
                                     // Mirrors appendCertificateIdBadge in
@@ -697,8 +703,8 @@ export const CertificateVisualEditor = ({
                                             if (badgePlan.code) onAutoStampChange('code', false);
                                             if (badgePlan.id) onAutoStampChange('number', false);
                                         }}
-                                        title="Don't print this automatically"
-                                        aria-label="Turn off the automatic stamp"
+                                        title={t('badge.stopPrintingTitle')}
+                                        aria-label={t('badge.turnOffAriaLabel')}
                                         className="absolute -right-2 -top-2 flex size-5 items-center justify-center rounded-full bg-red-500 text-white shadow"
                                     >
                                         <Trash2 className="size-3" />
@@ -710,14 +716,14 @@ export const CertificateVisualEditor = ({
                 </div>
                 {badgePlan.any && (
                     <p className="mt-2 text-center text-xs text-muted-foreground">
-                        {[
-                            badgePlan.code ? codeDisplayName(badgeCodeType) : null,
-                            badgePlan.id ? 'Certificate number' : null,
-                        ]
-                            .filter(Boolean)
-                            .join(' + ')}{' '}
-                        is stamped bottom-right on every certificate. Drag the dashed box to
-                        position it yourself, or remove it to stop printing it at all.
+                        {t('badge.stampedFooter', {
+                            names: [
+                                badgePlan.code ? codeDisplayName(badgeCodeType) : null,
+                                badgePlan.id ? t('badge.certificateNumberLabel') : null,
+                            ]
+                                .filter(Boolean)
+                                .join(' + '),
+                        })}
                     </p>
                 )}
             </div>
@@ -761,6 +767,7 @@ const FloatingPropertiesPanel = ({
     onRemove: () => void;
     onClose: () => void;
 }) => {
+    const { t } = useTranslation('settingsCertificateVisualEditor');
     const [pos, setPos] = useState({ x: 20, y: 20 });
     const dragRef = useRef<{ ox: number; oy: number } | null>(null);
 
@@ -810,7 +817,9 @@ const FloatingPropertiesPanel = ({
                         <Palette className="size-4 text-purple-600" />
                     </div>
                     <div>
-                        <h3 className="text-sm font-medium text-neutral-700">Field Properties</h3>
+                        <h3 className="text-sm font-medium text-neutral-700">
+                            {t('properties.title')}
+                        </h3>
                         <p className="text-xs text-neutral-500">{field.displayName}</p>
                     </div>
                 </div>
@@ -822,12 +831,12 @@ const FloatingPropertiesPanel = ({
                         className="text-red-600 hover:bg-red-50 hover:text-red-700"
                     >
                         <Trash className="mr-1 size-3" />
-                        Remove
+                        {t('properties.removeButton')}
                     </MyButton>
                     <button
                         onClick={onClose}
                         className="rounded p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"
-                        title="Close properties"
+                        title={t('properties.closeTitle')}
                     >
                         ✕
                     </button>
@@ -861,7 +870,7 @@ const FloatingPropertiesPanel = ({
                                 return (
                                     <div>
                                         <label className="mb-1 block text-xs font-medium text-neutral-700">
-                                            Font Size
+                                            {t('properties.fontSize.label')}
                                         </label>
                                         <input
                                             type="range"
@@ -876,11 +885,19 @@ const FloatingPropertiesPanel = ({
                                             className="w-full"
                                         />
                                         <div className="flex justify-between text-xs text-neutral-500">
-                                            <span>8px</span>
-                                            <span className="font-medium">
-                                                {field.style.fontSize}px
+                                            <span>
+                                                {t('properties.fontSize.pxValue', { value: 8 })}
                                             </span>
-                                            <span>{dynamicMax}px</span>
+                                            <span className="font-medium">
+                                                {t('properties.fontSize.pxValue', {
+                                                    value: field.style.fontSize,
+                                                })}
+                                            </span>
+                                            <span>
+                                                {t('properties.fontSize.pxValue', {
+                                                    value: dynamicMax,
+                                                })}
+                                            </span>
                                         </div>
                                         <input
                                             type="number"
@@ -895,7 +912,7 @@ const FloatingPropertiesPanel = ({
                                                 })
                                             }
                                             className="mt-2 w-full rounded border border-neutral-300 px-2 py-1 text-xs"
-                                            placeholder="Custom px"
+                                            placeholder={t('properties.fontSize.customPlaceholder')}
                                         />
                                     </div>
                                 );
@@ -904,7 +921,7 @@ const FloatingPropertiesPanel = ({
                             {/* Font Family */}
                             <div>
                                 <label className="mb-1 block text-xs font-medium text-neutral-700">
-                                    Font Family
+                                    {t('properties.fontFamily.label')}
                                 </label>
                                 <select
                                     value={field.style.fontFamily}
@@ -924,7 +941,7 @@ const FloatingPropertiesPanel = ({
                             {/* Font Weight */}
                             <div>
                                 <label className="mb-1 block text-xs font-medium text-neutral-700">
-                                    Font Weight
+                                    {t('properties.fontWeight.label')}
                                 </label>
                                 <select
                                     value={field.style.fontWeight}
@@ -935,15 +952,15 @@ const FloatingPropertiesPanel = ({
                                     }
                                     className="w-full rounded-md border border-neutral-200 p-2 text-sm"
                                 >
-                                    <option value="normal">Normal</option>
-                                    <option value="bold">Bold</option>
+                                    <option value="normal">{t('properties.fontWeight.normal')}</option>
+                                    <option value="bold">{t('properties.fontWeight.bold')}</option>
                                 </select>
                             </div>
 
                             {/* Text Color */}
                             <div>
                                 <label className="mb-1 block text-xs font-medium text-neutral-700">
-                                    Text Color
+                                    {t('properties.textColor.label')}
                                 </label>
                                 <div className="flex gap-2">
                                     <input
@@ -969,7 +986,7 @@ const FloatingPropertiesPanel = ({
                             {/* Text Alignment */}
                             <div>
                                 <label className="mb-1 block text-xs font-medium text-neutral-700">
-                                    Text Alignment
+                                    {t('properties.textAlignment.label')}
                                 </label>
                                 <div className="flex gap-1">
                                     {(['left', 'center', 'right'] as const).map((align) => (
@@ -983,7 +1000,7 @@ const FloatingPropertiesPanel = ({
                                                     : 'border-neutral-200 hover:border-neutral-300'
                                             )}
                                         >
-                                            {align.charAt(0).toUpperCase() + align.slice(1)}
+                                            {t(`properties.textAlignment.${align}`)}
                                         </button>
                                     ))}
                                 </div>
@@ -992,7 +1009,7 @@ const FloatingPropertiesPanel = ({
                             {/* Background Color */}
                             <div>
                                 <label className="mb-1 block text-xs font-medium text-neutral-700">
-                                    Background Color
+                                    {t('properties.backgroundColor.label')}
                                 </label>
                                 <div className="flex gap-2">
                                     <input
@@ -1015,11 +1032,15 @@ const FloatingPropertiesPanel = ({
                                         }
                                         className="rounded-md border border-neutral-200 px-3 py-2 text-xs hover:bg-neutral-50"
                                     >
-                                        Clear
+                                        {t('properties.backgroundColor.clear')}
                                     </button>
                                 </div>
                                 <p className="mt-1 text-xs text-neutral-500">
-                                    Current: {field.style.backgroundColor || 'transparent'}
+                                    {t('properties.backgroundColor.current', {
+                                        value:
+                                            field.style.backgroundColor ||
+                                            t('properties.backgroundColor.transparentValue'),
+                                    })}
                                 </p>
                             </div>
                         </>
@@ -1028,12 +1049,12 @@ const FloatingPropertiesPanel = ({
                     {/* Position */}
                     <div>
                         <label className="mb-1 block text-xs font-medium text-neutral-700">
-                            Position
+                            {t('properties.position.label')}
                         </label>
                         <div className="grid grid-cols-2 gap-2">
                             <div>
                                 <label className="mb-1 block text-xs text-neutral-500">
-                                    X Position
+                                    {t('properties.position.x')}
                                 </label>
                                 <input
                                     type="number"
@@ -1047,7 +1068,7 @@ const FloatingPropertiesPanel = ({
                             </div>
                             <div>
                                 <label className="mb-1 block text-xs text-neutral-500">
-                                    Y Position
+                                    {t('properties.position.y')}
                                 </label>
                                 <input
                                     type="number"
@@ -1065,12 +1086,12 @@ const FloatingPropertiesPanel = ({
                     {/* Field Size */}
                     <div>
                         <label className="mb-1 block text-xs font-medium text-neutral-700">
-                            Field Size
+                            {t('properties.fieldSize.label')}
                         </label>
                         <div className="grid grid-cols-2 gap-2">
                             <div>
                                 <label className="mb-1 block text-xs text-neutral-500">
-                                    Width
+                                    {t('properties.fieldSize.width')}
                                 </label>
                                 <input
                                     type="number"
@@ -1086,7 +1107,7 @@ const FloatingPropertiesPanel = ({
                             </div>
                             <div>
                                 <label className="mb-1 block text-xs text-neutral-500">
-                                    Height
+                                    {t('properties.fieldSize.height')}
                                 </label>
                                 <input
                                     type="number"

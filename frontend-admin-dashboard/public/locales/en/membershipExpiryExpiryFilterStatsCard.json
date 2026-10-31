@@ -1,0 +1,7 @@
+{
+    "title": "Selected Range Statistics",
+    "subtitle": "Based on your current filters",
+    "membershipsFound_one": "{{count}} membership found",
+    "membershipsFound_other": "{{count}} memberships found",
+    "viewList": "View List"
+}

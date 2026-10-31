@@ -1,0 +1,317 @@
+---
+title: "Pricing and credits"
+description: "Fixed prices you know before grading: per page for handwritten copies, per long answer for typed ones. Check your balance and quote a job before you submit it."
+icon: "coins"
+---
+
+Evalezy charges in **AI credits**, at a **fixed price that is known before grading starts**. The price depends only on what you send, never on how long the AI spends on it, so you can quote your own customers in advance.
+
+## What a submission costs
+
+| You submit | You pay (standard rate) | Example |
+|---|---|---|
+| A handwritten answer sheet (PDF) | **1 credit per page** of the uploaded PDF, blank pages included | 12-page CBSE Class X Science copy = 12 credits |
+| Typed answers | **1 credit per non-blank long answer** | UPSC GS2 test with 4 written answers = 4 credits |
+| Typed answers with only objective questions (MCQ, true/false, numeric, one word) | **Free** | A 30-question MCQ quiz = 0 credits |
+
+More examples at the standard rate:
+
+- B.Com Semester III booklet, 32 pages: **32 credits**
+- UPSC full-length test copy, 50 pages: **50 credits**
+- UPSC daily answer-writing, 3 pages: **3 credits**
+
+<Note>
+Credits are bought by your institute in the Vacademy admin dashboard. For the price of credits in your currency, see [evalezy.com/pricing](https://evalezy.com/pricing) or contact [hello@evalezy.com](mailto:hello@evalezy.com).
+</Note>
+
+### What is free
+
+- **Failed copies.** A submission that ends with `status: "failed"` is not charged, whatever the reason: unreadable scan, unsupported language, timeout, engine error. See the [submission error codes](/platform/errors#submission-error-codes).
+- **Cancelled copies.** Cancelling a queued or running evaluation (`POST /submissions/{id}/cancel`) charges nothing.
+- **Objective answers.** In a typed submission, MCQ, true/false, numeric and one-word answers are scored against your answer key without the AI and cost nothing. Blank long answers are scored 0 and are not charged.
+- **Reads.** Fetching results, lists, the checked copy, quotes and your balance is free.
+
+### What is charged again
+
+- **Re-evaluate.** `POST /submissions/{id}/re-evaluate` grades the whole copy again and is charged again at the same price (every page, or every non-blank long answer). Re-running a copy that failed is effectively its first charge, because the failed run was free.
+
+### Edge cases
+
+- A handwritten copy of **41 to 80 pages** is accepted and charged per page, and is flagged for human review (`review_reasons: ["pages_beyond_vision_limit"]`). Copies of **more than 80 pages** are refused with `422 too_many_pages` before anything is charged.
+- A copy that finishes as `partially_graded` (the AI could not grade one or more questions) is charged its full quote. Mark those questions by hand with `PATCH /submissions/{id}/questions/{question_id}`; overrides are free.
+
+## How charging works
+
+<Steps>
+  <Step title="Accept: the quote is fixed and reserved">
+    When you create a submission, the price is computed from the PDF's page count (or the number of non-blank long answers) and returned in the response's `quote` block. The amount is reserved against your balance and shows in `committed` until grading ends.
+  </Step>
+  <Step title="Graded: the quote is charged">
+    When grading completes, exactly the quoted amount is charged. There is no overage. `credits_charged` on the submission shows the amount.
+  </Step>
+  <Step title="Failed or cancelled: nothing is charged">
+    The reservation is released and `credits_charged` stays `null`.
+  </Step>
+</Steps>
+
+The submission object reports the charge:
+
+| `credits_charged` | Meaning |
+|---|---|
+| `null` | Not charged: still in the queue or being graded, or it failed or was cancelled. |
+| a number | Graded; this exact amount was charged. |
+| `0` | Nothing for the AI to grade (typed submission with only objective or blank answers). |
+
+## Check your balance: `GET /credits`
+
+Returns your balance, what is already reserved, what you can still spend, your institute's API rate card and the last 30 days of API spend. Requires the `evaluation:read` scope.
+
+<CodeGroup>
+
+```bash curl
+curl https://api.evalezy.com/v1/credits \
+  -H "X-API-Key: $EVALEZY_API_KEY"
+```
+
+```python Python
+import os
+import requests
+
+resp = requests.get(
+    "https://api.evalezy.com/v1/credits",
+    headers={"X-API-Key": os.environ["EVALEZY_API_KEY"]},
+    timeout=30,
+)
+resp.raise_for_status()
+credits = resp.json()
+print(credits["available"], credits["rate_card"]["credits_per_page"])
+```
+
+```javascript Node
+const resp = await fetch("https://api.evalezy.com/v1/credits", {
+  headers: { "X-API-Key": process.env.EVALEZY_API_KEY },
+});
+if (!resp.ok) throw new Error(`Evalezy ${resp.status}`);
+const credits = await resp.json();
+console.log(credits.available, credits.rate_card.credits_per_page);
+```
+
+</CodeGroup>
+
+```json Response
+{
+  "balance": 18420.5,
+  "credit_limit": 0,
+  "committed": 2700,
+  "available": 15720.5,
+  "rate_card": {
+    "tool": "copy_check_evaluation_api",
+    "unit": "page",
+    "credits_per_page": 1,
+    "typed_credits_per_answer": 1,
+    "fixed_price": true,
+    "rate_source": "standard"
+  },
+  "spent_30d": {
+    "copies": 4210,
+    "pages": 31877,
+    "credits": 31877
+  }
+}
+```
+
+<ResponseField name="balance" type="number">
+  Your institute's current AI credit balance.
+</ResponseField>
+<ResponseField name="credit_limit" type="number">
+  Credit line agreed with Evalezy, if any. Lets accepted work continue when the balance is low. `0` when you have none.
+</ResponseField>
+<ResponseField name="committed" type="number">
+  Credits reserved by your submissions that are queued or being graded right now.
+</ResponseField>
+<ResponseField name="available" type="number">
+  What new submissions can use: `balance + credit_limit - committed`. A submission is refused with `402` when its quote exceeds this.
+</ResponseField>
+<ResponseField name="rate_card" type="object">
+  Your institute's API prices.
+  <Expandable title="properties">
+    <ResponseField name="unit" type="string">Always `page` for the handwritten rate.</ResponseField>
+    <ResponseField name="credits_per_page" type="number">Credits per page of a handwritten copy.</ResponseField>
+    <ResponseField name="typed_credits_per_answer" type="number">Credits per non-blank long answer in a typed submission.</ResponseField>
+    <ResponseField name="fixed_price" type="boolean">`true`: the quote is the charge.</ResponseField>
+    <ResponseField name="rate_source" type="string">`standard` for the default API price, `contract` when your institute has its own agreed price.</ResponseField>
+  </Expandable>
+</ResponseField>
+<ResponseField name="spent_30d" type="object">
+  Graded API copies in the last 30 days: `copies`, `pages` and `credits`.
+</ResponseField>
+
+## Quote a job: `POST /credits/quote`
+
+Prices a job before you submit it and tells you whether your available credits cover it. Send **exactly one** of `pages`, `upload_ids` or `typed_answers`. Requires `evaluation:read`. A quote reserves nothing and charges nothing.
+
+<ParamField body="pages" type="integer">
+  Total pages you expect to submit, from 1 to 10,000,000. Use this to estimate a whole exam, for example 300 copies of about 12 pages each = `3600`.
+</ParamField>
+<ParamField body="upload_ids" type="string[]">
+  1 to 100 upload ids from `POST /uploads`. Each file must already be uploaded; the quote uses the exact page count of every PDF.
+</ParamField>
+<ParamField body="typed_answers" type="integer">
+  Number of non-blank long answers you expect to submit, from 1 to 10,000,000.
+</ParamField>
+
+<CodeGroup>
+
+```bash curl
+curl https://api.evalezy.com/v1/credits/quote \
+  -H "X-API-Key: $EVALEZY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"pages": 3600}'
+```
+
+```python Python
+import os
+import requests
+
+resp = requests.post(
+    "https://api.evalezy.com/v1/credits/quote",
+    headers={"X-API-Key": os.environ["EVALEZY_API_KEY"]},
+    json={"pages": 3600},
+    timeout=30,
+)
+resp.raise_for_status()
+quote = resp.json()
+if not quote["sufficient"]:
+    print(f"Top up: need {quote['total']}, have {quote['available']}")
+```
+
+```javascript Node
+const resp = await fetch("https://api.evalezy.com/v1/credits/quote", {
+  method: "POST",
+  headers: {
+    "X-API-Key": process.env.EVALEZY_API_KEY,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ pages: 3600 }),
+});
+const quote = await resp.json();
+if (!quote.sufficient) {
+  console.log(`Top up: need ${quote.total}, have ${quote.available}`);
+}
+```
+
+</CodeGroup>
+
+<Tabs>
+  <Tab title="Pages or uploads">
+    ```json Response
+    {
+      "unit": "page",
+      "credits_per_page": 1,
+      "pages": 3600,
+      "total": 3600,
+      "available": 15720.5,
+      "committed": 2700,
+      "sufficient": true,
+      "rate_source": "standard",
+      "note": "Fixed price: 1 credit per page of a graded copy at the standard rate. Failed, cancelled and unreadable copies are free."
+    }
+    ```
+  </Tab>
+  <Tab title="Typed answers">
+    Request: `{"typed_answers": 900}`
+
+    ```json Response
+    {
+      "unit": "answer",
+      "credits_per_answer": 1,
+      "typed_answers": 900,
+      "total": 900,
+      "available": 15720.5,
+      "committed": 2700,
+      "sufficient": true,
+      "rate_source": "standard",
+      "note": "Fixed price per non-blank long answer. Failed and cancelled submissions are free."
+    }
+    ```
+  </Tab>
+</Tabs>
+
+<ResponseField name="total" type="number">
+  Credits the job would cost at your rate.
+</ResponseField>
+<ResponseField name="sufficient" type="boolean">
+  `true` when `available` covers `total` right now. Other submissions accepted in the meantime can change this.
+</ResponseField>
+<ResponseField name="rate_source" type="string">
+  `standard` or `contract`.
+</ResponseField>
+
+**Quote errors**
+
+| Status | Code | When |
+|---|---|---|
+| 422 | `validation_failed` | None or more than one of `pages`, `upload_ids`, `typed_answers`; a number outside 1 to 10,000,000; more than 100 `upload_ids`. |
+| 404 | `upload_not_found` | One or more upload ids are unknown; `details.upload_ids` lists them. |
+| 422 | `upload_rejected` | An upload has not been uploaded yet (`details.reason: "not_uploaded"`) or was rejected (for example not a PDF). |
+| 503 | `engine_unavailable` | Prices could not be fetched. Retry after the `Retry-After` header (30 seconds). |
+
+## Quotes in other responses
+
+You do not have to call the quote endpoint for every job. Prices also come back where you need them:
+
+<AccordionGroup>
+  <Accordion title="POST /exams: the exam's rate">
+    Creating an exam returns a `quote` block with the price of the exam's unit:
+
+    ```json
+    "quote": { "unit": "page", "credits_per_page": 1, "rate_source": "standard" }
+    ```
+
+    For a typed exam: `{"unit": "answer", "credits_per_answer": 1, "rate_source": "standard"}`. The block is best effort: if prices cannot be fetched within a couple of seconds it is left out, and the exam is still created.
+  </Accordion>
+  <Accordion title="POST /exams/{id}/submissions: the exact price of this copy">
+    Every accepted submission returns its fixed price:
+
+    ```json
+    "quote": { "unit": "page", "pages": 12, "credits": 12, "rate_source": "standard" }
+    ```
+
+    For typed answers: `{"unit": "answer", "answers": 4, "credits": 4, "rate_source": "standard"}`. A typed submission with nothing for the AI returns `{"unit": "answer", "answers": 0, "credits": 0, "rate_source": null}`.
+  </Accordion>
+</AccordionGroup>
+
+## Not enough credits (402)
+
+A submission or re-evaluate whose quote is more than your `available` credits is refused before anything is created or charged:
+
+```json
+{
+  "error": {
+    "code": "insufficient_credits",
+    "message": "Not enough AI credits for this submission. Top up credits and retry.",
+    "request_id": "req_8c1f0a7d2b6e4f3a9d5c7b1e0f2a4c6d",
+    "details": {
+      "required": 32,
+      "available": 20,
+      "balance": 120,
+      "credit_limit": 0,
+      "committed": 100
+    }
+  }
+}
+```
+
+Top up credits in the Vacademy dashboard, then send the same request again. A `402` is never stored for [idempotent replay](/platform/idempotency), so a retry with the same `Idempotency-Key` runs again.
+
+<Warning>
+Credits are checked again when a copy reaches the front of the queue. If your balance dropped in the meantime (for example through other spending in the dashboard), the copy fails with `error.code: "insufficient_credits"` and is not charged. Top up and call `POST /submissions/{id}/re-evaluate`.
+</Warning>
+
+## Contract prices
+
+Institutes with volume commitments can agree their own price with Evalezy. Once it is set, it applies automatically to every quote and every submission, and `rate_source` reads `contract` instead of `standard`. Nothing changes in your integration. To discuss a contract price, write to [hello@evalezy.com](mailto:hello@evalezy.com).
+
+<Tip>
+Read `GET /credits` once a day and alert your operations team when `available` falls below a few days of typical usage. A failed `402` during result day is the most common avoidable incident.
+</Tip>

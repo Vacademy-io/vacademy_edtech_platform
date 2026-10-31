@@ -3,10 +3,10 @@
  *
  * Bright, chunky, Duolingo-style circular badges: a consistent themed emblem per
  * achievement, tier conveyed by a metallic ring (bronze → silver → gold → platinum →
- * diamond). PNGs are transparent-background so they sit on any card or dark surface.
+ * diamond). WebPs are transparent-background so they sit on any card or dark surface.
  *
  * A ready-made set of tiered reward badges. Each badge has a stable `lib:` token
- * stored in a badge's `icon` field; BadgeVisual renders it from the bundled PNG in
+ * stored in a badge's `icon` field; BadgeVisual renders it from the bundled WebP in
  * `public/badge-library/`. Because it is token-addressed, award snapshots keep their
  * look forever and the set can grow without touching render or picker code.
  *
@@ -33,41 +33,41 @@ export interface LibraryBadge {
 export const TIER_ORDER: BadgeTier[] = ["bronze", "silver", "gold", "platinum", "diamond"];
 
 export const BADGE_LIBRARY: LibraryBadge[] = [
-    { token: "lib:first_steps-bronze", url: "/badge-library/lib_first_steps_bronze.png", theme: "first_steps", themeLabel: "First Steps", tier: "bronze", trigger: "course_count", description: "Enrol in your first courses" },
-    { token: "lib:first_steps-silver", url: "/badge-library/lib_first_steps_silver.png", theme: "first_steps", themeLabel: "First Steps", tier: "silver", trigger: "course_count", description: "Enrol in your first courses" },
-    { token: "lib:first_steps-gold", url: "/badge-library/lib_first_steps_gold.png", theme: "first_steps", themeLabel: "First Steps", tier: "gold", trigger: "course_count", description: "Enrol in your first courses" },
-    { token: "lib:first_steps-platinum", url: "/badge-library/lib_first_steps_platinum.png", theme: "first_steps", themeLabel: "First Steps", tier: "platinum", trigger: "course_count", description: "Enrol in your first courses" },
-    { token: "lib:first_steps-diamond", url: "/badge-library/lib_first_steps_diamond.png", theme: "first_steps", themeLabel: "First Steps", tier: "diamond", trigger: "course_count", description: "Enrol in your first courses" },
-    { token: "lib:streak-bronze", url: "/badge-library/lib_streak_bronze.png", theme: "streak", themeLabel: "On Fire", tier: "bronze", trigger: "streak", description: "Keep a daily learning streak" },
-    { token: "lib:streak-silver", url: "/badge-library/lib_streak_silver.png", theme: "streak", themeLabel: "On Fire", tier: "silver", trigger: "streak", description: "Keep a daily learning streak" },
-    { token: "lib:streak-gold", url: "/badge-library/lib_streak_gold.png", theme: "streak", themeLabel: "On Fire", tier: "gold", trigger: "streak", description: "Keep a daily learning streak" },
-    { token: "lib:streak-platinum", url: "/badge-library/lib_streak_platinum.png", theme: "streak", themeLabel: "On Fire", tier: "platinum", trigger: "streak", description: "Keep a daily learning streak" },
-    { token: "lib:streak-diamond", url: "/badge-library/lib_streak_diamond.png", theme: "streak", themeLabel: "On Fire", tier: "diamond", trigger: "streak", description: "Keep a daily learning streak" },
-    { token: "lib:xp_master-bronze", url: "/badge-library/lib_xp_master_bronze.png", theme: "xp_master", themeLabel: "Star Scholar", tier: "bronze", trigger: "xp_total", description: "Earn experience points" },
-    { token: "lib:xp_master-silver", url: "/badge-library/lib_xp_master_silver.png", theme: "xp_master", themeLabel: "Star Scholar", tier: "silver", trigger: "xp_total", description: "Earn experience points" },
-    { token: "lib:xp_master-gold", url: "/badge-library/lib_xp_master_gold.png", theme: "xp_master", themeLabel: "Star Scholar", tier: "gold", trigger: "xp_total", description: "Earn experience points" },
-    { token: "lib:xp_master-platinum", url: "/badge-library/lib_xp_master_platinum.png", theme: "xp_master", themeLabel: "Star Scholar", tier: "platinum", trigger: "xp_total", description: "Earn experience points" },
-    { token: "lib:xp_master-diamond", url: "/badge-library/lib_xp_master_diamond.png", theme: "xp_master", themeLabel: "Star Scholar", tier: "diamond", trigger: "xp_total", description: "Earn experience points" },
-    { token: "lib:completionist-bronze", url: "/badge-library/lib_completionist_bronze.png", theme: "completionist", themeLabel: "Completionist", tier: "bronze", trigger: "course_completion", description: "Finish courses to 100%" },
-    { token: "lib:completionist-silver", url: "/badge-library/lib_completionist_silver.png", theme: "completionist", themeLabel: "Completionist", tier: "silver", trigger: "course_completion", description: "Finish courses to 100%" },
-    { token: "lib:completionist-gold", url: "/badge-library/lib_completionist_gold.png", theme: "completionist", themeLabel: "Completionist", tier: "gold", trigger: "course_completion", description: "Finish courses to 100%" },
-    { token: "lib:completionist-platinum", url: "/badge-library/lib_completionist_platinum.png", theme: "completionist", themeLabel: "Completionist", tier: "platinum", trigger: "course_completion", description: "Finish courses to 100%" },
-    { token: "lib:completionist-diamond", url: "/badge-library/lib_completionist_diamond.png", theme: "completionist", themeLabel: "Completionist", tier: "diamond", trigger: "course_completion", description: "Finish courses to 100%" },
-    { token: "lib:perfect_score-bronze", url: "/badge-library/lib_perfect_score_bronze.png", theme: "perfect_score", themeLabel: "Perfect Score", tier: "bronze", trigger: "assessment_score", description: "Ace an assessment" },
-    { token: "lib:perfect_score-silver", url: "/badge-library/lib_perfect_score_silver.png", theme: "perfect_score", themeLabel: "Perfect Score", tier: "silver", trigger: "assessment_score", description: "Ace an assessment" },
-    { token: "lib:perfect_score-gold", url: "/badge-library/lib_perfect_score_gold.png", theme: "perfect_score", themeLabel: "Perfect Score", tier: "gold", trigger: "assessment_score", description: "Ace an assessment" },
-    { token: "lib:perfect_score-platinum", url: "/badge-library/lib_perfect_score_platinum.png", theme: "perfect_score", themeLabel: "Perfect Score", tier: "platinum", trigger: "assessment_score", description: "Ace an assessment" },
-    { token: "lib:perfect_score-diamond", url: "/badge-library/lib_perfect_score_diamond.png", theme: "perfect_score", themeLabel: "Perfect Score", tier: "diamond", trigger: "assessment_score", description: "Ace an assessment" },
-    { token: "lib:live_learner-bronze", url: "/badge-library/lib_live_learner_bronze.png", theme: "live_learner", themeLabel: "Live Learner", tier: "bronze", trigger: "live_session_count", description: "Attend live classes" },
-    { token: "lib:live_learner-silver", url: "/badge-library/lib_live_learner_silver.png", theme: "live_learner", themeLabel: "Live Learner", tier: "silver", trigger: "live_session_count", description: "Attend live classes" },
-    { token: "lib:live_learner-gold", url: "/badge-library/lib_live_learner_gold.png", theme: "live_learner", themeLabel: "Live Learner", tier: "gold", trigger: "live_session_count", description: "Attend live classes" },
-    { token: "lib:live_learner-platinum", url: "/badge-library/lib_live_learner_platinum.png", theme: "live_learner", themeLabel: "Live Learner", tier: "platinum", trigger: "live_session_count", description: "Attend live classes" },
-    { token: "lib:live_learner-diamond", url: "/badge-library/lib_live_learner_diamond.png", theme: "live_learner", themeLabel: "Live Learner", tier: "diamond", trigger: "live_session_count", description: "Attend live classes" },
-    { token: "lib:scholar-bronze", url: "/badge-library/lib_scholar_bronze.png", theme: "scholar", themeLabel: "Scholar", tier: "bronze", trigger: "slide_count", description: "Work through your lessons" },
-    { token: "lib:scholar-silver", url: "/badge-library/lib_scholar_silver.png", theme: "scholar", themeLabel: "Scholar", tier: "silver", trigger: "slide_count", description: "Work through your lessons" },
-    { token: "lib:scholar-gold", url: "/badge-library/lib_scholar_gold.png", theme: "scholar", themeLabel: "Scholar", tier: "gold", trigger: "slide_count", description: "Work through your lessons" },
-    { token: "lib:scholar-platinum", url: "/badge-library/lib_scholar_platinum.png", theme: "scholar", themeLabel: "Scholar", tier: "platinum", trigger: "slide_count", description: "Work through your lessons" },
-    { token: "lib:scholar-diamond", url: "/badge-library/lib_scholar_diamond.png", theme: "scholar", themeLabel: "Scholar", tier: "diamond", trigger: "slide_count", description: "Work through your lessons" },
+    { token: "lib:first_steps-bronze", url: "/badge-library/lib_first_steps_bronze.webp", theme: "first_steps", themeLabel: "First Steps", tier: "bronze", trigger: "course_count", description: "Enrol in your first courses" },
+    { token: "lib:first_steps-silver", url: "/badge-library/lib_first_steps_silver.webp", theme: "first_steps", themeLabel: "First Steps", tier: "silver", trigger: "course_count", description: "Enrol in your first courses" },
+    { token: "lib:first_steps-gold", url: "/badge-library/lib_first_steps_gold.webp", theme: "first_steps", themeLabel: "First Steps", tier: "gold", trigger: "course_count", description: "Enrol in your first courses" },
+    { token: "lib:first_steps-platinum", url: "/badge-library/lib_first_steps_platinum.webp", theme: "first_steps", themeLabel: "First Steps", tier: "platinum", trigger: "course_count", description: "Enrol in your first courses" },
+    { token: "lib:first_steps-diamond", url: "/badge-library/lib_first_steps_diamond.webp", theme: "first_steps", themeLabel: "First Steps", tier: "diamond", trigger: "course_count", description: "Enrol in your first courses" },
+    { token: "lib:streak-bronze", url: "/badge-library/lib_streak_bronze.webp", theme: "streak", themeLabel: "On Fire", tier: "bronze", trigger: "streak", description: "Keep a daily learning streak" },
+    { token: "lib:streak-silver", url: "/badge-library/lib_streak_silver.webp", theme: "streak", themeLabel: "On Fire", tier: "silver", trigger: "streak", description: "Keep a daily learning streak" },
+    { token: "lib:streak-gold", url: "/badge-library/lib_streak_gold.webp", theme: "streak", themeLabel: "On Fire", tier: "gold", trigger: "streak", description: "Keep a daily learning streak" },
+    { token: "lib:streak-platinum", url: "/badge-library/lib_streak_platinum.webp", theme: "streak", themeLabel: "On Fire", tier: "platinum", trigger: "streak", description: "Keep a daily learning streak" },
+    { token: "lib:streak-diamond", url: "/badge-library/lib_streak_diamond.webp", theme: "streak", themeLabel: "On Fire", tier: "diamond", trigger: "streak", description: "Keep a daily learning streak" },
+    { token: "lib:xp_master-bronze", url: "/badge-library/lib_xp_master_bronze.webp", theme: "xp_master", themeLabel: "Star Scholar", tier: "bronze", trigger: "xp_total", description: "Earn experience points" },
+    { token: "lib:xp_master-silver", url: "/badge-library/lib_xp_master_silver.webp", theme: "xp_master", themeLabel: "Star Scholar", tier: "silver", trigger: "xp_total", description: "Earn experience points" },
+    { token: "lib:xp_master-gold", url: "/badge-library/lib_xp_master_gold.webp", theme: "xp_master", themeLabel: "Star Scholar", tier: "gold", trigger: "xp_total", description: "Earn experience points" },
+    { token: "lib:xp_master-platinum", url: "/badge-library/lib_xp_master_platinum.webp", theme: "xp_master", themeLabel: "Star Scholar", tier: "platinum", trigger: "xp_total", description: "Earn experience points" },
+    { token: "lib:xp_master-diamond", url: "/badge-library/lib_xp_master_diamond.webp", theme: "xp_master", themeLabel: "Star Scholar", tier: "diamond", trigger: "xp_total", description: "Earn experience points" },
+    { token: "lib:completionist-bronze", url: "/badge-library/lib_completionist_bronze.webp", theme: "completionist", themeLabel: "Completionist", tier: "bronze", trigger: "course_completion", description: "Finish courses to 100%" },
+    { token: "lib:completionist-silver", url: "/badge-library/lib_completionist_silver.webp", theme: "completionist", themeLabel: "Completionist", tier: "silver", trigger: "course_completion", description: "Finish courses to 100%" },
+    { token: "lib:completionist-gold", url: "/badge-library/lib_completionist_gold.webp", theme: "completionist", themeLabel: "Completionist", tier: "gold", trigger: "course_completion", description: "Finish courses to 100%" },
+    { token: "lib:completionist-platinum", url: "/badge-library/lib_completionist_platinum.webp", theme: "completionist", themeLabel: "Completionist", tier: "platinum", trigger: "course_completion", description: "Finish courses to 100%" },
+    { token: "lib:completionist-diamond", url: "/badge-library/lib_completionist_diamond.webp", theme: "completionist", themeLabel: "Completionist", tier: "diamond", trigger: "course_completion", description: "Finish courses to 100%" },
+    { token: "lib:perfect_score-bronze", url: "/badge-library/lib_perfect_score_bronze.webp", theme: "perfect_score", themeLabel: "Perfect Score", tier: "bronze", trigger: "assessment_score", description: "Ace an assessment" },
+    { token: "lib:perfect_score-silver", url: "/badge-library/lib_perfect_score_silver.webp", theme: "perfect_score", themeLabel: "Perfect Score", tier: "silver", trigger: "assessment_score", description: "Ace an assessment" },
+    { token: "lib:perfect_score-gold", url: "/badge-library/lib_perfect_score_gold.webp", theme: "perfect_score", themeLabel: "Perfect Score", tier: "gold", trigger: "assessment_score", description: "Ace an assessment" },
+    { token: "lib:perfect_score-platinum", url: "/badge-library/lib_perfect_score_platinum.webp", theme: "perfect_score", themeLabel: "Perfect Score", tier: "platinum", trigger: "assessment_score", description: "Ace an assessment" },
+    { token: "lib:perfect_score-diamond", url: "/badge-library/lib_perfect_score_diamond.webp", theme: "perfect_score", themeLabel: "Perfect Score", tier: "diamond", trigger: "assessment_score", description: "Ace an assessment" },
+    { token: "lib:live_learner-bronze", url: "/badge-library/lib_live_learner_bronze.webp", theme: "live_learner", themeLabel: "Live Learner", tier: "bronze", trigger: "live_session_count", description: "Attend live classes" },
+    { token: "lib:live_learner-silver", url: "/badge-library/lib_live_learner_silver.webp", theme: "live_learner", themeLabel: "Live Learner", tier: "silver", trigger: "live_session_count", description: "Attend live classes" },
+    { token: "lib:live_learner-gold", url: "/badge-library/lib_live_learner_gold.webp", theme: "live_learner", themeLabel: "Live Learner", tier: "gold", trigger: "live_session_count", description: "Attend live classes" },
+    { token: "lib:live_learner-platinum", url: "/badge-library/lib_live_learner_platinum.webp", theme: "live_learner", themeLabel: "Live Learner", tier: "platinum", trigger: "live_session_count", description: "Attend live classes" },
+    { token: "lib:live_learner-diamond", url: "/badge-library/lib_live_learner_diamond.webp", theme: "live_learner", themeLabel: "Live Learner", tier: "diamond", trigger: "live_session_count", description: "Attend live classes" },
+    { token: "lib:scholar-bronze", url: "/badge-library/lib_scholar_bronze.webp", theme: "scholar", themeLabel: "Scholar", tier: "bronze", trigger: "slide_count", description: "Work through your lessons" },
+    { token: "lib:scholar-silver", url: "/badge-library/lib_scholar_silver.webp", theme: "scholar", themeLabel: "Scholar", tier: "silver", trigger: "slide_count", description: "Work through your lessons" },
+    { token: "lib:scholar-gold", url: "/badge-library/lib_scholar_gold.webp", theme: "scholar", themeLabel: "Scholar", tier: "gold", trigger: "slide_count", description: "Work through your lessons" },
+    { token: "lib:scholar-platinum", url: "/badge-library/lib_scholar_platinum.webp", theme: "scholar", themeLabel: "Scholar", tier: "platinum", trigger: "slide_count", description: "Work through your lessons" },
+    { token: "lib:scholar-diamond", url: "/badge-library/lib_scholar_diamond.webp", theme: "scholar", themeLabel: "Scholar", tier: "diamond", trigger: "slide_count", description: "Work through your lessons" },
 ];
 
 const LIBRARY_BY_TOKEN: Record<string, LibraryBadge> = BADGE_LIBRARY.reduce(

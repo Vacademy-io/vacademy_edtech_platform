@@ -1,0 +1,31 @@
+{
+    "toast": {
+        "saveSettingsFailed": "Failed to save settings. Please try again.",
+        "settingsSaved": "Quiz settings saved!",
+        "questionsAddedSuccess_one": "{{count}} question added successfully!",
+        "questionsAddedSuccess_other": "{{count}} questions added successfully!",
+        "addQuestionsFailed": "Failed to add questions. Please try again.",
+        "questionUpdated": "Question updated successfully!",
+        "updateQuestionFailed": "Failed to update question. Please try again.",
+        "enterQuestionName": "Please enter a question name",
+        "questionAdded": "Question added successfully!",
+        "addQuestionFailed": "Failed to add question. Please try again.",
+        "questionDeleted": "Question deleted successfully!",
+        "deleteQuestionFailed": "Failed to delete question. Please try again."
+    },
+    "header": "Quiz Questions",
+    "deletedBadge": "DELETED",
+    "quizDeletedTitle": "This quiz has been deleted",
+    "quizDeletedSubtitle": "The quiz content is no longer available",
+    "unableToLoadTitle": "Unable to load quiz",
+    "unableToLoadSubtitle": "Route parameters are not available. Please refresh the page.",
+    "noQuestionsTitle": "No questions yet",
+    "noQuestionsSubtitle": "Add your first question to get started",
+    "addNewQuestionTitle": "Add New Question",
+    "editQuestionTitle": "Edit Question {{number}}",
+    "cancel": "Cancel",
+    "addQuestion": "Add Question",
+    "adding": "Adding...",
+    "saveChanges": "Save Changes",
+    "saving": "Saving..."
+}

@@ -1,0 +1,90 @@
+---
+title: "Data and privacy"
+description: "What institute data reaches the AI app, how contact details are limited, and whose data policy applies."
+icon: "user-lock"
+---
+
+When someone asks their AI app a question, the AI app calls a tool, and the tool's answer becomes part of that conversation. This page explains what those answers contain, and where the data goes.
+
+## Where the data goes
+
+```text
+Your institute's data  →  MCP server  →  the AI app (Claude, ChatGPT, Cursor, …)  →  that app's AI provider
+```
+
+- The MCP server sends a tool's answer to the AI app that called it. **No AI model runs on the MCP server**, so the data is not sent to any other AI service on the way.
+- The AI app passes the answer to **its own AI provider** to write a reply. From that point, the data is part of a conversation in that app, and **the provider's own terms and data policy apply**, including how long it keeps conversations and whether it trains on them.
+- Each person uses the AI app account they signed in with. A personal account and a company account can have very different data terms.
+
+<Warning>
+Before you turn on areas that hold personal data (Learners, Progress reports, Lead forms or the CRM areas), decide which AI apps and which plans your staff may use. Business and enterprise plans usually offer stronger data terms than personal plans.
+</Warning>
+
+Check each provider's current policy. These pages may move:
+
+- Anthropic (Claude): [Privacy Center](https://privacy.claude.com)
+- OpenAI (ChatGPT): [Enterprise privacy](https://openai.com/enterprise-privacy/)
+- Cursor: [Privacy and data](https://cursor.com/help/security-and-privacy/privacy)
+
+## What each area can return
+
+An AI app only receives data from areas your admin has turned on for the connected person's role. In the CRM, it also sees only the leads that person's admin portal shows them.
+
+| Area | Personal data it can return |
+|---|---|
+| Who is connected | The connected person's own name and contact details, and the institute's name, logo and theme. |
+| Institute stats | Counts and totals, such as active learners and outstanding fees. |
+| Website, Blog, Automations | Page content, posts, workflows and templates. Mostly not personal data. |
+| Courses | Course content, invite links and prices. |
+| Lead forms | Leads received for a campaign: name, date, source and status. **Email and phone are included only for people with the Admin role.** |
+| Learners | Learner profile: name, email, phone, date of birth, address, parents' names and contacts, and the courses they are enrolled in. |
+| Progress reports | One learner's attendance, test scores, study time, progress, assignments and doubts. |
+| CRM areas | Leads, their history, calls, meetings and messages, limited as described below. |
+
+## Contact details in the CRM
+
+The CRM areas hold the most personal data, so contact details are limited by default:
+
+- **Lists and reports show masked contact details.** A phone number shows only its last 4 digits, and an email address is partly hidden.
+- **Full contact details appear only for one lead at a time**, when the AI app opens a single lead that you are allowed to see in your admin portal.
+- **Bulk contact lists never appear in the chat.** When you ask for a list of leads with their phone numbers, you get a private download link instead (see below).
+- **You only see your own scope.** The AI app sees exactly the leads your admin portal shows you. A counsellor sees their own leads, a team lead sees their team's, and an admin sees the whole institute. See [For counsellors](/mcp-server/for-counsellors).
+
+## Private download links
+
+Some results should not travel through a chat at all, such as a file of learner logins or a bulk export. The server keeps these as a file and gives the AI app only a **link**:
+
+- The file itself never enters the conversation, so it never reaches the AI provider.
+- The file is stored encrypted, and the link contains the key.
+- The link **expires** and works for a **limited number of downloads**. For example, a file of new learners' usernames and passwords works for 30 minutes and up to 3 downloads.
+- After it expires or is used up, the file is deleted. A small record (who created it, from which tool, how often it was downloaded) is kept.
+
+<Tip>
+Anyone who has the link can download the file until it expires, so treat it like the file itself. Download it, then don't forward the link.
+</Tip>
+
+## What never reaches the AI app
+
+- **Passwords and sign-in details.** Learner logins are only delivered through a private download link. The AI app's own access token is not your admin portal password or session.
+- **Other institutes' data.** Every tool works only inside the institute in the connection.
+- **CRM leads outside the connected person's view** in your admin portal.
+- **Areas your admin has left off.**
+
+## Text written by other people
+
+Lead form answers, enquiry messages, WhatsApp replies, call transcripts and notes are written by leads or staff, not by your institute's systems. The server returns this text clearly marked as data, so the AI app should not follow instructions inside it. See [Prompt injection](/mcp-server/security/prompt-injection).
+
+## Good habits
+
+<AccordionGroup>
+  <Accordion title="For admins">
+    - Turn on only the areas each role needs. Counsellors rarely need Website or Courses; content staff rarely need the CRM.
+    - Keep edits that are turned on separately (opt-in), such as enrolling learners, editing learner details, and calling and messaging leads, for the roles that use them.
+    - Agree which AI apps and plans staff may connect, and check **Active connections** from time to time.
+  </Accordion>
+  <Accordion title="For staff">
+    - Connect only with the AI account your institute has approved, not a personal one.
+    - Don't copy lead or learner lists out of the chat into other tools.
+    - Delete conversations you no longer need, following your AI app's own settings.
+  </Accordion>
+</AccordionGroup>

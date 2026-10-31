@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
 import { Button } from '@/components/ui/button';
 import { Microphone, Stop, Pause, Play, ArrowCounterClockwise } from '@phosphor-icons/react';
@@ -8,6 +9,7 @@ interface AudioRecorderProps {
 }
 
 export function AudioRecorder({ onRecordingComplete }: AudioRecorderProps) {
+    const { t } = useTranslation('instructorCopilotAudioRecorder');
     const {
         isRecording,
         isPaused,
@@ -51,7 +53,7 @@ export function AudioRecorder({ onRecordingComplete }: AudioRecorderProps) {
                                 <div className="absolute inset-0 w-3 h-3 bg-red-500 rounded-full animate-ping" />
                             </div>
                             <span className="text-sm font-medium text-gray-700">
-                                {isPaused ? 'Paused' : 'Recording...'}
+                                {isPaused ? t('status.paused') : t('status.recording')}
                             </span>
                         </div>
                     )}
@@ -70,7 +72,7 @@ export function AudioRecorder({ onRecordingComplete }: AudioRecorderProps) {
                                 className="bg-red-500 hover:bg-red-600 text-white"
                             >
                                 <Microphone size={20} className="mr-2" />
-                                Start Recording
+                                {t('startRecording')}
                             </Button>
                         ) : (
                             <>
@@ -81,7 +83,7 @@ export function AudioRecorder({ onRecordingComplete }: AudioRecorderProps) {
                                         variant="outline"
                                     >
                                         <Pause size={20} className="mr-2" />
-                                        Pause
+                                        {t('pause')}
                                     </Button>
                                 ) : (
                                     <Button
@@ -90,7 +92,7 @@ export function AudioRecorder({ onRecordingComplete }: AudioRecorderProps) {
                                         variant="outline"
                                     >
                                         <Play size={20} className="mr-2" />
-                                        Resume
+                                        {t('resume')}
                                     </Button>
                                 )}
                                 <Button
@@ -99,7 +101,7 @@ export function AudioRecorder({ onRecordingComplete }: AudioRecorderProps) {
                                     className="bg-gray-900 hover:bg-gray-800"
                                 >
                                     <Stop size={20} className="mr-2" />
-                                    Stop
+                                    {t('stop')}
                                 </Button>
                             </>
                         )}
@@ -111,7 +113,7 @@ export function AudioRecorder({ onRecordingComplete }: AudioRecorderProps) {
                                 variant="ghost"
                             >
                                 <ArrowCounterClockwise size={20} className="mr-2" />
-                                Reset
+                                {t('reset')}
                             </Button>
                         )}
                     </div>
@@ -129,7 +131,7 @@ export function AudioRecorder({ onRecordingComplete }: AudioRecorderProps) {
             {isRecording && transcripts.length > 0 && (
                 <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
                     <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                        Real-time Transcription
+                        {t('transcriptionHeading')}
                     </h3>
                     <div className="space-y-2 max-h-48 overflow-y-auto">
                         {transcripts.map((transcript, index) => (

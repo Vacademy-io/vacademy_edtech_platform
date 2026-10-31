@@ -2,7 +2,9 @@ package vacademy.io.assessment_service.features.question_core.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
+import org.hibernate.type.SqlTypes;
 import vacademy.io.assessment_service.features.question_core.dto.QuestionDTO;
 import vacademy.io.assessment_service.features.rich_text.entity.AssessmentRichTextData;
 
@@ -68,6 +70,23 @@ public class Question {
     @Column(name = "default_question_time_mins")
     private Integer defaultQuestionTimeMins;
 
+    /** Owning institute (V42). Nullable: public/community questions have none. */
+    @Column(name = "institute_id")
+    private String instituteId;
+
+    /** MANUAL | UPLOAD | AI | KNOWLEDGE_BASE (V42). */
+    @Column(name = "source_type")
+    private String sourceType;
+
+    /**
+     * Where this question came from, as JSON (V42). For a knowledge-base question:
+     * kb_id, node_ids, topic, source_page, generation_id, figures. Kept as a string
+     * here — nothing in Java reads inside it; the browse query filters it in Postgres.
+     */
+    @Column(name = "source_meta", columnDefinition = "jsonb")
+    @JdbcTypeCode(SqlTypes.JSON)
+    private String sourceMeta;
+
     // One-to-One mapping with AssessmentRichTextData for text_id
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "text_id", referencedColumnName = "id", insertable = true, updatable = true)
@@ -105,6 +124,14 @@ public class Question {
         this.optionsJson = questionDTO.getOptionsJson();
         this.evaluationCriteriaJson = questionDTO.getEvaluationCriteriaJson();
         this.criteriaTemplateId = questionDTO.getCriteriaTemplateId();
+        // These three were silently dropped by this constructor, so any path building a
+        // Question from a DTO here (rather than through the import manager's
+        // initializeQuestion) lost the question's difficulty and problem type.
+        this.difficulty = questionDTO.getAiDifficultyLevel();
+        this.problemType = questionDTO.getProblemType();
+        this.instituteId = questionDTO.getInstituteId();
+        this.sourceType = questionDTO.getSourceType();
+        this.sourceMeta = questionDTO.getSourceMeta();
     }
 
     public Question(String id) {

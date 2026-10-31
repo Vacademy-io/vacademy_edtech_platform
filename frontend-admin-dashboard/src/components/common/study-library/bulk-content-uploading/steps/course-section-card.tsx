@@ -258,14 +258,16 @@ export const CourseSectionCard = ({ section, callbacks }: CourseSectionCardProps
                         <div className="flex items-start gap-2 rounded-md bg-danger-50 px-3 py-2">
                             <Prohibit className="mt-0.5 size-4 shrink-0 text-danger-600" />
                             <p className="text-caption text-danger-700">
-                                {section.error ?? 'You cannot upload into this course.'}
+                                {section.error ??
+                                    `You cannot upload into this ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}.`}
                             </p>
                         </div>
                     )}
                     {section.status === 'error' && (
                         <div className="flex items-center justify-between gap-2 rounded-md bg-danger-50 px-3 py-2">
                             <p className="text-caption text-danger-700">
-                                {section.error ?? 'Failed to read this course structure.'}
+                                {section.error ??
+                                    `Failed to read this ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()} structure.`}
                             </p>
                             <MyButton
                                 buttonType="secondary"

@@ -1,0 +1,24 @@
+{
+    "intro": "Chaque bulletin de paie qui vous a été délivré, du plus récent au plus ancien. Chacun est un PDF validé par votre établissement — téléchargez-le dès que vous en avez besoin pour un bailleur, un prêt ou vos propres archives.",
+    "yearLabel": "Année",
+    "payslipCount_one": "{{count}} bulletin de paie",
+    "payslipCount_many": "{{count}} bulletins de paie",
+    "payslipCount_other": "{{count}} bulletins de paie",
+    "netPay": "Salaire net",
+    "emailedToYou": "Envoyé par e-mail",
+    "download": "Télécharger",
+    "downloading": "Téléchargement…",
+    "issuedOn": "Délivré le {{date}}",
+    "issueDateUnknown": "Date de délivrance non renseignée",
+    "emptyState": {
+        "title": "Aucun bulletin de paie pour {{year}}",
+        "description": "Un bulletin de paie n'apparaît qu'une fois que votre établissement a exécuté la paie pour ce mois et généré les bulletins. Si un mois pour lequel vous avez été payé manque, demandez à votre équipe RH."
+    },
+    "toasts": {
+        "downloaded": "Bulletin de paie téléchargé"
+    },
+    "errors": {
+        "loadFailed": "Impossible de charger vos bulletins de paie.",
+        "downloadFailed": "Impossible de télécharger ce bulletin de paie."
+    }
+}

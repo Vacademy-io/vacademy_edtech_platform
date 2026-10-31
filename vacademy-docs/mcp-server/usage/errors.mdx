@@ -1,0 +1,141 @@
+---
+title: "Errors"
+description: "The error codes the tools return, what each one means and what to do about it."
+icon: "triangle-exclamation"
+---
+
+<Info>
+
+**Most common, in plain words**
+
+- **`tool_not_permitted`**: that area or edit is off for your role. An admin must turn it on in **Settings → MCP Server**.
+- **`confirm_token_expired`**: the preview is too old. Ask for a new preview.
+- **`out_of_scope`**: not your lead. It is outside the leads your admin portal shows you.
+- **`rate_limited`**: you reached an hourly limit for calls or messages. Wait, then try again.
+- **"session expired"**: reconnect your AI app and approve again.
+</Info>
+
+When a tool can't do what was asked, it doesn't crash the chat. It returns an error the AI app can read, in this shape:
+
+```json
+{
+  "error": "confirm_token_expired",
+  "message": "The preview expired (15 minutes). Run preview again and re-confirm with the admin."
+}
+```
+
+- **`error`** is a short, stable code.
+- **`message`** says what happened and, usually, what the AI app should do next. Some errors carry extra fields, such as which arguments are missing or how long to wait.
+
+Your AI app should explain the error to you in plain words. If it doesn't, ask: "What exactly did the tool say?"
+
+<Note>
+Codes marked **CRM** come from the CRM tools. You only see them when your institute uses the CRM areas.
+</Note>
+
+## Access and connection
+
+These happen before a tool runs. When access is refused, the AI app sees **no tools at all**, and a tool call returns a plain message instead of a code.
+
+| Message or code | What it means | What to do |
+|---|---|---|
+| "The MCP server is not enabled for this institute." | The server is switched off. | An admin turns it on in **Settings → MCP Server**. |
+| "This user's role is not allowed to connect to the MCP server." | None of your roles is in **Who can connect**. | An admin adds your role. See [Roles](/mcp-server/settings/roles). |
+| "The MCP server is available to institute staff only." | The account only has learner or parent roles. | Use a staff account. Learners and parents can never connect. |
+| "This connection's session has expired." / "rejected this connection's session" | Your admin portal sign-in behind the connection could not be renewed. | Reconnect in your AI app and approve again. |
+| "This token was issued for a different server URL." | The connection was made with another server URL. | Remove the connector and add it again with the URL from **Settings → MCP Server**. |
+| `tool_not_permitted` | The tool's area or edit is off for your role. | An admin turns it on in **Settings → MCP Server**. Don't retry until then. The message may mention Assistant settings; for AI apps, the switch is in **Settings → MCP Server**. |
+| `tool_not_available` | This tool isn't offered over the MCP server. | Nothing to fix. Ask for something else, or use your admin portal. |
+| `module_not_enabled` **CRM** | Your institute's plan doesn't include the CRM, or this part of it. | Ask your institute's owner, or your provider, about adding it. |
+| `admin_only` **CRM** | Only an institute admin can do this, for example start an AI calling campaign. | Ask an admin. |
+| `not_available_for_role` **CRM** | This report or action isn't available with your access. | Ask an admin or your manager. |
+| `out_of_scope` **CRM** | The lead, call or counsellor is outside what you can see in your admin portal. | Check the record in your admin portal. Ask your manager if you need access. |
+| `scope_unavailable` **CRM** | The server could not work out which leads you can see, so it refused rather than guess. | Try again shortly. If it persists, tell your admin. |
+
+## Previews and confirmations
+
+See [Confirmations](/mcp-server/usage/confirmations) for how these work.
+
+| Code | What it means | What to do |
+|---|---|---|
+| `confirm_required` | The AI app tried to apply a change without a preview. | Ask it to show you the preview first. |
+| `confirm_token_expired` | The preview is too old. Previews last a short time (minutes), depending on the tool. | Ask for a new preview and confirm again. |
+| `confirm_token_mismatch` | The request, or the data, changed since the preview. | Ask for a new preview. Check what changed. |
+| `confirm_token_used` | That confirmation was already used once. | Only if you really mean to do it again, ask for a new preview. |
+| `confirm_token_invalid`, `invalid_confirm_token` | The confirmation is missing, or isn't one the server issued to this connection. (Website publish uses the second spelling.) | Ask for a new preview. |
+| `plan_token_required` | Course data setup needs its dry run first. | Ask the AI app to show you the plan first. |
+| `plan_token_expired` | The plan is older than 10 minutes. | Ask for a new plan. |
+| `plan_changed` | The request or your data changed since the plan. | Ask for a new plan. |
+| `invalid_plan_token` | The plan token isn't one the server issued. | Ask for a new plan. |
+| `ask_admin` | Enrolment needs your answers first, for example whether to send the welcome email. | Answer the questions the AI app asks. |
+
+### Website publish
+
+| Code | What it means | What to do |
+|---|---|---|
+| `draft_changed` | The draft changed after it was checked, for example by an autosave or another editor. Nothing was published. | Ask for a new check and preview. |
+| `draft_older_than_live` | The live site changed after the check, so publishing would undo newer live changes. Nothing was published. | Reopen the live version in the editor, then check again. |
+| `open_draft` | A rollback was asked for while the site has an unpublished draft. Nothing was changed. | Publish or discard the open draft first. |
+| `publish_unavailable` | Publishing from the AI app isn't available right now. Nothing was changed. | Publish from the editor in your admin portal. |
+
+## Limits
+
+| Code | What it means | What to do |
+|---|---|---|
+| `rate_limited` **CRM** | You reached an hourly limit for calls or messages. The error says how many seconds to wait. | Wait, then try again. Ask "How many can I still send this hour?" to check first. |
+| `too_large` | Files or images sent to the tool are too big. | Send fewer or smaller files. |
+| `too_many_courses`, `too_many_learners`, `too_many_items`, `too_many_nodes`, `too_many_slides` | Too many items in one request. The message says the limit. | Split the request into smaller batches. |
+| `too_long`, `window_too_long` | A text or a date range is longer than allowed. | Shorten it. |
+
+## Finding the right record
+
+| Code | What it means | What to do |
+|---|---|---|
+| `unknown_course`, `unknown_page`, `unknown_learner`, `unknown_campaign`, `unknown_invite`, `unknown_workflow`, `unknown_post`, … | No such record in your institute, or the ID was wrong. | Ask the AI app to search for it by name first. |
+| `unknown_*` for a lead, list, call, follow-up or counsellor **CRM** | No such lead, list, call or follow-up within your access. | Search for it again ("find the lead with phone ending 4321"). |
+| `use_lead_id` **CRM** | The AI app named a lead by a person ID instead of the lead's ID. | Nothing for you to do. The AI app should search for the lead and retry. |
+| `choose_batch`, `choose_invite`, `pick_source_batch` | The course has several batches or invites, and the tool won't guess. | Tell the AI app which one. |
+| `already_lead` **CRM** | This person is already a lead. | Open the existing lead instead, or say it's a new enquiry from the same person. |
+| `opted_out` **CRM** | The lead asked not to be contacted. | Don't contact them. The tool refuses. |
+| `outside_calling_hours` **CRM** | AI calls can't be placed at this time of day. | Schedule it for calling hours. |
+
+## The record is in the wrong state
+
+| Code | What it means | What to do |
+|---|---|---|
+| `not_a_draft`, `not_draft`, `course_not_draft` | The tool only edits drafts, and this one is published or live. | Edit it in your admin portal, or ask the AI app to create a new draft. |
+| `course_is_live` | This invite change isn't allowed on a live course from here. | Make it in your admin portal. |
+| `template_exists` | A template with that name already exists. Existing templates are never changed from here. | Reuse it, or pick a new name. |
+| `no_payment_gateway` | No payment gateway is set up, so only free plans can be used. | Set up payments in your admin portal first. |
+| `option_disabled` | An email the AI app asked to send is switched off in your settings. | Turn it on in your admin portal, or don't send it. |
+| `org_batch_unsupported` | Batches sold to organisations are enrolled from your admin portal only. | Use your admin portal. |
+| `nothing_to_change`, `no_changes` | The request wouldn't change anything. | Check whether the change is already in place. |
+
+## Bad requests
+
+*Mainly for the AI app and technical readers.* These usually mean the AI app made a mistake. It should fix the request and try again on its own.
+
+| Code | What it means |
+|---|---|
+| `missing_argument` | A required field was left out. The error lists which. |
+| `unknown_action` | The tool has no such action. The error lists the valid ones. |
+| `bad_request`, `invalid_*` | A field had the wrong format or value. The message says which. |
+| `secret_not_accepted` | Someone sent a password or access token to a tool. Tools never need one: they already act as you. |
+| `reference_not_allowed` | An image link that isn't stored in your institute's media was used. Upload the image first. |
+
+## Something failed on our side
+
+*Mainly for technical readers.*
+
+| Code | What it means | What to do |
+|---|---|---|
+| `fetch_failed`, `save_failed`, `create_failed`, `update_failed`, `request_failed` | A read or a save didn't go through. The message says whether anything was saved. | Try again in a minute. Check your admin portal before repeating a change. |
+| `tool_failed` | The tool stopped with an unexpected error. | Try again in a minute. Check your admin portal before repeating a change. |
+| `admin_core_rejected`, `auth_rejected` | Your admin portal refused the request. The error carries its status and message. | Read the message. Often the record changed, or you lack access in your admin portal. |
+| `query_failed` **CRM** | A CRM lookup failed or took too long. | Try a narrower request, for example a shorter date range. |
+| `settings_unavailable` | Your institute's settings couldn't be read. Nothing was saved. | Try again shortly. |
+| `no_auth` | The tool had no valid sign-in for this request. | Reconnect your AI app. |
+
+<Tip>
+If an error keeps coming back, note the time, the tool name and the code, and send them to your admin or support. Every tool call is recorded with its result, so the time and code are enough to find it. See [Audit log](/mcp-server/security/audit-log).
+</Tip>

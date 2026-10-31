@@ -44,4 +44,15 @@ public interface EmployeeProfileRepository extends JpaRepository<EmployeeProfile
     List<EmployeeProfile> findActiveEmployees(@Param("instituteId") String instituteId, @Param("statuses") List<String> statuses);
 
     boolean existsByUserIdAndInstituteId(String userId, String instituteId);
+
+    /** Probation-end reminder sweep (ProbationEndJob): candidates in a broad window, filtered per institute TZ by the job. */
+    List<EmployeeProfile> findByProbationEndDateBetween(java.time.LocalDate start, java.time.LocalDate end);
+
+    /**
+     * The auth userId of an employee's reporting manager, without initializing
+     * the lazy association (safe to call from scheduler threads with no open
+     * session). Empty when the employee has no reporting manager.
+     */
+    @Query("SELECT e.reportingManager.userId FROM EmployeeProfile e WHERE e.id = :employeeId")
+    Optional<String> findReportingManagerUserId(@Param("employeeId") String employeeId);
 }

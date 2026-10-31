@@ -1,0 +1,26 @@
+{
+    "toasts": {
+        "updateSuccess": "Question paper for this assessment has been updated successfully!",
+        "incompleteQuestions": "Some of your questions are incomplete or need attention!"
+    },
+    "header": {
+        "joinLinkLabel": "Join Link:"
+    },
+    "announcementDialog": {
+        "title": "Live Assessment Announcement",
+        "empty": "No Announcement Exists",
+        "timestampPlaceholder": "Today, 11:28 AM"
+    },
+    "actions": {
+        "save": "Save",
+        "exit": "Exit",
+        "addQuestion": "Add Question"
+    },
+    "questionTypes": {
+        "mcqSingleCorrect": "MCQ (Single Correct)",
+        "mcqMultipleCorrect": "MCQ (Multiple Correct)"
+    },
+    "emptyStates": {
+        "noQuestions": "No Question Exists."
+    }
+}

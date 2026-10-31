@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import Papa from 'papaparse';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import {
     Dialog,
     DialogContent,
@@ -146,6 +147,8 @@ const isValidEmail = (value: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.te
 const isValidMobile = (value: string): boolean => /^\+?[0-9]{7,15}$/.test(value.replace(/\s+/g, ''));
 
 export const AdmissionBulkImportDialog = ({ open, onOpenChange, sessionId, onSuccess }: AdmissionBulkImportDialogProps) => {
+    const { t } = useTranslation('admissionsAdmissionBulkImportDialog');
+    const { t: tSubmitAdmissionBulk } = useTranslation('admissionsSubmitAdmissionBulk');
     const [step, setStep] = useState<Step>(1);
     const [parseError, setParseError] = useState<string | null>(null);
     const [validRows, setValidRows] = useState<ParsedCsvRow[]>([]);
@@ -225,7 +228,7 @@ export const AdmissionBulkImportDialog = ({ open, onOpenChange, sessionId, onSuc
 
     const parseFile = (file: File) => {
         if (!file.name.toLowerCase().endsWith('.csv')) {
-            setParseError('Only .csv files are supported');
+            setParseError(t('errors.onlyCsvSupported'));
             setValidRows([]);
             setSkippedRowsCount(0);
             return;
@@ -249,7 +252,7 @@ export const AdmissionBulkImportDialog = ({ open, onOpenChange, sessionId, onSuc
                     const missing = missingRequired
                         .map((field) => REQUIRED_COLUMN_LABELS[REQUIRED_CANONICAL_FIELDS.indexOf(field)])
                         .join(', ');
-                    setParseError(`Missing required column(s): ${missing}`);
+                    setParseError(t('errors.missingColumns', { columns: missing }));
                     setValidRows([]);
                     setSkippedRowsCount(0);
                     return;
@@ -320,7 +323,7 @@ export const AdmissionBulkImportDialog = ({ open, onOpenChange, sessionId, onSuc
                 setSkippedRowsCount(skipped);
             },
             error: (error) => {
-                setParseError(error.message || 'Failed to parse CSV');
+                setParseError(error.message || t('errors.failedToParseCsv'));
                 setValidRows([]);
                 setSkippedRowsCount(0);
             },
@@ -328,33 +331,34 @@ export const AdmissionBulkImportDialog = ({ open, onOpenChange, sessionId, onSuc
     };
 
     const submitMutation = useMutation({
-        mutationFn: (payload: BulkSubmitAdmissionRequest) => submitAdmissionBulkWithLead(payload),
+        mutationFn: (payload: BulkSubmitAdmissionRequest) =>
+            submitAdmissionBulkWithLead(payload, tSubmitAdmissionBulk),
         onSuccess: (response: BulkSubmitAdmissionResponse) => {
             const successCount = Number(response?.summary?.successful || 0);
             const failedCount = Number(response?.summary?.failed || 0);
 
-            toast.success(`Imported ${successCount} admission(s) (${failedCount} failed)`);
+            toast.success(t('toast.importSuccess', { count: successCount, failedCount }));
             onSuccess?.();
             closeDialog(false);
         },
         onError: (error: Error) => {
-            toast.error(error.message || 'Failed to import admissions');
+            toast.error(error.message || t('toast.importError'));
         },
     });
 
     const handleConfirmSubmit = () => {
         if (!instituteDetails?.id) {
-            toast.error('Institute details not loaded');
+            toast.error(t('errors.instituteNotLoaded'));
             return;
         }
         if (!sessionId) {
-            toast.error('Session is required');
+            toast.error(t('errors.sessionRequired'));
             return;
         }
 
         const destinationId = selectedPackageSessionId || classOptions[0]?.id || '';
         if (!destinationId) {
-            toast.error('Please select a class/batch');
+            toast.error(t('errors.selectClassRequired'));
             return;
         }
 
@@ -386,10 +390,10 @@ export const AdmissionBulkImportDialog = ({ open, onOpenChange, sessionId, onSuc
 
     return (
         <Dialog open={open} onOpenChange={closeDialog}>
-            <DialogContent className="max-h-[90vh] w-[95vw] overflow-y-auto sm:max-w-[1100px]">
+            <DialogContent className="max-h-dialog-tall w-dialog-xl overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle>Bulk Import Admissions</DialogTitle>
-                    <DialogDescription>Upload CSV, optionally choose class, preview and confirm import</DialogDescription>
+                    <DialogTitle>{t('dialog.title')}</DialogTitle>
+                    <DialogDescription>{t('dialog.description')}</DialogDescription>
                 </DialogHeader>
 
                 <div className="mb-2 flex items-center gap-2 text-xs">
@@ -398,7 +402,7 @@ export const AdmissionBulkImportDialog = ({ open, onOpenChange, sessionId, onSuc
                             key={s}
                             className={`rounded-full px-3 py-1 ${step === s ? 'bg-primary-100 text-primary-700' : 'bg-neutral-100 text-neutral-600'}`}
                         >
-                            Step {s}
+                            {t('steps.label', { number: s })}
                         </div>
                     ))}
                 </div>
@@ -406,16 +410,16 @@ export const AdmissionBulkImportDialog = ({ open, onOpenChange, sessionId, onSuc
                 {step === 1 && (
                     <div className="space-y-4">
                         <div className="flex items-center justify-between rounded-md border p-3">
-                            <div className="text-sm text-neutral-600">Download CSV template and upload filled learner responses</div>
+                            <div className="text-sm text-neutral-600">{t('upload.templateHint')}</div>
                             <MyButton buttonType="secondary" onClick={handleDownloadTemplate}>
-                                Download Template
+                                {t('upload.downloadTemplateButton')}
                             </MyButton>
                         </div>
                         <div
                             onClick={() => fileInputRef.current?.click()}
                             className="cursor-pointer rounded-md border-2 border-dashed border-neutral-300 p-8 text-center hover:border-primary-300"
                         >
-                            <p className="text-sm">Click to upload `.csv` file</p>
+                            <p className="text-sm">{t('upload.clickToUpload')}</p>
                             <input
                                 ref={fileInputRef}
                                 type="file"
@@ -430,7 +434,7 @@ export const AdmissionBulkImportDialog = ({ open, onOpenChange, sessionId, onSuc
                         {parseError && <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{parseError}</div>}
                         {!parseError && validRows.length > 0 && (
                             <div className="rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-700">
-                                Valid rows: {validRows.length} | Skipped rows: {skippedRowsCount}
+                                {t('upload.rowsSummary', { validCount: validRows.length, skippedCount: skippedRowsCount })}
                             </div>
                         )}
                     </div>
@@ -439,14 +443,14 @@ export const AdmissionBulkImportDialog = ({ open, onOpenChange, sessionId, onSuc
                 {step === 2 && (
                     <div className="space-y-4">
                         <p className="text-sm text-neutral-600">
-                            Select class/batch required for submitting admissions. If you skip, the first available option will be used.
+                            {t('classStep.description')}
                         </p>
                         <select
                             value={selectedPackageSessionId}
                             onChange={(e) => setSelectedPackageSessionId(e.target.value)}
                             className="w-full rounded-md border p-2 text-sm"
                         >
-                            <option value="">No class selected</option>
+                            <option value="">{t('classStep.noClassOption')}</option>
                             {classOptions.map((option) => (
                                 <option key={option.id} value={option.id}>
                                     {option.label}
@@ -458,31 +462,31 @@ export const AdmissionBulkImportDialog = ({ open, onOpenChange, sessionId, onSuc
 
                 {step === 4 && (
                     <div className="space-y-4">
-                        <div className="text-sm text-neutral-600">Previewing {validRows.length} valid row(s)</div>
+                        <div className="text-sm text-neutral-600">{t('preview.summary', { count: validRows.length })}</div>
                         <div className="max-h-80 overflow-x-auto overflow-y-auto rounded-md border">
-                            <table className="w-full min-w-[920px] text-left text-sm">
+                            <table className="w-full min-w-[920px] text-start text-sm"> {/* design-lint-ignore: table min-width for horizontal-scroll layout, no scale token close enough */}
                                 <thead className="bg-neutral-50">
                                     <tr>
-                                        <th className="px-3 py-2">Student Name</th>
-                                        <th className="px-3 py-2">Gender</th>
-                                        <th className="px-3 py-2">Date of Birth</th>
-                                        <th className="px-3 py-2">Father Name</th>
-                                        <th className="px-3 py-2">Father Email</th>
-                                        <th className="px-3 py-2">Father Mobile</th>
-                                        <th className="px-3 py-2">Mother Name</th>
-                                        <th className="px-3 py-2">Mother Email</th>
-                                        <th className="px-3 py-2">Mother Mobile</th>
-                                        <th className="px-3 py-2">Guardian Name</th>
-                                        <th className="px-3 py-2">Guardian Mobile</th>
-                                        <th className="px-3 py-2">Status</th>
-                                        <th className="px-3 py-2">Source</th>
+                                        <th className="px-3 py-2">{t('preview.columns.studentName')}</th>
+                                        <th className="px-3 py-2">{t('preview.columns.gender')}</th>
+                                        <th className="px-3 py-2">{t('preview.columns.dateOfBirth')}</th>
+                                        <th className="px-3 py-2">{t('preview.columns.fatherName')}</th>
+                                        <th className="px-3 py-2">{t('preview.columns.fatherEmail')}</th>
+                                        <th className="px-3 py-2">{t('preview.columns.fatherMobile')}</th>
+                                        <th className="px-3 py-2">{t('preview.columns.motherName')}</th>
+                                        <th className="px-3 py-2">{t('preview.columns.motherEmail')}</th>
+                                        <th className="px-3 py-2">{t('preview.columns.motherMobile')}</th>
+                                        <th className="px-3 py-2">{t('preview.columns.guardianName')}</th>
+                                        <th className="px-3 py-2">{t('preview.columns.guardianMobile')}</th>
+                                        <th className="px-3 py-2">{t('preview.columns.status')}</th>
+                                        <th className="px-3 py-2">{t('preview.columns.source')}</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {validRows.map((row, index) => (
                                         <tr key={`${row.student_name}-${index}`} className="border-t">
                                             <td className="px-3 py-2">{row.student_name}</td>
-                                            <td className="px-3 py-2">{row.gender}</td>
+                                            <td className="px-3 py-2">{t(`genderLabel.${row.gender}`)}</td>
                                             <td className="px-3 py-2">{row.date_of_birth}</td>
                                             <td className="px-3 py-2">{row.father_name || '-'}</td>
                                             <td className="px-3 py-2">{row.father_email || '-'}</td>
@@ -492,8 +496,8 @@ export const AdmissionBulkImportDialog = ({ open, onOpenChange, sessionId, onSuc
                                             <td className="px-3 py-2">{row.mother_mobile || '-'}</td>
                                             <td className="px-3 py-2">{row.guardian_name || '-'}</td>
                                             <td className="px-3 py-2">{row.guardian_mobile || '-'}</td>
-                                            <td className="px-3 py-2">{row.status}</td>
-                                            <td className="px-3 py-2">{row.source_type || '-'}</td>
+                                            <td className="px-3 py-2">{t(`statusLabel.${row.status}`)}</td>
+                                            <td className="px-3 py-2">{row.source_type ? t(`sourceLabel.${row.source_type}`) : '-'}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -508,22 +512,22 @@ export const AdmissionBulkImportDialog = ({ open, onOpenChange, sessionId, onSuc
                         disabled={step === 1 || submitMutation.isPending}
                         onClick={() => setStep(step === 4 ? 2 : 1)}
                     >
-                        Back
+                        {t('actions.back')}
                     </MyButton>
                     <div className="flex items-center gap-2">
                         <MyButton buttonType="secondary" disabled={submitMutation.isPending} onClick={() => closeDialog(false)}>
-                            Cancel
+                            {t('actions.cancel')}
                         </MyButton>
                         {step < 4 ? (
                             <MyButton
                                 disabled={submitMutation.isPending || (step === 1 && (!!parseError || validRows.length === 0))}
                                 onClick={() => setStep(step === 1 ? 2 : 4)}
                             >
-                                Next
+                                {t('actions.next')}
                             </MyButton>
                         ) : (
                             <MyButton disabled={submitMutation.isPending || validRows.length === 0} onClick={handleConfirmSubmit}>
-                                {submitMutation.isPending ? 'Importing...' : 'Confirm Import'}
+                                {submitMutation.isPending ? t('actions.importing') : t('actions.confirmImport')}
                             </MyButton>
                         )}
                     </div>

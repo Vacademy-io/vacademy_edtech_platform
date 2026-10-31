@@ -1,8 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
 import { HexColorPicker } from 'react-colorful';
+import { useTranslation } from 'react-i18next';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
+/** A colour value the field starts from, not a UI colour. */
+const BLANK_COLOUR = '#ffffff'; // design-lint-ignore: authored colour value, not UI styling
 
 interface ColorPickerFieldProps {
     label: string;
@@ -11,11 +15,15 @@ interface ColorPickerFieldProps {
 }
 
 export const ColorPickerField = ({ label, value, onChange }: ColorPickerFieldProps) => {
-    const [localValue, setLocalValue] = useState(value || '#ffffff');
+    const { t } = useTranslation('managePagesPropertyPanel');
+    // The label names the hex box, the swatch and the picker's own box, so a
+    // screen reader says which colour each one is.
+    const inputId = useId();
+    const [localValue, setLocalValue] = useState(value || BLANK_COLOUR);
 
     // Sync when external value changes
     useEffect(() => {
-        setLocalValue(value || '#ffffff');
+        setLocalValue(value || BLANK_COLOUR);
     }, [value]);
 
     const handlePickerChange = (color: string) => {
@@ -34,14 +42,16 @@ export const ColorPickerField = ({ label, value, onChange }: ColorPickerFieldPro
 
     return (
         <div className="space-y-2">
-            <Label>{label}</Label>
+            <Label htmlFor={inputId}>{label}</Label>
             <div className="flex items-center gap-2">
                 <Popover>
                     <PopoverTrigger asChild>
                         <button
+                            type="button"
                             className="size-9 shrink-0 rounded border border-gray-300 shadow-sm transition-shadow hover:shadow-md"
-                            style={{ backgroundColor: localValue || '#ffffff' }}
-                            title="Pick a color"
+                            style={{ backgroundColor: localValue || BLANK_COLOUR }}
+                            title={t('actions.pickColor')}
+                            aria-label={`${t('actions.pickColor')}: ${label}`}
                         />
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-3" align="start">
@@ -50,16 +60,18 @@ export const ColorPickerField = ({ label, value, onChange }: ColorPickerFieldPro
                             <Input
                                 value={localValue}
                                 onChange={handleInputChange}
-                                placeholder="#ffffff"
+                                placeholder={BLANK_COLOUR}
                                 className="font-mono text-sm"
+                                aria-label={label}
                             />
                         </div>
                     </PopoverContent>
                 </Popover>
                 <Input
+                    id={inputId}
                     value={localValue}
                     onChange={handleInputChange}
-                    placeholder="#ffffff"
+                    placeholder={BLANK_COLOUR}
                     className="font-mono text-sm"
                 />
             </div>

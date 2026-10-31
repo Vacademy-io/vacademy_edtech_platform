@@ -226,6 +226,11 @@ public class ApplicationFeeReceiptService {
                 .docType(RECEIPT_PREFIX)
                 .build();
 
+        // An institute numbering per learner (numberingSeries) keeps these receipts on their own
+        // counter, so they never take a number out of one of its series.
+        if (!config.getSeries().isEmpty()) {
+            context.setSeqNamespace(RECEIPT_PREFIX);
+        }
         return invoiceNumberService.generate(config, context);
     }
 

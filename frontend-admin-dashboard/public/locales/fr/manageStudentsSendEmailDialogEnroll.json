@@ -1,0 +1,83 @@
+{
+    "dialogTitle": "Envoyer un e-mail aux étudiants",
+    "cancel": "Annuler",
+    "sending": "Envoi en cours...",
+    "sendButton_one": "Envoyer à {{count}}",
+    "sendButton_many": "Envoyer à {{count}}",
+    "sendButton_other": "Envoyer à {{count}}",
+    "composeNotice_one": "Rédigez votre e-mail ci-dessous. {{count}} étudiant ayant une adresse e-mail le recevra.",
+    "composeNotice_many": "Rédigez votre e-mail ci-dessous. {{count}} d'étudiants ayant une adresse e-mail le recevront.",
+    "composeNotice_other": "Rédigez votre e-mail ci-dessous. {{count}} étudiants ayant une adresse e-mail le recevront.",
+    "templateLabel": "Modèle d'e-mail (facultatif)",
+    "selectTemplatePlaceholder": "Sélectionner un modèle",
+    "noTemplateOption": "Aucun modèle - Repartir de zéro",
+    "subjectLabel": "Objet *",
+    "showPreview": "Afficher l'aperçu",
+    "subjectPlaceholder": "Objet de votre e-mail",
+    "bodyLabel": "Corps *",
+    "clickToInsertVariables": "Cliquez sur les boutons ci-dessous pour insérer des variables :",
+    "bodyPlaceholder": "Saisissez votre message ici... Cliquez sur les boutons ci-dessus pour insérer des variables.",
+    "customMessageLabel": "Texte du message personnalisé (pour la variable custom_message_text)",
+    "customMessagePlaceholder": "Saisissez votre message personnalisé...",
+    "sendingProgress": "Progression de l'envoi ({{done}}/{{total}}) :",
+    "status": {
+        "pending": "En attente...",
+        "sent": "Envoyé",
+        "failed": "Échec"
+    },
+    "toasts": {
+        "templateLoaded": "Modèle « {{name}} » chargé.",
+        "subjectBodyRequired": "L'objet et le corps du message sont requis.",
+        "noValidRecipients": "Aucun destinataire valide pour l'envoi de l'e-mail.",
+        "processingEmails": "Traitement des e-mails en cours...",
+        "noPayloadPrepared": "Impossible de préparer les données pour un étudiant.",
+        "sendSuccess_one": "{{count}} e-mail envoyé avec succès.",
+        "sendSuccess_many": "{{count}} e-mails envoyés avec succès.",
+        "sendSuccess_other": "{{count}} e-mails envoyés avec succès.",
+        "sendPartial": "{{sent}} envoyé(s), {{failed}} en échec.",
+        "sendFailed": "Échec de l'envoi des e-mails.",
+        "errorPrefix": "Erreur : {{message}}",
+        "unexpectedError": "Une erreur inattendue s'est produite."
+    },
+    "templates": {
+        "welcome": {
+            "name": "E-mail de bienvenue",
+            "subject": "Bienvenue sur notre plateforme d'apprentissage",
+            "content": "Cher/Chère {{name}},\n\nBienvenue sur notre plateforme d'apprentissage ! Nous sommes ravis de vous compter parmi nous.\n\nVos identifiants de connexion :\nE-mail : {{email}}\nMobile : {{mobile_number}}\n\nCordialement,\nL'équipe"
+        },
+        "sessionUpdate": {
+            "name": "Mise à jour de session",
+            "subject": "Mise à jour de session - {{name}}",
+            "content": "Bonjour {{name}},\n\nVoici une mise à jour concernant votre session en cours.\n\nVeuillez consulter votre tableau de bord pour les dernières informations.\n\nCordialement,\nL'équipe"
+        },
+        "custom": {
+            "name": "E-mail personnalisé",
+            "subject": "Mise à jour importante",
+            "content": "Cher/Chère {{name}},\n\n{{custom_message_text}}\n\nCordialement,\nL'équipe"
+        }
+    },
+    "placeholders": {
+        "studentName": "Nom de l'étudiant",
+        "emailAddress": "Adresse e-mail",
+        "mobileNumber": "Numéro de mobile",
+        "customMessage": "Message personnalisé",
+        "courseName": "Nom du cours",
+        "batchName": "Nom du groupe",
+        "loginUsername": "Nom d'utilisateur de connexion",
+        "registrationDate": "Date d'inscription",
+        "currentDate": "Date actuelle"
+    },
+    "previewSampleData": {
+        "name": "Jean Dupont",
+        "courseName": "Cours de mathématiques",
+        "batchName": "Groupe A"
+    },
+    "preview": {
+        "heading": "Aperçu de l'e-mail",
+        "close": "Fermer",
+        "usingFirstStudent": "Aperçu utilisant les données du premier étudiant sélectionné",
+        "subjectLabel": "Objet :",
+        "bodyLabel": "Corps de l'e-mail :",
+        "emptyState": "Aucun contenu à afficher. Ajoutez un objet ou un corps de message pour voir l'aperçu."
+    }
+}

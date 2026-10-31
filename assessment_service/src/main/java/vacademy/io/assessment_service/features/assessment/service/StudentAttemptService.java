@@ -23,6 +23,7 @@ import vacademy.io.assessment_service.features.assessment.enums.ResultTypeEnum;
 import vacademy.io.assessment_service.features.assessment.repository.QuestionAssessmentSectionMappingRepository;
 import vacademy.io.assessment_service.features.assessment.repository.SectionRepository;
 import vacademy.io.assessment_service.features.assessment.repository.StudentAttemptRepository;
+import vacademy.io.assessment_service.features.assessment.service.evaluation_ai.TypedAnswerEvaluation;
 import vacademy.io.assessment_service.features.learner_assessment.constants.AttemptJsonConstants;
 import vacademy.io.assessment_service.features.learner_assessment.dto.status_json.LearnerAssessmentAttemptDataDto;
 import vacademy.io.assessment_service.features.learner_assessment.dto.status_json.manual.LearnerManualAttemptDataDto;
@@ -43,6 +44,10 @@ import java.util.stream.StreamSupport;
 @Slf4j
 @Service
 public class StudentAttemptService {
+
+    /** Internal choice ("any 4 of 5"); absent in unit tests that do not need it. */
+    @Autowired(required = false)
+    private vacademy.io.assessment_service.features.assessment.service.evaluation_ai.DashboardChoiceGroups choiceGroups;
 
     @Autowired
     StudentAttemptRepository studentAttemptRepository;
@@ -67,6 +72,9 @@ public class StudentAttemptService {
 
     @Autowired
     AssessmentWorkflowEventPublisher assessmentWorkflowEventPublisher;
+
+    @Autowired
+    TypedAnswerEvaluation typedAnswerEvaluation;
 
     public StudentAttempt updateStudentAttempt(StudentAttempt studentAttempt) {
         return studentAttemptRepository.save(studentAttempt);
@@ -93,13 +101,22 @@ public class StudentAttemptService {
     }
 
 
+    // @Transactional is load-bearing, not decorative: without it the rows loaded by
+    // the marks calculation detach the instant their read finishes, so saveAll() falls
+    // back to merge() and fires a SELECT per row — each dragging this entity's four
+    // EAGER @ManyToOne graphs. A 42-question paper became ~84 round trips per autosave
+    // per candidate, which took a live exam's background recalcs to 29s on 2026-08-29.
+    // Inside a transaction the entities stay managed, dirty checking emits plain
+    // batched UPDATEs, and the same work costs a couple of round trips.
     @Async
+    @Transactional
     @CacheEvict(value = "comparisonData", allEntries = true)
     public CompletableFuture<StudentAttempt> updateStudentAttemptWithTotalAfterMarksCalculationAsync(Optional<StudentAttempt> studentAttemptOptional) {
         return CompletableFuture.completedFuture(updateStudentAttemptWithTotalAfterMarksCalculation(studentAttemptOptional));
     }
 
     @Async
+    @Transactional
     @CacheEvict(value = "comparisonData", allEntries = true)
     public CompletableFuture<StudentAttempt> updateStudentAttemptResultAfterMarksCalculationAsync(Optional<StudentAttempt> studentAttemptOptional) {
         return updateStudentAttemptResultAfterMarksCalculationAsync(studentAttemptOptional, null);
@@ -107,6 +124,7 @@ public class StudentAttemptService {
 
     /** @param endSource see {@link #updateStudentAttemptWithResultAfterMarksCalculation(Optional, String)}. */
     @Async
+    @Transactional
     @CacheEvict(value = "comparisonData", allEntries = true)
     public CompletableFuture<StudentAttempt> updateStudentAttemptResultAfterMarksCalculationAsync(Optional<StudentAttempt> studentAttemptOptional,
                                                                                                  String endSource) {
@@ -127,6 +145,7 @@ public class StudentAttemptService {
      *                  cannot be inferred from here, because callers reach this method with
      *                  a non-ENDED attempt for several different reasons.
      */
+    @Transactional
     @CacheEvict(value = "comparisonData", allEntries = true)
     public StudentAttempt updateStudentAttemptWithResultAfterMarksCalculation(Optional<StudentAttempt> studentAttemptOptional,
                                                                              String endSource) {
@@ -148,9 +167,29 @@ public class StudentAttemptService {
         // attempt-expiry cron) must not flip such attempts to COMPLETED
         // ("Evaluated") or release their results.
         boolean isManualEvaluation = isManualEvaluationAssessment(attempt);
-        if (isManualEvaluation) {
+        // An online attempt whose written answers the AI is about to grade is held
+        // the same way: until then those answers carry only the word-overlap score,
+        // and the AI's marks are a draft the teacher reviews and releases.
+        boolean heldForAi = !isManualEvaluation && awaitsAiGrading(attempt);
+        if (heldForAi) {
+            // Still an AUTO attempt: keep result_marks as the release path expects;
+            // the AI run replaces both totals when it completes.
+            attempt.setResultMarks(totalMarks);
+        }
+        if (isManualEvaluation || heldForAi) {
             if (!AssessmentAttemptResultEnum.COMPLETED.name().equals(attempt.getResultStatus())) {
                 attempt.setResultStatus(AssessmentAttemptResultEnum.PENDING.name());
+            }
+            // Nothing automatic will ever release a manually-evaluated attempt
+            // (autoRelease is skipped below), so make the hold explicit. Left
+            // NULL, the attempt was invisible on the learner's Reports list —
+            // it filters on report_release_status IN ('RELEASED','PENDING') —
+            // and read "Not available" in the admin's Result Status column;
+            // the PDF-upload submit path already writes PENDING. Only fill the
+            // gap: a RELEASED attempt that comes back through here (a
+            // re-calculation) must stay released.
+            if (attempt.getReportReleaseStatus() == null) {
+                attempt.setReportReleaseStatus(ReleaseResultStatusEnum.PENDING.name());
             }
         } else {
             attempt.setResultMarks(totalMarks);
@@ -164,8 +203,12 @@ public class StudentAttemptService {
             attempt.setStatus(AssessmentAttemptEnum.ENDED.name());
         }
 
-        // Auto-release result based on assessment's result_type
-        boolean justReleased = !isManualEvaluation && autoReleaseResultIfApplicable(attempt);
+        // Auto-release result based on assessment's result_type. An OMR-mode assessment
+        // is never auto-released: its scanned sheets are reviewed (faint marks, double
+        // bubbles, a mis-bubbled roll number) and the admin releases them.
+        boolean heldForOmrReview = isOmrModeAssessment(attempt);
+        boolean justReleased = !isManualEvaluation && !heldForAi && !heldForOmrReview
+                && autoReleaseResultIfApplicable(attempt);
 
         StudentAttempt saved = studentAttemptRepository.save(attempt);
         if (endedByThisCall && endSource != null) {
@@ -175,6 +218,25 @@ public class StudentAttemptService {
             assessmentWorkflowEventPublisher.publishResultReleased(saved, null, null);
         }
         return saved;
+    }
+
+    private boolean awaitsAiGrading(StudentAttempt attempt) {
+        try {
+            return typedAnswerEvaluation.awaitsAiGrading(attempt, attempt.getRegistration().getAssessment());
+        } catch (Exception e) {
+            log.error("Failed to resolve AI grading for attempt {}: {}", attempt.getId(), e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean isOmrModeAssessment(StudentAttempt attempt) {
+        try {
+            Assessment assessment = attempt.getRegistration().getAssessment();
+            return assessment != null && Boolean.TRUE.equals(assessment.getOmrMode());
+        } catch (Exception e) {
+            log.error("Failed to resolve OMR mode for attempt {}: {}", attempt.getId(), e.getMessage());
+            return false;
+        }
     }
 
     private boolean isManualEvaluationAssessment(StudentAttempt attempt) {
@@ -199,7 +261,20 @@ public class StudentAttemptService {
 
         double totalMarks = calculateTotalMarksForAttemptAndUpdateQuestionWiseMarks(studentAttemptOptional);
 
-        StudentAttempt attempt = studentAttemptOptional.get();
+        // Re-read before writing. This runs async off a 60s autosave, so the
+        // learner may have submitted while it was calculating; the entity we
+        // were handed is a snapshot from before that submit. StudentAttempt has
+        // no @Version, so saving the snapshot is a full-row overwrite that
+        // resets status to LIVE and wipes submit_time/result_marks — measured at
+        // 6.6% of submits in the 1000-VU load test (2026-08-27). The submit and
+        // expiry paths compute authoritative marks, so once the attempt has
+        // ended there is nothing here worth persisting.
+        StudentAttempt attempt = studentAttemptRepository.findById(studentAttemptOptional.get().getId())
+                .orElse(studentAttemptOptional.get());
+        if (AssessmentAttemptEnum.ENDED.name().equals(attempt.getStatus()) || attempt.getSubmitTime() != null) {
+            log.debug("Skipping live-sync marks write, attempt already submitted: attemptId={}", attempt.getId());
+            return attempt;
+        }
         attempt.setTotalMarks(totalMarks);
         attempt.setTotalTimeInSeconds(timeElapsedInSeconds);
 
@@ -228,7 +303,12 @@ public class StudentAttemptService {
                 return !alreadyReleased;
             } else if (ResultTypeEnum.AUTO_AFTER_ASSESSMENT_END.name().equals(resultType)) {
                 Date now = new Date();
-                if (assessment.getBoundEndTime() != null && now.after(assessment.getBoundEndTime())) {
+                // A mock or practice test never ends (its window closes in 9999),
+                // so "after the assessment ends" would mean never. Release on
+                // submission instead - the only reading that shows results at all.
+                boolean openEnded = OPEN_ENDED_PLAY_MODES.contains(
+                        assessment.getPlayMode() == null ? "" : assessment.getPlayMode().toUpperCase());
+                if (openEnded || (assessment.getBoundEndTime() != null && now.after(assessment.getBoundEndTime()))) {
                     attempt.setReportReleaseStatus(ReleaseResultStatusEnum.RELEASED.name());
                     attempt.setReportLastReleaseDate(now);
                     return !alreadyReleased;
@@ -421,6 +501,11 @@ public class StudentAttemptService {
         Long timeTakenInSecs = attemptDataParserService.extractTimeTakenInSecondsFromQuestionJson(questionJson);
 
         QuestionWiseMarks marksRow = context.marksRowByQuestionAndSection.get(questionId + "|" + sectionId);
+        if (marksRow != null && isEvaluatorMarked(marksRow)) {
+            // Read by the AI (and maybe a teacher) - a recalculation must not put
+            // the word-overlap score back over that mark.
+            return marksRow.getMarks();
+        }
         if (marksRow != null) {
             if (!Objects.isNull(timeTakenInSecs)) {
                 marksRow.setTimeTakenInSeconds(timeTakenInSecs);
@@ -452,6 +537,10 @@ public class StudentAttemptService {
         }
 
         return marksObtained;
+    }
+
+    static boolean isEvaluatorMarked(QuestionWiseMarks marksRow) {
+        return "AI".equals(marksRow.getMarksSource()) || "AI_REVIEWED".equals(marksRow.getMarksSource());
     }
 
     public LearnerAssessmentAttemptDataDto validateAndCreateJsonObject(String jsonContent) {
@@ -570,6 +659,18 @@ public class StudentAttemptService {
         for (QuestionWiseMarks questionWiseMarks : allQuestionWiseMarks) {
             totalMarks += questionWiseMarks.getMarks();
         }
+        // Internal choice ("any 4 of 5"): the extra answers keep their marks but leave
+        // the total. Nothing changes for a paper without groups.
+        if (choiceGroups != null) {
+            java.util.Map<String, Double> byQuestion = new java.util.HashMap<>();
+            for (QuestionWiseMarks m : allQuestionWiseMarks) {
+                if (m.getQuestion() != null) byQuestion.put(m.getQuestion().getId(), m.getMarks());
+            }
+            for (String left : choiceGroups.notCountedByMarks(assessmentId, byQuestion)) {
+                Double marks = byQuestion.get(left);
+                if (marks != null) totalMarks -= marks;
+            }
+        }
 
         studentAttempt.setTotalMarks(totalMarks);
         if (studentAttempt.getStatus().equals("ENDED")) {
@@ -639,6 +740,21 @@ public class StudentAttemptService {
 
     public List<StudentAttempt> getAllLiveAttempt() {
         return studentAttemptRepository.findByStatusNotIn(List.of(AssessmentAttemptEnum.ENDED.name()));
+    }
+
+    /**
+     * Assessment types with no clock. A practice test is "no time limits" and a
+     * survey cannot even be given a duration; the learner app shows them no
+     * timer. Their attempts must never be ended for running out of time.
+     */
+    public static final List<String> UNTIMED_PLAY_MODES = List.of("PRACTICE", "SURVEY");
+
+    /** Always-available types: their live window is "now until 9999", so they never end. */
+    public static final List<String> OPEN_ENDED_PLAY_MODES = List.of("MOCK", "PRACTICE");
+
+    public Set<String> getOpenUntimedAttemptIds() {
+        return new HashSet<>(studentAttemptRepository.findOpenAttemptIdsByPlayModes(
+                List.of(AssessmentAttemptEnum.ENDED.name()), UNTIMED_PLAY_MODES));
     }
 
     public List<StudentAttempt> getAllAttemptsFromIds(List<String> attemptIds) {

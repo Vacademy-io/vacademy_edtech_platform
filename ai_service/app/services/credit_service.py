@@ -12,7 +12,7 @@ This service handles:
 import logging
 from datetime import datetime, timedelta
 from decimal import Decimal, ROUND_HALF_UP
-from typing import Optional, List, Dict
+from typing import Any, Optional, List, Dict
 from uuid import uuid4
 
 from sqlalchemy import text
@@ -48,6 +48,80 @@ from ..schemas.credits import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _metering(hook: str, *args, **kwargs):
+    """Call a usage-metering hook (services/metering/service.py). Metering is
+    write-only: whatever happens in there (package missing, tables absent, a
+    failed insert) is swallowed here and never reaches the charge."""
+    try:
+        from .metering import service as _metering_service
+
+        return getattr(_metering_service, hook)(*args, **kwargs)
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("metering hook %s skipped: %s", hook, exc)
+        return None
+
+
+def _limits_authorize(db, institute_id, **kwargs):
+    """Usage-limit gate (metering/limit_gate.py, contract N4) for a credit check
+    that already PASSED. An institute without a limits policy (every institute
+    until one is configured) costs one in-memory set lookup and nothing else.
+    Raises LimitExceeded (HTTP 429 via the app handler) only for an ENFORCE
+    block; any limits failure is allowed (fail open)."""
+    try:
+        from .metering import limit_gate
+    except Exception:  # noqa: BLE001
+        return None
+    if not limit_gate.policy_active(institute_id):
+        return None
+    return limit_gate.authorize(db, institute_id=institute_id, **kwargs)
+
+
+def _plan_live(institute_id) -> bool:
+    """AI subscription plans (metering/plan_wiring.py, contract P-WIRING): True
+    only when billing.plans.enabled is on AND the institute has a live
+    subscription. An in-memory lookup (no I/O); False on any problem. Every
+    plan branch below is behind this check, so an institute without a live
+    subscription runs exactly the code that ran before plans existed."""
+    if not institute_id:
+        return False
+    try:
+        from .metering import plan_wiring
+    except Exception:  # noqa: BLE001
+        return False
+    return plan_wiring.live(institute_id)
+
+
+def _plan_known(institute_id) -> bool:
+    """True when the institute has or had an AI subscription (any status) as
+    far as this pod knows (in-memory, no I/O; plan_wiring.known). Only refunds
+    and idempotent replays look at it: a batch or key a plan paid for stays
+    plan-aware after the subscription ended (or the flag went off). False for
+    every institute that never had a subscription: today's path, untouched."""
+    if not institute_id:
+        return False
+    try:
+        from .metering import plan_wiring
+    except Exception:  # noqa: BLE001
+        return False
+    return plan_wiring.known(institute_id)
+
+
+def _check_request_ctx(request) -> Optional[dict]:
+    """Actor fields a CreditCheckRequest carries (None when it names no actor:
+    the gate then reads the HTTP request in scope)."""
+    try:
+        fields = {k: getattr(request, k, None) for k in (
+            "actor_kind", "actor_user_id", "actor_role_class", "actor_roles_raw", "role_source",
+            "actor_display_name", "subject_user_id", "subject_display_name", "surface", "source_service")}
+        if not fields.get("actor_user_id") and getattr(request, "user_id", None):
+            fields["actor_user_id"] = request.user_id
+            fields["actor_kind"] = fields.get("actor_kind") or "USER"
+        fields = {k: v for k, v in fields.items() if v is not None}
+        return fields or None
+    except Exception:  # noqa: BLE001
+        return None
 
 # ============================================================================
 # Constants
@@ -88,6 +162,10 @@ MODEL_TIER_MAPPING = {
 DEFAULT_PRICING = {
     "content": {"base_cost": Decimal("0.05"), "token_rate": Decimal("0.00001"), "min_charge": Decimal("0.05"), "unit": "tokens"},
     "agent": {"base_cost": Decimal("0.05"), "token_rate": Decimal("0.00001"), "min_charge": Decimal("0.05"), "unit": "tokens"},
+    # Automations chatbot (WhatsApp flow AI_RESPONSE turn). Same rates as `agent`
+    # but bucketed separately so usage analytics can tell "the bot replied to a
+    # learner" apart from "an admin used the agent". Seeded in credit_pricing by V501.
+    "chatbot": {"base_cost": Decimal("0.05"), "token_rate": Decimal("0.00001"), "min_charge": Decimal("0.05"), "unit": "tokens"},
     "copilot": {"base_cost": Decimal("0.05"), "token_rate": Decimal("0.00001"), "min_charge": Decimal("0.05"), "unit": "tokens"},
     "analytics": {"base_cost": Decimal("0.05"), "token_rate": Decimal("0.00001"), "min_charge": Decimal("0.05"), "unit": "tokens"},
     "outline": {"base_cost": Decimal("0.05"), "token_rate": Decimal("0.00001"), "min_charge": Decimal("0.05"), "unit": "tokens"},
@@ -615,25 +693,16 @@ class CreditService:
     # Credit Check (Pre-flight)
     # ========================================================================
 
-    # Tier-aware pre-flight estimates for the video pipeline (recalibrated
-    # 2026-05-15 against live stage data). Original floors (300/380 for
-    # ultra/super_ultra) were calibrated against the worst-case Gemini 3.1 Pro
-    # pricing — but production ultra runs use Gemini 3 Flash, which deducts
-    # ~7-15 credits for a typical 60s video (observed: 7.22 cr on a 10-shot
-    # Labour Link run, 56s narration, 313K tokens). Those original floors
-    # would have blocked users with 50-200 credits who could complete an
-    # ultra run 5-10× over — paternalistic and wrong.
+    # Pre-flight for the video pipeline (2026-10-13). A run is charged as it
+    # goes — vendor USD × the credit ratio per stage, and the balance may go
+    # negative mid-run so the video still finishes (video deductions pass
+    # allow_negative). The start therefore requires the FULL estimate that
+    # video_estimation_service shows the user (same prices as the runtime),
+    # scaled by `partial_run_factor` on resume/retry.
     #
-    # The floor's job is to catch truly-bankrupt institutes and provide a
-    # ~30% headroom over typical cost, NOT to reserve the worst-case maximum.
-    # Mid-run depletion is handled by refund-on-failure (TokenUsageService.
-    # refund_video_credits), and per-stage deduction tracks reality via
-    # actual OpenRouter token counts. Institutes choosing the more expensive
-    # Pro model for HTML gen will spend more — they should have a sufficient
-    # balance, but we don't punish the Flash majority for that minority case.
-    #
-    # `partial_run_factor` scales the floor for resume/retry endpoints (where
-    # checkpoints mean only a fraction of the work remains).
+    # These flat floors are only used when the estimator fails (DB hiccup,
+    # unexpected selections). They date from 2026-05, when a run cost
+    # 7-15 credits; a real lesson now costs ~150-200.
     _VIDEO_TIER_FLOOR_CREDITS: Dict[str, Decimal] = {
         "free":        Decimal("5"),
         "standard":    Decimal("10"),
@@ -642,23 +711,76 @@ class CreditService:
         "super_ultra": Decimal("50"),
     }
 
+    def _video_estimate_credits(
+        self, quality_tier: str, estimate_params: Dict[str, Any]
+    ) -> Optional[Decimal]:
+        """Expected credits from the video estimator for these selections, or
+        None when it can't answer. The Veo hold is added by the caller, so the
+        estimator's worst-case AI-video row is left out here. The dialogue-clip
+        row is left out too: it is the full per-video dialogue budget, and
+        AiVideoLedger charges each clip with a guarded deduct that demotes the
+        scene to stock when the balance is short — reserving the whole budget
+        up front would 402 runs that a typical dialogue spend fits."""
+        # A savepoint: the estimator swallows its own DB errors, and a failed
+        # statement would otherwise leave the caller's session aborted.
+        nested = getattr(self.db, "begin_nested", None)
+        savepoint = None
+        try:
+            import inspect
+            from .video_estimation_service import estimate_video_generation
+
+            accepted = set(inspect.signature(estimate_video_generation).parameters)
+            params = {
+                k: v for k, v in (estimate_params or {}).items()
+                if k in accepted and v is not None
+            }
+            params["quality_tier"] = quality_tier
+            params["institute_id"] = None  # balance is checked here, not there
+            params["ai_video_enabled"] = False
+            params["dialogue_scenes_enabled"] = False
+            savepoint = nested() if callable(nested) else None
+            result = estimate_video_generation(self.db, **params)
+            if savepoint is not None:
+                savepoint.commit()
+            expected = Decimal(str((result.get("estimate") or {}).get("expected_credits") or 0))
+            if expected > 0:
+                return expected
+            logger.warning("check_video_tier_credits: estimator returned %s credits; using the tier floor", expected)
+        except Exception as exc:
+            if savepoint is not None:
+                try:
+                    savepoint.rollback()
+                except Exception:
+                    pass
+            logger.warning(f"check_video_tier_credits: estimator failed ({exc}); using the tier floor")
+        return None
+
     def check_video_tier_credits(
         self,
         institute_id: str,
         quality_tier: str,
         ai_video_enabled: bool = False,
         partial_run_factor: float = 1.0,
+        estimate_params: Optional[Dict[str, Any]] = None,
+        use_case: Optional[str] = None,
+        metering: Any = None,
     ) -> CreditCheckResponse:
-        """Tier-aware pre-flight credit check for the video pipeline.
+        """Pre-flight credit check for the video pipeline.
 
-        Returns a CreditCheckResponse with `estimated_cost` set to the per-tier
-        typical+headroom floor (NOT actual cost — actual cost lands in
-        credit_transactions stage-by-stage via TokenUsageService).
+        Returns a CreditCheckResponse whose `estimated_cost` is the credits the
+        institute must hold to start: the estimator's expected credits for the
+        run's selections (or the per-tier floor when the estimator fails),
+        times `partial_run_factor`, plus the Veo hold. The real charge still
+        lands stage by stage via TokenUsageService.
 
         Caller raises HTTP 402 when `has_sufficient_credits` is False.
 
         - `quality_tier`: one of free/standard/premium/ultra/super_ultra.
           Unknown tier falls back to the "standard" floor (defensive).
+        - `estimate_params`: the run's selections as keyword arguments of
+          video_estimation_service.estimate_video_generation (target_duration,
+          tts_provider, language, lesson, host, model, dialogue_*, ...);
+          unknown keys are ignored. None = use the tier floor (legacy callers).
         - `ai_video_enabled`: when True, adds a Veo hold — the per-video cap
           × AI_VIDEO_PREFLIGHT_HOLD_FRACTION × the USD→credit ratio — so a
           user with marginal balance can't enable Veo and then circuit-break
@@ -669,6 +791,9 @@ class CreditService:
         - `partial_run_factor`: 1.0 for fresh generation; 0.5 for resume/retry
           where most shots are already cached. Lets the same gate apply at
           all three router entry points without over-rejecting partial runs.
+        - `use_case` / `metering`: optional usage-limit attribution (default:
+          the 'video' request type -> lesson_video, actor from the HTTP
+          request in scope). Only read when the institute has a limits policy.
         """
         balance = self.get_balance(institute_id)
         if not balance:
@@ -676,15 +801,20 @@ class CreditService:
         current = balance.current_balance
 
         tier_key = (quality_tier or "standard").strip().lower()
-        floor = self._VIDEO_TIER_FLOOR_CREDITS.get(
-            tier_key, self._VIDEO_TIER_FLOOR_CREDITS["standard"]
-        )
+        base = None
+        if estimate_params is not None:
+            base = self._video_estimate_credits(tier_key, estimate_params)
+        from_estimate = base is not None
+        if base is None:
+            base = self._VIDEO_TIER_FLOOR_CREDITS.get(
+                tier_key, self._VIDEO_TIER_FLOOR_CREDITS["standard"]
+            )
         # partial_run_factor scales by the fraction of work remaining.
         try:
             factor = Decimal(str(max(0.1, min(1.0, float(partial_run_factor)))))
         except (TypeError, ValueError):
             factor = Decimal("1.0")
-        estimated_cost = (floor * factor).quantize(
+        estimated_cost = (base * factor).quantize(
             Decimal("0.0001"), rounding=ROUND_HALF_UP
         )
 
@@ -728,7 +858,7 @@ class CreditService:
             message = (
                 f"Sufficient credits for {tier_key} tier"
                 f"{' + AI video' if ai_video_enabled else ''}. "
-                f"Estimated floor: {estimated_cost} credits."
+                f"{'Estimated cost' if from_estimate else 'Estimated floor'}: {estimated_cost} credits."
             )
         else:
             short_by = estimated_cost - current
@@ -736,20 +866,37 @@ class CreditService:
                 f"Insufficient credits for {tier_key} tier"
                 f"{' + AI video (worst-case Veo cap included)' if ai_video_enabled else ''}. "
                 f"Need at least {estimated_cost} credits (you have {current}, short by {short_by}). "
-                f"Real cost is tracked per-stage via TokenUsageService — this is the upfront floor "
-                f"to keep your run from circuit-breaking mid-render."
+                f"{'This is the estimated cost of the video' if from_estimate else 'This is the upfront floor'}; "
+                f"the real cost is charged stage by stage as the video is made."
             )
 
-        return CreditCheckResponse(
+        response = CreditCheckResponse(
             has_sufficient_credits=has_sufficient,
             current_balance=current,
             estimated_cost=estimated_cost,
             balance_after=balance_after,
             message=message,
         )
+        if has_sufficient:
+            # Usage limits after today's check, estimate-only (no reservation:
+            # the run is charged stage by stage and the counters follow those
+            # charges). No policy -> nothing happens here.
+            _limits_authorize(self.db, institute_id, use_case=use_case, request_type="video",
+                              ctx=metering, estimate_credits=estimated_cost, reserve=False)
+        return response
 
-    def check_credits(self, request: CreditCheckRequest) -> CreditCheckResponse:
-        """Check if institute has sufficient credits for an operation."""
+    def check_credits(self, request: CreditCheckRequest, *, trust_actor_fields: bool = True) -> CreditCheckResponse:
+        """Check if institute has sufficient credits for an operation.
+
+        `trust_actor_fields=False` (a JWT caller of POST /credits/v1/check): the
+        actor fields in the body are ignored by the usage-limit gate, which then
+        reads the verified user and roles of the HTTP request instead. Only a
+        caller holding the internal service token may name another actor.
+        Today's credit answer is the same either way."""
+        if _plan_live(request.institute_id):
+            covered = self._plan_covered_check(request, trust_actor_fields=trust_actor_fields)
+            if covered is not None:
+                return covered
         # Get current balance
         balance = self.get_balance(request.institute_id)
         
@@ -774,12 +921,81 @@ class CreditService:
         else:
             message = f"Insufficient credits. Need {estimated_cost}, have {balance.current_balance}"
         
-        return CreditCheckResponse(
+        response = CreditCheckResponse(
             has_sufficient_credits=has_sufficient,
             current_balance=balance.current_balance,
             estimated_cost=estimated_cost,
             balance_after=balance_after,
             message=message,
+        )
+        if has_sufficient:
+            # Usage limits after today's check (an insufficient balance stays
+            # today's 402). No policy -> nothing happens here.
+            _limits_authorize(self.db, request.institute_id, use_case=getattr(request, "use_case", None),
+                              tool_key=getattr(request, "tool_key", None), request_type=request.request_type,
+                              ctx=_check_request_ctx(request) if trust_actor_fields else None,
+                              estimate_credits=estimated_cost)
+        return response
+
+    def _plan_covered_check(self, request: CreditCheckRequest, *, trust_actor_fields: bool = True
+                            ) -> Optional[CreditCheckResponse]:
+        """check_credits for an institute with a live AI subscription: when a
+        LIVE plan covers this operation in full (included within fair use, or
+        the remaining allowance), the balance requirement does not apply.
+        Read-only: the wallet is only READ (get_balance), never created, so the
+        100-credit starting grant is never triggered from here (critique C18).
+        None = not covered / any problem -> today's check runs unchanged."""
+        try:
+            # All of it in a SAVEPOINT: a failing statement in here can never
+            # abort the transaction today's check then runs in.
+            with self.db.begin_nested():
+                estimated_cost = self.calculate_credits(
+                    request_type=request.request_type,
+                    model=request.model,
+                    prompt_tokens=request.estimated_tokens or 0,
+                    completion_tokens=0,
+                    character_count=request.character_count or 0,
+                )
+                response = self._plan_covered_response(request, estimated_cost, trust_actor_fields)
+            if response is None:
+                return None
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"[credits] plan pre-check failed, using the balance check: {exc}")
+            return None
+        # Usage limits exactly as after a passed balance check.
+        _limits_authorize(self.db, request.institute_id, use_case=getattr(request, "use_case", None),
+                          tool_key=getattr(request, "tool_key", None), request_type=request.request_type,
+                          ctx=_check_request_ctx(request) if trust_actor_fields else None,
+                          estimate_credits=estimated_cost)
+        return response
+
+    def _plan_covered_response(self, request: CreditCheckRequest, estimated_cost: Decimal,
+                               trust_actor_fields: bool) -> Optional[CreditCheckResponse]:
+        """The plan-covered answer, or None (not covered: today's check)."""
+        from .metering import plan_wiring
+
+        if trust_actor_fields:
+            ctx, obj = _check_request_ctx(request), request
+        else:
+            # Untrusted body (JWT caller): the verified actor of the HTTP request.
+            from .metering import limit_gate
+
+            ctx, obj = limit_gate.context_from_current_request(request.institute_id), None
+        mode = plan_wiring.precheck_mode(
+            self.db, institute_id=request.institute_id, use_case=getattr(request, "use_case", None),
+            tool_key=getattr(request, "tool_key", None), request_type=request.request_type,
+            model=request.model, ctx=ctx, obj=obj, estimate=estimated_cost)
+        if mode is None:
+            return None
+        balance = self.get_balance(request.institute_id)
+        current = balance.current_balance if balance else Decimal("0")
+        label = "included in the AI plan" if mode == "INCLUDED" else "covered by the AI plan allowance"
+        return CreditCheckResponse(
+            has_sufficient_credits=True,
+            current_balance=current,
+            estimated_cost=estimated_cost,
+            balance_after=current,
+            message=f"Sufficient credits available ({label}). Estimated cost: {estimated_cost}",
         )
 
     # ========================================================================
@@ -788,6 +1004,10 @@ class CreditService:
 
     def deduct_credits(self, request: CreditDeductRequest) -> CreditDeductResponse:
         """Deduct credits after an AI operation."""
+        if _plan_live(getattr(request, "institute_id", None)):
+            # AI plans: only institutes with a live subscription (in-memory
+            # lookup). Everything below this branch is the pre-plans code.
+            return self._deduct_credits_with_plan(request)
         # Idempotency short-circuit: if a transaction with this dedup key already
         # exists, this is a duplicate (e.g. transcription callback + watchdog both
         # firing) — return a no-op success instead of double-charging.
@@ -809,6 +1029,13 @@ class CreditService:
                     transaction_id="",
                     message="Already processed (idempotent no-op)",
                 )
+            if _plan_known(request.institute_id):
+                # AI plans: an INCLUDED / ALLOWANCE charge has no ledger row; its usage
+                # event holds the key. Still a replay after the subscription ended.
+                from .metering import plan_wiring
+
+                if plan_wiring.plan_event_for_key(self.db, idem_key):
+                    return self._plan_idempotent_noop(request, idem_key)
 
         # Calculate actual credits — bypassed when `precomputed_credits` is set
         # (Veo path: pricing lives in fal_veo_client.py rather than ai_models).
@@ -862,6 +1089,9 @@ class CreditService:
                 f"{request.institute_id}, tried to deduct {credits_to_deduct} "
                 f"({request.request_type}). Work may have been delivered unbilled."
             )
+            # Usage event (DROPPED_INSUFFICIENT) on a background session: this
+            # branch commits nothing, so the caller's transaction is untouched.
+            _metering("queue_dropped_event", self.db, request, credits=credits_to_deduct, now=now)
             return CreditDeductResponse(
                 success=False,
                 credits_deducted=Decimal("0"),
@@ -942,6 +1172,13 @@ class CreditService:
         self._check_and_create_alerts(request.institute_id, new_balance, threshold)
         
         self.db.commit()
+
+        # Usage event for this charge, AFTER the charge committed (so it never
+        # lengthens the institute balance row lock): its own short transaction
+        # on this session, SAVEPOINT inside, always ended before returning. A
+        # failure loses only the event (parity / backfill cover it).
+        _metering("record_charged_event_after_commit", self.db, request,
+                  transaction_id=transaction_id, credits=credits_to_deduct, now=now)
         
         logger.info(f"Deducted {credits_to_deduct} credits from institute {request.institute_id}")
         
@@ -951,6 +1188,301 @@ class CreditService:
             new_balance=new_balance,
             transaction_id=transaction_id,
             message=f"Deducted {credits_to_deduct} credits",
+        )
+
+    # ------------------------------------------------------------------------
+    # AI subscription plans (contract P-WIRING): live-subscription institutes
+    # ------------------------------------------------------------------------
+
+    def _deduct_credits_with_plan(self, request: CreditDeductRequest) -> CreditDeductResponse:
+        """deduct_credits for an institute with a live AI subscription.
+
+        The price (`list_credits`) is computed exactly as today; the plan
+        (metering/plans.py decide) only decides who pays it:
+          * CHARGED (no plan item, always-charged feature, over a fair-use cap,
+            a SHADOW subscription, or ANY failure in the plan logic): today's
+            ledger row, balance and response; the usage event carries the
+            plan ids (and shadow_billing_mode for SHADOW).
+          * LIVE INCLUDED / ALLOWANCE: no ledger row, no wallet change; the
+            usage event (INCLUDED / ALLOWANCE, list_credits, credits_charged 0)
+            is the record and is written in the SAME transaction as the
+            fair-use / allowance reservation; response credits_deducted 0,
+            new_balance = the current balance, transaction_id = the event id.
+          * LIVE SPLIT: the allowance pays what it can, the ledger row and the
+            wallet take only the rest; the event is SPLIT.
+        """
+        from .metering import plan_wiring
+
+        idem_key = getattr(request, "idempotency_key", None)
+        if idem_key:
+            existing = self.db.execute(
+                text(
+                    "SELECT balance_after FROM credit_transactions "
+                    "WHERE external_reference_id = :k LIMIT 1"
+                ),
+                {"k": idem_key},
+            ).fetchone()
+            if existing:
+                logger.info(f"Idempotent deduct no-op for key {idem_key}")
+                return CreditDeductResponse(
+                    success=True,
+                    credits_deducted=Decimal("0"),
+                    new_balance=existing.balance_after,
+                    transaction_id="",
+                    message="Already processed (idempotent no-op)",
+                )
+            if plan_wiring.plan_event_for_key(self.db, idem_key):
+                return self._plan_idempotent_noop(request, idem_key)
+
+        precomputed = getattr(request, "precomputed_credits", None)
+        if precomputed is not None and precomputed > 0:
+            credits_to_deduct = Decimal(str(precomputed)).quantize(
+                Decimal("0.0001"), rounding=ROUND_HALF_UP
+            )
+        else:
+            credits_to_deduct = self.calculate_credits(
+                request_type=request.request_type,
+                model=request.model,
+                prompt_tokens=request.prompt_tokens,
+                completion_tokens=request.completion_tokens,
+                character_count=request.character_count,
+                seconds=getattr(request, "seconds", 0) or 0,
+            )
+
+        now = datetime.utcnow()
+        transaction_id = str(uuid4())
+
+        # Same as today, and before any plan work (create_initial_credits commits).
+        self.ensure_credits_exist(request.institute_id)
+
+        # Plan rows are locked before institute_credits (plans.py lock order).
+        # decide() reserves in SAVEPOINTs of this transaction: they commit with
+        # the ledger row, or plan_wiring.release() undoes them while this
+        # transaction is still open (a rollback undoes them anyway).
+        try:
+            outcome = plan_wiring.decide_for_deduct(self.db, request, credits_to_deduct)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"[credits] plan decision failed, charging as before: {exc}")
+            outcome = None
+        if outcome is None:
+            # Fail safe: charged exactly as today.
+            return self._plan_wallet_charge(request, credits_to_deduct, credits_to_deduct, None,
+                                            now, transaction_id, idem_key)
+
+        if outcome.no_ledger:
+            done = self._plan_no_ledger_charge(request, outcome, now, idem_key)
+            if done is not None:
+                return done
+            # The event (the only record of an included use) could not be
+            # written: the reservation was released -> charged as today.
+            return self._plan_wallet_charge(request, credits_to_deduct, credits_to_deduct, None,
+                                            now, transaction_id, idem_key)
+
+        wallet = outcome.wallet if outcome.billing_mode == "SPLIT" else credits_to_deduct
+        return self._plan_wallet_charge(request, wallet, credits_to_deduct, outcome,
+                                        now, transaction_id, idem_key)
+
+    @staticmethod
+    def _rollback_savepoint(savepoint) -> None:
+        try:
+            if savepoint is not None and savepoint.is_active:
+                savepoint.rollback()
+        except Exception:  # noqa: BLE001
+            pass
+
+    def _plan_idempotent_noop(self, request: CreditDeductRequest, idem_key: str) -> CreditDeductResponse:
+        logger.info(f"Idempotent deduct no-op for key {idem_key} (plan-covered charge)")
+        bal = self.get_balance(request.institute_id)
+        return CreditDeductResponse(
+            success=True,
+            credits_deducted=Decimal("0"),
+            new_balance=bal.current_balance if bal else Decimal("0"),
+            transaction_id="",
+            message="Already processed (idempotent no-op)",
+        )
+
+    def _plan_no_ledger_charge(self, request: CreditDeductRequest, outcome, now: datetime,
+                               idem_key: Optional[str]) -> Optional[CreditDeductResponse]:
+        """LIVE INCLUDED / ALLOWANCE: the usage event in the reservation's
+        transaction, no ledger row, no wallet change. None = the event could
+        not be written (reservation rolled back; caller charges as today)."""
+        from .metering import plan_wiring
+        from .metering import service as _msvc
+
+        out: Dict[str, Any] = {}
+        event_id = None
+        try:
+            fields = outcome.plan_fields()
+            desc = getattr(request, "description", None)
+            if desc:
+                fields.setdefault("context", {})["charge_description"] = str(desc)[:200]
+            event_id = _msvc.record_charged_event(
+                self.db, request, transaction_id=None, credits=Decimal("0"), now=now, _out=out,
+                billing_mode=outcome.billing_mode, charge_status="NOT_APPLICABLE",
+                list_credits=outcome.list_credits, plan_fields=fields)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"[credits] plan usage event failed: {exc}")
+            event_id = None
+        if not event_id:
+            plan_wiring.release(self.db, outcome)
+            if idem_key and plan_wiring.plan_event_for_key(self.db, idem_key):
+                # A concurrent duplicate with the same key won the event insert.
+                return self._plan_idempotent_noop(request, idem_key)
+            logger.warning(
+                f"[credits] plan-covered charge for institute {request.institute_id} has no usage event; "
+                f"charging {outcome.list_credits} credits as before")
+            return None
+
+        if request.usage_log_id:
+            try:
+                self.db.execute(text("UPDATE ai_token_usage SET credits_used = :credits WHERE id = :id"),
+                                {"credits": Decimal("0"), "id": request.usage_log_id})
+            except Exception as e:
+                logger.warning(f"Failed to update ai_token_usage: {e}")
+        # Usage-limit counters count list_credits (own SAVEPOINT; never fails the charge).
+        try:
+            if _msvc._limits_on(request.institute_id):  # noqa: SLF001
+                _msvc.apply_limits_for_event(self.db, event_id, request.institute_id,
+                                             noted=_msvc._noted_decision(request.institute_id),  # noqa: SLF001
+                                             previous=out.get("previous"))
+        except Exception as exc:  # noqa: BLE001
+            logger.debug(f"plan event limits skipped: {exc}")
+        bal = self.get_balance(request.institute_id)    # read inside the transaction it then commits
+        current = bal.current_balance if bal else Decimal("0")
+        self.db.commit()
+
+        what = "included in the AI plan" if outcome.billing_mode == "INCLUDED" else "paid from the AI plan allowance"
+        logger.info(f"Plan {outcome.billing_mode}: {outcome.list_credits} credits {what} for institute "
+                    f"{request.institute_id} (event {event_id})")
+        return CreditDeductResponse(
+            success=True,
+            credits_deducted=Decimal("0"),
+            new_balance=current,
+            transaction_id=event_id,
+            message=f"No credits deducted: {outcome.list_credits} credits {what}",
+        )
+
+    def _plan_wallet_charge(self, request: CreditDeductRequest, wallet_credits: Decimal, list_credits: Decimal,
+                            outcome, now: datetime, transaction_id: str,
+                            idem_key: Optional[str]) -> CreditDeductResponse:
+        """The ledger part of a plan-institute charge: today's guarded UPDATE /
+        ledger INSERT / usage back-fill / alerts / commit / post-commit event,
+        for `wallet_credits` (= list_credits unless SPLIT). `outcome` None =
+        untagged (charged as today)."""
+        from .metering import plan_wiring
+
+        allow_negative = getattr(request, "allow_negative", False)
+        guard = "" if allow_negative else "AND current_balance >= :amount"
+        update_query = text(f"""
+            UPDATE institute_credits
+            SET used_credits = used_credits + :amount,
+                current_balance = current_balance - :amount,
+                updated_at = :now
+            WHERE institute_id = :institute_id {guard}
+            RETURNING current_balance, low_balance_threshold
+        """)
+        result = self.db.execute(update_query, {
+            "amount": wallet_credits,
+            "now": now,
+            "institute_id": request.institute_id,
+        })
+        row = result.fetchone()
+        if not row:
+            # Insufficient balance: the plan's allowance take (if any) is given
+            # back; then exactly today's dropped branch.
+            if outcome is not None:
+                plan_wiring.release(self.db, outcome)
+            logger.error(
+                f"[credits] DROPPED CHARGE: insufficient balance for institute "
+                f"{request.institute_id}, tried to deduct {wallet_credits} "
+                f"({request.request_type}). Work may have been delivered unbilled."
+            )
+            _metering("queue_dropped_event", self.db, request, credits=list_credits, now=now)
+            return CreditDeductResponse(
+                success=False,
+                credits_deducted=Decimal("0"),
+                new_balance=Decimal("0"),
+                transaction_id="",
+                message=f"Insufficient credits. Need {wallet_credits} credits.",
+            )
+        new_balance = row.current_balance
+        threshold = row.low_balance_threshold if row else DEFAULT_LOW_BALANCE_THRESHOLD
+
+        insert_txn = text("""
+            INSERT INTO credit_transactions (id, institute_id, transaction_type, amount, balance_after,
+                                             description, reference_id, request_type, model_name, batch_id,
+                                             external_reference_id, user_id, user_role, subject_user_id, created_at)
+            VALUES (:id, :institute_id, :type, :amount, :balance, :desc, :ref_id, :req_type, :model, :batch_id,
+                    :ext_ref, :user_id, :user_role, :subject_user_id, :now)
+        """)
+        ref_id = request.usage_log_id or None
+        desc_override = getattr(request, "description", None)
+        try:
+            self.db.execute(insert_txn, {
+                "id": transaction_id,
+                "institute_id": request.institute_id,
+                "type": TransactionType.USAGE_DEDUCTION.value,
+                "amount": -wallet_credits,
+                "balance": new_balance,
+                "desc": desc_override or f"{request.request_type} using {request.model}",
+                "ref_id": ref_id,
+                "req_type": request.request_type,
+                "model": request.model,
+                "batch_id": request.batch_id,
+                "ext_ref": idem_key,
+                "user_id": getattr(request, "user_id", None),
+                "user_role": getattr(request, "user_role", None),
+                "subject_user_id": getattr(request, "subject_user_id", None),
+                "now": now,
+            })
+        except IntegrityError:
+            # Lost the idempotency race: the whole transaction (balance
+            # decrement and any plan reservation) is rolled back.
+            self.db.rollback()
+            logger.info(f"Idempotent deduct race resolved for key {idem_key}")
+            bal = self.get_balance(request.institute_id)
+            return CreditDeductResponse(
+                success=True,
+                credits_deducted=Decimal("0"),
+                new_balance=bal.current_balance if bal else Decimal("0"),
+                transaction_id="",
+                message="Already processed (idempotent no-op)",
+            )
+
+        if request.usage_log_id:
+            try:
+                self.db.execute(text("UPDATE ai_token_usage SET credits_used = :credits WHERE id = :id"),
+                                {"credits": wallet_credits, "id": request.usage_log_id})
+            except Exception as e:
+                logger.warning(f"Failed to update ai_token_usage: {e}")
+
+        self._check_and_create_alerts(request.institute_id, new_balance, threshold)
+        self.db.commit()
+
+        if outcome is None:
+            _metering("record_charged_event_after_commit", self.db, request,
+                      transaction_id=transaction_id, credits=wallet_credits, now=now)
+        else:
+            fields = outcome.plan_fields()
+            mode = "SPLIT" if outcome.billing_mode == "SPLIT" else "CHARGED"
+            _metering("record_charged_event_after_commit", self.db, request,
+                      transaction_id=transaction_id, credits=wallet_credits, now=now,
+                      billing_mode=mode, list_credits=list_credits, plan_fields=fields)
+
+        if outcome is not None and outcome.billing_mode == "SPLIT":
+            logger.info(f"Deducted {wallet_credits} credits from institute {request.institute_id} "
+                        f"({list_credits - wallet_credits} from the AI plan allowance)")
+            message = (f"Deducted {wallet_credits} credits "
+                       f"({list_credits - wallet_credits} more paid from the AI plan allowance)")
+        else:
+            logger.info(f"Deducted {wallet_credits} credits from institute {request.institute_id}")
+            message = f"Deducted {wallet_credits} credits"
+        return CreditDeductResponse(
+            success=True,
+            credits_deducted=wallet_credits,
+            new_balance=new_balance,
+            transaction_id=transaction_id,
+            message=message,
         )
 
     # ========================================================================
@@ -976,6 +1508,14 @@ class CreditService:
                 transaction_id="",
                 message="Nothing to refund",
             )
+
+        if batch_id and (_plan_live(institute_id) or _plan_known(institute_id)):
+            # AI plans (an institute that has or had a subscription): a batch
+            # whose uses were partly paid by the plan credits the wallet only
+            # for its wallet part, also after the subscription stopped being live.
+            planned = self._refund_with_plan(institute_id, amount, description, batch_id)
+            if planned is not None:
+                return planned
 
         now = datetime.utcnow()
         transaction_id = str(uuid4())
@@ -1018,6 +1558,12 @@ class CreditService:
         self.db.commit()
         logger.info(f"Refunded {amount} credits to institute {institute_id}: {description}")
 
+        # Usage events of this batch: refunded_credits / charge_status. After
+        # the refund committed, on a background session of its own: this
+        # session (often a long-lived pipeline session) is never touched again.
+        if batch_id:
+            _metering("queue_batch_refunds", self.db, institute_id, batch_id)
+
         return CreditDeductResponse(
             success=True,
             credits_deducted=amount,
@@ -1025,6 +1571,105 @@ class CreditService:
             transaction_id=transaction_id,
             message=f"Refunded {amount} credits",
         )
+
+    def _refund_with_plan(self, institute_id: str, amount: Decimal, description: str,
+                          batch_id: str) -> Optional[CreditDeductResponse]:
+        """refund_credits for a live-subscription institute and a batch with
+        plan-paid uses (INCLUDED / ALLOWANCE / SPLIT events): the wallet gets
+        only what the batch's ledger rows took from it; an allowance part goes
+        back to the period allowance (guarded, never below 0); an included
+        part is credited nowhere. None = no plan parts in this batch, or any
+        failure -> today's refund, unchanged."""
+        from .metering import plan_wiring
+
+        self.ensure_credits_exist(institute_id)
+        savepoint = None
+        try:
+            savepoint = self.db.begin_nested()
+            wallet = plan_wiring.refund_allocation(self.db, institute_id, batch_id, Decimal(str(amount)), description)
+        except Exception as exc:  # noqa: BLE001
+            self._rollback_savepoint(savepoint)
+            logger.warning(f"[credits] plan refund split failed, refunding as before: {exc}")
+            return None
+        try:
+            if savepoint is not None and savepoint.is_active:
+                savepoint.commit()
+        except Exception:  # noqa: BLE001
+            pass
+        if wallet is None:
+            return None
+
+        now = datetime.utcnow()
+        transaction_id = ""
+        new_balance = None
+        if wallet > 0:
+            transaction_id = str(uuid4())
+            row = self.db.execute(text("""
+                UPDATE institute_credits
+                SET used_credits = used_credits - :amount,
+                    current_balance = current_balance + :amount,
+                    updated_at = :now
+                WHERE institute_id = :institute_id
+                RETURNING current_balance
+            """), {"amount": wallet, "now": now, "institute_id": institute_id}).fetchone()
+            new_balance = row.current_balance if row else Decimal("0")
+            self.db.execute(text("""
+                INSERT INTO credit_transactions
+                    (id, institute_id, transaction_type, amount, balance_after, description, batch_id, created_at)
+                VALUES
+                    (:id, :institute_id, :type, :amount, :balance, :desc, :batch_id, :now)
+            """), {
+                "id": transaction_id,
+                "institute_id": institute_id,
+                "type": TransactionType.REFUND.value,
+                "amount": wallet,
+                "balance": new_balance,
+                "desc": description,
+                "batch_id": batch_id,
+                "now": now,
+            })
+        if new_balance is None:
+            bal = self.get_balance(institute_id)
+            new_balance = bal.current_balance if bal else Decimal("0")
+        self.db.commit()
+        not_wallet = Decimal(str(amount)) - wallet
+        logger.info(f"Refunded {wallet} credits to institute {institute_id}: {description}"
+                    + (f" ({not_wallet} of the requested {amount} was plan-paid: allowance given back / included)"
+                       if not_wallet > 0 else ""))
+        _metering("queue_batch_refunds", self.db, institute_id, batch_id)
+        return CreditDeductResponse(
+            success=True,
+            credits_deducted=wallet,
+            new_balance=new_balance,
+            transaction_id=transaction_id,
+            message=(f"Refunded {wallet} credits" if not_wallet <= 0 else
+                     f"Refunded {wallet} credits to the balance; the rest was paid by the AI plan"),
+        )
+
+    def restore_plan_allowance(self, institute_id: str, batch_id: Optional[str]) -> Decimal:
+        """Full refund of a failed batch (TokenUsageService.refund_video_credits):
+        every allowance part of the batch goes back to the plan period's
+        allowance. Nothing (no I/O) unless the institute has or had an AI
+        subscription. Never raises; returns the credits given back."""
+        if not batch_id or not (_plan_live(institute_id) or _plan_known(institute_id)):
+            return Decimal("0")
+        from .metering import plan_wiring
+
+        savepoint = None
+        try:
+            savepoint = self.db.begin_nested()
+            given = plan_wiring.restore_batch_allowance(self.db, institute_id, batch_id)
+            savepoint.commit()
+            self.db.commit()
+        except Exception as exc:  # noqa: BLE001
+            self._rollback_savepoint(savepoint)
+            logger.warning(f"[credits] plan allowance restore failed for batch {batch_id}: {exc}")
+            return Decimal("0")
+        if given > 0:
+            # (the events were updated in the same transaction; the wallet
+            # refund that usually follows re-marks the batch's ledger events)
+            logger.info(f"Gave back {given} AI plan allowance credits to institute {institute_id} (batch {batch_id})")
+        return given
 
     # ========================================================================
     # Credit Calculation
@@ -1046,6 +1691,21 @@ class CreditService:
                 exc,
             )
             return USD_TO_CREDIT_RATIO
+
+    def usd_to_credits(self, usd: Any) -> Decimal:
+        """Vendor USD → credits at the live ratio (credit_rate_config,
+        CreditRateService), quantized to 0.0001. No base cost or minimum: this
+        is what metered video units (images, premium TTS, the lesson teacher)
+        pass as `precomputed_credits`. Non-positive or unparsable USD → 0."""
+        try:
+            amount = Decimal(str(usd)) if usd is not None else Decimal("0")
+        except Exception:
+            return Decimal("0")
+        if not amount.is_finite() or amount <= 0:
+            return Decimal("0")
+        return (amount * self._effective_usd_to_credit_ratio()).quantize(
+            Decimal("0.0001"), rounding=ROUND_HALF_UP
+        )
 
     def calculate_credits(
         self,

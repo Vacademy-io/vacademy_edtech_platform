@@ -28,7 +28,11 @@ export function useCourseDisplaySettings() {
   const [showCourseConfiguration, setShowCourseConfiguration] =
     useState<boolean>(true);
   const [overviewVisible, setOverviewVisible] = useState<boolean>(true);
+  // Tag chips above the title; shown unless the institute hides them.
+  const [hideTags, setHideTags] = useState<boolean>(false);
   const [hideAuthorName, setHideAuthorName] = useState<boolean>(false);
+  const [hideOverviewCard, setHideOverviewCard] = useState<boolean>(false);
+  const [hideProgressCard, setHideProgressCard] = useState<boolean>(false);
   // Teachers/Instructors section is hidden unless the institute opts in.
   const [showInstructors, setShowInstructors] = useState<boolean>(false);
   // "full" keeps today's page. Institutes opt into the table-of-contents page
@@ -53,8 +57,11 @@ export function useCourseDisplaySettings() {
         const cd = settings?.courseDetails;
         if (cd) {
           setShowCourseConfiguration(cd.showCourseConfiguration ?? true);
+          setHideTags(cd.hideTags === true);
           setOverviewVisible(cd.courseOverview?.visible ?? true);
           setHideAuthorName(cd.hideAuthorName ?? false);
+          setHideOverviewCard(cd.hideOverviewCard === true);
+          setHideProgressCard(cd.hideProgressCard === true);
           setShowInstructors(cd.showInstructors ?? false);
           setEnrolledLayout(
             readDebugEnrolledLayout() ?? cd.enrolledLayout ?? "full"
@@ -65,8 +72,11 @@ export function useCourseDisplaySettings() {
       })
       .catch(() => {
         setShowCourseConfiguration(true);
+        setHideTags(false);
         setOverviewVisible(true);
         setHideAuthorName(false);
+        setHideOverviewCard(false);
+        setHideProgressCard(false);
         setShowInstructors(false);
         setEnrolledLayout(readDebugEnrolledLayout() ?? "full");
         setChapterOpensFirstSlide(undefined);
@@ -76,8 +86,11 @@ export function useCourseDisplaySettings() {
 
   return {
     showCourseConfiguration,
+    hideTags,
     overviewVisible,
     hideAuthorName,
+    hideOverviewCard,
+    hideProgressCard,
     showInstructors,
     enrolledLayout,
     chapterOpensFirstSlide,

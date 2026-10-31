@@ -9,14 +9,19 @@ import org.springframework.stereotype.Service;
 import vacademy.io.notification_service.constants.NotificationConstants;
 import vacademy.io.notification_service.features.chatbot_flow.engine.provider.CombotMessageProvider;
 import vacademy.io.notification_service.features.combot.repository.ChannelToInstituteMappingRepository;
+import vacademy.io.notification_service.features.notification_log.MessageOriginPayload;
 import vacademy.io.notification_service.institute.InstituteInfoDTO;
 import vacademy.io.notification_service.institute.InstituteInternalService;
 import vacademy.io.notification_service.features.notification_log.entity.NotificationLog;
 import vacademy.io.notification_service.features.notification_log.repository.NotificationLogRepository;
 import vacademy.io.common.logging.SentryLogger;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -119,6 +124,93 @@ public class WhatsAppService {
      */
     public record WhatsAppSendResult(String phone, boolean success, String error, String messageId) {}
 
+    private static final Pattern BODY_PLACEHOLDER = Pattern.compile("\\{\\{\\s*([^{}]*?)\\s*\\}\\}");
+
+    /**
+     * Highest {{n}} in a WhatsApp template body (Meta numbers them 1..n), or null when it can't be
+     * known: blank body, or a named placeholder ({{first_name}}) whose params aren't positional.
+     */
+    public static Integer countBodyPlaceholders(String bodyText) {
+        if (bodyText == null || bodyText.isBlank()) return null;
+        int max = 0;
+        java.util.regex.Matcher m = BODY_PLACEHOLDER.matcher(bodyText);
+        while (m.find()) {
+            Integer pos = parsePosition(m.group(1));
+            if (pos == null) return null;
+            max = Math.max(max, pos);
+        }
+        return max;
+    }
+
+    /**
+     * Applies {@link #keepDeclaredBodyParams} to each recipient that would send MORE body params
+     * than declared. Recipients at or under the count are passed through untouched, so a send
+     * that Meta accepts today is unchanged.
+     */
+    static List<Map<String, Map<String, String>>> trimToDeclaredBodyParams(
+            List<Map<String, Map<String, String>>> bodyParams, Integer declared) {
+        if (declared == null || bodyParams == null) return bodyParams;
+        List<Map<String, Map<String, String>>> out = new ArrayList<>(bodyParams.size());
+        for (Map<String, Map<String, String>> userDetail : bodyParams) {
+            if (userDetail == null || userDetail.size() != 1) {
+                out.add(userDetail);
+                continue;
+            }
+            Map.Entry<String, Map<String, String>> e = userDetail.entrySet().iterator().next();
+            Map<String, String> params = e.getValue();
+            if (params == null || bodyParamCount(params) <= declared) {
+                out.add(userDetail);
+                continue;
+            }
+            Map<String, Map<String, String>> trimmed = new HashMap<>();
+            trimmed.put(e.getKey(), keepDeclaredBodyParams(params, declared));
+            out.add(trimmed);
+        }
+        return out;
+    }
+
+    /**
+     * Trims params to what the approved body declares: "_" control keys plus positions
+     * 1..declared. A position the caller left unfilled takes the next unmapped named value, in
+     * the order the legacy pass-through would have sent it, so templates stored without
+     * variable names keep working; whatever is left over is dropped.
+     */
+    static Map<String, String> keepDeclaredBodyParams(Map<String, String> params, int declared) {
+        Map<String, String> kept = new HashMap<>();
+        List<String> unmapped = new ArrayList<>();
+        for (Map.Entry<String, String> e : params.entrySet()) {
+            String key = e.getKey();
+            if (key.startsWith("_")) {
+                kept.put(key, e.getValue());
+                continue;
+            }
+            Integer pos = parsePosition(key);
+            if (pos == null) {
+                unmapped.add(e.getValue());
+            } else if (pos >= 1 && pos <= declared) {
+                kept.put(key, e.getValue());
+            }
+        }
+        Iterator<String> fill = unmapped.iterator();
+        for (int pos = 1; pos <= declared && fill.hasNext(); pos++) {
+            kept.putIfAbsent(String.valueOf(pos), fill.next());
+        }
+        return kept;
+    }
+
+    /** Number of values sent as body params — every key not prefixed "_" (see sendViaCombotProvider). */
+    static long bodyParamCount(Map<String, String> params) {
+        return params.keySet().stream().filter(k -> !k.startsWith("_")).count();
+    }
+
+    private static Integer parsePosition(String key) {
+        try {
+            return Integer.parseInt(key);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     /**
      * Same send path as {@link #sendWhatsappMessagesExtended}, but each result carries the
      * provider's error message. Returns {@code null} on the same whole-batch failures
@@ -132,6 +224,24 @@ public class WhatsAppService {
             Map<String, String> buttonIndexParams,
             String languageCode, String headerType, String instituteId,
             String source, String correlationId) {
+        return sendWhatsappMessagesDetailed(templateName, bodyParams, headerParams, headerVideoParams,
+                buttonUrlParams, buttonIndexParams, languageCode, headerType, instituteId,
+                source, correlationId, null);
+    }
+
+    /**
+     * @param declaredBodyParams number of {{n}} in the approved template body (see
+     *        {@link #countBodyPlaceholders}), or null when unknown. Only used on the META/COMBOT
+     *        path to drop body params the template does not declare.
+     */
+    public List<WhatsAppSendResult> sendWhatsappMessagesDetailed(String templateName,
+            List<Map<String, Map<String, String>>> bodyParams,
+            Map<String, Map<String, String>> headerParams,
+            Map<String, String> headerVideoParams,
+            Map<String, String> buttonUrlParams,
+            Map<String, String> buttonIndexParams,
+            String languageCode, String headerType, String instituteId,
+            String source, String correlationId, Integer declaredBodyParams) {
 
         if (instituteId == null) {
             log.error("Missing instituteId for WhatsApp message sending");
@@ -190,6 +300,10 @@ public class WhatsAppService {
                         .collect(Collectors.toList());
             } else {
                 // COMBOT and META both go through CombotMessageProvider
+                // Meta rejects the whole message (#132000) when the body param count differs from
+                // the approved template — audience sends always carry name + email. WATI ignores
+                // extras, so only this path is trimmed.
+                bodyParams = trimToDeclaredBodyParams(bodyParams, declaredBodyParams);
                 senderChannelId = resolveSenderChannelId(whatsappSetting, provider);
                 results = sendViaCombotProvider(templateName, bodyParams, headerParams,
                         headerVideoParams, buttonUrlParams, buttonIndexParams,
@@ -379,12 +493,44 @@ public class WhatsAppService {
             config.put("type", type);
             config.put("url", url);
             if ("document".equals(type)) {
-                config.put("filename", "file.pdf");
+                config.put("filename", documentFilenameFromUrl(url));
             }
             return config;
         }
 
         return null;
+    }
+
+    private static final Pattern UPLOAD_KEY_PREFIX =
+            Pattern.compile("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}-");
+
+    /**
+     * The name WhatsApp shows on a document header — the recipient sees this in the chat, so it
+     * should be the file's own name, not a placeholder. Our uploads are stored as
+     * {@code <uuid>-<original name>}; the uuid prefix is stripped. Falls back to "file.pdf" when
+     * the URL carries nothing usable (no path, no extension).
+     */
+    static String documentFilenameFromUrl(String url) {
+        String fallback = "file.pdf";
+        if (url == null || url.isBlank()) return fallback;
+        String path = url;
+        int q = path.indexOf('?');
+        if (q >= 0) path = path.substring(0, q);
+        int h = path.indexOf('#');
+        if (h >= 0) path = path.substring(0, h);
+        String segment = path.substring(path.lastIndexOf('/') + 1);
+        try {
+            // URLDecoder is form-decoding: a literal '+' in the name would become a space, so
+            // shield it first. Anything that decodes to a path separator is dropped as well.
+            segment = URLDecoder.decode(segment.replace("+", "%2B"), StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException ignored) {
+            // malformed %-escape: keep the raw segment
+        }
+        segment = segment.substring(segment.lastIndexOf('/') + 1);
+        segment = UPLOAD_KEY_PREFIX.matcher(segment).replaceFirst("").trim();
+        int dot = segment.lastIndexOf('.');
+        if (segment.isEmpty() || dot <= 0 || dot == segment.length() - 1) return fallback;
+        return segment;
     }
 
     private List<Map<String, Object>> buildButtonConfig(String phoneNumber,
@@ -502,6 +648,54 @@ public class WhatsAppService {
         return filtered;
     }
 
+    /**
+     * Catch the statuses that arrived before these rows did.
+     *
+     * <p>A batch sends every recipient and only then writes its notification_log rows, so for a
+     * blast of any size WhatsApp's sent/delivered/read webhooks for the early recipients are
+     * processed while their send row does not yet exist — the webhook finds nothing to stamp and
+     * never runs again, leaving delivered messages on one grey tick. The rows exist now, so ask
+     * once what the provider has already reported about them.
+     *
+     * <p>Best-effort by contract: the messages are sent and logged either way, and a tick that
+     * stays grey is not worth failing a send over.
+     */
+    private void backfillStatusesReportedBeforeTheseRowsExisted(List<NotificationLog> logs,
+                                                                String templateName,
+                                                                String instituteId) {
+        if (instituteId == null || instituteId.isBlank()) return;
+        try {
+            String[] messageIds = logs.stream()
+                    .map(NotificationLog::getSourceId)
+                    // Only a real provider id can join. A send with none (WATI bulk, a refused
+                    // send) stored the template name instead, and matching on that would drag in
+                    // every other message ever sent from the same template.
+                    .filter(id -> id != null && !id.equals(templateName))
+                    .distinct()
+                    .toArray(String[]::new);
+            if (messageIds.length == 0) return;
+
+            // How far back to look for statuses that already arrived. The batch's own oldest send
+            // plus a margin — the status cannot predate its send, and keeping the window tight is
+            // what makes this an indexed lookup instead of a scan of every status row on file.
+            Instant since = logs.stream()
+                    .map(NotificationLog::getNotificationDate)
+                    .filter(Objects::nonNull)
+                    .min(Instant::compareTo)
+                    .orElse(Instant.now())
+                    .minus(Duration.ofMinutes(15));
+
+            int stamped = notificationLogRepository.backfillDeliveryStatusFromRecordedEvents(
+                    instituteId, since, messageIds);
+            if (stamped > 0) {
+                log.info("Back-filled delivery status on {} of {} just-logged WhatsApp rows "
+                        + "(status webhook arrived before the row)", stamped, messageIds.length);
+            }
+        } catch (Exception e) {
+            log.warn("Could not back-fill delivery status for this batch: {}", e.getMessage());
+        }
+    }
+
     // ==================== Notification Logging ====================
 
     private void logWhatsAppMessages(String templateName,
@@ -532,7 +726,10 @@ public class WhatsAppService {
                 Map<String, Object> payload = new HashMap<>();
                 payload.put("templateName", templateName);
                 payload.put("phoneNumber", phoneNumber);
-                payload.put("bodyParams", params);
+                // Who sent it (workflow, ...) goes on the payload's top level, not in bodyParams —
+                // a resend built from these params must not carry the original sender along.
+                payload.put("bodyParams", MessageOriginPayload.withoutOrigin(params));
+                MessageOriginPayload.liftToPayload(params, payload);
                 payload.put("languageCode", languageCode);
                 payload.put("headerType", headerType);
                 payload.put("provider", provider);
@@ -595,6 +792,7 @@ public class WhatsAppService {
             if (!logs.isEmpty()) {
                 notificationLogRepository.saveAll(logs);
                 log.info("Logged {} WhatsApp messages to notification_log table", logs.size());
+                backfillStatusesReportedBeforeTheseRowsExisted(logs, templateName, instituteId);
             }
 
         } catch (Exception e) {

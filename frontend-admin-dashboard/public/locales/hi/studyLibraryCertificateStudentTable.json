@@ -1,0 +1,37 @@
+{
+    "status": {
+        "generated": "जनरेट हुआ",
+        "awaiting": "प्रतीक्षारत",
+        "pending": "लंबित"
+    },
+    "columns": {
+        "learner": "शिक्षार्थी",
+        "completion": "पूर्णता",
+        "status": "स्थिति",
+        "generatedOn": "जनरेट होने की तारीख",
+        "certificateNumber": "प्रमाणपत्र संख्या",
+        "actions": "कार्रवाइयाँ"
+    },
+    "actions": {
+        "generate": "जनरेट करें"
+    },
+    "toast": {
+        "regenerated": "प्रमाणपत्र पुनः जनरेट किया गया",
+        "generated": "प्रमाणपत्र जनरेट किया गया",
+        "regeneratedDescription": "प्रमाणपत्र संख्या अपरिवर्तित है; पीडीएफ बदल दी गई है।",
+        "generatedDescription": "शिक्षार्थी को उनका प्रमाणपत्र ईमेल कर दिया गया है।",
+        "generateError": "प्रमाणपत्र जनरेट नहीं किया जा सका",
+        "generateErrorDescription": "जाँचें कि इस कोर्स के लिए प्रमाणपत्र सक्षम हैं और शिक्षार्थी पूर्णता सीमा पार कर चुका है।",
+        "emailSent": "प्रमाणपत्र ईमेल भेजा गया",
+        "emailError": "प्रमाणपत्र ईमेल नहीं भेजा जा सका",
+        "openedInNewTab": "प्रमाणपत्र एक नए टैब में खोला गया",
+        "openedInNewTabDescription": "आपके ब्राउज़र ने सीधा डाउनलोड रोक दिया — इसे वहीं से सहेजें।"
+    },
+    "searchPlaceholder": "नाम, ईमेल या प्रमाणपत्र संख्या से खोजें",
+    "learnerCount_one": "{{count}} शिक्षार्थी",
+    "learnerCount_other": "{{count}} शिक्षार्थी",
+    "emptyState": {
+        "noMatch": "आपकी खोज से कोई शिक्षार्थी मेल नहीं खाता।",
+        "noLearners": "इस बैच में अभी तक कोई शिक्षार्थी नामांकित नहीं है।"
+    }
+}

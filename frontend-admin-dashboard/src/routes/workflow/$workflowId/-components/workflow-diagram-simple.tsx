@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AutomationDiagram, NodeType, WorkflowNode } from '@/types/workflow/workflow-types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -64,6 +65,7 @@ export function WorkflowDiagramSimple({
     diagram,
     instituteId: passedInstituteId,
 }: WorkflowDiagramSimpleProps) {
+    const { t } = useTranslation('workflowDiagramSimple');
     const [selectedNode, setSelectedNode] = useState<WorkflowNode | null>(null);
     const [zoom, setZoom] = useState(1);
     const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -228,10 +230,10 @@ export function WorkflowDiagramSimple({
         return (
             <div className="flex h-[50vh] flex-col items-center justify-center rounded-lg border-2 border-dashed border-neutral-300 bg-neutral-50">
                 <p className="text-lg font-medium text-neutral-500">
-                    No workflow diagram available
+                    {t('emptyState.title')}
                 </p>
                 <p className="text-sm text-neutral-400">
-                    This workflow may not have any configured nodes
+                    {t('emptyState.description')}
                 </p>
             </div>
         );
@@ -259,10 +261,10 @@ export function WorkflowDiagramSimple({
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <div>
-                    <h2 className="text-xl font-semibold text-neutral-800">Automation Diagram</h2>
+                    <h2 className="text-xl font-semibold text-neutral-800">{t('title')}</h2>
                     <p className="text-sm text-neutral-600">
-                        {diagram.nodes.length} node{diagram.nodes.length !== 1 ? 's' : ''},{' '}
-                        {diagram.edges.length} connection{diagram.edges.length !== 1 ? 's' : ''}
+                        {t('nodeCount', { count: diagram.nodes.length })},{' '}
+                        {t('connectionCount', { count: diagram.edges.length })}
                     </p>
                 </div>
 
@@ -443,8 +445,7 @@ export function WorkflowDiagramSimple({
             {/* Instructions */}
             <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3">
                 <p className="text-xs text-neutral-600">
-                    <strong>💡 Tip:</strong> Click and drag to pan around the diagram. Use the zoom
-                    controls to zoom in/out. Click on any node to view its details.
+                    <strong>💡 {t('tip.label')}</strong> {t('tip.description')}
                 </p>
             </div>
 
@@ -452,10 +453,11 @@ export function WorkflowDiagramSimple({
             <div className="space-y-3 rounded-lg border border-neutral-200 bg-white p-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h3 className="text-lg font-semibold text-neutral-800">Executions</h3>
+                        <h3 className="text-lg font-semibold text-neutral-800">
+                            {t('executions.title')}
+                        </h3>
                         <p className="text-sm text-neutral-600">
-                            {executions?.total_elements ?? 0} execution
-                            {(executions?.total_elements ?? 0) !== 1 ? 's' : ''}
+                            {t('executions.count', { count: executions?.total_elements ?? 0 })}
                         </p>
                     </div>
                 </div>
@@ -463,7 +465,7 @@ export function WorkflowDiagramSimple({
                 {/* Filters */}
                 <div className="flex flex-wrap items-end gap-3">
                     <div className="flex min-w-[240px] flex-col gap-1">
-                        <Label htmlFor="startDateTime">Start date & time</Label>
+                        <Label htmlFor="startDateTime">{t('filters.startDateTime')}</Label>
                         <Input
                             id="startDateTime"
                             type="datetime-local"
@@ -472,7 +474,7 @@ export function WorkflowDiagramSimple({
                         />
                     </div>
                     <div className="flex min-w-[240px] flex-col gap-1">
-                        <Label htmlFor="endDateTime">End date & time</Label>
+                        <Label htmlFor="endDateTime">{t('filters.endDateTime')}</Label>
                         <Input
                             id="endDateTime"
                             type="datetime-local"
@@ -493,7 +495,7 @@ export function WorkflowDiagramSimple({
                                 void refetchExecutions();
                             }}
                         >
-                            Search
+                            {t('filters.search')}
                         </Button>
                         <Button
                             variant="outline"
@@ -508,35 +510,35 @@ export function WorkflowDiagramSimple({
                                 void refetchExecutions();
                             }}
                         >
-                            Reset
+                            {t('filters.reset')}
                         </Button>
                     </div>
                 </div>
                 <p className="text-xs text-neutral-500">
-                    Times are sent as GMT/UTC in the request.
+                    {t('filters.timezoneNote')}
                 </p>
 
                 {/* Results */}
                 <div className="rounded-md border border-neutral-200">
                     <div className="grid grid-cols-12 gap-2 border-b border-neutral-200 bg-neutral-50 p-2 text-xs font-medium text-neutral-600">
-                        <div className="col-span-3">Started</div>
-                        <div className="col-span-3">Completed</div>
-                        <div className="col-span-2">Status</div>
-                        <div className="col-span-4">Idempotency Key</div>
+                        <div className="col-span-3">{t('table.started')}</div>
+                        <div className="col-span-3">{t('table.completed')}</div>
+                        <div className="col-span-2">{t('table.status')}</div>
+                        <div className="col-span-4">{t('table.idempotencyKey')}</div>
                     </div>
                     {isExecLoading && (
-                        <div className="p-4 text-sm text-neutral-500">Loading executions…</div>
+                        <div className="p-4 text-sm text-neutral-500">{t('table.loading')}</div>
                     )}
                     {isExecError && (
                         <div className="p-4 text-sm text-red-600">
                             {execError instanceof Error
                                 ? execError.message
-                                : 'Failed to load executions'}
+                                : t('table.loadFailed')}
                         </div>
                     )}
                     {!isExecLoading && !isExecError && (executions?.content?.length ?? 0) === 0 && (
                         <div className="p-4 text-sm text-neutral-500">
-                            No executions found for the selected range.
+                            {t('table.empty')}
                         </div>
                     )}
                     {!isExecLoading && !isExecError && (executions?.content?.length ?? 0) > 0 && (
@@ -586,7 +588,10 @@ export function WorkflowDiagramSimple({
                 {executions && executions.total_pages > 1 && (
                     <div className="flex items-center justify-between pt-2">
                         <span className="text-xs text-neutral-500">
-                            Page {executions.page_number + 1} of {executions.total_pages}
+                            {t('pagination.pageOf', {
+                                page: executions.page_number + 1,
+                                total: executions.total_pages,
+                            })}
                         </span>
                         <div className="flex items-center gap-2">
                             <Button
@@ -595,7 +600,7 @@ export function WorkflowDiagramSimple({
                                 disabled={executions.first || pageNo === 0}
                                 onClick={() => setPageNo((p) => Math.max(0, p - 1))}
                             >
-                                Previous
+                                {t('pagination.previous')}
                             </Button>
                             <Button
                                 variant="outline"
@@ -603,7 +608,7 @@ export function WorkflowDiagramSimple({
                                 disabled={executions.last}
                                 onClick={() => setPageNo((p) => p + 1)}
                             >
-                                Next
+                                {t('pagination.next')}
                             </Button>
                         </div>
                     </div>
@@ -632,7 +637,7 @@ export function WorkflowDiagramSimple({
                             {selectedNode.description && (
                                 <div>
                                     <span className="text-sm font-medium text-neutral-700">
-                                        Description:
+                                        {t('nodeDetails.description')}
                                     </span>
                                     <p className="mt-1 text-sm text-neutral-600">
                                         {selectedNode.description}
@@ -644,7 +649,7 @@ export function WorkflowDiagramSimple({
                                 Object.keys(selectedNode.details).length > 0 && (
                                     <div>
                                         <span className="text-sm font-medium text-neutral-700">
-                                            Configuration Details:
+                                            {t('nodeDetails.configuration')}
                                         </span>
                                         <div className="mt-2 max-h-96 space-y-2 overflow-auto rounded-lg border border-neutral-200 bg-neutral-50 p-4">
                                             {Object.entries(selectedNode.details).map(
@@ -653,11 +658,7 @@ export function WorkflowDiagramSimple({
                                                         <p className="text-sm font-medium text-neutral-700">
                                                             {key}:
                                                         </p>
-                                                        <pre className="overflow-auto whitespace-pre-wrap break-words rounded bg-white p-2 text-xs text-neutral-600">
-                                                            {typeof value === 'object'
-                                                                ? JSON.stringify(value, null, 2)
-                                                                : String(value)}
-                                                        </pre>
+                                                        <DetailValue value={value} />
                                                     </div>
                                                 )
                                             )}
@@ -669,5 +670,43 @@ export function WorkflowDiagramSimple({
                 </DialogContent>
             </Dialog>
         </div>
+    );
+}
+
+/**
+ * Render one configuration detail. The values the diagram endpoint returns are already
+ * human-readable, so raw JSON.stringify was actively unhelpful: a list of audience names
+ * came out as `["JEE Leads"]` and a variable mapping as a brace-wrapped blob. Lists become
+ * lines and key/value maps become rows; only genuinely unexpected shapes fall back to JSON.
+ */
+function DetailValue({ value }: { value: unknown }) {
+    if (Array.isArray(value)) {
+        return (
+            <ul className="space-y-1 rounded bg-white p-2">
+                {value.map((v, i) => (
+                    <li key={i} className="text-xs text-neutral-700">
+                        • {typeof v === 'object' ? JSON.stringify(v) : String(v)}
+                    </li>
+                ))}
+            </ul>
+        );
+    }
+    if (value && typeof value === 'object') {
+        const entries = Object.entries(value as Record<string, unknown>);
+        return (
+            <div className="divide-y divide-neutral-100 rounded bg-white">
+                {entries.map(([k, v]) => (
+                    <div key={k} className="flex gap-2 px-2 py-1.5 text-xs">
+                        <span className="min-w-24 shrink-0 text-neutral-500">{k}</span>
+                        <span className="break-all font-medium text-neutral-700">
+                            {typeof v === 'object' ? JSON.stringify(v) : String(v)}
+                        </span>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+    return (
+        <p className="break-words rounded bg-white p-2 text-xs text-neutral-700">{String(value)}</p>
     );
 }

@@ -1,0 +1,150 @@
+{
+    "page": {
+        "title": "Rapports programmés",
+        "description": "Envoyez l'activité de l'institut à votre équipe selon un calendrier, plutôt que d'attendre que quelqu'un vienne consulter les chiffres.",
+        "save": "Enregistrer",
+        "saving": "Enregistrement…"
+    },
+    "toggles": {
+        "enable": {
+            "label": "Activer les rapports programmés",
+            "description": "Lorsque cette option est désactivée, rien n'est généré et rien n'est facturé."
+        },
+        "timezone": {
+            "label": "Fuseau horaire",
+            "description": "Les jours et créneaux des rapports sont calculés dans ce fuseau horaire."
+        },
+        "skip": {
+            "label": "Ignorer quand il n'y a rien à signaler",
+            "description": "Recommandé. Sinon, une semaine calme envoie quand même un rapport vide."
+        }
+    },
+    "defaultNames": {
+        "daily": "Digest quotidien",
+        "weekly": "Digest hebdomadaire",
+        "monthly": "Digest mensuel"
+    },
+    "schedule": {
+        "remove": "Supprimer",
+        "sectionsLabel": "Sections",
+        "namesLearnersBadge": "nomme les apprenants",
+        "noDataBadge": "aucune donnée sur les 30 derniers jours",
+        "sectionsError": "Impossible de charger les sections disponibles. Actualisez pour réessayer — ce n'est pas la même chose que l'absence de données.",
+        "sectionsLoading": "Vérification des sections disposant de données…",
+        "noSectionsAvailable": "Aucune section ne dispose de données pour cet institut pour le moment.",
+        "hourSuffix": "heure ({{timezone}})",
+        "checkReports": "Vérifier le nombre de rapports",
+        "previewButton": "Aperçu",
+        "building": "Génération…",
+        "sendNow": "Envoyer maintenant",
+        "sendToLabel": "Envoyer à"
+    },
+    "frequency": {
+        "daily": "Quotidien",
+        "weekly": "Hebdomadaire",
+        "monthly": "Mensuel"
+    },
+    "days": {
+        "MON": "LUN",
+        "TUE": "MAR",
+        "WED": "MER",
+        "THU": "JEU",
+        "FRI": "VEN",
+        "SAT": "SAM",
+        "SUN": "DIM"
+    },
+    "scopes": {
+        "INSTITUTE": "Institut entier",
+        "BATCH": "Par groupe",
+        "SUBJECT": "Par matière",
+        "FACULTY": "Par enseignant"
+    },
+    "roles": {
+        "ADMIN": "Administrateur",
+        "TEACHER": "Enseignant",
+        "EVALUATOR": "Évaluateur"
+    },
+    "preview": {
+        "reportsPerRun_one": "rapport par exécution ×",
+        "reportsPerRun_many": "rapports par exécution ×",
+        "reportsPerRun_other": "rapports par exécution ×",
+        "runsEqualsMonth": "exécutions =",
+        "aMonth": "par mois.",
+        "exceedsCap": "Cela dépasse la limite de {{max}} par exécution et ne s'exécutera pas. Réduisez la portée.",
+        "freeNoAi": "Gratuit — pas d'analyse IA sur ce programme.",
+        "creditsPerReport": "crédits par rapport",
+        "perRun": "par exécution,",
+        "aMonthAiAnalysis": "par mois pour l'analyse IA. Le rapport lui-même est gratuit ; les destinataires sont gratuits ; c'est la portée qui multiplie le coût.",
+        "exampleLabel": "p. ex."
+    },
+    "ai": {
+        "label": "Ajouter une analyse IA",
+        "badge": "2 crédits par rapport",
+        "description": "Lit les chiffres ci-dessous et rédige ce qu'il faut faire — quoi corriger, qui contacter, ce que demandent les apprenants. Le rapport lui-même est gratuit ; seul ceci est facturé, et uniquement lorsqu'une analyse est réellement produite."
+    },
+    "creditCap": {
+        "prefix": "Refuser une exécution coûtant plus de",
+        "placeholder": "aucune limite",
+        "suffix": "crédits"
+    },
+    "recipients": {
+        "helperText": "Seules les personnes disposant d'un compte peuvent recevoir ces rapports — les rapports peuvent nommer des apprenants, il n'y a donc pas d'option d'e-mail en texte libre. Les enseignants sont automatiquement limités à leurs propres groupes."
+    },
+    "addSchedule": "Ajouter un programme",
+    "history": {
+        "title": "Rapports récents",
+        "loadError": "Impossible de charger l'historique des envois.",
+        "empty": "Rien n'a encore été envoyé. Les rapports apparaissent ici une fois qu'un programme s'exécute.",
+        "columns": {
+            "when": "Quand",
+            "report": "Rapport",
+            "status": "Statut",
+            "recipients": "Destinataires",
+            "learnersNamed": "Apprenants nommés",
+            "whoReceivedIt": "Qui l'a reçu"
+        },
+        "statusWithSkipReason": "{{status}} — {{skipReason}}"
+    },
+    "whoReceivedDialog": {
+        "heading": "Qui l'a reçu",
+        "instituteReportFallback": "Rapport de l'institut",
+        "loading": "Chargement…",
+        "emptyState": "Personne n'a reçu cette exécution. Si elle a été ignorée, la raison est indiquée ci-dessus.",
+        "noEmail": "(aucun e-mail enregistré)",
+        "unknownRole": "rôle inconnu",
+        "delivered": "livré",
+        "notDelivered": "non livré",
+        "namedLearners_one": "{{count}} apprenant nommé",
+        "namedLearners_many": "{{count}} apprenants nommés",
+        "namedLearners_other": "{{count}} apprenants nommés"
+    },
+    "reportPreviewDialog": {
+        "heading": "Aperçu du rapport",
+        "iframeTitle": "Aperçu du rapport",
+        "subtitle": "Exactement ce que vous recevriez. Rien n'a été envoyé et rien n'a été facturé.",
+        "openInNewTab": "Ouvrir dans un nouvel onglet",
+        "downloadHtml": "Télécharger le HTML",
+        "nothingToSend": "Rien ne serait envoyé pour ce programme."
+    },
+    "toasts": {
+        "previewScopeError": "Impossible de déterminer combien de rapports cela créerait",
+        "previewBuildError": "Impossible de générer l'aperçu",
+        "sendError": "Impossible d'envoyer le rapport",
+        "saveSuccess": "Rapports programmés enregistrés",
+        "saveError": "Impossible d'enregistrer les rapports programmés",
+        "recipientsLoadError": "Impossible de charger la liste des destinataires pour cette exécution.",
+        "popupBlocked": "Autorisez les pop-ups pour ouvrir l'aperçu dans un nouvel onglet."
+    },
+    "confirmSend": {
+        "message": "Envoyer « {{name}} » maintenant à {{who}} ?\n\nCeci envoie un e-mail réel, facture des crédits, et ne peut pas être annulé. Utilisez l'aperçu si vous voulez seulement le voir.",
+        "roleAudience": "tous les utilisateurs ayant le rôle {{roles}}",
+        "selectedAudience_one": "{{count}} destinataire sélectionné",
+        "selectedAudience_many": "{{count}} destinataires sélectionnés",
+        "selectedAudience_other": "{{count}} destinataires sélectionnés"
+    },
+    "validation": {
+        "exceedsCap": "« {{name}} » créerait {{documentsPerRun}} rapports par exécution, au-delà de la limite de {{max}}. Réduisez d'abord la portée.",
+        "noSections": "« {{name}} » n'a aucune section sélectionnée.",
+        "noRecipients": "« {{name}} » n'a aucun destinataire."
+    }
+}

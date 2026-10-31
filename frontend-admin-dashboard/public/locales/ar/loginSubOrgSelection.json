@@ -1,0 +1,15 @@
+{
+    "noSubOrgsFound": "لم يتم العثور على منظمات فرعية",
+    "pleaseSelectASubOrg": "يرجى اختيار منظمة فرعية",
+    "loadingSubOrgs": "جارٍ تحميل المنظمات الفرعية...",
+    "logoAlt": "الشعار",
+    "selectSubOrg": "اختر المنظمة الفرعية",
+    "pleaseChooseSubOrgToAccess": "يرجى اختيار المنظمة الفرعية التي تريد الوصول إليها",
+    "availableSubOrgs": "المنظمات الفرعية المتاحة",
+    "subOrgFallbackName": "منظمة فرعية {{subOrgId}}",
+    "chooseASubOrg": "اختر منظمة فرعية",
+    "idLabel": "المعرف: {{idPrefix}}...",
+    "continueToPortal": "المتابعة إلى البوابة",
+    "selectASubOrg": "اختر منظمة فرعية",
+    "backToLogin": "العودة إلى تسجيل الدخول"
+}

@@ -1,0 +1,18 @@
+{
+    "errorSavingSlide": "स्लाइड सहेजने में त्रुटि",
+    "couldNotReadContent": "एडिटर की सामग्री पढ़ी नहीं जा सकी। कृपया पुनः प्रयास करें।",
+    "slidePublished": "स्लाइड सफलतापूर्वक प्रकाशित हुई!",
+    "confirmForcePublish": "आकस्मिक डेटा हानि से बचने के लिए, कृपया पुष्टि करें।\n\n{{serverMessage}}\n\nक्या आप वाकई इस संस्करण को प्रकाशित करना चाहते हैं?",
+    "slidePublishedForced": "स्लाइड प्रकाशित हुई (जबरन ओवरराइड)।",
+    "errorPublishingSlide": "स्लाइड प्रकाशित करने में त्रुटि",
+    "videoSlideMissing": "वीडियो स्लाइड डेटा गायब है।",
+    "quizPublished": "क्विज़ सफलतापूर्वक प्रकाशित हुई!",
+    "quizPublishFailed": "क्विज़ प्रकाशित करने में विफल",
+    "audioSlideMissing": "ऑडियो स्लाइड डेटा गायब है।",
+    "scormSlideMissing": "SCORM स्लाइड डेटा गायब है।",
+    "scormSlidePublished": "SCORM स्लाइड सफलतापूर्वक प्रकाशित हुई!",
+    "errorPublishingScormSlide": "SCORM स्लाइड प्रकाशित करने में त्रुटि",
+    "assessmentSlideMissing": "असेसमेंट स्लाइड डेटा गायब है।",
+    "assessmentSlidePublished": "असेसमेंट स्लाइड सफलतापूर्वक प्रकाशित हुई!",
+    "errorPublishingAssessmentSlide": "असेसमेंट स्लाइड प्रकाशित करने में त्रुटि"
+}

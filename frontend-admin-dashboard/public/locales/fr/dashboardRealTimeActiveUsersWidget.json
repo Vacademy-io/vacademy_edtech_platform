@@ -1,0 +1,12 @@
+{
+    "header": {
+        "title": "Actifs en temps réel",
+        "subtitle": "Utilisateurs actuellement en ligne"
+    },
+    "stats": {
+        "liveUpdates": "Mises à jour en direct"
+    },
+    "error": {
+        "widgetName": "utilisateurs actifs en temps réel"
+    }
+}

@@ -1,0 +1,25 @@
+{
+    "title": "Gérer l'espacement des réponses",
+    "helper": {
+        "text": "Précisez l'espace (en mm) à prévoir après chaque question pour les réponses. La plage valide se situe entre <strong>{{min}} mm</strong> et <strong>{{max}} mm</strong>."
+    },
+    "table": {
+        "headers": {
+            "qNo": "N° Q.",
+            "section": "Section",
+            "question": "Question",
+            "type": "Type",
+            "space": "Espace (mm)"
+        },
+        "empty": "Aucune question éligible trouvée. Seules les questions à réponse longue et en un mot peuvent avoir un espacement personnalisé.",
+        "type": {
+            "longAnswer": "Réponse longue",
+            "oneWord": "Un mot"
+        },
+        "unit": "mm"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "save": "Enregistrer les paramètres"
+    }
+}

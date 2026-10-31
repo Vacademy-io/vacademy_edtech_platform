@@ -8,10 +8,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.chapter.entity.Chapter;
 import vacademy.io.admin_core_service.features.chapter.entity.ChapterToSlides;
 import vacademy.io.admin_core_service.features.chapter.repository.ChapterRepository;
 import vacademy.io.admin_core_service.features.chapter.repository.ChapterToSlidesRepository;
+import vacademy.io.admin_core_service.features.course_knowledge.service.ContentIndexMarker;
+import vacademy.io.admin_core_service.features.learner_offline.service.OfflineManifestVersionService;
 import vacademy.io.admin_core_service.features.live_session.dto.*;
 import vacademy.io.admin_core_service.features.live_session.entity.LiveSession;
 import vacademy.io.admin_core_service.features.live_session.entity.LiveSessionContentLink;
@@ -25,7 +28,10 @@ import vacademy.io.admin_core_service.features.slide.dto.DocumentSlideDTO;
 import vacademy.io.admin_core_service.features.slide.dto.VideoSlideDTO;
 import vacademy.io.admin_core_service.features.slide.entity.Slide;
 import vacademy.io.admin_core_service.features.slide.enums.SlideStatus;
+import vacademy.io.admin_core_service.features.slide.enums.SlideTypeEnum;
+import vacademy.io.admin_core_service.features.slide.repository.DocumentSlideRepository;
 import vacademy.io.admin_core_service.features.slide.repository.SlideRepository;
+import vacademy.io.admin_core_service.features.slide.repository.VideoSlideRepository;
 import vacademy.io.admin_core_service.features.slide.service.SlideService;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
@@ -59,7 +65,12 @@ public class LiveSessionContentLinkService {
     private final LiveSessionContentLinkRepository liveSessionContentLinkRepository;
     private final SlideService slideService;
     private final SlideRepository slideRepository;
+    private final DocumentSlideRepository documentSlideRepository;
+    private final VideoSlideRepository videoSlideRepository;
+    private final OfflineManifestVersionService offlineManifestVersionService;
+    private final InstituteAccessValidator instituteAccessValidator;
     private final ObjectMapper objectMapper;
+    private final ContentIndexMarker contentIndexMarker;
 
     @Transactional
     public List<ContentLinkOutcomeDTO> linkContent(LinkContentRequestDTO request, CustomUserDetails user) {
@@ -182,16 +193,62 @@ public class LiveSessionContentLinkService {
                 l.getCreatedAt())).collect(Collectors.toList());
     }
 
+    /**
+     * Renames the slide a link created. The title lives on the slide row and is
+     * mirrored on its document/video source row (the study-library editor writes
+     * both), so both are updated to keep the two in step.
+     */
     @Transactional
-    public void deleteLink(String linkId) {
+    public void renameLink(String linkId, String title, CustomUserDetails user) {
+        if (!StringUtils.hasText(title)) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "title is required");
+        }
+        String trimmed = title.trim();
+        // slide.title / document_slide.title / video_slide.title are all varchar(255).
+        if (trimmed.length() > 255) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "Name must be 255 characters or fewer");
+        }
+        LiveSessionContentLink link = liveSessionContentLinkRepository.findById(linkId)
+                .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "Content link not found"));
+        if ("DELETED".equals(link.getStatus())) {
+            throw new VacademyException(HttpStatus.NOT_FOUND, "Content link not found");
+        }
+        requireStaffOfSessionInstitute(link, user);
+
+        Slide slide = slideRepository.findById(link.getSlideId())
+                .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "Slide not found"));
+        slide.setTitle(trimmed);
+        slideRepository.save(slide);
+
+        if (StringUtils.hasText(slide.getSourceId())) {
+            if (SlideTypeEnum.DOCUMENT.name().equals(slide.getSourceType())) {
+                documentSlideRepository.findById(slide.getSourceId()).ifPresent(doc -> {
+                    doc.setTitle(trimmed);
+                    documentSlideRepository.save(doc);
+                });
+            } else if (SlideTypeEnum.VIDEO.name().equals(slide.getSourceType())) {
+                videoSlideRepository.findById(slide.getSourceId()).ifPresent(video -> {
+                    video.setTitle(trimmed);
+                    videoSlideRepository.save(video);
+                });
+            }
+        }
+
+        // bump() (not bumpAll) so the call goes through the proxy and gets its own
+        // REQUIRES_NEW transaction: a failed bump can never roll back the rename.
+        offlineManifestVersionService.bump(link.getPackageSessionId(), "SLIDE_RENAMED");
+        contentIndexMarker.mark(slide.getId(), link.getChapterId(), "SLIDE_RENAMED");
+    }
+
+    @Transactional
+    public void deleteLink(String linkId, CustomUserDetails user) {
         LiveSessionContentLink link = liveSessionContentLinkRepository.findById(linkId)
                 .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "Content link not found"));
         if ("DELETED".equals(link.getStatus())) {
             return;
         }
 
-        LiveSession liveSession = liveSessionRepository.findById(link.getSessionId())
-                .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "Live session not found"));
+        LiveSession liveSession = requireStaffOfSessionInstitute(link, user);
 
         // Reuses the same path as PUT /slide/v1/update-status — soft-deletes both
         // the chapter_to_slides mapping and the slide itself rather than a hard
@@ -201,6 +258,93 @@ public class LiveSessionContentLinkService {
 
         link.setStatus("DELETED");
         liveSessionContentLinkRepository.save(link);
+    }
+
+    // ── Admin activity log helpers ──────────────────────────────────────
+    // Called from @Auditable SpEL on LiveSessionContentLinkController. They must
+    // never throw: a failure here only costs the log sentence, never the action.
+
+    /** Snapshot of a link before rename/delete; null when the link does not exist. */
+    public ContentLinkAuditDTO auditSnapshot(String linkId) {
+        try {
+            LiveSessionContentLink link = liveSessionContentLinkRepository.findById(linkId).orElse(null);
+            if (link == null) {
+                return null;
+            }
+            String title = slideRepository.findById(link.getSlideId()).map(Slide::getTitle).orElse(null);
+            String chapterName = chapterRepository.findById(link.getChapterId())
+                    .map(Chapter::getChapterName).orElse(null);
+            return new ContentLinkAuditDTO(link.getId(), link.getSessionId(), auditKind(link.getContentType()),
+                    title, chapterName, !"DELETED".equals(link.getStatus()));
+        } catch (Exception e) {
+            log.warn("Content link audit snapshot failed for {}: {}", linkId, e.getMessage());
+            return null;
+        }
+    }
+
+    /** True when at least one destination got a new slide — a no-op re-link is not logged. */
+    public boolean hasCreatedOutcome(List<ContentLinkOutcomeDTO> outcomes) {
+        return outcomes != null && outcomes.stream().anyMatch(o -> OUTCOME_CREATED.equals(o.getOutcome()));
+    }
+
+    /** "added class material Revision Class to Lecture PDF, Notes". */
+    public String describeLinkAdded(LinkContentRequestDTO request, List<ContentLinkOutcomeDTO> outcomes) {
+        try {
+            String kind = request != null && request.getSource() != null
+                    && KIND_RECORDING.equals(request.getSource().getKind())
+                    ? auditKind(CONTENT_TYPE_RECORDING) : auditKind(CONTENT_TYPE_MATERIAL_PDF);
+            String title = request != null && StringUtils.hasText(request.getTitle())
+                    ? request.getTitle().trim() : "untitled";
+            List<String> chapterIds = outcomes == null ? List.of() : outcomes.stream()
+                    .filter(o -> OUTCOME_CREATED.equals(o.getOutcome()))
+                    .map(ContentLinkOutcomeDTO::getChapterId)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .collect(Collectors.toList());
+            String chapters = chapterRepository.findAllById(chapterIds).stream()
+                    .map(Chapter::getChapterName)
+                    .filter(StringUtils::hasText)
+                    .collect(Collectors.joining(", "));
+            return "added " + kind + " " + title
+                    + (StringUtils.hasText(chapters) ? " to " + chapters : "");
+        } catch (Exception e) {
+            log.warn("Content link add description failed: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /** "renamed class material Old name to New name". */
+    public String describeLinkRenamed(ContentLinkAuditDTO before, String newTitle) {
+        String kind = before != null && before.getKind() != null ? before.getKind() : auditKind(null);
+        String oldTitle = before != null && StringUtils.hasText(before.getTitle()) ? before.getTitle() : "untitled";
+        String title = newTitle != null ? newTitle.trim() : "";
+        return "renamed " + kind + " " + oldTitle + " to " + title;
+    }
+
+    /** "removed class material Revision Class from Lecture PDF". */
+    public String describeLinkRemoved(ContentLinkAuditDTO before) {
+        if (before == null) {
+            return null;
+        }
+        String title = StringUtils.hasText(before.getTitle()) ? before.getTitle() : "untitled";
+        return "removed " + before.getKind() + " " + title
+                + (StringUtils.hasText(before.getChapterName()) ? " from " + before.getChapterName() : "");
+    }
+
+    private String auditKind(String contentType) {
+        return CONTENT_TYPE_RECORDING.equals(contentType) ? "recording" : "class material";
+    }
+
+    /**
+     * Rename/delete act on a link by id alone, so the caller's institute is checked
+     * against the session's. Any staff role passes (admin, teacher, custom roles);
+     * learners and other institutes are refused.
+     */
+    private LiveSession requireStaffOfSessionInstitute(LiveSessionContentLink link, CustomUserDetails user) {
+        LiveSession liveSession = liveSessionRepository.findById(link.getSessionId())
+                .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "Live session not found"));
+        instituteAccessValidator.requireStaffAccess(user, liveSession.getInstituteId());
+        return liveSession;
     }
 
     private String resolveContentType(String kind) {

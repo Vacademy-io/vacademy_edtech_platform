@@ -1,0 +1,35 @@
+{
+    "tabs": {
+        "inApp": "Dans l'appli",
+        "push": "Push",
+        "email": "E-mail",
+        "whatsapp": "WhatsApp"
+    },
+    "device": {
+        "mobile": "Mobile",
+        "desktop": "Bureau"
+    },
+    "inApp": {
+        "badge": "Annonce",
+        "pinned": "Épinglé",
+        "titlePlaceholder": "Le titre de votre annonce",
+        "contentPlaceholder": "Votre message apparaîtra ici tel que les apprenants le liront."
+    },
+    "push": {
+        "senderPlaceholder": "Votre application",
+        "titlePlaceholder": "Titre du push",
+        "bodyPlaceholder": "Le corps du push apparaît ici."
+    },
+    "whatsapp": {
+        "noTemplate": "Choisissez un modèle WhatsApp approuvé à l'étape Diffusion pour le prévisualiser ici.",
+        "titleFallback": "Titre de l'annonce",
+        "contentFallback": "Contenu de l'annonce",
+        "senderFallback": "Expéditeur"
+    },
+    "email": {
+        "fromPrefix": "De : {{sender}}",
+        "senderPlaceholder": "Votre établissement",
+        "noSubject": "(Sans objet)",
+        "iframeTitle": "Aperçu de l'e-mail"
+    }
+}

@@ -1,0 +1,9 @@
+{
+    "addedToChapters_one": "Added to {{count}} chapter",
+    "addedToChapters_other": "Added to {{count}} chapters",
+    "sharedChapterDeduped_one": "{{count}} shared chapter (deduped)",
+    "sharedChapterDeduped_other": "{{count}} shared chapters (deduped)",
+    "alreadyLinked_one": "{{count}} already linked",
+    "alreadyLinked_other": "{{count}} already linked",
+    "noChangesMade": "No changes made"
+}

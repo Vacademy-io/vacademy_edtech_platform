@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Network } from "@capacitor/network";
 import { WifiHigh, WifiSlash, ArrowsClockwise, SpinnerGap } from "@phosphor-icons/react";
 import type { PluginListenerHandle } from "@capacitor/core";
@@ -9,6 +10,7 @@ interface NetworkStatusProps {
 }
 
 const NetworkStatus = ({ onRetrySave }: NetworkStatusProps) => {
+  const { t } = useTranslation("questionTest");
   const [isOnline, setIsOnline] = useState(true);
   const [showAlert, setShowAlert] = useState(false);
   const [isRetrying, setIsRetrying] = useState(false);
@@ -77,10 +79,11 @@ const NetworkStatus = ({ onRetrySave }: NetworkStatusProps) => {
         <>
           <WifiSlash className="size-5 flex-none text-danger-400" />
           <div className="min-w-0">
-            <p className="text-caption font-semibold">No internet connection</p>
+            <p className="text-caption font-semibold">
+              {t("networkStatus.offline.title")}
+            </p>
             <p className="text-2xs text-neutral-400">
-              Your answers are held on this device and re-sent when you are back
-              online.
+              {t("networkStatus.offline.description")}
             </p>
           </div>
         </>
@@ -88,9 +91,11 @@ const NetworkStatus = ({ onRetrySave }: NetworkStatusProps) => {
         <>
           <WifiSlash className="size-5 flex-none text-warning-400" />
           <div className="min-w-0">
-            <p className="text-caption font-semibold">Answers not syncing</p>
+            <p className="text-caption font-semibold">
+              {t("networkStatus.saveFailed.title")}
+            </p>
             <p className="text-2xs text-neutral-400">
-              They are safe on this device. Tap retry to sync now.
+              {t("networkStatus.saveFailed.description")}
             </p>
           </div>
         </>
@@ -98,9 +103,11 @@ const NetworkStatus = ({ onRetrySave }: NetworkStatusProps) => {
         <>
           <WifiHigh className="size-5 flex-none text-success-400" />
           <div className="min-w-0">
-            <p className="text-caption font-semibold">Back online</p>
+            <p className="text-caption font-semibold">
+              {t("networkStatus.online.title")}
+            </p>
             <p className="text-2xs text-neutral-400">
-              Your network connection was restored.
+              {t("networkStatus.online.description")}
             </p>
           </div>
         </>
@@ -117,7 +124,7 @@ const NetworkStatus = ({ onRetrySave }: NetworkStatusProps) => {
           ) : (
             <ArrowsClockwise className="size-3" />
           )}
-          Retry
+          {t("networkStatus.retry")}
         </button>
       )}
     </div>

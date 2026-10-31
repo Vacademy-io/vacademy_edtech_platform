@@ -1,5 +1,6 @@
 // services/student-operations/useStudentOperations.ts
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { STUDENT_UPDATE_OPERATION } from '@/constants/urls';
 import { useToast } from '@/hooks/use-toast';
@@ -33,20 +34,21 @@ const updateStudentBatch = async ({ students, newPackageSessionId }: UpdateBatch
 export const useUpdateBatchMutation = () => {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const { t } = useTranslation('manageStudentsUseStudentOperations');
 
     return useMutation({
         mutationFn: updateStudentBatch,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
             toast({
-                title: 'Success',
-                description: 'Batch updated successfully',
+                title: t('success'),
+                description: t('updateBatchSuccess'),
             });
         },
         onError: (error) => {
             toast({
-                title: 'Error',
-                description: 'Failed to update batch. Please try again.',
+                title: t('error'),
+                description: t('updateBatchError'),
                 variant: 'destructive',
             });
             console.error('Error updating batch:', error);
@@ -81,20 +83,21 @@ const extendStudentSession = async ({ students, newExpiryDate }: ExtendSessionRe
 export const useExtendSessionMutation = () => {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const { t } = useTranslation('manageStudentsUseStudentOperations');
 
     return useMutation({
         mutationFn: extendStudentSession,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
             toast({
-                title: 'Success',
-                description: 'Session extended successfully',
+                title: t('success'),
+                description: t('extendSessionSuccess'),
             });
         },
         onError: (error) => {
             toast({
-                title: 'Error',
-                description: 'Failed to extend session. Please try again.',
+                title: t('error'),
+                description: t('extendSessionError'),
                 variant: 'destructive',
             });
             console.error('Error extending session:', error);
@@ -131,20 +134,21 @@ const terminateStudent = async ({ students }: TerminateStudentRequest) => {
 export const useTerminateStudentMutation = () => {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const { t } = useTranslation('manageStudentsUseStudentOperations');
 
     return useMutation({
         mutationFn: terminateStudent,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
             toast({
-                title: 'Success',
-                description: 'Student registration terminated successfully',
+                title: t('success'),
+                description: t('terminateStudentSuccess'),
             });
         },
         onError: (error) => {
             toast({
-                title: 'Error',
-                description: 'Failed to terminate registration. Please try again.',
+                title: t('error'),
+                description: t('terminateStudentError'),
                 variant: 'destructive',
             });
             console.error('Error terminating registration:', error);
@@ -178,20 +182,21 @@ const deleteStudent = async ({ students }: DeleteStudentRequest) => {
 export const useDeleteStudentMutation = () => {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const { t } = useTranslation('manageStudentsUseStudentOperations');
 
     return useMutation({
         mutationFn: deleteStudent,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['students'] });
             toast({
-                title: 'Success',
-                description: 'Student deleted successfully',
+                title: t('success'),
+                description: t('deleteStudentSuccess'),
             });
         },
         onError: (error) => {
             toast({
-                title: 'Error',
-                description: 'Failed to delete student. Please try again.',
+                title: t('error'),
+                description: t('deleteStudentError'),
                 variant: 'destructive',
             });
             console.error('Error deleting student:', error);

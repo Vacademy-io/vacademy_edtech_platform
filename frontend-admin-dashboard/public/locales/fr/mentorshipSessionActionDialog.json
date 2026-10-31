@@ -1,0 +1,23 @@
+{
+    "pickNewSlot": "Choisissez un nouveau créneau",
+    "sessionCancelled": "Session annulée",
+    "sessionMoved": "Session déplacée",
+    "cancelFailed": "Impossible d'annuler la session.",
+    "rescheduleFailed": "Impossible de déplacer la session.",
+    "cancelHeading": "Annuler la session",
+    "rescheduleHeading": "Reprogrammer la session",
+    "keepAsIs": "Laisser tel quel",
+    "saving": "Enregistrement…",
+    "cancelSession": "Annuler la session",
+    "moveSession": "Déplacer la session",
+    "learnerFallback": "L'apprenant",
+    "mentorFallback": "le mentor",
+    "cancelBody": "<bold1>{{studentName}}</bold1> et <bold2>{{mentorName}}</bold2> seront informés de l'annulation, et l'entrée du calendrier ainsi que les rappels seront supprimés.",
+    "rescheduleBody": "L'ancien créneau est libéré et une nouvelle réservation est créée pour <bold1>{{studentName}}</bold1>. Si le nouveau créneau vient d'être pris, il vous sera demandé d'en choisir un autre.",
+    "learnerFallbackLower": "l'apprenant",
+    "newDateTime": "Nouvelle date et heure",
+    "reasonCancelPlaceholder": "ex. Le mentor est indisponible",
+    "reasonOptionalPlaceholder": "Note facultative",
+    "reasonCancelLabel": "Motif (affiché à l'apprenant)",
+    "reasonOptionalLabel": "Motif (facultatif)"
+}

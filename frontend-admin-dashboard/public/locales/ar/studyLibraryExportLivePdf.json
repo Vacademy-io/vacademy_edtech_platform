@@ -1,0 +1,65 @@
+{
+    "cornerLabel": "تقرير الحصة المباشرة",
+    "subtitle": "تقرير الحضور والمشاركة",
+    "fields": {
+        "course": "الدورة",
+        "batch": "الدفعة",
+        "period": "الفترة",
+        "learner": "المتعلم",
+        "attendance": "الحضور",
+        "engagement": "المشاركة"
+    },
+    "batch": {
+        "title": "تقرير الحصة المباشرة للدفعة",
+        "classWiseAttendance": "الحضور حسب الحصة",
+        "cards": {
+            "avgAttendance": "متوسط الحضور",
+            "learnersCount_zero": "{{count}} متعلم",
+            "learnersCount_one": "متعلم واحد",
+            "learnersCount_two": "متعلمان",
+            "learnersCount_few": "{{count}} متعلمين",
+            "learnersCount_many": "{{count}} متعلمًا",
+            "learnersCount_other": "{{count}} متعلم",
+            "classesHeld": "الحصص المنعقدة",
+            "avgDuration": "متوسط المدة",
+            "perPresentLearner": "لكل متعلم حاضر",
+            "avgEngagement": "متوسط المشاركة",
+            "participationPoints": "نقاط المشاركة"
+        }
+    },
+    "leaderboard": {
+        "title": "لوحة الصدارة"
+    },
+    "learner": {
+        "title": "تقرير الحصة المباشرة للمتعلم",
+        "classHistory": "سجل الحصص",
+        "cards": {
+            "batchPct": "الدفعة {{pct}}%",
+            "classesAttended": "الحصص الحاضرة",
+            "batchDuration": "الدفعة {{duration}}",
+            "batchAvgPts": "متوسط الدفعة {{points}} نقطة"
+        }
+    },
+    "tableHeaders": {
+        "date": "التاريخ",
+        "class": "الحصة",
+        "present": "حاضر",
+        "absent": "غائب",
+        "attendance": "الحضور",
+        "avgDuration": "متوسط المدة",
+        "engagement": "المشاركة",
+        "rank": "الترتيب",
+        "name": "الاسم",
+        "classes": "الحصص",
+        "status": "الحالة",
+        "duration": "المدة",
+        "talkTime": "وقت الحديث",
+        "chats": "الدردشات",
+        "polls": "الاستطلاعات",
+        "raiseHand": "رفع اليد"
+    },
+    "status": {
+        "present": "حاضر",
+        "absent": "غائب"
+    }
+}

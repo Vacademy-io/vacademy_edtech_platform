@@ -1,0 +1,23 @@
+{
+    "trigger": {
+        "extracting": "निकाला जा रहा है…",
+        "extractCopiedQuestions": "कॉपी किए गए प्रश्न निकालें"
+    },
+    "header": {
+        "instituteLogoAlt": "संस्थान लोगो"
+    },
+    "generateMore": {
+        "triggerLabel": "और जनरेट करें",
+        "dialogTitle": "और प्रश्न जनरेट करें",
+        "inputPlaceholder": "प्रश्न जनरेट करने के लिए विषय दर्ज करें",
+        "submitLabel": "प्रश्न जनरेट करें"
+    },
+    "closeButton": "बंद करें",
+    "pageActions": {
+        "duplicate": "डुप्लिकेट करें",
+        "delete": "हटाएं"
+    },
+    "emptyState": {
+        "noQuestions": "कोई प्रश्न मौजूद नहीं है।"
+    }
+}

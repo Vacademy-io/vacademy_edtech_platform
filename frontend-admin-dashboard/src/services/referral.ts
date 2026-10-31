@@ -40,7 +40,7 @@ export interface ReferralOptionRequest {
     referrer_discount_json: string;
     referee_discount_json: string;
     referrer_vesting_days: number;
-    allowCombineOffers:boolean;
+    allow_combine_offers: boolean;
     tag: string | null;
     description: string;
     setting_json?: string;
@@ -93,7 +93,8 @@ const convertRewardToBenefit = (reward: ReferrerReward | RefereeReward) => {
                 type: 'PERCENTAGE_DISCOUNT',
                 value: {
                     percentage: reward.value || 0,
-                    maxDiscount: reward.value || 100.0,
+                    // No cap. This used to send the percentage itself, so "10%" was capped at ₹10.
+                    maxDiscount: null,
                 },
                 pointTriggers: [],
             };
@@ -199,7 +200,7 @@ const convertRewardToBenefit = (reward: ReferrerReward | RefereeReward) => {
                                 type: 'PERCENTAGE_DISCOUNT',
                                 value: {
                                     percentage: reward.pointsRewardValue,
-                                    maxDiscount: reward.pointsRewardValue || 100.0,
+                                    maxDiscount: null,
                                 },
                                 pointTriggers: [],
                             };
@@ -263,13 +264,28 @@ export const convertToApiFormat = (settings: UnifiedReferralSettings): ReferralO
     }
 
     // 3. Safely convert referrer rewards (fallback to empty array if undefined)
+    // Per-referral rewards (discounts, points) form a ladder: a tier applies from its count
+    // up to the next tier's count, and the last one applies to every referral after that.
+    // Saving min = max = count rewarded only the exact Nth referral, so a "5% per referral"
+    // programme paid out once. One-off milestone rewards (content, free days) keep the
+    // exact count so they are not re-sent on every later referral.
+    const perReferral = new Set(['discount_percentage', 'discount_fixed', 'points_system']);
+    const tierCounts = (settings.referrerRewards || [])
+        .map((tier: ReferrerTier) => tier.referralCount)
+        .sort((a, b) => a - b);
+    const nextCount = (count: number) => tierCounts.find((c) => c > count);
     const referrerTiers = (settings.referrerRewards || []).map((tier: ReferrerTier) => {
         const benefit = convertRewardToBenefit(tier.reward);
+        const next = nextCount(tier.referralCount);
         return {
             tierName: tier.tierName,
             referralRange: {
                 min: tier.referralCount,
-                max: tier.referralCount,
+                max: perReferral.has(tier.reward.type)
+                    ? next !== undefined
+                        ? next - 1
+                        : null
+                    : tier.referralCount,
             },
             vestingDays: settings.payoutVestingDays || 7,
             benefits: [benefit],
@@ -300,7 +316,8 @@ export const convertToApiFormat = (settings: UnifiedReferralSettings): ReferralO
         source_id: instituteId || '',
         referrer_discount_json: referrerDiscountJson,
         referee_discount_json: refereeDiscountJson,
-        allowCombineOffers: settings.allowCombineOffers,
+        // The backend DTO is snake_case; the camelCase key was silently dropped.
+        allow_combine_offers: settings.allowCombineOffers,
         referrer_vesting_days: settings.payoutVestingDays || 7,
         tag: settings.isDefault ? 'DEFAULT' : null,
         description: settings.description || `Referral program: ${settings.label}`,

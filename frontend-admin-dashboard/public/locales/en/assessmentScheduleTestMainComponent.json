@@ -1,0 +1,49 @@
+{
+    "meta": {
+        "helmetTitle": "Schedule Tests",
+        "helmetDescription": "This page shows the list of all the schedules tests and also an assessment can be scheduled here."
+    },
+    "header": {
+        "navHeading": "Assessments List"
+    },
+    "tabs": {
+        "liveTests": {
+            "emptyMessage": "No tests are currently live."
+        },
+        "upcomingTests": {
+            "emptyMessage": "No upcoming tests scheduled."
+        },
+        "previousTests": {
+            "emptyMessage": "No previous tests available."
+        },
+        "draftTests": {
+            "emptyMessage": "No draft tests available."
+        }
+    },
+    "filters": {
+        "filterBy": "Filter by",
+        "mode": "Mode",
+        "type": "Type",
+        "evaluation": "Evaluation",
+        "unapplied": {
+            "countLabel_one": "{{count}} filter selected",
+            "countLabel_other": "{{count}} filters selected",
+            "instructionPrefix": "— press",
+            "applyLabel": "Apply",
+            "instructionSuffix": "to update the list."
+        },
+        "source": {
+            "label": "Source",
+            "options": {
+                "DASHBOARD": "Dashboard",
+                "API": "API"
+            },
+            "emptyOnPage": "No assessments from this source on this page. Try another page or clear the Source filter."
+        }
+    },
+    "dialogs": {
+        "noCourse": {
+            "type": "Creating assessment"
+        }
+    }
+}

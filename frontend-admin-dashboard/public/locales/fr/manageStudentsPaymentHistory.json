@@ -1,0 +1,144 @@
+{
+    "feePlan": {
+        "heading": "Plan de frais",
+        "planLabelFallback": "Plan de frais",
+        "installments_one": "{{count}} échéance",
+        "installments_many": "{{count}} d'échéances",
+        "installments_other": "{{count}} échéances",
+        "netPaid": "Net {{net}} · Payé {{paid}}",
+        "outstanding": "Solde restant"
+    },
+    "accountSummary": {
+        "heading": "Résumé du compte",
+        "totalAccrued": "Total accumulé",
+        "totalPaid": "Total payé",
+        "due": "Dû",
+        "pastDue": "En retard"
+    },
+    "markPaidDialog": {
+        "successToast": "Facture {{invoice}} marquée comme payée",
+        "errorToast": "Échec du marquage comme payée",
+        "title": "Marquer la facture comme payée",
+        "descriptionPrefix": "Enregistre un paiement hors ligne pour",
+        "descriptionFallback": "Enregistre un paiement hors ligne pour cette facture.",
+        "transactionReference": "Référence de transaction",
+        "transactionReferencePlaceholder": "n° de chèque, réf. UPI, n° de reçu",
+        "notes": "Notes",
+        "notesPlaceholder": "Note facultative",
+        "cancel": "Annuler",
+        "saving": "Enregistrement…",
+        "submit": "Marquer comme payée"
+    },
+    "invoicesList": {
+        "cancelSuccessToast": "Facture annulée",
+        "cancelErrorToast": "Impossible d'annuler la facture",
+        "copyLinkSuccessToast": "Lien de paiement copié",
+        "copyLinkErrorToast": "Impossible de copier dans le presse-papiers",
+        "emptyTitle": "Aucune facture pour l'instant",
+        "emptyHint": "Les factures générées pour cet apprenant apparaîtront ici.",
+        "proforma": "PROFORMA",
+        "proformaTitle": "Facture proforma — devient une facture numérotée une fois payée",
+        "discountFallback": "Remise",
+        "sourceAdminInvoice": "Facture admin",
+        "sourceSubscription": "Abonnement",
+        "sourceFeePayment": "Paiement de frais",
+        "previewTitle": "Aperçu du PDF de la facture sans le télécharger",
+        "preview": "Aperçu",
+        "downloadTitle": "Télécharger le PDF de la facture",
+        "download": "Télécharger",
+        "copied": "Copié",
+        "copyPaymentLink": "Copier le lien de paiement",
+        "copyPaymentLinkTitle": "Copier le lien de paiement à partager avec l'apprenant",
+        "editTitle": "Modifier cette facture impayée — conserve le même numéro de facture",
+        "edit": "Modifier",
+        "markPaidTitle": "Enregistrer un paiement hors ligne / manuel",
+        "markPaid": "Marquer comme payée",
+        "cancelInvoiceTitle": "Annuler cette facture — le lien de paiement cessera de fonctionner",
+        "cancelling": "Annulation…",
+        "cancelAction": "Annuler",
+        "paginationRange": "{{from}}–{{to}} sur {{total}}",
+        "cancelDialog": {
+            "title": "Annuler la facture {{number}} ?",
+            "description": "Cela annule définitivement la facture — le lien de paiement cessera de fonctionner et elle ne pourra plus jamais être marquée comme payée. Cette action est irréversible. Pour corriger une erreur, créez une nouvelle facture par la suite.",
+            "keep": "Conserver la facture",
+            "confirm": "Annuler la facture"
+        },
+        "left": "reste {{amount}}",
+        "paidWithReceipt": "{{amount}} payé · reçu {{receipt}}",
+        "paidSoFar": "{{amount}} payé"
+    },
+    "invoiceStatus": {
+        "generated": "Générée",
+        "sent": "Envoyée",
+        "viewed": "Consultée",
+        "pendingPayment": "Paiement en attente",
+        "paid": "Payée",
+        "rejected": "Rejetée"
+    },
+    "transactionHistory": {
+        "heading": "Historique des transactions",
+        "loading": "Chargement des transactions…",
+        "empty": "Aucun historique de transaction pour l'instant.",
+        "pageOf": "Page {{page}} sur {{total}}",
+        "event": {
+            "debitAccrual": "Facture émise",
+            "creditPayment": "Paiement reçu",
+            "creditWaiver": "Remise gracieuse",
+            "creditAdjustment": "Ajustement",
+            "debitPenalty": "Pénalité",
+            "debitReversal": "Facture annulée",
+            "creditReversal": "Paiement annulé"
+        }
+    },
+    "main": {
+        "loadInvoiceError": "Impossible de charger la facture à modifier",
+        "noLearnerTitle": "Aucun apprenant sélectionné",
+        "noLearnerHint": "Sélectionnez un apprenant pour voir son historique de paiement.",
+        "installmentsHeading": "Échéances",
+        "invoicesHeading": "Factures",
+        "invoicesHeadingCount": "Factures ({{count}})",
+        "createInvoice": "Créer une facture",
+        "loadingInvoices": "Chargement des factures..."
+    },
+    "voidPayment": {
+        "action": "Annuler le paiement",
+        "actionTitle": "Annuler ce paiement — à utiliser lorsqu'un paiement a été saisi par erreur",
+        "voidedTag": "Annulé",
+        "dialog": {
+            "title": "Annuler ce paiement de {{amount}} ?",
+            "description": "À utiliser pour un paiement saisi par erreur. Le montant est réaffecté au solde et aux échéances de l'apprenant, sa facture est annulée et il n'est plus compté comme encaissé. Le paiement reste dans l'historique, marqué comme annulé. Cette action est irréversible.",
+            "reasonLabel": "Motif (facultatif)",
+            "reasonPlaceholder": "ex. : saisi deux fois",
+            "keep": "Conserver le paiement",
+            "confirm": "Annuler le paiement"
+        },
+        "successToast": "Paiement annulé — {{amount}} est de nouveau dû par l'apprenant",
+        "errorToast": "Impossible d'annuler ce paiement"
+    },
+    "permanentDelete": {
+        "action": "Supprimer définitivement",
+        "paymentTitle": "Supprimer définitivement le paiement de {{label}} ?",
+        "invoiceTitle": "Supprimer définitivement la facture {{label}} ?",
+        "cannotUndo": "Cette action est irréversible.",
+        "whatHappens": "Ce qui va se passer",
+        "payment": {
+            "removed": "L'enregistrement du paiement est supprimé définitivement.",
+            "balance": "S'il compte encore, le montant est réaffecté au solde et aux échéances de l'apprenant.",
+            "invoice": "La facture-reçu générée pour ce paiement est supprimée et son numéro est libéré pour la prochaine facture."
+        },
+        "invoice": {
+            "removed": "La facture est supprimée définitivement.",
+            "balance": "Une facture impayée ne compte plus dans le solde de l'apprenant.",
+            "number": "Son numéro de facture est libéré et attribué à la prochaine facture."
+        },
+        "auditLog": "Une trace de la suppression est conservée dans le journal d'activité administrateur.",
+        "typePrefix": "Saisissez",
+        "typeSuffix": "pour confirmer",
+        "keep": "Conserver",
+        "confirm": "Supprimer définitivement",
+        "deleting": "Suppression…",
+        "paymentDeletedToast": "Paiement {{label}} supprimé",
+        "invoiceDeletedToast": "Facture {{label}} supprimée",
+        "errorToast": "Suppression impossible"
+    }
+}

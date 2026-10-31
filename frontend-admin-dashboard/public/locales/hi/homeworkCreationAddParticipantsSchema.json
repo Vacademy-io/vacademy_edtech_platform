@@ -1,0 +1,6 @@
+{
+    "validation": {
+        "endDateAfterStartDate": "समाप्ति तिथि आरंभ तिथि से बाद की होनी चाहिए।",
+        "startDateRequired": "ओपन टेस्ट के लिए पंजीकरण आरंभ तिथि आवश्यक है।"
+    }
+}

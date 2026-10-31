@@ -74,10 +74,12 @@ public class RevenueReportService {
     private static final String CONV_CTE = """
             conv AS (
                 SELECT ulp.user_id,
-                       COALESCE(ulp.best_source_type, ar.source_type, 'UNKNOWN') AS source_type,
+                       """ + ReportSourceSql.effective("COALESCE(ulp.best_source_type, ar.source_type)", "sa.campaign_type") + """
+                           AS source_type,
                        COALESCE(lu.user_id, ulp.assigned_counselor_id)           AS counsellor_id
                 FROM user_lead_profile ulp
                 LEFT JOIN audience_response ar ON ar.id = ulp.best_score_response_id
+                LEFT JOIN audience sa ON sa.id = ar.audience_id
                 LEFT JOIN LATERAL (
                     SELECT lu2.user_id FROM linked_users lu2
                     WHERE lu2.source = 'ENQUIRY' AND lu2.source_id = ar.enquiry_id
@@ -139,6 +141,55 @@ public class RevenueReportService {
             ORDER BY 1
             """;
 
+    /**
+     * Admissions + booked fee: converted leads ENROLLED in the window (institute-TZ enrolled_date,
+     * falling back to the mapping's created_at) and the full fee on those enrolments' plans,
+     * whatever has been collected so far — the admissions view counsellors are judged on, as
+     * opposed to {@link #PAID_CTE}'s cash-in-window. One plan can back several mappings, so
+     * plans are de-duplicated before their installments are summed. Cancelled / voided / waived
+     * installments are not owed and stay out.
+     */
+    private static final String BOOKED_CTE = """
+            enr AS (
+                SELECT DISTINCT c.user_id, c.counsellor_id, s.user_plan_id
+                FROM student_session_institute_group_mapping s
+                JOIN conv c ON c.user_id = s.user_id
+                WHERE s.institute_id = :instituteId
+                  AND s.status IN ('ACTIVE', 'COMPLETED', 'INVITED')
+                  AND COALESCE(s.enrolled_date, (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date) >= :fromDay
+                  AND COALESCE(s.enrolled_date, (s.created_at AT TIME ZONE 'UTC' AT TIME ZONE :tz)::date) <  :toDay
+            ),
+            plan_fee AS (
+                SELECT f.user_plan_id, SUM(f.amount_expected) AS fee
+                FROM student_fee_payment f
+                WHERE f.user_plan_id IN (SELECT user_plan_id FROM enr WHERE user_plan_id IS NOT NULL)
+                  AND f.amount_expected IS NOT NULL
+                  AND COALESCE(f.status, '') NOT IN ('CANCELLED', 'VOIDED', 'WAIVED')
+                GROUP BY f.user_plan_id
+            ),
+            booked AS (
+                SELECT e.user_id, e.counsellor_id, COALESCE(SUM(pf.fee), 0) AS fee
+                FROM (SELECT DISTINCT user_id, counsellor_id, user_plan_id FROM enr) e
+                LEFT JOIN plan_fee pf ON pf.user_plan_id = e.user_plan_id
+                GROUP BY e.user_id, e.counsellor_id
+            )
+            """;
+
+    private static final String BOOKED_TOTALS_SQL = "WITH " + CONV_CTE + ", " + BOOKED_CTE + """
+            SELECT COUNT(*)              AS admissions,
+                   COALESCE(SUM(fee), 0) AS booked_revenue
+            FROM booked
+            """;
+
+    private static final String BOOKED_BY_COUNSELLOR_SQL = "WITH " + CONV_CTE + ", " + BOOKED_CTE + """
+            SELECT counsellor_id         AS user_id,
+                   COUNT(*)              AS admissions,
+                   COALESCE(SUM(fee), 0) AS booked_revenue
+            FROM booked
+            WHERE counsellor_id IS NOT NULL
+            GROUP BY counsellor_id
+            """;
+
     /** Modal currency across this institute's PAID converted-lead payments (not window-bound). */
     private static final String CURRENCY_SQL = """
             SELECT pl.currency
@@ -160,7 +211,10 @@ public class RevenueReportService {
         Window w = resolveWindow(fromDate, toDate, zone);
         String scopeCsv = scopeResolver.resolveScopeUsersCsv(
                 instituteId, callerUserId, trimToNull(teamId), trimToNull(counsellorUserId));
-        MapSqlParameterSource p = baseParams(instituteId, w, scopeCsv).addValue("tz", zone.getId());
+        MapSqlParameterSource p = baseParams(instituteId, w, scopeCsv)
+                .addValue("tz", zone.getId())
+                .addValue("fromDay", java.sql.Date.valueOf(localDay(w.fromUtc(), zone)), Types.DATE)
+                .addValue("toDay", java.sql.Date.valueOf(localDay(w.toUtc(), zone)), Types.DATE);
 
         RevenueReportDTO.Totals totals = jdbc.queryForObject(REVENUE_TOTALS_SQL, p, (rs, i) -> {
             double revenue = rs.getDouble("revenue");
@@ -196,6 +250,25 @@ public class RevenueReportService {
                     .avgDealValue(payingLeads > 0 ? round2(revenue / payingLeads) : null)
                     .build();
         });
+        if (totals != null) {
+            jdbc.query(BOOKED_TOTALS_SQL, p, (RowCallbackHandler) rs -> {
+                totals.setAdmissions(rs.getLong("admissions"));
+                totals.setBookedRevenue(round2(rs.getDouble("booked_revenue")));
+            });
+        }
+
+        // A counsellor can have admissions in the window with nothing collected yet (or the
+        // reverse), so merge both sides instead of only decorating the cash rows.
+        Map<String, RevenueReportDTO.CounsellorRow> cslById = new LinkedHashMap<>();
+        byCounsellor.forEach(r -> cslById.put(r.getUserId(), r));
+        jdbc.query(BOOKED_BY_COUNSELLOR_SQL, p, (RowCallbackHandler) rs -> {
+            RevenueReportDTO.CounsellorRow row = cslById.computeIfAbsent(rs.getString("user_id"),
+                    id -> RevenueReportDTO.CounsellorRow.builder().userId(id).build());
+            row.setAdmissions(rs.getLong("admissions"));
+            row.setBookedRevenue(round2(rs.getDouble("booked_revenue")));
+        });
+        byCounsellor = new ArrayList<>(cslById.values());
+
         Map<String, String> names = resolveNames(
                 byCounsellor.stream().map(RevenueReportDTO.CounsellorRow::getUserId).toList());
         byCounsellor.forEach(r -> r.setName(names.getOrDefault(r.getUserId(), r.getUserId())));
@@ -431,10 +504,8 @@ public class RevenueReportService {
     private List<RevenueReportDTO.DayPoint> gapFillDays(Window w, ZoneId zone,
                                                         Map<String, RevenueReportDTO.DayPoint> byDay) {
         List<RevenueReportDTO.DayPoint> out = new ArrayList<>();
-        LocalDate from = w.fromUtc().toLocalDateTime().atZone(ZoneOffset.UTC)
-                .withZoneSameInstant(zone).toLocalDate();
-        LocalDate toExclusive = w.toUtc().toLocalDateTime().atZone(ZoneOffset.UTC)
-                .withZoneSameInstant(zone).toLocalDate();
+        LocalDate from = localDay(w.fromUtc(), zone);
+        LocalDate toExclusive = localDay(w.toUtc(), zone);
         for (LocalDate d = from; d.isBefore(toExclusive); d = d.plusDays(1)) {
             String key = d.toString();
             out.add(byDay.getOrDefault(key, RevenueReportDTO.DayPoint.builder()
@@ -448,6 +519,11 @@ public class RevenueReportService {
         LocalDate to = parseOr(toDate, today);
         LocalDate from = parseOr(fromDate, to.minusDays(DEFAULT_RANGE_DAYS - 1L));
         return new Window(toUtc(from, zone), toUtc(to.plusDays(1), zone));
+    }
+
+    /** Institute-TZ calendar date of a UTC wall-clock window bound. */
+    private static LocalDate localDay(Timestamp utc, ZoneId zone) {
+        return utc.toLocalDateTime().atZone(ZoneOffset.UTC).withZoneSameInstant(zone).toLocalDate();
     }
 
     private static Timestamp toUtc(LocalDate localDate, ZoneId zone) {

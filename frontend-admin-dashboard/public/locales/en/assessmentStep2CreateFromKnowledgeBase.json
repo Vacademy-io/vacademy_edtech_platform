@@ -1,0 +1,72 @@
+{
+    "defaultSectionName": "Section {{number}}",
+    "trigger": {
+        "title": "Create From Knowledge Base",
+        "subtitle": "Questions from your own books and notes"
+    },
+    "dialog": {
+        "headingChooseKb": "Choose a knowledge base",
+        "headingKbSection": "{{kbName}} — {{sectionName}}"
+    },
+    "kbStep": {
+        "intro": "Questions will be written only from the material in the knowledge base you pick, and each one will show the page it came from.",
+        "emptyTitle": "No knowledge bases yet",
+        "emptyDescription": "Add your books or notes under Knowledge Base first, then come back here.",
+        "sourcesCount_one": "{{count}} source",
+        "sourcesCount_other": "{{count}} sources"
+    },
+    "setup": {
+        "numberOfQuestions": "Number of questions",
+        "questionType": "Question type",
+        "difficulty": "Difficulty",
+        "noTopicsWarning": "This knowledge base has no topics yet. Questions will be drawn from all of its material.",
+        "questionTypeOptions": {
+            "mcqs": "Multiple choice (one answer)",
+            "mcqm": "Multiple choice (several answers)",
+            "trueFalse": "True / false",
+            "oneWord": "One word",
+            "longAnswer": "Long answer",
+            "numeric": "Numeric",
+            "passage": "Passage / comprehension",
+            "assertionReason": "Assertion–Reason"
+        },
+        "difficultyOptions": {
+            "easy": "Easy",
+            "medium": "Medium",
+            "hard": "Hard"
+        },
+        "validation": {
+            "minCount": "At least 1 question",
+            "maxCount": "At most 60 at a time"
+        }
+    },
+    "generating": {
+        "writingFrom": "Writing questions from {{kbName}}",
+        "hint": "Questions are written a few at a time, so a larger section takes longer. This run is kept in the knowledge base's history even if you close this."
+    },
+    "review": {
+        "partialDelivery": "{{delivered}} of {{planned}} questions could be written from the topics you picked. Add more material or widen the selection for the rest."
+    },
+    "insert": {
+        "paperTitle": "{{kbName}} — {{sectionName}}",
+        "successToast_one": "Added {{count}} question to {{sectionName}}",
+        "successToast_other": "Added {{count}} questions to {{sectionName}}"
+    },
+    "footer": {
+        "cancel": "Cancel",
+        "back": "Back",
+        "generateQuestions": "Generate questions",
+        "changeSelection": "Change selection",
+        "adding": "Adding…",
+        "addQuestions_one": "Add {{count}} question to this section",
+        "addQuestions_other": "Add {{count}} questions to this section"
+    },
+    "errors": {
+        "loadTopics": "Could not read the topics in this knowledge base",
+        "startGenerating": "Could not start generating",
+        "generationFailed": "Generation failed",
+        "regenerateQuestion": "Could not rewrite that question",
+        "paperNotSaved": "The question paper was not saved",
+        "insertQuestions": "Could not add these questions to the section"
+    }
+}

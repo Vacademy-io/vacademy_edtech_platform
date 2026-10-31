@@ -1,0 +1,63 @@
+{
+    "header": {
+        "title": "Edit {{term}}: {{name}}",
+        "description": "Update auth roles, allowed team roles, admin permissions, the admin payment option, seat cap, and validity. CPO swaps and removing linked courses aren't supported here."
+    },
+    "toasts": {
+        "noChanges": "No changes to save",
+        "saved": "Saved: {{bits}}",
+        "linkedCourses_one": "linked {{count}} course",
+        "linkedCourses_other": "linked {{count}} courses",
+        "updatedFields": "updated {{fields}}",
+        "updateFailed": "Failed to update {{term}}"
+    },
+    "validation": {
+        "seatCapPositive": "Seat cap must be a positive number",
+        "validityPositive": "Validity must be a positive number"
+    },
+    "linkedCourses": {
+        "heading_one": "Linked course ({{count}})",
+        "heading_other": "Linked courses ({{count}})",
+        "noneLinkedYet": "No courses linked yet.",
+        "cannotRemoveLinked": "Already linked PSes can't be removed here (would orphan enrolled learners).",
+        "addCourses": "Add courses",
+        "selectAll": "Select all",
+        "clearSelection": "Clear selection",
+        "searchPlaceholder": "Search courses by name",
+        "noMatch": "No courses match “{{query}}”.",
+        "willBeLinkedOnSave_one": "{{count}} course will be linked on Save.",
+        "willBeLinkedOnSave_other": "{{count}} courses will be linked on Save.",
+        "noneAvailable": "No other courses available to link."
+    },
+    "roles": {
+        "authRolesHeading": "Auth roles (assigned on invite acceptance)",
+        "noRolesFound": "No roles found",
+        "allowedTeamRolesHeading": "Allowed team roles ({{term}} admin's pick-list)",
+        "emptyMeansNoRestriction": "Empty = no restriction."
+    },
+    "permissions": {
+        "heading": "Admin permissions",
+        "description": "Stamped on the {{term}} admin's FSPSSM rows. Empty falls back to FULL. Applies only to admins enrolled after this save."
+    },
+    "paymentOption": {
+        "heading": "Admin payment option",
+        "cpoNotSupported": "This {{term}} is backed by a CPO fee structure. Switching the admin payment option isn't supported here.",
+        "description": "Which institute payment option the {{term}} admin pays via. Changing it affects future admin enrollments only — an admin who already paid keeps their plan.",
+        "loading": "Loading payment options...",
+        "noActiveOption": "No active option found",
+        "selectPlaceholder": "Select a payment option"
+    },
+    "seatCap": {
+        "label": "Seat cap",
+        "placeholder": "e.g. 25"
+    },
+    "validity": {
+        "label": "Validity (days)",
+        "placeholder": "e.g. 365"
+    },
+    "footer": {
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving…"
+    }
+}

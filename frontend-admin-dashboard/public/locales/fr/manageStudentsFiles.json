@@ -1,0 +1,128 @@
+{
+    "mediaTypes": {
+        "video": "Vidéo",
+        "audio": "Audio",
+        "pdf": "Document PDF",
+        "doc": "Document Word",
+        "image": "Image",
+        "note": "Note",
+        "other": "Autre"
+    },
+    "fileTypes": {
+        "file": "Fichier",
+        "url": "Lien",
+        "note": "Note"
+    },
+    "folders": {
+        "uncategorized": "Non classé",
+        "addToFolder": "Ajouter au dossier",
+        "fileCount_one": "{{count}} fichier",
+        "fileCount_many": "{{count}} fichiers",
+        "fileCount_other": "{{count}} fichiers"
+    },
+    "row": {
+        "viewNote": "Voir la note",
+        "download": "Télécharger",
+        "openLink": "Ouvrir le lien",
+        "manageAccess": "Gérer l'accès",
+        "delete": "Supprimer"
+    },
+    "toasts": {
+        "loadFilesFailed": "Échec du chargement des fichiers de l'élève",
+        "noStudentSelected": "Aucun élève sélectionné",
+        "enterFileName": "Veuillez saisir un nom de fichier",
+        "selectFile": "Veuillez sélectionner un fichier",
+        "fileUploaded": "Fichier téléversé avec succès",
+        "enterUrl": "Veuillez saisir une URL",
+        "urlAdded": "URL ajoutée avec succès",
+        "enterNoteContent": "Veuillez saisir le contenu de la note",
+        "noteCreated": "Note créée avec succès",
+        "addFileFailed": "Échec de l'ajout du fichier",
+        "fileDeleted": "Fichier supprimé avec succès",
+        "deleteFileFailed": "Échec de la suppression du fichier",
+        "filesRefreshed": "Fichiers actualisés",
+        "loadAccessFailed": "Échec du chargement des détails d'accès au fichier",
+        "viewAccessRevoked": "Accès en consultation révoqué",
+        "viewAccessGranted": "Accès en consultation accordé",
+        "updateViewAccessFailed": "Échec de la mise à jour de l'accès en consultation",
+        "editAccessRevoked": "Accès en modification révoqué",
+        "editAccessGranted": "Accès en modification accordé",
+        "updateEditAccessFailed": "Échec de la mise à jour de l'accès en modification",
+        "getFileUrlFailed": "Échec de l'obtention de l'URL du fichier",
+        "openFileFailed": "Échec de l'ouverture du fichier"
+    },
+    "empty": {
+        "title": "Aucun fichier pour l'instant",
+        "hint": "Téléversez un fichier, ajoutez une URL ou créez une note pour cet élève.",
+        "addFirstFile": "Ajouter le premier fichier"
+    },
+    "error": {
+        "title": "Impossible de charger les fichiers",
+        "hint": "Une erreur s'est produite lors de la récupération des fichiers de l'élève."
+    },
+    "heroStats": {
+        "totalFiles": "Total des fichiers",
+        "folders": "Dossiers",
+        "recent": "Récents (7j)"
+    },
+    "actionBar": {
+        "uploadFile": "Téléverser un fichier",
+        "addLink": "Ajouter un lien",
+        "addNote": "Ajouter une note",
+        "refreshFiles": "Actualiser les fichiers"
+    },
+    "addDialog": {
+        "titleFor": "Ajouter un fichier pour {{term}}",
+        "descriptionFor": "Téléversez un fichier, ajoutez une URL ou créez une note pour cet {{term}}",
+        "tabs": {
+            "file": "Fichier",
+            "url": "URL",
+            "note": "Note"
+        },
+        "selectFileLabel": "Sélectionner un fichier *",
+        "selected": "Sélectionné : {{name}} ({{size}} Mo)",
+        "mediaTypeLabel": "Type de média *",
+        "urlLabel": "URL *",
+        "urlPlaceholder": "https://exemple.com/ressource",
+        "urlHint": "Saisissez une URL valide vers une ressource externe",
+        "noteContentLabel": "Contenu de la note *",
+        "notePlaceholder": "Rédigez votre note ici...",
+        "noteHint": "Créez une note enrichie pour cet élève",
+        "fileNameLabel": "Nom du fichier *",
+        "fileNamePlaceholder": "ex. : Vidéo tutoriel - Bases de React",
+        "folderNameLabel": "Nom du dossier",
+        "folderNamePreselected": "Présélectionné",
+        "folderNamePlaceholder": "ex. : Devoirs, Certificats, Ressources",
+        "folderNameHintPreselected": "Ajout du fichier au dossier sélectionné",
+        "folderNameHintDefault": "Facultatif : organisez les fichiers en dossiers (insensible à la casse)",
+        "grantEditAccessLabel": "Accorder également l'accès en modification à l'élève",
+        "cancel": "Annuler",
+        "uploading": "Téléversement...",
+        "adding": "Ajout...",
+        "addSubmit": "Ajouter {{type}}"
+    },
+    "viewNoteDialog": {
+        "titleFallback": "Voir la note",
+        "description": "Consulter le contenu de la note pour cet élève",
+        "noContent": "Aucun contenu disponible",
+        "close": "Fermer"
+    },
+    "deleteDialog": {
+        "title": "Supprimer le fichier",
+        "description": "Voulez-vous vraiment supprimer ce fichier ? Cette action est irréversible.",
+        "cancel": "Annuler",
+        "confirm": "Supprimer"
+    },
+    "accessDialog": {
+        "titleFor": "Gérer l'accès de {{term}}",
+        "description": "Contrôlez l'accès de l'élève à ce fichier",
+        "viewAccessTitle": "Accès en consultation",
+        "viewAccessHint": "{{term}} peut consulter ce fichier",
+        "editAccessTitle": "Accès en modification",
+        "editAccessHint": "{{term}} peut modifier ce fichier",
+        "grant": "Accorder",
+        "revoke": "Révoquer",
+        "helpText": "L'accès en modification permettra à l'élève de modifier le fichier.",
+        "close": "Fermer"
+    }
+}

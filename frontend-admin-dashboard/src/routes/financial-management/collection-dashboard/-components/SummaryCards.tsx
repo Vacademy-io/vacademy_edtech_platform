@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { IconProps } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
 
@@ -19,8 +20,9 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
     iconColor, 
     bgColor, 
     borderColor,
-    delay = 0 
+    delay = 0
 }) => {
+    const { t } = useTranslation('financialManagementSummaryCards');
     return (
         <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -42,7 +44,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
                 <div className="text-2xl font-black text-gray-900 tracking-tight">{value}</div>
                 <div className="flex items-center gap-1.5 mt-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">Live Status</span>
+                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-tighter">{t('liveStatus')}</span>
                 </div>
             </div>
         </motion.div>

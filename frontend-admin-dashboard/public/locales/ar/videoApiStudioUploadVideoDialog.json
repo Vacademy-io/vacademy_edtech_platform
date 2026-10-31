@@ -1,0 +1,35 @@
+{
+    "title": "رفع فيديو للفهرسة",
+    "fileSize": "{{size}} ميجابايت",
+    "filePicker": {
+        "selectPrompt": "انقر لاختيار ملف فيديو",
+        "sizeHint": "MP4 وWebM وMOV حتى {{maxSize}} ميجابايت"
+    },
+    "name": {
+        "label": "الاسم",
+        "placeholder": "مثال: تسجيل عرض المنتج"
+    },
+    "videoType": {
+        "label": "نوع الفيديو",
+        "podcast": "بودكاست",
+        "demo": "عرض توضيحي للبرنامج"
+    },
+    "progress": {
+        "uploading": "جاري رفع الفيديو...",
+        "indexing": "جاري بدء الفهرسة..."
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "processing": "جاري المعالجة...",
+        "upload": "رفع وفهرسة"
+    },
+    "errors": {
+        "unsupportedFormat": "صيغة غير مدعومة. استخدم MP4 أو WebM أو MOV.",
+        "fileTooLarge": "الملف كبير جدًا. الحد الأقصى {{maxSize}} ميجابايت.",
+        "uploadFailed": "فشل الرفع",
+        "publicUrlFailed": "تعذر الحصول على الرابط العام"
+    },
+    "success": {
+        "uploadStarted": "تم رفع الفيديو وبدأت الفهرسة"
+    }
+}

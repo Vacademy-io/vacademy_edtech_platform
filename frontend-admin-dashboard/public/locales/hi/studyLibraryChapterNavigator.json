@@ -1,0 +1,19 @@
+{
+    "untitledSlide": "शीर्षक रहित",
+    "previousChapterTitle": "पिछला: {{name}}",
+    "noPreviousChapter": "कोई पिछला {{term}} नहीं",
+    "nextChapterTitle": "अगला: {{name}}",
+    "noNextChapter": "कोई अगला {{term}} नहीं",
+    "selectChapter": "{{term}} चुनें",
+    "searchAllPlaceholder": "सभी {{term}} खोजें...",
+    "loading": "लोड हो रहा है…",
+    "couldNotLoadSubject": "इस {{term}} को लोड नहीं किया जा सका",
+    "retry": "पुनः प्रयास करें",
+    "noChaptersFound": "कोई {{term}} नहीं मिला",
+    "showSlidesTitle": "{{term}} दिखाएं",
+    "unsavedCount_one": "{{count}} सहेजा नहीं गया",
+    "unsavedCount_other": "{{count}} सहेजे नहीं गए",
+    "unsavedChangesTitle": "सहेजे न गए परिवर्तन",
+    "couldNotLoadRetry": "लोड नहीं हो सका — पुनः प्रयास करें",
+    "noSlidesYet": "अभी तक कोई {{term}} नहीं"
+}

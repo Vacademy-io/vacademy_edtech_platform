@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.credits.client.CreditClient;
+import vacademy.io.admin_core_service.features.credits.client.MeteringFields;
 import vacademy.io.admin_core_service.features.telephony.core.dto.VoiceCallingSettingsPojo;
 import vacademy.io.admin_core_service.features.telephony.enums.ProviderType;
 import vacademy.io.admin_core_service.features.telephony.persistence.repository.AiCallResultRepository;
@@ -59,6 +60,15 @@ public class CallBillingService {
 
     private static final Logger log = LoggerFactory.getLogger(CallBillingService.class);
 
+    /**
+     * Platform-wide billing granularity in seconds. 30 = half-minute pulses for every
+     * institute that has not negotiated its own. Rates stay credits-per-MINUTE, so this
+     * does not change anybody's price per minute — it only stops a 5-second call being
+     * rounded up to a full one.
+     */
+    @org.springframework.beans.factory.annotation.Value("${telephony.billing.pulse-seconds:60}")
+    private int defaultPulseSeconds;
+
     /** Providers whose telephony minutes ride Vacademy-paid trunks. */
     private static final List<String> VOICE_BILLABLE_PROVIDERS =
             List.of(ProviderType.PLIVO, ProviderType.VACADEMY_AI);
@@ -84,12 +94,32 @@ public class CallBillingService {
     @Autowired private AiCallResultRepository aiCallResultRepo;
     @PersistenceContext private EntityManager entityManager;
 
-    public boolean isVoiceBillableProvider(String providerType) {
+    /**
+     * Static twin of {@link #isVoiceBillableProvider}, so a pre-dial caller can ask
+     * "would this call be charged to the Vacademy wallet?" without taking a bean
+     * dependency on the billing service. The pre-dial credit gate and this meter
+     * MUST agree on the provider set: gating a provider we never bill would block
+     * an institute for spend it does not make, and billing one we never gate is the
+     * hole this whole change exists to close.
+     */
+    public static boolean isVoiceBillable(String providerType) {
         return providerType != null && VOICE_BILLABLE_PROVIDERS.contains(providerType);
     }
 
-    public boolean isAiBillableProvider(String provider) {
+    public boolean isVoiceBillableProvider(String providerType) {
+        return isVoiceBillable(providerType);
+    }
+
+    /**
+     * Static twin of {@link #isAiBillableProvider}, for readers that report what is still
+     * to be charged (the public API's usage and per-call cost) and must use the same set.
+     */
+    public static boolean isAiBillable(String provider) {
         return provider != null && AI_BILLABLE_PROVIDERS.contains(provider);
+    }
+
+    public boolean isAiBillableProvider(String provider) {
+        return isAiBillable(provider);
     }
 
     /**
@@ -121,7 +151,10 @@ public class CallBillingService {
             String requestType = "INBOUND".equalsIgnoreCase(direction) ? RT_VOICE_IN : RT_VOICE_OUT;
             boolean ok = bill(callLogId, instituteId, requestType, durationSeconds,
                     "voice_call:" + callLogId,
-                    "Call minutes (" + providerType + " " + direction + ")");
+                    "Call minutes (" + providerType + " " + direction + ")",
+                    BigDecimal.ZERO,
+                    callMetering(USE_CASE_TELEPHONY, "call_log_id", callLogId, providerType, direction,
+                            durationSeconds, null, null, null, leadIdForCallLog(callLogId)));
             if (ok) callLogRepo.markCreditsBilled(callLogId, Instant.now());
         } catch (Exception e) {
             log.error("call-billing: voice leg failed call={} inst={}: {}",
@@ -146,7 +179,10 @@ public class CallBillingService {
                     idempotencyKey,
                     "AI call minutes (" + provider + " " + direction
                             + (engine != null ? " · " + engine : "") + ")",
-                    surcharge);
+                    surcharge,
+                    callMetering(USE_CASE_AI_CALLING, "ai_call_result_id", aiCallResultId, provider, direction,
+                            durationSeconds, agentId, engine, agentName(agentId),
+                            leadIdForAiCallResult(aiCallResultId)));
             if (ok) aiCallResultRepo.markCreditsBilled(aiCallResultId, Instant.now());
         } catch (Exception e) {
             log.error("call-billing: ai leg failed result={} inst={}: {}",
@@ -154,16 +190,104 @@ public class CallBillingService {
         }
     }
 
-    /** @return true when ai_service acknowledged the charge (or its idempotent replay). */
-    private boolean bill(String refId, String instituteId, String requestType,
-                         int durationSeconds, String idempotencyKey, String description) {
-        return bill(refId, instituteId, requestType, durationSeconds, idempotencyKey,
-                description, BigDecimal.ZERO);
+    /** ai_usage_event use cases (ai_use_case_catalog keys) for the two meters. */
+    static final String USE_CASE_TELEPHONY = "telephony";
+    static final String USE_CASE_AI_CALLING = "ai_calling";
+
+    /**
+     * Usage-metering fields for one call charge: a system meter on the PHONE surface,
+     * with what identifies the call in the context. Never affects the amount.
+     */
+    static MeteringFields callMetering(String useCase, String refKey, String refId, String provider,
+                                       String direction, int durationSeconds, String agentId, String engine) {
+        return callMetering(useCase, refKey, refId, provider, direction, durationSeconds, agentId, engine,
+                null, null);
     }
 
+    /** As above, plus the agent's display name and the lead (audience_response) id when known. */
+    static MeteringFields callMetering(String useCase, String refKey, String refId, String provider,
+                                       String direction, int durationSeconds, String agentId, String engine,
+                                       String agentName, String leadId) {
+        java.util.Map<String, Object> context = new java.util.HashMap<>();
+        if (refId != null) context.put(refKey, refId);
+        if (provider != null) context.put("provider", provider);
+        if (direction != null) context.put("direction", direction);
+        context.put("duration_seconds", durationSeconds);
+        if (agentId != null && !agentId.isBlank()) context.put("agent_id", agentId);
+        if (engine != null) context.put("tts_engine", engine);
+        if (agentName != null && !agentName.isBlank()) context.put("agent_name", agentName);
+        if (leadId != null && !leadId.isBlank()) context.put("lead_id", leadId);
+        return MeteringFields.system(useCase)
+                .surface(MeteringFields.SURFACE_PHONE)
+                .usageContext(context)
+                .build();
+    }
+
+    /**
+     * {@code metering} with the BILLED minutes (pulse-rounded, the same quantity the
+     * description's billed label shows) in usage_context.minutes, which ai_service
+     * stores as the event's minutes. Null in, null out; never affects the amount.
+     */
+    static MeteringFields withBilledMinutes(MeteringFields metering, long pulses, int pulseSeconds) {
+        if (metering == null) return null;
+        java.util.Map<String, Object> context = new java.util.LinkedHashMap<>();
+        if (metering.usageContext() != null) context.putAll(metering.usageContext());
+        context.put("minutes", BigDecimal.valueOf(pulses * (long) pulseSeconds)
+                .divide(BigDecimal.valueOf(60), 3, RoundingMode.HALF_UP));
+        return metering.toBuilder().usageContext(context).build();
+    }
+
+    /** ai_agent.name for the usage-event label; best effort (null on any problem). */
+    private String agentName(String agentId) {
+        if (agentId == null || agentId.isBlank()) return null;
+        try {
+            List<?> rows = entityManager.createNativeQuery("SELECT name FROM ai_agent WHERE id = :id")
+                    .setParameter("id", agentId)
+                    .getResultList();
+            return rows.isEmpty() || rows.get(0) == null ? null : String.valueOf(rows.get(0));
+        } catch (Exception e) {
+            log.debug("call-billing: agent name lookup failed for {}: {}", agentId, e.getMessage());
+            return null;
+        }
+    }
+
+    /** The lead (audience_response) a call log targeted, for the usage-event context; best effort. */
+    private String leadIdForCallLog(String callLogId) {
+        if (callLogId == null || callLogId.isBlank()) return null;
+        try {
+            List<?> rows = entityManager.createNativeQuery(
+                    "SELECT response_id FROM telephony_call_log WHERE id = :id "
+                            + "AND (subject_type IS NULL OR subject_type = 'LEAD')")
+                    .setParameter("id", callLogId)
+                    .getResultList();
+            return rows.isEmpty() || rows.get(0) == null ? null : String.valueOf(rows.get(0));
+        } catch (Exception e) {
+            log.debug("call-billing: lead lookup failed for call {}: {}", callLogId, e.getMessage());
+            return null;
+        }
+    }
+
+    /** The lead behind an AI call result (via its call log), for the usage-event context; best effort. */
+    private String leadIdForAiCallResult(String aiCallResultId) {
+        if (aiCallResultId == null || aiCallResultId.isBlank()) return null;
+        try {
+            List<?> rows = entityManager.createNativeQuery(
+                    "SELECT cl.response_id FROM ai_call_result r "
+                            + "JOIN telephony_call_log cl ON cl.id = r.call_log_id "
+                            + "WHERE r.id = :id AND (cl.subject_type IS NULL OR cl.subject_type = 'LEAD')")
+                    .setParameter("id", aiCallResultId)
+                    .getResultList();
+            return rows.isEmpty() || rows.get(0) == null ? null : String.valueOf(rows.get(0));
+        } catch (Exception e) {
+            log.debug("call-billing: lead lookup failed for ai result {}: {}", aiCallResultId, e.getMessage());
+            return null;
+        }
+    }
+
+    /** @return true when ai_service acknowledged the charge (or its idempotent replay). */
     private boolean bill(String refId, String instituteId, String requestType,
                          int durationSeconds, String idempotencyKey, String description,
-                         BigDecimal engineSurcharge) {
+                         BigDecimal engineSurcharge, MeteringFields metering) {
         if (instituteId == null || instituteId.isBlank() || durationSeconds <= 0) return false;
 
         Rate rate = resolveRate(instituteId, requestType);
@@ -191,10 +315,20 @@ public class CallBillingService {
                 perMinute = perMinute.add(engineSurcharge).max(BigDecimal.ZERO);
             }
         }
-        long minutes = (durationSeconds + 59) / 60; // ceil, min 1 for any >0 duration
-        BigDecimal cost = perMinute.multiply(BigDecimal.valueOf(minutes))
+        // Billing granularity. The rate stays credits-per-MINUTE; the pulse only decides
+        // how coarsely the duration is rounded up, so changing it never reprices the rate
+        // itself. Default 60 = the historical per-minute behaviour.
+        int pulseSeconds = resolvePulseSeconds(instituteId);
+        long pulses = (durationSeconds + pulseSeconds - 1L) / pulseSeconds; // ceil, min 1
+        BigDecimal perPulse = perMinute
+                .multiply(BigDecimal.valueOf(pulseSeconds))
+                .divide(BigDecimal.valueOf(60), 6, RoundingMode.HALF_UP);
+        BigDecimal cost = perPulse.multiply(BigDecimal.valueOf(pulses))
                 .max(rate.minimum())
                 .setScale(4, RoundingMode.HALF_UP);
+        String billedLabel = pulseSeconds == 60
+                ? pulses + " min"
+                : pulses + " x " + pulseSeconds + "s";
         if (cost.signum() <= 0) {
             // 0-rate = metering disabled (globally or per-institute): report success so
             // the caller stamps the row and the sweeper doesn't retry forever.
@@ -202,10 +336,10 @@ public class CallBillingService {
         }
 
         boolean ok = creditClient.deductPrecomputed(
-                instituteId, requestType, description + " · " + minutes + " min",
-                cost, idempotencyKey);
-        log.info("call-billing: {} ref={} inst={} mins={} credits={} ok={}",
-                requestType, refId, instituteId, minutes, cost, ok);
+                instituteId, requestType, description + " · " + billedLabel,
+                cost, idempotencyKey, withBilledMinutes(metering, pulses, pulseSeconds));
+        log.info("call-billing: {} ref={} inst={} secs={} pulse={}s billed={} credits={} ok={}",
+                requestType, refId, instituteId, durationSeconds, pulseSeconds, billedLabel, cost, ok);
         return ok;
     }
 
@@ -283,6 +417,26 @@ public class CallBillingService {
             log.error("call-billing: engine surcharge lookup failed for '{}': {}", engine, e.getMessage());
             return BigDecimal.ZERO;
         }
+    }
+
+    /**
+     * Billing pulse for this institute, in seconds: the per-institute override when set,
+     * otherwise the platform default. Falls back to 60 (per-minute) on any error, which is
+     * the historical behaviour and never bills MORE than the institute expects.
+     */
+    private int resolvePulseSeconds(String instituteId) {
+        try {
+            VoiceCallingSettingsPojo pojo = voiceSettings.get(instituteId);
+            VoiceCallingSettingsPojo.BillingConfig billing = pojo == null ? null : pojo.getBilling();
+            if (billing != null && billing.getBillingPulseSeconds() != null
+                    && billing.getBillingPulseSeconds() > 0) {
+                return billing.getBillingPulseSeconds();
+            }
+        } catch (Exception e) {
+            log.debug("call-billing: pulse lookup failed for {} — using default {}s",
+                    instituteId, defaultPulseSeconds);
+        }
+        return defaultPulseSeconds > 0 ? defaultPulseSeconds : 30;
     }
 
     private Rate resolveRate(String instituteId, String requestType) {

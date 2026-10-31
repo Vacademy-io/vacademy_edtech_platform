@@ -1,5 +1,15 @@
+import type { TFunction } from 'i18next';
 import type { SlideType } from '../../../shared/types';
-import { DEFAULT_QUIZ_QUESTIONS, DEFAULT_SOLUTION_CODE } from '../../../shared/constants';
+import { buildDefaultQuizQuestions, DEFAULT_SOLUTION_CODE } from '../../../shared/constants';
+import i18n from '@/i18n';
+
+// This module builds content strings outside any React render tree (called
+// from a plain generator function, not a component/hook), so useTranslation()
+// isn't available. Use the shared i18next singleton directly with a fixed
+// namespace — same pattern as studyLibraryAssessmentToHtml.
+const NAMESPACE = 'studyLibraryMockSlideContent';
+const t: TFunction = ((key: string, options?: Record<string, unknown>) =>
+    i18n.t(key, { ns: NAMESPACE, ...options })) as TFunction;
 
 /**
  * Generate mock/sample content for a slide based on session and slide info
@@ -91,13 +101,13 @@ print("Python is simple and powerful!")
 
     // Default content based on slide type
     if (slideType === 'objectives') {
-        return `<h2>Learning Objectives</h2><p>By the end of this session, students will achieve the learning goals outlined for ${sessionTitle}.</p>`;
+        return t('defaultObjectives', { sessionTitle });
     } else if (slideType === 'topic') {
-        return `<h2>${slideTitle}</h2><p>This topic covers important concepts related to ${sessionTitle}.</p>`;
+        return t('defaultTopic', { slideTitle, sessionTitle });
     } else if (slideType === 'quiz') {
-        return JSON.stringify({ questions: DEFAULT_QUIZ_QUESTIONS });
+        return JSON.stringify({ questions: buildDefaultQuizQuestions(t) });
     } else if (slideType === 'homework' || slideType === 'assignment') {
-        return `Complete the assignment for ${sessionTitle}.`;
+        return t('defaultAssignment', { sessionTitle });
     } else if (slideType === 'solution') {
         return DEFAULT_SOLUTION_CODE;
     }

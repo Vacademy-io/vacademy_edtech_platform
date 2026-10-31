@@ -6,6 +6,8 @@
 
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { toast } from 'sonner';
 import { DotsThreeVertical, PencilSimple, Lightning, Trash } from '@phosphor-icons/react';
 import { Card, CardContent } from '@/components/ui/card';
@@ -37,11 +39,13 @@ import {
 import { getInstituteId } from '@/constants/helper';
 import { TriggerWorkflowDialog } from './TriggerWorkflowDialog';
 
-const MODE_LABEL: Record<AssignmentMode, string> = {
-    MANUAL: 'Manual',
-    ROUND_ROBIN: 'Round-robin',
-    TIME_BASED: 'Time-based',
-};
+function buildModeLabel(t: TFunction): Record<AssignmentMode, string> {
+    return {
+        MANUAL: t('modes.manual'),
+        ROUND_ROBIN: t('modes.roundRobin'),
+        TIME_BASED: t('modes.timeBased'),
+    };
+}
 
 const MODE_TONE: Record<AssignmentMode, string> = {
     MANUAL: 'bg-neutral-100 text-neutral-700',
@@ -50,6 +54,7 @@ const MODE_TONE: Record<AssignmentMode, string> = {
 };
 
 export default function PoolsList() {
+    const { t } = useTranslation('settingsPoolsList');
     const navigate = useNavigate();
     const { data: pools, isLoading } = useCounselorPools();
     const { mutate: deletePool, isPending: deleting } = useDeletePool();
@@ -71,7 +76,7 @@ export default function PoolsList() {
         if (!poolToDelete) return;
         deletePool(poolToDelete.id, {
             onSuccess: () => {
-                toast.success(`Pool "${poolToDelete.name}" deleted`);
+                toast.success(t('toasts.deleted', { name: poolToDelete.name }));
                 setPoolToDelete(null);
             },
             onError: (err: unknown) => {
@@ -80,39 +85,36 @@ export default function PoolsList() {
                         ?.data?.ex ??
                     (err as { response?: { data?: { message?: string } } })?.response?.data
                         ?.message ??
-                    'Failed to delete pool';
+                    t('toasts.deleteFailed');
                 toast.error(message);
             },
         });
     };
 
     if (isLoading) {
-        return <div className="p-6 text-sm text-muted-foreground">Loading pools…</div>;
+        return <div className="p-6 text-sm text-muted-foreground">{t('loading')}</div>;
     }
+
+    const modeLabel = buildModeLabel(t);
 
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <div>
-                    <h3 className="text-lg font-semibold">Counselor Pools</h3>
-                    <p className="text-sm text-muted-foreground">
-                        A pool groups counselors and decides how leads from its campaigns get
-                        auto-assigned. Each campaign can belong to only one pool.
-                    </p>
+                    <h3 className="text-lg font-semibold">{t('header.title')}</h3>
+                    <p className="text-sm text-muted-foreground">{t('header.description')}</p>
                 </div>
                 <MyButton buttonType="primary" scale="medium" onClick={goToCreate}>
-                    + Create Pool
+                    {t('header.createPool')}
                 </MyButton>
             </div>
 
             {pools && pools.length === 0 ? (
                 <Card>
                     <CardContent className="flex flex-col items-center gap-3 py-12">
-                        <p className="text-sm text-muted-foreground">
-                            No pools yet. Create your first pool to start auto-assigning leads.
-                        </p>
+                        <p className="text-sm text-muted-foreground">{t('emptyState.message')}</p>
                         <MyButton buttonType="primary" scale="medium" onClick={goToCreate}>
-                            Create Pool
+                            {t('emptyState.createPool')}
                         </MyButton>
                     </CardContent>
                 </Card>
@@ -135,14 +137,20 @@ export default function PoolsList() {
                                         )}
                                     </div>
                                     <Badge className={MODE_TONE[pool.assignment_mode]}>
-                                        {MODE_LABEL[pool.assignment_mode]}
+                                        {modeLabel[pool.assignment_mode]}
                                     </Badge>
                                 </div>
                                 <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                    <span>{pool.audiences?.length ?? 0} campaigns</span>
+                                    <span>
+                                        {t('card.campaignsCount', {
+                                            count: pool.audiences?.length ?? 0,
+                                        })}
+                                    </span>
                                     <span>·</span>
                                     <span>
-                                        {countDistinctCounselors(pool.members)} counselors
+                                        {t('card.counselorsCount', {
+                                            count: countDistinctCounselors(pool.members),
+                                        })}
                                     </span>
                                 </div>
                                 <div className="flex justify-end pt-1">
@@ -150,7 +158,7 @@ export default function PoolsList() {
                                         <DropdownMenuTrigger asChild>
                                             <button
                                                 type="button"
-                                                aria-label="Pool actions"
+                                                aria-label={t('card.actionsAriaLabel')}
                                                 className="rounded-md p-1 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"
                                                 onClick={(e) => e.stopPropagation()}
                                             >
@@ -167,7 +175,7 @@ export default function PoolsList() {
                                                     goToEdit(pool.id);
                                                 }}
                                             >
-                                                <PencilSimple size={16} /> Edit
+                                                <PencilSimple size={16} /> {t('card.edit')}
                                             </DropdownMenuItem>
                                             <DropdownMenuItem
                                                 onClick={(e) => {
@@ -175,7 +183,8 @@ export default function PoolsList() {
                                                     setTriggerPool(pool);
                                                 }}
                                             >
-                                                <Lightning size={16} /> Trigger workflow
+                                                <Lightning size={16} />{' '}
+                                                {t('card.triggerWorkflow')}
                                             </DropdownMenuItem>
                                             <DropdownMenuSeparator />
                                             <DropdownMenuItem
@@ -185,7 +194,7 @@ export default function PoolsList() {
                                                     setPoolToDelete(pool);
                                                 }}
                                             >
-                                                <Trash size={16} /> Delete
+                                                <Trash size={16} /> {t('card.delete')}
                                             </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -202,22 +211,24 @@ export default function PoolsList() {
             >
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete pool "{poolToDelete?.name}"?</AlertDialogTitle>
+                        <AlertDialogTitle>
+                            {t('deleteDialog.title', { name: poolToDelete?.name })}
+                        </AlertDialogTitle>
                         <AlertDialogDescription>
-                            This permanently removes the pool, its shift schedule, and all member
-                            configuration. Counselors assigned to existing leads are not affected;
-                            new leads on this pool's campaigns will no longer be auto-assigned.
+                            {t('deleteDialog.description')}
                             {poolToDelete?.audiences && poolToDelete.audiences.length > 0 && (
                                 <span className="mt-2 block text-amber-600">
-                                    This pool still has {poolToDelete.audiences.length} campaign
-                                    {poolToDelete.audiences.length === 1 ? '' : 's'} attached. You
-                                    must remove all campaigns from the pool first.
+                                    {t('deleteDialog.campaignsAttachedWarning', {
+                                        count: poolToDelete.audiences.length,
+                                    })}
                                 </span>
                             )}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogCancel disabled={deleting}>
+                            {t('deleteDialog.cancel')}
+                        </AlertDialogCancel>
                         <AlertDialogAction
                             disabled={
                                 deleting ||
@@ -226,7 +237,7 @@ export default function PoolsList() {
                             onClick={confirmDelete}
                             className="bg-red-600 hover:bg-red-700"
                         >
-                            {deleting ? 'Deleting…' : 'Delete'}
+                            {deleting ? t('deleteDialog.deleting') : t('deleteDialog.delete')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>

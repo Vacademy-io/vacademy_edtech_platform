@@ -1,0 +1,29 @@
+{
+    "heading": "Workflows",
+    "statusHeading": "Workflows {{status}}",
+    "foundCount_one": "{{count}} workflow trouvé",
+    "foundCount_many": "{{count}} workflows trouvés",
+    "foundCount_other": "{{count}} workflows trouvés",
+    "createWorkflow": "Créer un workflow",
+    "searchPlaceholder": "Rechercher des workflows...",
+    "status": "Statut :",
+    "all": "Tous",
+    "filterByType": "Filtrer par type :",
+    "loadFailed": {
+        "title": "Échec du chargement des workflows",
+        "hint": "Veuillez actualiser la page ou contacter le support si le problème persiste."
+    },
+    "retry": "Réessayer",
+    "empty": {
+        "filteredTitle": "Aucun workflow trouvé",
+        "noneTitle": "Aucun workflow pour l'instant",
+        "filteredHint": "Essayez d'ajuster vos critères de recherche ou de filtre",
+        "noneHint": "Créez votre premier workflow pour automatiser les processus de votre établissement"
+    },
+    "createFirstWorkflow": "Créer votre premier workflow",
+    "statusLabels": {
+        "active": "Actif",
+        "draft": "Brouillon",
+        "inactive": "Inactif"
+    }
+}

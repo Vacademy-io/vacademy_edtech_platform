@@ -1,0 +1,66 @@
+{
+    "notReady": {
+        "title": "वेबहुक सेटअप",
+        "description": "पहले ऊपर किसी WhatsApp प्रदाता को कॉन्फ़िगर और सक्रिय करें, फिर यहां वेबहुक सेट करें।"
+    },
+    "header": {
+        "title": "वेबहुक सेटअप — {{provider}}",
+        "subtitle": "इनकमिंग संदेश प्राप्त करने के लिए अपने WhatsApp प्रदाता को कनेक्ट करें"
+    },
+    "status": {
+        "channelMapping": "चैनल मैपिंग",
+        "channelMappingHint": "इनकमिंग वेबहुक को आपके इंस्टीट्यूट तक रूट करता है",
+        "connected": "कनेक्टेड: {{channelId}}",
+        "notConnected": "कनेक्टेड नहीं है"
+    },
+    "setup": {
+        "oneClickTitle": "वन-क्लिक सेटअप",
+        "webhookUrlTitle": "वेबहुक URL",
+        "autoDescription": "चैनल मैपिंग बनाता है और {{provider}} के साथ वेबहुक को स्वचालित रूप से पंजीकृत करता है।",
+        "manualDescription": "चैनल मैपिंग बनाता है। वेबहुक URL कॉपी करें और इसे अपने {{provider}} डैशबोर्ड में पेस्ट करें।",
+        "button": {
+            "settingUp": "सेटअप हो रहा है...",
+            "reRegister": "{{provider}} के साथ वेबहुक फिर से पंजीकृत करें",
+            "setup": "{{provider}} के साथ वेबहुक सेटअप करें",
+            "mappingAlreadyCreated": "मैपिंग पहले से बनाई जा चुकी है",
+            "createMapping": "चैनल मैपिंग बनाएं"
+        }
+    },
+    "webhookUrl": {
+        "title": "वेबहुक URL",
+        "copyButtonTitle": "वेबहुक URL कॉपी करें"
+    },
+    "combot": {
+        "manualSetupTitle": "मैनुअल वेबहुक सेटअप",
+        "instructions": "ऊपर दिए गए URL को Com.bot डैशबोर्ड → सेटिंग्स → वेबहुक्स में पेस्ट करें।",
+        "verifyTokenLabel": "वेरिफाई टोकन:"
+    },
+    "verify": {
+        "title": "चरण 3: कनेक्शन सत्यापित करें",
+        "description": "जांचें कि वेबहुक एंडपॉइंट सुलभ है",
+        "verifying": "सत्यापित हो रहा है...",
+        "verifyEndpoint": "एंडपॉइंट सत्यापित करें"
+    },
+    "instructions": {
+        "title": "यह कैसे काम करता है:",
+        "channelMapping": "<0>चैनल मैपिंग</0> आपके WhatsApp बिज़नेस नंबर को इस इंस्टीट्यूट से जोड़ती है ताकि इनकमिंग वेबहुक सही तरीके से रूट हों",
+        "webhookUrl": "<0>वेबहुक URL</0> वह पता है जहां आपका प्रदाता इनकमिंग संदेश और डिलीवरी स्टेटस अपडेट भेजता है",
+        "verify": "<0>सत्यापित करें</0> जांचता है कि एंडपॉइंट सार्वजनिक रूप से सुलभ है और चैलेंज का सही जवाब देता है"
+    },
+    "toasts": {
+        "copiedUrl": "वेबहुक URL कॉपी किया गया",
+        "configureCredentialsFirst": "पहले प्रदाता क्रेडेंशियल कॉन्फ़िगर करें (फ़ोन नंबर ID / WhatsApp नंबर आवश्यक है)",
+        "mappingCreatedWithRouting": "चैनल मैपिंग बनाई गई — वेबहुक अब आपके इंस्टीट्यूट तक रूट होंगे",
+        "createMappingFailed": "मैपिंग बनाने में विफल",
+        "endpointReachable": "वेबहुक एंडपॉइंट सुलभ है",
+        "credentialsNotConfigured": "प्रदाता क्रेडेंशियल कॉन्फ़िगर नहीं हैं",
+        "phoneNumberIdNotFound": "क्रेडेंशियल में फ़ोन नंबर ID / WhatsApp नंबर नहीं मिला",
+        "mappingCreated": "चैनल मैपिंग बनाई गई",
+        "comBotMappingReady": "चैनल मैपिंग तैयार है। वेबहुक URL कॉपी करें और इसे अपने COMBOT डैशबोर्ड में सेट करें।",
+        "webhookRegistered": "{{provider}} के साथ वेबहुक पंजीकृत किया गया",
+        "setupFailed": "सेटअप विफल रहा"
+    },
+    "errors": {
+        "verificationRequestFailed": "सत्यापन अनुरोध विफल रहा"
+    }
+}

@@ -1,0 +1,42 @@
+{
+    "title": "أداء المستشارين",
+    "summary": {
+        "counsellorCount_zero": "لا يوجد مستشارون ({{count}})",
+        "counsellorCount_one": "مستشار واحد ({{count}})",
+        "counsellorCount_two": "مستشاران ({{count}})",
+        "counsellorCount_few": "{{count}} مستشارين",
+        "counsellorCount_many": "{{count}} مستشارًا",
+        "counsellorCount_other": "{{count}} مستشار",
+        "avgResponse": "متوسط الاستجابة",
+        "avgConversion": "متوسط التحويل"
+    },
+    "csv": {
+        "headers": {
+            "counsellor": "المستشار",
+            "assigned": "المُسندة",
+            "responded": "تم الرد عليها",
+            "conversions": "التحويلات",
+            "convRate": "معدل التحويل %",
+            "avgResponse": "متوسط الاستجابة (دقيقة)",
+            "tatMet": "الالتزام بوقت الاستجابة %",
+            "open": "مفتوحة",
+            "overdue": "متأخرة"
+        }
+    },
+    "table": {
+        "loading": "جارٍ تحميل المستشارين…",
+        "empty": "لا يوجد نشاط للمستشارين في هذه الفترة.",
+        "topPerformer": "الأفضل أداءً",
+        "headers": {
+            "counsellor": "المستشار",
+            "assigned": "المُسندة",
+            "responded": "تم الرد عليها",
+            "conversions": "التحويلات",
+            "convRate": "معدل التحويل",
+            "avgResponse": "متوسط الاستجابة",
+            "tatMet": "الالتزام بالوقت",
+            "open": "مفتوحة",
+            "overdue": "متأخرة"
+        }
+    }
+}

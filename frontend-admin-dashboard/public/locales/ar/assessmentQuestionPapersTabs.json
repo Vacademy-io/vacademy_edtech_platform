@@ -1,0 +1,15 @@
+{
+    "filters": {
+        "yearClass": "السنة/الصف",
+        "tags": "الوسوم"
+    },
+    "actions": {
+        "filter": "تصفية",
+        "reset": "إعادة تعيين",
+        "tryAgain": "إعادة المحاولة"
+    },
+    "emptyStates": {
+        "noQuestionPapers": "لا توجد أوراق أسئلة متاحة",
+        "noFavouriteQuestionPapers": "لم يتم تمييز أي ورقة أسئلة كمفضلة بعد"
+    }
+}

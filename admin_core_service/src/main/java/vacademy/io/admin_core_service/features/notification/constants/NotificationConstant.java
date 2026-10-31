@@ -16,4 +16,8 @@ public class NotificationConstant {
      * This path is open for inter-service calls (see AnnouncementSecurityConfig).
      */
     public static final String ANNOUNCEMENT_MULTIPLE = "/notification-service/v1/announcements/admin/multiple";
+
+    /** Service-to-service: switch off the system alerts raised about one entity. */
+    public static final String SYSTEM_ALERT_DEACTIVATE_BY_ENTITY =
+            "/notification-service/internal/v1/system-alerts/deactivate-by-entity";
 }

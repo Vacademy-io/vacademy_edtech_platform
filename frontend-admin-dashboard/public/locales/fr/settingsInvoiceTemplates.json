@@ -1,0 +1,63 @@
+{
+    "types": {
+        "invoice": {
+            "title": "Modèles de facture PDF",
+            "description": "Mise en page utilisée pour générer la facture PDF — image de marque, tableau des articles et totaux."
+        },
+        "invoiceEmail": {
+            "title": "Modèles d'e-mail de facture",
+            "description": "Corps de l'e-mail envoyé à l'apprenant avec la facture PDF jointe."
+        }
+    },
+    "actions": {
+        "generateSampleTitle": "Générer un modèle d'exemple avec toutes les variables de facture pré-remplies",
+        "generateSample": "Générer un exemple",
+        "generating": "Génération…",
+        "createTemplate": "Créer un modèle"
+    },
+    "toasts": {
+        "loadFailed": "Échec du chargement des modèles. Veuillez réessayer.",
+        "sampleCreated": "Modèle d'exemple créé — ouverture de l'éditeur…",
+        "generateSampleFailed": "Échec de la génération du modèle d'exemple. Veuillez réessayer.",
+        "deleteSuccess": "Modèle supprimé avec succès !",
+        "deleteFailed": "Échec de la suppression du modèle. Veuillez réessayer.",
+        "defaultSet": "Modèle par défaut mis à jour",
+        "defaultSetFailed": "Impossible de définir le modèle par défaut. Veuillez réessayer."
+    },
+    "loading": "Chargement des modèles…",
+    "emptyState": {
+        "messagePdf": "Aucun modèle de facture PDF pour le moment. Le modèle par défaut intégré sera utilisé jusqu'à ce que vous en créiez un.",
+        "messageEmail": "Aucun modèle d'e-mail de facture pour le moment. Le modèle par défaut intégré sera utilisé jusqu'à ce que vous en créiez un.",
+        "createFirst": "Créez votre premier modèle"
+    },
+    "table": {
+        "columns": {
+            "name": "Nom",
+            "subject": "Objet",
+            "created": "Créé le",
+            "actions": "Actions"
+        },
+        "noSubject": "Aucun objet",
+        "actions": {
+            "preview": "Aperçu",
+            "edit": "Modifier",
+            "delete": "Supprimer",
+            "setDefault": "Définir par défaut"
+        },
+        "defaultBadge": "Par défaut",
+        "defaultBadgeTitle": "Utilisé pour chaque nouvelle facture"
+    },
+    "pagination": {
+        "templateCount_one": "{{count}} modèle",
+        "templateCount_many": "{{count}} modèles",
+        "templateCount_other": "{{count}} modèles",
+        "pageOf": "Page {{page}} sur {{total}}"
+    },
+    "deleteDialog": {
+        "title": "Supprimer le modèle",
+        "description": "Êtes-vous sûr de vouloir supprimer ce modèle ? Cette action est irréversible.",
+        "cancel": "Annuler",
+        "deleting": "Suppression…",
+        "delete": "Supprimer"
+    }
+}

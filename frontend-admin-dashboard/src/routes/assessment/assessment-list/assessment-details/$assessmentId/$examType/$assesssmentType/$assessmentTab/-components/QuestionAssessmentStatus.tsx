@@ -38,6 +38,8 @@ import {
 } from '@/types/assessments/student-questionwise-status';
 import ExportDialogPDFCSV from '@/components/common/export-dialog-pdf-csv';
 import Papa from 'papaparse';
+import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 
 const QuestionAssessmentStatus = ({
     assessmentId,
@@ -46,6 +48,7 @@ const QuestionAssessmentStatus = ({
     assesssmentType,
     questionStatus,
 }: QuestionAssessmentStatusProps) => {
+    const { t } = useTranslation('assessmentQuestionStatus');
     const [isLoading, setIsLoading] = useState(false);
     const { data: initData } = useSuspenseQuery(useInstituteQuery());
     const { BatchesFilterData } = useFilterDataForAssesment(initData);
@@ -281,7 +284,7 @@ const QuestionAssessmentStatus = ({
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
-            toast.success('Student respondent list data for PDF exported successfully');
+            toast.success(t('toasts.pdfExportSuccess'));
         },
         onError: (error: unknown) => {
             throw error;
@@ -334,7 +337,7 @@ const QuestionAssessmentStatus = ({
 
             // Clean up the created URL object
             URL.revokeObjectURL(url);
-            toast.success('Student respondent list data for CSV exported successfully');
+            toast.success(t('toasts.csvExportSuccess'));
         },
         onError: (error: unknown) => {
             throw error;
@@ -462,7 +465,7 @@ const QuestionAssessmentStatus = ({
                                             : ''
                                     }`}
                                 >
-                                    Internal Participants
+                                    {t('tabs.internalParticipants')}
                                 </span>
                             </TabsTrigger>
                             <Separator orientation="vertical" className="h-full bg-gray-500" />
@@ -481,13 +484,13 @@ const QuestionAssessmentStatus = ({
                                             : ''
                                     }`}
                                 >
-                                    External Participants
+                                    {t('tabs.externalParticipants')}
                                 </span>
                             </TabsTrigger>
                         </TabsList>
                     )}
                 </div>
-                <div className="flex max-h-[72vh] flex-col gap-6 overflow-y-auto px-4">
+                <div className="flex max-h-[72vh] flex-col gap-6 overflow-y-auto px-4">{/* design-lint-ignore: viewport-relative scroll cap has no spacing token */}
                     <TabsContent value={selectedParticipantsTab}>
                         <MyTable
                             data={{

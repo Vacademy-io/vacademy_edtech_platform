@@ -1,0 +1,50 @@
+{
+    "badgesStats": {
+        "loading": "बैज आंकड़े लोड हो रहे हैं…",
+        "heading": "प्रदान किए गए बैज",
+        "totalAwarded": "कुल प्रदान किए गए",
+        "learnersRecognised": "मान्यता प्राप्त शिक्षार्थी",
+        "noneAwarded": "अभी तक कोई बैज प्रदान नहीं किया गया।"
+    },
+    "badgesDialog": {
+        "title": "बैज",
+        "titleWithName": "{{name}} के बैज",
+        "noneEarned": "अभी तक कोई बैज अर्जित नहीं किया गया।"
+    },
+    "leaderboardRow": {
+        "viewBadges": "बैज देखें",
+        "points_one": "{{count}} अंक",
+        "points_other": "{{count}} अंक"
+    },
+    "toasts": {
+        "linkCopied": "सार्वजनिक लीडरबोर्ड लिंक कॉपी हो गया"
+    },
+    "share": {
+        "dialogTitle": "संस्थान लीडरबोर्ड"
+    },
+    "viewToggle": {
+        "instituteWide": "संस्थान-व्यापी",
+        "byCourse": "कोर्स के अनुसार"
+    },
+    "batchSelector": {
+        "course": "कोर्स",
+        "selectCourse": "एक कोर्स चुनें",
+        "searchCourse": "कोर्स खोजें...",
+        "session": "सत्र",
+        "selectSession": "एक सत्र चुनें",
+        "level": "स्तर",
+        "selectLevel": "एक स्तर चुनें"
+    },
+    "leaderboardPanel": {
+        "instituteWideHeading": "संस्थान-व्यापी लीडरबोर्ड",
+        "courseHeading": "कोर्स लीडरबोर्ड",
+        "learnersCount_one": "{{count}} शिक्षार्थी",
+        "learnersCount_other": "{{count}} शिक्षार्थी",
+        "copyLink": "लिंक कॉपी करें",
+        "shareAriaLabel": "सार्वजनिक लीडरबोर्ड लिंक साझा करें",
+        "selectToView": "इसका लीडरबोर्ड देखने के लिए एक कोर्स, सत्र और स्तर चुनें।",
+        "loading": "लीडरबोर्ड लोड हो रहा है…",
+        "noInstituteActivity": "अभी तक कोई शिक्षार्थी गतिविधि दर्ज नहीं हुई।",
+        "noBatchActivity": "इस बैच के लिए अभी तक कोई गतिविधि दर्ज नहीं हुई।"
+    }
+}

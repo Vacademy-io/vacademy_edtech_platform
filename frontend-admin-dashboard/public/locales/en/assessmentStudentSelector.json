@@ -1,0 +1,25 @@
+{
+    "tabs": {
+        "batchSelection": "Batch Selection",
+        "individualSelection": "Individual Selection"
+    },
+    "studentCount_one": "{{count}} student",
+    "studentCount_other": "{{count}} students",
+    "clickRowHint": "Click a row to start data entry",
+    "search": {
+        "placeholder": "Search by name..."
+    },
+    "table": {
+        "headers": {
+            "studentName": "Student Name",
+            "status": "Status",
+            "score": "Score"
+        },
+        "empty": "No students found"
+    },
+    "status": {
+        "attempted": "Attempted",
+        "pending": "Pending",
+        "registered": "Registered"
+    }
+}

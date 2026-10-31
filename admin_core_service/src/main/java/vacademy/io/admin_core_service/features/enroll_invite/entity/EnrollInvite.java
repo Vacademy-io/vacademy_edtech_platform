@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.enroll_invite.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Id; // Added
 import jakarta.persistence.Table; // Added
 import lombok.AllArgsConstructor; // Added for consistency
@@ -62,8 +63,18 @@ public class EnrollInvite {
     @Column(name = "created_at", insertable = false, updatable = false)
     private Timestamp createdAt;
 
-    @Column(name = "updated_at", insertable = false, updatable = false)
+    // Written on every save (see touchUpdatedAt): the DB default only covers the
+    // insert, and no trigger maintains this column, so before this it never moved.
+    @Column(name = "updated_at", insertable = false)
     private Timestamp updatedAt;
+
+    /** auth_service user id of the admin who created the invite. Stamped once, never rewritten. */
+    @Column(name = "created_by_user_id", updatable = false)
+    private String createdByUserId;
+
+    /** auth_service user id of the admin who last saved the invite (edit, delete, make default). */
+    @Column(name = "updated_by_user_id")
+    private String updatedByUserId;
 
     @Column(name = "learner_access_days")
     private Integer learnerAccessDays;
@@ -79,6 +90,11 @@ public class EnrollInvite {
 
     @Column(name = "sub_org_id")
     private String subOrgId;
+
+    @PreUpdate
+    void touchUpdatedAt() {
+        this.updatedAt = new Timestamp(System.currentTimeMillis());
+    }
 
     public EnrollInvite(EnrollInviteDTO enrollInviteDTO) {
         this.id = enrollInviteDTO.getId();

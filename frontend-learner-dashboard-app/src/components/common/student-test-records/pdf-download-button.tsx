@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { DownloadSimple, SpinnerGap } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import { EXPORT_ASSESSMENT_REPORT } from "@/constants/urls";
 
@@ -17,6 +18,7 @@ export function PdfDownloadButton({
   instituteId,
   assessmentName,
 }: PdfDownloadButtonProps) {
+  const { t } = useTranslation("testRecords");
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState(false);
 
@@ -63,10 +65,10 @@ export function PdfDownloadButton({
         <DownloadSimple className="h-4 w-4" />
       )}
       {downloading
-        ? "Downloading..."
+        ? t("pdfDownloadButton.downloading")
         : error
-          ? "Download failed"
-          : "Download PDF"}
+          ? t("pdfDownloadButton.downloadFailed")
+          : t("pdfDownloadButton.downloadPdf")}
     </Button>
   );
 }

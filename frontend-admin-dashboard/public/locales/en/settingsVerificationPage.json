@@ -1,0 +1,67 @@
+{
+    "header": {
+        "title": "Verification page",
+        "description": "Scanning the code on a certificate opens this page. It is hosted on your own portal and needs no login, so anyone holding the certificate can check it."
+    },
+    "modeSection": {
+        "title": "What the code opens",
+        "options": {
+            "page": {
+                "title": "Verification page",
+                "hint": "The hosted page below. Works on any phone, nothing to maintain."
+            },
+            "document": {
+                "title": "Your own document",
+                "hint": "Upload a PDF and place dynamic fields on it, like a certificate."
+            }
+        },
+        "uploadButton": "Upload a PDF",
+        "uploadingButton": "Reading the PDF…",
+        "placeFieldsButton": "Place fields",
+        "documentAlt": "Verification document",
+        "fieldsHint": "Fields you place are filled in when someone scans — the certificate number, the course, the learner's name as the page shows it. Only the first page becomes the document.",
+        "uploadHint": "Upload the PDF you want people to see. Its first page becomes a canvas you can drop dynamic fields onto, exactly like a certificate.",
+        "fallbackWarning": "Until you upload a document, scans keep opening the verification page below — so verification never breaks while you are still setting this up."
+    },
+    "address": {
+        "label": "Address",
+        "unset": "Set your learner portal address in Dashboard → Edit institute profile and this page moves to your own domain. Until then scans verify on the platform address."
+    },
+    "customUrl": {
+        "part1": "Scans currently open a link set earlier:",
+        "part2": ". That page receives only the certificate number, which is not a credential, so it cannot prove the certificate is genuine.",
+        "useMyPortal": "Use my portal instead"
+    },
+    "headline": {
+        "label": "Headline",
+        "hintPart1": "The line under the seal. Blank uses “",
+        "hintPart2": "”."
+    },
+    "note": {
+        "label": "Your message (optional)",
+        "placeholder": "e.g. Questions about this certificate? registrar@example.com",
+        "hint": "Shown on the page below. Anyone with the link can read it, so keep it to something public."
+    },
+    "detailsList": {
+        "label": "What the page lists",
+        "courseName": "Course name",
+        "issueDate": "Issue date",
+        "completionPercentage": "Completion percentage",
+        "hint": "The recipient's name (partially masked) and the certificate number are always shown — they are what tie the page to the certificate in someone's hand."
+    },
+    "preview": {
+        "sectionTitle": "What a scan shows",
+        "defaultInstituteName": "Your institute",
+        "defaultHeadline": "This certificate is genuine",
+        "verifiedBy": "Verified by",
+        "issuedTo": "Issued to",
+        "issuedToValue": "A··· S·····",
+        "course": "Course",
+        "courseValue": "Intro to Sample Course",
+        "certificateNumber": "Certificate number",
+        "issuedOn": "Issued on",
+        "issuedOnValue": "14 August 2026",
+        "completion": "Completion",
+        "completionValue": "92%"
+    }
+}

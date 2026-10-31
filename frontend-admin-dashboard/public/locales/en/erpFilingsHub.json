@@ -1,0 +1,39 @@
+{
+    "intro": "Statutory outputs built from the payroll runs you have already approved. Preview one to see what it contains and what is missing, then download the file for the portal.",
+    "monthlyFilingsLabel": "Monthly filings",
+    "tdsLabel": "TDS:",
+    "preview": "Preview",
+    "download": "Download",
+    "preparing": "Preparing…",
+    "downloadedToast": "{{title}} downloaded",
+    "downloadErrorFallback": "Could not download the {{title}}.",
+    "filings": {
+        "ecr": {
+            "title": "PF ECR",
+            "blurb": "Monthly EPFO electronic challan-cum-return. Uploaded to the EPFO employer portal.",
+            "fileHint": "ECR v2 text — validate against the EPFO portal before your first live upload."
+        },
+        "esi": {
+            "title": "ESI Return",
+            "blurb": "Monthly ESIC contribution return for insured persons."
+        },
+        "pt": {
+            "title": "Professional Tax Return",
+            "blurb": "Monthly state professional-tax return, slab-wise."
+        },
+        "form24q": {
+            "title": "Form 24Q",
+            "blurb": "Quarterly salary-TDS return, reconciled against the challans you have recorded.",
+            "fileHint": "CSV for a return preparer — not the FVU e-TDS file itself."
+        },
+        "form16": {
+            "title": "Form 16 (Part B)",
+            "blurb": "An employee's annual salary and TDS statement. Part A comes from TRACES."
+        },
+        "wps": {
+            "title": "WPS Salary File",
+            "blurb": "Wage Protection System file for the bank / labour ministry.",
+            "fileHint": "v1 layout — validate with your WPS agent bank before your first live submission."
+        }
+    }
+}

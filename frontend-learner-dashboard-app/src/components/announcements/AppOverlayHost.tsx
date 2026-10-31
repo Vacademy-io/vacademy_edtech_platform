@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { Megaphone } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { sanitizeHtml } from '@/lib/utils';
@@ -47,6 +48,7 @@ function isFullHtmlDocument(html: string): boolean {
  * and server-side dismiss-once filtering.
  */
 export const AppOverlayHost = () => {
+  const { t } = useTranslation('courseComponentsExtra');
   const [queue, setQueue] = useState<UserMessage[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const seenMarkedRef = useRef<Set<string>>(new Set());
@@ -114,7 +116,7 @@ export const AppOverlayHost = () => {
       className="fixed inset-0 z-50 flex flex-col bg-white animate-in fade-in duration-300"
       role="dialog"
       aria-modal="true"
-      aria-label={current.title || 'Announcement'}
+      aria-label={current.title || t('appOverlayHost.announcement')}
       style={{
         paddingTop: 'env(safe-area-inset-top, 0px)',
         paddingBottom: 'env(safe-area-inset-bottom, 0px)',
@@ -126,24 +128,27 @@ export const AppOverlayHost = () => {
         </span>
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-subtitle font-semibold text-neutral-700">
-            {current.title || 'Announcement'}
+            {current.title || t('appOverlayHost.announcement')}
           </h2>
           {current.createdByName && (
             <p className="truncate text-caption text-neutral-500">
-              From {current.createdByName}
+              {t('appOverlayHost.from', { name: current.createdByName })}
             </p>
           )}
         </div>
         {totalCount > 1 && (
           <span className="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-caption text-neutral-500">
-            {totalCount - queue.length + 1} of {totalCount}
+            {t('appOverlayHost.progressOfTotal', {
+              current: totalCount - queue.length + 1,
+              total: totalCount,
+            })}
           </span>
         )}
       </header>
 
       {fullDocument ? (
         <iframe
-          title={current.title || 'Announcement'}
+          title={current.title || t('appOverlayHost.announcement')}
           srcDoc={html}
           sandbox="allow-scripts allow-popups"
           className="min-h-0 w-full flex-1 border-0 bg-white"
@@ -166,7 +171,7 @@ export const AppOverlayHost = () => {
             className="w-full"
             onClick={handleDismiss}
           >
-            Got it
+            {t('appOverlayHost.gotIt')}
           </MyButton>
         </div>
       </footer>

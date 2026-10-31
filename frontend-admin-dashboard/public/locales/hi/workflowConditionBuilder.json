@@ -1,0 +1,26 @@
+{
+    "operators": {
+        "equals": "बराबर है",
+        "notEquals": "बराबर नहीं है",
+        "greaterThan": "से अधिक",
+        "lessThan": "से कम",
+        "greaterOrEqual": "से अधिक या बराबर",
+        "lessOrEqual": "से कम या बराबर",
+        "contains": "में शामिल है",
+        "isEmpty": "खाली है",
+        "isNotEmpty": "खाली नहीं है",
+        "isTrue": "सत्य है",
+        "isFalse": "असत्य है"
+    },
+    "switchToVisual": "विज़ुअल बिल्डर पर स्विच करें",
+    "rawSpelMode": "रॉ SpEL एक्सप्रेशन मोड",
+    "ifLabel": "अगर",
+    "pickVariablePlaceholder": "एक वेरिएबल चुनें...",
+    "valuePlaceholder": "मान",
+    "addCondition": "शर्त जोड़ें",
+    "switchToRawSpel": "रॉ SpEL पर स्विच करें",
+    "advanced": "उन्नत",
+    "spelBadge": "SpEL",
+    "joinerAnd": "और",
+    "joinerOr": "या"
+}

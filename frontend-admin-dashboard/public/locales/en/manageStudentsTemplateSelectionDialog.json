@@ -1,0 +1,36 @@
+{
+    "dialog": {
+        "heading": "Choose an existing template or create a new one for your email",
+        "cancel": "Cancel"
+    },
+    "search": {
+        "placeholder": "Search templates..."
+    },
+    "actions": {
+        "createNewTemplate": "Create New Template"
+    },
+    "loading": {
+        "templates": "Loading templates..."
+    },
+    "empty": {
+        "noSearchResults": "No templates found matching your search.",
+        "noTemplates": "No email templates found.",
+        "getStarted": "Create your first template to get started."
+    },
+    "table": {
+        "templateName": "Template Name",
+        "subject": "Subject",
+        "contentPreview": "Content Preview",
+        "noSubject": "No subject",
+        "noContent": "No content"
+    },
+    "pagination": {
+        "showingRange": "Showing {{start}} to {{end}} of {{total}} templates",
+        "rowsPerPage": "Rows per page:",
+        "pageOf": "Page {{current}} of {{total}}"
+    },
+    "errors": {
+        "loadTemplatesFailed": "Failed to load email templates",
+        "loadTemplateContentFailed": "Failed to load template content. Using cached version."
+    }
+}

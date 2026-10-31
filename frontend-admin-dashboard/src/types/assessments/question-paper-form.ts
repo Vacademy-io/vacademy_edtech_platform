@@ -21,6 +21,8 @@ export interface MyQuestion {
     questionType: string; // Default value: "MCQS"
     questionMark: string; // Required string
     questionPenalty: string;
+    /** The paper's section a digitised question was printed under (Vsmart Extract). */
+    sectionName?: string;
     tags?: string[];
     level?: string;
     questionDuration: {

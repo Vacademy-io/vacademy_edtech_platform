@@ -12,16 +12,21 @@ import {
     getMessages,
     sendMessage as apiSendMessage,
     deleteMessage as apiDeleteMessage,
+    editMessage as apiEditMessage,
     markRead,
     createBatchConversation,
     classifyChatSendError,
+    describeDeleteChatError,
+    describeEditChatError,
     type ChatConversationResponse,
+    type ChatMessageResponse,
     type SendChatMessageRequest,
     type ChatMessagePayload,
 } from '@/services/chat/chatApi';
 import { getChatUser } from '@/services/chat/getChatUser';
 import { useChatStream } from '@/hooks/useChatStream';
 import { ChatThread, type ThreadMessage } from './ChatThread';
+import { ReportMessageDialog } from './ReportMessageDialog';
 import { MessageComposer } from './MessageComposer';
 
 interface BatchChatPanelProps {
@@ -77,6 +82,7 @@ export function BatchChatPanel({ packageSessionId, className }: BatchChatPanelPr
     const [chatDisabled, setChatDisabled] = useState(false);
     const [disabledMessage, setDisabledMessage] = useState<string | null>(null);
     const [loadError, setLoadError] = useState(false);
+    const [reportTarget, setReportTarget] = useState<ChatMessageResponse | null>(null);
 
     // Latest known seq for this conversation — used for SSE reconnect resync.
     const latestSeqRef = useRef<number>(0);
@@ -260,8 +266,22 @@ export function BatchChatPanel({ packageSessionId, className }: BatchChatPanelPr
         try {
             const updated = await apiDeleteMessage(message.conversationId, message.id);
             setMessages((prev) => prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m)));
-        } catch {
-            toast.error('Failed to delete the message.');
+        } catch (err) {
+            toast.error(describeDeleteChatError(err));
+        }
+    }, []);
+
+    // ── Edit a message ────────────────────────────────────────────────────
+    const handleEdit = useCallback(async (message: ThreadMessage, text: string) => {
+        try {
+            const updated = await apiEditMessage(message.conversationId, message.id, { text });
+            setMessages((prev) =>
+                prev.map((m) => (m.id === updated.id ? { ...m, ...updated } : m))
+            );
+        } catch (err) {
+            toast.error(describeEditChatError(err));
+            // Rethrow so the dialog stays open on the text the user is still trying to save.
+            throw err;
         }
     }, []);
 
@@ -340,8 +360,18 @@ export function BatchChatPanel({ packageSessionId, className }: BatchChatPanelPr
             .catch(() => undefined);
     }, []);
 
+    // ── SSE: an existing message changed in place (edited / deleted) ──────
+    // Kept off the new-message path, which reconciles optimistic sends and treats the payload as a
+    // fresh arrival — neither is right for a message the thread already holds.
+    const onStreamMessageUpdated = useCallback((payload: ChatMessagePayload) => {
+        const msg = payload.message;
+        if (!msg || payload.conversationId !== conversationIdRef.current) return;
+        setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, ...msg } : m)));
+    }, []);
+
     useChatStream({
         onMessage: onStreamMessage,
+        onMessageUpdated: onStreamMessageUpdated,
         onReconnect: onStreamReconnect,
         enabled: Boolean(userId) && Boolean(conversation),
     });
@@ -449,9 +479,10 @@ export function BatchChatPanel({ packageSessionId, className }: BatchChatPanelPr
                 isLoading={false}
                 hasMore={hasMore}
                 onLoadMore={handleLoadMore}
-                onReport={() => undefined}
+                onReport={setReportTarget}
                 onRetry={handleRetry}
                 onDelete={handleDelete}
+                onEdit={handleEdit}
             />
 
             <MessageComposer
@@ -460,6 +491,12 @@ export function BatchChatPanel({ packageSessionId, className }: BatchChatPanelPr
                 disabledReason={composerDisabledReason}
                 allowAttachments
                 onSend={handleSend}
+            />
+
+            <ReportMessageDialog
+                target={reportTarget}
+                conversationId={conversation.id}
+                onClose={() => setReportTarget(null)}
             />
         </div>
     );

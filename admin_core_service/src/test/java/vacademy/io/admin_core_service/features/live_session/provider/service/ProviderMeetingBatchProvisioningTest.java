@@ -11,6 +11,8 @@ import org.mockito.quality.Strictness;
 import vacademy.io.admin_core_service.features.live_session.entity.LiveSession;
 import vacademy.io.admin_core_service.features.live_session.entity.SessionSchedule;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.ProviderMeetingCreateRequestDTO;
+import vacademy.io.admin_core_service.features.live_session.provider.entity.LiveSessionProviderConfig;
+import vacademy.io.admin_core_service.features.live_session.provider.repository.LiveSessionProviderConfigRepository;
 import vacademy.io.admin_core_service.features.live_session.repository.LiveSessionRepository;
 import vacademy.io.admin_core_service.features.live_session.repository.SessionScheduleRepository;
 
@@ -38,10 +40,24 @@ class ProviderMeetingBatchProvisioningTest {
     @Mock private LiveSessionProviderService providerService;
     @Mock private SessionScheduleRepository scheduleRepository;
     @Mock private LiveSessionRepository liveSessionRepository;
+    @Mock private LiveSessionProviderConfigRepository providerConfigRepository;
 
     private ProviderMeetingBatchService service() {
         return new ProviderMeetingBatchService(
-                providerService, scheduleRepository, liveSessionRepository, new ObjectMapper());
+                providerService, scheduleRepository, liveSessionRepository, new ObjectMapper(),
+                providerConfigRepository);
+    }
+
+    private void storedAccount(String id, String provider) {
+        when(providerConfigRepository.findById(id)).thenReturn(Optional.of(
+                LiveSessionProviderConfig.builder().id(id).provider(provider).build()));
+    }
+
+    private static SessionSchedule pendingRow() {
+        return SessionSchedule.builder()
+                .id("r1").sessionId(SESSION_ID).status("LIVE").providerMeetingId(null)
+                .meetingDate(java.sql.Date.valueOf(LocalDate.of(2026, 6, 10)))
+                .startTime(Time.valueOf("10:00:00")).lastEntryTime(Time.valueOf("11:00:00")).build();
     }
 
     @Test
@@ -78,6 +94,7 @@ class ProviderMeetingBatchProvisioningTest {
                 .startTime(Time.valueOf("10:00:00")).lastEntryTime(Time.valueOf("11:00:00")).build();
         when(liveSessionRepository.findById(SESSION_ID)).thenReturn(Optional.of(session));
         when(scheduleRepository.findBySessionId(SESSION_ID)).thenReturn(List.of(pending));
+        storedAccount("acct-1", "ZOOM_MEETING");
 
         int created = service().reprovisionFromStoredConfig(session);
 
@@ -90,6 +107,58 @@ class ProviderMeetingBatchProvisioningTest {
         assertEquals("acct-1", req.resolveProviderAccountId());
         assertEquals("r1", req.getScheduleId());
         assertEquals(Boolean.TRUE, req.resolveProviderConfig().get("waitingRoom")); // parsed from stored JSON
+    }
+
+    @Test
+    void reprovisionUsesTheStoredAccountsProviderForGoogleMeet() {
+        // Google Meet sessions store their Google account id in zoom_account_id too; the
+        // retry used to rebuild them as ZOOM_MEETING and fail with "Zoom account not found".
+        LiveSession session = LiveSession.builder()
+                .id(SESSION_ID).instituteId("inst-1").title("Robotics")
+                .zoomAccountId("g-acct").linkType("google meet").timezone("Asia/Kolkata").build();
+        when(liveSessionRepository.findById(SESSION_ID)).thenReturn(Optional.of(session));
+        when(scheduleRepository.findBySessionId(SESSION_ID)).thenReturn(List.of(pendingRow()));
+        storedAccount("g-acct", "GOOGLE_MEET");
+
+        assertEquals(1, service().reprovisionFromStoredConfig(session));
+
+        ArgumentCaptor<ProviderMeetingCreateRequestDTO> captor =
+                ArgumentCaptor.forClass(ProviderMeetingCreateRequestDTO.class);
+        verify(providerService).createMeeting(captor.capture());
+        assertEquals("GOOGLE_MEET", captor.getValue().getProvider());
+        assertEquals("g-acct", captor.getValue().resolveProviderAccountId());
+    }
+
+    @Test
+    void reprovisionSkipsWhenStoredAccountIsGone() {
+        LiveSession session = LiveSession.builder().id(SESSION_ID).zoomAccountId("deleted").build();
+        when(providerConfigRepository.findById("deleted")).thenReturn(Optional.empty());
+
+        assertEquals(0, service().reprovisionFromStoredConfig(session));
+        verify(providerService, never()).createMeeting(any());
+    }
+
+    @Test
+    void reprovisionSkipsWhenAdminSwitchedPlatform() {
+        // Provisioned on Google Meet, later switched to YouTube: a pending row must not get
+        // a Meet link written over the link the admin chose.
+        LiveSession session = LiveSession.builder()
+                .id(SESSION_ID).zoomAccountId("g-acct").linkType("youtube").build();
+        when(scheduleRepository.findBySessionId(SESSION_ID)).thenReturn(List.of(pendingRow()));
+        storedAccount("g-acct", "GOOGLE_MEET");
+
+        assertEquals(0, service().reprovisionFromStoredConfig(session));
+        verify(providerService, never()).createMeeting(any());
+    }
+
+    @Test
+    void platformChangedSinceTreatsMatchingAndUnsetLinkTypesAsUnchanged() {
+        assertFalse(ProviderMeetingBatchService.platformChangedSince("google meet", "GOOGLE_MEET"));
+        assertFalse(ProviderMeetingBatchService.platformChangedSince("zoom", "ZOOM_MEETING"));
+        assertFalse(ProviderMeetingBatchService.platformChangedSince(null, "GOOGLE_MEET"));
+        assertFalse(ProviderMeetingBatchService.platformChangedSince("UNKNOWN", "ZOOM_MEETING"));
+        assertTrue(ProviderMeetingBatchService.platformChangedSince("zoom", "GOOGLE_MEET"));
+        assertTrue(ProviderMeetingBatchService.platformChangedSince("other", "ZOOM_MEETING"));
     }
 
     @Test

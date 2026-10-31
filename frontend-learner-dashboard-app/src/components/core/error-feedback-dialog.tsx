@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import * as Sentry from '@sentry/react';
 import { useLocation } from '@tanstack/react-router';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { SpinnerGap, Bug, PaperPlaneTilt, User, Envelope, FileText, Image as ImageIcon } from '@phosphor-icons/react';
 import {
     Sheet,
@@ -212,6 +213,7 @@ export function ErrorFeedbackDialog({
     const [files, setFiles] = useState<FileList | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const location = useLocation();
+    const { t } = useTranslation('courseComponentsExtra');
 
     // Pre-fill name/email from JWT token when dialog opens
     useEffect(() => {
@@ -272,13 +274,13 @@ export function ErrorFeedbackDialog({
                 );
             }
 
-            toast.success('Thank you! Your report has been sent.');
+            toast.success(t('errorFeedbackDialog.submitSuccess'));
             setIsOpen(false);
             setDescription('');
             setFiles(null);
         } catch (err) {
             console.error('Failed to submit feedback', err);
-            toast.error('Failed to submit report. Please try again.');
+            toast.error(t('errorFeedbackDialog.submitFailure'));
         } finally {
             setIsSubmitting(false);
         }
@@ -287,61 +289,61 @@ export function ErrorFeedbackDialog({
     return (
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-                {trigger || <MyButton buttonType="secondary">Report an Issue</MyButton>}
+                {trigger || <MyButton buttonType="secondary">{t('common.reportIssue')}</MyButton>}
             </SheetTrigger>
-            <SheetContent className="sm:max-w-md w-vw-90 overflow-y-auto bg-white border-s border-gray-200 p-6">
-                <SheetHeader className="mb-6">
-                    <SheetTitle className="text-xl font-bold text-gray-900">Report an Issue</SheetTitle>
+            <SheetContent className="sm:max-w-md w-vw-90 overflow-y-auto bg-white border-s border-gray-200 p-6 space-y-section">
+                <SheetHeader>
+                    <SheetTitle className="text-xl font-bold text-gray-900">{t('common.reportIssue')}</SheetTitle>
                     <SheetDescription className="text-gray-500">
-                        Help us improve by providing details. Context is automatically included.
+                        {t('errorFeedbackDialog.description')}
                     </SheetDescription>
                 </SheetHeader>
-                
+
                 <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                     <div className="grid gap-2">
                         <Label htmlFor="name" className="text-sm font-medium text-gray-700">
-                            Name (Optional)
+                            {t('errorFeedbackDialog.nameLabel')}
                         </Label>
                         <Input
                             id="name"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            placeholder="Your name"
+                            placeholder={t('errorFeedbackDialog.namePlaceholder')}
                             className="bg-white border-gray-300 focus-visible:ring-1 focus-visible:ring-primary-500"
                         />
                     </div>
-                    
+
                     <div className="grid gap-2">
                         <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-                            Email (Optional)
+                            {t('errorFeedbackDialog.emailLabel')}
                         </Label>
                         <Input
                             id="email"
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="Your email for follow-up"
+                            placeholder={t('errorFeedbackDialog.emailPlaceholder')}
                             className="bg-white border-gray-300 focus-visible:ring-1 focus-visible:ring-primary-500"
                         />
                     </div>
 
                     <div className="grid gap-2">
                         <Label htmlFor="description" className="text-sm font-medium text-gray-700">
-                            What went wrong? <span className="text-red-500">*</span>
+                            {t('errorFeedbackDialog.whatWentWrongLabel')} <span className="text-red-500">*</span>
                         </Label>
                         <Textarea
                             id="description"
                             required
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            placeholder="Please describe what you were doing when the error occurred..."
+                            placeholder={t('errorFeedbackDialog.descriptionPlaceholder')}
                             className="min-h-reg-120 resize-y bg-white border-gray-300 focus-visible:ring-1 focus-visible:ring-primary-500"
                         />
                     </div>
 
                     <div className="grid gap-2">
                         <Label className="text-sm font-medium text-gray-700">
-                            Attachments
+                            {t('errorFeedbackDialog.attachments')}
                         </Label>
                         <Input
                             type="file"
@@ -352,22 +354,22 @@ export function ErrorFeedbackDialog({
                         />
                         {files && files.length > 0 && (
                             <p className="text-xs text-gray-500 mt-1">
-                                {files.length} file(s) selected
+                                {t('errorFeedbackDialog.filesSelected', { count: files.length })}
                             </p>
                         )}
                     </div>
 
                     <div className="flex gap-3 pt-4 mt-2 border-t border-gray-100">
-                        <MyButton 
-                            type="button" 
-                            buttonType="secondary" 
+                        <MyButton
+                            type="button"
+                            buttonType="secondary"
                             onClick={() => setIsOpen(false)}
                             className="w-full"
                         >
-                            Cancel
+                            {t('common.cancel')}
                         </MyButton>
-                        <MyButton 
-                            type="submit" 
+                        <MyButton
+                            type="submit"
                             buttonType="primary"
                             disabled={isSubmitting}
                             className="w-full"
@@ -375,12 +377,12 @@ export function ErrorFeedbackDialog({
                             {isSubmitting ? (
                                 <>
                                     <SpinnerGap className="me-2 h-4 w-4 animate-spin" />
-                                    Sending...
+                                    {t('errorFeedbackDialog.sending')}
                                 </>
                             ) : (
                                 <>
                                     <PaperPlaneTilt className="me-2 h-4 w-4" />
-                                    Send Report
+                                    {t('errorFeedbackDialog.sendReport')}
                                 </>
                             )}
                         </MyButton>

@@ -1,0 +1,15 @@
+{
+    "trigger": {
+        "makeAnnouncement": "घोषणा करें"
+    },
+    "dialog": {
+        "heading": "घोषणा करें",
+        "titleLabel": "घोषणा शीर्षक",
+        "titlePlaceholder": "घोषणा के लिए एक संक्षिप्त शीर्षक दें (जैसे, शेष समय, तकनीकी समस्या हल हो गई)",
+        "instructionsHeading": "परीक्षा निर्देश",
+        "publishButton": "घोषणा प्रकाशित करें"
+    },
+    "validation": {
+        "titleRequired": "शीर्षक आवश्यक है"
+    }
+}

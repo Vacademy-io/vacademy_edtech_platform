@@ -1,0 +1,41 @@
+{
+    "tabs": {
+        "selectBatch": "اختيار الدفعة",
+        "selectIndividually": "اختيار فرديًا"
+    },
+    "search": {
+        "placeholder": "ابحث عن كورسات أو دفعات…",
+        "clearAriaLabel": "مسح البحث"
+    },
+    "emptyStates": {
+        "selectSessionFirst": "اختر جلسة أعلاه لتحديد المشاركين.",
+        "noSearchMatches": "لا توجد كورسات أو دفعات مطابقة لبحثك.",
+        "noCoursesAvailable": "لا توجد كورسات متاحة لهذه الجلسة."
+    },
+    "actions": {
+        "clear": "مسح",
+        "selectAllInSession": "تحديد الكل في هذه الجلسة"
+    },
+    "summary": {
+        "selectedOfTotalBatches": "{{selected}} من {{total}} دفعة",
+        "courseCount_zero": "لا كورسات",
+        "courseCount_one": "كورس واحد",
+        "courseCount_two": "كورسان",
+        "courseCount_few": "{{count}} كورسات",
+        "courseCount_many": "{{count}} كورسًا",
+        "courseCount_other": "{{count}} كورس",
+        "withSelections_zero": "لا شيء محدد",
+        "withSelections_one": "به تحديد واحد",
+        "withSelections_two": "بهما تحديدان",
+        "withSelections_few": "بها {{count}} تحديدات",
+        "withSelections_many": "بها {{count}} تحديدًا",
+        "withSelections_other": "بها {{count}} تحديد",
+        "batchCount_zero": "لا دفعات",
+        "batchCount_one": "دفعة واحدة",
+        "batchCount_two": "دفعتان",
+        "batchCount_few": "{{count}} دفعات",
+        "batchCount_many": "{{count}} دفعة",
+        "batchCount_other": "{{count}} دفعة",
+        "footerSelected": "{{batchPart}} عبر {{coursePart}} محددة"
+    }
+}

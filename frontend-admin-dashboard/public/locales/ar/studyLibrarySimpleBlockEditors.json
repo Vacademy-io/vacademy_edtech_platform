@@ -1,0 +1,65 @@
+{
+    "actions": {
+        "save": "حفظ",
+        "cancel": "إلغاء",
+        "uploading": "جارٍ الرفع…",
+        "showPreview": "إظهار المعاينة",
+        "hidePreview": "إخفاء المعاينة"
+    },
+    "fields": {
+        "titleOptional": "العنوان (اختياري)"
+    },
+    "math": {
+        "title": "رياضيات (LaTeX)",
+        "clickToAdd": "انقر لإضافة LaTeX",
+        "displayModeLabel": "وضع العرض (في المنتصف)"
+    },
+    "mermaid": {
+        "title": "مخطط Mermaid",
+        "render": "عرض"
+    },
+    "audio": {
+        "title": "صوت",
+        "noAudioUploaded": "لم يتم رفع أي ملف صوتي",
+        "upload": "رفع الصوت",
+        "replace": "استبدال الصوت",
+        "uploadFailed": "فشل رفع الملف الصوتي"
+    },
+    "pdf": {
+        "title": "PDF",
+        "openInNewTab": "فتح PDF في علامة تبويب جديدة",
+        "noPdfUploaded": "لم يتم رفع أي ملف PDF",
+        "upload": "رفع PDF",
+        "replace": "استبدال PDF",
+        "uploadFailed": "فشل رفع ملف PDF"
+    },
+    "fillBlanks": {
+        "title": "املأ الفراغات",
+        "clickToAddSentence": "انقر لإضافة جملة — حدّد الإجابات بصيغة {blank:answer}",
+        "sentencePlaceholder": "يغلي الماء عند {blank:100} درجة مئوية."
+    },
+    "jupyter": {
+        "title": "دفتر Jupyter",
+        "titleWithProject": "دفتر Jupyter: {{projectName}}",
+        "previewTitle": "معاينة دفتر Jupyter",
+        "notConfigured": "لم يتم تهيئة أي دفتر — يلزم اسم المشروع ورابط GitHub.",
+        "fields": {
+            "projectName": "اسم المشروع",
+            "repositoryUrl": "رابط مستودع GitHub",
+            "branch": "الفرع (main)",
+            "notebookLocation": "موقع الدفتر (الجذر)"
+        }
+    },
+    "scratch": {
+        "title": "مشروع Scratch",
+        "previewTitle": "مشروع Scratch",
+        "notConfigured": "لم يتم تهيئة أي مشروع Scratch — معرّف المشروع مطلوب.",
+        "fields": {
+            "projectId": "معرّف مشروع Scratch"
+        }
+    },
+    "toc": {
+        "title": "جدول المحتويات",
+        "description": "يتم إنشاء المخطط تلقائيًا من عناوين المستند للمتعلمين."
+    }
+}

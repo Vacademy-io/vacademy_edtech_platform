@@ -7,6 +7,7 @@ import { getExecutionSummaryQuery } from '@/services/workflow-service';
 import { ExecutionSummaryCards } from './execution-summary-cards';
 import { ExecutionDetailDrawer } from './execution-detail-drawer';
 import { CaretLeft, CaretRight, FunnelSimple } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { BASE_URL } from '@/constants/urls';
 
 interface ExecutionRow {
@@ -39,6 +40,7 @@ const statusBadgeColor: Record<string, string> = {
 };
 
 export function ExecutionHistoryTab({ workflowId, instituteId, onViewOnDiagram }: Props) {
+    const { t, i18n } = useTranslation('workflowExecutionHistoryTab');
     const [statusFilter, setStatusFilter] = useState<string>('ALL');
     const [page, setPage] = useState(0);
     const pageSize = 10;
@@ -97,6 +99,14 @@ export function ExecutionHistoryTab({ workflowId, instituteId, onViewOnDiagram }
     const executions = executionData?.content ?? [];
     const totalPages = executionData?.total_pages ?? 0;
 
+    const statusFilterLabels: Record<(typeof STATUS_FILTERS)[number], string> = {
+        ALL: t('statusFilters.all'),
+        COMPLETED: t('statusFilters.completed'),
+        FAILED: t('statusFilters.failed'),
+        PROCESSING: t('statusFilters.processing'),
+        PENDING: t('statusFilters.pending'),
+    };
+
     return (
         <div className="space-y-4">
             {/* Summary cards */}
@@ -113,7 +123,7 @@ export function ExecutionHistoryTab({ workflowId, instituteId, onViewOnDiagram }
                         onClick={() => setStatusFilter(s)}
                         className="h-7 text-xs"
                     >
-                        {s}
+                        {statusFilterLabels[s]}
                     </Button>
                 ))}
                 <div className="flex-1" />
@@ -123,7 +133,7 @@ export function ExecutionHistoryTab({ workflowId, instituteId, onViewOnDiagram }
                     onChange={(e) => setStartDate(e.target.value)}
                     className="h-7 text-xs border rounded px-2"
                 />
-                <span className="text-xs text-muted-foreground">to</span>
+                <span className="text-xs text-muted-foreground">{t('to')}</span>
                 <input
                     type="date"
                     value={endDate}
@@ -137,29 +147,27 @@ export function ExecutionHistoryTab({ workflowId, instituteId, onViewOnDiagram }
                 <table className="w-full text-sm">
                     <thead className="bg-muted/50">
                         <tr>
-                            <th className="text-left px-4 py-2 font-medium">Started</th>
-                            <th className="text-left px-4 py-2 font-medium">Completed</th>
-                            <th className="text-left px-4 py-2 font-medium">Status</th>
-                            <th className="text-left px-4 py-2 font-medium">Duration</th>
-                            <th className="text-left px-4 py-2 font-medium">Error</th>
+                            <th className="text-start px-4 py-2 font-medium">{t('table.started')}</th>
+                            <th className="text-start px-4 py-2 font-medium">{t('table.completed')}</th>
+                            <th className="text-start px-4 py-2 font-medium">{t('table.status')}</th>
+                            <th className="text-start px-4 py-2 font-medium">{t('table.duration')}</th>
+                            <th className="text-start px-4 py-2 font-medium">{t('table.error')}</th>
                         </tr>
                     </thead>
                     <tbody>
                         {isLoading ? (
                             <tr>
                                 <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                                    Loading...
+                                    {t('loading')}
                                 </td>
                             </tr>
                         ) : executions.length === 0 ? (
                             <tr>
                                 <td colSpan={5} className="px-4 py-12 text-center">
                                     <div className="space-y-2">
-                                        <p className="text-sm font-medium text-muted-foreground">No executions found</p>
+                                        <p className="text-sm font-medium text-muted-foreground">{t('empty.title')}</p>
                                         <p className="text-xs text-gray-400 max-w-md mx-auto">
-                                            For event-driven workflows, executions appear when the trigger event fires (e.g., form submission, enrollment).
-                                            For scheduled workflows, wait for the next scheduled run.
-                                            Try adjusting the date range or status filter above.
+                                            {t('empty.hint')}
                                         </p>
                                     </div>
                                 </td>
@@ -181,10 +189,10 @@ export function ExecutionHistoryTab({ workflowId, instituteId, onViewOnDiagram }
                                         }}
                                     >
                                         <td className="px-4 py-2 text-xs">
-                                            {ex.started_at ? new Date(ex.started_at).toLocaleString() : '-'}
+                                            {ex.started_at ? new Date(ex.started_at).toLocaleString(i18n.language) : '-'}
                                         </td>
                                         <td className="px-4 py-2 text-xs">
-                                            {ex.completed_at ? new Date(ex.completed_at).toLocaleString() : '-'}
+                                            {ex.completed_at ? new Date(ex.completed_at).toLocaleString(i18n.language) : '-'}
                                         </td>
                                         <td className="px-4 py-2">
                                             <Badge className={`${statusBadgeColor[ex.status] ?? 'bg-gray-100'} text-[10px]`}>
@@ -213,7 +221,11 @@ export function ExecutionHistoryTab({ workflowId, instituteId, onViewOnDiagram }
             {totalPages > 1 && (
                 <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">
-                        Page {page + 1} of {totalPages} ({executionData?.total_elements ?? 0} total)
+                        {t('pagination.summary', {
+                            current: page + 1,
+                            total: totalPages,
+                            count: executionData?.total_elements ?? 0,
+                        })}
                     </span>
                     <div className="flex gap-1">
                         <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(page - 1)}>

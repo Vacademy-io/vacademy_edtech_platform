@@ -1,0 +1,80 @@
+{
+    "pageTitle": "Modèles de messages",
+    "subtitleApi": "Créez, gérez et soumettez des modèles pour approbation par Meta",
+    "subtitleWati": "Consultez les modèles synchronisés. Créez de nouveaux modèles dans le tableau de bord WATI.",
+    "whatsappSettings": "Paramètres WhatsApp",
+    "syncing": "Synchronisation...",
+    "syncTemplates": "Synchroniser les modèles",
+    "createTemplate": "Créer un modèle",
+    "createInWati": "Créer dans WATI",
+    "watiBanner": {
+        "title": "Fournisseur WATI actif",
+        "beforeLink": "Les modèles doivent être créés dans le",
+        "linkText": "tableau de bord WATI",
+        "afterLink": ". Une fois approuvés par Meta, cliquez sur \"Synchroniser les modèles\" pour les importer ici. Vous pourrez ensuite les utiliser dans les flux du chatbot et la boîte de réception WhatsApp."
+    },
+    "tabAll": "Tous",
+    "tabWhatsapp": "WhatsApp",
+    "tabEmail": "E-mail",
+    "searchPlaceholder": "Rechercher des modèles...",
+    "loadingTemplates": "Chargement des modèles...",
+    "tryAgain": "Réessayer",
+    "noTemplatesYet": "Aucun modèle pour l'instant. Créez-en un ou synchronisez depuis {{provider}}.",
+    "noTemplatesMatchSearch": "Aucun modèle ne correspond à votre recherche.",
+    "vacademyBadge": "Vacademy",
+    "rejectionReason": "Rejet : {{reason}}",
+    "edit": "Modifier",
+    "submitToMeta": "Soumettre à Meta",
+    "delete": "Supprimer",
+    "status": {
+        "draft": "Brouillon",
+        "pending": "En attente",
+        "approved": "Approuvé",
+        "rejected": "Rejeté",
+        "disabled": "Désactivé",
+        "deleted": "Supprimé"
+    },
+    "category": {
+        "marketing": "Marketing",
+        "utility": "Utilitaire",
+        "authentication": "Authentification"
+    },
+    "couldNotLoadTemplates": "Impossible de charger les modèles.",
+    "syncedCount_one": "{{count}} modèle synchronisé depuis {{provider}}",
+    "syncedCount_many": "{{count}} modèles synchronisés depuis {{provider}}",
+    "syncedCount_other": "{{count}} modèles synchronisés depuis {{provider}}",
+    "noTemplatesForAccount": "{{provider}} n'a aucun modèle pour ce compte pour l'instant",
+    "couldNotSyncTemplates": "Impossible de synchroniser les modèles depuis {{provider}}.",
+    "deleteConfirmLive": "Supprimer « {{name}} » ? Il sera aussi retiré de {{provider}}, et tout ce qui l'envoie encore cessera de fonctionner.",
+    "deleteConfirmDraft": "Supprimer le brouillon « {{name}} » ?",
+    "templateDeleted": "Modèle supprimé",
+    "couldNotDeleteTemplate": "Impossible de supprimer « {{name}} ».",
+    "approvedByMeta": "Modèle approuvé par Meta et prêt à l'emploi.",
+    "submittedForApproval": "Modèle soumis à Meta pour approbation.",
+    "metaRejectedTemplate": "Meta a rejeté le modèle.",
+    "summary": {
+        "header": "En-tête {{type}}",
+        "headerType": {
+            "text": "texte",
+            "image": "image",
+            "video": "vidéo",
+            "document": "document"
+        },
+        "variables_one": "{{count}} variable",
+        "variables_other": "{{count}} variables",
+        "buttons_one": "{{count}} bouton",
+        "buttons_other": "{{count}} boutons",
+        "footer": "Pied de page"
+    },
+    "showFullMessage": "Voir le message complet",
+    "showLess": "Voir moins",
+    "providerChip": "Fournisseur : {{provider}}",
+    "filters": {
+        "allCategories": "Toutes les catégories",
+        "allLanguages": "Toutes les langues",
+        "clear": "Effacer les filtres"
+    },
+    "resultsCount_one": "{{count}} modèle",
+    "resultsCount_other": "{{count}} modèles",
+    "actionsNote": "Modifier et Soumettre à Meta sont disponibles pour les brouillons et les modèles rejetés. Les modèles approuvés et en attente peuvent seulement être supprimés."
+}

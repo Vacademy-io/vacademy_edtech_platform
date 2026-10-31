@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CaretDown, CaretUp } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
 import { QuestionHtmlContent } from "./question-html-content";
@@ -19,6 +20,7 @@ interface QuestionPassageProps {
  * It opens by default on every new passage.
  */
 export function QuestionPassage({ html, className }: QuestionPassageProps) {
+  const { t } = useTranslation("questionTest");
   const [expanded, setExpanded] = useState(true);
 
   useEffect(() => {
@@ -41,10 +43,10 @@ export function QuestionPassage({ html, className }: QuestionPassageProps) {
         className="flex w-full items-center gap-2 px-4 py-3 text-start transition-colors hover:bg-neutral-100"
       >
         <span className="text-3xs font-bold uppercase tracking-wide text-neutral-500">
-          Passage
+          {t("questionPassage.label")}
         </span>
         <span className="flex-1 text-caption text-neutral-400">
-          {expanded ? "" : "Tap to read"}
+          {expanded ? "" : t("questionPassage.tapToRead")}
         </span>
         {expanded ? (
           <CaretUp size={16} className="flex-none text-neutral-400" />

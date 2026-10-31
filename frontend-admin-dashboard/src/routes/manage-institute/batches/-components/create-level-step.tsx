@@ -1,19 +1,23 @@
 // CreateLevelStep.tsx
 import { AddLevelInput } from '@/components/design-system/add-level-input';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { RadioGroup } from '@/components/ui/radio-group';
+import { ChoiceCard } from './choice-card';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { useEffect, useState } from 'react';
-import { MyDropdown } from '@/components/common/students/enroll-manually/dropdownForPackageItems';
+import { BatchItemSelect } from './batch-item-select';
 import { useFormContext } from 'react-hook-form';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { X } from '@phosphor-icons/react';
+import { Plus, Stack, X } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { useTranslation } from 'react-i18next';
+import { DEFAULT_LEVEL_ID, DEFAULT_SESSION_ID } from '../-utils/batch-defaults';
 
 export const CreateLevelStep = () => {
-    const { getLevelsFromPackage, instituteDetails, getSessionFromPackage } =
+    const { t } = useTranslation('manageInstituteCreateLevelStep');
+    const { getLevelsFromPackage, instituteDetails, getSessionFromPackage, getPackageSessionId } =
         useInstituteDetailsStore();
     const [newLevelName, setNewLevelName] = useState('');
     const [newLevelDuration, setNewLevelDuration] = useState<number | null>(null);
@@ -24,16 +28,15 @@ export const CreateLevelStep = () => {
     const form = useFormContext();
     const { watch } = form;
 
+    /**
+     * Every level of the institute. The level already used by this course and
+     * session used to be dropped, so an institute with a single level had
+     * nothing to pick and was forced to create one. A batch now has its own
+     * name, so several batches can share the same course, session and level.
+     */
     useEffect(() => {
-        const allLevels = getLevelsFromPackage();
-        //pass the selected courseId and sessionId
-        const levelToRemove = getLevelsFromPackage({
-            courseId: form.watch('selectedCourse')?.id || '',
-            sessionId: form.watch('selectedSession')?.id || '',
-        });
-        const requiredLevelList = allLevels.filter((level) => level.id != levelToRemove[0]?.id);
-        setLevelList(requiredLevelList);
-    }, [instituteDetails, form.watch('selectedCourse'), form.watch('selectedSession')]);
+        setLevelList(getLevelsFromPackage());
+    }, [instituteDetails]);
 
     useEffect(() => {
         // Get all sessions except the currently selected one
@@ -66,24 +69,63 @@ export const CreateLevelStep = () => {
         }
     }, [levelList, form]);
 
+    // When the course already uses the default level, start with it picked.
+    const selectedCourseId = watch('selectedCourse')?.id;
+    useEffect(() => {
+        if (watch('levelCreationType') !== 'existing' || watch('selectedLevel')) return;
+        const courseUsesDefault =
+            !!selectedCourseId &&
+            getLevelsFromPackage({ courseId: selectedCourseId }).some(
+                (level) => level.id === DEFAULT_LEVEL_ID
+            );
+        const defaultLevel = levelList.find((level) => level.id === DEFAULT_LEVEL_ID);
+        if (courseUsesDefault && defaultLevel) {
+            form.setValue('selectedLevel', { id: defaultLevel.id, name: defaultLevel.name });
+        }
+    }, [levelList, selectedCourseId, watch('levelCreationType')]);
+
+    // Copying needs to find the new batch by course + session + level, which is
+    // only unambiguous when no batch has that combination yet.
+    const selectedLevelId = watch('selectedLevel')?.id;
+    const comboHasBatch =
+        !!selectedLevelId &&
+        !!getPackageSessionId({
+            courseId: watch('selectedCourse')?.id || '',
+            sessionId: watch('selectedSession')?.id || DEFAULT_SESSION_ID,
+            levelId: selectedLevelId,
+        });
     const shouldShowDuplicateOption =
         watch('courseCreationType') !== 'new' &&
         watch('levelCreationType') !== 'new' &&
+        !!selectedLevelId &&
+        !comboHasBatch &&
         sessionList.length > 0;
+
+    const levelTerm = getTerminology(ContentTerms.Level, SystemTerms.Level);
+    const levelLower = levelTerm.toLocaleLowerCase();
 
     return (
         <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-1">
+                <p className="text-title font-semibold text-neutral-800">
+                    {t('form.title', { term: levelTerm })}
+                </p>
+                <p className="text-body text-neutral-500">
+                    {t('form.subtitle', { term: levelLower })}
+                </p>
+                <p className="text-caption text-neutral-500">
+                    {t('form.optionalHint', { term: levelLower })}
+                </p>
+            </div>
+
             <FormField
                 control={form.control}
                 name="levelCreationType"
                 render={({ field }) => (
-                    <FormItem className="space-y-3">
-                        <FormLabel className="text-base font-medium text-neutral-700">
-                            {getTerminology(ContentTerms.Level, SystemTerms.Level)} Selection
-                        </FormLabel>
+                    <FormItem>
                         <FormControl>
                             <RadioGroup
-                                className="flex gap-6 pt-1"
+                                className="grid gap-4 md:grid-cols-2"
                                 onValueChange={(value) => {
                                     field.onChange(value);
                                     form.setValue('selectedLevel', null); // Reset dependent field
@@ -94,34 +136,25 @@ export const CreateLevelStep = () => {
                                 }}
                                 value={field.value}
                             >
-                                <FormItem className="flex items-center space-x-2 space-y-0">
-                                    <FormControl>
-                                        <RadioGroupItem
-                                            value="existing"
-                                            id="existing-level"
-                                            disabled={levelList.length === 0}
-                                        />
-                                    </FormControl>
-                                    <FormLabel
-                                        htmlFor="existing-level"
-                                        className={`cursor-pointer font-normal ${levelList.length === 0 ? 'text-neutral-400' : 'text-neutral-600'}`}
-                                    >
-                                        Select existing{' '}
-                                        {getTerminology(ContentTerms.Level, SystemTerms.Level)}
-                                    </FormLabel>
-                                </FormItem>
-                                <FormItem className="flex items-center space-x-2 space-y-0">
-                                    <FormControl>
-                                        <RadioGroupItem value="new" id="new-level" />
-                                    </FormControl>
-                                    <FormLabel
-                                        htmlFor="new-level"
-                                        className="cursor-pointer font-normal text-neutral-600"
-                                    >
-                                        Create new{' '}
-                                        {getTerminology(ContentTerms.Level, SystemTerms.Level)}
-                                    </FormLabel>
-                                </FormItem>
+                                <ChoiceCard
+                                    id="existing-level"
+                                    value="existing"
+                                    selected={field.value === 'existing'}
+                                    disabled={levelList.length === 0}
+                                    icon={<Stack size={22} />}
+                                    iconClassName="bg-primary-50 text-primary-500"
+                                    title={t('form.selectExisting', { term: levelTerm })}
+                                    description={t('form.selectExistingHint', { term: levelLower })}
+                                />
+                                <ChoiceCard
+                                    id="new-level"
+                                    value="new"
+                                    selected={field.value === 'new'}
+                                    icon={<Plus size={22} />}
+                                    iconClassName="bg-success-50 text-success-600"
+                                    title={t('form.createNew', { term: levelTerm })}
+                                    description={t('form.createNewHint', { term: levelLower })}
+                                />
                             </RadioGroup>
                         </FormControl>
                         <FormMessage />
@@ -133,23 +166,34 @@ export const CreateLevelStep = () => {
                 <FormField
                     control={form.control}
                     name="selectedLevel"
-                    rules={{ required: 'Please select a level' }}
                     render={({ field }) => (
                         <FormItem className="flex flex-col gap-1.5">
-                            <FormLabel className="text-neutral-700">
-                                {getTerminology(ContentTerms.Level, SystemTerms.Level)}{' '}
-                                <span className="text-danger-500">*</span>
+                            <FormLabel className="text-subtitle font-semibold text-neutral-700">
+                                {getTerminology(ContentTerms.Level, SystemTerms.Level)}
                             </FormLabel>
                             <FormControl>
-                                <MyDropdown
-                                    currentValue={field.value}
-                                    dropdownList={levelList}
-                                    handleChange={field.onChange}
-                                    placeholder={`Select a ${getTerminology(
-                                        ContentTerms.Level,
-                                        SystemTerms.Level
-                                    ).toLocaleLowerCase()}`}
-                                    disable={levelList.length === 0}
+                                <BatchItemSelect
+                                    items={levelList}
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    placeholder={t('form.selectALevelPlaceholder', {
+                                        term: getTerminology(
+                                            ContentTerms.Level,
+                                            SystemTerms.Level
+                                        ).toLocaleLowerCase(),
+                                    })}
+                                    searchPlaceholder={t('form.searchLevel', {
+                                        term: getTerminology(
+                                            ContentTerms.Level,
+                                            SystemTerms.Level
+                                        ).toLocaleLowerCase(),
+                                    })}
+                                    emptyMessage={t('form.noLevelsYet', {
+                                        term: getTerminology(
+                                            ContentTerms.Level,
+                                            SystemTerms.Level
+                                        ).toLocaleLowerCase(),
+                                    })}
                                 />
                             </FormControl>
                             <FormMessage />
@@ -160,12 +204,12 @@ export const CreateLevelStep = () => {
 
             {form.watch('levelCreationType') === 'new' &&
                 (newLevelAdded ? (
-                    <div className="flex items-center gap-3 rounded-md border border-neutral-200 bg-neutral-50 p-3">
+                    <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
                         <div className="flex grow flex-col">
                             <p className="text-sm font-medium text-neutral-700">{newLevelName}</p>
                             {newLevelDuration && (
                                 <p className="text-xs text-neutral-500">
-                                    Duration: {newLevelDuration} days
+                                    {t('form.durationDays', { count: newLevelDuration })}
                                 </p>
                             )}
                         </div>
@@ -197,7 +241,7 @@ export const CreateLevelStep = () => {
                 ))}
 
             {shouldShowDuplicateOption && (
-                <div className="mt-4 border-t border-neutral-200 pt-4">
+                <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-4">
                     <FormField
                         control={form.control}
                         name="duplicateStudyMaterials"
@@ -219,11 +263,12 @@ export const CreateLevelStep = () => {
                                     htmlFor="duplicate-materials"
                                     className="cursor-pointer text-sm font-normal text-neutral-700"
                                 >
-                                    Duplicate study materials from a pre-existing{' '}
-                                    {getTerminology(
-                                        ContentTerms.Session,
-                                        SystemTerms.Session
-                                    ).toLocaleLowerCase()}
+                                    {t('form.duplicateFromPreExisting', {
+                                        term: getTerminology(
+                                            ContentTerms.Session,
+                                            SystemTerms.Session
+                                        ).toLocaleLowerCase(),
+                                    })}
                                 </FormLabel>
                             </FormItem>
                         )}
@@ -233,27 +278,41 @@ export const CreateLevelStep = () => {
                         <FormField
                             control={form.control}
                             name="selectedDuplicateSession"
-                            rules={{ required: 'Please select a session to duplicate from' }}
+                            rules={{ required: t('validation.pleaseSelectSessionToDuplicate') }}
                             render={({ field }) => (
                                 <FormItem className="mt-3 flex flex-col gap-1.5">
                                     <FormLabel className="text-neutral-700">
-                                        Duplicate from{' '}
-                                        {getTerminology(
-                                            ContentTerms.Session,
-                                            SystemTerms.Session
-                                        ).toLocaleLowerCase()}{' '}
+                                        {t('form.duplicateFrom', {
+                                            term: getTerminology(
+                                                ContentTerms.Session,
+                                                SystemTerms.Session
+                                            ).toLocaleLowerCase(),
+                                        })}{' '}
                                         <span className="text-danger-500">*</span>
                                     </FormLabel>
                                     <FormControl>
-                                        <MyDropdown
-                                            currentValue={field.value}
-                                            dropdownList={sessionList}
-                                            handleChange={field.onChange}
-                                            placeholder={`Select ${getTerminology(
-                                                ContentTerms.Session,
-                                                SystemTerms.Session
-                                            ).toLocaleLowerCase()} for duplication`}
-                                            disable={sessionList.length === 0}
+                                        <BatchItemSelect
+                                            items={sessionList}
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            placeholder={t('form.selectForDuplication', {
+                                                term: getTerminology(
+                                                    ContentTerms.Session,
+                                                    SystemTerms.Session
+                                                ).toLocaleLowerCase(),
+                                            })}
+                                            searchPlaceholder={t('form.searchSession', {
+                                                term: getTerminology(
+                                                    ContentTerms.Session,
+                                                    SystemTerms.Session
+                                                ).toLocaleLowerCase(),
+                                            })}
+                                            emptyMessage={t('form.noOtherSessions', {
+                                                term: getTerminology(
+                                                    ContentTerms.Session,
+                                                    SystemTerms.Session
+                                                ).toLocaleLowerCase(),
+                                            })}
                                         />
                                     </FormControl>
                                     <FormMessage />

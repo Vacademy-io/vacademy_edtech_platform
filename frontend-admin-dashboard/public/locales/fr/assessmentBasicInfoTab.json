@@ -1,0 +1,29 @@
+{
+    "basicInfo": {
+        "assessmentName": "Nom de l'évaluation",
+        "untitled": "Sans titre",
+        "notAvailable": "N/A"
+    },
+    "instructions": {
+        "title": "Instructions de l'évaluation",
+        "description": "Affichées aux participants avant qu'ils ne commencent l'évaluation",
+        "empty": "Aucune instruction fournie."
+    },
+    "liveDateRange": {
+        "title": "Plage de dates en direct",
+        "startDateTime": "Date et heure de début",
+        "endDateTime": "Date et heure de fin"
+    },
+    "attemptSettings": {
+        "title": "Paramètres de tentative",
+        "description": "Contrôle la façon dont les participants peuvent passer l'évaluation",
+        "reattemptCount": "Nombre de tentatives",
+        "totalDuration": "Durée totale",
+        "durationNotSet": "—",
+        "durationMinutes_one": "{{count}} minute",
+        "durationMinutes_many": "{{count}} de minutes",
+        "durationMinutes_other": "{{count}} minutes",
+        "assessmentPreview": "Aperçu de l'évaluation",
+        "allowSwitchingSections": "Autoriser le passage d'une section à l'autre"
+    }
+}

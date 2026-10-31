@@ -1,0 +1,236 @@
+/* =====================================================================
+   Corporate Theme — modern, calm, layered
+   =====================================================================
+   Applied via the .ui-corporate class on <html> (mutually exclusive with
+   .ui-play / .ui-cleaner-play / .ui-vibrant — see __root.tsx applyUiType).
+
+   Where it sits against the other skins:
+     default      neutral product UI
+     vibrant      pastel, friendly accents
+     play         gamified, bold, 3D press, 20px radii
+     cleanerPlay  warm felted-clay, illustrated, generous whitespace
+     corporate    modern B2B product UI — Linear / Stripe / Vercel register
+
+   For the B2B and professional-training institutes on the platform, where
+   the interface should read as a polished work tool.
+
+   ---------------------------------------------------------------------
+   REVISION NOTE 2 (2026-09-25, same day). v2 fixed the tokens but the owner,
+   looking at the live dashboard, still called it "kiddish". Correctly: the
+   childish cues were never in tokens — they were in the components (36px
+   extra-bold hero titles, uppercase coloured eyebrows, emoji task markers, a
+   rainbow of per-type chips, gold trophy pills, a big letter-avatar). A skin
+   that only moves tokens cannot reach those. So Corporate now also has
+   component-level treatment: [.ui-corporate_&]: variants for anything purely
+   visual, and hooks/use-corporate-theme.ts where the MARKUP must differ
+   (a Phosphor line icon instead of an emoji). This file adds the weight
+   ceiling and 8px geometry.
+
+   REVISION NOTE (2026-09-25). The first version of this skin was built on
+   2012-era enterprise conventions — 4px corners, darkened hairline borders
+   with shadows stripped out, white cards on a white canvas, tighter spacing,
+   uppercase tracked eyebrows. Rendered, it read as a Bootstrap-3 intranet:
+   every card a grey wireframe box, nothing elevated. Modern corporate UI is
+   close to the opposite on almost every axis, and this file now follows it:
+
+   1. LAYERING, NOT OUTLINES. A cool off-white canvas with white surfaces on
+      top. Depth comes from surface contrast plus a soft, layered shadow —
+      the border is a quiet low-contrast edge, not the structure itself.
+   2. MODEST GEOMETRY. 8px corners — neither the dated 4px of 2012
+      enterprise UI nor the 14–20px pill softness of consumer apps.
+   3. CALM, NOT CRAMPED. Default spacing. Density belongs in data tables, and
+      the density axis is still there for institutes that want it.
+   4. CONFIDENT, CONTROLLED BRAND. Primary actions are solid brand with a
+      subtle top highlight; focus rings and hero washes are brand-tinted.
+      Everything else is cool neutral — brand is still an accent, not a fill.
+   5. QUIET MOTION. Short, eased transitions; elevation changes on hover
+      instead of colour swaps or bounces.
+
+   ---------------------------------------------------------------------
+   WHAT A SKIN STYLESHEET CANNOT CHANGE (by design, not oversight):
+   - The font. utils/branding.ts applyTabBranding writes --app-font-family and
+     body.style.fontFamily INLINE on every route, so a stylesheet can only win
+     with !important — which would also stomp an institute's explicit font.
+   - The sidebar colours. theme-provider writes --nav-* INLINE for the same
+     reason (they are an institute-authored role in THEME_SETTING).
+   Both stay under the institute's control, which is the correct precedence.
+
+   ---------------------------------------------------------------------
+   HOW THIS COMPOSES WITH THE INSTITUTE AXES (data-ui-corners/density/gradient)
+
+   Everything below is a DEFAULT, not an override. institute-theme-roles.ts
+   only writes a data-ui-* attribute when the institute actually picked that
+   axis, and styles/ui-axes.css is imported AFTER this file. Both selectors
+   have specificity (0,1,1), so on a tie the later one — the axis — wins.
+   An institute-set page background is written inline (as both --background
+   and --canvas) by applyInstituteBackground, so it also beats the canvas
+   tint here.
+
+   No !important anywhere. play-theme.css carries 181 of them and its own
+   header records that they had to be deleted from the navbar and sidebar
+   blocks because they masked the redesigned JSX.
+   ===================================================================== */
+
+html.ui-corporate {
+  /* ---- Geometry (default; the corners axis overrides) ----------------
+     8px seed -> sm/rounded 4, md 6, lg 8, xl 10, 2xl 12. Tightened from 10px
+     on 2026-09-25 after owner review: at 10 the rounded-2xl heroes and cards
+     sat at 14px, which still read soft and app-like next to Linear/Vercel. */
+  --radius: 8px;
+
+  /* ---- Surfaces: layered, cool neutral -------------------------------
+     Off-white canvas, pure white cards. The small lightness gap is what
+     makes cards read as raised without heavy borders or big shadows.
+
+     --canvas, NOT --background: ~100 bg-background usages across 12 shared
+     primitives mean "white surface" (dialogs, sheets, toasts, active tabs,
+     switch thumbs, outline buttons). Tinting --background turned all of them
+     grey; --canvas is painted only by body and the shell's SidebarInset. */
+  --canvas: 220 20% 97.5%;
+  --card: 0 0% 100%;
+  --popover: 0 0% 100%;
+  --muted: 220 16% 95.5%;
+  --muted-foreground: 220 9% 43%;
+  --accent: 220 16% 95.5%;
+  --accent-foreground: 222 47% 11%;
+
+  /* Borders are a quiet edge, LIGHTER than stock (210 18% 84%), because the
+     shadow now carries the elevation. */
+  --border: 220 15% 90%;
+  --input: 220 14% 87%;
+
+  /* Brand-tinted focus ring. --primary-500 is written inline on <html> by
+     theme-provider; a var() reference resolves against it at computed time. */
+  --ring: var(--primary-500);
+
+  /* ---- Elevation: soft, layered, cool-tinted ------------------------
+     Two-layer shadows (a tight contact shadow plus a wider soft one), the
+     convention across current B2B design systems. Tinted to a cool ink
+     rather than black so they sit naturally on the off-white canvas. */
+  --shadow-xs: 0 1px 2px 0 rgb(16 24 40 / 0.05);
+  --shadow-sm: 0 1px 3px 0 rgb(16 24 40 / 0.07), 0 1px 2px -1px rgb(16 24 40 / 0.05);
+  --shadow-md: 0 4px 10px -2px rgb(16 24 40 / 0.08), 0 2px 4px -2px rgb(16 24 40 / 0.05);
+  --shadow-lg: 0 12px 20px -4px rgb(16 24 40 / 0.08), 0 4px 8px -2px rgb(16 24 40 / 0.04);
+  --shadow-xl: 0 20px 28px -6px rgb(16 24 40 / 0.10), 0 8px 12px -4px rgb(16 24 40 / 0.04);
+  --shadow-2xl: 0 28px 56px -14px rgb(16 24 40 / 0.20);
+  --shadow-inner: inset 0 1px 2px 0 rgb(16 24 40 / 0.06);
+
+  /* ---- Brand wash for hero surfaces (gradient axis overrides) ---------
+     A barely-there brand tint fading into the card: modern products use
+     this on the one surface that should draw the eye, and nowhere else. */
+  --ui-gradient-from: hsl(var(--primary-50));
+  --ui-gradient-to: hsl(var(--card));
+
+  /* ---- Motion: quick and eased ---------------------------------------- */
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
+  --duration-slow: 240ms;
+
+  /* ---- Page chrome ----------------------------------------------------- */
+  scrollbar-color: hsl(220 12% 80%) transparent;
+}
+
+html.ui-corporate ::selection {
+  background: hsl(var(--primary-100));
+}
+
+@layer components {
+  /* Literal card classes (shadcn Cards emit none and are styled through the
+     tokens above). `.cp-card` is included because the Cleaner Play card class
+     is used on shared widgets regardless of the active skin. Hover raises the
+     surface rather than recolouring its edge. */
+  .ui-corporate .card,
+  .ui-corporate .Card,
+  .ui-corporate .cp-card {
+    border: 1px solid hsl(var(--border));
+    box-shadow: var(--shadow-sm);
+    transition:
+      box-shadow var(--duration-base) var(--ease-out-soft),
+      border-color var(--duration-base) var(--ease-out-soft);
+  }
+  .ui-corporate .card:hover,
+  .ui-corporate .Card:hover,
+  .ui-corporate .cp-card:hover {
+    box-shadow: var(--shadow-md);
+    border-color: hsl(220 14% 85%);
+    transform: none; /* cancels the Play/Cleaner Play lift */
+  }
+
+  /* Primary actions: solid brand with a faint top highlight and a tight
+     contact shadow — the "pressable" treatment modern products use in place
+     of both flat fills and 3D bevels. Scoped to elements that actually carry
+     a solid primary background so outline/ghost buttons are untouched. */
+  .ui-corporate :is(button, a).bg-primary,
+  .ui-corporate :is(button, a).bg-primary-500 {
+    background-image: linear-gradient(rgb(255 255 255 / 0.1), rgb(255 255 255 / 0));
+    box-shadow:
+      inset 0 1px 0 0 rgb(255 255 255 / 0.16),
+      0 1px 2px 0 rgb(16 24 40 / 0.12);
+  }
+
+  .ui-corporate button:active,
+  .ui-corporate .btn:active,
+  .ui-corporate .my-button:active {
+    transform: none; /* no press-scale */
+  }
+
+  /* Headings: tighter tracking on display sizes is most of what makes type
+     read current rather than default. */
+  .ui-corporate :is(h1, h2, h3, .text-h1, .text-h2, .text-h3, .text-display, .text-display-sm) {
+    letter-spacing: -0.02em;
+  }
+}
+
+/* ── Weight ceiling ──────────────────────────────────────────────────
+   Linear / Stripe / Vercel almost never set UI text above semibold,
+   while this app uses bold, extra-bold and black liberally —
+   heavy weights at display sizes were a large part of why the dashboard read
+   as a children's product. Capped at 600.
+
+   Deliberately OUTSIDE @layer: inside it, Tailwind v3 treats .font-bold as a
+   utility and clones this rule for every variant used in the app
+   ([&_h1]:font-bold, [.ui-play_&]:font-bold, …). Specificity is (0,2,0), so
+   it beats plain .font-bold; component-level [.ui-corporate_&]: variants tie
+   on specificity and win because utilities are emitted after this file. */
+.ui-corporate :is(.font-bold, .font-extrabold, .font-black, .text-display, .text-display-sm) {
+  font-weight: 600;
+}
+
+/* ── Icons ────────────────────────────────────────────────────────────
+   The app renders ~200 Phosphor icons at weight="duotone". Line icons read
+   more current and more professional, so Corporate drops duotone's
+   translucent fill layer (opacity="0.2", verified in
+   @phosphor-icons/react/dist/index.umd.js) and keeps the outline — exactly
+   what weight="regular" draws. One rule, no call sites touched.
+
+   Scoped to the Phosphor viewBox so it cannot reach unrelated inline SVG
+   (illustrations, charts, the boot splash) that legitimately use opacity.
+
+   KNOWN LIMIT: weight="fill" and weight="bold" bake their weight into the
+   path geometry and stay as authored; the weight is often semantic (a filled
+   star means earned), so converting them wholesale would destroy meaning. */
+.ui-corporate svg[viewBox="0 0 256 256"] path[opacity] {
+  opacity: 0;
+}
+
+@layer utilities {
+  /* Section label above a block. Sentence case, medium weight, muted — the
+     current convention; the uppercase-and-tracked version this replaced is a
+     large part of what dated the first iteration. */
+  .ui-corporate .corporate-eyebrow {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    color: hsl(var(--muted-foreground));
+  }
+}
+
+/* Vestibular safety, matching play-theme.css and cleaner-play-theme.css. */
+@media (prefers-reduced-motion: reduce) {
+  html.ui-corporate {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+  }
+}

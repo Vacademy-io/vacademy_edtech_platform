@@ -10,6 +10,9 @@ import java.util.List;
 @Data
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class AttendanceFilterRequest {
+    // Required. Scopes the whole report to one institute - without it the attendance
+    // query spans every institute on the platform (see AttendanceReportService).
+    private String instituteId;
     private String name; // Optional for search
     private LocalDate startDate;
     private LocalDate endDate;

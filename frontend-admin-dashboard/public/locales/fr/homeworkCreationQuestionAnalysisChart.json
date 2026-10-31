@@ -1,0 +1,21 @@
+{
+    "title": "Analyse des questions",
+    "legend": {
+        "correct": "Correct",
+        "partiallyCorrect": "Partiellement correct",
+        "wrongResponses": "Réponses incorrectes",
+        "skip": "Ignoré"
+    },
+    "chart": {
+        "xAxisLabel": "Question",
+        "yAxisLabel": "Nombre de participants"
+    },
+    "actions": {
+        "checkQuestionInsights": "Voir les analyses des questions",
+        "selectSectionPlaceholder": "Sélectionner une section",
+        "export": "Exporter"
+    },
+    "dialog": {
+        "questionInsightsTitle": "Analyses des questions"
+    }
+}

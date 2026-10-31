@@ -1,0 +1,23 @@
+{
+    "heading": "إنشاء ملف موارد بشرية",
+    "cancel": "إلغاء",
+    "createProfile": "إنشاء الملف",
+    "creating": "جارٍ الإنشاء…",
+    "noDepartment": "بلا قسم",
+    "noDesignation": "بلا مسمى وظيفي",
+    "thisPerson": "هذا الشخص",
+    "fields": {
+        "employeeCodeLabel": "رمز الموظف",
+        "employeeCodePlaceholder": "اتركه فارغًا ليقوم HR بتعيين واحد",
+        "joinDateLabel": "تاريخ الالتحاق",
+        "departmentLabel": "القسم",
+        "designationLabel": "المسمى الوظيفي"
+    },
+    "toasts": {
+        "created": "تم إنشاء ملف الموارد البشرية لـ {{name}}"
+    },
+    "errors": {
+        "joinDateRequired": "اختر تاريخ الالتحاق",
+        "createFailed": "تعذّر إنشاء ملف موارد بشرية لـ {{name}}"
+    }
+}

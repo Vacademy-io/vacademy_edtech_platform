@@ -1,4 +1,5 @@
 import { SealCheck } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -82,34 +83,35 @@ export const VerificationPageSection = ({
     uploading,
     disabled,
 }: Props) => {
-    const displayName = instituteName || 'Your institute';
-    const headline = config.headline.trim() || DEFAULT_VERIFICATION_HEADLINE;
+    const { t } = useTranslation('settingsVerificationPage');
+    const defaultHeadline = t('preview.defaultHeadline') || DEFAULT_VERIFICATION_HEADLINE;
+    const displayName = instituteName || t('preview.defaultInstituteName');
+    const headline = config.headline.trim() || defaultHeadline;
+
+    const modeOptions = [
+        {
+            value: 'PAGE' as const,
+            title: t('modeSection.options.page.title'),
+            hint: t('modeSection.options.page.hint'),
+        },
+        {
+            value: 'DOCUMENT' as const,
+            title: t('modeSection.options.document.title'),
+            hint: t('modeSection.options.document.hint'),
+        },
+    ];
 
     return (
         <div className="space-y-5 rounded-lg border bg-card p-6">
             <div>
-                <h3 className="text-base font-semibold">Verification page</h3>
-                <p className="text-sm text-muted-foreground">
-                    Scanning the code on a certificate opens this page. It is hosted on your own
-                    portal and needs no login, so anyone holding the certificate can check it.
-                </p>
+                <h3 className="text-base font-semibold">{t('header.title')}</h3>
+                <p className="text-sm text-muted-foreground">{t('header.description')}</p>
             </div>
 
             <div className="space-y-3 rounded-md border border-neutral-200 bg-neutral-50/60 p-4">
-                <div className="text-sm font-medium">What the code opens</div>
+                <div className="text-sm font-medium">{t('modeSection.title')}</div>
                 <div className="grid gap-2 sm:grid-cols-2">
-                    {[
-                        {
-                            value: 'PAGE' as const,
-                            title: 'Verification page',
-                            hint: 'The hosted page below. Works on any phone, nothing to maintain.',
-                        },
-                        {
-                            value: 'DOCUMENT' as const,
-                            title: 'Your own document',
-                            hint: 'Upload a PDF and place dynamic fields on it, like a certificate.',
-                        },
-                    ].map((option) => (
+                    {modeOptions.map((option) => (
                         <button
                             key={option.value}
                             type="button"
@@ -156,7 +158,9 @@ export const VerificationPageSection = ({
                                     document.getElementById('verification-doc-file')?.click()
                                 }
                             >
-                                {uploading ? 'Reading the PDF…' : 'Upload a PDF'}
+                                {uploading
+                                    ? t('modeSection.uploadingButton')
+                                    : t('modeSection.uploadButton')}
                             </MyButton>
                             {config.documentBackgroundUrl && (
                                 <MyButton
@@ -166,7 +170,7 @@ export const VerificationPageSection = ({
                                     disable={disabled}
                                     onClick={() => onEditDocument?.()}
                                 >
-                                    Place fields
+                                    {t('modeSection.placeFieldsButton')}
                                 </MyButton>
                             )}
                         </div>
@@ -175,27 +179,22 @@ export const VerificationPageSection = ({
                             <div className="flex items-start gap-3">
                                 <img
                                     src={config.documentBackgroundUrl}
-                                    alt="Verification document"
+                                    alt={t('modeSection.documentAlt')}
                                     className="h-24 w-auto rounded border bg-white object-contain"
                                 />
                                 <p className="text-xs text-muted-foreground">
-                                    Fields you place are filled in when someone scans — the
-                                    certificate number, the course, the learner&apos;s name as the
-                                    page shows it. Only the first page becomes the document.
+                                    {t('modeSection.fieldsHint')}
                                 </p>
                             </div>
                         ) : (
                             <p className="text-xs text-muted-foreground">
-                                Upload the PDF you want people to see. Its first page becomes a
-                                canvas you can drop dynamic fields onto, exactly like a certificate.
+                                {t('modeSection.uploadHint')}
                             </p>
                         )}
 
                         <div className="flex items-start gap-2 rounded-md border border-warning-300 bg-warning-50 p-3">
                             <span className="text-xs text-warning-700">
-                                Until you upload a document, scans keep opening the verification
-                                page below — so verification never breaks while you are still
-                                setting this up.
+                                {t('modeSection.fallbackWarning')}
                             </span>
                         </div>
                     </div>
@@ -205,16 +204,14 @@ export const VerificationPageSection = ({
             <div className="grid gap-6 lg:grid-cols-2">
                 <div className="space-y-4">
                     <div>
-                        <div className="text-sm font-medium">Address</div>
+                        <div className="text-sm font-medium">{t('address.label')}</div>
                         {verificationPageUrl ? (
                             <p className="mt-1 break-all rounded border bg-muted/30 p-3 font-mono text-xs">
                                 {verificationPageUrl}
                             </p>
                         ) : (
                             <p className="mt-1 rounded border bg-muted/30 p-3 text-xs text-muted-foreground">
-                                Set your learner portal address in Dashboard → Edit institute
-                                profile and this page moves to your own domain. Until then scans
-                                verify on the platform address.
+                                {t('address.unset')}
                             </p>
                         )}
                     </div>
@@ -222,10 +219,9 @@ export const VerificationPageSection = ({
                     {customUrl && (
                         <div className="flex flex-wrap items-center gap-2 rounded border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
                             <span>
-                                Scans currently open a link set earlier:{' '}
-                                <span className="font-mono">{customUrl}</span>. That page receives
-                                only the certificate number, which is not a credential, so it cannot
-                                prove the certificate is genuine.
+                                {t('customUrl.part1')}{' '}
+                                <span className="font-mono">{customUrl}</span>
+                                {t('customUrl.part2')}
                             </span>
                             <MyButton
                                 buttonType="secondary"
@@ -233,73 +229,67 @@ export const VerificationPageSection = ({
                                 onClick={onClearCustomUrl}
                                 disable={disabled}
                             >
-                                Use my portal instead
+                                {t('customUrl.useMyPortal')}
                             </MyButton>
                         </div>
                     )}
 
                     <div>
-                        <Label htmlFor="verification-headline">Headline</Label>
+                        <Label htmlFor="verification-headline">{t('headline.label')}</Label>
                         <Input
                             id="verification-headline"
                             value={config.headline}
                             disabled={disabled}
                             maxLength={80}
-                            placeholder={DEFAULT_VERIFICATION_HEADLINE}
+                            placeholder={defaultHeadline}
                             onChange={(e) => onConfigChange({ headline: e.target.value })}
                             className="mt-1"
                         />
                         <p className="mt-1 text-xs text-muted-foreground">
-                            The line under the seal. Blank uses &ldquo;
-                            {DEFAULT_VERIFICATION_HEADLINE}&rdquo;.
+                            {t('headline.hintPart1')}
+                            {defaultHeadline}
+                            {t('headline.hintPart2')}
                         </p>
                     </div>
 
                     <div>
-                        <Label htmlFor="verification-note">Your message (optional)</Label>
+                        <Label htmlFor="verification-note">{t('note.label')}</Label>
                         <Input
                             id="verification-note"
                             value={config.note}
                             disabled={disabled}
                             maxLength={200}
-                            placeholder="e.g. Questions about this certificate? registrar@example.com"
+                            placeholder={t('note.placeholder')}
                             onChange={(e) => onConfigChange({ note: e.target.value })}
                             className="mt-1"
                         />
-                        <p className="mt-1 text-xs text-muted-foreground">
-                            Shown on the page below. Anyone with the link can read it, so keep it to
-                            something public.
-                        </p>
+                        <p className="mt-1 text-xs text-muted-foreground">{t('note.hint')}</p>
                     </div>
 
                     {/* The recipient's masked name and the certificate number are
                         not on this list: without them the page confirms that a
                         certificate exists rather than the one being held. */}
                     <div className="flex flex-col gap-2">
-                        <Label>What the page lists</Label>
+                        <Label>{t('detailsList.label')}</Label>
                         <DetailToggle
-                            label="Course name"
+                            label={t('detailsList.courseName')}
                             checked={config.showCourse}
                             disabled={disabled}
                             onChange={(showCourse) => onConfigChange({ showCourse })}
                         />
                         <DetailToggle
-                            label="Issue date"
+                            label={t('detailsList.issueDate')}
                             checked={config.showIssueDate}
                             disabled={disabled}
                             onChange={(showIssueDate) => onConfigChange({ showIssueDate })}
                         />
                         <DetailToggle
-                            label="Completion percentage"
+                            label={t('detailsList.completionPercentage')}
                             checked={config.showCompletion}
                             disabled={disabled}
                             onChange={(showCompletion) => onConfigChange({ showCompletion })}
                         />
-                        <p className="text-xs text-muted-foreground">
-                            The recipient&apos;s name (partially masked) and the certificate number
-                            are always shown &mdash; they are what tie the page to the certificate
-                            in someone&apos;s hand.
-                        </p>
+                        <p className="text-xs text-muted-foreground">{t('detailsList.hint')}</p>
                     </div>
                 </div>
 
@@ -308,7 +298,7 @@ export const VerificationPageSection = ({
                     work — only the people it is trying to convince do. */}
                 <div className="rounded-lg border bg-muted/20 p-4">
                     <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        What a scan shows
+                        {t('preview.sectionTitle')}
                     </div>
                     <div className="overflow-hidden rounded-lg border bg-white">
                         <div
@@ -332,7 +322,7 @@ export const VerificationPageSection = ({
                                 </div>
                             )}
                             <div className="text-caption uppercase tracking-widest text-neutral-400">
-                                Verified by
+                                {t('preview.verifiedBy')}
                             </div>
                             <div className="text-sm font-semibold text-neutral-700">
                                 {displayName}
@@ -343,15 +333,32 @@ export const VerificationPageSection = ({
                             <div className="text-xs font-medium text-neutral-700">{headline}</div>
                         </div>
                         <dl className="flex flex-col gap-1.5 px-5 py-4 text-xs">
-                            <PreviewRow label="Issued to" value="A··· S·····" />
+                            <PreviewRow
+                                label={t('preview.issuedTo')}
+                                value={t('preview.issuedToValue')}
+                            />
                             {config.showCourse && (
-                                <PreviewRow label="Course" value="Intro to Sample Course" />
+                                <PreviewRow
+                                    label={t('preview.course')}
+                                    value={t('preview.courseValue')}
+                                />
                             )}
-                            <PreviewRow label="Certificate number" value={sampleCertificateId} />
+                            <PreviewRow
+                                label={t('preview.certificateNumber')}
+                                value={sampleCertificateId}
+                            />
                             {config.showIssueDate && (
-                                <PreviewRow label="Issued on" value="14 August 2026" />
+                                <PreviewRow
+                                    label={t('preview.issuedOn')}
+                                    value={t('preview.issuedOnValue')}
+                                />
                             )}
-                            {config.showCompletion && <PreviewRow label="Completion" value="92%" />}
+                            {config.showCompletion && (
+                                <PreviewRow
+                                    label={t('preview.completion')}
+                                    value={t('preview.completionValue')}
+                                />
+                            )}
                         </dl>
                         {config.note.trim() && (
                             <p className="border-t px-5 py-3 text-xs text-neutral-600">

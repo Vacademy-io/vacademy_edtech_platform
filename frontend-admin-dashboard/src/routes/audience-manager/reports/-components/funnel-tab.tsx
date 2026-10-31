@@ -11,6 +11,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
 import { CaretRight, CheckCircle, Funnel, Timer } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import {
@@ -42,6 +43,7 @@ export function FunnelTab({
     counsellorUserId,
     audienceId,
 }: ReportTabProps) {
+    const { t } = useTranslation('audienceManagerFunnelTab');
     const navigate = useNavigate();
     const params = { instituteId, fromDate, toDate, teamId, counsellorUserId, audienceId };
 
@@ -75,23 +77,23 @@ export function FunnelTab({
             {/* Overall KPI pair */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <KpiCard
-                    label="Median Days to Convert"
+                    label={t('kpi.medianDaysToConvert.label')}
                     value={fmtDays(overall?.median_days_to_convert)}
-                    sub="From first activity to Converted, for leads won in this range"
+                    sub={t('kpi.medianDaysToConvert.sub')}
                     icon={<Timer size={20} weight="bold" />}
                     tone="info"
                 />
                 <KpiCard
-                    label="Conversion Rate"
+                    label={t('kpi.conversionRate.label')}
                     value={fmtPct(overall?.conversion_rate)}
-                    sub="Won in range ÷ submitted in range"
+                    sub={t('kpi.conversionRate.sub')}
                     icon={<CheckCircle size={20} weight="bold" />}
                     tone="success"
                 />
             </div>
 
             <ReportSection
-                title="Stage funnel"
+                title={t('section.title')}
                 icon={<Funnel size={18} />}
                 actions={
                     <ExportWithColumnPickerButton
@@ -99,13 +101,13 @@ export function FunnelTab({
                         disabled={stages.length === 0}
                         getHeadersAndRows={() => ({
                             headers: [
-                                'Stage',
-                                'Entered',
-                                'In stage now',
-                                'Median days in stage',
-                                'Advanced',
-                                'Advanced %',
-                                'Regressed',
+                                t('csv.headers.stage'),
+                                t('csv.headers.entered'),
+                                t('csv.headers.inStageNow'),
+                                t('csv.headers.medianDaysInStage'),
+                                t('csv.headers.advanced'),
+                                t('csv.headers.advancedPct'),
+                                t('csv.headers.regressed'),
                             ],
                             rows: stages.map((s) => [
                                 s.label || s.status_key,
@@ -121,7 +123,7 @@ export function FunnelTab({
                 }
             >
                 {stages.length === 0 ? (
-                    <EmptyHint message="No stage activity in this range." />
+                    <EmptyHint message={t('emptyHint')} />
                 ) : (
                     <>
                         {/* Visual stage bars — entered volume per stage. */}
@@ -141,12 +143,24 @@ export function FunnelTab({
                             <table className="w-full text-sm">
                                 <thead>
                                     <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
-                                        <th className="py-2 pr-3 text-left">Stage</th>
-                                        <th className="py-2 pr-3 text-right">Entered</th>
-                                        <th className="py-2 pr-3 text-right">In stage now</th>
-                                        <th className="py-2 pr-3 text-right">Median days</th>
-                                        <th className="py-2 pr-3 text-right">Advanced %</th>
-                                        <th className="py-2 pr-3 text-right">Regressed</th>
+                                        <th className="py-2 pe-3 text-start">
+                                            {t('table.headers.stage')}
+                                        </th>
+                                        <th className="py-2 pe-3 text-end">
+                                            {t('table.headers.entered')}
+                                        </th>
+                                        <th className="py-2 pe-3 text-end">
+                                            {t('table.headers.inStageNow')}
+                                        </th>
+                                        <th className="py-2 pe-3 text-end">
+                                            {t('table.headers.medianDays')}
+                                        </th>
+                                        <th className="py-2 pe-3 text-end">
+                                            {t('table.headers.advancedPct')}
+                                        </th>
+                                        <th className="py-2 pe-3 text-end">
+                                            {t('table.headers.regressed')}
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -216,11 +230,7 @@ export function FunnelTab({
                                 </tbody>
                             </table>
                         </div>
-                        <p className="text-xs text-neutral-400">
-                            Median days = time spent in the stage for stints started in this range.
-                            Advanced / Regressed = moves to a later / earlier stage in your status
-                            order.
-                        </p>
+                        <p className="text-xs text-neutral-400">{t('footnote')}</p>
                     </>
                 )}
             </ReportSection>
@@ -239,6 +249,7 @@ function StageBar({
     maxEntered: number;
     onClick: () => void;
 }) {
+    const { t } = useTranslation('audienceManagerFunnelTab');
     const pct = Math.min(100, (stage.entered / maxEntered) * 100);
     return (
         <div
@@ -267,7 +278,7 @@ function StageBar({
                 <span className="flex items-center gap-1 font-medium text-neutral-900">
                     {fmtNumber(stage.entered)}
                     <span className="text-xs font-normal text-neutral-500">
-                        · {fmtNumber(stage.current_stock)} now
+                        {t('stageBar.nowSuffix', { value: fmtNumber(stage.current_stock) })}
                     </span>
                     <CaretRight
                         size={12}

@@ -1,0 +1,14 @@
+{
+    "jupyterNotebook": "Jupyter नोटबुक",
+    "jupyterDescription": "वीडियो के साथ इंटरैक्टिव कोडिंग नोटबुक",
+    "scratchProject": "Scratch प्रोजेक्ट",
+    "scratchDescription": "वीडियो के साथ विज़ुअल प्रोग्रामिंग ब्लॉक",
+    "codeEditor": "कोड एडिटर",
+    "codeDescription": "वीडियो के साथ इंटरैक्टिव कोड एनवायरनमेंट",
+    "videoSlideNotFound": "वीडियो स्लाइड नहीं मिली",
+    "convertSuccess": "वीडियो सफलतापूर्वक स्प्लिट-स्क्रीन {{type}} में बदल दिया गया!",
+    "convertError": "स्प्लिट-स्क्रीन {{type}} में बदलने में विफल",
+    "convertToSplitScreen": "स्प्लिट स्क्रीन में बदलें",
+    "dialogSubtitle": "वीडियो के साथ इंटरैक्टिव एनवायरनमेंट जोड़ें",
+    "creatingSlide": "स्प्लिट स्क्रीन स्लाइड बनाई जा रही है..."
+}

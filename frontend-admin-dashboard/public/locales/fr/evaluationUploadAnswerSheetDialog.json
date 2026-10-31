@@ -1,0 +1,13 @@
+{
+    "uploadStudentAnswerSheetHeading": "Téléverser la copie de l'élève",
+    "cancel": "Annuler",
+    "uploadingEllipsis": "Téléchargement en cours...",
+    "uploadAndView": "Téléverser et afficher",
+    "uploadOnBehalfHint": "Si l'élève n'a pas pu téléverser sa réponse, téléversez la copie qu'il vous a partagée (par exemple par e-mail ou WhatsApp) pour l'évaluer en son nom.",
+    "change": "Modifier",
+    "clickToUploadOrDrag": "Cliquez pour téléverser ou glissez-déposez",
+    "pdfOnly": "PDF uniquement",
+    "uploadFailedTryAgain": "Échec du téléchargement du fichier, veuillez réessayer",
+    "answerSheetUploaded": "Copie téléversée pour l'élève",
+    "couldNotUploadAnswerSheet": "Impossible de téléverser la copie"
+}

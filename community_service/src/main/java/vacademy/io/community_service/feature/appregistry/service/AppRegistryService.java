@@ -41,6 +41,25 @@ public class AppRegistryService {
         return out;
     }
 
+    /**
+     * Read path for the institute-admin-facing status view. Unlike {@link #listAll()} this never
+     * returns archived apps — an institute admin should not see a decommissioned registration and
+     * wonder why "their app" looks broken.
+     */
+    @Transactional(readOnly = true)
+    public List<JsonNode> listByInstitute(String instituteId) {
+        // A blank id is not "every unowned app" — it is a caller that lost the institute somewhere.
+        // Answering it would hand whoever asked the ops-only registrations that have no owner.
+        if (instituteId == null || instituteId.isBlank()) {
+            return List.of();
+        }
+        List<JsonNode> out = new ArrayList<>();
+        for (AppRegistration row : repository.findAllByInstituteIdAndArchivedFalseOrderByNameAsc(instituteId)) {
+            out.add(parse(row.getPayload(), row.getId()));
+        }
+        return out;
+    }
+
     @Transactional(readOnly = true)
     public JsonNode get(String id) {
         AppRegistration row = repository.findById(id)
@@ -101,9 +120,21 @@ public class AppRegistryService {
         row.setName(textAt(basics, "name", ""));
         row.setClientName(textAt(basics, "client", ""));
         row.setPackageName(textAt(basics, "packageName", ""));
+        row.setInstituteId(blankToNull(textAt(basics, "instituteId", null)));
         row.setArchived(node.path("archived").asBoolean(false));
         row.setPayload(write(node));
         return repository.save(row);
+    }
+
+    /**
+     * The dashboard's Institute ID field is optional and arrives as "" when left blank, so storing
+     * it verbatim would give every ownerless app the same non-null owner — and any lookup that ever
+     * passed an empty string would match all of them at once. Absent means NULL.
+     */
+    private static String blankToNull(String value) {
+        if (value == null) return null;
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private static String textAt(JsonNode node, String field, String fallback) {

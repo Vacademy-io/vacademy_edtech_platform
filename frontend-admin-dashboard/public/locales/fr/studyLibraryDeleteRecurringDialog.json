@@ -1,0 +1,15 @@
+{
+    "heading": "Supprimer l'événement récurrent",
+    "scope": {
+        "single": "Cet événement",
+        "following": "Cet événement et tous les suivants",
+        "manual": "Sélectionner les événements manuellement"
+    },
+    "selectDatesToRemove": "Sélectionnez les dates à supprimer :",
+    "loadingSchedule": "Chargement du programme...",
+    "manualDeletionNotImplemented": "L'API de suppression manuelle n'est pas encore implémentée. Consultez la console pour les dates sélectionnées.",
+    "notifyLearners": "Informer les apprenants de l'annulation",
+    "notifyLearnersHint": "Si la case n'est pas cochée, aucun e-mail d'annulation n'est envoyé aux apprenants inscrits.",
+    "cancel": "Annuler",
+    "delete": "Supprimer"
+}

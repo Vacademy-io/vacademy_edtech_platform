@@ -1,0 +1,65 @@
+{
+    "title": "Modes de paiement hors ligne",
+    "description": "Les options proposées aux administrateurs quand ils enregistrent un paiement à la main. Désactivez un mode ou une option au lieu de le supprimer : les paiements passés y restent liés.",
+    "loading": "Chargement…",
+    "requireMode": {
+        "label": "Exiger un mode lors de l’enregistrement d’un paiement",
+        "hint": "Désactivé, le mode est facultatif."
+    },
+    "defaultMode": "Mode présélectionné",
+    "noDefault": "Aucun",
+    "mode": {
+        "active": "Mode actif",
+        "labelPlaceholder": "Nom du mode, ex. UPI",
+        "referenceLabelPlaceholder": "Libellé de la référence, ex. n° UTR",
+        "remove": "Supprimer le mode",
+        "referenceRequired": "Référence obligatoire",
+        "proofRequired": "Justificatif obligatoire"
+    },
+    "extra": {
+        "cheque_date": "Demander la date du chèque",
+        "bank_name": "Demander la banque",
+        "payer_name": "Demander qui a payé"
+    },
+    "subModes": {
+        "heading": "Options (ex. PhonePe, Google Pay, ou le compte crédité)",
+        "active": "Option active",
+        "placeholder": "Nom de l’option",
+        "remove": "Supprimer l’option",
+        "add": "Ajouter une option",
+        "labelPlaceholder": "Nom des options, ex. Compte",
+        "required": "Une option doit être choisie"
+    },
+    "addMode": "Ajouter un mode de paiement",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "toasts": {
+        "saved": "Modes de paiement enregistrés",
+        "saveError": "Impossible d’enregistrer les modes de paiement"
+    },
+    "errors": {
+        "modeLabel": "Chaque mode doit avoir un nom.",
+        "subModeLabel": "Chaque option doit avoir un nom.",
+        "noActive": "Gardez au moins un mode actif.",
+        "fieldLabel": "Chaque champ doit avoir un nom.",
+        "selectOptions": "Chaque liste déroulante doit avoir au moins un choix."
+    },
+    "required": "Obligatoire",
+    "fields": {
+        "heading": "Champs supplémentaires pour ce mode (ex. agence, statut du chèque, date de transaction)",
+        "active": "Champ actif",
+        "labelPlaceholder": "Nom du champ, ex. Statut du chèque",
+        "type": "Type de champ",
+        "types": {
+            "TEXT": "Texte",
+            "DATE": "Date",
+            "NUMBER": "Nombre",
+            "SELECT": "Liste déroulante"
+        },
+        "remove": "Supprimer le champ",
+        "optionPlaceholder": "Choix, ex. Encaissé",
+        "removeOption": "Supprimer le choix",
+        "addOption": "Ajouter un choix",
+        "add": "Ajouter un champ"
+    }
+}

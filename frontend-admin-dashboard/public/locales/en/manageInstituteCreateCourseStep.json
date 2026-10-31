@@ -1,0 +1,25 @@
+{
+    "selectionLabel": "{{course}} Selection",
+    "selectExisting": "Select existing {{course}}",
+    "createNew": "Create new {{course}}",
+    "selectPlaceholder": "Select a {{course}}",
+    "addNewCourse": "Add New Course",
+    "validation": {
+        "selectCourse": "Please select a course"
+    },
+    "toast": {
+        "batchCreated": "Batch created successfully",
+        "createFailed": "Failed to create batch"
+    },
+    "searchPlaceholder": "Search {{course}}…",
+    "emptyCourses": "No courses yet. Choose \"Create new\" above to add one.",
+    "title": "Choose {{course}}",
+    "subtitle": "Select an existing {{course}} or create a new one to proceed.",
+    "selectExistingHint": "Choose from your available {{courses}}",
+    "createNewHint": "Add a new {{course}} and then create the {{batch}}",
+    "createNewButton": "Create New {{course}}",
+    "newCourseHint": "Create the {{course}} first. As soon as it is saved it is picked here and you can carry on with the {{batch}}.",
+    "noMatch": "No {{course}} matches your search.",
+    "batchCount_one": "{{count}} {{batch}}",
+    "batchCount_other": "{{count}} {{batches}}"
+}

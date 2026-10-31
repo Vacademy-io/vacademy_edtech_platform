@@ -1,11 +1,12 @@
 import { useMemo, useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLeadSettings } from '@/hooks/use-lead-settings';
 import { MyTable } from '@/components/design-system/table';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import EmptyInvitePage from '@/assets/svgs/empty-invite-page.svg';
 import { Button } from '@/components/ui/button';
 import { Pagination, PaginationContent, PaginationItem } from '@/components/ui/pagination';
-import { ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { CaretLeft, CaretRight, DownloadSimple } from '@phosphor-icons/react';
 import { generateDynamicColumns, EnquiryTableRow } from './enquiry-table-columns';
 import { convertToLocalDateTime } from '@/constants/helper';
 import { useCustomFieldSetup } from '@/routes/audience-manager/list/-hooks/useCustomFieldSetup';
@@ -26,8 +27,8 @@ import type { EnquiryItem } from '../-services/get-enquiries';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     updateEnquiryStatus,
-    ENQUIRY_STATUS_OPTIONS,
-    CONVERSION_STATUS_OPTIONS,
+    buildEnquiryStatusOptions,
+    buildConversionStatusOptions,
     EnquiryStatus,
     ConversionStatus,
 } from '../-services/update-enquiry-status';
@@ -133,6 +134,13 @@ const EnquiryTableInner = ({
     setIsSidebarOpen,
     setSelectedEnquiryId,
 }: EnquiryTableInnerProps) => {
+    const { t } = useTranslation([
+        'admissionsEnquiryTable',
+        'admissionsEnquiryTableColumns',
+        'admissionsUpdateEnquiryStatus',
+    ]);
+    const enquiryStatusOptions = useMemo(() => buildEnquiryStatusOptions(t), [t]);
+    const conversionStatusOptions = useMemo(() => buildConversionStatusOptions(t), [t]);
     const [page, setPage] = useState(0);
     const pageSize = 10;
     const { instituteDetails, getDetailsFromPackageSessionId } = useInstituteDetailsStore();
@@ -171,23 +179,21 @@ const EnquiryTableInner = ({
     const bulkUpdateMutation = useMutation({
         mutationFn: updateEnquiryStatus,
         onSuccess: () => {
-            toast.success(
-                `Updated ${selectedRows.size} enquir${selectedRows.size === 1 ? 'y' : 'ies'} successfully`
-            );
+            toast.success(t('toast.bulkUpdateSuccess', { count: selectedRows.size }));
             setSelectedRows(new Set());
             setBulkEnquiryStatus('');
             setBulkConversionStatus('');
             queryClient.invalidateQueries();
         },
         onError: () => {
-            toast.error('Failed to update enquiry statuses');
+            toast.error(t('toast.bulkUpdateError'));
         },
     });
 
     const handleBulkApply = () => {
         if (selectedRows.size === 0) return;
         if (!bulkEnquiryStatus && !bulkConversionStatus) {
-            toast.warning('Please select at least one status to update');
+            toast.warning(t('toast.selectAtLeastOneStatus'));
             return;
         }
         bulkUpdateMutation.mutate({
@@ -359,6 +365,7 @@ const EnquiryTableInner = ({
 
         const fieldIdsToUse = allCustomFieldsArray.length > 0 ? allCustomFieldsArray : customFields;
         return generateDynamicColumns(
+            t,
             fieldIdsToUse,
             customFieldMap,
             selectedRows,
@@ -372,6 +379,7 @@ const EnquiryTableInner = ({
             leadSettings.enabled && leadSettings.showScoreInEnquiryTable
         );
     }, [
+        t,
         customFields,
         allFieldIdsFromAllEnquiries,
         customFieldMap,
@@ -468,7 +476,7 @@ const EnquiryTableInner = ({
 
         try {
             setIsDownloading(true);
-            toast.info('Starting download...');
+            toast.info(t('toast.downloadStarting'));
 
             const allDataPayload = {
                 ...enquiriesPayload,
@@ -480,25 +488,25 @@ const EnquiryTableInner = ({
             const response = await fetchEnquiries(allDataPayload);
 
             if (!response.content || response.content.length === 0) {
-                toast.error('No data to download');
+                toast.error(t('toast.noDataToDownload'));
                 setIsDownloading(false);
                 return;
             }
 
             const csvHeaders = [
-                'Enquiry ID',
-                'Class',
-                'Student Name',
-                'Gender',
-                'Date of Birth',
-                'Parent Name',
-                'Parent Email',
-                'Parent Mobile',
-                'Tracking ID',
-                'Status',
-                'Source',
-                'Counsellor',
-                'Submitted At',
+                t('csv.headers.enquiryId'),
+                t('csv.headers.class'),
+                t('csv.headers.studentName'),
+                t('csv.headers.gender'),
+                t('csv.headers.dateOfBirth'),
+                t('csv.headers.parentName'),
+                t('csv.headers.parentEmail'),
+                t('csv.headers.parentMobile'),
+                t('csv.headers.trackingId'),
+                t('csv.headers.status'),
+                t('csv.headers.source'),
+                t('csv.headers.counsellor'),
+                t('csv.headers.submittedAt'),
             ];
 
             // Add custom field headers
@@ -563,7 +571,11 @@ const EnquiryTableInner = ({
                     safeString(enquiry.enquiry_tracking_id || '-'),
                     safeString(enquiry.enquiry_status || '-'),
                     safeString(enquiry.source_type || '-'),
-                    safeString(enquiry.assigned_counsellor_id ? 'Assigned' : 'Not Assigned'),
+                    safeString(
+                        enquiry.assigned_counsellor_id
+                            ? t('csv.assigned')
+                            : t('csv.notAssigned')
+                    ),
                     safeString(submittedAt),
                 ];
 
@@ -581,17 +593,17 @@ const EnquiryTableInner = ({
             link.href = url;
             link.setAttribute(
                 'download',
-                `${enquiryName || 'enquiries'}_${new Date().toISOString().split('T')[0]}.csv`
+                `${enquiryName || t('csv.filenameFallback')}_${new Date().toISOString().split('T')[0]}.csv`
             );
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
 
-            toast.success('Download completed successfully');
+            toast.success(t('toast.downloadSuccess'));
         } catch (error) {
             console.error('Download failed:', error);
-            toast.error('Failed to download data');
+            toast.error(t('toast.downloadError'));
         } finally {
             setIsDownloading(false);
         }
@@ -602,7 +614,7 @@ const EnquiryTableInner = ({
             <div className="flex w-full flex-col items-center gap-4 py-12">
                 <DashboardLoader />
                 <p className="animate-pulse text-sm text-neutral-500">
-                    Loading enquiry responses...
+                    {t('loading.enquiryResponses')}
                 </p>
             </div>
         );
@@ -610,25 +622,25 @@ const EnquiryTableInner = ({
 
     if (error || customFieldsError) {
         return (
-            <div className="flex h-[70vh] w-full flex-col items-center justify-center gap-2">
-                <p className="text-red-500">Error loading enquiry responses</p>
+            <div className="flex h-[70vh] w-full flex-col items-center justify-center gap-2"> {/* design-lint-ignore: viewport-relative full-page state height, no vh design token exists */}
+                <p className="text-red-500">{t('error.loadingEnquiryResponses')}</p>
             </div>
         );
     }
 
     if (!tableData || tableData.content.length === 0) {
         return (
-            <div className="flex h-[70vh] w-full flex-col items-center justify-center gap-2">
+            <div className="flex h-[70vh] w-full flex-col items-center justify-center gap-2"> {/* design-lint-ignore: viewport-relative full-page state height, no vh design token exists */}
                 <EmptyInvitePage />
-                <p>No responses for this enquiry yet!</p>
+                <p>{t('empty.noResponses')}</p>
                 <MyButton
                     buttonType="secondary"
                     onClick={() => navigate({ to: `/admissions/new-enquiry/${enquiryId}` })}
                 >
-                    Add New Enquiry Response
+                    {t('empty.addNewEnquiryResponse')}
                 </MyButton>
                 <MyButton buttonType="secondary" onClick={() => setIsBulkImportOpen(true)}>
-                    Bulk Import
+                    {t('header.bulkImport')}
                 </MyButton>
                 <EnquiryBulkImportDialog
                     open={isBulkImportOpen}
@@ -646,18 +658,18 @@ const EnquiryTableInner = ({
                 <div>
                     <h2 className="text-h3 font-semibold">{enquiryName}</h2>
                     <p className="mt-1 text-sm text-neutral-600">
-                        Total Responses:{' '}
+                        {t('header.totalResponses')}{' '}
                         <span className="font-semibold">{tableData.total_elements}</span>
                     </p>
                     {selectedRows.size > 0 && (
                         <p className="mt-1 text-sm text-primary-600">
-                            {selectedRows.size} row(s) selected
+                            {t('header.rowsSelected', { count: selectedRows.size })}
                         </p>
                     )}
                 </div>
                 <div className="flex items-center gap-2">
                     <Button variant="outline" size="sm" onClick={() => setIsBulkImportOpen(true)}>
-                        Bulk Import
+                        {t('header.bulkImport')}
                     </Button>
                     <Button
                         variant="outline"
@@ -665,8 +677,8 @@ const EnquiryTableInner = ({
                         onClick={handleDownload}
                         disabled={isDownloading || !tableData?.total_elements}
                     >
-                        <Download className="mr-2 size-4" />
-                        {isDownloading ? 'Downloading...' : 'Download CSV'}
+                        <DownloadSimple className="me-2 size-4" />
+                        {isDownloading ? t('header.downloading') : t('header.downloadCsv')}
                     </Button>
                 </div>
             </div>
@@ -706,13 +718,16 @@ const EnquiryTableInner = ({
                                 onClick={() => handlePageChange(Math.max(0, page - 1))}
                                 disabled={page === 0}
                             >
-                                <span className="sr-only">Previous</span>
-                                <ChevronLeft className="size-4" />
+                                <span className="sr-only">{t('pagination.previous')}</span>
+                                <CaretLeft className="size-4" />
                             </Button>
                         </PaginationItem>
                         <PaginationItem className="hidden sm:block">
                             <span className="px-4 text-sm text-muted-foreground">
-                                Page {page + 1} of {tableData.total_pages}
+                                {t('pagination.pageOf', {
+                                    page: page + 1,
+                                    total: tableData.total_pages,
+                                })}
                             </span>
                         </PaginationItem>
                         <PaginationItem>
@@ -724,8 +739,8 @@ const EnquiryTableInner = ({
                                 }
                                 disabled={page >= tableData.total_pages - 1}
                             >
-                                <span className="sr-only">Next</span>
-                                <ChevronRight className="size-4" />
+                                <span className="sr-only">{t('pagination.next')}</span>
+                                <CaretRight className="size-4" />
                             </Button>
                         </PaginationItem>
                     </PaginationContent>
@@ -741,7 +756,9 @@ const EnquiryTableInner = ({
                             <span className="flex size-7 items-center justify-center rounded-full bg-primary-500 text-xs font-bold text-white">
                                 {selectedRows.size}
                             </span>
-                            <span className="text-sm font-medium text-neutral-700">selected</span>
+                            <span className="text-sm font-medium text-neutral-700">
+                                {t('bulkActionBar.selectedLabel')}
+                            </span>
                         </div>
 
                         <div className="h-5 w-px bg-neutral-200" />
@@ -749,17 +766,17 @@ const EnquiryTableInner = ({
                         {/* Enquiry Status Dropdown */}
                         <div className="flex items-center gap-2">
                             <span className="text-xs font-medium text-neutral-500">
-                                Enquiry Status
+                                {t('bulkActionBar.enquiryStatusLabel')}
                             </span>
                             <Select
                                 value={bulkEnquiryStatus}
                                 onValueChange={(v) => setBulkEnquiryStatus(v as EnquiryStatus)}
                             >
                                 <SelectTrigger className="h-8 w-36 rounded-lg border-neutral-200 text-xs">
-                                    <SelectValue placeholder="Select…" />
+                                    <SelectValue placeholder={t('bulkActionBar.selectPlaceholder')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {ENQUIRY_STATUS_OPTIONS.map((opt) => (
+                                    {enquiryStatusOptions.map((opt) => (
                                         <SelectItem
                                             key={opt.value}
                                             value={opt.value}
@@ -776,7 +793,9 @@ const EnquiryTableInner = ({
 
                         {/* Conversion Status Dropdown */}
                         <div className="flex items-center gap-2">
-                            <span className="text-xs font-medium text-neutral-500">Conversion</span>
+                            <span className="text-xs font-medium text-neutral-500">
+                                {t('bulkActionBar.conversionLabel')}
+                            </span>
                             <Select
                                 value={bulkConversionStatus}
                                 onValueChange={(v) =>
@@ -784,10 +803,10 @@ const EnquiryTableInner = ({
                                 }
                             >
                                 <SelectTrigger className="h-8 w-28 rounded-lg border-neutral-200 text-xs">
-                                    <SelectValue placeholder="Select…" />
+                                    <SelectValue placeholder={t('bulkActionBar.selectPlaceholder')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {CONVERSION_STATUS_OPTIONS.map((opt) => (
+                                    {conversionStatusOptions.map((opt) => (
                                         <SelectItem
                                             key={opt.value}
                                             value={opt.value}
@@ -809,7 +828,9 @@ const EnquiryTableInner = ({
                             onClick={handleBulkApply}
                             disabled={bulkUpdateMutation.isPending}
                         >
-                            {bulkUpdateMutation.isPending ? 'Applying…' : 'Apply'}
+                            {bulkUpdateMutation.isPending
+                                ? t('bulkActionBar.applying')
+                                : t('bulkActionBar.apply')}
                         </Button>
                         <Button
                             size="sm"
@@ -821,7 +842,7 @@ const EnquiryTableInner = ({
                                 setBulkConversionStatus('');
                             }}
                         >
-                            Clear
+                            {t('bulkActionBar.clear')}
                         </Button>
                     </div>
                 </div>
@@ -860,7 +881,7 @@ export const EnquiryTable = (props: EnquiryTableWithSortProps) => {
                     setIsSidebarOpen={setIsSidebarOpen}
                     setSelectedEnquiryId={setSelectedEnquiryId}
                 />
-                <StudentSidebar enquiryId={selectedEnquiryId ?? undefined} className="z-[60]" />
+                <StudentSidebar enquiryId={selectedEnquiryId ?? undefined} className="z-50" />
             </SidebarProvider>
         </StudentSidebarProvider>
     );

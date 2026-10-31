@@ -4,6 +4,9 @@
   "exclude": [
     "/badge-library/*",
     "/email-editor/*",
+    "/locales/*",
+    "/sw.js",
+    "/service-worker.js",
     "/favicon.ico",
     "/robots.txt",
     "/styles.css",

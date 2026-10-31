@@ -1,4 +1,5 @@
 import { ArrowLeft, ArrowRight, SpinnerGap } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { MyButton } from "@/components/design-system/button";
 import { SelectedPayment } from "./types";
 import { PaymentVendor } from "../-utils/payment-vendor-helper";
@@ -36,6 +37,7 @@ const NavigationButtons = ({
   hidePrimaryButton = false,
   autopayConsentPending = false,
 }: NavigationButtonsProps) => {
+  const { t } = useTranslation("enrollmentA");
   const isNextDisabled = () => {
     if (loading) return true;
     if (hasUnappliedReferral) return true;
@@ -72,7 +74,7 @@ const NavigationButtons = ({
     // because the only Next button is far below the fold. Sticky keeps it in
     // reach the whole way down; from sm: up the page is short enough that the
     // bar sits inline as before.
-    <div className="sticky bottom-0 z-30 sm:static p-4 sm:p-6 flex flex-col-reverse sm:flex-row items-center justify-between w-full gap-3 mt-4 bg-white border border-gray-200 rounded-lg shadow-lg sm:shadow-sm">
+    <div className="sticky bottom-0 z-30 sm:static p-4 sm:p-6 flex flex-col-reverse sm:flex-row items-center justify-between w-full gap-stack mt-4 bg-white border border-gray-200 rounded-lg shadow-lg sm:shadow-sm">
       <MyButton
         type="button"
         buttonType="secondary"
@@ -82,7 +84,7 @@ const NavigationButtons = ({
         className="w-full sm:w-auto flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-6 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
       >
         <ArrowLeft className="w-4 h-4" />
-        Previous
+        {t("navigationButtons.previous")}
       </MyButton>
       {!hidePrimaryButton && (
       <MyButton
@@ -99,14 +101,14 @@ const NavigationButtons = ({
         className="w-full sm:w-auto flex items-center gap-2 bg-gradient-to-r from-primary-500 to-primary-500 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
       >
         {loading
-          ? "Processing..."
+          ? t("navigationButtons.processing")
           : currentStep === 2 && paymentType === "FREE"
-            ? "Complete Enrollment"
+            ? t("navigationButtons.completeEnrollment")
             : currentStep === 3
               ? paymentVendor === "RAZORPAY"
-                ? "Pay Now"
-                : "Confirm & Pay"
-              : "Next"}
+                ? t("navigationButtons.payNow")
+                : t("navigationButtons.confirmAndPay")
+              : t("navigationButtons.next")}
         {loading ? (
           <SpinnerGap className="w-4 h-4 animate-spin" />
         ) : (

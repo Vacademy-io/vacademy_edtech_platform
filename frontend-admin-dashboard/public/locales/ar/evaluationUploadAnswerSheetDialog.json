@@ -1,0 +1,13 @@
+{
+    "uploadStudentAnswerSheetHeading": "رفع ورقة إجابة الطالب",
+    "cancel": "إلغاء",
+    "uploadingEllipsis": "جارٍ الرفع...",
+    "uploadAndView": "رفع وعرض",
+    "uploadOnBehalfHint": "إذا لم يتمكن الطالب من رفع إجابته، ارفع ورقة الإجابة التي شاركها معك (مثلاً عبر البريد الإلكتروني أو واتساب) لتقييمها نيابة عنه.",
+    "change": "تغيير",
+    "clickToUploadOrDrag": "انقر للرفع أو اسحب وأفلت",
+    "pdfOnly": "PDF فقط",
+    "uploadFailedTryAgain": "فشل رفع الملف، الرجاء المحاولة مرة أخرى",
+    "answerSheetUploaded": "تم رفع ورقة الإجابة للطالب",
+    "couldNotUploadAnswerSheet": "تعذر رفع ورقة الإجابة"
+}

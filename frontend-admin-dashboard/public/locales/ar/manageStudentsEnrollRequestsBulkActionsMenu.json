@@ -1,0 +1,33 @@
+{
+    "menu": {
+        "shareCredentials": "مشاركة بيانات الاعتماد",
+        "sendWhatsappMessage": "إرسال رسالة واتساب",
+        "sendEmail": "إرسال بريد إلكتروني",
+        "acceptRequest": "قبول الطلب",
+        "declineRequest": "رفض الطلب"
+    },
+    "actionInfo": {
+        "selectedStudents_zero": "لا يوجد طلاب محددون ({{count}})",
+        "selectedStudents_one": "طالب واحد محدد ({{count}})",
+        "selectedStudents_two": "طالبان محددان ({{count}})",
+        "selectedStudents_few": "{{count}} طلاب محددون",
+        "selectedStudents_many": "{{count}} طالبًا محددًا",
+        "selectedStudents_other": "{{count}} طالب محدد"
+    },
+    "errors": {
+        "noneEnrolled": "لا أحد من جهات الاتصال المحددة مسجَّل في دفعة، لذلك لا يمكن تنفيذ هذا الإجراء عليهم.",
+        "noneActionable": "لا يملك أي من جهات الاتصال المحددة حسابًا، لذلك لا يمكن إرسال أي شيء إليهم.",
+        "someNotEnrolled_zero": "لم يتم استبعاد أي جهة اتصال.",
+        "someNotEnrolled_one": "تم استبعاد جهة اتصال واحدة محددة — فهي غير مسجَّلة في أي دفعة.",
+        "someNotEnrolled_two": "تم استبعاد جهتَي اتصال محددتين — فهما غير مسجَّلتين في أي دفعة.",
+        "someNotEnrolled_few": "تم استبعاد {{count}} جهات اتصال محددة — فهي غير مسجَّلة في أي دفعة.",
+        "someNotEnrolled_many": "تم استبعاد {{count}} جهة اتصال محددة — فهي غير مسجَّلة في أي دفعة.",
+        "someNotEnrolled_other": "تم استبعاد {{count}} جهة اتصال محددة — فهي غير مسجَّلة في أي دفعة.",
+        "someNoAccount_zero": "لم يتم استبعاد أي جهة اتصال.",
+        "someNoAccount_one": "تم استبعاد جهة اتصال واحدة محددة — إذ ليس لديها حساب بعد.",
+        "someNoAccount_two": "تم استبعاد جهتَي اتصال محددتين — إذ ليس لديهما حساب بعد.",
+        "someNoAccount_few": "تم استبعاد {{count}} جهات اتصال محددة — إذ ليس لديها حسابات بعد.",
+        "someNoAccount_many": "تم استبعاد {{count}} جهة اتصال محددة — إذ ليس لديها حسابات بعد.",
+        "someNoAccount_other": "تم استبعاد {{count}} جهة اتصال محددة — إذ ليس لديها حسابات بعد."
+    }
+}

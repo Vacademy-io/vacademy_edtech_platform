@@ -1,0 +1,10 @@
+{
+    "validation": {
+        "campaignNameRequired": "पूछताछ का नाम आवश्यक है",
+        "campaignNameMinLength": "नाम कम से कम 3 अक्षर लंबा होना चाहिए",
+        "campaignTypeRequired": "पूछताछ का प्रकार आवश्यक है",
+        "sessionRequired": "सत्र आवश्यक है",
+        "startDateRequired": "प्रारंभ तिथि आवश्यक है",
+        "endDateRequired": "समाप्ति तिथि आवश्यक है"
+    }
+}

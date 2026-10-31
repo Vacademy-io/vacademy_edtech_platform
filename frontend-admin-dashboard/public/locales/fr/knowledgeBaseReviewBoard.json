@@ -1,0 +1,31 @@
+{
+    "nudges": {
+        "harder": { "label": "Rendre plus difficile" },
+        "easier": { "label": "Rendre plus facile" },
+        "moreApplication": { "label": "Plus d'application" }
+    },
+    "emptyState": {
+        "title": "Aucune question n'a pu être rédigée à partir du contenu sélectionné.",
+        "description": "Essayez d'élargir la sélection de chapitres, ou vérifiez que ces chapitres ont bien été traités."
+    },
+    "marks_one": "{{count}} point",
+    "marks_many": "{{count}} points",
+    "marks_other": "{{count}} points",
+    "status": {
+        "needsFixing": "À corriger",
+        "check": "À vérifier"
+    },
+    "markingScheme": "Barème de correction",
+    "pageLabel": "page {{page}}",
+    "noPageRecorded": "aucune page enregistrée",
+    "diagramsFromBook_one": "{{count}} schéma du livre",
+    "diagramsFromBook_many": "{{count}} schémas du livre",
+    "diagramsFromBook_other": "{{count}} schémas du livre",
+    "actions": {
+        "rewrite": "Réécrire",
+        "rewriting": "Réécriture en cours…"
+    },
+    "errors": {
+        "sectionRemoved": "La section de cette question n'est plus dans le plan."
+    }
+}

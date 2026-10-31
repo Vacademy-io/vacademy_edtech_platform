@@ -1,0 +1,360 @@
+{
+  "common": {
+    "back": "رجوع",
+    "cancel": "إلغاء",
+    "continue": "متابعة",
+    "submitting": "جارٍ الإرسال...",
+    "submitRegistration": "إرسال التسجيل",
+    "sessionMissing": "جلسة التسجيل غير موجودة. يرجى البدء من جديد"
+  },
+  "subOrgRegistration": {
+    "linkError": {
+      "title": "رابط التسجيل مغلق",
+      "defaultMessage": "رابط التسجيل هذا غير صالح أو لم يعد يقبل تسجيلات جديدة.",
+      "contactHint": "يرجى التواصل مع المؤسسة للحصول على رابط تسجيل جديد."
+    },
+    "paymentResult": {
+      "notFoundTitle": "لم نتمكن من العثور على جلسة التسجيل الخاصة بك",
+      "notFoundDescription": "لا داعي للقلق — إذا تم الدفع بنجاح، فسيتم تسجيل مؤسستك تلقائيًا وسيتم إرسال بيانات تسجيل الدخول إلى بريد {{admin}} الإلكتروني الذي قدمته.",
+      "notFoundEmailHint": "إذا لم تصلك الرسالة خلال بضع دقائق، يرجى التواصل مع المؤسسة.",
+      "waitingTitle": "جارٍ تأكيد الدفع...",
+      "waitingDescription": "يستغرق هذا عادةً بضع لحظات فقط. اترك هذه الصفحة مفتوحة — سيتم تحديثها تلقائيًا فور تأكيد الدفع.",
+      "reassurancePrefix": "يستغرق التأكيد وقتًا أطول من المعتاد. يمكنك إغلاق هذه الصفحة بأمان — فور تأكيد الدفع، سيتم تسجيل مؤسستك وإرسال بيانات تسجيل الدخول",
+      "reassuranceTo": "إلى",
+      "reassuranceToAdminEmail": "إلى بريد {{admin}} الإلكتروني الذي قدمته"
+    },
+    "wizard": {
+      "defaultTemplateName": "تسجيل المؤسسة",
+      "subtitle": "سجّل مؤسستك لدى {{instituteName}}",
+      "defaultInstituteName": "المؤسسة",
+      "steps": {
+        "details": "التفاصيل",
+        "verifyEmail": "تحقق من البريد الإلكتروني",
+        "additionalInfo": "معلومات إضافية",
+        "terms": "الشروط",
+        "identityVerification": "التحقق من الهوية",
+        "payment": "الدفع"
+      },
+      "toast": {
+        "completeError": "تعذّر إكمال التسجيل. يرجى المحاولة مرة أخرى",
+        "codeSentNewEmail": "تم إرسال رمز التحقق إلى بريدك الإلكتروني الجديد",
+        "detailsUpdated": "تم تحديث التفاصيل",
+        "codeSent": "تم إرسال رمز التحقق إلى بريدك الإلكتروني",
+        "saveError": "تعذّر حفظ تفاصيلك. يرجى المحاولة مرة أخرى",
+        "startError": "تعذّر بدء التسجيل. يرجى المحاولة مرة أخرى",
+        "resumeError": "تعذّر استئناف هذا التسجيل. يرجى المحاولة مرة أخرى",
+        "emailVerified": "تم التحقق من البريد الإلكتروني بنجاح!",
+        "invalidOtp": "رمز التحقق غير صالح أو منتهي الصلاحية",
+        "resendError": "تعذّر إعادة الإرسال. يرجى المحاولة مرة أخرى",
+        "codeResent": "تمت إعادة إرسال رمز التحقق"
+      }
+    },
+    "details": {
+      "validation": {
+        "orgNameRequired": "اسم المؤسسة مطلوب",
+        "adminNameRequired": "اسم {{admin}} مطلوب",
+        "adminEmailRequired": "بريد {{admin}} الإلكتروني مطلوب",
+        "adminEmailInvalid": "أدخل عنوان بريد إلكتروني صالحًا",
+        "phoneInvalid": "أدخل رقم هاتف صالحًا للدولة المحددة",
+        "pincodeTooLong": "الرمز البريدي طويل جدًا",
+        "addressLine1Required": "سطر العنوان 1 مطلوب",
+        "cityRequired": "المدينة مطلوبة",
+        "stateRequired": "الولاية/المحافظة مطلوبة",
+        "pincodeRequired": "الرمز البريدي مطلوب"
+      },
+      "title": "تفاصيل المؤسسة",
+      "subtitle": "أخبرنا عن مؤسستك و{{admin}}",
+      "orgName": {
+        "label": "اسم المؤسسة",
+        "placeholder": "مثال: Acme Coaching Center"
+      },
+      "logo": {
+        "label": "شعار المؤسسة",
+        "previewAlt": "معاينة شعار المؤسسة",
+        "uploading": "جارٍ الرفع...",
+        "change": "تغيير الشعار",
+        "upload": "رفع الشعار",
+        "remove": "إزالة",
+        "hint": "اختياري — يُفضّل استخدام صيغة PNG أو JPG"
+      },
+      "adminName": {
+        "label": "الاسم الكامل لـ{{admin}}",
+        "placeholder": "الاسم الكامل لـ{{admin}} في المؤسسة"
+      },
+      "adminEmail": {
+        "label": "البريد الإلكتروني لـ{{admin}}",
+        "placeholder": "admin@yourorg.com",
+        "hint": "سنرسل رمز تحقق إلى هذا البريد الإلكتروني"
+      },
+      "adminPhone": {
+        "label": "هاتف {{admin}}",
+        "placeholder": "123 456 7890"
+      },
+      "address": {
+        "line1": { "label": "سطر العنوان 1", "placeholder": "المبنى، الشارع" },
+        "line2": { "label": "سطر العنوان 2", "placeholder": "الحي، معلم قريب (اختياري)" },
+        "city": { "label": "المدينة", "placeholder": "المدينة" },
+        "state": { "label": "الولاية/المحافظة", "placeholder": "الولاية/المحافظة" },
+        "pincode": { "label": "الرمز البريدي", "placeholder": "مثال: 110001" }
+      },
+      "submit": {
+        "saving": "جارٍ الحفظ...",
+        "sendingCode": "جارٍ إرسال الرمز..."
+      },
+      "toast": {
+        "logoInvalidType": "يرجى اختيار ملف صورة للشعار",
+        "logoUploadFailed": "تعذّر رفع الشعار. يرجى المحاولة مرة أخرى"
+      },
+      "resume": {
+        "inProgress": "يوجد تسجيل قيد التنفيذ بالفعل بهذا البريد الإلكتروني.",
+        "descriptionPrefix": "استأنف من حيث توقفت — سنرسل رمز تحقق إلى",
+        "descriptionSuffix": ".",
+        "button": "استئناف التسجيل"
+      }
+    },
+    "otp": {
+      "toast": {
+        "invalidCode": "يرجى إدخال رمز تحقق صالح"
+      },
+      "title": "تحقق من بريدك الإلكتروني",
+      "sentTo": "لقد أرسلنا رمز تحقق إلى",
+      "sentToResume": "لقد أرسلنا رمزًا لاستئناف تسجيلك إلى",
+      "cantFindEmail": "لا تجد الرسالة؟",
+      "checkSpam": "تحقق من مجلد <b1>الرسائل غير المرغوب فيها</b1> أو <b2>البريد غير الهام</b2>",
+      "correctEmail": "تأكد من صحة عنوان البريد الإلكتروني",
+      "waitRefresh": "انتظر بضع ثوانٍ ثم أعد تحديث صندوق الوارد",
+      "enterCodeLabel": "أدخل رمز التحقق",
+      "codePlaceholder": "أدخل الرمز المكوّن من 6 أرقام",
+      "verifying": "جارٍ التحقق...",
+      "verifyContinue": "تحقق ومتابعة",
+      "editDetails": "تعديل التفاصيل",
+      "resending": "جارٍ الإرسال...",
+      "resendCode": "إعادة إرسال الرمز"
+    },
+    "customFields": {
+      "title": "معلومات إضافية",
+      "subtitle": "بعض التفاصيل الإضافية التي تطلبها المؤسسة",
+      "noFieldsMessage": "لا حاجة إلى أي معلومات إضافية.",
+      "phonePlaceholder": "123 456 7890"
+    },
+    "tnc": {
+      "title": "الشروط والأحكام",
+      "subtitle": "يرجى مراجعة الشروط وقبولها لإتمام التسجيل",
+      "loadingDocument": "جارٍ تحميل المستند...",
+      "loadError": "تعذّر تحميل مستند الشروط والأحكام. يمكنك مع ذلك قبول الشروط أدناه للمتابعة.",
+      "openInNewTab": "فتح في علامة تبويب جديدة",
+      "noDocNoConsent": "يرجى تأكيد قبولك للشروط والأحكام الخاصة بالمؤسسة لإتمام التسجيل.",
+      "acceptCheckboxLabel": "أوافق على الشروط والأحكام"
+    },
+    "kyc": {
+      "defaultPanInstructions": "في DigiLocker، ضع علامة على مربعي الموافقة الخاصين بكل من Aadhaar وPAN عند طلب الموافقة — لا يمكن إتمام التحقق إذا تُرك أحدهما غير محدد.",
+      "failure": {
+        "consentDenied": "تم رفض الموافقة في DigiLocker. للتحقق من هويتك، يرجى المحاولة مرة أخرى والموافقة على الوصول إلى مستنداتك.",
+        "expired": "انتهت صلاحية رابط التحقق قبل إتمامه. ابدأ عملية تحقق جديدة للمتابعة.",
+        "failed": "تعذّر التحقق من هويتك. يرجى المحاولة مرة أخرى."
+      },
+      "title": "التحقق من الهوية",
+      "subtitle": "تحقق بأمان من هوية {{admin}} عبر DigiLocker",
+      "checkingStatus": "جارٍ التحقق من حالة التحقق...",
+      "intro": "بصفتك {{admin}}، يجب التحقق من هويتك بأمان قبل إتمام التسجيل. سيتم نقلك إلى DigiLocker (الحكومة الهندية) لمشاركة المستندات التالية بأمان — لا يتم رفع أي نسخ هنا.",
+      "requiredDocuments": "المستندات المطلوبة",
+      "preparingVerification": "جارٍ تجهيز التحقق...",
+      "verifyWithDigiLocker": "تحقق عبر DigiLocker",
+      "completeInTab": "أكمل عملية التحقق في علامة تبويب DigiLocker",
+      "autoUpdateHint": "تتحدّث هذه الصفحة تلقائيًا بمجرد الانتهاء — اتركها مفتوحة.",
+      "tabBlocked": "قام متصفحك بحظر علامة تبويب DigiLocker.",
+      "openVerification": "فتح صفحة التحقق في DigiLocker",
+      "preparingNewLink": "جارٍ تجهيز رابط جديد...",
+      "restartVerification": "هل تواجه مشكلة في علامة التبويب؟ أعد بدء التحقق",
+      "verifiedSuccess": "تم التحقق من الهوية بنجاح",
+      "verifiedName": "الاسم الموثّق",
+      "aadhaar": "Aadhaar",
+      "pan": "PAN",
+      "verificationNotCompleted": "لم يكتمل التحقق",
+      "tryAgain": "أعد المحاولة",
+      "startVerificationFailed": "تعذّر بدء التحقق من الهوية. يرجى المحاولة مرة أخرى"
+    },
+    "payment": {
+      "stripeLoading": "لا يزال نموذج الدفع قيد التحميل. يرجى الانتظار لحظة ثم المحاولة مرة أخرى",
+      "stripeFailed": "تعذّرت معالجة الدفع. يرجى التحقق من بيانات بطاقتك",
+      "ewayIncomplete": "يرجى إكمال بيانات البطاقة أولًا",
+      "sessionPrepFailed": "تعذّر تجهيز جلسة الدفع. يرجى التواصل مع الدعم",
+      "initFailedContactSupport": "تعذّر بدء عملية الدفع. يرجى المحاولة مرة أخرى أو التواصل مع الدعم",
+      "initFailed": "تعذّر بدء عملية الدفع. يرجى المحاولة مرة أخرى",
+      "orderCreateFailed": "تعذّر إنشاء طلب الدفع. يرجى المحاولة مرة أخرى",
+      "gatewayNotReady": "بوابة الدفع غير جاهزة بعد. يرجى المحاولة مرة أخرى",
+      "phonepeFailed": "تعذّر بدء الدفع عبر PhonePe. يرجى المحاولة مرة أخرى أو التواصل مع الدعم",
+      "vendorUnsupported": "بوابة الدفع \"{{vendor}}\" غير مدعومة بعد. يرجى التواصل مع الدعم",
+      "processFailed": "تعذّرت معالجة الدفع. يرجى المحاولة مرة أخرى",
+      "alreadyInProgressTitle": "الدفع قيد التنفيذ بالفعل",
+      "alreadyInProgressPrefix": "يجري بالفعل معالجة عملية دفع لهذا التسجيل. إذا كنت قد أتممتها، فسيتم إرسال بيانات تسجيل الدخول عبر البريد الإلكتروني",
+      "alreadyInProgressSuffix": "قريبًا.",
+      "retryHint": "إذا لم تكتمل عملية الدفع، يمكنك إعادة المحاولة أدناه.",
+      "completePaymentButton": "إتمام الدفع",
+      "retryConfirmTitle": "أكمل عملية الدفع",
+      "retryConfirmFor": "تسجيلك في",
+      "retryConfirmLockedIn": "تم حفظه — تبقّى الدفع فقط. تم بالفعل تثبيت خطتك",
+      "retryConfirmAt": "بمبلغ",
+      "proceedButton": "المتابعة إلى الدفع",
+      "selectedPlanLabel": "الخطة المختارة",
+      "paymentLabel": "الدفع",
+      "changePlanButton": "تغيير الخطة",
+      "registrationPaymentFor": "دفعة التسجيل مقابل {{templateName}}",
+      "tryAgainButton": "أعد المحاولة",
+      "confirmAndPayButton": "تأكيد والدفع",
+      "processingButton": "جارٍ المعالجة...",
+      "continueToPaymentButton": "المتابعة إلى الدفع"
+    },
+    "completion": {
+      "redirectingPaid": "تم تأكيد الدفع — جارٍ نقلك...",
+      "redirectingFree": "تم تأكيد التسجيل — جارٍ نقلك...",
+      "paidTitle": "تم استلام الدفع — تم تسجيل مؤسستك.",
+      "freeTitle": "تم تسجيل مؤسستك!",
+      "orgReadySuffix": "جاهزة الآن.",
+      "credentialsSentPrefix": "تم إرسال بيانات تسجيل الدخول إلى",
+      "defaultPrefix": "تم تسجيل مؤسستك. تم إرسال بيانات تسجيل الدخول إلى",
+      "goToAdminPortal": "الانتقال إلى بوابة {{admin}}"
+    }
+  },
+  "subOrgLearners": {
+    "page": {
+      "navHeading": "إدارة أعضاء الممارسة",
+      "toast": {
+        "notAuthenticated": "المستخدم غير مصادَق عليه",
+        "instituteNotFound": "معرّف المؤسسة غير موجود",
+        "accessCheckFailed": "تعذّر التحقق من صلاحيات الوصول"
+      },
+      "checkingPermissions": "جارٍ التحقق من الصلاحيات...",
+      "accessDeniedTitle": "تم رفض الوصول",
+      "accessDeniedDescription": "لا تملك الصلاحيات اللازمة للوصول إلى هذه الصفحة. يرجى التواصل مع {{admin}}.",
+      "defaultOrgName": "مؤسسة فرعية",
+      "subtitle": "أدر الموظفين في {{orgName}}",
+      "refreshButton": "تحديث",
+      "bulkUploadButton": "رفع جماعي",
+      "selectBatchTitle": "اختر {{batch}}",
+      "selectBatchPlaceholder": "اختر {{batch}}",
+      "practiceGroupTitle": "مجموعة الممارسة"
+    },
+    "toast": {
+      "selectBatch": "يرجى اختيار {{batch}}",
+      "invalidBatch": "حدث خطأ في اختيار {{batch}}",
+      "loadFormConfigFailed": "تعذّر تحميل إعدادات نموذج التسجيل"
+    },
+    "addStaff": {
+      "addButton": "إضافة موظف",
+      "addingLabel": "جارٍ الإضافة...",
+      "dialogTitle": "إضافة موظف جديد",
+      "phonePlaceholder": "+1 234 567 8900",
+      "fallback": {
+        "emailLabel": "البريد الإلكتروني *",
+        "emailPlaceholder": "staff@example.com",
+        "fullNameLabel": "الاسم الكامل *",
+        "fullNamePlaceholder": "أدخل الاسم الكامل",
+        "mobileLabel": "رقم الجوال *"
+      },
+      "toast": {
+        "configProblem": "لا يحتوي نموذج الدعوة الخاص بهذه المؤسسة على حقل بريد إلكتروني أو اسم كامل يمكن التعرف عليه. اطلب من {{admin}} التحقق من إعداد نموذج الدعوة.",
+        "emailNameRequired": "البريد الإلكتروني والاسم حقلان مطلوبان.",
+        "invalidEmail": "يرجى إدخال عنوان بريد إلكتروني صالح",
+        "invalidPhone": "يرجى إدخال رقم هاتف صالح مع رمز الدولة (مثال: ‎+1234567890)",
+        "addFailed": "تعذّرت إضافة الموظف"
+      }
+    },
+    "table": {
+      "staffCountTitle": "الموظفون ({{count}})",
+      "selectedCount_zero": "تم تحديد {{count}} موظف",
+      "selectedCount_one": "تم تحديد {{count}} موظف",
+      "selectedCount_two": "تم تحديد {{count}} موظفين",
+      "selectedCount_few": "تم تحديد {{count}} موظفين",
+      "selectedCount_many": "تم تحديد {{count}} موظفًا",
+      "selectedCount_other": "تم تحديد {{count}} موظف",
+      "loading": "جارٍ تحميل الموظفين...",
+      "emptyTitle": "لم يتم العثور على موظفين",
+      "emptyDescription": "ابدأ بإضافة موظفين إلى {{batch}}.",
+      "statusColumn": "الحالة"
+    },
+    "terminate": {
+      "selectedButton": "إنهاء المحدد ({{count}})",
+      "confirmTitle": "تأكيد الإنهاء",
+      "confirmDescription_zero": "أزل <b1>{{count}}</b1> موظف من هذه العضوية.",
+      "confirmDescription_one": "أزل <b1>{{count}}</b1> موظف من هذه العضوية.",
+      "confirmDescription_two": "أزل <b1>{{count}}</b1> موظفين من هذه العضوية.",
+      "confirmDescription_few": "أزل <b1>{{count}}</b1> موظفين من هذه العضوية.",
+      "confirmDescription_many": "أزل <b1>{{count}}</b1> موظفًا من هذه العضوية.",
+      "confirmDescription_other": "أزل <b1>{{count}}</b1> موظف من هذه العضوية.",
+      "modeLabel": "وضع الإنهاء",
+      "hardLabel": "إنهاء الآن",
+      "hardDescription": "— يُلغى الوصول فورًا.",
+      "softLabel": "الاحتفاظ حتى تاريخ محدد",
+      "softDescription": "— يستمر الوصول حتى تاريخ الوصول الأخير أدناه، ثم ينتهي تلقائيًا.",
+      "lastAccessDateLabel": "تاريخ آخر وصول",
+      "pickDateHint": "اختر تاريخًا للاحتفاظ بالوصول حتى حلوله.",
+      "schedulingLabel": "جارٍ الجدولة...",
+      "terminatingLabel": "جارٍ الإنهاء...",
+      "toast": {
+        "selectMembers": "يرجى اختيار أعضاء لإنهائهم",
+        "pickDate": "يرجى اختيار تاريخ آخر وصول للإنهاء التدريجي",
+        "softSuccess_zero": "سيستمر وصول {{count}} موظف حتى {{date}}",
+        "softSuccess_one": "سيستمر وصول {{count}} موظف حتى {{date}}",
+        "softSuccess_two": "سيستمر وصول {{count}} موظفين حتى {{date}}",
+        "softSuccess_few": "سيستمر وصول {{count}} موظفين حتى {{date}}",
+        "softSuccess_many": "سيستمر وصول {{count}} موظفًا حتى {{date}}",
+        "softSuccess_other": "سيستمر وصول {{count}} موظف حتى {{date}}",
+        "hardSuccess_zero": "تم إنهاء عضوية {{count}} موظف بنجاح",
+        "hardSuccess_one": "تم إنهاء عضوية {{count}} موظف بنجاح",
+        "hardSuccess_two": "تم إنهاء عضوية {{count}} موظفين بنجاح",
+        "hardSuccess_few": "تم إنهاء عضوية {{count}} موظفين بنجاح",
+        "hardSuccess_many": "تم إنهاء عضوية {{count}} موظفًا بنجاح",
+        "hardSuccess_other": "تم إنهاء عضوية {{count}} موظف بنجاح",
+        "failed": "تعذّر إنهاء عضوية الموظفين. يرجى المحاولة مرة أخرى."
+      }
+    },
+    "bulkUpload": {
+      "dialogTitle": "رفع جماعي للموظفين",
+      "instructionsTitle": "التعليمات",
+      "steps": {
+        "step1": "نزّل النموذج التوضيحي للاطلاع على الصيغة المطلوبة",
+        "step2": "أدخل بيانات الموظفين (الحقول المميزة بـ * مطلوبة)",
+        "step3": "احفظ ملفك وقم برفعه أدناه",
+        "step4": "ستتم معالجة كل صف على حدة"
+      },
+      "downloadButton": "تنزيل النموذج التوضيحي",
+      "downloadHint": "نموذج Excel يحتوي على جميع الحقول المطلوبة",
+      "processingLabel": "جارٍ معالجة {{processed}} من أصل {{total}} موظف...",
+      "dropHere": "أفلت ملفك هنا",
+      "dragDropPrompt": "اسحب ملفك وأفلته هنا، أو",
+      "browseButton": "استعراض الملفات",
+      "supportsHint": "يدعم ملفات ‎.xlsx وxls. وcsv.",
+      "resultsTitle": "نتائج الرفع",
+      "resultsSuccessBadge": "{{count}} نجاح",
+      "resultsFailedBadge": "{{count}} فشل",
+      "resultRowLabel": "الصف {{rowNumber}}: {{fullName}}",
+      "unknownValue": "غير معروف",
+      "closeButton": "إغلاق",
+      "result": {
+        "invalidData": "بيانات غير صالحة: البريد الإلكتروني والاسم مطلوبان. يرجى التحقق من الصيغة.",
+        "success": "تمت الإضافة بنجاح"
+      },
+      "toast": {
+        "templateDownloaded": "تم تنزيل النموذج التوضيحي بنجاح",
+        "parseFailed": "تعذّر تحليل الملف. يرجى التأكد من أنه ملف Excel أو CSV صالح.",
+        "readFailed": "تعذّرت قراءة الملف",
+        "invalidFileType": "يرجى رفع ملف Excel (‎.xlsx أو ‎.xls) أو CSV صالح",
+        "emptyFile": "يبدو أن الملف فارغ",
+        "processFailed": "تعذّرت معالجة الملف",
+        "addedSuccess_zero": "تمت إضافة {{count}} موظف بنجاح",
+        "addedSuccess_one": "تمت إضافة {{count}} موظف بنجاح",
+        "addedSuccess_two": "تمت إضافة {{count}} موظفين بنجاح",
+        "addedSuccess_few": "تمت إضافة {{count}} موظفين بنجاح",
+        "addedSuccess_many": "تمت إضافة {{count}} موظفًا بنجاح",
+        "addedSuccess_other": "تمت إضافة {{count}} موظف بنجاح",
+        "addedFailedCount_zero": "فشلت إضافة {{count}} موظف. راجع النتائج أدناه.",
+        "addedFailedCount_one": "فشلت إضافة {{count}} موظف. راجع النتائج أدناه.",
+        "addedFailedCount_two": "فشلت إضافة {{count}} موظفين. راجع النتائج أدناه.",
+        "addedFailedCount_few": "فشلت إضافة {{count}} موظفين. راجع النتائج أدناه.",
+        "addedFailedCount_many": "فشلت إضافة {{count}} موظفًا. راجع النتائج أدناه.",
+        "addedFailedCount_other": "فشلت إضافة {{count}} موظف. راجع النتائج أدناه."
+      }
+    }
+  }
+}

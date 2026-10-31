@@ -1,0 +1,26 @@
+{
+    "columns": {
+        "fullName": "Full Name",
+        "username": "Username",
+        "enrollmentNumber": "Enrollment Number",
+        "mobileNumber": "Mobile Number",
+        "email": "Email",
+        "status": "Status",
+        "error": "Error"
+    },
+    "summary": {
+        "successCount_one": "{{count}} successful",
+        "successCount_other": "{{count}} successful",
+        "failedCount_one": "{{count}} failed",
+        "failedCount_other": "{{count}} failed",
+        "warningMessage": "Some entries were not uploaded successfully. Please check the {{column}} column for details."
+    },
+    "error": {
+        "none": "No errors",
+        "detailsLabel": "Error Details:"
+    },
+    "actions": {
+        "view": "View",
+        "downloadResponse": "Download Response"
+    }
+}

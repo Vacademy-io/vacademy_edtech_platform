@@ -4,12 +4,16 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import vacademy.io.admin_core_service.features.timeline.dto.StudentLatestNoteDTO;
 import vacademy.io.admin_core_service.features.timeline.dto.TimelineEventDTO;
 import vacademy.io.admin_core_service.features.timeline.dto.TimelineEventRequestDTO;
@@ -44,6 +48,10 @@ public class TimelineEventService {
         @Autowired
         private ObjectMapper objectMapper;
 
+        /** Lazily resolved: the engagement engine's wake hook depends on services that log here. */
+        @Autowired
+        private ObjectProvider<TimelineEventHook> hooks;
+
         // ── Write: ACTIVITY events ────────────────────────────────────────────
 
         @Transactional
@@ -63,6 +71,41 @@ public class TimelineEventService {
                                 title, description, metadata, studentUserId, TimelineCategory.ACTIVITY);
         }
 
+        /**
+         * Insert-or-update the single CALL_MADE (ACTIVITY) event for one telephony call.
+         * The event is first written when the call ends — so every call counts as a lead
+         * response at the time it happened, even one with no recording (no answer, busy,
+         * failed upload) — and is updated in place when the recording lands later.
+         * REQUIRES_NEW: the call-ended path invokes this from an afterCommit callback, where a
+         * REQUIRED transaction would join the already-committed one and never commit.
+         */
+        @Transactional(propagation = Propagation.REQUIRES_NEW)
+        public void upsertCallEvent(String typeId, String callLogId,
+                        String actorId, String actorName,
+                        String title, String description, Object metadata,
+                        String studentUserId) {
+                TimelineEvent existing = timelineEventRepository.findCallEvent(typeId, callLogId).orElse(null);
+                if (existing == null) {
+                        saveEvent("LEAD", typeId, "CALL_MADE", "USER", actorId, actorName,
+                                        title, description, metadata, studentUserId, TimelineCategory.ACTIVITY);
+                        return;
+                }
+                if (metadata != null) {
+                        try {
+                                existing.setMetadataJson(objectMapper.writeValueAsString(metadata));
+                        } catch (JsonProcessingException e) {
+                                logger.error("Failed to serialize call event metadata", e);
+                        }
+                }
+                existing.setTitle(title);
+                existing.setDescription(description);
+                if (existing.getActorId() == null) existing.setActorId(actorId);
+                if (existing.getActorName() == null) existing.setActorName(actorName);
+                if (existing.getStudentUserId() == null) existing.setStudentUserId(studentUserId);
+                if (existing.getInstituteId() == null) existing.setInstituteId(resolveInstituteId("LEAD", typeId));
+                timelineEventRepository.save(existing);
+        }
+
         // ── Write: JOURNEY events ─────────────────────────────────────────────
 
         /**
@@ -77,6 +120,7 @@ public class TimelineEventService {
                         String studentUserId) {
                 saveEvent(type, typeId, actionType.name(), actorType, actorId, actorName,
                                 title, description, metadata, studentUserId, TimelineCategory.JOURNEY);
+
         }
 
         // ── Write: manual event from frontend ────────────────────────────────
@@ -110,9 +154,11 @@ public class TimelineEventService {
                                 .isPinned(request.getIsPinned() != null ? request.getIsPinned() : false)
                                 .studentUserId(request.getStudentUserId())
                                 .category(category)
+                                .instituteId(resolveInstituteId(request.getType(), request.getTypeId()))
                                 .build();
 
                 TimelineEvent savedEvent = timelineEventRepository.save(event);
+                notifyHooks(savedEvent);
                 return mapToDTO(savedEvent);
         }
 
@@ -130,22 +176,30 @@ public class TimelineEventService {
 
         @Transactional(readOnly = true)
         public Page<TimelineEventDTO> getTimelineEvents(String type, String typeId, Pageable pageable) {
-                return timelineEventRepository
-                                .findByTypeAndTypeIdOrderByCreatedAtDesc(type, typeId, pageable)
+                String instituteId = requestInstituteId();
+                return (instituteId == null
+                                ? timelineEventRepository.findByTypeAndTypeIdOrderByCreatedAtDesc(type, typeId, pageable)
+                                : timelineEventRepository.findForInstituteByTypeAndTypeId(type, typeId, instituteId, pageable))
                                 .map(this::mapToDTO);
         }
 
         @Transactional(readOnly = true)
         public Page<TimelineEventDTO> getTimelineEventsWithPinnedFirst(String type, String typeId, Pageable pageable) {
-                return timelineEventRepository
-                                .findByTypeAndTypeIdOrderByIsPinnedDescCreatedAtDesc(type, typeId, pageable)
+                String instituteId = requestInstituteId();
+                return (instituteId == null
+                                ? timelineEventRepository.findByTypeAndTypeIdOrderByIsPinnedDescCreatedAtDesc(type, typeId, pageable)
+                                : timelineEventRepository.findForInstituteByTypeAndTypeIdPinnedFirst(type, typeId, instituteId,
+                                                pageable))
                                 .map(this::mapToDTO);
         }
 
         @Transactional(readOnly = true)
         public Page<TimelineEventDTO> getCrossStageTimeline(String studentUserId, Pageable pageable) {
-                return timelineEventRepository
-                                .findByStudentUserIdOrderByIsPinnedDescCreatedAtDesc(studentUserId, pageable)
+                String instituteId = requestInstituteId();
+                return (instituteId == null
+                                ? timelineEventRepository.findByStudentUserIdOrderByIsPinnedDescCreatedAtDesc(studentUserId, pageable)
+                                : timelineEventRepository.findForInstituteByStudentUserIdPinnedFirst(studentUserId, instituteId,
+                                                pageable))
                                 .map(this::mapToDTO);
         }
 
@@ -160,22 +214,33 @@ public class TimelineEventService {
                 List<String> effectiveTypeIds = (typeIds != null && !typeIds.isEmpty())
                                 ? typeIds
                                 : List.of("__no_match__");
-                return timelineEventRepository
-                                .findAllEventsForLead(studentUserId, effectiveTypeIds, pageable)
+                String instituteId = requestInstituteId();
+                return (instituteId == null
+                                ? timelineEventRepository.findAllEventsForLead(studentUserId, effectiveTypeIds, pageable)
+                                : timelineEventRepository.findAllEventsForLeadForInstitute(studentUserId, effectiveTypeIds,
+                                                instituteId, pageable))
                                 .map(this::mapToDTO);
         }
 
         @Transactional(readOnly = true)
         public Page<TimelineEventDTO> getJourneyEvents(String type, String typeId, Pageable pageable) {
-                return timelineEventRepository
-                                .findByTypeAndTypeIdAndCategoryOrderByCreatedAtDesc(type, typeId, TimelineCategory.JOURNEY, pageable)
+                String instituteId = requestInstituteId();
+                return (instituteId == null
+                                ? timelineEventRepository.findByTypeAndTypeIdAndCategoryOrderByCreatedAtDesc(type, typeId,
+                                                TimelineCategory.JOURNEY, pageable)
+                                : timelineEventRepository.findForInstituteByTypeAndTypeIdAndCategory(type, typeId,
+                                                TimelineCategory.JOURNEY, instituteId, pageable))
                                 .map(this::mapToDTO);
         }
 
         @Transactional(readOnly = true)
         public Page<TimelineEventDTO> getCrossStageJourney(String studentUserId, Pageable pageable) {
-                return timelineEventRepository
-                                .findByStudentUserIdAndCategoryOrderByCreatedAtDesc(studentUserId, TimelineCategory.JOURNEY, pageable)
+                String instituteId = requestInstituteId();
+                return (instituteId == null
+                                ? timelineEventRepository.findByStudentUserIdAndCategoryOrderByCreatedAtDesc(studentUserId,
+                                                TimelineCategory.JOURNEY, pageable)
+                                : timelineEventRepository.findForInstituteByStudentUserIdAndCategory(studentUserId,
+                                                TimelineCategory.JOURNEY, instituteId, pageable))
                                 .map(this::mapToDTO);
         }
 
@@ -186,8 +251,11 @@ public class TimelineEventService {
                 Map<String, StudentLatestNoteDTO> result = new HashMap<>();
                 if (studentUserIds == null || studentUserIds.isEmpty()) return result;
 
-                List<TimelineEvent> recentEvents = timelineEventRepository
-                                .findRecentPerStudent(studentUserIds, RECENT_NOTES_PER_STUDENT);
+                String instituteId = requestInstituteId();
+                List<TimelineEvent> recentEvents = instituteId == null
+                                ? timelineEventRepository.findRecentPerStudent(studentUserIds, RECENT_NOTES_PER_STUDENT)
+                                : timelineEventRepository.findRecentPerStudentForInstitute(studentUserIds, instituteId,
+                                                RECENT_NOTES_PER_STUDENT);
                 Map<String, List<TimelineEventDTO>> recentByUser = new HashMap<>();
                 for (TimelineEvent e : recentEvents) {
                         if (e.getStudentUserId() == null) continue;
@@ -196,7 +264,10 @@ public class TimelineEventService {
                 }
 
                 Map<String, Long> countByUser = new HashMap<>();
-                for (Object[] row : timelineEventRepository.countByStudentUserIds(studentUserIds)) {
+                List<Object[]> counts = instituteId == null
+                                ? timelineEventRepository.countByStudentUserIds(studentUserIds)
+                                : timelineEventRepository.countByStudentUserIdsForInstitute(studentUserIds, instituteId);
+                for (Object[] row : counts) {
                         if (row[0] != null) {
                                 countByUser.put((String) row[0], ((Number) row[1]).longValue());
                         }
@@ -230,8 +301,11 @@ public class TimelineEventService {
                 // etc., whose student_user_id is often null). The old
                 // findRecentPerStudent-based version missed the latter, so the
                 // export's journey column carried a single row per lead.
-                List<TimelineEventRepository.JourneyEventRow> rows = timelineEventRepository
-                                .findJourneyRowsForUsers(studentUserIds, JOURNEY_EXPORT_CAP);
+                String instituteId = requestInstituteId();
+                List<TimelineEventRepository.JourneyEventRow> rows = instituteId == null
+                                ? timelineEventRepository.findJourneyRowsForUsers(studentUserIds, JOURNEY_EXPORT_CAP)
+                                : timelineEventRepository.findJourneyRowsForUsersForInstitute(studentUserIds, instituteId,
+                                                JOURNEY_EXPORT_CAP);
                 for (TimelineEventRepository.JourneyEventRow r : rows) {
                         if (r.getJourneyUserId() == null) continue;
                         TimelineCategory category = null;
@@ -262,7 +336,75 @@ public class TimelineEventService {
 
         // ── Private helpers ───────────────────────────────────────────────────
 
-        private void saveEvent(String type, String typeId, String actionType,
+        /**
+         * The institute an event belongs to: the institute of the enquiry or lead profile it
+         * is keyed by when there is one (exact, whoever writes it), else the institute the
+         * request is made for (the dashboard's clientId header), e.g. a note on a person.
+         * Null when neither is known (a background job writing a person-keyed event): that
+         * event shows in every institute, as all events did before. Never fails the write.
+         */
+        private String resolveInstituteId(String type, String typeId) {
+                if (typeId != null && !typeId.isBlank()) {
+                        try {
+                                java.util.Optional<String> owned = java.util.Optional.empty();
+                                if ("LEAD".equals(type) || "AUDIENCE_RESPONSE".equals(type)) {
+                                        owned = timelineEventRepository.findInstituteIdOfResponse(typeId);
+                                } else if ("USER_LEAD_PROFILE".equals(type)) {
+                                        owned = timelineEventRepository.findInstituteIdOfLeadProfile(typeId);
+                                }
+                                if (owned.isPresent() && !owned.get().isBlank()) return owned.get();
+                        } catch (Exception e) {
+                                logger.warn("Could not resolve the institute of {}[{}]: {}", type, typeId, e.getMessage());
+                        }
+                }
+                return requestInstituteId();
+        }
+
+        /** The institute the current request is made for (clientId header); null outside a request. */
+        String requestInstituteId() {
+                RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
+                if (attributes instanceof ServletRequestAttributes servletAttributes) {
+                        String clientId = servletAttributes.getRequest().getHeader("clientId");
+                        return clientId == null || clientId.isBlank() ? null : clientId.trim();
+                }
+                return null;
+        }
+
+        // ── Write: engagement engine notes (B6) ─────────────────────────────
+
+        /** Actor of every note the engagement engine writes; the hooks and readers key on it. */
+        public static final String ENGINE_ACTOR_TYPE = "ENGAGEMENT_ENGINE";
+        /** How the note's author reads in the timeline: a normal note, labelled AI. */
+        public static final String ENGINE_NOTE_AUTHOR = "AI · Engagement Engine";
+
+        /**
+         * A normal NOTE on a lead, written by the engagement engine (labelled AI by its author name
+         * and metadata.ai). Returns the event id, so the engine can undo it.
+         */
+        @Transactional
+        public String logEngineNote(String leadRowId, String title, String description,
+                        Map<String, Object> metadata, String studentUserId) {
+                Map<String, Object> meta = new HashMap<>(metadata != null ? metadata : Map.of());
+                meta.put("source", ENGINE_ACTOR_TYPE);
+                meta.put("ai", true);
+                return saveEvent("LEAD", leadRowId, "NOTE", ENGINE_ACTOR_TYPE, null, ENGINE_NOTE_AUTHOR,
+                                title, description, meta, studentUserId, TimelineCategory.ACTIVITY).getId();
+        }
+
+        /** Undo of {@link #logEngineNote}: removes only a note the engine wrote. */
+        @Transactional
+        public boolean deleteEngineNote(String eventId) {
+                if (eventId == null) return false;
+                return timelineEventRepository.findById(eventId)
+                                .filter(e -> ENGINE_ACTOR_TYPE.equals(e.getActorType()))
+                                .map(e -> {
+                                        timelineEventRepository.delete(e);
+                                        return true;
+                                })
+                                .orElse(false);
+        }
+
+        private TimelineEvent saveEvent(String type, String typeId, String actionType,
                         String actorType, String actorId, String actorName,
                         String title, String description, Object metadata,
                         String studentUserId, TimelineCategory category) {
@@ -288,10 +430,25 @@ public class TimelineEventService {
                                 .metadataJson(metadataJson)
                                 .studentUserId(studentUserId)
                                 .category(category)
+                                .instituteId(resolveInstituteId(type, typeId))
                                 .build();
 
-                timelineEventRepository.save(event);
+                TimelineEvent saved = timelineEventRepository.save(event);
+                notifyHooks(saved);
                 logger.debug("Logged {} event: {} on {}[{}]", category, actionType, type, typeId);
+                return saved;
+        }
+
+        private void notifyHooks(TimelineEvent event) {
+                if (hooks == null) return;
+                hooks.orderedStream().forEach(hook -> {
+                        try {
+                                hook.onEventSaved(event);
+                        } catch (Exception e) {
+                                logger.warn("Timeline hook {} failed on {}[{}]: {}", hook.getClass().getSimpleName(),
+                                                event.getType(), event.getTypeId(), e.getMessage());
+                        }
+                });
         }
 
         private TimelineEventDTO mapToDTO(TimelineEvent event) {

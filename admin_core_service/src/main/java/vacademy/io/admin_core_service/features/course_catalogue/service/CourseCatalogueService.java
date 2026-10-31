@@ -86,6 +86,7 @@ public class CourseCatalogueService {
                 }
 
                 CourseCatalogue catalogue = optional.get();
+                String previousJson = catalogue.getCatalogueJson();
                 if (request.getCatalogueJson() != null) catalogue.setCatalogueJson(request.getCatalogueJson());
                 if (request.getTagName() != null) catalogue.setTagName(request.getTagName());
                 if (request.getStatus() != null) catalogue.setStatus(request.getStatus());
@@ -93,7 +94,10 @@ public class CourseCatalogueService {
 
                 // Legacy direct write bypasses the draft/publish flow — record it
                 // as a PUBLISHED revision so history stays complete/restorable.
-                if (request.getCatalogueJson() != null) {
+                // Re-sending the same content (a settings-only update) is not a
+                // new version: recording it would mark an open draft as stale.
+                if (request.getCatalogueJson() != null
+                                && !CatalogueRevisionService.sameJson(previousJson, request.getCatalogueJson())) {
                         catalogueRevisionService.recordLegacyPublishedRevision(catalogueId,
                                         request.getCatalogueJson(), userId);
                 }
@@ -118,6 +122,9 @@ public class CourseCatalogueService {
                                 .sourceId(mapping.get().getSourceId())
                                 .instituteId(mapping.get().getInstitute().getId())
                                 .isDefault(mapping.get().getIsDefault())
+                                // An open editor draft is never discarded here (someone may be
+                                // mid-edit); report it so the caller knows it now lags the live site.
+                                .openDraftRevisionNo(catalogueRevisionService.openDraftRevisionNo(catalogueId))
                                 .build();
         }
 
@@ -176,6 +183,18 @@ public class CourseCatalogueService {
                                 .sourceId(mapping.getSourceId())
                                 .instituteId(mapping.getInstitute().getId())
                                 .build();
+        }
+
+        /**
+         * The site for the editor: as the public by-tag response, plus when the
+         * live site was last published (the live revision; null when there is
+         * none on record, so the editor falls back to the revision history).
+         */
+        @Transactional(readOnly = true)
+        public CourseCatalogueResponse getCatalogueByInstituteAndTagForEditor(String instituteId, String tagName) {
+                CourseCatalogueResponse response = getCatalogueByInstituteAndTag(instituteId, tagName);
+                response.setUpdatedAt(catalogueRevisionService.liveUpdatedAt(response.getId()));
+                return response;
         }
 
         @Transactional(readOnly = true)

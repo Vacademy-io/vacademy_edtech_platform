@@ -1,0 +1,10 @@
+{
+    "errorMessage": "Impossible de charger {{widgetName}}",
+    "sessionExpiredNotice": "Votre session a peut-être expiré ou nécessite une nouvelle authentification.",
+    "debugInfoLabel": "Informations de débogage",
+    "actions": {
+        "refreshPage": "Actualiser la page",
+        "login": "Connexion",
+        "tryAgain": "Réessayer"
+    }
+}

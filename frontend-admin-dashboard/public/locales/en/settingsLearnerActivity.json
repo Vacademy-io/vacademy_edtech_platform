@@ -1,0 +1,74 @@
+{
+    "states": {
+        "loading": "Loading learner activity settings…",
+        "error": "Could not load learner activity settings. Please refresh and try again."
+    },
+    "toasts": {
+        "saveSuccess": "Learner activity settings saved",
+        "saveFailed": "Failed to save learner activity settings"
+    },
+    "completion": {
+        "title": "Completion Threshold",
+        "description": "Controls when a {{slide}} or chapter shows as completed (green tick) in the {{learner}} app. Progress percentages themselves are unaffected — this is the display cutoff.",
+        "thresholdField": {
+            "label": "Mark as complete at",
+            "suffix": "% progress",
+            "help": "Default 80%. Certificates use their own threshold under Certificate Settings."
+        }
+    },
+    "reading": {
+        "title": "Reading & Documents",
+        "description": "How long a {{learner}} must actually spend on document content before it counts as viewed.",
+        "pageDwell": {
+            "label": "Minimum time per page",
+            "suffix": "seconds",
+            "help": "A PDF/document page flicked past faster than this does not count as viewed. Default 10s."
+        },
+        "actionDwell": {
+            "label": "Minimum time per action",
+            "suffix": "seconds",
+            "help": "Applies to interactive slides (Jupyter, Scratch, Code editor). Default 5s."
+        },
+        "readingTimeToggle": {
+            "label": "Content-aware reading time",
+            "help": "Long single-page documents require time proportional to their length before counting as read — a 3,000-word page is no longer \"done\" in 10 seconds. Recommended on."
+        },
+        "wpm": {
+            "label": "Reading speed",
+            "suffix": "words/min",
+            "help": "Default 200 wpm."
+        },
+        "minSeconds": {
+            "label": "Minimum",
+            "suffix": "seconds",
+            "help": "Floor for very short notes. Default 10s."
+        },
+        "maxSeconds": {
+            "label": "Maximum",
+            "suffix": "seconds",
+            "help": "Cap for very long pages. Default 600s (10 min)."
+        }
+    },
+    "focus": {
+        "title": "Focus & Idle Detection",
+        "description": "The \"are you still there?\" check and automatic pause that stop idle time from counting as study time on document slides. Video check-in frequency is configured under Display Settings → Concentration.",
+        "idlePopupToggle": {
+            "label": "Show attention check on inactivity",
+            "help": "When off, no popup is shown; tracking still auto-pauses after the hard pause below."
+        },
+        "idleDelay": {
+            "label": "Show check after",
+            "suffix": "seconds idle",
+            "help": "No mouse/keyboard/touch activity for this long triggers the check. Default 60s."
+        },
+        "hardPause": {
+            "label": "Hard pause after",
+            "suffix": "minutes idle",
+            "help": "Tracking always pauses after this much inactivity, popup or not. Default 5 min."
+        }
+    },
+    "footer": {
+        "saving": "Saving…",
+        "save": "Save Learner Activity Settings"
+    }
+}

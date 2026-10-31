@@ -1,0 +1,29 @@
+{
+    "trigger": {
+        "label": "Generate Questions"
+    },
+    "dialog": {
+        "title": "Generate Questions From Audio",
+        "fields": {
+            "topics": {
+                "label": "Topics",
+                "placeholder": "For example, Generate a set of questions covering the key principles of photosynthesis, including the process, factors affecting it, and its importance in the ecosystem. Focus on conceptual understanding and application"
+            },
+            "numQuestions": {
+                "label": "Number of Questions",
+                "placeholder": "For example, 10"
+            },
+            "difficulty": {
+                "label": "Enter difficulty level",
+                "placeholder": "for example easy, medium and hard"
+            },
+            "language": {
+                "label": "Question Language"
+            }
+        },
+        "submitButton": "Submit"
+    },
+    "tasksList": {
+        "heading": "Vsmart Audio"
+    }
+}

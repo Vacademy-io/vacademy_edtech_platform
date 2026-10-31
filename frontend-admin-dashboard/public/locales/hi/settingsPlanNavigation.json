@@ -1,0 +1,12 @@
+{
+    "buttons": {
+        "saving": "सहेजा जा रहा है...",
+        "createPlan": "योजना बनाएं",
+        "next": "अगला",
+        "createPaymentPlan": "भुगतान योजना बनाएं",
+        "back": "पीछे",
+        "hidePreview": "पूर्वावलोकन छिपाएं",
+        "previewPlans": "योजनाओं का पूर्वावलोकन करें",
+        "cancel": "रद्द करें"
+    }
+}

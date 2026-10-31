@@ -23,6 +23,7 @@ import vacademy.io.admin_core_service.features.engagement.service.EngagementEngi
 import vacademy.io.admin_core_service.features.engagement.spi.DataPointRegistry;
 import vacademy.io.admin_core_service.features.engagement.spi.DataPointSpec;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementAccessGuard;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
 import java.util.List;
@@ -46,11 +47,18 @@ public class EngagementEngineController {
     private final vacademy.io.admin_core_service.features.engagement.repository.EngagementActionRepository actionRepository;
     private final DataPointRegistry dataPointRegistry;
     private final EngagementAccessGuard accessGuard;
+    private final vacademy.io.admin_core_service.features.engagement.service.EngagementChannelReadiness channelReadiness;
+    private final vacademy.io.admin_core_service.features.engagement.service.EngagementUpcomingCallsService upcomingCalls;
 
     @org.springframework.beans.factory.annotation.Value("${engagement.autonomy.first-n:5}")
     private int defaultFirstN;
 
     @PostMapping
+    @Auditable(
+            entityType = "ENGAGEMENT_ENGINE",
+            action = "CREATE",
+            entityIdExpr = "#result?.body?.id",
+            descriptionExpr = "'created engagement engine ' + (#request?.name ?: '')")
     public ResponseEntity<EngagementEngine> create(@RequestParam String instituteId,
                                                    @RequestBody CreateEngineRequest request,
                                                    @RequestAttribute("user") CustomUserDetails user) {
@@ -79,22 +87,43 @@ public class EngagementEngineController {
         body.put("activeMembers", memberRepository.countByEngineIdAndStatus(engineId, "ACTIVE"));
         body.put("prompt", promptRepository.findTopByEngineIdAndStatusOrderByVersionDesc(engineId, "ACTIVE").orElse(null));
         body.put("approvedSends", actionRepository.countApprovedSends(engineId));
+        // Graduation is per channel; the detail page shows each auto-send channel's own progress.
+        Map<String, Long> byChannel = new java.util.HashMap<>();
+        for (Object[] row : actionRepository.countApprovedSendsByChannel(engineId)) {
+            if (row[0] != null) byChannel.put((String) row[0], ((Number) row[1]).longValue());
+        }
+        // An AI call is a CRM action, not a message: a person approving one is DONE + ACCEPTED with no
+        // channel, so the per-channel count above never sees it. Its graduation is the action type's.
+        byChannel.put("AI_CALL", actionRepository.countApprovedCrmActions(engineId, "SCHEDULE_AI_CALL"));
+        body.put("approvedSendsByChannel", byChannel);
         body.put("effectiveFirstN", effectiveFirstN);
         return ResponseEntity.ok(body);
     }
 
     /** Resolve audience selectors → enroll (idempotent, jittered) + exit leavers. */
     @PostMapping("/{engineId}/enroll")
+    @Auditable(
+            entityType = "ENGAGEMENT_ENGINE",
+            action = "ENROLL",
+            entityIdExpr = "#engineId",
+            descriptionExpr = "'refreshed the audience of an engagement engine'")
     public ResponseEntity<EngagementEngineService.EnrollmentResult> enroll(
             @PathVariable String engineId,
             @RequestParam String instituteId,
             @RequestAttribute("user") CustomUserDetails user) {
         accessGuard.requireAdmin(user, instituteId);
+        engineService.requireAdminManaged(engineService.requireEngine(engineId, instituteId));
         return ResponseEntity.ok(engineService.enrollAndReconcile(engineId, instituteId));
     }
 
     /** DRAFT → DRY_RUN/ACTIVE → PAUSED → ARCHIVED. Activation requires an enrolled audience. */
     @PutMapping("/{engineId}/status")
+    @Auditable(
+            entityType = "ENGAGEMENT_ENGINE",
+            action = "STATUS_CHANGE",
+            entityIdExpr = "#engineId",
+            descriptionExpr = "'changed status of engagement engine ' + (#result?.body?.name ?: #engineId) "
+                    + "+ ' to ' + #toStatus")
     public ResponseEntity<EngagementEngine> transition(@PathVariable String engineId,
                                                        @RequestParam String instituteId,
                                                        @RequestParam String toStatus,
@@ -105,6 +134,11 @@ public class EngagementEngineController {
 
     /** The prompt that grows: append an amendment; base_text is immutable. */
     @PostMapping("/{engineId}/prompt")
+    @Auditable(
+            entityType = "ENGAGEMENT_ENGINE",
+            action = "UPDATE",
+            entityIdExpr = "#engineId",
+            descriptionExpr = "'edited the prompt of an engagement engine'")
     public ResponseEntity<EngagementPromptVersion> editPrompt(@PathVariable String engineId,
                                                               @RequestParam String instituteId,
                                                               @RequestBody PromptEditRequest request,
@@ -115,6 +149,12 @@ public class EngagementEngineController {
 
     /** Kill switch: stop/resume autonomous sending (the engine keeps drafting copilot tasks). */
     @PutMapping("/{engineId}/autonomy")
+    @Auditable(
+            entityType = "ENGAGEMENT_ENGINE",
+            action = "AUTONOMY_CHANGE",
+            entityIdExpr = "#engineId",
+            descriptionExpr = "(#killed ? 'paused' : 'resumed') + ' autonomous sending for engagement engine ' "
+                    + "+ (#result?.body?.name ?: #engineId)")
     public ResponseEntity<EngagementEngine> setAutonomy(@PathVariable String engineId,
                                                         @RequestParam String instituteId,
                                                         @RequestParam boolean killed,
@@ -133,6 +173,43 @@ public class EngagementEngineController {
         return ResponseEntity.ok(promptRepository.findByEngineIdOrderByVersionDesc(engineId));
     }
 
+    /**
+     * The engine page's "AI calls" card: whether calls still need approval (and how many approvals
+     * until they run on their own), the calls waiting for approval, held or in the dialer queue, the
+     * ones placed in the last day, and the first people a call is coming for.
+     */
+    @GetMapping("/{engineId}/upcoming-calls")
+    public ResponseEntity<vacademy.io.admin_core_service.features.engagement.service.EngagementUpcomingCallsService.UpcomingCalls>
+            upcomingCalls(@PathVariable String engineId,
+                          @RequestParam String instituteId,
+                          @RequestAttribute("user") CustomUserDetails user) {
+        accessGuard.requireAdmin(user, instituteId);
+        return ResponseEntity.ok(upcomingCalls.upcoming(engineService.requireEngine(engineId, instituteId)));
+    }
+
+    /**
+     * Which channels the institute has set up, so the wizard can say so before the engine is
+     * saved: {WHATSAPP:{ready,reason},EMAIL:{...},IN_APP:{...},AI_CALL:{...}}. reason is
+     * NOT_SET_UP, or SENDER_MISSING when the given email sender no longer exists.
+     */
+    @GetMapping("/channel-readiness")
+    public ResponseEntity<Map<String, vacademy.io.admin_core_service.features.engagement.service.EngagementChannelReadiness.Readiness>>
+            channelReadiness(@RequestParam String instituteId,
+                             @RequestParam(required = false) String emailType,
+                             @RequestAttribute("user") CustomUserDetails user) {
+        accessGuard.requireAdmin(user, instituteId);
+        return ResponseEntity.ok(channelReadiness.check(instituteId, emailType));
+    }
+
+    /** The institute's email senders, for the wizard's "From email" picker on the Email channel. */
+    @GetMapping("/email-senders")
+    public ResponseEntity<List<vacademy.io.admin_core_service.features.engagement.service.EngagementChannelReadiness.EmailSender>>
+            emailSenders(@RequestParam String instituteId,
+                         @RequestAttribute("user") CustomUserDetails user) {
+        accessGuard.requireAdmin(user, instituteId);
+        return ResponseEntity.ok(channelReadiness.emailSenders(instituteId));
+    }
+
     /** The wizard's data-point picker — served by the registry catalog (declare()). */
     @GetMapping("/data-points")
     public ResponseEntity<List<DataPointSpec>> dataPointCatalog(
@@ -141,16 +218,50 @@ public class EngagementEngineController {
                 .map(p -> {
                     DataPointSpec spec = p.declare();
                     spec.setKey(p.key());
+                    // The wizard showed these as optional checkboxes that unchecking did nothing to.
+                    spec.setAlwaysOn(p.alwaysOn());
                     return spec;
                 }).toList());
     }
 
+    /** Edit an engine's settings (name, channels, audience, cadence, quiet hours, autonomy numbers). */
+    @PutMapping("/{engineId}")
+    @Auditable(
+            entityType = "ENGAGEMENT_ENGINE",
+            action = "UPDATE",
+            entityIdExpr = "#engineId",
+            captureBefore = "@engagementEngineService.requireEngine(#engineId, #instituteId)",
+            descriptionExpr = "'edited engagement engine ' + (#result?.body?.name ?: #engineId)")
+    public ResponseEntity<EngagementEngine> update(@PathVariable String engineId,
+                                                   @RequestParam String instituteId,
+                                                   @RequestBody CreateEngineRequest request,
+                                                   @RequestAttribute("user") CustomUserDetails user) {
+        accessGuard.requireAdmin(user, instituteId);
+        return ResponseEntity.ok(engineService.update(engineId, instituteId, request, user.getUserId()));
+    }
+
+    /**
+     * Archive (default) from any state, or with permanent=true delete an engine that never reached
+     * anyone (no message sent, no WhatsApp template at Meta).
+     */
     @DeleteMapping("/{engineId}")
+    @Auditable(
+            entityType = "ENGAGEMENT_ENGINE",
+            actionExpr = "#permanent == true ? 'DELETE' : 'ARCHIVE'",
+            action = "ARCHIVE",
+            entityIdExpr = "#engineId",
+            captureBefore = "@engagementEngineService.requireEngine(#engineId, #instituteId)",
+            descriptionExpr = "(#permanent == true ? 'permanently deleted' : 'archived') + ' an engagement engine'")
     public ResponseEntity<Void> archive(@PathVariable String engineId,
                                         @RequestParam String instituteId,
+                                        @RequestParam(required = false, defaultValue = "false") boolean permanent,
                                         @RequestAttribute("user") CustomUserDetails user) {
         accessGuard.requireAdmin(user, instituteId);
-        engineService.transition(engineId, instituteId, "ARCHIVED");
+        if (permanent) {
+            engineService.deletePermanently(engineId, instituteId);
+        } else {
+            engineService.archive(engineId, instituteId);
+        }
         return ResponseEntity.noContent().build();
     }
 }

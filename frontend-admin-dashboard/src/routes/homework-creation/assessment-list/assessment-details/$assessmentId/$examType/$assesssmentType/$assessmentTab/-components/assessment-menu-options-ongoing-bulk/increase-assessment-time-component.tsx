@@ -1,4 +1,5 @@
 import { ReactNode, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { useSubmissionsBulkActionsDialogStoreOngoing } from '../bulk-actions-zustand-store/useSubmissionsBulkActionsDialogStoreOngoing';
@@ -23,6 +24,7 @@ const IncreaseAssessmentTimeDialogContent = ({
 }: {
     durationDistribution: string;
 }) => {
+    const { t } = useTranslation('homeworkCreationIncreaseAssessmentTime');
     const [selectedSection, setSelectedSection] = useState<string>(timeLimit[0] as string);
     const { selectedStudent, bulkActionInfo, isBulkAction, closeAllDialogs } =
         useSubmissionsBulkActionsDialogStoreOngoing();
@@ -37,19 +39,19 @@ const IncreaseAssessmentTimeDialogContent = ({
     };
 
     return (
-        <div className="flex max-h-[60vh] flex-col gap-6 overflow-y-auto text-neutral-600">
+        <div className="flex max-h-[60vh] flex-col gap-6 overflow-y-auto text-neutral-600"> {/* design-lint-ignore: viewport-relative scrollable dialog body, no vh token exists */}
             {durationDistribution === 'ASSESSMENT' && (
                 <div className="flex flex-col gap-2 p-4">
-                    <h1>Entire Assessment</h1>
-                    <h3>Increase By</h3>
+                    <h1>{t('assessment.title')}</h1>
+                    <h3>{t('assessment.increaseByLabel')}</h3>
                     <Select value={selectedSection} onValueChange={setSelectedSection}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select Section" />
+                        <SelectTrigger className="w-44">
+                            <SelectValue placeholder={t('assessment.selectSectionPlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
-                            {timeLimit.map((section, idx) => (
-                                <SelectItem key={idx} value={section}>
-                                    {section}
+                            {timeLimit.map((sec, idx) => (
+                                <SelectItem key={idx} value={sec}>
+                                    {sec}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -61,37 +63,37 @@ const IncreaseAssessmentTimeDialogContent = ({
                             layoutVariant="default"
                             onClick={handleSubmit}
                         >
-                            Done
+                            {t('assessment.doneButton')}
                         </MyButton>
                     </div>
                 </div>
             )}
             {durationDistribution === 'SECTION' && (
                 <div className="flex flex-col gap-2 p-4">
-                    <h1>Section 1</h1>
-                    <h3>Increase By</h3>
+                    <h1>{t('section.title', { index: 1 })}</h1>
+                    <h3>{t('section.increaseByLabel')}</h3>
                     <Select value={selectedSection} onValueChange={setSelectedSection}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select Section" />
+                        <SelectTrigger className="w-44">
+                            <SelectValue placeholder={t('section.selectSectionPlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
-                            {timeLimit.map((section, idx) => (
-                                <SelectItem key={idx} value={section}>
-                                    {section}
+                            {timeLimit.map((sec, idx) => (
+                                <SelectItem key={idx} value={sec}>
+                                    {sec}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
-                    <h1>Section 2</h1>
-                    <h3>Increase By</h3>
+                    <h1>{t('section.title', { index: 2 })}</h1>
+                    <h3>{t('section.increaseByLabel')}</h3>
                     <Select value={selectedSection} onValueChange={setSelectedSection}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select Section" />
+                        <SelectTrigger className="w-44">
+                            <SelectValue placeholder={t('section.selectSectionPlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
-                            {timeLimit.map((section, idx) => (
-                                <SelectItem key={idx} value={section}>
-                                    {section}
+                            {timeLimit.map((sec, idx) => (
+                                <SelectItem key={idx} value={sec}>
+                                    {sec}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -103,37 +105,37 @@ const IncreaseAssessmentTimeDialogContent = ({
                             layoutVariant="default"
                             onClick={handleSubmit}
                         >
-                            Done
+                            {t('section.doneButton')}
                         </MyButton>
                     </div>
                 </div>
             )}
             {durationDistribution === 'QUESTION' && (
                 <div className="flex flex-col gap-2 p-4">
-                    <h1>Question 1</h1>
-                    <h3>Increase By</h3>
+                    <h1>{t('question.title', { index: 1 })}</h1>
+                    <h3>{t('question.increaseByLabel')}</h3>
                     <Select value={selectedSection} onValueChange={setSelectedSection}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select Section" />
+                        <SelectTrigger className="w-44">
+                            <SelectValue placeholder={t('question.selectSectionPlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
-                            {timeLimit.map((section, idx) => (
-                                <SelectItem key={idx} value={section}>
-                                    {section}
+                            {timeLimit.map((sec, idx) => (
+                                <SelectItem key={idx} value={sec}>
+                                    {sec}
                                 </SelectItem>
                             ))}
                         </SelectContent>
                     </Select>
-                    <h1>Question 2</h1>
-                    <h3>Increase By</h3>
+                    <h1>{t('question.title', { index: 2 })}</h1>
+                    <h3>{t('question.increaseByLabel')}</h3>
                     <Select value={selectedSection} onValueChange={setSelectedSection}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select Section" />
+                        <SelectTrigger className="w-44">
+                            <SelectValue placeholder={t('question.selectSectionPlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
-                            {timeLimit.map((section, idx) => (
-                                <SelectItem key={idx} value={section}>
-                                    {section}
+                            {timeLimit.map((sec, idx) => (
+                                <SelectItem key={idx} value={sec}>
+                                    {sec}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -145,7 +147,7 @@ const IncreaseAssessmentTimeDialogContent = ({
                             layoutVariant="default"
                             onClick={handleSubmit}
                         >
-                            Done
+                            {t('question.doneButton')}
                         </MyButton>
                     </div>
                 </div>
@@ -160,11 +162,12 @@ export const IncreaseAssessmentTimeDialog = ({
     onOpenChange,
     durationDistribution,
 }: ProvideDialogDialogProps) => {
+    const { t } = useTranslation('homeworkCreationIncreaseAssessmentTime');
     return (
         <MyDialog
             trigger={trigger}
-            heading="Increase Assessment Time"
-            dialogWidth="w-[400px] max-w-[400px]"
+            heading={t('dialog.heading')}
+            dialogWidth="w-96 max-w-sm"
             content={
                 <IncreaseAssessmentTimeDialogContent durationDistribution={durationDistribution} />
             }

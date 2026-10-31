@@ -1,0 +1,48 @@
+{
+    "relatedCourses": {
+        "course1": {
+            "name": "Mathématiques avancées",
+            "description": "Plongée approfondie dans le calcul et l'algèbre.",
+            "tags": {
+                "math": "Maths",
+                "advanced": "Avancé",
+                "stem": "STIM"
+            }
+        },
+        "course2": {
+            "name": "Physique pour ingénieurs",
+            "description": "Mécanique, thermodynamique et bien plus encore.",
+            "tags": {
+                "physics": "Physique",
+                "engineering": "Ingénierie"
+            }
+        },
+        "course3": {
+            "name": "Écriture créative",
+            "description": "Révélez votre potentiel de conteur.",
+            "tags": {
+                "writing": "Écriture",
+                "creativity": "Créativité",
+                "arts": "Arts"
+            }
+        }
+    },
+    "billingContactFields": {
+        "nameLabel": "Nom complet du contact de facturation",
+        "emailLabel": "E-mail du contact de facturation",
+        "roleLabel": "Rôle"
+    },
+    "validation": {
+        "planNameRequired": "Le nom du plan est requis",
+        "descriptionRequired": "La description est requise",
+        "titleRequired": "Le titre est requis",
+        "codeRequired": "Le code est requis",
+        "valueRequired": "La valeur est requise",
+        "expiryDateRequired": "La date d'expiration est requise",
+        "programNameRequired": "Le nom du programme est requis",
+        "refereeBenefitRequired": "L'avantage du filleul est requis",
+        "tierRequired": "Le palier est requis",
+        "rewardRequired": "La récompense est requise",
+        "atLeastOneTierRequired": "Au moins un palier est requis"
+    }
+}

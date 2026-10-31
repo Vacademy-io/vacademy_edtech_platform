@@ -6,6 +6,8 @@ import { MyButton } from "@/components/design-system/button";
 import { fetchUserPlanStatus } from "@/services/payment-status-api";
 import { getTokenFromStorage } from "@/lib/auth/sessionUtility";
 import { TokenKey } from "@/constants/auth/tokens";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 interface ApprovalStatusPollingDialogProps {
   open: boolean;
@@ -138,7 +140,7 @@ export const ApprovalStatusPollingDialog: React.FC<ApprovalStatusPollingDialogPr
           {/* Error Icon */}
           <div className="flex justify-center mb-6">
             <div className="relative">
-              <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-20 h-20 bg-gradient-to-br from-danger-100 to-danger-200 rounded-full flex items-center justify-center shadow-lg">
                 <XCircle className="w-10 h-10 text-red-600" />
               </div>
             </div>
@@ -155,7 +157,7 @@ export const ApprovalStatusPollingDialog: React.FC<ApprovalStatusPollingDialogPr
           </div>
 
           {/* Error Details */}
-          <div className="mt-8 bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl p-6 shadow-sm">
+          <div className="mt-8 bg-gradient-to-r from-danger-50 to-pink-50 border border-red-200 rounded-xl p-6 shadow-sm">
             <div className="flex items-start space-x-3">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center">
@@ -196,7 +198,7 @@ export const ApprovalStatusPollingDialog: React.FC<ApprovalStatusPollingDialogPr
           {/* Animated Icon */}
           <div className="flex justify-center mb-6">
             <div className="relative">
-              <div className="w-20 h-20 bg-gradient-to-br from-yellow-100 to-orange-200 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-20 h-20 bg-gradient-to-br from-warning-100 to-primary-200 rounded-full flex items-center justify-center shadow-lg">
                 <Clock className="w-10 h-10 text-yellow-600" />
               </div>
               <div className="absolute -top-1 -end-1 w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
@@ -216,15 +218,15 @@ export const ApprovalStatusPollingDialog: React.FC<ApprovalStatusPollingDialogPr
           </div>
 
           {/* Status Card */}
-          <div className="mt-8 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-6 shadow-sm">
+          <div className="mt-8 bg-gradient-to-r from-warning-50 to-primary-50 border border-yellow-200 rounded-xl p-6 shadow-sm">
             <div className="flex items-start space-x-3">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
                   <Clock className="w-4 h-4 text-white" />
                 </div>
               </div>
-              <div className="flex-1 text-start">
-                <h4 className="text-sm font-semibold text-yellow-900 mb-2">
+              <div className="flex-1 text-start space-y-2">
+                <h4 className="text-sm font-semibold text-yellow-900">
                   What happens next?
                 </h4>
                 <div className="space-y-2">
@@ -238,7 +240,7 @@ export const ApprovalStatusPollingDialog: React.FC<ApprovalStatusPollingDialogPr
                   </div>
                   <div className="flex items-center space-x-2 text-sm text-yellow-700">
                     <div className="w-1.5 h-1.5 bg-yellow-600 rounded-full"></div>
-                    <span>Course access will be granted immediately</span>
+                    <span>{getTerminology(ContentTerms.Course, SystemTerms.Course)} access will be granted immediately</span>
                   </div>
                 </div>
               </div>
@@ -262,7 +264,7 @@ export const ApprovalStatusPollingDialog: React.FC<ApprovalStatusPollingDialogPr
           {/* Success Icon */}
           <div className="flex justify-center mb-6">
             <div className="relative">
-              <div className="w-20 h-20 bg-gradient-to-br from-green-100 to-green-200 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-20 h-20 bg-gradient-to-br from-success-100 to-success-200 rounded-full flex items-center justify-center shadow-lg">
                 <CheckCircle className="w-10 h-10 text-green-600" />
               </div>
               <div className="absolute -top-1 -end-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
@@ -277,23 +279,23 @@ export const ApprovalStatusPollingDialog: React.FC<ApprovalStatusPollingDialogPr
               Approval Successful!
             </h3>
             <p className="text-gray-600 text-lg">
-              Your enrollment has been approved and you now have access to the course.
+              Your enrollment has been approved and you now have access to the {getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}.
             </p>
           </div>
           
-          <div className="mt-8 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6 shadow-sm">
+          <div className="mt-8 bg-gradient-to-r from-success-50 to-success-50 border border-green-200 rounded-xl p-6 shadow-sm">
             <div className="flex items-center space-x-3">
               <div className="flex-shrink-0">
                 <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
                   <CheckCircle className="w-4 h-4 text-white" />
                 </div>
               </div>
-              <div className="flex-1 text-start">
-                <h4 className="text-sm font-semibold text-green-900 mb-1">
+              <div className="flex-1 text-start space-y-1">
+                <h4 className="text-sm font-semibold text-green-900">
                   Ready to Learn!
                 </h4>
                 <p className="text-sm text-green-800">
-                  You can now access the course content and start learning.
+                  You can now access the {getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()} content and start learning.
                 </p>
               </div>
             </div>

@@ -1,0 +1,62 @@
+{
+    "unknown": "Unknown",
+    "unknownCourse": "Unknown course",
+    "untitled": "Untitled",
+    "dropdown": {
+        "allNoRestriction": "All (no restriction)",
+        "loading": "Loading...",
+        "noOptions": "No options available"
+    },
+    "multiSelect": {
+        "selectedCount_one": "{{count}} selected",
+        "selectedCount_other": "{{count}} selected",
+        "searchPlaceholder": "Search...",
+        "noMatches": "Nothing matches “{{search}}”.",
+        "someHiddenBySearch": "some selected items are hidden by the search"
+    },
+    "batch": {
+        "selectPlaceholder": "-- Select a batch --",
+        "emptyRequired": "Select at least one batch.",
+        "emptyOptional": "No selection — runs across all active batches in your institute."
+    },
+    "audience": {
+        "emptyRequired": "Select at least one campaign.",
+        "emptyOptional": "No selection — runs across all campaigns."
+    },
+    "template": {
+        "emailPlaceholder": "-- Select an email template --",
+        "whatsappPlaceholder": "-- Select a WhatsApp template --",
+        "livesessionPlaceholder": "-- Select a live session --",
+        "invitePlaceholder": "-- Select an invite --",
+        "coursePlaceholder": "-- Select a course --",
+        "creating": "Creating...",
+        "useSample": "Use sample: \"{{name}}\"",
+        "useSampleHint": "Pre-built template with the right variables — added to your template library",
+        "noWhatsappTemplates": "No approved WhatsApp templates found. They sync from Meta — open Communication → WhatsApp Templates and sync, or get the template approved in Meta first.",
+        "whatsappVarsNeedMapping": "This template uses {{vars}}. Variables named after a lead field fill in automatically; numbered ones must be mapped in the builder after generating — WhatsApp rejects the message if any is left unfilled."
+    },
+    "jsonPayload": {
+        "invalidObject": "Payload must be a JSON object (not an array or primitive).",
+        "valid": "✓ Valid JSON",
+        "errorPrefix": "⚠ {{error}}"
+    },
+    "picker": {
+        "heading": "How would you like to build this workflow?",
+        "subheading": "Pick a ready-made template below, or build your workflow from scratch using the visual editor.",
+        "templatesForTrigger": "Templates for this trigger",
+        "useThisTemplate": "Use this template",
+        "noTemplates": "No pre-built templates available for this trigger yet.",
+        "noTemplatesHint": "Use the advanced builder to create your workflow from scratch.",
+        "or": "or",
+        "buildFromScratch": "Build from scratch",
+        "buildFromScratchHint": "Use the visual drag-and-drop editor to build a custom workflow with full control.",
+        "back": "Back"
+    },
+    "wizard": {
+        "backToTemplates": "Back to templates",
+        "configureHeading": "Configure your workflow",
+        "whatWillBeCreated": "What will be created",
+        "back": "Back",
+        "generate": "Generate Workflow"
+    }
+}

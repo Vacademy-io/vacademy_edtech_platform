@@ -1,13 +1,15 @@
 import { memo } from 'react';
 import { NodeProps } from 'reactflow';
-import { Globe2, Loader2, Search } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Globe as Globe2, CircleNotch as Loader2, MagnifyingGlass as Search } from '@phosphor-icons/react';
 import { BaseNodeShell } from './BaseNodeShell';
-import { ACTIVE_SUB_STATUS } from '../-utils/stage-vocab';
+import { buildActiveSubStatus } from '../-utils/stage-vocab';
 import type { PipelineNodeData } from '../-utils/build-pipeline-graph';
 
 const PREVIEW_SOURCES = 3;
 
 function ResearchNodeInner({ data }: NodeProps<PipelineNodeData>) {
+    const { t } = useTranslation('videoApiStudioStageVocab');
     const slot = data.state.research;
     if (!slot) return null;
 
@@ -25,7 +27,7 @@ function ResearchNodeInner({ data }: NodeProps<PipelineNodeData>) {
     if (slot.state === 'cut' || slot.state === 'reshoot') {
         return (
             <BaseNodeShell kind="research" state={slot.state}>
-                <p className="text-[11px] text-red-700">{slot.error}</p>
+                <p className="text-2xs text-red-700">{slot.error}</p>
             </BaseNodeShell>
         );
     }
@@ -35,7 +37,7 @@ function ResearchNodeInner({ data }: NodeProps<PipelineNodeData>) {
             <BaseNodeShell kind="research" state={slot.state}>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Loader2 className="size-3.5 animate-spin text-blue-600" />
-                    {ACTIVE_SUB_STATUS.research}
+                    {buildActiveSubStatus(t).research}
                 </div>
             </BaseNodeShell>
         );
@@ -66,21 +68,21 @@ function ResearchNodeInner({ data }: NodeProps<PipelineNodeData>) {
                         {urlsAttempted!.slice(0, PREVIEW_SOURCES).map((u, i) => (
                             <li
                                 key={i}
-                                className="flex items-center gap-1 truncate text-[10px] text-muted-foreground"
+                                className="flex items-center gap-1 truncate text-2xs text-muted-foreground"
                             >
                                 <Globe2 className="size-3 shrink-0 text-muted-foreground/70" />
                                 <span className="truncate">{tryHostname(u)}</span>
                             </li>
                         ))}
                         {(urlsAttempted!.length ?? 0) > PREVIEW_SOURCES && (
-                            <li className="text-[10px] text-muted-foreground">
+                            <li className="text-2xs text-muted-foreground">
                                 +{urlsAttempted!.length - PREVIEW_SOURCES} more
                             </li>
                         )}
                     </ul>
                 )}
                 {searchedAny && (
-                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                    <div className="flex items-center gap-1 text-2xs text-muted-foreground">
                         <Search className="size-3 shrink-0 text-muted-foreground/70" />
                         <span className="truncate italic">
                             {searchQuery ? `“${searchQuery}”` : 'Web search results gathered'}
@@ -88,7 +90,7 @@ function ResearchNodeInner({ data }: NodeProps<PipelineNodeData>) {
                     </div>
                 )}
                 {!scrapedAny && !searchedAny && (
-                    <p className="truncate text-[11px] text-muted-foreground">
+                    <p className="truncate text-2xs text-muted-foreground">
                         Research notes filed
                     </p>
                 )}

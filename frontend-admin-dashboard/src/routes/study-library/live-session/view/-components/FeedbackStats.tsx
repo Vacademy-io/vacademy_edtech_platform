@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Star, ChatText, WarningCircle, UserList } from '@phosphor-icons/react';
 import type { LiveSessionReport } from '../../-services/utils';
 
@@ -8,6 +9,7 @@ interface FeedbackStatsProps {
 }
 
 export function FeedbackStats({ data, feedbackConfig }: FeedbackStatsProps) {
+    const { t } = useTranslation('studyLibraryFeedbackStats');
     const stats = useMemo(() => {
         if (!feedbackConfig?.enabled || !feedbackConfig?.questions?.length) {
             return null;
@@ -77,9 +79,9 @@ export function FeedbackStats({ data, feedbackConfig }: FeedbackStatsProps) {
                     <ChatText weight="fill" size={18} />
                 </div>
                 <div>
-                    <h3 className="font-semibold text-purple-900">Learner Feedback Stats</h3>
+                    <h3 className="font-semibold text-purple-900">{t('learnerFeedbackStats')}</h3>
                     <p className="text-xs text-purple-600">
-                        {stats.totalSubmissions} total responses collected
+                        {t('totalResponsesCollected', { count: stats.totalSubmissions })}
                     </p>
                 </div>
             </div>
@@ -99,11 +101,13 @@ export function FeedbackStats({ data, feedbackConfig }: FeedbackStatsProps) {
                                         <span className="text-sm font-normal text-gray-400">/ {qStat.max_stars || 5}</span>
                                     </div>
                                     <div className="flex flex-col text-xs text-gray-500">
-                                        <span>{qStat.count} ratings</span>
+                                        <span>{t('ratingsCount', { count: qStat.count })}</span>
                                         {qStat.lowRatingsCount > 0 && (
                                             <span className="flex items-center gap-1 text-red-500 font-medium mt-0.5">
                                                 <WarningCircle weight="fill" size={12} />
-                                                {qStat.lowRatingsCount} low (&lt; 3)
+                                                {t('lowRatingsCount', {
+                                                    count: qStat.lowRatingsCount,
+                                                })}
                                             </span>
                                         )}
                                     </div>
@@ -131,7 +135,7 @@ export function FeedbackStats({ data, feedbackConfig }: FeedbackStatsProps) {
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-sm italic text-gray-400">No written responses yet.</p>
+                                    <p className="text-sm italic text-gray-400">{t('noWrittenResponsesYet')}</p>
                                 )}
                             </div>
                         );

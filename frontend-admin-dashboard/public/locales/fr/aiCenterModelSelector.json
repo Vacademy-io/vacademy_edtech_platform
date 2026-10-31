@@ -1,0 +1,10 @@
+{
+    "aiModelLabel": "Modèle d'IA",
+    "unableToLoadModels": "Impossible de charger les modèles",
+    "tooltipDescription": "Sélectionnez un modèle d'IA pour le traitement. Le modèle par défaut est recommandé pour la plupart des cas d'usage.",
+    "selectModel": "Sélectionner un modèle",
+    "defaultRecommended": "Par défaut (recommandé)",
+    "defaultModelSummary": "{{name}} - {{description}}",
+    "availableModels": "Modèles disponibles",
+    "footerNote": "Les modèles ont des capacités variables. Le modèle par défaut convient le mieux à la plupart des tâches."
+}

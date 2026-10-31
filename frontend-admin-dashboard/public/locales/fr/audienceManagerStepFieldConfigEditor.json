@@ -1,0 +1,13 @@
+{
+    "untitledField": "Champ sans titre",
+    "newFieldBadge": "(nouveau)",
+    "mandatoryLabel": "Obligatoire",
+    "hiddenLabel": "Masqué",
+    "accessButton": "Accès",
+    "emptyState": "Aucun champ associé pour le moment. Associez un champ personnalisé existant ou créez-en un nouveau.",
+    "pickerPlaceholderEmpty": "Plus aucun champ à associer",
+    "pickerPlaceholderDefault": "Associer un ou plusieurs champs existants…",
+    "attachButton": "Associer",
+    "attachButtonWithCount": "Associer ({{count}})",
+    "createNewFieldButton": "Créer un nouveau champ"
+}

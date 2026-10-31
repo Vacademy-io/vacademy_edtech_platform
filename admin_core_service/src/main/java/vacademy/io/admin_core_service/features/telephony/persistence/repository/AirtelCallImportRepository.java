@@ -14,6 +14,10 @@ public interface AirtelCallImportRepository extends JpaRepository<AirtelCallImpo
     /** Idempotency: has this exact S3 object already been imported? */
     boolean existsByS3Key(String s3Key);
 
+    /** Which of these S3 keys already have a row (one query instead of one probe per key). */
+    @org.springframework.data.jpa.repository.Query("SELECT a.s3Key FROM AirtelCallImport a WHERE a.s3Key IN :keys")
+    java.util.List<String> findExistingS3Keys(@org.springframework.data.repository.query.Param("keys") java.util.Collection<String> keys);
+
     Optional<AirtelCallImport> findByS3Key(String s3Key);
 
     /** Oldest-first batch of staging rows the promoter still needs to process. */

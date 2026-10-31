@@ -1,0 +1,31 @@
+{
+    "emptyState": {
+        "learnerUnavailable": "शिक्षार्थी का विवरण उपलब्ध नहीं है",
+        "noCourseContent": "अभी तक कोई कोर्स सामग्री नहीं है",
+        "noCourseContentHint": "इस बैच के लिए अभी कोई विषय नहीं बनाया गया है।"
+    },
+    "errorState": {
+        "title": "सीखने की प्रगति लोड नहीं हो सकी",
+        "hint": "इस शिक्षार्थी की प्रगति लाते समय कुछ गड़बड़ हो गई।"
+    },
+    "batchPicker": {
+        "label": "प्रगति देखें इसके लिए"
+    },
+    "hero": {
+        "courseFallback": "कोर्स",
+        "percentComplete": "{{percent}}% पूर्ण",
+        "behindOn_one": "{{count}} {{term}} में पीछे",
+        "behindOn_other": "{{count}} {{term}} में पीछे"
+    },
+    "actions": {
+        "learningTimeline": "लर्निंग टाइमलाइन",
+        "learningProgress": "लर्निंग प्रगति"
+    },
+    "courseContent": {
+        "heading": "कोर्स सामग्री",
+        "selectSubject": "{{term}} चुनें",
+        "noModules": "इस {{subjectTerm}} के लिए कोई {{moduleTerm}} नहीं है।",
+        "noChapters": "इस {{moduleTerm}} में कोई अध्याय नहीं है।",
+        "moduleLabel": "{{moduleTerm}}: {{moduleName}}"
+    }
+}

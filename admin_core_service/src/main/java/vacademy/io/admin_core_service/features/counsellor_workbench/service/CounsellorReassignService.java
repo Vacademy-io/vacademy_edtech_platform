@@ -25,6 +25,8 @@ import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import vacademy.io.admin_core_service.features.live_activity.core.LiveActivityCounsellorRecorder;
+import vacademy.io.admin_core_service.features.live_activity.enums.LiveActivityAction;
 
 /**
  * Bulk re-routing of one counsellor's open leads.
@@ -49,6 +51,7 @@ import java.util.stream.Collectors;
 public class CounsellorReassignService {
 
     private final UserLeadProfileRepository profileRepo;
+    private final LiveActivityCounsellorRecorder liveActivityCounsellorRecorder;
     private final UserLeadProfileService profileService;
     private final TimelineEventService timelineEventService;
     private final CounsellorScopeService scopeService;
@@ -456,8 +459,21 @@ public class CounsellorReassignService {
      * the (already committed) reassignment.
      */
     private void notifyReassignTargets(String instituteId, Map<String, Long> countByTarget) {
-        countByTarget.forEach((toUserId, count) -> leadAssignmentNotifier.notifyBatchAssigned(
-                instituteId, toUserId, count.intValue(), "workbench reassign"));
+        countByTarget.forEach((toUserId, count) -> {
+            leadAssignmentNotifier.notifyBatchAssigned(
+                    instituteId, toUserId, count.intValue(), "workbench reassign");
+
+            // Live activity feed, from the same already-batched after-commit hook. One row
+            // per target with a count, not one per lead -- a bulk reassign of 200 leads
+            // should read as a single line, not flood the feed.
+            liveActivityCounsellorRecorder.recordLeadTransfer(
+                    instituteId, LiveActivityAction.LEAD_TRANSFERRED_IN,
+                    // Null actor: this runs from an after-commit callback where the
+                    // caller's CustomUserDetails is no longer threaded through, so the feed
+                    // attributes the transfer to the receiving counsellor rather than
+                    // guessing at an admin.
+                    toUserId, null, null, count.intValue());
+        });
     }
 
     /**

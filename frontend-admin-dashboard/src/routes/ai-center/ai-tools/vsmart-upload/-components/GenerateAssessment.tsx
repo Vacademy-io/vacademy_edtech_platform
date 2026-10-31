@@ -30,6 +30,7 @@ import {
     QuestionConfigPanel,
     buildQuestionPrompt,
 } from '@/routes/ai-center/-components/QuestionConfigPanel';
+import { useTranslation } from 'react-i18next';
 
 const ACCEPTED_FORMATS = '.pdf,.doc,.docx,.ppt,.pptx,.html';
 const ACCEPTED_EXTENSIONS = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'html'];
@@ -43,6 +44,7 @@ const GenerateAIAssessmentComponent = ({
     form?: UseFormReturn<SectionFormType>;
     currentSectionIndex?: number;
 }) => {
+    const { t } = useTranslation(['aiCenterGenerateAssessment', 'aiCenterQuestionConfigPanel']);
     const queryClient = useQueryClient();
     const instituteId = getInstituteId();
     const { setLoader, setKey } = useAICenter();
@@ -85,7 +87,7 @@ const GenerateAIAssessmentComponent = ({
         if (match.status === 'COMPLETED') {
             setReadyTask(match);
         } else if (match.status === 'FAILED') {
-            setErrorMessage("We couldn't finish your paper. Want to try again?");
+            setErrorMessage(t('errors.taskFailed'));
             setPendingTaskId(null);
         }
     }, [recentTasksData, pendingTaskId]);
@@ -109,7 +111,7 @@ const GenerateAIAssessmentComponent = ({
     const processFile = async (file: File) => {
         const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
         if (!ACCEPTED_EXTENSIONS.includes(ext)) {
-            setErrorMessage(`We can't read .${ext} files yet. Try PDF, Word, or PowerPoint.`);
+            setErrorMessage(t('errors.unsupportedFileType', { ext }));
             return;
         }
         setErrorMessage(null);
@@ -125,7 +127,7 @@ const GenerateAIAssessmentComponent = ({
                 sourceId: 'STUDENTS',
             });
             if (!fileId) {
-                setErrorMessage("Upload didn't complete. Want to try again?");
+                setErrorMessage(t('errors.uploadIncomplete'));
                 resetFile();
                 return;
             }
@@ -135,12 +137,12 @@ const GenerateAIAssessmentComponent = ({
                 setUploadedFilePDFId(response.pdf_id);
                 setPhase('ready');
             } else {
-                setErrorMessage("We couldn't read this file. Try a different one?");
+                setErrorMessage(t('errors.fileUnreadable'));
                 resetFile();
             }
         } catch (err) {
             console.error(err);
-            setErrorMessage('Something went wrong while reading your file. Try again?');
+            setErrorMessage(t('errors.genericReadError'));
             resetFile();
         }
     };
@@ -208,14 +210,14 @@ const GenerateAIAssessmentComponent = ({
             console.log(error);
             setPhase('ready');
             setLoader(false);
-            setErrorMessage("We couldn't draft questions from this file. Want to try again?");
+            setErrorMessage(t('errors.generateFailed'));
         },
     });
 
     const pollGenerateAssessment = (_prompt?: string, taskId?: string) => {
         generateAssessmentMutation.mutate({
             pdfId: uploadedFilePDFId,
-            userPrompt: buildQuestionPrompt(numQuestions, questionType, difficulty, language),
+            userPrompt: buildQuestionPrompt(t, numQuestions, questionType, difficulty, language),
             taskName: getRandomTaskName(),
             taskId,
         });
@@ -305,25 +307,22 @@ const GenerateAIAssessmentComponent = ({
         phase === 'uploading' || phase === 'processing' || phase === 'generating';
     const workingLabel =
         phase === 'uploading'
-            ? 'Reading your file…'
+            ? t('workingStatus.uploading')
             : phase === 'processing'
-              ? 'Getting your document ready…'
+              ? t('workingStatus.processing')
               : phase === 'generating'
-                ? 'Drafting your paper — usually takes ~30 seconds.'
+                ? t('workingStatus.generating')
                 : pageWiseGenerateQuestionsStatus
-                  ? 'Preparing pages for you to pick…'
+                  ? t('workingStatus.preparingPages')
                   : '';
 
     return (
         <div className="flex w-full flex-col gap-8 px-4 pb-12 sm:px-8">
             <header className="flex flex-col gap-1">
                 <h1 className="text-2xl font-semibold text-gray-900 sm:text-3xl">
-                    Create a Question Paper
+                    {t('header.title')}
                 </h1>
-                <p className="text-sm text-gray-500">
-                    Drop a PDF, Word, or PowerPoint file. We&apos;ll draft questions you can
-                    edit before sending.
-                </p>
+                <p className="text-sm text-gray-500">{t('header.subtitle')}</p>
             </header>
 
             {!fileChosen ? (
@@ -343,11 +342,9 @@ const GenerateAIAssessmentComponent = ({
                     </div>
                     <div className="flex flex-col gap-1">
                         <p className="text-base font-medium text-gray-900">
-                            Drop your file here, or click to choose
+                            {t('dropzone.title')}
                         </p>
-                        <p className="text-xs text-neutral-500">
-                            PDF, Word, or PowerPoint — up to a few hundred pages.
-                        </p>
+                        <p className="text-xs text-neutral-500">{t('dropzone.subtitle')}</p>
                     </div>
                 </div>
             ) : (
@@ -362,10 +359,10 @@ const GenerateAIAssessmentComponent = ({
                                     {fileName}
                                 </span>
                                 <span className="text-xs text-neutral-500">
-                                    {phase === 'uploading' && 'Uploading…'}
-                                    {phase === 'processing' && 'Reading…'}
-                                    {phase === 'ready' && 'Ready to draft'}
-                                    {phase === 'generating' && 'Drafting in progress'}
+                                    {phase === 'uploading' && t('fileCard.status.uploading')}
+                                    {phase === 'processing' && t('fileCard.status.processing')}
+                                    {phase === 'ready' && t('fileCard.status.ready')}
+                                    {phase === 'generating' && t('fileCard.status.generating')}
                                 </span>
                             </div>
                         </div>
@@ -374,7 +371,7 @@ const GenerateAIAssessmentComponent = ({
                                 type="button"
                                 onClick={resetFile}
                                 className="rounded-md p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700"
-                                aria-label="Remove file"
+                                aria-label={t('fileCard.removeFile')}
                             >
                                 <X size={18} />
                             </button>
@@ -386,7 +383,7 @@ const GenerateAIAssessmentComponent = ({
                             readyTask={readyTask}
                             openPreview={openPreviewDialog}
                             setOpenPreview={setOpenPreviewDialog}
-                            heading="Vsmart Upload"
+                            heading={t('toolName')}
                             pollGenerateAssessment={pollGenerateAssessment}
                             sectionsForm={form}
                             currentSectionIndex={currentSectionIndex}
@@ -403,8 +400,8 @@ const GenerateAIAssessmentComponent = ({
                         />
                     ) : phase === 'generating' || (pendingTaskId && !readyTask) ? (
                         <GeneratingState
-                            title="Drafting your paper"
-                            subtitle="Reading your document and crafting questions. Usually ~30 seconds."
+                            title={t('generatingState.draftingTitle')}
+                            subtitle={t('generatingState.draftingSubtitle')}
                         />
                     ) : phase === 'uploading' || phase === 'processing' ? (
                         <div className="flex items-center gap-3 rounded-xl border border-blue-100 bg-blue-50 p-4">
@@ -413,8 +410,8 @@ const GenerateAIAssessmentComponent = ({
                         </div>
                     ) : pageWiseGenerateQuestionsStatus ? (
                         <GeneratingState
-                            title="Preparing pages"
-                            subtitle="Getting your document ready to pick from."
+                            title={t('generatingState.preparingPagesTitle')}
+                            subtitle={t('generatingState.preparingPagesSubtitle')}
                         />
                     ) : (
                         phase === 'ready' && (
@@ -428,9 +425,9 @@ const GenerateAIAssessmentComponent = ({
                                 language={language}
                                 setLanguage={setLanguage}
                                 onSubmit={() => pollGenerateAssessment()}
-                                ctaLabel="Draft my paper"
+                                ctaLabel={t('questionConfig.ctaLabel')}
                                 secondary={{
-                                    label: 'or pick specific pages →',
+                                    label: t('questionConfig.pickPagesLabel'),
                                     onClick: handlePickPages,
                                 }}
                             />
@@ -455,9 +452,9 @@ const GenerateAIAssessmentComponent = ({
 
             <RecentFilesPanel
                 tasks={recentTasks}
-                title="Your recent drafts"
-                fallbackLabel="Untitled draft"
-                emptyHint="Your drafts will appear here. Drop a file above to start your first one."
+                title={t('recentFiles.title')}
+                fallbackLabel={t('recentFiles.fallbackLabel')}
+                emptyHint={t('recentFiles.emptyHint')}
                 onOpenAll={() => setEnableTasksDialog(true)}
             />
 
@@ -468,7 +465,7 @@ const GenerateAIAssessmentComponent = ({
             />
 
             <AITasksList
-                heading="Vsmart Upload"
+                heading={t('toolName')}
                 enableDialog={enableTasksDialog}
                 setEnableDialog={setEnableTasksDialog}
                 pollGenerateAssessment={pollGenerateAssessment}

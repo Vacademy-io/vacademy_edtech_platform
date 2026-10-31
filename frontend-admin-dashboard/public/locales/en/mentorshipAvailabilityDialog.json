@@ -1,0 +1,76 @@
+{
+    "heading": "Availability",
+    "cancel": "Cancel",
+    "save": "Save",
+    "saving": "Saving…",
+    "loading": "Loading your availability…",
+    "intro": "Set when and how learners can book 1:1 sessions with you.",
+    "to": "to",
+    "unavailable": "Unavailable",
+    "savedToast": "Availability saved",
+    "saveFailed": "Failed to save availability",
+    "timezoneNote": {
+        "prefix": "Times below are in",
+        "suffix": "."
+    },
+    "days": {
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday"
+    },
+    "location": {
+        "heading": "Meeting location",
+        "description": "Where the video call happens when a learner books a session.",
+        "googleMeetOption": "Google Meet (auto-generated per booking)",
+        "customLinkOption": "Zoom / BigBlueButton / custom link",
+        "meetingLinkLabel": "Meeting link",
+        "meetingLinkPlaceholder": "https://zoom.us/j/… or your BigBlueButton room URL"
+    },
+    "weeklyHours": {
+        "heading": "Weekly hours",
+        "description": "Turn on the days you're free, and set the hours learners can book within."
+    },
+    "overrides": {
+        "heading": "Time off & specific dates",
+        "addDate": "Add date",
+        "addDateTitle": "Add a date to block off or give custom hours",
+        "description": "Block off a day, or give a specific date different hours — these override your weekly hours above.",
+        "empty": "No date overrides yet.",
+        "unavailable": "Unavailable",
+        "customHours": "Custom hours",
+        "removeAriaLabel": "Remove this date override",
+        "removeTitle": "Remove this date override"
+    },
+    "sessionSettings": {
+        "heading": "Session settings",
+        "description": "Default session length and the scheduling rules around it — notice, buffers, and how far ahead learners can book.",
+        "defaultDuration": "Default duration",
+        "minimumNotice": "Minimum notice (hours)",
+        "bufferBefore": "Buffer before (min)",
+        "bufferAfter": "Buffer after (min)",
+        "bookingHorizon": "Booking horizon (days)",
+        "minutesOption_one": "{{count}} minute",
+        "minutesOption_other": "{{count}} minutes"
+    },
+    "sessionTypes": {
+        "heading": "Session types",
+        "addType": "Add type",
+        "addTypeTitle": "Offer another bookable session length",
+        "description": "Optional. Offer more than one bookable length (e.g. “Quick chat” 15 min, “Deep dive” 60 min) — the learner picks one when booking. Leave empty to use the default duration above.",
+        "empty": "No session types yet.",
+        "namePlaceholder": "Name (e.g. Career chat)",
+        "minutesShortOption_one": "{{count}} min",
+        "minutesShortOption_other": "{{count}} min",
+        "removeAriaLabel": "Remove this session type",
+        "removeTitle": "Remove this session type"
+    },
+    "validation": {
+        "endAfterStart": "{{day}}: end time must be after start time.",
+        "enableOneDay": "Enable at least one day so learners can book.",
+        "addMeetingLink": "Add your meeting link (Zoom, BigBlueButton, or other)."
+    }
+}

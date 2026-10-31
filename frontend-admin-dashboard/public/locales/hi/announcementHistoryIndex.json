@@ -1,0 +1,206 @@
+{
+    "heading": "घोषणा इतिहास",
+    "tabs": {
+        "all": "सभी",
+        "planned": "नियोजित",
+        "past": "बीती हुई"
+    },
+    "toolbar": {
+        "searchLabel": "शीर्षक खोजें",
+        "searchPlaceholder": "खोजें…",
+        "statusLabel": "स्थिति",
+        "statusAll": "सभी",
+        "fromLabel": "से",
+        "toLabel": "तक"
+    },
+    "status": {
+        "DRAFT": "ड्राफ्ट",
+        "PENDING_APPROVAL": "अनुमोदन लंबित",
+        "REJECTED": "अस्वीकृत",
+        "SCHEDULED": "निर्धारित",
+        "ACTIVE": "सक्रिय",
+        "INACTIVE": "निष्क्रिय",
+        "DELIVERED": "वितरित",
+        "CANCELLED": "रद्द"
+    },
+    "results_one": "{{count}} परिणाम",
+    "results_other": "{{count}} परिणाम",
+    "sizeLabel": "आकार",
+    "prev": "पिछला",
+    "next": "अगला",
+    "page": "पृष्ठ {{page}}",
+    "table": {
+        "title": "शीर्षक",
+        "status": "स्थिति",
+        "modes": "मोड",
+        "mediums": "माध्यम",
+        "schedule": "शेड्यूल",
+        "createdBy": "बनाया गया",
+        "createdAt": "बनाने की तिथि",
+        "actions": "कार्रवाई",
+        "loading": "लोड हो रहा है…",
+        "empty": "कोई घोषणा नहीं",
+        "recipientsPrefix": "प्राप्तकर्ता:",
+        "recipientsMore": "+{{count}} और",
+        "channels": "माध्यम",
+        "loadFailed": "घोषणाएँ लोड नहीं हो सकीं।",
+        "noMatch": "इस पेज पर इस खोज से कोई घोषणा मेल नहीं खाती।",
+        "announcement": "घोषणा",
+        "appearsIn": "कहाँ दिखेगी · किस माध्यम से",
+        "inProductOnly": "केवल ऐप के अंदर"
+    },
+    "actions": {
+        "view": "देखें",
+        "stats": "आँकड़े",
+        "approve": "स्वीकृत करें",
+        "reject": "अस्वीकार करें",
+        "deliverNow": "अभी भेजें",
+        "delete": "हटाएं",
+        "more": "और विकल्प"
+    },
+    "toasts": {
+        "statsLoadFailed": "आँकड़े लोड करने में विफल",
+        "approved": "स्वीकृत",
+        "approveFailed": "स्वीकृति विफल",
+        "rejected": "अस्वीकृत",
+        "rejectFailed": "अस्वीकृति विफल",
+        "deliveryTriggered": "डिलीवरी शुरू की गई",
+        "triggerFailed": "शुरू करना विफल",
+        "deleted": "हटाया गया",
+        "deleteFailed": "हटाना विफल"
+    },
+    "detailsDialog": {
+        "title": "घोषणा विवरण",
+        "content": "सामग्री",
+        "modes": "मोड",
+        "mediums": "माध्यम",
+        "recipients": "प्राप्तकर्ता",
+        "close": "बंद करें",
+        "viewStats": "डिलीवरी आँकड़े देखें",
+        "createdLine": "{{name}} द्वारा · {{when}}",
+        "system": "सिस्टम",
+        "createdBy": "बनाने वाले",
+        "createdAt": "बनाया गया",
+        "schedule": "शेड्यूल",
+        "noContent": "कोई संदेश सामग्री नहीं।",
+        "recipientsCount_one": "प्राप्तकर्ता ({{count}})",
+        "recipientsCount_other": "प्राप्तकर्ता ({{count}})",
+        "noRecipients": "कोई प्राप्तकर्ता नहीं।"
+    },
+    "statsDialog": {
+        "title": "डिलीवरी आँकड़े",
+        "loading": "आँकड़े लोड हो रहे हैं...",
+        "overviewTitle": "डिलीवरी अवलोकन",
+        "tiles": {
+            "recipients": "प्राप्तकर्ता",
+            "delivered": "वितरित",
+            "read": "पढ़ा गया",
+            "failed": "विफल",
+            "dismissed": "खारिज",
+            "dismissRate": "खारिज दर"
+        },
+        "emailEventsTitle": "ईमेल इवेंट",
+        "viaSes": "SES के माध्यम से",
+        "emailTiles": {
+            "emailsSent": "भेजे गए ईमेल",
+            "delivered": "वितरित",
+            "opened": "खोले गए",
+            "clicked": "क्लिक किए गए",
+            "bounced": "बाउंस हुए",
+            "rejected": "अस्वीकृत",
+            "complained": "शिकायत की गई",
+            "awaitingEvents": "इवेंट की प्रतीक्षा"
+        },
+        "pendingNote": "ईमेल भेजे जा चुके हैं लेकिन अभी तक कोई SES इवेंट वापस नहीं आया है। यदि आप स्थानीय रूप से चला रहे हैं, तो सुनिश्चित करें कि SES → SNS → notification_service वेबहुक कॉन्फ़िगर किया गया है।",
+        "noEmails": "इस घोषणा के लिए कोई ईमेल नहीं भेजा गया।",
+        "recipientsSection": {
+            "title": "प्राप्तकर्ता",
+            "loadFailed": "प्राप्तकर्ता लोड करने में विफल",
+            "loading": "प्राप्तकर्ता लोड हो रहे हैं...",
+            "empty": "इस घोषणा के लिए कोई प्राप्तकर्ता नहीं मिला।",
+            "table": {
+                "name": "प्राप्तकर्ता",
+                "mode": "मोड",
+                "status": "स्थिति",
+                "seenAt": "देखा गया",
+                "dismissedAt": "खारिज किया गया",
+                "deliveredAt": "डिलीवर हुआ"
+            },
+            "pagePagination": "पृष्ठ {{page}} में से {{totalPages}}",
+            "titleCount_one": "प्राप्तकर्ता ({{count}})",
+            "titleCount_other": "प्राप्तकर्ता ({{count}})"
+        },
+        "nav": {
+            "recipients": "प्राप्तकर्ता",
+            "overview": "डिलीवरी सारांश",
+            "email": "ईमेल"
+        },
+        "rates": {
+            "delivery": "डिलीवरी दर",
+            "read": "पढ़ने की दर",
+            "dismiss": "खारिज दर"
+        }
+    },
+    "rejectDialog": {
+        "title": "घोषणा अस्वीकार करें",
+        "reasonPlaceholder": "कारण",
+        "cancel": "रद्द करें",
+        "reject": "अस्वीकार करें"
+    },
+    "schedule": {
+        "none": "-",
+        "immediate": "तत्काल",
+        "oneTime": "एक बार",
+        "recurring": "आवर्ती",
+        "cron": "CRON: {{expr}}",
+        "nextRun": "अगला: {{when}}"
+    },
+    "subheading": "इस संस्थान से भेजी गई हर घोषणा और सिस्टम अलर्ट, और किसे मिली।",
+    "createAnnouncement": "घोषणा बनाएँ",
+    "retry": "फिर से कोशिश करें",
+    "recipients": {
+        "unknownUser": "अज्ञात उपयोगकर्ता",
+        "unknownBatch": "बैच"
+    },
+    "recipientTypes": {
+        "USER": "उपयोगकर्ता",
+        "ROLE": "भूमिका",
+        "PACKAGE_SESSION": "बैच",
+        "PACKAGE_SESSION_COMMA_SEPARATED_ORG_ROLES": "बैच भूमिकाएँ",
+        "TAG": "टैग",
+        "CUSTOM_FIELD_FILTER": "कस्टम फ़ील्ड फ़िल्टर",
+        "AUDIENCE": "ऑडियंस"
+    },
+    "roles": {
+        "ADMIN": "एडमिन",
+        "TEACHER": "शिक्षक",
+        "STUDENT": "छात्र",
+        "SYSTEM": "सिस्टम"
+    },
+    "modes": {
+        "SYSTEM_ALERT": "सिस्टम अलर्ट",
+        "DASHBOARD_PIN": "डैशबोर्ड पिन",
+        "DM": "सीधा संदेश",
+        "STREAM": "स्ट्रीम",
+        "RESOURCES": "संसाधन",
+        "COMMUNITY": "समुदाय",
+        "TASKS": "कार्य",
+        "APP_OVERLAY": "ऐप ओवरले"
+    },
+    "mediums": {
+        "WHATSAPP": "WhatsApp",
+        "PUSH_NOTIFICATION": "पुश नोटिफ़िकेशन",
+        "EMAIL": "ईमेल"
+    },
+    "messageStatus": {
+        "PENDING": "लंबित",
+        "SENT": "भेजा गया",
+        "DELIVERED": "डिलीवर",
+        "FAILED": "विफल",
+        "READ": "पढ़ा गया"
+    },
+    "deleteDialog": {
+        "title": "घोषणा हटाएँ?",
+        "description": "\"{{title}}\" इतिहास से हटा दी जाएगी। यह वापस नहीं होगा।"
+    }
+}

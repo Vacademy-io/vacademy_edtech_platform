@@ -1,0 +1,83 @@
+{
+    "filters": {
+        "all": "Toutes",
+        "upcoming": "À venir",
+        "awaitingReview": "En attente d'évaluation",
+        "completed": "Terminées",
+        "noShows": "Absences",
+        "cancelled": "Annulées"
+    },
+    "fallback": {
+        "mentor": "Mentor",
+        "learner": "Apprenant",
+        "mentorLower": "le mentor",
+        "learnerLower": "l'apprenant"
+    },
+    "columns": {
+        "mentor": "Mentor",
+        "mentee": "Mentoré",
+        "when": "Quand",
+        "duration": "Durée",
+        "topic": "Sujet",
+        "status": "Statut",
+        "rating": "Note",
+        "actions": "Actions"
+    },
+    "openSessionDetails": "Ouvrir les détails de la séance",
+    "durationMinutes_one": "{{count}} minute",
+    "durationMinutes_many": "{{count}} minutes",
+    "durationMinutes_other": "{{count}} minutes",
+    "durationMinutesShort_one": "{{count}} min",
+    "durationMinutesShort_many": "{{count}} min",
+    "durationMinutesShort_other": "{{count}} min",
+    "whoAndTemplate": "{{mentor}} avec {{student}}",
+    "viewSessionAria": "Voir les détails de la séance de {{who}}",
+    "viewSessionDetailsTitle": "Voir les détails de la séance",
+    "joinSessionAria": "Rejoindre la séance avec {{who}}",
+    "noMeetingLinkAria": "Aucun lien de réunion pour {{who}} pour le moment",
+    "joinMeetingTitle": "Rejoindre la réunion",
+    "noMeetingLinkTitle": "Aucun lien de réunion pour le moment",
+    "rescheduleAria": "Reprogrammer cette séance",
+    "rescheduleTitle": "Reprogrammer",
+    "cancelAria": "Annuler cette séance",
+    "cancelTitle": "Annuler",
+    "mentorsFilterLabel": "Mentor",
+    "mentorsSearchPlaceholder": "Rechercher des mentors",
+    "loadError": "Impossible de charger les séances.",
+    "retry": "Réessayer",
+    "emptyStateFiltered": "Aucune séance ne correspond à ce filtre",
+    "emptyStateAll": "Aucune séance pour le moment",
+    "emptyStateHint": "Les séances réservées via les pages de réservation des mentors s'afficheront ici.",
+    "lifecycle": {
+        "completed": "Terminée",
+        "noShow": "Absence",
+        "cancelled": "Annulée",
+        "rescheduled": "Reprogrammée",
+        "upcoming": "À venir",
+        "awaitingReview": "En attente d'évaluation"
+    },
+    "detailDialog": {
+        "heading": "Détails de la séance",
+        "defaultTitle": "Séance de mentorat",
+        "openMeetingLink": "Ouvrir le lien de la réunion",
+        "mentorNotesLabel": "Notes du mentor",
+        "learnerFeedbackLabel": "Retour de l'apprenant",
+        "ratingOutOfFive": "{{rating}}/5"
+    },
+    "fieldLabels": {
+        "mentor": "Mentor",
+        "learner": "Apprenant",
+        "when": "Quand",
+        "duration": "Durée",
+        "topic": "Sujet",
+        "bookingStatus": "Statut de réservation"
+    },
+    "searchPlaceholder": "Search by mentor, {{learner}} or topic",
+    "shownCount_one": "{{count}} session shown",
+    "shownCount_other": "{{count}} sessions shown",
+    "week": {
+        "title": "This week",
+        "subtitle": "Today and the next six days · click a session for details",
+        "more": "+{{count}} more"
+    }
+}

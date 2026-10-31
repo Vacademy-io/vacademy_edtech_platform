@@ -1,0 +1,16 @@
+{
+    "trigger": {
+        "makeAnnouncement": "Créer une annonce"
+    },
+    "dialog": {
+        "heading": "Créer une annonce",
+        "titleLabel": "Titre de l'annonce",
+        "titlePlaceholder": "Indiquez un titre concis pour l'annonce (ex. : Temps restant, Problème technique résolu)",
+        "instructionsHeading": "Instructions de l'évaluation",
+        "instructionsPlaceholder": "Ajouter des instructions",
+        "publishButton": "Publier l'annonce"
+    },
+    "validation": {
+        "titleRequired": "Le titre est requis"
+    }
+}

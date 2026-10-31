@@ -1,0 +1,31 @@
+{
+    "header": {
+        "title": "Most Active Users",
+        "subtitle": "Top performers by activity and engagement"
+    },
+    "error": {
+        "message": "Failed to load active users"
+    },
+    "empty": {
+        "message": "No user activity data available"
+    },
+    "status": {
+        "online": "Online",
+        "recent": "Recent",
+        "offline": "Offline",
+        "unknown": "Unknown"
+    },
+    "device": {
+        "desktop": "Desktop",
+        "mobile": "Mobile",
+        "tablet": "Tablet"
+    },
+    "stats": {
+        "sessions_one": "{{count}} session",
+        "sessions_other": "{{count}} sessions",
+        "calls_one": "{{count}} call",
+        "calls_other": "{{count}} calls",
+        "totalTime": "Total time",
+        "last": "Last: {{date}}"
+    }
+}

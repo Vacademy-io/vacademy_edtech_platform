@@ -32,5 +32,20 @@
     },
     "common": {
         "loading": "جارٍ التحميل..."
+    },
+    "aiUsageLimit": {
+        "title": "تم بلوغ حد استخدام الذكاء الاصطناعي",
+        "featureFallback": "الذكاء الاصطناعي",
+        "reachedDay": "لقد استهلكت حصة اليوم من {{feature}}.",
+        "reachedWeek": "لقد استهلكت حصة هذا الأسبوع من {{feature}}.",
+        "reachedMonth": "لقد استهلكت حصة هذا الشهر من {{feature}}.",
+        "reachedPlanPeriod": "لقد استهلكت حصتك من {{feature}} لفترة الخطة هذه.",
+        "reached": "لقد بلغت حد الاستخدام لـ {{feature}}.",
+        "numbersCredits": "تم استخدام {{used}} من أصل {{limit}} رصيد.",
+        "numbersRequests": "تم استخدام {{used}} من أصل {{limit}} طلب.",
+        "numbersUsd": "تم استخدام {{used}} من أصل {{limit}}.",
+        "resetsAt": "يمكنك استخدامه مجددًا بعد {{when}}، أو اسأل معلمك.",
+        "tryLater": "حاول مرة أخرى لاحقًا، أو اسأل معلمك.",
+        "warning": "أنت تقترب من حد استخدامك للذكاء الاصطناعي."
     }
 }

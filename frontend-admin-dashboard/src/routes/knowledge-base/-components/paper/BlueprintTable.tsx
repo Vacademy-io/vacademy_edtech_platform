@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Minus, Plus, Trash, WarningCircle } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { Card } from '@/components/ui/card';
@@ -15,18 +17,24 @@ import type {
     PaperQuestionType,
 } from '../../-types/paper';
 
-const TYPE_LABEL: Record<PaperQuestionType, string> = {
-    MCQS: 'Multiple choice',
-    ONE_WORD: 'One word',
-    LONG_ANSWER: 'Long answer',
-    NUMERIC: 'Numerical',
-};
+// Doubles as the type picker's option list (see Object.keys below), so adding an
+// entry here is all it takes to offer a new question type in the plan.
+const buildTypeLabel = (t: TFunction): Record<PaperQuestionType, string> => ({
+    MCQS: t('typeLabel.MCQS'),
+    MCQM: t('typeLabel.MCQM'),
+    TRUE_FALSE: t('typeLabel.TRUE_FALSE'),
+    ONE_WORD: t('typeLabel.ONE_WORD'),
+    LONG_ANSWER: t('typeLabel.LONG_ANSWER'),
+    NUMERIC: t('typeLabel.NUMERIC'),
+    PASSAGE: t('typeLabel.PASSAGE'),
+    ASSERTION_REASON: t('typeLabel.ASSERTION_REASON'),
+});
 
-const DIFFICULTY_LABEL: Record<PaperDifficulty, string> = {
-    EASY: 'Easy',
-    MEDIUM: 'Medium',
-    HARD: 'Hard',
-};
+const buildDifficultyLabel = (t: TFunction): Record<PaperDifficulty, string> => ({
+    EASY: t('difficultyLabel.EASY'),
+    MEDIUM: t('difficultyLabel.MEDIUM'),
+    HARD: t('difficultyLabel.HARD'),
+});
 
 interface BlueprintTableProps {
     blueprint: Blueprint;
@@ -48,6 +56,10 @@ const recompute = (rows: BlueprintRow[]): Pick<Blueprint, 'total_questions' | 't
  * they're deciding, not after generating.
  */
 export const BlueprintTable = ({ blueprint, onChange, disabled }: BlueprintTableProps) => {
+    const { t, i18n } = useTranslation('knowledgeBaseBlueprintTable');
+    const TYPE_LABEL = buildTypeLabel(t);
+    const DIFFICULTY_LABEL = buildDifficultyLabel(t);
+
     const patchRow = (rowId: string, patch: Partial<BlueprintRow>) => {
         const rows = blueprint.rows.map((r) => {
             if (r.id !== rowId) return r;
@@ -86,26 +98,26 @@ export const BlueprintTable = ({ blueprint, onChange, disabled }: BlueprintTable
                     <table className="w-max min-w-full border-collapse">
                         <thead>
                             <tr className="border-b border-neutral-200 bg-neutral-50">
-                                <th className="px-3 py-2 text-left text-caption font-semibold text-neutral-600">
-                                    Section
+                                <th className="px-3 py-2 text-start text-caption font-semibold text-neutral-600">
+                                    {t('columns.section')}
                                 </th>
-                                <th className="px-3 py-2 text-left text-caption font-semibold text-neutral-600">
-                                    What it tests
+                                <th className="px-3 py-2 text-start text-caption font-semibold text-neutral-600">
+                                    {t('columns.whatItTests')}
                                 </th>
-                                <th className="px-3 py-2 text-left text-caption font-semibold text-neutral-600">
-                                    Type
-                                </th>
-                                <th className="px-3 py-2 text-center text-caption font-semibold text-neutral-600">
-                                    Questions
+                                <th className="px-3 py-2 text-start text-caption font-semibold text-neutral-600">
+                                    {t('columns.type')}
                                 </th>
                                 <th className="px-3 py-2 text-center text-caption font-semibold text-neutral-600">
-                                    Marks each
+                                    {t('columns.questions')}
                                 </th>
-                                <th className="px-3 py-2 text-left text-caption font-semibold text-neutral-600">
-                                    Difficulty
+                                <th className="px-3 py-2 text-center text-caption font-semibold text-neutral-600">
+                                    {t('columns.marksEach')}
                                 </th>
-                                <th className="px-3 py-2 text-right text-caption font-semibold text-neutral-600">
-                                    Total
+                                <th className="px-3 py-2 text-start text-caption font-semibold text-neutral-600">
+                                    {t('columns.difficulty')}
+                                </th>
+                                <th className="px-3 py-2 text-end text-caption font-semibold text-neutral-600">
+                                    {t('columns.total')}
                                 </th>
                                 <th className="w-10 px-2" />
                             </tr>
@@ -125,10 +137,13 @@ export const BlueprintTable = ({ blueprint, onChange, disabled }: BlueprintTable
                                         </p>
                                         {row.page_start && (
                                             <p className="text-caption text-neutral-400">
-                                                p. {row.page_start}
-                                                {row.page_end && row.page_end !== row.page_start
-                                                    ? `-${row.page_end}`
-                                                    : ''}
+                                                {t('pageRange', {
+                                                    range:
+                                                        row.page_end &&
+                                                        row.page_end !== row.page_start
+                                                            ? `${row.page_start}-${row.page_end}`
+                                                            : row.page_start,
+                                                })}
                                             </p>
                                         )}
                                     </td>
@@ -163,7 +178,7 @@ export const BlueprintTable = ({ blueprint, onChange, disabled }: BlueprintTable
                                                 layoutVariant="icon"
                                                 scale="small"
                                                 disable={disabled || row.count <= 0}
-                                                aria-label={`One fewer question in ${row.topic}`}
+                                                aria-label={t('aria.oneFewer', { topic: row.topic })}
                                                 onClick={() =>
                                                     patchRow(row.id, {
                                                         count: Math.max(0, row.count - 1),
@@ -180,7 +195,7 @@ export const BlueprintTable = ({ blueprint, onChange, disabled }: BlueprintTable
                                                 layoutVariant="icon"
                                                 scale="small"
                                                 disable={disabled}
-                                                aria-label={`One more question in ${row.topic}`}
+                                                aria-label={t('aria.oneMore', { topic: row.topic })}
                                                 onClick={() =>
                                                     patchRow(row.id, { count: row.count + 1 })
                                                 }
@@ -196,7 +211,7 @@ export const BlueprintTable = ({ blueprint, onChange, disabled }: BlueprintTable
                                             step={0.5}
                                             value={row.marks_each}
                                             disabled={disabled}
-                                            aria-label={`Marks per question in ${row.topic}`}
+                                            aria-label={t('aria.marksPer', { topic: row.topic })}
                                             onChange={(e) =>
                                                 patchRow(row.id, {
                                                     marks_each: Number(e.target.value) || 0,
@@ -231,8 +246,8 @@ export const BlueprintTable = ({ blueprint, onChange, disabled }: BlueprintTable
                                             </SelectContent>
                                         </Select>
                                     </td>
-                                    <td className="px-3 py-2 text-right text-body text-neutral-600">
-                                        {(row.count * row.marks_each).toLocaleString('en-IN')}
+                                    <td className="px-3 py-2 text-end text-body text-neutral-600">
+                                        {(row.count * row.marks_each).toLocaleString(i18n.language)}
                                     </td>
                                     <td className="p-2">
                                         <MyButton
@@ -240,7 +255,7 @@ export const BlueprintTable = ({ blueprint, onChange, disabled }: BlueprintTable
                                             layoutVariant="icon"
                                             scale="small"
                                             disable={disabled}
-                                            aria-label={`Remove ${row.topic}`}
+                                            aria-label={t('aria.remove', { topic: row.topic })}
                                             onClick={() => removeRow(row.id)}
                                         >
                                             <Trash className="size-3 text-danger-600" />
@@ -255,15 +270,15 @@ export const BlueprintTable = ({ blueprint, onChange, disabled }: BlueprintTable
                                     colSpan={3}
                                     className="px-3 py-2 text-body font-semibold text-neutral-700"
                                 >
-                                    Total
+                                    {t('footer.total')}
                                 </td>
                                 <td className="px-3 py-2 text-center text-body font-semibold text-neutral-700">
                                     {blueprint.total_questions}
                                 </td>
                                 <td />
                                 <td />
-                                <td className="px-3 py-2 text-right text-body font-semibold text-neutral-700">
-                                    {blueprint.total_marks.toLocaleString('en-IN')}
+                                <td className="px-3 py-2 text-end text-body font-semibold text-neutral-700">
+                                    {blueprint.total_marks.toLocaleString(i18n.language)}
                                 </td>
                                 <td />
                             </tr>

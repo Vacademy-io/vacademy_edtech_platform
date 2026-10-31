@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { Separator } from '@/components/ui/separator';
@@ -42,6 +43,7 @@ export const ExitSplitScreenDialog: React.FC<ExitSplitScreenDialogProps> = ({
     currentSlideId,
     isEditable,
 }) => {
+    const { t } = useTranslation('studyLibraryExitSplitScreenDialog');
     const { setActiveItem, getSlideById } = useContentStore();
     const { chapterId } = Route.useSearch();
     const { addUpdateVideoSlide } = useSlidesMutations(chapterId);
@@ -53,14 +55,14 @@ export const ExitSplitScreenDialog: React.FC<ExitSplitScreenDialogProps> = ({
             setIsConverting(true);
 
             if (!splitScreenData.originalVideoData) {
-                toast.error('Original video data not found');
+                toast.error(t('toast.originalVideoDataNotFound'));
                 return;
             }
 
             // Get the current slide
             const currentSlide = getSlideById(currentSlideId);
             if (!currentSlide) {
-                toast.error('Current slide not found');
+                toast.error(t('toast.currentSlideNotFound'));
                 return;
             }
 
@@ -68,7 +70,7 @@ export const ExitSplitScreenDialog: React.FC<ExitSplitScreenDialogProps> = ({
             const slideWithSplit = currentSlide as unknown as SlideWithSplitScreen;
             const originalVideoSlide = slideWithSplit.originalVideoSlide;
             if (!originalVideoSlide) {
-                toast.error('Original video slide data not found');
+                toast.error(t('toast.originalVideoSlideDataNotFound'));
                 return;
             }
 
@@ -132,11 +134,11 @@ export const ExitSplitScreenDialog: React.FC<ExitSplitScreenDialogProps> = ({
             // Update the active item locally
             setActiveItem(restoredSlide);
 
-            toast.success('Converted back to video slide successfully!');
+            toast.success(t('toast.convertSuccess'));
             setIsDialogOpen(false);
         } catch (error) {
             console.error('Error converting back to video:', error);
-            toast.error('Failed to convert back to video slide');
+            toast.error(t('toast.convertFailed'));
         } finally {
             setIsConverting(false);
         }
@@ -155,8 +157,8 @@ export const ExitSplitScreenDialog: React.FC<ExitSplitScreenDialogProps> = ({
                     disabled={isConverting}
                     className="border-orange-300 text-orange-700 hover:bg-orange-50"
                 >
-                    <ArrowLeft className="mr-1 size-3" />
-                    Remove Split Screen
+                    <ArrowLeft className="me-1 size-3" />
+                    {t('trigger.removeSplitScreen')}
                 </MyButton>
             </DialogTrigger>
             <DialogContent className="max-w-md">
@@ -167,10 +169,10 @@ export const ExitSplitScreenDialog: React.FC<ExitSplitScreenDialogProps> = ({
                             <Video className="size-8 text-orange-600" />
                         </div>
                         <h2 className="text-xl font-semibold text-gray-900">
-                            Exit Split Screen Mode
+                            {t('dialog.title')}
                         </h2>
                         <p className="mt-2 text-sm text-gray-600">
-                            Convert back to a regular video slide
+                            {t('dialog.subtitle')}
                         </p>
                     </div>
 
@@ -178,15 +180,11 @@ export const ExitSplitScreenDialog: React.FC<ExitSplitScreenDialogProps> = ({
 
                     {/* Warning */}
                     <div className="rounded-lg bg-amber-50 p-4">
-                        <div className="flex items-start space-x-3">
+                        <div className="flex items-start gap-3">
                             <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-600" />
                             <div className="text-sm text-amber-800">
-                                <p className="font-medium">Data Loss Warning</p>
-                                <p className="mt-1">
-                                    Exiting split screen mode will remove the interactive content
-                                    and convert this slide back to a regular video slide. The
-                                    original video will be restored.
-                                </p>
+                                <p className="font-medium">{t('dialog.warningTitle')}</p>
+                                <p className="mt-1">{t('dialog.warningBody')}</p>
                             </div>
                         </div>
                     </div>
@@ -194,17 +192,18 @@ export const ExitSplitScreenDialog: React.FC<ExitSplitScreenDialogProps> = ({
                     {/* Video Info */}
                     {splitScreenData.originalVideoData && (
                         <div className="rounded-lg bg-blue-50 p-4">
-                            <div className="flex items-start space-x-3">
+                            <div className="flex items-start gap-3">
                                 <Video className="mt-0.5 size-5 shrink-0 text-blue-600" />
                                 <div className="text-sm text-blue-800">
-                                    <p className="font-medium">Original Video</p>
+                                    <p className="font-medium">{t('dialog.originalVideo')}</p>
                                     <p className="mt-1">
-                                        <strong>Title:</strong>{' '}
-                                        {splitScreenData.originalVideoData.title || 'Untitled'}
+                                        <strong>{t('dialog.titleLabel')}</strong>{' '}
+                                        {splitScreenData.originalVideoData.title ||
+                                            t('dialog.untitled')}
                                     </p>
                                     {splitScreenData.originalVideoData.description && (
                                         <p className="mt-1">
-                                            <strong>Description:</strong>{' '}
+                                            <strong>{t('dialog.descriptionLabel')}</strong>{' '}
                                             {splitScreenData.originalVideoData.description}
                                         </p>
                                     )}
@@ -216,7 +215,7 @@ export const ExitSplitScreenDialog: React.FC<ExitSplitScreenDialogProps> = ({
                     <Separator />
 
                     {/* Actions */}
-                    <div className="flex space-x-3">
+                    <div className="flex gap-3">
                         <MyButton
                             buttonType="secondary"
                             scale="medium"
@@ -224,7 +223,7 @@ export const ExitSplitScreenDialog: React.FC<ExitSplitScreenDialogProps> = ({
                             onClick={() => setIsDialogOpen(false)}
                             disabled={isConverting}
                         >
-                            Cancel
+                            {t('actions.cancel')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
@@ -234,12 +233,12 @@ export const ExitSplitScreenDialog: React.FC<ExitSplitScreenDialogProps> = ({
                             disabled={isConverting}
                         >
                             {isConverting ? (
-                                <div className="flex items-center space-x-2">
+                                <div className="flex items-center gap-2">
                                     <div className="size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                                    <span>Converting...</span>
+                                    <span>{t('actions.converting')}</span>
                                 </div>
                             ) : (
-                                'Convert to Video'
+                                t('actions.convertToVideo')
                             )}
                         </MyButton>
                     </div>

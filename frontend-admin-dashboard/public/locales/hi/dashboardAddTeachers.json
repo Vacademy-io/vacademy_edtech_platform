@@ -1,0 +1,32 @@
+{
+    "trigger": {
+        "inviteUsers": "उपयोगकर्ताओं को आमंत्रित करें"
+    },
+    "dialog": {
+        "title": "टीम सदस्य जोड़ें"
+    },
+    "tabs": {
+        "existingMembers": "मौजूदा सदस्य",
+        "inviteNew": "नया आमंत्रित करें"
+    },
+    "existing": {
+        "searchPlaceholder": "टीम सदस्यों को खोजें...",
+        "noMatchingMembers": "कोई मिलता-जुलता सदस्य नहीं मिला",
+        "noMembersAvailable": "कोई टीम सदस्य उपलब्ध नहीं है",
+        "assignButton": "{{name}} को असाइन करें"
+    },
+    "invite": {
+        "form": {
+            "namePlaceholder": "पूरा नाम (पहला और अंतिम)",
+            "nameLabel": "पूरा नाम",
+            "emailPlaceholder": "ईमेल दर्ज करें",
+            "emailLabel": "ईमेल"
+        },
+        "inviteButton": "उपयोगकर्ता आमंत्रित करें"
+    },
+    "validation": {
+        "nameRequired": "पूरा नाम आवश्यक है",
+        "emailRequired": "ईमेल आवश्यक है",
+        "emailInvalid": "ईमेल प्रारूप अमान्य है"
+    }
+}

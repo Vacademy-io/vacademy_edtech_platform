@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
@@ -23,6 +24,8 @@ import {
 } from '../utils/utils';
 import { PlanTypeSelection } from './PlanTypeSelection';
 import { ApprovalToggle } from './ApprovalToggle';
+import { PlanChangeToggle } from './PlanChangeToggle';
+import { RegionalPricingSection } from './RegionalPricingSection';
 import { DonationPlanConfiguration } from './DonationPlanConfiguration';
 import { SubscriptionPlanConfiguration } from './SubscriptionPlanConfiguration';
 import { UpfrontPlanConfiguration } from './UpfrontPlanConfiguration';
@@ -31,6 +34,10 @@ import { PlanDiscountsConfiguration } from './PlanDiscountsConfiguration';
 import { PlanNavigation } from './PlanNavigation';
 import { CPOPlanConfiguration } from './CPOPlanConfiguration';
 import type { CPOForm } from '@/routes/financial-management/fee-plans/-components/CreateCPODialog';
+import {
+    flexibleDefaultsError,
+    flexibleHasNoSplitFee,
+} from '@/routes/financial-management/fee-plans/-utils/flexible-defaults';
 import { DAYS_IN_MONTH } from '@/routes/settings/-constants/terms';
 
 interface CustomInterval {
@@ -54,6 +61,14 @@ interface PaymentPlanCreatorProps {
     existingFreePlans?: FreePlanInfo[];
     requireApproval: boolean;
     setRequireApproval: (value: boolean) => void;
+    /** Option-level master switch for plan change; see PlanChangeToggle. */
+    planChangeAllowed: boolean;
+    setPlanChangeAllowed: (value: boolean) => void;
+    /** Option-level regional pricing; see RegionalPricingSection. */
+    regionalPricingEnabled: boolean;
+    setRegionalPricingEnabled: (value: boolean) => void;
+    regionalPricingCurrencies: string[];
+    setRegionalPricingCurrencies: (value: string[]) => void;
 }
 
 export const PaymentPlanCreator: React.FC<PaymentPlanCreatorProps> = ({
@@ -68,7 +83,14 @@ export const PaymentPlanCreator: React.FC<PaymentPlanCreatorProps> = ({
     existingFreePlans = [],
     requireApproval = false,
     setRequireApproval,
+    planChangeAllowed = false,
+    setPlanChangeAllowed,
+    regionalPricingEnabled = false,
+    setRegionalPricingEnabled,
+    regionalPricingCurrencies = [],
+    setRegionalPricingCurrencies,
 }) => {
+    const { t } = useTranslation('settingsPaymentPlanCreator');
     const [currentStep, setCurrentStep] = useState(1);
     const [planData, setPlanData] = useState<Partial<PaymentPlan>>({});
     const [showPreview, setShowPreview] = useState(false);
@@ -77,6 +99,12 @@ export const PaymentPlanCreator: React.FC<PaymentPlanCreatorProps> = ({
     const onApprovalChange = (value: boolean) => {
         setRequireApproval(value);
         setPlanData((prev) => ({ ...prev, requireApproval: value }));
+    };
+    // Mirrored onto planData so the plan handed back to onSave carries the flag, the same
+    // way requireApproval does.
+    const onPlanChangeAllowedChange = (value: boolean) => {
+        setPlanChangeAllowed(value);
+        setPlanData((prev) => ({ ...prev, planChangeAllowed: value }));
     };
 
     // Initialize form data when creating new plan
@@ -177,7 +205,9 @@ export const PaymentPlanCreator: React.FC<PaymentPlanCreatorProps> = ({
             if (
                 !cpoForm ||
                 cpoForm.packageSessionIds.length === 0 ||
-                cpoForm.feeTypes.length === 0
+                cpoForm.feeTypes.length === 0 ||
+                flexibleDefaultsError(cpoForm.scheduleMode, cpoForm.flexibleDefaults) != null ||
+                flexibleHasNoSplitFee(cpoForm.scheduleMode, cpoForm.feeTypes)
             ) {
                 return;
             }
@@ -441,7 +471,7 @@ export const PaymentPlanCreator: React.FC<PaymentPlanCreatorProps> = ({
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <CreditCard className="size-5" />
-                            Edit Payment Plan
+                            {t('dialog.editTitle')}
                         </DialogTitle>
                     </DialogHeader>
                     <PaymentPlanEditor
@@ -451,6 +481,14 @@ export const PaymentPlanCreator: React.FC<PaymentPlanCreatorProps> = ({
                         onSave={onSave}
                         onCancel={onClose}
                         isSaving={isSaving}
+                        requireApproval={requireApproval}
+                        setRequireApproval={onApprovalChange}
+                        planChangeAllowed={planChangeAllowed}
+                        setPlanChangeAllowed={onPlanChangeAllowedChange}
+                        regionalPricingEnabled={regionalPricingEnabled}
+                        setRegionalPricingEnabled={setRegionalPricingEnabled}
+                        regionalPricingCurrencies={regionalPricingCurrencies}
+                        setRegionalPricingCurrencies={setRegionalPricingCurrencies}
                     />
                 </DialogContent>
             </Dialog>
@@ -468,7 +506,7 @@ export const PaymentPlanCreator: React.FC<PaymentPlanCreatorProps> = ({
                     <div className="flex items-center justify-between">
                         <DialogTitle className="flex items-center gap-2">
                             <CreditCard className="size-5" />
-                            Create Payment Plan
+                            {t('dialog.createTitle')}
                         </DialogTitle>
                     </div>
                 </div>
@@ -499,6 +537,12 @@ export const PaymentPlanCreator: React.FC<PaymentPlanCreatorProps> = ({
                                 />
                             )}
 
+                            <PlanChangeToggle
+                                planType={planData.type as PaymentPlanType}
+                                planChangeAllowed={planChangeAllowed}
+                                onPlanChangeAllowedChange={onPlanChangeAllowedChange}
+                            />
+
                             {planData.type !== PaymentPlans.FREE &&
                                 planData.type !== PaymentPlans.CPO && (
                                     <div className="mb-4">
@@ -506,7 +550,7 @@ export const PaymentPlanCreator: React.FC<PaymentPlanCreatorProps> = ({
                                             htmlFor="planCurrency"
                                             className="text-sm font-medium"
                                         >
-                                            Plan Currency
+                                            {t('step2.planCurrencyLabel')}
                                         </Label>
                                         <Select
                                             value={planData.currency}
@@ -529,11 +573,22 @@ export const PaymentPlanCreator: React.FC<PaymentPlanCreatorProps> = ({
                                             </SelectContent>
                                         </Select>
                                         <p className="mt-1 text-xs text-gray-500">
-                                            Default: {defaultCurrency} (
-                                            {getCurrencySymbol(defaultCurrency)})
+                                            {t('step2.defaultCurrencyHint', {
+                                                currency: defaultCurrency,
+                                                symbol: getCurrencySymbol(defaultCurrency),
+                                            })}
                                         </p>
                                     </div>
                                 )}
+
+                            <RegionalPricingSection
+                                planType={planData.type as PaymentPlanType}
+                                baseCurrency={planData.currency}
+                                enabled={regionalPricingEnabled}
+                                onEnabledChange={setRegionalPricingEnabled}
+                                currencies={regionalPricingCurrencies}
+                                onCurrenciesChange={setRegionalPricingCurrencies}
+                            />
 
                             {planData.type === PaymentPlans.DONATION && (
                                 <DonationPlanConfiguration
@@ -627,6 +682,7 @@ export const PaymentPlanCreator: React.FC<PaymentPlanCreatorProps> = ({
                                     setFeaturesGlobal={setFeaturesGlobal}
                                     selectedUnit={selectedUnit}
                                     onUnitChange={setSelectedUnit}
+                                    planChangeAllowed={planChangeAllowed}
                                     onCustomIntervalsChange={(intervals) =>
                                         updateConfig({
                                             subscription: {

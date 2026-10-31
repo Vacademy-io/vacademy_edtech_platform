@@ -1,0 +1,137 @@
+{
+    "dialogs": {
+        "attentionLabel": "تنبيه",
+        "yes": "نعم",
+        "cancel": "إلغاء",
+        "continue": "متابعة",
+        "provideReattempt": {
+            "title": "منح محاولة إعادة",
+            "confirmMessagePrefix": "هل أنت متأكد أنك تريد منح فرصة إعادة المحاولة لـ",
+            "providing": "جارٍ المنح..."
+        },
+        "releaseResult": {
+            "title": "نشر النتيجة",
+            "confirmMessagePrefix": "هل أنت متأكد أنك تريد نشر النتيجة لـ"
+        },
+        "manualReEvaluate": {
+            "title": "إعادة تقييم المحاولة",
+            "evaluatingLabel": "قيد التقييم",
+            "messagePart1": "لديه محاولة تم تقييمها بالفعل. ستؤدي إعادة التقييم إلى إعادتها إلى حالة",
+            "messagePart2": "حتى تقوم بإرسال درجات جديدة. هل تريد المتابعة؟"
+        },
+        "evaluateWithAI": {
+            "title": "تقييم الاختبار بالذكاء الاصطناعي",
+            "evaluatingLabel": "قيد التقييم",
+            "reEvaluationWarningPart1": "تم تقييم هذه المحاولة بالفعل. ستؤدي إعادة التقييم إلى إعادتها إلى حالة",
+            "reEvaluationWarningPart2": "حتى تصبح النتيجة الجديدة جاهزة.",
+            "selectModelLabel": "اختر نموذج الذكاء الاصطناعي",
+            "selectModelPlaceholder": "اختر نموذجًا",
+            "chooseModelPrefix": "اختر نموذج الذكاء الاصطناعي لتقييم مشاركة",
+            "chooseModelSuffix": "",
+            "rubricInfo": "بالنسبة لأي سؤال بدون معايير تقييم، يقوم الذكاء الاصطناعي بإنشاء معايير التصحيح في المرة الأولى ويعيد استخدامها لكل طالب، بحيث يتم تقييم الجميع بنفس الطريقة. حدد معايير التقييم على الاختبار للتحكم الكامل في كيفية منح الدرجات.",
+            "estimatedCostLabel": "التكلفة المقدّرة:",
+            "creditsCount_zero": "{{count}} رصيد",
+            "creditsCount_one": "{{count}} رصيد واحد",
+            "creditsCount_two": "{{count}} رصيدان",
+            "creditsCount_few": "{{count}} أرصدة",
+            "creditsCount_many": "{{count}} رصيدًا",
+            "creditsCount_other": "{{count}} رصيد",
+            "balance_zero": "الرصيد: {{count}}",
+            "balance_one": "الرصيد: {{count}}",
+            "balance_two": "الرصيد: {{count}}",
+            "balance_few": "الرصيد: {{count}}",
+            "balance_many": "الرصيد: {{count}}",
+            "balance_other": "الرصيد: {{count}}",
+            "insufficientCredits": "لا يوجد رصيد كافٍ لهذا التقييم. أضف رصيدًا إلى مؤسستك للمتابعة.",
+            "starting": "جارٍ البدء...",
+            "start": "ابدأ"
+        },
+        "revaluateEntireAssessment": {
+            "title": "إعادة تقييم الاختبار بالكامل",
+            "confirmMessagePrefix": "هل أنت متأكد أنك تريد إعادة التقييم لـ",
+            "confirmMessageSuffix": "بالنسبة للاختبار بالكامل؟"
+        },
+        "aiReport": {
+            "title": "تنزيل تقرير الذكاء الاصطناعي",
+            "intro": "تقرير الذكاء الاصطناعي نفسه الذي يراه الطالب، لـ",
+            "bulletWeakness": "الدرجة والترتيب ودرجات الأقسام مقارنةً بالصف",
+            "bulletCharts": "رسوم بيانية للمواضيع ومهارات التفكير (بلوم) وطريقة أداء الاختبار",
+            "bulletActions": "كل سؤال مع إجابة الطالب والإجابة الصحيحة والشرح، مع خطة دراسة",
+            "checking": "جارٍ التحقق ممّا إذا كان التحليل جاهزاً…",
+            "usesCredits": "لم يُنشأ تحليل هذه المحاولة بعد. سيؤدي تنزيله إلى استهلاك أرصدة الذكاء الاصطناعي لمؤسستك. التنزيلات اللاحقة لنفس المحاولة مجانية.",
+            "alreadyGenerated": "تحليل هذه المحاولة جاهز — لن يستهلك التنزيل أي أرصدة.",
+            "unsupported": "لا يمكن تحليل هذه المحاولة، لذا لا يتوفر لها تقرير ذكاء اصطناعي.",
+            "balance_one": "الرصيد: {{count}}",
+            "balance_other": "الرصيد: {{count}}",
+            "generateAndDownload": "إنشاء وتنزيل",
+            "download": "تنزيل",
+            "generating": "جارٍ الإنشاء…",
+            "downloaded": "تم تنزيل تقرير الذكاء الاصطناعي."
+        }
+    },
+    "dropdown": {
+        "checkingSubmission": "جارٍ التحقق من المشاركة...",
+        "viewSubmission": "عرض المشاركة",
+        "loadingSubmission": "جارٍ تحميل المشاركة...",
+        "uploadSubmission": "رفع المشاركة",
+        "provideReattempt": "منح محاولة إعادة",
+        "evaluate": "تقييم",
+        "revaluate": "إعادة تقييم",
+        "questionWise": "حسب السؤال",
+        "entireAssessment": "الاختبار بالكامل",
+        "manual": "يدوي",
+        "evaluateWithAI": "تقييم بالذكاء الاصطناعي",
+        "checkingEvaluatedCopy": "جارٍ التحقق من النسخة المقيَّمة...",
+        "viewEvaluatedCopy": "عرض النسخة المقيَّمة",
+        "loadingEvaluatedCopy": "جارٍ تحميل النسخة المقيَّمة...",
+        "generatingReport": "جارٍ إنشاء التقرير...",
+        "downloadReport": "تنزيل التقرير",
+        "releaseResult": "نشر النتيجة",
+        "downloadAiReport": "تنزيل تقرير الذكاء الاصطناعي",
+        "proctoring": "المراقبة"
+    },
+    "toasts": {
+        "reattemptProvided": "تم منح {{name}} فرصة إعادة المحاولة.",
+        "reattemptError": "فشل منح فرصة إعادة المحاولة. يرجى المحاولة مرة أخرى.",
+        "reattemptRegistrationError": "تعذر تحديد تسجيل هذا المشارك. يرجى المحاولة مرة أخرى.",
+        "resultReleased": "تم نشر النتيجة بنجاح. تم إشعار المتعلم عبر البريد الإلكتروني.",
+        "revaluateSuccess": "تمت إعادة تقييم محاولتك لهذا الاختبار. يرجى التحقق من بريدك الإلكتروني!",
+        "evaluationStarted": "بدأ التقييم بالذكاء الاصطناعي بنجاح!",
+        "evaluationError": "فشل بدء التقييم بالذكاء الاصطناعي. يرجى المحاولة مرة أخرى.",
+        "noEvaluatedCopy": "لم يتم العثور على نسخة مقيَّمة لهذه المحاولة.",
+        "evaluatedCopyLoadError": "فشل تحميل النسخة المقيَّمة. يرجى المحاولة مرة أخرى.",
+        "noSubmissionFile": "لم يتم العثور على ملف مشاركة لهذه المحاولة.",
+        "popupBlocked": "يرجى السماح بالنوافذ المنبثقة لعرض المشاركة.",
+        "submissionLoadError": "فشل تحميل المشاركة. يرجى المحاولة مرة أخرى.",
+        "reportGenerateError": "فشل إنشاء التقرير. يرجى المحاولة مرة أخرى.",
+        "aiReportError": "تعذّر تنزيل تقرير الذكاء الاصطناعي. يرجى المحاولة مرة أخرى."
+    },
+    "proctoring": {
+        "title": "المراقبة — {{name}}",
+        "loadError": "تعذر تحميل سجل المراقبة.",
+        "flags": "{{count}} تعليمات",
+        "warnings": "{{count}} تحذيرات",
+        "snapshots": "{{count}} لقطات",
+        "tier": "المستوى: {{tier}}",
+        "filter": {
+            "flagsOnly": "التعليمات والتحذيرات",
+            "everything": "الكل"
+        },
+        "empty": "لا توجد بيانات مراقبة لهذه المحاولة. كانت المراقبة متوقفة أو لم يرسل جهاز المتعلم شيئاً.",
+        "noFlags": "لم يتم تعليم أي شيء.",
+        "viewSnapshot": "عرض اللقطة",
+        "snapshotMissing": "اللقطة غير متاحة",
+        "snapshotAlt": "لقطة مراقبة",
+        "events": {
+            "CHECK_IN": "تسجيل الكاميرا",
+            "SNAPSHOT": "لقطة",
+            "CAMERA_DENIED": "رُفض إذن الكاميرا",
+            "CAMERA_LOST": "انقطعت الكاميرا",
+            "NO_FACE": "لا وجه في الإطار",
+            "MULTIPLE_FACES": "أكثر من وجه",
+            "TAB_SWITCH": "غادر نافذة الاختبار",
+            "FULLSCREEN_EXIT": "خرج من ملء الشاشة",
+            "AUTO_SUBMITTED": "أُرسل تلقائياً بعد تعليمات كثيرة"
+        }
+    }
+}

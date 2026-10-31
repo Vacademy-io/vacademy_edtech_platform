@@ -1,0 +1,9 @@
+{
+    "addedToChapters_one": "{{count}} अध्याय में जोड़ा गया",
+    "addedToChapters_other": "{{count}} अध्यायों में जोड़ा गया",
+    "sharedChapterDeduped_one": "{{count}} साझा अध्याय (डुप्लिकेट हटाया गया)",
+    "sharedChapterDeduped_other": "{{count}} साझा अध्याय (डुप्लिकेट हटाए गए)",
+    "alreadyLinked_one": "{{count}} पहले से जुड़ा है",
+    "alreadyLinked_other": "{{count}} पहले से जुड़े हैं",
+    "noChangesMade": "कोई बदलाव नहीं किया गया"
+}

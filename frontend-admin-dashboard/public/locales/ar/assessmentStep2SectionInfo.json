@@ -1,0 +1,113 @@
+{
+    "header": {
+        "deleteSection": "حذف القسم",
+        "mcqSingle": "اختيار واحد",
+        "mcqMulti": "اختيار متعدد",
+        "total": "الإجمالي"
+    },
+    "uploadSection": {
+        "title": "تحميل ورقة الأسئلة",
+        "subtitle": "اختر الطريقة التي تريد بها ملء هذا القسم بالأسئلة.",
+        "manualCard": {
+            "title": "الإنشاء يدويًا",
+            "subtitle": "اكتب الأسئلة واحدًا تلو الآخر"
+        },
+        "manualDialog": {
+            "title": "إنشاء ورقة أسئلة يدويًا"
+        },
+        "savedCard": {
+            "title": "اختيار ورقة محفوظة",
+            "subtitle": "إعادة استخدام ورقة موجودة"
+        },
+        "savedDialog": {
+            "title": "اختيار ورقة أسئلة محفوظة من القائمة",
+            "description": "اختر ورقة أسئلة محفوظة مسبقًا لإضافتها إلى هذا القسم"
+        }
+    },
+    "criteria": {
+        "title": "معايير التقييم",
+        "subtitle": "دع الذكاء الاصطناعي يصيغ معايير تقييم لكل سؤال.",
+        "generateAll": "إنشاء جميع المعايير",
+        "stopProgress": "إيقاف ({{current}}/{{total}})"
+    },
+    "dialogs": {
+        "confirmBulkGenerate_zero": "إنشاء معايير الذكاء الاصطناعي لجميع أسئلة هذا القسم ({{count}})؟",
+        "confirmBulkGenerate_one": "إنشاء معايير الذكاء الاصطناعي لسؤال واحد ({{count}}) في هذا القسم؟",
+        "confirmBulkGenerate_two": "إنشاء معايير الذكاء الاصطناعي للسؤالين ({{count}}) في هذا القسم؟",
+        "confirmBulkGenerate_few": "إنشاء معايير الذكاء الاصطناعي لجميع الأسئلة الـ{{count}} في هذا القسم؟",
+        "confirmBulkGenerate_many": "إنشاء معايير الذكاء الاصطناعي لجميع الأسئلة الـ{{count}} في هذا القسم؟",
+        "confirmBulkGenerate_other": "إنشاء معايير الذكاء الاصطناعي لجميع الأسئلة الـ{{count}} في هذا القسم؟",
+        "cancel": "إلغاء"
+    },
+    "toasts": {
+        "noQuestionsInSection": "لا توجد أسئلة في هذا القسم",
+        "generationCancelled": "تم إلغاء الإنشاء بواسطة المستخدم",
+        "questionAlreadyHasCriteria": "السؤال {{number}} لديه بالفعل معايير",
+        "questionZeroMarksSkip": "السؤال {{number}} بدون درجات، سيتم تخطيه",
+        "failedGenerateCriteriaForQuestion": "فشل إنشاء المعايير للسؤال {{number}}: {{error}}",
+        "generatedCriteriaSuccess_zero": "تم إنشاء المعايير لـ {{count}} سؤال!",
+        "generatedCriteriaSuccess_one": "تم إنشاء المعايير لسؤال واحد ({{count}})!",
+        "generatedCriteriaSuccess_two": "تم إنشاء المعايير للسؤالين ({{count}})!",
+        "generatedCriteriaSuccess_few": "تم إنشاء المعايير لـ {{count}} أسئلة!",
+        "generatedCriteriaSuccess_many": "تم إنشاء المعايير لـ {{count}} سؤالاً!",
+        "generatedCriteriaSuccess_other": "تم إنشاء المعايير لـ {{count}} سؤال!",
+        "failedGenerateCriteriaCount_zero": "فشل إنشاء المعايير لـ {{count}} سؤال",
+        "failedGenerateCriteriaCount_one": "فشل إنشاء المعايير لسؤال واحد ({{count}})",
+        "failedGenerateCriteriaCount_two": "فشل إنشاء المعايير للسؤالين ({{count}})",
+        "failedGenerateCriteriaCount_few": "فشل إنشاء المعايير لـ {{count}} أسئلة",
+        "failedGenerateCriteriaCount_many": "فشل إنشاء المعايير لـ {{count}} سؤالاً",
+        "failedGenerateCriteriaCount_other": "فشل إنشاء المعايير لـ {{count}} سؤال",
+        "questionUpdated": "تم تحديث السؤال",
+        "questionUpdateFailed": "تعذّر تحديث السؤال",
+        "questionInvalid": "أكمل السؤال وخياراته قبل الحفظ."
+    },
+    "sectionDescription": {
+        "title": "وصف القسم",
+        "placeholder": "صف هذا القسم"
+    },
+    "duration": {
+        "questionDuration": "مدة السؤال",
+        "sectionDuration": "مدة القسم",
+        "hrs": "ساعات",
+        "minutes": "دقائق"
+    },
+    "markingScheme": {
+        "marksPerQuestion": {
+            "title": "الدرجات لكل سؤال",
+            "subtitle": "الدرجات الافتراضية الممنوحة للإجابات الصحيحة"
+        },
+        "negativeMarking": "الدرجات السالبة",
+        "partialMarking": "التقييم الجزئي"
+    },
+    "randomization": {
+        "problemRandomization": "عشوائية الأسئلة"
+    },
+    "table": {
+        "surveyQuestionsTitle": "أسئلة الاستبيان",
+        "adaptiveMarkingRulesTitle": "قواعد التقييم التكيفي",
+        "questionCount_zero": "{{count}} سؤال",
+        "questionCount_one": "سؤال واحد ({{count}})",
+        "questionCount_two": "سؤالان ({{count}})",
+        "questionCount_few": "{{count}} أسئلة",
+        "questionCount_many": "{{count}} سؤالاً",
+        "questionCount_other": "{{count}} سؤال",
+        "headers": {
+            "qno": "رقم السؤال",
+            "question": "السؤال",
+            "surveyQuestion": "سؤال الاستبيان",
+            "questionType": "نوع السؤال",
+            "marks": "الدرجات",
+            "penalty": "الخصم",
+            "time": "الوقت",
+            "criteria": "المعايير"
+        },
+        "editQuestion": "تعديل السؤال",
+        "editQuestionMissing": "تعذّر تحميل هذا السؤال.",
+        "saveQuestion": "حفظ السؤال",
+        "savingQuestion": "جارٍ الحفظ…",
+        "correctOption": "الخيار الصحيح"
+    },
+    "totalMarks": {
+        "label": "إجمالي الدرجات"
+    }
+}

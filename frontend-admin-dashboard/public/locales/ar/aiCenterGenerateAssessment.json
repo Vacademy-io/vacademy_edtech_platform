@@ -1,0 +1,49 @@
+{
+    "header": {
+        "title": "إنشاء ورقة أسئلة",
+        "subtitle": "أسقط ملف PDF أو Word أو PowerPoint. سنصوغ أسئلة يمكنك تعديلها قبل الإرسال."
+    },
+    "dropzone": {
+        "title": "أسقط ملفك هنا، أو انقر للاختيار",
+        "subtitle": "PDF أو Word أو PowerPoint — حتى بضع مئات من الصفحات."
+    },
+    "fileCard": {
+        "removeFile": "إزالة الملف",
+        "status": {
+            "uploading": "جارٍ الرفع…",
+            "processing": "جارٍ القراءة…",
+            "ready": "جاهز للصياغة",
+            "generating": "الصياغة قيد التقدم"
+        }
+    },
+    "workingStatus": {
+        "uploading": "جارٍ قراءة ملفك…",
+        "processing": "جارٍ تجهيز مستندك…",
+        "generating": "جارٍ صياغة ورقتك — عادةً ما يستغرق الأمر حوالي ٣٠ ثانية.",
+        "preparingPages": "جارٍ تجهيز الصفحات لتختار منها…"
+    },
+    "errors": {
+        "unsupportedFileType": "لا يمكننا قراءة ملفات .{{ext}} بعد. جرّب PDF أو Word أو PowerPoint.",
+        "uploadIncomplete": "لم يكتمل الرفع. هل تريد المحاولة مرة أخرى؟",
+        "fileUnreadable": "تعذّرت علينا قراءة هذا الملف. هل تجرّب ملفًا آخر؟",
+        "genericReadError": "حدث خطأ ما أثناء قراءة ملفك. حاول مرة أخرى؟",
+        "generateFailed": "تعذّر علينا صياغة أسئلة من هذا الملف. هل تريد المحاولة مرة أخرى؟",
+        "taskFailed": "تعذّر علينا إنهاء ورقتك. هل تريد المحاولة مرة أخرى؟"
+    },
+    "toolName": "Vsmart Upload",
+    "generatingState": {
+        "draftingTitle": "جارٍ صياغة ورقتك",
+        "draftingSubtitle": "نقرأ مستندك ونصوغ الأسئلة. يستغرق الأمر عادةً ٣٠ ثانية تقريبًا.",
+        "preparingPagesTitle": "جارٍ تجهيز الصفحات",
+        "preparingPagesSubtitle": "نجهّز مستندك لتختار منه."
+    },
+    "questionConfig": {
+        "ctaLabel": "صياغة ورقتي",
+        "pickPagesLabel": "أو اختر صفحات محددة ←"
+    },
+    "recentFiles": {
+        "title": "مسوداتك الأخيرة",
+        "fallbackLabel": "مسودة بلا عنوان",
+        "emptyHint": "ستظهر مسوداتك هنا. أسقط ملفًا أعلاه لتبدأ أول مسودة لك."
+    }
+}

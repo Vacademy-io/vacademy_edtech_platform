@@ -1,0 +1,58 @@
+{
+    "description": "TDS deposits made against salary withholding. Form 24Q reconciles each quarter against these, so a deposit missing here shows up there as a mismatch.",
+    "recordChallan": "Record challan",
+    "toast": {
+        "recorded": "Challan recorded",
+        "removed": "Challan removed"
+    },
+    "errors": {
+        "record": "Could not record the challan.",
+        "remove": "Could not remove the challan.",
+        "load": "Could not load the challan register."
+    },
+    "empty": {
+        "title": "No challans recorded",
+        "description": "Nothing deposited for {{financialYear}} {{quarter}} yet."
+    },
+    "table": {
+        "depositDate": "Deposit date",
+        "bsrCode": "BSR code",
+        "serial": "Serial",
+        "amount": "Amount",
+        "interest": "Interest",
+        "fee": "Fee"
+    },
+    "removeChallanAria": "Remove challan",
+    "totalDeposited": "Total deposited · {{financialYear}} {{quarter}}",
+    "dialog": {
+        "heading": "Record a TDS challan",
+        "cancel": "Cancel",
+        "save": "Save challan",
+        "saving": "Saving…"
+    },
+    "fields": {
+        "financialYear": "Financial year",
+        "financialYearPlaceholder": "2025-26",
+        "quarter": "Quarter",
+        "depositDate": "Deposit date",
+        "amountDeposited": "Amount deposited",
+        "bsrCode": "BSR code",
+        "bsrCodePlaceholder": "Bank branch code",
+        "challanSerial": "Challan serial",
+        "interest": "Interest",
+        "fee": "Fee",
+        "notes": "Notes"
+    },
+    "deleteDialog": {
+        "title": "Remove this challan?",
+        "description": "{{amount}} deposited on {{date}} will no longer count towards the Form 24Q reconciliation.",
+        "unknownDate": "an unknown date",
+        "keepIt": "Keep it",
+        "remove": "Remove"
+    },
+    "validation": {
+        "financialYearFormat": "Use the form 2025-26",
+        "depositDateRequired": "Deposit date is required",
+        "amountPositive": "Amount must be more than zero"
+    }
+}

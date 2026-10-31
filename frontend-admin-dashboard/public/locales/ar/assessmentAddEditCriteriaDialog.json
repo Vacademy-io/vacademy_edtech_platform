@@ -1,0 +1,80 @@
+{
+    "dialog": {
+        "headingEdit": "تعديل معايير التقييم",
+        "headingAdd": "إضافة معايير التقييم"
+    },
+    "footer": {
+        "cancel": "إلغاء",
+        "save": "حفظ المعايير"
+    },
+    "questionInfo": {
+        "typeLabel": "نوع السؤال:",
+        "maxMarksLabel": "الدرجة القصوى:"
+    },
+    "tabs": {
+        "manual": "يدوي",
+        "ai": "توليد بالذكاء الاصطناعي",
+        "template": "استخدام نموذج"
+    },
+    "manual": {
+        "criteriaHeading": "المعيار {{index}}",
+        "nameLabel": "اسم المعيار",
+        "namePlaceholder": "مثال: جودة المحتوى",
+        "descriptionLabel": "الوصف",
+        "descriptionPlaceholder": "مثال: عمق ودقة المحتوى",
+        "maxMarksLabel": "الدرجة القصوى",
+        "maxMarksPlaceholder": "0",
+        "addCriteria": "إضافة معيار",
+        "saveAsTemplateLabel_zero": "حفظ كنموذج لإعادة الاستخدام ({{questionType}} - {{count}} درجة)",
+        "saveAsTemplateLabel_one": "حفظ كنموذج لإعادة الاستخدام ({{questionType}} - {{count}} درجة واحدة)",
+        "saveAsTemplateLabel_two": "حفظ كنموذج لإعادة الاستخدام ({{questionType}} - {{count}} درجتان)",
+        "saveAsTemplateLabel_few": "حفظ كنموذج لإعادة الاستخدام ({{questionType}} - {{count}} درجات)",
+        "saveAsTemplateLabel_many": "حفظ كنموذج لإعادة الاستخدام ({{questionType}} - {{count}} درجة)",
+        "saveAsTemplateLabel_other": "حفظ كنموذج لإعادة الاستخدام ({{questionType}} - {{count}} درجة)",
+        "totalMarks_zero": "الإجمالي: {{achieved}} / {{count}} درجة",
+        "totalMarks_one": "الإجمالي: {{achieved}} / {{count}} درجة واحدة",
+        "totalMarks_two": "الإجمالي: {{achieved}} / {{count}} درجتان",
+        "totalMarks_few": "الإجمالي: {{achieved}} / {{count}} درجات",
+        "totalMarks_many": "الإجمالي: {{achieved}} / {{count}} درجة",
+        "totalMarks_other": "الإجمالي: {{achieved}} / {{count}} درجة",
+        "totalMarksValidSuffix": " ✓",
+        "totalMarksInvalidSuffix": " (يجب أن يطابق درجات السؤال)"
+    },
+    "ai": {
+        "generatedBanner": "✓ تم توليد المعايير بنجاح!",
+        "marksBadge_zero": "{{count}} درجة",
+        "marksBadge_one": "{{count}} درجة واحدة",
+        "marksBadge_two": "{{count}} درجتان",
+        "marksBadge_few": "{{count}} درجات",
+        "marksBadge_many": "{{count}} درجة",
+        "marksBadge_other": "{{count}} درجة",
+        "regenerate": "إعادة التوليد",
+        "emptyPrompt": "دع الذكاء الاصطناعي يولّد معايير تقييم لهذا السؤال",
+        "generateButton": "توليد بالذكاء الاصطناعي"
+    },
+    "template": {
+        "selectPrompt": "اختر نموذجًا لاستخدامه:",
+        "emptyState": "لم يتم العثور على نماذج لهذا النوع من الأسئلة",
+        "criteriaCount_zero": "{{count}} معايير",
+        "criteriaCount_one": "{{count}} معيار واحد",
+        "criteriaCount_two": "{{count}} معياران",
+        "criteriaCount_few": "{{count}} معايير",
+        "criteriaCount_many": "{{count}} معيارًا",
+        "criteriaCount_other": "{{count}} معيار",
+        "marksCount_zero": "{{count}} درجة",
+        "marksCount_one": "{{count}} درجة واحدة",
+        "marksCount_two": "{{count}} درجتان",
+        "marksCount_few": "{{count}} درجات",
+        "marksCount_many": "{{count}} درجة",
+        "marksCount_other": "{{count}} درجة"
+    },
+    "toasts": {
+        "criteriaGenerated": "تم توليد المعايير بنجاح!",
+        "generateFailed": "فشل توليد المعايير. يرجى المحاولة مرة أخرى.",
+        "templateSaved": "تم حفظ المعايير كنموذج!",
+        "templateSaveFailed": "فشل حفظ النموذج",
+        "invalidMarksDistribution": "توزيع الدرجات غير صالح",
+        "criteriaSaved": "تم حفظ المعايير بنجاح!",
+        "incompleteCriteria": "يرجى إكمال المعايير قبل الحفظ"
+    }
+}

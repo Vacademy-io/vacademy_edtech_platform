@@ -1,0 +1,15 @@
+{
+    "manageYourSessions": "إدارة {{session}} الخاصة بك",
+    "description": "نظّم وارفع وتتبّع الموارد التعليمية بسهولة في مكان واحد. امنح {{learnerPlural}} وصولاً سهلاً إلى المواد التي يحتاجونها للنجاح، مما يضمن تجربة تعلم سلسة.",
+    "add": "إضافة",
+    "addNew": "إضافة {{session}} جديدة",
+    "noCourseDialog": {
+        "type": "إضافة الجلسات",
+        "content": "يجب عليك إنشاء دورة أولاً"
+    },
+    "toast": {
+        "added": " تمت إضافة {{session}} بنجاح",
+        "addFailed": "فشل في إضافة {{session}}"
+    },
+    "subtitle": "Each {{session}} lists the {{course}} levels that run in it. Every {{course}} × {{level}} × {{session}} is a {{batch}}."
+}

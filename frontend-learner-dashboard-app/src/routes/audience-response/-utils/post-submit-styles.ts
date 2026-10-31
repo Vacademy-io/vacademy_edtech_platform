@@ -23,7 +23,9 @@ export const POST_SUBMIT_ICON_ACCENT_CLASS: Record<PostSubmitAccent, string> = {
 /** Solid ("primary") action button in the campaign's accent. */
 export const POST_SUBMIT_BUTTON_ACCENT_CLASS: Record<PostSubmitAccent, string> = {
   success: "bg-success-600 text-white hover:bg-success-700",
-  primary: "bg-primary-500 text-white hover:bg-primary-600",
+  // The learner app's primary scale stops at 500 — `primary-600` compiles to
+  // nothing, so the hover step goes down the scale, not up.
+  primary: "bg-primary-500 text-white hover:bg-primary-400",
   info: "bg-info-600 text-white hover:bg-info-700",
   warning: "bg-warning-600 text-white hover:bg-warning-700",
   neutral: "bg-neutral-700 text-white hover:bg-neutral-800",

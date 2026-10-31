@@ -1,0 +1,265 @@
+{
+    "common": {
+        "correct": "Correct",
+        "incorrect": "Incorrect",
+        "skipped": "Ignorée",
+        "notAnswered": "Sans réponse",
+        "download": "Télécharger",
+        "downloadingEllipsis": "Téléchargement…",
+        "loadingEllipsis": "Chargement…",
+        "tryAgain": "Réessayer",
+        "view": "Voir",
+        "accuracy": "Précision",
+        "timeTaken": "Temps mis",
+        "you": "Vous",
+        "marks": "Points",
+        "percentile": "Centile",
+        "excellent": "Excellent",
+        "good": "Bien",
+        "average": "Moyen",
+        "low": "Faible",
+        "yourResponse": "Votre réponse",
+        "explanation": "Explication",
+        "resultReport": "Rapport de résultat",
+        "classAverageValue": "Moyenne de la classe : {{value}}",
+        "studentsCount_one": "{{count}} élève",
+        "studentsCount_other": "{{count}} élèves",
+        "studentsCount_many": "{{count}} élèves"
+    },
+    "annotatedCopyDialog": {
+        "title": "Copie annotée de la réponse",
+        "toastError": "Impossible de charger la copie annotée."
+    },
+    "attemptPapersCard": {
+        "title": "Vos copies",
+        "opening": "Ouverture...",
+        "errors": {
+            "fileUnavailable": "Ce fichier n'est plus disponible.",
+            "popupBlocked": "Votre navigateur a bloqué la fenêtre pop-up. Autorisez les pop-up pour ce site et réessayez.",
+            "openFailed": "Impossible d'ouvrir ce fichier. Veuillez réessayer."
+        }
+    },
+    "evaluatedReportDialog": {
+        "defaultTitle": "Réponse évaluée",
+        "downloadError": "Impossible de télécharger le fichier.",
+        "evaluatorRemark": "Remarque de l'évaluateur"
+    },
+    "comparisonDashboard": {
+        "errors": {
+            "fileNotAvailable": "Fichier non disponible.",
+            "openFileFailed": "Impossible d'ouvrir le fichier.",
+            "downloadReportFailed": "Impossible de télécharger le rapport."
+        },
+        "empty": {
+            "title": "Aucune donnée de comparaison pour le moment",
+            "description": "La comparaison avec la promotion apparaîtra ici une fois votre tentative évaluée et les résultats publiés.",
+            "noQuestionsTitle": "Aucune question dans cette section",
+            "noQuestionsDescription": "Choisissez un autre onglet de section pour revoir le reste de vos réponses."
+        },
+        "masthead": {
+            "reportType": "Rapport de performance individuelle",
+            "attempted": "Tentative le {{date}}",
+            "submitted": "Soumis à {{time}}"
+        },
+        "reportOptionsAriaLabel": "Options du rapport",
+        "menu": {
+            "downloadReport": "Télécharger le rapport",
+            "yourSubmission": "Votre copie soumise",
+            "viewEvaluated": "Voir la réponse évaluée",
+            "viewSubmitted": "Voir la copie soumise",
+            "viewResultReport": "Voir le rapport de résultat",
+            "viewAnnotatedCopy": "Voir la copie annotée"
+        },
+        "stats": {
+            "yourScore": "Votre score",
+            "classRank": "Rang dans la classe",
+            "of": "sur {{count}}",
+            "classAccuracy": "classe {{pct}} %",
+            "classDuration": "classe {{duration}}",
+            "highest": "Le plus élevé",
+            "lowest": "Le plus bas",
+            "participants": "Participants"
+        },
+        "sections": {
+            "whereYouStand": "Où vous en êtes — total (sur {{maxMarks}})",
+            "summaryTitle": "Résumé de votre performance",
+            "vsClassAverage": "Vous vs moyenne de la classe",
+            "sectionWisePerformance": "Performance par section",
+            "marksDistribution": "Répartition des notes — tous les élèves",
+            "leaderboardPosition": "Classement — votre position",
+            "reviewAndPractice": "Révision et entraînement",
+            "answerReview": "Révision des réponses",
+            "easyMissesCount": "Erreurs évitables — {{count}}",
+            "easyMissesNone": "Erreurs évitables — aucune",
+            "expertiseCount": "Vos points forts — {{count}}",
+            "expertiseNone": "Vos points forts — aucun"
+        },
+        "summary": {
+            "strengthsLead": "Vos points forts.",
+            "strengthsText": "{{section}} est votre meilleur domaine — environ {{delta}} points au-dessus de la moyenne de la classe.",
+            "weaknessLead": "Point clé à améliorer.",
+            "weaknessText": "{{section}} — environ {{delta}} points en dessous de la moyenne de la classe, le plus grand écart de cette épreuve.",
+            "paceLead": "Votre rythme.",
+            "paceTextAhead": "Vous avez terminé en {{duration}}, plus rapide que la moyenne de la classe de {{avgDuration}}.",
+            "paceTextBehind": "Vous avez terminé en {{duration}}, contre une moyenne de classe de {{avgDuration}}."
+        },
+        "compare": {
+            "you": "Vous {{value}}",
+            "avg": "Moy. {{value}}"
+        },
+        "leaderboard": {
+            "rankOf": "Rang n° {{rank}} sur {{total}}",
+            "rank": "Rang",
+            "student": "Élève",
+            "time": "Temps"
+        },
+        "review": {
+            "everyQuestionDesc": "Chaque question avec votre réponse, la bonne réponse, et la façon dont le reste de la classe a répondu.",
+            "viewAnswerReview": "Voir la révision des réponses",
+            "noEasyMisses": "Vous n'avez manqué aucune question à laquelle la majorité de la classe a bien répondu — les points perdus concernaient les questions les plus difficiles de l'épreuve.",
+            "noExpertise": "Aucune question pour l'instant où vous avez surpassé la majorité de la classe — continuez à vous entraîner sur les problèmes les plus difficiles.",
+            "pctOfClassCorrect": "de la classe a bien répondu",
+            "moreInAnswerReview": "+ {{count}} de plus dans la révision des réponses ci-dessous",
+            "questionsCount_one": "{{count}} question",
+            "questionsCount_other": "{{count}} questions",
+            "classPctCorrect": "{{pct}} % de la classe correct",
+            "yourResponse": "Votre réponse",
+            "marksAwardedDirectly": "Points attribués directement ({{value}})",
+            "notAttempted": "Non tenté",
+            "correctAnswer": "Bonne réponse",
+            "feedback": "Retour",
+            "aiAssistedReviewed": "Assisté par IA, revu par l'enseignant",
+            "aiAssisted": "Assisté par IA",
+            "criteria": "Critère",
+            "reason": "Raison",
+            "howClassAnswered": "Comment la classe a répondu",
+            "questionsCount_many": "{{count}} questions"
+        }
+    },
+    "marksBreakdown": {
+        "partiallyCorrect": "Partiellement correct",
+        "wrongResponse": "Réponse incorrecte"
+    },
+    "marksChip": {
+        "markLabel_one": "Point",
+        "markLabel_other": "Points",
+        "markLabel_many": "Points"
+    },
+    "marksDistributionChart": {
+        "yourScoreRange": "Votre plage de score",
+        "restOfBatch": "Reste de la promotion"
+    },
+    "pdfDownloadButton": {
+        "downloading": "Téléchargement...",
+        "downloadFailed": "Échec du téléchargement",
+        "downloadPdf": "Télécharger le PDF"
+    },
+    "performanceBand": {
+        "tooltip": {
+            "classTopper": "Premier de la classe : {{value}}",
+            "you": "Vous : {{value}}"
+        },
+        "legend": {
+            "classAverage": "Moyenne de la classe",
+            "classTopper": "Premier de la classe"
+        }
+    },
+    "pieChart": {
+        "noData": "Aucune donnée disponible pour le graphique circulaire"
+    },
+    "questionResponseRenderer": {
+        "noResponse": "Aucune réponse",
+        "noOptionSelected": "Aucune option sélectionnée",
+        "noOptionsSelected": "Aucune option sélectionnée",
+        "hiddenWord": "masqués",
+        "sampleWord": "exemple",
+        "testsFraction": "{{passed}}/{{total}} tests",
+        "scorePts": "· {{score}} pts",
+        "pasteAttempts_one": "{{count}} tentative de collage",
+        "pasteAttempts_other": "{{count}} tentatives de collage",
+        "testCasesPassed": "Cas de test réussis :",
+        "sampleFraction": "Exemple : {{passed}}/{{total}}",
+        "timeTakenLabel": "Temps mis :",
+        "msValue": "{{value}} ms",
+        "msAllowed": "/ {{value}} ms autorisées",
+        "memoryLabel": "Mémoire :",
+        "kbValue": "{{value}} Ko",
+        "kbAllowed": "/ {{value}} Ko autorisés",
+        "showSourceCode": "Afficher le code source soumis",
+        "testCasesHeading": "Cas de test",
+        "testNumber": "Test {{number}}",
+        "hiddenParenthetical": "(masqué)",
+        "noCorrectAnswerProvided": "Aucune bonne réponse fournie",
+        "noAnswerProvided": "Aucune réponse fournie",
+        "noCorrectOptionsProvided": "Aucune option correcte fournie",
+        "codingTestCaseSummary": "{{visible}} visibles + {{hidden}} masqués parmi les cas de test — consultez les résultats dans le panneau de réponse.",
+        "errorDisplayingResponse": "Erreur lors de l'affichage de la réponse",
+        "errorDisplayingCorrectAnswer": "Erreur lors de l'affichage de la bonne réponse",
+        "pasteAttempts_many": "{{count}} tentatives de collage"
+    },
+    "responseBreakdown": {
+        "errorDisplayingResponseWithError": "Erreur lors de l'affichage de la réponse : {{error}}",
+        "errorDisplayingCorrectAnswerWithError": "Erreur lors de l'affichage de la bonne réponse : {{error}}"
+    },
+    "sectionComparisonTable": {
+        "section": "Section",
+        "yourMarks": "Vos points",
+        "total": "Total",
+        "classAvg": "Moy. classe",
+        "classMax": "Max classe",
+        "cutOff": "Seuil de réussite",
+        "status": "Statut",
+        "pass": "Réussi",
+        "fail": "Échoué"
+    },
+    "surveyReportDialog": {
+        "title": "Rapport du sondage",
+        "responseNotAvailable": "Réponse non disponible",
+        "errorParsingResponse": "Erreur lors de l'analyse de la réponse",
+        "noSurveyData": "Aucune donnée de sondage disponible"
+    },
+    "testReportDialog": {
+        "navHeadingReport": "Rapport",
+        "attemptDate": "Date de la tentative",
+        "duration": "Durée",
+        "startTime": "Heure de début",
+        "endTime": "Heure de fin",
+        "subjectLabel": "{{subject}} : {{name}}",
+        "papers": {
+            "answerSheetLabel": "Votre copie de réponses",
+            "answerSheetDescription": "La copie que vous avez soumise, telle que numérisée par votre établissement.",
+            "checkedCopyLabel": "Copie corrigée",
+            "checkedCopyDescription": "Votre copie de réponses avec les notes et remarques de l'évaluateur.",
+            "resultReportDescription": "Le rapport de résultat préparé par votre établissement."
+        },
+        "yourScore": "Votre score",
+        "marksFraction": "{{achieved}} / {{total}} points",
+        "veryGood": "Très bien",
+        "needsImprovement": "À améliorer",
+        "classRank": "Rang dans la classe",
+        "notAvailable": "N/D",
+        "topPercentile": "Top {{pct}} % (centile)",
+        "quickStats": "Statistiques rapides",
+        "performanceAnalytics": "Analyse de performance",
+        "performanceAnalyticsDesc": "Répartition détaillée de vos réponses et de vos points",
+        "responseBreakdown": "Répartition des réponses",
+        "attemptedCount": "Tentées : {{count}}",
+        "skippedCount": "Ignorées : {{count}}",
+        "marksBreakdown": "Répartition des points",
+        "partial": "Partiel",
+        "marksAwardedWithPlus": "{{count}} (+{{marks}})",
+        "marksAwardedPlain": "{{count}} ({{marks}})",
+        "answerReview": "Révision des réponses",
+        "answerReviewDesc": "Analyse détaillée de vos réponses",
+        "sectionTotal": "Total de la section : {{marks}} points",
+        "questionNumber": "Question {{number}}",
+        "correctAnswerLabel": "Bonne réponse",
+        "evaluatorFeedback": "Retour de l'évaluateur",
+        "noQuestionsAvailable": "Aucune question disponible pour la révision",
+        "exporting": "Exportation...",
+        "exportReport": "Exporter le rapport",
+        "viewEvaluatedCopy": "Voir la copie évaluée",
+        "close": "Fermer",
+        "evaluatedFileName": "Fichier évalué.pdf"
+    }
+}

@@ -1,0 +1,16 @@
+{
+    "untitledMeeting": "اجتماع",
+    "hostedBy": "استضافة",
+    "with": "مع",
+    "join": "انضمام",
+    "errorTitle": "تعذّر تحميل الاجتماعات",
+    "errorDescription": "حدث خطأ أثناء جلب هذا التقويم. حاول مرة أخرى.",
+    "status": {
+        "confirmed": "مؤكد",
+        "pending": "قيد الانتظار",
+        "completed": "مكتمل",
+        "noShow": "لم يحضر",
+        "cancelled": "ملغى",
+        "rescheduled": "أُعيدت جدولته"
+    }
+}

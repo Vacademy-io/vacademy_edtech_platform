@@ -1,0 +1,34 @@
+{
+    "columns": {
+        "fullName": "الاسم الكامل",
+        "username": "اسم المستخدم",
+        "enrollmentNumber": "رقم القيد",
+        "mobileNumber": "رقم الجوال",
+        "email": "البريد الإلكتروني",
+        "status": "الحالة",
+        "error": "خطأ"
+    },
+    "summary": {
+        "successCount_zero": "لا توجد نتائج ناجحة ({{count}})",
+        "successCount_one": "نتيجة ناجحة واحدة ({{count}})",
+        "successCount_two": "نتيجتان ناجحتان ({{count}})",
+        "successCount_few": "{{count}} نتائج ناجحة",
+        "successCount_many": "{{count}} نتيجة ناجحة",
+        "successCount_other": "{{count}} نتيجة ناجحة",
+        "failedCount_zero": "لا توجد نتائج فاشلة ({{count}})",
+        "failedCount_one": "نتيجة فاشلة واحدة ({{count}})",
+        "failedCount_two": "نتيجتان فاشلتان ({{count}})",
+        "failedCount_few": "{{count}} نتائج فاشلة",
+        "failedCount_many": "{{count}} نتيجة فاشلة",
+        "failedCount_other": "{{count}} نتيجة فاشلة",
+        "warningMessage": "لم يتم رفع بعض الإدخالات بنجاح. يرجى مراجعة عمود {{column}} لمزيد من التفاصيل."
+    },
+    "error": {
+        "none": "لا توجد أخطاء",
+        "detailsLabel": "تفاصيل الخطأ:"
+    },
+    "actions": {
+        "view": "عرض",
+        "downloadResponse": "تنزيل الاستجابة"
+    }
+}

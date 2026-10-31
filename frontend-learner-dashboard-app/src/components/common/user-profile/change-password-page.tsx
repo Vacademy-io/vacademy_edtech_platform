@@ -1,9 +1,11 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useStudentPermissions } from "@/hooks/use-student-permissions";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import AccountDetailsEdit from "./account-details-edit";
 
 const ChangePasswordPage = () => {
+  const { t } = useTranslation("userProfileExtra");
   const navigate = useNavigate();
   const { permissions, isLoading: permissionsLoading } =
     useStudentPermissions();
@@ -19,9 +21,9 @@ const ChangePasswordPage = () => {
   if (permissionsLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
-          <p className="text-gray-600">Checking permissions...</p>
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="text-gray-600">{t("changePassword.checkingPermissions")}</p>
         </div>
       </div>
     );

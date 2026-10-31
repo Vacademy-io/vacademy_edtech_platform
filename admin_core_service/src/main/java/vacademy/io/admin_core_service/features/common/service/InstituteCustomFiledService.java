@@ -837,6 +837,14 @@ public class InstituteCustomFiledService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Same as the overload below, for callers that hold an institute id but not
+     * the entity — the `institute` argument there is accepted and never read.
+     */
+    public String updateCustomField(CustomFieldDTO request, String fieldId) {
+        return updateCustomField(null, request, fieldId);
+    }
+
     public String updateCustomField(Institute institute, CustomFieldDTO request, String fieldId) {
         Optional<CustomFields> customFieldsOptional = customFieldRepository.findById(fieldId);
         if (customFieldsOptional.isEmpty()) {

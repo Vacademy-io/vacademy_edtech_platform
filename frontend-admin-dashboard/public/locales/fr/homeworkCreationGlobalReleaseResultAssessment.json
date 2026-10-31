@@ -1,0 +1,14 @@
+{
+    "trigger": {
+        "releaseResult": "Publier le résultat"
+    },
+    "dialog": {
+        "title": "Publier le résultat pour tous les {{learnerPlural}}",
+        "attention": "Attention",
+        "confirmText": "Êtes-vous sûr de vouloir publier le résultat pour tous les {{learnerLower}}s ?",
+        "confirmButton": "Oui"
+    },
+    "toasts": {
+        "releaseResultSuccess": "Le résultat de cette évaluation a été publié pour tous les étudiants. Les participants doivent vérifier leur e-mail !"
+    }
+}

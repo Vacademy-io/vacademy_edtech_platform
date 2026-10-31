@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/react';
 import { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Warning } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 
@@ -25,6 +26,7 @@ export function ScheduleErrorBoundary({
     feature: string;
     children: ReactNode;
 }) {
+    const { t } = useTranslation('studyLibraryScheduleErrorBoundary');
     return (
         <Sentry.ErrorBoundary
             beforeCapture={(scope) => {
@@ -36,15 +38,12 @@ export function ScheduleErrorBoundary({
                     <Warning size={40} className="text-danger-500" />
                     <div>
                         <h2 className="text-lg font-semibold text-neutral-800">
-                            Something went wrong
+                            {t('title')}
                         </h2>
-                        <p className="mt-1 text-sm text-neutral-500">
-                            This page hit an unexpected error and our team has been notified.
-                            Try again — nothing else you&apos;ve done is affected.
-                        </p>
+                        <p className="mt-1 text-sm text-neutral-500">{t('body')}</p>
                     </div>
                     <MyButton type="button" buttonType="primary" onClick={resetError}>
-                        Try again
+                        {t('tryAgain')}
                     </MyButton>
                 </div>
             )}

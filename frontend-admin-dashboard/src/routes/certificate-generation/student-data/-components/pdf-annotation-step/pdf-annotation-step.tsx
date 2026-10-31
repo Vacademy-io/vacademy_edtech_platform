@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent } from '@dnd-kit/core';
 import {
     CertificateGenerationSession,
@@ -37,6 +38,7 @@ export const PdfAnnotationStep = ({
     onSessionUpdate,
     onPrevStep,
 }: PdfAnnotationStepProps) => {
+    const { t, i18n } = useTranslation('certificateGenerationPdfAnnotationStep');
     const [activeView, setActiveView] = useState<'upload' | 'design' | 'preview'>('upload');
     const [isGenerating, setIsGenerating] = useState(false);
     const [generationProgress, setGenerationProgress] = useState({ completed: 0, total: 0 });
@@ -47,67 +49,67 @@ export const PdfAnnotationStep = ({
         const systemFields: AvailableField[] = [
             {
                 name: 'user_id',
-                displayName: 'User ID',
+                displayName: t('fields.userId.label'),
                 type: 'text',
                 isRequired: true,
                 source: 'system',
-                sampleValue: 'USR001',
+                sampleValue: t('fields.userId.sample'),
             },
             {
                 name: 'enrollment_number',
-                displayName: 'Enrollment Number',
+                displayName: t('fields.enrollmentNumber.label'),
                 type: 'text',
                 isRequired: true,
                 source: 'system',
-                sampleValue: 'ENR2024001',
+                sampleValue: t('fields.enrollmentNumber.sample'),
             },
             {
                 name: 'student_name',
-                displayName: 'Student Name',
+                displayName: t('fields.studentName.label'),
                 type: 'text',
                 isRequired: true,
                 source: 'system',
-                sampleValue: 'John Doe',
+                sampleValue: t('fields.studentName.sample'),
             },
             {
                 name: 'full_name',
-                displayName: 'Full Name',
+                displayName: t('fields.fullName.label'),
                 type: 'text',
                 isRequired: false,
                 source: 'system',
-                sampleValue: 'John Michael Doe',
+                sampleValue: t('fields.fullName.sample'),
             },
             {
                 name: 'email',
-                displayName: 'Email Address',
+                displayName: t('fields.email.label'),
                 type: 'text',
                 isRequired: false,
                 source: 'system',
-                sampleValue: 'john.doe@example.com',
+                sampleValue: t('fields.email.sample'),
             },
             {
                 name: 'mobile_number',
-                displayName: 'Mobile Number',
+                displayName: t('fields.mobileNumber.label'),
                 type: 'text',
                 isRequired: false,
                 source: 'system',
-                sampleValue: '+1 (555) 123-4567',
+                sampleValue: t('fields.mobileNumber.sample'),
             },
             {
                 name: 'institute_name',
-                displayName: 'Institute Name',
+                displayName: t('fields.instituteName.label'),
                 type: 'text',
                 isRequired: false,
                 source: 'system',
-                sampleValue: 'University of Technology',
+                sampleValue: t('fields.instituteName.sample'),
             },
             {
                 name: 'completion_date',
-                displayName: 'Completion Date',
+                displayName: t('fields.completionDate.label'),
                 type: 'date',
                 isRequired: false,
                 source: 'system',
-                sampleValue: new Date().toLocaleDateString(),
+                sampleValue: new Date().toLocaleDateString(i18n.language),
             },
         ];
 
@@ -139,7 +141,7 @@ export const PdfAnnotationStep = ({
             }) || [];
 
         return [...systemFields, ...csvFields];
-    }, [session.csvHeaders, session.uploadedCsvData]);
+    }, [session.csvHeaders, session.uploadedCsvData, t, i18n.language]);
 
     // Handle image template upload
     const handleImageTemplateUpload = (template: ImageTemplate) => {
@@ -225,7 +227,7 @@ export const PdfAnnotationStep = ({
             !session.fieldMappings ||
             session.fieldMappings.length === 0
         ) {
-            alert('Please upload a template and map some fields first.');
+            alert(t('alerts.missingFields'));
             return;
         }
 
@@ -261,12 +263,17 @@ export const PdfAnnotationStep = ({
             downloadManager.downloadGenerationSummary(result);
 
             alert(
-                `Certificate generation completed!\nSuccessful: ${result.successCount}\nErrors: ${result.errorCount}`
+                t('alerts.generationSuccess', {
+                    successCount: result.successCount,
+                    errorCount: result.errorCount,
+                })
             );
         } catch (error) {
             console.error('Certificate generation failed:', error);
             alert(
-                `Certificate generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+                t('alerts.generationFailed', {
+                    message: error instanceof Error ? error.message : t('alerts.unknownError'),
+                })
             );
 
             onSessionUpdate({
@@ -301,20 +308,18 @@ export const PdfAnnotationStep = ({
                             </div>
                             <div>
                                 <h2 className="text-lg font-semibold text-neutral-700">
-                                    Template Design & Certificate Generation
+                                    {t('header.title')}
                                 </h2>
-                                <p className="text-sm text-neutral-500">
-                                    Upload template and annotate with student data fields
-                                </p>
+                                <p className="text-sm text-neutral-500">{t('header.subtitle')}</p>
                             </div>
                         </div>
 
                         {/* View Toggle */}
                         <div className="flex items-center gap-1 rounded-lg bg-neutral-100 p-1">
                             {[
-                                { key: 'upload', label: 'Upload', icon: Upload },
-                                { key: 'design', label: 'Design', icon: PaintBrush },
-                                { key: 'preview', label: 'Preview', icon: Eye },
+                                { key: 'upload', label: t('viewToggle.upload'), icon: Upload },
+                                { key: 'design', label: t('viewToggle.design'), icon: PaintBrush },
+                                { key: 'preview', label: t('viewToggle.preview'), icon: Eye },
                             ].map(({ key, label, icon: Icon }) => (
                                 <button
                                     key={key}
@@ -344,11 +349,13 @@ export const PdfAnnotationStep = ({
                                 <div className="size-5 animate-spin rounded-full border-2 border-blue-300 border-t-blue-600" />
                                 <div className="flex-1">
                                     <p className="text-sm font-medium text-blue-800">
-                                        Generating Certificates...
+                                        {t('progress.generating')}
                                     </p>
                                     <p className="text-xs text-blue-600">
-                                        {generationProgress.completed} of {generationProgress.total}{' '}
-                                        completed
+                                        {t('progress.status', {
+                                            completed: generationProgress.completed,
+                                            total: generationProgress.total,
+                                        })}
                                     </p>
                                 </div>
                                 <div className="text-sm font-medium text-blue-700">
@@ -427,13 +434,13 @@ export const PdfAnnotationStep = ({
                         className="flex items-center gap-2"
                     >
                         <ArrowLeft className="size-4" />
-                        Back to Student Data
+                        {t('footer.back')}
                     </MyButton>
 
                     <div className="flex items-center gap-3">
                         {session.fieldMappings && session.fieldMappings.length > 0 && (
                             <div className="text-sm text-neutral-600">
-                                {session.fieldMappings.length} fields mapped
+                                {t('footer.fieldsMapped', { count: session.fieldMappings.length })}
                             </div>
                         )}
 
@@ -447,12 +454,12 @@ export const PdfAnnotationStep = ({
                             {isGenerating ? (
                                 <>
                                     <div className="size-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                                    Generating...
+                                    {t('footer.generating')}
                                 </>
                             ) : (
                                 <>
                                     <Download className="size-4" />
-                                    Generate Certificates
+                                    {t('footer.generate')}
                                 </>
                             )}
                         </MyButton>
@@ -468,29 +475,14 @@ export const PdfAnnotationStep = ({
                             </div>
                             <div>
                                 <h3 className="mb-2 text-sm font-medium text-blue-800">
-                                    Getting Started with Certificate Generation
+                                    {t('help.title')}
                                 </h3>
                                 <ol className="list-inside list-decimal space-y-1 text-xs text-blue-700">
-                                    <li>
-                                        Upload a certificate template (PDF or image) using the
-                                        upload area above
-                                    </li>
-                                    <li>
-                                        Switch to "Design" view to map data fields onto your
-                                        template
-                                    </li>
-                                    <li>
-                                        Drag fields from the palette onto the template where you
-                                        want data to appear
-                                    </li>
-                                    <li>
-                                        Use "Preview" to see how certificates will look with real
-                                        student data
-                                    </li>
-                                    <li>
-                                        Click "Generate Certificates" to create and download all
-                                        certificates
-                                    </li>
+                                    <li>{t('help.step1')}</li>
+                                    <li>{t('help.step2')}</li>
+                                    <li>{t('help.step3')}</li>
+                                    <li>{t('help.step4')}</li>
+                                    <li>{t('help.step5')}</li>
                                 </ol>
                             </div>
                         </div>

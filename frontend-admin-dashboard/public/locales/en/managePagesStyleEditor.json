@@ -1,0 +1,360 @@
+{
+    "design": {
+        "heading": "Design"
+    },
+    "sections": {
+        "spacing": "Spacing",
+        "layoutWidth": "Layout & Width",
+        "background": "Background",
+        "borderShadow": "Border & Shadow",
+        "premiumEffects": "Premium Effects",
+        "decorations": "Decorations",
+        "effects": "Effects",
+        "typography": "Typography",
+        "animation": "Animation",
+        "visibility": "Visibility"
+    },
+    "presetRow": {
+        "custom": "Custom ({{value}})"
+    },
+    "spacing": {
+        "paddingTop": "Padding Top",
+        "paddingBottom": "Padding Bottom",
+        "paddingLeft": "Padding Left",
+        "paddingRight": "Padding Right",
+        "marginTop": "Margin Top",
+        "marginBottom": "Margin Bottom"
+    },
+    "layoutWidth": {
+        "description": "Section shell: the background spans the full page width while the content stays in a centered column. Leave everything off for the classic single-block layout.",
+        "contentWidth": {
+            "label": "Content Width",
+            "options": {
+                "off": "Off",
+                "text": "Text",
+                "narrow": "Narrow",
+                "default": "Default",
+                "wide": "Wide",
+                "full": "Full"
+            }
+        },
+        "customMaxWidth": {
+            "label": "Custom Max Width",
+            "placeholder": "e.g. 820px (overrides preset)"
+        },
+        "overlapTop": {
+            "label": "Overlap Previous Section",
+            "options": {
+                "none": "None"
+            }
+        },
+        "overlapHint": "Overlaps flatten automatically on mobile.",
+        "zIndex": {
+            "label": "Stack Order (z-index)",
+            "options": {
+                "auto": "Auto"
+            }
+        },
+        "minHeight": {
+            "label": "Min Height",
+            "options": {
+                "off": "Off",
+                "fullScreen": "Full screen"
+            }
+        },
+        "verticalAlign": {
+            "label": "Vertical Align (within min height)",
+            "options": {
+                "top": "Top",
+                "center": "Center",
+                "bottom": "Bottom"
+            }
+        },
+        "sticky": {
+            "label": "Pin While Scrolling (sticky)",
+            "options": {
+                "off": "Off",
+                "top80": "Top 80",
+                "top96": "Top 96",
+                "top120": "Top 120"
+            },
+            "hint": "Pins this block inside a column layout — set the layout’s Vertical Align to Stretch so it has room to travel."
+        }
+    },
+    "background": {
+        "color": {
+            "label": "Background Color"
+        },
+        "image": {
+            "label": "Background Image",
+            "placeholder": "Image URL or upload"
+        },
+        "size": {
+            "label": "Background Size",
+            "options": {
+                "cover": "Cover",
+                "contain": "Contain",
+                "auto": "Auto"
+            }
+        },
+        "overlayColor": {
+            "label": "Overlay Color"
+        },
+        "gradient": {
+            "label": "Gradient",
+            "enabled": "Enabled",
+            "off": "Off",
+            "type": {
+                "label": "Type",
+                "options": {
+                    "linear": "Linear",
+                    "radial": "Radial"
+                }
+            },
+            "angle": {
+                "label": "Angle ({{angle}}°)"
+            },
+            "stop": {
+                "label": "Stop {{index}}"
+            },
+            "addStop": "+ Add Stop"
+        }
+    },
+    "borderShadow": {
+        "borderWidth": {
+            "label": "Border Width"
+        },
+        "borderColor": {
+            "label": "Border Color"
+        },
+        "borderStyle": {
+            "label": "Border Style",
+            "options": {
+                "solid": "Solid",
+                "dashed": "Dashed",
+                "dotted": "Dotted"
+            }
+        },
+        "borderRadius": {
+            "label": "Border Radius",
+            "options": {
+                "none": "None",
+                "full": "Full"
+            }
+        },
+        "boxShadow": {
+            "label": "Box Shadow",
+            "options": {
+                "none": "None",
+                "sm": "SM",
+                "md": "MD",
+                "lg": "LG",
+                "xl": "XL",
+                "xxl": "2XL"
+            }
+        }
+    },
+    "premiumEffects": {
+        "glassSurface": {
+            "label": "Glass Surface",
+            "options": {
+                "off": "Off",
+                "subtle": "Subtle",
+                "medium": "Medium",
+                "strong": "Strong"
+            }
+        },
+        "glow": {
+            "label": "Glow",
+            "options": {
+                "off": "Off",
+                "soft": "Soft",
+                "medium": "Medium",
+                "bold": "Bold"
+            }
+        },
+        "borderGradient": {
+            "label": "Border Gradient",
+            "options": {
+                "off": "Off",
+                "primary": "Primary",
+                "bold": "Bold",
+                "aurora": "Aurora"
+            },
+            "hint": "The gradient border owns the surface — background layers and images are ignored while it is on."
+        },
+        "meshBackground": {
+            "label": "Mesh Background",
+            "options": {
+                "off": "Off",
+                "soft": "Soft",
+                "bold": "Bold",
+                "aurora": "Aurora"
+            }
+        },
+        "imageOverlay": {
+            "label": "Image Overlay",
+            "options": {
+                "off": "Off",
+                "scrim": "Scrim",
+                "bottom": "Bottom",
+                "light": "Light",
+                "brand": "Brand"
+            }
+        }
+    },
+    "decorations": {
+        "ornaments": {
+            "label": "Ornaments",
+            "off": "Off"
+        },
+        "ornamentsHint": "Ambient shapes painted behind the content, colored by the active theme. Subtle by design.",
+        "divider": {
+            "labelTop": "Divider · Top edge",
+            "labelBottom": "Divider · Bottom edge",
+            "options": {
+                "off": "Off",
+                "wave": "Wave",
+                "angle": "Angle",
+                "curve": "Curve"
+            }
+        },
+        "dividerHeight": {
+            "label": "Divider Height",
+            "options": {
+                "s": "S",
+                "m": "M",
+                "l": "L"
+            },
+            "hint": "The divider is cut in the page background color, blending this section into its neighbours. Give the section its own background so the shape reads."
+        }
+    },
+    "effects": {
+        "opacity": {
+            "label": "Opacity ({{percent}}%)"
+        },
+        "maxWidth": {
+            "label": "Max Width",
+            "layoutHint": "Width is controlled by Layout & Width while the section shell is on (use its Custom Max Width there).",
+            "options": {
+                "none": "None"
+            }
+        },
+        "minHeight": {
+            "label": "Min Height (custom — presets in Layout & Width)",
+            "placeholder": "e.g. 400px"
+        },
+        "customClass": {
+            "label": "Custom CSS Class",
+            "placeholder": "e.g. my-hero-section"
+        }
+    },
+    "typography": {
+        "fontFamily": {
+            "label": "Font Family",
+            "default": "Default",
+            "serifSuffix": "{{label}} (serif)"
+        },
+        "fontSize": {
+            "label": "Font Size"
+        },
+        "fontWeight": {
+            "label": "Font Weight",
+            "options": {
+                "regular": "Regular",
+                "medium": "Medium",
+                "semi": "Semi",
+                "bold": "Bold",
+                "extra": "Extra"
+            }
+        },
+        "lineHeight": {
+            "label": "Line Height ({{value}})"
+        },
+        "letterSpacing": {
+            "label": "Letter Spacing",
+            "options": {
+                "tight": "Tight",
+                "normal": "Normal",
+                "wide": "Wide",
+                "wider": "Wider"
+            }
+        },
+        "textColor": {
+            "label": "Text Color"
+        },
+        "textAlign": {
+            "label": "Text Align",
+            "options": {
+                "left": "Left",
+                "center": "Center",
+                "right": "Right"
+            }
+        },
+        "textTransform": {
+            "label": "Text Transform",
+            "options": {
+                "none": "None",
+                "upper": "UPPER",
+                "lower": "lower",
+                "title": "Title"
+            }
+        }
+    },
+    "animation": {
+        "entrance": {
+            "label": "Entrance Animation",
+            "options": {
+                "none": "None",
+                "fadeIn": "Fade In",
+                "fadeUp": "Fade Up",
+                "fadeDown": "Fade Down",
+                "fadeLeft": "Fade Left",
+                "fadeRight": "Fade Right",
+                "scaleUp": "Scale Up",
+                "slideUp": "Slide Up"
+            }
+        },
+        "stagger": {
+            "label": "Stagger Children (cards/items cascade in)",
+            "options": {
+                "off": "Off",
+                "fast": "Fast",
+                "normal": "Normal",
+                "slow": "Slow"
+            }
+        },
+        "duration": {
+            "label": "Duration ({{ms}}ms)"
+        },
+        "delay": {
+            "label": "Delay ({{ms}}ms)"
+        },
+        "easing": {
+            "label": "Easing",
+            "options": {
+                "ease": "Ease",
+                "easeIn": "Ease In",
+                "easeOut": "Ease Out",
+                "easeInOut": "Ease In-Out"
+            }
+        },
+        "hover": {
+            "label": "Hover Effect",
+            "options": {
+                "none": "None",
+                "lift": "Lift",
+                "glow": "Glow",
+                "scale": "Scale",
+                "brighten": "Brighten"
+            }
+        }
+    },
+    "visibility": {
+        "viewports": {
+            "desktop": "Desktop",
+            "tablet": "Tablet",
+            "mobile": "Mobile"
+        }
+    }
+}

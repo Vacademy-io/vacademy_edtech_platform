@@ -8,4 +8,6 @@ import java.util.List;
 public interface AppRegistrationRepository extends JpaRepository<AppRegistration, String> {
 
     List<AppRegistration> findAllByOrderByNameAsc();
+
+    List<AppRegistration> findAllByInstituteIdAndArchivedFalseOrderByNameAsc(String instituteId);
 }

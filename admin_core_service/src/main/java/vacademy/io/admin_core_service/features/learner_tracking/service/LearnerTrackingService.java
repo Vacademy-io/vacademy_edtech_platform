@@ -6,6 +6,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.learner_operation.enums.LearnerOperationEnum;
 import vacademy.io.admin_core_service.features.learner_operation.enums.LearnerOperationSourceEnum;
@@ -57,6 +59,43 @@ public class LearnerTrackingService {
         this.concentrationScoreService = concentrationScoreService;
     }
 
+    /**
+     * Defer a rollup until the current transaction has actually committed.
+     *
+     * The rollups in LearnerTrackingAsyncService are @Async: they re-read the
+     * very breadcrumb rows this request just wrote (video_tracked /
+     * document_tracked / audio_tracked) from a different thread, in their own
+     * transaction. Called inline they start while this transaction is still
+     * open, so those rows are invisible to them and the slide gets scored from
+     * previously committed requests only — a learner's first viewing session
+     * counted as 0% and only caught up when they watched again. Worst on Vimeo,
+     * whose player sends a single POST per session, so nothing ever caught up.
+     *
+     * No transaction in progress (the audio path) means nothing to wait for,
+     * so the rollup runs as before.
+     */
+    private void afterCommit(Runnable rollup) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            rollup.run();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                // An exception thrown here propagates to whoever called commit,
+                // so the request would 500 even though the learner's activity is
+                // already safely committed. Dispatching a rollup is best-effort
+                // (it was fire-and-forget before this indirection); a rejected
+                // async task must not turn a successful write into an error.
+                try {
+                    rollup.run();
+                } catch (RuntimeException e) {
+                    log.error("Failed to dispatch learner progress rollup after commit", e);
+                }
+            }
+        });
+    }
+
     @Transactional
     public ActivityLogDTO addOrUpdateDocumentActivityLog(ActivityLogDTO activityLogDTO, String slideId,
             String chapterId, String packageSessionId, String moduleId, String subjectId, CustomUserDetails user) {
@@ -72,8 +111,8 @@ public class LearnerTrackingService {
                 : updateActivityLog(activityLogDTO, activityLogDTO.getId(), user.getUserId());
         saveDocumentTracking(activityLogDTO, activityLog);
         recomputeEngagedMsFromBreadcrumbs(activityLog);
-        learnerTrackingAsyncService.updateLearnerOperationsForDocument(user.getUserId(), slideId, chapterId, moduleId,
-                subjectId, packageSessionId, activityLogDTO);
+        afterCommit(() -> learnerTrackingAsyncService.updateLearnerOperationsForDocument(user.getUserId(), slideId,
+                chapterId, moduleId, subjectId, packageSessionId, activityLogDTO));
         concentrationScoreService.addConcentrationScore(activityLogDTO.getConcentrationScore(), activityLog);
         return activityLog.toActivityLogDTO();
     }
@@ -88,8 +127,8 @@ public class LearnerTrackingService {
 
         saveVideoTracking(activityLogDTO, activityLog);
         recomputeEngagedMsFromBreadcrumbs(activityLog);
-        learnerTrackingAsyncService.updateLearnerOperationsForVideo(user.getUserId(), slideId, chapterId, moduleId,
-                subjectId, packageSessionId, activityLogDTO);
+        afterCommit(() -> learnerTrackingAsyncService.updateLearnerOperationsForVideo(user.getUserId(), slideId,
+                chapterId, moduleId, subjectId, packageSessionId, activityLogDTO));
         concentrationScoreService.addConcentrationScore(activityLogDTO.getConcentrationScore(), activityLog);
         return activityLog.toActivityLogDTO();
     }
@@ -104,8 +143,8 @@ public class LearnerTrackingService {
 
         saveVideoTracking(activityLogDTO, activityLog); // Reuse VideoTracking entity
         recomputeEngagedMsFromBreadcrumbs(activityLog);
-        learnerTrackingAsyncService.updateLearnerOperationsForHtmlVideo(user.getUserId(), slideId, chapterId, moduleId,
-                subjectId, packageSessionId, activityLogDTO);
+        afterCommit(() -> learnerTrackingAsyncService.updateLearnerOperationsForHtmlVideo(user.getUserId(), slideId,
+                chapterId, moduleId, subjectId, packageSessionId, activityLogDTO));
         concentrationScoreService.addConcentrationScore(activityLogDTO.getConcentrationScore(), activityLog);
         return activityLog.toActivityLogDTO();
     }
@@ -259,8 +298,8 @@ public class LearnerTrackingService {
 
         saveAudioTracking(activityLogDTO, activityLog);
         recomputeEngagedMsFromBreadcrumbs(activityLog);
-        learnerTrackingAsyncService.updateLearnerOperationsForAudio(user.getUserId(), slideId, chapterId, moduleId,
-                subjectId, packageSessionId, activityLogDTO);
+        afterCommit(() -> learnerTrackingAsyncService.updateLearnerOperationsForAudio(user.getUserId(), slideId,
+                chapterId, moduleId, subjectId, packageSessionId, activityLogDTO));
         concentrationScoreService.addConcentrationScore(activityLogDTO.getConcentrationScore(), activityLog);
         return activityLog.toActivityLogDTO();
     }
@@ -365,12 +404,12 @@ public class LearnerTrackingService {
      * reads that row — while still inflating the chapter rollup, which sums
      * across all of them.
      *
-     * Graded and self-reporting types are refused outright rather than mapped.
-     * Completion there is earned, not declared: a quiz, question, assignment or
-     * assessment completes by submission and SCORM reports its own status, so a
-     * "mark as complete" button would be claiming a score the learner has not
-     * got. Mainstream players draw the same line — Udemy and Coursera let you
-     * tick a lecture or a reading, never a graded item.
+     * Graded types are refused outright rather than mapped. Completion there is
+     * earned, not declared: a quiz, question, assignment or assessment completes
+     * by submission, so a "mark as complete" button would be claiming a score
+     * the learner has not got. SCORM is allowed: many packages are plain reading
+     * screens that never report completion, and the package's own report still
+     * counts — un-marking falls back to whatever it last sent.
      */
     private String percentageOperationForSlideType(String slideType) {
         if (SlideTypeEnum.VIDEO.name().equals(slideType) || SlideTypeEnum.HTML_VIDEO.name().equals(slideType)) {
@@ -381,6 +420,9 @@ public class LearnerTrackingService {
         }
         if (SlideTypeEnum.DOCUMENT.name().equals(slideType)) {
             return LearnerOperationEnum.PERCENTAGE_DOCUMENT_COMPLETED.name();
+        }
+        if (SlideTypeEnum.SCORM.name().equals(slideType)) {
+            return LearnerOperationEnum.PERCENTAGE_SCORM_COMPLETED.name();
         }
         throw new InvalidRequestException(
                 "Slide type " + slideType + " cannot be marked complete by hand; it completes on submission.");

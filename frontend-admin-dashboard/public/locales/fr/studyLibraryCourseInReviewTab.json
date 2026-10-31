@@ -1,0 +1,22 @@
+{
+    "withdrawSuccess": "Cours retiré de la révision",
+    "withdrawFailed": "Échec du retrait de la révision",
+    "errorLoadingCourses": "Erreur lors du chargement des cours",
+    "retry": "Réessayer",
+    "coursesInReview": "Cours en révision",
+    "reviewedByAdminsNote": "Ces cours sont actuellement examinés par les administrateurs.",
+    "emptyState": {
+        "title": "Aucun cours en révision",
+        "description": "Vous n'avez actuellement aucun cours en cours de révision."
+    },
+    "submitted": "Soumis {{time}}",
+    "inReview": "En révision",
+    "update": "Mise à jour",
+    "viewCourse": "Voir le cours",
+    "withdrawing": "Retrait en cours...",
+    "withdrawFromReview": "Retirer de la révision",
+    "reviewProcess": {
+        "title": "Processus de révision",
+        "description": "Une fois soumis, vos cours seront examinés par les administrateurs. Vous pouvez retirer un cours de la révision à tout moment si vous devez apporter des modifications."
+    }
+}

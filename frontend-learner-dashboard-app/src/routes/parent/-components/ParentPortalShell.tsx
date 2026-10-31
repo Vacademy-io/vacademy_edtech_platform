@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import type { ChildProfile } from "@/types/parent-portal";
 import { ParentDashboard } from "./ParentDashboard";
 import { ParentApplicationForm } from "./ParentApplicationForm";
@@ -9,7 +10,7 @@ import { PaymentsModule } from "./PaymentsModule";
 import { DocumentsModule } from "./DocumentsModule";
 import { AdmissionTracker } from "./AdmissionTracker";
 import { ParentPortalLayout } from "./ParentPortalLayout";
-import { type TabId, NAV_TABS } from "./navigation-config";
+import { useNavTabs, type TabId } from "./navigation-config";
 
 interface ParentPortalShellProps {
   child: ChildProfile;
@@ -24,6 +25,8 @@ export function ParentPortalShell({
   parentName,
   onSwitchChild,
 }: ParentPortalShellProps) {
+  const { t } = useTranslation("parent");
+  const navTabs = useNavTabs();
   const location = useLocation();
   console.log("sheel", child);
   // Derive active tab from URL path so routes map to tabs.
@@ -84,7 +87,8 @@ export function ParentPortalShell({
   }, [activeTab, child]);
 
   const currentTabLabel =
-    NAV_TABS.find((t) => t.id === activeTab)?.label ?? "Dashboard";
+    navTabs.find((tab) => tab.id === activeTab)?.label ??
+    t("admissionPortal.nav.dashboard");
 
   return (
     <ParentPortalLayout

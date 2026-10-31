@@ -38,4 +38,6 @@ public interface AssessmentReattemptRequestRepository extends JpaRepository<Asse
                                                   Pageable pageable);
 
     long countByInstituteIdAndStatus(String instituteId, String status);
+
+    long countByInstituteIdAndAssessmentIdAndStatus(String instituteId, String assessmentId, String status);
 }

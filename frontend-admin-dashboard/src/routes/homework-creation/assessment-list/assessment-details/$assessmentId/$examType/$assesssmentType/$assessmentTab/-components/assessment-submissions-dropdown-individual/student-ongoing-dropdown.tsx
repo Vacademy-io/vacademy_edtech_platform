@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -25,16 +26,19 @@ const CloseSubmissionComponent = ({
     student: AssessmentRevaluateStudentInterface;
     onClose: () => void;
 }) => {
+    const { t } = useTranslation('homeworkCreationStudentOngoingDropdown');
     return (
         <DialogContent className="flex flex-col p-0">
-            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">Close Submission</h1>
+            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
+                {t('dialogs.closeSubmission.title')}
+            </h1>
             <div className="flex flex-col gap-2 p-4">
                 <div className="flex items-center text-danger-600">
-                    <p>Attention</p>
+                    <p>{t('dialogs.attentionLabel')}</p>
                     <WarningCircle size={18} />
                 </div>
                 <h1>
-                    Are you sure you want to close Assessment submission of{' '}
+                    {t('dialogs.closeSubmission.confirmMessagePrefix')}{' '}
                     <span className="text-primary-500">{student.full_name}</span>?
                 </h1>
                 <div className="flex justify-end">
@@ -45,7 +49,7 @@ const CloseSubmissionComponent = ({
                         className="mt-4 font-medium"
                         onClick={onClose}
                     >
-                        Close
+                        {t('dialogs.closeButton')}
                     </MyButton>
                 </div>
             </div>
@@ -62,21 +66,26 @@ const IncreaseAssessmentTimeComponent = ({
     distributionDuration: string;
     onClose: () => void;
 }) => {
+    const { t } = useTranslation('homeworkCreationStudentOngoingDropdown');
     console.log(student);
     const [selectedSection, setSelectedSection] = useState<string>(timeLimit[0] as string);
 
     return (
         <DialogContent className="flex flex-col p-0">
             <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
-                Increase Assessment Time
+                {t('dialogs.increaseAssessmentTime.title')}
             </h1>
             {distributionDuration === 'ASSESSMENT' && (
-                <div className="flex max-h-[60vh] flex-col gap-2 overflow-y-auto p-4">
-                    <h1>Entire Assessment</h1>
-                    <h3>Increase By</h3>
+                <div className="flex max-h-[60vh] flex-col gap-2 overflow-y-auto p-4"> {/* design-lint-ignore: viewport-relative scrollable dialog body, no vh token exists */}
+                    <h1>{t('dialogs.increaseAssessmentTime.entireAssessment')}</h1>
+                    <h3>{t('dialogs.increaseAssessmentTime.increaseBy')}</h3>
                     <Select value={selectedSection} onValueChange={setSelectedSection}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select Section" />
+                        <SelectTrigger className="w-44">
+                            <SelectValue
+                                placeholder={t(
+                                    'dialogs.increaseAssessmentTime.selectSectionPlaceholder'
+                                )}
+                            />
                         </SelectTrigger>
                         <SelectContent>
                             {timeLimit.map((section, idx) => (
@@ -94,18 +103,22 @@ const IncreaseAssessmentTimeComponent = ({
                             className="mt-4 font-medium"
                             onClick={onClose}
                         >
-                            Close
+                            {t('dialogs.closeButton')}
                         </MyButton>
                     </div>
                 </div>
             )}
             {distributionDuration === 'SECTION' && (
-                <div className="flex max-h-[60vh] flex-col gap-2 overflow-y-auto p-4">
-                    <h1>Section 1</h1>
-                    <h3>Increase By</h3>
+                <div className="flex max-h-[60vh] flex-col gap-2 overflow-y-auto p-4"> {/* design-lint-ignore: viewport-relative scrollable dialog body, no vh token exists */}
+                    <h1>{t('dialogs.increaseAssessmentTime.sectionNumber', { number: 1 })}</h1>
+                    <h3>{t('dialogs.increaseAssessmentTime.increaseBy')}</h3>
                     <Select value={selectedSection} onValueChange={setSelectedSection}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select Section" />
+                        <SelectTrigger className="w-44">
+                            <SelectValue
+                                placeholder={t(
+                                    'dialogs.increaseAssessmentTime.selectSectionPlaceholder'
+                                )}
+                            />
                         </SelectTrigger>
                         <SelectContent>
                             {timeLimit.map((section, idx) => (
@@ -115,11 +128,15 @@ const IncreaseAssessmentTimeComponent = ({
                             ))}
                         </SelectContent>
                     </Select>
-                    <h1>Section 2</h1>
-                    <h3>Increase By</h3>
+                    <h1>{t('dialogs.increaseAssessmentTime.sectionNumber', { number: 2 })}</h1>
+                    <h3>{t('dialogs.increaseAssessmentTime.increaseBy')}</h3>
                     <Select value={selectedSection} onValueChange={setSelectedSection}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select Section" />
+                        <SelectTrigger className="w-44">
+                            <SelectValue
+                                placeholder={t(
+                                    'dialogs.increaseAssessmentTime.selectSectionPlaceholder'
+                                )}
+                            />
                         </SelectTrigger>
                         <SelectContent>
                             {timeLimit.map((section, idx) => (
@@ -137,18 +154,22 @@ const IncreaseAssessmentTimeComponent = ({
                             className="mt-4 font-medium"
                             onClick={onClose}
                         >
-                            Close
+                            {t('dialogs.closeButton')}
                         </MyButton>
                     </div>
                 </div>
             )}
             {distributionDuration === 'QUESTION' && (
-                <div className="flex max-h-[60vh] flex-col gap-2 overflow-y-auto p-4">
-                    <h1>Question 1</h1>
-                    <h3>Increase By</h3>
+                <div className="flex max-h-[60vh] flex-col gap-2 overflow-y-auto p-4"> {/* design-lint-ignore: viewport-relative scrollable dialog body, no vh token exists */}
+                    <h1>{t('dialogs.increaseAssessmentTime.questionNumber', { number: 1 })}</h1>
+                    <h3>{t('dialogs.increaseAssessmentTime.increaseBy')}</h3>
                     <Select value={selectedSection} onValueChange={setSelectedSection}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select Section" />
+                        <SelectTrigger className="w-44">
+                            <SelectValue
+                                placeholder={t(
+                                    'dialogs.increaseAssessmentTime.selectSectionPlaceholder'
+                                )}
+                            />
                         </SelectTrigger>
                         <SelectContent>
                             {timeLimit.map((section, idx) => (
@@ -158,11 +179,15 @@ const IncreaseAssessmentTimeComponent = ({
                             ))}
                         </SelectContent>
                     </Select>
-                    <h1>Question 2</h1>
-                    <h3>Increase By</h3>
+                    <h1>{t('dialogs.increaseAssessmentTime.questionNumber', { number: 2 })}</h1>
+                    <h3>{t('dialogs.increaseAssessmentTime.increaseBy')}</h3>
                     <Select value={selectedSection} onValueChange={setSelectedSection}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Select Section" />
+                        <SelectTrigger className="w-44">
+                            <SelectValue
+                                placeholder={t(
+                                    'dialogs.increaseAssessmentTime.selectSectionPlaceholder'
+                                )}
+                            />
                         </SelectTrigger>
                         <SelectContent>
                             {timeLimit.map((section, idx) => (
@@ -180,7 +205,7 @@ const IncreaseAssessmentTimeComponent = ({
                             className="mt-4 font-medium"
                             onClick={onClose}
                         >
-                            Close
+                            {t('dialogs.closeButton')}
                         </MyButton>
                     </div>
                 </div>
@@ -190,6 +215,7 @@ const IncreaseAssessmentTimeComponent = ({
 };
 
 const StudentOngoingDropdown = ({ student }: { student: AssessmentRevaluateStudentInterface }) => {
+    const { t } = useTranslation('homeworkCreationStudentOngoingDropdown');
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [openDialog, setOpenDialog] = useState(false);
 
@@ -216,13 +242,13 @@ const StudentOngoingDropdown = ({ student }: { student: AssessmentRevaluateStude
                         className="cursor-pointer"
                         onClick={() => handleMenuOptionsChange('Increase Submission Time')}
                     >
-                        Increase Submission Time
+                        {t('dropdown.increaseSubmissionTime')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         className="cursor-pointer"
                         onClick={() => handleMenuOptionsChange('Close Submission')}
                     >
-                        Close Submission
+                        {t('dropdown.closeSubmission')}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>

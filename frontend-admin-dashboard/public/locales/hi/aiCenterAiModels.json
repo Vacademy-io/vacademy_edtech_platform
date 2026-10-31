@@ -1,0 +1,29 @@
+{
+    "models": {
+        "glm53Flash": {
+            "name": "GLM 5.3 Flash",
+            "description": "Z.ai — अनुशंसित, हस्तलेख पढ़ता है"
+        },
+        "claudeOpus45": {
+            "name": "Claude Opus 4.5",
+            "description": "Anthropic"
+        },
+        "gemini3ProPreview": {
+            "name": "Gemini 3 Pro Preview",
+            "description": "Google"
+        },
+        "gemini31ProPreview": {
+            "name": "Gemini 3.1 Pro Preview",
+            "description": "Google"
+        },
+        "gpt54": {
+            "name": "GPT-5.4",
+            "description": "OpenAI"
+        }
+    },
+    "fallbackDescription": "एआई मॉडल",
+    "platformDefault": {
+        "name": "प्लेटफ़ॉर्म डिफ़ॉल्ट",
+        "description": "अनुशंसित — कॉपी जाँच के लिए प्लेटफ़ॉर्म एडमिन द्वारा चुना गया मॉडल"
+    }
+}

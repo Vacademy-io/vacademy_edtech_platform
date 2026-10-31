@@ -1,7 +1,11 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { DotOutline } from '@phosphor-icons/react';
 import { Separator } from '@radix-ui/react-separator';
-import { getSubjectNameById } from '@/routes/assessment/question-papers/-utils/helper';
+import {
+    resolveSubjectName,
+    unresolvedSubjectIds,
+    useSubjectNamesByIds,
+} from '@/services/subject-names';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
 import { convertToLocalDateTime, extractDateTime } from '@/constants/helper';
@@ -20,6 +24,7 @@ import ExportDialogPDFCSV from '@/components/common/export-dialog-pdf-csv';
 import { toast } from 'sonner';
 import { handleGetStudentReportExportPDF } from '@/routes/assessment/assessment-list/assessment-details/$assessmentId/$examType/$assesssmentType/$assessmentTab/-services/assessment-details-services';
 import { Steps } from '@/types/assessments/assessment-data-type';
+import { useTranslation } from 'react-i18next';
 
 interface TestReportDialogProps {
     isOpen: boolean;
@@ -36,6 +41,7 @@ export const TestReportDialog = ({
     studentReport,
     assessmentDetails,
 }: TestReportDialogProps) => {
+    const { t } = useTranslation('manageStudentsTestReportDialog');
     const { data: instituteDetails } = useQuery(useInstituteQuery());
     const sectionsInfo = assessmentDetails[1]?.saved_data.sections?.map((section) => ({
         name: section.name,
@@ -73,7 +79,7 @@ export const TestReportDialog = ({
         if (typeof options === 'string') {
             return <p>{parseHtmlToString(options)}</p>;
         }
-        return <p>No response</p>;
+        return <p>{t('review.noResponse')}</p>;
     };
     const getExportStudentReportDataPDF = useMutation({
         mutationFn: ({
@@ -95,7 +101,7 @@ export const TestReportDialog = ({
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
-            toast.success('Test report data for PDF exported successfully!');
+            toast.success(t('toast.exportPdfSuccess'));
         },
         onError: (error: unknown) => {
             throw error;
@@ -108,13 +114,21 @@ export const TestReportDialog = ({
             attemptId: studentReport.assessment_id,
         });
     };
+    // The institute list keeps one subject per distinct name and drops subjects whose
+    // course was deleted, so most stored ids need the direct lookup.
+    const subjectNamesById = useSubjectNamesByIds(
+        unresolvedSubjectIds(instituteDetails?.subjects, [
+            testReport.question_overall_detail_dto.subjectId,
+        ])
+    );
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col !gap-0 overflow-y-auto !p-0">
+            <DialogContent className="no-scrollbar !m-0 flex max-h-dialog-tall w-dialog-xl flex-col !gap-0 overflow-y-auto !p-0">
                 <DialogHeader className="flex flex-col gap-6">
                     <div className="flex items-center justify-between">
                         <DialogTitle className="w-full bg-primary-50 px-6 py-4 text-h3 font-semibold text-primary-500">
-                            Student Test Report
+                            {t('title')}
                         </DialogTitle>
                     </div>
                 </DialogHeader>
@@ -140,14 +154,15 @@ export const TestReportDialog = ({
 
                     <div className="grid grid-cols-1 text-body sm:grid-cols-3">
                         <div>
-                            Subject:{' '}
-                            {getSubjectNameById(
-                                instituteDetails?.subjects || [],
+                            {t('info.subject')}{' '}
+                            {resolveSubjectName(
+                                instituteDetails?.subjects,
+                                subjectNamesById,
                                 testReport.question_overall_detail_dto.subjectId
-                            ) || ''}
+                            )}
                         </div>
                         <div>
-                            Attempt Date:{' '}
+                            {t('info.attemptDate')}{' '}
                             {
                                 extractDateTime(
                                     convertToLocalDateTime(
@@ -157,17 +172,20 @@ export const TestReportDialog = ({
                             }
                         </div>
                         <div>
-                            Marks: {testReport.question_overall_detail_dto.achievedMarks.toFixed(2)}
+                            {t('info.marks')}{' '}
+                            {testReport.question_overall_detail_dto.achievedMarks.toFixed(2)}
                         </div>
                         <div>
-                            Completion Time:{' '}
-                            {(
-                                testReport.question_overall_detail_dto.completionTimeInSeconds / 60
-                            ).toFixed(2)}{' '}
-                            min
+                            {t('info.completionTime')}{' '}
+                            {t('info.minutes', {
+                                value: (
+                                    testReport.question_overall_detail_dto.completionTimeInSeconds /
+                                    60
+                                ).toFixed(2),
+                            })}
                         </div>
                         <div>
-                            Start Time:{' '}
+                            {t('info.startTime')}{' '}
                             {
                                 extractDateTime(
                                     convertToLocalDateTime(
@@ -177,7 +195,7 @@ export const TestReportDialog = ({
                             }
                         </div>
                         <div>
-                            End Time:{' '}
+                            {t('info.endTime')}{' '}
                             {
                                 extractDateTime(
                                     convertToLocalDateTime(
@@ -192,11 +210,13 @@ export const TestReportDialog = ({
                 <Separator />
 
                 {/* Charts Section */}
-                <div className="p-6 text-h3 font-semibold text-primary-500">Score Report</div>
+                <div className="p-6 text-h3 font-semibold text-primary-500">
+                    {t('score.heading')}
+                </div>
                 <div className="flex">
                     <div className="ml-6 flex flex-col items-center gap-20 p-6">
                         <div className="flex flex-col">
-                            <h1>Rank</h1>
+                            <h1>{t('score.rank')}</h1>
                             <div className="flex items-center gap-1">
                                 {testReport.question_overall_detail_dto.rank === 1 && (
                                     <Crown className="size-6" />
@@ -207,38 +227,38 @@ export const TestReportDialog = ({
                             </div>
                         </div>
                         <div>
-                            <h1>Percentile</h1>
+                            <h1>{t('score.percentile')}</h1>
                             <p className="text-center text-neutral-500">
                                 {testReport.question_overall_detail_dto.percentile.toFixed(2)}%
                             </p>
                         </div>
                         <div>
-                            <h1>Marks</h1>
+                            <h1>{t('score.marks')}</h1>
                             <p className="text-neutral-500">
                                 {studentReport.total_marks.toFixed(2)}/20
                             </p>
                         </div>
                     </div>
                     <div className="flex w-full flex-col items-center gap-6">
-                        <div className="text-h3 font-semibold">Response Breakdown</div>
+                        <div className="text-h3 font-semibold">{t('response.heading')}</div>
                         <ResponseBreakdownComponent responseData={responseData} />
                         <div className="flex flex-col">
                             <div className="-mt-14 flex items-center">
                                 <DotOutline weight="fill" className="size-20 text-success-400" />
-                                <p className="-ml-4 text-[14px]">
-                                    Attempted: &nbsp;{responseData.attempted}
+                                <p className="-ms-4 text-body">
+                                    {t('response.attempted')} &nbsp;{responseData.attempted}
                                 </p>
                             </div>
                             <div className="-mt-12 flex items-center">
                                 <DotOutline weight="fill" className="size-20 text-neutral-200" />
-                                <p className="-ml-4 text-[14px]">
-                                    Skipped: &nbsp;{responseData.skipped}
+                                <p className="-ms-4 text-body">
+                                    {t('response.skipped')} &nbsp;{responseData.skipped}
                                 </p>
                             </div>
                         </div>
                     </div>
                     <div className="flex w-full flex-col items-center gap-6">
-                        <div className="text-h3 font-semibold">Marks Breakdown</div>
+                        <div className="text-h3 font-semibold">{t('marksBreakdown.heading')}</div>
                         <MarksBreakdownComponent marksData={marksData} />
                         <div className="flex flex-col">
                             <div className="-mb-8 flex items-center justify-between">
@@ -248,7 +268,7 @@ export const TestReportDialog = ({
                                         weight="fill"
                                         className="text-success-400"
                                     />
-                                    <p>Correct Respondents: </p>
+                                    <p>{t('marksBreakdown.correctRespondents')} </p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <p>{marksData.correct}</p>
@@ -271,7 +291,7 @@ export const TestReportDialog = ({
                                         weight="fill"
                                         className="text-warning-400"
                                     />
-                                    <p>Partially Correct Respondents: </p>
+                                    <p>{t('marksBreakdown.partiallyCorrectRespondents')} </p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <p>{marksData.partiallyCorrect}</p>
@@ -294,7 +314,7 @@ export const TestReportDialog = ({
                                         weight="fill"
                                         className="text-danger-400"
                                     />
-                                    <p>Wrong Respondents: </p>
+                                    <p>{t('marksBreakdown.wrongRespondents')} </p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <p>{marksData.wrongResponse}</p>
@@ -317,7 +337,7 @@ export const TestReportDialog = ({
                                         weight="fill"
                                         className="text-neutral-200"
                                     />
-                                    <p>Skipped: </p>
+                                    <p>{t('marksBreakdown.skipped')} </p>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <p>{marksData.skipped}</p>
@@ -358,7 +378,9 @@ export const TestReportDialog = ({
 
                 {/* Answer Review Section */}
                 <div className="flex w-full flex-col gap-10 p-6">
-                    <div className="text-h3 font-semibold text-primary-500">Answer Review</div>
+                    <div className="text-h3 font-semibold text-primary-500">
+                        {t('review.heading')}
+                    </div>
                     <div className="flex w-full flex-col gap-10">
                         {currentSectionAllQuestions && currentSectionAllQuestions.length > 0 ? (
                             currentSectionAllQuestions.map((review, index) => (
@@ -367,19 +389,21 @@ export const TestReportDialog = ({
                                         <div className="flex w-full items-start justify-between gap-6 text-subtitle">
                                             <div className="flex items-start gap-6 text-title">
                                                 <div className="whitespace-nowrap">
-                                                    Question ({index + 1}.)
+                                                    {t('review.question', { number: index + 1 })}
                                                 </div>
                                                 <div>{parseHtmlToString(review.question_name)}</div>
                                             </div>
                                             <div className="flex flex-nowrap items-center gap-2 whitespace-nowrap">
                                                 <Clock size={20} />
                                                 <p className="text-primary-500">
-                                                    {review.time_taken_in_seconds} sec
+                                                    {t('review.timeTakenSeconds', {
+                                                        count: review.time_taken_in_seconds,
+                                                    })}
                                                 </p>
                                             </div>
                                         </div>
                                         <div className="flex w-full items-center gap-6 text-subtitle">
-                                            <div>Student answer:</div>
+                                            <div>{t('review.studentAnswer')}</div>
                                             <div className="flex w-full items-center justify-between">
                                                 <div
                                                     className={`flex w-full max-w-2xl items-center rounded-lg p-4 ${
@@ -417,7 +441,9 @@ export const TestReportDialog = ({
                                                     }
                                                     showIcon={false}
                                                 >
-                                                    {review.mark.toFixed(2)} Marks
+                                                    {t('review.marksLabel', {
+                                                        marks: review.mark.toFixed(2),
+                                                    })}
                                                 </StatusChips>
                                                 <StatusChips
                                                     status={
@@ -436,7 +462,7 @@ export const TestReportDialog = ({
                                         {review.question_type !== 'CODING' &&
                                             review.answer_status !== 'CORRECT' && (
                                             <div className="flex w-full items-center gap-6 text-subtitle">
-                                                <div>Correct answer:</div>
+                                                <div>{t('review.correctAnswer')}</div>
                                                 <div className="flex w-full items-center justify-between">
                                                     <div
                                                         className={`flex w-full max-w-2xl rounded-lg bg-success-50 p-4`}
@@ -452,7 +478,7 @@ export const TestReportDialog = ({
                                         )}
                                         {review.explanation && (
                                             <div className="flex items-center gap-6 text-subtitle">
-                                                <div>Explanation:</div>
+                                                <div>{t('review.explanation')}</div>
                                                 <div>{parseHtmlToString(review.explanation)}</div>
                                             </div>
                                         )}
@@ -462,7 +488,7 @@ export const TestReportDialog = ({
                             ))
                         ) : (
                             <div className="py-4 text-center text-subtitle">
-                                No answer review available
+                                {t('review.empty')}
                             </div>
                         )}
                     </div>

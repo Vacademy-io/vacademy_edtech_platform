@@ -6,8 +6,9 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { getBatchDetailsListOfStudents } from '../-services/assessment-details-services';
 import { getInstituteId } from '@/constants/helper';
+import { useTranslation } from 'react-i18next';
 import { MyTable } from '@/components/design-system/table';
-import { step3ParticipantsListColumn } from '../-utils/student-columns';
+import { buildStep3ParticipantsListColumn } from '../-utils/student-columns';
 import { OnChangeFn, RowSelectionState } from '@tanstack/react-table';
 import { MyPagination } from '@/components/design-system/pagination';
 import { getAssessmentStep3ParticipantsListWithBatchName } from '../-utils/helper';
@@ -29,6 +30,7 @@ export interface AssessmentParticipantsInterface {
 }
 
 export const AssessmentParticipantsList = ({ batchId }: { batchId: string }) => {
+    const { t: tStudentColumns } = useTranslation('homeworkCreationStudentColumns');
     const { data: initData } = useSuspenseQuery(useInstituteQuery());
     const instituteId = getInstituteId();
     const [pageNo, setPageNo] = useState(0);
@@ -171,7 +173,7 @@ export const AssessmentParticipantsList = ({ batchId }: { batchId: string }) => 
                     </span>
                 </div>
             </DialogTrigger>
-            <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col gap-6 overflow-y-auto !p-0">
+            <DialogContent className="no-scrollbar !m-0 flex h-[90vh] !w-full !max-w-[90vw] flex-col gap-6 overflow-y-auto !p-0">{/* design-lint-ignore: vh/vw dialog sizing matches MyDialog primitive */}
                 <h1 className="rounded-t-lg bg-primary-100 p-4 font-semibold text-primary-500">
                     Participants List
                 </h1>
@@ -213,7 +215,7 @@ export const AssessmentParticipantsList = ({ batchId }: { batchId: string }) => 
                                 total_elements: participantsData.total_elements,
                                 last: participantsData.last,
                             }}
-                            columns={step3ParticipantsListColumn || []}
+                            columns={buildStep3ParticipantsListColumn(tStudentColumns) || []}
                             rowSelection={currentPageSelection}
                             onRowSelectionChange={handleRowSelectionChange}
                             currentPage={pageNo}

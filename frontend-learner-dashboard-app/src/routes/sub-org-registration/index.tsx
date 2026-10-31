@@ -2,6 +2,7 @@ import { createFileRoute, ErrorComponentProps } from "@tanstack/react-router";
 import { z } from "zod";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { LinkBreak } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { ModernCard } from "@/components/design-system/modern-card";
 import {
   handleGetSubOrgRegistrationTemplate,
@@ -19,9 +20,10 @@ const registrationParamsSchema = z.object({
  * returns 4xx/5xx for inactive links or ones that hit their registration cap).
  */
 function RegistrationLinkError({ error }: ErrorComponentProps) {
+  const { t } = useTranslation("registrationB");
   const message = getSubOrgApiErrorMessage(
     error,
-    "This registration link is invalid or no longer accepting registrations."
+    t("subOrgRegistration.linkError.defaultMessage")
   );
 
   return (
@@ -37,11 +39,11 @@ function RegistrationLinkError({ error }: ErrorComponentProps) {
             <LinkBreak className="size-8 text-neutral-500" />
           </div>
           <h1 className="text-xl font-semibold text-neutral-700">
-            Registration Link Closed
+            {t("subOrgRegistration.linkError.title")}
           </h1>
           <p className="text-sm text-neutral-500">{message}</p>
           <p className="text-caption text-neutral-400">
-            Please contact the institute for a new registration link.
+            {t("subOrgRegistration.linkError.contactHint")}
           </p>
         </div>
       </ModernCard>

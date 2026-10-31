@@ -81,8 +81,11 @@ public class FeeAllocationEngine {
             candidates = new ArrayList<>(enriched);
         }
 
-        // Remove bills with nothing left to pay
-        candidates.removeIf(b -> b.amountDue.compareTo(BigDecimal.ZERO) <= 0);
+        // Remove bills with nothing left to pay, and written-off ones
+        candidates.removeIf(b -> b.amountDue.compareTo(BigDecimal.ZERO) <= 0
+                || "WAIVED".equalsIgnoreCase(b.bill.getStatus())
+                || "CANCELLED".equalsIgnoreCase(b.bill.getStatus())
+                || "DELETED".equalsIgnoreCase(b.bill.getStatus()));
 
         if (candidates.isEmpty()) {
             log.info("No qualifying bills for scope {} and paymentLog {}", scope, paymentLogId);
@@ -156,15 +159,19 @@ public class FeeAllocationEngine {
         Comparator<BillWithDue> cmp;
 
         if (hasPriorityConfig) {
-            // Priority order first, then due-date ASC, then id for determinism
+            // Priority order first, then due-date ASC, installment order on the same day, then id
             cmp = Comparator
                     .comparingInt((BillWithDue b) -> priorityMap.getOrDefault(b.bill.getFeeTypeId(), Integer.MAX_VALUE))
                     .thenComparing(b -> b.bill.getDueDate() != null ? b.bill.getDueDate().getTime() : Long.MAX_VALUE)
+                    .thenComparing(FeeAllocationEngine::installmentOrder)
                     .thenComparing(b -> b.bill.getId());
         } else {
-            // Fallback: due-date ASC, same date → higher amountDue first, then id
+            // Fallback: due-date ASC; same date → installment 1 before 2 (a payment meant for
+            // the first installment must not land on a bigger one due the same day), then
+            // higher amountDue, then id
             cmp = Comparator
                     .comparing((BillWithDue b) -> b.bill.getDueDate() != null ? b.bill.getDueDate().getTime() : Long.MAX_VALUE)
+                    .thenComparing(FeeAllocationEngine::installmentOrder)
                     .thenComparing((BillWithDue b) -> b.amountDue, Comparator.reverseOrder())
                     .thenComparing(b -> b.bill.getId());
         }
@@ -221,5 +228,11 @@ public class FeeAllocationEngine {
      * avoiding repeated computation during sorting.
      */
     private record BillWithDue(StudentFeePayment bill, BigDecimal amountDue, boolean overdue) {
+    }
+
+    /** Installment number, bills without one last. */
+    private static int installmentOrder(BillWithDue b) {
+        Integer n = b.bill.getInstallmentNumber();
+        return n != null ? n : Integer.MAX_VALUE;
     }
 }

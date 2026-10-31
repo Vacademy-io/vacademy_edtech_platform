@@ -1,0 +1,29 @@
+{
+    "nudges": {
+        "harder": { "label": "इसे कठिन बनाएँ" },
+        "easier": { "label": "इसे आसान बनाएँ" },
+        "moreApplication": { "label": "अधिक अनुप्रयोग" }
+    },
+    "emptyState": {
+        "title": "चुनी गई सामग्री से कोई प्रश्न नहीं बनाया जा सका।",
+        "description": "अध्याय चयन को व्यापक बनाकर देखें, या जाँचें कि वे अध्याय सही ढंग से संसाधित हुए थे।"
+    },
+    "marks_one": "{{count}} अंक",
+    "marks_other": "{{count}} अंक",
+    "status": {
+        "needsFixing": "सुधार की आवश्यकता है",
+        "check": "जाँचें"
+    },
+    "markingScheme": "अंकन योजना",
+    "pageLabel": "पेज {{page}}",
+    "noPageRecorded": "कोई पेज दर्ज नहीं है",
+    "diagramsFromBook_one": "किताब से {{count}} चित्र",
+    "diagramsFromBook_other": "किताब से {{count}} चित्र",
+    "actions": {
+        "rewrite": "फिर से लिखें",
+        "rewriting": "फिर से लिखा जा रहा है…"
+    },
+    "errors": {
+        "sectionRemoved": "इस प्रश्न का सेक्शन अब योजना में नहीं है।"
+    }
+}

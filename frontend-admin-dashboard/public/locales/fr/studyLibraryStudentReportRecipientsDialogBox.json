@@ -1,0 +1,19 @@
+{
+    "reportRecipients": "Destinataires des rapports",
+    "generateTypeReports": "Générer des rapports {{type}}",
+    "sendReportsToStudentViaMail": "Envoyer les rapports à l'étudiant par e-mail",
+    "sendReportsToStudentViaWhatsapp": "Envoyer les rapports à l'étudiant via WhatsApp",
+    "sendReportsToParentViaMail": "Envoyer les rapports au parent/tuteur par e-mail",
+    "sendReportsToParentViaWhatsapp": "Envoyer les rapports au parent/tuteur via WhatsApp",
+    "studentsEmail": "E-mail de l'étudiant",
+    "learnerMobileNumberLabel": "Numéro de mobile du {{term}}",
+    "parentGuardianEmail": "E-mail du parent/tuteur",
+    "parentGuardianMobileNumber": "Numéro de mobile du parent/tuteur",
+    "studentLearningProgressReport": "Rapport de progression d'apprentissage de l'étudiant",
+    "batchLearningProgressReport": "Rapport de progression d'apprentissage du groupe",
+    "saveChanges": "Enregistrer les modifications",
+    "toast": {
+        "settingsUpdated": "Paramètres mis à jour !",
+        "updateFailed": "Échec de la mise à jour"
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "header": {
+        "title": "VSmart Lecture Preview"
+    },
+    "labels": {
+        "lectureTitle": "📘 Lecture Title: {{title}}",
+        "level": "Level:",
+        "modeOfTeaching": "Mode of Teaching:",
+        "lectureLanguage": "Lecture Language:",
+        "lectureDuration": "Lecture Duration:",
+        "topicCovered": "Topic Covered:",
+        "content": "Content:",
+        "inLectureQuestion": "In-Lecture Question:",
+        "activity": "Activity:",
+        "assignment": "Assignment",
+        "notApplicable": "N/A",
+        "task": "Task:"
+    }
+}

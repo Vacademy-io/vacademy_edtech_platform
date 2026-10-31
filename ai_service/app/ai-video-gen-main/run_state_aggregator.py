@@ -100,6 +100,11 @@ SUB_STAGE_TO_STAGE: Dict[str, str] = {
 # ──────────────────────────────────────────────────────────────────────────
 
 
+# How much of a failure message to keep. Long enough that a raw model
+# response is still diagnosable, short enough not to bloat run metadata.
+_ERROR_KEEP = 4000
+
+
 @dataclass
 class StageProgress:
     state: str = "pending"  # pending | in_progress | wrapped | failed
@@ -477,7 +482,12 @@ def _handle_shot_error(lp: LiveProgress, ev: Dict[str, Any], now: float) -> None
     if idx is None:
         return
     shot = _ensure_shot(lp, int(idx))
-    shot.last_error = str(ev.get("error") or "")[:300]
+    # 300 chars is not enough to diagnose a shot failure. A per-shot error
+    # commonly embeds the model's raw output, and clipping it mid-JSON makes a
+    # well-formed-but-rejected response indistinguishable from a truncated one
+    # — which cost a wrong diagnosis on a real incident. Keep enough to tell
+    # those apart.
+    shot.last_error = str(ev.get("error") or "")[:_ERROR_KEEP]
     retrying = bool(ev.get("retrying"))
     shot.state = "reshoot" if retrying else "cut"
 
@@ -514,7 +524,7 @@ def _handle_external_call(lp: LiveProgress, ev: Dict[str, Any], now: float) -> N
             existing.finished_at = now
             existing.elapsed_s = round(now - existing.started_at, 2)
             if state == "failed":
-                existing.error = str(ev.get("error") or "")[:300]
+                existing.error = str(ev.get("error") or "")[:_ERROR_KEEP]
 
 
 def _handle_cost_tick(lp: LiveProgress, ev: Dict[str, Any], now: float) -> None:

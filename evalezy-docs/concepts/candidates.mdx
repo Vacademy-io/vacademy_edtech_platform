@@ -1,0 +1,168 @@
+---
+title: "Candidates"
+description: "Identify students by your own ids, register them on exams, and send only the personal data you need."
+icon: "user-graduate"
+---
+
+A **candidate** is a student who sits your exams. Candidates belong to the institute, not to one exam, so the same student can be registered on every paper they write. You always identify a candidate by your own id, `external_id`. Evalezy also assigns its own `id`, which you can use in paths.
+
+Candidates created through the API have no login and no email address. Evalezy never contacts them.
+
+## The candidate object
+
+<ParamField body="external_id" type="string" required>
+  Your id for the student, such as an admission number or your own user id. Up to 128 characters, unique per institute.
+</ParamField>
+
+<ParamField body="name" type="string">
+  Up to 255 characters. Optional. Cannot contain `<` or `>`.
+</ParamField>
+
+<ParamField body="roll_number" type="string">
+  Up to 64 characters. Cannot contain `<` or `>`.
+</ParamField>
+
+<ParamField body="section_or_class" type="string">
+  Up to 64 characters, for example `10-A`. Cannot contain `<` or `>`.
+</ParamField>
+
+<ParamField body="metadata" type="object">
+  Any JSON object up to 2 KB, returned as you sent it. Useful for your own ids, such as a batch or centre code.
+</ParamField>
+
+Candidate objects returned by the API add `id`, `created_at` and `updated_at`.
+
+## Create or update candidates
+
+`POST /candidates` (scope `evaluation:write`) creates or updates 1 to 2,000 candidates, matched on `external_id`.
+
+<CodeGroup>
+
+```bash curl
+curl https://api.evalezy.com/v1/candidates \
+  -H "X-API-Key: $EVALEZY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "candidates": [
+      {"external_id": "STU-10A-0007", "name": "Aarav Mehta", "roll_number": "10A07", "section_or_class": "10-A"},
+      {"external_id": "STU-10A-0008", "roll_number": "10A08", "section_or_class": "10-A"}
+    ]
+  }'
+```
+
+```python Python
+import os
+import requests
+
+resp = requests.post(
+    "https://api.evalezy.com/v1/candidates",
+    headers={"X-API-Key": os.environ["EVALEZY_API_KEY"]},
+    json={"candidates": [
+        {"external_id": "STU-10A-0007", "name": "Aarav Mehta", "roll_number": "10A07", "section_or_class": "10-A"},
+        {"external_id": "STU-10A-0008", "roll_number": "10A08", "section_or_class": "10-A"},
+    ]},
+    timeout=30,
+)
+resp.raise_for_status()
+for c in resp.json()["candidates"]:
+    print(c["external_id"], c["id"], "created" if c["created"] else "updated")
+```
+
+```javascript Node
+const resp = await fetch("https://api.evalezy.com/v1/candidates", {
+  method: "POST",
+  headers: {
+    "X-API-Key": process.env.EVALEZY_API_KEY,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    candidates: [
+      { external_id: "STU-10A-0007", name: "Aarav Mehta", roll_number: "10A07", section_or_class: "10-A" },
+      { external_id: "STU-10A-0008", roll_number: "10A08", section_or_class: "10-A" },
+    ],
+  }),
+});
+const { candidates } = await resp.json();
+```
+
+</CodeGroup>
+
+```json
+{
+  "candidates": [
+    {"id": "e7c1...", "external_id": "STU-10A-0007", "created": true},
+    {"id": "e7c2...", "external_id": "STU-10A-0008", "created": false}
+  ]
+}
+```
+
+When a candidate already exists, the fields you send replace the stored values, and fields you leave out (or send as `null`) keep their stored values. The same `external_id` twice in one request returns `422 validation_failed`.
+
+## Register candidates on an exam
+
+`POST /exams/{id}/candidates` registers candidates on an exam. Send **one** of:
+
+- `{"candidates": [...]}`: creates or updates the candidates first, then registers them.
+- `{"candidate_ids": [...]}`: registers existing candidates by their Evalezy `id`.
+
+Each call takes up to 2,000 candidates. An unknown `candidate_ids` value fails the whole call with `404 candidate_not_found`, listing the unknown ids in `details.candidate_ids`. Registering a candidate who is already registered is harmless:
+
+```json
+{
+  "registered": 310,
+  "already_registered": 2,
+  "candidates": [
+    {"id": "e7c1...", "external_id": "STU-10A-0007", "registration_id": "9b0d..."}
+  ]
+}
+```
+
+You can register candidates in draft or after open, until the exam is finalized. There are two shortcuts:
+
+- **On create.** `POST /exams` accepts `candidates[]` inline, and registers them.
+- **On first submission.** Submitting a copy for a candidate who isn't registered yet registers them. Send the candidate inline or by `candidate_id`. See [Submissions](/concepts/submissions).
+
+## Find candidates
+
+<Warning>
+Look candidates up by `external_id` with `POST /candidates/search`, which takes the ids in the request **body**. Admission numbers and roll numbers can identify a child, and request bodies stay out of URLs, browser history and access logs. `GET` paths only ever take Evalezy ids.
+</Warning>
+
+```bash
+curl https://api.evalezy.com/v1/candidates/search \
+  -H "X-API-Key: $EVALEZY_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"external_ids": ["STU-10A-0007", "STU-10A-0008"]}'
+```
+
+Send 1 to 500 `external_ids`. The response is `{"data": [...]}` with the full candidate objects. Ids that don't exist are simply missing from `data`.
+
+| Call | Returns |
+|---|---|
+| `GET /candidates/{id}` | One candidate, by Evalezy id. |
+| `GET /exams/{id}/candidates` | The exam's registered candidates, each with `registration_id`, `submission_id` (the latest live submission, or `null`) and `submission_status`. Takes `limit` (1 to 200, default 50), `cursor` and `updated_since`. |
+
+## Unregister a candidate
+
+`DELETE /exams/{id}/candidates/{candidate_id}` removes a registration. The call returns `404 candidate_not_found` if the candidate isn't registered on the exam, and `409 candidate_has_submission` if they already have a submission on it; delete the submission first.
+
+## Privacy
+
+<Tip>
+**Send only what you need.** Evalezy needs nothing more than an `external_id` to grade and return results. `name`, `roll_number`, `section_or_class` and `metadata` are all optional.
+</Tip>
+
+- **Use a pseudonymous `external_id`**, such as your own internal user id, rather than a phone number, email address or government id.
+- **Leave out names if your teachers don't need them in the dashboard.** If you leave out `name`, teachers see the candidate under their `external_id`.
+- **Use a blind exam for anonymous marking.** On an exam created with `"blind": true`, candidates are registered under their `external_id`, and results return `name: null`, even if you stored a name.
+- **Keep `metadata` small and non-sensitive.** It is returned on every read.
+
+## Errors
+
+| Status and code | When |
+|---|---|
+| `422 validation_failed` | Missing or duplicate `external_id`, a field too long, angle brackets in a name, `metadata` not an object or larger than 2 KB, both or neither of `candidates` and `candidate_ids`, or more than 2,000 per call (500 for search). |
+| `404 candidate_not_found` | Unknown candidate id, or the candidate isn't registered on this exam. |
+| `409 candidate_has_submission` | Unregister refused because the candidate has a submission. |
+| `409 exam_finalized` | The exam is finalized. |
+| `404 exam_not_found` | The exam id doesn't exist in your institute, or the exam is deleted. |

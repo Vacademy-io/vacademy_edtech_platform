@@ -2,6 +2,16 @@ package vacademy.io.assessment_service.features.assessment.manager;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
+import java.util.Set;
+import java.util.HashSet;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.http.HttpStatus;
+import vacademy.io.assessment_service.features.assessment.enums.AssessmentStatus;
+import vacademy.io.assessment_service.features.open_evaluation.policy.ApiCandidatePolicy;
+import vacademy.io.assessment_service.features.question_core.dto.QuestionDTO;
+import vacademy.io.assessment_service.features.question_bank.manager.AddQuestionPaperFromImportManager;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +50,9 @@ public class AssessmentLinkQuestionsManager {
     @Autowired
     QuestionAssessmentSectionMappingService questionAssessmentSectionMappingService;
 
+    @Autowired
+    AddQuestionPaperFromImportManager addQuestionPaperFromImportManager;
+
     @Transactional
     public ResponseEntity<AssessmentSaveResponseDto> saveQuestionsToAssessment(CustomUserDetails user, AddQuestionsAssessmentDetailsDTO addQuestionsAssessmentDetailsDTO, String assessmentId, String instituteId, String type) {
 
@@ -48,6 +61,7 @@ public class AssessmentLinkQuestionsManager {
         if (assessmentOptional.isEmpty()) {
             throw new VacademyException("Assessment not found");
         }
+        requireApiStructureUnlocked(assessmentOptional.get(), addQuestionsAssessmentDetailsDTO);
 
         for (SectionAddEditRequestDto sectionAddEditRequestDto : addQuestionsAssessmentDetailsDTO.getAddedSections()) {
             addSectionToAssessment(user, sectionAddEditRequestDto, assessmentOptional.get(), instituteId, type);
@@ -71,6 +85,61 @@ public class AssessmentLinkQuestionsManager {
         AssessmentSaveResponseDto assessmentSaveResponseDto = new AssessmentSaveResponseDto(assessmentId, assessmentOptional.get().getStatus());
         return ResponseEntity.ok(assessmentSaveResponseDto);
     }
+
+    /**
+     * Exams created through the partner API freeze their structure once open (spec 7.1):
+     * submitted attempts are marked against the linked scheme, so questions cannot be added
+     * or removed and max marks cannot change. Enforced here, server-side, for every caller
+     * (the dashboard dialog included), only for {@code source = 'API'} exams that are
+     * PUBLISHED. Dashboard exams and API drafts are untouched. Section renames, order and
+     * duration edits, and re-sending unchanged marks stay allowed.
+     */
+    void requireApiStructureUnlocked(Assessment assessment, AddQuestionsAssessmentDetailsDTO dto) {
+        if (!ApiCandidatePolicy.isApiExam(assessment)
+                || !AssessmentStatus.PUBLISHED.name().equals(assessment.getStatus())) {
+            return;
+        }
+        if (!isEmpty(dto.getAddedSections()) || !isEmpty(dto.getDeletedSections())) {
+            throw apiStructureLocked();
+        }
+        for (SectionAddEditRequestDto section : dto.getUpdatedSections()) {
+            if (section.getQuestionAndMarking() == null) continue;
+            for (SectionAddEditRequestDto.QuestionAndMarking qm : section.getQuestionAndMarking()) {
+                if (Boolean.TRUE.equals(qm.getIsAdded()) || Boolean.TRUE.equals(qm.getIsDeleted())) {
+                    throw apiStructureLocked();
+                }
+                if (Boolean.TRUE.equals(qm.getIsUpdated())) {
+                    QuestionAssessmentSectionMapping existing = questionAssessmentSectionMappingService
+                            .getMappingById(qm.getQuestionId(), section.getSectionId());
+                    if (existing == null || !Objects.equals(totalMark(existing.getMarkingJson()), totalMark(qm.getMarkingJson()))) {
+                        throw apiStructureLocked();
+                    }
+                }
+            }
+        }
+    }
+
+    private static boolean isEmpty(List<?> list) {
+        return list == null || list.isEmpty();
+    }
+
+    private static VacademyException apiStructureLocked() {
+        return new VacademyException(HttpStatus.CONFLICT,
+                "This exam is managed by the API and is open: questions cannot be added or removed and max marks cannot change.");
+    }
+
+    /** {@code data.totalMark} of a marking JSON, null when absent or unreadable. */
+    static Double totalMark(String markingJson) {
+        if (markingJson == null || markingJson.isBlank()) return null;
+        try {
+            JsonNode value = MARKING_READER.readTree(markingJson).path("data").path("totalMark");
+            return value.isNumber() ? value.asDouble() : null;
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+    }
+
+    private static final ObjectMapper MARKING_READER = new ObjectMapper();
 
     void validateMarkingScheme(SectionAddEditRequestDto.QuestionAndMarking questionAndMarkings) {
         //Todo: validate marking scheme
@@ -183,5 +252,56 @@ public class AssessmentLinkQuestionsManager {
             response.get(sectionId).add(fillOptionsExplanationsOfQuestion);
         }
         return response;
+    }
+
+    /**
+     * The same questions as {@link #getQuestionsOfSection}, but as the full
+     * {@link QuestionDTO} the question-paper editor already understands
+     * (options with explanations, answer key, explanation text), so an
+     * assessment's questions can be edited with the same screen as a paper's.
+     */
+    public Map<String, List<QuestionDTO>> getFullQuestionsOfSection(CustomUserDetails user, String assessmentId, String sectionIds) {
+        Map<String, List<QuestionDTO>> response = new HashMap<>();
+        if (sectionIds == null || sectionIds.isBlank()) return response;
+        List<String> sectionIdList = Arrays.asList(sectionIds.split(","));
+        List<QuestionAssessmentSectionMapping> mappings = questionAssessmentSectionMappingService.getQuestionAssessmentSectionMappingBySectionIds(sectionIdList);
+        for (QuestionAssessmentSectionMapping mapping : mappings) {
+            String sectionId = mapping.getSection().getId();
+            QuestionDTO dto = new QuestionDTO(mapping.getQuestion(), true);
+            dto.setSectionId(sectionId);
+            dto.setQuestionOrderInSection(mapping.getQuestionOrder());
+            response.computeIfAbsent(sectionId, k -> new ArrayList<>()).add(dto);
+        }
+        return response;
+    }
+
+    /**
+     * Edit the text/options/answer key of questions that belong to this
+     * assessment, in place. Only ids actually mapped to one of the
+     * assessment's sections are touched, so a stray id cannot rewrite a
+     * question in someone else's paper.
+     */
+    @Transactional
+    public Boolean editQuestionsOfAssessment(CustomUserDetails user, String assessmentId, String instituteId, List<QuestionDTO> updatedQuestions) {
+        Optional<Assessment> assessmentOptional = assessmentService.getAssessmentWithActiveSections(assessmentId, instituteId);
+        if (assessmentOptional.isEmpty()) {
+            throw new VacademyException("Assessment not found");
+        }
+        List<String> sectionIds = assessmentOptional.get().getSections().stream().map(Section::getId).toList();
+        if (sectionIds.isEmpty() || updatedQuestions == null || updatedQuestions.isEmpty()) return false;
+        Set<String> allowed = new HashSet<>();
+        for (QuestionAssessmentSectionMapping mapping : questionAssessmentSectionMappingService.getQuestionAssessmentSectionMappingBySectionIds(sectionIds)) {
+            allowed.add(mapping.getQuestion().getId());
+        }
+        List<QuestionDTO> permitted = updatedQuestions.stream()
+                .filter(q -> q.getId() != null && allowed.contains(q.getId()))
+                .toList();
+        if (permitted.isEmpty()) return false;
+        try {
+            addQuestionPaperFromImportManager.updateQuestionsInPlace(permitted, instituteId);
+        } catch (JsonProcessingException e) {
+            throw new VacademyException(e.getMessage());
+        }
+        return true;
     }
 }

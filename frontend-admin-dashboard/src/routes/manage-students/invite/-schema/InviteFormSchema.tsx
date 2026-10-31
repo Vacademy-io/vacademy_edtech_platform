@@ -1,4 +1,5 @@
 import { BatchForSessionSchema } from '@/schemas/student/student-list/institute-schema';
+import type { TFunction } from 'i18next';
 import { z } from 'zod';
 
 // Define the email entry schema
@@ -21,40 +22,48 @@ const levelSchema = z.object({
     packageSessionId: z.string(),
 });
 
-const batchSchema = z
-    .object({
-        maxCourses: z.number().or(z.nan()),
-        courseSelectionMode: selectionModeSchema,
-        preSelectedCourses: z.array(BatchForSessionSchema),
-        learnerChoiceCourses: z.array(BatchForSessionSchema),
-    })
-    .superRefine((data, ctx) => {
-        if (data.courseSelectionMode === 'student') {
-            if (isNaN(data.maxCourses)) {
-                ctx.addIssue({
-                    code: 'custom',
-                    message: 'This field is required',
-                    path: ['maxCourses'],
-                });
+// Builds the batch-selection validation schema. This used to be a module-level `const`
+// whose superRefine() issued hardcoded English messages via ctx.addIssue({ message: '...' })
+// — zod's addIssue only accepts a static string, so there's no lazy-thunk escape hatch and
+// the schema must be rebuilt with the current `t` instead. Converted to a factory (matching
+// the buildAddDiscountSchema pattern in GenerateInviteLinkSchema.ts) so the sole real
+// consumer (useInviteForm.tsx, via buildInviteFormSchema below) can rebuild it fresh from a
+// hook-scoped `t`, recomputed whenever the active locale changes.
+export const buildBatchSchema = (t: TFunction) =>
+    z
+        .object({
+            maxCourses: z.number().or(z.nan()),
+            courseSelectionMode: selectionModeSchema,
+            preSelectedCourses: z.array(BatchForSessionSchema),
+            learnerChoiceCourses: z.array(BatchForSessionSchema),
+        })
+        .superRefine((data, ctx) => {
+            if (data.courseSelectionMode === 'student') {
+                if (isNaN(data.maxCourses)) {
+                    ctx.addIssue({
+                        code: 'custom',
+                        message: t('validation.maxCoursesRequired'),
+                        path: ['maxCourses'],
+                    });
+                }
+                if (data.learnerChoiceCourses.length === 1) {
+                    ctx.addIssue({
+                        code: 'custom',
+                        message: t('validation.inviteLinkAlreadyPresent'),
+                        path: ['learnerChoiceCourses'],
+                    });
+                }
             }
-            if (data.learnerChoiceCourses.length === 1) {
-                ctx.addIssue({
-                    code: 'custom',
-                    message: 'invite link for this batch is already present',
-                    path: ['learnerChoiceCourses'],
-                });
+            if (data.courseSelectionMode === 'institute') {
+                if (data.preSelectedCourses.length === 1) {
+                    ctx.addIssue({
+                        code: 'custom',
+                        message: t('validation.inviteLinkAlreadyPresent'),
+                        path: ['preSelectedCourses'],
+                    });
+                }
             }
-        }
-        if (data.courseSelectionMode === 'institute') {
-            if (data.preSelectedCourses.length === 1) {
-                ctx.addIssue({
-                    code: 'custom',
-                    message: 'invite link for this batch is already present',
-                    path: ['preSelectedCourses'],
-                });
-            }
-        }
-    });
+        });
 
 const customFieldSchema = z.object({
     id: z.number(),
@@ -75,22 +84,24 @@ const customFieldSchema = z.object({
     status: z.enum(['ACTIVE', 'DELETED']),
 });
 
-// Create schema for form validation
-export const inviteFormSchema = z.object({
-    inviteLink: z.string().min(1, 'Invite link is required'),
-    activeStatus: z.boolean(),
-    custom_fields: z.array(customFieldSchema),
-    batches: batchSchema,
-    studentExpiryDays: z.number(),
-    inviteeEmail: z.string().optional(), // For the input field
-    inviteeEmails: z.array(emailEntrySchema).optional(),
-});
+// Builds the form validation schema. Factory-with-parameter (see buildBatchSchema above)
+// since the `inviteLink` min() message and the nested batch schema both need a live `t`.
+export const buildInviteFormSchema = (t: TFunction) =>
+    z.object({
+        inviteLink: z.string().min(1, t('validation.inviteLinkRequired')),
+        activeStatus: z.boolean(),
+        custom_fields: z.array(customFieldSchema),
+        batches: buildBatchSchema(t),
+        studentExpiryDays: z.number(),
+        inviteeEmail: z.string().optional(), // For the input field
+        inviteeEmails: z.array(emailEntrySchema).optional(),
+    });
 
-export type InviteForm = z.infer<typeof inviteFormSchema>;
+export type InviteForm = z.infer<ReturnType<typeof buildInviteFormSchema>>;
 export type SelectionMode = z.infer<typeof selectionModeSchema>;
 export type BatchField = z.infer<typeof dropdownItemSchema>;
 export type LevelField = z.infer<typeof levelSchema>;
-export type BatchDetails = z.infer<typeof batchSchema>;
+export type BatchDetails = z.infer<ReturnType<typeof buildBatchSchema>>;
 export type CustomField = z.infer<typeof customFieldSchema>;
 
 export const defaultFormValues: Partial<InviteForm> = {

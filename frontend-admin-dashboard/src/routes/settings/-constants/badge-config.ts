@@ -9,9 +9,14 @@
  * `frontend-learner-dashboard-app/src/services/badge-config.ts`.
  */
 
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+
 export const BADGES_REWARDS_SETTING_KEY = 'BADGES_REWARDS_SETTING';
 
 export type BadgeTriggerType =
+    /** Never unlocks on its own — only when staff award it to a learner. */
+    | 'manual'
     | 'course_count'
     | 'slide_count'
     | 'streak'
@@ -25,10 +30,23 @@ export interface BadgeDefinitionConfig {
     id: string;
     name: string;
     description: string;
-    icon: string; // one of BADGE_ICON_NAMES
+    icon: string; // one of BADGE_ICON_NAMES, a `lib:` library token, or an uploaded file id
     trigger: BadgeTriggerType;
+    /** Unlock threshold for auto triggers; always 0 for `manual`. */
     threshold: number;
     enabled: boolean;
+    /**
+     * Hidden from learners until they earn it (a "mystery" badge). A UI affordance, not a
+     * security boundary — the definition is still downloaded by the learner app. Optional
+     * for back-compat; absent = visible. (Named `hidden`, not `secret`: the audit-log
+     * redactor masks any key called "secret".)
+     */
+    hidden?: boolean;
+}
+
+/** True for the staff-awarded trigger — the badge has no automatic unlock condition. */
+export function isManualTrigger(trigger: string | undefined | null): boolean {
+    return trigger === 'manual';
 }
 
 /** Points-per-action scoring — how many points each factor is worth. Drives learner XP + leaderboard. */
@@ -71,8 +89,13 @@ export const SCORING_FIELDS: Array<{
     },
     {
         key: 'courseCompletion',
-        label: 'Course completion',
-        help: 'Points for finishing a course (scaled by completion %).',
+        // Getters so the institute's Course term is read when rendered, not at import.
+        get label() {
+            return `${getTerminology(ContentTerms.Course, SystemTerms.Course)} completion`;
+        },
+        get help() {
+            return `Points for finishing a ${getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()} (scaled by completion %).`;
+        },
     },
     {
         key: 'assessmentBestScore',
@@ -113,10 +136,20 @@ export const BADGE_ICON_NAMES = [
 ] as const;
 
 /** UI metadata for each trigger type: label, helper text, and the unit shown next to the threshold. */
-export const TRIGGER_META: Record<
-    BadgeTriggerType,
-    { label: string; help: string; unit: string; defaultThreshold: number }
-> = {
+export interface TriggerMeta {
+    label: string;
+    help: string;
+    unit: string;
+    defaultThreshold: number;
+}
+
+export const TRIGGER_META: Record<BadgeTriggerType, TriggerMeta> = {
+    manual: {
+        label: 'Awarded manually by staff',
+        help: 'Never unlocks on its own — a teacher or admin awards it to a learner (e.g. Helping Hand, Most Improved). Each learner can hold a badge once; for recurring recognition create dated or tiered variants.',
+        unit: '',
+        defaultThreshold: 0,
+    },
     course_count: {
         label: 'Courses enrolled',
         help: 'Unlocks when the learner is enrolled in at least this many courses.',
@@ -171,6 +204,23 @@ export const TRIGGER_OPTIONS = (Object.keys(TRIGGER_META) as BadgeTriggerType[])
     value,
     label: TRIGGER_META[value].label,
 }));
+
+/**
+ * Meta for an unknown trigger value (a badge saved by a newer client, or a typo in the
+ * blob). Renders as a manual-style badge instead of crashing on `meta.unit`.
+ */
+export const FALLBACK_TRIGGER_META: TriggerMeta = {
+    label: 'Custom condition',
+    help: 'This unlock condition is not recognised by this version of the dashboard.',
+    unit: '',
+    defaultThreshold: 0,
+};
+
+/** Safe lookup — never returns undefined. */
+export function getTriggerMeta(trigger: string | undefined | null): TriggerMeta {
+    const known = trigger ? (TRIGGER_META as Record<string, TriggerMeta>)[trigger] : undefined;
+    return known ?? FALLBACK_TRIGGER_META;
+}
 
 /** The original hardcoded six badges, expressed as editable defaults. */
 export const DEFAULT_BADGE_CONFIG: BadgesRewardsConfig = {
@@ -247,14 +297,34 @@ export function newBadgeId(): string {
     return `badge_${Math.floor(Math.random() * 1e9).toString(36)}`;
 }
 
-export function makeNewBadge(): BadgeDefinitionConfig {
+export function makeNewBadge(trigger: BadgeTriggerType = 'course_count'): BadgeDefinitionConfig {
+    if (trigger === 'manual') return makeManualBadge();
     return {
         id: newBadgeId(),
         name: 'New Badge',
         description: '',
         icon: 'lib:first_steps-bronze',
-        trigger: 'course_count',
-        threshold: TRIGGER_META.course_count.defaultThreshold,
+        trigger,
+        threshold: TRIGGER_META[trigger].defaultThreshold,
         enabled: true,
+    };
+}
+
+/**
+ * A blank staff-awarded badge. Defaults to a neutral Phosphor icon — every library artwork
+ * is themed to an auto trigger (streak, course, XP…), so none fits a recognition badge.
+ */
+export function makeManualBadge(
+    partial: Partial<Omit<BadgeDefinitionConfig, 'trigger' | 'threshold'>> = {}
+): BadgeDefinitionConfig {
+    return {
+        id: partial.id ?? newBadgeId(),
+        name: partial.name ?? '',
+        description: partial.description ?? '',
+        icon: partial.icon ?? 'Star',
+        trigger: 'manual',
+        threshold: 0,
+        enabled: partial.enabled ?? true,
+        hidden: partial.hidden ?? false,
     };
 }

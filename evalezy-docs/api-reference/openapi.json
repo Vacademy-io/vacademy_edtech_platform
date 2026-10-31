@@ -1,0 +1,5371 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Evalezy AI Evaluation API",
+    "version": "v1",
+    "description": "Create exams, register candidates, submit scanned answer copies or typed answers, and read question-wise AI marks with feedback. Results are drafts until you finalize them.\n\nServer-to-server only: never ship an API key inside a browser or mobile app. English answers only for now (Hindi and regional languages are on the roadmap).",
+    "contact": {
+      "name": "Evalezy",
+      "email": "hello@evalezy.com",
+      "url": "https://evalezy.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.evalezy.com/v1",
+      "description": "Production"
+    }
+  ],
+  "security": [
+    {
+      "ApiKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Exams",
+      "description": "Create, open, edit and look up exams."
+    },
+    {
+      "name": "Questions",
+      "description": "Add, edit and remove the questions of an exam."
+    },
+    {
+      "name": "Rubrics",
+      "description": "Marking criteria and model answers for long-answer questions."
+    },
+    {
+      "name": "Choice groups",
+      "description": "Internal choice (\"attempt any N of M\"). Beta, enabled on request."
+    },
+    {
+      "name": "Candidates",
+      "description": "Your students, keyed by your own external_id, and their exam registrations."
+    },
+    {
+      "name": "Uploads",
+      "description": "Presigned uploads for scanned answer copies (PDF)."
+    },
+    {
+      "name": "Submissions",
+      "description": "Submit a copy or typed answers for a candidate and track its evaluation."
+    },
+    {
+      "name": "Results",
+      "description": "Question-wise marks, feedback and the checked (annotated) copy."
+    },
+    {
+      "name": "Review",
+      "description": "Teacher overrides, approval, finalize and unfinalize."
+    },
+    {
+      "name": "Credits",
+      "description": "Credit balance, rate card and price quotes."
+    },
+    {
+      "name": "Account",
+      "description": "Check which institute and scopes an API key has."
+    }
+  ],
+  "paths": {
+    "/exams/{examId}/questions/{questionId}/rubric": {
+      "put": {
+        "tags": [
+          "Rubrics"
+        ],
+        "summary": "Set a question's rubric",
+        "operationId": "setRubric",
+        "parameters": [
+          {
+            "name": "examId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exam id (UUID)."
+          },
+          {
+            "name": "questionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Question id (UUID)."
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "3"
+            },
+            "description": "Optional. The rubric version you last read, e.g. `3`. If the rubric has moved on, the call fails with 412 `rubric_version_mismatch`."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonNode"
+              },
+              "example": {
+                "rubric": {
+                  "partial_marking": true,
+                  "criteria": [
+                    {
+                      "name": "Correct accounts debited and credited",
+                      "marks": 2,
+                      "guidance": "Purchases account debited, creditor credited."
+                    },
+                    {
+                      "name": "Narration",
+                      "marks": 1,
+                      "guidance": "Clear narration for each entry."
+                    },
+                    {
+                      "name": "Amounts and totals",
+                      "marks": 2,
+                      "guidance": "Amounts match the question; totals agree."
+                    }
+                  ]
+                },
+                "model_answer": "Purchases A/c Dr 50,000 To Mehta Traders 50,000 (Being goods purchased on credit)"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RubricWriteResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error412"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Sets or clears one long-answer question's rubric and/or model answer. Send `{\"rubric\": null}` to clear the rubric. The same rules as [Update several rubrics](/api-reference/rubrics/update-several) apply.\n\n**Scope:** `evaluation:write`"
+      }
+    },
+    "/exams/{examId}/choice-groups": {
+      "put": {
+        "tags": [
+          "Choice groups"
+        ],
+        "summary": "Replace choice groups (beta)",
+        "operationId": "replaceChoiceGroups",
+        "parameters": [
+          {
+            "name": "examId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exam id (UUID)."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReplaceChoiceGroups"
+              },
+              "example": {
+                "choice_groups": [
+                  {
+                    "label": "Section E internal choice",
+                    "question_labels": [
+                      "Q30",
+                      "Q31",
+                      "Q32"
+                    ],
+                    "attempt": 2,
+                    "policy": "best"
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "**Beta, enabled on request.** Choice groups are currently switched off, so this endpoint returns 422 `feature_not_available`; send papers without internal choice for now, or contact hello@evalezy.com if you need them.\n\nWhen enabled, it replaces every choice group of the exam (\"attempt any N of M\"). Each group lists at least two question labels, `attempt` (at least 1 and less than the group size) and `policy` (`first` or `best`). The response carries `choice_groups`, `total_marks` and `paper_max`.\n\n**Scope:** `evaluation:write`"
+      }
+    },
+    "/uploads": {
+      "post": {
+        "tags": [
+          "Uploads"
+        ],
+        "summary": "Create uploads",
+        "operationId": "createUploads",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255,
+              "example": "exam-cbse-sci-10a-2026-10-14"
+            },
+            "description": "Optional. Any unique string of 1-255 printable ASCII characters (a UUID works). Retrying with the same key within 48 hours replays the first response with `Idempotent-Replayed: true`."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUploads"
+              },
+              "examples": {
+                "single": {
+                  "summary": "One answer copy",
+                  "value": {
+                    "filename": "STU-10A-0142-science.pdf",
+                    "content_type": "application/pdf",
+                    "size_bytes": 4718592
+                  }
+                },
+                "batch": {
+                  "summary": "A bundle of copies",
+                  "value": {
+                    "files": [
+                      {
+                        "filename": "STU-10A-0142-science.pdf",
+                        "content_type": "application/pdf",
+                        "size_bytes": 4718592
+                      },
+                      {
+                        "filename": "STU-10A-0143-science.pdf",
+                        "content_type": "application/pdf",
+                        "size_bytes": 5242880
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "uploads": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/UploadTicket"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "uploads": [
+                    {
+                      "id": "e7d35b19-04c2-4a8f-93e6-b1f2c8a4d057",
+                      "filename": "STU-10A-0142-science.pdf",
+                      "upload_url": "https://uploads.example-storage.com/eval/...signed...",
+                      "method": "PUT",
+                      "headers": {
+                        "Content-Type": "application/pdf"
+                      },
+                      "expires_at": "2026-10-14T06:58:41Z",
+                      "status": "pending"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Returns presigned upload URLs for one PDF (top-level fields) or up to 100 PDFs (`files`). Each URL is valid for 1 hour. PUT the raw file bytes to `upload_url` with the returned `headers`, then pass the upload `id` as `upload_id` when you submit.\n\nPDF only, up to 50 MB each. Image types return 422 `feature_not_available`. On an idempotent replay the URLs are not repeated (`upload_url_redacted: true`); request new uploads instead.\n\n**Scope:** `evaluation:write`"
+      }
+    },
+    "/submissions/{submissionId}/unfinalize": {
+      "post": {
+        "tags": [
+          "Review"
+        ],
+        "summary": "Unfinalize a submission",
+        "operationId": "unfinalizeSubmission",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Submission id (UUID)."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255,
+              "example": "exam-cbse-sci-10a-2026-10-14"
+            },
+            "description": "Optional. Any unique string of 1-255 printable ASCII characters (a UUID works). Retrying with the same key within 48 hours replays the first response with `Idempotent-Replayed: true`."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Unfinalize"
+              },
+              "example": {
+                "reason": "Revaluation request RV-2026-0193"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Submission"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Puts a finalized result back on hold so it can be reviewed or re-evaluated. `reason` is required and recorded. A submission that is not finalized returns 409 `submission_not_finalized`.\n\n**Scope:** `evaluation:finalize`"
+      }
+    },
+    "/submissions/{submissionId}/re-evaluate": {
+      "post": {
+        "tags": [
+          "Submissions"
+        ],
+        "summary": "Re-evaluate a submission",
+        "operationId": "reevaluateSubmission",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Submission id (UUID)."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255,
+              "example": "exam-cbse-sci-10a-2026-10-14"
+            },
+            "description": "Optional. Any unique string of 1-255 printable ASCII characters (a UUID works). Retrying with the same key within 48 hours replays the first response with `Idempotent-Replayed: true`."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Reevaluate"
+              },
+              "example": {
+                "keep_reviewed": true
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted: evaluation queued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Submission"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "402": {
+            "$ref": "#/components/responses/Error402"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Grades the whole copy again, for example after you change the rubric. **Charged again** at the same fixed price. With `keep_reviewed` (default `true`) questions a teacher edited keep their marks. A finalized submission returns 409 `submission_finalized`; one still being evaluated returns 409 `evaluation_in_progress`.\n\n**Scope:** `evaluation:write`"
+      }
+    },
+    "/submissions/{submissionId}/cancel": {
+      "post": {
+        "tags": [
+          "Submissions"
+        ],
+        "summary": "Cancel an evaluation",
+        "operationId": "cancelSubmission",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Submission id (UUID)."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255,
+              "example": "exam-cbse-sci-10a-2026-10-14"
+            },
+            "description": "Optional. Any unique string of 1-255 printable ASCII characters (a UUID works). Retrying with the same key within 48 hours replays the first response with `Idempotent-Replayed: true`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Cancels a queued or running evaluation. Cancelled evaluations are not billed. A finished one returns 409 `already_completed`. Returns `{\"id\": \"...\", \"status\": \"cancelled\"}`.\n\n**Scope:** `evaluation:write`"
+      }
+    },
+    "/submissions/{submissionId}/approve": {
+      "post": {
+        "tags": [
+          "Review"
+        ],
+        "summary": "Approve a submission",
+        "operationId": "approveSubmission",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Submission id (UUID)."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255,
+              "example": "exam-cbse-sci-10a-2026-10-14"
+            },
+            "description": "Optional. Any unique string of 1-255 printable ASCII characters (a UUID works). Retrying with the same key within 48 hours replays the first response with `Idempotent-Replayed: true`."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Approve"
+              },
+              "example": {
+                "reviewer": {
+                  "ref": "TCH-031",
+                  "name": "Mrs. Kavita Rao"
+                }
+              }
+            }
+          },
+          "required": false
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Submission"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Marks the AI marks as reviewed without changes, which clears `needs_review`. The body is optional.\n\n**Scope:** `evaluation:review`"
+      }
+    },
+    "/exams": {
+      "get": {
+        "tags": [
+          "Exams"
+        ],
+        "summary": "List exams",
+        "operationId": "listExams",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "draft",
+                "open",
+                "finalized",
+                "deleted"
+              ]
+            },
+            "description": "Filter by exam status."
+          },
+          {
+            "name": "updated_since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2026-10-01T09:00:00Z"
+            },
+            "description": "ISO 8601 UTC time, e.g. `2026-10-01T09:00:00Z`. Only rows updated since then."
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "`next_cursor` from the previous page, passed as is."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            },
+            "description": "Page size, 1-200. Default 50."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageExam"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Lists the exams this institute created through the API, ordered by last change. Exams created in the dashboard are not listed.\n\n**Scope:** `evaluation:read`"
+      },
+      "post": {
+        "tags": [
+          "Exams"
+        ],
+        "summary": "Create an exam",
+        "operationId": "createExam",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255,
+              "example": "exam-cbse-sci-10a-2026-10-14"
+            },
+            "description": "Optional. Any unique string of 1-255 printable ASCII characters (a UUID works). Retrying with the same key within 48 hours replays the first response with `Idempotent-Replayed: true`."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateExam"
+              },
+              "examples": {
+                "handwritten": {
+                  "summary": "CBSE Class 10 science paper (handwritten)",
+                  "value": {
+                    "title": "Class 10 Science - Half-Yearly 2026 (Section 10-A)",
+                    "mode": "handwritten",
+                    "external_ref": "cbse-sci-10a-hy-2026",
+                    "conducted_on": "2026-10-14",
+                    "subject": "Science",
+                    "level": "school",
+                    "board": "CBSE",
+                    "class": "10",
+                    "questions": [
+                      {
+                        "label": "Q1",
+                        "section": "A",
+                        "type": "mcq_single",
+                        "text": "Which of the following is a balanced chemical equation?",
+                        "max_marks": 1,
+                        "options": [
+                          {
+                            "label": "A",
+                            "text": "H2 + O2 -> H2O"
+                          },
+                          {
+                            "label": "B",
+                            "text": "2H2 + O2 -> 2H2O"
+                          },
+                          {
+                            "label": "C",
+                            "text": "H2 + 2O2 -> H2O"
+                          },
+                          {
+                            "label": "D",
+                            "text": "2H2 + 2O2 -> H2O"
+                          }
+                        ],
+                        "correct_options": [
+                          "B"
+                        ]
+                      },
+                      {
+                        "label": "Q24",
+                        "section": "C",
+                        "type": "long_answer",
+                        "text": "Explain the process of digestion of food in the human stomach. Name the enzymes involved.",
+                        "max_marks": 3,
+                        "expects_diagram": false,
+                        "rubric": {
+                          "partial_marking": true,
+                          "criteria": [
+                            {
+                              "name": "Role of hydrochloric acid",
+                              "marks": 1,
+                              "guidance": "Acidic medium, kills germs, activates pepsin."
+                            },
+                            {
+                              "name": "Enzymes named",
+                              "marks": 1,
+                              "keywords": [
+                                "pepsin",
+                                "gastric lipase"
+                              ],
+                              "guidance": "Pepsin digests proteins; gastric lipase acts on fats."
+                            },
+                            {
+                              "name": "Mucus and protection",
+                              "marks": 1,
+                              "guidance": "Mucus protects the inner lining from the acid."
+                            }
+                          ]
+                        }
+                      }
+                    ],
+                    "candidates": [
+                      {
+                        "external_id": "STU-10A-0142",
+                        "name": "Aarav Sharma",
+                        "roll_number": "14",
+                        "section_or_class": "10-A"
+                      }
+                    ],
+                    "open": true
+                  }
+                },
+                "typed": {
+                  "summary": "UPSC GS2 answer writing (typed)",
+                  "value": {
+                    "title": "UPSC GS Paper II - Weekly Answer Writing #18",
+                    "mode": "typed",
+                    "external_ref": "upsc-gs2-week18",
+                    "subject": "Polity and Governance",
+                    "level": "upsc",
+                    "questions": [
+                      {
+                        "label": "Q1",
+                        "type": "long_answer",
+                        "text": "Discuss the role of the Finance Commission in strengthening fiscal federalism in India.",
+                        "max_marks": 15,
+                        "word_limit": 250,
+                        "model_answer": "The Finance Commission under Article 280 recommends the vertical and horizontal distribution of the divisible pool of taxes...",
+                        "rubric": {
+                          "criteria": [
+                            {
+                              "name": "Constitutional basis",
+                              "marks": 3,
+                              "guidance": "Article 280, composition, periodicity."
+                            },
+                            {
+                              "name": "Vertical and horizontal devolution",
+                              "marks": 5,
+                              "guidance": "Share of states in the divisible pool and the criteria used."
+                            },
+                            {
+                              "name": "Contemporary issues",
+                              "marks": 4,
+                              "guidance": "Cesses and surcharges, GST compensation, conditional grants."
+                            },
+                            {
+                              "name": "Structure and conclusion",
+                              "marks": 3,
+                              "guidance": "Introduction, body, balanced way forward."
+                            }
+                          ]
+                        }
+                      }
+                    ],
+                    "open": true
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Exam"
+                },
+                "example": {
+                  "id": "3f6c1d2e-8b4a-4c7e-9a51-2d0e7b9c4f18",
+                  "status": "open",
+                  "mode": "handwritten",
+                  "title": "Class 10 Science - Half-Yearly 2026 (Section 10-A)",
+                  "external_ref": "cbse-sci-10a-hy-2026",
+                  "conducted_on": "2026-10-14",
+                  "subject": "Science",
+                  "level": "school",
+                  "board": "CBSE",
+                  "class": "10",
+                  "answer_language": "en",
+                  "feedback_language": "en",
+                  "blind": false,
+                  "total_marks": 4,
+                  "paper_max": 4,
+                  "question_count": 2,
+                  "questions": [
+                    {
+                      "id": "a1f0c2d4-6e8b-4a3c-9d5e-7f1b2c3d4e5f",
+                      "label": "Q1",
+                      "section": "A",
+                      "max_marks": 1
+                    },
+                    {
+                      "id": "b2e1d3c5-7f9a-4b4d-8e6f-0a2c3d4e5f6a",
+                      "label": "Q24",
+                      "section": "C",
+                      "max_marks": 3
+                    }
+                  ],
+                  "candidates": [
+                    {
+                      "id": "c41a7e93-2f58-4b6d-8e0a-5d9f1b3c7e62",
+                      "external_id": "STU-10A-0142",
+                      "registration_id": "e7b3f9a1-4c2d-4e8f-a6b5-0d1c9e2f7a48"
+                    }
+                  ],
+                  "rubric": {
+                    "version": 1,
+                    "locked": false,
+                    "questions_with_rubric": 1,
+                    "questions_without_rubric": 1
+                  },
+                  "quote": {
+                    "unit": "page",
+                    "credits_per_page": 1,
+                    "rate_source": "standard"
+                  },
+                  "opened_at": "2026-10-14T05:30:12Z",
+                  "created_at": "2026-10-14T05:30:12Z",
+                  "updated_at": "2026-10-14T05:30:12Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Creates an exam with its questions, and optionally registers candidates in the same call. The exam starts as a `draft`; send `open: true` to open it right away (or call [Open an exam](/api-reference/exams/open) later).\n\n- `mode` is `handwritten` (scanned PDF copies) or `typed` (answers sent as text).\n- `external_ref` is your own id for the exam. A second create with the same value returns 409 `exam_exists` with `details.exam_id`, so you can safely look it up instead.\n- Long-answer questions with neither a rubric nor a model answer get an `auto_rubric` warning.\n- Only English is supported (`answer_language: en`).\n- `choice_groups` is beta and enabled on request; until then it returns 422 `feature_not_available`.\n\nThe response includes the exam's `quote` (credits per page or per answer) and any `warnings`. Exams created through the API also appear in your dashboard, tagged Source: API.\n\n**Scope:** `evaluation:write`"
+      }
+    },
+    "/exams/{examId}/submissions": {
+      "get": {
+        "tags": [
+          "Submissions"
+        ],
+        "summary": "List an exam's submissions",
+        "operationId": "listExamSubmissions",
+        "parameters": [
+          {
+            "name": "examId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exam id (UUID)."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "graded,partially_graded"
+            },
+            "description": "Comma-separated statuses: queued, processing, reading, grading, graded, partially_graded, failed, cancelled."
+          },
+          {
+            "name": "needs_review",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "`true` or `false`."
+          },
+          {
+            "name": "finalized",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "`true` or `false`."
+          },
+          {
+            "name": "candidate_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Only this candidate's submissions (Evalezy candidate id)."
+          },
+          {
+            "name": "updated_since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2026-10-01T09:00:00Z"
+            },
+            "description": "ISO 8601 UTC time, e.g. `2026-10-01T09:00:00Z`. Only rows updated since then."
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "`next_cursor` from the previous page, passed as is."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            },
+            "description": "Page size, 1-200. Default 50. Capped at 50 when `include=result`."
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "result"
+            },
+            "description": "`result` adds the full result to each live submission. Can be combined with `annotations`, `model_answer`, `-extracted_answer`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Lists an exam's submissions ordered by `(updated_at, id)`. Filter by `status`, `needs_review`, `finalized`, `candidate_id` or `updated_since`. `include=result` adds each live submission's full result.\n\n**Scope:** `evaluation:read`"
+      },
+      "post": {
+        "tags": [
+          "Submissions"
+        ],
+        "summary": "Create a submission",
+        "operationId": "createSubmission",
+        "parameters": [
+          {
+            "name": "examId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exam id (UUID)."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255,
+              "example": "exam-cbse-sci-10a-2026-10-14"
+            },
+            "description": "Optional. Any unique string of 1-255 printable ASCII characters (a UUID works). Retrying with the same key within 48 hours replays the first response with `Idempotent-Replayed: true`."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSubmission"
+              },
+              "examples": {
+                "handwritten": {
+                  "summary": "Handwritten copy",
+                  "value": {
+                    "candidate": {
+                      "external_id": "STU-10A-0142",
+                      "name": "Aarav Sharma",
+                      "roll_number": "14"
+                    },
+                    "upload_id": "e7d35b19-04c2-4a8f-93e6-b1f2c8a4d057",
+                    "metadata": {
+                      "centre": "Jaipur-02"
+                    }
+                  }
+                },
+                "typed": {
+                  "summary": "Typed answers",
+                  "value": {
+                    "candidate": {
+                      "external_id": "aspirant-58213",
+                      "name": "Neha Verma"
+                    },
+                    "answers": [
+                      {
+                        "question_label": "Q1",
+                        "text": "Fiscal federalism refers to the division of taxation powers and expenditure responsibilities between the Union and the states. The Finance Commission, constituted under Article 280..."
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted: evaluation queued.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionCreated"
+                },
+                "example": {
+                  "id": "9b2e4f71-5c3a-4d8e-b6f0-1a7c3e5d9b24",
+                  "exam_id": "3f6c1d2e-8b4a-4c7e-9a51-2d0e7b9c4f18",
+                  "candidate": {
+                    "id": "c41a7e93-2f58-4b6d-8e0a-5d9f1b3c7e62",
+                    "external_id": "STU-10A-0142"
+                  },
+                  "state": "live",
+                  "status": "queued",
+                  "lane": "copy",
+                  "pages": 12,
+                  "needs_review": false,
+                  "review_reasons": [],
+                  "finalized": false,
+                  "finalized_at": null,
+                  "progress": {
+                    "step": null,
+                    "questions_done": 0,
+                    "questions_total": 2
+                  },
+                  "queue": {
+                    "position": 3,
+                    "estimated_ready_at": "2026-10-14T06:02:00Z"
+                  },
+                  "attempt_count": 1,
+                  "rubric_version": 1,
+                  "credits_charged": null,
+                  "error": null,
+                  "metadata": {
+                    "centre": "Jaipur-02"
+                  },
+                  "created_at": "2026-10-14T05:58:41Z",
+                  "updated_at": "2026-10-14T05:58:41Z",
+                  "quote": {
+                    "unit": "page",
+                    "pages": 12,
+                    "credits": 12,
+                    "rate_source": "standard"
+                  },
+                  "warnings": []
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "402": {
+            "$ref": "#/components/responses/Error402"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Submits one candidate's work for AI evaluation and returns `202` with the submission and its fixed-price `quote`.\n\n- **Handwritten exams:** send `upload_id` of a `ready` upload. Copies of up to 40 pages are read normally; 41 to 80 pages are accepted but flagged for review (`pages_beyond_vision_limit`); more than 80 pages return 422 `too_many_pages`.\n- **Typed exams:** send `answers`, each keyed by `question_id` or `question_label`. Long answers are plain text up to 20,000 characters. An answer in which more than 20% of the letters are Devanagari returns 422 `language_not_supported`.\n\nIdentify the candidate with `candidate_id` or an inline `candidate` (created and registered if new). One live submission per candidate per exam: a second one returns 409 `submission_exists` unless you send `replace: true`. The exam must be open (409 `exam_not_open`).\n\n**Scope:** `evaluation:write`"
+      }
+    },
+    "/exams/{examId}/questions": {
+      "get": {
+        "tags": [
+          "Questions"
+        ],
+        "summary": "List questions",
+        "operationId": "listQuestions",
+        "parameters": [
+          {
+            "name": "examId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exam id (UUID)."
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "rubric,model_answer"
+            },
+            "description": "Comma-separated: `rubric`, `model_answer`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Returns `{\"questions\": [...]}` in paper order. Add `include=rubric,model_answer` to include marking material.\n\n**Scope:** `evaluation:read`"
+      },
+      "post": {
+        "tags": [
+          "Questions"
+        ],
+        "summary": "Add questions",
+        "operationId": "addQuestions",
+        "parameters": [
+          {
+            "name": "examId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exam id (UUID)."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255,
+              "example": "exam-cbse-sci-10a-2026-10-14"
+            },
+            "description": "Optional. Any unique string of 1-255 printable ASCII characters (a UUID works). Retrying with the same key within 48 hours replays the first response with `Idempotent-Replayed: true`."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddQuestions"
+              },
+              "example": {
+                "questions": [
+                  {
+                    "label": "Q12",
+                    "section": "B",
+                    "type": "numeric",
+                    "text": "A wire of resistance 10 ohm is cut into two equal parts joined in parallel. Find the resistance of the combination in ohm.",
+                    "max_marks": 1,
+                    "answer": 2.5
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Adds questions to a draft exam. Labels must be unique across the exam. An open exam returns 409 `exam_open`.\n\n**Scope:** `evaluation:write`"
+      }
+    },
+    "/exams/{examId}/open": {
+      "post": {
+        "tags": [
+          "Exams"
+        ],
+        "summary": "Open an exam",
+        "operationId": "openExam",
+        "parameters": [
+          {
+            "name": "examId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exam id (UUID)."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255,
+              "example": "exam-cbse-sci-10a-2026-10-14"
+            },
+            "description": "Optional. Any unique string of 1-255 printable ASCII characters (a UUID works). Retrying with the same key within 48 hours replays the first response with `Idempotent-Replayed: true`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Exam"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Opens a draft exam so it accepts submissions. The exam needs at least one question, and every rubric must add up to its question's max marks. Opening an exam that is already open changes nothing.\n\n**Scope:** `evaluation:write`",
+        "x-mint": {
+          "href": "/api-reference/exams/open"
+        }
+      }
+    },
+    "/exams/{examId}/finalize": {
+      "post": {
+        "tags": [
+          "Review"
+        ],
+        "summary": "Finalize results",
+        "operationId": "finalizeExam",
+        "parameters": [
+          {
+            "name": "examId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exam id (UUID)."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255,
+              "example": "exam-cbse-sci-10a-2026-10-14"
+            },
+            "description": "Optional. Any unique string of 1-255 printable ASCII characters (a UUID works). Retrying with the same key within 48 hours replays the first response with `Idempotent-Replayed: true`."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Finalize"
+              },
+              "examples": {
+                "all": {
+                  "summary": "Finalize everything graded",
+                  "value": {
+                    "all_graded": true
+                  }
+                },
+                "ids": {
+                  "summary": "Finalize chosen submissions",
+                  "value": {
+                    "submission_ids": [
+                      "9b2e4f71-5c3a-4d8e-b6f0-1a7c3e5d9b24"
+                    ],
+                    "allow_partial": false
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FinalizeResult"
+                },
+                "example": {
+                  "finalized": [
+                    "9b2e4f71-5c3a-4d8e-b6f0-1a7c3e5d9b24"
+                  ],
+                  "skipped": [
+                    {
+                      "id": "5d1c9e2a-7b3f-4a6e-8c0d-2f4b6a8e1c39",
+                      "reason": "not_graded"
+                    }
+                  ],
+                  "has_more": false
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Publishes AI draft marks as final. Send `submission_ids` (up to 500) or `all_graded: true`. Graded submissions are finalized; `partially_graded` and `failed` ones only with `allow_partial` (failed questions count 0); queued or running ones are skipped. After finalize, overrides and re-evaluate return 409 `submission_finalized` until you unfinalize. Finalizing sends no emails or notifications.\n\n**Scope:** `evaluation:finalize`"
+      }
+    },
+    "/exams/{examId}/candidates": {
+      "get": {
+        "tags": [
+          "Candidates"
+        ],
+        "summary": "List an exam's candidates",
+        "operationId": "listExamCandidates",
+        "parameters": [
+          {
+            "name": "examId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exam id (UUID)."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            },
+            "description": "Page size, 1-200. Default 50."
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "`next_cursor` from the previous page, passed as is."
+          },
+          {
+            "name": "updated_since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2026-10-01T09:00:00Z"
+            },
+            "description": "ISO 8601 UTC time, e.g. `2026-10-01T09:00:00Z`. Only rows updated since then."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandidateRegistrationPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Lists the candidates registered on an exam, each with their latest submission id and status.\n\n**Scope:** `evaluation:read`"
+      },
+      "post": {
+        "tags": [
+          "Candidates"
+        ],
+        "summary": "Register candidates on an exam",
+        "operationId": "registerCandidates",
+        "parameters": [
+          {
+            "name": "examId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exam id (UUID)."
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255,
+              "example": "exam-cbse-sci-10a-2026-10-14"
+            },
+            "description": "Optional. Any unique string of 1-255 printable ASCII characters (a UUID works). Retrying with the same key within 48 hours replays the first response with `Idempotent-Replayed: true`."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CandidatesBody"
+              },
+              "example": {
+                "candidates": [
+                  {
+                    "external_id": "STU-10A-0142",
+                    "name": "Aarav Sharma"
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Registers candidates on an exam. Send `candidates` (created or updated by `external_id` first) or `candidate_ids` (up to 2,000). Returns `registered`, `already_registered` and `candidates`. You can also skip this step: submitting for an inline candidate registers them.\n\n**Scope:** `evaluation:write`"
+      }
+    },
+    "/exams/search": {
+      "post": {
+        "tags": [
+          "Exams"
+        ],
+        "summary": "Find exams by external_ref",
+        "operationId": "searchExams",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchExams"
+              },
+              "example": {
+                "external_refs": [
+                  "cbse-sci-10a-hy-2026",
+                  "upsc-gs2-week18"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Looks up exams by your own `external_ref` values (1 to 500 per call). Returns `{\"data\": [...]}` with the exams found.\n\n**Scope:** `evaluation:read`",
+        "x-mint": {
+          "href": "/api-reference/exams/search"
+        }
+      }
+    },
+    "/credits/quote": {
+      "post": {
+        "tags": [
+          "Credits"
+        ],
+        "summary": "Quote a price",
+        "operationId": "quoteCredits",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Quote"
+              },
+              "examples": {
+                "pages": {
+                  "summary": "A bundle of 40 twelve-page copies",
+                  "value": {
+                    "pages": 480
+                  }
+                },
+                "uploads": {
+                  "summary": "Exact pages of uploads",
+                  "value": {
+                    "upload_ids": [
+                      "e7d35b19-04c2-4a8f-93e6-b1f2c8a4d057"
+                    ]
+                  }
+                },
+                "typed": {
+                  "summary": "Typed long answers",
+                  "value": {
+                    "typed_answers": 120
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditQuote"
+                },
+                "example": {
+                  "unit": "page",
+                  "credits_per_page": 1,
+                  "pages": 480,
+                  "total": 480,
+                  "available": 4952,
+                  "committed": 48,
+                  "sufficient": true,
+                  "rate_source": "standard",
+                  "note": "Fixed price: 1 credit per page of a graded copy at the standard rate. Failed, cancelled and unreadable copies are free."
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Quotes the fixed price before you submit. Send exactly one of `pages`, `upload_ids` (exact page counts of 1 to 100 uploads) or `typed_answers`. `sufficient` tells you whether the available credits cover it.\n\n**Scope:** `evaluation:read`"
+      }
+    },
+    "/candidates": {
+      "post": {
+        "tags": [
+          "Candidates"
+        ],
+        "summary": "Create or update candidates",
+        "operationId": "upsertCandidates",
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255,
+              "example": "exam-cbse-sci-10a-2026-10-14"
+            },
+            "description": "Optional. Any unique string of 1-255 printable ASCII characters (a UUID works). Retrying with the same key within 48 hours replays the first response with `Idempotent-Replayed: true`."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CandidatesBody"
+              },
+              "example": {
+                "candidates": [
+                  {
+                    "external_id": "STU-10A-0142",
+                    "name": "Aarav Sharma",
+                    "roll_number": "14",
+                    "section_or_class": "10-A"
+                  },
+                  {
+                    "external_id": "STU-10A-0143",
+                    "name": "Diya Patel",
+                    "roll_number": "15",
+                    "section_or_class": "10-A"
+                  }
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Creates or updates up to 2,000 candidates by your `external_id`. Returns `{\"candidates\": [{\"id\", \"external_id\", \"created\"}]}`.\n\n**Scope:** `evaluation:write`"
+      }
+    },
+    "/candidates/search": {
+      "post": {
+        "tags": [
+          "Candidates"
+        ],
+        "summary": "Find candidates by external_id",
+        "operationId": "searchCandidates",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SearchBody"
+              },
+              "example": {
+                "external_ids": [
+                  "STU-10A-0142",
+                  "STU-10A-0143"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Looks up candidates by your `external_id` values (1 to 500 per call). Returns `{\"data\": [...]}`.\n\n**Scope:** `evaluation:read`",
+        "x-mint": {
+          "href": "/api-reference/candidates/search"
+        }
+      }
+    },
+    "/submissions/{submissionId}/questions/{questionId}": {
+      "patch": {
+        "tags": [
+          "Review"
+        ],
+        "summary": "Override a question's marks",
+        "operationId": "overrideQuestion",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Submission id (UUID)."
+          },
+          {
+            "name": "questionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Question id (UUID)."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewQuestion"
+              },
+              "example": {
+                "awarded": 2.5,
+                "feedback": "Mentions mucus briefly; half credit for the third point.",
+                "reviewer": {
+                  "ref": "TCH-031",
+                  "name": "Mrs. Kavita Rao"
+                },
+                "reason": "Re-checked on student request"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Sets a teacher's marks and feedback for one question. `awarded` must be between 0 and the question's max, in steps of 0.5 (422 `invalid_marks`). The reviewer and reason are shown in the dashboard. A finalized submission returns 409 `submission_finalized`.\n\n**Scope:** `evaluation:review`"
+      }
+    },
+    "/exams/{examId}": {
+      "get": {
+        "tags": [
+          "Exams"
+        ],
+        "summary": "Get an exam",
+        "operationId": "getExam",
+        "parameters": [
+          {
+            "name": "examId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exam id (UUID)."
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "questions,stats"
+            },
+            "description": "Comma-separated: `questions`, `candidates`, `choice_groups`, `stats`, `rubric`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Exam"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Returns one exam. Use `include` to add `questions`, `candidates`, `choice_groups`, `stats` or `rubric`. Deleted exams are returned with status `deleted`.\n\n**Scope:** `evaluation:read`"
+      },
+      "delete": {
+        "tags": [
+          "Exams"
+        ],
+        "summary": "Delete an exam",
+        "operationId": "deleteExam",
+        "parameters": [
+          {
+            "name": "examId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exam id (UUID)."
+          },
+          {
+            "name": "purge",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean"
+            },
+            "description": "Not available yet: `true` returns 422 `feature_not_available`."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Deletes a draft exam, or an open exam that has no submissions. An exam with submissions returns 409 `exam_has_submissions`. Returns `{\"id\": \"...\", \"status\": \"deleted\"}`.\n\n**Scope:** `evaluation:write`"
+      },
+      "patch": {
+        "tags": [
+          "Exams"
+        ],
+        "summary": "Update an exam",
+        "operationId": "updateExam",
+        "parameters": [
+          {
+            "name": "examId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exam id (UUID)."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "title": "Class 10 Science - Half-Yearly 2026 (10-A, re-test)",
+                "conducted_on": "2026-10-21"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Exam"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Edits exam fields. Until the exam is finalized you can change `title`, `external_ref`, `conducted_on`, `subject`, `board`, `class`, `level`, `instructions` and `feedback_language`. `sections`, `blind` and `mode` can change only while the exam is a draft. `answer_language` and `status` cannot be changed here.\n\n**Scope:** `evaluation:write`"
+      }
+    },
+    "/exams/{examId}/rubrics": {
+      "get": {
+        "tags": [
+          "Rubrics"
+        ],
+        "summary": "List rubrics",
+        "operationId": "listRubrics",
+        "parameters": [
+          {
+            "name": "examId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exam id (UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Returns the rubrics and model answers of an exam's long-answer questions, with the current rubric version.\n\n**Scope:** `evaluation:read`"
+      },
+      "patch": {
+        "tags": [
+          "Rubrics"
+        ],
+        "summary": "Update several rubrics",
+        "operationId": "updateRubrics",
+        "parameters": [
+          {
+            "name": "examId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exam id (UUID)."
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "3"
+            },
+            "description": "Optional. The rubric version you last read, e.g. `3`. If the rubric has moved on, the call fails with 412 `rubric_version_mismatch`."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JsonNode"
+              },
+              "example": {
+                "questions": {
+                  "b2e1d3c5-7f9a-4b4d-8e6f-0a2c3d4e5f6a": {
+                    "rubric": {
+                      "partial_marking": true,
+                      "criteria": [
+                        {
+                          "name": "Role of hydrochloric acid",
+                          "marks": 1,
+                          "guidance": "Acidic medium, kills germs, activates pepsin."
+                        },
+                        {
+                          "name": "Enzymes named",
+                          "marks": 1,
+                          "keywords": [
+                            "pepsin"
+                          ],
+                          "guidance": "Pepsin digests proteins."
+                        },
+                        {
+                          "name": "Mucus and protection",
+                          "marks": 1,
+                          "guidance": "Mucus protects the inner lining from the acid."
+                        }
+                      ]
+                    }
+                  },
+                  "d3f2e4c6-8a0b-4c5e-9f7a-1b3d4e5f6a7b": {
+                    "model_answer": null
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RubricWriteResult"
+                },
+                "example": {
+                  "version": 4,
+                  "questions": [
+                    {
+                      "question_id": "b2e1d3c5-7f9a-4b4d-8e6f-0a2c3d4e5f6a"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "412": {
+            "$ref": "#/components/responses/Error412"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Sets or clears the rubric and/or model answer of several long-answer questions in one version bump. The body maps question ids to `{rubric, model_answer}`; send `null` to clear one.\n\nCriterion marks must add up to the question's max marks (422 `rubric_marks_mismatch`), names must be unique (422 `rubric_duplicate_criterion`) and guidance must not contain mark figures (422 `rubric_guidance_has_marks`). Send `If-Match` with the version you read to avoid overwriting someone else's change.\n\n**Scope:** `evaluation:write`",
+        "x-mint": {
+          "href": "/api-reference/rubrics/update-several"
+        }
+      }
+    },
+    "/exams/{examId}/questions/{questionId}": {
+      "delete": {
+        "tags": [
+          "Questions"
+        ],
+        "summary": "Delete a question",
+        "operationId": "deleteQuestion",
+        "parameters": [
+          {
+            "name": "examId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exam id (UUID)."
+          },
+          {
+            "name": "questionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Question id (UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Removes a question from a draft exam. Returns `{\"id\": \"...\", \"deleted\": true}`.\n\n**Scope:** `evaluation:write`"
+      },
+      "patch": {
+        "tags": [
+          "Questions"
+        ],
+        "summary": "Update a question",
+        "operationId": "updateQuestion",
+        "parameters": [
+          {
+            "name": "examId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exam id (UUID)."
+          },
+          {
+            "name": "questionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Question id (UUID)."
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              },
+              "example": {
+                "word_limit": 120
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Question"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Edits one question. In a draft exam any field can change except `type` and `section`. Once the exam is open, only `text`, `model_answer`, `rubric`, `tags`, `word_limit` and `expects_diagram` can change.\n\n**Scope:** `evaluation:write`"
+      }
+    },
+    "/uploads/{uploadId}": {
+      "get": {
+        "tags": [
+          "Uploads"
+        ],
+        "summary": "Get an upload",
+        "operationId": "getUpload",
+        "parameters": [
+          {
+            "name": "uploadId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Upload id (UUID) from POST /uploads."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Upload"
+                },
+                "example": {
+                  "id": "e7d35b19-04c2-4a8f-93e6-b1f2c8a4d057",
+                  "filename": "STU-10A-0142-science.pdf",
+                  "content_type": "application/pdf",
+                  "size_bytes": 4718592,
+                  "status": "ready",
+                  "pages": 12,
+                  "reject_reason": null,
+                  "submission_id": null,
+                  "expires_at": "2026-10-14T06:58:41Z",
+                  "created_at": "2026-10-14T05:58:41Z"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Returns an upload. The first read after your PUT checks the file (size, type, page count): the status becomes `ready` with `pages`, or `rejected` with a `reject_reason`. A file still not uploaded stays `pending` until its URL expires.\n\n**Scope:** `evaluation:read`"
+      }
+    },
+    "/submissions": {
+      "get": {
+        "tags": [
+          "Submissions"
+        ],
+        "summary": "Submission feed",
+        "operationId": "listSubmissions",
+        "parameters": [
+          {
+            "name": "updated_since",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2026-10-01T09:00:00Z"
+            },
+            "description": "Required. ISO 8601 UTC time. Start with an old time on the first sync, then follow `next_cursor`."
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "graded,partially_graded"
+            },
+            "description": "Comma-separated statuses: queued, processing, reading, grading, graded, partially_graded, failed, cancelled."
+          },
+          {
+            "name": "needs_review",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "`true` or `false`."
+          },
+          {
+            "name": "finalized",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "`true` or `false`."
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "`next_cursor` from the previous page, passed as is."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "default": 50
+            },
+            "description": "Page size, 1-200. Default 50."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubmissionPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "All submissions of the institute across exams, ordered by `(updated_at, id)`. `updated_since` is required. Poll this feed to pick up status changes: store the last `updated_at` you processed and follow `next_cursor` until `has_more` is false.\n\n**Scope:** `evaluation:read`"
+      }
+    },
+    "/submissions/{submissionId}": {
+      "get": {
+        "tags": [
+          "Submissions"
+        ],
+        "summary": "Get a submission",
+        "operationId": "getSubmission",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Submission id (UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Submission"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Returns a submission's status, with queue position and estimated ready time while it is queued.\n\n**Scope:** `evaluation:read`"
+      },
+      "delete": {
+        "tags": [
+          "Submissions"
+        ],
+        "summary": "Delete a submission",
+        "operationId": "deleteSubmission",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Submission id (UUID)."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Deletes a submission that is not finalized, for example a wrong upload. Any running evaluation is cancelled. Returns `{\"id\": \"...\", \"deleted\": true}`.\n\n**Scope:** `evaluation:write`"
+      }
+    },
+    "/submissions/{submissionId}/result": {
+      "get": {
+        "tags": [
+          "Results"
+        ],
+        "summary": "Get a result",
+        "operationId": "getResult",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Submission id (UUID)."
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "model_answer"
+            },
+            "description": "Comma-separated: `annotations`, `model_answer`. `extracted_answer` is included by default; `-extracted_answer` leaves it out."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                },
+                "example": {
+                  "submission_id": "9b2e4f71-5c3a-4d8e-b6f0-1a7c3e5d9b24",
+                  "exam_id": "3f6c1d2e-8b4a-4c7e-9a51-2d0e7b9c4f18",
+                  "candidate": {
+                    "id": "c41a7e93-2f58-4b6d-8e0a-5d9f1b3c7e62",
+                    "external_id": "STU-10A-0142",
+                    "name": "Aarav Sharma",
+                    "roll_number": "14"
+                  },
+                  "status": "graded",
+                  "needs_review": false,
+                  "review_reasons": [],
+                  "finalized": false,
+                  "finalized_at": null,
+                  "rubric_version": 1,
+                  "totals": {
+                    "awarded": 3,
+                    "max": 4,
+                    "percentage": 75.0,
+                    "questions_graded": 2,
+                    "questions_failed": 0
+                  },
+                  "questions": [
+                    {
+                      "question_id": "b2e1d3c5-7f9a-4b4d-8e6f-0a2c3d4e5f6a",
+                      "label": "Q24",
+                      "section": "C",
+                      "status": "graded",
+                      "counted": true,
+                      "awarded": 2,
+                      "max": 3,
+                      "source": "ai",
+                      "confidence": 0.86,
+                      "needs_review": false,
+                      "review_reasons": [],
+                      "extracted_answer": "In the stomach HCl makes the medium acidic and kills germs. Pepsin breaks proteins...",
+                      "feedback": "Correctly explains the role of HCl and names pepsin. Does not mention mucus protecting the stomach lining.",
+                      "criteria": [
+                        {
+                          "name": "Role of hydrochloric acid",
+                          "awarded": 1,
+                          "max": 1,
+                          "reason": "Acidic medium and germ-killing stated."
+                        },
+                        {
+                          "name": "Enzymes named",
+                          "awarded": 1,
+                          "max": 1,
+                          "reason": "Pepsin named with its function."
+                        },
+                        {
+                          "name": "Mucus and protection",
+                          "awarded": 0,
+                          "max": 1,
+                          "reason": "Not mentioned."
+                        }
+                      ],
+                      "error": null
+                    }
+                  ],
+                  "checked_copy": {
+                    "available": true,
+                    "download_path": "/submissions/9b2e4f71-5c3a-4d8e-b6f0-1a7c3e5d9b24/checked-copy"
+                  },
+                  "graded_at": "2026-10-14T06:03:18Z",
+                  "credits_charged": 12,
+                  "error": null
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Question-wise marks, criteria, feedback and totals for one submission. Marks are drafts until you finalize. `extracted_answer` (what the AI read) is included by default; add `include=annotations,model_answer` for more.\n\n**Scope:** `evaluation:read`",
+        "x-mint": {
+          "href": "/api-reference/results/get-result"
+        }
+      }
+    },
+    "/submissions/{submissionId}/checked-copy": {
+      "get": {
+        "tags": [
+          "Results"
+        ],
+        "summary": "Download the checked copy",
+        "operationId": "getCheckedCopy",
+        "parameters": [
+          {
+            "name": "submissionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Submission id (UUID)."
+          },
+          {
+            "name": "redirect",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "`true` answers 302 with a short-lived download link when one can be issued; otherwise the PDF is streamed."
+          },
+          {
+            "name": "expires_in",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 60,
+              "maximum": 3600,
+              "default": 900
+            },
+            "description": "Lifetime of the redirect link in seconds, 60-3600. Default 900."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The checked copy.",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "302": {
+            "description": "Redirect to a short-lived download link (only with `redirect=true`).",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Returns the checked (annotated) copy as a PDF. With `redirect=true` you may get a `302` to a short-lived link instead. No checked copy yet returns 404 `checked_copy_not_found`.\n\n**Scope:** `evaluation:read`"
+      }
+    },
+    "/me": {
+      "get": {
+        "tags": [
+          "Account"
+        ],
+        "operationId": "getMe",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeResponse"
+                },
+                "example": {
+                  "key_id": "4e8a1c6f-2b9d-4f3a-8c5e-7d1b0a9f6e23",
+                  "name": "ERP production",
+                  "institute_id": "9a7d3c21-64e8-4b0f-8c52-3e1f0a9b6d47",
+                  "institute_name": "Green Valley Public School",
+                  "scopes": [
+                    "evaluation:read",
+                    "evaluation:write"
+                  ],
+                  "rate_tier": "standard",
+                  "daily_copy_quota": 2000,
+                  "daily_copy_cap": null,
+                  "quota_used_today": 37,
+                  "quota_resets_at": "2026-10-15T00:00:00Z"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "summary": "Check your API key",
+        "description": "Returns the key's id, name, institute, scopes, rate tier and today's copy quota. Any valid key can call it; use it to test a new key.\n\n**Scope:** any valid key"
+      }
+    },
+    "/exams/{examId}/results": {
+      "get": {
+        "tags": [
+          "Results"
+        ],
+        "summary": "List an exam's results",
+        "operationId": "listExamResults",
+        "parameters": [
+          {
+            "name": "examId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exam id (UUID)."
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "json",
+                "csv"
+              ],
+              "default": "json"
+            },
+            "description": "`json` (default). `csv` is not available yet and returns 422 `feature_not_available`."
+          },
+          {
+            "name": "finalized",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "description": "`true` or `false`."
+          },
+          {
+            "name": "updated_since",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2026-10-01T09:00:00Z"
+            },
+            "description": "ISO 8601 UTC time, e.g. `2026-10-01T09:00:00Z`. Only rows updated since then."
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "`next_cursor` from the previous page, passed as is."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "default": 20
+            },
+            "description": "Page size, 1-50. Default 20."
+          },
+          {
+            "name": "include",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "model_answer"
+            },
+            "description": "Comma-separated: `annotations`, `model_answer`. `extracted_answer` is included by default; `-extracted_answer` leaves it out."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "422": {
+            "$ref": "#/components/responses/Error422"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "One result per live submission of the exam, in the same shape as [Get a result](/api-reference/results/get-result). `limit` is 1-50 (default 20). Filter with `finalized` and `updated_since`. `format=csv` is not available yet.\n\n**Scope:** `evaluation:read`",
+        "x-mint": {
+          "href": "/api-reference/results/list-exam-results"
+        }
+      }
+    },
+    "/credits": {
+      "get": {
+        "tags": [
+          "Credits"
+        ],
+        "summary": "Get credit balance",
+        "operationId": "getCredits",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Credits"
+                },
+                "example": {
+                  "balance": 5000,
+                  "credit_limit": 0,
+                  "committed": 48,
+                  "available": 4952,
+                  "rate_card": {
+                    "tool": "copy_check_evaluation_api",
+                    "unit": "page",
+                    "credits_per_page": 1,
+                    "typed_credits_per_answer": 1,
+                    "fixed_price": true,
+                    "rate_source": "standard"
+                  },
+                  "spent_30d": {
+                    "copies": 214,
+                    "pages": 2368,
+                    "credits": 2368
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Returns the institute's credit balance, credits committed to queued and running evaluations, what is available, the rate card and the last 30 days' spend.\n\n**Scope:** `evaluation:read`"
+      }
+    },
+    "/candidates/{candidateId}": {
+      "get": {
+        "tags": [
+          "Candidates"
+        ],
+        "summary": "Get a candidate",
+        "operationId": "getCandidate",
+        "parameters": [
+          {
+            "name": "candidateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Evalezy candidate id (UUID), not your external_id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Candidate"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Returns one candidate by Evalezy id.\n\n**Scope:** `evaluation:read`"
+      }
+    },
+    "/exams/{examId}/candidates/{candidateId}": {
+      "delete": {
+        "tags": [
+          "Candidates"
+        ],
+        "summary": "Unregister a candidate",
+        "operationId": "unregisterCandidate",
+        "parameters": [
+          {
+            "name": "examId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Exam id (UUID)."
+          },
+          {
+            "name": "candidateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Evalezy candidate id (UUID), not your external_id."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error404"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error409"
+          },
+          "429": {
+            "$ref": "#/components/responses/Error429"
+          }
+        },
+        "description": "Removes a candidate from an exam. A candidate who already has a submission returns 409 `candidate_has_submission`.\n\n**Scope:** `evaluation:write`"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "JsonNode": {
+        "type": "object"
+      },
+      "ChoiceGroupInput": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "question_labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "attempt": {
+            "type": "integer",
+            "format": "int32",
+            "description": "How many questions of the group count. At least 1 and less than the group size."
+          },
+          "policy": {
+            "type": "string",
+            "enum": [
+              "first",
+              "best"
+            ],
+            "description": "Which answers count when a candidate attempts more than `attempt`."
+          }
+        }
+      },
+      "ReplaceChoiceGroups": {
+        "type": "object",
+        "properties": {
+          "choice_groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChoiceGroupInput"
+            }
+          }
+        }
+      },
+      "CreateUploads": {
+        "type": "object",
+        "properties": {
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UploadFile"
+            },
+            "description": "Up to 100 files. Send either `files` or one file at the top level."
+          },
+          "filename": {
+            "type": "string"
+          },
+          "content_type": {
+            "type": "string",
+            "description": "Must be `application/pdf`."
+          },
+          "size_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Exact file size in bytes. At most 50 MB (52,428,800 bytes)."
+          },
+          "sha256": {
+            "type": "string",
+            "description": "Optional: 64 hex characters."
+          }
+        }
+      },
+      "UploadFile": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string"
+          },
+          "content_type": {
+            "type": "string",
+            "description": "Must be `application/pdf`."
+          },
+          "size_bytes": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Exact file size in bytes. At most 50 MB."
+          },
+          "sha256": {
+            "type": "string",
+            "description": "Optional: 64 hex characters."
+          }
+        }
+      },
+      "Unfinalize": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Required, up to 500 characters (e.g. the revaluation request number)."
+          }
+        }
+      },
+      "Reevaluate": {
+        "type": "object",
+        "properties": {
+          "question_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Not available yet: re-evaluating single questions returns 422 `feature_not_available`."
+          },
+          "keep_reviewed": {
+            "type": "boolean",
+            "description": "Keep teacher-edited questions as they are (default true)."
+          }
+        }
+      },
+      "Approve": {
+        "type": "object",
+        "properties": {
+          "reviewer": {
+            "$ref": "#/components/schemas/Reviewer"
+          }
+        }
+      },
+      "Reviewer": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "description": "Your teacher id, up to 120 characters."
+          },
+          "name": {
+            "type": "string",
+            "description": "Teacher name, up to 120 characters."
+          }
+        }
+      },
+      "CandidateInput": {
+        "type": "object",
+        "properties": {
+          "external_id": {
+            "type": "string",
+            "description": "Your id for the candidate (required), up to 128 characters."
+          },
+          "name": {
+            "type": "string",
+            "description": "Up to 255 characters, no `<` or `>`."
+          },
+          "roll_number": {
+            "type": "string",
+            "description": "Up to 64 characters."
+          },
+          "section_or_class": {
+            "type": "string",
+            "description": "Up to 64 characters."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/JsonNode",
+            "description": "A JSON object of your own, up to 2 KB."
+          }
+        }
+      },
+      "CreateExam": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Exam title, up to 255 characters, no `<` or `>`."
+          },
+          "mode": {
+            "type": "string",
+            "description": "`handwritten` (scanned answer copies) or `typed` (answers sent as text).",
+            "enum": [
+              "handwritten",
+              "typed"
+            ]
+          },
+          "external_ref": {
+            "type": "string",
+            "description": "Your own id for the exam, up to 128 characters. Unique per institute: a repeat returns 409 `exam_exists`."
+          },
+          "conducted_on": {
+            "type": "string",
+            "description": "Exam date, `YYYY-MM-DD`. Defaults to today.",
+            "format": "date"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Up to 120 characters."
+          },
+          "level": {
+            "type": "string",
+            "description": "`school` (default), `ug`, `pg` or `upsc`.",
+            "enum": [
+              "school",
+              "ug",
+              "pg",
+              "upsc"
+            ]
+          },
+          "board": {
+            "type": "string",
+            "description": "e.g. CBSE. Up to 64 characters."
+          },
+          "answer_language": {
+            "type": "string",
+            "description": "Only `en` is supported. `hi` returns 422 `language_not_supported`.",
+            "enum": [
+              "en",
+              "hi"
+            ]
+          },
+          "feedback_language": {
+            "type": "string",
+            "description": "Only `en` is supported.",
+            "enum": [
+              "en",
+              "hi"
+            ]
+          },
+          "instructions": {
+            "type": "string",
+            "description": "Paper-level instructions for the evaluator, up to 4,000 characters."
+          },
+          "blind": {
+            "type": "boolean",
+            "description": "Hide candidate names from results and reviewers."
+          },
+          "open": {
+            "type": "boolean",
+            "description": "Open the exam in the same call so it accepts submissions right away."
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SectionInput"
+            },
+            "description": "Up to 20 sections. If omitted, sections come from the questions' `section` values, or a single section `A`."
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionInput"
+            },
+            "description": "Up to 200 questions."
+          },
+          "choice_groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChoiceGroupInput"
+            },
+            "description": "Beta, enabled on request. Currently returns 422 `feature_not_available`."
+          },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CandidateInput"
+            },
+            "description": "Up to 2,000 candidates to create (or update) and register on the exam."
+          },
+          "class": {
+            "type": "string",
+            "description": "e.g. 10. Up to 32 characters."
+          }
+        }
+      },
+      "CriterionInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Up to 200 characters."
+          },
+          "marks": {
+            "type": "number"
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Up to 30 keywords, 100 characters each."
+          },
+          "guidance": {
+            "type": "string",
+            "description": "What earns this criterion, up to 2,000 characters. Must not contain mark figures such as \"2 marks\"."
+          }
+        }
+      },
+      "OptionInput": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "QuestionInput": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "description": "Question label as printed on the paper, e.g. `Q3` or `5(b)`. Up to 16 characters, unique in the exam."
+          },
+          "parent_label": {
+            "type": "string",
+            "description": "Label of the parent question for sub-parts."
+          },
+          "section": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "mcq_single",
+              "mcq_multi",
+              "true_false",
+              "numeric",
+              "one_word",
+              "long_answer"
+            ]
+          },
+          "text": {
+            "type": "string",
+            "description": "Question text, up to 20,000 characters."
+          },
+          "max_marks": {
+            "type": "number",
+            "description": "Greater than 0, at most 1000, in steps of 0.5."
+          },
+          "negative_marks": {
+            "type": "number",
+            "description": "0 or more. Ignored (with a warning) on handwritten exams."
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OptionInput"
+            },
+            "description": "MCQ and true/false only: 2 to 26 options."
+          },
+          "correct_options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Option labels. Exactly one for `mcq_single` and `true_false`."
+          },
+          "answer": {
+            "$ref": "#/components/schemas/JsonNode",
+            "description": "`numeric`: a number or a list of accepted numbers. `one_word`: a string up to 255 characters."
+          },
+          "model_answer": {
+            "type": "string",
+            "description": "`long_answer` only. Up to 20,000 characters."
+          },
+          "rubric": {
+            "$ref": "#/components/schemas/RubricInput",
+            "description": "`long_answer` only. Criterion marks must add up to `max_marks`."
+          },
+          "word_limit": {
+            "type": "integer",
+            "format": "int32",
+            "description": "Greater than 0."
+          },
+          "expects_diagram": {
+            "type": "boolean"
+          },
+          "assess_language": {
+            "type": "boolean"
+          },
+          "tags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            },
+            "description": "Your own key-value tags, up to 2 KB."
+          },
+          "external_id": {
+            "type": "string",
+            "description": "Your id for the question, up to 128 characters."
+          }
+        }
+      },
+      "RubricInput": {
+        "type": "object",
+        "properties": {
+          "partial_marking": {
+            "type": "boolean",
+            "description": "Allow partial marks within a criterion."
+          },
+          "instructions": {
+            "type": "string",
+            "description": "Up to 4,000 characters."
+          },
+          "criteria": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CriterionInput"
+            },
+            "description": "Up to 30 criteria. Names unique within the question; marks add up to the question's `max_marks`."
+          }
+        }
+      },
+      "SectionInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "order": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "AnswerInput": {
+        "type": "object",
+        "properties": {
+          "question_id": {
+            "type": "string",
+            "description": "Question id. Send this or `question_label`."
+          },
+          "question_label": {
+            "type": "string",
+            "description": "Question label. Send this or `question_id`."
+          },
+          "text": {
+            "type": "string",
+            "description": "`long_answer`: plain text, up to 20,000 characters."
+          },
+          "option_labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "MCQ and true/false: the chosen option labels."
+          },
+          "value": {
+            "$ref": "#/components/schemas/JsonNode",
+            "description": "`numeric`: a number. `one_word`: a string."
+          }
+        }
+      },
+      "CreateSubmission": {
+        "type": "object",
+        "properties": {
+          "candidate": {
+            "$ref": "#/components/schemas/CandidateInput",
+            "description": "Inline candidate (created or updated by `external_id`). Send this or `candidate_id`."
+          },
+          "candidate_id": {
+            "type": "string",
+            "description": "Evalezy candidate id. Send this or `candidate`."
+          },
+          "upload_id": {
+            "type": "string",
+            "description": "Handwritten exams: the id of a `ready` upload."
+          },
+          "replace": {
+            "type": "boolean",
+            "description": "Replace the candidate's existing live submission (not allowed once finalized)."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/JsonNode",
+            "description": "A JSON object of your own, up to 2 KB, returned on the submission."
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Not available yet (422 `feature_not_available`)."
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Not available yet (422 `feature_not_available`)."
+          },
+          "answers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnswerInput"
+            },
+            "description": "Typed exams: one entry per answered question."
+          }
+        }
+      },
+      "AddQuestions": {
+        "type": "object",
+        "properties": {
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionInput"
+            }
+          }
+        }
+      },
+      "Finalize": {
+        "type": "object",
+        "properties": {
+          "submission_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Up to 500 submission ids. Send this or `all_graded`."
+          },
+          "all_graded": {
+            "type": "boolean",
+            "description": "Finalize every graded, unfinalized submission of the exam (up to 500 per call)."
+          },
+          "allow_partial": {
+            "type": "boolean",
+            "description": "Also finalize `partially_graded` and `failed` submissions; failed questions count 0."
+          }
+        }
+      },
+      "CandidatesBody": {
+        "type": "object",
+        "properties": {
+          "candidates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CandidateInput"
+            }
+          },
+          "candidate_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "SearchExams": {
+        "type": "object",
+        "properties": {
+          "external_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Quote": {
+        "type": "object",
+        "properties": {
+          "pages": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Quote this many handwritten pages."
+          },
+          "upload_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Quote the exact pages of 1 to 100 uploads."
+          },
+          "typed_answers": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Quote this many non-blank long answers."
+          }
+        }
+      },
+      "SearchBody": {
+        "type": "object",
+        "properties": {
+          "external_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ReviewQuestion": {
+        "type": "object",
+        "properties": {
+          "awarded": {
+            "type": "number",
+            "description": "New marks, between 0 and the question's max, in steps of 0.5."
+          },
+          "feedback": {
+            "type": "string",
+            "description": "Up to 4,000 characters."
+          },
+          "reviewer": {
+            "$ref": "#/components/schemas/Reviewer"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Why the marks changed, up to 500 characters."
+          }
+        }
+      },
+      "ChoiceGroup": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "question_labels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "question_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "attempt": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "policy": {
+            "type": "string"
+          }
+        }
+      },
+      "Exam": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "external_ref": {
+            "type": "string"
+          },
+          "conducted_on": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          },
+          "board": {
+            "type": "string"
+          },
+          "answer_language": {
+            "type": "string"
+          },
+          "feedback_language": {
+            "type": "string"
+          },
+          "instructions": {
+            "type": "string"
+          },
+          "blind": {
+            "type": "boolean"
+          },
+          "total_marks": {
+            "type": "number",
+            "format": "double"
+          },
+          "paper_max": {
+            "type": "number",
+            "format": "double"
+          },
+          "question_count": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "dashboard_url": {
+            "type": "string"
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Question"
+            }
+          },
+          "choice_groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChoiceGroup"
+            }
+          },
+          "candidates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object"
+              }
+            }
+          },
+          "rubric": {
+            "$ref": "#/components/schemas/RubricSummary"
+          },
+          "quote": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "stats": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          },
+          "opened_at": {
+            "type": "string"
+          },
+          "finalized_at": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string"
+          },
+          "class": {
+            "type": "string"
+          }
+        }
+      },
+      "Option": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "option_id": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      },
+      "Question": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "parent_label": {
+            "type": "string"
+          },
+          "section": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "max_marks": {
+            "type": "number",
+            "format": "double"
+          },
+          "negative_marks": {
+            "type": "number",
+            "format": "double"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Option"
+            }
+          },
+          "correct_options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "answer": {
+            "type": "object"
+          },
+          "model_answer": {
+            "type": "string"
+          },
+          "rubric": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "word_limit": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "expects_diagram": {
+            "type": "boolean"
+          },
+          "assess_language": {
+            "type": "boolean"
+          },
+          "tags": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          },
+          "external_id": {
+            "type": "string"
+          },
+          "rubric_version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "rubric_sync": {
+            "type": "string"
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "RubricSummary": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "locked": {
+            "type": "boolean"
+          },
+          "questions_with_rubric": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "questions_without_rubric": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sync": {
+            "type": "string"
+          },
+          "sync_error": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object"
+            }
+          }
+        }
+      },
+      "Warning": {
+        "type": "object",
+        "description": "A non-fatal note about the request, e.g. `auto_rubric` or `pages_beyond_vision_limit`.",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "field": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "PageMapStringObject": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object"
+              }
+            }
+          },
+          "next_cursor": {
+            "type": "string"
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        }
+      },
+      "MeResponse": {
+        "type": "object",
+        "properties": {
+          "key_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "institute_id": {
+            "type": "string"
+          },
+          "institute_name": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rate_tier": {
+            "type": "string"
+          },
+          "daily_copy_quota": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "daily_copy_cap": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "quota_used_today": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "quota_resets_at": {
+            "type": "string"
+          }
+        }
+      },
+      "PageExam": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Exam"
+            }
+          },
+          "next_cursor": {
+            "type": "string",
+            "nullable": true
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "description": "Every error uses this envelope. Branch on `error.code`; the message is for humans.",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Stable machine code, e.g. `validation_failed`.",
+                "example": "validation_failed"
+              },
+              "message": {
+                "type": "string",
+                "description": "Human-readable explanation.",
+                "example": "questions[1].max_marks must be a multiple of 0.5."
+              },
+              "request_id": {
+                "type": "string",
+                "description": "Quote this when you contact support (also sent as the X-Request-Id header)."
+              },
+              "details": {
+                "type": "object",
+                "description": "Extra context. For `validation_failed`, `details.errors` lists every failing field.",
+                "additionalProperties": true
+              }
+            }
+          }
+        }
+      },
+      "CandidateRef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Evalezy candidate id."
+          },
+          "external_id": {
+            "type": "string",
+            "description": "Your id for the candidate."
+          }
+        }
+      },
+      "Submission": {
+        "type": "object",
+        "description": "Status of one submission. Create, get, lists and the feed all return this shape.",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "exam_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "candidate": {
+            "$ref": "#/components/schemas/CandidateRef"
+          },
+          "state": {
+            "type": "string",
+            "description": "`live` for the current submission; `replaced` or `deleted` otherwise.",
+            "example": "live"
+          },
+          "replaced_by": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Present when this submission was replaced."
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "processing",
+              "reading",
+              "grading",
+              "graded",
+              "partially_graded",
+              "failed",
+              "cancelled"
+            ]
+          },
+          "lane": {
+            "type": "string",
+            "description": "`copy` (handwritten) or `typed`."
+          },
+          "pages": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Page count of the handwritten copy."
+          },
+          "needs_review": {
+            "type": "boolean"
+          },
+          "review_reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Submission-level reasons, e.g. `pages_beyond_vision_limit`."
+          },
+          "finalized": {
+            "type": "boolean"
+          },
+          "finalized_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "progress": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "step": {
+                "type": "string",
+                "nullable": true
+              },
+              "questions_done": {
+                "type": "integer"
+              },
+              "questions_total": {
+                "type": "integer"
+              },
+              "estimated_ready_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "queue": {
+            "type": "object",
+            "nullable": true,
+            "description": "Only while `queued`.",
+            "properties": {
+              "position": {
+                "type": "integer"
+              },
+              "estimated_ready_at": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              }
+            }
+          },
+          "attempt_count": {
+            "type": "integer",
+            "description": "How many evaluation runs this submission has had."
+          },
+          "rubric_version": {
+            "type": "integer",
+            "nullable": true
+          },
+          "credits_charged": {
+            "type": "number",
+            "nullable": true,
+            "description": "Charged credits once graded; 0 for a typed submission with only objective answers; null while running or when failed/cancelled."
+          },
+          "error": {
+            "type": "object",
+            "nullable": true,
+            "description": "Only when `failed`, e.g. `copy_unreadable` or `language_not_supported`.",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "nullable": true,
+            "additionalProperties": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "SubmissionQuote": {
+        "type": "object",
+        "description": "The fixed price of this evaluation, known before grading.",
+        "properties": {
+          "unit": {
+            "type": "string",
+            "enum": [
+              "page",
+              "answer"
+            ]
+          },
+          "pages": {
+            "type": "integer",
+            "description": "Handwritten: pages of the PDF."
+          },
+          "answers": {
+            "type": "integer",
+            "description": "Typed: non-blank long answers."
+          },
+          "credits": {
+            "type": "number",
+            "nullable": true
+          },
+          "rate_source": {
+            "type": "string",
+            "nullable": true,
+            "description": "`standard` or `contract`."
+          }
+        }
+      },
+      "SubmissionCreated": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Submission"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "quote": {
+                "$ref": "#/components/schemas/SubmissionQuote"
+              },
+              "warnings": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Warning"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "Upload": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "content_type": {
+            "type": "string",
+            "example": "application/pdf"
+          },
+          "size_bytes": {
+            "type": "integer"
+          },
+          "sha256": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "ready",
+              "rejected"
+            ]
+          },
+          "pages": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Page count once `ready`."
+          },
+          "reject_reason": {
+            "type": "string",
+            "nullable": true,
+            "description": "`file_too_large`, `not_a_pdf`, `too_many_pages`, `missing_object` or `unparseable`."
+          },
+          "submission_id": {
+            "type": "string",
+            "nullable": true,
+            "description": "The submission that used this upload."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the upload URL stops working."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "UploadTicket": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Upload id. Pass it as `upload_id` when you submit."
+          },
+          "filename": {
+            "type": "string"
+          },
+          "upload_url": {
+            "type": "string",
+            "description": "Presigned URL. PUT the raw PDF bytes here with the returned headers."
+          },
+          "method": {
+            "type": "string",
+            "example": "PUT"
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Send these headers with the PUT."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The URL is valid for 1 hour."
+          },
+          "status": {
+            "type": "string",
+            "example": "pending"
+          },
+          "upload_url_redacted": {
+            "type": "boolean",
+            "description": "Only on an idempotent replay: the URL is not repeated. Request a new upload."
+          }
+        }
+      },
+      "QuestionResult": {
+        "type": "object",
+        "properties": {
+          "question_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "label": {
+            "type": "string"
+          },
+          "section": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "graded",
+              "failed",
+              "pending",
+              "cancelled",
+              "not_answered"
+            ]
+          },
+          "counted": {
+            "type": "boolean",
+            "description": "False when the answer does not count towards the total."
+          },
+          "awarded": {
+            "type": "number",
+            "nullable": true
+          },
+          "max": {
+            "type": "number"
+          },
+          "source": {
+            "type": "string",
+            "nullable": true,
+            "description": "`ai`, `ai_reviewed` (a teacher edited it) or `auto` (objective answer scored by key)."
+          },
+          "confidence": {
+            "type": "number",
+            "nullable": true
+          },
+          "needs_review": {
+            "type": "boolean"
+          },
+          "review_reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "e.g. `low_confidence`, `failed`."
+          },
+          "extracted_answer": {
+            "type": "string",
+            "nullable": true,
+            "description": "What the AI read (on by default; `include=-extracted_answer` turns it off)."
+          },
+          "feedback": {
+            "type": "string",
+            "nullable": true
+          },
+          "criteria": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "awarded": {
+                  "type": "number",
+                  "nullable": true
+                },
+                "max": {
+                  "type": "number",
+                  "nullable": true
+                },
+                "reason": {
+                  "type": "string",
+                  "nullable": true
+                }
+              }
+            }
+          },
+          "model_answer": {
+            "type": "string",
+            "nullable": true,
+            "description": "With `include=model_answer`."
+          },
+          "annotations": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "With `include=annotations`."
+          },
+          "review": {
+            "type": "object",
+            "properties": {
+              "reviewer": {
+                "type": "object",
+                "properties": {
+                  "ref": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              },
+              "reason": {
+                "type": "string"
+              },
+              "edited": {
+                "type": "boolean"
+              },
+              "edited_at": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "approved": {
+                "type": "boolean"
+              }
+            }
+          },
+          "error": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "Result": {
+        "type": "object",
+        "properties": {
+          "submission_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "exam_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "candidate": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "external_id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string",
+                "nullable": true,
+                "description": "Null on blind exams."
+              },
+              "roll_number": {
+                "type": "string",
+                "nullable": true
+              }
+            }
+          },
+          "status": {
+            "type": "string"
+          },
+          "needs_review": {
+            "type": "boolean"
+          },
+          "review_reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "finalized": {
+            "type": "boolean"
+          },
+          "finalized_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "rubric_version": {
+            "type": "integer",
+            "nullable": true
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "awarded": {
+                "type": "number"
+              },
+              "max": {
+                "type": "number"
+              },
+              "percentage": {
+                "type": "number",
+                "nullable": true
+              },
+              "questions_graded": {
+                "type": "integer"
+              },
+              "questions_failed": {
+                "type": "integer"
+              }
+            }
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionResult"
+            }
+          },
+          "checked_copy": {
+            "type": "object",
+            "properties": {
+              "available": {
+                "type": "boolean"
+              },
+              "download_path": {
+                "type": "string",
+                "nullable": true,
+                "example": "/submissions/{id}/checked-copy"
+              }
+            }
+          },
+          "graded_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "credits_charged": {
+            "type": "number",
+            "nullable": true
+          },
+          "error": {
+            "type": "object",
+            "nullable": true
+          }
+        }
+      },
+      "Candidate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "external_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "roll_number": {
+            "type": "string"
+          },
+          "section_or_class": {
+            "type": "string"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RateCard": {
+        "type": "object",
+        "properties": {
+          "tool": {
+            "type": "string"
+          },
+          "unit": {
+            "type": "string",
+            "example": "page"
+          },
+          "credits_per_page": {
+            "type": "number",
+            "nullable": true
+          },
+          "typed_credits_per_answer": {
+            "type": "number",
+            "nullable": true
+          },
+          "fixed_price": {
+            "type": "boolean"
+          },
+          "rate_source": {
+            "type": "string",
+            "description": "`standard` or `contract`."
+          }
+        }
+      },
+      "Credits": {
+        "type": "object",
+        "properties": {
+          "balance": {
+            "type": "number"
+          },
+          "credit_limit": {
+            "type": "number"
+          },
+          "committed": {
+            "type": "number",
+            "description": "Credits quoted for your queued and running evaluations."
+          },
+          "available": {
+            "type": "number",
+            "description": "balance + credit_limit - committed."
+          },
+          "rate_card": {
+            "$ref": "#/components/schemas/RateCard"
+          },
+          "spent_30d": {
+            "type": "object",
+            "properties": {
+              "copies": {
+                "type": "integer"
+              },
+              "pages": {
+                "type": "integer"
+              },
+              "credits": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      },
+      "CreditQuote": {
+        "type": "object",
+        "properties": {
+          "unit": {
+            "type": "string",
+            "enum": [
+              "page",
+              "answer"
+            ]
+          },
+          "credits_per_page": {
+            "type": "number"
+          },
+          "pages": {
+            "type": "integer"
+          },
+          "credits_per_answer": {
+            "type": "number"
+          },
+          "typed_answers": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "number"
+          },
+          "available": {
+            "type": "number"
+          },
+          "committed": {
+            "type": "number"
+          },
+          "sufficient": {
+            "type": "boolean"
+          },
+          "rate_source": {
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "FinalizeResult": {
+        "type": "object",
+        "properties": {
+          "finalized": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Submission ids finalized by this call."
+          },
+          "skipped": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string",
+                  "description": "`already_finalized`, `not_graded`, `partially_graded` or `failed`."
+                }
+              }
+            }
+          },
+          "has_more": {
+            "type": "boolean",
+            "description": "With `all_graded`, true when more than 500 were eligible: call again."
+          }
+        }
+      },
+      "RubricWriteResult": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "nullable": true,
+            "description": "New rubric version (null while `sync` is `pending`)."
+          },
+          "sync": {
+            "type": "string",
+            "description": "`pending` when the change is saved but still syncing."
+          },
+          "question": {
+            "type": "object",
+            "description": "PUT: the question's rubric view."
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            },
+            "description": "PATCH: one entry per changed question."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            }
+          }
+        }
+      },
+      "SubmissionPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Submission"
+            }
+          },
+          "next_cursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Pass as `cursor` to get the next page."
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        }
+      },
+      "ResultPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Result"
+            }
+          },
+          "next_cursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Pass as `cursor` to get the next page."
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CandidateRegistrationPage": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "next_cursor": {
+            "type": "string",
+            "nullable": true,
+            "description": "Pass as `cursor` to get the next page."
+          },
+          "has_more": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "ApiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Your institute's API key, `vak_eval_` followed by 48 hex characters. An institute admin creates keys in the dashboard under Settings -> Integrations -> API keys."
+      }
+    },
+    "responses": {
+      "Error400": {
+        "description": "Malformed JSON or invalid cursor.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "malformed_json",
+                "message": "The request body is not valid JSON for this endpoint.",
+                "request_id": "req_4f9c2a7e1b3d4c8a9e6f0b2d5a7c1e3f"
+              }
+            }
+          }
+        }
+      },
+      "Error401": {
+        "description": "Missing or invalid API key.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "invalid_api_key",
+                "message": "The API key is not valid.",
+                "request_id": "req_4f9c2a7e1b3d4c8a9e6f0b2d5a7c1e3f"
+              }
+            }
+          }
+        }
+      },
+      "Error402": {
+        "description": "Not enough credits for this evaluation.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "insufficient_credits",
+                "message": "Not enough credits for this evaluation.",
+                "request_id": "req_4f9c2a7e1b3d4c8a9e6f0b2d5a7c1e3f"
+              }
+            }
+          }
+        }
+      },
+      "Error403": {
+        "description": "The key lacks the required scope, or the API is not enabled for the institute.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "insufficient_scope",
+                "message": "This API key lacks the evaluation:write scope.",
+                "request_id": "req_4f9c2a7e1b3d4c8a9e6f0b2d5a7c1e3f",
+                "details": {
+                  "required_scope": "evaluation:write"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error404": {
+        "description": "Not found (ids of other institutes are also 404).",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "not_found",
+                "message": "The resource was not found.",
+                "request_id": "req_4f9c2a7e1b3d4c8a9e6f0b2d5a7c1e3f"
+              }
+            }
+          }
+        }
+      },
+      "Error409": {
+        "description": "Conflict with the current state.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "conflict",
+                "message": "The request conflicts with the current state.",
+                "request_id": "req_4f9c2a7e1b3d4c8a9e6f0b2d5a7c1e3f"
+              }
+            }
+          }
+        }
+      },
+      "Error412": {
+        "description": "The rubric is at a different version than If-Match.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "rubric_version_mismatch",
+                "message": "The rubric is at version 4, not 3. Re-read it and retry.",
+                "request_id": "req_4f9c2a7e1b3d4c8a9e6f0b2d5a7c1e3f"
+              }
+            }
+          }
+        }
+      },
+      "Error422": {
+        "description": "The request is valid JSON but breaks a rule.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "validation_failed",
+                "message": "questions[0].max_marks is required.",
+                "request_id": "req_4f9c2a7e1b3d4c8a9e6f0b2d5a7c1e3f",
+                "details": {
+                  "errors": [
+                    {
+                      "field": "questions[0].max_marks",
+                      "code": "required",
+                      "message": "max_marks is required."
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "Error429": {
+        "description": "Rate limit or daily quota reached. Retry after the Retry-After header.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "example": {
+              "error": {
+                "code": "rate_limited",
+                "message": "Too many requests. Retry after 2 s.",
+                "request_id": "req_4f9c2a7e1b3d4c8a9e6f0b2d5a7c1e3f"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

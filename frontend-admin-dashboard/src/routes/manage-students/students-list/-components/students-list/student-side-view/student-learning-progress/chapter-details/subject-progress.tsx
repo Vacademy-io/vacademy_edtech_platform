@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { ChapterAccordian } from './chapter-accordian';
 import { ModulesWithChaptersProgressType } from '@/routes/manage-students/students-list/-types/student-subjects-details-types';
 
@@ -6,6 +7,7 @@ export const SubjectProgress = ({
 }: {
     moduleDetails?: ModulesWithChaptersProgressType | null;
 }) => {
+    const { t } = useTranslation('manageStudentsSubjectProgress');
     return (
         <>
             {moduleDetails?.chapters ? (
@@ -19,7 +21,7 @@ export const SubjectProgress = ({
                     )}
                 </div>
             ) : (
-                <p>No chapter created for this module</p>
+                <p>{t('noChaptersCreated')}</p>
             )}
         </>
     );

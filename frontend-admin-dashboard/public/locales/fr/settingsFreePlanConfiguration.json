@@ -1,0 +1,13 @@
+{
+    "title": "Configuration du plan gratuit",
+    "courseAccess": {
+        "label": "Accès au cours *",
+        "unlimited": "Accès illimité",
+        "limited": "Accès limité"
+    },
+    "accessDuration": {
+        "label": "Durée d'accès (jours) *",
+        "placeholder": "Entrez le nombre de jours"
+    },
+    "accessNote": "S'applique lorsqu'un administrateur affecte un apprenant à ce plan. Les apprenants qui s'inscrivent eux-mêmes via un lien d'invitation obtiennent leurs jours d'accès à partir de la durée d'accès de l'apprenant définie dans cette invitation."
+}

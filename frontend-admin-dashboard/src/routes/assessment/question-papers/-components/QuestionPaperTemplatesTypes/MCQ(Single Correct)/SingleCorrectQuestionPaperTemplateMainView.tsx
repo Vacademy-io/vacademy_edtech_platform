@@ -5,6 +5,7 @@ import { QuestionPaperTemplateFormProps } from '../../../-utils/question-paper-t
 import { formatStructure } from '../../../-utils/helper';
 import { Badge } from '@/components/ui/badge';
 import { AnswerOptionsEditor, QuestionSectionHeader } from '../QuestionEditorParts';
+import { useTranslation } from 'react-i18next';
 
 export const SingleCorrectQuestionPaperTemplateMainView = ({
     form,
@@ -14,9 +15,10 @@ export const SingleCorrectQuestionPaperTemplateMainView = ({
     examType,
     enableOptionModalCompose = false,
 }: QuestionPaperTemplateFormProps) => {
+    const { t } = useTranslation('assessmentSingleCorrectMainQP');
     const { control, getValues } = form;
-    const answersType = getValues('answersType') || 'Answer';
-    const explanationsType = getValues('explanationsType') || 'Explanation';
+    const answersType = getValues('answersType') || t('defaults.answer');
+    const explanationsType = getValues('explanationsType') || t('defaults.explanation');
     const optionsType = getValues('optionsType') || '';
     const questionsType = getValues('questionsType') || '';
     const allQuestions = getValues('questions') || [];
@@ -27,18 +29,24 @@ export const SingleCorrectQuestionPaperTemplateMainView = ({
     if (allQuestions.length === 0) {
         return (
             <div className="flex h-full w-full items-center justify-center">
-                <p className="text-body text-neutral-500">
-                    Please add a question to show question details
-                </p>
+                <p className="text-body text-neutral-500">{t('emptyState')}</p>
             </div>
         );
     }
+
+    const questionNumberText = questionsType
+        ? formatStructure(questionsType, currentQuestionIndex + 1)
+        : String(currentQuestionIndex + 1);
+
+    const questionTitle = showQuestionNumber
+        ? t('questionLabel', { number: questionNumberText })
+        : t('question');
 
     return (
         <div className={className}>
             {getValues(`questions.${currentQuestionIndex}.parentRichTextContent`) && (
                 <div className="flex w-full flex-col !flex-nowrap items-start gap-2">
-                    <QuestionSectionHeader title="Comprehension text" />
+                    <QuestionSectionHeader title={t('comprehensionText')} />
                     <FormField
                         control={control}
                         name={`questions.${currentQuestionIndex}.parentRichTextContent`}
@@ -50,7 +58,7 @@ export const SingleCorrectQuestionPaperTemplateMainView = ({
                                         onBlur={field.onBlur}
                                         onChange={field.onChange}
                                         minHeight={100}
-                                        placeholder="Comprehension text"
+                                        placeholder={t('comprehensionText')}
                                     />
                                 </FormControl>
                                 <FormMessage />
@@ -61,15 +69,7 @@ export const SingleCorrectQuestionPaperTemplateMainView = ({
             )}
             <div className="flex w-full flex-col !flex-nowrap items-start gap-2">
                 <QuestionSectionHeader
-                    title={`Question${
-                        showQuestionNumber
-                            ? ` ${
-                                  questionsType
-                                      ? formatStructure(questionsType, currentQuestionIndex + 1)
-                                      : currentQuestionIndex + 1
-                              }`
-                            : ''
-                    }`}
+                    title={questionTitle}
                     action={level ? <Badge variant="outline">{level}</Badge> : undefined}
                 />
                 <FormField
@@ -83,7 +83,7 @@ export const SingleCorrectQuestionPaperTemplateMainView = ({
                                     onBlur={field.onBlur}
                                     onChange={field.onChange}
                                     minHeight={100}
-                                    placeholder="Write the question"
+                                    placeholder={t('writeQuestionPlaceholder')}
                                 />
                             </FormControl>
                             <FormMessage />
@@ -111,10 +111,7 @@ export const SingleCorrectQuestionPaperTemplateMainView = ({
                 enableOptionModalCompose={enableOptionModalCompose}
             />
             <div className="flex w-full flex-col !flex-nowrap items-start gap-2">
-                <QuestionSectionHeader
-                    title={explanationsType}
-                    hint="Shown to learners with their result."
-                />
+                <QuestionSectionHeader title={explanationsType} hint={t('explanationHint')} />
                 <FormField
                     control={control}
                     name={`questions.${currentQuestionIndex}.explanation`}
@@ -126,7 +123,7 @@ export const SingleCorrectQuestionPaperTemplateMainView = ({
                                     onBlur={field.onBlur}
                                     onChange={field.onChange}
                                     minHeight={80}
-                                    placeholder="Explanation"
+                                    placeholder={t('explanationPlaceholder')}
                                 />
                             </FormControl>
                             <FormMessage />

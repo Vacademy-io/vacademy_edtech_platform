@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { WORKFLOW_NODE_TYPES } from '@/types/workflow/workflow-types';
 import { Lightning } from '@phosphor-icons/react';
 
@@ -25,13 +26,14 @@ const SUGGESTIONS: Record<string, string[]> = {
 };
 
 export function NodeSuggestions({ currentNodeType, onAddNode }: Props) {
+    const { t } = useTranslation('workflowNodeSuggestions');
     const suggested = SUGGESTIONS[currentNodeType];
     if (!suggested || suggested.length === 0) return null;
 
     return (
         <div className="flex items-center gap-2 py-2 px-3 bg-muted/30 rounded-md border border-dashed">
             <Lightning size={14} className="text-amber-500 shrink-0" />
-            <span className="text-[10px] text-muted-foreground shrink-0">Next:</span>
+            <span className="text-[10px] text-muted-foreground shrink-0">{t('next')}</span>
             <div className="flex flex-wrap gap-1">
                 {suggested.map((type) => {
                     const meta = WORKFLOW_NODE_TYPES.find((t) => t.type === type);

@@ -1,0 +1,120 @@
+{
+    "common": {
+        "home": "Home",
+        "logOut": "Log out",
+        "poweredBy": "Powered by",
+        "notifications": "Notifications"
+    },
+    "playBottomNav": {
+        "labels": {
+            "learningCenter": "Learn",
+            "homework": "Tasks",
+            "assessmentCenter": "Tests",
+            "referral": "Refer",
+            "attendance": "Attend",
+            "planning": "Plan",
+            "subOrgLearners": "Orgs"
+        },
+        "more": "More",
+        "mainNavigation": "Main navigation"
+    },
+    "sidebar": {
+        "tabs": {
+            "dashboard": "Dashboard",
+            "learningCenter": "Learning Center",
+            "homework": "Homework",
+            "assessmentCentre": "Assessment Centre",
+            "referral": "Referral",
+            "attendance": "Attendance",
+            "inAppMessages": "In-App Messages",
+            "myMentors": "My Mentors"
+        },
+        "mentorLabelWithName": "Mentor · {{name}}",
+        "allMentors": "All mentors",
+        "chatWithMentorName": "Chat · {{name}}",
+        "mentorFallbackName": "Mentor",
+        "hamburgerMenu": {
+            "viewProfileDetails": "View Profile Details",
+            "myFiles": "My Files",
+            "downloads": "Downloads",
+            "myReports": "My Reports",
+            "onboarding": "Onboarding",
+            "changePassword": "Change Password",
+            "logOut": "Log Out",
+            "deleteAccount": "Delete Account"
+        },
+        "logoAlt": "Logo",
+        "closeSidebar": "Close sidebar",
+        "appsAndPortals": "Apps & Portals",
+        "webPortal": "Web Portal",
+        "androidApp": "Android App",
+        "iosApp": "iOS App",
+        "windowsApp": "Windows App",
+        "macApp": "Mac App",
+        "openProfile": "Open profile"
+    },
+    "logoutSidebar": {
+        "instituteLogoAlt": "Institute Logo",
+        "profilePhotoAlt": "Profile Photo"
+    },
+    "navbar": {
+        "goBack": "Go back",
+        "instituteFallbackAlt": "Institute",
+        "switchToRole": "Switch to {{role}}",
+        "raiseQuery": "Raise a query"
+    },
+    "userMenu": {
+        "profileLabel": "Profile",
+        "openAccountMenu": "Open account menu",
+        "switchToParentPortal": "Switch to parent portal",
+        "language": "Language"
+    },
+    "notificationsBell": {
+        "ariaLabelWithCount_one": "Notifications, {{count}} new",
+        "ariaLabelWithCount_other": "Notifications, {{count}} new",
+        "allCaughtUpTitle": "All caught up",
+        "allCaughtUpDescription": "New notifications will show up here.",
+        "fallbackNotificationTitle": "Notification",
+        "viewAll": "All notifications"
+    },
+    "fullScreenLoader": {
+        "loadingFallback": "Loading"
+    },
+    "filePreview": {
+        "attachmentAlt": "Attachment"
+    },
+    "getAppBanner": {
+        "appLabelWithName": "{{name}} app",
+        "appLabelGeneric": "our app",
+        "getRegionLabel": "Get the {{appLabel}}",
+        "dismiss": "Dismiss",
+        "googlePlay": "Get it on Google Play",
+        "appStore": "Get it on the App Store",
+        "getButton": "Get"
+    },
+    "priceWithMrp": {
+        "free": "Free",
+        "percentOff": "{{percent}}% off",
+        "mrpLabel": "M.R.P.",
+        "freeRibbon": "FREE",
+        "percentOffRibbon": "{{percent}}% OFF"
+    },
+    "sessionFilter": {
+        "clearFilter": "Clear Filter",
+        "filter": "Filter",
+        "showSessionsInNext": "Show {{sessions}} in next",
+        "presets": {
+            "oneDay": "1 Day",
+            "threeDays": "3 Days",
+            "sevenDays": "7 Days",
+            "fifteenDays": "15 Days"
+        },
+        "customRange": "Custom Range",
+        "fromLabel": "From",
+        "toLabel": "To",
+        "applyRange": "Apply Range",
+        "custom": "Custom",
+        "fromDate": "From {{date}}",
+        "untilDate": "Until {{date}}"
+    }
+}

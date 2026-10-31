@@ -1,0 +1,185 @@
+{
+    "status": {
+        "paid": "Paid",
+        "partialPaid": "Partially Paid",
+        "overdue": "Overdue",
+        "waived": "Waived",
+        "cancelled": "Cancelled",
+        "stopped": "Stopped"
+    },
+    "row": {
+        "updateSuccessToast": "Installment updated",
+        "updateErrorToast": "Update failed",
+        "discountOptionNone": "none",
+        "discountOptionPercentage": "%",
+        "discountOptionFlat": "₹",
+        "reasonPlaceholder": "Reason",
+        "save": "Save",
+        "split": "Split",
+        "splitTitle": "Move part of the unpaid amount to a new installment with its own date"
+    },
+    "cpoDiscount": {
+        "heading": "Discount",
+        "typeLabel": "Type",
+        "discountOptionNone": "none",
+        "discountOptionPercentage": "% of total",
+        "discountOptionFlat": "flat ₹ off",
+        "valueLabel": "Value",
+        "reasonLabel": "Reason",
+        "reasonPlaceholder": "e.g. Sibling discount",
+        "removeSuccessToast": "CPO discount removed",
+        "applySuccessToast": "CPO discount applied",
+        "applyErrorToast": "Failed to apply CPO discount",
+        "applying": "Applying…",
+        "apply": "Apply",
+        "remove": "Remove",
+        "currentSummary": "Now: {{amount}} off · {{how}}",
+        "howLabel": "Take the discount off",
+        "previewError": "Could not work out this discount",
+        "customOff": "Amount off installment {{n}}",
+        "paidRow": "paid",
+        "paidRowKeeps": "−{{amount}} kept",
+        "totalOff": "Total off: {{amount}}",
+        "capped": "(you entered {{requested}}; only what is still unpaid can come off)"
+    },
+    "offlinePayment": {
+        "amountRequiredError": "Enter a positive amount",
+        "recordedSuccessToast": "Recorded {{amount}} offline payment",
+        "recordErrorToast": "Payment record failed",
+        "addPaymentButton": "+ Add Payment",
+        "heading": "Add Payment",
+        "amountLabel": "Amount (₹)",
+        "nextDue": "Next installment {{amount}}",
+        "allDues": "All dues {{amount}}",
+        "dateLabel": "Date",
+        "referenceLabel": "Reference",
+        "referencePlaceholder": "cheque #, UPI ref…",
+        "generateInvoiceLabel": "Generate invoice",
+        "saving": "Saving…",
+        "saveAndAllocate": "Save & FIFO-allocate",
+        "cancel": "Cancel"
+    },
+    "card": {
+        "installmentCount_one": "{{count}} installment",
+        "installmentCount_other": "{{count}} installments",
+        "net": "Net {{amount}}",
+        "paid": "Paid {{amount}}",
+        "outstanding": "Outstanding {{amount}}",
+        "loadingInstallments": "Loading installments…",
+        "loadInstallmentsError": "Could not load installments.",
+        "tableHeaders": {
+            "index": "#",
+            "startDate": "Start Date",
+            "dueDate": "Due Date",
+            "default": "Default",
+            "amount": "Amount",
+            "discount": "Discount",
+            "paid": "Paid",
+            "status": "Status"
+        },
+        "inPackage": "Part of the admission package — record payments on the package above.",
+        "packageManaged": "Part of an admission package: pay, reschedule or split its installments on the package above, so every course stays on one schedule."
+    },
+    "loadingPlans": "Loading CPO plans…",
+    "loadPlansError": "Could not load CPO plans.",
+    "split": {
+        "heading": "New installment from the unpaid {{unpaid}}",
+        "hint": "The plan total stays the same — only when this part falls due changes.",
+        "amountLabel": "Amount to move",
+        "startDateLabel": "Start date",
+        "dueDateLabel": "Due date",
+        "save": "Create installment",
+        "saving": "Saving…",
+        "cancel": "Cancel",
+        "amountError": "Enter an amount above 0 and up to {{unpaid}}",
+        "dueDateError": "Pick a due date for the new installment",
+        "successToast": "New installment of {{amount}} due {{date}} added",
+        "errorToast": "Could not split this installment"
+    },
+    "item": {
+        "due": "Due {{date}}",
+        "paid": "Paid {{amount}}",
+        "left": "{{amount}} left",
+        "overpaid": "Overpaid {{amount}}",
+        "planDiscount": "Plan discount −{{amount}}",
+        "ownDiscount": "Discount −{{amount}}",
+        "was": "Before discounts {{amount}}",
+        "recordPayment": "Record payment",
+        "edit": "Edit"
+    },
+    "pay": {
+        "heading": "Record payment · installment {{n}}",
+        "coversEarlier_one": "Payments clear the oldest dues first, so this also covers 1 earlier installment.",
+        "coversEarlier_other": "Payments clear the oldest dues first, so this also covers {{count}} earlier installments.",
+        "submit": "Record {{amount}}",
+        "anyAmountNote": "Any amount; it clears the oldest dues first."
+    },
+    "edit": {
+        "startDate": "Start date",
+        "dueDate": "Due date",
+        "amount": "Amount",
+        "amountHint": "Leave blank to use the plan amount ({{amount}}).",
+        "discount": "Discount on this installment",
+        "reason": "Reason"
+    },
+    "allocation": {
+        "UNPAID_PROPORTIONAL": {
+            "label": "Unpaid installments, in proportion",
+            "short": "spread over unpaid installments",
+            "hint": "Each unpaid installment gets a share in proportion to what is still owed on it. Paid installments are not touched."
+        },
+        "UNPAID_EQUAL": {
+            "label": "Unpaid installments, equally",
+            "short": "equal on unpaid installments",
+            "hint": "The same amount comes off each unpaid installment."
+        },
+        "LAST_FIRST": {
+            "label": "From the last installment",
+            "short": "from the last installment",
+            "hint": "Comes off the last installment first, then the one before it, until it is used up."
+        },
+        "NEXT_FIRST": {
+            "label": "From the next installment",
+            "short": "from the next installment",
+            "hint": "Comes off the next installment due first, then the one after it."
+        },
+        "CUSTOM": {
+            "label": "Custom amount per installment",
+            "short": "custom amounts",
+            "hint": "Type how much comes off each unpaid installment. The discount is their total."
+        },
+        "ALL_PROPORTIONAL": {
+            "label": "All installments, including paid ones",
+            "short": "spread over all installments",
+            "hint": "The original way: every installment, paid or not, takes a share. A paid installment can end up overpaid."
+        }
+    },
+    "stopDues": {
+        "action": "Stop dues",
+        "heading": "Stop dues",
+        "hint": "For a learner who dropped out or stopped paying. What you stop is no longer due, overdue or reminded. Money already paid and its receipts stay. You can reopen it while the learner is enrolled.",
+        "onlyThis": "Only this installment ({{amount}} unpaid)",
+        "thisAndLater_one": "This and the {{count}} later installment ({{amount}})",
+        "thisAndLater_other": "This and the {{count}} later installments ({{amount}})",
+        "reason": "Reason",
+        "reasonPlaceholder": "e.g. Discontinued after first installment",
+        "removeCourse": "Also remove the learner from this course",
+        "removePackage_one": "Also remove the learner from the package's {{count}} course",
+        "removePackage_other": "Also remove the learner from all {{count}} courses of the package",
+        "removeWarning": "Access ends now, and the stopped dues can no longer be reopened.",
+        "cancel": "Cancel",
+        "saving": "Saving…",
+        "submit": "Stop {{amount}}",
+        "success": "Dues of {{amount}} stopped",
+        "successRemoved_one": "Dues of {{amount}} stopped; removed from {{count}} course",
+        "successRemoved_other": "Dues of {{amount}} stopped; removed from {{count}} courses",
+        "removalError": "Dues stopped, but the learner could not be removed: {{errors}}",
+        "error": "Could not stop the dues",
+        "reasonError": "Say why the dues are stopped",
+        "reopen": "Reopen",
+        "reopened_one": "{{count}} installment reopened",
+        "reopened_other": "{{count}} installments reopened",
+        "reopenError": "Could not reopen",
+        "stoppedFact": "Stopped {{amount}} · {{reason}}"
+    }
+}

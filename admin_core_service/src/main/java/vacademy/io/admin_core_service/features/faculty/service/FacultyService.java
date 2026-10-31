@@ -1,6 +1,7 @@
 package vacademy.io.admin_core_service.features.faculty.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -9,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.common.enums.StatusEnum;
 import vacademy.io.admin_core_service.features.course.dto.AddFacultyToCourseDTO;
@@ -30,16 +32,24 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class FacultyService {
     private final FacultySubjectPackageSessionMappingRepository facultyRepository;
     private final AuthService authService;
     private final SubjectService subjectService;
+    private final InstituteAccessValidator instituteAccessValidator;
 
     public String addFacultyToSubjectsAndBatches(AddFacultyToSubjectAndBatchDTO addFacultyToSubjectAndBatch,
             String instituteId, CustomUserDetails userDetails) {
         UserDTO userDTO = addFacultyToSubjectAndBatch.getUser();
         if (addFacultyToSubjectAndBatch.isNewUser()) {
+            // The invite creates the user with the roles in the request. Only an ADMIN of
+            // this institute may create another ADMIN (no root bypass: learners are root users).
+            if (userDTO != null && userDTO.getRoles() != null
+                    && userDTO.getRoles().stream().anyMatch("ADMIN"::equalsIgnoreCase)) {
+                instituteAccessValidator.requireInstituteAdmin(userDetails, instituteId);
+            }
             userDTO = inviteUser(userDTO, instituteId);
         }
         List<FacultySubjectPackageSessionMapping> mappings = new ArrayList<>();
@@ -77,6 +87,19 @@ public class FacultyService {
                             userDetails.getFullName(),
                             FacultyStatusEnum.ACTIVE.name());
                     updatedMappings.add(newMapping);
+                } else if (subjectId == null) {
+                    // Removing the batch-level (subject-less) instructor row. A plain
+                    // `subject_id = NULL` lookup never matches, so retire every active
+                    // NULL-subject row explicitly. Nothing to retire is fine: the caller
+                    // sends this entry unconditionally on "remove from batch".
+                    for (FacultySubjectPackageSessionMapping batchLevelMapping : facultyRepository
+                            .findAllByUserIdAndPackageSessionIdAndSubjectIdIsNullAndStatusIn(
+                                    updateRequest.getFacultyId(),
+                                    batchId,
+                                    List.of(FacultyStatusEnum.ACTIVE.name()))) {
+                        batchLevelMapping.setStatus(FacultyStatusEnum.DELETED.name());
+                        updatedMappings.add(batchLevelMapping);
+                    }
                 } else {
                     FacultySubjectPackageSessionMapping existingMapping = facultyRepository
                             .findByUserIdAndPackageSessionIdAndSubjectIdAndStatusIn(
@@ -241,6 +264,8 @@ public class FacultyService {
             if (addFacultyToCourseDTO.isNewUser()) {
 
                 teacher = inviteUser(teacher, instituteId);
+            } else {
+                syncAuthorMetadata(teacher);
             }
             FacultySubjectPackageSessionMapping mapping = new FacultySubjectPackageSessionMapping(
                     teacher.getId(),
@@ -249,6 +274,7 @@ public class FacultyService {
                     addFacultyToCourseDTO.getUser().getFullName(),
                     !StringUtils.hasText(addFacultyToCourseDTO.getStatus()) ? FacultyStatusEnum.ACTIVE.name()
                             : addFacultyToCourseDTO.getStatus());
+            mapping.setRoleLabel(CourseRoleLabelService.normalize(addFacultyToCourseDTO.getRoleLabel()));
             mappings.add(mapping);
         }
         facultyRepository.saveAll(mappings);
@@ -260,18 +286,64 @@ public class FacultyService {
             return;
         }
 
-        List<FacultySubjectPackageSessionMapping> mappings = facultyDTOs.stream()
-                .map(dto -> {
-                    UserDTO teacher = resolveUser(dto, instituteId);
-                    return resolveMapping(dto, teacher, batchId);
-                })
-                .toList();
+        List<FacultySubjectPackageSessionMapping> mappings = new ArrayList<>();
+        for (AddFacultyToCourseDTO dto : facultyDTOs) {
+            UserDTO teacher = resolveUser(dto, instituteId);
+            FacultySubjectPackageSessionMapping mapping = resolveMapping(dto, teacher, batchId);
+            mappings.add(mapping);
+            if (dto.getRoleLabel() != null && mapping.getId() != null) {
+                mappings.addAll(relabelDuplicateRows(mapping, dto.getRoleLabel()));
+            }
+        }
 
         facultyRepository.saveAll(mappings);
     }
 
     private UserDTO resolveUser(AddFacultyToCourseDTO dto, String instituteId) {
-        return dto.isNewUser() ? inviteUser(dto.getUser(), instituteId) : dto.getUser();
+        if (dto.isNewUser()) {
+            return inviteUser(dto.getUser(), instituteId);
+        }
+        syncAuthorMetadata(dto.getUser());
+        return dto.getUser();
+    }
+
+    /**
+     * Push author metadata (subtitle / description / photo) from the Add Course -> Add Authors
+     * flow onto the EXISTING user record in auth_service. Best-effort: a transient
+     * auth-service failure is logged and swallowed so it never fails course
+     * creation/update, and the faculty mapping itself is unaffected.
+     * A blank photo never clears an existing one; an unchanged photo alone skips the update.
+     */
+    private void syncAuthorMetadata(UserDTO teacher) {
+        if (teacher == null || teacher.getId() == null) {
+            return;
+        }
+        boolean hasMeta = teacher.getAuthorSubtitle() != null || teacher.getAuthorDescription() != null;
+        boolean hasPhoto = StringUtils.hasText(teacher.getProfilePicFileId());
+        if (!hasMeta && !hasPhoto) {
+            return;
+        }
+        try {
+            UserDTO persistedUser = authService.getUsersFromAuthServiceByUserIds(List.of(teacher.getId()))
+                    .stream()
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("Author user not found"));
+            boolean photoChanged = hasPhoto
+                    && !teacher.getProfilePicFileId().equals(persistedUser.getProfilePicFileId());
+            if (!hasMeta && !photoChanged) {
+                return;
+            }
+            if (hasMeta) {
+                persistedUser.setAuthorSubtitle(teacher.getAuthorSubtitle());
+                persistedUser.setAuthorDescription(teacher.getAuthorDescription());
+            }
+            if (photoChanged) {
+                persistedUser.setProfilePicFileId(teacher.getProfilePicFileId());
+            }
+            authService.updateUser(persistedUser, persistedUser.getId());
+        } catch (Exception e) {
+            log.warn("Failed to sync author metadata for user {}: {}", teacher.getId(), e.getMessage());
+        }
     }
 
     private FacultySubjectPackageSessionMapping resolveMapping(AddFacultyToCourseDTO dto, UserDTO teacher,
@@ -282,14 +354,42 @@ public class FacultyService {
                 List.of(FacultyStatusEnum.ACTIVE.name()))
                 .map(mapping -> {
                     mapping.setStatus(determineStatus(dto));
+                    if (dto.getRoleLabel() != null) {
+                        mapping.setRoleLabel(CourseRoleLabelService.normalize(dto.getRoleLabel()));
+                    }
                     return mapping;
                 })
-                .orElseGet(() -> new FacultySubjectPackageSessionMapping(
-                        teacher.getId(),
-                        batchId,
-                        null,
-                        teacher.getFullName(),
-                        determineStatus(dto)));
+                .orElseGet(() -> {
+                    FacultySubjectPackageSessionMapping mapping = new FacultySubjectPackageSessionMapping(
+                            teacher.getId(),
+                            batchId,
+                            null,
+                            teacher.getFullName(),
+                            determineStatus(dto));
+                    mapping.setRoleLabel(CourseRoleLabelService.normalize(dto.getRoleLabel()));
+                    return mapping;
+                });
+    }
+
+    /**
+     * addFacultyToBatch never de-duplicates, so a user can hold several ACTIVE course-level
+     * rows on one batch. The page reads one role per user per course, so every one of those
+     * rows gets the new role, not only the row resolveMapping picked.
+     */
+    private List<FacultySubjectPackageSessionMapping> relabelDuplicateRows(
+            FacultySubjectPackageSessionMapping updated, String roleLabel) {
+        String normalized = CourseRoleLabelService.normalize(roleLabel);
+        List<FacultySubjectPackageSessionMapping> siblings = new ArrayList<>();
+        for (FacultySubjectPackageSessionMapping row : facultyRepository
+                .findAllByUserIdAndPackageSessionIdAndSubjectIdIsNullAndStatusIn(
+                        updated.getUserId(), updated.getPackageSessionId(),
+                        List.of(FacultyStatusEnum.ACTIVE.name()))) {
+            if (!updated.getId().equals(row.getId()) && !Objects.equals(normalized, row.getRoleLabel())) {
+                row.setRoleLabel(normalized);
+                siblings.add(row);
+            }
+        }
+        return siblings;
     }
 
     private String determineStatus(AddFacultyToCourseDTO dto) {

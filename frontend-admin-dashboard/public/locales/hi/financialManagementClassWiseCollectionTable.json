@@ -1,0 +1,10 @@
+{
+    "heading": "कक्षा-वार प्रदर्शन",
+    "columns": {
+        "className": "कक्षा का नाम",
+        "projected": "अनुमानित",
+        "expected": "अपेक्षित",
+        "collected": "एकत्रित",
+        "collectionRate": "संग्रह दर"
+    }
+}

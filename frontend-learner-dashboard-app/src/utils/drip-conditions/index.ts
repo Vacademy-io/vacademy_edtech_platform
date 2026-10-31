@@ -40,7 +40,9 @@ export type {
 
 export {
   resolveDripCondition,
+  enforceableCondition,
   parseCourseSettingsDripConditions,
+  TIME_RULE_TYPES,
 } from "./resolveDripCondition";
 export type {
   ResolvedDripConditions,

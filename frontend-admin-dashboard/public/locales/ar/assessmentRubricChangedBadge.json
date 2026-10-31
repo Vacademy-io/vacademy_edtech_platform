@@ -1,0 +1,4 @@
+{
+    "tooltip": "تم تحديث معايير التقييم إلى الإصدار v{{currentVersion}} منذ هذا التقييم (v{{evaluationVersion}})",
+    "badgeLabel": "تم تحديث معايير التقييم منذ هذا التقييم"
+}

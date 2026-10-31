@@ -1,0 +1,199 @@
+{
+    "navigation": {
+        "updateSurvey": "تحديث الاستبيان",
+        "updateAssessment": "تحديث التقييم",
+        "createSurvey": "إنشاء استبيان",
+        "createAssessment": "إنشاء تقييم"
+    },
+    "toasts": {
+        "updateSuccess": "تم تحديث بيانات الخطوة 1 بنجاح!",
+        "saveSuccess": "تم حفظ بيانات الخطوة 1 بنجاح!"
+    },
+    "errors": {
+        "saveFailed": "فشل حفظ المعلومات الأساسية."
+    },
+    "header": {
+        "title": "المعلومات الأساسية",
+        "description": "قم بتكوين التفاصيل الأساسية لتقييمك، بما في ذلك الاسم والجدول الزمني وطريقة التقييم وتفضيلات إصدار النتائج.",
+        "updateButton": "تحديث",
+        "nextButton": "التالي"
+    },
+    "basicInfoSection": {
+        "titleSurvey": "معلومات الاستبيان",
+        "titleAssessment": "المعلومات الأساسية",
+        "description": "الاسم والمادة والتعليمات المعروضة للمشاركين.",
+        "titlePlaceholder": "أضف عنوانًا",
+        "nameLabelSurvey": "اسم الاستبيان",
+        "nameLabelAssessment": "اسم التقييم",
+        "instructionsLabelSurvey": "تعليمات الاستبيان",
+        "instructionsLabelAssessment": "تعليمات التقييم",
+        "instructionsPlaceholderSurvey": "اكتب تعليمات الاستبيان",
+        "instructionsPlaceholderAssessment": "اكتب تعليمات التقييم"
+    },
+    "liveDateRangeSection": {
+        "title": "النطاق الزمني المباشر",
+        "description": "متى يمكن للمشاركين البدء ومتى يجب عليهم إنهاء التقييم.",
+        "startDateLabel": "تاريخ ووقت البدء",
+        "endDateLabel": "تاريخ ووقت الانتهاء"
+    },
+    "attemptSettingsSection": {
+        "title": "إعدادات المحاولة",
+        "description": "تحكم في كيفية أداء المشاركين لهذا التقييم.",
+        "reattemptCountPlaceholder": "عدد المحاولات",
+        "reattemptCountLabel": "عدد المحاولات",
+        "resultEvaluationType": {
+            "label": "نوع النتيجة والتقييم",
+            "options": {
+                "autoAfterSubmission": {
+                    "label": "تلقائي — الإصدار بعد التسليم",
+                    "help": "يقوم النظام بالتصحيح تلقائيًا. تكون النتائج مرئية للمتعلم فور تسليمه مباشرة."
+                },
+                "autoAfterAssessmentEnd": {
+                    "label": "تلقائي — الإصدار بعد انتهاء الاختبار",
+                    "help": "يقوم النظام بالتصحيح تلقائيًا. لا تصبح النتائج مرئية إلا بعد انقضاء وقت انتهاء التقييم."
+                },
+                "noAutoRelease": {
+                    "label": "تلقائي — الإصدار يدويًا",
+                    "help": "يقوم النظام بالتصحيح تلقائيًا. تبقى النتائج مخفية حتى تنقر على \"إصدار النتيجة\" في علامة تبويب التسليمات."
+                },
+                "manual": {
+                    "label": "التقييم والإصدار اليدوي",
+                    "help": "يقوم المعلم بتصحيح كل تسليم يدويًا. تبقى النتائج مخفية حتى تقوم بتقييمها وإصدارها يدويًا."
+                }
+            },
+            "managedByApi": "تتم إدارته عبر API: يُصدر النظام الشريك النتائج (أو عبر إصدار النتيجة)، لذا يبقى هذا يدويًا."
+        },
+        "submissionType": {
+            "label": "نوع التسليم",
+            "helper": "كيفية تسليم الطلاب لإجاباتهم (مثل رفع ملف أو PDF)."
+        },
+        "assessmentPreview": {
+            "labelSurvey": "السماح بمعاينة الاستبيان",
+            "labelAssessment": "السماح بمعاينة التقييم",
+            "description": "السماح للمشاركين بمعاينة التقييم قبل البدء.",
+            "timeLimitLabel": "حد وقت المعاينة"
+        },
+        "switchSections": {
+            "label": "السماح لـ {{role}} بالتنقل بين الأقسام",
+            "description": "يمكن للمشاركين التنقل ذهابًا وإيابًا بين الأقسام."
+        },
+        "aiEvaluation": {
+            "label": "تقييم الإجابات بالذكاء الاصطناعي",
+            "description": "تصحيح كل إجابة تلقائياً عند إرسالها. يستهلك رصيد المعهد لكل سؤال يتم تصحيحه، ويظل المعلم هو من يراجع النتيجة ويعتمدها."
+        }
+    },
+    "unusedFields": {
+        "testCreation": {
+            "titlePlaceholder": "أضف عنوانًا",
+            "nameLabelSurvey": "اسم الاستبيان",
+            "nameLabelAssessment": "اسم التقييم"
+        },
+        "liveDateRange": {
+            "startDateLabel": "تاريخ ووقت البدء",
+            "endDateLabel": "تاريخ ووقت الانتهاء"
+        },
+        "assessmentInstructions": {
+            "labelSurvey": "تعليمات الاستبيان",
+            "labelAssessment": "تعليمات التقييم",
+            "placeholderSurvey": "أضف تعليمات الاستبيان",
+            "placeholderAssessment": "أضف تعليمات التقييم"
+        },
+        "assessmentPreview": {
+            "enableLabel": "تمكين معاينة التقييم",
+            "timeLimitLabel": "حد وقت المعاينة"
+        },
+        "reattemptCount": {
+            "placeholder": "أدخل عدد المحاولات",
+            "label": "عدد المحاولات"
+        },
+        "submissionType": {
+            "label": "نوع التسليم",
+            "options": {
+                "autoSubmit": "تسليم تلقائي",
+                "manualSubmit": "تسليم يدوي"
+            }
+        },
+        "durationDistribution": {
+            "label": "توزيع المدة",
+            "helper": "اختر ما إذا كانت حدود الوقت تنطبق على الاختبار بأكمله، أو لكل قسم، أو لكل سؤال.",
+            "options": {
+                "entireAssessment": "التقييم بأكمله",
+                "sectionWise": "حسب القسم",
+                "questionWise": "حسب السؤال"
+            }
+        },
+        "evaluationType": {
+            "label": "نوع التقييم",
+            "options": {
+                "auto": "تقييم تلقائي",
+                "manual": "تقييم يدوي"
+            }
+        },
+        "switchSections": {
+            "label": "السماح بالتنقل بين الأقسام"
+        },
+        "reattemptRequest": {
+            "label": "السماح للطلاب بتقديم طلب إعادة محاولة"
+        },
+        "timeIncreaseRequest": {
+            "label": "السماح للطلاب بتقديم طلب زيادة الوقت"
+        }
+    },
+    "validation": {
+        "cannotSave": "لا يمكن الحفظ بعد",
+        "cannotSaveGeneric": "لا يمكن الحفظ بعد — بعض التفاصيل المطلوبة ناقصة أو غير صالحة."
+    },
+    "proctoring": {
+        "title": "المراقبة",
+        "description": "رصد الغش أثناء المحاولة. اختر مستوى المراقبة المطلوب؛ يتم إعلام المتعلم قبل البدء.",
+        "comingSoon": "قريباً",
+        "tiers": {
+            "NONE": {
+                "label": "إيقاف",
+                "description": "بدون كاميرا. التحقق من ملء الشاشة وتبديل التبويبات فقط.",
+                "price": "مجاني"
+            },
+            "BASIC": {
+                "label": "أساسي",
+                "description": "تسجيل دخول بالكاميرا، كشف الوجه على الجهاز، لقطة صغيرة كل بضع ثوانٍ. لا بث.",
+                "price": "مشمول"
+            },
+            "PRO": {
+                "label": "احترافي",
+                "description": "الأساسي مع مقاطع فيديو قصيرة لكل لحظة مُعلَّمة وكشف الهاتف.",
+                "price": ""
+            },
+            "ULTRA": {
+                "label": "فائق",
+                "description": "الاحترافي مع غرفة مراقبة مباشرة ومراجعة بالذكاء الاصطناعي لكل محاولة.",
+                "price": ""
+            }
+        },
+        "knobs": {
+            "cameraRequired": {
+                "label": "الكاميرا مطلوبة للبدء",
+                "description": "لا تبدأ المحاولة حتى يسمح المتعلم بالكاميرا."
+            },
+            "faceCheck": {
+                "label": "كشف الوجه",
+                "description": "تعليم عند عدم وجود وجه أو وجود أكثر من وجه. يعمل على جهاز المتعلم."
+            },
+            "showSelfView": {
+                "label": "إظهار الكاميرا للمتعلم",
+                "description": "تبقى معاينة صغيرة على الشاشة ليعلم أنه يُسجَّل."
+            },
+            "snapshotInterval": {
+                "label": "لقطة كل",
+                "description": "إطارات منتظمة للمراجعة. كل تعليم يلتقط واحدة.",
+                "off": "التعليمات فقط",
+                "every": "{{seconds}} ث"
+            },
+            "maxViolations": {
+                "label": "إرسال تلقائي بعد",
+                "description": "عدد التعليمات قبل الإرسال التلقائي. أبداً = التسجيل للمراجعة فقط.",
+                "never": "أبداً",
+                "after": "{{count}} تعليمات"
+            }
+        }
+    }
+}

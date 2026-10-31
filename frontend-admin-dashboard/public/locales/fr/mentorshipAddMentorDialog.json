@@ -1,0 +1,64 @@
+{
+    "optionalDetails": {
+        "hide": "Masquer les détails",
+        "show": "Ajouter photo, expertise et capacité"
+    },
+    "toast": {
+        "selectTeamMember": "Sélectionnez un membre de l'équipe",
+        "enterNameEmail": "Saisissez un nom et une adresse e-mail valide",
+        "invitationSent": "Invitation envoyée à {{email}} — c'est déjà un mentor",
+        "mentorAdded": "Mentor ajouté",
+        "photoUploadFailed": "Échec de l'envoi de la photo",
+        "inviteFailed": "Échec de l'invitation de ce mentor",
+        "addFailed": "Échec de l'ajout du mentor"
+    },
+    "errors": {
+        "invitationMissingUser": "L'invitation n'a pas renvoyé d'utilisateur à ajouter comme mentor"
+    },
+    "dialog": {
+        "heading": "Ajouter un mentor"
+    },
+    "actions": {
+        "cancel": "Annuler",
+        "chooseTeamMemberFirst": "Choisissez d'abord un membre de l'équipe ci-dessus",
+        "inviting": "Invitation en cours…",
+        "adding": "Ajout en cours…",
+        "inviteAsMentor": "Inviter comme mentor",
+        "addMentor": "Ajouter un mentor"
+    },
+    "intro": "Les mentors reçoivent le rôle de mentor et apparaissent aux étudiants que vous leur assignez.",
+    "modeTabs": {
+        "team": "Depuis votre équipe",
+        "invite": "Inviter par e-mail"
+    },
+    "inviteHint": "Cette personne recevra un e-mail d'invitation et le rôle de mentor, et apparaîtra immédiatement dans cette liste — pas besoin de passer par Équipes d'abord.",
+    "fields": {
+        "fullNameLabel": "Nom complet",
+        "fullNamePlaceholder": "ex. Asha Nair",
+        "emailLabel": "E-mail",
+        "emailPlaceholder": "asha@example.com",
+        "displayNameLabel": "Nom affiché",
+        "titleLabel": "Titre",
+        "titlePlaceholder": "ex. Mentor de carrière senior",
+        "bioLabel": "Bio",
+        "bioPlaceholder": "Courte bio (facultatif)"
+    },
+    "teamSearch": {
+        "placeholder": "Rechercher dans votre équipe par nom ou e-mail",
+        "loading": "Chargement de l'équipe…",
+        "loadError": "Impossible de charger votre équipe.",
+        "noMembers": "Aucun membre de l'équipe trouvé.",
+        "noMatches": "Aucune correspondance."
+    },
+    "selectedMember": {
+        "change": "Changer",
+        "changeTitle": "Choisir un autre membre de l'équipe"
+    },
+    "photo": {
+        "alt": "Mentor",
+        "uploading": "Envoi en cours…",
+        "change": "Changer la photo",
+        "upload": "Ajouter une photo",
+        "hint": "Facultatif. Utilise par défaut leur photo de profil d'équipe."
+    }
+}

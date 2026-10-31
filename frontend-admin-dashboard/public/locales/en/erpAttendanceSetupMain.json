@@ -1,0 +1,9 @@
+{
+    "heading": "Shifts & Holidays",
+    "description": "The rules attendance is measured against. Changes apply to days marked from now on — a month that payroll has already processed is not re-judged.",
+    "tabs": {
+        "shifts": "Shifts",
+        "holidays": "Holidays",
+        "configuration": "Configuration"
+    }
+}

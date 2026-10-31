@@ -1,0 +1,15 @@
+{
+    "title": "Discount Settings",
+    "changeButton": "Change Discount Settings",
+    "noDiscount": {
+        "label": "No Discount Applied"
+    },
+    "badge": {
+        "active": "Active"
+    },
+    "value": {
+        "percentOff": "{{value}}% off",
+        "amountOff": "₹{{value}} off"
+    },
+    "expires": "Expires: {{date}}"
+}

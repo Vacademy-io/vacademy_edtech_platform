@@ -1,0 +1,33 @@
+{
+    "frameTitle": "Website preview",
+    "loading": "Loading the website…",
+    "failed": {
+        "title": "The website preview did not load here.",
+        "hint": "Use <b>Structure</b> above to keep editing, with block previews, or open <b>View live</b>.",
+        "showPreviews": "Show block previews"
+    },
+    "toolbar": {
+        "select": "Select",
+        "selectHint": "Click a block on the page to edit it",
+        "browse": "Browse",
+        "browseHint": "Use the page as a visitor would: open menus, filters and tabs. A link to another page opens that page here.",
+        "desktopWidthHint": "Desktop width",
+        "widthPx": "{{width}} px",
+        "fit": "Fit",
+        "fitHint": "Shrink the page to fit the canvas",
+        "actualSize": "100%",
+        "actualSizeHint": "Show the page at its real size and scroll sideways",
+        "scaledTo": "Shown at {{percent}}%",
+        "draft": "Your changes",
+        "draftHint": "The site with your unsaved changes",
+        "live": "Live site",
+        "liveHint": "The site as visitors see it now, without your changes"
+    },
+    "notAPage": "That link opens {{target}}, which isn't a page of this site. Use View live to follow it.",
+    "leftPreview": {
+        "title": "That link left the preview, so your edits no longer show here.",
+        "back": "Back to the page"
+    },
+    "livePageMissing": "This page is not on the live site yet, so the live site’s first page is shown.",
+    "liveClick": "This is the live site. Switch to “Your changes” to pick a block to edit."
+}

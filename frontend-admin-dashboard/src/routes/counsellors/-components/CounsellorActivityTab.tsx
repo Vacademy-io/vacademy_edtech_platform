@@ -1,4 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     Phone,
     PhoneIncoming,
@@ -34,6 +36,7 @@ const ICON: Record<string, React.ReactNode> = {
 };
 
 export function CounsellorActivityTab({ instituteId, counsellorUserId }: Props) {
+    const { t } = useTranslation('counsellorsActivityTab');
     const { data, isLoading, error } = useQuery({
         queryKey: ['workbench-activity', counsellorUserId, instituteId],
         enabled: !!instituteId && !!counsellorUserId,
@@ -41,17 +44,17 @@ export function CounsellorActivityTab({ instituteId, counsellorUserId }: Props) 
     });
 
     if (isLoading)
-        return <div className="p-4 text-subtitle text-neutral-500">Loading activity…</div>;
+        return <div className="p-4 text-subtitle text-neutral-500">{t('loading')}</div>;
     if (error)
         return (
             <div className="p-4 text-subtitle text-danger-600">
-                Could not load activity. Try refreshing.
+                {t('error')}
             </div>
         );
     if (!data || data.length === 0) {
         return (
             <div className="rounded border border-dashed border-neutral-300 p-6 text-center text-subtitle text-neutral-500">
-                No activity in the last 30 days.
+                {t('empty')}
             </div>
         );
     }
@@ -88,6 +91,7 @@ function parseCallMetadata(json: string | null): CallMetadata | null {
 }
 
 function ActivityRow({ item, instituteId }: { item: ActivityFeedItem; instituteId: string }) {
+    const { t } = useTranslation('counsellorsActivityTab');
     const callMeta = item.action_type === 'CALL' ? parseCallMetadata(item.metadata_json) : null;
 
     return (
@@ -98,10 +102,10 @@ function ActivityRow({ item, instituteId }: { item: ActivityFeedItem; instituteI
             <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                     <div className="truncate text-body font-medium text-neutral-900">
-                        {labelFor(item.action_type)}
+                        {labelFor(item.action_type, t)}
                     </div>
                     <time className="shrink-0 text-caption text-neutral-500">
-                        {relative(item.created_at)}
+                        {relative(item.created_at, t)}
                     </time>
                 </div>
                 {callMeta ? (
@@ -137,6 +141,7 @@ function CallDetails({
     callLogId: string;
     instituteId: string;
 }) {
+    const { t } = useTranslation('counsellorsActivityTab');
     const isInbound = meta.direction === 'INBOUND';
     return (
         <div className="mt-1 flex flex-col gap-1.5">
@@ -144,11 +149,11 @@ function CallDetails({
                 {meta.direction &&
                     (isInbound ? (
                         <span className="inline-flex items-center gap-1 text-caption text-info-600">
-                            <PhoneIncoming size={12} /> Inbound
+                            <PhoneIncoming size={12} /> {t('inbound')}
                         </span>
                     ) : (
                         <span className="inline-flex items-center gap-1 text-caption text-neutral-500">
-                            <PhoneOutgoing size={12} /> Outbound
+                            <PhoneOutgoing size={12} /> {t('outbound')}
                         </span>
                     ))}
                 {meta.status && <CallStatusPill status={meta.status} />}
@@ -167,35 +172,35 @@ function CallDetails({
     );
 }
 
-function labelFor(action: string) {
+function labelFor(action: string, t: TFunction) {
     switch (action) {
         case 'CALL':
-            return 'Call';
+            return t('actions.call');
         case 'FOLLOWUP_CREATED':
-            return 'Follow-up created';
+            return t('actions.followupCreated');
         case 'FOLLOWUP_CLOSED':
-            return 'Follow-up closed';
+            return t('actions.followupClosed');
         case 'NOTE_ADDED':
-            return 'Note added';
+            return t('actions.noteAdded');
         case 'LEAD_TRANSFERRED_OUT':
-            return 'Lead transferred out';
+            return t('actions.leadTransferredOut');
         case 'LEAD_TRANSFERRED_IN':
-            return 'Lead transferred in';
+            return t('actions.leadTransferredIn');
         case 'STATUS_CHANGED':
-            return 'Status changed';
+            return t('actions.statusChanged');
         default:
             return action.replaceAll('_', ' ').toLowerCase();
     }
 }
 
-function relative(iso: string) {
-    const t = new Date(iso).getTime();
-    const diffMs = Date.now() - t;
+function relative(iso: string, t: TFunction) {
+    const then = new Date(iso).getTime();
+    const diffMs = Date.now() - then;
     const minutes = Math.floor(diffMs / 60_000);
-    if (minutes < 1) return 'just now';
-    if (minutes < 60) return `${minutes}m ago`;
+    if (minutes < 1) return t('relativeTime.justNow');
+    if (minutes < 60) return t('relativeTime.minutesAgo', { count: minutes });
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
+    if (hours < 24) return t('relativeTime.hoursAgo', { count: hours });
     const days = Math.floor(hours / 24);
-    return `${days}d ago`;
+    return t('relativeTime.daysAgo', { count: days });
 }

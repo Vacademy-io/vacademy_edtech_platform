@@ -1,0 +1,112 @@
+---
+title: "Manage agents and counsellors from your systems"
+description: "Keep your Telleo counsellors in step with your HR system, and roll out or switch AI agents without opening the dashboard."
+---
+
+This guide connects two everyday jobs to your own systems: **onboarding and offboarding counsellors**, and **rolling out a new AI agent** (or switching back). Read [Counsellors](/concepts/counsellors) and [Managing agents](/concepts/managing-agents) for the rules behind each step.
+
+**You need:** an API key created with **Can manage counsellors** and/or **Can manage AI agents** ticked ([Getting API access](/getting-api-access)). Keep this key on your server, separate from the key your CRM uses to place calls: it can add logins to your account and change what your callers hear.
+
+## Onboarding and offboarding counsellors
+
+<Steps>
+  <Step title="Add the counsellor when they join">
+    Use your employee id as the `Idempotency-Key`, so a retried request never adds them twice:
+
+    ```python
+    import os, requests
+
+    API = "https://api.telleo.ai/v1"
+    H = {"X-API-Key": os.environ["TELLEO_ADMIN_KEY"], "Content-Type": "application/json"}
+
+    def onboard(emp):
+        r = requests.post(f"{API}/counsellors", headers={**H, "Idempotency-Key": f"hr-{emp['id']}"}, json={
+            "name": emp["name"],
+            "email": emp["work_email"],
+            "mobile_number": emp["mobile"],          # E.164, e.g. +919876543210
+        })
+        if r.status_code == 409 and r.json()["error"]["code"] == "email_in_use_elsewhere":
+            # Their email is someone's login in another account: ask for a work email,
+            # or have an admin add them in the dashboard.
+            return notify_hr(emp, r.json()["error"]["message"])
+        if r.status_code == 409 and r.json()["error"]["code"] == "counsellor_inactive":
+            # They worked here before: reactivate instead of re-adding.
+            cid = r.json()["error"]["details"]["counsellor_id"]
+            r = requests.patch(f"{API}/counsellors/{cid}", headers=H, json={"active": True})
+        r.raise_for_status()
+        c = r.json()
+        save_telleo_id(emp["id"], c["id"])
+        for w in c.get("warnings", []):
+            notify_hr(emp, w["message"])             # e.g. mobile_number_missing
+        return c
+    ```
+
+    A new person receives the welcome email with their login. Someone you had removed earlier gets their old login back and receives nothing: tell them to sign in as usual. Store the returned `id`.
+  </Step>
+
+  <Step title="Keep their details in step">
+    When the mobile number or Airtel extension changes in your system, `PATCH` just that field:
+
+    ```python
+    requests.patch(f"{API}/counsellors/{cid}", headers=H, json={"mobile_number": "+919812345678"}).raise_for_status()
+    ```
+
+    A `409 shared_account` means the login is also used in another account on the platform; ask the counsellor to change their name or number in their own profile.
+  </Step>
+
+  <Step title="Deactivate them when they leave">
+    ```python
+    r = requests.delete(f"{API}/counsellors/{cid}", headers=H)
+    effects = r.json()["effects"]
+    ```
+
+    They can no longer sign in to your account, stop receiving new leads and inbound calls, and are taken out of your IVR ring lists. Their existing leads stay assigned to them: reassign them in the dashboard. Check `effects.ivr_dial_steps_updated` for any step with `no_one_left: true` and add someone else to it.
+  </Step>
+</Steps>
+
+<Note>
+The API only manages counsellors. Admins and other staff are refused with `403 counsellor_not_manageable`, so an HR sync can never lock an admin out of your account.
+</Note>
+
+## Rolling out a new AI agent
+
+<Steps>
+  <Step title="Pick a voice">
+    ```bash
+    curl https://api.telleo.ai/v1/voices -H "X-API-Key: $TELLEO_ADMIN_KEY"
+    ```
+
+    Choose an engine that speaks your agent's language and one of its voices. `pricing.credits_per_minute` is what a connected minute costs.
+  </Step>
+
+  <Step title="Create the agent and try it">
+    `POST /v1/agents` with `name`, `system_prompt`, `opening_line`, `language`, `tts_model` and `voice`. Then place a few [test calls](/concepts/test-mode) and some real ones to your own phone with `POST /v1/calls` and the new `agent_id`.
+  </Step>
+
+  <Step title="Make it the default">
+    ```bash
+    curl -X PUT https://api.telleo.ai/v1/settings/default-agent \
+      -H "X-API-Key: $TELLEO_ADMIN_KEY" -H "Content-Type: application/json" \
+      -d '{"agent_id": "NEW_AGENT_ID"}'
+    ```
+
+    Workflow, bulk and manual AI calls that do not name an agent now use it. Keep the old agent's id: switching back is the same request.
+  </Step>
+
+  <Step title="Let it answer your inbound number (optional)">
+    Give the agent `direction: "both"` (or `"inbound"`), then:
+
+    ```bash
+    curl https://api.telleo.ai/v1/numbers -H "X-API-Key: $TELLEO_ADMIN_KEY"
+    curl -X PUT https://api.telleo.ai/v1/numbers/NUMBER_ID/agent \
+      -H "X-API-Key: $TELLEO_ADMIN_KEY" -H "Content-Type: application/json" \
+      -d '{"agent_id": "NEW_AGENT_ID"}'
+    ```
+
+    `409 number_routing_complex` means the number's menu needs a person's judgement (several agents, no AI step, or a menu shared with other numbers); change it in the dashboard's IVR builder.
+  </Step>
+
+  <Step title="Retire the old agent">
+    `POST /v1/agents/{old}/disable` stops it and cancels anything still waiting for it. When nothing refers to it any more, `DELETE /v1/agents/{old}`; a `409 agent_in_use` lists what still does.
+  </Step>
+</Steps>

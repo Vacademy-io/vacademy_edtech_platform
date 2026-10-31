@@ -3,6 +3,8 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { useDebounce } from 'use-debounce';
 import * as XLSX from 'xlsx';
 import { Sparkle, Users, MagnifyingGlass, DownloadSimple, Eye } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
 import { cn } from '@/lib/utils';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
@@ -45,18 +47,18 @@ const fileDate = (ms?: number): string => {
 const prettyTool = (s: string | null): string =>
     s ? s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : '';
 
-const senderLabel = (t: string | null): string => {
-    switch (t) {
+const senderLabel = (mt: string | null): string => {
+    switch (mt) {
         case 'user':
-            return 'Learner';
+            return i18next.t('settingsAiUsage:sender.learner');
         case 'assistant':
-            return 'AI';
+            return i18next.t('settingsAiUsage:sender.ai');
         case 'tool_call':
-            return 'Tool call';
+            return i18next.t('settingsAiUsage:sender.toolCall');
         case 'tool_result':
-            return 'Tool result';
+            return i18next.t('settingsAiUsage:sender.toolResult');
         default:
-            return prettyTool(t);
+            return prettyTool(mt);
     }
 };
 
@@ -88,6 +90,7 @@ function RoleChips({ roles }: { roles: string | null }) {
 }
 
 export function AiUsageSection() {
+    const { t } = useTranslation('settingsAiUsage');
     const [range, setRange] = useState<UsageDateRange>(defaultRange);
     const [roleTab, setRoleTab] = useState<string | null>(null); // null = All
     const [nameInput, setNameInput] = useState('');
@@ -129,7 +132,13 @@ export function AiUsageSection() {
         const wb = XLSX.utils.book_new();
 
         // Sheet 1 — Summary (per member)
-        const summaryHeader = ['Name', 'Email', 'Role', 'Credits used', 'Requests'];
+        const summaryHeader = [
+            t('common.name'),
+            t('common.email'),
+            t('common.role'),
+            t('common.creditsUsed'),
+            t('common.requests'),
+        ];
         const summaryBody = (usersData.content ?? []).map((u) => [
             u.name || u.userId,
             u.email || '',
@@ -139,10 +148,19 @@ export function AiUsageSection() {
         ]);
         const summaryWs = XLSX.utils.aoa_to_sheet([summaryHeader, ...summaryBody]);
         summaryWs['!cols'] = [{ wch: 28 }, { wch: 32 }, { wch: 22 }, { wch: 14 }, { wch: 12 }];
-        XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+        XLSX.utils.book_append_sheet(wb, summaryWs, t('export.sheets.summary'));
 
         // Sheet 2 — Activity Log (every credit deduction across all tools)
-        const logHeader = ['When', 'Name', 'Email', 'Role', 'Tool', 'Model', 'Credits', 'Detail'];
+        const logHeader = [
+            t('export.headers.when'),
+            t('common.name'),
+            t('common.email'),
+            t('common.role'),
+            t('export.headers.tool'),
+            t('export.headers.model'),
+            t('export.headers.credits'),
+            t('export.headers.detail'),
+        ];
         const logBody = logs.map((l) => [
             dateTime(l.createdAt),
             l.name || l.userId,
@@ -158,12 +176,20 @@ export function AiUsageSection() {
             { wch: 20 }, { wch: 24 }, { wch: 30 }, { wch: 18 },
             { wch: 16 }, { wch: 26 }, { wch: 10 }, { wch: 40 },
         ];
-        XLSX.utils.book_append_sheet(wb, logWs, 'Activity Log');
+        XLSX.utils.book_append_sheet(wb, logWs, t('export.sheets.activityLog'));
 
         // Sheet 3 — Chat Sessions (one row per Student-AI session)
         const sessionHeader = [
-            'Started', 'Last active', 'Name', 'Email', 'Role',
-            'Context', 'Mode', 'Status', 'Messages', 'First message',
+            t('export.headers.started'),
+            t('export.headers.lastActive'),
+            t('common.name'),
+            t('common.email'),
+            t('common.role'),
+            t('export.headers.context'),
+            t('export.headers.mode'),
+            t('export.headers.status'),
+            t('export.headers.messages'),
+            t('export.headers.firstMessage'),
         ];
         const sessionBody = sessions.map((s) => [
             dateTime(s.createdAt),
@@ -182,10 +208,18 @@ export function AiUsageSection() {
             { wch: 20 }, { wch: 20 }, { wch: 24 }, { wch: 30 }, { wch: 16 },
             { wch: 28 }, { wch: 16 }, { wch: 12 }, { wch: 10 }, { wch: 50 },
         ];
-        XLSX.utils.book_append_sheet(wb, sessionWs, 'Chat Sessions');
+        XLSX.utils.book_append_sheet(wb, sessionWs, t('export.sheets.chatSessions'));
 
         // Sheet 4 — Chat Messages (every prompt + AI answer)
-        const msgHeader = ['When', 'Name', 'Email', 'Session', 'Context', 'Sender', 'Message'];
+        const msgHeader = [
+            t('export.headers.when'),
+            t('common.name'),
+            t('common.email'),
+            t('export.headers.session'),
+            t('export.headers.context'),
+            t('export.headers.sender'),
+            t('export.headers.message'),
+        ];
         const msgBody = messages.map((m) => [
             dateTime(m.createdAt),
             m.name || m.userId,
@@ -200,7 +234,7 @@ export function AiUsageSection() {
             { wch: 20 }, { wch: 24 }, { wch: 30 }, { wch: 24 },
             { wch: 26 }, { wch: 12 }, { wch: 80 },
         ];
-        XLSX.utils.book_append_sheet(wb, msgWs, 'Chat Messages');
+        XLSX.utils.book_append_sheet(wb, msgWs, t('export.sheets.chatMessages'));
 
         XLSX.writeFile(wb, `ai-credit-usage_${fileDate(range.startDate)}_${fileDate(range.endDate)}.xlsx`);
     };
@@ -209,7 +243,7 @@ export function AiUsageSection() {
         () => [
             {
                 accessorKey: 'name',
-                header: 'Name',
+                header: t('common.name'),
                 size: 260,
                 cell: ({ row }) => (
                     <span
@@ -222,7 +256,7 @@ export function AiUsageSection() {
             },
             {
                 accessorKey: 'email',
-                header: 'Email',
+                header: t('common.email'),
                 size: 460,
                 cell: ({ row }) =>
                     row.original.email ? (
@@ -235,13 +269,13 @@ export function AiUsageSection() {
             },
             {
                 accessorKey: 'roles',
-                header: 'Role',
+                header: t('common.role'),
                 size: 200,
                 cell: ({ row }) => <RoleChips roles={row.original.roles} />,
             },
             {
                 accessorKey: 'totalCredits',
-                header: 'Credits used',
+                header: t('common.creditsUsed'),
                 size: 170,
                 cell: ({ row }) => (
                     <span className="font-semibold text-neutral-800">
@@ -249,10 +283,10 @@ export function AiUsageSection() {
                     </span>
                 ),
             },
-            { accessorKey: 'requestCount', header: 'Requests', size: 150 },
+            { accessorKey: 'requestCount', header: t('common.requests'), size: 150 },
             {
                 id: 'actions',
-                header: 'Activity',
+                header: t('table.activity'),
                 size: 160,
                 cell: ({ row }) => (
                     <MyButton
@@ -270,12 +304,12 @@ export function AiUsageSection() {
                         }
                     >
                         <Eye className="size-4" />
-                        View logs
+                        {t('table.viewLogs')}
                     </MyButton>
                 ),
             },
         ],
-        []
+        [t]
     );
 
     return (
@@ -283,19 +317,16 @@ export function AiUsageSection() {
             <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
                     <Sparkle className="size-5 text-primary-500" weight="fill" />
-                    <h3 className="text-h3 font-semibold text-neutral-700">AI Credit Usage by User</h3>
+                    <h3 className="text-h3 font-semibold text-neutral-700">{t('heading')}</h3>
                 </div>
-                <p className="text-body text-neutral-500">
-                    Credits consumed per member in the selected period (net of refunds). Pick a member to
-                    see their detailed activity — including the prompts they sent and the AI's answers.
-                </p>
+                <p className="text-body text-neutral-500">{t('description')}</p>
             </div>
 
             <div className="flex flex-wrap items-center justify-between gap-3">
                 {/* Role sub-tabs */}
                 <div className="flex flex-wrap items-center gap-2">
                     <RoleTabButton active={roleTab === null} onClick={() => { setRoleTab(null); setPage(0); }}>
-                        <Users className="size-3.5" /> All
+                        <Users className="size-3.5" /> {t('roleTabs.all')}
                     </RoleTabButton>
                     {roleTabs.map((rs) => (
                         <RoleTabButton
@@ -319,7 +350,7 @@ export function AiUsageSection() {
                     <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
                     <MyInput
                         inputType="text"
-                        inputPlaceholder="Search by name or email…"
+                        inputPlaceholder={t('search.placeholder')}
                         input={nameInput}
                         onChangeFunction={(e) => {
                             setNameInput(e.target.value);
@@ -334,11 +365,11 @@ export function AiUsageSection() {
                     scale="medium"
                     layoutVariant="default"
                     onAsyncClick={handleExport}
-                    loadingText="Exporting…"
+                    loadingText={t('export.loading')}
                     disable={!usersQ.data || usersQ.data.total_elements === 0}
                 >
                     <DownloadSimple className="size-4" />
-                    Export to Excel
+                    {t('export.button')}
                 </MyButton>
             </div>
 

@@ -1,0 +1,27 @@
+{
+    "columns": {
+        "shift": "الوردية",
+        "timing": "التوقيت",
+        "break": "الاستراحة",
+        "grace": "فترة السماح",
+        "thresholds": "يوم كامل / نصف يوم"
+    },
+    "defaultShiftName": "وردية",
+    "defaultChip": "افتراضية",
+    "nightTag": "ليلية",
+    "minutesValue_zero": "{{count}} دقيقة",
+    "minutesValue_one": "دقيقة واحدة",
+    "minutesValue_two": "دقيقتان",
+    "minutesValue_few": "{{count}} دقائق",
+    "minutesValue_many": "{{count}} دقيقة",
+    "minutesValue_other": "{{count}} دقيقة",
+    "editAriaLabel": "تعديل {{name}}",
+    "defaultShiftFallback": "الوردية",
+    "intro": "ساعات العمل والاستراحات والحدود التي تقرر ما إذا كان اليوم يُحتسب كاملًا أو نصفيًا أو غيابًا. الموظفون بلا تعيين يقعون على الوردية الافتراضية.",
+    "assignToEmployees": "تعيين للموظفين",
+    "addShift": "إضافة وردية",
+    "loadError": "تعذّر تحميل الورديات.",
+    "emptyTitle": "لا توجد ورديات مُعرَّفة بعد",
+    "emptyDescription": "أضف وردية واحدة على الأقل وحدّدها كافتراضية — وإلا فلن يكون لتسجيل الدخول ساعات تُقاس عليها.",
+    "addFirstShift": "إضافة أول وردية"
+}

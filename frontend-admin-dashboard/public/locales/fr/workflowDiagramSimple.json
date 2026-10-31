@@ -1,0 +1,48 @@
+{
+    "title": "Diagramme d'automatisation",
+    "nodeCount_one": "{{count}} nœud",
+    "nodeCount_many": "{{count}} nœuds",
+    "nodeCount_other": "{{count}} nœuds",
+    "connectionCount_one": "{{count}} connexion",
+    "connectionCount_many": "{{count}} connexions",
+    "connectionCount_other": "{{count}} connexions",
+    "emptyState": {
+        "title": "Aucun diagramme de workflow disponible",
+        "description": "Ce workflow ne comporte peut-être aucun nœud configuré"
+    },
+    "tip": {
+        "label": "Astuce :",
+        "description": "Cliquez et faites glisser pour vous déplacer dans le diagramme. Utilisez les commandes de zoom pour zoomer/dézoomer. Cliquez sur un nœud pour afficher ses détails."
+    },
+    "executions": {
+        "title": "Exécutions",
+        "count_one": "{{count}} exécution",
+        "count_many": "{{count}} exécutions",
+        "count_other": "{{count}} exécutions"
+    },
+    "filters": {
+        "startDateTime": "Date et heure de début",
+        "endDateTime": "Date et heure de fin",
+        "search": "Rechercher",
+        "reset": "Réinitialiser",
+        "timezoneNote": "Les heures sont envoyées en GMT/UTC dans la requête."
+    },
+    "table": {
+        "started": "Démarré",
+        "completed": "Terminé",
+        "status": "Statut",
+        "idempotencyKey": "Clé d'idempotence",
+        "loading": "Chargement des exécutions…",
+        "loadFailed": "Échec du chargement des exécutions",
+        "empty": "Aucune exécution trouvée pour la période sélectionnée."
+    },
+    "pagination": {
+        "pageOf": "Page {{page}} sur {{total}}",
+        "previous": "Précédent",
+        "next": "Suivant"
+    },
+    "nodeDetails": {
+        "description": "Description :",
+        "configuration": "Détails de configuration :"
+    }
+}

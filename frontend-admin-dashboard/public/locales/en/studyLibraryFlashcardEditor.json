@@ -1,0 +1,17 @@
+{
+    "front": "Front",
+    "back": "Back",
+    "noContent": "No content",
+    "clickToFlip": "Click to flip",
+    "clickToFlipBack": "Click to flip back",
+    "flashcard": "Flashcard",
+    "imageAspectRatioTitle": "Image aspect ratio",
+    "imageAspectRatioOriginal": "Image: Original",
+    "imageAspectRatioValue": "Image: {{label}}",
+    "preview": "Preview",
+    "edit": "Edit",
+    "frontLabel": "Front (Question / Term)",
+    "backLabel": "Back (Answer / Definition)",
+    "frontPlaceholder": "Front — add text and/or an image…",
+    "backPlaceholder": "Back — add text and/or an image…"
+}

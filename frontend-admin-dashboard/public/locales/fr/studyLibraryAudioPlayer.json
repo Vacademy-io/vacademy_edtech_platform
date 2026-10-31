@@ -1,0 +1,13 @@
+{
+    "audioPlayer": "Lecteur audio",
+    "replace": "Remplacer",
+    "noAudioUploaded": "Aucun audio téléversé",
+    "uploadingEllipsis": "Téléversement...",
+    "clickOrDragHint": "Cliquez ou glissez un fichier audio ici",
+    "supportedFormats": "MP3, WAV, OGG, M4A pris en charge",
+    "titlePlaceholder": "Titre audio (facultatif)",
+    "selectAudioFile": "Veuillez sélectionner un fichier audio",
+    "uploadFailedError": "Échec du téléversement",
+    "failedToGetUrl": "Impossible d'obtenir l'URL",
+    "uploadFailedAlert": "Échec du téléversement du fichier audio"
+}

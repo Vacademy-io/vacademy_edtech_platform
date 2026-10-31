@@ -1,0 +1,43 @@
+{
+    "description": "Ce qu'il reste à chaque employé, par type de congé. Le solde de clôture correspond au solde d'ouverture plus ce qui a été acquis et reporté, moins ce qui a été utilisé ou converti en espèces, plus tout ajustement manuel.",
+    "runAccrual": "Lancer l'acquisition",
+    "yearEndProcess": "Processus de fin d'année",
+    "tabs": {
+        "balances": "Soldes",
+        "compOff": "Repos compensateur"
+    },
+    "yearLabel": "Année",
+    "employeeLabel": "Employé",
+    "allEmployeesPlaceholder": "Tous les employés",
+    "showEveryone": "Afficher tout le monde",
+    "loadError": "Impossible de charger les soldes de congés.",
+    "noBalancesTitle": "Aucun solde pour {{year}}",
+    "noBalancesForEmployeeDescription": "Cet employé n'a aucune ligne de solde pour l'année sélectionnée. Les soldes sont créés par le cycle d'acquisition une fois qu'une politique s'applique à eux.",
+    "noBalancesDescription": "Les soldes apparaissent une fois qu'une politique de congés est en vigueur et que l'acquisition a été exécutée pour la période. Configurez d'abord les politiques sous Types et politiques.",
+    "accrualFinished": "Cycle d'acquisition terminé",
+    "yearEndFinished": "Processus de fin d'année terminé",
+    "accrualError": "Impossible d'exécuter l'acquisition.",
+    "yearEndError": "Impossible d'exécuter le processus de fin d'année.",
+    "notNow": "Pas maintenant",
+    "runYearEnd": "Lancer la fin d'année",
+    "accrualDialog": {
+        "title": "Lancer l'acquisition des congés maintenant ?",
+        "description": "Ceci crédite le congé de cette période à chaque employé éligible, selon la politique de chaque type de congé. Il est sûr de l'exécuter plusieurs fois — le registre d'acquisition rend une répétition pour la même période sans effet, afin que personne ne soit crédité deux fois."
+    },
+    "yearEndDialog": {
+        "title": "Lancer le processus de fin d'année ?",
+        "description": "Ceci clôture l'année de congés : chaque solde est reporté ou converti en espèces selon la politique de son type de congé, jusqu'au plafond de report. Exécutez-le seulement lorsque l'année en cours de clôture est réellement terminée — les soldes qui expirent ne sont pas récupérables depuis ici."
+    },
+    "columns": {
+        "employee": "Employé",
+        "leaveType": "Type de congé",
+        "opening": "Ouverture",
+        "accrued": "Acquis",
+        "used": "Utilisé",
+        "adjustment": "Ajustement",
+        "carriedForward": "Reporté",
+        "encashed": "Converti",
+        "closing": "Clôture",
+        "adjust": "Ajuster"
+    }
+}

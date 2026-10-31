@@ -1,0 +1,40 @@
+{
+    "page": {
+        "title": "एक्सेस नियंत्रण",
+        "updateButton": "अपडेट करें",
+        "saveButton": "सहेजें",
+        "publishButton": "प्रकाशित करें"
+    },
+    "sections": {
+        "creationAccess": "मूल्यांकन निर्माण पहुँच",
+        "liveAssessmentNotification": "लाइव मूल्यांकन सूचना",
+        "submissionAndReportAccess": "मूल्यांकन सबमिशन और रिपोर्ट पहुँच",
+        "evaluationProcess": "मूल्यांकन प्रक्रिया"
+    },
+    "toast": {
+        "updateSuccess": "आपका मूल्यांकन सफलतापूर्वक अपडेट कर दिया गया है!",
+        "saveSuccess": "आपका मूल्यांकन सफलतापूर्वक सहेज लिया गया है!",
+        "updateAndPublishSuccess": "आपका मूल्यांकन सफलतापूर्वक अपडेट और प्रकाशित कर दिया गया है!",
+        "publishSuccess": "आपका मूल्यांकन सफलतापूर्वक प्रकाशित कर दिया गया है!",
+        "cancelInvitationSuccess": "इस उपयोगकर्ता का आमंत्रण सफलतापूर्वक रद्द कर दिया गया है!"
+    },
+    "errors": {
+        "saveFailed": "एक्सेस नियंत्रण सहेजने में विफल।",
+        "publishFailed": "मूल्यांकन प्रकाशित करने में विफल।"
+    },
+    "addUserDialog": {
+        "addButton": "जोड़ें",
+        "title": "उपयोगकर्ता जोड़ें",
+        "roleTypeFilterLabel": "भूमिका प्रकार",
+        "selectAllLabel": "सभी चुनें",
+        "doneButton": "हो गया"
+    },
+    "cancelInvitationDialog": {
+        "trigger": "आमंत्रण रद्द करें",
+        "title": "आमंत्रण रद्द करें",
+        "attention": "ध्यान दें",
+        "confirmMessagePrefix": "क्या आप वाकई इस उपयोगकर्ता का आमंत्रण रद्द करना चाहते हैं",
+        "confirmMessageSuffix": "?",
+        "confirmButton": "हाँ"
+    }
+}

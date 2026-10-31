@@ -5,6 +5,7 @@ import { UseFormReturn } from 'react-hook-form';
 import { CalendarBlank } from '@phosphor-icons/react';
 import { RichTextEditor } from '@/components/editor/RichTextEditor';
 import { InviteLinkFormValues } from '../GenerateInviteLinkSchema';
+import { useTranslation } from 'react-i18next';
 
 interface InviteAvailabilityCardProps {
     form: UseFormReturn<InviteLinkFormValues>;
@@ -17,6 +18,7 @@ interface InviteAvailabilityCardProps {
  * date empty keeps that side of the window open.
  */
 const InviteAvailabilityCard = ({ form }: InviteAvailabilityCardProps) => {
+    const { t } = useTranslation('manageStudentsInviteAvailabilityCard');
     return (
         <Card className="mb-4">
             <CardHeader>
@@ -25,13 +27,11 @@ const InviteAvailabilityCard = ({ form }: InviteAvailabilityCardProps) => {
                         <div className="flex items-center gap-2">
                             <CalendarBlank size={22} />
                             <CardTitle className="text-2xl font-bold">
-                                Availability Window
+                                {t('title')}
                             </CardTitle>
                         </div>
                         <span className="text-sm text-gray-600">
-                            Optionally limit when this link accepts enrollments. Outside the window
-                            (or when the link is deactivated) learners see the message below instead
-                            of the enrollment form.
+                            {t('description')}
                         </span>
                     </div>
                 </div>
@@ -43,7 +43,7 @@ const InviteAvailabilityCard = ({ form }: InviteAvailabilityCardProps) => {
                         name="availabilityStartDate"
                         render={({ field }) => (
                             <FormItem className="flex-1">
-                                <FormLabel>Start date (optional)</FormLabel>
+                                <FormLabel>{t('startDate.label')}</FormLabel>
                                 <FormControl>
                                     <Input
                                         type="date"
@@ -61,7 +61,7 @@ const InviteAvailabilityCard = ({ form }: InviteAvailabilityCardProps) => {
                         name="availabilityEndDate"
                         render={({ field }) => (
                             <FormItem className="flex-1">
-                                <FormLabel>End date (optional)</FormLabel>
+                                <FormLabel>{t('endDate.label')}</FormLabel>
                                 <FormControl>
                                     <Input
                                         type="date"
@@ -81,14 +81,14 @@ const InviteAvailabilityCard = ({ form }: InviteAvailabilityCardProps) => {
                     name="unavailableMessage"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Message shown when unavailable</FormLabel>
+                            <FormLabel>{t('unavailableMessage.label')}</FormLabel>
                             <FormControl>
                                 <RichTextEditor
                                     value={field.value}
                                     onChange={field.onChange}
                                     onBlur={field.onBlur}
                                     minHeight={120}
-                                    placeholder="e.g. Enrollments for this batch are closed. Write to us to hear about the next one."
+                                    placeholder={t('unavailableMessage.placeholder')}
                                 />
                             </FormControl>
                             <FormMessage />

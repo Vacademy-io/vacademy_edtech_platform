@@ -1,0 +1,257 @@
+{
+    "common": {
+        "submit": "Soumettre",
+        "returnToTest": "Retour au test",
+        "yourAnswer": "Votre réponse",
+        "questionNumber": "Question {{number}}",
+        "tabSwitchWarning": "Avertissement : vous essayez de quitter l'environnement du test. Il s'agit de l'avertissement {{count}} sur 3. Si vous essayez de quitter à nouveau, votre test sera automatiquement soumis.",
+        "tools": {
+            "calculator": "Calculatrice",
+            "scratchpad": "Brouillon"
+        }
+    },
+    "preview": {
+        "header": {
+            "title": "Aperçu",
+            "subtitle": "Lecture seule — les réponses commencent à la fin de ce temps"
+        },
+        "nav": {
+            "sectionsAriaLabel": "Sections"
+        },
+        "actions": {
+            "starting": "Démarrage...",
+            "startTest": "Démarrer le test"
+        }
+    },
+    "navbar": {
+        "autoSave": {
+            "saved": "Enregistré",
+            "saving": "Enregistrement…",
+            "notSaved": "Non enregistré"
+        },
+        "timer": {
+            "title": "Temps restant"
+        },
+        "help": {
+            "ariaLabel": "Aide et demandes",
+            "menu": {
+                "instructions": "Instructions",
+                "alerts": "Alertes du test",
+                "reattempt": "Demander une nouvelle tentative",
+                "timeIncrease": "Demander plus de temps"
+            }
+        },
+        "questionPanel": {
+            "hide": "Masquer le panneau des questions",
+            "show": "Afficher le panneau des questions"
+        },
+        "pdf": {
+            "preview": "Aperçu du PDF",
+            "upload": "Téléverser",
+            "uploading": "Téléversement...",
+            "back": "Retour",
+            "replace": "Remplacer le PDF"
+        },
+        "exitWarning": {
+            "description": "Votre test est toujours en cours. Vous ne pouvez pas revenir en arrière pendant la tentative. Utilisez le bouton Soumettre lorsque vous avez terminé — vos réponses sont enregistrées automatiquement."
+        },
+        "toast": {
+            "missingAttemptId": "Échec de la soumission : identifiant de tentative manquant.",
+            "submitSuccess": "Test soumis avec succès !",
+            "retrying": "Échec de la soumission. Nouvelle tentative ({{attempt}}/{{max}})...",
+            "submitFailed": "Impossible de soumettre votre test. Veuillez vérifier votre connexion et réessayer."
+        }
+    },
+    "networkStatus": {
+        "offline": {
+            "title": "Aucune connexion Internet",
+            "description": "Vos réponses sont conservées sur cet appareil et renvoyées dès que vous êtes de nouveau en ligne."
+        },
+        "saveFailed": {
+            "title": "Les réponses ne se synchronisent pas",
+            "description": "Elles sont en sécurité sur cet appareil. Appuyez sur réessayer pour synchroniser maintenant."
+        },
+        "online": {
+            "title": "De nouveau en ligne",
+            "description": "Votre connexion réseau a été rétablie."
+        },
+        "retry": "Réessayer"
+    },
+    "footer": {
+        "actions": {
+            "questionPalette": "Palette de questions",
+            "tools": "Outils",
+            "closeToolsMenu": "Fermer le menu des outils"
+        },
+        "markForReview": {
+            "mark": "Marquer pour révision",
+            "unmark": "Retirer le marquage",
+            "marked": "Marqué pour révision"
+        },
+        "clearResponse": {
+            "ariaLabel": "Effacer la réponse",
+            "label": "Effacer"
+        },
+        "nav": {
+            "previous": "Précédent",
+            "previousAriaLabel": "Question précédente",
+            "next": "Suivant",
+            "saveAndNext": "Enregistrer et suivant"
+        }
+    },
+    "coding": {
+        "problem": {
+            "missing": "(Aucun énoncé du problème)"
+        },
+        "badges": {
+            "maxPoints": "Points maximum : {{max}}",
+            "cpu": "CPU {{seconds}} s",
+            "tests": "Tests : {{count}}"
+        },
+        "actions": {
+            "run": "Exécuter"
+        },
+        "loadingRuntime": "Chargement de l'environnement Python…",
+        "tabs": {
+            "tests": "Tests",
+            "output": "Sortie"
+        },
+        "tests": {
+            "noneProvided": "Aucun test d'exemple fourni.",
+            "sampleFallback": "Exemple {{number}}",
+            "hiddenFallback": "Caché {{number}}",
+            "input": "Entrée",
+            "expected": "Attendu",
+            "empty": "(vide)",
+            "compilerError": "Erreur de compilation / d'exécution",
+            "yourOutput": "Votre sortie",
+            "hiddenBadge": "caché"
+        },
+        "output": {
+            "none": "Aucune sortie pour le moment.",
+            "testFallback": "Test {{number}}",
+            "stdoutLabel": "stdout",
+            "stderrLabel": "stderr / compilateur"
+        }
+    },
+    "longAnswer": {
+        "wordCount_one": "{{count}} mot",
+        "wordCount_many": "{{count}} mots",
+        "wordCount_other": "{{count}} mots",
+        "placeholder": "Écrivez votre réponse ici. Les points sont attribués pour le raisonnement, pas pour la longueur."
+    },
+    "oneWord": {
+        "placeholder": "Tapez votre réponse en un mot"
+    },
+    "numeric": {
+        "ariaLabel": "Votre réponse numérique",
+        "noNegativeMarking": "Aucun point négatif sur cette question.",
+        "pad": {
+            "show": "Afficher le pavé numérique",
+            "hide": "Masquer le pavé numérique",
+            "decimalPointAriaLabel": "Point décimal",
+            "backspaceAriaLabel": "Retour arrière"
+        }
+    },
+    "paragraph": {
+        "readMore": "Lire plus",
+        "readLess": "Lire moins"
+    },
+    "page": {
+        "toast": {
+            "savingResumed": "Vos réponses sont de nouveau enregistrées",
+            "savingFailed": "Vos réponses ne sont pas enregistrées"
+        }
+    },
+    "questionDisplay": {
+        "selectPrompt": "Sélectionnez une question pour commencer",
+        "sectionTimeUp": "Le temps est écoulé pour cette section. Veuillez passer à la section suivante disponible.",
+        "ofTotal": "sur {{total}}",
+        "codingMissingConfig": "La question de programmation n'a pas de configuration.",
+        "answerOptionsAriaLabel": "Options de réponse",
+        "unsupportedType": "Ce type de question ne peut pas être affiché ici."
+    },
+    "questionList": {
+        "itemAriaLabel": "Question {{number}}, {{status}}"
+    },
+    "questionNavigator": {
+        "sectionFallback": "Section",
+        "questionCount_one": "{{count}} question",
+        "questionCount_many": "{{count}} questions",
+        "questionCount_other": "{{count}} questions",
+        "legendAriaLabel": "Légende du statut des questions",
+        "submitPaper": "Soumettre la copie",
+        "hidePanel": "Masquer le panneau des questions"
+    },
+    "questionPassage": {
+        "label": "Passage",
+        "tapToRead": "Toucher pour lire"
+    },
+    "questionStatus": {
+        "answered": "Répondu",
+        "answeredMarked": "Répondu et marqué",
+        "marked": "Marqué pour révision",
+        "notAnswered": "Sans réponse",
+        "notVisited": "Non consulté"
+    },
+    "sectionTabs": {
+        "ariaLabel": "Sections du test"
+    },
+    "sectionTimer": {
+        "ariaLabel": "Temps restant pour la section : {{minutes}} minutes {{seconds}} secondes"
+    },
+    "sidebar": {
+        "paletteAriaLabel": "Palette de questions"
+    },
+    "calculator": {
+        "genericError": "Erreur",
+        "errors": {
+            "factorialWholeNumber": "La factorielle nécessite un nombre entier",
+            "tooLarge": "Trop grand",
+            "unexpectedChar": "Caractère inattendu « {{char}} »",
+            "malformedNumber": "Nombre mal formé",
+            "divideByZero": "Division par zéro",
+            "outOfDomain": "Hors du domaine",
+            "unknownFunction": "Fonction inconnue",
+            "incompleteExpression": "Expression incomplète",
+            "missingParen": "Parenthèse ) manquante",
+            "empty": "Vide",
+            "unbalancedParen": "Parenthèse ) déséquilibrée",
+            "notANumber": "N'est pas un nombre",
+            "outOfRange": "Hors limites"
+        },
+        "keys": {
+            "clear": "Effacer",
+            "backspace": "Retour arrière",
+            "percent": "Pourcentage",
+            "divide": "Diviser",
+            "multiply": "Multiplier",
+            "minus": "Moins",
+            "plus": "Plus",
+            "decimalPoint": "Point décimal",
+            "equals": "Égal",
+            "secondFunction": "Deuxième fonction",
+            "toggleAngleUnit": "Basculer entre degrés et radians",
+            "openBracket": "Parenthèse ouvrante",
+            "closeBracket": "Parenthèse fermante",
+            "squareRoot": "Racine carrée",
+            "square": "Carré",
+            "power": "Puissance",
+            "pi": "Pi",
+            "eulersNumber": "Nombre d'Euler",
+            "toggleSign": "Changer de signe",
+            "factorial": "Factorielle"
+        }
+    },
+    "scratchpad": {
+        "placeholder": "Brouillon — non soumis avec votre copie.",
+        "ariaLabel": "Brouillon pour le travail préparatoire"
+    },
+    "toolPanel": {
+        "closeAriaLabel": "Fermer {{title}}"
+    },
+    "viewToggle": {
+        "grid": "Vue grille",
+        "list": "Vue liste"
+    }
+}

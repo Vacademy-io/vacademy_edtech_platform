@@ -1,0 +1,18 @@
+{
+    "mathLatex": "गणित / LaTeX",
+    "display": "डिस्प्ले",
+    "inline": "इनलाइन",
+    "preview": "पूर्वावलोकन",
+    "edit": "संपादित करें",
+    "latexPlaceholder": "LaTeX अभिव्यक्ति दर्ज करें, जैसे \\frac{a}{b} या \\int_0^1 f(x)\\,dx",
+    "clickToAddEquation": "गणितीय समीकरण जोड़ने के लिए क्लिक करें",
+    "invalidLatex": "अमान्य LaTeX: {{latex}}",
+    "shortcutFraction": "भिन्न",
+    "shortcutSquareRoot": "वर्गमूल",
+    "shortcutPower": "घात",
+    "shortcutSubscript": "सबस्क्रिप्ट",
+    "shortcutIntegral": "समाकल",
+    "shortcutSum": "योग",
+    "shortcutGreek": "ग्रीक",
+    "shortcutMatrix": "मैट्रिक्स"
+}

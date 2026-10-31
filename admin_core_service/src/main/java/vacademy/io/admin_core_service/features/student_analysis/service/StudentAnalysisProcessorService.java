@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import vacademy.io.admin_core_service.features.credits.client.CreditClient;
+import vacademy.io.admin_core_service.features.credits.client.MeteringFields;
 import vacademy.io.admin_core_service.features.student_analysis.dto.StudentAnalysisData;
 import vacademy.io.admin_core_service.features.student_analysis.dto.StudentReportData;
 import vacademy.io.admin_core_service.features.student_analysis.dto.comprehensive.AiInsightsSection;
@@ -65,6 +67,9 @@ public class StudentAnalysisProcessorService {
         // Learner notification (best-effort; never affects report generation)
         private final StudentReportNotificationService studentReportNotificationService;
 
+        // Wallet check before the paid AI calls
+        private final vacademy.io.admin_core_service.features.credits.client.CreditClient creditClient;
+
         /**
          * Process student analysis asynchronously.
          *
@@ -72,7 +77,7 @@ public class StudentAnalysisProcessorService {
          * Each DB write is handled by {@link StudentAnalysisPersistenceService}.
          */
         @Async
-        public void processStudentAnalysis(String processId) {
+        public void processStudentAnalysis(String processId, String actorUserId) {
                 log.info("[Student-Analysis-Processor] Starting async processing for process ID: {}", processId);
 
                 // Commit PROCESSING immediately so pollers see it before the long work starts.
@@ -82,7 +87,7 @@ public class StudentAnalysisProcessorService {
                         boolean isV2 = "v2".equalsIgnoreCase(process.getReportVersion());
 
                         if (isV2) {
-                                processV2(process);
+                                processV2(process, actorUserId);
                         } else {
                                 processV1(process);
                         }
@@ -126,8 +131,30 @@ public class StudentAnalysisProcessorService {
                 notifyLearnerSafe(completed);
         }
 
+        /** Rough prompt + reply estimate of one comprehensive-report narration, for the plan pre-check. */
+        static final int NARRATIVE_ESTIMATED_TOKENS = 8000;
+
+        /**
+         * The v2 narrative's affordability: today's rule (a known balance must be positive; an
+         * unreadable one does not block), plus, only for a known empty wallet, the institute's
+         * LIVE AI plan.
+         */
+        static boolean aiAffordable(CreditClient credits, String instituteId, String learnerUserId,
+                        String actorUserId) {
+                java.util.Optional<Double> balance = credits.readBalance(instituteId);
+                if (balance.isEmpty() || balance.get() > 0) {
+                        return true; // today's rule, unchanged
+                }
+                // planCovers never throws; no LIVE plan = false at once (no HTTP call).
+                MeteringFields.MeteringFieldsBuilder m = actorUserId != null
+                                ? MeteringFields.user("student_report", MeteringFields.SURFACE_ADMIN_APP)
+                                : MeteringFields.system("student_report");
+                return credits.planCovers(instituteId, "analytics", null, NARRATIVE_ESTIMATED_TOKENS,
+                                actorUserId, m.subjectUserId(learnerUserId).build());
+        }
+
         // ── v2 path (new comprehensive report) ───────────────────────────────────
-        private void processV2(StudentAnalysisProcess process) throws Exception {
+        private void processV2(StudentAnalysisProcess process, String actorUserId) throws Exception {
                 log.info("[Student-Analysis-Processor] [v2] Collecting comprehensive data");
 
                 // Step 1: Layer-1 deterministic aggregation — only the admin-selected modules are queried
@@ -150,13 +177,30 @@ public class StudentAnalysisProcessorService {
                 // Done before narration so the LLM also sees the trend context.
                 enrichTrends(report, process);
 
+                // Every AI charge below is attributed to this report, its learner and the admin who ran it.
+                ComprehensiveReportLLMService.ChargeContext charge = new ComprehensiveReportLLMService.ChargeContext(
+                                process.getInstituteId(), process.getUserId(), actorUserId, process.getId());
+
+                // Affordability: an institute whose wallet is known to be empty gets the deterministic
+                // report without AI text — the same outcome as a model failure — instead of being
+                // charged into a negative balance (charges are allow_negative). An unreadable
+                // balance does not block: the report behaves as it always has. An empty wallet is
+                // asked once more about the institute's LIVE AI plan (learner reports can be
+                // included); no LIVE plan = no extra call, any failure there = today's answer.
+                boolean aiAffordable = aiAffordable(creditClient, process.getInstituteId(), process.getUserId(),
+                                actorUserId);
+                if (!aiAffordable) {
+                        log.warn("[Student-Analysis-Processor] [v2] Institute {} has no AI credits; skipping AI narrative for processId={}",
+                                        process.getInstituteId(), process.getId());
+                }
+
                 // Step 2: Layer-2 AI narrative (best-effort; failure → report without ai_insights)
                 log.info("[Student-Analysis-Processor] [v2] Generating AI narrative");
                 try {
                         // Must exceed the per-request timeout in ComprehensiveReportLLMService
                         // (RESPONSE_TIMEOUT_SECONDS) so a slow free-tier model gets one full attempt
                         // instead of being cut off here at the blocking read. Background @Async job.
-                        AiInsightsSection insights = comprehensiveLLMService.narrate(report, process.getUserId(), process.getInstituteId())
+                        AiInsightsSection insights = !aiAffordable ? null : comprehensiveLLMService.narrate(report, charge)
                                         .blockOptional(Duration.ofSeconds(180))
                                         .orElse(null);
 
@@ -212,7 +256,7 @@ public class StudentAnalysisProcessorService {
                 // here we try to upgrade it to LLM-clustered subjects and, on ANY failure or empty
                 // result, silently keep the deterministic grouping already in place — this codebase
                 // has learned the LLM can be unreliable, so the fallback is mandatory, not optional.
-                clusterSubjectMarksSafe(report, process.getUserId(), process.getInstituteId());
+                if (aiAffordable) clusterSubjectMarksSafe(report, charge);
 
                 // Step 3: Persist completed report + mark COMPLETED atomically
                 String reportJson = objectMapper.writeValueAsString(report);
@@ -263,6 +307,9 @@ public class StudentAnalysisProcessorService {
                         if (priorByKey.isEmpty()) return;
 
                         for (var metric : report.getOverview().getHeadlineMetrics()) {
+                                // A count over a different-length window, or a label ("Hindi 2"), has no
+                                // meaningful "vs last" delta.
+                                if (metric.getKey() != null && NO_TREND_METRICS.contains(metric.getKey())) continue;
                                 Double cur = numericValue(metric.getValue());
                                 Double prev = metric.getKey() != null ? priorByKey.get(metric.getKey()) : null;
                                 if (cur == null || prev == null) continue;
@@ -285,6 +332,8 @@ public class StudentAnalysisProcessorService {
                         log.warn("[Student-Analysis-Processor] [v2] Trend enrichment skipped (non-fatal): {}", e.getMessage());
                 }
         }
+
+        private static final Set<String> NO_TREND_METRICS = Set.of("assessments_taken", "above_class_average", "best_subject");
 
         /** Best-effort numeric coercion of a HeadlineMetric value (Number or numeric String). */
         private Double numericValue(Object value) {
@@ -381,10 +430,16 @@ public class StudentAnalysisProcessorService {
                                                 (int) Math.round(report.getCourseProgress().getOverallCompletionPercentage()));
                         }
 
+                        resolveStrengthAreaOverlap(report, topicScores);
+
                         // ── Strengths (>=60) / areas-to-improve (<60): single split, so every topic is
                         // classified and there is never a "gap band". Only fill what the LLM left blank.
+                        // The fallbacks below must not re-add a topic the other list already holds —
+                        // that would undo resolveStrengthAreaOverlap.
+                        java.util.Set<String> inAreas = topicKeys(report.getAreasToImprove());
                         if (report.getStrengths() == null || report.getStrengths().isEmpty()) {
                                 java.util.List<TopicConfidence> strengths = topicScores.entrySet().stream()
+                                                .filter(e -> !inAreas.contains(topicKey(e.getKey())))
                                                 .filter(e -> e.getValue() >= 60)
                                                 .sorted((a, b) -> Integer.compare(b.getValue(), a.getValue()))
                                                 .limit(6)
@@ -393,14 +448,17 @@ public class StudentAnalysisProcessorService {
                                 // Guarantee at least one relative strength when a decent topic exists.
                                 if (strengths.isEmpty()) {
                                         topicScores.entrySet().stream()
+                                                        .filter(e -> !inAreas.contains(topicKey(e.getKey())))
                                                         .max(java.util.Map.Entry.comparingByValue())
                                                         .filter(e -> e.getValue() >= 45)
                                                         .ifPresent(e -> strengths.add(topic(e.getKey(), e.getValue())));
                                 }
                                 if (!strengths.isEmpty()) report.setStrengths(strengths);
                         }
+                        java.util.Set<String> inStrengths = topicKeys(report.getStrengths());
                         if (report.getAreasToImprove() == null || report.getAreasToImprove().isEmpty()) {
                                 java.util.List<TopicConfidence> areas = topicScores.entrySet().stream()
+                                                .filter(e -> !inStrengths.contains(topicKey(e.getKey())))
                                                 .filter(e -> e.getValue() < 60)
                                                 .sorted(java.util.Map.Entry.comparingByValue())
                                                 .limit(6)
@@ -409,6 +467,7 @@ public class StudentAnalysisProcessorService {
                                 // Guarantee at least one improvement target unless everything is already strong.
                                 if (areas.isEmpty()) {
                                         topicScores.entrySet().stream()
+                                                        .filter(e -> !inStrengths.contains(topicKey(e.getKey())))
                                                         .min(java.util.Map.Entry.comparingByValue())
                                                         .filter(e -> e.getValue() < 85)
                                                         .ifPresent(e -> areas.add(topic(e.getKey(), e.getValue())));
@@ -470,9 +529,15 @@ public class StudentAnalysisProcessorService {
                                 StringBuilder sb = new StringBuilder();
                                 String name = (report.getStudent() != null && report.getStudent().getName() != null)
                                                 ? report.getStudent().getName() : "The student";
-                                sb.append(name).append(" is ");
-                                sb.append(status != null ? "currently " + status.toLowerCase() : "progressing")
-                                                .append(grade != null ? " with an overall grade of " + grade + "." : ".");
+                                // "<name>'s overall status is Needs Attention, with an overall grade of B." — the
+                                // old template read "<name> is currently needs attention with …".
+                                if (status != null) {
+                                        sb.append(name).append("'s overall status is ").append(status)
+                                                        .append(grade != null ? ", with an overall grade of " + grade + "." : ".");
+                                } else {
+                                        sb.append(name).append(" is progressing")
+                                                        .append(grade != null ? ", with an overall grade of " + grade + "." : ".");
+                                }
                                 if (topStrength != null) sb.append(" Strongest area: ").append(topStrength).append(".");
                                 if (topArea != null) sb.append(" Main focus area: ").append(topArea)
                                                 .append(" — see the recommended next steps below.");
@@ -525,7 +590,8 @@ public class StudentAnalysisProcessorService {
          * subject domains. On any exception, timeout, or empty LLM result, the deterministic
          * grouping already on the report is left untouched — never fails report generation.
          */
-        private void clusterSubjectMarksSafe(ComprehensiveStudentReport report, String userId, String instituteId) {
+        private void clusterSubjectMarksSafe(ComprehensiveStudentReport report,
+                        ComprehensiveReportLLMService.ChargeContext charge) {
                 try {
                         var subjectMarks = report.getSubjectMarks();
                         if (subjectMarks == null || !subjectMarks.isAvailable()
@@ -533,7 +599,7 @@ public class StudentAnalysisProcessorService {
                                 return;
                         }
 
-                        var clustered = comprehensiveLLMService.clusterSubjectMarks(subjectMarks.getItems(), userId, instituteId)
+                        var clustered = comprehensiveLLMService.clusterSubjectMarks(subjectMarks.getItems(), charge)
                                         .blockOptional(Duration.ofSeconds(60))
                                         .orElse(null);
 
@@ -628,6 +694,59 @@ public class StudentAnalysisProcessorService {
                 return out.size() > 4 ? out.subList(0, 4) : out;
         }
 
+        /**
+         * A topic can't be both a strength and an area to improve, but the model sometimes rates
+         * one good test and one bad test of the same subject separately (Accountancy 72 in
+         * strengths, Accountancy 40 in areas). Keep each such topic once, on the side its overall
+         * fact score supports (the average of the two model ratings when there is no fact score),
+         * then order strengths best-first and areas weakest-first.
+         */
+        private void resolveStrengthAreaOverlap(ComprehensiveStudentReport report,
+                        java.util.Map<String, Integer> topicScores) {
+                java.util.List<TopicConfidence> strengths = report.getStrengths();
+                java.util.List<TopicConfidence> areas = report.getAreasToImprove();
+                if (strengths == null || areas == null || strengths.isEmpty() || areas.isEmpty()) return;
+
+                java.util.Map<String, Integer> factByKey = new java.util.HashMap<>();
+                topicScores.forEach((k, v) -> factByKey.putIfAbsent(topicKey(k), v));
+
+                java.util.List<TopicConfidence> keptStrengths = new java.util.ArrayList<>();
+                java.util.List<TopicConfidence> keptAreas = new java.util.ArrayList<>(areas);
+                for (TopicConfidence s : strengths) {
+                        TopicConfidence twin = keptAreas.stream()
+                                        .filter(a -> topicKey(a.getTopic()).equals(topicKey(s.getTopic())))
+                                        .findFirst().orElse(null);
+                        if (twin == null) {
+                                keptStrengths.add(s);
+                                continue;
+                        }
+                        keptAreas.remove(twin);
+                        Integer fact = factByKey.get(topicKey(s.getTopic()));
+                        int score = fact != null ? fact
+                                        : (int) Math.round((nz(s.getConfidence()) + nz(twin.getConfidence())) / 2.0);
+                        if (score >= 60) keptStrengths.add(topic(s.getTopic(), score));
+                        else keptAreas.add(topic(s.getTopic(), score));
+                }
+                keptStrengths.sort((a, b) -> Integer.compare(nz(b.getConfidence()), nz(a.getConfidence())));
+                keptAreas.sort((a, b) -> Integer.compare(nz(a.getConfidence()), nz(b.getConfidence())));
+                report.setStrengths(keptStrengths);
+                report.setAreasToImprove(keptAreas);
+        }
+
+        private static java.util.Set<String> topicKeys(java.util.List<TopicConfidence> topics) {
+                java.util.Set<String> keys = new java.util.HashSet<>();
+                if (topics != null) topics.forEach(t -> keys.add(topicKey(t.getTopic())));
+                return keys;
+        }
+
+        private static String topicKey(String topic) {
+                return topic == null ? "" : topic.trim().toLowerCase(java.util.Locale.ROOT);
+        }
+
+        private static int nz(Integer v) {
+                return v == null ? 0 : v;
+        }
+
         private static TopicConfidence topic(String name, int confidence) {
                 return TopicConfidence.builder().topic(name).confidence(confidence).build();
         }
@@ -688,7 +807,7 @@ public class StudentAnalysisProcessorService {
                 if (ov != null || (ac != null && ac.isAvailable()) || (cp != null && cp.isAvailable())) {
                         StringBuilder md = new StringBuilder("### Progress\n\n");
                         if (ov != null && ov.getOverallStatus() != null) {
-                                md.append(name).append(" is currently **").append(ov.getOverallStatus()).append("**");
+                                md.append(name).append("'s overall status is **").append(ov.getOverallStatus()).append("**");
                                 if (ov.getOverallGrade() != null)
                                         md.append(" with an overall grade of **").append(ov.getOverallGrade()).append("**");
                                 md.append(".");

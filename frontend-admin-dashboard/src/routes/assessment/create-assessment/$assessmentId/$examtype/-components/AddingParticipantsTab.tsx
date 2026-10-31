@@ -1,5 +1,6 @@
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TabsContent } from '@radix-ui/react-tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { StudentListTab } from './StudentListTab';
@@ -53,6 +54,7 @@ export function AddingParticipantsTab({
     setSelectedSection: React.Dispatch<React.SetStateAction<string | undefined>>;
     sectionsInfo: SectionInfoInterface[];
 }) {
+    const { t } = useTranslation('assessmentAddingParticipantsTab');
     const [selectedTab, setSelectedTab] = useState(
         form.getValues('select_individually.checked') === true ? 'Individually' : 'Batch'
     );
@@ -78,11 +80,9 @@ export function AddingParticipantsTab({
                 </div>
                 <div>
                     <CardTitle className="text-subtitle font-semibold">
-                        Participant Selection
+                        {t('header.title')}
                     </CardTitle>
-                    <CardDescription>
-                        Pick entire batches or hand-select individual learners.
-                    </CardDescription>
+                    <CardDescription>{t('header.description')}</CardDescription>
                 </div>
             </CardHeader>
             <CardContent>
@@ -97,7 +97,7 @@ export function AddingParticipantsTab({
                             )}
                         >
                             <Stack size={16} weight="bold" />
-                            Select Batch
+                            {t('tabs.selectBatch')}
                         </TabsTrigger>
                         <TabsTrigger
                             value="Individually"
@@ -108,7 +108,7 @@ export function AddingParticipantsTab({
                             )}
                         >
                             <User size={16} weight="bold" />
-                            Select Individually
+                            {t('tabs.selectIndividually')}
                         </TabsTrigger>
                     </TabsList>
                     <TabsContent value="Batch" className="mt-6">
@@ -145,6 +145,7 @@ const Step3BatchList = ({
     setSelectedSection: React.Dispatch<React.SetStateAction<string | undefined>>;
     sectionsInfo: SectionInfoInterface[];
 }) => {
+    const { t } = useTranslation('assessmentAddingParticipantsTab');
     const params = Route.useParams();
     const assessmentId = params.assessmentId ?? '';
     const { setValue, watch } = form;
@@ -243,8 +244,8 @@ const Step3BatchList = ({
                 <div className="flex items-center gap-2">
                     <span>{getTerminology(ContentTerms.Session, SystemTerms.Session)}</span>
                     <Select value={selectedSection} onValueChange={setSelectedSection}>
-                        <SelectTrigger className="h-9 w-[200px] rounded-lg border-neutral-200 bg-white text-sm font-medium shadow-sm">
-                            <SelectValue placeholder="Select Section" />
+                        <SelectTrigger className="h-9 w-48 rounded-lg border-neutral-200 bg-white text-sm font-medium shadow-sm">
+                            <SelectValue placeholder={t('batchList.sectionPlaceholder')} />
                         </SelectTrigger>
                         <SelectContent>
                             {sectionsInfo?.map((section) => (
@@ -264,7 +265,7 @@ const Step3BatchList = ({
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search by course or level"
+                        placeholder={t('batchList.searchPlaceholder')}
                         className="h-9 rounded-lg border-neutral-200 bg-white px-9 text-sm shadow-none placeholder:text-body placeholder:font-regular hover:border-primary-200 focus:border-primary-500 focus-visible:ring-0"
                     />
                     {searchQuery && (
@@ -272,7 +273,7 @@ const Step3BatchList = ({
                             type="button"
                             onClick={() => setSearchQuery('')}
                             className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600 focus:outline-none"
-                            aria-label="Clear search"
+                            aria-label={t('batchList.clearSearchAriaLabel')}
                         >
                             <X size={16} />
                         </button>
@@ -282,14 +283,14 @@ const Step3BatchList = ({
             {filteredEntries.length === 0 ? (
                 <div className="flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-neutral-200 bg-neutral-50/50 py-10 text-center">
                     <span className="text-sm font-medium text-neutral-600">
-                        No courses or levels match &ldquo;{searchQuery}&rdquo;
+                        {t('batchList.emptyState.message', { query: searchQuery })}
                     </span>
                     <button
                         type="button"
                         onClick={() => setSearchQuery('')}
                         className="text-sm font-semibold text-primary-500 hover:text-primary-600 focus:outline-none"
                     >
-                        Clear search
+                        {t('batchList.emptyState.clearSearch')}
                     </button>
                 </div>
             ) : (
@@ -328,7 +329,7 @@ const Step3BatchList = ({
                                     </span>
                                 </div>
                                 {selectedCount > 0 && (
-                                    <span className="rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-semibold text-primary-600">
+                                    <span className="rounded-full bg-primary-100 px-2 py-0.5 text-2xs font-semibold text-primary-600">
                                         {selectedCount}/{totalCount}
                                     </span>
                                 )}

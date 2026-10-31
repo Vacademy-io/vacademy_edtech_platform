@@ -11,6 +11,7 @@ Single API for sending WhatsApp, Email, Push Notifications, and System Alerts.
 
 ## Authentication
 
+
 | Endpoint Path | Auth Type | Who Uses It |
 |---|---|---|
 | `/v1/send` | JWT (Bearer token) | Frontend |

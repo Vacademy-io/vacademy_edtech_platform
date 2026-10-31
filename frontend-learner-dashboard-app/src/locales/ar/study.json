@@ -3,7 +3,9 @@
         "tab": {
             "all": "كل {{courses}}",
             "inProgress": "قيد التقدم",
-            "completed": "مكتمل"
+            "completed": "مكتمل",
+            "scrollStart": "مرّر التبويبات للخلف",
+            "scrollEnd": "مرّر التبويبات للأمام"
         },
         "toast": {
             "loadError": "حدث خطأ أثناء تحميل {{courses}}. يرجى المحاولة مرة أخرى.",
@@ -31,6 +33,11 @@
         },
         "card": {
             "untitledPackage": "حزمة بدون عنوان"
+        },
+        "customTab": {
+            "open": "فتح",
+            "coursesCount": "{{count}} دورات",
+            "productPagesEmpty": "لا يوجد شيء لعرضه هنا بعد"
         }
     },
     "filters": {
@@ -152,5 +159,311 @@
         "nextSlide": "التالي: {{title}}",
         "overview": "نظرة عامة",
         "overviewAriaLabel": "عرض نظرة عامة على {{course}}"
+    },
+    "liveClass": {
+        "badge": {
+            "live": "مباشر",
+            "liveNow": "مباشر الآن",
+            "session": "جلسة",
+            "startingSoon": "يبدأ قريبًا",
+            "waitingRoom": "غرفة الانتظار"
+        },
+        "button": {
+            "join": "انضمام",
+            "joinEarly": "انضمام مبكر",
+            "joinLiveClass": "انضمام إلى الحصة المباشرة",
+            "joinSession": "انضمام إلى الجلسة",
+            "joinWaitingRoom": "انضمام إلى غرفة الانتظار",
+            "next": "التالي",
+            "nextSessions": "التالي: {{sessions}}",
+            "notStarted": "لم يبدأ",
+            "previous": "السابق",
+            "previousSessions": "السابق: {{sessions}}",
+            "settingUp": "جارٍ الإعداد…",
+            "today": "اليوم"
+        },
+        "calendar": {
+            "clickDayHint": "انقر على يوم لعرض كل {{liveSessions}}",
+            "dayNamesShort": [
+                "الأحد",
+                "الاثنين",
+                "الثلاثاء",
+                "الأربعاء",
+                "الخميس",
+                "الجمعة",
+                "السبت"
+            ],
+            "monthNames": [
+                "يناير",
+                "فبراير",
+                "مارس",
+                "أبريل",
+                "مايو",
+                "يونيو",
+                "يوليو",
+                "أغسطس",
+                "سبتمبر",
+                "أكتوبر",
+                "نوفمبر",
+                "ديسمبر"
+            ],
+            "moreCount": "+{{count}} أخرى"
+        },
+        "countdown": {
+            "hours": "ساعات",
+            "minutes": "دقائق",
+            "seconds": "ثوانٍ"
+        },
+        "dayModal": {
+            "classesOn": "الحصص في {{date}}",
+            "noneScheduled": "لا توجد {{liveSessions}} مجدولة لهذا اليوم",
+            "pastSessions": "سابقًا: {{sessions}}",
+            "upcomingSessions": "قادمًا: {{sessions}}"
+        },
+        "defaultClassCard": {
+            "defaultTitle": "افتراضي: {{session}}",
+            "description": "لا يوجد {{liveSession}} حاليًا. يمكنك مشاهدة: {{session}}.",
+            "noLiveSession": "لا يوجد {{liveSession}}",
+            "viewSession": "عرض {{session}}"
+        },
+        "disclaimer": {
+            "continue": "متابعة إلى الحصة",
+            "description": "يرجى مشاهدة هذا الفيديو القصير.",
+            "iframeTitle": "إخلاء المسؤولية",
+            "title": "قبل الانضمام"
+        },
+        "embed": {
+            "back": "→ رجوع",
+            "classReady": "جاهز: {{liveClass}}",
+            "clickToJoinNewWindow": "انقر أدناه للانضمام إلى {{liveClass}} في نافذة جديدة.",
+            "clickToViewLive": "انقر هنا لمشاهدة البث المباشر",
+            "errorLoadingSessionDetails": "خطأ في تحميل تفاصيل {{session}}: {{message}}",
+            "goToLogin": "الذهاب إلى تسجيل الدخول",
+            "invalidYoutubeUrl": "صيغة رابط يوتيوب غير صالحة",
+            "loginRequired": "تسجيل الدخول مطلوب",
+            "loginRequiredDescription": "يرجى تسجيل الدخول لحضور {{session}}. الوصول إلى {{session}} خاص ويتطلب المصادقة.",
+            "noMeetingLink": "لا يتوفر رابط اجتماع لـ {{session}}.",
+            "openingInNewTab": "جارٍ فتح رابط الاجتماع في علامة تبويب جديدة...",
+            "rec": "تسجيل",
+            "recording": "تسجيل",
+            "tapToJoin": "اضغط أدناه للانضمام إلى {{liveClass}}.",
+            "toast": {
+                "classNotStarted": "لم يبدأ {{instructor}} {{liveClass}} بعد. يرجى الانتظار قليلاً والمحاولة مرة أخرى.",
+                "joinFailed": "تعذّر الانضمام إلى {{liveClass}}. يرجى المحاولة مرة أخرى.",
+                "liveSessionStarted": "تم بدء {{liveSession}}!"
+            },
+            "unsupportedSessionType": "نوع {{session}} غير مدعوم: {{linkType}}"
+        },
+        "feedback": {
+            "backToLiveClasses": "العودة إلى {{liveSessions}}",
+            "fieldRequired": "هذا الحقل مطلوب",
+            "hopeFoundGeneric": "نأمل أن يكون محتوى {{session}} مفيدًا.",
+            "hopeFoundTitled": "نأمل أن يكون \"{{title}}\" مفيدًا.",
+            "instituteLogoAlt": "شعار المؤسسة",
+            "loadingForm": "جارٍ تحميل نموذج التقييم…",
+            "rating": {
+                "excellent": "ممتاز",
+                "fair": "مقبول",
+                "good": "جيد",
+                "poor": "ضعيف",
+                "starAriaLabel_zero": "{{count}} نجمة",
+                "starAriaLabel_one": "{{count}} نجمة واحدة",
+                "starAriaLabel_two": "{{count}} نجمتان",
+                "starAriaLabel_few": "{{count}} نجوم",
+                "starAriaLabel_many": "{{count}} نجمة",
+                "starAriaLabel_other": "{{count}} نجمة",
+                "veryGood": "جيد جداً"
+            },
+            "requiredBody": "اعتبر {{instructor}} التقييم إلزاميًا لهذه {{session}} — يرجى إكمال جميع الأسئلة المطلوبة للمتابعة.",
+            "requiredLabel": "التقييم مطلوب.",
+            "responsePlaceholder": "اكتب إجابتك هنا…",
+            "responsesRecorded": "تم تسجيل إجاباتك. جارٍ إعادتك…",
+            "sessionFeedbackTitle": "تقييم {{session}}",
+            "skip": "تخطي",
+            "submitFeedback": "إرسال التقييم",
+            "submitting": "جارٍ الإرسال…",
+            "thankYouTitle": "شكرًا لك على تقييمك!",
+            "thanksForAttending": "شكرًا لحضورك!"
+        },
+        "field": {
+            "duration": "المدة:",
+            "starts": "يبدأ:"
+        },
+        "filter": {
+            "days_zero": "{{count}} يوم",
+            "days_one": "{{count}} يوم واحد",
+            "days_two": "{{count}} يومان",
+            "days_few": "{{count}} أيام",
+            "days_many": "{{count}} يومًا",
+            "days_other": "{{count}} يوم"
+        },
+        "loginForm": {
+            "continue": "متابعة",
+            "enterOtp": "أدخل رمز التحقق",
+            "findingUser": "جارٍ البحث عن المستخدم...",
+            "findingUserDetails": "جارٍ البحث عن بيانات المستخدم...",
+            "heading": "تسجيل الدخول لعرض الجلسات",
+            "loadingUserDetails": "جارٍ تحميل بيانات المستخدم...",
+            "otpSentTo": "لقد أرسلنا رمزًا مكونًا من 6 أرقام إلى",
+            "quickLoginDescription": "سيتم تسجيل دخولك مباشرة دون التحقق عبر البريد الإلكتروني.",
+            "quickLoginTitle": "وضع تسجيل الدخول السريع",
+            "subtitle": "أدخل اسم المستخدم للوصول إلى {{liveSession}}",
+            "toast": {
+                "emailServiceUnavailable": "خدمة البريد الإلكتروني غير متاحة مؤقتًا.",
+                "invalidUserData": "تم استلام بيانات مستخدم غير صالحة",
+                "loggingIn": "جارٍ تسجيل الدخول...",
+                "linkExpired": "انتهت صلاحية رابط تسجيل الدخول هذا",
+                "linkExpiredDescription": "اطلب رابطًا جديدًا، أو سجّل الدخول باسم المستخدم وكلمة المرور.",
+                "loginFailedLater": "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى لاحقًا.",
+                "loginFailedRetry": "فشل تسجيل الدخول. يرجى المحاولة مرة أخرى.",
+                "loginSuccessTitle": "تم تسجيل الدخول بنجاح! جارٍ إعادة التوجيه...",
+                "otpIncomplete": "يرجى إدخال رمز التحقق المكون من 6 أرقام كاملاً",
+                "otpInvalid": "رمز التحقق غير صحيح. يرجى المحاولة مرة أخرى.",
+                "otpSendFailed": "فشل إرسال رمز التحقق",
+                "otpSent": "لقد أرسلنا رمز التحقق! يرجى مراجعة بريدك الإلكتروني.",
+                "otpVerified": "تم التحقق من الرمز بنجاح!",
+                "studentDetailsFailed": "فشل جلب بيانات الطالب",
+                "tryAgain": "يرجى المحاولة مرة أخرى",
+                "userLookupFailed": "تعذّر العثور على المستخدم",
+                "userNotFound": "المستخدم غير موجود",
+                "welcome": "مرحبًا بك في {{liveSession}}"
+            },
+            "usernameLabel": "اسم المستخدم",
+            "usernamePlaceholder": "أدخل اسم المستخدم",
+            "verifyAndContinue": "تحقق ومتابعة",
+            "verifying": "جارٍ التحقق..."
+        },
+        "meta": {
+            "pageDescription": "{{liveClasses}} والجلسات القادمة",
+            "pageTitle": "{{liveClasses}}"
+        },
+        "pagination": {
+            "pageOf": "صفحة {{page}} من {{totalPages}}",
+            "viewingPage": "عرض الصفحة {{page}}"
+        },
+        "pastSession": {
+            "activity": {
+                "attended": "حضر {{minutes}} دقيقة",
+                "chats": "{{count}} رسالة دردشة",
+                "handRaises": "{{count}} رفع يد",
+                "pollVotes": "{{count}} تصويت استطلاع",
+                "reactions": "{{count}} تفاعل"
+            },
+            "attendance": {
+                "absent": "غائب",
+                "notMarked": "غير مسجل",
+                "present": "حاضر"
+            },
+            "materialFallback": "مادة",
+            "materialsLabel": "مواد الحصة",
+            "recording": {
+                "expired": "انتهت صلاحية التسجيل",
+                "part": "الجزء {{number}}",
+                "watch": "مشاهدة التسجيل"
+            },
+            "toast": {
+                "materialOpenFailed": "تعذّر فتح هذه المادة."
+            }
+        },
+        "recordingDialog": {
+            "copy": "نسخ",
+            "expiresAround": "قد تنتهي صلاحية هذا الرابط في حوالي {{date}}.",
+            "loading": "جارٍ تحميل التسجيل…",
+            "openRecording": "فتح التسجيل",
+            "passcodeLabel": "رمز الدخول:",
+            "toast": {
+                "loadFailed": "فشل تحميل التسجيل.",
+                "passcodeCopied": "تم نسخ رمز الدخول"
+            },
+            "unableToEmbed": "تعذّر تضمين هذا الفيديو.",
+            "zoomCloudHosted": "هذا التسجيل مستضاف على Zoom Cloud. افتحه في علامة تبويب جديدة للمشاهدة."
+        },
+        "section": {
+            "adjustFilters": "حاول تعديل عوامل التصفية أو مسحها لعرض كل {{sessions}}",
+            "checkBackLater": "عد لاحقًا أو اطّلع على {{sessions}} القادمة",
+            "classesWillShowUp": "ستظهر الحصص هنا بعد انتهائها.",
+            "foundCount_zero": "تم العثور على {{count}} {{liveSessions}}",
+            "foundCount_one": "تم العثور على {{count}} {{liveSessions}} واحدة",
+            "foundCount_two": "تم العثور على {{count}} {{liveSessions}}",
+            "foundCount_few": "تم العثور على {{count}} {{liveSessions}}",
+            "foundCount_many": "تم العثور على {{count}} {{liveSessions}}",
+            "foundCount_other": "تم العثور على {{count}} {{liveSessions}}",
+            "liveSessionsHeading": "{{liveSessions}} - {{timezone}}",
+            "newSessionsWillAppear": "ستظهر {{sessions}} الجديدة هنا عند جدولتها",
+            "noPastSessionsYet": "لا توجد جلسات سابقة بعد",
+            "noUpcomingMatchFilters": "لا توجد {{sessions}} قادمة تطابق عوامل التصفية",
+            "noUpcomingScheduled": "لا توجد {{sessions}} قادمة مجدولة",
+            "noneAtTheMoment": "لا توجد {{liveSessions}} في الوقت الحالي",
+            "noneFound": "لم يتم العثور على {{liveSessions}}",
+            "pastSessionsSubtitle": "الحصص التي جرت بالفعل في {{batch}} الخاص بك.",
+            "sessionCount_zero": "{{count}} جلسة",
+            "sessionCount_one": "{{count}} جلسة واحدة",
+            "sessionCount_two": "{{count}} جلستان",
+            "sessionCount_few": "{{count}} جلسات",
+            "sessionCount_many": "{{count}} جلسة",
+            "sessionCount_other": "{{count}} جلسة"
+        },
+        "sessionSelection": {
+            "description": "توجد {{count}} {{sessions}} نشطة الآن. يرجى اختيار الجلسة التي ترغب في الانضمام إليها:",
+            "tipBody": "يمكنك الانضمام إلى {{session}} واحدة فقط في كل مرة. اختر {{session}} التي ترغب في حضورها.",
+            "tipLabel": "نصيحة:",
+            "title": "جلسات نشطة متعددة"
+        },
+        "state": {
+            "errorLoadingPrefix": "خطأ في تحميل الجلسات:",
+            "loadingSessions": "جارٍ تحميل الجلسات..."
+        },
+        "tabs": {
+            "calendar": "عرض التقويم",
+            "list": "عرض القائمة"
+        },
+        "toast": {
+            "classEnded": "انتهى وقت {{liveClass}}",
+            "classNotStartedYet": "لم تبدأ الحصة بعد. يرجى انتظار فتح غرفة الانتظار.",
+            "markAttendanceFailed": "فشل تسجيل الحضور",
+            "paymentRequired": "يتطلب الانضمام إلى {{session}} إتمام الدفع أولاً.",
+            "statusUndetermined": "تعذّر تحديد حالة {{session}}. يرجى المحاولة مرة أخرى."
+        },
+        "usernameLogin": {
+            "footerHelp": "بحاجة إلى مساعدة؟ تواصل مع الدعم للحصول على المساعدة في الوصول إلى {{liveSession}}."
+        },
+        "zoomSdk": {
+            "couldNotInit": "تعذّر تهيئة اجتماع Zoom ({{code}}).",
+            "couldNotJoin": "تعذّر الانضمام إلى اجتماع Zoom ({{code}}).",
+            "couldNotLoad": "تعذّر تحميل {{liveClass}}. يرجى التحديث أو التواصل مع المعلم.",
+            "couldNotLoadCheckConnection": "تعذّر تحميل اجتماع Zoom. تحقق من اتصالك وحاول مرة أخرى.",
+            "failedToLoad": "فشل تحميل اجتماع Zoom.",
+            "initError": "خطأ في التهيئة",
+            "joinError": "خطأ في الانضمام",
+            "joiningMeeting": "جارٍ الانضمام إلى الاجتماع…",
+            "notReadyToJoin": "لم تصبح {{liveClass}} جاهزة للانضمام بعد — قد تكون لا تزال قيد الإعداد. يرجى التحديث خلال لحظات، أو التواصل مع المعلم إذا استمرت المشكلة.",
+            "openInZoomApp": "فتح في تطبيق Zoom",
+            "preparingMeeting": "جارٍ تجهيز الاجتماع…",
+            "refreshOrRejoin": "يرجى تحديث الصفحة أو محاولة الانضمام مرة أخرى.",
+            "stillSettingUp": "{{liveClass}} لا تزال قيد الإعداد. يرجى التحديث خلال لحظات."
+        },
+        "zoomSettingUpTooltip": "لا يزال اجتماع Zoom قيد الإعداد. تحقق مرة أخرى بعد قليل."
+    },
+    "supportersSection": {
+        "headingPrefix": "الجهات",
+        "headingHighlight": "الداعمة"
+    },
+    "courseCatalogBanner": {
+        "alt": "لافتة دليل {{course}}"
+    },
+    "instructorCta": {
+        "headingBefore": "هل تريد إنشاء",
+        "headingAfter": " الخاص بك؟",
+        "subtitle": "شارك معرفتك مع العالم!",
+        "description": "سجّل الدخول وابدأ في إنشاء {{courses}} الخاصة بك ليستكشفها الآخرون ويتعلموا منها.",
+        "login": "تسجيل الدخول"
+    },
+    "legacyNav": {
+        "brandName": "مركز التعلم",
+        "logoAlt": "شعار مركز التعلم",
+        "userProfileAlt": "الملف الشخصي للمستخدم"
+    },
+    "studyCourseCatalog": {
+        "heading": "دليل {{course}} للدراسة"
     }
 }

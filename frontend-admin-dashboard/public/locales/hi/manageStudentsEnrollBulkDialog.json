@@ -1,0 +1,16 @@
+{
+    "placeholders": {
+        "select": "{{term}} चुनें"
+    },
+    "buttons": {
+        "enroll": "नामांकित करें"
+    },
+    "toasts": {
+        "courseCreatedSuccess": "कोर्स सफलतापूर्वक बनाया गया",
+        "createBatchFailed": "बैच बनाने में विफल",
+        "itemAddedSuccess": "{{term}} सफलतापूर्वक जोड़ा गया",
+        "addItemFailed": "{{term}} जोड़ने में विफल",
+        "levelAddedSuccess": "स्तर सफलतापूर्वक जोड़ा गया",
+        "addLevelFailedFallback": "कोर्स जोड़ने में विफल"
+    }
+}

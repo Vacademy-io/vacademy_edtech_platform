@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     BookOpen,
@@ -23,6 +24,8 @@ import {
     FloppyDisk,
     UploadSimple,
     Images,
+    HandHeart,
+    EyeSlash,
     Medal as MedalHeader,
     type IconProps,
 } from '@phosphor-icons/react';
@@ -46,13 +49,19 @@ import {
     BadgeTriggerType,
     DEFAULT_BADGE_CONFIG,
     DEFAULT_SCORING,
+    getTriggerMeta,
+    isManualTrigger,
     makeNewBadge,
     ScoringConfig,
     SCORING_FIELDS,
-    TRIGGER_META,
     TRIGGER_OPTIONS,
 } from '../../-constants/badge-config';
-import { getBadgesRewardsConfig, saveBadgesSettings } from '../../-services/badges-settings';
+import {
+    getBadgesRewardsConfig,
+    getBadgesRewardsConfigStrict,
+    mergeMissingBadges,
+    saveBadgesSettings,
+} from '../../-services/badges-settings';
 import { BadgeVisual, isBuiltInBadgeIcon } from '../../-constants/badge-icon-map';
 import {
     isLibraryToken,
@@ -90,18 +99,27 @@ function BadgeIcon({ name, className }: { name: string; className?: string }) {
 }
 
 export default function BadgesRewardsSettings() {
+    const { t } = useTranslation('settingsBadgesRewards');
     const queryClient = useQueryClient();
     const [badges, setBadges] = useState<BadgeDefinitionConfig[]>([]);
     const [enabled, setEnabled] = useState(false);
     const [scoring, setScoring] = useState<ScoringConfig>(DEFAULT_SCORING);
     const [publicShowFullNames, setPublicShowFullNames] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
+    /** True while the pre-save read of the server catalogue is in flight. */
+    const [checkingServer, setCheckingServer] = useState(false);
 
     const { data, isLoading } = useQuery({
         queryKey: ['badges-settings'],
         queryFn: getBadgesRewardsConfig,
         staleTime: 5 * 60 * 1000,
     });
+
+    // Ids that were on the server when this page loaded (or last saved). Anything the save
+    // guard finds on the server that is NOT in here was created elsewhere in the meantime and
+    // must be kept; anything that IS in here but missing locally was deleted by the admin on
+    // purpose and must stay deleted.
+    const knownIdsRef = useRef<Set<string>>(new Set());
 
     useEffect(() => {
         if (data) {
@@ -110,6 +128,9 @@ export default function BadgesRewardsSettings() {
             setScoring(data.scoring);
             setPublicShowFullNames(data.publicShowFullNames);
             setHasChanges(false);
+            knownIdsRef.current = new Set(
+                data.storedBadgesEmpty ? [] : data.badges.map((b) => b.id)
+            );
         }
     }, [data]);
 
@@ -121,11 +142,11 @@ export default function BadgesRewardsSettings() {
             publicShowFullNames: boolean;
         }) => saveBadgesSettings(vars.badges, vars.enabled, vars.scoring, vars.publicShowFullNames),
         onSuccess: () => {
-            toast.success('Badges saved');
+            toast.success(t('toasts.badgesSaved'));
             setHasChanges(false);
             queryClient.invalidateQueries({ queryKey: ['badges-settings'] });
         },
-        onError: () => toast.error('Failed to save badges'),
+        onError: () => toast.error(t('toasts.saveFailed')),
     });
 
     const toggleEnabled = (v: boolean) => {
@@ -156,10 +177,10 @@ export default function BadgesRewardsSettings() {
             );
             if (fileId) {
                 updateBadge(index, { icon: fileId });
-                toast.success('Image uploaded');
+                toast.success(t('toasts.imageUploaded'));
             }
         } catch {
-            toast.error('Failed to upload image');
+            toast.error(t('toasts.uploadFailed'));
         }
     };
 
@@ -168,15 +189,27 @@ export default function BadgesRewardsSettings() {
         setHasChanges(true);
     };
 
-    const addBadge = () => {
-        setBadges((prev) => [...prev, makeNewBadge()]);
+    const addBadge = (trigger: BadgeTriggerType = 'course_count') => {
+        setBadges((prev) => [...prev, makeNewBadge(trigger)]);
         setHasChanges(true);
     };
 
     const resetDefaults = () => {
+        const manualCount = badges.filter((b) => isManualTrigger(b.trigger)).length;
         setBadges(DEFAULT_BADGE_CONFIG.badges.map((b) => ({ ...b })));
         setHasChanges(true);
+        if (manualCount > 0) {
+            // Awards already given stay on the learners' records; only the catalogue entry goes.
+            toast.info(t('toasts.resetRemovesManual', { count: manualCount }));
+        }
     };
+
+    /**
+     * Trigger copy goes through i18n keyed by trigger id; the hardcoded English in
+     * TRIGGER_META is only the fallback (also covers triggers this build does not know).
+     */
+    const triggerText = (trigger: string, field: 'label' | 'help' | 'unit') =>
+        t(`triggers.${trigger}.${field}`, { defaultValue: getTriggerMeta(trigger)[field] });
 
     /** Any badge still on a plain icon that has matching ready-made artwork. */
     const canApplyLibraryArt = badges.some(
@@ -223,20 +256,48 @@ export default function BadgesRewardsSettings() {
             })
         );
         setHasChanges(true);
-        toast.success('Switched badges to library artwork');
+        toast.success(t('toasts.libraryArtApplied'));
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         const invalid = badges.find((b) => !b.name.trim());
         if (invalid) {
-            toast.error('Every badge needs a name');
+            toast.error(t('toasts.nameRequired'));
             return;
         }
-        save({ badges, enabled, scoring, publicShowFullNames });
+        // Saving overwrites the whole catalogue. Badges created elsewhere while this page was
+        // open (the student view appends through its own endpoint) must survive, and a failed
+        // read must never be mistaken for "no custom badges" — so read STRICT, then merge.
+        setCheckingServer(true);
+        try {
+            const server = await getBadgesRewardsConfigStrict();
+            // When the server holds no list, `server.badges` is the built-in defaults — not
+            // something created elsewhere, so there is nothing to merge back in (and an admin
+            // who deleted a default must not see it reappear).
+            // Only badges that did not exist when the page loaded count as "created elsewhere";
+            // a badge the admin removed locally is on the server too, but must stay removed.
+            const serverBadges = server.storedBadgesEmpty
+                ? []
+                : server.badges.filter((b) => !knownIdsRef.current.has(b.id));
+            const { merged, added } = mergeMissingBadges(badges, serverBadges);
+            if (added.length > 0) {
+                setBadges(merged);
+                toast.info(t('toasts.mergedFromServer', { count: added.length }));
+            }
+            knownIdsRef.current = new Set(merged.map((b) => b.id));
+            save({ badges: merged, enabled, scoring, publicShowFullNames });
+        } catch {
+            // Never save from a failed read — a transient error must not wipe the catalogue.
+            toast.error(t('toasts.saveGuardFailed'));
+        } finally {
+            setCheckingServer(false);
+        }
     };
 
+    const busy = saving || checkingServer;
+
     if (isLoading) {
-        return <div className="flex items-center justify-center p-8">Loading...</div>;
+        return <div className="flex items-center justify-center p-8">{t('loading')}</div>;
     }
 
     return (
@@ -245,22 +306,18 @@ export default function BadgesRewardsSettings() {
                 <div className="space-y-1">
                     <h1 className="flex items-center gap-2 text-lg font-bold">
                         <MedalHeader className="size-6" weight="fill" />
-                        Badges &amp; Rewards
+                        {t('header.title')}
                     </h1>
-                    <p className="text-sm text-neutral-500">
-                        Define the achievement badges learners can unlock on the gamified
-                        dashboard. Pick what each badge is named, how it looks, and the condition
-                        that unlocks it.
-                    </p>
+                    <p className="text-sm text-neutral-500">{t('header.description')}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <MyButton buttonType="secondary" onClick={resetDefaults} disabled={saving}>
+                    <MyButton buttonType="secondary" onClick={resetDefaults} disabled={busy}>
                         <ArrowCounterClockwise className="mr-2 size-4" />
-                        Reset to defaults
+                        {t('header.resetDefaults')}
                     </MyButton>
-                    <MyButton onClick={handleSave} disabled={saving || !hasChanges}>
+                    <MyButton onClick={handleSave} disabled={busy || !hasChanges}>
                         <FloppyDisk className="mr-2 size-4" />
-                        {saving ? 'Saving...' : 'Save Changes'}
+                        {busy ? t('header.saving') : t('header.saveChanges')}
                     </MyButton>
                 </div>
             </div>
@@ -268,14 +325,8 @@ export default function BadgesRewardsSettings() {
             <Card>
                 <CardContent className="flex items-center justify-between gap-4 p-4">
                     <div className="space-y-0.5">
-                        <Label className="text-sm font-semibold">
-                            Enable Badges &amp; Leaderboard
-                        </Label>
-                        <p className="text-xs text-neutral-500">
-                            Master switch. When off, badges and the course leaderboard are hidden
-                            everywhere — across the learner app and the admin Learning Reports
-                            leaderboard tab.
-                        </p>
+                        <Label className="text-sm font-semibold">{t('enableCard.label')}</Label>
+                        <p className="text-xs text-neutral-500">{t('enableCard.description')}</p>
                     </div>
                     <Switch checked={enabled} onCheckedChange={toggleEnabled} />
                 </CardContent>
@@ -283,18 +334,16 @@ export default function BadgesRewardsSettings() {
 
             {hasChanges && (
                 <div className="rounded-lg border border-warning-200 bg-warning-50 p-3">
-                    <p className="text-sm text-warning-700">
-                        You have unsaved changes. Don&apos;t forget to save.
-                    </p>
+                    <p className="text-sm text-warning-700">{t('unsavedBanner.text')}</p>
                 </div>
             )}
 
             {!enabled && (
                 <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3">
                     <p className="text-sm text-neutral-600">
-                        Badges &amp; leaderboard are currently <strong>disabled</strong> for this
-                        institute. Turn the switch on to configure badges, points and the
-                        leaderboard.
+                        {t('disabledBanner.before')}{' '}
+                        <strong>{t('disabledBanner.disabled')}</strong>{' '}
+                        {t('disabledBanner.after')}
                     </p>
                 </div>
             )}
@@ -305,13 +354,9 @@ export default function BadgesRewardsSettings() {
                 <CardContent className="space-y-4 p-4">
                     <div>
                         <h2 className="text-base font-semibold text-neutral-800">
-                            Points &amp; Scoring
+                            {t('scoring.title')}
                         </h2>
-                        <p className="text-sm text-neutral-500">
-                            How many points each action is worth. These drive the learner&apos;s
-                            points &amp; level and the course leaderboard ranking. Set a factor to 0
-                            to ignore it.
-                        </p>
+                        <p className="text-sm text-neutral-500">{t('scoring.description')}</p>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                         {SCORING_FIELDS.map((f) => (
@@ -327,7 +372,9 @@ export default function BadgesRewardsSettings() {
                                         }
                                         className="w-24"
                                     />
-                                    <span className="text-xs text-neutral-400">points</span>
+                                    <span className="text-xs text-neutral-400">
+                                        {t('scoring.pointsUnit')}
+                                    </span>
                                 </div>
                                 <p className="text-xs text-neutral-400">{f.help}</p>
                             </div>
@@ -341,13 +388,10 @@ export default function BadgesRewardsSettings() {
                     <div className="flex items-start justify-between gap-4">
                         <div>
                             <h2 className="text-base font-semibold text-neutral-800">
-                                Show full names on leaderboards
+                                {t('leaderboardNames.title')}
                             </h2>
                             <p className="text-sm text-neutral-500">
-                                By default leaderboards show learners as anonymized initials
-                                (e.g. &quot;A.G.&quot;). Turn this on to show full names on both the
-                                shareable public link and the in-app leaderboard learners see. Each
-                                learner&apos;s own row always reads &quot;You&quot;.
+                                {t('leaderboardNames.description')}
                             </p>
                         </div>
                         <Switch
@@ -367,11 +411,10 @@ export default function BadgesRewardsSettings() {
                         <Images className="mt-0.5 size-5 shrink-0 text-primary-500" weight="fill" />
                         <div>
                             <p className="text-sm font-semibold text-neutral-800">
-                                Show ready-made artwork instead of plain icons
+                                {t('libraryArt.title')}
                             </p>
                             <p className="text-xs text-neutral-500">
-                                Give every badge a polished tiered look, matched to what unlocks it.
-                                You can still fine-tune any badge from the library.
+                                {t('libraryArt.description')}
                             </p>
                         </div>
                     </div>
@@ -381,7 +424,7 @@ export default function BadgesRewardsSettings() {
                         className="shrink-0"
                     >
                         <Images className="mr-2 size-4" />
-                        Use library artwork
+                        {t('libraryArt.button')}
                     </MyButton>
                 </div>
             )}
@@ -390,25 +433,30 @@ export default function BadgesRewardsSettings() {
                 <Card>
                     <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
                         <Trophy className="size-8 text-neutral-300" weight="fill" />
-                        <p className="text-sm text-neutral-500">
-                            No badges configured. Add one to get started.
-                        </p>
-                        <MyButton buttonType="secondary" onClick={addBadge}>
-                            <Plus className="mr-2 size-4" />
-                            Add Badge
-                        </MyButton>
+                        <p className="text-sm text-neutral-500">{t('emptyState.text')}</p>
+                        <div className="flex flex-wrap justify-center gap-2">
+                            <MyButton buttonType="secondary" onClick={() => addBadge()}>
+                                <Plus className="mr-2 size-4" />
+                                {t('addBadge')}
+                            </MyButton>
+                            <MyButton buttonType="secondary" onClick={() => addBadge('manual')}>
+                                <HandHeart className="mr-2 size-4" />
+                                {t('addManualBadge')}
+                            </MyButton>
+                        </div>
                     </CardContent>
                 </Card>
             )}
 
             <div className="grid gap-4">
                 {badges.map((badge, index) => {
-                    const meta = TRIGGER_META[badge.trigger];
-                    const triggerLabel =
-                        TRIGGER_OPTIONS.find((o) => o.value === badge.trigger)?.label ?? '';
+                    const manual = isManualTrigger(badge.trigger);
+                    const triggerLabel = triggerText(badge.trigger, 'label');
+                    const triggerUnit = triggerText(badge.trigger, 'unit');
                     return (
                         <Card
                             key={badge.id}
+                            data-testid="badge-card"
                             className={cn(
                                 'overflow-hidden transition',
                                 !badge.enabled && 'opacity-70'
@@ -428,22 +476,40 @@ export default function BadgesRewardsSettings() {
                                     <div className="min-w-0 flex-1 pt-1">
                                         <div className="flex items-center gap-2">
                                             <p className="truncate text-base font-semibold text-neutral-800">
-                                                {badge.name.trim() || 'Untitled badge'}
+                                                {badge.name.trim() || t('badgeCard.untitled')}
                                             </p>
                                             {!badge.enabled && (
                                                 <span className="shrink-0 rounded-full bg-neutral-200 px-2 py-0.5 text-xs font-medium text-neutral-600">
-                                                    Hidden
+                                                    {t('badgeCard.disabledChip')}
+                                                </span>
+                                            )}
+                                            {badge.hidden && (
+                                                <span
+                                                    data-testid="hidden-chip"
+                                                    className="inline-flex shrink-0 items-center gap-1 rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600"
+                                                >
+                                                    <EyeSlash className="size-3" weight="bold" />
+                                                    {t('badgeCard.hiddenChip')}
                                                 </span>
                                             )}
                                         </div>
                                         <p className="truncate text-sm text-neutral-500">
                                             {badge.description.trim() ||
-                                                'Add a short description below'}
+                                                t('badgeCard.defaultDescription')}
                                         </p>
                                         {triggerLabel && (
-                                            <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-primary-100 bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-600">
-                                                <Target className="size-3.5" weight="bold" />
-                                                {triggerLabel} · {badge.threshold} {meta.unit}
+                                            <span
+                                                data-testid="trigger-chip"
+                                                className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-primary-100 bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-600"
+                                            >
+                                                {manual ? (
+                                                    <HandHeart className="size-3.5" weight="bold" />
+                                                ) : (
+                                                    <Target className="size-3.5" weight="bold" />
+                                                )}
+                                                {manual
+                                                    ? triggerLabel
+                                                    : `${triggerLabel} · ${badge.threshold} ${triggerUnit}`}
                                             </span>
                                         )}
                                     </div>
@@ -456,14 +522,16 @@ export default function BadgesRewardsSettings() {
                                                 }
                                             />
                                             <span className="w-6 text-xs text-neutral-500">
-                                                {badge.enabled ? 'On' : 'Off'}
+                                                {badge.enabled
+                                                    ? t('badgeCard.on')
+                                                    : t('badgeCard.off')}
                                             </span>
                                         </div>
                                         <button
                                             type="button"
                                             onClick={() => removeBadge(index)}
                                             className="rounded-md p-2 text-danger-500 hover:bg-danger-50"
-                                            aria-label="Delete badge"
+                                            aria-label={t('badgeCard.deleteAriaLabel')}
                                         >
                                             <Trash className="size-4" />
                                         </button>
@@ -474,17 +542,21 @@ export default function BadgesRewardsSettings() {
                                 <div className="space-y-4 p-4">
                                     <div className="grid gap-4 md:grid-cols-2">
                                         <div className="space-y-2">
-                                            <Label className="text-sm">Badge name</Label>
+                                            <Label className="text-sm">
+                                                {t('badgeCard.nameLabel')}
+                                            </Label>
                                             <Input
                                                 value={badge.name}
-                                                placeholder="e.g. First Steps"
+                                                placeholder={t('badgeCard.namePlaceholder')}
                                                 onChange={(e) =>
                                                     updateBadge(index, { name: e.target.value })
                                                 }
                                             />
                                         </div>
                                         <div className="space-y-2">
-                                            <Label className="text-sm">Icon</Label>
+                                            <Label className="text-sm">
+                                                {t('badgeCard.iconLabel')}
+                                            </Label>
                                             <div className="flex items-center gap-2">
                                                 <div className="flex-1">
                                                     <Select
@@ -498,7 +570,11 @@ export default function BadgesRewardsSettings() {
                                                         }
                                                     >
                                                         <SelectTrigger>
-                                                            <SelectValue placeholder="Custom image" />
+                                                            <SelectValue
+                                                                placeholder={t(
+                                                                    'badgeCard.iconPlaceholder'
+                                                                )}
+                                                            />
                                                         </SelectTrigger>
                                                         <SelectContent>
                                                             {BADGE_ICON_NAMES.map((name) => (
@@ -522,7 +598,7 @@ export default function BadgesRewardsSettings() {
                                                     }
                                                 />
                                                 <label
-                                                    title="Upload a custom image"
+                                                    title={t('badgeCard.uploadTitle')}
                                                     className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md border border-neutral-200 text-neutral-500 hover:bg-neutral-50"
                                                 >
                                                     <UploadSimple className="size-4" />
@@ -541,19 +617,23 @@ export default function BadgesRewardsSettings() {
                                             </div>
                                             <p className="text-xs text-neutral-400">
                                                 {isLibraryToken(badge.icon)
-                                                    ? 'Library badge selected.'
+                                                    ? t('badgeCard.iconHint.library')
                                                     : !isBuiltInBadgeIcon(badge.icon) && badge.icon
-                                                      ? 'Custom image uploaded.'
-                                                      : 'Pick an icon, choose from the library, or upload your own.'}
+                                                      ? t('badgeCard.iconHint.custom')
+                                                      : t('badgeCard.iconHint.default')}
                                             </p>
                                         </div>
                                     </div>
 
                                     <div className="space-y-2">
-                                        <Label className="text-sm">Description</Label>
+                                        <Label className="text-sm">
+                                            {t('badgeCard.descriptionLabel')}
+                                        </Label>
                                         <Input
                                             value={badge.description}
-                                            placeholder="Shown on hover, e.g. Maintain a 7-day streak"
+                                            placeholder={t(
+                                                'badgeCard.descriptionPlaceholder'
+                                            )}
                                             onChange={(e) =>
                                                 updateBadge(index, {
                                                     description: e.target.value,
@@ -564,16 +644,29 @@ export default function BadgesRewardsSettings() {
 
                                     <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                         <div className="space-y-2">
-                                            <Label className="text-sm">Unlocks based on</Label>
+                                            <Label className="text-sm">
+                                                {t('badgeCard.triggerLabel')}
+                                            </Label>
                                             <Select
                                                 value={badge.trigger}
-                                                onValueChange={(v) =>
+                                                onValueChange={(v) => {
+                                                    const next = v as BadgeTriggerType;
+                                                    // Manual badges carry no threshold; leaving
+                                                    // manual picks up the new trigger's default.
                                                     updateBadge(index, {
-                                                        trigger: v as BadgeTriggerType,
-                                                    })
-                                                }
+                                                        trigger: next,
+                                                        threshold: isManualTrigger(next)
+                                                            ? 0
+                                                            : manual
+                                                              ? getTriggerMeta(next)
+                                                                    .defaultThreshold
+                                                              : badge.threshold,
+                                                    });
+                                                }}
                                             >
-                                                <SelectTrigger>
+                                                <SelectTrigger
+                                                    aria-label={t('badgeCard.triggerLabel')}
+                                                >
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
@@ -582,29 +675,70 @@ export default function BadgesRewardsSettings() {
                                                             key={opt.value}
                                                             value={opt.value}
                                                         >
-                                                            {opt.label}
+                                                            {triggerText(opt.value, 'label')}
                                                         </SelectItem>
                                                     ))}
                                                 </SelectContent>
                                             </Select>
                                         </div>
-                                        <div className="space-y-2">
-                                            <Label className="text-sm">
-                                                Threshold ({meta.unit})
-                                            </Label>
-                                            <Input
-                                                type="number"
-                                                min={0}
-                                                value={badge.threshold}
-                                                onChange={(e) =>
-                                                    updateBadge(index, {
-                                                        threshold: Number(e.target.value) || 0,
-                                                    })
-                                                }
-                                            />
-                                        </div>
+                                        {manual ? (
+                                            <div className="flex items-start gap-2 rounded-md border border-neutral-100 bg-neutral-50 p-3">
+                                                <HandHeart
+                                                    className="mt-0.5 size-4 shrink-0 text-primary-500"
+                                                    weight="fill"
+                                                />
+                                                <p className="text-xs text-neutral-600">
+                                                    {t('badgeCard.manualHint')}
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-2">
+                                                <Label className="text-sm">
+                                                    {t('badgeCard.thresholdLabel', {
+                                                        unit: triggerUnit,
+                                                    })}
+                                                </Label>
+                                                <Input
+                                                    type="number"
+                                                    min={0}
+                                                    aria-label={t('badgeCard.thresholdLabel', {
+                                                        unit: triggerUnit,
+                                                    })}
+                                                    value={badge.threshold}
+                                                    onChange={(e) =>
+                                                        updateBadge(index, {
+                                                            threshold:
+                                                                Number(e.target.value) || 0,
+                                                        })
+                                                    }
+                                                />
+                                            </div>
+                                        )}
                                     </div>
-                                    <p className="text-xs text-neutral-400">{meta.help}</p>
+                                    <p className="text-xs text-neutral-400">
+                                        {triggerText(badge.trigger, 'help')}
+                                    </p>
+
+                                    <div className="flex items-start justify-between gap-4 rounded-md border border-neutral-100 p-3">
+                                        <div className="space-y-0.5">
+                                            <Label
+                                                htmlFor={`badge-hidden-${badge.id}`}
+                                                className="text-sm"
+                                            >
+                                                {t('badgeCard.hiddenLabel')}
+                                            </Label>
+                                            <p className="text-xs text-neutral-400">
+                                                {t('badgeCard.hiddenHelp')}
+                                            </p>
+                                        </div>
+                                        <Switch
+                                            id={`badge-hidden-${badge.id}`}
+                                            checked={badge.hidden === true}
+                                            onCheckedChange={(v) =>
+                                                updateBadge(index, { hidden: v })
+                                            }
+                                        />
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
@@ -613,10 +747,16 @@ export default function BadgesRewardsSettings() {
             </div>
 
             {badges.length > 0 && (
-                <MyButton buttonType="secondary" onClick={addBadge}>
-                    <Plus className="mr-2 size-4" />
-                    Add Badge
-                </MyButton>
+                <div className="flex flex-wrap gap-2">
+                    <MyButton buttonType="secondary" onClick={() => addBadge()}>
+                        <Plus className="mr-2 size-4" />
+                        {t('addBadge')}
+                    </MyButton>
+                    <MyButton buttonType="secondary" onClick={() => addBadge('manual')}>
+                        <HandHeart className="mr-2 size-4" />
+                        {t('addManualBadge')}
+                    </MyButton>
+                </div>
             )}
                 </>
             )}

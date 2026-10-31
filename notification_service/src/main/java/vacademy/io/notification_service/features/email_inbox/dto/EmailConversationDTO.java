@@ -21,10 +21,16 @@ public class EmailConversationDTO {
     private String userId;
     /** Direction of the last message: OUTGOING or INCOMING. */
     private String lastMessageDirection;
-    /** Truncated preview of the last message (HTML stripped). */
+    /** Subject of the last message when known. */
+    private String lastMessageSubject;
+    /** Truncated preview of the last message: its subject when known, else clean body text. */
     private String lastMessagePreview;
     /** When the last message was sent/received. Jackson emits Instant as ISO-8601 with trailing Z. */
     private Instant lastMessageTime;
     /** Number of inbound messages newer than the latest outbound to this counterparty. */
     private long unreadCount;
+    /** True when the counterparty is a mail-system sender (mailer-daemon / postmaster / no-reply-aws). */
+    private boolean system;
+    /** True when this counterparty sent at least one email with a (non-inline) attachment. */
+    private boolean hasAttachments;
 }

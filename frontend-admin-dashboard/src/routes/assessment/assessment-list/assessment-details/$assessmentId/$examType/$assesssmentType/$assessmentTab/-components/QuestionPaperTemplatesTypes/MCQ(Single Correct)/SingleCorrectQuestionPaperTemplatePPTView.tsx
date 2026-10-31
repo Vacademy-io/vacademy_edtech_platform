@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { DotsThree } from '@phosphor-icons/react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -36,6 +37,7 @@ export const SingleCorrectQuestionPaperTemplatePPTView = ({
     className,
     selectedSectionIndex,
 }: SectionQuestionPaperFormProps) => {
+    const { t } = useTranslation('assessmentSingleCorrectPPTList');
     const { control, getValues, setValue } = form;
 
     const [isDropdownVisible, setIsDropdownVisible] = useState(false); // State to track dropdown visibility
@@ -133,7 +135,7 @@ export const SingleCorrectQuestionPaperTemplatePPTView = ({
                     >
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
-                                <span className="!p-0 text-sm">(a.)</span>
+                                <span className="!p-0 text-sm">{t('optionLabels.a')}</span>
                             </div>
                         </div>
                         <div className="flex size-10 items-center justify-center rounded-full bg-white px-4">
@@ -166,7 +168,7 @@ export const SingleCorrectQuestionPaperTemplatePPTView = ({
                     >
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
-                                <span className="!p-0 text-sm">(b.)</span>
+                                <span className="!p-0 text-sm">{t('optionLabels.b')}</span>
                             </div>
                         </div>
                         <div className="flex size-10 items-center justify-center rounded-full bg-white px-4">
@@ -201,7 +203,7 @@ export const SingleCorrectQuestionPaperTemplatePPTView = ({
                     >
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
-                                <span className="!p-0 text-sm">(c.)</span>
+                                <span className="!p-0 text-sm">{t('optionLabels.c')}</span>
                             </div>
                         </div>
                         <div className="flex size-10 items-center justify-center rounded-full bg-white px-4">
@@ -234,7 +236,7 @@ export const SingleCorrectQuestionPaperTemplatePPTView = ({
                     >
                         <div className="flex w-full items-center gap-4">
                             <div className="flex size-10 items-center justify-center rounded-full bg-white px-3">
-                                <span className="!p-0 text-sm">(d.)</span>
+                                <span className="!p-0 text-sm">{t('optionLabels.d')}</span>
                             </div>
                         </div>
                         <div className="flex size-10 items-center justify-center rounded-full bg-white px-4">
@@ -282,10 +284,10 @@ export const SingleCorrectQuestionPaperTemplatePPTView = ({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="mt-1">
                             <DropdownMenuItem onClick={handleDuplicateSlide}>
-                                Duplicate Slide
+                                {t('menu.duplicateSlide')}
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={handleDeleteSlide}>
-                                Delete Slide
+                                {t('menu.deleteSlide')}
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

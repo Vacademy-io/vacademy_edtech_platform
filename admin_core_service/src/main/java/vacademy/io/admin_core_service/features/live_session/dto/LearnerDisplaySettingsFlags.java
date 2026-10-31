@@ -11,15 +11,21 @@ package vacademy.io.admin_core_service.features.live_session.dto;
  * server-side enforcement, not just a UI nicety, so a learner can never see
  * past-session data (or the more sensitive recordings/attendance/engagement
  * sub-blocks) by guessing the endpoint URL before an admin has opted in.
+ *
+ * {@code showUnassignedPublicSessions} is not a Past-tab flag: when on, a
+ * PUBLIC class with no batch or learner attached is listed to every enrolled
+ * learner of the institute (upcoming + past). See
+ * {@link vacademy.io.admin_core_service.features.live_session.service.LearnerPublicSessionVisibilityService}.
  */
 public record LearnerDisplaySettingsFlags(
         boolean showPastSessions,
         boolean showRecordings,
         boolean showAttendance,
         boolean showActivityStats,
-        boolean showClassMaterials) {
+        boolean showClassMaterials,
+        boolean showUnassignedPublicSessions) {
 
     public static LearnerDisplaySettingsFlags allOff() {
-        return new LearnerDisplaySettingsFlags(false, false, false, false, false);
+        return new LearnerDisplaySettingsFlags(false, false, false, false, false, false);
     }
 }

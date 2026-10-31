@@ -1,0 +1,283 @@
+{
+  "slideDisplayUtils": {
+    "untitled": "Untitled",
+    "item": "Item"
+  },
+  "fileUploader": {
+    "types": {
+      "pdf": "PDF",
+      "image": "Image",
+      "doc": "DOC/DOCX",
+      "video": "Video",
+      "audio": "Audio"
+    },
+    "anyFile": "Any file",
+    "clickToUpload": "Click to upload",
+    "orDragAndDrop": "or drag and drop",
+    "sizeLimit": "{{hint}} up to 10MB",
+    "uploading": "Uploading...",
+    "selectFile": "Select File",
+    "uploadedFiles": "Uploaded Files",
+    "onlyTypesAllowed": "Only {{types}} files are allowed for this assignment."
+  },
+  "htmlSlideIframe": {
+    "documentTitle": "Document"
+  },
+  "jupyterSlide": {
+    "loadingNotebook": "Loading Jupyter Notebook...",
+    "loadingInterface": "Loading notebook interface...",
+    "openInNewTab": "Open in New Tab",
+    "errors": {
+      "loadConfigFailed": "Failed to load notebook configuration",
+      "loadFailed": "Failed to load notebook"
+    },
+    "verification": {
+      "prompt": "Just ensuring that you are actively learning, please click the number <num>{{number}}</num> within <cnt>{{countdown}}</cnt> seconds."
+    },
+    "paused": {
+      "title": "Jupyter Notebook Paused",
+      "body_one": "You've switched tabs {{count}} time. Please click below to resume your notebook session.",
+      "body_other": "You've switched tabs {{count}} times. Please click below to resume your notebook session.",
+      "resume": "Resume Notebook"
+    },
+    "header": {
+      "branchLocation": "Branch: {{branch}} • Location: {{location}}"
+    },
+    "footer": {
+      "type": "Type: Jupyter Notebook",
+      "activeTab": "Active Tab: {{tab}}",
+      "interactive": "Interactive"
+    }
+  },
+  "lessonListSidebar": {
+    "locked": "Locked",
+    "slideCount": "{{count}} {{term}}",
+    "progressCompleted": "{{done}} / {{total}} completed",
+    "noSlides": "No {{term}}",
+    "loadOutlineFailed": "Couldn't load the course outline.",
+    "courseProgress": "{{done}} / {{total}} {{term}} completed",
+    "noModulesYet": "No {{term}} yet"
+  },
+  "leaseLockOverlay": {
+    "leaseExpired": {
+      "title": "Connect to the internet to keep offline access",
+      "body": "This device periodically re-validates offline content. Reconnect briefly to renew access and keep viewing this course offline."
+    },
+    "revoked": {
+      "title": "Offline access removed",
+      "body": "Your institute revoked offline access for this device. Reconnect to see what's still available."
+    }
+  },
+  "requiresInternetSlide": {
+    "title": "This content requires internet",
+    "bodyWithType": "{{type}} content is hosted externally and can't be downloaded for offline use. Reconnect to view it.",
+    "bodyGeneric": "This content is hosted externally and can't be downloaded for offline use. Reconnect to view it.",
+    "waiting": "Waiting for connection"
+  },
+  "pdfViewer": {
+    "loading": "Loading…"
+  },
+  "questionSlide": {
+    "toast": {
+      "savedOffline": "Saved — will sync when online"
+    },
+    "placeholders": {
+      "oneWord": "Type your one-word answer",
+      "longAnswer": "Type your answer...",
+      "decimal": "Enter decimal value",
+      "integer": "Enter integer value"
+    },
+    "numericPad": {
+      "clear": "Clear"
+    },
+    "unsupportedType": "Unsupported question type: {{type}}",
+    "questionLabel": "Question:",
+    "prompts": {
+      "mcqs": "Select one answer:",
+      "trueFalse": "Select True or False:",
+      "mcqm": "Select all that apply:",
+      "oneWord": "Enter your answer:",
+      "longAnswer": "Type your answer:",
+      "numeric": "Enter numeric value:"
+    },
+    "buttons": {
+      "submitting": "Submitting...",
+      "submitted": "Submitted",
+      "resubmit": "Resubmit",
+      "submit": "Submit"
+    },
+    "explanation": {
+      "hide": "Hide answer guidance",
+      "show": "Show answer guidance"
+    }
+  },
+  "quizViewer": {
+    "selectAllThatApply": "More than one option can be correct — select all that apply",
+    "questionTypeDescriptions": {
+      "mcqs": "Multiple Choice Questions - Single Correct Option",
+      "mcqm": "Multiple Choice Questions - Multiple Correct Option",
+      "numeric": "Numeric Answer",
+      "oneWord": "One Word Answer",
+      "text": "Short Answer - Text Response",
+      "longAnswer": "Long Answer - Detailed Response",
+      "trueFalse": "True or False",
+      "match": "Match the Following",
+      "fillInTheBlank": "Fill in the Blank",
+      "comprehensionPrefix": "Comprehension {{description}}",
+      "genericQuestion": "Question"
+    },
+    "noQuestionsAvailable": "No quiz questions available.",
+    "toast": {
+      "noAttemptsRemaining": "No attempts remaining for this quiz.",
+      "missingContext": "Cannot submit quiz — missing context. Please reopen this slide.",
+      "savedOffline": "Saved — will sync when online",
+      "quizSubmitted": "Quiz submitted!",
+      "quizSubmittedSuccessfully": "Quiz submitted successfully!",
+      "submitFailed": "Failed to submit quiz. Please try again.",
+      "incorrectAnswer": "Incorrect answer. Please try again."
+    },
+    "invalidNumber": "Please enter a valid number",
+    "placeholders": {
+      "numeric": "Enter numeric value",
+      "text": "Type your answer",
+      "longAnswer": "Type your answer..."
+    },
+    "questionOf": "Question {{current}} of {{total}}",
+    "passageLabel": "Passage:",
+    "showLess": "Show less",
+    "showMore": "Show more",
+    "questionLabel": "Question:",
+    "questionTextUnavailable": "Question text not available",
+    "buttons": {
+      "previous": "Previous",
+      "submitting": "Submitting...",
+      "finish": "Finish",
+      "next": "Next"
+    },
+    "answered": "Answered",
+    "notAnswered": "Not answered",
+    "incorrectTryAgain": "Incorrect. Try again."
+  },
+  "scormSlide": {
+    "errors": {
+      "dataNotFound": "SCORM slide data not found",
+      "launchPathNotConfigured": "SCORM launch path is not configured",
+      "loadFailed": "Failed to load SCORM content"
+    },
+    "loading": "Loading SCORM content...",
+    "urlNotAvailable": "SCORM content URL not available",
+    "defaultTitle": "SCORM Content"
+  },
+  "scratchSlide": {
+    "loadingProject": "Loading Scratch Project...",
+    "loadingInterface": "Loading Scratch interface...",
+    "openInScratch": "Open in Scratch",
+    "editInScratch": "Edit in Scratch",
+    "errors": {
+      "loadConfigFailed": "Failed to load project configuration",
+      "loadFailed": "Failed to load project"
+    },
+    "verification": {
+      "prompt": "Just ensuring that you are actively learning, please click the number <num>{{number}}</num> within <cnt>{{countdown}}</cnt> seconds."
+    },
+    "paused": {
+      "title": "Scratch Project Paused",
+      "body_one": "You've switched tabs {{count}} time. Please click below to resume your Scratch project.",
+      "body_other": "You've switched tabs {{count}} times. Please click below to resume your Scratch project.",
+      "resume": "Resume Project"
+    },
+    "header": {
+      "projectId": "Project ID: {{id}}"
+    },
+    "footer": {
+      "type": "Type: Scratch Project",
+      "embedType": "Embed Type: {{type}}",
+      "autoStart": "Auto Start",
+      "interactive": "Interactive"
+    }
+  },
+  "videoQuestionOverlay": {
+    "title": "Video Question",
+    "skipQuestion": "Skip Question",
+    "answerRequired": "Answer required to continue",
+    "questionLabel": "Question : ",
+    "questionContextAlt": "Question context {{index}}",
+    "placeholders": {
+      "oneWord": "Enter your answer",
+      "longAnswer": "Type your detailed answer here...",
+      "decimal": "Enter decimal value",
+      "integer": "Enter integer value"
+    },
+    "numericPad": {
+      "clear": "Clear"
+    },
+    "prompts": {
+      "mcqs": "Select one answer:",
+      "trueFalse": "Select True or False:",
+      "mcqm": "Select all that apply:",
+      "oneWord": "Enter your answer:",
+      "longAnswer": "Provide a detailed answer:",
+      "numeric": "Enter the numeric value:",
+      "generic": "Answer the question:"
+    },
+    "evaluation": {
+      "submittedSuccessfully": "Answer submitted successfully.",
+      "correctWellDone": "Correct! Well done.",
+      "incorrectAnswerIs": "Incorrect. The correct answer is: {{answer}}",
+      "notFound": "Not found",
+      "correctAllSelected": "Correct! You selected all the right answers.",
+      "incorrectAnswersAre": "Incorrect. The correct answers are: {{answers}}",
+      "explanationSuffix": "\n\nExplanation: {{explanation}}",
+      "imagePlaceholder": "[Image: {{content}}]"
+    },
+    "submitError": "There was an error processing your answer. Please try again.",
+    "correct": "Correct!",
+    "incorrect": "Incorrect",
+    "buttons": {
+      "continueVideo": "Continue Video",
+      "submitting": "Submitting...",
+      "submitAnswer": "Submit Answer"
+    }
+  },
+  "vimeoPlayer": {
+    "unavailable": {
+      "title": "This video is unavailable",
+      "body": "It could not be loaded. Please contact your admin."
+    },
+    "verification": {
+      "selectMiddleNumber": "Select the middle number to continue",
+      "timeRemaining": "Time remaining: {{seconds}}s"
+    }
+  },
+  "youtubePlayer": {
+    "verification": {
+      "title": "Active Focus Check",
+      "prompt": "Select <num>{{number}}</num> to maintain your learning streak.",
+      "closingIn": "Closing in {{seconds}}s"
+    },
+    "controls": {
+      "exitFullscreen": "Exit fullscreen",
+      "goToLive": "Go to live stream",
+      "live": "LIVE",
+      "speed": "Speed"
+    },
+    "manualPlay": {
+      "ariaLabel": "Start video",
+      "tapToStart": "Tap to Start Video",
+      "autoplayHint": "Video will play automatically"
+    },
+    "questionMarker": {
+      "title": "Question {{index}}",
+      "answered": " (Answered)",
+      "skippable": " (Skippable)",
+      "required": " (Required)",
+      "navigationDisabled": " (Navigation disabled)"
+    },
+    "live": {
+      "ended": "This session has ended",
+      "notStarted": "Starts at the scheduled time",
+      "endedHint": "There is nothing more to play. You can leave this page.",
+      "notStartedHint": "It will begin on its own when the class starts."
+    }
+  }
+}

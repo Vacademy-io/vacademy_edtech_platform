@@ -1,0 +1,8 @@
+{
+    "searchPlaceholder": "Search user by name or email...",
+    "selectUser": "Select user...",
+    "addParticipants": "Add participants...",
+    "typeToSearch": "Type at least 3 characters to search...",
+    "noUsersFound": "No users found.",
+    "removeUser": "Remove {{name}}"
+}

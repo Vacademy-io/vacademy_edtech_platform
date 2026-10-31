@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,22 +12,20 @@ import {
 import { useWeeklyAttendanceQuery } from "@/services/attendance/getWeeklyAttendance";
 import {
   ChartBar,
-  Fire,
   CaretRight,
   Check,
   X,
   Minus,
 } from "@phosphor-icons/react";
-import { isToday } from "date-fns";
+import { format, isToday, parseISO } from "date-fns";
 import { usePlayTheme } from "@/hooks/use-play-theme";
 import { useCleanerPlayTheme } from "@/hooks/use-cleaner-play-theme";
 import iconAttendance from "@/assets/cleaner-play/icon-attendance.webp";
-
-const PERIOD_LABELS: Record<AttendancePeriod, string> = {
-  "7d": "7 Days",
-  "30d": "30 Days",
-  "90d": "3 Months",
-};
+import {
+  getTerminology,
+  getTerminologyPlural,
+} from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 function getPercentageColor(pct: number) {
   if (pct >= 75) return "text-emerald-600";
@@ -49,17 +48,18 @@ function DayDot({
   label: string;
   isCurrentDay?: boolean;
 }) {
+  const { t } = useTranslation("dashboard");
   const isFuturePending = status === "PENDING" && !isCurrentDay;
   const title =
     status === "PRESENT"
-      ? "Present"
+      ? t("attendance.dayStatus.present")
       : status === "ABSENT"
-        ? "Absent"
+        ? t("attendance.dayStatus.absent")
         : status === "NO_CLASS"
-          ? "No class"
+          ? t("attendance.dayStatus.noClass")
           : isFuturePending
-            ? "Upcoming"
-            : "Not marked yet";
+            ? t("liveClasses.upcomingBadge")
+            : t("attendance.dayStatus.notMarked");
 
   return (
     <div className="flex flex-col items-center gap-1">
@@ -90,13 +90,16 @@ function DayDot({
 }
 
 /**
- * The streak is a game mechanic, not an attendance fact, so it rides the same
- * `gamification` widget flag as the XP / badges panel: an institute that turned
- * game mechanics off was still getting "start your streak" copy and a Fire
- * counter inside the attendance card. Defaults to on, so institutes that never
- * touched the flag are unaffected.
+ * Attendance for the dashboard rail.
+ *
+ * There is exactly one streak on the dashboard (the server's learning streak,
+ * shown by the hero / streak widgets), so this card no longer carries an
+ * attendance streak of its own (D9): the middle tile says how many of this
+ * week's class days the learner attended ("3 of 4 live classes this week").
  */
-export function AttendanceWidget({ showStreak = true }: { showStreak?: boolean } = {}) {
+export function AttendanceWidget() {
+  const { t } = useTranslation("dashboard");
+  const { t: tE } = useTranslation("dashboardEngagement");
   const [period, setPeriod] = useState<AttendancePeriod>("7d");
   const { data: stats, isLoading } = useAttendanceStats({ period });
   const { data: weeklyData, isLoading: isLoadingWeekly } =
@@ -104,6 +107,21 @@ export function AttendanceWidget({ showStreak = true }: { showStreak?: boolean }
   const navigate = useNavigate();
   const isPlay = usePlayTheme();
   const isCleanerPlay = useCleanerPlayTheme();
+  // Attendance tracks a learner's live classes, so the label follows the
+  // institute's renamed term for LiveSession, lowercased for mid-sentence use.
+  const liveClassTerm = getTerminology(
+    ContentTerms.LiveSession,
+    SystemTerms.LiveSession
+  ).toLocaleLowerCase();
+  const liveClassPluralTerm = getTerminologyPlural(
+    ContentTerms.LiveSession,
+    SystemTerms.LiveSession
+  ).toLocaleLowerCase();
+  const PERIOD_LABELS: Record<AttendancePeriod, string> = {
+    "7d": t("attendance.period7d"),
+    "30d": t("attendance.period30d"),
+    "90d": t("attendance.period90d"),
+  };
 
   if (isLoading && isLoadingWeekly) {
     return (
@@ -114,7 +132,7 @@ export function AttendanceWidget({ showStreak = true }: { showStreak?: boolean }
           "[.ui-play_&]:rounded-play-card-sm [.ui-play_&]:border-border [.ui-play_&]:bg-play-success-soft/50 [.ui-play_&]:shadow-play-soft-card"
         )}
       >
-        <CardContent className="p-4 space-y-4">
+        <CardContent className="p-card space-y-4">
           <Skeleton className="h-6 w-40" />
           <div className="flex gap-4">
             <Skeleton className="h-16 w-20" />
@@ -132,7 +150,6 @@ export function AttendanceWidget({ showStreak = true }: { showStreak?: boolean }
   }
 
   const pct = stats?.attendancePercentage ?? 0;
-  const streak = stats?.currentStreak ?? 0;
   const present = stats?.presentDays ?? 0;
   const total = stats?.totalClassDays ?? 0;
   // First-run state: nothing has been marked yet (no present days and no
@@ -142,19 +159,38 @@ export function AttendanceWidget({ showStreak = true }: { showStreak?: boolean }
     weeklyData?.days?.some(
       (d) => d.status === "PRESENT" || d.status === "ABSENT"
     ) ?? false;
-  const isEmpty =
-    (total === 0 && (!showStreak || streak === 0)) ||
-    (present === 0 && !hasMarkedDay);
+  const isEmpty = total === 0 || (present === 0 && !hasMarkedDay);
 
-  // Empty-state copy has to drop the streak framing too, else an institute with
-  // game mechanics off still reads "start your streak".
-  const emptyTitle = showStreak
-    ? "Attend today's class to start your streak"
-    : "Attend today's class to start tracking attendance";
-  const emptyBody = showStreak
-    ? "Your attendance stats and weekly streak will appear here."
-    : "Your attendance stats for the week will appear here.";
-  const statGridClass = showStreak ? "grid-cols-3" : "grid-cols-2";
+  // This week (Mon-Sun): class days so far and ahead, and how many attended.
+  const weekDays = weeklyData?.days ?? [];
+  const weekClassDays = weekDays.filter((d) => d.status !== "NO_CLASS").length;
+  const weekPresent = weekDays.filter((d) => d.status === "PRESENT").length;
+  const weekSummary =
+    weekClassDays > 0
+      ? tE("attendanceWeek.summary", {
+          present: weekPresent,
+          count: weekClassDays,
+          liveClass: weekClassDays === 1 ? liveClassTerm : liveClassPluralTerm,
+        })
+      : tE("attendanceWeek.none", { liveClass: liveClassPluralTerm });
+
+  // The chosen period is only an upper bound: the backend also floors results at
+  // the learner's enrolment date, and a studio may have no older sessions. When
+  // it does, "30 Days" and "3 Months" return the identical set and the card
+  // reads as broken — state the span actually covered so the numbers make sense.
+  const coverageNote =
+    !isEmpty && stats?.firstClassDay
+      ? t("attendance.coverageNote", {
+          count: total,
+          liveClass: liveClassTerm,
+          date: format(parseISO(stats.firstClassDay), "d MMM"),
+        })
+      : null;
+
+  // No streak framing: attendance has no streak of its own any more.
+  const emptyTitle = t("attendance.emptyTitleNoStreak", { liveClass: liveClassTerm });
+  const emptyBody = t("attendance.emptyBodyNoStreak");
+  const statGridClass = "grid-cols-3";
 
   const goToAttendance = () =>
     navigate({ to: "/learning-centre/attendance" });
@@ -179,7 +215,7 @@ export function AttendanceWidget({ showStreak = true }: { showStreak?: boolean }
               className="h-11 w-11 object-contain"
             />
             <p className="text-body font-black uppercase tracking-wide text-play-success-soft-ink">
-              Attendance
+              {t("attendance.title")}
             </p>
           </div>
           <div className="flex items-center gap-1">
@@ -207,7 +243,7 @@ export function AttendanceWidget({ showStreak = true }: { showStreak?: boolean }
                 e.stopPropagation();
                 goToAttendance();
               }}
-              aria-label="View attendance details"
+              aria-label={t("attendance.viewDetailsAria")}
               className="ms-1 rounded-full p-1 text-play-ink/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-play-ink/30"
             >
               <CaretRight size={14} weight="bold" />
@@ -227,28 +263,30 @@ export function AttendanceWidget({ showStreak = true }: { showStreak?: boolean }
                 <div className={cn("text-h3 font-black", getPercentageColor(pct))}>
                   {isLoading ? <Skeleton className="mx-auto h-8 w-12" /> : `${pct}%`}
                 </div>
-                <div className="mt-0.5 text-3xs font-bold text-play-ink/60">Overall</div>
+                <div className="mt-0.5 text-3xs font-bold text-play-ink/60">{t("attendance.overall")}</div>
               </div>
 
-              {showStreak && (
-                <div className="min-w-0 rounded-xl bg-white/70 px-2 py-2 text-center">
-                  <div className="flex items-center justify-center gap-1 text-h3 font-black text-play-ink">
-                    {isLoading ? (
-                      <Skeleton className="h-8 w-12" />
-                    ) : (
-                      <>
-                        <Fire
-                          size={18}
-                          weight="fill"
-                          className={streak > 0 ? "text-play-warn" : "text-play-ink/30"}
-                        />
-                        {streak}
-                      </>
-                    )}
-                  </div>
-                  <div className="mt-0.5 text-3xs font-bold text-play-ink/60">Streak</div>
+              <div
+                className="min-w-0 rounded-xl bg-white/70 px-2 py-2 text-center"
+                title={weekSummary}
+              >
+                <div className="text-h3 font-black tabular-nums text-play-ink">
+                  {isLoadingWeekly ? (
+                    <Skeleton className="mx-auto h-8 w-12" />
+                  ) : (
+                    <span aria-hidden>
+                      {weekPresent}
+                      {weekClassDays > 0 && (
+                        <span className="text-body text-play-ink/60">/{weekClassDays}</span>
+                      )}
+                    </span>
+                  )}
                 </div>
-              )}
+                <span className="sr-only">{weekSummary}</span>
+                <div className="mt-0.5 text-3xs font-bold text-play-ink/60" aria-hidden>
+                  {t("attendance.thisWeek")}
+                </div>
+              </div>
 
               <div className="min-w-0 rounded-xl bg-white/70 px-2 py-2 text-center">
                 <div className="text-h3 font-black text-play-ink">
@@ -261,7 +299,7 @@ export function AttendanceWidget({ showStreak = true }: { showStreak?: boolean }
                     </span>
                   )}
                 </div>
-                <div className="mt-0.5 text-3xs font-bold text-play-ink/60">Days Present</div>
+                <div className="mt-0.5 text-3xs font-bold text-play-ink/60">{t("attendance.daysPresent")}</div>
               </div>
             </div>
 
@@ -272,16 +310,25 @@ export function AttendanceWidget({ showStreak = true }: { showStreak?: boolean }
               />
             </div>
 
+            {coverageNote && (
+              <p className="text-3xs font-bold text-play-ink/60">{coverageNote}</p>
+            )}
+
             {weeklyData && (
-              <div className="flex justify-between px-1">
-                {weeklyData.days.map((day) => (
-                  <DayDot
-                    key={day.day}
-                    status={day.status}
-                    label={day.day}
-                    isCurrentDay={isToday(day.date)}
-                  />
-                ))}
+              <div className="space-y-1.5">
+                {/* Always the CURRENT Mon-Sun week — it does not follow the
+                    period toggle above, so it is labelled to say so. */}
+                <p className="text-3xs font-bold uppercase tracking-widest text-play-ink/60">{t("attendance.thisWeek")}</p>
+                <div className="flex justify-between px-1">
+                  {weeklyData.days.map((day) => (
+                    <DayDot
+                      key={day.day}
+                      status={day.status}
+                      label={day.day}
+                      isCurrentDay={isToday(day.date)}
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </>
@@ -306,7 +353,7 @@ export function AttendanceWidget({ showStreak = true }: { showStreak?: boolean }
               aria-hidden="true"
               className="h-11 w-11 object-contain"
             />
-            <p className="cp-heading text-body">Attendance</p>
+            <p className="cp-heading text-body">{t("attendance.title")}</p>
           </div>
           <div className="flex items-center gap-1">
             {!isEmpty &&
@@ -333,7 +380,7 @@ export function AttendanceWidget({ showStreak = true }: { showStreak?: boolean }
                 e.stopPropagation();
                 goToAttendance();
               }}
-              aria-label="View attendance details"
+              aria-label={t("attendance.viewDetailsAria")}
               className="cp-muted ms-1 rounded-full p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
             >
               <CaretRight size={14} weight="bold" />
@@ -353,28 +400,30 @@ export function AttendanceWidget({ showStreak = true }: { showStreak?: boolean }
                 <div className={cn("text-h3 font-bold", getPercentageColor(pct))}>
                   {isLoading ? <Skeleton className="mx-auto h-8 w-12" /> : `${pct}%`}
                 </div>
-                <div className="cp-muted mt-0.5 text-3xs">Overall</div>
+                <div className="cp-muted mt-0.5 text-3xs">{t("attendance.overall")}</div>
               </div>
 
-              {showStreak && (
-                <div className="min-w-0 rounded-xl bg-cp-bg-deep px-2 py-2 text-center">
-                  <div className="cp-heading flex items-center justify-center gap-1 text-h3">
-                    {isLoading ? (
-                      <Skeleton className="h-8 w-12" />
-                    ) : (
-                      <>
-                        <Fire
-                          size={18}
-                          weight="fill"
-                          className={streak > 0 ? "text-cp-gold" : "cp-muted"}
-                        />
-                        {streak}
-                      </>
-                    )}
-                  </div>
-                  <div className="cp-muted mt-0.5 text-3xs">Streak</div>
+              <div
+                className="min-w-0 rounded-xl bg-cp-bg-deep px-2 py-2 text-center"
+                title={weekSummary}
+              >
+                <div className="cp-heading text-h3 tabular-nums">
+                  {isLoadingWeekly ? (
+                    <Skeleton className="mx-auto h-8 w-12" />
+                  ) : (
+                    <span aria-hidden>
+                      {weekPresent}
+                      {weekClassDays > 0 && (
+                        <span className="cp-muted text-body">/{weekClassDays}</span>
+                      )}
+                    </span>
+                  )}
                 </div>
-              )}
+                <span className="sr-only">{weekSummary}</span>
+                <div className="cp-muted mt-0.5 text-3xs" aria-hidden>
+                  {t("attendance.thisWeek")}
+                </div>
+              </div>
 
               <div className="min-w-0 rounded-xl bg-cp-bg-deep px-2 py-2 text-center">
                 <div className="cp-heading text-h3">
@@ -387,7 +436,7 @@ export function AttendanceWidget({ showStreak = true }: { showStreak?: boolean }
                     </span>
                   )}
                 </div>
-                <div className="cp-muted mt-0.5 text-3xs">Days Present</div>
+                <div className="cp-muted mt-0.5 text-3xs">{t("attendance.daysPresent")}</div>
               </div>
             </div>
 
@@ -398,16 +447,25 @@ export function AttendanceWidget({ showStreak = true }: { showStreak?: boolean }
               />
             </div>
 
+            {coverageNote && (
+              <p className="cp-muted text-3xs">{coverageNote}</p>
+            )}
+
             {weeklyData && (
-              <div className="flex justify-between px-1">
-                {weeklyData.days.map((day) => (
-                  <DayDot
-                    key={day.day}
-                    status={day.status}
-                    label={day.day}
-                    isCurrentDay={isToday(day.date)}
-                  />
-                ))}
+              <div className="space-y-1.5">
+                {/* Always the CURRENT Mon-Sun week — it does not follow the
+                    period toggle above, so it is labelled to say so. */}
+                <p className="cp-muted text-3xs uppercase tracking-widest">{t("attendance.thisWeek")}</p>
+                <div className="flex justify-between px-1">
+                  {weeklyData.days.map((day) => (
+                    <DayDot
+                      key={day.day}
+                      status={day.status}
+                      label={day.day}
+                      isCurrentDay={isToday(day.date)}
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </>
@@ -433,7 +491,7 @@ export function AttendanceWidget({ showStreak = true }: { showStreak?: boolean }
             <div className="p-1.5 rounded-md bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-300">
               <ChartBar size={18} weight="duotone" />
             </div>
-            <CardTitle className="text-sm font-semibold">Attendance</CardTitle>
+            <CardTitle className="text-sm font-semibold">{t("attendance.title")}</CardTitle>
           </div>
           <div className="flex items-center gap-1">
             {!isEmpty &&
@@ -462,7 +520,7 @@ export function AttendanceWidget({ showStreak = true }: { showStreak?: boolean }
                 e.stopPropagation();
                 goToAttendance();
               }}
-              aria-label="View attendance details"
+              aria-label={t("attendance.viewDetailsAria")}
               className="ms-1 rounded-full p-1 text-muted-foreground transition-all duration-300 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:translate-x-0.5 group-hover:text-primary"
             >
               <CaretRight size={14} weight="bold" />
@@ -490,32 +548,29 @@ export function AttendanceWidget({ showStreak = true }: { showStreak?: boolean }
                   )}
                 </div>
                 <div className="text-caption text-muted-foreground mt-0.5">
-                  Overall
+                  {t("attendance.overall")}
                 </div>
               </div>
 
-              {/* Streak */}
-              {showStreak && (
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-foreground flex items-center justify-center gap-1">
-                    {isLoading ? (
-                      <Skeleton className="h-8 w-12" />
-                    ) : (
-                      <>
-                        <Fire
-                          size={20}
-                          weight="fill"
-                          className={streak > 0 ? "text-orange-500" : "text-slate-300"}
-                        />
-                        {streak}
-                      </>
-                    )}
-                  </div>
-                  <div className="text-caption text-muted-foreground mt-0.5">
-                    Streak
-                  </div>
+              {/* This week: attended class days of this week's class days */}
+              <div className="text-center" title={weekSummary}>
+                <div className="text-h2 font-bold tabular-nums text-foreground">
+                  {isLoadingWeekly ? (
+                    <Skeleton className="h-8 w-12 mx-auto" />
+                  ) : (
+                    <span aria-hidden>
+                      {weekPresent}
+                      {weekClassDays > 0 && (
+                        <span className="text-muted-foreground text-title">/{weekClassDays}</span>
+                      )}
+                    </span>
+                  )}
                 </div>
-              )}
+                <span className="sr-only">{weekSummary}</span>
+                <div className="text-caption text-muted-foreground mt-0.5" aria-hidden>
+                  {t("attendance.thisWeek")}
+                </div>
+              </div>
 
               {/* Present / Total */}
               <div className="text-center">
@@ -530,7 +585,7 @@ export function AttendanceWidget({ showStreak = true }: { showStreak?: boolean }
                   )}
                 </div>
                 <div className="text-caption text-muted-foreground mt-0.5">
-                  Days Present
+                  {t("attendance.daysPresent")}
                 </div>
               </div>
             </div>
@@ -544,16 +599,25 @@ export function AttendanceWidget({ showStreak = true }: { showStreak?: boolean }
             </div>
 
             {/* Weekly grid */}
+            {coverageNote && (
+              <p className="text-3xs text-muted-foreground">{coverageNote}</p>
+            )}
+
             {weeklyData && (
-              <div className="flex justify-between px-1">
-                {weeklyData.days.map((day) => (
-                  <DayDot
-                    key={day.day}
-                    status={day.status}
-                    label={day.day}
-                    isCurrentDay={isToday(day.date)}
-                  />
-                ))}
+              <div className="space-y-1.5">
+                {/* Always the CURRENT Mon-Sun week — it does not follow the
+                    period toggle above, so it is labelled to say so. */}
+                <p className="text-3xs uppercase tracking-widest text-muted-foreground">{t("attendance.thisWeek")}</p>
+                <div className="flex justify-between px-1">
+                  {weeklyData.days.map((day) => (
+                    <DayDot
+                      key={day.day}
+                      status={day.status}
+                      label={day.day}
+                      isCurrentDay={isToday(day.date)}
+                    />
+                  ))}
+                </div>
               </div>
             )}
           </>

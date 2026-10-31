@@ -1,0 +1,61 @@
+{
+    "heading": "Assets",
+    "subtitle": "Brochures, videos, price sheets and links the agent can share on WhatsApp.",
+    "hint": "Up to {{max}} items. The agent reads each description to decide when to send it.",
+    "noDescriptionWarning": "Add a description so the agent knows when to send this.",
+    "limitReached": "The assets list is full ({{max}} items). Remove one to add more.",
+    "loadFailed": "Could not load the assets.",
+    "empty": {
+        "title": "No assets yet",
+        "text": "Add brochures, videos or links. The agent sends the right one when asked, or alerts the counsellor if nothing fits."
+    },
+    "kind": {
+        "document": "Documents",
+        "image": "Images",
+        "video": "Videos",
+        "audio": "Audio",
+        "link": "Links"
+    },
+    "actions": {
+        "uploadFile": "Upload a file",
+        "addLink": "Add a link",
+        "edit": "Edit",
+        "remove": "Remove",
+        "retry": "Retry"
+    },
+    "dialog": {
+        "fileHeading": "Add a file",
+        "linkHeading": "Add a link",
+        "editHeading": "Edit material",
+        "title": "Title",
+        "titlePlaceholder": "e.g. 2026 course brochure",
+        "url": "Link (https)",
+        "description": "Description",
+        "descriptionPlaceholder": "e.g. Full 2026 brochure with fees and scholarship details. Send when someone asks for a brochure or course details.",
+        "descriptionHint": "Say what this is and when the agent should send it.",
+        "cancel": "Cancel",
+        "save": "Save",
+        "add": "Add"
+    },
+    "remove": {
+        "title": "Remove this material?",
+        "description": "\"{{title}}\" will no longer be sent by the agent.",
+        "confirm": "Remove",
+        "cancel": "Cancel"
+    },
+    "errors": {
+        "unsupported": "This file type cannot be sent on WhatsApp. Use a PDF or Office document, an image, a video or an audio file.",
+        "tooLarge": "{{kind}} must be {{mb}} MB or smaller for WhatsApp.",
+        "httpsOnly": "The link must start with https://",
+        "uploadFailed": "Upload failed. Please try again.",
+        "saveFailed": "Could not save. Please try again."
+    },
+    "toast": {
+        "added": "Material added.",
+        "addFailed": "Could not add the material.",
+        "updated": "Material updated.",
+        "updateFailed": "Could not update the material.",
+        "removed": "Material removed.",
+        "removeFailed": "Could not remove the material."
+    }
+}

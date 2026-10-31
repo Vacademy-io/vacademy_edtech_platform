@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface TestCaseResult {
     id?: string;
@@ -33,6 +34,8 @@ function safeParse(value: unknown): Record<string, unknown> | null {
  * hidden set), a pass-rate bar, per-test results, runtime metrics and source.
  */
 export function CodingAnswerReview({ studentResponse, correctOptions }: Props) {
+    const { t } = useTranslation('manageStudentsCodingAnswerReview');
+
     const r = useMemo(() => {
         const root = safeParse(studentResponse);
         return (root?.responseData as Record<string, unknown> | undefined) ?? {};
@@ -40,16 +43,29 @@ export function CodingAnswerReview({ studentResponse, correctOptions }: Props) {
 
     const tests = (r.testCaseResults as TestCaseResult[] | undefined) ?? [];
 
-    const hiddenTests = tests.filter((t) => t.visible === false);
-    const sampleTests = tests.filter((t) => t.visible !== false);
+    const hiddenTests = tests.filter((tc) => tc.visible === false);
+    const sampleTests = tests.filter((tc) => tc.visible !== false);
     const gradedTests = hiddenTests.length > 0 ? hiddenTests : sampleTests;
-    const gradedPassed = gradedTests.filter((t) => t.passed).length;
+    const gradedPassed = gradedTests.filter((tc) => tc.passed).length;
     const gradedTotal = gradedTests.length;
-    const gradedLabel = hiddenTests.length > 0 ? 'hidden' : 'sample';
-    const samplePassed = sampleTests.filter((t) => t.passed).length;
+    const gradedLabel =
+        hiddenTests.length > 0
+            ? t('testCases.gradedSuffixHidden')
+            : t('testCases.gradedSuffixSample');
+    const samplePassed = sampleTests.filter((tc) => tc.passed).length;
     const pct = gradedTotal > 0 ? Math.round((gradedPassed / gradedTotal) * 100) : 0;
 
     const verdict = (r.verdict as string) || '—';
+    // Known verdict enum (see submissions-api.ts `Verdict`); fall back to the
+    // raw value for anything unrecognized rather than swallowing it.
+    const verdictLabels: Record<string, string> = {
+        ACCEPTED: t('verdict.accepted'),
+        PARTIAL: t('verdict.partial'),
+        REJECTED: t('verdict.rejected'),
+        ERROR: t('verdict.error'),
+        TIMED_OUT: t('verdict.timedOut'),
+    };
+    const verdictLabel = verdict === '—' ? verdict : (verdictLabels[verdict] ?? verdict);
     const score = typeof r.score === 'number' ? (r.score as number) : null;
     const language = r.language as string | undefined;
     const pasteAttempts = (r.pasteAttemptCount as number | undefined) ?? 0;
@@ -89,7 +105,7 @@ export function CodingAnswerReview({ studentResponse, correctOptions }: Props) {
     if (!hasAnyData) {
         return (
             <p className="text-caption text-neutral-400">
-                No test-case data recorded for this submission.
+                {t('empty.noData')}
             </p>
         );
     }
@@ -97,9 +113,11 @@ export function CodingAnswerReview({ studentResponse, correctOptions }: Props) {
     return (
         <div className="flex w-full flex-col gap-3 text-body">
             <div className="flex flex-wrap items-center gap-2">
-                <span className={`font-semibold ${verdictColor}`}>{verdict}</span>
+                <span className={`font-semibold ${verdictColor}`}>{verdictLabel}</span>
                 {score !== null && (
-                    <span className="text-neutral-500">· {score.toFixed(2)} pts</span>
+                    <span className="text-neutral-500">
+                        · {t('score.points', { score: score.toFixed(2) })}
+                    </span>
                 )}
                 {language && (
                     <span className="rounded-sm bg-neutral-100 px-1.5 py-0.5 text-caption">
@@ -108,7 +126,7 @@ export function CodingAnswerReview({ studentResponse, correctOptions }: Props) {
                 )}
                 {pasteAttempts > 0 && (
                     <span className="rounded-sm bg-warning-100 px-1.5 py-0.5 text-caption text-warning-700">
-                        {pasteAttempts} paste attempt(s)
+                        {t('pasteAttempts', { count: pasteAttempts })}
                     </span>
                 )}
             </div>
@@ -116,7 +134,7 @@ export function CodingAnswerReview({ studentResponse, correctOptions }: Props) {
             {gradedTotal > 0 && (
                 <div className="flex flex-col gap-1">
                     <div className="flex flex-wrap items-center gap-2 text-caption">
-                        <span className="font-semibold">Test cases passed:</span>
+                        <span className="font-semibold">{t('testCases.passedLabel')}</span>
                         <span>
                             {gradedPassed}/{gradedTotal}
                         </span>
@@ -124,7 +142,11 @@ export function CodingAnswerReview({ studentResponse, correctOptions }: Props) {
                         <span className="text-neutral-400">{pct}%</span>
                         {hiddenTests.length > 0 && sampleTests.length > 0 && (
                             <span className="text-neutral-400">
-                                · Sample {samplePassed}/{sampleTests.length}
+                                ·{' '}
+                                {t('testCases.sampleBreakdown', {
+                                    passed: samplePassed,
+                                    total: sampleTests.length,
+                                })}
                             </span>
                         )}
                     </div>
@@ -138,30 +160,38 @@ export function CodingAnswerReview({ studentResponse, correctOptions }: Props) {
             {showRuntime && (
                 <div className="flex flex-wrap gap-4 text-caption text-neutral-500">
                     <span>
-                        <span className="font-semibold">Time:</span>{' '}
-                        {measuredTimeMs !== null ? `${measuredTimeMs} ms` : '—'}
-                        {allowedTimeMs !== null && ` / ${allowedTimeMs} ms allowed`}
+                        <span className="font-semibold">{t('runtime.timeLabel')}</span>{' '}
+                        {measuredTimeMs !== null
+                            ? t('runtime.timeValue', { value: measuredTimeMs })
+                            : '—'}
+                        {allowedTimeMs !== null &&
+                            ` ${t('runtime.timeAllowed', { value: allowedTimeMs })}`}
                     </span>
                     <span>
-                        <span className="font-semibold">Memory:</span>{' '}
-                        {measuredMemoryKb !== null ? `${measuredMemoryKb} KB` : '—'}
-                        {allowedMemoryKb !== null && ` / ${allowedMemoryKb} KB allowed`}
+                        <span className="font-semibold">{t('runtime.memoryLabel')}</span>{' '}
+                        {measuredMemoryKb !== null
+                            ? t('runtime.memoryValue', { value: measuredMemoryKb })
+                            : '—'}
+                        {allowedMemoryKb !== null &&
+                            ` ${t('runtime.memoryAllowed', { value: allowedMemoryKb })}`}
                     </span>
                 </div>
             )}
 
             {tests.length > 0 && (
                 <div className="flex flex-col gap-1">
-                    {tests.map((t, i) => (
-                        <div key={t.id || i} className="flex items-center gap-2 text-caption">
+                    {tests.map((testCase, i) => (
+                        <div key={testCase.id || i} className="flex items-center gap-2 text-caption">
                             <span
-                                className={t.passed ? 'text-success-600' : 'text-danger-600'}
+                                className={testCase.passed ? 'text-success-600' : 'text-danger-600'}
                             >
-                                {t.passed ? '✓' : '✗'}
+                                {testCase.passed ? '✓' : '✗'}
                             </span>
-                            <span>{t.label || `Test ${i + 1}`}</span>
-                            {t.visible === false && (
-                                <span className="text-neutral-400">(hidden)</span>
+                            <span>
+                                {testCase.label || t('testCases.fallbackLabel', { number: i + 1 })}
+                            </span>
+                            {testCase.visible === false && (
+                                <span className="text-neutral-400">{t('testCases.hiddenTag')}</span>
                             )}
                         </div>
                     ))}
@@ -171,7 +201,7 @@ export function CodingAnswerReview({ studentResponse, correctOptions }: Props) {
             {sourceCode && (
                 <details>
                     <summary className="cursor-pointer text-caption text-primary-500">
-                        Show submitted source code
+                        {t('sourceCode.toggleLabel')}
                     </summary>
                     <pre className="mt-1 max-h-64 overflow-auto rounded-md bg-neutral-50 p-2 text-caption">
                         {sourceCode}

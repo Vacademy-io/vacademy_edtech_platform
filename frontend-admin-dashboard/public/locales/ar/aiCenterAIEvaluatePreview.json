@@ -1,0 +1,18 @@
+{
+    "failedDialog": {
+        "heading": "فشل تحميل الأسئلة",
+        "clickPrefix": "انقر",
+        "hereLink": "هنا",
+        "retrySuffix": "لإعادة المحاولة"
+    },
+    "retryButton": {
+        "label": "إعادة المحاولة"
+    },
+    "viewReviewButton": {
+        "label": "عرض المراجعة",
+        "loading": "جارٍ التحميل…"
+    },
+    "toast": {
+        "noDataExists": "لا توجد بيانات!"
+    }
+}

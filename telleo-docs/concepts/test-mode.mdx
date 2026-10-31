@@ -1,0 +1,31 @@
+---
+title: "Test mode"
+description: "Build and test your integration without calling anyone."
+---
+
+Add `"test": true` to `POST /v1/calls` or `POST /v1/batches`, and Telleo runs the whole flow **without dialling**:
+
+- No phone rings and no line is used.
+- No credits are used, and the [limits](/concepts/queue-and-limits) do not apply.
+- The call completes at once: the response already has `status: "completed"` and a sample `outcome`.
+- Your webhook receives `call.completed` for it, signed exactly like a real one.
+- It appears in `GET /v1/calls` with `"test": true`, and you can repeat a test to the same number as often as you like.
+- Up to 500 test calls per 24 hours per account; beyond that, test requests get `429 test_limit_reached`.
+
+```bash
+curl https://api.telleo.ai/v1/calls \
+  -H "X-API-Key: $TELLEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"agent_id": "17ea33d2-…", "phone_number": "+919876543210", "contact": {"name": "Test"}, "test": true}'
+```
+
+Your validation still runs: a bad phone number, an unknown agent or an over-long variable fails exactly as it would for a real call. That makes test mode the right way to check your payloads.
+
+<Note>
+The sample outcome contains placeholder answers, not your agent's questions, and an empty transcript. Use a real call to your own phone to see what your agent actually returns.
+</Note>
+
+## What test mode does not cover
+
+- How your agent sounds and what it says. Call your own number.
+- Calling hours, line limits and queue timing. Test calls skip the queue.

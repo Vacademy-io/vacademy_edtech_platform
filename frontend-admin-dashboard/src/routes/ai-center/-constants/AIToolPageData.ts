@@ -1,3 +1,5 @@
+import type { TFunction } from 'i18next';
+
 export interface ToolInstructionsType {
     stepHeading: string;
     steps: string[];
@@ -17,428 +19,461 @@ export interface AIToolPageDataType {
     [key: string]: ToolDataType;
 }
 
-export const AIToolPageData: AIToolPageDataType = {
+/**
+ * Builds the AI tool page copy (headings + step-by-step instructions) shown on
+ * each ai-center tool page. Module-scope data needs the translation function
+ * passed in explicitly, so this is a factory rather than a plain constant —
+ * call it from a component with `t` from `useTranslation('aiCenterAIToolPageData')`.
+ */
+export const buildAIToolPageData = (t: TFunction): AIToolPageDataType => ({
     assessment: {
         key: 'assessment',
-        heading: 'Vsmart Upload',
-        instructionsHeading:
-            'Follow these simple steps to generate a question paper from your PDF, Word, or PPT files:',
+        heading: t('aiCenterAIToolPageData:tools.assessment.heading'),
+        instructionsHeading: t('aiCenterAIToolPageData:tools.assessment.instructionsHeading'),
         instructions: [
             {
-                stepHeading: 'Upload Your File',
+                stepHeading: t('aiCenterAIToolPageData:tools.assessment.instructions.0.stepHeading'),
                 steps: [
-                    'Click on Upload File',
-                    'Supported formats: .pdf, .doc, .docx, .ppt, .pptx',
+                    t('aiCenterAIToolPageData:tools.assessment.instructions.0.steps.0'),
+                    t('aiCenterAIToolPageData:tools.assessment.instructions.0.steps.1'),
                 ],
             },
             {
-                stepHeading: 'Choose How You Want to Generate Questions',
+                stepHeading: t('aiCenterAIToolPageData:tools.assessment.instructions.1.stepHeading'),
                 steps: [
-                    'Option 1: Generate from Entire File The tool will scan the full document and create questions from all the content',
-                    "Option 2: Copy Specific Text. Manually paste a section of the content that you'd like to generate questions from.",
+                    t('aiCenterAIToolPageData:tools.assessment.instructions.1.steps.0'),
+                    t('aiCenterAIToolPageData:tools.assessment.instructions.1.steps.1'),
                 ],
             },
             {
-                stepHeading: 'Customize the Output',
-                stepSubHeading:
-                    'After selecting the content source, specify the following details:',
-                steps: ['Generate a set of questions by adding topics'],
+                stepHeading: t('aiCenterAIToolPageData:tools.assessment.instructions.2.stepHeading'),
+                stepSubHeading: t(
+                    'aiCenterAIToolPageData:tools.assessment.instructions.2.stepSubHeading'
+                ),
+                steps: [t('aiCenterAIToolPageData:tools.assessment.instructions.2.steps.0')],
             },
             {
-                stepHeading: 'Click Generate',
+                stepHeading: t('aiCenterAIToolPageData:tools.assessment.instructions.3.stepHeading'),
                 steps: [
-                    'Sit back while the AI processes your input. This might take a few seconds',
-                    'You can continue working or navigate away — the system will keep working in the background.',
+                    t('aiCenterAIToolPageData:tools.assessment.instructions.3.steps.0'),
+                    t('aiCenterAIToolPageData:tools.assessment.instructions.3.steps.1'),
                 ],
             },
             {
-                stepHeading: 'View Status in My AI Task',
+                stepHeading: t('aiCenterAIToolPageData:tools.assessment.instructions.4.stepHeading'),
                 steps: [
-                    'Go to the My AI Task tab to track the progress of your generated papers.',
-                    "Once ready, you'll see the status change to Completed.",
+                    t('aiCenterAIToolPageData:tools.assessment.instructions.4.steps.0'),
+                    t('aiCenterAIToolPageData:tools.assessment.instructions.4.steps.1'),
                 ],
             },
             {
-                stepHeading: 'Export & Use',
+                stepHeading: t('aiCenterAIToolPageData:tools.assessment.instructions.5.stepHeading'),
                 steps: [
-                    'Once generated, click on Export to download your question paper in PDF or DOC format.',
-                    'You are now ready to print, share, or upload it into your assessment system.',
+                    t('aiCenterAIToolPageData:tools.assessment.instructions.5.steps.0'),
+                    t('aiCenterAIToolPageData:tools.assessment.instructions.5.steps.1'),
                 ],
             },
         ],
     },
     audio: {
         key: 'audio',
-        heading: 'Vsmart Audio',
-        instructionsHeading: 'How to Use Vsmart Audio',
+        heading: t('aiCenterAIToolPageData:tools.audio.heading'),
+        instructionsHeading: t('aiCenterAIToolPageData:tools.audio.instructionsHeading'),
         instructions: [
             {
-                stepHeading: 'Upload Your Audio File',
-                steps: ['Click on Upload File', 'Supported formats: WAV, FLAC, MP3, AAC, M4A'],
-            },
-            {
-                stepHeading: 'Set Your Preferences',
-                stepSubHeading: 'Fill in the details to shape your question paper:',
+                stepHeading: t('aiCenterAIToolPageData:tools.audio.instructions.0.stepHeading'),
                 steps: [
-                    'Number of Questions (e.g., 5, 10, 20...)',
-                    'Level (e.g., Beginner, Intermediate, Advanced)',
-                    'Topic or Focus Area (Optional)',
-                    'Question Type (MCQs, Short Answer, Descriptive, Mixed)',
-                    'Question Language (Choose from supported languages)',
+                    t('aiCenterAIToolPageData:tools.audio.instructions.0.steps.0'),
+                    t('aiCenterAIToolPageData:tools.audio.instructions.0.steps.1'),
                 ],
             },
             {
-                stepHeading: 'Click Generate',
+                stepHeading: t('aiCenterAIToolPageData:tools.audio.instructions.1.stepHeading'),
+                stepSubHeading: t('aiCenterAIToolPageData:tools.audio.instructions.1.stepSubHeading'),
                 steps: [
-                    'Once your file is uploaded and details are in, hit the Generate button. The AI will process the audio and start crafting questions.',
-                    'This may take some time, depending on the length of your audio. Feel free to explore or come back later.',
+                    t('aiCenterAIToolPageData:tools.audio.instructions.1.steps.0'),
+                    t('aiCenterAIToolPageData:tools.audio.instructions.1.steps.1'),
+                    t('aiCenterAIToolPageData:tools.audio.instructions.1.steps.2'),
+                    t('aiCenterAIToolPageData:tools.audio.instructions.1.steps.3'),
+                    t('aiCenterAIToolPageData:tools.audio.instructions.1.steps.4'),
                 ],
             },
             {
-                stepHeading: 'View Status in My AI Task',
+                stepHeading: t('aiCenterAIToolPageData:tools.audio.instructions.2.stepHeading'),
                 steps: [
-                    'Go to the My AI Task tab to track the progress of your generated papers.',
-                    "Once ready, you'll see the status change to Completed.",
+                    t('aiCenterAIToolPageData:tools.audio.instructions.2.steps.0'),
+                    t('aiCenterAIToolPageData:tools.audio.instructions.2.steps.1'),
                 ],
             },
             {
-                stepHeading: 'Export & Use',
+                stepHeading: t('aiCenterAIToolPageData:tools.audio.instructions.3.stepHeading'),
                 steps: [
-                    'Once generated, click on Export to download your question paper in PDF or DOC format.',
-                    "You're now ready to print, share, or upload it into your assessment system.",
+                    t('aiCenterAIToolPageData:tools.audio.instructions.3.steps.0'),
+                    t('aiCenterAIToolPageData:tools.audio.instructions.3.steps.1'),
+                ],
+            },
+            {
+                stepHeading: t('aiCenterAIToolPageData:tools.audio.instructions.4.stepHeading'),
+                steps: [
+                    t('aiCenterAIToolPageData:tools.audio.instructions.4.steps.0'),
+                    t('aiCenterAIToolPageData:tools.audio.instructions.4.steps.1'),
                 ],
             },
         ],
     },
     text: {
         key: 'text',
-        heading: 'Vsmart Topics',
-        instructionsHeading: 'How to Use Vsmart Topics',
+        heading: t('aiCenterAIToolPageData:tools.text.heading'),
+        instructionsHeading: t('aiCenterAIToolPageData:tools.text.instructionsHeading'),
         instructions: [
             {
-                stepHeading: 'Click on Generate Questions',
-                steps: ['Start by clicking the Generate Questions button to open the prompt panel'],
+                stepHeading: t('aiCenterAIToolPageData:tools.text.instructions.0.stepHeading'),
+                steps: [t('aiCenterAIToolPageData:tools.text.instructions.0.steps.0')],
             },
             {
-                stepHeading: 'Enter Your Prompt',
+                stepHeading: t('aiCenterAIToolPageData:tools.text.instructions.1.stepHeading'),
                 steps: [
-                    'Describe what you want questions for – be as specific or broad as you like.',
-                    'Example: "Generate a set of questions covering all the principles of photosynthesis, including the process, factors affecting it, and its importance in the ecosystem. Focus on conceptual understanding and application"',
+                    t('aiCenterAIToolPageData:tools.text.instructions.1.steps.0'),
+                    t('aiCenterAIToolPageData:tools.text.instructions.1.steps.1'),
                 ],
             },
             {
-                stepHeading: 'Add Generation Preferences',
-                stepSubHeading:
-                    'Fine-tune your question paper by filling in the following details:',
+                stepHeading: t('aiCenterAIToolPageData:tools.text.instructions.2.stepHeading'),
+                stepSubHeading: t('aiCenterAIToolPageData:tools.text.instructions.2.stepSubHeading'),
                 steps: [
-                    'Number of Questions (e.g., 5, 10, 20...)',
-                    'Level (e.g., Easy, Medium, Hard, Intermediate...)',
-                    'Topic or Chapter Name (Optional)',
-                    'Question Type (MCQs, Short Answer, Descriptive, Mixed)',
-                    'Question Language (Choose from supported languages)',
+                    t('aiCenterAIToolPageData:tools.text.instructions.2.steps.0'),
+                    t('aiCenterAIToolPageData:tools.text.instructions.2.steps.1'),
+                    t('aiCenterAIToolPageData:tools.text.instructions.2.steps.2'),
+                    t('aiCenterAIToolPageData:tools.text.instructions.2.steps.3'),
+                    t('aiCenterAIToolPageData:tools.text.instructions.2.steps.4'),
                 ],
             },
             {
-                stepHeading: 'Click Generate',
+                stepHeading: t('aiCenterAIToolPageData:tools.text.instructions.3.stepHeading'),
                 steps: [
-                    "Once you're ready, click the Generate button. The AI will start working on your custom paper.",
-                    'You can stay on the page or continue exploring — generation happens in the background.',
+                    t('aiCenterAIToolPageData:tools.text.instructions.3.steps.0'),
+                    t('aiCenterAIToolPageData:tools.text.instructions.3.steps.1'),
                 ],
             },
             {
-                stepHeading: 'View Status in My AI Task',
+                stepHeading: t('aiCenterAIToolPageData:tools.text.instructions.4.stepHeading'),
                 steps: [
-                    'Go to the My AI Task tab to track the progress of your generated papers.',
-                    "Once ready, you'll see the status change to Completed.",
+                    t('aiCenterAIToolPageData:tools.text.instructions.4.steps.0'),
+                    t('aiCenterAIToolPageData:tools.text.instructions.4.steps.1'),
                 ],
             },
             {
-                stepHeading: 'Export & Use',
+                stepHeading: t('aiCenterAIToolPageData:tools.text.instructions.5.stepHeading'),
                 steps: [
-                    'Once generated, click on Export to download your question paper in PDF or DOC format.',
-                    "You're now ready to print, share, or upload it into your assessment system.",
+                    t('aiCenterAIToolPageData:tools.text.instructions.5.steps.0'),
+                    t('aiCenterAIToolPageData:tools.text.instructions.5.steps.1'),
                 ],
             },
         ],
     },
     chat: {
         key: 'chat',
-        heading: 'Vsmart Chat',
-        instructionsHeading: 'How to Use Vsmart Upload',
-        instructionsSubHeading:
-            'This tool allows you to upload educational files — like PDF, DOC, or PPT — and automatically generates questions from the content. Then, with a built-in chat interface, you can customize those questions using simple prompts.',
+        heading: t('aiCenterAIToolPageData:tools.chat.heading'),
+        instructionsHeading: t('aiCenterAIToolPageData:tools.chat.instructionsHeading'),
+        instructionsSubHeading: t('aiCenterAIToolPageData:tools.chat.instructionsSubHeading'),
         instructions: [
             {
-                stepHeading: 'Upload Your File',
-                steps: ['Click on upload file', 'Supported formats: pdf, doc, docx, ppt, pptx'],
-            },
-            {
-                stepHeading: 'Let AI Generate Questions',
+                stepHeading: t('aiCenterAIToolPageData:tools.chat.instructions.0.stepHeading'),
                 steps: [
-                    'Once uploaded, the AI scans the content and automatically generates a draft question paper based on the material',
+                    t('aiCenterAIToolPageData:tools.chat.instructions.0.steps.0'),
+                    t('aiCenterAIToolPageData:tools.chat.instructions.0.steps.1'),
                 ],
             },
             {
-                stepHeading: 'Modify Using Chat',
-                steps: [
-                    'When the questions are ready, you can chat with the AI to refine them:',
-                    'Ask things like:',
-                    '"Add more questions/multiple choice"',
-                    '"Add more higher-order thinking questions"',
-                    '"Simplify question 3"',
-                    '"Include more questions from the second half of the document"',
-                ],
-                stepFooter: "It's as easy as texting — no technical skills needed.",
+                stepHeading: t('aiCenterAIToolPageData:tools.chat.instructions.1.stepHeading'),
+                steps: [t('aiCenterAIToolPageData:tools.chat.instructions.1.steps.0')],
             },
             {
-                stepHeading: 'View Status in My AI Task',
+                stepHeading: t('aiCenterAIToolPageData:tools.chat.instructions.2.stepHeading'),
                 steps: [
-                    'You can go to the My AI Tasks tab to check all the question papers generated.',
-                    'There, you can review, regenerate, or export them at any time.',
+                    t('aiCenterAIToolPageData:tools.chat.instructions.2.steps.0'),
+                    t('aiCenterAIToolPageData:tools.chat.instructions.2.steps.1'),
+                    t('aiCenterAIToolPageData:tools.chat.instructions.2.steps.2'),
+                    t('aiCenterAIToolPageData:tools.chat.instructions.2.steps.3'),
+                    t('aiCenterAIToolPageData:tools.chat.instructions.2.steps.4'),
+                    t('aiCenterAIToolPageData:tools.chat.instructions.2.steps.5'),
+                ],
+                stepFooter: t('aiCenterAIToolPageData:tools.chat.instructions.2.stepFooter'),
+            },
+            {
+                stepHeading: t('aiCenterAIToolPageData:tools.chat.instructions.3.stepHeading'),
+                steps: [
+                    t('aiCenterAIToolPageData:tools.chat.instructions.3.steps.0'),
+                    t('aiCenterAIToolPageData:tools.chat.instructions.3.steps.1'),
                 ],
             },
         ],
     },
     question: {
         key: 'question',
-        heading: 'Vsmart Extract',
-        instructionsHeading: 'How to Use Vsmart Extract',
-        instructionsSubHeading:
-            'This tool reads your uploaded content and automatically pulls out relevant questions — perfect for reusing material from notes, textbooks, or presentations.',
+        heading: t('aiCenterAIToolPageData:tools.question.heading'),
+        instructionsHeading: t('aiCenterAIToolPageData:tools.question.instructionsHeading'),
+        instructionsSubHeading: t('aiCenterAIToolPageData:tools.question.instructionsSubHeading'),
         instructions: [
             {
-                stepHeading: 'Upload Your File',
-                steps: ['Click on upload file', 'Supported formats: pdf, doc, docx, ppt, pptx'],
-            },
-            {
-                stepHeading: 'Let the AI Do the Work',
+                stepHeading: t('aiCenterAIToolPageData:tools.question.instructions.0.stepHeading'),
                 steps: [
-                    'Once uploaded, the tool begins processing your file to identify and extract potential questions.',
+                    t('aiCenterAIToolPageData:tools.question.instructions.0.steps.0'),
+                    t('aiCenterAIToolPageData:tools.question.instructions.0.steps.1'),
                 ],
             },
             {
-                stepHeading: 'View Status in My AI Task',
+                stepHeading: t('aiCenterAIToolPageData:tools.question.instructions.1.stepHeading'),
+                steps: [t('aiCenterAIToolPageData:tools.question.instructions.1.steps.0')],
+            },
+            {
+                stepHeading: t('aiCenterAIToolPageData:tools.question.instructions.2.stepHeading'),
                 steps: [
-                    'Go to the My AI Task tab to track the progress of your generated papers.',
-                    "Once ready, you'll see the status change to Completed.",
+                    t('aiCenterAIToolPageData:tools.question.instructions.2.steps.0'),
+                    t('aiCenterAIToolPageData:tools.question.instructions.2.steps.1'),
                 ],
             },
             {
-                stepHeading: 'Refine with Prompts (Optional)',
+                stepHeading: t('aiCenterAIToolPageData:tools.question.instructions.3.stepHeading'),
                 steps: [
-                    'Use the Regenerate option to generate additional questions.',
-                    'Modify existing questions using a custom prompt to change type, complexity, or format.',
+                    t('aiCenterAIToolPageData:tools.question.instructions.3.steps.0'),
+                    t('aiCenterAIToolPageData:tools.question.instructions.3.steps.1'),
                 ],
             },
             {
-                stepHeading: 'Export & Use',
+                stepHeading: t('aiCenterAIToolPageData:tools.question.instructions.4.stepHeading'),
                 steps: [
-                    'Once satisfied, click Export to download your question paper in PDF or DOC format.',
-                    "You're now ready to print, share, or upload it into your assessment system.",
+                    t('aiCenterAIToolPageData:tools.question.instructions.4.steps.0'),
+                    t('aiCenterAIToolPageData:tools.question.instructions.4.steps.1'),
                 ],
             },
         ],
     },
     image: {
         key: 'image',
-        heading: 'Vsmart Image',
-        instructionsHeading: 'How to Use Vsmart Image',
-        instructionsSubHeading:
-            'This tool lets you upload an image of content — handwritten notes, printed pages, textbook snapshots — and automatically extracts relevant questions from it.',
+        heading: t('aiCenterAIToolPageData:tools.image.heading'),
+        instructionsHeading: t('aiCenterAIToolPageData:tools.image.instructionsHeading'),
+        instructionsSubHeading: t('aiCenterAIToolPageData:tools.image.instructionsSubHeading'),
         instructions: [
             {
-                stepHeading: 'Upload Your Image',
-                steps: ['Click on Upload', 'Supported formats: jpg, jpeg, png'],
-            },
-            {
-                stepHeading: 'Let the AI Process It',
+                stepHeading: t('aiCenterAIToolPageData:tools.image.instructions.0.stepHeading'),
                 steps: [
-                    'Once uploaded, the tool scans the image, reads the text, and begins generating relevant questions from the extracted content',
+                    t('aiCenterAIToolPageData:tools.image.instructions.0.steps.0'),
+                    t('aiCenterAIToolPageData:tools.image.instructions.0.steps.1'),
                 ],
             },
             {
-                stepHeading: 'View Status in My AI Task',
+                stepHeading: t('aiCenterAIToolPageData:tools.image.instructions.1.stepHeading'),
+                steps: [t('aiCenterAIToolPageData:tools.image.instructions.1.steps.0')],
+            },
+            {
+                stepHeading: t('aiCenterAIToolPageData:tools.image.instructions.2.stepHeading'),
                 steps: [
-                    'Go to the My AI Task tab to track the progress of your generated papers',
-                    "Once ready, you'll see the status change to Completed",
+                    t('aiCenterAIToolPageData:tools.image.instructions.2.steps.0'),
+                    t('aiCenterAIToolPageData:tools.image.instructions.2.steps.1'),
                 ],
             },
             {
-                stepHeading: 'Refine with Prompts (Optional)',
+                stepHeading: t('aiCenterAIToolPageData:tools.image.instructions.3.stepHeading'),
                 steps: [
-                    'Use the Regenerate option to generate additional questions',
-                    'Modify existing questions using a custom prompt to change type, complexity, or format',
+                    t('aiCenterAIToolPageData:tools.image.instructions.3.steps.0'),
+                    t('aiCenterAIToolPageData:tools.image.instructions.3.steps.1'),
                 ],
             },
             {
-                stepHeading: 'Export & Use',
+                stepHeading: t('aiCenterAIToolPageData:tools.image.instructions.4.stepHeading'),
                 steps: [
-                    'Once satisfied, click Export to download your question paper in PDF or DOC format',
-                    "You're now ready to print, share, or upload it into your assessment system",
+                    t('aiCenterAIToolPageData:tools.image.instructions.4.steps.0'),
+                    t('aiCenterAIToolPageData:tools.image.instructions.4.steps.1'),
                 ],
             },
         ],
     },
     sortSplitPdf: {
         key: 'sortSplitPdf',
-        heading: 'Vsmart Organizer',
-        instructionsHeading: 'How to Use Vsmart Organizer',
-        instructionsSubHeading:
-            'Upload a PDF, PPT, or DOC file to automatically generate and group questions by topic — perfect for chapter-wise tests or syllabus-aligned assessments.',
+        heading: t('aiCenterAIToolPageData:tools.sortSplitPdf.heading'),
+        instructionsHeading: t('aiCenterAIToolPageData:tools.sortSplitPdf.instructionsHeading'),
+        instructionsSubHeading: t(
+            'aiCenterAIToolPageData:tools.sortSplitPdf.instructionsSubHeading'
+        ),
         instructions: [
             {
-                stepHeading: 'Upload Your File',
-                steps: ['Click on Upload File', 'Supported formats: pdf, doc, docx, ppt, pptx'],
-            },
-            {
-                stepHeading: 'Let the AI Organize It',
+                stepHeading: t('aiCenterAIToolPageData:tools.sortSplitPdf.instructions.0.stepHeading'),
                 steps: [
-                    'The tool analyzes the content, creates relevant questions, and automatically arranges them under specific topic headings',
+                    t('aiCenterAIToolPageData:tools.sortSplitPdf.instructions.0.steps.0'),
+                    t('aiCenterAIToolPageData:tools.sortSplitPdf.instructions.0.steps.1'),
                 ],
             },
             {
-                stepHeading: 'Click Regenerate (Optional)',
+                stepHeading: t('aiCenterAIToolPageData:tools.sortSplitPdf.instructions.1.stepHeading'),
+                steps: [t('aiCenterAIToolPageData:tools.sortSplitPdf.instructions.1.steps.0')],
+            },
+            {
+                stepHeading: t('aiCenterAIToolPageData:tools.sortSplitPdf.instructions.2.stepHeading'),
+                steps: [t('aiCenterAIToolPageData:tools.sortSplitPdf.instructions.2.steps.0')],
+            },
+            {
+                stepHeading: t('aiCenterAIToolPageData:tools.sortSplitPdf.instructions.3.stepHeading'),
                 steps: [
-                    'Want a different set of questions or structure? Use the Regenerate button and add a custom prompt to tweak order, complexity, or question style.',
+                    t('aiCenterAIToolPageData:tools.sortSplitPdf.instructions.3.steps.0'),
+                    t('aiCenterAIToolPageData:tools.sortSplitPdf.instructions.3.steps.1'),
                 ],
             },
             {
-                stepHeading: 'View Status in My AI Task',
+                stepHeading: t('aiCenterAIToolPageData:tools.sortSplitPdf.instructions.4.stepHeading'),
                 steps: [
-                    'Go to the My AI Task tab to track the progress of your generated papers.',
-                    "Once ready, you'll see the status change to Completed.",
-                ],
-            },
-            {
-                stepHeading: 'Export & Use',
-                steps: [
-                    'Once generated, click on Export to download your question paper in PDF or DOC format.',
-                    "You're now ready to print, share, or upload it into your assessment system.",
+                    t('aiCenterAIToolPageData:tools.sortSplitPdf.instructions.4.steps.0'),
+                    t('aiCenterAIToolPageData:tools.sortSplitPdf.instructions.4.steps.1'),
                 ],
             },
         ],
     },
     sortTopicsPdf: {
         key: 'sortTopicsPdf',
-        heading: 'Vsmart Sorter',
-        instructionsHeading: 'How to Use Vsmart Sorter',
-        instructionsSubHeading:
-            'Organize your question paper with precision — sort by topics and define the exact order using simple prompts.',
+        heading: t('aiCenterAIToolPageData:tools.sortTopicsPdf.heading'),
+        instructionsHeading: t('aiCenterAIToolPageData:tools.sortTopicsPdf.instructionsHeading'),
+        instructionsSubHeading: t(
+            'aiCenterAIToolPageData:tools.sortTopicsPdf.instructionsSubHeading'
+        ),
         instructions: [
             {
-                stepHeading: 'Upload Your File',
-                steps: ['Click on Upload File', 'Supported formats: pdf, doc, docx, ppt, pptx'],
-            },
-            {
-                stepHeading: 'AI Generates & Sorts Questions',
+                stepHeading: t(
+                    'aiCenterAIToolPageData:tools.sortTopicsPdf.instructions.0.stepHeading'
+                ),
                 steps: [
-                    'Once uploaded, the tool reads the content, generates questions, and groups them under relevant topics or chapters',
+                    t('aiCenterAIToolPageData:tools.sortTopicsPdf.instructions.0.steps.0'),
+                    t('aiCenterAIToolPageData:tools.sortTopicsPdf.instructions.0.steps.1'),
                 ],
             },
             {
-                stepHeading: 'Rearrange Using Prompts',
+                stepHeading: t(
+                    'aiCenterAIToolPageData:tools.sortTopicsPdf.instructions.1.stepHeading'
+                ),
+                steps: [t('aiCenterAIToolPageData:tools.sortTopicsPdf.instructions.1.steps.0')],
+            },
+            {
+                stepHeading: t(
+                    'aiCenterAIToolPageData:tools.sortTopicsPdf.instructions.2.stepHeading'
+                ),
                 steps: [
-                    'Want specific questions to appear first? Just type your instruction.',
-                    'Example: "I want the 5th and 6th questions from \'Plant Nutrition\' to be the first two questions in the paper"',
+                    t('aiCenterAIToolPageData:tools.sortTopicsPdf.instructions.2.steps.0'),
+                    t('aiCenterAIToolPageData:tools.sortTopicsPdf.instructions.2.steps.1'),
                 ],
             },
             {
-                stepHeading: 'View Status in My AI Task',
+                stepHeading: t(
+                    'aiCenterAIToolPageData:tools.sortTopicsPdf.instructions.3.stepHeading'
+                ),
                 steps: [
-                    'Go to the My AI Task tab to track the progress of your generated papers.',
-                    "Once ready, you'll see the status change to Completed.",
+                    t('aiCenterAIToolPageData:tools.sortTopicsPdf.instructions.3.steps.0'),
+                    t('aiCenterAIToolPageData:tools.sortTopicsPdf.instructions.3.steps.1'),
                 ],
             },
             {
-                stepHeading: 'Export & Use',
+                stepHeading: t(
+                    'aiCenterAIToolPageData:tools.sortTopicsPdf.instructions.4.stepHeading'
+                ),
                 steps: [
-                    'Once generated, click on Export to download your question paper in PDF or DOC format.',
-                    "You're now ready to print, share, or upload it into your assessment system.",
+                    t('aiCenterAIToolPageData:tools.sortTopicsPdf.instructions.4.steps.0'),
+                    t('aiCenterAIToolPageData:tools.sortTopicsPdf.instructions.4.steps.1'),
                 ],
             },
         ],
     },
     planLecture: {
         key: 'planLecture',
-        heading: 'Vsmart Lecturer',
-        instructionsHeading: 'How to Use Vsmart Sorter',
-        instructionsSubHeading:
-            'This tool helps you generate a complete lecture plan tailored to your teaching style, topics, language, and timeframe — including optional in-between questions and end-of-lecture assignments.',
+        heading: t('aiCenterAIToolPageData:tools.planLecture.heading'),
+        // NOTE: source copy says "How to Use Vsmart Sorter" (pre-existing content
+        // bug — should read "Vsmart Lecturer"). Preserved verbatim; see catalog.
+        instructionsHeading: t('aiCenterAIToolPageData:tools.planLecture.instructionsHeading'),
+        instructionsSubHeading: t(
+            'aiCenterAIToolPageData:tools.planLecture.instructionsSubHeading'
+        ),
         instructions: [
             {
-                stepHeading: 'Click Plan Lecture',
+                stepHeading: t('aiCenterAIToolPageData:tools.planLecture.instructions.0.stepHeading'),
                 steps: [
-                    'Lecture Title and Topics',
-                    'Academic Level (e.g., 8th Standard)',
-                    'Preferred Teaching Method (e.g., Storytelling, More Examples',
-                    'Language (English or Hindi)',
-                    'Total Duration of the Lecture',
-                    'Include Questions in Between? (Yes/No)',
-                    'Add Assignment or Homework at the End? (Yes/No)',
+                    t('aiCenterAIToolPageData:tools.planLecture.instructions.0.steps.0'),
+                    t('aiCenterAIToolPageData:tools.planLecture.instructions.0.steps.1'),
+                    t('aiCenterAIToolPageData:tools.planLecture.instructions.0.steps.2'),
+                    t('aiCenterAIToolPageData:tools.planLecture.instructions.0.steps.3'),
+                    t('aiCenterAIToolPageData:tools.planLecture.instructions.0.steps.4'),
+                    t('aiCenterAIToolPageData:tools.planLecture.instructions.0.steps.5'),
+                    t('aiCenterAIToolPageData:tools.planLecture.instructions.0.steps.6'),
                 ],
             },
             {
-                stepHeading: 'Click Generate',
-                steps: [
-                    'Once your preferences are set, hit the Generate button. The AI will take a few moments to craft a smart, structured, and interactive lecture plan based on your inputs.',
-                ],
+                stepHeading: t('aiCenterAIToolPageData:tools.planLecture.instructions.1.stepHeading'),
+                steps: [t('aiCenterAIToolPageData:tools.planLecture.instructions.1.steps.0')],
             },
             {
-                stepHeading: 'Export Your Plan',
+                stepHeading: t('aiCenterAIToolPageData:tools.planLecture.instructions.2.stepHeading'),
                 steps: [
-                    'Time-wise structure',
-                    'Topic-wise breakdown',
-                    'Built-in engagement points (if selected)',
-                    'Assignment section (if selected)',
-                    'Teaching method-based content generation',
+                    t('aiCenterAIToolPageData:tools.planLecture.instructions.2.steps.0'),
+                    t('aiCenterAIToolPageData:tools.planLecture.instructions.2.steps.1'),
+                    t('aiCenterAIToolPageData:tools.planLecture.instructions.2.steps.2'),
+                    t('aiCenterAIToolPageData:tools.planLecture.instructions.2.steps.3'),
+                    t('aiCenterAIToolPageData:tools.planLecture.instructions.2.steps.4'),
                 ],
             },
         ],
     },
     evaluateLecture: {
         key: 'evaluateLecture',
-        heading: 'Vsmart Feedback',
-        instructionsHeading: 'How to Use Vsmart Feedback',
-        instructionsSubHeading:
-            'This tool helps you upload an audio file of your lecture and automatically generates a detailed evaluation report — highlighting strengths, areas of improvement, and a performance score across multiple criteria.',
+        heading: t('aiCenterAIToolPageData:tools.evaluateLecture.heading'),
+        instructionsHeading: t('aiCenterAIToolPageData:tools.evaluateLecture.instructionsHeading'),
+        instructionsSubHeading: t(
+            'aiCenterAIToolPageData:tools.evaluateLecture.instructionsSubHeading'
+        ),
         instructions: [
             {
-                stepHeading: 'Upload Your File',
-                steps: ['Click on Upload File', 'Supported formats: WAV, FLAC, MP3, AAC, M4A'],
-            },
-            {
-                stepHeading: 'Let the AI Evaluate It',
+                stepHeading: t(
+                    'aiCenterAIToolPageData:tools.evaluateLecture.instructions.0.stepHeading'
+                ),
                 steps: [
-                    'Once uploaded, the tool listens to the lecture and analyzes it across eight key areas — from clarity and engagement to content quality and professionalism.',
-                    'Each section is scored, with comments and suggestions provided.',
+                    t('aiCenterAIToolPageData:tools.evaluateLecture.instructions.0.steps.0'),
+                    t('aiCenterAIToolPageData:tools.evaluateLecture.instructions.0.steps.1'),
                 ],
             },
             {
-                stepHeading: 'Example Scoring Areas',
+                stepHeading: t(
+                    'aiCenterAIToolPageData:tools.evaluateLecture.instructions.1.stepHeading'
+                ),
                 steps: [
-                    'Delivery & Presentation (20 pts)',
-                    'Content Quality (20 pts)',
-                    'Student Engagement (15 pts)',
-                    'Assessment & Feedback (10 pts)',
-                    'Inclusivity & Language (10 pts)',
-                    'Classroom Management (10 pts)',
-                    'Teaching Aids (10 pts)',
-                    'Professionalism (5 pts)',
+                    t('aiCenterAIToolPageData:tools.evaluateLecture.instructions.1.steps.0'),
+                    t('aiCenterAIToolPageData:tools.evaluateLecture.instructions.1.steps.1'),
                 ],
             },
             {
-                stepHeading: 'Check Back Later in My AI Tools',
+                stepHeading: t(
+                    'aiCenterAIToolPageData:tools.evaluateLecture.instructions.2.stepHeading'
+                ),
                 steps: [
-                    'The evaluation may take a few minutes depending on file length. You can wait or return later to check the status in your My Builts tab.',
-                    'Once ready, your full report will appear — with highlights, scores, and AI-generated suggestions.',
+                    t('aiCenterAIToolPageData:tools.evaluateLecture.instructions.2.steps.0'),
+                    t('aiCenterAIToolPageData:tools.evaluateLecture.instructions.2.steps.1'),
+                    t('aiCenterAIToolPageData:tools.evaluateLecture.instructions.2.steps.2'),
+                    t('aiCenterAIToolPageData:tools.evaluateLecture.instructions.2.steps.3'),
+                    t('aiCenterAIToolPageData:tools.evaluateLecture.instructions.2.steps.4'),
+                    t('aiCenterAIToolPageData:tools.evaluateLecture.instructions.2.steps.5'),
+                    t('aiCenterAIToolPageData:tools.evaluateLecture.instructions.2.steps.6'),
+                    t('aiCenterAIToolPageData:tools.evaluateLecture.instructions.2.steps.7'),
                 ],
             },
             {
-                stepHeading: 'Export Your Report',
+                stepHeading: t(
+                    'aiCenterAIToolPageData:tools.evaluateLecture.instructions.3.stepHeading'
+                ),
                 steps: [
-                    'Download the final evaluation report in PDF format to share with peers, save for future reference, or use for personal growth.',
+                    t('aiCenterAIToolPageData:tools.evaluateLecture.instructions.3.steps.0'),
+                    t('aiCenterAIToolPageData:tools.evaluateLecture.instructions.3.steps.1'),
                 ],
+            },
+            {
+                stepHeading: t(
+                    'aiCenterAIToolPageData:tools.evaluateLecture.instructions.4.stepHeading'
+                ),
+                steps: [t('aiCenterAIToolPageData:tools.evaluateLecture.instructions.4.steps.0')],
             },
         ],
     },
-};
+});

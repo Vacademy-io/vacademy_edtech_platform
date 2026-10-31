@@ -1,0 +1,28 @@
+{
+    "basicInfo": {
+        "assessmentName": "मूल्यांकन का नाम",
+        "untitled": "शीर्षक रहित",
+        "notAvailable": "उपलब्ध नहीं"
+    },
+    "instructions": {
+        "title": "मूल्यांकन निर्देश",
+        "description": "मूल्यांकन शुरू करने से पहले प्रतिभागियों को दिखाया जाता है",
+        "empty": "कोई निर्देश उपलब्ध नहीं है।"
+    },
+    "liveDateRange": {
+        "title": "लाइव तारीख सीमा",
+        "startDateTime": "प्रारंभ तिथि और समय",
+        "endDateTime": "समाप्ति तिथि और समय"
+    },
+    "attemptSettings": {
+        "title": "प्रयास सेटिंग्स",
+        "description": "नियंत्रित करता है कि प्रतिभागी मूल्यांकन कैसे दे सकते हैं",
+        "reattemptCount": "पुनः प्रयास की संख्या",
+        "totalDuration": "कुल अवधि",
+        "durationNotSet": "—",
+        "durationMinutes_one": "{{count}} मिनट",
+        "durationMinutes_other": "{{count}} मिनट",
+        "assessmentPreview": "मूल्यांकन पूर्वावलोकन",
+        "allowSwitchingSections": "अनुभागों के बीच स्विच करने की अनुमति दें"
+    }
+}

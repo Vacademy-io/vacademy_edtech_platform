@@ -15,11 +15,14 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import vacademy.io.assessment_service.core.config.AssessmentInternalUserDetailsService;
+import vacademy.io.common.auth.apikey.ApiKeyAuthentication;
 import vacademy.io.common.auth.entity.UserActivity;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.auth.repository.UserActivityRepository;
+import vacademy.io.common.auth.filter.JwtAuthFilter;
 import vacademy.io.common.auth.service.JwtService;
 import vacademy.io.common.auth.service.UserActivityTrackingService;
+import vacademy.io.common.core.utils.TextSanitizer;
 import vacademy.io.common.exceptions.ExpiredTokenException;
 import vacademy.io.common.exceptions.InvalidTokenException;
 
@@ -70,6 +73,14 @@ public class AssessmentJwtAuthFilter extends OncePerRequestFilter {
             return;
         }
 
+        // Already authenticated by an institute API key (partner API, ApiKeyAuthFilter runs
+        // first): a stray Authorization header must neither replace that identity nor turn
+        // an unparseable token into an error on a key-authenticated call.
+        if (SecurityContextHolder.getContext().getAuthentication() instanceof ApiKeyAuthentication) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         try {
             // Extract JWT token from the header (remove "Bearer ")
             final String jwt = authHeader.substring(7);
@@ -81,8 +92,19 @@ public class AssessmentJwtAuthFilter extends OncePerRequestFilter {
             request.setAttribute("serviceName", serviceName);
             request.setAttribute("sessionToken", sessionToken);
 
-            // Extract user email from the JWT using JwtService
-            final String usernameWithInstituteId = instituteId + "@" + jwtService.extractUsername(jwt);
+            // Extract user email from the JWT using JwtService.
+            //
+            // Sanitize before it becomes a lookup key — see the same handling in
+            // common_service's JwtAuthFilter. An email pasted with an invisible
+            // character (ZWSP, BOM, NBSP) is stored verbatim at signup, minted into
+            // the token subject, and then matches no user, which surfaces as a
+            // bodyless 403 on every authenticated endpoint.
+            final String rawUsername = jwtService.extractUsername(jwt);
+            final String username = TextSanitizer.cleanIdentifier(rawUsername);
+            if (TextSanitizer.hasInvisibleChars(rawUsername)) {
+                log.warn("JWT subject carried invisible characters and was normalised (institute={})", instituteId);
+            }
+            final String usernameWithInstituteId = instituteId + "@" + username;
 
             // Get current authentication object from SecurityContextHolder
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -101,12 +123,28 @@ public class AssessmentJwtAuthFilter extends OncePerRequestFilter {
 
                 CustomUserDetails userDetails = null;
 
-                if (startWithAssessAuth(requestUri)) {
-                    userDetails = (CustomUserDetails) (assessmentInternalUserDetailsService
-                            .loadUserByUsername(usernameWithInstituteId));
-                } else {
-                    // Load user details using user email
-                    userDetails = (CustomUserDetails) userDetailsService.loadUserByUsername(usernameWithInstituteId);
+                try {
+                    if (startWithAssessAuth(requestUri)) {
+                        userDetails = (CustomUserDetails) (assessmentInternalUserDetailsService
+                                .loadUserByUsername(usernameWithInstituteId));
+                    } else {
+                        // Load user details using user email
+                        userDetails = (CustomUserDetails) userDetailsService
+                                .loadUserByUsername(usernameWithInstituteId);
+                    }
+                } catch (Exception lookupFailure) {
+                    // Token is ours and unexpired but resolves to no user. Record the
+                    // reason so it reaches the response body instead of surfacing as an
+                    // empty 403, then let permitAll endpoints serve the request as before.
+                    log.warn("User resolution failed for subject '{}' (institute={}): {}",
+                            username, instituteId, lookupFailure.getMessage());
+                    request.setAttribute(JwtAuthFilter.AUTH_FAILURE_REASON,
+                            "Token subject could not be matched to a user in this institute. Please log in again.");
+                    // Rethrow rather than calling the chain here: the catch-all below
+                    // falls through to the single doFilter at the end of this method.
+                    // Calling it from inside the try would run the chain twice whenever
+                    // a downstream handler throws.
+                    throw new IllegalStateException("user resolution failed", lookupFailure);
                 }
                 // Pass User ID with request
                 request.setAttribute("user", userDetails);

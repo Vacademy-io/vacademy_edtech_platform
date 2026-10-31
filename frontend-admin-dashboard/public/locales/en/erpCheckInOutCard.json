@@ -1,0 +1,21 @@
+{
+    "today": "Today",
+    "intro": "Your attendance for today. Checking in stamps the time on your record — your HR team sees the same one.",
+    "checkedIn": "Checked in",
+    "checkedOut": "Checked out",
+    "hours": "Hours",
+    "checkIn": "Check in",
+    "checkOut": "Check out",
+    "checkingYouIn": "Checking you in…",
+    "checkingYouOut": "Checking you out…",
+    "locationNotice": "If your browser offers to share your location, allowing it lets your institute confirm you checked in on site. You can decline — we send the check-in either way, and you'll be told here if your institute needs the location.",
+    "closedDaySummary": "Checked out at {{time}}. Your day is recorded — nothing more to do.",
+    "toasts": {
+        "checkedIn": "Checked in",
+        "checkedOut": "Checked out"
+    },
+    "errors": {
+        "checkInFailed": "Could not check you in.",
+        "checkOutFailed": "Could not check you out."
+    }
+}

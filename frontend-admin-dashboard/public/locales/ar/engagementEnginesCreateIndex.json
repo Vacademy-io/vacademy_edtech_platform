@@ -1,0 +1,208 @@
+{
+    "pageTitle": "محرك تفاعل جديد",
+    "heading": "محرك جديد",
+    "steps": {
+        "basics": "الأساسيات",
+        "dataPoints": "نقاط البيانات",
+        "channels": "القنوات",
+        "audience": "الجمهور",
+        "cadence": "التوقيت",
+        "review": "المراجعة",
+        "assets": "الأصول"
+    },
+    "basics": {
+        "name": "اسم المحرك",
+        "namePlaceholder": "إعادة إشراك {{learners}} غير النشطين",
+        "objective": "الهدف (باختصار)",
+        "objectivePlaceholder": "إعادة {{learners}} الذين توقفوا عن التفاعل",
+        "brief": "الموجز",
+        "briefHint": "صف الهدف والنبرة وما يجب قوله وما يجب تجنبه وأي روابط. يصبح هذا تعليمات الذكاء الاصطناعي، وكلما كان أدق كان أفضل.",
+        "briefPlaceholder": "أنت تعيد إشراك {{learners}} الذين توقفوا عن الحضور. كن ودودًا ومختصرًا…",
+        "language": "اللغة",
+        "agent": {
+            "heading": "من وكيل العملاء المحتملين «{{name}}»:",
+            "filled": "تمت التعبئة من وكيل العملاء المحتملين {{names}}. عدّله بحرية.",
+            "use": "استخدم وصف وكيل العملاء المحتملين كملخص"
+        },
+        "ai": {
+            "title": "اكتبه بالذكاء الاصطناعي",
+            "hint": "أدخل المنتج والموقع وسيكتب الذكاء الاصطناعي مسودة الملخص. لا يستطيع فتح الموقع: يستخدم العنوان كرابط للمشاركة وما تكتبه عن المنتج. أي نقص يظهر كسطر TODO لتكمله.",
+            "website": "الموقع",
+            "websitePlaceholder": "https://example.com",
+            "product": "عن المنتج أو العرض",
+            "productPlaceholder": "ما هو، ولمن، وما فائدته…",
+            "generate": "إنشاء بالذكاء الاصطناعي",
+            "improve": "تحسين بالذكاء الاصطناعي",
+            "generating": "جارٍ كتابة الملخص…",
+            "needInput": "أضف الهدف أو المنتج أو الموقع أولاً.",
+            "failed": "تعذّرت كتابة الملخص"
+        }
+    },
+    "dataPoints": {
+        "intro": "اختر ما يمكن للذكاء الاصطناعي الاطلاع عليه لكل شخص، مثل الحضور أو الرسوم المستحقة. معلومات أكثر تعني رسائل في وقت أنسب.",
+        "sensitive": "حساس",
+        "alwaysOn": "مفعّل دائمًا",
+        "consent": "أؤكد أن هذه المؤسسة لديها موافقة على استخدام نقاط البيانات الحساسة أعلاه في المراسلة.",
+        "sensitivity": {
+            "LOW": "low",
+            "MEDIUM": "medium",
+            "HIGH": "sensitive · high"
+        }
+    },
+    "channels": {
+        "intro": "ما القنوات التي يمكن لهذا المحرك استخدامها؟ في البداية تراجع كل رسالة قبل إرسالها. يحتاج واتساب إلى قوالب معتمدة من Meta (تُعدّ بعد الإنشاء).",
+        "enableAria": "تفعيل {{channel}}",
+        "auto": "إرسال استباقي تلقائي (بعد تأهل هذه القناة؛ وحتى ذلك الحين تراجع كل رسالة وترسلها)",
+        "autoAria": "إرسال استباقي تلقائي على {{channel}}",
+        "autoReply": "الرد التلقائي على الردود (يرد الذكاء الاصطناعي خلال 24 ساعة؛ المال والغضب وطلبات الإيقاف وحالات عدم اليقين تصل إليك دائمًا)",
+        "autoReplyAria": "الرد التلقائي على الردود في {{channel}}",
+        "autoTitle": "الإرسال تلقائيًا بعد فترة تجربة",
+        "autoHint": "بعد أن توافق على أول بضع رسائل في هذه القناة، ترسل دون أن تسأل. حتى ذلك الحين تراجع كل رسالة.",
+        "autoReplyTitle": "الرد تلقائيًا",
+        "autoReplyHint": "يرد الذكاء الاصطناعي خلال 24 ساعة. كل ما يتعلق بالمال أو الغضب أو طلبات التوقف أو الشك يصل إليك دائمًا.",
+        "callNote": "The engine proposes a call for your team. Calls are never placed from the task inbox.",
+        "whatsappNote": "Needs Meta-approved templates — the AI proposes them after you create the engine."
+    },
+    "audience": {
+        "intro": "اختر من يجب أن يصل إليهم هذا المحرك. حدّد ما تشاء من {{batches}} و{{audiences}}.",
+        "audiencesHint": "العملاء المحتملون في القوائم المحددة.",
+        "batchesHint": "كل المسجلين في ما حدّدته.",
+        "summary": "{{batches}}: {{batchCount}} · {{audiences}}: {{listCount}}",
+        "summaryNone": "لم يُحدَّد شيء بعد",
+        "dedupNote": "الشخص الموجود في أكثر من واحدة يُتواصل معه مرة واحدة فقط.",
+        "picker": {
+            "searchBatches": "ابحث في {{batches}}",
+            "searchLists": "ابحث في {{audiences}}",
+            "noBatches": "لا توجد {{batches}} بعد.",
+            "noLists": "لا توجد {{audiences}} بعد.",
+            "noMatch": "لا نتائج لـ «{{query}}».",
+            "loading": "جارٍ التحميل…",
+            "selectAll": "تحديد الكل ({{count}})",
+            "selectShown": "تحديد هذه ({{count}})",
+            "unselectShown": "إلغاء تحديد الكل",
+            "clear": "مسح الكل",
+            "remove": "إزالة {{name}}",
+            "unknown": "غير موجود (محذوف؟)",
+            "moreLists": "يُعرض {{shown}} من {{total}}. اكتب اسمًا للعثور على الباقي."
+        }
+    },
+    "cadence": {
+        "recheck": "التواصل مع كل شخص بحد أقصى",
+        "recheckHint": "يختار الذكاء الاصطناعي التوقيت الفعلي. هذا فقط يمنعه من التواصل مع أحد أكثر من ذلك.",
+        "quietHours": "ساعات الهدوء",
+        "quietHint": "لا رسائل بين هذه الساعات، وفق المنطقة الزمنية أدناه. يظل الحد الأدنى لساعات الهدوء الخاص بالمؤسسة مطبقًا أيضًا.",
+        "from": "من",
+        "to": "إلى",
+        "timezone": "المنطقة الزمنية",
+        "legendQuiet": "Quiet (no messages)",
+        "legendOpen": "Can send"
+    },
+    "autonomy": {
+        "title": "إعدادات متقدمة",
+        "hint": "اختياري. متى تبدأ القنوات الإرسال تلقائيًا، ومجموعة اختبار.",
+        "firstN": "عدد الموافقات قبل بدء الإرسال التلقائي",
+        "firstNPlaceholder": "5 (افتراضي)",
+        "firstNHint": "للقنوات المضبوطة على الإرسال التلقائي: توافق أولًا على هذا العدد من رسائلها، ثم ترسل القناة بنفسها. اتركه فارغًا لـ 5.",
+        "holdout": "مجموعة اختبار (%)",
+        "holdoutHint": "تُضاف هذه النسبة من الأشخاص دون مراسلتهم أبدًا، لتقارن وترى هل يساعد المحرك. اتركها 0 إن لم تكن متأكدًا."
+    },
+    "review": {
+        "name": "الاسم",
+        "objective": "الهدف",
+        "language": "اللغة",
+        "dataPoints": "نقاط البيانات",
+        "dataPointsNone": "المفعّلة دائمًا فقط",
+        "channels": "القنوات",
+        "audienceSources": "من يصل إليهم",
+        "cadence": "التواصل",
+        "cadenceValue": "كل {{hours}} ساعة",
+        "quietHours": "ساعات الهدوء",
+        "autoSendChannels": "قنوات الإرسال التلقائي",
+        "autoSendNone": "لا شيء — تراجع كل رسالة",
+        "holdout": "مجموعة اختبار",
+        "draftNote": "يبدأ المحرك كمسودة. بعد إنشائه، أضف الأشخاص و(لواتساب) وافق على القوالب، ثم فعّله.",
+        "consentGiven": "consent given",
+        "whatNext": "What happens next",
+        "next": {
+            "draft": {
+                "title": "Starts as a Draft",
+                "text": "Nothing is sent yet."
+            },
+            "enroll": {
+                "title": "إضافة الأشخاص",
+                "text": "اضغط «إضافة الأشخاص الآن» في صفحة المحرك لجلب الأشخاص الذين اخترتهم."
+            },
+            "templates": {
+                "title": "Approve WhatsApp templates",
+                "text": "The AI proposes them; you approve and submit; Meta reviews."
+            },
+            "activate": {
+                "title": "Dry run, then activate",
+                "text": "يعرض التشغيل التجريبي مسودات نموذجية في صندوق المهام دون إرسال أي شيء."
+            }
+        },
+        "moreSources": "+{{count}} أخرى",
+        "holdoutValue": "{{pct}}% (لا يُراسلون أبدًا)",
+        "assets": "الأصول",
+        "assetsItems": "{{count}} عنصر",
+        "assetsNone": "لم تتم إضافة شيء",
+        "teamContacts": "تذهب التنبيهات إلى",
+        "teamContactsCount_zero": "{{count}} عضو فريق (ومستشار العميل المحتمل)",
+        "teamContactsCount_one": "عضو فريق واحد (ومستشار العميل المحتمل)",
+        "teamContactsCount_two": "عضوان في الفريق (ومستشار العميل المحتمل)",
+        "teamContactsCount_few": "{{count}} أعضاء في الفريق (ومستشار العميل المحتمل)",
+        "teamContactsCount_many": "{{count}} عضوًا في الفريق (ومستشار العميل المحتمل)",
+        "teamContactsCount_other": "{{count}} عضو فريق (ومستشار العميل المحتمل)",
+        "teamContactsNone": "مستشار العميل المحتمل"
+    },
+    "actions": {
+        "back": "رجوع",
+        "continue": "متابعة",
+        "create": "إنشاء المحرك",
+        "creating": "جارٍ الإنشاء…",
+        "cancel": "Cancel"
+    },
+    "errors": {
+        "nameAndBrief": "يحتاج المحرك إلى اسم وموجز."
+    },
+    "subtitle": "Six short steps. You can review everything before it is created — nothing is sent until you activate it.",
+    "stepHints": {
+        "basics": "Name, brief, language",
+        "dataPoints": "What the AI may read",
+        "channels": "Where it can message",
+        "audience": "Who it engages",
+        "cadence": "عدد المرات، ساعات الهدوء",
+        "review": "Check and create",
+        "assets": "اختياري: كتيبات وفيديوهات وروابط"
+    },
+    "footer": {
+        "step": "Step {{n}} of {{total}} · {{label}}"
+    },
+    "blocked": {
+        "name": "أعطِ المحرك اسمًا للمتابعة.",
+        "brief": "اكتب التعليمات للمتابعة.",
+        "consent": "حدّد مربع الموافقة للمتابعة.",
+        "channel": "فعّل قناة واحدة على الأقل للمتابعة.",
+        "audience": "حدّد واحدًا على الأقل من {{batches}} أو {{audiences}} للمتابعة.",
+        "cadence": "اختر عدد مرات التواصل."
+    },
+    "leaveDialog": {
+        "title": "المغادرة دون حفظ؟",
+        "description": "سيضيع ما أدخلته حتى الآن.",
+        "editDescription": "لن تُحفظ تغييراتك على هذا المحرك.",
+        "stay": "متابعة التعديل",
+        "leave": "مغادرة"
+    },
+    "assetsStep": {
+        "lead": "أضف مواد يرسلها الوكيل عبر واتساب عندما يطلبها العميل. يمكنك التخطي وإضافتها لاحقًا من صفحة المحرك.",
+        "editLead": "أضف المواد التي يمكن للوكيل إرسالها عبر واتساب عند طلب العميل المحتمل أو استبدلها أو احذفها. تُحفظ التغييرات هنا فورًا دون حفظ باقي المحرك."
+    },
+    "team": {
+        "title": "من يُنبَّه ومع من تُحجز الاجتماعات",
+        "hint": "عندما لا يستطيع الوكيل التعامل مع رد بمفرده، أو يطلب أحدهم مادة غير متوفرة لديه، يتلقى هذا الشخص تنبيهًا في النظام ورسالة بريد إلكتروني. تستخدم الاجتماعات التي يحجزها الوكيل حساب Google الخاص به إذا ربطه في جدولي، وإلا فحساب Google الافتراضي للمؤسسة. يتم إبلاغ مستشار العميل المحتمل دائمًا أيضًا.",
+        "searchPlaceholder": "ابحث عن أعضاء الفريق",
+        "empty": "لم يُعثر على أعضاء فريق",
+        "note": "اختر شخصًا واحدًا.",
+        "loadFailed": "تعذر تحميل فريقك. حاول مرة أخرى بعد قليل."
+    }
+}

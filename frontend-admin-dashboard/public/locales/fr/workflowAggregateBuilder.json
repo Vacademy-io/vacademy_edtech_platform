@@ -1,0 +1,16 @@
+{
+    "aggTypes": {
+        "COUNT": "Nombre",
+        "SUM": "Somme",
+        "AVG": "Moyenne",
+        "MIN": "Minimum",
+        "MAX": "Maximum"
+    },
+    "operationLabel": "Opération {{index}}",
+    "typeLabel": "Type",
+    "saveAsLabel": "Enregistrer sous",
+    "saveAsPlaceholder": "ex. totalCount",
+    "fieldToLabel": "Champ pour {{operation}}",
+    "fieldPlaceholder": "ex. score, amount",
+    "addOperation": "Ajouter une opération"
+}

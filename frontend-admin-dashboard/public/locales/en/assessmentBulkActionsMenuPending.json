@@ -1,0 +1,11 @@
+{
+    "menu": {
+        "sendWhatsApp": "Send Reminder on WhatsApp",
+        "sendEmail": "Send Reminder on Email",
+        "removeParticipants": "Remove Participants"
+    },
+    "actionInfo": {
+        "selectedStudents_one": "{{count}} student",
+        "selectedStudents_other": "{{count}} students"
+    }
+}

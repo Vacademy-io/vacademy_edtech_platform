@@ -12,6 +12,12 @@ interface ManifestEntry {
 interface ManifestData {
     updatedAt: number;
     items: Record<string, ManifestEntry>;
+    /**
+     * Node id → the subject/module/chapter id auto-create made for it. Node ids
+     * come from normalized folder paths, so they are stable across re-parses of
+     * the same zip — without this a reload mid-run would create duplicates.
+     */
+    nodes?: Record<string, string>;
 }
 
 const KEY_PREFIX = 'bulk-content-uploading:manifest:';
@@ -45,6 +51,9 @@ const pruneOldManifests = () => {
 export interface SessionManifest {
     get: (itemKey: string) => ManifestEntry | undefined;
     set: (itemKey: string, entry: ManifestEntry) => void;
+    /** Entity id auto-create already made for this node, if any. */
+    getNode: (nodeId: string) => string | undefined;
+    setNode: (nodeId: string, entityId: string) => void;
     flush: () => void;
     clear: () => void;
 }
@@ -75,6 +84,12 @@ export const openManifest = (contextKey: string, fingerprint: string): SessionMa
         get: (itemKey) => data.items[itemKey],
         set: (itemKey, entry) => {
             data.items[itemKey] = { ...data.items[itemKey], ...entry };
+            if (!flushTimer) flushTimer = setTimeout(writeNow, FLUSH_DELAY_MS);
+        },
+        // `nodes` is absent in manifests written before auto-create shipped.
+        getNode: (nodeId) => data.nodes?.[nodeId],
+        setNode: (nodeId, entityId) => {
+            data.nodes = { ...data.nodes, [nodeId]: entityId };
             if (!flushTimer) flushTimer = setTimeout(writeNow, FLUSH_DELAY_MS);
         },
         flush: () => {

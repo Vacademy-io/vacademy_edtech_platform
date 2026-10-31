@@ -1,0 +1,8 @@
+{
+    "dialog": {
+        "heading": "Retirer les participants",
+        "confirmMessagePrefix": "Voulez-vous vraiment retirer les participants pour",
+        "confirmMessageSuffix": "?",
+        "done": "Terminé"
+    }
+}

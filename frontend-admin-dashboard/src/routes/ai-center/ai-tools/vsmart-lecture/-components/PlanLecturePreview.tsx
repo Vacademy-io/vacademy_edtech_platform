@@ -2,6 +2,7 @@ import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { useState } from 'react';
 import { PlanLectureDataInterface } from '@/types/ai/generate-assessment/generate-complete-assessment';
+import { useTranslation } from 'react-i18next';
 
 const PlanLecturePreview = ({
     openDialog = false,
@@ -10,32 +11,41 @@ const PlanLecturePreview = ({
     openDialog?: boolean;
     planLectureData: PlanLectureDataInterface;
 }) => {
+    const { t } = useTranslation('aiCenterPlanLecturePreview');
     const [open, setOpen] = useState(openDialog);
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent className="no-scrollbar !m-0 h-full !w-full !max-w-full !gap-0 overflow-y-auto !rounded-none p-0">
                 <h1 className="bg-primary-50 p-4 font-semibold text-primary-500">
-                    VSmart Lecture Preview
+                    {t('header.title')}
                 </h1>
                 <div className="flex h-screen w-full flex-col gap-4 p-6">
                     <h1 className="text-xl font-semibold">
-                        📘 Lecture Title: {planLectureData?.heading}
+                        {t('labels.lectureTitle', { title: planLectureData?.heading })}
                     </h1>
                     <div className="flex flex-col gap-1">
                         <div className="flex items-center">
-                            <span className="text-sm font-semibold">Level:&nbsp;</span>
+                            <span className="text-sm font-semibold">
+                                {t('labels.level')}&nbsp;
+                            </span>
                             <span className="text-sm font-thin">{planLectureData?.level}</span>
                         </div>
                         <div className="flex items-center">
-                            <span className="text-sm font-semibold">Mode of Teaching:&nbsp;</span>
+                            <span className="text-sm font-semibold">
+                                {t('labels.modeOfTeaching')}&nbsp;
+                            </span>
                             <span className="text-sm font-thin">{planLectureData?.mode}</span>
                         </div>
                         <div className="flex items-center">
-                            <span className="text-sm font-semibold">Lecture Language:&nbsp;</span>
+                            <span className="text-sm font-semibold">
+                                {t('labels.lectureLanguage')}&nbsp;
+                            </span>
                             <span className="text-sm font-thin">{planLectureData?.language}</span>
                         </div>
                         <div className="flex items-center">
-                            <span className="text-sm font-semibold">Lecture Duration:&nbsp;</span>
+                            <span className="text-sm font-semibold">
+                                {t('labels.lectureDuration')}&nbsp;
+                            </span>
                             <span className="text-sm font-thin">{planLectureData?.duration}</span>
                         </div>
                     </div>
@@ -55,7 +65,7 @@ const PlanLecturePreview = ({
                                         </div>
                                         <div className="flex items-center">
                                             <span className="text-sm font-semibold">
-                                                Topic Covered:&nbsp;
+                                                {t('labels.topicCovered')}&nbsp;
                                             </span>
                                             <div className="flex items-center gap-2">
                                                 {lectureData?.topicCovered?.map((topic, idx) => {
@@ -71,13 +81,13 @@ const PlanLecturePreview = ({
                                             </div>
                                         </div>
                                         <div>
-                                            <span>Content:</span>
+                                            <span>{t('labels.content')}</span>
                                             <p className="text-sm font-thin">
                                                 {lectureData?.content}
                                             </p>
                                         </div>
                                         <div>
-                                            <span>In-Lecture Question:</span>
+                                            <span>{t('labels.inLectureQuestion')}</span>
                                             <div className="flex flex-col">
                                                 {lectureData?.questionToStudents?.map(
                                                     (activity, idx) => {
@@ -94,7 +104,7 @@ const PlanLecturePreview = ({
                                             </div>
                                         </div>
                                         <div>
-                                            <span>Activity:</span>
+                                            <span>{t('labels.activity')}</span>
                                             <div className="flex flex-col">
                                                 {lectureData?.activity?.map((activity, idx) => {
                                                     return (
@@ -113,11 +123,15 @@ const PlanLecturePreview = ({
                     </div>
                     <div className="flex flex-col gap-3">
                         <div className="flex items-center gap-4">
-                            <h1 className="font-semibold">Assignment</h1>
-                            <span className="text-primary-300">(N/A)</span>
+                            <h1 className="font-semibold">{t('labels.assignment')}</h1>
+                            <span className="text-primary-300">
+                                ({t('labels.notApplicable')})
+                            </span>
                         </div>
                         <div className="flex items-center">
-                            <span className="text-sm font-semibold">Topic Covered:&nbsp;</span>
+                            <span className="text-sm font-semibold">
+                                {t('labels.topicCovered')}&nbsp;
+                            </span>
                             <div className="flex items-center gap-2">
                                 {planLectureData?.assignment?.topicCovered?.map((topic, idx) => {
                                     return (
@@ -129,7 +143,7 @@ const PlanLecturePreview = ({
                             </div>
                         </div>
                         <div className="mb-4 flex flex-col">
-                            <span>Task:</span>
+                            <span>{t('labels.task')}</span>
                             <div className="-mb-1 flex flex-col">
                                 {planLectureData?.assignment?.tasks?.map((activity, idx) => {
                                     return (

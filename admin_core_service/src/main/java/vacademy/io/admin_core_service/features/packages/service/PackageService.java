@@ -10,6 +10,7 @@ import vacademy.io.admin_core_service.features.chapter.enums.ChapterStatus;
 import vacademy.io.admin_core_service.features.common.enums.StatusEnum;
 import vacademy.io.admin_core_service.features.course.dto.AddCourseDTO;
 import vacademy.io.admin_core_service.features.faculty.enums.FacultyStatusEnum;
+import vacademy.io.admin_core_service.features.faculty.service.CourseRoleLabelService;
 import vacademy.io.admin_core_service.features.level.enums.LevelStatusEnum;
 import vacademy.io.admin_core_service.features.packages.dto.CustomPage;
 import vacademy.io.admin_core_service.features.packages.dto.LearnerPackageFilterDTO;
@@ -42,7 +43,13 @@ public class PackageService {
     private AuthService authService;
 
     @Autowired
+    private CourseRoleLabelService courseRoleLabelService;
+
+    @Autowired
     private SessionService sessionService;
+
+    @Autowired
+    private PackagePageContentService packagePageContentService;
 
     @Transactional(readOnly = true)
     public Page<PackageDetailDTO> getcourseCatalogDetail(
@@ -134,6 +141,8 @@ public class PackageService {
                     filterDTO.getPackageSessionIds(),
                     effectiveFilter,
                     filterDTO.getSessionIds(),
+                    filterDTO.getLevelIds(),
+                    filterDTO.getTag(),
                     pageable);
         } else {
             return packageRepository.getCatalogPackageDetail(
@@ -171,13 +180,16 @@ public class PackageService {
         Map<String, UserDTO> userMap = userDTOS.stream()
                 .filter(u -> u != null && u.getId() != null)
                 .collect(Collectors.toMap(UserDTO::getId, Function.identity(), (a, b) -> a));
+        Map<String, Map<String, String>> roleLabels = courseRoleLabelService.labelsByPackage(
+                        projections.stream().map(p -> p.getId()).toList());
 
         return projections.stream().map(projection -> {
-            List<UserDTO> instructors = Optional.ofNullable(projection.getFacultyUserIds())
+            List<UserDTO> instructors = courseRoleLabelService.withRoleLabels(Optional.ofNullable(projection.getFacultyUserIds())
                     .orElse(List.of()).stream()
                     .map(userMap::get)
                     .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
+                    .collect(Collectors.toList()),
+                    roleLabels.get(projection.getId()));
 
             return new PackageDetailDTO(
                     projection.getId(),
@@ -232,11 +244,14 @@ public class PackageService {
         Map<String, UserDTO> userMap = userDTOS.stream()
                 .filter(u -> u != null && u.getId() != null)
                 .collect(Collectors.toMap(UserDTO::getId, Function.identity(), (a, b) -> a));
+        Map<String, Map<String, String>> roleLabels = courseRoleLabelService.labelsByPackage(
+                        Collections.singletonList(projection.getId()));
 
-        List<UserDTO> instructors = instructorIds.stream()
+        List<UserDTO> instructors = courseRoleLabelService.withRoleLabels(instructorIds.stream()
                 .map(userMap::get)
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()),
+                roleLabels.get(projection.getId()));
 
         PackageDetailDTO dto = new PackageDetailDTO(
                 projection.getId(),
@@ -273,6 +288,9 @@ public class PackageService {
     public void addOrUpdatePackage(AddCourseDTO addCourseDTO, String instituteId, CustomUserDetails userDetails) {
         PackageEntity packageEntity;
 
+        // Reject a malformed course_page_json (HTTP 400) before anything is written.
+        PackagePageContentService.validate(addCourseDTO.getCoursePageJson());
+
         // Set created_by_user_id from user context if not already set in DTO
         if (!StringUtils.hasText(addCourseDTO.getCreatedByUserId()) && userDetails != null) {
             addCourseDTO.setCreatedByUserId(userDetails.getId());
@@ -284,6 +302,11 @@ public class PackageService {
             packageEntity = packageRepository.findById(addCourseDTO.getId())
                     .orElseThrow(() -> new VacademyException("Package not found"));
             updateCourse(addCourseDTO, packageEntity);
+        }
+        if (Boolean.TRUE.equals(addCourseDTO.getNewCourse())) {
+            packagePageContentService.applyOnCreate(packageEntity.getId(), addCourseDTO.getCoursePageJson());
+        } else {
+            packagePageContentService.applyOnUpdate(packageEntity.getId(), addCourseDTO.getCoursePageJson());
         }
         for (AddNewSessionDTO addNewSessionDTO : addCourseDTO.getSessions()) {
             sessionService.addOrUpdateSession(addNewSessionDTO, packageEntity, instituteId, userDetails);
@@ -355,10 +378,26 @@ public class PackageService {
         // Directly overwrite every field — even if null or empty
         packageEntity.setPackageName(addCourseDTO.getCourseName());
         packageEntity.setThumbnailFileId(addCourseDTO.getThumbnailFileId());
-        packageEntity.setStatus(addCourseDTO.getStatus());
-        packageEntity.setCreatedByUserId(addCourseDTO.getCreatedByUserId());
-        packageEntity.setOriginalCourseId(addCourseDTO.getOriginalCourseId());
-        packageEntity.setVersionNumber(addCourseDTO.getVersionNumber());
+
+        // Approval-workflow fields are owned by the approval flow (submit /
+        // approve / publish / editable copy), not by a details edit. Only apply
+        // them when the caller explicitly sent a value, and never re-own a
+        // course that already has a creator — otherwise a teacher's published
+        // course flipped back to DRAFT and an admin edit stole ownership so the
+        // teacher could no longer publish or submit it.
+        if (StringUtils.hasText(addCourseDTO.getStatus())) {
+            packageEntity.setStatus(addCourseDTO.getStatus());
+        }
+        if (!StringUtils.hasText(packageEntity.getCreatedByUserId())
+                && StringUtils.hasText(addCourseDTO.getCreatedByUserId())) {
+            packageEntity.setCreatedByUserId(addCourseDTO.getCreatedByUserId());
+        }
+        if (StringUtils.hasText(addCourseDTO.getOriginalCourseId())) {
+            packageEntity.setOriginalCourseId(addCourseDTO.getOriginalCourseId());
+        }
+        if (addCourseDTO.getVersionNumber() != null) {
+            packageEntity.setVersionNumber(addCourseDTO.getVersionNumber());
+        }
         packageEntity.setIsCoursePublishedToCatalaouge(addCourseDTO.getIsCoursePublishedToCatalaouge());
         packageEntity.setCoursePreviewImageMediaId(addCourseDTO.getCoursePreviewImageMediaId());
         packageEntity.setCourseBannerMediaId(addCourseDTO.getCourseBannerMediaId());

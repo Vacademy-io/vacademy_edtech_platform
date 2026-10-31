@@ -1,0 +1,118 @@
+{
+    "header": {
+        "title": "AI Agents (Vacademy AI)",
+        "description": "Author the personas our own AI caller speaks with — the prompt, opening line, language, voice and what to find out. Saving an agent automatically registers it under Campaigns / Agents above, so workflows and the IVR can pick it by name."
+    },
+    "loading": "Loading agents…",
+    "empty": "No agents yet. Create one — e.g. an “Admissions Qualifier” that greets new leads and finds out the student’s class and course interest.",
+    "list": {
+        "disabled": "(disabled)",
+        "summary": "{{direction}} · {{language}} · voice {{voice}}",
+        "maxMinutesSuffix": " · max {{count}} min"
+    },
+    "direction": {
+        "outbound": "Outbound",
+        "inbound": "Inbound",
+        "both": "Both"
+    },
+    "expressiveness": {
+        "default": "Model default",
+        "calm": "Calm & steady",
+        "natural": "Natural",
+        "expressive": "Expressive"
+    },
+    "form": {
+        "agentName": {
+            "label": "Agent name",
+            "placeholder": "e.g. Admissions Qualifier"
+        },
+        "direction": {
+            "label": "Direction"
+        },
+        "maxCallMinutes": {
+            "label": "Max call minutes"
+        },
+        "enabled": {
+            "label": "Enabled"
+        },
+        "language": {
+            "label": "Language",
+            "placeholder": "hinglish | hi | en"
+        },
+        "voiceEngine": {
+            "label": "Voice engine"
+        },
+        "voice": {
+            "label": "Voice",
+            "placeholder": "Pick a voice…",
+            "genderMale": "Male",
+            "genderFemale": "Female",
+            "genderHint": "The bot matches its Hindi grammar (kar rahi/raha hoon) to the voice's gender automatically."
+        },
+        "speakingPace": {
+            "label": "Speaking pace",
+            "placeholder": "Platform default · 1.0 natural, 1.1 brisk",
+            "hint": "0.5–2.0. 1.0–1.1 suits sales calls; above 1.2 starts to sound rushed.",
+            "rumikHint": " Rumik has no numeric speed control, so this steers its delivery in words — the average pace lands where you set it, but individual sentences vary a little."
+        },
+        "expressivenessField": {
+            "label": "Expressiveness",
+            "hint": "How much the voice varies its intonation and emotion."
+        },
+        "voiceModulation": {
+            "label": "Voice modulation",
+            "hint": "How much the pitch rises and falls. Applied to the audio itself, so it works with every voice and engine — a flat, read-out tone becomes conversational.",
+            "options": {
+                "default": "Platform default",
+                "off": "Off",
+                "subtle": "Subtle",
+                "conversational": "Conversational",
+                "lively": "Lively"
+            }
+        },
+        "voiceTester": {
+            "label": "Test this voice",
+            "stop": "Stop",
+            "play": "Play",
+            "hint": "Speaks the sample with the selected voice, pace and expressiveness — change the voice above and play again to compare. Phone calls sound slightly warmer/narrower than this (telephony is 8 kHz audio)."
+        },
+        "openingLine": {
+            "label": "Opening line",
+            "placeholder": "What the agent says the moment the call connects…"
+        },
+        "systemPrompt": {
+            "label": "System prompt",
+            "placeholder": "Who the agent is, its goal, tone, and rules…"
+        },
+        "extractionQuestions": {
+            "label": "Questions to find out (one per line)",
+            "placeholder": "What class is the student in?\nWhich course are they interested in?"
+        },
+        "handoffNumbers": {
+            "label": "Handoff numbers (comma separated)",
+            "placeholder": "+9198xxxxxxxx — who gets the call when the caller asks for a human",
+            "hint": "Blank = the voicemail/fallback number from Calling settings."
+        },
+        "bookingPage": {
+            "label": "Auto-book meetings on",
+            "placeholder": "No booking page",
+            "none": "Don't auto-book meetings",
+            "audienceSuffix": " · adds lead to its audience list",
+            "noAudienceSuffix": " · not linked to a list",
+            "hint": "When a call agrees on a demo/visit time, a meeting is booked on this page (Google Meet link + reminders sent). If the page is linked to an audience list, the lead is added there too.",
+            "hintNoPages": " Create a booking page first in CRM → Meetings → Share Booking Link."
+        },
+        "cancel": "Cancel",
+        "save": "Save agent",
+        "saving": "Saving…",
+        "newAgent": "New agent"
+    },
+    "toast": {
+        "previewSynthesisFailed": "Could not synthesize the sample — try again in a moment",
+        "previewPlaybackFailed": "Could not play the sample",
+        "agentSaved": "Agent saved",
+        "agentSaveFailed": "Failed to save agent",
+        "agentDeleted": "Agent deleted",
+        "agentDeleteFailed": "Failed to delete agent"
+    }
+}

@@ -1,0 +1,16 @@
+{
+    "dialogs": {
+        "attentionLabel": "Attention",
+        "removeParticipant": {
+            "title": "Retirer le participant",
+            "confirmMessagePrefix": "Voulez-vous vraiment retirer",
+            "confirmMessageSuffix": "de cette évaluation ?",
+            "remove": "Retirer"
+        }
+    },
+    "dropdown": {
+        "sendWhatsApp": "Envoyer un rappel sur WhatsApp",
+        "sendEmail": "Envoyer un rappel par e-mail",
+        "removeParticipants": "Retirer les participants"
+    }
+}

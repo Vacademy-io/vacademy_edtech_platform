@@ -868,8 +868,8 @@ export const OneTimePaymentDialog: React.FC<OneTimePaymentDialogProps> = ({
             <DialogTitle>Loading Payment Options</DialogTitle>
           </DialogHeader>
           <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <SpinnerGap className="w-8 h-8 animate-spin mx-auto mb-4 text-primary-600" />
+            <div className="text-center space-y-4">
+              <SpinnerGap className="w-8 h-8 animate-spin mx-auto text-primary-600" />
               <p className="text-gray-600">Loading payment options...</p>
             </div>
           </div>
@@ -885,8 +885,8 @@ export const OneTimePaymentDialog: React.FC<OneTimePaymentDialogProps> = ({
           <DialogHeader>
             <DialogTitle>Payment Error</DialogTitle>
           </DialogHeader>
-          <div className="text-center py-6">
-            <p className="text-red-600 mb-4">{error}</p>
+          <div className="text-center py-6 space-y-4">
+            <p className="text-red-600">{error}</p>
             <Button onClick={fetchEnrollmentData} variant="outline">
               Try Again
             </Button>
@@ -906,7 +906,7 @@ export const OneTimePaymentDialog: React.FC<OneTimePaymentDialogProps> = ({
             </DialogTitle>
             {enrollmentData && (
               <p className="text-sm text-gray-600 text-center">
-                Complete your one-time payment to access the course
+                Complete your one-time payment to access the {getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}
               </p>
             )}
           </DialogHeader>
@@ -915,7 +915,7 @@ export const OneTimePaymentDialog: React.FC<OneTimePaymentDialogProps> = ({
             <>
               {/* Plan Summary */}
               {selectedPaymentPlan && (
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-6">
+                <div className="bg-gradient-to-r from-info-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-6">
                   <div className="text-center">
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
                       <svg
@@ -1115,7 +1115,7 @@ export const OneTimePaymentDialog: React.FC<OneTimePaymentDialogProps> = ({
                   <p className="text-red-600 text-xs mt-1">{validationError}</p>
                 )}
                 <p className="text-sm text-gray-500 mt-2">
-                  We'll send your receipt and course details to this email
+                  We'll send your receipt and {getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()} details to this email
                   address
                 </p>
               </div>
@@ -1230,15 +1230,15 @@ export const OneTimePaymentDialog: React.FC<OneTimePaymentDialogProps> = ({
               {!isSupportedVendor ? (
                 /* PAYPAL / MANUAL etc. aren't wired into this in-course dialog —
                    show a clear notice instead of a broken Stripe form. */
-                <div className="mb-2 border border-orange-300 bg-orange-50 rounded p-4 text-sm">
-                  <div className="flex items-center gap-2 text-orange-700 mb-2">
+                <div className="mb-2 border border-orange-300 bg-orange-50 rounded p-4 text-sm space-y-2">
+                  <div className="flex items-center gap-2 text-orange-700">
                     <Lock size={16} />
                     <span className="font-medium">
                       {vendor} payments aren't available here yet
                     </span>
                   </div>
                   <p className="text-orange-600">
-                    This course's payment provider ({vendor}) isn't supported on
+                    This {getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}'s payment provider ({vendor}) isn't supported on
                     this screen yet. Please use the enrollment link to complete
                     your payment, or contact support.
                   </p>
@@ -1290,7 +1290,7 @@ export const OneTimePaymentDialog: React.FC<OneTimePaymentDialogProps> = ({
                 <div className="mb-2 border border-blue-200 bg-blue-50 rounded p-4 text-sm text-blue-700">
                   You'll be securely redirected to{" "}
                   {isCashfree ? "Cashfree" : "PhonePe"} to complete your payment,
-                  then brought back to your course.
+                  then brought back to your {getTerminology(ContentTerms.Course, SystemTerms.Course).toLocaleLowerCase()}.
                 </div>
               ) : (
                 <div className="mb-2">

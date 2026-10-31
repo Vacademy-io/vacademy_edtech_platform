@@ -1,0 +1,27 @@
+{
+    "summary": {
+        "learnersSelected_one": "{{count}} apprenant sélectionné",
+        "learnersSelected_many": "{{count}} apprenants sélectionnés",
+        "learnersSelected_other": "{{count}} apprenants sélectionnés"
+    },
+    "chip": {
+        "editing": "(modification…)",
+        "newUser": "(nouvel utilisateur)",
+        "editTitle": "Modifier",
+        "removeTitle": "Supprimer"
+    },
+    "tabs": {
+        "search": "Rechercher un existant",
+        "fromCourse": "Depuis {{term}}",
+        "csv": "Importer un CSV",
+        "manual": "Ajouter manuellement"
+    },
+    "search": {
+        "placeholder": "Rechercher par nom, e-mail ou nom d'utilisateur…",
+        "searching": "Recherche en cours…",
+        "added": "Ajouté",
+        "addAction": "+ Ajouter",
+        "noResults": "Aucun étudiant trouvé correspondant à « {{query}} »",
+        "minChars": "Saisissez au moins 2 caractères pour rechercher"
+    }
+}

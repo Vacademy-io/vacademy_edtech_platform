@@ -1,0 +1,63 @@
+{
+    "questionTypes": {
+        "mcqs": "Choix unique",
+        "mcqm": "Choix multiple",
+        "trueFalse": "Vrai / Faux",
+        "oneWord": "Un mot",
+        "longAnswer": "Réponse longue",
+        "numeric": "Numérique",
+        "cmcqs": "Compréhension (choix unique)",
+        "cmcqm": "Compréhension (choix multiple)"
+    },
+    "toasts": {
+        "linkCopied": "Lien copié dans le presse-papiers",
+        "copyFailed": "Échec de la copie du lien"
+    },
+    "shareAssignment": {
+        "heading": "Partager le devoir",
+        "copyLinkTitle": "Copier le lien"
+    },
+    "taskDescription": {
+        "heading": "Description de la tâche"
+    },
+    "liveDateRange": {
+        "heading": "Période de disponibilité",
+        "description": "Les horaires sont interprétés dans votre fuseau horaire local. Les soumissions avant l'heure de début sont bloquées ; celles après l'heure de fin sont acceptées mais marquées comme tardives.",
+        "startDateLabel": "Date et heure de début",
+        "endDateLabel": "Date et heure de fin"
+    },
+    "reattemptCount": {
+        "label": "Nombre de tentatives"
+    },
+    "allowedFileTypes": {
+        "heading": "Types de fichiers de soumission autorisés",
+        "description": "Choisissez les types de fichiers que les apprenants peuvent envoyer, ou sélectionnez Tous les fichiers pour accepter tout fichier (y compris des formats comme les projets .sb3 PictoBlox/Scratch)."
+    },
+    "marks": {
+        "heading": "Notes",
+        "totalMarksLabel": "Note totale",
+        "totalMarksPlaceholder": "ex. 100",
+        "passingMarksLabel": "Note de passage (facultatif)",
+        "passingMarksPlaceholder": "ex. 40"
+    },
+    "uploadQuestionPaper": {
+        "heading": "Téléverser le sujet",
+        "uploadFromDevice": "Téléverser depuis l'appareil",
+        "uploadFromDeviceDialogTitle": "Téléverser le sujet depuis l'appareil",
+        "createManually": "Créer manuellement",
+        "createManuallyDialogTitle": "Créer le sujet manuellement",
+        "chooseSavedPaper": "Choisir un sujet enregistré",
+        "chooseSavedPaperDialogTitle": "Choisir un sujet enregistré dans la liste"
+    },
+    "questionsList": {
+        "heading_one": "Question ({{count}})",
+        "heading_many": "Questions ({{count}})",
+        "heading_other": "Questions ({{count}})"
+    },
+    "responses": {
+        "heading": "Réponses",
+        "totalParticipants_one": "Participant total : {{count}}",
+        "totalParticipants_many": "Participants au total : {{count}}",
+        "totalParticipants_other": "Participants au total : {{count}}"
+    }
+}

@@ -1,0 +1,56 @@
+{
+    "title": "Course knowledge",
+    "intro": "Let the student AI answer from your lessons, with links to the exact page or minute. Locked lessons stay locked: the AI only tells learners when they unlock.",
+    "readOnlyNotice": "Only admins can change these settings.",
+    "enabled": {
+        "label": "Make new and edited lessons AI-ready",
+        "hint": "Free for text, PDFs with text, quizzes, SCORM, code, AI videos and YouTube captions."
+    },
+    "learnerAnswers": {
+        "label": "Answer learners from course content",
+        "hint": "The student AI searches the lessons each learner can open and links to the exact page or minute.",
+        "needsEnabled": "Turn on \"Make new and edited lessons AI-ready\" first."
+    },
+    "autoPaid": {
+        "label": "Automatically process scans and videos",
+        "hint": "Uses AI credits for scanned pages, slide images and uploaded videos, within the monthly limit below.",
+        "capPrefix": "Up to",
+        "capSuffix": "credits per month",
+        "capAria": "Monthly credit limit for automatic processing",
+        "capHint": "Automatic processing pauses for the month once this is reached. Maximum {{max}}.",
+        "allowOcr": "Read scanned pages and slide images (0.5 credits per page)",
+        "allowTranscription": "Transcribe uploaded videos and audio (0.5 credits per minute)",
+        "meter": "Used this month: {{used}} of {{cap}} credits",
+        "meterAria": "Credits used this month for automatic processing",
+        "capReached": "Monthly limit reached"
+    },
+    "footer": "Existing courses are not processed automatically. Open a course › AI knowledge › Make course AI-ready.",
+    "validation": {
+        "capWholeNumber": "Enter a whole number of credits (0 or more)",
+        "capMax": "The limit can be at most {{max}} credits"
+    },
+    "save": "Save",
+    "saving": "Saving…",
+    "discard": "Discard changes",
+    "toasts": {
+        "saved": "Course knowledge settings saved",
+        "deleted": "Course AI data deleted"
+    },
+    "errors": {
+        "saveFailed": "Could not save course knowledge settings. Try again.",
+        "deleteFailed": "Could not delete course AI data. Try again."
+    },
+    "danger": {
+        "title": "Danger zone",
+        "description": "Delete everything the AI has read from your lessons and turn course knowledge off.",
+        "button": "Delete course AI data",
+        "dialogTitle": "Delete course AI data?",
+        "dialogBody": "This cannot be undone. Your lessons themselves are not changed.",
+        "dialogPointIndex": "Everything the AI has read from your lessons is removed.",
+        "dialogPointOff": "Course knowledge is turned off, so learners stop getting answers from course content.",
+        "dialogPointCredits": "Processing in progress is stopped. Credits already spent are not refunded.",
+        "cancel": "Cancel",
+        "confirm": "Delete data",
+        "deleting": "Deleting…"
+    }
+}

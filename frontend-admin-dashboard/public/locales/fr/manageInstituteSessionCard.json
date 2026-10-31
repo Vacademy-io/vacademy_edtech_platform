@@ -1,0 +1,23 @@
+{
+    "toast": {
+        "sessionEditedSuccess": "{{term}} modifié avec succès",
+        "sessionEditFailed": "Échec de la modification de {{term}}"
+    },
+    "button": {
+        "saveChanges": "Enregistrer les modifications"
+    },
+    "card": {
+        "startDate": "Date de début",
+        "editButton": "Modifier {{term}}",
+        "deleteButton": "Supprimer {{term}}",
+        "active": "Active",
+        "inactive": "Inactive",
+        "courseCount_one": "{{count}} {{term}}",
+        "courseCount_other": "{{count}} {{term}}",
+        "batchCount_one": "{{count}} active {{term}}",
+        "batchCount_other": "{{count}} active {{term}}",
+        "moreActions": "More actions",
+        "hiddenLevel": "Hidden in this session",
+        "noCourses": "No {{term}} in this session yet."
+    }
+}

@@ -1,0 +1,50 @@
+{
+    "header": {
+        "title": "تصميم القالب وإنشاء الشهادات",
+        "subtitle": "قم برفع القالب وربطه بحقول بيانات الطلاب"
+    },
+    "viewToggle": {
+        "upload": "رفع",
+        "design": "تصميم",
+        "preview": "معاينة"
+    },
+    "progress": {
+        "generating": "جارٍ إنشاء الشهادات...",
+        "status": "{{completed}} من {{total}} مكتملة"
+    },
+    "alerts": {
+        "missingFields": "يرجى رفع قالب وربط بعض الحقول أولاً.",
+        "generationSuccess": "اكتمل إنشاء الشهادات!\nناجحة: {{successCount}}\nأخطاء: {{errorCount}}",
+        "generationFailed": "فشل إنشاء الشهادات: {{message}}",
+        "unknownError": "خطأ غير معروف"
+    },
+    "footer": {
+        "back": "العودة إلى بيانات الطلاب",
+        "fieldsMapped_zero": "لا توجد حقول مرتبطة",
+        "fieldsMapped_one": "حقل واحد مرتبط",
+        "fieldsMapped_two": "حقلان مرتبطان",
+        "fieldsMapped_few": "{{count}} حقول مرتبطة",
+        "fieldsMapped_many": "{{count}} حقلاً مرتبطاً",
+        "fieldsMapped_other": "{{count}} حقل مرتبط",
+        "generating": "جارٍ الإنشاء...",
+        "generate": "إنشاء الشهادات"
+    },
+    "help": {
+        "title": "البدء في إنشاء الشهادات",
+        "step1": "قم برفع قالب شهادة (PDF أو صورة) باستخدام منطقة الرفع أعلاه",
+        "step2": "انتقل إلى عرض \"تصميم\" لربط حقول البيانات بقالبك",
+        "step3": "اسحب الحقول من اللوحة إلى القالب حيث تريد ظهور البيانات",
+        "step4": "استخدم \"معاينة\" لرؤية شكل الشهادات ببيانات الطلاب الحقيقية",
+        "step5": "انقر على \"إنشاء الشهادات\" لإنشاء جميع الشهادات وتنزيلها"
+    },
+    "fields": {
+        "userId": { "label": "معرّف المستخدم", "sample": "USR001" },
+        "enrollmentNumber": { "label": "رقم التسجيل", "sample": "ENR2024001" },
+        "studentName": { "label": "اسم الطالب", "sample": "أحمد محمد" },
+        "fullName": { "label": "الاسم الكامل", "sample": "أحمد محمد علي" },
+        "email": { "label": "البريد الإلكتروني", "sample": "john.doe@example.com" },
+        "mobileNumber": { "label": "رقم الجوال", "sample": "+1 (555) 123-4567" },
+        "instituteName": { "label": "اسم المؤسسة", "sample": "جامعة التكنولوجيا" },
+        "completionDate": { "label": "تاريخ الإكمال" }
+    }
+}

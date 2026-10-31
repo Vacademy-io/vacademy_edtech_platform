@@ -1,0 +1,43 @@
+{
+    "header": {
+        "title": "مراجعة الأسئلة التي تم رفعها",
+        "summary_zero": "{{grouped}} من أصل {{count}} سؤال بحاجة إلى انتباه",
+        "summary_one": "{{grouped}} من أصل {{count}} سؤال واحد بحاجة إلى انتباه",
+        "summary_two": "{{grouped}} من أصل {{count}} سؤالين بحاجة إلى انتباه",
+        "summary_few": "{{grouped}} من أصل {{count}} أسئلة بحاجة إلى انتباه",
+        "summary_many": "{{grouped}} من أصل {{count}} سؤالًا بحاجة إلى انتباه",
+        "summary_other": "{{grouped}} من أصل {{count}} سؤال بحاجة إلى انتباه",
+        "errorsCount_zero": "— {{count}} بها أخطاء",
+        "errorsCount_one": "— سؤال واحد ({{count}}) به أخطاء",
+        "errorsCount_two": "— سؤالان ({{count}}) بهما أخطاء",
+        "errorsCount_few": "— {{count}} بها أخطاء",
+        "errorsCount_many": "— {{count}} بها أخطاء",
+        "errorsCount_other": "— {{count}} بها أخطاء",
+        "warningsCount_zero": ", {{count}} بها تحذيرات",
+        "warningsCount_one": ", سؤال واحد ({{count}}) به تحذيرات",
+        "warningsCount_two": ", سؤالان ({{count}}) بهما تحذيرات",
+        "warningsCount_few": ", {{count}} بها تحذيرات",
+        "warningsCount_many": ", {{count}} بها تحذيرات",
+        "warningsCount_other": ", {{count}} بها تحذيرات"
+    },
+    "actionsBar": {
+        "summary": "{{skipCount}} محددة للتخطي · {{proceedCount}} ستُضاف إلى النموذج",
+        "skipAll": "تخطي الكل",
+        "skipNone": "عدم تخطي أي منها"
+    },
+    "listItem": {
+        "questionNumber": "س{{number}}",
+        "errorBadge": "خطأ",
+        "warningBadge": "تحذير"
+    },
+    "footer": {
+        "copyDiagnostics": "نسخ JSON التشخيصي",
+        "cancel": "إلغاء",
+        "keepAllAndEdit": "الاحتفاظ بالكل والتعديل",
+        "skipAndProceed": "تخطي والمتابعة ({{count}})"
+    },
+    "toasts": {
+        "copySuccess": "تم نسخ معلومات التشخيص إلى الحافظة",
+        "copyFailed": "تعذر النسخ إلى الحافظة"
+    }
+}

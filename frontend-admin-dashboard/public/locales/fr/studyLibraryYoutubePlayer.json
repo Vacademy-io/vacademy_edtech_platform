@@ -1,0 +1,22 @@
+{
+    "timestampLabel": "Horodatage : {{time}}",
+    "correctBadge": "Correct",
+    "questionsList": {
+        "timeStampLine": "{{index}}. Horodatage - {{time}}"
+    },
+    "deleteDialog": {
+        "title": "Supprimer la question",
+        "confirmMessage": "Voulez-vous vraiment supprimer cette question ?",
+        "description": "Cette action supprime définitivement la question à cet horodatage et est irréversible.",
+        "cancel": "Annuler",
+        "delete": "Supprimer"
+    },
+    "toasts": {
+        "questionDeleted": "Question supprimée",
+        "videoJumpedTo": "Vidéo déplacée à {{time}}"
+    },
+    "errors": {
+        "deleteQuestionFailed": "Échec de la suppression de la question",
+        "seekFailed": "Échec du déplacement dans la vidéo"
+    }
+}

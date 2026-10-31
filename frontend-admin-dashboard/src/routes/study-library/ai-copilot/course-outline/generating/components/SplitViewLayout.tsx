@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
@@ -52,6 +53,7 @@ export const SplitViewLayout: React.FC<SplitViewLayoutProps> = ({
     onCreateCourse,
     onGenerateContent,
 }) => {
+    const { t } = useTranslation('studyLibrarySplitViewLayout');
     const [selectedSlideId, setSelectedSlideId] = useState<string | null>(null);
     const [expandedChapters, setExpandedChapters] = useState<Set<string>>(new Set());
     const [showMetadataDialog, setShowMetadataDialog] = useState(false);
@@ -138,7 +140,7 @@ export const SplitViewLayout: React.FC<SplitViewLayoutProps> = ({
                             className="flex items-center gap-2 self-start text-sm font-medium text-neutral-600 transition-colors hover:text-indigo-600"
                         >
                             <ArrowLeft className="size-4" />
-                            Back
+                            {t('back')}
                         </button>
 
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -149,8 +151,8 @@ export const SplitViewLayout: React.FC<SplitViewLayoutProps> = ({
                                 onClick={() => setShowMetadataDialog(true)}
                             >
                                 <Settings className="mr-1 size-4" />
-                                <span className="hidden sm:inline">Course Details</span>
-                                <span className="sm:hidden">Details</span>
+                                <span className="hidden sm:inline">{t('courseDetails')}</span>
+                                <span className="sm:hidden">{t('details')}</span>
                             </MyButton>
 
                             {/* Action Buttons */}
@@ -158,7 +160,7 @@ export const SplitViewLayout: React.FC<SplitViewLayoutProps> = ({
                                 <div className="flex items-center gap-2 sm:gap-3">
                                     <div className="flex items-center gap-2 text-sm text-indigo-600">
                                         <Loader2 className="size-4 animate-spin" />
-                                        <span>{progressPercent}%</span>
+                                        <span>{t('percent', { value: progressPercent })}</span>
                                     </div>
                                 </div>
                             ) : isContentGenerated ? (
@@ -172,13 +174,15 @@ export const SplitViewLayout: React.FC<SplitViewLayoutProps> = ({
                                     ) : (
                                         <CheckCircle className="h-4 w-4 mr-1" />
                                     )}
-                                    {isAdmin ? 'Create Course' : 'Create Draft Course'}
+                                    {isAdmin ? t('createCourse') : t('createDraftCourse')}
                                 </MyButton>
                             ) : (
                                 <MyButton buttonType="primary" onClick={onGenerateContent}>
                                     <Sparkles className="mr-1 size-4" />
-                                    <span className="hidden sm:inline">Generate Page Content</span>
-                                    <span className="sm:hidden">Generate</span>
+                                    <span className="hidden sm:inline">
+                                        {t('generatePageContent')}
+                                    </span>
+                                    <span className="sm:hidden">{t('generate')}</span>
                                 </MyButton>
                             )}
                         </div>
@@ -188,9 +192,12 @@ export const SplitViewLayout: React.FC<SplitViewLayoutProps> = ({
                     {isGeneratingContent && (
                         <div className="mt-3">
                             <div className="mb-1 flex items-center justify-between text-xs text-neutral-600">
-                                <span>Generating content...</span>
+                                <span>{t('generatingContent')}</span>
                                 <span>
-                                    {completedSlides} of {totalSlides} pages
+                                    {t('pagesProgress', {
+                                        completed: completedSlides,
+                                        total: totalSlides,
+                                    })}
                                 </span>
                             </div>
                             <div className="h-2 overflow-hidden rounded-full bg-neutral-200">
@@ -217,7 +224,7 @@ export const SplitViewLayout: React.FC<SplitViewLayoutProps> = ({
                         )}
                     >
                         <List className="size-4" />
-                        Chapters
+                        {t('chapters')}
                     </button>
                     <button
                         onClick={() => setMobileActivePanel('editor')}
@@ -229,7 +236,7 @@ export const SplitViewLayout: React.FC<SplitViewLayoutProps> = ({
                         )}
                     >
                         <PanelLeft className="size-4" />
-                        Content
+                        {t('content')}
                     </button>
                 </div>
 

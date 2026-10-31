@@ -1,0 +1,40 @@
+{
+    "heading": "Planifier un déverrouillage progressif",
+    "alerts": {
+        "dripDisabled": "Les conditions de diffusion progressive sont désactivées pour cet établissement. Le calendrier sera enregistré, mais rien ne se verrouillera tant que vous ne l'activez pas dans Paramètres → Cours → Conditions de diffusion progressive."
+    },
+    "emptyState": "Ce cours n'a pas encore de contenu à planifier.",
+    "form": {
+        "releaseOne": "Diffuser un(e)",
+        "everyDays": "Tous les … jours",
+        "firstOneOpensOnDay": "Le premier s'ouvre au jour",
+        "countedFrom": "Décompté à partir de",
+        "anchorEnrollment": "La date d'inscription de chaque apprenant",
+        "anchorSessionStart": "La date de début du groupe",
+        "opensAt": "S'ouvre à",
+        "untilThen": "Jusque-là",
+        "showLocked": "Afficher verrouillé",
+        "hideCompletely": "Masquer complètement"
+    },
+    "preview": {
+        "summary_one": "{{items}} diffusé(s) sur {{count}} jour, par apprenant.",
+        "summary_many": "{{items}} diffusé(s) sur {{count}} jours, par apprenant.",
+        "summary_other": "{{items}} diffusé(s) sur {{count}} jours, par apprenant.",
+        "existingRules_one": "{{count}} règle existante à ce niveau sera remplacée.",
+        "existingRules_many": "{{count}} règles existantes à ce niveau seront remplacées.",
+        "existingRules_other": "{{count}} règles existantes à ce niveau seront remplacées."
+    },
+    "table": {
+        "day": "Jour",
+        "dayLabel": "Jour {{day}}"
+    },
+    "actions": {
+        "clearSchedule": "Effacer le calendrier",
+        "cancel": "Annuler",
+        "saving": "Enregistrement…",
+        "applySchedule": "Appliquer le calendrier"
+    },
+    "clearConfirm_one": "Supprimer {{count}} règle de déverrouillage de ce cours ? Chaque {{level}} s'ouvrira immédiatement pour tous les apprenants.",
+    "clearConfirm_many": "Supprimer {{count}} règles de déverrouillage de ce cours ? Chaque {{level}} s'ouvrira immédiatement pour tous les apprenants.",
+    "clearConfirm_other": "Supprimer {{count}} règles de déverrouillage de ce cours ? Chaque {{level}} s'ouvrira immédiatement pour tous les apprenants."
+}

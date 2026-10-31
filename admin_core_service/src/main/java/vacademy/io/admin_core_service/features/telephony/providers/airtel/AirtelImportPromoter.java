@@ -27,6 +27,7 @@ import vacademy.io.admin_core_service.features.timeline.service.TimelineEventSer
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -89,7 +90,7 @@ public class AirtelImportPromoter {
             // A CDR creates/enriches the call row, so it needs the counsellor.
             String counsellor = resolveCounsellor(imp);
             if (counsellor == null) {
-                skip(imp, "counsellor not mapped (ext=" + imp.getSourceExtension()
+                skip(imp, "counsellor not mapped, or mapped twice (ext=" + imp.getSourceExtension()
                         + ", user=" + imp.getSourceUserId() + ")");
                 return;
             }
@@ -138,18 +139,35 @@ public class AirtelImportPromoter {
         return null;
     }
 
-    private String resolveCounsellor(AirtelCallImport imp) {
+    /**
+     * The counsellor behind the record's extension (else its Airtel user id), looked up in the
+     * institute the record was attributed to only. Two rows for the same extension in that
+     * institute is ambiguous: neither is picked, and the record is skipped with a reason.
+     */
+    String resolveCounsellor(AirtelCallImport imp) {
+        String instituteId = imp.getInstituteId();
+        if (instituteId == null || instituteId.isBlank()) return null;
         if (imp.getSourceExtension() != null && !imp.getSourceExtension().isBlank()) {
-            Optional<TelephonyCounsellorEndpoint> ep = endpointRepo
-                    .findByProviderTypeAndExtensionAndEnabledTrue(ProviderType.AIRTEL, imp.getSourceExtension());
-            if (ep.isPresent()) return ep.get().getCounsellorUserId();
+            String c = single(endpointRepo.findByInstituteIdAndProviderTypeAndExtensionAndEnabledTrue(
+                    instituteId, ProviderType.AIRTEL, imp.getSourceExtension()), "extension " + imp.getSourceExtension());
+            if (c != null) return c;
         }
         if (imp.getSourceUserId() != null && !imp.getSourceUserId().isBlank()) {
-            Optional<TelephonyCounsellorEndpoint> ep = endpointRepo
-                    .findByProviderTypeAndProviderUserIdAndEnabledTrue(ProviderType.AIRTEL, imp.getSourceUserId());
-            if (ep.isPresent()) return ep.get().getCounsellorUserId();
+            return single(endpointRepo.findByInstituteIdAndProviderTypeAndProviderUserIdAndEnabledTrue(
+                    instituteId, ProviderType.AIRTEL, imp.getSourceUserId()), "Airtel user " + imp.getSourceUserId());
         }
         return null;
+    }
+
+    private static String single(List<TelephonyCounsellorEndpoint> rows, String what) {
+        if (rows == null || rows.isEmpty()) return null;
+        java.util.Set<String> users = new java.util.HashSet<>();
+        for (TelephonyCounsellorEndpoint r : rows) users.add(r.getCounsellorUserId());
+        if (users.size() > 1) {
+            log.warn("airtel-import: {} is mapped to {} counsellors in one institute; not attributing", what, users.size());
+            return null;
+        }
+        return users.iterator().next();
     }
 
     private void promoteCdr(AirtelCallImport imp, String instituteId, String counsellor) {
@@ -308,7 +326,8 @@ public class AirtelImportPromoter {
                     "SYSTEM", null, actorName,
                     title,
                     "Airtel call " + row.getStatus().toLowerCase(),
-                    meta, null);
+                    // Link to the lead so an imported call counts as a response for TAT.
+                    meta, row.getUserId());
         } catch (Exception ignored) {
             // never block promotion on a logging side-effect
         }

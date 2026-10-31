@@ -1,0 +1,73 @@
+{
+    "loading": "جارٍ تحميل تفاصيل الاستفسار…",
+    "loadError": "فشل تحميل تفاصيل الاستفسار.",
+    "duplicateBanner": {
+        "message": "هذا عميل محتمل مكرر.",
+        "primaryLabel": "الأساسي: {{id}}…"
+    },
+    "header": {
+        "trackingId": "معرّف التتبع",
+        "copy": "نسخ",
+        "copiedToast": "تم نسخ معرّف التتبع!",
+        "enquiryStatus": "حالة الاستفسار",
+        "overallStatus": "الحالة العامة"
+    },
+    "sections": {
+        "child": {
+            "title": "الطالب / الطفل",
+            "name": "الاسم",
+            "dob": "تاريخ الميلاد",
+            "gender": "الجنس",
+            "applyingForClass": "الصف المتقدَّم إليه",
+            "academicYear": "العام الدراسي",
+            "previousSchool": "المدرسة السابقة"
+        },
+        "parent": {
+            "title": "ولي الأمر",
+            "name": "الاسم",
+            "email": "البريد الإلكتروني",
+            "phone": "الهاتف",
+            "address": "العنوان",
+            "city": "المدينة",
+            "pinCode": "الرمز البريدي"
+        },
+        "enquiryInfo": {
+            "title": "معلومات الاستفسار",
+            "mode": "الوسيلة",
+            "referenceSource": "مصدر الإحالة",
+            "leadInterestScore": "درجة اهتمام العميل المحتمل",
+            "feeRangeExpectation": "نطاق الرسوم المتوقع",
+            "transportRequirement": "الحاجة إلى النقل",
+            "currentStage": "المرحلة الحالية",
+            "createdAt": "تاريخ الإنشاء",
+            "updatedAt": "تاريخ التحديث",
+            "notes": "ملاحظات"
+        },
+        "campaign": {
+            "title": "الاستفسار",
+            "enquiry": "الاستفسار",
+            "source": "المصدر",
+            "classLevel": "الصف / المستوى",
+            "session": "الجلسة"
+        },
+        "applicationStatus": {
+            "title": "حالة الطلب",
+            "applied": "تم التقديم",
+            "applicantId": "معرّف المتقدم",
+            "assignedCounselor": "المرشد المخصص",
+            "yes": "نعم",
+            "no": "لا"
+        },
+        "customFields": {
+            "title": "حقول مخصصة"
+        }
+    },
+    "status": {
+        "NEW": "جديد",
+        "CONTACTED": "تم التواصل",
+        "QUALIFIED": "مؤهَّل",
+        "NOT_ELIGIBLE": "غير مؤهَّل",
+        "ENQUIRY": "استفسار",
+        "APPLICATION": "طلب التحاق"
+    }
+}

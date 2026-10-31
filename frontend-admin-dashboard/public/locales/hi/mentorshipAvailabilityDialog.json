@@ -1,0 +1,76 @@
+{
+    "heading": "उपलब्धता",
+    "cancel": "रद्द करें",
+    "save": "सहेजें",
+    "saving": "सहेजा जा रहा है…",
+    "loading": "आपकी उपलब्धता लोड हो रही है…",
+    "intro": "तय करें कि शिक्षार्थी आपके साथ 1:1 सत्र कब और कैसे बुक कर सकते हैं।",
+    "to": "से",
+    "unavailable": "अनुपलब्ध",
+    "savedToast": "उपलब्धता सहेज दी गई",
+    "saveFailed": "उपलब्धता सहेजने में विफल",
+    "timezoneNote": {
+        "prefix": "नीचे दिए गए समय",
+        "suffix": "समय क्षेत्र में हैं।"
+    },
+    "days": {
+        "monday": "सोमवार",
+        "tuesday": "मंगलवार",
+        "wednesday": "बुधवार",
+        "thursday": "गुरुवार",
+        "friday": "शुक्रवार",
+        "saturday": "शनिवार",
+        "sunday": "रविवार"
+    },
+    "location": {
+        "heading": "मीटिंग स्थान",
+        "description": "जब कोई शिक्षार्थी सत्र बुक करता है तो वीडियो कॉल कहाँ होती है।",
+        "googleMeetOption": "Google Meet (हर बुकिंग पर अपने-आप बनता है)",
+        "customLinkOption": "Zoom / BigBlueButton / कस्टम लिंक",
+        "meetingLinkLabel": "मीटिंग लिंक",
+        "meetingLinkPlaceholder": "https://zoom.us/j/… या आपका BigBlueButton रूम URL"
+    },
+    "weeklyHours": {
+        "heading": "साप्ताहिक घंटे",
+        "description": "जिन दिनों आप उपलब्ध हैं उन्हें चालू करें, और वे घंटे सेट करें जिनमें शिक्षार्थी बुक कर सकें।"
+    },
+    "overrides": {
+        "heading": "छुट्टी और विशेष तारीखें",
+        "addDate": "तारीख जोड़ें",
+        "addDateTitle": "किसी तारीख को ब्लॉक करने या कस्टम घंटे देने के लिए जोड़ें",
+        "description": "किसी दिन को ब्लॉक करें, या किसी विशेष तारीख के लिए अलग घंटे दें — ये ऊपर दिए गए आपके साप्ताहिक घंटों को ओवरराइड करते हैं।",
+        "empty": "अभी तक कोई तारीख अपवाद नहीं है।",
+        "unavailable": "अनुपलब्ध",
+        "customHours": "कस्टम घंटे",
+        "removeAriaLabel": "यह तारीख अपवाद हटाएं",
+        "removeTitle": "यह तारीख अपवाद हटाएं"
+    },
+    "sessionSettings": {
+        "heading": "सत्र सेटिंग्स",
+        "description": "डिफ़ॉल्ट सत्र अवधि और उससे जुड़े शेड्यूलिंग नियम — सूचना अवधि, बफ़र, और शिक्षार्थी कितने पहले बुक कर सकते हैं।",
+        "defaultDuration": "डिफ़ॉल्ट अवधि",
+        "minimumNotice": "न्यूनतम सूचना (घंटे)",
+        "bufferBefore": "पहले बफ़र (मिनट)",
+        "bufferAfter": "बाद में बफ़र (मिनट)",
+        "bookingHorizon": "बुकिंग सीमा (दिन)",
+        "minutesOption_one": "{{count}} मिनट",
+        "minutesOption_other": "{{count}} मिनट"
+    },
+    "sessionTypes": {
+        "heading": "सत्र प्रकार",
+        "addType": "प्रकार जोड़ें",
+        "addTypeTitle": "बुक करने योग्य एक और अवधि पेश करें",
+        "description": "वैकल्पिक। एक से अधिक बुक करने योग्य अवधि पेश करें (जैसे “त्वरित चर्चा” 15 मिनट, “गहन चर्चा” 60 मिनट) — बुकिंग करते समय शिक्षार्थी एक चुनता है। ऊपर दी गई डिफ़ॉल्ट अवधि का उपयोग करने के लिए इसे खाली छोड़ें।",
+        "empty": "अभी तक कोई सत्र प्रकार नहीं है।",
+        "namePlaceholder": "नाम (जैसे: करियर चर्चा)",
+        "minutesShortOption_one": "{{count}} मि",
+        "minutesShortOption_other": "{{count}} मि",
+        "removeAriaLabel": "यह सत्र प्रकार हटाएं",
+        "removeTitle": "यह सत्र प्रकार हटाएं"
+    },
+    "validation": {
+        "endAfterStart": "{{day}}: समाप्ति समय प्रारंभ समय के बाद होना चाहिए।",
+        "enableOneDay": "शिक्षार्थियों के बुक कर सकने के लिए कम से कम एक दिन चालू करें।",
+        "addMeetingLink": "अपना मीटिंग लिंक जोड़ें (Zoom, BigBlueButton, या अन्य)।"
+    }
+}

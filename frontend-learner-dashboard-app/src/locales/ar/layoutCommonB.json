@@ -1,0 +1,892 @@
+{
+  "aiReportDetails": {
+    "areasOfImprovement": {
+      "title": "📝 مجالات التحسين"
+    },
+    "behavioralInsights": {
+      "difficultyResponse": "📈 الاستجابة للصعوبة",
+      "fatigueIndicator": "😴 مؤشر الإرهاق",
+      "skipPattern": "⏭️ نمط تخطي الأسئلة",
+      "timeManagement": "⏱️ إدارة الوقت",
+      "title": "🧩 رؤى سلوكية"
+    },
+    "bloomLevels": {
+      "analyze": "التحليل",
+      "apply": "التطبيق",
+      "create": "الإبداع",
+      "evaluate": "التقييم",
+      "remember": "التذكر",
+      "understand": "الفهم"
+    },
+    "bloomsTaxonomy": {
+      "caption": "أداؤك في مستويات التفكير المختلفة — من التذكر الأساسي إلى التحليل المتقدم وحل المشكلات.",
+      "performanceByLevel": "الأداء حسب المستوى المعرفي",
+      "title": "🎓 تصنيف بلوم"
+    },
+    "confidence": {
+      "aiInsight": "رؤية الذكاء الاصطناعي:",
+      "caption": "الثقة المقدَّرة استنادًا إلى زمن الاستجابة وأنماط الإجابة وصعوبة السؤال.",
+      "high": "مرتفعة",
+      "highConfCorrect": "ثقة عالية وإجابة صحيحة",
+      "highConfWrong": "ثقة عالية وإجابة خاطئة",
+      "likelyGuessed": "على الأرجح تخمين",
+      "low": "منخفضة",
+      "lowConfCorrect": "ثقة منخفضة وإجابة صحيحة",
+      "medium": "متوسطة",
+      "perQuestion": "الثقة لكل سؤال",
+      "title": "🎯 تقدير الثقة"
+    },
+    "defaultSubtitle": "تحليل أداء مخصص",
+    "downloadPdf": "تنزيل PDF",
+    "failed": "فشل",
+    "flashcards": {
+      "answer": "الإجابة",
+      "flip": "قلب البطاقة",
+      "question": "السؤال",
+      "title": "🃏 بطاقات تعليمية"
+    },
+    "generating": "جارٍ الإنشاء...",
+    "improvementPath": {
+      "title": "🚀 مسار التعلم الموصى به"
+    },
+    "leaderboard": {
+      "marks": "الدرجات",
+      "ofNStudents": "من أصل {{total}} طالب",
+      "percentile": "الشريحة المئوية",
+      "rank": "الترتيب",
+      "student": "الطالب",
+      "title": "🏅 لوحة الصدارة (موقعك)",
+      "youMarker": ">> {{name}} (أنت)",
+      "yourRankPrefix": "ترتيبك:"
+    },
+    "learningPath": {
+      "title": "🗺️ مسار التعلم الموصى به"
+    },
+    "misconceptions": {
+      "caption": "الأسئلة التي أخطأت فيها والمفاهيم الخاطئة الدقيقة وراء كل خطأ.",
+      "correct": "الصحيح:",
+      "misconceptionLabel": "المفهوم الخاطئ:",
+      "title": "🔍 تحليل المفاهيم الخاطئة",
+      "yourAnswer": "إجابتك:"
+    },
+    "performanceAnalysis": {
+      "title": "📊 تحليل الأداء"
+    },
+    "scoreOverview": {
+      "marksObtained": "الدرجات المحققة",
+      "percentile": "الشريحة المئوية",
+      "rankOf": "الترتيب (من أصل {{total}})"
+    },
+    "strengths": {
+      "title": "💪 نقاط القوة"
+    },
+    "topicAnalysis": {
+      "caption": "أداؤك في المواضيع المختلفة التي يغطيها هذا التقييم.",
+      "table": {
+        "accuracy": "الدقة",
+        "avgTime": "متوسط الوقت",
+        "correct": "صحيح",
+        "mastery": "الإتقان",
+        "questions": "الأسئلة",
+        "topic": "الموضوع"
+      },
+      "title": "🧠 تحليل المواضيع"
+    },
+    "vsClass": {
+      "accuracyCaption": "الدقة (أنت مقابل متوسط الفصل)",
+      "avg": "المتوسط: {{value}}",
+      "highest": "الأعلى:",
+      "lowest": "الأدنى:",
+      "marksCaption": "الدرجات (أنت مقابل متوسط الفصل)",
+      "participants": "المشاركون:",
+      "title": "📊 أداؤك مقابل الفصل",
+      "you": "أنت: {{value}}"
+    },
+    "weaknesses": {
+      "title": "🎯 نقاط الضعف"
+    }
+  },
+  "attendanceReport": {
+    "attendanceRate": "معدل الحضور",
+    "bestRegards": "مع أطيب التحيات،",
+    "closingNote": "الحضور المنتظم هو مفتاح النجاح.",
+    "downloadPdf": "تنزيل PDF",
+    "engagement": {
+      "attendanceLabel": "الحضور:",
+      "attendancePts": "80 نقطة",
+      "breakdownTitle": "تفاصيل درجة المشاركة",
+      "chats_few": "{{count}} رسائل دردشة",
+      "chats_many": "{{count}} رسالة دردشة",
+      "chats_one": "{{count}} رسالة دردشة",
+      "chats_other": "{{count}} رسالة دردشة",
+      "chats_two": "{{count}} رسالتا دردشة",
+      "chats_zero": "{{count}} رسالة دردشة",
+      "emojis_few": "{{count}} إيموجي",
+      "emojis_many": "{{count}} إيموجي",
+      "emojis_one": "{{count}} إيموجي",
+      "emojis_other": "{{count}} إيموجي",
+      "emojis_two": "{{count}} إيموجي",
+      "emojis_zero": "{{count}} إيموجي",
+      "explanationMiddle": "استنادًا إلى وقت الحضور مقارنة بإجمالي مدة الجلسة، بالإضافة إلى",
+      "explanationPrefix": "طريقة احتساب درجة كل جلسة:",
+      "explanationSuffix": "من التفاعلات أثناء الجلسة. الحد الأقصى للمجموع هو 100.",
+      "interactionPts": "20 نقطة",
+      "interactionsLabel": "التفاعلات:",
+      "joinedOf": "({{joined}} من أصل {{total}} دقيقة تم الانضمام إليها)",
+      "polls_few": "{{count}} استطلاعات",
+      "polls_many": "{{count}} استطلاعًا",
+      "polls_one": "{{count}} استطلاع",
+      "polls_other": "{{count}} استطلاع",
+      "polls_two": "{{count}} استطلاعان",
+      "polls_zero": "{{count}} استطلاع",
+      "raises_few": "{{count}} مرات رفع يد",
+      "raises_many": "{{count}} مرة رفع يد",
+      "raises_one": "{{count}} مرة رفع يد",
+      "raises_other": "{{count}} مرة رفع يد",
+      "raises_two": "{{count}} مرتا رفع يد",
+      "raises_zero": "{{count}} مرة رفع يد",
+      "talkTime": "{{count}} وقت التحدث (بالثواني)",
+      "total": "المجموع: {{score}}/100"
+    },
+    "generated": "تم الإنشاء",
+    "generating": "جارٍ الإنشاء...",
+    "greeting": {
+      "middle": "، إليك ملخص حضورك للفترة من",
+      "prefix": "مرحبًا",
+      "to": "إلى"
+    },
+    "loadFailed": "فشل تحميل التقرير.",
+    "minutesTotal": "{{count}} دقيقة إجمالًا",
+    "noData": "لا تتوفر بيانات حضور لهذه الفترة.",
+    "pdfGenerationFailed": "فشل إنشاء ملف PDF. يرجى المحاولة مرة أخرى.",
+    "sessionDetails": "تفاصيل الجلسات",
+    "sessionsAttended": "{{count}} جلسة تم حضورها",
+    "title": "تقرير الحضور",
+    "unknownError": "خطأ غير معروف"
+  },
+  "comprehensiveReportCard": {
+    "academics": {
+      "average": "المتوسط",
+      "best": "الأفضل:",
+      "needsWork": "يحتاج إلى تحسين:",
+      "subjectPerformanceVsClass": "أداء {{subject}} مقابل الفصل",
+      "table": {
+        "assessment": "التقييم",
+        "needsWorkBadge": "يحتاج إلى تحسين",
+        "rank": "الترتيب",
+        "score": "الدرجة",
+        "status": "الحالة"
+      },
+      "title": "الأداء الأكاديمي",
+      "vsClassAverage": "مقابل متوسط الفصل {{percent}}%"
+    },
+    "achievements": {
+      "title": "الإنجازات"
+    },
+    "aiInsights": {
+      "recommendedNextSteps": "الخطوات التالية الموصى بها",
+      "whatWeNoticed": "ما لاحظناه"
+    },
+    "assignments": {
+      "assigned": "المُكلَّف بها",
+      "avgScore": "متوسط الدرجة",
+      "late": "متأخر",
+      "onTime": "في الوقت المحدد",
+      "pending": "معلّق",
+      "submitted": "تم التسليم",
+      "title": "الواجبات"
+    },
+    "attendance": {
+      "absent": "غائب",
+      "late": "متأخر",
+      "present": "حاضر",
+      "presentOfTotal": "{{present}} من أصل {{total}} حاضر",
+      "title": "الحضور",
+      "weeklyTrend": "الاتجاه الأسبوعي"
+    },
+    "courseProgress": {
+      "title": "تقدم {{course}} — اكتمل {{percent}}%"
+    },
+    "footer": "تم إنشاؤه بواسطة {{institute}} بتاريخ {{date}} · يغطي هذا التقرير {{period}}.",
+    "header": {
+      "classBatch": "الصف / الدفعة",
+      "downloadPdf": "تنزيل PDF",
+      "enrollmentNo": "رقم التسجيل",
+      "periodGenerated": "{{period}} · تم الإنشاء بتاريخ {{date}}",
+      "preparing": "جارٍ التحضير…",
+      "rollNo": "رقم القيد",
+      "statusGrade": "● {{status}} · الدرجة {{grade}}",
+      "student": "الطالب",
+      "title": "تقرير تقدم الطالب"
+    },
+    "liveClasses": {
+      "attendance": "الحضور",
+      "attended": "تم حضوره",
+      "missed": "فائت",
+      "notMarked": "غير مسجَّل",
+      "total": "إجمالي الحصص"
+    },
+    "parentSummary": {
+      "title": "ملخص لأولياء الأمور"
+    },
+    "strengths": {
+      "areasToImproveTitle": "مجالات التحسين",
+      "strengthsTitle": "نقاط القوة"
+    },
+    "studyHabits": {
+      "activeDays": "الأيام النشطة",
+      "contentExplored": "المحتوى الذي تم استكشافه:",
+      "dailyStudyTime": "وقت الدراسة اليومي (بالدقائق) · {{count}} يوم",
+      "dayN": "اليوم {{day}}",
+      "days": "أيام",
+      "documents": "مستندات",
+      "focusScore": "درجة التركيز",
+      "longestStreak": "أطول سلسلة متتالية",
+      "mostActive": "الأكثر نشاطًا",
+      "quizzes": "اختبارات قصيرة",
+      "title": "عادات الدراسة والمشاركة اليومية",
+      "videos": "فيديوهات"
+    },
+    "subjectMarks": {
+      "caption": "مجمّعة من التقييمات والواجبات والاختبارات القصيرة وأسئلة التدريب.",
+      "title": "الدرجات حسب {{subject}}"
+    }
+  },
+  "couponInput": {
+    "apply": "تطبيق",
+    "applying": "جارٍ التطبيق...",
+    "couponCode": "رمز القسيمة",
+    "discountOff": "— خصم {{amount}}",
+    "errors": {
+      "applyFailed": "تعذّر تطبيق القسيمة. يرجى المحاولة مرة أخرى.",
+      "enterCodeFirst": "يرجى إدخال رمز القسيمة أولاً."
+    },
+    "heading": "رمز القسيمة",
+    "placeholder": "أدخل رمز القسيمة",
+    "removeCoupon": "إزالة القسيمة"
+  },
+  "customFields": {
+    "enterField": "أدخل {{name}}",
+    "file": {
+      "allowedTypes": "المسموح به: {{allowed}}",
+      "maxSize": " · الحد الأقصى {{maxSizeMB}} ميجابايت",
+      "tooLarge": "يجب أن يكون حجم الملف أقل من {{maxSizeMB}} ميجابايت",
+      "typeNotAllowed": "نوع الملف .{{ext}} غير مسموح به. المسموح به: {{allowed}}",
+      "uploadFailed": "فشل رفع الملف. يرجى المحاولة مرة أخرى.",
+      "uploaded": "تم الرفع: {{fileName}}",
+      "uploading": "جارٍ الرفع...",
+      "viewCurrentFile": "عرض الملف الحالي"
+    },
+    "pickDate": "اختر تاريخًا",
+    "selectField": "اختر {{name}}"
+  },
+  "donation": {
+    "amountSelector": {
+      "customAmountPlaceholder": "{{symbol}} (الحد الأدنى {{minAmount}})",
+      "other": "أخرى"
+    },
+    "dialog": {
+      "chooseAmount": "اختر مبلغًا للتبرع",
+      "close": "إغلاق",
+      "continue": "متابعة",
+      "loadingOptions": "جارٍ تحميل خيارات التبرع...",
+      "processing": "جارٍ المعالجة...",
+      "skip": "تخطي",
+      "supportFreeLearning": "ادعم التعلّم المجاني",
+      "tryAgain": "أعد المحاولة"
+    },
+    "emailForm": {
+      "emailPlaceholder": "you@example.com",
+      "receiptNotice": "سنرسل إيصالك إلى عنوان البريد الإلكتروني هذا",
+      "yourEmail": "بريدك الإلكتروني"
+    },
+    "hook": {
+      "errors": {
+        "accessDenied": "تم رفض الوصول. يرجى التحقق من صلاحياتك والمحاولة مرة أخرى.",
+        "alreadyEnrolled": "أنت مسجَّل بالفعل في هذا {{course}}. يرجى مراجعة {{courses}} المسجَّلة لديك.",
+        "cardMountFailed": "فشل تحميل حقل البطاقة. يرجى تحديث الصفحة والمحاولة مرة أخرى.",
+        "courseConfigError": "خطأ في إعدادات {{course}}. يرجى تحديث الصفحة والمحاولة مرة أخرى.",
+        "courseDataError": "خطأ في بيانات {{course}}. يرجى تحديث الصفحة والمحاولة مرة أخرى.",
+        "enrollmentError": "خطأ في التسجيل. يرجى المحاولة مرة أخرى أو التواصل مع الدعم.",
+        "enrollmentFailed": "فشل التسجيل. يرجى المحاولة مرة أخرى.",
+        "enterAmount": "يرجى إدخال مبلغ التبرع",
+        "enterEmail": "يرجى إدخال عنوان بريدك الإلكتروني",
+        "invalidAmount": "يرجى إدخال مبلغ تبرع صالح",
+        "invalidEmail": "يرجى إدخال عنوان بريد إلكتروني صالح",
+        "invalidEmailFormat": "صيغة بريد إلكتروني غير صالحة",
+        "loginAgain": "يرجى تسجيل الدخول مرة أخرى والمحاولة مجددًا.",
+        "minimumAmount": "الحد الأدنى لمبلغ التبرع هو {{amount}}",
+        "paymentFailed": "فشلت عملية الدفع. يرجى المحاولة مرة أخرى.",
+        "paymentFormLoadFailed": "فشل تحميل نموذج الدفع. يرجى تحديث الصفحة والمحاولة مرة أخرى.",
+        "paymentFormNotLoaded": "لم يتم تحميل نموذج الدفع. يرجى تحديث الصفحة والمحاولة مرة أخرى.",
+        "paymentGatewayError": "خطأ في نظام الدفع. يرجى المحاولة مرة أخرى أو التواصل مع الدعم.",
+        "selectAmount": "⚠️ يرجى تحديد أو إدخال مبلغ تبرع للمتابعة",
+        "somethingWentWrong": "حدث خطأ ما. يرجى المحاولة مرة أخرى أو التواصل مع الدعم.",
+        "systemError": "خطأ في النظام. يرجى المحاولة مرة أخرى أو التواصل مع الدعم.",
+        "unableToFetchUserData": "تعذّر جلب بيانات المستخدم. يرجى المحاولة مرة أخرى."
+      }
+    },
+    "paymentForm": {
+      "cardDetails": "تفاصيل البطاقة",
+      "donateNow": "تبرّع الآن",
+      "loadingPaymentForm": "جارٍ تحميل نموذج الدفع...",
+      "processing": "جارٍ المعالجة...",
+      "securePaymentPoweredBy": "دفع آمن مدعوم من",
+      "skip": "تخطي",
+      "stripe": "Stripe"
+    },
+    "summary": {
+      "amount": "المبلغ:",
+      "edit": "تعديل",
+      "email": "البريد الإلكتروني:",
+      "plan": "الخطة:",
+      "title": "ملخص التبرع"
+    }
+  },
+  "instructionPage": {
+    "assessmentInstructions": {
+      "attachment": "مرفق",
+      "attemptOf": "المحاولة {{used}} من {{max}}",
+      "downloadPaper": "تنزيل",
+      "instructionsFromInstitute": "تعليمات من مؤسستك",
+      "no": "لا",
+      "noAdditionalInstructions": "لم تُقدَّم أي تعليمات إضافية لهذا التقييم.",
+      "readBeforeYouBegin": "اقرأ هذا قبل أن تبدأ. يبدأ العداد الزمني بمجرد دخولك الاختبار.",
+      "rules": {
+        "attempts": {
+          "bodyFirst": "هذه هي محاولتك الأولى في هذه الورقة.",
+          "bodyUsed_few": "لقد استخدمت بالفعل {{count}} محاولات في هذه الورقة.",
+          "bodyUsed_many": "لقد استخدمت بالفعل {{count}} محاولة في هذه الورقة.",
+          "bodyUsed_one": "لقد استخدمت بالفعل {{count}} محاولة في هذه الورقة.",
+          "bodyUsed_other": "لقد استخدمت بالفعل {{count}} محاولة في هذه الورقة.",
+          "bodyUsed_two": "لقد استخدمت بالفعل {{count}} محاولتين في هذه الورقة.",
+          "bodyUsed_zero": "لقد استخدمت {{count}} محاولة في هذه الورقة."
+        },
+        "autoSave": {
+          "body": "تتم مزامنة كل إجابة أولاً بأول. إذا انقطع اتصالك، تُحفظ الإجابات على هذا الجهاز وتُرسَل عند عودة الاتصال.",
+          "title": "تُحفظ إجاباتك تلقائيًا"
+        },
+        "clock": {
+          "bodyFixed": "تُفتح الأقسام بالترتيب. بمجرد انتهاء وقت أحد الأقسام، لا يمكنك العودة إليه.",
+          "bodySwitchable": "يمكنك التنقل بين الأقسام بحرية حتى انتهاء العداد الزمني الإجمالي.",
+          "title": "{{duration}} على العداد الزمني"
+        },
+        "fullScreen": {
+          "body": "يعمل الاختبار في وضع ملء الشاشة. تسجَّل مغادرته أو تبديل علامات التبويب أو فتح نافذة أخرى. ستؤدي ثلاثة تحذيرات إلى تسليم ورقتك تلقائيًا.",
+          "title": "ابقَ في وضع ملء الشاشة"
+        },
+        "preview": {
+          "body": "تحصل على معاينة للقراءة فقط للورقة قبل بدء وقت الإجابة.",
+          "title": "معاينة قبل البدء"
+        },
+        "questionPalette": {
+          "body": "تُظهر اللوحة ما تمت الإجابة عنه أو تخطّيه أو تمييزه للمراجعة. تمييز سؤال للمراجعة لا يزال يُسلِّم أي إجابة اخترتها.",
+          "title": "استخدم لوحة الأسئلة"
+        },
+        "tools": {
+          "and": " و",
+          "body": "يوفر لك هذا الاختبار {{tools}}. افتحها من شريط الأدوات أثناء الاختبار.",
+          "title": "أدوات يمكنك استخدامها"
+        }
+      },
+      "stats": {
+        "duration": "المدة",
+        "preview": "المعاينة",
+        "switching": "التنقل"
+      },
+      "tools": {
+        "calculator": "آلة حاسبة",
+        "scientificCalculator": "آلة حاسبة علمية",
+        "scratchpad": "مسودة للحسابات"
+      },
+      "yes": "نعم"
+    },
+    "instructionPage": {
+      "acknowledgement": "لقد قرأت التعليمات وأفهم أن مغادرة وضع ملء الشاشة تُسجَّل وقد تؤدي إلى تسليم ورقتي تلقائيًا.",
+      "detailsUnavailable": "تفاصيل التقييم غير متوفرة",
+      "loadFailed": "تعذّر تحميل هذا التقييم. يرجى العودة والمحاولة مرة أخرى.",
+      "loadingDetails": "جارٍ تحميل تفاصيل التقييم…",
+      "tickToBegin": "ضع علامة على الإقرار أعلاه للبدء."
+    },
+    "navbar": {
+      "assessmentBrief": "نبذة عن التقييم",
+      "goBack": "رجوع"
+    },
+    "sectionDetails": {
+      "cutoffMarks": "درجة القبول:",
+      "description": "وصف القسم:",
+      "duration": "مدة القسم:",
+      "notApplicable": "غير متاح",
+      "totalMarks": "إجمالي الدرجات:"
+    },
+    "startAssessment": {
+      "cancel": "إلغاء",
+      "close": "إغلاق",
+      "confirmBody": "بمجرد بدء التقييم، يجب عليك إكماله دون انقطاع. ابدأ فقط عندما تكون جاهزًا.",
+      "loading": "جارٍ التحميل...",
+      "proceed": "متابعة",
+      "startAssessment": "بدء التقييم",
+      "uploadAnswer": "رفع الإجابة"
+    }
+  },
+  "languageDropdown": {
+    "changeLanguage": "تغيير اللغة"
+  },
+  "myFilesPage": {
+    "actions": {
+      "download": "تنزيل",
+      "downloadFile": "تنزيل الملف",
+      "edit": "تعديل",
+      "editFile": "تعديل الملف",
+      "openUrl": "فتح الرابط",
+      "view": "عرض",
+      "viewNote": "عرض الملاحظة"
+    },
+    "backToDashboard": "العودة إلى لوحة التحكم",
+    "empty": {
+      "message": "ليس لديك أي تقارير بعد.",
+      "title": "لم يتم العثور على تقارير"
+    },
+    "errorLoading": {
+      "message": "يرجى المحاولة مرة أخرى لاحقًا.",
+      "title": "خطأ في تحميل الملفات"
+    },
+    "fileType": {
+      "note": "ملاحظة",
+      "text": "نص"
+    },
+    "table": {
+      "actions": "الإجراءات",
+      "addedBy": "أضافه",
+      "dateAdded": "تاريخ الإضافة",
+      "mediaType": "نوع الوسائط",
+      "name": "الاسم",
+      "type": "النوع"
+    },
+    "title": "ملفاتي"
+  },
+  "myReportsPage": {
+    "activity": {
+      "viewInsights": "عرض التحليلات"
+    },
+    "emptyActivity": {
+      "message": "تظهر التحليلات هنا بعد إكمالك اختبارًا قصيرًا أو سؤالًا أو واجبًا. يتم إعدادها بعد وقت قصير من تسليمك.",
+      "title": "لا توجد تحليلات نشاط بعد"
+    },
+    "emptyTerm": {
+      "message": "ليس لديك أي تقارير بعد.",
+      "title": "لم يتم العثور على تقارير"
+    },
+    "errorLoading": {
+      "message": "يرجى المحاولة مرة أخرى لاحقًا.",
+      "title": "خطأ في تحميل التقارير"
+    },
+    "header": {
+      "activityInsightsTab": "تحليلات النشاط",
+      "backToDashboard": "العودة إلى لوحة التحكم",
+      "progressReportsTab": "تقارير التقدم",
+      "title": "تقاريري"
+    },
+    "term": {
+      "comprehensive": "شامل",
+      "created": "أُنشئ في: {{date}}",
+      "viewDetails": "عرض التفاصيل"
+    }
+  },
+  "notificationSettings": {
+    "categories": {
+      "announcements": {
+        "description": "إعلانات مهمة من مؤسستك",
+        "label": "الإعلانات"
+      },
+      "assignments": {
+        "description": "واجبات جديدة وتذكيرات بالتسليم",
+        "label": "الواجبات"
+      },
+      "description": "اختر أنواع المحتوى التي تريد الإشعار بها",
+      "general": {
+        "description": "تحديثات ومعلومات عامة عن التطبيق",
+        "label": "عام"
+      },
+      "liveClasses": {
+        "description": "تذكيرات وتحديثات {{liveClasses}}",
+        "label": "{{liveClasses}}"
+      },
+      "title": "فئات الإشعارات"
+    },
+    "helpText": {
+      "body": "لتلقّي الإشعارات الفورية، عليك منح الإذن. انقر على \"تفعيل الإشعارات\" أعلاه للبدء. يمكنك دائمًا تغيير هذه الإعدادات لاحقًا في إعدادات إشعارات جهازك.",
+      "title": "تفعيل الإشعارات"
+    },
+    "preferences": {
+      "appBadge": {
+        "description": "إظهار عدد الإشعارات على أيقونة التطبيق",
+        "label": "شارة التطبيق"
+      },
+      "description": "اختر أنواع الإشعارات التي تريد تلقّيها",
+      "enableNotifications": {
+        "description": "تشغيل جميع الإشعارات أو إيقافها",
+        "label": "تفعيل الإشعارات"
+      },
+      "sound": {
+        "description": "تشغيل صوت عند وصول الإشعارات",
+        "label": "الصوت"
+      },
+      "title": "تفضيلات الإشعارات"
+    },
+    "status": {
+      "description": "إدارة تفضيلات الإشعارات الفورية عبر جميع أجهزتك",
+      "enableNotifications": "تفعيل الإشعارات",
+      "enabled": "مفعَّل",
+      "notSupported": "غير مدعوم",
+      "notificationsDisabled": "الإشعارات معطَّلة",
+      "notificationsEnabled": "الإشعارات مفعَّلة",
+      "permissionStatus": "حالة الإذن",
+      "platform": "المنصة",
+      "sendTest": "إرسال اختبار",
+      "supported": "مدعوم",
+      "testNotifications": "إشعارات تجريبية",
+      "testNotificationsDescription": "أرسل إشعارًا تجريبيًا للتحقق من أن كل شيء يعمل",
+      "title": "حالة الإشعارات",
+      "unreadBadge": "{{count}} غير مقروء"
+    },
+    "testNotification": {
+      "body": "هذا إشعار تجريبي من Vacademy Learner!",
+      "title": "إشعار تجريبي"
+    },
+    "toasts": {
+      "disableViaDeviceSettings": "الإشعارات مفعَّلة حاليًا. لتعطيلها، يرجى استخدام إعدادات جهازك."
+    }
+  },
+  "offline": {
+    "deviceLimitDialog": {
+      "heading": "تم بلوغ الحد الأقصى للأجهزة غير المتصلة",
+      "remove": "إزالة",
+      "removed": "تمت الإزالة",
+      "retryDownload": "إعادة محاولة التنزيل",
+      "toasts": {
+        "removeFailed": "تعذّرت إزالة هذا الجهاز. يرجى المحاولة مرة أخرى.",
+        "removed": "تمت إزالة الجهاز. يمكنك الآن تسجيل هذا الجهاز."
+      },
+      "unknownPlatform": "غير معروف",
+      "unnamedDevice": "جهاز بلا اسم"
+    },
+    "downloadNodeButton": {
+      "cancelDownload": "إلغاء التنزيل",
+      "confirmDelete": {
+        "cancel": "إلغاء",
+        "confirm": "إزالة",
+        "description": "ستتم إزالة هذا المحتوى من هذا الجهاز. ستحتاج إلى اتصال بالإنترنت لتنزيله مرة أخرى.",
+        "title": "إزالة المحتوى الذي تم تنزيله؟"
+      },
+      "removeDownload": "إزالة التنزيل",
+      "status": {
+        "downloaded": "تم التنزيل — متاح دون اتصال",
+        "downloading": "جارٍ التنزيل…",
+        "error": "فشل التنزيل — اضغط لإعادة المحاولة",
+        "notDownloaded": "تنزيل للاستخدام دون اتصال",
+        "partial": "تم حفظ جزء منه — اضغط لتنزيل الباقي",
+        "removedByAdmin": "تمت إزالته من قِبل المسؤول",
+        "savedWithOnlineOnly": "تم حفظه للعمل دون اتصال — لا يزال بعض محتواه يحتاج إلى الإنترنت",
+        "updateAvailable": "يتوفر تحديث — اضغط للتحديث"
+      },
+      "toasts": {
+        "changeSettings": "تغيير الإعدادات",
+        "downloadStarted": "بدأ التنزيل",
+        "networkError": "تعذّر الوصول إلى الخادم — تحقق من اتصالك وحاول مرة أخرى",
+        "startFailed": "تعذّر بدء التنزيل — يرجى المحاولة مرة أخرى",
+        "wifiOnlyDescription": "أنت متصل ببيانات الهاتف المحمول.",
+        "wifiOnlyTitle": "التنزيل عبر الواي فاي فقط"
+      }
+    },
+    "downloadsPage": {
+      "confirmDialog": {
+        "cancel": "إلغاء",
+        "clearAllConfirm": "مسح الكل",
+        "clearAllDescription": "ستتم إزالة كل ما تم حفظه على هذا الجهاز. ستحتاج إلى اتصال بالإنترنت لتنزيله مرة أخرى.",
+        "clearAllTitle": "مسح جميع التنزيلات؟",
+        "removeConfirm": "إزالة",
+        "removeContentDescription": "ستتم إزالة هذا المحتوى من هذا الجهاز. ستحتاج إلى اتصال بالإنترنت لتنزيله مرة أخرى.",
+        "removeNamedTitle": "إزالة \"{{label}}\"؟",
+        "removeOtherDeviceDescription": "سيفقد ذلك الجهاز الوصول دون اتصال وستتم إزالة محتواه الذي تم تنزيله في المرة التالية التي يتصل فيها.",
+        "removeThisDeviceDescription": "سيفقد هذا الجهاز الوصول دون اتصال وستُحذف كل المحتويات التي تم تنزيلها عليه. يمكنك التنزيل مرة أخرى لاحقًا.",
+        "removeThisDeviceTitle": "إزالة هذا الجهاز؟"
+      },
+      "content": {
+        "clearAll": "مسح جميع التنزيلات",
+        "delete": "حذف",
+        "emptyDescription": "افتح {{course}} واضغط على أيقونة التنزيل لحفظه للاستخدام دون اتصال.",
+        "emptyTitle": "لم يتم تنزيل أي شيء بعد",
+        "newContentInPrefix": "محتوى جديد في",
+        "open": "فتح",
+        "update": "تحديث",
+        "updateAvailable": "يتوفر تحديث",
+        "updating": "جارٍ التحديث…"
+      },
+      "devices": {
+        "loading": "جارٍ التحميل…",
+        "none": "لا توجد أجهزة مسجَّلة للوصول دون اتصال.",
+        "remove": "إزالة",
+        "thisDeviceFallbackLabel": "هذا الجهاز",
+        "thisDeviceSuffix": "(هذا الجهاز)",
+        "title": "الأجهزة غير المتصلة",
+        "unknownPlatform": "غير معروف",
+        "unnamedDevice": "جهاز بلا اسم"
+      },
+      "dismiss": "إغلاق",
+      "downloadSettings": {
+        "mobileDataAllowed": "يمكن استخدام بيانات الهاتف المحمول",
+        "title": "إعدادات التنزيل",
+        "waitsForWifi": "تنتظر التنزيلات الواي فاي",
+        "wifiOnly": "التنزيل عبر الواي فاي فقط"
+      },
+      "downloadedContent": "المحتوى الذي تم تنزيله",
+      "heading": "التنزيلات",
+      "lease": {
+        "expired": "يجب إعادة الاتصال لتجديد الوصول دون اتصال.",
+        "none": "لا يوجد جهاز غير متصل مسجَّل بعد.",
+        "revoked": "تم إيقاف الوصول دون اتصال لهذا الجهاز.",
+        "validUntil": "الوصول دون اتصال صالح حتى {{date}}"
+      },
+      "offlineAccess": {
+        "title": "الوصول دون اتصال"
+      },
+      "storage": {
+        "availableOnDevice": "المتاح على الجهاز",
+        "lowSpace": "مساحة التخزين منخفضة — قد تفشل التنزيلات الجديدة.",
+        "title": "التخزين",
+        "usedByDownloads": "المستخدَم بواسطة التنزيلات"
+      },
+      "subheading": "إدارة ما تم حفظه على هذا الجهاز للاستخدام دون اتصال.",
+      "tabs": {
+        "content": "المحتوى",
+        "contentWithCount": "المحتوى ({{count}})",
+        "settings": "الإعدادات"
+      },
+      "toasts": {
+        "allCleared": "تم مسح جميع التنزيلات",
+        "clearFailed": "تعذّر مسح التنزيلات — يرجى المحاولة مرة أخرى",
+        "deviceRemoveFailed": "تعذّرت إزالة هذا الجهاز. يرجى المحاولة مرة أخرى.",
+        "deviceRemoved": "تمت إزالة الجهاز من الوصول دون اتصال.",
+        "openChapterFailed": "تعذّر فتح هذا الفصل — حاول فتحه من {{course}}",
+        "removeDownloadFailed": "تعذّرت إزالة هذا التنزيل — يرجى المحاولة مرة أخرى",
+        "removedFromDownloads": "تمت الإزالة من التنزيلات",
+        "thisDeviceRemoved": "تمت إزالة هذا الجهاز. تم حذف المحتوى الذي تم تنزيله.",
+        "updateFetchFailed": "تعذّر جلب التحديث — يرجى المحاولة مرة أخرى",
+        "updateStarted": "جارٍ التحديث — يتم تنزيل المحتوى الجديد"
+      },
+      "unavailable": {
+        "description": "الوصول دون اتصال يعمل في تطبيق الجوال، وفقط عندما تُفعّله مؤسستك.",
+        "title": "التنزيلات دون اتصال غير متاحة هنا"
+      }
+    },
+    "revokedDeviceDialog": {
+      "body": "ألغت مؤسستك الوصول دون اتصال لهذا الجهاز. تمت إزالة كل المحتوى الذي تم تنزيله على هذا الجهاز. لا يزال بإمكانك الوصول إلى كل شيء عبر الإنترنت، وتسجيل جهاز آخر للاستخدام دون اتصال.",
+      "gotIt": "فهمت",
+      "heading": "تمت إزالة الوصول دون اتصال"
+    }
+  },
+  "reportDetailsDialog": {
+    "generatedOn": "تم الإنشاء في {{date}}",
+    "heading": "التقرير: {{start}} - {{end}}",
+    "sections": {
+      "areasForImprovement": "مجالات التحسين",
+      "learningFrequency": "تكرار التعلّم",
+      "overallProgress": "التقدم العام",
+      "recommendedRemedialActions": "الإجراءات العلاجية الموصى بها",
+      "strengths": "نقاط القوة",
+      "topicsNeedingAttention": "مواضيع تحتاج إلى اهتمام",
+      "topicsOfImprovement": "مواضيع التحسين"
+    }
+  },
+  "reportDetailsPage": {
+    "generatedOn": "تم الإنشاء في {{date}}",
+    "reportSections": "أقسام التقرير",
+    "sections": {
+      "learningPattern": "نمط التعلّم",
+      "overallProgress": "التقدم العام",
+      "recommendedRemedialActions": "الإجراءات العلاجية الموصى بها",
+      "strengths": "نقاط القوة",
+      "studentEfforts": "جهود الطالب",
+      "topicsNeedingAttention": "مواضيع تحتاج إلى اهتمام",
+      "topicsOfImprovement": "مواضيع التحسين",
+      "weaknesses": "نقاط الضعف"
+    }
+  },
+  "reviewItem": {
+    "actions": {
+      "delete": "حذف"
+    },
+    "deleteDialog": {
+      "cancel": "إلغاء",
+      "confirm": "حذف",
+      "description": "هل أنت متأكد من رغبتك في حذف هذا التقييم؟ لا يمكن التراجع عن هذا الإجراء.",
+      "title": "حذف التقييم"
+    },
+    "timeAgo": {
+      "days": "قبل {{count}} ي",
+      "hours": "قبل {{count}} س",
+      "minutes": "قبل {{count}} د",
+      "seconds": "قبل {{count}} ث"
+    }
+  },
+  "safetyWarningModal": {
+    "adultVerification": {
+      "body": "للوصول إلى الميزات الاجتماعية (مثل الدردشة أو الجلسات المباشرة)، يجب على شخص بالغ التحقق من هذا الإجراء.",
+      "challengeLabel": "كم يساوي 12 + 7؟",
+      "placeholder": "أدخل الرقم",
+      "title": "مطلوب تحقق من شخص بالغ"
+    },
+    "agreeAndProceed": "أوافق وأتابع",
+    "goBack": "رجوع",
+    "incorrectAnswer": "إجابة غير صحيحة. يرجى المحاولة مرة أخرى.",
+    "readCarefully": "يرجى القراءة بعناية قبل المتابعة:",
+    "rules": {
+      "beSafeOnline": {
+        "body": "لا تشارك أبدًا معلومات شخصية (مثل رقم هاتفك أو عنوانك أو مدرستك) مع الغرباء.",
+        "title": "كن آمنًا على الإنترنت:"
+      },
+      "chatWithCaution": {
+        "body": "تفاعل فقط مع الأشخاص الذين تعرفهم وتثق بهم.",
+        "title": "تحدَّث بحذر:"
+      },
+      "respectOthers": {
+        "body": "كن لطيفًا ومحترمًا في جميع التفاعلات عبر الإنترنت.",
+        "title": "احترم الآخرين:"
+      }
+    },
+    "title": "السلامة أولاً"
+  },
+  "studentReportCard": {
+    "charts": {
+      "confidence": "الثقة",
+      "confidenceDonutAriaLabel": "مخطط دائري لمعايرة الثقة",
+      "radarAriaLabel": "مخطط رادار لمهارات التفكير"
+    },
+    "fallbacks": {
+      "institute": "المؤسسة",
+      "progressReport": "تقرير التقدم",
+      "student": "الطالب"
+    },
+    "masthead": {
+      "enrolment": "التسجيل {{enrollment}}",
+      "generated": "تم الإنشاء {{date}}",
+      "roll": "رقم القيد {{roll}}"
+    },
+    "sections": {
+      "achievements": {
+        "caption": "الشارات والشهادات المكتسبة",
+        "title": "الإنجازات"
+      },
+      "aiInsights": {
+        "aiSummary": "ملخص الذكاء الاصطناعي",
+        "mediumPriority": "متوسطة",
+        "recommendedNextSteps": "الخطوات التالية الموصى بها",
+        "whatWeNoticed": "ما لاحظناه"
+      },
+      "assessments": {
+        "title": "التقييمات",
+        "caption": "{{count}} في هذه الفترة",
+        "rank": "الترتيب {{rank}}"
+      },
+      "assignments": {
+        "assigned": "المُكلَّف بها",
+        "avgScore": "متوسط الدرجة",
+        "late": "متأخر",
+        "onTime": "في الوقت المحدد",
+        "pending": "معلّق",
+        "submitted": "تم التسليم",
+        "title": "الواجبات"
+      },
+      "attendance": {
+        "absent": "غائب",
+        "late": "متأخر",
+        "present": "حاضر",
+        "title": "الحضور",
+        "totalSessions": "إجمالي الجلسات",
+        "vsLastPeriod": "{{change}} مقارنة بالفترة السابقة"
+      },
+      "courseProgress": {
+        "percentComplete": "اكتمل {{percent}}% إجمالًا",
+        "title": "تقدم {{course}}"
+      },
+      "doubts": {
+        "avgResolutionTime": "متوسط وقت الحل",
+        "hours": "{{count}} س",
+        "questionsAsked": "الأسئلة المطروحة",
+        "resolved": "تم حلها",
+        "title": "الاستفسارات والمشاركة"
+      },
+      "gradeMix": {
+        "title": "الدرجات المحققة",
+        "summary": "{{good}} من {{total}} اختبارات بدرجة B أو أعلى",
+        "testCount": "{{count}} اختبار",
+        "range": {
+          "ap": "90% فأكثر",
+          "a": "80–89%",
+          "bp": "70–79%",
+          "b": "60–69%",
+          "c": "50–59%",
+          "d": "أقل من 50%"
+        }
+      },
+      "liveClasses": {
+        "attendance": "الحضور",
+        "attended": "تم حضورها",
+        "missed": "فائتة",
+        "title": "{{liveClasses}}",
+        "total": "إجمالي الحصص"
+      },
+      "marksBySubject": {
+        "note": "عبر التقييمات والواجبات والاختبارات القصيرة والأسئلة",
+        "title": "الدرجات حسب {{subject}}",
+        "vsClassAverage": "أداء {{subject}} مقابل متوسط الفصل"
+      },
+      "misconceptions": {
+        "note": "مفاهيم خاطئة محدَّدة + كيفية تصحيحها",
+        "title": "ما يجب العمل عليه لاحقًا"
+      },
+      "narrative": {
+        "actionChecklist": "قائمة الإجراءات",
+        "detailedAnalysis": "تحليل مفصَّل",
+        "effortVsOutput": "الجهد مقابل النتيجة",
+        "learningFrequency": "تكرار التعلّم",
+        "progress": "التقدم",
+        "topicsImproving": "مواضيع في تحسُّن",
+        "topicsNeedingAttention": "مواضيع تحتاج إلى اهتمام"
+      },
+      "strengthsAreas": {
+        "areasToImprove": "مجالات التحسين",
+        "strengths": "نقاط القوة"
+      },
+      "studyHabits": {
+        "activeDaysOf": "الأيام النشطة / {{total}}",
+        "caption": "دقائق الدراسة اليومية في هذه الفترة",
+        "consistency": "الانتظام",
+        "days": "أيام",
+        "longestStreak": "أطول سلسلة متتالية",
+        "title": "عادات الدراسة"
+      },
+      "thinking": {
+        "confidenceCaption": "معايرة الثقة عبر الأسئلة المُجابة",
+        "confidenceTitle": "المعرفة مقابل التخمين",
+        "confidentlyRight": "واثق وصحيح",
+        "confidentlyWrong": "واثق وخاطئ",
+        "note": "من تحليل الذكاء الاصطناعي لـ {{count}} محاولة أخيرة",
+        "radarCaption": "الدقة عبر المستويات المعرفية (تصنيف بلوم)",
+        "radarTitle": "ملف مهارات التفكير",
+        "rightButUnsure": "صحيح لكن غير متأكد",
+        "title": "كيف يفكر {{firstName}}"
+      },
+      "topicMastery": {
+        "note": "الدقة حسب الموضوع، لجميع المحاولات في هذه الفترة",
+        "title": "إتقان المواضيع"
+      },
+      "trend": {
+        "title": "الدرجات عبر الزمن",
+        "classAverage": "متوسط الصف",
+        "ariaLabel": "الدرجة في كل تقييم مقارنة بمتوسط الصف"
+      }
+    }
+  }
+}

@@ -1,0 +1,85 @@
+{
+    "regenerateSlideDialog": {
+        "title": "Regenerate Page",
+        "promptPlaceholder": "Enter a prompt describing how you want this page to be regenerated...",
+        "regenerate": "Regenerate"
+    },
+    "regenerateSessionDialog": {
+        "title": "Regenerate {{term}}",
+        "promptLabel": "Prompt",
+        "promptPlaceholder": "Enter a prompt describing how you want this session to be regenerated...",
+        "lengthLabel": "{{term}} Length",
+        "lengthPlaceholder": "Select session length",
+        "length45": "45 minutes",
+        "length60": "60 minutes",
+        "length90": "90 minutes",
+        "lengthCustom": "Custom",
+        "customLengthPlaceholder": "Enter custom length in minutes",
+        "componentsLabel": "Session Components",
+        "includeDiagrams": "Include diagrams",
+        "includeCodeSnippets": "Include code snippets",
+        "includePracticeProblems": "Include practice problems",
+        "includeQuizzes": "Include quizzes",
+        "includeAssignments": "Include assignments",
+        "includeSolutions": "Include solutions",
+        "numberOfLabel": "Number of {{term}}",
+        "topicsCountPlaceholder": "e.g., 3, 4, 5, etc.",
+        "topicsInLabel": "{{plural}} in {{term}} (Optional)",
+        "topicsPlaceholder": "Enter a topic and press Enter",
+        "regenerate": "Regenerate"
+    },
+    "addSlideDialog": {
+        "generationTitle": "AI Generation Prompt",
+        "selectTypeTitle": "Select Page Type",
+        "selectTypeDescription": "Choose the type of page you want to add to this session.",
+        "types": {
+            "document": "Document",
+            "pdf": "PDF",
+            "video": "Video",
+            "image": "Image",
+            "jupyter": "Jupyter",
+            "codeEditor": "Code Editor",
+            "scratch": "Scratch",
+            "videoJupyter": "Video + Jupyter",
+            "videoCode": "Video + Code",
+            "videoScratch": "Video + Scratch",
+            "quiz": "Quiz",
+            "assignment": "Assignment"
+        },
+        "promptPlaceholder": "Enter a prompt describing the page you want to create...",
+        "back": "Back",
+        "createPage": "Create Page"
+    },
+    "addSessionDialog": {
+        "title": "Add New {{term}}",
+        "nameLabel": "{{term}} Name",
+        "namePlaceholder": "Enter {{term}} name",
+        "cancel": "Cancel",
+        "add": "Add {{term}}"
+    },
+    "generateCourseAssetsDialog": {
+        "title": "Final Confirmation",
+        "reviewNotice": "Please review the text content for each page carefully before proceeding.",
+        "noComingBack": "Once you proceed, AI will start creating the actual course content and there is no coming back.",
+        "estimatedCost": "Estimated cost: ≈ {{credits}} credits",
+        "usageBilled_one": "+ {{count}} AI video/slides/storybook slide billed by actual usage",
+        "usageBilled_other": "+ {{count}} AI video/slides/storybook slides billed by actual usage",
+        "insufficientBalance": "Your institute's credit balance may be insufficient — please top up before proceeding.",
+        "cancel": "Cancel",
+        "proceed": "Proceed"
+    },
+    "leaveDuringGenerationDialog": {
+        "title": "Generation still in progress",
+        "progressPrefix": "Only {{progressLabel}} pages have been generated. ",
+        "warning": "If you leave now, generation stops and everything created so far is lost. The credits already spent will not be returned.",
+        "leaveAndStop": "Leave and stop",
+        "stayOnPage": "Stay on page"
+    },
+    "backToLibraryDialog": {
+        "title": "Go Back to Course Library?",
+        "description": "Are you sure you want to go back to course library? You can either discard your current course or save it to drafts.",
+        "cancel": "Cancel",
+        "discardCourse": "Discard Course",
+        "saveToDrafts": "Save to Drafts"
+    }
+}

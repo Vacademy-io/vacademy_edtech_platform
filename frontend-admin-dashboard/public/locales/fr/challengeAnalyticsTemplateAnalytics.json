@@ -1,0 +1,59 @@
+{
+    "emptyState": {
+        "title": "Analyses des modèles",
+        "message": "Aucune donnée de modèle disponible"
+    },
+    "header": {
+        "title": "Analyses des modèles par jour",
+        "subtitle": "Messages et engagement par jour et par modèle"
+    },
+    "viewToggle": {
+        "chart": "Vue graphique",
+        "table": "Vue tableau"
+    },
+    "summary": {
+        "totalDays": "Jours totaux",
+        "messagesSent": "Messages envoyés",
+        "responses": "Réponses",
+        "usersReached": "Utilisateurs atteints",
+        "responseRate": "Taux de réponse"
+    },
+    "tabs": {
+        "messagesByDay": "Messages par jour",
+        "usersByDay": "Utilisateurs par jour",
+        "combinedView": "Vue combinée"
+    },
+    "tooltip": {
+        "outgoing": "Sortants : {{value}}",
+        "incoming": "Entrants : {{value}}",
+        "uniqueUsersOut": "Utilisateurs uniques (sortants) : {{value}}",
+        "uniqueUsersIn": "Utilisateurs uniques (entrants) : {{value}}"
+    },
+    "series": {
+        "outgoingMessages": "Messages sortants",
+        "incomingMessages": "Messages entrants",
+        "uniqueUsersOutgoing": "Utilisateurs uniques (sortants)",
+        "uniqueUsersIncoming": "Utilisateurs uniques (entrants)",
+        "messagesSent": "Messages envoyés",
+        "responses": "Réponses",
+        "responseRatePercent": "Taux de réponse (%)"
+    },
+    "table": {
+        "day": "Jour",
+        "outgoingUsers": "Utilisateurs sortants",
+        "outgoingMessages": "Messages sortants",
+        "incomingUsers": "Utilisateurs entrants",
+        "incomingMessages": "Messages entrants",
+        "responseRate": "Taux de réponse",
+        "templates": "Modèles"
+    },
+    "dayLabel": "Jour {{number}}",
+    "outgoingTemplates": "Modèles sortants",
+    "incomingTemplatesResponses": "Modèles entrants (réponses)",
+    "usersCount_one": "{{count}} utilisateur",
+    "usersCount_many": "{{count}} d'utilisateurs",
+    "usersCount_other": "{{count}} utilisateurs",
+    "messagesCount_one": "{{count}} message",
+    "messagesCount_many": "{{count}} de messages",
+    "messagesCount_other": "{{count}} messages"
+}

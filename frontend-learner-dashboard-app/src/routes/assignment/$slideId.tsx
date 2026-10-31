@@ -7,6 +7,7 @@ import AssignmentSlide from "@/components/common/study-library/level-material/su
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 import { useContentStore } from "@/stores/study-library/chapter-sidebar-store";
 import { BASE_URL } from "@/constants/urls";
+import { useTranslation } from "react-i18next";
 
 const GET_SLIDE_BY_ID = `${BASE_URL}/admin-core-service/slide/v1/slide`;
 
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/assignment/$slideId")({
 });
 
 function AssignmentPage() {
+  const { t } = useTranslation("assessment");
   const { slideId } = Route.useParams();
   const [isUploading, setIsUploading] = useState(false);
   const { uploadFile } = useFileUpload();
@@ -54,10 +56,10 @@ function AssignmentPage() {
       if (fileId) {
         return { success: true, fileId };
       }
-      return { success: false, error: "Upload failed" };
+      return { success: false, error: t("assignment.uploadFailed") };
     } catch (error) {
       console.error("Assignment upload error:", error);
-      return { success: false, error: "Upload failed" };
+      return { success: false, error: t("assignment.uploadFailed") };
     } finally {
       setIsUploading(false);
     }
@@ -74,7 +76,7 @@ function AssignmentPage() {
   if (error || !slideData) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-gray-500">Assignment not found</p>
+        <p className="text-gray-500">{t("assignment.notFound")}</p>
       </div>
     );
   }
@@ -82,16 +84,16 @@ function AssignmentPage() {
   if (slideData.source_type !== "ASSIGNMENT" || !slideData.assignment_slide) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <p className="text-gray-500">This is not an assignment slide</p>
+        <p className="text-gray-500">{t("assignment.notAssignmentSlide")}</p>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 py-6 sm:py-10">
-      <div className="mx-auto max-w-3xl">
-        <h1 className="mb-6 px-4 text-xl font-semibold text-gray-900 sm:text-2xl">
-          {slideData.title || "Assignment"}
+      <div className="mx-auto max-w-3xl space-y-section">
+        <h1 className="px-4 text-xl font-semibold text-gray-900 sm:text-2xl">
+          {slideData.title || t("assignment.defaultTitle")}
         </h1>
         <AssignmentSlide
           assignmentData={slideData.assignment_slide}

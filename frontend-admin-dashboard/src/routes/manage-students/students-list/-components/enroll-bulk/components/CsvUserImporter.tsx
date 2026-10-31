@@ -1,6 +1,8 @@
 import { useRef, useState, useMemo, useEffect } from 'react';
 import Papa from 'papaparse';
 import { UploadSimple, DownloadSimple } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { MyButton } from '@/components/design-system/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
@@ -35,31 +37,105 @@ interface CsvColumnDef {
 // address_line and pin_code are included here (not in OPTIONAL) because
 // ADDRESS_LINE and PIN_CODE don't exist in DEFAULT_SYSTEM_FIELDS, so
 // the visibility gate would permanently hide them from the CSV template.
-const buildCoreColumns = (phoneRequired: boolean): CsvColumnDef[] => [
-    { csvKey: 'email', label: 'Email', required: !phoneRequired, sample: 'student@example.com' },
-    { csvKey: 'full_name', label: 'Full Name', required: true, sample: 'John Doe' },
-    { csvKey: 'mobile_number', label: 'Mobile Number', required: phoneRequired, sample: '+91 9876543210', systemKey: 'MOBILE_NUMBER' },
-    { csvKey: 'username', label: 'Username', required: false, sample: '' },
-    { csvKey: 'password', label: 'Password', required: false, sample: '' },
-    { csvKey: 'address_line', label: 'Address', required: false, sample: '' },
-    { csvKey: 'pin_code', label: 'PIN Code', required: false, sample: '' },
-    { csvKey: 'payment_date', label: 'Payment Date (dd/MM/yyyy)', required: false, sample: '15/01/2025' },
-    { csvKey: 'transaction_id', label: 'Transaction ID', required: false, sample: '' },
+const buildCoreColumns = (t: TFunction, phoneRequired: boolean): CsvColumnDef[] => [
+    {
+        csvKey: 'email',
+        label: t('columns.email'),
+        required: !phoneRequired,
+        sample: 'student@example.com',
+    },
+    {
+        csvKey: 'full_name',
+        label: t('columns.fullName'),
+        required: true,
+        sample: 'John Doe',
+    },
+    {
+        csvKey: 'mobile_number',
+        label: t('columns.mobileNumber'),
+        required: phoneRequired,
+        sample: '+91 9876543210',
+        systemKey: 'MOBILE_NUMBER',
+    },
+    { csvKey: 'username', label: t('columns.username'), required: false, sample: '' },
+    { csvKey: 'password', label: t('columns.password'), required: false, sample: '' },
+    { csvKey: 'address_line', label: t('columns.address'), required: false, sample: '' },
+    { csvKey: 'pin_code', label: t('columns.pinCode'), required: false, sample: '' },
+    {
+        csvKey: 'payment_date',
+        label: t('columns.paymentDate'),
+        required: false,
+        sample: '15/01/2025',
+    },
+    {
+        csvKey: 'transaction_id',
+        label: t('columns.transactionId'),
+        required: false,
+        sample: '',
+    },
 ];
 
 // Optional system columns — included ONLY if visible in the institute's custom field settings
-const OPTIONAL_SYSTEM_COLUMNS: CsvColumnDef[] = [
-    { csvKey: 'gender', label: 'Gender', required: false, sample: 'MALE', systemKey: 'GENDER' },
-    { csvKey: 'date_of_birth', label: 'Date of Birth', required: false, sample: '2000-01-15', systemKey: 'DATE_OF_BIRTH' },
-    { csvKey: 'city', label: 'City', required: false, sample: '', systemKey: 'CITY' },
-    { csvKey: 'region', label: 'State/Region', required: false, sample: '', systemKey: 'REGION' },
-    { csvKey: 'linked_institute_name', label: 'College/School', required: false, sample: '', systemKey: 'LINKED_INSTITUTE_NAME' },
-    { csvKey: 'fathers_name', label: "Father's Name", required: false, sample: '', systemKey: 'FATHER_NAME' },
-    { csvKey: 'mothers_name', label: "Mother's Name", required: false, sample: '', systemKey: 'MOTHER_NAME' },
-    { csvKey: 'parents_mobile_number', label: "Father's Mobile", required: false, sample: '', systemKey: 'PARENTS_MOBILE_NUMBER' },
-    { csvKey: 'parents_email', label: "Father's Email", required: false, sample: '', systemKey: 'PARENTS_EMAIL' },
-    { csvKey: 'parents_to_mother_mobile_number', label: "Mother's Mobile", required: false, sample: '', systemKey: 'PARENTS_TO_MOTHER_MOBILE_NUMBER' },
-    { csvKey: 'parents_to_mother_email', label: "Mother's Email", required: false, sample: '', systemKey: 'PARENTS_TO_MOTHER_EMAIL' },
+const buildOptionalSystemColumns = (t: TFunction): CsvColumnDef[] => [
+    { csvKey: 'gender', label: t('columns.gender'), required: false, sample: 'MALE', systemKey: 'GENDER' },
+    {
+        csvKey: 'date_of_birth',
+        label: t('columns.dateOfBirth'),
+        required: false,
+        sample: '2000-01-15',
+        systemKey: 'DATE_OF_BIRTH',
+    },
+    { csvKey: 'city', label: t('columns.city'), required: false, sample: '', systemKey: 'CITY' },
+    { csvKey: 'region', label: t('columns.region'), required: false, sample: '', systemKey: 'REGION' },
+    {
+        csvKey: 'linked_institute_name',
+        label: t('columns.linkedInstituteName'),
+        required: false,
+        sample: '',
+        systemKey: 'LINKED_INSTITUTE_NAME',
+    },
+    {
+        csvKey: 'fathers_name',
+        label: t('columns.fathersName'),
+        required: false,
+        sample: '',
+        systemKey: 'FATHER_NAME',
+    },
+    {
+        csvKey: 'mothers_name',
+        label: t('columns.mothersName'),
+        required: false,
+        sample: '',
+        systemKey: 'MOTHER_NAME',
+    },
+    {
+        csvKey: 'parents_mobile_number',
+        label: t('columns.fathersMobile'),
+        required: false,
+        sample: '',
+        systemKey: 'PARENTS_MOBILE_NUMBER',
+    },
+    {
+        csvKey: 'parents_email',
+        label: t('columns.fathersEmail'),
+        required: false,
+        sample: '',
+        systemKey: 'PARENTS_EMAIL',
+    },
+    {
+        csvKey: 'parents_to_mother_mobile_number',
+        label: t('columns.mothersMobile'),
+        required: false,
+        sample: '',
+        systemKey: 'PARENTS_TO_MOTHER_MOBILE_NUMBER',
+    },
+    {
+        csvKey: 'parents_to_mother_email',
+        label: t('columns.mothersEmail'),
+        required: false,
+        sample: '',
+        systemKey: 'PARENTS_TO_MOTHER_EMAIL',
+    },
 ];
 
 export interface CsvPaymentInfo {
@@ -73,6 +149,7 @@ interface Props {
 }
 
 export const CsvUserImporter = ({ onImport, onPaymentInfoDetected }: Props) => {
+    const { t } = useTranslation('manageStudentsCsvUserImporter');
     const fileRef = useRef<HTMLInputElement>(null);
     const [preview, setPreview] = useState<NewUserRow[]>([]);
     const [errors, setErrors] = useState<string[]>([]);
@@ -103,12 +180,12 @@ export const CsvUserImporter = ({ onImport, onPaymentInfoDetected }: Props) => {
         const isColVisible = (csvKey: string) => systemVisibility[csvKey] !== false;
 
         // Core columns: keep required ones always; gate the optional ones (e.g. address, pin code)
-        const cols: CsvColumnDef[] = buildCoreColumns(phoneRequired).filter(
+        const cols: CsvColumnDef[] = buildCoreColumns(t, phoneRequired).filter(
             (col) => col.required || isColVisible(col.csvKey)
         );
 
         // Add optional system columns that aren't toggled off
-        for (const col of OPTIONAL_SYSTEM_COLUMNS) {
+        for (const col of buildOptionalSystemColumns(t)) {
             if (isColVisible(col.csvKey)) {
                 cols.push(col);
             }
@@ -147,7 +224,7 @@ export const CsvUserImporter = ({ onImport, onPaymentInfoDetected }: Props) => {
         }
 
         return { allColumns: cols, customFieldColumns: cfCols };
-    }, [settings, phoneRequired]);
+    }, [settings, phoneRequired, t]);
 
     const REQUIRED_HEADERS = allColumns.filter((c) => c.required).map((c) => c.csvKey);
 
@@ -222,7 +299,8 @@ export const CsvUserImporter = ({ onImport, onPaymentInfoDetected }: Props) => {
                 // Check required headers
                 const headers = result.meta.fields || [];
                 REQUIRED_HEADERS.forEach((h) => {
-                    if (!headers.includes(h)) errs.push(`Missing required column: "${h}"`);
+                    if (!headers.includes(h))
+                        errs.push(t('errors.missingRequiredColumn', { column: h }));
                 });
 
                 if (errs.length > 0) {
@@ -238,23 +316,25 @@ export const CsvUserImporter = ({ onImport, onPaymentInfoDetected }: Props) => {
                     const rowNum = i + 2;
                     if (phoneRequired) {
                         if (!row.mobile_number?.trim()) {
-                            errs.push(`Row ${rowNum}: mobile_number is required`);
+                            errs.push(
+                                t('errors.rowFieldRequired', { rowNum, field: 'mobile_number' })
+                            );
                             return;
                         }
                     } else {
                         if (!row.email?.trim()) {
-                            errs.push(`Row ${rowNum}: email is required`);
+                            errs.push(t('errors.rowFieldRequired', { rowNum, field: 'email' }));
                             return;
                         }
                     }
                     if (!row.full_name?.trim()) {
-                        errs.push(`Row ${rowNum}: full_name is required`);
+                        errs.push(t('errors.rowFieldRequired', { rowNum, field: 'full_name' }));
                         return;
                     }
                     // Usernames must not contain spaces — skip this row so the
                     // learner is NOT enrolled, and surface a clear error.
                     if (row.username && /\s/.test(row.username.trim())) {
-                        errs.push(`Row ${rowNum}: username cannot contain spaces`);
+                        errs.push(t('errors.rowUsernameSpaces', { rowNum }));
                         return;
                     }
 
@@ -280,7 +360,12 @@ export const CsvUserImporter = ({ onImport, onPaymentInfoDetected }: Props) => {
                             }
                         }
                         if (!parsedPaymentDate) {
-                            errs.push(`Row ${rowNum}: invalid payment_date format "${rawPaymentDate}"`);
+                            errs.push(
+                                t('errors.rowInvalidPaymentDate', {
+                                    rowNum,
+                                    value: rawPaymentDate,
+                                })
+                            );
                         }
                     }
 
@@ -344,7 +429,7 @@ export const CsvUserImporter = ({ onImport, onPaymentInfoDetected }: Props) => {
     const handleFile = (file: File | undefined) => {
         if (!file) return;
         if (!file.name.endsWith('.csv')) {
-            setErrors(['Please upload a .csv file']);
+            setErrors([t('errors.notCsvFile')]);
             return;
         }
         parseFile(file);
@@ -371,21 +456,24 @@ export const CsvUserImporter = ({ onImport, onPaymentInfoDetected }: Props) => {
             {/* Template download */}
             <div className="flex items-center justify-between rounded-lg border border-dashed border-neutral-300 bg-neutral-50 px-4 py-3">
                 <div>
-                    <p className="text-sm font-medium text-neutral-700">Download Template</p>
+                    <p className="text-sm font-medium text-neutral-700">
+                        {t('template.downloadTitle')}
+                    </p>
                     <p className="text-xs text-neutral-400">
-                        Fill in the template and re-upload. Required columns:{' '}
+                        {t('template.instructions')}{' '}
                         <code className="text-primary-600">
                             {phoneRequired ? 'mobile_number, full_name' : 'email, full_name'}
                         </code>
                         {extraColCount > 0 && (
                             <span>
                                 {' '}
-                                + {extraColCount} optional
+                                {t('template.optionalCount', { count: extraColCount })}
                                 {customFieldColumns.length > 0 && (
                                     <span className="text-primary-500">
                                         {' '}
-                                        (incl. {customFieldColumns.length} custom field
-                                        {customFieldColumns.length !== 1 ? 's' : ''})
+                                        {t('template.customFieldsIncluded', {
+                                            count: customFieldColumns.length,
+                                        })}
                                     </span>
                                 )}
                             </span>
@@ -399,7 +487,7 @@ export const CsvUserImporter = ({ onImport, onPaymentInfoDetected }: Props) => {
                     onClick={openTemplatePicker}
                 >
                     <DownloadSimple size={14} className="mr-1" />
-                    Template
+                    {t('template.templateButton')}
                 </MyButton>
             </div>
 
@@ -409,19 +497,16 @@ export const CsvUserImporter = ({ onImport, onPaymentInfoDetected }: Props) => {
                     <div className="flex items-center justify-between gap-2 border-b border-neutral-100 pb-2">
                         <div className="min-w-0">
                             <p className="text-sm font-medium text-neutral-700">
-                                Choose template columns
+                                {t('picker.title')}
                             </p>
-                            <p className="text-xs text-neutral-400">
-                                Required columns are always included; the upload still accepts any
-                                subset.
-                            </p>
+                            <p className="text-xs text-neutral-400">{t('picker.description')}</p>
                         </div>
                         <button
                             type="button"
                             onClick={toggleAllTemplateCols}
                             className="shrink-0 text-xs font-medium text-primary-500 hover:text-primary-600"
                         >
-                            {allOptionalSelected ? 'Clear optional' : 'Select all'}
+                            {allOptionalSelected ? t('picker.clearOptional') : t('picker.selectAll')}
                         </button>
                     </div>
                     <div className="grid max-h-60 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
@@ -449,7 +534,7 @@ export const CsvUserImporter = ({ onImport, onPaymentInfoDetected }: Props) => {
                                     </span>
                                     {required && (
                                         <span className="ml-auto shrink-0 rounded bg-neutral-100 px-1.5 py-0.5 text-xs font-medium text-neutral-500">
-                                            Required
+                                            {t('picker.required')}
                                         </span>
                                     )}
                                 </label>
@@ -458,7 +543,7 @@ export const CsvUserImporter = ({ onImport, onPaymentInfoDetected }: Props) => {
                     </div>
                     <div className="flex items-center justify-between gap-2 border-t border-neutral-100 pt-2">
                         <span className="text-xs text-neutral-500">
-                            {selectedTemplateCount} column(s)
+                            {t('picker.columnsSelected', { count: selectedTemplateCount })}
                         </span>
                         <div className="flex items-center gap-2">
                             <MyButton
@@ -467,7 +552,7 @@ export const CsvUserImporter = ({ onImport, onPaymentInfoDetected }: Props) => {
                                 layoutVariant="default"
                                 onClick={() => setShowTemplatePicker(false)}
                             >
-                                Cancel
+                                {t('picker.cancel')}
                             </MyButton>
                             <MyButton
                                 buttonType="primary"
@@ -477,7 +562,7 @@ export const CsvUserImporter = ({ onImport, onPaymentInfoDetected }: Props) => {
                                 className="flex items-center gap-1.5"
                             >
                                 <DownloadSimple size={14} />
-                                Download
+                                {t('picker.download')}
                             </MyButton>
                         </div>
                     </div>
@@ -496,10 +581,8 @@ export const CsvUserImporter = ({ onImport, onPaymentInfoDetected }: Props) => {
                 className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed py-10 transition-colors ${isDragging ? 'border-primary-400 bg-primary-50' : 'border-neutral-300 bg-white hover:border-primary-300 hover:bg-primary-50/50'}`}
             >
                 <UploadSimple size={28} className="text-neutral-400" />
-                <p className="text-sm font-medium text-neutral-600">
-                    Drag & drop a CSV file here
-                </p>
-                <p className="text-xs text-neutral-400">or click to browse</p>
+                <p className="text-sm font-medium text-neutral-600">{t('dropzone.dragDrop')}</p>
+                <p className="text-xs text-neutral-400">{t('dropzone.orBrowse')}</p>
                 <input
                     ref={fileRef}
                     type="file"
@@ -525,7 +608,7 @@ export const CsvUserImporter = ({ onImport, onPaymentInfoDetected }: Props) => {
                 <div className="rounded-lg border border-success-200 bg-success-50 p-3">
                     <div className="mb-2 flex items-center justify-between">
                         <p className="text-sm font-medium text-success-700">
-                            ✅ {preview.length} valid row{preview.length !== 1 ? 's' : ''} detected
+                            ✅ {t('preview.rowsDetected', { count: preview.length })}
                         </p>
                         <MyButton
                             buttonType="primary"
@@ -533,7 +616,7 @@ export const CsvUserImporter = ({ onImport, onPaymentInfoDetected }: Props) => {
                             layoutVariant="default"
                             onClick={handleConfirm}
                         >
-                            Add {preview.length} learner{preview.length !== 1 ? 's' : ''}
+                            {t('preview.addLearners', { count: preview.length })}
                         </MyButton>
                     </div>
                     <div className="max-h-36 overflow-y-auto">
@@ -543,15 +626,16 @@ export const CsvUserImporter = ({ onImport, onPaymentInfoDetected }: Props) => {
                                 {r.custom_field_values && r.custom_field_values.length > 0 && (
                                     <span className="text-success-400">
                                         {' '}
-                                        ({r.custom_field_values.length} custom field
-                                        {r.custom_field_values.length !== 1 ? 's' : ''})
+                                        {t('preview.customFieldsCount', {
+                                            count: r.custom_field_values.length,
+                                        })}
                                     </span>
                                 )}
                             </p>
                         ))}
                         {preview.length > 5 && (
                             <p className="text-xs text-success-400">
-                                …and {preview.length - 5} more
+                                {t('preview.andMore', { count: preview.length - 5 })}
                             </p>
                         )}
                     </div>

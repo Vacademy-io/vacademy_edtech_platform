@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
@@ -15,27 +17,35 @@ import { toast } from 'sonner';
 import { useEnrollRequestsDialogStore } from '../bulk-actions-store';
 import { bulkEmailService, type BulkEmailResult } from '@/services/bulkEmailService';
 
-// Define email templates
-const EMAIL_TEMPLATES = [
+// Define email templates. The subject/content strings contain the app's own
+// {{placeholder}} tokens (resolved later by bulkEmailService's per-student
+// resolver, not by i18next) — each is translated with an identity
+// interpolation value so the token text survives translation unchanged.
+const buildEmailTemplates = (t: TFunction) => [
     {
         id: 'template1',
-        name: 'Welcome Email',
-        subject: 'Welcome to Our Learning Platform',
-        content:
-            'Dear {{name}},\n\nWelcome to our learning platform! We are excited to have you join us.\n\nYour login credentials:\nEmail: {{email}}\nMobile: {{mobile_number}}\n\nBest regards,\nThe Team',
+        name: t('templates.welcome.name'),
+        subject: t('templates.welcome.subject'),
+        content: t('templates.welcome.content', {
+            name: '{{name}}',
+            email: '{{email}}',
+            mobile_number: '{{mobile_number}}',
+        }),
     },
     {
         id: 'template2',
-        name: 'Session Update',
-        subject: 'Session Update - {{name}}',
-        content:
-            'Hi {{name}},\n\nThis is an update regarding your current session.\n\nPlease check your dashboard for the latest information.\n\nBest regards,\nThe Team',
+        name: t('templates.sessionUpdate.name'),
+        subject: t('templates.sessionUpdate.subject', { name: '{{name}}' }),
+        content: t('templates.sessionUpdate.content', { name: '{{name}}' }),
     },
     {
         id: 'template3',
-        name: 'Custom Email',
-        subject: 'Important Update',
-        content: 'Dear {{name}},\n\n{{custom_message_text}}\n\nBest regards,\nThe Team',
+        name: t('templates.custom.name'),
+        subject: t('templates.custom.subject'),
+        content: t('templates.custom.content', {
+            name: '{{name}}',
+            custom_message_text: '{{custom_message_text}}',
+        }),
     },
 ];
 
@@ -51,19 +61,22 @@ interface StudentEmailStatus {
 
 // Placeholder variables users can insert — every one of these is actually resolved by
 // bulkEmailService.ts's per-student placeholder resolver at send time (no dead variables).
-const PLACEHOLDER_VARIABLES = [
-    { label: 'Student Name', value: '{{name}}' },
-    { label: 'Email Address', value: '{{email}}' },
-    { label: 'Mobile Number', value: '{{mobile_number}}' },
-    { label: 'Custom Message', value: '{{custom_message_text}}' },
-    { label: 'Course Name', value: '{{course_name}}' },
-    { label: 'Batch Name', value: '{{batch_name}}' },
-    { label: 'Login Username', value: '{{username}}' },
-    { label: 'Registration Date', value: '{{registration_date}}' },
-    { label: 'Current Date', value: '{{current_date}}' },
+// Only the label is translated; the `value` token itself must stay literal in every
+// locale since bulkEmailService matches on the exact {{...}} text.
+const buildPlaceholderVariables = (t: TFunction) => [
+    { label: t('placeholders.studentName'), value: '{{name}}' },
+    { label: t('placeholders.emailAddress'), value: '{{email}}' },
+    { label: t('placeholders.mobileNumber'), value: '{{mobile_number}}' },
+    { label: t('placeholders.customMessage'), value: '{{custom_message_text}}' },
+    { label: t('placeholders.courseName'), value: '{{course_name}}' },
+    { label: t('placeholders.batchName'), value: '{{batch_name}}' },
+    { label: t('placeholders.loginUsername'), value: '{{username}}' },
+    { label: t('placeholders.registrationDate'), value: '{{registration_date}}' },
+    { label: t('placeholders.currentDate'), value: '{{current_date}}' },
 ];
 
 export const SendEmailDialog = () => {
+    const { t } = useTranslation('manageStudentsSendEmailDialogEnroll');
     const { isSendEmailOpen, bulkActionInfo, selectedStudent, isBulkAction, closeAllDialogs } =
         useEnrollRequestsDialogStore();
     const [emailSubject, setEmailSubject] = useState('');
@@ -79,13 +92,18 @@ export const SendEmailDialog = () => {
     const emailSubjectRef = useRef<HTMLInputElement>(null);
     const emailBodyRef = useRef<HTMLTextAreaElement>(null);
 
+    const emailTemplates = useMemo(() => buildEmailTemplates(t), [t]);
+    const placeholderVariables = useMemo(() => buildPlaceholderVariables(t), [t]);
+
     const handleSelectEmailTemplate = (templateId: string) => {
-        const template = EMAIL_TEMPLATES.find((t) => t.id === templateId);
+        // Renamed the find() callback param from `t` to `tpl` — it shadowed the
+        // outer translation function `t` from useTranslation() above.
+        const template = emailTemplates.find((tpl) => tpl.id === templateId);
         if (template) {
             setSelectedTemplateId(template.id);
             setEmailSubject(template.subject);
             setEmailBody(template.content);
-            toast.info(`Template "${template.name}" loaded.`);
+            toast.info(t('toasts.templateLoaded', { name: template.name }));
         }
     };
 
@@ -131,12 +149,12 @@ export const SendEmailDialog = () => {
         const currentDate = new Date().toLocaleDateString();
 
         const replacements = {
-            '{{name}}': sampleStudent.full_name || 'John Doe',
+            '{{name}}': sampleStudent.full_name || t('previewSampleData.name'),
             '{{email}}': sampleStudent.email || 'john.doe@example.com',
             '{{mobile_number}}': sampleStudent.mobile_number || '+1234567890',
             '{{custom_message_text}}': customMessage,
-            '{{course_name}}': 'Mathematics Course', // You can get this from student data
-            '{{batch_name}}': 'Batch A', // You can get this from student data
+            '{{course_name}}': t('previewSampleData.courseName'), // You can get this from student data
+            '{{batch_name}}': t('previewSampleData.batchName'), // You can get this from student data
             '{{username}}': sampleStudent.email?.split('@')[0] || 'johndoe',
             '{{registration_date}}': '2024-01-15', // You can get this from student data
             '{{current_date}}': currentDate,
@@ -165,17 +183,17 @@ export const SendEmailDialog = () => {
         const trimmedEmailBody = emailBody.trim();
 
         if (!trimmedEmailSubject || !trimmedEmailBody) {
-            toast.error('Subject and body are required.');
+            toast.error(t('toasts.subjectBodyRequired'));
             return;
         }
 
         if (studentEmailStatuses.length === 0) {
-            toast.error('No valid recipients to send email to.');
+            toast.error(t('toasts.noValidRecipients'));
             return;
         }
 
         setIsBulkEmailSending(true);
-        toast.info('Processing emails...', { id: 'bulk-email-progress' });
+        toast.info(t('toasts.processingEmails'), { id: 'bulk-email-progress' });
 
         setStudentEmailStatuses((prevStatuses) =>
             prevStatuses.map((s) => ({ ...s, status: 'sending' }))
@@ -198,7 +216,7 @@ export const SendEmailDialog = () => {
             .filter((s): s is NonNullable<typeof s> => s !== null);
 
         if (students.length === 0) {
-            toast.error('Could not prepare payload for any student.');
+            toast.error(t('toasts.noPayloadPrepared'));
             setIsBulkEmailSending(false);
             setStudentEmailStatuses((prevStatuses) =>
                 prevStatuses.map((s) => ({ ...s, status: 'pending' }))
@@ -225,12 +243,16 @@ export const SendEmailDialog = () => {
 
             if (result.success) {
                 if (result.failedStudents === 0) {
-                    toast.success(`Successfully sent ${result.processedStudents} email(s).`, {
-                        id: 'bulk-email-progress',
-                    });
+                    toast.success(
+                        t('toasts.sendSuccess', { count: result.processedStudents }),
+                        { id: 'bulk-email-progress' }
+                    );
                 } else {
                     toast.warning(
-                        `Sent ${result.processedStudents - result.failedStudents}, failed ${result.failedStudents} email(s).`,
+                        t('toasts.sendPartial', {
+                            sent: result.processedStudents - result.failedStudents,
+                            failed: result.failedStudents,
+                        }),
                         { id: 'bulk-email-progress' }
                     );
                 }
@@ -244,15 +266,15 @@ export const SendEmailDialog = () => {
                     })
                 );
             } else {
-                toast.error('Failed to send emails.', { id: 'bulk-email-progress' });
+                toast.error(t('toasts.sendFailed'), { id: 'bulk-email-progress' });
                 setStudentEmailStatuses((prev) =>
                     prev.map((s) => ({ ...s, status: 'failed', error: 'Send failed' }))
                 );
             }
         } catch (error: unknown) {
-            const message = error instanceof Error ? error.message : 'An unexpected error occurred.';
+            const message = error instanceof Error ? error.message : t('toasts.unexpectedError');
             console.error('Error sending email:', error);
-            toast.error(`Error: ${message}`, { id: 'bulk-email-progress' });
+            toast.error(t('toasts.errorPrefix', { message }), { id: 'bulk-email-progress' });
             setStudentEmailStatuses((prev) =>
                 prev.map((s) => ({ ...s, status: 'failed', error: message }))
             );
@@ -296,10 +318,10 @@ export const SendEmailDialog = () => {
     return (
         <>
             <MyDialog
-                heading="Send Email to Students"
+                heading={t('dialogTitle')}
                 open={isSendEmailOpen}
                 onOpenChange={handleClose}
-                dialogWidth="w-[90vw] max-w-2xl"
+                dialogWidth="w-dialog-md"
                 footer={
                     <div className="flex items-center justify-end gap-2">
                         <MyButton
@@ -308,7 +330,7 @@ export const SendEmailDialog = () => {
                             onClick={handleClose}
                             disable={isBulkEmailSending}
                         >
-                            Cancel
+                            {t('cancel')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
@@ -320,17 +342,17 @@ export const SendEmailDialog = () => {
                                 recipientCount === 0 ||
                                 isBulkEmailSending
                             }
-                            className="min-w-[120px] bg-blue-600 text-white hover:bg-blue-700"
+                            className="min-w-32 bg-blue-600 text-white hover:bg-blue-700"
                         >
                             {isBulkEmailSending ? (
                                 <>
                                     <Spinner className="mr-2 size-4 animate-spin" />
-                                    Sending...
+                                    {t('sending')}
                                 </>
                             ) : (
                                 <>
                                     <PaperPlaneTilt className="mr-2 size-4" />
-                                    Send to {recipientCount}
+                                    {t('sendButton', { count: recipientCount })}
                                 </>
                             )}
                         </MyButton>
@@ -339,14 +361,13 @@ export const SendEmailDialog = () => {
             >
                 <div className="space-y-4">
                     <div className="mb-4 text-sm text-neutral-600">
-                        Compose your email below. {recipientCount} student(s) with email addresses
-                        will receive it.
+                        {t('composeNotice', { count: recipientCount })}
                     </div>
 
                     {/* Template Selection */}
                     <div>
                         <label className="mb-2 block text-sm font-medium text-neutral-700">
-                            Email Template (Optional)
+                            {t('templateLabel')}
                         </label>
                         <Select
                             value={selectedTemplateId}
@@ -362,11 +383,11 @@ export const SendEmailDialog = () => {
                             disabled={isBulkEmailSending}
                         >
                             <SelectTrigger className="w-full">
-                                <SelectValue placeholder="Select a template" />
+                                <SelectValue placeholder={t('selectTemplatePlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="none">No template - Start fresh</SelectItem>
-                                {EMAIL_TEMPLATES.map((template) => (
+                                <SelectItem value="none">{t('noTemplateOption')}</SelectItem>
+                                {emailTemplates.map((template) => (
                                     <SelectItem key={template.id} value={template.id}>
                                         {template.name}
                                     </SelectItem>
@@ -379,7 +400,7 @@ export const SendEmailDialog = () => {
                     <div>
                         <div className="mb-2 flex items-center justify-between">
                             <label className="text-sm font-medium text-neutral-700">
-                                Subject *
+                                {t('subjectLabel')}
                             </label>
                             <MyButton
                                 buttonType="secondary"
@@ -389,7 +410,7 @@ export const SendEmailDialog = () => {
                                 className="text-xs"
                             >
                                 <Eye className="mr-1 size-3" />
-                                Show Preview
+                                {t('showPreview')}
                             </MyButton>
                         </div>
                         <MyInput
@@ -397,11 +418,11 @@ export const SendEmailDialog = () => {
                             inputType="text"
                             input={emailSubject}
                             onChangeFunction={(e) => setEmailSubject(e.target.value)}
-                            inputPlaceholder="Your email subject"
+                            inputPlaceholder={t('subjectPlaceholder')}
                             disabled={isBulkEmailSending}
                         />
                         <div className="mt-2 flex flex-wrap gap-1">
-                            {PLACEHOLDER_VARIABLES.slice(0, 4).map((placeholder) => (
+                            {placeholderVariables.slice(0, 4).map((placeholder) => (
                                 <MyButton
                                     key={placeholder.value}
                                     buttonType="secondary"
@@ -419,13 +440,13 @@ export const SendEmailDialog = () => {
                     {/* Body */}
                     <div>
                         <label className="mb-2 block text-sm font-medium text-neutral-700">
-                            Body *
+                            {t('bodyLabel')}
                         </label>
                         <div className="mb-2 text-xs text-neutral-600">
-                            Click buttons below to insert variables:
+                            {t('clickToInsertVariables')}
                         </div>
                         <div className="mb-3 flex flex-wrap gap-1">
-                            {PLACEHOLDER_VARIABLES.map((placeholder) => (
+                            {placeholderVariables.map((placeholder) => (
                                 <MyButton
                                     key={placeholder.value}
                                     buttonType="secondary"
@@ -442,22 +463,22 @@ export const SendEmailDialog = () => {
                             ref={emailBodyRef}
                             value={emailBody}
                             onChange={(e) => setEmailBody(e.target.value)}
-                            placeholder="Type your email message here... Click the buttons above to insert variables."
+                            placeholder={t('bodyPlaceholder')}
                             disabled={isBulkEmailSending}
-                            className="min-h-[200px]"
+                            className="min-h-48"
                         />
                     </div>
 
                     {/* Custom Message Field */}
                     <div>
                         <label className="mb-2 block text-sm font-medium text-neutral-700">
-                            Custom Message Text (for custom_message_text placeholder)
+                            {t('customMessageLabel')}
                         </label>
                         <MyInput
                             inputType="text"
                             input={customMessage}
                             onChangeFunction={(e) => setCustomMessage(e.target.value)}
-                            inputPlaceholder="Enter your custom message..."
+                            inputPlaceholder={t('customMessagePlaceholder')}
                             disabled={isBulkEmailSending}
                         />
                     </div>
@@ -466,38 +487,41 @@ export const SendEmailDialog = () => {
                     {isBulkEmailSending && studentEmailStatuses.length > 0 && (
                         <div className="max-h-48 space-y-2 overflow-y-auto pr-2">
                             <p className="mb-2 text-sm font-medium">
-                                Sending Progress (
-                                {
-                                    studentEmailStatuses.filter(
+                                {t('sendingProgress', {
+                                    done: studentEmailStatuses.filter(
                                         (s) => s.status === 'sent' || s.status === 'failed'
-                                    ).length
-                                }
-                                /{studentEmailStatuses.length}):
+                                    ).length,
+                                    total: studentEmailStatuses.length,
+                                })}
                             </p>
                             {studentEmailStatuses.map((s) => (
                                 <div
                                     key={s.userId}
                                     className="flex items-center justify-between rounded bg-neutral-100 p-1.5 text-xs"
                                 >
-                                    <span className="max-w-[200px] truncate">
+                                    <span className="max-w-48 truncate">
                                         {s.name} ({s.email})
                                     </span>
                                     <div className="shrink-0">
                                         {s.status === 'pending' && (
-                                            <span className="text-neutral-500">Pending...</span>
+                                            <span className="text-neutral-500">
+                                                {t('status.pending')}
+                                            </span>
                                         )}
                                         {s.status === 'sending' && (
                                             <Spinner className="size-3 animate-spin text-blue-500" />
                                         )}
                                         {s.status === 'sent' && (
-                                            <span className="font-medium text-green-600">Sent</span>
+                                            <span className="font-medium text-green-600">
+                                                {t('status.sent')}
+                                            </span>
                                         )}
                                         {s.status === 'failed' && (
                                             <span
                                                 className="font-medium text-red-600"
                                                 title={s.error}
                                             >
-                                                Failed
+                                                {t('status.failed')}
                                             </span>
                                         )}
                                     </div>
@@ -510,10 +534,10 @@ export const SendEmailDialog = () => {
 
             {/* Email Preview Modal */}
             <MyDialog
-                heading="Email Preview"
+                heading={t('preview.heading')}
                 open={showPreviewModal}
                 onOpenChange={setShowPreviewModal}
-                dialogWidth="w-[90vw] max-w-2xl"
+                dialogWidth="w-dialog-md"
                 footer={
                     <div className="flex items-center justify-end">
                         <MyButton
@@ -521,7 +545,7 @@ export const SendEmailDialog = () => {
                             scale="medium"
                             onClick={() => setShowPreviewModal(false)}
                         >
-                            Close
+                            {t('preview.close')}
                         </MyButton>
                     </div>
                 }
@@ -529,12 +553,14 @@ export const SendEmailDialog = () => {
                 <div className="space-y-4">
                     <div className="mb-4 flex items-center gap-2 text-sm text-neutral-600">
                         <Eye className="size-4 text-blue-600" />
-                        <span>Preview using data from the first selected student</span>
+                        <span>{t('preview.usingFirstStudent')}</span>
                     </div>
 
                     {generatePreview().subject && (
                         <div className="space-y-2">
-                            <div className="text-sm font-medium text-neutral-700">Subject:</div>
+                            <div className="text-sm font-medium text-neutral-700">
+                                {t('preview.subjectLabel')}
+                            </div>
                             <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-neutral-800">
                                 {generatePreview().subject}
                             </div>
@@ -543,7 +569,9 @@ export const SendEmailDialog = () => {
 
                     {generatePreview().body && (
                         <div className="space-y-2">
-                            <div className="text-sm font-medium text-neutral-700">Email Body:</div>
+                            <div className="text-sm font-medium text-neutral-700">
+                                {t('preview.bodyLabel')}
+                            </div>
                             <div className="max-h-96 overflow-y-auto whitespace-pre-wrap rounded-lg border border-neutral-200 bg-neutral-50 p-4 text-neutral-800">
                                 {generatePreview().body}
                             </div>
@@ -553,7 +581,7 @@ export const SendEmailDialog = () => {
                     {!generatePreview().subject && !generatePreview().body && (
                         <div className="py-8 text-center text-neutral-500">
                             <Eye className="mx-auto mb-2 size-8 opacity-50" />
-                            <p>No content to preview. Add a subject or body to see the preview.</p>
+                            <p>{t('preview.emptyState')}</p>
                         </div>
                     )}
                 </div>

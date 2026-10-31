@@ -1,0 +1,18 @@
+{
+    "autoTitle": "{{type}} Question {{index}}",
+    "questionWord": "Question",
+    "addSuccess": "Question ajoutée avec succès !",
+    "addError": "Échec de l'ajout de la question",
+    "quickAccess": "Accès rapide",
+    "mcqSingleCorrect": "Questions à choix multiples (une seule réponse correcte)",
+    "mcqMultipleCorrect": "Questions à choix multiples (plusieurs réponses correctes)",
+    "numerical": "Numérique",
+    "trueFalse": "Vrai Faux",
+    "writingSkills": "Compétences rédactionnelles",
+    "longAnswer": "Réponse longue",
+    "singleWord": "Un mot",
+    "readingSkills": "Compétences de lecture",
+    "comprehensionSingleCorrect": "QCM de compréhension (une seule réponse correcte)",
+    "comprehensionMultipleCorrect": "QCM de compréhension (plusieurs réponses correctes)",
+    "comprehensionNumeric": "Compréhension numérique"
+}

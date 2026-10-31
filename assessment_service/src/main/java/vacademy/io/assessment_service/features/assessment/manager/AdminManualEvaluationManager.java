@@ -33,7 +33,9 @@ import vacademy.io.assessment_service.features.learner_assessment.service.Questi
 import vacademy.io.assessment_service.features.question_core.entity.Question;
 import vacademy.io.assessment_service.features.question_core.repository.QuestionRepository;
 import vacademy.io.common.auth.model.CustomUserDetails;
-import vacademy.io.common.core.standard_classes.ListService;
+import vacademy.io.assessment_service.features.assessment.sort.StableSort;
+import vacademy.io.assessment_service.features.open_evaluation.policy.ResultLockGuard;
+import vacademy.io.assessment_service.features.open_evaluation.policy.ResultLockedException;
 import vacademy.io.common.core.utils.DateUtil;
 import vacademy.io.common.exceptions.VacademyException;
 
@@ -64,6 +66,13 @@ public class AdminManualEvaluationManager {
     @Autowired
     EvaluationDraftRepository evaluationDraftRepository;
 
+    @Autowired
+    ResultLockGuard resultLockGuard;
+
+    /** Internal choice ("any 4 of 5"); absent in unit tests that do not need it. */
+    @Autowired(required = false)
+    vacademy.io.assessment_service.features.assessment.service.evaluation_ai.DashboardChoiceGroups choiceGroups;
+
 
     public ResponseEntity<String> submitManualEvaluatedMarks(CustomUserDetails userDetails, String assessmentId, String instituteId, String attemptId, ManualSubmitMarksRequest request) {
         try {
@@ -78,6 +87,10 @@ public class AdminManualEvaluationManager {
             Assessment assessment = attemptOptional.get().getRegistration().getAssessment();
             if (!assessment.getId().equals(assessmentId)) throw new VacademyException("Assessment Not Found");
 
+            // Partner-API exam whose result is already released: finalized, no new marks
+            // until it is unfinalized (gate G8). Dashboard exams are unaffected.
+            resultLockGuard.requireNotFinalizedForApiExam(attemptOptional.get());
+
             updateMarksForAttempt(assessment, attemptOptional.get(), request);
 
             createEvaluationLog(attemptOptional.get(), userDetails, request.getDataJson());
@@ -87,6 +100,8 @@ public class AdminManualEvaluationManager {
             discardDraftsForAttempt(attemptId);
 
             return ResponseEntity.ok("Done");
+        } catch (ResultLockedException e) {
+            throw e; // 409, not the generic 510 below
         } catch (Exception e) {
             throw new VacademyException("Failed To Update Marks: " + e.getMessage());
         }
@@ -282,6 +297,19 @@ public class AdminManualEvaluationManager {
 
         questionWiseMarksService.createQuestionWiseMarks(allQuestionAttempts);
 
+        // Internal choice ("any 4 of 5"): every answer keeps its marks, the extra ones
+        // are left out of the total. Nothing changes for a paper without groups.
+        if (choiceGroups != null) {
+            Map<String, Double> byQuestion = new HashMap<>();
+            for (QuestionWiseMarks m : allQuestionAttempts) {
+                if (m.getQuestion() != null) byQuestion.put(m.getQuestion().getId(), m.getMarks());
+            }
+            for (String left : choiceGroups.notCountedByMarks(assessment.getId(), byQuestion)) {
+                Double marks = byQuestion.get(left);
+                if (marks != null) totalMarks -= marks;
+            }
+        }
+
         return totalMarks;
     }
 
@@ -464,7 +492,16 @@ public class AdminManualEvaluationManager {
     public ResponseEntity<ManualAttemptResponse> getAssignedAttempt(CustomUserDetails userDetails, ManualAttemptFilter filter, String assessmentId, String instituteId, int pageNo, int pageSize) {
         if (Objects.isNull(filter)) throw new VacademyException("Invalid Request");
 
-        Sort sortColumns = ListService.createSortObject(filter.getSortColumns());
+        // findAllAssignedAttemptForUserIdWithFilter is native SQL with no ORDER BY,
+        // and it is driven off student_attempt — the very table this evaluator is
+        // writing to. An unsorted Pageable therefore returned rows in heap order,
+        // so grading one paper (or just opening it, which flips result_status to
+        // EVALUATING) moved that row and reshuffled the queue the evaluator was
+        // working down. This query selects participantName/attemptId, so the
+        // default and tie-breaker use those aliases rather than the participant
+        // list's studentName.
+        Sort sortColumns = StableSort.withStableOrder(filter.getSortColumns(),
+                Sort.by(Sort.Order.asc("participantName")), "attemptId");
         Pageable pageable = PageRequest.of(pageNo, pageSize, sortColumns);
 
 

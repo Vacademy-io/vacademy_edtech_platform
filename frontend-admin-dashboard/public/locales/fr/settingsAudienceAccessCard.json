@@ -1,0 +1,45 @@
+{
+    "title": "{{role}} — Accès à l'audience",
+    "ariaLabel": "Mode d'accès à l'audience",
+    "description": {
+        "part1": "Contrôle ce que",
+        "part2": "peut voir dans les prospects récents, la liste des prospects et les campagnes."
+    },
+    "modes": {
+        "default": {
+            "title": "Tout voir (par défaut)",
+            "description": "Voit chaque prospect et chaque campagne, comme un administrateur."
+        },
+        "counselor": {
+            "title": "Assigné à {{role}}",
+            "description": "Les lignes des prospects récents et de la liste des prospects sont automatiquement limitées aux prospects où l'utilisateur est le conseiller associé. Les campagnes ne sont pas affectées — {{role}} voit toujours toutes les campagnes."
+        },
+        "audienceList": {
+            "title": "Listes d'audience accordées uniquement",
+            "description": "Voit uniquement les listes d'audience explicitement accordées, et uniquement les réponses de ces listes dans les prospects récents."
+        }
+    },
+    "grantedLists": {
+        "label": "Listes d'audience accordées",
+        "loading": "Chargement des listes d'audience…",
+        "empty": "Aucune liste d'audience trouvée pour cet établissement.",
+        "untitledFallback": "Liste sans titre",
+        "zeroSelectedWarning": "Aucune liste sélectionnée pour l'instant — ce rôle ne verra aucun prospect tant qu'au moins une liste n'est pas accordée."
+    },
+    "assignedOnly": {
+        "title": "N'afficher que les prospects appartenant à {{role}}",
+        "description": "Restreint également la visibilité aux prospects que {{role}} possède, tout prospect ajouté manuellement leur étant automatiquement attribué — pour qu'un prospect ne disparaisse jamais de leur vue dès qu'il est enregistré. Actif uniquement tant que l'établissement n'utilise aucun pool de conseillers.",
+        "inertWarning_one": "Cet établissement gère déjà {{count}} pool de conseillers, donc ce réglage n'a aucun effet pour l'instant.",
+        "inertWarning_many": "Cet établissement gère déjà {{count}} pools de conseillers, donc ce réglage n'a aucun effet pour l'instant.",
+        "inertWarning_other": "Cet établissement gère déjà {{count}} pools de conseillers, donc ce réglage n'a aucun effet pour l'instant."
+    },
+    "toasts": {
+        "saveFailed": "Échec de l'enregistrement de l'accès à l'audience"
+    },
+    "status": {
+        "loading": "Chargement…",
+        "saving": "Enregistrement…",
+        "saved": "Enregistré",
+        "unsaved": "Modifications non enregistrées"
+    }
+}

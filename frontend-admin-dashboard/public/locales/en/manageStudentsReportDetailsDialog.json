@@ -1,0 +1,15 @@
+{
+    "dialog": {
+        "defaultTitle": "Analysis Report"
+    },
+    "tabs": {
+        "efforts": "Efforts",
+        "overview": "Overview",
+        "topics": "Topics",
+        "remedial": "Remedial"
+    },
+    "sections": {
+        "strengths": "Strengths",
+        "weaknesses": "Weaknesses"
+    }
+}

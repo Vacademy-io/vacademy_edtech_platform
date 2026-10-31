@@ -10,6 +10,7 @@ import {
     useImperativeHandle,
 } from "react";
 import { v4 as uuidv4 } from "uuid";
+import { Trans, useTranslation } from "react-i18next";
 import { useTrackingStore } from "@/stores/study-library/youtube-video-tracking-store";
 import { getEpochTimeInMillis, safePlay } from "./utils";
 import { convertTimeToSeconds } from "@/utils/study-library/tracking/convertTimeToSeconds";
@@ -118,6 +119,7 @@ function ControlButton({
 
 const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
     ({ videoUrl, sourceType = "URL", isOfflineSource = false, onTimeUpdate, questions = [], concentrationSettings }, ref) => {
+        const { t } = useTranslation("libraryCommonA");
         const { activeItem } = useContentStore();
         // Whether this user's role is allowed to download the video. Defaults to
         // false (today's behavior — native download is suppressed). Always
@@ -519,7 +521,7 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                 console.log("Source type:", sourceType);
 
                 if (!videoUrl) {
-                    throw new Error("No video URL provided");
+                    throw new Error(t("videoPlayer.error.noUrlProvided"));
                 }
 
                 // Cleanup existing video before loading new one
@@ -537,14 +539,14 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                         console.log("getPublicUrl response:", publicUrl);
 
                         if (!publicUrl) {
-                            throw new Error("Failed to get public URL");
+                            throw new Error(t("videoPlayer.error.failedFromFileId"));
                         }
 
                         finalUrl = publicUrl;
                         console.log("Final video URL:", finalUrl);
                     } catch (error) {
                         console.error("Error getting public URL:", error);
-                        throw new Error("Failed to get video URL from file ID");
+                        throw new Error(t("videoPlayer.error.failedFromFileId"));
                     }
                 }
 
@@ -556,7 +558,7 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                 setError(
                     error instanceof Error
                         ? error.message
-                        : "Error loading video"
+                        : t("videoPlayer.error.loadingVideo")
                 );
                 setActualVideoUrl(null);
             } finally {
@@ -596,21 +598,21 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
             console.error("Video error:", e);
             const videoElement = e.target as HTMLVideoElement;
             const error = videoElement.error;
-            let errorMessage = "Error loading video";
+            let errorMessage = t("videoPlayer.error.loadingVideo");
 
             if (error) {
                 switch (error.code) {
                     case MediaError.MEDIA_ERR_ABORTED:
-                        errorMessage = "Video playback was aborted";
+                        errorMessage = t("videoPlayer.error.aborted");
                         break;
                     case MediaError.MEDIA_ERR_NETWORK:
-                        errorMessage = "Network error while loading video";
+                        errorMessage = t("videoPlayer.error.network");
                         break;
                     case MediaError.MEDIA_ERR_DECODE:
-                        errorMessage = "Video format not supported";
+                        errorMessage = t("videoPlayer.error.formatNotSupported");
                         break;
                     case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
-                        errorMessage = "Video source not supported";
+                        errorMessage = t("videoPlayer.error.sourceNotSupported");
                         break;
                 }
             }
@@ -1534,7 +1536,13 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                             e.stopPropagation();
                             handleQuestionMarkerClick(question);
                         }}
-                        title={`Question ${index + 1}${isAnswered ? " (Answered)" : canSkip ? " (Skippable)" : " (Required)"}: ${question.text_data.content}`}
+                        title={
+                            isAnswered
+                                ? t("videoPlayer.questionMarker.titleAnswered", { number: index + 1, text: question.text_data.content })
+                                : canSkip
+                                    ? t("videoPlayer.questionMarker.titleSkippable", { number: index + 1, text: question.text_data.content })
+                                    : t("videoPlayer.questionMarker.titleRequired", { number: index + 1, text: question.text_data.content })
+                        }
                     >
                         {isAnswered ? (
                             <span className="text-white text-xs font-bold flex items-center justify-center w-full h-full">
@@ -1568,16 +1576,18 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                             <div className="p-3">
                                 <div className="mt-1">
                                     <p className="text-xs text-neutral-600">
-                                        Just ensuring that you are actively
-                                        learning, please click the number{" "}
-                                        <span className="text-primary-500 font-bold">
-                                            {verificationNumbers[1]}
-                                        </span>{" "}
-                                        within{" "}
-                                        <span className="text-primary-500 font-bold">
-                                            {verificationCountdown}{" "}
-                                        </span>
-                                        seconds.
+                                        <Trans
+                                            t={t}
+                                            i18nKey="verification.focusPrompt"
+                                            values={{
+                                                number: verificationNumbers[1],
+                                                seconds: verificationCountdown,
+                                            }}
+                                            components={{
+                                                1: <span className="text-primary-500 font-bold" />,
+                                                2: <span className="text-primary-500 font-bold" />,
+                                            }}
+                                        />
                                     </p>
                                 </div>
                                 <div className="mt-2 flex justify-center space-x-2">
@@ -1622,17 +1632,22 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                                         />
                                     </div>
 
-                                    <div className="p-5 flex flex-col sm:flex-row items-center gap-6">
+                                    <div className="p-5 flex flex-col sm:flex-row items-center gap-section">
                                         <div className="flex-1 text-center sm:text-start space-y-2">
                                             <div className="flex items-center justify-center sm:justify-start gap-2.5">
                                                 <span className="relative flex h-3 w-3">
                                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                                     <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                                                 </span>
-                                                <h4 className="text-base font-bold text-white tracking-tight">Active Focus Check</h4>
+                                                <h4 className="text-base font-bold text-white tracking-tight">{t("videoPlayer.verification.focusCheckTitle")}</h4>
                                             </div>
                                             <p className="text-sm text-zinc-400 leading-relaxed">
-                                                Select <span className="inline-block px-2 py-0.5 mx-1 bg-zinc-900 border border-zinc-700 rounded text-emerald-400 font-mono font-bold text-base shadow-inner md:align-middle">{verificationNumbers[1]}</span> to maintain your learning streak.
+                                                <Trans
+                                                    t={t}
+                                                    i18nKey="videoPlayer.verification.selectToMaintainStreak"
+                                                    values={{ number: verificationNumbers[1] }}
+                                                    components={{ 1: <span className="inline-block px-2 py-0.5 mx-1 bg-zinc-900 border border-zinc-700 rounded text-emerald-400 font-mono font-bold text-base shadow-inner md:align-middle" /> }}
+                                                />
                                             </p>
                                         </div>
 
@@ -1651,7 +1666,7 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                                 </div>
                                 <div className="text-center mt-3">
                                     <span className="text-xs font-medium text-zinc-500 bg-black/40 px-3 py-1 rounded-full border border-white/5 backdrop-blur-md">
-                                        Closing in {verificationCountdown}s
+                                        {t("videoPlayer.verification.closingIn", { countdown: verificationCountdown })}
                                     </span>
                                 </div>
                             </div>
@@ -1670,17 +1685,22 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                                         />
                                     </div>
 
-                                    <div className="p-5 flex flex-col sm:flex-row items-center gap-6">
+                                    <div className="p-5 flex flex-col sm:flex-row items-center gap-section">
                                         <div className="flex-1 text-center sm:text-start space-y-2">
                                             <div className="flex items-center justify-center sm:justify-start gap-2.5">
                                                 <span className="relative flex h-3 w-3">
                                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                                                     <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
                                                 </span>
-                                                <h4 className="text-base font-bold text-white tracking-tight">Active Focus Check</h4>
+                                                <h4 className="text-base font-bold text-white tracking-tight">{t("videoPlayer.verification.focusCheckTitle")}</h4>
                                             </div>
                                             <p className="text-sm text-zinc-400 leading-relaxed">
-                                                Select <span className="inline-block px-2 py-0.5 mx-1 bg-zinc-900 border border-zinc-700 rounded text-emerald-400 font-mono font-bold text-base shadow-inner md:align-middle">{verificationNumbers[1]}</span> to maintain your learning streak.
+                                                <Trans
+                                                    t={t}
+                                                    i18nKey="videoPlayer.verification.selectToMaintainStreak"
+                                                    values={{ number: verificationNumbers[1] }}
+                                                    components={{ 1: <span className="inline-block px-2 py-0.5 mx-1 bg-zinc-900 border border-zinc-700 rounded text-emerald-400 font-mono font-bold text-base shadow-inner md:align-middle" /> }}
+                                                />
                                             </p>
                                         </div>
 
@@ -1699,7 +1719,7 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                                 </div>
                                 <div className="text-center mt-3">
                                     <span className="text-xs font-medium text-zinc-500 bg-black/40 px-3 py-1 rounded-full border border-white/5 backdrop-blur-md">
-                                        Closing in {verificationCountdown}s
+                                        {t("videoPlayer.verification.closingIn", { countdown: verificationCountdown })}
                                     </span>
                                 </div>
                             </div>
@@ -1715,7 +1735,7 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                         actualVideoUrl && (
                             <button
                                 type="button"
-                                aria-label="Play"
+                                aria-label={t("videoPlayer.play")}
                                 onClick={togglePlay}
                                 className="absolute inset-0 z-20 grid place-items-center bg-black/20 transition-colors hover:bg-black/30"
                             >
@@ -1780,7 +1800,7 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                         {/* Buttons row */}
                         <div className="flex items-center gap-1 text-white">
                             <ControlButton
-                                label={isPlayed ? "Pause" : "Play"}
+                                label={isPlayed ? t("videoPlayer.pause") : t("videoPlayer.play")}
                                 onClick={togglePlay}
                             >
                                 {isPlayed ? (
@@ -1791,7 +1811,7 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                             </ControlButton>
 
                             <ControlButton
-                                label={`Rewind ${SKIP_SECONDS} seconds`}
+                                label={t("videoPlayer.rewindSeconds", { seconds: SKIP_SECONDS })}
                                 onClick={() => skip(-SKIP_SECONDS)}
                             >
                                 <ArrowCounterClockwise size={20} weight="bold" />
@@ -1801,7 +1821,7 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                             </ControlButton>
 
                             <ControlButton
-                                label={`Forward ${SKIP_SECONDS} seconds`}
+                                label={t("videoPlayer.forwardSeconds", { seconds: SKIP_SECONDS })}
                                 onClick={() => skip(SKIP_SECONDS)}
                             >
                                 <span className="text-xs font-semibold">
@@ -1816,7 +1836,7 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                                 onMouseLeave={() => setAdjustingVolume(false)}
                             >
                                 <ControlButton
-                                    label={isSilent ? "Unmute" : "Mute"}
+                                    label={isSilent ? t("videoPlayer.unmute") : t("videoPlayer.mute")}
                                     onClick={toggleMute}
                                 >
                                     {isSilent ? (
@@ -1867,8 +1887,8 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                                 <ControlButton
                                     label={
                                         isFullscreen
-                                            ? "Exit full screen"
-                                            : "Full screen"
+                                            ? t("videoPlayer.exitFullScreen")
+                                            : t("videoPlayer.fullScreen")
                                     }
                                     onClick={toggleFullscreen}
                                 >
@@ -1881,7 +1901,7 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
 
                                 <div ref={menuRef} className="relative">
                                     <ControlButton
-                                        label="More options"
+                                        label={t("videoPlayer.moreOptions")}
                                         onClick={() => setMenuOpen((o) => !o)}
                                         className={cn(menuOpen && "bg-white/20")}
                                     >
@@ -1895,7 +1915,7 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                                         <div className="absolute bottom-full right-0 mb-2 w-56 rounded-lg border border-white/10 bg-black/90 py-1.5 text-white shadow-lg">
                                             <div className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-white/70">
                                                 <Gauge size={16} weight="bold" />
-                                                Playback speed
+                                                {t("videoPlayer.playbackSpeed")}
                                             </div>
                                             <div className="flex flex-wrap gap-1 px-3 pb-2 pt-1">
                                                 {PLAYBACK_RATES.map((r) => (
@@ -1913,7 +1933,7 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                                                         )}
                                                     >
                                                         {r === 1
-                                                            ? "Normal"
+                                                            ? t("videoPlayer.normalSpeed")
                                                             : `${r}x`}
                                                     </button>
                                                 ))}
@@ -1931,7 +1951,7 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                                                             size={18}
                                                         />
                                                         <span className="flex-1 text-left">
-                                                            Download
+                                                            {t("common.download")}
                                                         </span>
                                                     </button>
                                                 </>
@@ -1952,8 +1972,8 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                     {/* Error message */}
                     {error && (
                         <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                            <div className="bg-white p-4 rounded-lg shadow-lg max-w-md">
-                                <p className="text-red-500 mb-2">{error}</p>
+                            <div className="bg-white p-4 rounded-lg shadow-lg max-w-md space-y-2">
+                                <p className="text-red-500">{error}</p>
                                 <button
                                     onClick={() => {
                                         setError(null);
@@ -1962,7 +1982,7 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                                     }}
                                     className="text-primary-500 hover:text-primary-600"
                                 >
-                                    Try Again
+                                    {t("common.tryAgain")}
                                 </button>
                             </div>
                         </div>
@@ -1989,17 +2009,18 @@ const CustomVideoPlayer = forwardRef<any, CustomVideoPlayerProps>(
                             playsInline
                             preload="auto"
                             controlsList={allowVideoDownload ? undefined : "nodownload"}
-                            // The native OfflineMedia responders (iOS scheme
-                            // handler / Android localhost server) don't send
-                            // Access-Control-Allow-Origin — crossOrigin would
-                            // make some WebViews refuse to play the stream.
-                            crossOrigin={isOfflineSource ? undefined : "anonymous"}
+                            // No crossOrigin: nothing reads the frames (no canvas,
+                            // no tracks), and CORS mode only adds ways to fail —
+                            // the native OfflineMedia responders send no
+                            // Access-Control-Allow-Origin, and Google Meet
+                            // recordings on CloudFront fail WebKit's CORS check
+                            // ("Video source not supported" on iOS) while
+                            // playing fine as a plain media request.
                         >
                             <source src={actualVideoUrl} type="video/mp4" />
                             <source src={actualVideoUrl} type="video/webm" />
                             <source src={actualVideoUrl} type="video/ogg" />
-                            Your browser does not support the video tag or the
-                            video format.
+                            {t("videoPlayer.unsupportedBrowser")}
                         </video>
                     )}
 

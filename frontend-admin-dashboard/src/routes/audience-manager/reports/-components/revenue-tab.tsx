@@ -3,11 +3,22 @@
  *
  * Collected revenue from CONVERTED leads (GET /v1/reports/revenue): KPI strip, a daily revenue
  * trend, and per-source / per-counsellor breakdown tables. Revenue counts a payment only once the
- * lead it came from is converted, so totals here are "money won", not gross billing.
+ * lead it came from is converted, so totals here are "money won", not gross billing. Admissions /
+ * booked fee are the other view: converted leads enrolled in the range and their full fee, which
+ * is what counsellors are measured on.
  */
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { CurrencyCircleDollar, Megaphone, Receipt, TrendUp, Users } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import {
+    CurrencyCircleDollar,
+    GraduationCap,
+    Megaphone,
+    Receipt,
+    TrendUp,
+    Users,
+    Wallet,
+} from '@phosphor-icons/react';
 import {
     fetchRevenue,
     revenueQueryKey,
@@ -28,7 +39,14 @@ import {
 } from './report-shared';
 
 type SourceSortKey = 'source_type' | 'revenue' | 'paying_leads' | 'payments' | 'avg_deal_value';
-type CounsellorSortKey = 'name' | 'revenue' | 'paying_leads' | 'payments' | 'avg_deal_value';
+type CounsellorSortKey =
+    | 'name'
+    | 'admissions'
+    | 'booked_revenue'
+    | 'revenue'
+    | 'paying_leads'
+    | 'payments'
+    | 'avg_deal_value';
 
 export function RevenueTab({
     instituteId,
@@ -37,6 +55,7 @@ export function RevenueTab({
     teamId,
     counsellorUserId,
 }: ReportTabProps) {
+    const { t } = useTranslation('audienceManagerRevenueTab');
     const params = { instituteId, fromDate, toDate, teamId, counsellorUserId };
     const query = useQuery({
         queryKey: revenueQueryKey(params),
@@ -48,7 +67,7 @@ export function RevenueTab({
 
     const [srcSort, setSrcSort] = useState<SourceSortKey>('revenue');
     const [srcDir, setSrcDir] = useState<'asc' | 'desc'>('desc');
-    const [cslSort, setCslSort] = useState<CounsellorSortKey>('revenue');
+    const [cslSort, setCslSort] = useState<CounsellorSortKey>('booked_revenue');
     const [cslDir, setCslDir] = useState<'asc' | 'desc'>('desc');
 
     const currency = query.data?.currency ?? 'INR';
@@ -88,36 +107,50 @@ export function RevenueTab({
 
     return (
         <div className="flex flex-col gap-6">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <KpiCard
-                    label="Revenue"
+                    label={t('column.admissions')}
+                    value={fmtNumber(totals?.admissions ?? 0)}
+                    icon={<GraduationCap size={18} />}
+                    tone="primary"
+                    sub={t('kpi.admissionsSub')}
+                />
+                <KpiCard
+                    label={t('column.bookedRevenue')}
+                    value={fmtCurrency(totals?.booked_revenue ?? 0, currency)}
+                    icon={<Wallet size={18} />}
+                    tone="info"
+                    sub={t('kpi.bookedRevenueSub')}
+                />
+                <KpiCard
+                    label={t('column.revenue')}
                     value={fmtCurrency(totals?.revenue ?? 0, currency)}
                     icon={<CurrencyCircleDollar size={18} />}
                     tone="success"
-                    sub="Collected from converted leads"
+                    sub={t('kpi.revenueSub')}
                 />
                 <KpiCard
-                    label="Paying leads"
+                    label={t('column.payingLeads')}
                     value={fmtNumber(totals?.paying_leads ?? 0)}
                     icon={<Users size={18} />}
                     tone="primary"
                 />
                 <KpiCard
-                    label="Avg deal value"
+                    label={t('column.avgDealValue')}
                     value={fmtCurrency(totals?.avg_deal_value ?? null, currency)}
                     icon={<TrendUp size={18} />}
                     tone="info"
                 />
                 <KpiCard
-                    label="Payments"
+                    label={t('column.payments')}
                     value={fmtNumber(totals?.payments ?? 0)}
                     icon={<Receipt size={18} />}
                 />
             </div>
 
-            <ReportSection title="Daily revenue" icon={<TrendUp size={18} />}>
+            <ReportSection title={t('dailyRevenue.title')} icon={<TrendUp size={18} />}>
                 {trend.length === 0 || trend.every((d) => d.revenue === 0) ? (
-                    <EmptyHint message="No revenue in this range." />
+                    <EmptyHint message={t('empty.noRevenue')} />
                 ) : (
                     <div className="flex h-40 items-end gap-0.5 overflow-x-auto">
                         {trend.map((d) => (
@@ -131,27 +164,35 @@ export function RevenueTab({
                                         style={{
                                             height: `${Math.max(2, (d.revenue / peakRevenue) * 100)}%`,
                                         }}
-                                        title={`${d.date}: ${fmtCurrency(d.revenue, currency)} (${d.payments} payments)`}
+                                        title={t('dailyRevenue.barTooltip', {
+                                            date: d.date,
+                                            amount: fmtCurrency(d.revenue, currency),
+                                            count: d.payments,
+                                        })}
                                     />
                                 </div>
                             </div>
                         ))}
                     </div>
                 )}
-                <p className="text-xs text-neutral-400">
-                    Revenue is recognized on the payment date for leads whose profile is converted.
-                </p>
+                <p className="text-xs text-neutral-400">{t('dailyRevenue.footnote')}</p>
             </ReportSection>
 
             <ReportSection
-                title="Revenue by source"
+                title={t('bySource.title')}
                 icon={<Megaphone size={18} />}
                 actions={
                     <ExportWithColumnPickerButton
                         filename={`revenue-by-source_${fromDate}_${toDate}.csv`}
                         disabled={sources.length === 0}
                         getHeadersAndRows={() => ({
-                            headers: ['Source', 'Revenue', 'Paying leads', 'Payments', 'Avg deal value'],
+                            headers: [
+                                t('column.source'),
+                                t('column.revenue'),
+                                t('column.payingLeads'),
+                                t('column.payments'),
+                                t('column.avgDealValue'),
+                            ],
                             rows: sources.map((r) => [
                                 r.source_type,
                                 r.revenue,
@@ -164,14 +205,14 @@ export function RevenueTab({
                 }
             >
                 {sources.length === 0 ? (
-                    <EmptyHint message="No revenue in this range." />
+                    <EmptyHint message={t('empty.noRevenue')} />
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
                                     <SortableHeader
-                                        label="Source"
+                                        label={t('column.source')}
                                         sortKey="source_type"
                                         current={srcSort}
                                         dir={srcDir}
@@ -179,28 +220,28 @@ export function RevenueTab({
                                         align="left"
                                     />
                                     <SortableHeader
-                                        label="Revenue"
+                                        label={t('column.revenue')}
                                         sortKey="revenue"
                                         current={srcSort}
                                         dir={srcDir}
                                         onClick={toggleSrc}
                                     />
                                     <SortableHeader
-                                        label="Paying leads"
+                                        label={t('column.payingLeads')}
                                         sortKey="paying_leads"
                                         current={srcSort}
                                         dir={srcDir}
                                         onClick={toggleSrc}
                                     />
                                     <SortableHeader
-                                        label="Payments"
+                                        label={t('column.payments')}
                                         sortKey="payments"
                                         current={srcSort}
                                         dir={srcDir}
                                         onClick={toggleSrc}
                                     />
                                     <SortableHeader
-                                        label="Avg deal value"
+                                        label={t('column.avgDealValue')}
                                         sortKey="avg_deal_value"
                                         current={srcSort}
                                         dir={srcDir}
@@ -238,16 +279,26 @@ export function RevenueTab({
             </ReportSection>
 
             <ReportSection
-                title="Revenue by counsellor"
+                title={t('byCounsellor.title')}
                 icon={<Users size={18} />}
                 actions={
                     <ExportWithColumnPickerButton
                         filename={`revenue-by-counsellor_${fromDate}_${toDate}.csv`}
                         disabled={counsellors.length === 0}
                         getHeadersAndRows={() => ({
-                            headers: ['Counsellor', 'Revenue', 'Paying leads', 'Payments', 'Avg deal value'],
+                            headers: [
+                                t('column.counsellor'),
+                                t('column.admissions'),
+                                t('column.bookedRevenue'),
+                                t('column.revenue'),
+                                t('column.payingLeads'),
+                                t('column.payments'),
+                                t('column.avgDealValue'),
+                            ],
                             rows: counsellors.map((r) => [
                                 r.name ?? r.user_id,
+                                r.admissions,
+                                r.booked_revenue,
                                 r.revenue,
                                 r.paying_leads,
                                 r.payments,
@@ -258,14 +309,14 @@ export function RevenueTab({
                 }
             >
                 {counsellors.length === 0 ? (
-                    <EmptyHint message="No counsellor-attributed revenue in this range." />
+                    <EmptyHint message={t('empty.noCounsellorRevenue')} />
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
                                     <SortableHeader
-                                        label="Counsellor"
+                                        label={t('column.counsellor')}
                                         sortKey="name"
                                         current={cslSort}
                                         dir={cslDir}
@@ -273,28 +324,42 @@ export function RevenueTab({
                                         align="left"
                                     />
                                     <SortableHeader
-                                        label="Revenue"
+                                        label={t('column.admissions')}
+                                        sortKey="admissions"
+                                        current={cslSort}
+                                        dir={cslDir}
+                                        onClick={toggleCsl}
+                                    />
+                                    <SortableHeader
+                                        label={t('column.bookedRevenue')}
+                                        sortKey="booked_revenue"
+                                        current={cslSort}
+                                        dir={cslDir}
+                                        onClick={toggleCsl}
+                                    />
+                                    <SortableHeader
+                                        label={t('column.revenue')}
                                         sortKey="revenue"
                                         current={cslSort}
                                         dir={cslDir}
                                         onClick={toggleCsl}
                                     />
                                     <SortableHeader
-                                        label="Paying leads"
+                                        label={t('column.payingLeads')}
                                         sortKey="paying_leads"
                                         current={cslSort}
                                         dir={cslDir}
                                         onClick={toggleCsl}
                                     />
                                     <SortableHeader
-                                        label="Payments"
+                                        label={t('column.payments')}
                                         sortKey="payments"
                                         current={cslSort}
                                         dir={cslDir}
                                         onClick={toggleCsl}
                                     />
                                     <SortableHeader
-                                        label="Avg deal value"
+                                        label={t('column.avgDealValue')}
                                         sortKey="avg_deal_value"
                                         current={cslSort}
                                         dir={cslDir}
@@ -310,6 +375,12 @@ export function RevenueTab({
                                     >
                                         <td className="py-2.5 pr-3 font-medium text-neutral-900">
                                             {r.name ?? r.user_id}
+                                        </td>
+                                        <td className="py-2.5 pr-3 text-right text-neutral-800">
+                                            {fmtNumber(r.admissions)}
+                                        </td>
+                                        <td className="py-2.5 pr-3 text-right font-semibold text-neutral-900">
+                                            {fmtCurrency(r.booked_revenue, currency)}
                                         </td>
                                         <td className="py-2.5 pr-3 text-right font-semibold text-green-700">
                                             {fmtCurrency(r.revenue, currency)}
@@ -329,6 +400,7 @@ export function RevenueTab({
                         </table>
                     </div>
                 )}
+                <p className="text-xs text-neutral-400">{t('byCounsellor.footnote')}</p>
             </ReportSection>
         </div>
     );

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -42,28 +43,26 @@ const ToggleRow = ({ label, description, checked, onCheckedChange, children }: T
  * how much app chrome survives on a phone.
  */
 const ExamExperienceSettingsCard = ({ settings, onChange }: ExamExperienceSettingsCardProps) => {
+    const { t } = useTranslation('settingsExamExperienceCard');
     const patch = (next: Partial<ExamExperienceSettings>) => onChange({ ...settings, ...next });
 
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-base">Live Test Experience</CardTitle>
-                <CardDescription>
-                    Controls what learners see while attempting an assessment, on both web and
-                    mobile.
-                </CardDescription>
+                <CardTitle className="text-base">{t('header.title')}</CardTitle>
+                <CardDescription>{t('header.description')}</CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-4">
                 <ToggleRow
-                    label="Calculator"
-                    description="Show an on-screen calculator inside the test."
+                    label={t('calculator.label')}
+                    description={t('calculator.description')}
                     checked={settings.calculator.enabled}
                     onCheckedChange={(enabled) =>
                         patch({ calculator: { ...settings.calculator, enabled } })
                     }
                 >
                     <div className="flex flex-col gap-2">
-                        <Label className="text-sm font-medium">Calculator type</Label>
+                        <Label className="text-sm font-medium">{t('calculator.typeLabel')}</Label>
                         <Select
                             value={settings.calculator.mode}
                             onValueChange={(mode) =>
@@ -76,39 +75,38 @@ const ExamExperienceSettingsCard = ({ settings, onChange }: ExamExperienceSettin
                             }
                         >
                             <SelectTrigger className="w-full max-w-xs">
-                                <SelectValue placeholder="Select calculator type" />
+                                <SelectValue placeholder={t('calculator.typePlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="basic">Basic (four function)</SelectItem>
+                                <SelectItem value="basic">{t('calculator.basic')}</SelectItem>
                                 <SelectItem value="scientific">
-                                    Scientific (JEE / NEET style)
+                                    {t('calculator.scientific')}
                                 </SelectItem>
                             </SelectContent>
                         </Select>
-                        <p className="text-xs text-gray-500">
-                            Scientific adds trigonometry and its inverses, logarithms, powers and
-                            roots, factorial, π and e, and a DEG/RAD toggle.
-                        </p>
+                        <p className="text-xs text-gray-500">{t('calculator.hint')}</p>
                     </div>
                 </ToggleRow>
 
                 <ToggleRow
-                    label="Scratchpad"
-                    description="A rough-work notepad. Its contents are never submitted with the paper."
+                    label={t('scratchpad.label')}
+                    description={t('scratchpad.description')}
                     checked={settings.scratchpad.enabled}
                     onCheckedChange={(enabled) => patch({ scratchpad: { enabled } })}
                 />
 
                 <ToggleRow
-                    label="Question palette"
-                    description="Lets learners jump between questions and see answered / marked status."
+                    label={t('questionPalette.label')}
+                    description={t('questionPalette.description')}
                     checked={settings.questionPalette.enabled}
                     onCheckedChange={(enabled) =>
                         patch({ questionPalette: { ...settings.questionPalette, enabled } })
                     }
                 >
                     <div className="flex flex-col gap-2">
-                        <Label className="text-sm font-medium">Default view</Label>
+                        <Label className="text-sm font-medium">
+                            {t('questionPalette.viewLabel')}
+                        </Label>
                         <Select
                             value={settings.questionPalette.defaultView}
                             onValueChange={(defaultView) =>
@@ -121,26 +119,26 @@ const ExamExperienceSettingsCard = ({ settings, onChange }: ExamExperienceSettin
                             }
                         >
                             <SelectTrigger className="w-full max-w-xs">
-                                <SelectValue placeholder="Select default view" />
+                                <SelectValue placeholder={t('questionPalette.viewPlaceholder')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="grid">Grid of question numbers</SelectItem>
-                                <SelectItem value="list">List with question preview</SelectItem>
+                                <SelectItem value="grid">{t('questionPalette.grid')}</SelectItem>
+                                <SelectItem value="list">{t('questionPalette.list')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                 </ToggleRow>
 
                 <ToggleRow
-                    label="Show marking scheme on each question"
-                    description="Displays the marks awarded and deducted beside every question."
+                    label={t('markingScheme.label')}
+                    description={t('markingScheme.description')}
                     checked={settings.showMarkingScheme}
                     onCheckedChange={(showMarkingScheme) => patch({ showMarkingScheme })}
                 />
 
                 <ToggleRow
-                    label="Hide app navigation on mobile"
-                    description="During a live test on a phone, hide the chatbot launcher and other app chrome so only the assessment is visible."
+                    label={t('mobileNav.label')}
+                    description={t('mobileNav.description')}
                     checked={settings.mobile.hideAppNavigation}
                     onCheckedChange={(hideAppNavigation) =>
                         patch({ mobile: { hideAppNavigation } })

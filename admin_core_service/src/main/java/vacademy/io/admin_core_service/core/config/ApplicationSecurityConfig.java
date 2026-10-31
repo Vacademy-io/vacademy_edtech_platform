@@ -15,11 +15,16 @@ import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
+import org.springframework.security.web.header.writers.frameoptions.XFrameOptionsHeaderWriter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.NegatedRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.cors.CorsConfigurationSource;
 import vacademy.io.common.auth.filter.InternalAuthFilter;
 import vacademy.io.common.auth.filter.JwtAuthFilter;
+import vacademy.io.common.auth.config.JsonAuthEntryPoint;
 
 @Configuration
 @EnableMethodSecurity
@@ -83,6 +88,13 @@ public class ApplicationSecurityConfig {
             // Agent SSE stream - EventSource doesn't support auth headers, session is
             // validated internally
             "/admin-core-service/v1/agent/stream/**",
+            // Live activity SSE stream - same EventSource constraint. Unlike the
+            // per-call telephony stream, an instituteId is guessable, so this one is
+            // gated on a short-lived signed token minted by the AUTHENTICATED
+            // /stream-token endpoint, which stays off this list. The token also carries
+            // the caller's permitted categories, and the bus filters every event
+            // against them before writing.
+            "/admin-core-service/v1/live-activity/stream",
             "/admin-core-service/api/v1/audience/webhook/**",
             // Ad platform webhook endpoints (Meta hub.challenge GET + POST, Google POST)
             "/admin-core-service/api/v1/webhook/meta",
@@ -108,11 +120,23 @@ public class ApplicationSecurityConfig {
             // BBB server-to-server callback (no JWT — called by BigBlueButton when meeting ends)
             "/admin-core-service/live-sessions/provider/meeting/bbb-callback",
             "/admin-core-service/live-sessions/provider/meeting/bbb-analytics-callback",
+            // BBB activeness plugin report (from the learner's browser inside BBB, no JWT —
+            // authenticated by the per-learner HMAC token in the body)
+            "/admin-core-service/live-sessions/provider/meeting/bbb-activeness",
             // BBB recording upload (server-to-server from BBB post-publish script, auth via X-BBB-Secret header)
             "/admin-core-service/live-sessions/provider/meeting/recording/init-upload",
             "/admin-core-service/live-sessions/provider/meeting/recording/complete",
             // BBB server pool management (server-to-server from community_service, no JWT)
             "/admin-core-service/bbb/pool/**",
+            // BBB custom live-class domains, read by the pool start workflow.
+            // No JWT, but NOT unauthenticated: BbbCustomDomainController itself
+            // requires the shared X-Internal-Service-Token. Note the path must not
+            // contain the word "internal" — InternalAuthFilter substring-matches the
+            // URI and would demand clientName + Signature instead.
+            "/admin-core-service/bbb/custom-domains",
+            // ai_service copy-check callbacks for assignment AI evaluation. No JWT, but
+            // AssignmentCopyCheckCallbackController requires X-Internal-Service-Token.
+            "/admin-core-service/assignment-ai-evaluation/hook/**",
             // Zoom webhook callback (no JWT — verified by per-account HMAC signature)
             "/admin-core-service/live-sessions/provider/meeting/zoom-callback/**",
             // "Connect with Zoom" OAuth redirect (no JWT — CSRF-protected by the state record)
@@ -143,6 +167,11 @@ public class ApplicationSecurityConfig {
     };
     @Autowired
     JwtAuthFilter jwtAuthFilter;
+
+    // Replaces the default bodyless 403 (which is re-dispatched to a secured
+    // /error and comes back empty) with a JSON body naming the actual reason.
+    @Autowired
+    private JsonAuthEntryPoint jsonAuthEntryPoint;
     @Autowired
     UserDetailsService userDetailsService;
 
@@ -152,9 +181,27 @@ public class ApplicationSecurityConfig {
     @Autowired
     private CorsConfigurationSource corsConfigurationSource;
 
+    /**
+     * The public certificate verification document, which the learner portal
+     * shows in an iframe on the institute's own domain. Every other response
+     * keeps X-Frame-Options: DENY. The document sets its own CSP, which allows
+     * the framing and nothing else (see PublicCertificateVerificationController).
+     */
+    static final RequestMatcher VERIFICATION_DOCUMENT = request -> {
+        String uri = request.getRequestURI();
+        return uri != null
+                && uri.startsWith("/admin-core-service/open/v1/certificate/verify/")
+                && uri.endsWith("/document");
+    };
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.disable())
+                        .addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
+                                new NegatedRequestMatcher(VERIFICATION_DOCUMENT),
+                                new XFrameOptionsHeaderWriter(XFrameOptionsHeaderWriter.XFrameOptionsMode.DENY))))
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .authorizeHttpRequests(authz -> {
@@ -173,7 +220,10 @@ public class ApplicationSecurityConfig {
                 .anonymous(anonymous -> anonymous.disable())
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(internalAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(jsonAuthEntryPoint)
+                        .accessDeniedHandler(jsonAuthEntryPoint));
         return http.build();
     }
 

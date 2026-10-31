@@ -3,6 +3,8 @@ package vacademy.io.assessment_service.features.assessment.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.hibernate.annotations.UuidGenerator;
 import vacademy.io.assessment_service.features.rich_text.entity.AssessmentRichTextData;
 
@@ -46,6 +48,57 @@ public class Assessment {
 
     @Column(name = "evaluation_type", nullable = false)
     private String evaluationType;
+
+    /**
+     * Evaluate every submission with AI, without a teacher pressing anything (V43).
+     *
+     * NULL means off. AI evaluation charges institute credits per graded question, so
+     * this is deliberately opt-in: an assessment never starts spending on its own.
+     * Independent of {@link #evaluationType} -- that decides how the AUTO scorer treats
+     * the paper, this decides whether the AI grader is additionally enqueued on submit.
+     */
+    @Column(name = "ai_evaluation_enabled")
+    private Boolean aiEvaluationEnabled;
+
+    /** Preferred model for those runs. NULL falls back to the ai_service default. */
+    @Column(name = "ai_evaluation_model")
+    private String aiEvaluationModel;
+
+    /**
+     * Checked-copy template for AI-checked copies (V55): OUTSIDE = remarks in a
+     * Teacher Comments panel beside the copy. NULL / INSIDE = written on the copy.
+     */
+    @Column(name = "copy_comment_placement")
+    private String copyCommentPlacement;
+
+    /**
+     * How the AI checks this paper's copies (V59): subject, level, the institute's
+     * marking instructions and the language-feedback choice, as JSON. See
+     * {@link vacademy.io.assessment_service.features.assessment.service.evaluation_ai.CopyCheckConfig}.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "copy_check_config", columnDefinition = "jsonb")
+    private String copyCheckConfig;
+
+    /**
+     * Proctoring tier + knobs as JSON (V50); see
+     * {@link vacademy.io.assessment_service.features.proctoring.dto.ProctoringConfigDTO}.
+     * NULL means off -- the behaviour of every assessment that predates it. Read and
+     * written only through ProctoringConfigService.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "proctoring_config", columnDefinition = "jsonb")
+    private String proctoringConfig;
+
+    /**
+     * OMR sheet settings as JSON (V60); see
+     * {@link vacademy.io.assessment_service.features.assessment.omr.dto.OmrConfig}.
+     * Only meaningful while {@link #omrMode} is on. Read and written only through
+     * OmrSetService.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "omr_config", columnDefinition = "jsonb")
+    private String omrConfig;
 
     @Column(name = "submission_type", nullable = false)
     private String submissionType;

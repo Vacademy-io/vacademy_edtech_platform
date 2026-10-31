@@ -1,0 +1,185 @@
+{
+    "status": {
+        "paid": "भुगतान हो गया",
+        "partialPaid": "आंशिक भुगतान",
+        "overdue": "अतिदेय",
+        "waived": "माफ किया गया",
+        "cancelled": "रद्द",
+        "stopped": "रोका गया"
+    },
+    "row": {
+        "updateSuccessToast": "किस्त अपडेट हो गई",
+        "updateErrorToast": "अपडेट विफल रहा",
+        "discountOptionNone": "कोई नहीं",
+        "discountOptionPercentage": "%",
+        "discountOptionFlat": "₹",
+        "reasonPlaceholder": "कारण",
+        "save": "सेव करें",
+        "split": "विभाजित करें",
+        "splitTitle": "बकाया राशि का एक हिस्सा अपनी तारीख वाली नई किस्त में ले जाएं"
+    },
+    "cpoDiscount": {
+        "heading": "छूट",
+        "typeLabel": "प्रकार",
+        "discountOptionNone": "कोई नहीं",
+        "discountOptionPercentage": "कुल का %",
+        "discountOptionFlat": "फ्लैट ₹ छूट",
+        "valueLabel": "मूल्य",
+        "reasonLabel": "कारण",
+        "reasonPlaceholder": "जैसे: भाई-बहन छूट",
+        "removeSuccessToast": "CPO छूट हटा दी गई",
+        "applySuccessToast": "CPO छूट लागू कर दी गई",
+        "applyErrorToast": "CPO छूट लागू नहीं हो सकी",
+        "applying": "लागू हो रहा है…",
+        "apply": "लागू करें",
+        "remove": "हटाएं",
+        "currentSummary": "अभी: {{amount}} छूट · {{how}}",
+        "howLabel": "छूट कहाँ से घटाएँ",
+        "previewError": "यह छूट निकाली नहीं जा सकी",
+        "customOff": "किस्त {{n}} पर छूट",
+        "paidRow": "भुगतान हो चुका",
+        "paidRowKeeps": "−{{amount}} बनी रहेगी",
+        "totalOff": "कुल छूट: {{amount}}",
+        "capped": "(आपने {{requested}} डाला; केवल बकाया राशि से ही छूट दी जा सकती है)"
+    },
+    "offlinePayment": {
+        "amountRequiredError": "एक धनात्मक राशि दर्ज करें",
+        "recordedSuccessToast": "{{amount}} का ऑफ़लाइन भुगतान दर्ज किया गया",
+        "recordErrorToast": "भुगतान दर्ज करना विफल रहा",
+        "addPaymentButton": "+ भुगतान जोड़ें",
+        "heading": "भुगतान जोड़ें",
+        "amountLabel": "राशि (₹)",
+        "nextDue": "अगली किस्त {{amount}}",
+        "allDues": "पूरा बकाया {{amount}}",
+        "dateLabel": "तारीख",
+        "referenceLabel": "संदर्भ",
+        "referencePlaceholder": "चेक नंबर, UPI संदर्भ…",
+        "generateInvoiceLabel": "इनवॉइस बनाएं",
+        "saving": "सेव हो रहा है…",
+        "saveAndAllocate": "सेव करें और FIFO आवंटित करें",
+        "cancel": "रद्द करें"
+    },
+    "card": {
+        "installmentCount_one": "{{count}} किस्त",
+        "installmentCount_other": "{{count}} किस्तें",
+        "net": "शुद्ध {{amount}}",
+        "paid": "भुगतान {{amount}}",
+        "outstanding": "बकाया {{amount}}",
+        "loadingInstallments": "किस्तें लोड हो रही हैं…",
+        "loadInstallmentsError": "किस्तें लोड नहीं हो सकीं।",
+        "tableHeaders": {
+            "index": "#",
+            "startDate": "प्रारंभ तिथि",
+            "dueDate": "देय तिथि",
+            "default": "डिफ़ॉल्ट",
+            "amount": "राशि",
+            "discount": "छूट",
+            "paid": "भुगतान",
+            "status": "स्थिति"
+        },
+        "inPackage": "प्रवेश पैकेज का हिस्सा — भुगतान ऊपर पैकेज पर दर्ज करें।",
+        "packageManaged": "प्रवेश पैकेज का हिस्सा: इसकी किस्तों का भुगतान, तारीख बदलना या बाँटना ऊपर पैकेज पर करें, ताकि सभी कोर्स एक ही शेड्यूल पर रहें।"
+    },
+    "loadingPlans": "CPO योजनाएं लोड हो रही हैं…",
+    "loadPlansError": "CPO योजनाएं लोड नहीं हो सकीं।",
+    "split": {
+        "heading": "बकाया {{unpaid}} में से नई किस्त",
+        "hint": "योजना की कुल राशि वही रहती है — केवल इस हिस्से की देय तिथि बदलती है।",
+        "amountLabel": "ले जाने वाली राशि",
+        "startDateLabel": "प्रारंभ तिथि",
+        "dueDateLabel": "देय तिथि",
+        "save": "किस्त बनाएं",
+        "saving": "सहेजा जा रहा है…",
+        "cancel": "रद्द करें",
+        "amountError": "0 से अधिक और {{unpaid}} तक की राशि दर्ज करें",
+        "dueDateError": "नई किस्त के लिए देय तिथि चुनें",
+        "successToast": "{{date}} को देय {{amount}} की नई किस्त जोड़ी गई",
+        "errorToast": "यह किस्त विभाजित नहीं हो सकी"
+    },
+    "item": {
+        "due": "देय {{date}}",
+        "paid": "भुगतान {{amount}}",
+        "left": "{{amount}} बाकी",
+        "overpaid": "अधिक भुगतान {{amount}}",
+        "planDiscount": "प्लान छूट −{{amount}}",
+        "ownDiscount": "छूट −{{amount}}",
+        "was": "छूट से पहले {{amount}}",
+        "recordPayment": "भुगतान दर्ज करें",
+        "edit": "बदलें"
+    },
+    "pay": {
+        "heading": "भुगतान दर्ज करें · किस्त {{n}}",
+        "coversEarlier_one": "भुगतान पहले सबसे पुराने बकाये चुकाता है, इसलिए इसमें 1 पिछली किस्त भी शामिल है।",
+        "coversEarlier_other": "भुगतान पहले सबसे पुराने बकाये चुकाता है, इसलिए इसमें {{count}} पिछली किस्तें भी शामिल हैं।",
+        "submit": "{{amount}} दर्ज करें",
+        "anyAmountNote": "कोई भी राशि; यह पहले सबसे पुराने बकाये चुकाती है।"
+    },
+    "edit": {
+        "startDate": "शुरू होने की तारीख",
+        "dueDate": "देय तारीख",
+        "amount": "राशि",
+        "amountHint": "प्लान की राशि ({{amount}}) रखने के लिए खाली छोड़ें।",
+        "discount": "इस किस्त पर छूट",
+        "reason": "कारण"
+    },
+    "allocation": {
+        "UNPAID_PROPORTIONAL": {
+            "label": "बकाया किस्तों में, अनुपात में",
+            "short": "बकाया किस्तों में बाँटी गई",
+            "hint": "हर बकाया किस्त को उस पर बचे बकाये के अनुपात में हिस्सा मिलता है। चुकाई गई किस्तें नहीं बदलतीं।"
+        },
+        "UNPAID_EQUAL": {
+            "label": "बकाया किस्तों में, बराबर",
+            "short": "बकाया किस्तों पर बराबर",
+            "hint": "हर बकाया किस्त से उतनी ही राशि घटती है।"
+        },
+        "LAST_FIRST": {
+            "label": "आखिरी किस्त से",
+            "short": "आखिरी किस्त से",
+            "hint": "पहले आखिरी किस्त से घटती है, फिर उससे पहले वाली से, जब तक पूरी न हो जाए।"
+        },
+        "NEXT_FIRST": {
+            "label": "अगली किस्त से",
+            "short": "अगली किस्त से",
+            "hint": "पहले अगली देय किस्त से घटती है, फिर उसके बाद वाली से।"
+        },
+        "CUSTOM": {
+            "label": "हर किस्त पर अपनी राशि",
+            "short": "अपनी राशियाँ",
+            "hint": "हर बकाया किस्त पर कितनी छूट है, लिखें। कुल छूट इनका जोड़ है।"
+        },
+        "ALL_PROPORTIONAL": {
+            "label": "सभी किस्तों में, चुकाई गई भी",
+            "short": "सभी किस्तों में बाँटी गई",
+            "hint": "पुराना तरीका: हर किस्त, चुकाई गई हो या नहीं, हिस्सा लेती है। चुकाई गई किस्त में अधिक भुगतान हो सकता है।"
+        }
+    },
+    "stopDues": {
+        "action": "बकाया रोकें",
+        "heading": "बकाया रोकें",
+        "hint": "उस लर्नर के लिए जिसने कोर्स छोड़ दिया या भुगतान बंद कर दिया। रोकी गई राशि अब देय, ओवरड्यू या रिमाइंडर में नहीं आएगी। पहले से चुकाई गई राशि और उसकी रसीदें बनी रहेंगी। लर्नर के नामांकित रहते इसे फिर से खोला जा सकता है।",
+        "onlyThis": "केवल यह किस्त ({{amount}} बकाया)",
+        "thisAndLater_one": "यह और बाद की {{count}} किस्त ({{amount}})",
+        "thisAndLater_other": "यह और बाद की {{count}} किस्तें ({{amount}})",
+        "reason": "कारण",
+        "reasonPlaceholder": "जैसे: पहली किस्त के बाद कोर्स छोड़ा",
+        "removeCourse": "लर्नर को इस कोर्स से भी हटाएँ",
+        "removePackage_one": "लर्नर को पैकेज के {{count}} कोर्स से भी हटाएँ",
+        "removePackage_other": "लर्नर को पैकेज के सभी {{count}} कोर्सों से भी हटाएँ",
+        "removeWarning": "एक्सेस अभी खत्म होगा, और रोका गया बकाया फिर से नहीं खोला जा सकेगा।",
+        "cancel": "रद्द करें",
+        "saving": "सहेज रहे हैं…",
+        "submit": "{{amount}} रोकें",
+        "success": "{{amount}} का बकाया रोका गया",
+        "successRemoved_one": "{{amount}} का बकाया रोका गया; {{count}} कोर्स से हटाया गया",
+        "successRemoved_other": "{{amount}} का बकाया रोका गया; {{count}} कोर्सों से हटाया गया",
+        "removalError": "बकाया रोका गया, पर लर्नर को हटाया नहीं जा सका: {{errors}}",
+        "error": "बकाया नहीं रोका जा सका",
+        "reasonError": "बकाया रोकने का कारण लिखें",
+        "reopen": "फिर से खोलें",
+        "reopened_one": "{{count}} किस्त फिर से खोली गई",
+        "reopened_other": "{{count}} किस्तें फिर से खोली गईं",
+        "reopenError": "फिर से नहीं खुल सका",
+        "stoppedFact": "{{amount}} रोका गया · {{reason}}"
+    }
+}

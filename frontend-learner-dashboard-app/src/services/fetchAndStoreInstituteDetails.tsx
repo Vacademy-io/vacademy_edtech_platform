@@ -2,6 +2,7 @@ import { Preferences } from "@capacitor/preferences";
 import authenticatedAxiosInstance from "@/lib/auth/axiosInstance";
 import { INSTITUTE_DETAIL } from "@/constants/urls";
 import { NAMING_SETTINGS_KEY } from "@/types/naming-settings";
+import { notifyNamingSettingsUpdated } from "@/components/common/layout-container/sidebar/utils";
 import { THEME_ROLE_SETTINGS_KEY, type ThemeRoleSettings } from "@/types/theme-role-settings";
 import { upsertInstituteDetails } from "@/services/institute-settings-cache";
 import {
@@ -136,6 +137,8 @@ export const fetchAndStoreInstituteDetails = async (
             NAMING_SETTINGS_KEY,
             JSON.stringify(namingSettings)
           );
+          // Terms feed the translation catalogs too (i18n/naming-terms.ts).
+          notifyNamingSettingsUpdated();
         }
 
         // Role-based theme (currently just `nav`) — absent for every

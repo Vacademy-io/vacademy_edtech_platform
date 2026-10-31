@@ -1,0 +1,13 @@
+{
+    "trigger": {
+        "title": "Choisir dans la bibliothèque de badges"
+    },
+    "dialog": {
+        "title": "Bibliothèque de badges",
+        "description": "Choisissez un badge prêt à l'emploi. Chaque succès existe en cinq niveaux — l'anneau passe du bronze à l'argent, puis à l'or, au platine, puis au diamant."
+    },
+    "badgeOption": {
+        "title": "{{theme}} · {{tier}}",
+        "alt": "Badge {{theme}} {{tier}}"
+    }
+}

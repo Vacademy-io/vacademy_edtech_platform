@@ -1,0 +1,212 @@
+{
+    "common": {
+        "email": "E-mail",
+        "resendOtp": "Renvoyer le code",
+        "registrationCompletedBadge": "Inscription terminée",
+        "liveNow": "En direct",
+        "registrationFormHeading": "Formulaire d'inscription",
+        "verifying": "Vérification..."
+    },
+    "closedExpired": {
+        "assessmentLabel": "Évaluation",
+        "defaultAssessmentName": "Cette évaluation",
+        "accessDenied": {
+            "badge": "Accès refusé",
+            "title": "Accès à l'évaluation refusé",
+            "description": "Vous n'êtes pas inscrit(e) à cette évaluation."
+        },
+        "expired": {
+            "badge": "Expirée",
+            "title": "Évaluation expirée",
+            "description": "Cette évaluation n'est plus disponible. La période prévue pour la passer est terminée."
+        },
+        "closed": {
+            "badge": "Fermée",
+            "title": "Inscriptions fermées",
+            "description": "Les inscriptions à cette évaluation sont fermées. Veuillez contacter votre établissement pour plus d'informations."
+        }
+    },
+    "completed": {
+        "badge": "Inscription terminée",
+        "title": "Tout est prêt !",
+        "liveBadge": "En direct",
+        "liveMessage": "Votre évaluation est prête à commencer",
+        "goesLiveIn": "L'évaluation démarre dans",
+        "cta": "Aller à l'évaluation",
+        "unlockHint": "Ce bouton se débloquera automatiquement au démarrage de l'évaluation.",
+        "toast": {
+            "fetchDetailsError": "Échec de la récupération des détails"
+        }
+    },
+    "form": {
+        "notYetOpenBadge": "Inscriptions pas encore ouvertes",
+        "opensIn": "Les inscriptions ouvrent dans",
+        "openBadge": "Inscriptions ouvertes",
+        "closesIn": "Les inscriptions ferment dans",
+        "closingSoon": "Fermeture imminente",
+        "registerNowMobile": "S'inscrire maintenant",
+        "countdown": {
+            "hr": "h",
+            "min": "min",
+            "sec": "s",
+            "dayUnit_one": "jour",
+            "dayUnit_other": "jours",
+            "dayUnit_many": "jours"
+        },
+        "meta": {
+            "duration": "Durée",
+            "durationValue": "{{minutes}} min",
+            "mode": "Mode",
+            "evaluation": "Évaluation",
+            "attempts": "Tentatives"
+        },
+        "dates": {
+            "heading": "Dates importantes",
+            "registrationWindow": "Période d'inscription",
+            "assessmentLive": "Évaluation en direct"
+        },
+        "dateBlock": {
+            "start": "DÉBUT",
+            "end": "FIN"
+        },
+        "instructions": "Instructions",
+        "aboutAssessment": "À propos de l'évaluation",
+        "registrationFormSubheading": "Renseignez vos informations pour vous inscrire à cette évaluation.",
+        "phoneNumberLabel": "Numéro de téléphone",
+        "phoneNumberPlaceholder": "123 456 7890",
+        "register": "S'inscrire",
+        "resetForm": "Réinitialiser le formulaire",
+        "toast": {
+            "registeredSuccess": "Votre inscription a bien été enregistrée !",
+            "accountUnresolved": "Nous n'avons pas pu identifier votre compte. Veuillez réessayer."
+        }
+    },
+    "checkEmailDialog": {
+        "title": "Vérifier le statut d'inscription",
+        "subtitle": "Vérifiez votre e-mail pour poursuivre l'inscription à l'évaluation.",
+        "emailPlaceholder": "Saisissez votre e-mail",
+        "resendIn": "Renvoyer le code dans {{seconds}} secondes",
+        "sending": "Envoi du code...",
+        "send": "Envoyer le code",
+        "verify": "Vérifier et continuer",
+        "toast": {
+            "otpSent": "Code envoyé avec succès",
+            "notRegisteredTitle": "Cet e-mail n'est pas enregistré",
+            "notRegisteredDescription": "Veuillez vous inscrire pour passer cette évaluation",
+            "attemptsOverTitle": "Vous avez épuisé vos tentatives restantes pour cette évaluation !",
+            "attemptsOverDescription": "Vos tentatives sont épuisées !",
+            "invalidOtpTitle": "Code invalide",
+            "invalidOtpDescription": "Veuillez réessayer",
+            "fillAllOtp": "Veuillez remplir tous les champs du code"
+        }
+    },
+    "otpVerify": {
+        "title": "Encore une dernière étape !",
+        "subtitle": "Vérifiez votre e-mail pour accéder à {{assessmentName}}",
+        "otpSentToLabel": "Code envoyé à",
+        "verify": "Vérifier et accéder à l'évaluation",
+        "verifying": "Vérification…",
+        "resendPrompt": "Vous ne l'avez pas reçu ?",
+        "resendIn": "Renvoyer dans {{seconds}} s",
+        "toast": {
+            "otpSentTo": "Code envoyé à {{email}}",
+            "sendFailed": "Échec de l'envoi du code. Veuillez réessayer.",
+            "enterFullOtp": "Veuillez saisir le code à 6 chiffres en entier",
+            "invalidOtp": "Code invalide. Veuillez réessayer."
+        }
+    },
+    "liveClass": {
+        "countdown": {
+            "startsIn": "Commence dans",
+            "days": "Jours",
+            "hours": "Heures",
+            "mins": "Min",
+            "secs": "Sec"
+        },
+        "sessionInfo": {
+            "instituteFallback": "Établissement",
+            "registrationAlt": "Inscription",
+            "start": "Début",
+            "end": "Fin"
+        },
+        "registrationForm": {
+            "joinPrompt": "Renseignez vos informations pour rejoindre la {{session}}",
+            "alreadyRegistered": "Déjà inscrit(e) ?",
+            "continueHere": "Continuer ici",
+            "enterFieldPlaceholder": "Saisissez {{fieldName}}",
+            "joinNow": "Rejoindre maintenant",
+            "toast": {
+                "invalidEmail": "Veuillez saisir une adresse e-mail valide",
+                "invalidMobile": "Veuillez saisir un numéro de mobile valide"
+            },
+            "lookup": {
+                "title": "Retrouver votre inscription",
+                "descriptionPhone": "Saisissez le numéro de mobile utilisé pour votre inscription",
+                "descriptionEmail": "Saisissez l'e-mail utilisé pour votre inscription",
+                "placeholderPhone": "Numéro de mobile (avec indicatif du pays)",
+                "placeholderEmail": "vous@exemple.com",
+                "notFound": "Aucune inscription trouvée avec ce(t) {{channel}}. Veuillez le vérifier, ou remplir le formulaire d'inscription à la place.",
+                "channelMobile": "numéro de mobile",
+                "channelEmail": "e-mail",
+                "continue": "Continuer",
+                "checking": "Vérification...",
+                "backToForm": "Nouveau ici ? Remplissez le formulaire d'inscription"
+            }
+        },
+        "otpDialog": {
+            "emailSubject": "Vérification de l'e-mail",
+            "verifyEmailTitle": "Vérifiez votre e-mail",
+            "verifyPhoneTitle": "Vérifiez votre numéro de mobile",
+            "descriptionEmail": "Nous avons envoyé un code à 6 chiffres à {{value}}.",
+            "descriptionPhone": "Nous avons envoyé un code à 6 chiffres sur WhatsApp à {{value}}.",
+            "stepOf": " (Étape {{current}} sur {{total}})",
+            "placeholder": "Saisissez le code à 6 chiffres",
+            "verify": "Vérifier",
+            "resend": "Renvoyer le code",
+            "sending": "Envoi...",
+            "toast": {
+                "otpSentTo": "Code envoyé à {{value}}",
+                "otpSentWhatsapp": "Code envoyé sur WhatsApp",
+                "sendFailedEmail": "Impossible d'envoyer le code par e-mail. Veuillez réessayer.",
+                "sendFailedWhatsapp": "Impossible d'envoyer le code par WhatsApp. Veuillez réessayer.",
+                "enterOtp": "Veuillez saisir le code",
+                "verifiedEmail": "E-mail vérifié",
+                "verifiedPhone": "Numéro de mobile vérifié",
+                "invalidOtp": "Code invalide ou expiré. Veuillez réessayer."
+            }
+        },
+        "statusCard": {
+            "joinLive": "Rejoindre la {{session}} en direct",
+            "waitingRoomOpenBadge": "Salle d'attente ouverte",
+            "enterWaitingRoom": "Entrer dans la salle d'attente",
+            "notStarted": "La {{session}} n'a pas encore commencé",
+            "willStartSoon": "La {{session}} commencera bientôt",
+            "alreadyRegisteredTitle": "Déjà inscrit(e) !",
+            "registeredWith": "Vous êtes inscrit(e) à cette {{session}} avec :",
+            "startTime": "Heure de début",
+            "waitingRoomOpens": "Ouverture de la salle d'attente"
+        },
+        "page": {
+            "priceLabel": "Prix",
+            "completeRegistration": "Finalisez votre inscription",
+            "completeRegistrationDescription": "Votre place est réservée. Finalisez le paiement pour la confirmer — vous recevrez un reçu par e-mail et pourrez rejoindre la session le moment venu.",
+            "total": "Total",
+            "payAndConfirm": "Payer et confirmer",
+            "toast": {
+                "buildRequestError": "Erreur lors de la préparation de la demande",
+                "identityRequired": "Veuillez saisir votre e-mail ou votre numéro de mobile",
+                "emailRequiredPaid": "Une adresse e-mail est requise pour cette {{liveSession}} payante",
+                "emailRequired": "Une adresse e-mail est requise pour cette {{liveSession}}",
+                "phoneRequired": "Un numéro de mobile est requis pour cette {{liveSession}}",
+                "registrationSuccess": "Inscription réussie",
+                "spotReserved": "Place réservée — finalisez le paiement pour confirmer votre inscription",
+                "alreadyRegistered": "Vous êtes déjà inscrit(e) à cette {{session}}"
+            }
+        },
+        "hooks": {
+            "registrationFailed": "Échec de l'inscription",
+            "registrationFailedRetry": "Échec de l'inscription. Veuillez réessayer.",
+            "markAttendanceFailed": "Échec de l'enregistrement de la présence"
+        }
+    }
+}

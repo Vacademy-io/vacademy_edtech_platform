@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -152,6 +153,7 @@ const clamp = (n: number, min: number, max: number) => Math.min(max, Math.max(mi
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function LearnerActivitySettings() {
+    const { t } = useTranslation('settingsLearnerActivity');
     const queryClient = useQueryClient();
     const [settings, setSettings] = useState<LearnerActivitySettingsData>(DEFAULT_SETTINGS);
     const [hasChanges, setHasChanges] = useState(false);
@@ -181,12 +183,12 @@ export default function LearnerActivitySettings() {
     const { mutate: save, isPending: saving } = useMutation({
         mutationFn: saveSettings,
         onSuccess: () => {
-            toast.success('Learner activity settings saved');
+            toast.success(t('toasts.saveSuccess'));
             setHasChanges(false);
             queryClient.invalidateQueries({ queryKey: ['learner-activity-settings'] });
         },
         onError: () => {
-            toast.error('Failed to save learner activity settings');
+            toast.error(t('toasts.saveFailed'));
         },
     });
 
@@ -229,16 +231,12 @@ export default function LearnerActivitySettings() {
 
     if (isLoading) {
         return (
-            <div className="p-6 text-sm text-muted-foreground">
-                Loading learner activity settings…
-            </div>
+            <div className="p-6 text-sm text-muted-foreground">{t('states.loading')}</div>
         );
     }
     if (isError) {
         return (
-            <div className="p-6 text-sm text-muted-foreground">
-                Could not load learner activity settings. Please refresh and try again.
-            </div>
+            <div className="p-6 text-sm text-muted-foreground">{t('states.error')}</div>
         );
     }
 
@@ -246,22 +244,23 @@ export default function LearnerActivitySettings() {
         <div className="space-y-6 p-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Completion Threshold</CardTitle>
+                    <CardTitle>{t('completion.title')}</CardTitle>
                     <CardDescription>
-                        Controls when a {slideLabel.toLowerCase()} or chapter shows as completed
-                        (green tick) in the {learnerLabel.toLowerCase()} app. Progress percentages
-                        themselves are unaffected — this is the display cutoff.
+                        {t('completion.description', {
+                            slide: slideLabel.toLowerCase(),
+                            learner: learnerLabel.toLowerCase(),
+                        })}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <NumberField
                         id="completion-threshold"
-                        label="Mark as complete at"
+                        label={t('completion.thresholdField.label')}
                         value={settings.completion.slideCompletionThresholdPercent}
                         min={1}
                         max={100}
-                        suffix="% progress"
-                        help="Default 80%. Certificates use their own threshold under Certificate Settings."
+                        suffix={t('completion.thresholdField.suffix')}
+                        help={t('completion.thresholdField.help')}
                         onChange={(v) =>
                             update((p) => ({
                                 ...p,
@@ -274,21 +273,20 @@ export default function LearnerActivitySettings() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Reading &amp; Documents</CardTitle>
+                    <CardTitle>{t('reading.title')}</CardTitle>
                     <CardDescription>
-                        How long a {learnerLabel.toLowerCase()} must actually spend on document
-                        content before it counts as viewed.
+                        {t('reading.description', { learner: learnerLabel.toLowerCase() })}
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <NumberField
                         id="page-dwell"
-                        label="Minimum time per page"
+                        label={t('reading.pageDwell.label')}
                         value={settings.documents.pageDwellSeconds}
                         min={1}
                         max={600}
-                        suffix="seconds"
-                        help="A PDF/document page flicked past faster than this does not count as viewed. Default 10s."
+                        suffix={t('reading.pageDwell.suffix')}
+                        help={t('reading.pageDwell.help')}
                         onChange={(v) =>
                             update((p) => ({
                                 ...p,
@@ -298,12 +296,12 @@ export default function LearnerActivitySettings() {
                     />
                     <NumberField
                         id="action-dwell"
-                        label="Minimum time per action"
+                        label={t('reading.actionDwell.label')}
                         value={settings.documents.actionDwellSeconds}
                         min={1}
                         max={600}
-                        suffix="seconds"
-                        help="Applies to interactive slides (Jupyter, Scratch, Code editor). Default 5s."
+                        suffix={t('reading.actionDwell.suffix')}
+                        help={t('reading.actionDwell.help')}
                         onChange={(v) =>
                             update((p) => ({
                                 ...p,
@@ -329,25 +327,23 @@ export default function LearnerActivitySettings() {
                             />
                             <div>
                                 <Label htmlFor="reading-time-enabled" className="cursor-pointer">
-                                    Content-aware reading time
+                                    {t('reading.readingTimeToggle.label')}
                                 </Label>
                                 <p className="text-xs text-muted-foreground">
-                                    Long single-page documents require time proportional to their
-                                    length before counting as read — a 3,000-word page is no longer
-                                    &quot;done&quot; in 10 seconds. Recommended on.
+                                    {t('reading.readingTimeToggle.help')}
                                 </p>
                             </div>
                         </div>
                         <div className="grid gap-4 sm:grid-cols-3">
                             <NumberField
                                 id="reading-wpm"
-                                label="Reading speed"
+                                label={t('reading.wpm.label')}
                                 value={settings.documents.readingTime.wordsPerMinute}
                                 min={50}
                                 max={1000}
-                                suffix="words/min"
+                                suffix={t('reading.wpm.suffix')}
                                 disabled={!settings.documents.readingTime.enabled}
-                                help="Default 200 wpm."
+                                help={t('reading.wpm.help')}
                                 onChange={(v) =>
                                     update((p) => ({
                                         ...p,
@@ -363,13 +359,13 @@ export default function LearnerActivitySettings() {
                             />
                             <NumberField
                                 id="reading-min"
-                                label="Minimum"
+                                label={t('reading.minSeconds.label')}
                                 value={settings.documents.readingTime.minSeconds}
                                 min={1}
                                 max={3600}
-                                suffix="seconds"
+                                suffix={t('reading.minSeconds.suffix')}
                                 disabled={!settings.documents.readingTime.enabled}
-                                help="Floor for very short notes. Default 10s."
+                                help={t('reading.minSeconds.help')}
                                 onChange={(v) =>
                                     update((p) => ({
                                         ...p,
@@ -385,13 +381,13 @@ export default function LearnerActivitySettings() {
                             />
                             <NumberField
                                 id="reading-max"
-                                label="Maximum"
+                                label={t('reading.maxSeconds.label')}
                                 value={settings.documents.readingTime.maxSeconds}
                                 min={10}
                                 max={7200}
-                                suffix="seconds"
+                                suffix={t('reading.maxSeconds.suffix')}
                                 disabled={!settings.documents.readingTime.enabled}
-                                help="Cap for very long pages. Default 600s (10 min)."
+                                help={t('reading.maxSeconds.help')}
                                 onChange={(v) =>
                                     update((p) => ({
                                         ...p,
@@ -412,12 +408,8 @@ export default function LearnerActivitySettings() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Focus &amp; Idle Detection</CardTitle>
-                    <CardDescription>
-                        The &quot;are you still there?&quot; check and automatic pause that stop
-                        idle time from counting as study time on document slides. Video check-in
-                        frequency is configured under Display Settings → Concentration.
-                    </CardDescription>
+                    <CardTitle>{t('focus.title')}</CardTitle>
+                    <CardDescription>{t('focus.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="flex items-center gap-3">
@@ -433,24 +425,23 @@ export default function LearnerActivitySettings() {
                         />
                         <div>
                             <Label htmlFor="idle-popup-enabled" className="cursor-pointer">
-                                Show attention check on inactivity
+                                {t('focus.idlePopupToggle.label')}
                             </Label>
                             <p className="text-xs text-muted-foreground">
-                                When off, no popup is shown; tracking still auto-pauses after the
-                                hard pause below.
+                                {t('focus.idlePopupToggle.help')}
                             </p>
                         </div>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                         <NumberField
                             id="idle-delay"
-                            label="Show check after"
+                            label={t('focus.idleDelay.label')}
                             value={settings.focus.idlePopupDelaySeconds}
                             min={10}
                             max={3600}
-                            suffix="seconds idle"
+                            suffix={t('focus.idleDelay.suffix')}
                             disabled={!settings.focus.idlePopupEnabled}
-                            help="No mouse/keyboard/touch activity for this long triggers the check. Default 60s."
+                            help={t('focus.idleDelay.help')}
                             onChange={(v) =>
                                 update((p) => ({
                                     ...p,
@@ -460,12 +451,12 @@ export default function LearnerActivitySettings() {
                         />
                         <NumberField
                             id="hard-pause"
-                            label="Hard pause after"
+                            label={t('focus.hardPause.label')}
                             value={settings.focus.hardPauseMinutes}
                             min={1}
                             max={120}
-                            suffix="minutes idle"
-                            help="Tracking always pauses after this much inactivity, popup or not. Default 5 min."
+                            suffix={t('focus.hardPause.suffix')}
+                            help={t('focus.hardPause.help')}
                             onChange={(v) =>
                                 update((p) => ({
                                     ...p,
@@ -484,7 +475,7 @@ export default function LearnerActivitySettings() {
                     onClick={handleSave}
                     disable={saving || !hasChanges}
                 >
-                    {saving ? 'Saving…' : 'Save Learner Activity Settings'}
+                    {saving ? t('footer.saving') : t('footer.save')}
                 </MyButton>
             </div>
         </div>

@@ -1,0 +1,9 @@
+{
+    "liveRefreshing": "مباشر · جارٍ التحديث…",
+    "liveUpdatedAgo_zero": "مباشر · آخر تحديث الآن",
+    "liveUpdatedAgo_one": "مباشر · آخر تحديث قبل ثانية واحدة",
+    "liveUpdatedAgo_two": "مباشر · آخر تحديث قبل ثانيتين",
+    "liveUpdatedAgo_few": "مباشر · آخر تحديث قبل {{count}} ثوانٍ",
+    "liveUpdatedAgo_many": "مباشر · آخر تحديث قبل {{count}} ثانية",
+    "liveUpdatedAgo_other": "مباشر · آخر تحديث قبل {{count}} ثانية"
+}

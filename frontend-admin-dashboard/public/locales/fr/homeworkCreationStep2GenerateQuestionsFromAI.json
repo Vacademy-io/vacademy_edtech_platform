@@ -1,0 +1,44 @@
+{
+    "trigger": {
+        "label": "Créer avec l'IA",
+        "badge": "(Vacademy AI)"
+    },
+    "dialog": {
+        "title": "Créer des questions avec l'IA"
+    },
+    "generate": {
+        "cardTitle": "Générer des questions",
+        "cardDescription": "Demandez à l'IA d'utiliser un PDF, une image ou n'importe quel sujet pour générer de nouvelles questions",
+        "dialogTitle": "Générer des questions",
+        "upload": {
+            "toolName": "VSmart Upload",
+            "shortDescription": "(Générez des questions en téléchargeant des fichiers PDF, Word ou PowerPoint)",
+            "description": "Générez instantanément des sujets d'examen en téléchargeant vos supports de cours au format PDF, Word ou PowerPoint. Vsmart Upload utilise l'IA pour analyser l'intégralité de votre fichier et créer des questions pertinentes et bien structurées — ou vous permet de coller le contenu manuellement si vous préférez. Aucune mise en forme nécessaire, il suffit de brancher et de commencer. Idéal pour les enseignants, les concepteurs d'examens et les formateurs d'entreprise qui travaillent avec du contenu existant comme des diapositives de cours, des guides d'étude ou des supports de formation. Que vous prépariez des évaluations pour une classe, un groupe de coaching ou une session de formation — Vsmart Upload vous fait gagner des heures d'effort en transformant vos supports en sujets d'examen prêts à l'emploi."
+        },
+        "audio": {
+            "toolName": "Vsmart Audio",
+            "shortDescription": "(Générez des questions en téléchargeant des fichiers audio)",
+            "description": "Transformez n'importe quel cours, réunion ou enregistrement audio en un sujet d'examen complet. Téléchargez simplement un fichier MP3, WAV ou tout autre format audio — Vsmart Audio transcrit votre contenu et utilise l'IA pour générer des questions structurées et contextualisées. Aucune transcription ni édition manuelle nécessaire. Idéal pour les laboratoires de langues, les modules d'apprentissage basés sur des podcasts, les sessions de formation d'entreprise et les cours enregistrés dans les universités ou les centres de coaching. Les formateurs et enseignants peuvent réutiliser des ressources audio existantes pour créer des quiz, des tests de compréhension ou des sujets de discussion en quelques clics, renforçant ainsi l'engagement et les résultats d'apprentissage."
+        },
+        "topics": {
+            "toolName": "Vsmart Topics",
+            "shortDescription": "(Générez des questions en indiquant des sujets)",
+            "description": "Générez des sujets d'examen personnalisés en quelques secondes en saisissant simplement un sujet, un concept ou une consigne. Vsmart Prompt utilise une IA avancée pour comprendre votre saisie et créer un ensemble de questions sur mesure — couvrant différents niveaux de difficulté, formats et compétences cognitives, le tout adapté à vos besoins. Idéal pour les enseignants, formateurs et responsables pédagogiques qui souhaitent des évaluations rapides sur des sujets précis sans télécharger de support. Que ce soit pour un quiz improvisé, une révision de concepts ou une session rapide, Vsmart Prompt fournit des questions précises et variées avec un minimum de saisie."
+        }
+    },
+    "extract": {
+        "cardTitle": "Extraire des questions",
+        "cardDescription": "Demandez à l'IA d'extraire des questions à partir de n'importe quel PDF, image ou cours audio",
+        "dialogTitle": "Extraire des questions",
+        "file": {
+            "toolName": "Vsmart Extract",
+            "shortDescription": "(Extrayez des questions en téléchargeant des fichiers PDF, Word ou PowerPoint)",
+            "description": "Extrayez facilement toutes les questions existantes de n'importe quel document PDF — qu'il s'agisse d'un ancien sujet d'examen, d'une fiche d'exercices ou d'une banque de questions. Vsmart Extract analyse l'intégralité du fichier, identifie les modèles de questions et les organise soigneusement pour faciliter leur réutilisation, leur modification ou leur exportation. Idéal pour les enseignants et équipes pédagogiques qui travaillent avec d'anciens PDF, des ressources partagées ou des documents numérisés. Gagnez du temps au lieu de recopier ou de retaper manuellement les questions — Vsmart Extract aide les écoles, les centres de coaching et les services de formation d'entreprise à constituer rapidement des archives numériques ou à créer des évaluations actualisées à partir d'anciens supports."
+        },
+        "image": {
+            "toolName": "Vsmart Image",
+            "shortDescription": "(Extrayez des questions en téléchargeant des images)",
+            "description": "Transformez facilement des images en questions. Vsmart Image utilise une technologie OCR avancée et l'IA pour analyser des photographies, des pages numérisées, des notes manuscrites ou des captures d'écran — et en extraire des questions structurées. Il suffit de télécharger votre image et de laisser l'IA faire le reste. Idéal pour les enseignants, les instituts de coaching et les formateurs qui reçoivent souvent du contenu sous forme de notes manuscrites, de captures de manuels ou d'images de tableau. Que vous numérisiez d'anciens sujets d'examen ou extrayiez des questions de supports imprimés — Vsmart Image intègre le contenu analogique dans votre flux de travail numérique en quelques secondes."
+        }
+    }
+}

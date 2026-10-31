@@ -1,0 +1,21 @@
+{
+    "next": "Next",
+    "addQuestion": "Add Question",
+    "quickAccess": "Quick Access",
+    "optionBased": "Option Based",
+    "mathBased": "Math Based",
+    "writingSkills": "Writing Skills",
+    "readingSkills": "Reading Skills",
+    "invalidTimestamp": "Invalid timestamp. Please enter a valid time in MM:SS format or seconds also current timestamp should be less than video length",
+    "questionTypes": {
+        "mcqSingle": "Multiple Choice Questions (Single correct)",
+        "mcqMultiple": "Multiple Choice Questions (Multiple correct)",
+        "numerical": "Numerical",
+        "trueFalse": "True False",
+        "longAnswer": "Long Answer",
+        "singleWord": "Single Word",
+        "comprehensionMcqSingle": "Comprehension Multiple Choice Questions (Single correct)",
+        "comprehensionMcqMultiple": "Comprehension Multiple Choice Questions (Multiple correct)",
+        "comprehensionNumeric": "Comprehension Numeric"
+    }
+}

@@ -1,7 +1,17 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
+import i18n from '@/i18n';
 import { BASE_URL } from '@/constants/urls';
 import type { TableData } from '@/components/design-system/table';
+
+/** Namespace for this module's user-visible copy (see studyLibraryChatbotAnalytics.json).
+ *  SESSION_MODE_LABELS / CONTEXT_TYPE_LABELS / DAY_RANGE_OPTIONS below are read
+ *  by table cells and dropdown builders with no React context of their own, so
+ *  they resolve their labels through the i18next singleton at module load
+ *  rather than useTranslation() — same tradeoff as a Yoopta plugin's
+ *  options.display.title: not reactive to a runtime language switch without a
+ *  remount of whatever consumes them. */
+const NS = 'studyLibraryChatbotAnalytics';
 
 /**
  * Read-only admin views over Student AI (learner chatbot) activity.
@@ -187,23 +197,23 @@ export const useChatTranscriptQuery = (sessionId: string | null) =>
 // ── Display helpers ────────────────────────────────────────────────────────
 
 export const SESSION_MODE_LABELS: Record<string, string> = {
-    text: 'Text chat',
-    voice_interview: 'Mock interview',
-    voice_doubt: 'Voice doubt',
-    voice_oral_test: 'Oral test',
+    text: i18n.t(`${NS}:sessionMode.textChat`),
+    voice_interview: i18n.t(`${NS}:sessionMode.mockInterview`),
+    voice_doubt: i18n.t(`${NS}:sessionMode.voiceDoubt`),
+    voice_oral_test: i18n.t(`${NS}:sessionMode.oralTest`),
 };
 
 export const CONTEXT_TYPE_LABELS: Record<string, string> = {
-    slide: 'Study material',
-    course_details: 'Course page',
-    general: 'General',
+    slide: i18n.t(`${NS}:contextType.studyMaterial`),
+    course_details: i18n.t(`${NS}:contextType.coursePage`),
+    general: i18n.t(`${NS}:contextType.general`),
 };
 
 export const DAY_RANGE_OPTIONS = [
-    { label: 'Last 7 days', value: '7' },
-    { label: 'Last 30 days', value: '30' },
-    { label: 'Last 90 days', value: '90' },
-    { label: 'Last 365 days', value: '365' },
+    { label: i18n.t(`${NS}:dayRange.last7`), value: '7' },
+    { label: i18n.t(`${NS}:dayRange.last30`), value: '30' },
+    { label: i18n.t(`${NS}:dayRange.last90`), value: '90' },
+    { label: i18n.t(`${NS}:dayRange.last365`), value: '365' },
 ];
 
 export const prettifyLabel = (value: string | null | undefined): string =>

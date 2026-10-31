@@ -16,8 +16,8 @@ import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.common.auth.dto.UserDTO;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -46,6 +46,8 @@ public class LeadReportService {
     private final AuthService authService;
     private final ReportScopeResolver reportScopeResolver;
     private final vacademy.io.admin_core_service.features.counsellor_workbench.service.CounsellorScopeService counsellorScopeService;
+    private final LeadReportSettingService settingService;
+    private final LeadDeduplicationService leadDeduplicationService;
 
     private static final int DEFAULT_RANGE_DAYS = 30;
 
@@ -58,33 +60,38 @@ public class LeadReportService {
                                                String teamId, String counsellorUserId,
                                                String audienceId, String sourceType,
                                                String callerUserId) {
-        DateRange range = resolveRange(fromDate, toDate);
-        Integer tatHours = resolveTatHours(instituteId); // null when TAT disabled
-        Integer tatHoursParam = tatHours != null ? tatHours : 0;
+        DateRange range = resolveRange(fromDate, toDate, instituteId);
+        LeadSlaConfigDTO.TatReminder tat = resolveTat(instituteId); // null when TAT disabled
+        Integer tatMinutes = tat != null ? tat.getTatMinutes() : null;
+        Integer tatMinutesParam = tatMinutes != null ? tatMinutes : 0;
+        String tatRule = tat != null ? tat.getWorkingHoursRule() : null;
 
         String scopeCsv = reportScopeResolver.resolveScopeUsersCsv(
                 instituteId, callerUserId, trimToNull(teamId), trimToNull(counsellorUserId));
         String audienceFilter = trimToNull(audienceId);
         String sourceFilter = trimToNull(sourceType);
+        // Same lead set as the leads list: duplicates drop out where Lead Settings keeps them on
+        // the Duplicate Leads tab, so the totals here match the list a drill-through opens.
+        boolean excludeDuplicates = leadDeduplicationService.duplicatesTabOnly(instituteId);
 
         LeadReportProjections.TotalsProjection totals =
                 audienceResponseRepository.findReportTotals(instituteId, range.from, range.to,
-                        scopeCsv, audienceFilter, sourceFilter);
+                        scopeCsv, audienceFilter, sourceFilter, excludeDuplicates);
         LeadReportProjections.ResponseStatsProjection response =
-                audienceResponseRepository.findReportResponseStats(instituteId, range.from, range.to, tatHoursParam,
-                        scopeCsv, audienceFilter, sourceFilter);
+                audienceResponseRepository.findReportResponseStats(instituteId, range.from, range.to, tatMinutesParam, tatRule,
+                        scopeCsv, audienceFilter, sourceFilter, excludeDuplicates);
         List<LeadReportProjections.StatusCountProjection> statusRows =
                 audienceResponseRepository.findReportStatusBreakdown(instituteId, range.from, range.to,
-                        scopeCsv, audienceFilter, sourceFilter);
+                        scopeCsv, audienceFilter, sourceFilter, excludeDuplicates);
         List<LeadReportProjections.SourceCountProjection> sourceRows =
                 audienceResponseRepository.findReportSourceBreakdown(instituteId, range.from, range.to,
-                        scopeCsv, audienceFilter, sourceFilter);
+                        scopeCsv, audienceFilter, sourceFilter, excludeDuplicates);
         List<LeadReportProjections.TierCountProjection> tierRows =
                 audienceResponseRepository.findReportTierBreakdown(instituteId, range.from, range.to,
-                        scopeCsv, audienceFilter, sourceFilter);
+                        scopeCsv, audienceFilter, sourceFilter, excludeDuplicates);
         List<LeadReportProjections.DailyTrendProjection> trendRows =
                 audienceResponseRepository.findReportDailyTrend(instituteId, range.from, range.to,
-                        scopeCsv, audienceFilter, sourceFilter);
+                        range.zone, scopeCsv, audienceFilter, sourceFilter, excludeDuplicates);
 
         long total = nz(totals != null ? totals.getTotalLeads() : null);
         long converted = nz(totals != null ? totals.getConvertedLeads() : null);
@@ -93,7 +100,8 @@ public class LeadReportService {
         long overdue = nz(totals != null ? totals.getOverdueLeads() : null);
         long responded = nz(response != null ? response.getRespondedLeads() : null);
         Double avgResponseMin = response != null ? response.getAvgResponseMinutes() : null;
-        Long tatMet = (tatHours == null || response == null) ? null : response.getTatMetCount();
+        Double medianResponseMin = response != null ? response.getMedianResponseMinutes() : null;
+        Long tatMet = (tatMinutes == null || response == null) ? null : response.getTatMetCount();
 
         LeadReportSummaryDTO.Totals totalsDto = LeadReportSummaryDTO.Totals.builder()
                 .totalLeads(total)
@@ -103,6 +111,7 @@ public class LeadReportService {
                 .conversionRate(percentage(converted, total))
                 .respondedLeads(responded)
                 .avgResponseMinutes(avgResponseMin)
+                .medianResponseMinutes(medianResponseMin)
                 .tatMetCount(tatMet)
                 .tatMetRate(tatMet == null ? null : percentage(tatMet, responded))
                 .overdueLeads(overdue)
@@ -128,6 +137,7 @@ public class LeadReportService {
         List<LeadReportSummaryDTO.SourceBreakdown> sourceBreakdown = sourceRows.stream()
                 .map(r -> LeadReportSummaryDTO.SourceBreakdown.builder()
                         .sourceType(r.getSourceType())
+                        .campaignType(Boolean.TRUE.equals(r.getFromCampaignType()) ? r.getSourceType() : null)
                         .total(nz(r.getTotalCount()))
                         .converted(nz(r.getConvertedCount()))
                         .build())
@@ -140,22 +150,26 @@ public class LeadReportService {
                         .build())
                 .collect(Collectors.toList());
 
-        List<LeadReportSummaryDTO.DailyTrendPoint> trend = trendRows.stream()
+        List<LeadReportSummaryDTO.DailyTrendPoint> trend = fillTrendGaps(trendRows.stream()
                 .map(r -> LeadReportSummaryDTO.DailyTrendPoint.builder()
                         .date(r.getDay() != null ? r.getDay().toString() : null)
                         .submitted(nz(r.getSubmittedCount()))
                         .converted(nz(r.getConvertedCount()))
                         .build())
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()), range);
 
         return LeadReportSummaryDTO.builder()
-                .fromDate(range.from)
-                .toDate(range.to)
+                .fromDate(range.fromLocal)
+                .toDate(range.toLocal)
                 .totals(totalsDto)
                 .byStatus(statusBreakdown)
                 .bySource(sourceBreakdown)
                 .byTier(tierBreakdown)
                 .trendByDay(trend)
+                .scopeCounsellorIds(trimToNull(teamId) != null && trimToNull(counsellorUserId) == null
+                        && scopeCsv != null
+                        ? java.util.Arrays.stream(scopeCsv.split(",")).filter(id -> !id.isBlank()).toList()
+                        : null)
                 .build();
     }
 
@@ -168,16 +182,19 @@ public class LeadReportService {
                                                            String teamId, String counsellorUserId,
                                                            String audienceId, String sourceType,
                                                            String callerUserId) {
-        DateRange range = resolveRange(fromDate, toDate);
-        Integer tatHours = resolveTatHours(instituteId);
-        Integer tatHoursParam = tatHours != null ? tatHours : 0;
+        DateRange range = resolveRange(fromDate, toDate, instituteId);
+        LeadSlaConfigDTO.TatReminder tat = resolveTat(instituteId);
+        Integer tatMinutes = tat != null ? tat.getTatMinutes() : null;
+        Integer tatMinutesParam = tatMinutes != null ? tatMinutes : 0;
+        String tatRule = tat != null ? tat.getWorkingHoursRule() : null;
 
         String scopeCsv = reportScopeResolver.resolveScopeUsersCsv(
                 instituteId, callerUserId, trimToNull(teamId), trimToNull(counsellorUserId));
 
         List<LeadReportProjections.CounselorRowProjection> raw = audienceResponseRepository
-                .findReportCounselorPerformance(instituteId, range.from, range.to, tatHoursParam,
-                        scopeCsv, trimToNull(audienceId), trimToNull(sourceType));
+                .findReportCounselorPerformance(instituteId, range.from, range.to, tatMinutesParam, tatRule,
+                        scopeCsv, trimToNull(audienceId), trimToNull(sourceType),
+                        leadDeduplicationService.duplicatesTabOnly(instituteId));
 
         // Every ACTIVE counsellor in the caller's scope must get a row — the
         // SQL groups the lead DATA, so a counsellor with zero leads in the
@@ -209,7 +226,7 @@ public class LeadReportService {
             long assigned = nz(r.getLeadsAssigned());
             long responded = nz(r.getLeadsResponded());
             long conversions = nz(r.getConversions());
-            Long tatMet = tatHours == null ? null : r.getTatMetCount();
+            Long tatMet = tatMinutes == null ? null : r.getTatMetCount();
             return CounselorPerformanceDTO.Row.builder()
                     .counselorId(r.getCounselorId())
                     .counselorName(Optional.ofNullable(nameByIdFinal.get(r.getCounselorId()))
@@ -244,7 +261,7 @@ public class LeadReportService {
                         .conversions(0)
                         .conversionRate(null)
                         .avgResponseMinutes(null)
-                        .tatMetCount(tatHours == null ? null : 0L)
+                        .tatMetCount(tatMinutes == null ? null : 0L)
                         .tatMetRate(null)
                         .openLeads(0)
                         .overdueLeads(0)
@@ -269,9 +286,10 @@ public class LeadReportService {
                 .build();
 
         return CounselorPerformanceDTO.builder()
-                .fromDate(range.from)
-                .toDate(range.to)
-                .tatHours(tatHours)
+                .fromDate(range.fromLocal)
+                .toDate(range.toLocal)
+                .tatMinutes(tatMinutes)
+                .tatHours(tatMinutes == null ? null : (tatMinutes + 59) / 60)
                 .rows(rows)
                 .summary(summary)
                 .build();
@@ -303,12 +321,12 @@ public class LeadReportService {
                 .collect(Collectors.toList());
     }
 
-    /** Read tat_hours when TAT is enabled; null otherwise (drives "is TAT shown?" downstream). */
-    private Integer resolveTatHours(String instituteId) {
+    /** The TAT config when TAT is enabled; null otherwise (drives "is TAT shown?" downstream). */
+    private LeadSlaConfigDTO.TatReminder resolveTat(String instituteId) {
         try {
             LeadSlaConfigDTO sla = leadSlaConfigService.getSchedulerConfig(instituteId);
             if (sla != null && sla.getTatReminder() != null && sla.getTatReminder().isEnabled()) {
-                return sla.getTatReminder().getTatHours();
+                return sla.getTatReminder();
             }
         } catch (Exception ex) {
             log.debug("[LeadReport] No SLA config for institute {}: {}", instituteId, ex.getMessage());
@@ -316,16 +334,32 @@ public class LeadReportService {
         return null;
     }
 
-    /** Parse [from, to] as ISO yyyy-MM-dd; default to last 30 days. Returns the server-TZ timestamp strings. */
-    private DateRange resolveRange(String fromDate, String toDate) {
-        ZoneId zone = ZoneId.systemDefault();
+    /**
+     * Parse [from, to] as ISO yyyy-MM-dd days in the INSTITUTE timezone (report settings); default to
+     * the last 30 days. Columns store UTC wall clock, so the query bounds are each day's local midnight
+     * converted to UTC; fromLocal/toLocal keep the local midnights for the response.
+     */
+    private DateRange resolveRange(String fromDate, String toDate, String instituteId) {
+        ZoneId zone;
+        try {
+            zone = ZoneId.of(settingService.get(instituteId).timezone());
+        } catch (Exception e) {
+            zone = ZoneId.of("Asia/Kolkata");
+        }
         LocalDate today = LocalDate.now(zone);
         LocalDate to = parseOr(toDate, today);
         LocalDate from = parseOr(fromDate, to.minusDays(DEFAULT_RANGE_DAYS - 1L));
         // Inclusive-of-day on both ends; query uses '<' on the upper bound so add a day.
         return new DateRange(
+                utcWallClock(from, zone),
+                utcWallClock(to.plusDays(1), zone),
                 from.atStartOfDay().toString(),
-                to.plusDays(1).atStartOfDay().toString());
+                to.plusDays(1).atStartOfDay().toString(),
+                zone.getId());
+    }
+
+    private static String utcWallClock(LocalDate day, ZoneId zone) {
+        return day.atStartOfDay(zone).withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime().toString();
     }
 
     private static LocalDate parseOr(String iso, LocalDate fallback) {
@@ -334,6 +368,40 @@ public class LeadReportService {
     }
 
     private static long nz(Long v) { return v == null ? 0L : v; }
+
+    /** Longest window (days) the trend is padded for; past it the raw days are returned as-is. */
+    private static final int MAX_TREND_FILL_DAYS = 3660;
+
+    /**
+     * One point per day of the window, zero where no lead came in. The SQL only returns days that
+     * have leads, and the chart spaces points evenly, so quiet days used to vanish and the line
+     * read as if leads arrived every day.
+     */
+    static List<LeadReportSummaryDTO.DailyTrendPoint> fillTrendGaps(
+            List<LeadReportSummaryDTO.DailyTrendPoint> points, DateRange range) {
+        LocalDate first;
+        LocalDate endExclusive;
+        try {
+            first = LocalDate.parse(range.fromLocal.substring(0, 10));
+            endExclusive = LocalDate.parse(range.toLocal.substring(0, 10));
+        } catch (Exception e) {
+            return points;
+        }
+        if (!first.isBefore(endExclusive)
+                || java.time.temporal.ChronoUnit.DAYS.between(first, endExclusive) > MAX_TREND_FILL_DAYS) {
+            return points;
+        }
+        Map<String, LeadReportSummaryDTO.DailyTrendPoint> byDay = points.stream()
+                .filter(p -> p.getDate() != null)
+                .collect(Collectors.toMap(LeadReportSummaryDTO.DailyTrendPoint::getDate, p -> p, (a, b) -> a));
+        List<LeadReportSummaryDTO.DailyTrendPoint> filled = new java.util.ArrayList<>();
+        for (LocalDate d = first; d.isBefore(endExclusive); d = d.plusDays(1)) {
+            String key = d.toString();
+            filled.add(byDay.getOrDefault(key, LeadReportSummaryDTO.DailyTrendPoint.builder()
+                    .date(key).submitted(0L).converted(0L).build()));
+        }
+        return filled;
+    }
 
     /** numerator/denominator * 100, rounded to one decimal; null when denominator is 0. */
     private static Double percentage(long num, long denom) {
@@ -354,13 +422,7 @@ public class LeadReportService {
         return den == 0 ? Double.NaN : (num / den);
     }
 
-    private record DateRange(String from, String to) {
-        // ISO LocalDateTime strings the native query CASTs to timestamp.
-    }
-
-    /** Local DateTime helper kept for future use if we want UTC casts. */
-    @SuppressWarnings("unused")
-    private static LocalDateTime startOfDay(LocalDate d) {
-        return d.atStartOfDay();
+    record DateRange(String from, String to, String fromLocal, String toLocal, String zone) {
+        // from/to: ISO LocalDateTime strings (UTC wall clock) the native query CASTs to timestamp.
     }
 }

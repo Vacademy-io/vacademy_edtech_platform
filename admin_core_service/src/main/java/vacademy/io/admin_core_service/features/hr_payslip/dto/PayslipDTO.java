@@ -28,4 +28,5 @@ public class PayslipDTO {
     private LocalDateTime generatedAt;
     private LocalDateTime emailedAt;
     private String emailStatus;
+    private String currency;
 }

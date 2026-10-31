@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { GET_SLIDES } from '@/constants/urls';
 import { getInstituteId } from '@/constants/helper';
@@ -83,6 +84,7 @@ const fetchChapterSlides = async (chapterId: string) => {
 
 export const useAddToCourse = () => {
     const queryClient = useQueryClient();
+    const { t } = useTranslation('studyLibraryUseAddToCourse');
     const [isCreating, setIsCreating] = useState(false);
 
     const create = async ({
@@ -97,15 +99,15 @@ export const useAddToCourse = () => {
         pdfTotalPages,
     }: CreateArgs): Promise<{ createdIds: string[]; failed: AddToCourseDestination[] }> => {
         const instituteId = getInstituteId();
-        if (!instituteId) throw new Error('Could not resolve your institute.');
+        if (!instituteId) throw new Error(t('errors.noInstitute'));
 
         const targets = (destinations ?? []).filter((d) => d.chapterId && d.packageSessionId);
         if (targets.length === 0) {
-            throw new Error('Pick at least one destination chapter to continue.');
+            throw new Error(t('errors.pickDestination'));
         }
 
         const finalTitle =
-            title.trim() || (content.kind === 'NOTES' ? 'Lecture Notes' : 'Assessment');
+            title.trim() || (content.kind === 'NOTES' ? t('defaultTitles.notes') : t('defaultTitles.assessment'));
         const slideStatus = status ?? getSlideStatusForUser();
 
         setIsCreating(true);
@@ -122,7 +124,7 @@ export const useAddToCourse = () => {
                 docHtml = formatHTMLString(notesMarkdownToHtml(content.markdown || ''));
                 // Same guard the editor uses, so we never persist a blank slide.
                 if (checkIsHtmlEmpty(docHtml)) {
-                    throw new Error('These notes are empty — nothing to add.');
+                    throw new Error(t('errors.emptyNotes'));
                 }
                 if (notesFormat === 'PDF') {
                     let file = pdfFile;
@@ -145,19 +147,17 @@ export const useAddToCourse = () => {
                             undefined,
                             false
                         )) ?? null;
-                    if (!pdfFileId) throw new Error('Could not upload the notes PDF.');
+                    if (!pdfFileId) throw new Error(t('errors.pdfUploadFailed'));
                 }
             } else if (assessmentMode === 'ASSESSMENT') {
                 if (!content.assessmentId) {
-                    throw new Error(
-                        'Publish the assessment first to link it as an assessment slide.'
-                    );
+                    throw new Error(t('errors.publishAssessmentFirst'));
                 }
                 linkAssessmentId = content.assessmentId;
             } else {
                 quizQuestions = transformGeneratedQuestions(content.questions || []);
                 if (quizQuestions.length === 0) {
-                    throw new Error('There are no questions to add.');
+                    throw new Error(t('errors.noQuestions'));
                 }
             }
 
@@ -225,7 +225,7 @@ export const useAddToCourse = () => {
 
             queryClient.invalidateQueries({ queryKey: ['GET_MODULES_WITH_CHAPTERS'] });
             if (createdIds.length === 0) {
-                throw new Error('Could not add the slide to any chapter.');
+                throw new Error(t('errors.allChaptersFailed'));
             }
             return { createdIds, failed };
         } finally {

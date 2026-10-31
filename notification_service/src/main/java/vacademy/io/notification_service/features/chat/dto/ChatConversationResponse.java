@@ -26,4 +26,8 @@ public class ChatConversationResponse {
     private String memberRole;       // caller's role in the conversation
     private Integer rulesVersion;
     private boolean canPost;         // whether the caller may post (permissions + rules)
+    // Whether the caller may edit / delete a message THEY sent. Institute-configurable for students
+    // (settings.chat.message_actions); always true for teachers and admins.
+    private boolean canEditOwnMessages;
+    private boolean canDeleteOwnMessages;
 }

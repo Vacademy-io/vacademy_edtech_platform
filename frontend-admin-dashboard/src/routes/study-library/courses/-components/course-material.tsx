@@ -1,6 +1,7 @@
 import { getInstituteId } from '@/constants/helper';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { useEffect, useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { AddCourseButton } from '@/components/common/study-library/add-course/add-course-button';
 import { MyButton } from '@/components/design-system/button';
 import { SettingsQuickAccessButton } from '@/components/settings/quick-access/SettingsQuickAccessButton';
@@ -119,6 +120,9 @@ export interface CourseItem {
     enrolled_student_count?: number | null;
 }
 
+/** Courses per page on the All / Authored courses tabs. */
+const COURSES_PAGE_SIZE = 20;
+
 export interface AllCoursesApiResponse {
     totalPages: number;
     totalElements: number;
@@ -139,6 +143,7 @@ interface CourseMaterialProps {
 }
 
 export const CourseMaterial = ({ initialSelectedTab, initialAction }: CourseMaterialProps = {}) => {
+    const { t } = useTranslation('courseMaterial');
     const [isAddCourseOpen, setIsAddCourseOpen] = useState(false);
 
     // Sync initialAction with dialog state
@@ -325,6 +330,19 @@ export const CourseMaterial = ({ initialSelectedTab, initialAction }: CourseMate
         });
     };
 
+    const handleSessionChange = (sessionId: string) => {
+        setSelectedFilters((prev) => {
+            const session_ids = prev.session_ids ?? [];
+            const alreadySelected = session_ids.includes(sessionId);
+            return {
+                ...prev,
+                session_ids: alreadySelected
+                    ? session_ids.filter((id) => id !== sessionId)
+                    : [...session_ids, sessionId],
+            };
+        });
+    };
+
     const handleTagChange = (tagValue: string) => {
         setSelectedFilters((prev) => {
             const tag = prev.tag ?? [];
@@ -378,7 +396,7 @@ export const CourseMaterial = ({ initialSelectedTab, initialAction }: CourseMate
             setDeletingCourseId(courseId);
             deleteCourseMutation.mutate(courseId, {
                 onSuccess: () => {
-                    toast.success('Course deleted successfully');
+                    toast.success(t('deletedSuccess'));
                     handlePageChange(page);
                     setDeletingCourseId(null);
                 },
@@ -387,7 +405,7 @@ export const CourseMaterial = ({ initialSelectedTab, initialAction }: CourseMate
                         error && typeof error === 'object' && 'message' in error
                             ? (error as { message?: string }).message
                             : undefined;
-                    toast.error(errMsg || 'Failed to delete course');
+                    toast.error(errMsg || t('deleteFailed'));
                     setDeletingCourseId(null);
                 },
             });
@@ -395,7 +413,7 @@ export const CourseMaterial = ({ initialSelectedTab, initialAction }: CourseMate
     };
 
     useEffect(() => {
-        setNavHeading(`Explore ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)}`);
+        setNavHeading(t('exploreTerm', { term: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course) }));
     }, []);
 
     // Update sort_columns in selectedFilters when sortBy changes and call handleGetCourses after update
@@ -529,7 +547,7 @@ export const CourseMaterial = ({ initialSelectedTab, initialAction }: CourseMate
     // Only fetch data for the active tab to prevent unnecessary API calls
     const { data: fetchedAllCoursesData, isLoading: isLoadingAllCourses } = useQuery({
         queryKey: ['allCourses', instituteDetails?.id, page, filtersKey],
-        queryFn: () => getAllCoursesWithFilters(page, 10, instituteDetails?.id, filtersKey),
+        queryFn: () => getAllCoursesWithFilters(page, COURSES_PAGE_SIZE, instituteDetails?.id, filtersKey),
         enabled: !!instituteDetails?.id && selectedTab === 'AllCourses',
         staleTime: 30000, // Data is fresh for 30 seconds
         gcTime: 300000, // Cache for 5 minutes
@@ -542,7 +560,7 @@ export const CourseMaterial = ({ initialSelectedTab, initialAction }: CourseMate
                 ...filtersKey,
                 faculty_ids: tokenData?.user ? [tokenData.user] : [],
             };
-            return getAllCoursesWithFilters(page, 10, instituteDetails?.id, authoredFilters);
+            return getAllCoursesWithFilters(page, COURSES_PAGE_SIZE, instituteDetails?.id, authoredFilters);
         },
         enabled: !!instituteDetails?.id && !!tokenData?.user && selectedTab === 'AuthoredCourses',
         staleTime: 30000,
@@ -588,52 +606,74 @@ export const CourseMaterial = ({ initialSelectedTab, initialAction }: CourseMate
         const labelFor = (id: CourseListTabId): string => {
             switch (id) {
                 case 'AuthoredCourses':
-                    return `Authored ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)}`;
+                    return t('tabs.authoredTerm', { term: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course) });
                 case 'AllCourses':
-                    return `All ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)}`;
+                    return t('tabs.allTerm', { term: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course) });
                 case 'CourseInReview':
-                    return `${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)} In Review`;
+                    return t('tabs.termInReview', { term: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course) });
                 case 'CourseApproval':
-                    return `${getTerminology(ContentTerms.Course, SystemTerms.Course)} Approval`;
+                    return t('tabs.termApproval', { term: getTerminology(ContentTerms.Course, SystemTerms.Course) });
                 default:
                     return String(id);
             }
         };
 
+        // "Courses In Review" only makes sense when the role's drafts go
+        // through admin approval. When the admin turns that off for the role
+        // the teacher publishes directly and the tab would never populate,
+        // so hide it.
+        // Decided only once settings are loaded — deciding on the null
+        // first paint would bounce a deep link to ?selectedTab=CourseInReview
+        // before the (possibly on) toggle arrives.
+        const safeRoles = Array.isArray(roles) ? roles : [];
+        const isAdmin = safeRoles.includes('ADMIN');
+        const hideInReviewTab =
+            !isAdmin && !!roleDisplay && roleDisplay.coursePage?.requireCourseApproval === false;
+        // Role guard on top of the saved visibility. The Course Approval
+        // dashboard is admin-only and Courses In Review is for non-admins;
+        // the Settings page shows the other role's tab as locked-off, but an
+        // older save / copy-to-roles can still leave `visible: true` in the
+        // stored blob (Oui Académie teacher settings, 2026-09-20), so the
+        // stored flag alone must never surface the wrong role's tab.
+        const isTabAllowedForRole = (id: string) => {
+            if (id === 'CourseApproval') return isAdmin;
+            if (id === 'CourseInReview') return !isAdmin && !hideInReviewTab;
+            return true;
+        };
+
         if (roleDisplay?.courseList?.tabs && roleDisplay.courseList.tabs.length > 0) {
             return roleDisplay.courseList.tabs
                 .filter((t) => t.visible !== false)
+                .filter((t) => isTabAllowedForRole(t.id))
                 .sort((a, b) => (a.order || 0) - (b.order || 0))
                 .map((t) => ({ key: t.id, label: labelFor(t.id as CourseListTabId), show: true }));
         }
 
         // Fallback to original role-based defaults
-        const safeRoles = Array.isArray(roles) ? roles : [];
-        const isAdmin = safeRoles.includes('ADMIN');
         const tabs: { key: string; label: string; show: boolean }[] = [
             {
                 key: 'AuthoredCourses',
-                label: `Authored ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)}`,
+                label: t('tabs.authoredTerm', { term: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course) }),
                 show: true,
             },
             {
                 key: 'AllCourses',
-                label: `All ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)}`,
+                label: t('tabs.allTerm', { term: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course) }),
                 show: true,
             },
             {
                 key: 'CourseInReview',
-                label: `${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)} In Review`,
-                show: !isAdmin,
+                label: t('tabs.termInReview', { term: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course) }),
+                show: isTabAllowedForRole('CourseInReview'),
             },
             {
                 key: 'CourseApproval',
-                label: `${getTerminology(ContentTerms.Course, SystemTerms.Course)} Approval`,
-                show: isAdmin,
+                label: t('tabs.termApproval', { term: getTerminology(ContentTerms.Course, SystemTerms.Course) }),
+                show: isTabAllowedForRole('CourseApproval'),
             },
         ];
         return tabs.filter((t) => t.show);
-    }, [roles, roleDisplay?.courseList, instituteDetails?.id]);
+    }, [roles, roleDisplay?.courseList, roleDisplay?.coursePage?.requireCourseApproval, instituteDetails?.id, t]);
 
     // Apply default tab from role settings when appropriate
     useEffect(() => {
@@ -761,15 +801,15 @@ export const CourseMaterial = ({ initialSelectedTab, initialAction }: CourseMate
         return (
             <div className="flex h-full flex-col items-center justify-center py-20">
                 <div className="mb-2 text-2xl font-semibold">
-                    No {getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)} found
+                    {t('noTermFound', { term: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course) })}
                 </div>
                 <div className="mb-4 text-gray-500">
-                    Try adding a new {getTerminology(ContentTerms.Course, SystemTerms.Course)}.
+                    {t('tryAddingNewTerm', { term: getTerminology(ContentTerms.Course, SystemTerms.Course) })}
                 </div>
                 <div className="flex flex-wrap items-center justify-center gap-2">
                     <SettingsQuickAccessButton
                         settingsKey={SettingsTabs.Course}
-                        label="Course settings"
+                        label={t('courseSettings')}
                     />
                     {canShowCreateCourse && <AddCourseButton />}
                     {canShowCreateCourse && roleDisplay?.courseCreation?.showCreateCourseWithAI && (
@@ -781,7 +821,7 @@ export const CourseMaterial = ({ initialSelectedTab, initialAction }: CourseMate
                             onClick={() => navigate({ to: '/study-library/ai-copilot' })}
                         >
                             <Sparkles className="h-4 w-4 mr-1" />
-                            Create {getTerminology(ContentTerms.Course, SystemTerms.Course)} with AI
+                            {t('createTermWithAI', { term: getTerminology(ContentTerms.Course, SystemTerms.Course) })}
                         </MyButton>
                     )}
                 </div>
@@ -795,16 +835,16 @@ export const CourseMaterial = ({ initialSelectedTab, initialAction }: CourseMate
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-col gap-1">
                     <div className="sm:text-h5 text-lg font-semibold">
-                        Explore {getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)}
+                        {t('exploreTerm', { term: getTerminologyPlural(ContentTerms.Course, SystemTerms.Course) })}
                     </div>
                     <div className="text-xs text-neutral-500 sm:text-sm">
-                        Effortlessly organize, upload, and track educational resources in one place.
+                        {t('exploreSubtitle')}
                     </div>
                 </div>
                 <div className="flex flex-shrink-0 flex-wrap items-center gap-2">
                     <SettingsQuickAccessButton
                         settingsKey={SettingsTabs.Course}
-                        label="Course settings"
+                        label={t('courseSettings')}
                     />
                     {canShowCreateCourse && <AddCourseButton />}
                     {canShowCreateCourse && roleDisplay?.courseCreation?.showCreateCourseWithAI && (
@@ -816,7 +856,7 @@ export const CourseMaterial = ({ initialSelectedTab, initialAction }: CourseMate
                             onClick={() => navigate({ to: '/study-library/ai-copilot' })}
                         >
                             <Sparkles className="h-4 w-4 mr-1" />
-                            Create {getTerminology(ContentTerms.Course, SystemTerms.Course)} with AI
+                            {t('createTermWithAI', { term: getTerminology(ContentTerms.Course, SystemTerms.Course) })}
                         </MyButton>
                     )}
                 </div>
@@ -877,6 +917,7 @@ export const CourseMaterial = ({ initialSelectedTab, initialAction }: CourseMate
                             // Check if any filters are applied
                             const hasActiveFilters =
                                 selectedFilters.level_ids.length > 0 ||
+                                selectedFilters.session_ids.length > 0 ||
                                 selectedFilters.tag.length > 0 ||
                                 selectedFilters.faculty_ids.length > 0 ||
                                 selectedFilters.search_by_name ||
@@ -888,12 +929,12 @@ export const CourseMaterial = ({ initialSelectedTab, initialAction }: CourseMate
                                 if (!hasActiveFilters) {
                                     return (
                                         <div className="flex h-40 flex-col items-center justify-center text-gray-500">
-                                            No{' '}
-                                            {getTerminology(
-                                                ContentTerms.Course,
-                                                SystemTerms.Course
-                                            ).toLocaleLowerCase()}
-                                            s found for this tab.
+                                            {t('noTermFoundForTab', {
+                                                term: getTerminologyPlural(
+                                                    ContentTerms.Course,
+                                                    SystemTerms.Course
+                                                ).toLocaleLowerCase(),
+                                            })}
                                         </div>
                                     );
                                 } else {
@@ -907,6 +948,7 @@ export const CourseMaterial = ({ initialSelectedTab, initialAction }: CourseMate
                                                 handleApply={handleApply}
                                                 levels={levels}
                                                 handleLevelChange={handleLevelChange}
+                                                handleSessionChange={handleSessionChange}
                                                 tags={tags}
                                                 accessControlUsers={accessControlUsers}
                                                 handleUserChange={handleUserChange}
@@ -933,12 +975,12 @@ export const CourseMaterial = ({ initialSelectedTab, initialAction }: CourseMate
                                                 }
                                             />
                                             <div className="mt-4 flex h-20 flex-col items-center justify-center text-gray-500">
-                                                No{' '}
-                                                {getTerminology(
-                                                    ContentTerms.Course,
-                                                    SystemTerms.Course
-                                                ).toLocaleLowerCase()}
-                                                s found for the applied filters.
+                                                {t('noTermFoundForFilters', {
+                                                    term: getTerminologyPlural(
+                                                        ContentTerms.Course,
+                                                        SystemTerms.Course
+                                                    ).toLocaleLowerCase(),
+                                                })}
                                             </div>
                                         </>
                                     );
@@ -952,6 +994,7 @@ export const CourseMaterial = ({ initialSelectedTab, initialAction }: CourseMate
                                     handleApply={handleApply}
                                     levels={levels}
                                     handleLevelChange={handleLevelChange}
+                                    handleSessionChange={handleSessionChange}
                                     tags={tags}
                                     accessControlUsers={accessControlUsers}
                                     handleUserChange={handleUserChange}

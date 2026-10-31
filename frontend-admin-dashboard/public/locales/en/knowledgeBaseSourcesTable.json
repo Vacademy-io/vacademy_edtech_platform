@@ -1,0 +1,44 @@
+{
+    "counts": {
+        "pages_one": "{{formatted}} page",
+        "pages_other": "{{formatted}} pages",
+        "passages_one": "{{formatted}} passage",
+        "passages_other": "{{formatted}} passages",
+        "figures_one": "{{formatted}} diagram & table",
+        "figures_other": "{{formatted}} diagrams & tables",
+        "credits_one": "{{formatted}} credit",
+        "credits_other": "{{formatted}} credits",
+        "ocrPages_one": "{{formatted}} scanned page read",
+        "ocrPages_other": "{{formatted}} scanned pages read"
+    },
+    "aria": {
+        "stopUsing": "Stop using {{title}}",
+        "startUsing": "Start using {{title}}",
+        "actionsFor": "Actions for {{title}}"
+    },
+    "toast": {
+        "nowUsed": "Now being used for answers",
+        "noLongerUsed": "No longer used for answers",
+        "updateFailed": "Could not update this",
+        "reindexing": "Reading it again — you are not charged twice.",
+        "reindexFailed": "Could not start re-reading",
+        "removeSuccess": "Removed",
+        "removeFailed": "Could not remove this source"
+    },
+    "readAgain": "Read again",
+    "remove": "Remove",
+    "stage": {
+        "working": "Working",
+        "gettingStarted": "Getting started"
+    },
+    "partialWarning": "{{lowConfidence}} of {{total}} pages could not be read reliably. The rest is usable — re-upload a clearer scan of those pages if it matters.",
+    "notActive": "Not being used for answers right now.",
+    "emptyState": "Nothing added yet. Add a textbook, a set of notes or a past paper to begin.",
+    "deleteDialog": {
+        "title": "Remove this source?",
+        "description": "“{{title}}” and everything read from it will be deleted. Adding it again later will cost credits again. To stop using it without losing the work, switch it off instead.",
+        "cancel": "Cancel",
+        "removing": "Removing…",
+        "confirm": "Remove"
+    }
+}

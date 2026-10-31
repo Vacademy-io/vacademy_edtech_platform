@@ -15,6 +15,8 @@
  */
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { ChartBar, Users, UsersThree } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import {
@@ -56,13 +58,13 @@ type SortKey =
     | 'attainment_pct';
 
 /** Display label for a team row, with stable fallbacks. */
-function teamLabel(row: TeamRollupRow): string {
-    return row.team_name || row.team_id || 'Unassigned';
+function teamLabel(row: TeamRollupRow, t: TFunction): string {
+    return row.team_name || row.team_id || t('unassigned');
 }
 
 /** Sort accessor — "name" maps to the team label, every other key reads the metric. */
-function sortValue(row: TeamRollupRow, key: SortKey): string | number | null {
-    if (key === 'name') return teamLabel(row);
+function sortValue(row: TeamRollupRow, key: SortKey, t: TFunction): string | number | null {
+    if (key === 'name') return teamLabel(row, t);
     return row[key];
 }
 
@@ -76,6 +78,8 @@ export function ManagerTab({
     counsellorUserId,
     audienceId,
 }: ReportTabProps) {
+    const { t } = useTranslation('audienceManagerManagerTab');
+
     const params: ManagerReportParams = {
         instituteId,
         fromDate,
@@ -102,8 +106,8 @@ export function ManagerTab({
     const sortedTeams = useMemo(() => {
         const copy = [...teams];
         copy.sort((a, b) => {
-            const av = sortValue(a, sortKey);
-            const bv = sortValue(b, sortKey);
+            const av = sortValue(a, sortKey, t);
+            const bv = sortValue(b, sortKey, t);
             // Nulls sink to the bottom regardless of direction.
             if (av == null && bv == null) return 0;
             if (av == null) return 1;
@@ -115,7 +119,7 @@ export function ManagerTab({
             return sortDir === 'asc' ? s : -s;
         });
         return copy;
-    }, [teams, sortKey, sortDir]);
+    }, [teams, sortKey, sortDir, t]);
 
     const toggleSort = (k: SortKey) => {
         if (sortKey === k) {
@@ -132,19 +136,19 @@ export function ManagerTab({
     }
 
     // Conversion-rate comparison uses the team with the most leads as the bar baseline.
-    const maxLeads = Math.max(1, ...teams.map((t) => t.leads));
+    const maxLeads = Math.max(1, ...teams.map((row) => row.leads));
 
 
     return (
         <div className="flex flex-col gap-6">
             <ReportSection
-                title="Team performance"
+                title={t('sectionTitle')}
                 icon={<UsersThree size={18} />}
                 actions={
                     <div className="flex items-center gap-2">
                         {teams.length > 0 && (
                             <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600">
-                                {teams.length} team{teams.length === 1 ? '' : 's'}
+                                {t('teamsBadge', { count: teams.length })}
                             </span>
                         )}
                         <ExportWithColumnPickerButton
@@ -152,34 +156,34 @@ export function ManagerTab({
                             disabled={teams.length === 0}
                             getHeadersAndRows={() => ({
                                 headers: [
-                                    'Team',
-                                    'Head',
-                                    'Counsellors',
-                                    'Leads',
-                                    'Responded',
-                                    'Conversions',
-                                    'Conversion rate (%)',
-                                    'Open',
-                                    'Overdue',
-                                    'Avg response (minutes)',
-                                    'Target',
-                                    'Attainment (%)',
+                                    t('csv.team'),
+                                    t('csv.head'),
+                                    t('csv.counsellors'),
+                                    t('csv.leads'),
+                                    t('csv.responded'),
+                                    t('csv.conversions'),
+                                    t('csv.conversionRatePct'),
+                                    t('csv.open'),
+                                    t('csv.overdue'),
+                                    t('csv.avgResponseMinutes'),
+                                    t('csv.target'),
+                                    t('csv.attainmentPct'),
                                 ],
-                                rows: [...sortedTeams, ...(totals ? [totals] : [])].map((t) => [
-                                    t === totals ? teamLabel(t) || 'Total' : teamLabel(t),
-                                    t.head_name ?? '',
-                                    t.counsellors,
-                                    t.leads,
-                                    t.responded,
-                                    t.conversions,
-                                    t.conversion_rate != null ? t.conversion_rate.toFixed(1) : '',
-                                    t.open,
-                                    t.overdue,
-                                    t.avg_response_minutes != null
-                                        ? Math.round(t.avg_response_minutes)
+                                rows: [...sortedTeams, ...(totals ? [totals] : [])].map((row) => [
+                                    row === totals ? teamLabel(row, t) || t('total') : teamLabel(row, t),
+                                    row.head_name ?? '',
+                                    row.counsellors,
+                                    row.leads,
+                                    row.responded,
+                                    row.conversions,
+                                    row.conversion_rate != null ? row.conversion_rate.toFixed(1) : '',
+                                    row.open,
+                                    row.overdue,
+                                    row.avg_response_minutes != null
+                                        ? Math.round(row.avg_response_minutes)
                                         : '',
-                                    t.target ?? '',
-                                    t.attainment_pct != null ? t.attainment_pct.toFixed(1) : '',
+                                    row.target ?? '',
+                                    row.attainment_pct != null ? row.attainment_pct.toFixed(1) : '',
                                 ]),
                             })}
                         />
@@ -187,86 +191,86 @@ export function ManagerTab({
                 }
             >
                 {teams.length === 0 ? (
-                    <EmptyHint message="No team activity in this range." />
+                    <EmptyHint message={t('emptyHint')} />
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
                                     <SortableHeader
-                                        label="Team"
+                                        label={t('table.team')}
                                         sortKey="name"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                         align="left"
                                     />
-                                    <th className="py-2 pr-3 text-left">Head</th>
+                                    <th className="py-2 pe-3 text-start">{t('table.head')}</th>
                                     <SortableHeader
-                                        label="Counsellors"
+                                        label={t('table.counsellors')}
                                         sortKey="counsellors"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                     />
                                     <SortableHeader
-                                        label="Leads"
+                                        label={t('table.leads')}
                                         sortKey="leads"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                     />
                                     <SortableHeader
-                                        label="Responded"
+                                        label={t('table.responded')}
                                         sortKey="responded"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                     />
                                     <SortableHeader
-                                        label="Conversions"
+                                        label={t('table.conversions')}
                                         sortKey="conversions"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                     />
                                     <SortableHeader
-                                        label="Conv %"
+                                        label={t('table.convRate')}
                                         sortKey="conversion_rate"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                     />
                                     <SortableHeader
-                                        label="Open"
+                                        label={t('table.open')}
                                         sortKey="open"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                     />
                                     <SortableHeader
-                                        label="Overdue"
+                                        label={t('table.overdue')}
                                         sortKey="overdue"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                     />
                                     <SortableHeader
-                                        label="Avg response"
+                                        label={t('table.avgResponse')}
                                         sortKey="avg_response_minutes"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                     />
                                     <SortableHeader
-                                        label="Target"
+                                        label={t('table.target')}
                                         sortKey="target"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                     />
                                     <SortableHeader
-                                        label="Attainment %"
+                                        label={t('table.attainmentPct')}
                                         sortKey="attainment_pct"
                                         current={sortKey}
                                         dir={sortDir}
@@ -275,8 +279,8 @@ export function ManagerTab({
                                 </tr>
                             </thead>
                             <tbody>
-                                {sortedTeams.map((t) => (
-                                    <TeamRow key={t.team_id ?? teamLabel(t)} row={t} />
+                                {sortedTeams.map((row) => (
+                                    <TeamRow key={row.team_id ?? teamLabel(row, t)} row={row} />
                                 ))}
                             </tbody>
                             {totals && (
@@ -291,23 +295,20 @@ export function ManagerTab({
 
             {/* Conversion-rate comparison across teams. */}
             {teams.length > 0 && (
-                <BreakdownCard title="Conversion rate by team" icon={<ChartBar size={18} />}>
-                    {sortedTeams.map((t) => (
+                <BreakdownCard title={t('breakdownTitle')} icon={<ChartBar size={18} />}>
+                    {sortedTeams.map((row) => (
                         <BreakdownBar
-                            key={`bar-${t.team_id ?? teamLabel(t)}`}
-                            label={`${teamLabel(t)} · ${fmtPct(t.conversion_rate)}`}
-                            count={t.leads}
+                            key={`bar-${row.team_id ?? teamLabel(row, t)}`}
+                            label={`${teamLabel(row, t)} · ${fmtPct(row.conversion_rate)}`}
+                            count={row.leads}
                             total={maxLeads}
-                            converted={t.conversions}
+                            converted={row.conversions}
                         />
                     ))}
                 </BreakdownCard>
             )}
 
-            <p className="text-xs text-neutral-400">
-                Responded = leads with at least one response. Conv % = conversions ÷ leads. Avg
-                response = mean time to first response. Attainment % = conversions ÷ target.
-            </p>
+            <p className="text-xs text-neutral-400">{t('footnote')}</p>
         </div>
     );
 }
@@ -315,6 +316,7 @@ export function ManagerTab({
 // ── Team row (shared by body + pinned totals) ──────────────────────────
 
 function TeamRow({ row, pinned = false }: { row: TeamRollupRow; pinned?: boolean }) {
+    const { t } = useTranslation('audienceManagerManagerTab');
     const numCell = 'py-2.5 pr-3 text-right text-neutral-800';
     return (
         <tr
@@ -328,7 +330,7 @@ function TeamRow({ row, pinned = false }: { row: TeamRollupRow; pinned?: boolean
             <td className="py-2.5 pr-3">
                 <span className="flex items-center gap-2 font-medium text-neutral-900">
                     <Users size={14} className="shrink-0 text-neutral-400" />
-                    {pinned ? teamLabel(row) || 'Total' : teamLabel(row)}
+                    {pinned ? teamLabel(row, t) || t('total') : teamLabel(row, t)}
                 </span>
             </td>
             <td className="py-2.5 pr-3 text-left text-neutral-700">

@@ -1,5 +1,6 @@
 import { SUBMIT_AUDIENCE_LEAD_ADMIN_URL, SUBMIT_AUDIENCE_LEAD_URL } from '@/constants/urls';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
+import type { TFunction } from 'i18next';
 
 export interface SubmitLeadUserDto {
     id?: string;
@@ -95,18 +96,35 @@ interface ServerErrorBody {
     error?: string;
 }
 
+/** The server's own message plus the HTTP status, so a caller can treat e.g. 409 specially. */
+export class ServerMessageError extends Error {
+    readonly status?: number;
+
+    constructor(message: string, status?: number) {
+        super(message);
+        this.name = 'ServerMessageError';
+        this.status = status;
+    }
+}
+
 export const throwWithServerMessage = (error: unknown, fallback: string): never => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const data = (error as any)?.response?.data;
-    if (typeof data === 'string' && data.trim()) throw new Error(data);
+    const response = (error as any)?.response;
+    const data = response?.data;
+    const status: number | undefined =
+        typeof response?.status === 'number' ? response.status : undefined;
+    if (typeof data === 'string' && data.trim()) throw new ServerMessageError(data, status);
     if (data && typeof data === 'object') {
         const body = data as ServerErrorBody;
         const message = body.ex ?? body.message ?? body.error;
-        if (message) throw new Error(message);
+        if (message) throw new ServerMessageError(message, status);
     }
     if (error instanceof Error && error.message) throw error;
-    throw new Error(fallback);
+    throw new ServerMessageError(fallback, status);
 };
+
+/** A saved lead's response id (UUID) — the only success body of the admin submit. */
+const RESPONSE_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Submit a lead the signed-in admin/counsellor is adding by hand.
@@ -119,9 +137,14 @@ export const throwWithServerMessage = (error: unknown, fallback: string): never 
  *
  * Use {@link submitAudienceLead} for anything that isn't an authenticated
  * dashboard user (embedded forms, the cURL integration snippet).
+ *
+ * `t` must be bound to the `audienceManagerSubmitAudienceLead` namespace — it only
+ * supplies the fallback wording used when the server response carries no message
+ * of its own (see {@link throwWithServerMessage}).
  */
 export const submitAudienceLeadAsAdmin = async (
-    payload: SubmitLeadRequest
+    payload: SubmitLeadRequest,
+    t: TFunction
 ): Promise<SubmitLeadResponse> => {
     let response;
     try {
@@ -131,12 +154,18 @@ export const submitAudienceLeadAsAdmin = async (
             data: payload,
         });
     } catch (error) {
-        return throwWithServerMessage(error, 'Failed to submit response. Please try again.');
+        return throwWithServerMessage(error, t('errors.submitFailed'));
     }
 
     const body = response.data;
     if (!body) return { success: true };
-    if (typeof body === 'string') return { success: true, message: body };
+    // A saved lead answers with its response id. Any other text is the backend
+    // explaining why nothing was saved ("already submitted", a dedup rejection),
+    // which used to be shown as a success.
+    if (typeof body === 'string') {
+        if (!RESPONSE_ID_PATTERN.test(body.trim())) throw new Error(body);
+        return { success: true, response_id: body.trim() };
+    }
     return body as SubmitLeadResponse;
 };
 

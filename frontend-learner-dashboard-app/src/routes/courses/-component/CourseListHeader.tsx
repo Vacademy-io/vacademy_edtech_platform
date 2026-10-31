@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import { AuthModal, AuthModalRef } from "@/components/common/auth/modal/AuthModal";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
@@ -23,6 +24,7 @@ const CourseListHeader = ({
   autoOpenLogin?: boolean;
   autoOpenDonation?: boolean;
 }) => {
+  const { t } = useTranslation("coursesRouteA");
   const [imgUrl, setImgUrl] = useState("");
   const [logoLoading, setLogoLoading] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -75,15 +77,15 @@ const CourseListHeader = ({
   }, [homeIconClickRoute]);
 
   const navigationItems = [
-    { href: "https://codecircle.org", label: "Home" },
-    { href: "https://codecircle.org/about.html", label: "About" },
-    { href: "https://codecircle.org/impact/stories.html", label: "Impact" },
+    { href: "https://codecircle.org", label: t("header.nav.home") },
+    { href: "https://codecircle.org/about.html", label: t("header.nav.about") },
+    { href: "https://codecircle.org/impact/stories.html", label: t("header.nav.impact") },
     {
       href: "#courses",
       label: getTerminology(ContentTerms.Course, SystemTerms.Course) + 's' ,
     },
-    { href: "https://codecircle.org/get-involved.html", label: "Get Involved" },
-    { href: "https://codecircle.org/contact.html", label: "Contact" },
+    { href: "https://codecircle.org/get-involved.html", label: t("header.nav.getInvolved") },
+    { href: "https://codecircle.org/contact.html", label: t("header.nav.contact") },
   ];
 
   return (
@@ -94,15 +96,15 @@ const CourseListHeader = ({
           {logoLoading && (
             <div
               className="absolute inset-0 bg-gray-200 flex items-center justify-center text-gray-400 text-xs"
-              aria-label="Loading logo"
+              aria-label={t("header.loadingLogoAriaLabel")}
             >
-              Loading...
+              {t("common.loading")}
             </div>
           )}
           {imgUrl && (
             <img
               src={imgUrl}
-              alt={`logo`}
+              alt={t("header.logoAlt")}
               onClick={homeIconClickRoute ? handleLogoClick : undefined}
               className={`h-full w-full object-contain rounded-md ${
                 logoLoading ? "opacity-0" : "opacity-100"
@@ -115,7 +117,7 @@ const CourseListHeader = ({
         <button
           onClick={toggleMobileMenu}
           className="lg:hidden p-1.5 sm:p-2 rounded-md hover:bg-gray-100 transition-colors"
-          aria-label="Toggle mobile menu"
+          aria-label={t("header.toggleMobileMenuAriaLabel")}
         >
           <svg
             className="w-5 h-5 sm:w-6 sm:h-6"
@@ -163,7 +165,7 @@ const CourseListHeader = ({
             courseId={courseId}
             trigger={
               <Button data-auth-modal-trigger variant={"outline"} size="sm" className="text-xs sm:text-sm">
-                Login
+                {t("common.login")}
               </Button>
             }
           />
@@ -172,7 +174,7 @@ const CourseListHeader = ({
             className="text-xs text-white sm:text-sm"
             onClick={() => setIsDonationDialogOpen(true)}
           >
-            Donate
+            {t("header.donate")}
           </Button>
         </div>
       </div>
@@ -180,10 +182,10 @@ const CourseListHeader = ({
       {/* Mobile Navigation Menu */}
       {isMobileMenuOpen && (
         <div
-          className="lg:hidden w-full bg-white border-t border-gray-200 py-4 px-3 sm:px-4"
+          className="lg:hidden w-full bg-white border-t border-gray-200 py-4 px-3 sm:px-4 space-y-4"
           style={{ zIndex: 100 }}
         >
-          <ul className="flex flex-col space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+          <ul className="flex flex-col space-y-3 sm:space-y-4 sm:mb-6">
             {navigationItems.map((item) => (
               <li key={item.href}>
                 <a
@@ -212,7 +214,7 @@ const CourseListHeader = ({
               size="sm"
               className="text-xs sm:text-sm"
             >
-              Login
+              {t("common.login")}
             </Button>
             <Button
               size="sm"
@@ -222,7 +224,7 @@ const CourseListHeader = ({
                 setIsDonationDialogOpen(true);
               }}
             >
-              Donate
+              {t("header.donate")}
             </Button>
           </div>
         </div>

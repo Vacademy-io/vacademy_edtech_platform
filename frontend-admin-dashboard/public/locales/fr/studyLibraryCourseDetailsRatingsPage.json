@@ -1,0 +1,11 @@
+{
+    "unknownUser": "Inconnu",
+    "title": "Notes et avis",
+    "errorMissingCourse": "Impossible de charger les notes - informations du cours manquantes",
+    "errorGeneric": "Impossible de charger les notes. Veuillez réessayer plus tard.",
+    "notAvailable": "N/A",
+    "reviewsCount_one": "{{count}} avis",
+    "reviewsCount_many": "{{count}} avis",
+    "reviewsCount_other": "{{count}} avis",
+    "noReviewsYet": "Aucun avis pour le moment"
+}

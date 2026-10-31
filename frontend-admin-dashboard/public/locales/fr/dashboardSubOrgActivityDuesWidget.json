@@ -1,0 +1,13 @@
+{
+    "heading": "Mon forfait et mes échéances",
+    "planPayment": {
+        "label": "Paiement du forfait",
+        "of": "sur {{amount}}",
+        "percentPaid": "{{percent}} % payé"
+    },
+    "dues": {
+        "outstanding": "Impayé",
+        "pendingInstallments": "Échéances en attente",
+        "nextDue": "Prochaine échéance"
+    }
+}

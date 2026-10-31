@@ -1,0 +1,35 @@
+{
+    "header": {
+        "title": "Available Fields",
+        "count_one": "{{count}} field available",
+        "count_other": "{{count}} fields available"
+    },
+    "instructions": {
+        "label": "Instructions:",
+        "text": "Drag fields from this panel onto the PDF template to position them where you want the data to appear on the certificate."
+    },
+    "sections": {
+        "systemFields": "System Fields",
+        "csvFields": "CSV Data Fields",
+        "fieldCount": "({{count}})"
+    },
+    "noCsvFields": {
+        "title": "No CSV Fields Available",
+        "description": "Upload a CSV file in Step 1 to see additional fields for mapping"
+    },
+    "legend": {
+        "title": "Field Types",
+        "systemFields": "System Fields - Built-in student data",
+        "csvFields": "CSV Fields - Custom data from uploaded file"
+    },
+    "fields": {
+        "userId": { "label": "User ID", "sample": "USR001" },
+        "enrollmentNumber": { "label": "Enrollment Number", "sample": "ENR2024001" },
+        "studentName": { "label": "Student Name", "sample": "John Doe" },
+        "fullName": { "label": "Full Name", "sample": "John Michael Doe" },
+        "email": { "label": "Email Address", "sample": "john.doe@example.com" },
+        "mobileNumber": { "label": "Mobile Number", "sample": "+1 (555) 123-4567" },
+        "instituteName": { "label": "Institute Name", "sample": "University of Technology" },
+        "completionDate": { "label": "Completion Date" }
+    }
+}

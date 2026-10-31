@@ -1,3 +1,4 @@
+import i18next from 'i18next';
 import { PaymentPlans } from '@/types/payment';
 
 export interface FreePlanInfo {
@@ -73,10 +74,10 @@ export const getApprovalToggleMessage = (
 
     const restrictions = getFreePlanRestrictions(existingFreePlans);
     if (restrictions.existingApprovalPlans > 0) {
-        return 'Approval is disabled because you already have a free plan with approval. This plan will be created without approval.';
+        return i18next.t('settingsApprovalToggle:message.approvalDisabled');
     }
     if (restrictions.existingNonApprovalPlans > 0) {
-        return 'Approval is required because you already have a free plan without approval. This plan will be created with approval.';
+        return i18next.t('settingsApprovalToggle:message.approvalRequired');
     }
     return null;
 };

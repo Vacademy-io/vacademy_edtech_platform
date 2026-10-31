@@ -1,0 +1,92 @@
+{
+    "logo": {
+        "label": "Logo",
+        "alt": "Logo",
+        "ariaLabel": "Upload logo",
+        "upload": "Upload Logo",
+        "uploading": "Uploading...",
+        "uploadSuccess": "Logo uploaded successfully",
+        "uploadNoFileId": "Upload did not return a file ID",
+        "uploadFailed": "Failed to upload logo"
+    },
+    "validation": {
+        "nameRequired": "Name is required",
+        "seatRequired": "At least 1 seat required",
+        "validityRequired": "Validity must be at least 1 day",
+        "roleNameRequired": "Role name is required",
+        "selectPackageSession": "Select at least one package session",
+        "selectCpo": "Please select a fee structure (CPO) for the {{subOrgTerm}} subscription",
+        "selectPaymentOption": "Please select a payment option for the {{subOrgTerm}} admin"
+    },
+    "toast": {
+        "createdWithSubscription": "{{subOrgTerm}} created with subscription",
+        "inviteCode": "Invite code: {{code}}",
+        "createFailed": "Failed to create sub-organization",
+        "createdSuccessfully": "{{subOrgTerm}} created successfully",
+        "roleCreated": "Role created successfully",
+        "roleCreateFailed": "Failed to create role"
+    },
+    "common": {
+        "cancel": "Cancel",
+        "next": "Next",
+        "back": "Back"
+    },
+    "step1": {
+        "title": "Create {{subOrgTerm}}",
+        "description": "Step 1 of 3: {{subOrgTerm}} details",
+        "nameLabel": "Name",
+        "namePlaceholder": "{{subOrgTerm}} Name"
+    },
+    "step2": {
+        "title": "Select Package Sessions",
+        "description": "Step 2 of 3: Choose courses to assign",
+        "loading": "Loading package sessions...",
+        "empty": "No package sessions found.",
+        "selectedCount_one": "{{count}} session selected",
+        "selectedCount_other": "{{count}} sessions selected",
+        "skip": "Skip (No Subscription)"
+    },
+    "step3": {
+        "title": "Pricing & Seats",
+        "description": "Step 3 of 3: Configure pricing and seat limits",
+        "paymentTypeLabel": "Payment Type",
+        "paymentTypeFree": "Free",
+        "paymentTypeOneTime": "One-Time",
+        "paymentTypeSubscription": "Subscription",
+        "paymentTypeCpo": "CPO (Custom Fee Structure)",
+        "cpoLabel": "Fee Structure (CPO) *",
+        "cpoDescription": "The admin who joins via this invite pays the CPO installments. Learners ride free under the scoped invites.",
+        "cpoLoading": "Loading fee structures...",
+        "cpoEmpty": "No active fee structures found",
+        "cpoPlaceholder": "Select a fee structure",
+        "paymentOptionLabel": "Payment Option *",
+        "paymentOptionDescription": "The {{subOrgTerm}} admin pays via this existing institute payment option. Price & currency come from the option's plan.",
+        "paymentOptionLoading": "Loading payment options...",
+        "paymentOptionEmpty": "No active option found",
+        "paymentOptionPlaceholder": "Select a payment option",
+        "paymentOptionNoneWarning": "No active {{type}} payment option found. Create one in Payment Settings first.",
+        "vendorLabel": "Payment Vendor",
+        "vendorNoneConfigured": "No payment vendor configured. Please link a payment vendor in Settings first.",
+        "vendorPlaceholder": "Select payment vendor",
+        "adminRolesLabel": "Admin Roles (auth service)",
+        "adminRolesDescription": "Roles assigned to users who join via this invite",
+        "addNewRole": "Add New",
+        "roleNamePlaceholder": "Enter role name",
+        "createRole": "Create",
+        "noRolesFound": "No roles found",
+        "allowedTeamRolesLabel": "Allowed team roles",
+        "allowedTeamRolesDescription": "Roles the {{subOrgTerm}} admin can pick when adding their own team members. Leave empty to allow any custom role.",
+        "adminPermissionsLabel": "Admin permissions",
+        "adminPermissionsDescription": "What the {{subOrgTerm}} admin can do. Leave empty to grant FULL access (default).",
+        "seatLimitLabel": "Seat Limit",
+        "seatLimitPlaceholder": "10",
+        "validityLabel": "Validity (Days)",
+        "validityPlaceholder": "365",
+        "summaryTitle": "Summary",
+        "summaryOrganization": "Organization: {{name}}",
+        "summaryPackageSessions_one": "Package Sessions: {{count}} selected",
+        "summaryPackageSessions_other": "Package Sessions: {{count}} selected",
+        "summaryPayment": "Payment: {{type}} | Seats: {{seats}} | Validity: {{days}} days",
+        "submit": "Create {{subOrgTerm}}"
+    }
+}

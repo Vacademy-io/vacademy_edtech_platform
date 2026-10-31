@@ -1,0 +1,46 @@
+{
+    "navHeading": "People",
+    "heading": "Staff coverage",
+    "subheading": "Everyone on your team, and whether they have an HR profile. Creating one here reuses their existing account — no new user, no invitation.",
+    "allEmployees": "All employees",
+    "stats": {
+        "teamMembers": "Team members",
+        "withHrProfile": "With an HR profile",
+        "coveredPercent": "{{percent}}% covered",
+        "teachingNoProfile": "Teaching, no profile",
+        "paidButInvisible": "These people are paid but invisible to payroll",
+        "everyTeacherCovered": "Every teacher is covered"
+    },
+    "searchPlaceholder": "Search by name or email",
+    "clearFilters": "Clear filters",
+    "errors": {
+        "load": "Couldn't load staff coverage."
+    },
+    "empty": {
+        "noMatchTitle": "Nobody matches this search",
+        "noneTitle": "No team members found",
+        "noMatchDescription": "Try a different name, or clear the role filter.",
+        "noneDescription": "Invite people to your institute from Manage institute → Teams, then come back to give them HR profiles."
+    },
+    "table": {
+        "name": "Name",
+        "email": "Email",
+        "roles": "Roles",
+        "teaches": "Teaches",
+        "hrProfile": "HR profile",
+        "role": "Role"
+    },
+    "teamMember": "Team member",
+    "yes": "Yes",
+    "no": "No",
+    "viewProfile": "View profile",
+    "noneYet": "None yet",
+    "createHrProfile": "Create HR profile",
+    "roles": {
+        "admin": "Admin",
+        "teacher": "Teacher",
+        "evaluator": "Evaluator",
+        "contentCreator": "Content creator",
+        "assessmentCreator": "Assessment creator"
+    }
+}

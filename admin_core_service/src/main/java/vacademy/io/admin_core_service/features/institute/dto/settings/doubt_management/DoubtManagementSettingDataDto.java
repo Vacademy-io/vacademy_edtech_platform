@@ -69,6 +69,43 @@ public class DoubtManagementSettingDataDto {
      */
     private SubOrgNotificationPrefs subOrgNotifications;
 
+    /**
+     * Configurable workflow statuses for the admin/teacher side (Pending, In progress, Escalated,
+     * Waiting on learner, Resolved, …). {@code null}/empty ⇒ just the two built-ins, PENDING and
+     * RESOLVED, which are always present regardless of what is stored. See
+     * {@link vacademy.io.admin_core_service.features.doubts.service.DoubtStatusCatalog}.
+     */
+    private List<WorkflowStatusConfig> statuses;
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class WorkflowStatusConfig {
+        /** Stable key persisted on doubts.workflow_status (e.g. IN_PROGRESS). Never renamed. */
+        private String key;
+        /** Internal label shown to admins and teachers. */
+        private String label;
+        /**
+         * What the LEARNER sees for this status. Optional — falls back to {@link #label}. Lets an
+         * internal "Escalated to HOD" read as "Being looked into" on the learner side.
+         */
+        private String learnerLabel;
+        /**
+         * One of {@link vacademy.io.admin_core_service.features.doubts.enums.DoubtStatusKindEnum}
+         * as a string: OPEN | IN_PROGRESS | RESOLVED. Drives the coarse doubts.status column
+         * (RESOLVED kind ⇒ status RESOLVED, else ACTIVE) and the learner-side tone.
+         */
+        private String kind;
+        /** Optional hex colour for the admin board column / chip. */
+        private String color;
+        /** When false, hidden from pickers (kept for historical rows). Default true. */
+        private Boolean enabled;
+        /** PENDING and RESOLVED — cannot be deleted from the admin UI. */
+        private Boolean isSystem;
+    }
+
     @Data
     @Builder
     @AllArgsConstructor

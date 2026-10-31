@@ -1,0 +1,7 @@
+{
+    "dialog": {
+        "heading": "Fermer la soumission",
+        "confirmMessage": "Voulez-vous vraiment fermer la soumission pour <highlight>{{name}}</highlight> ?"
+    },
+    "doneButton": "Terminé"
+}

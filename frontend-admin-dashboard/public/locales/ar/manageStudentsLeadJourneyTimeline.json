@@ -1,0 +1,100 @@
+{
+    "actionConfig": {
+        "leadSubmitted": "تم تقديم العميل المحتمل",
+        "counselorAssigned": "تم تعيين المستشار",
+        "statusChanged": "تم تغيير الحالة",
+        "scoreUpdated": "تم تحديث النقاط",
+        "manualScoreUpdate": "تحديث يدوي للنقاط",
+        "followup": "متابعة",
+        "reachout": "تواصل",
+        "leadConverted": "تم التحويل",
+        "leadLost": "عميل محتمل مفقود",
+        "duplicateMerged": "تم دمج التكرار",
+        "paymentReceived": "تم استلام الدفعة",
+        "enrollmentCompleted": "تم التسجيل",
+        "note": "ملاحظة",
+        "call": "مكالمة",
+        "callMade": "مكالمة صادرة",
+        "walkInNote": "ملاحظة زيارة شخصية",
+        "followupScheduled": "تمت جدولة المتابعة",
+        "statusChange": "تم تغيير الحالة",
+        "fallback": "حدث",
+        "reEnquiry": "تواصل مجددًا",
+        "reattempt": "محاولة جديدة"
+    },
+    "statusChangeMeta": {
+        "previous": "السابق"
+    },
+    "counselorMeta": {
+        "unknown": "غير معروف",
+        "autoPool": "تلقائي (مجموعة)",
+        "manual": "يدوي"
+    },
+    "callStatus": {
+        "connected": "متصل",
+        "noAnswer": "لا يوجد رد",
+        "busy": "مشغول",
+        "failed": "فشل",
+        "cancelled": "ملغى",
+        "inProgress": "قيد التنفيذ",
+        "ringing": "يرن",
+        "queued": "في الانتظار"
+    },
+    "callOutcome": {
+        "connected": "متصل",
+        "noAnswer": "لا يوجد رد",
+        "busy": "مشغول",
+        "leftVoicemail": "تم ترك رسالة صوتية",
+        "callBackLater": "معاودة الاتصال لاحقًا",
+        "notReachable": "غير قابل للوصول",
+        "switchedOff": "الهاتف مغلق",
+        "wrongNumber": "رقم خاطئ",
+        "interested": "مهتم",
+        "notInterested": "غير مهتم",
+        "followUpScheduled": "تمت جدولة المتابعة",
+        "demoScheduled": "تمت جدولة العرض التجريبي",
+        "converted": "تم التحويل",
+        "doNotCall": "عدم الاتصال"
+    },
+    "duration": {
+        "zero": "٠ث",
+        "secondsOnly_zero": "{{count}} ثانية",
+        "secondsOnly_one": "{{count}} ثانية واحدة",
+        "secondsOnly_two": "{{count}} ثانيتان",
+        "secondsOnly_few": "{{count}} ثوانٍ",
+        "secondsOnly_many": "{{count}} ثانية",
+        "secondsOnly_other": "{{count}} ثانية",
+        "minutesSeconds": "{{minutes}}د {{seconds}}ث"
+    },
+    "callRecording": {
+        "from": "· من {{caller}}",
+        "download": "تنزيل",
+        "loading": "جارٍ التحميل…",
+        "playRecording": "تشغيل التسجيل",
+        "addNote": "إضافة ملاحظة"
+    },
+    "emptyState": {
+        "title": "لا توجد أحداث بعد",
+        "description": "تظهر الأحداث هنا مع تقدم العميل المحتمل — عمليات التقديم والنقاط والملاحظات والمزيد"
+    },
+    "noProfileLinked": "لا يوجد ملف عميل محتمل مرتبط",
+    "errorState": {
+        "title": "فشل تحميل الأحداث",
+        "retry": "إعادة المحاولة"
+    },
+    "eventRow": {
+        "byPrefix": "بواسطة",
+        "system": "النظام",
+        "activity": "نشاط"
+    },
+    "pagination": {
+        "pageOf": "{{current}} / {{total}}",
+        "prev": "السابق",
+        "next": "التالي"
+    },
+    "header": {
+        "title": "رحلة العميل المحتمل",
+        "refresh": "تحديث",
+        "refreshAria": "تحديث أحداث الرحلة"
+    }
+}

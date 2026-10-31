@@ -1,16 +1,23 @@
 import React, { useEffect, useState } from "react";
 import { Star, BookOpen } from "@phosphor-icons/react";
 import { useRouter } from "@tanstack/react-router";
+import { useTranslation } from "react-i18next";
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 import { toTitleCase } from "@/lib/utils";
 import { ContentTerms, RoleTerms, SystemTerms } from "@/types/naming-settings";
 import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
 import { Button } from "@/components/ui/button";
+import { authorRole, sharedAuthorRole } from "@/lib/course-author-role";
 
 interface Instructor {
     id: string;
     full_name: string;
     image_url?: string;
+    profile_pic_file_id?: string | null;
+    author_subtitle?: string;
+    author_description?: string;
+    /** Display role in this course (Author / Instructor / Acharya …). */
+    role_label?: string | null;
 }
 
 interface CourseCardProps {
@@ -43,12 +50,14 @@ const CourseCard: React.FC<CourseCardProps> = ({
     previewImageUrl,
 }) => {
     const router = useRouter();
+    const { t } = useTranslation("coursesRouteA");
     const [courseImageUrl, setCourseImageUrl] = useState("");
     const [loadingImage, setLoadingImage] = useState(true);
+    const [instructorImageUrl, setInstructorImageUrl] = useState("");
 
     const instructor = instructors[0];
-    const instructorName = instructor?.full_name || "Unknown Instructor";
-    const instructorImage = instructor?.image_url || fallbackInstructorImage;
+    const instructorName = instructor?.full_name || t("common.unknownInstructor");
+    const instructorImage = instructorImageUrl || fallbackInstructorImage;
 
     const ratingValue = rating || 0;
 
@@ -77,6 +86,33 @@ const CourseCard: React.FC<CourseCardProps> = ({
     useEffect(() => {
         loadImage();
     }, [courseImageUrl]);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const loadInstructorImage = async () => {
+            if (instructor?.image_url) {
+                if (isMounted) setInstructorImageUrl(instructor.image_url);
+                return;
+            }
+            if (!instructor?.profile_pic_file_id) {
+                if (isMounted) setInstructorImageUrl("");
+                return;
+            }
+
+            try {
+                const url = await getPublicUrlWithoutLogin(instructor.profile_pic_file_id);
+                if (isMounted) setInstructorImageUrl(url || "");
+            } catch {
+                if (isMounted) setInstructorImageUrl("");
+            }
+        };
+
+        void loadInstructorImage();
+        return () => {
+            isMounted = false;
+        };
+    }, [instructor?.image_url, instructor?.profile_pic_file_id]);
 
     const getLevelColor = () => {
         switch (level_name.toLowerCase()) {
@@ -145,11 +181,11 @@ const CourseCard: React.FC<CourseCardProps> = ({
                             alt={instructorName}
                             className="w-6 h-6 sm:w-8 sm:h-8 rounded-full me-2 object-cover"
                         />
-                        <div className="min-w-0 flex-1">
-                            <p className="text-xs text-gray-500 font-medium uppercase tracking-wider mb-1">
-                                {getTerminology(
-                                    RoleTerms.Teacher,
-                                    SystemTerms.Teacher
+                        <div className="min-w-0 flex-1 space-y-1">
+                            <p className="text-xs text-gray-500 font-medium uppercase tracking-wider">
+                                {sharedAuthorRole(
+                                    instructors.map(authorRole),
+                                    getTerminology(RoleTerms.Teacher, SystemTerms.Teacher)
                                 )}
                             </p>
                             <div className="text-xs sm:text-sm font-semibold text-gray-800 truncate">
@@ -162,6 +198,11 @@ const CourseCard: React.FC<CourseCardProps> = ({
                                     </span>
                                 ))}
                             </div>
+                            {instructor?.author_subtitle && (
+                                <p className="text-[11px] sm:text-xs text-gray-500 truncate">
+                                    {instructor.author_subtitle}
+                                </p>
+                            )}
                         </div>
                     </div>
                 )}
@@ -179,13 +220,13 @@ const CourseCard: React.FC<CourseCardProps> = ({
                             ))}
                             {tags && tags.length > 3 && (
                                 <span className="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded-full inline-block">
-                                    + {tags.length - 3} more
+                                    {t("courseCard.moreTags", { count: tags.length - 3 })}
                                 </span>
                             )}
                         </div>
                     ) : (
                         <span className="text-xs text-gray-400 italic">
-                            No tags available
+                            {t("courseCard.noTagsAvailable")}
                         </span>
                     )}
                 </div>
@@ -222,8 +263,9 @@ const CourseCard: React.FC<CourseCardProps> = ({
                     onClick={handleViewCoureseDetails}
                     className="w-full py-2 sm:py-2.5 text-sm sm:text-base"
                 >
-                    View{" "}
-                    {getTerminology(ContentTerms.Course, SystemTerms.Course)}
+                    {t("courseCard.viewButton", {
+                        course: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                    })}
                 </Button>
             </div>
         </div>

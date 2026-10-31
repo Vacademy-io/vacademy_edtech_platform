@@ -1,5 +1,8 @@
 import { useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
+import i18next from 'i18next';
+import type { TFunction } from 'i18next';
 import { FileArrowUp, FilePdf, UploadSimple, WarningCircle, X } from '@phosphor-icons/react';
 import { FileUploadComponent } from '@/components/design-system/file-upload';
 import { MyButton } from '@/components/design-system/button';
@@ -15,21 +18,21 @@ interface SlotConfig {
 // The three artifacts a pen-and-paper exam leaves behind. Each one lands in a
 // different place on the attempt (see attachOfflineFiles), so they are collected
 // separately rather than as one generic "attachments" list.
-const SLOTS: SlotConfig[] = [
+const buildSlots = (t: TFunction): SlotConfig[] => [
     {
         slot: 'student',
-        label: "Student's answer sheet",
-        hint: "The scan of what the student wrote. Shown as their submitted response.",
+        label: t('slots.student.label'),
+        hint: t('slots.student.hint'),
     },
     {
         slot: 'checked',
-        label: 'Checked answer sheet',
-        hint: 'The evaluated copy with your marks and remarks. Shown to the student with their result.',
+        label: t('slots.checked.label'),
+        hint: t('slots.checked.hint'),
     },
     {
         slot: 'report',
-        label: 'Report',
-        hint: 'An optional result report you prepared outside the platform.',
+        label: t('slots.report.label'),
+        hint: t('slots.report.hint'),
     },
 ];
 
@@ -49,10 +52,14 @@ const isAcceptedPdf = (file: File): boolean =>
 
 const describeRejection = (file: File): string | null => {
     if (!isAcceptedPdf(file)) {
-        return `"${file.name}" is not a PDF. Scans must be uploaded as PDF files.`;
+        return i18next.t('assessmentOfflineAttachmentsPanel:rejections.notPdf', {
+            fileName: file.name,
+        });
     }
     if (file.size === 0) {
-        return `"${file.name}" is empty (0 bytes). Re-export it and try again.`;
+        return i18next.t('assessmentOfflineAttachmentsPanel:rejections.emptyFile', {
+            fileName: file.name,
+        });
     }
     return null;
 };
@@ -74,6 +81,8 @@ export const OfflineAttachmentsPanel = ({
     disabled = false,
     error = null,
 }: OfflineAttachmentsPanelProps) => {
+    const { t } = useTranslation('assessmentOfflineAttachmentsPanel');
+    const slots = buildSlots(t);
     const [rejections, setRejections] = useState<Partial<Record<AttachmentSlot, string>>>({});
     const form = useForm<AttachmentsForm>({
         defaultValues: { student: null, checked: null, report: null },
@@ -112,21 +121,21 @@ export const OfflineAttachmentsPanel = ({
         onChange(next);
     };
 
-    const attachedCount = SLOTS.filter(({ slot }) => files[slot]).length;
+    const attachedCount = slots.filter(({ slot }) => files[slot]).length;
 
     return (
         <section className="rounded-lg border border-neutral-200 bg-white p-4">
             <div className="mb-1 flex flex-wrap items-center gap-2">
                 <FilePdf className="size-5 text-primary-500" />
-                <h2 className="text-subtitle font-semibold text-neutral-700">Attachments</h2>
+                <h2 className="text-subtitle font-semibold text-neutral-700">{t('header.title')}</h2>
                 <span className="text-caption text-neutral-400">
-                    Optional&nbsp;&middot;&nbsp;PDF only
-                    {attachedCount > 0 ? ` · ${attachedCount} of 3 selected` : ''}
+                    {t('header.optionalPdfOnly')}
+                    {attachedCount > 0
+                        ? ` ${t('header.selectedCount', { count: attachedCount })}`
+                        : ''}
                 </span>
             </div>
-            <p className="mb-4 text-caption text-neutral-500">
-                Uploaded when you submit this entry.
-            </p>
+            <p className="mb-4 text-caption text-neutral-500">{t('description')}</p>
 
             {error && (
                 <div
@@ -140,7 +149,7 @@ export const OfflineAttachmentsPanel = ({
 
             <Form {...form}>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {SLOTS.map(({ slot, label, hint }) => {
+                    {slots.map(({ slot, label, hint }) => {
                         const file = files[slot];
                         const rejection = rejections[slot];
                         return (
@@ -176,7 +185,7 @@ export const OfflineAttachmentsPanel = ({
                                                 layoutVariant="icon"
                                                 type="button"
                                                 disable={disabled}
-                                                aria-label={`Remove ${label}`}
+                                                aria-label={t('removeAria', { label })}
                                                 // Stop the dropzone (the parent) from
                                                 // re-opening the file picker on remove.
                                                 onClick={(e) => {
@@ -191,7 +200,7 @@ export const OfflineAttachmentsPanel = ({
                                         <div className="flex flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-neutral-300 p-6 text-center hover:border-primary-300">
                                             <UploadSimple className="size-6 text-neutral-400" />
                                             <p className="text-caption font-medium text-neutral-700">
-                                                Click to upload or drag &amp; drop
+                                                {t('dropzone.uploadPrompt')}
                                             </p>
                                         </div>
                                     )}

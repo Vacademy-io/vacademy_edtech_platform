@@ -149,13 +149,24 @@ public class AssessmentReattemptRequestManager {
                 .map(this::enrich);
     }
 
-    /** Drives the inbox badge — the admin's "you have requests waiting" signal. */
-    public long pendingCount(String instituteId) {
+    /**
+     * Drives the inbox badge — the admin's "you have requests waiting" signal.
+     *
+     * {@code assessmentId} is optional and must be passed by anything showing the badge next to
+     * one assessment's inbox: the institute-wide count is the same number on every assessment
+     * page, so an unscoped badge reads as "this exam has a request" when the request is someone
+     * else's exam entirely, and the tab it points at then renders empty.
+     */
+    public long pendingCount(String instituteId, String assessmentId) {
         if (instituteId == null || instituteId.isBlank()) {
             throw new VacademyException("instituteId is required");
         }
-        return reattemptRequestRepository.countByInstituteIdAndStatus(instituteId,
-                AssessmentReattemptRequest.STATUS_PENDING);
+        if (assessmentId == null || assessmentId.isBlank()) {
+            return reattemptRequestRepository.countByInstituteIdAndStatus(instituteId,
+                    AssessmentReattemptRequest.STATUS_PENDING);
+        }
+        return reattemptRequestRepository.countByInstituteIdAndAssessmentIdAndStatus(instituteId,
+                assessmentId, AssessmentReattemptRequest.STATUS_PENDING);
     }
 
     @Transactional

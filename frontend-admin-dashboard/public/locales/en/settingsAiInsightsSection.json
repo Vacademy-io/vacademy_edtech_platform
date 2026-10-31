@@ -1,0 +1,15 @@
+{
+    "title": "Learner Insights",
+    "description": "Show the AI report generated for each learner attempt — performance summary, topic breakdown, misconceptions and next steps. Reports are produced hourly from activity that has already been recorded; this changes who can see them, not whether they are generated. Learners see their own under My Reports whenever the canViewReports permission lets them open that section — there is no separate switch.",
+    "adminActivityToggle": {
+        "label": "Show in admin activity log",
+        "hint": "Adds an AI Insights panel to the activity-log dialog when staff open a learner's quiz, question or assignment attempt."
+    },
+    "reviewNotice": "These reports are written by AI from recorded activity. Review one before passing it on to a learner or guardian.",
+    "saving": "Saving…",
+    "save": "Save",
+    "toasts": {
+        "saveSuccess": "AI insights settings saved",
+        "saveError": "Could not save AI insights settings"
+    }
+}

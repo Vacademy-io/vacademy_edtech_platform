@@ -1,0 +1,25 @@
+{
+    "heading": "Nouvelle période de paie",
+    "actions": {
+        "cancel": "Annuler",
+        "creating": "Création…",
+        "createRun": "Créer la période"
+    },
+    "fields": {
+        "payrollMonth": "Mois de paie",
+        "monthHint": "Créer la période ne calcule encore rien — vous la traitez à l'étape suivante.",
+        "runType": "Type de période",
+        "notes": "Notes",
+        "notesOptional": "(facultatif)",
+        "notesPlaceholder": "Pourquoi cette période existe — ex. prime de Diwali approuvée par le conseil le 12 oct."
+    },
+    "runTypes": {
+        "regular": "Tous les employés durant le mois — la paie mensuelle normale.",
+        "offCycle": "Seulement les employés ayant un ajustement hors cycle en attente pour le mois.",
+        "fnf": "Seulement les employés quittant durant le mois — règle leur solde final.",
+        "bonus": "Seulement les employés ayant un ajustement de prime en attente pour le mois."
+    },
+    "toast": {
+        "created": "Période de paie créée. Traitez-la lorsque vous êtes prêt à calculer les salaires."
+    }
+}

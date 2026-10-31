@@ -32,5 +32,20 @@
     },
     "common": {
         "loading": "Loading..."
+    },
+    "aiUsageLimit": {
+        "title": "AI usage limit reached",
+        "featureFallback": "AI",
+        "reachedDay": "You've used today's {{feature}} allowance.",
+        "reachedWeek": "You've used this week's {{feature}} allowance.",
+        "reachedMonth": "You've used this month's {{feature}} allowance.",
+        "reachedPlanPeriod": "You've used your {{feature}} allowance for this plan period.",
+        "reached": "You've reached your {{feature}} usage limit.",
+        "numbersCredits": "{{used}} of {{limit}} credits used.",
+        "numbersRequests": "{{used}} of {{limit}} requests used.",
+        "numbersUsd": "{{used}} of {{limit}} used.",
+        "resetsAt": "You can use it again after {{when}}, or ask your teacher.",
+        "tryLater": "Try again later, or ask your teacher.",
+        "warning": "You're close to your AI usage allowance."
     }
 }

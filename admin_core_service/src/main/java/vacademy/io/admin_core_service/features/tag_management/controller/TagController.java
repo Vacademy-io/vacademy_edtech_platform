@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.tag_management.dto.*;
 import vacademy.io.admin_core_service.features.tag_management.service.CsvTagService;
 import vacademy.io.admin_core_service.features.tag_management.service.TagService;
@@ -31,6 +32,11 @@ public class TagController {
      * Create a new tag for institute
      */
     @PostMapping("/institutes/{instituteId}/tags")
+    @Auditable(
+            entityType = "TAG",
+            action = "CREATE",
+            entityIdExpr = "#result?.body?.id",
+            descriptionExpr = "'created tag ' + (#createTagDTO?.tagName ?: '')")
     public ResponseEntity<TagDTO> createTag(
             @PathVariable String instituteId,
             @Valid @RequestBody CreateTagDTO createTagDTO,
@@ -85,6 +91,11 @@ public class TagController {
      * Delete a tag (mark as inactive) - only non-default tags
      */
     @DeleteMapping("/institutes/{instituteId}/tags/{tagId}")
+    @Auditable(
+            entityType = "TAG",
+            action = "DELETE",
+            entityIdExpr = "#tagId",
+            descriptionExpr = "'deleted a tag'")
     public ResponseEntity<String> deleteTag(
             @PathVariable String instituteId,
             @PathVariable String tagId,
@@ -158,6 +169,10 @@ public class TagController {
      * Add tags to users
      */
     @PostMapping("/institutes/{instituteId}/users/tags/add")
+    @Auditable(
+            entityType = "TAG",
+            action = "TAG_USERS",
+            descriptionExpr = "'tagged ' + (#result?.body?.successCount ?: 0) + ' contact(s)'")
     public ResponseEntity<BulkUserTagOperationResultDTO> addTagsToUsers(
             @PathVariable String instituteId,
             @Valid @RequestBody AddTagsToUsersDTO request,
@@ -175,6 +190,11 @@ public class TagController {
      * Add single tag to multiple users
      */
     @PostMapping("/institutes/{instituteId}/tags/{tagId}/users/add")
+    @Auditable(
+            entityType = "TAG",
+            action = "TAG_USERS",
+            entityIdExpr = "#tagId",
+            descriptionExpr = "'tagged ' + (#result?.body?.successCount ?: 0) + ' contact(s)'")
     public ResponseEntity<BulkUserTagOperationResultDTO> addTagToUsers(
             @PathVariable String instituteId,
             @PathVariable String tagId,
@@ -193,6 +213,10 @@ public class TagController {
      * Add tag by name to multiple users (auto-creates tag if it doesn't exist)
      */
     @PostMapping("/institutes/{instituteId}/tags/by-name/{tagName}/users/add")
+    @Auditable(
+            entityType = "TAG",
+            action = "TAG_USERS",
+            descriptionExpr = "'tagged ' + (#result?.body?.successCount ?: 0) + ' contact(s) with ' + #tagName")
     public ResponseEntity<BulkUserTagOperationResultDTO> addTagByNameToUsers(
             @PathVariable String instituteId,
             @PathVariable String tagName,
@@ -211,6 +235,10 @@ public class TagController {
      * Deactivate user tags for specific users
      */
     @PostMapping("/institutes/{instituteId}/users/tags/deactivate")
+    @Auditable(
+            entityType = "TAG",
+            action = "UNTAG_USERS",
+            descriptionExpr = "'removed tags from ' + (#result?.body?.successCount ?: 0) + ' contact(s)'")
     public ResponseEntity<BulkUserTagOperationResultDTO> deactivateUserTags(
             @PathVariable String instituteId,
             @RequestParam List<String> userIds,

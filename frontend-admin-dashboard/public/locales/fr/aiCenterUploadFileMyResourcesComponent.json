@@ -1,0 +1,12 @@
+{
+    "trigger": {
+        "uploadButton": "Téléverser"
+    },
+    "dialog": {
+        "title": "Téléverser un fichier",
+        "uploadButton": "Téléverser un PDF/DOCX/PPT"
+    },
+    "toast": {
+        "success": "Fichier téléversé avec succès !"
+    }
+}

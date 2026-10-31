@@ -19,6 +19,7 @@ import { useCrossPageSelection } from '@/hooks/use-cross-page-selection';
 import { reportApiError } from '@/lib/report-api-error';
 import { MyButton } from '@/components/design-system/button';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { StudentListHeader } from '@/routes/manage-students/students-list/-components/students-list/student-list-section/student-list-header';
 import { DropdownItemType } from '@/components/common/students/enroll-manually/dropdownTypesForPackageItems';
@@ -198,8 +199,9 @@ const Students = ({
         staleTime: 1000 * 60 * 5,
     });
 
+    const { t: tAllFilters } = useTranslation('manageStudentsAllFilters');
     const filters = [
-        ...GetFilterData(instituteDetails, currentSession?.id).filter(
+        ...GetFilterData(tAllFilters, instituteDetails, currentSession?.id).filter(
             (filter) => filter.id !== 'batch'
         ),
         ...(invitesForFilter && invitesForFilter.length > 0

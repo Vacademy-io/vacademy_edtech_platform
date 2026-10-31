@@ -1,0 +1,106 @@
+{
+    "trigger": "Modifier les informations",
+    "dialogHeading": "Modifier le profil {{term}}",
+    "discardConfirm": "Abandonner les modifications non enregistrées ?",
+    "unsavedChanges": "Modifications non enregistrées",
+    "allChangesSaved": "Toutes les modifications sont enregistrées",
+    "cancel": "Annuler",
+    "saving": "Enregistrement...",
+    "saveChanges": "Enregistrer les modifications",
+    "noStudentFound": "Aucun étudiant trouvé",
+    "validation": {
+        "required": "Ce champ est obligatoire",
+        "invalidEmail": "Adresse e-mail invalide",
+        "invalidEmailShort": "E-mail invalide"
+    },
+    "sections": {
+        "photo": {
+            "title": "Photo de profil",
+            "helper": "Image carrée, au moins 200×200. Max 5 Mo."
+        },
+        "identity": {
+            "title": "Identité",
+            "helper": "Son nom et ses informations de base."
+        },
+        "contact": {
+            "title": "Contact",
+            "helper": "Principaux moyens de le/la joindre."
+        },
+        "address": {
+            "title": "Adresse",
+            "helper": "Où il/elle habite."
+        },
+        "institute": {
+            "title": "Établissement",
+            "helper": "Son établissement d'études principal."
+        },
+        "family": {
+            "title": "Famille",
+            "helper": "Tuteurs et contacts d'urgence."
+        },
+        "custom": {
+            "title": "Informations complémentaires",
+            "helper": "Champs personnalisés configurés pour votre établissement."
+        }
+    },
+    "subgroups": {
+        "father": "Père / Tuteur",
+        "mother": "Mère / Tutrice"
+    },
+    "photo": {
+        "alt": "Profil",
+        "upload": "Importer",
+        "replace": "Remplacer",
+        "remove": "Supprimer"
+    },
+    "fields": {
+        "fullName": {
+            "label": "Nom complet",
+            "placeholder": "ex. Himang Sharma"
+        },
+        "gender": {
+            "label": "Genre",
+            "placeholder": "Sélectionner le genre"
+        },
+        "email": {
+            "label": "E-mail",
+            "placeholder": "name@example.com"
+        },
+        "mobile": {
+            "label": "Numéro de mobile",
+            "placeholder": "123 456 7890"
+        },
+        "addressLine": {
+            "label": "Adresse",
+            "placeholder": "Maison / rue / quartier"
+        },
+        "city": {
+            "label": "Ville",
+            "placeholder": "Ville"
+        },
+        "state": {
+            "label": "État / Région",
+            "placeholder": "État / Région"
+        },
+        "pincode": {
+            "label": "Code postal",
+            "placeholder": "ex. 425562"
+        },
+        "instituteName": {
+            "label": "Nom de l'établissement",
+            "placeholder": "École / Collège / Établissement"
+        },
+        "fatherName": {
+            "label": "Nom",
+            "placeholder": "Nom du père / tuteur"
+        },
+        "motherName": {
+            "label": "Nom",
+            "placeholder": "Nom de la mère / tutrice"
+        }
+    },
+    "customField": {
+        "selectPlaceholder": "Sélectionner {{name}}",
+        "enterPlaceholder": "Saisir {{name}}"
+    }
+}

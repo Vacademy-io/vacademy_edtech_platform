@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.live_session.provider.scheduler;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import vacademy.io.admin_core_service.features.live_session.entity.SessionSchedule;
@@ -31,6 +32,7 @@ public class GoogleMeetRecordingSyncProcessor {
     private final GoogleRecordingService googleRecordingService;
 
     /** Runs every hour at minute 27 (offset to avoid colliding with the Zoom/BBB jobs). */
+    @SchedulerLock(name = "GoogleMeetRecordingSync", lockAtMostFor = "PT50M", lockAtLeastFor = "PT30S")
     @Scheduled(cron = "${google.recording.sync.cron:0 27 * * * ?}")
     public void syncGoogleRecordings() {
         Date before = new Date(System.currentTimeMillis() - STALE_MILLIS);

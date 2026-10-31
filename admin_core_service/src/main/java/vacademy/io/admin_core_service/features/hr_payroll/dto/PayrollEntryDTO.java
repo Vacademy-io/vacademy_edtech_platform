@@ -35,6 +35,7 @@ public class PayrollEntryDTO {
     private BigDecimal arrears;
     private BigDecimal reimbursements;
     private BigDecimal loanDeduction;
+    private String currency;
     private String status;
     private List<PayrollEntryComponentDTO> components;
 }

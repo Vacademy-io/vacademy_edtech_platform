@@ -7,7 +7,12 @@ import {
   SpinnerGap,
   WarningCircle,
 } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import { ModernCard } from "@/components/design-system/modern-card";
+import {
+  getTerminology,
+} from "@/components/common/layout-container/sidebar/utils";
+import { RoleTerms, SystemTerms } from "@/types/naming-settings";
 import CompletionPanel from "./-components/completion-panel";
 import { getSubOrgRegistrationStatus } from "./-services/sub-org-registration-services";
 
@@ -67,6 +72,8 @@ const readStashedContext = (key: string): StashedReturnContext | null => {
  * panel (redirect / custom message / default admin-portal CTA).
  */
 function PaymentResultPage() {
+  const { t } = useTranslation("registrationB");
+  const admin = getTerminology(RoleTerms.Admin, SystemTerms.Admin).toLocaleLowerCase();
   const search = Route.useSearch();
 
   // The gateway redirect can drop our query params — recover the registration
@@ -132,16 +139,15 @@ function PaymentResultPage() {
                 <WarningCircle className="size-8 text-warning-600" />
               </div>
               <h1 className="text-xl font-semibold text-neutral-700">
-                We couldn&apos;t find your registration session
+                {t("subOrgRegistration.paymentResult.notFoundTitle")}
               </h1>
               <p className="mx-auto max-w-md text-sm text-neutral-500">
-                Don&apos;t worry — if your payment went through, your
-                organization will be registered automatically and the login
-                credentials will be emailed to the admin email you provided.
+                {t("subOrgRegistration.paymentResult.notFoundDescription", {
+                  admin,
+                })}
               </p>
               <p className="text-caption text-neutral-400">
-                If the email doesn&apos;t arrive within a few minutes, please
-                contact the institute.
+                {t("subOrgRegistration.paymentResult.notFoundEmailHint")}
               </p>
             </div>
           </ModernCard>
@@ -157,31 +163,31 @@ function PaymentResultPage() {
               <SpinnerGap className="mx-auto size-10 animate-spin text-primary-500" />
               <div className="space-y-2">
                 <h1 className="text-xl font-semibold text-neutral-700">
-                  Confirming your payment...
+                  {t("subOrgRegistration.paymentResult.waitingTitle")}
                 </h1>
                 <p className="mx-auto max-w-md text-sm text-neutral-500">
-                  This usually takes a few moments. Keep this page open — it
-                  updates automatically once the payment is confirmed.
+                  {t("subOrgRegistration.paymentResult.waitingDescription")}
                 </p>
               </div>
               {showReassurance && (
                 <div className="mx-auto flex max-w-md items-start gap-2 rounded-lg border border-neutral-200 bg-neutral-50 p-4 text-start">
                   <EnvelopeSimple className="mt-0.5 size-5 flex-shrink-0 text-primary-500" />
                   <p className="text-sm text-neutral-600">
-                    Confirmation is taking longer than usual. You can safely
-                    close this page — once the payment is confirmed, your
-                    organization will be registered and the login credentials
-                    will be emailed
+                    {t("subOrgRegistration.paymentResult.reassurancePrefix")}
                     {status?.admin_email ? (
                       <>
                         {" "}
-                        to{" "}
+                        {t("subOrgRegistration.paymentResult.reassuranceTo")}{" "}
                         <span className="font-semibold text-neutral-700">
                           {status.admin_email}
                         </span>
                       </>
                     ) : (
-                      " to the admin email you provided"
+                      " " +
+                      t(
+                        "subOrgRegistration.paymentResult.reassuranceToAdminEmail",
+                        { admin }
+                      )
                     )}
                     .
                   </p>

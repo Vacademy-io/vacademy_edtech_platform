@@ -1,0 +1,14 @@
+{
+    "copyHistory": "कॉपी इतिहास",
+    "copiedContent": "कॉपी की गई सामग्री",
+    "usedByBatches_one": "{{count}} बैच द्वारा उपयोग की गई",
+    "usedByBatches_other": "{{count}} बैचों द्वारा उपयोग की गई",
+    "showCopyHistory": "कॉपी इतिहास दिखाएं",
+    "contentBroughtInFrom": "सामग्री यहां से लाई गई थी",
+    "usedAsSourceBy": "स्रोत के रूप में उपयोग किया गया",
+    "batchCount_one": "{{count}} बैच",
+    "batchCount_other": "{{count}} बैच",
+    "linkedCopy": "लिंक की गई कॉपी",
+    "separateCopy": "अलग कॉपी",
+    "unknownBatch": "अज्ञात बैच"
+}

@@ -1,0 +1,14 @@
+{
+    "columns": {
+        "userId": "यूज़र आईडी",
+        "enrollmentId": "नामांकन आईडी",
+        "nameHeader": "{{term}} का नाम",
+        "email": "ईमेल",
+        "institute": "संस्थान",
+        "phoneNumber": "फ़ोन नंबर"
+    },
+    "downloadTemplate": "टेम्पलेट डाउनलोड करें",
+    "headerSelected": "चयनित {{term}} ({{count}})",
+    "reviewSubtitle": "{{term}} डेटा की समीक्षा करें और सीएसवी के माध्यम से डायनामिक जानकारी अपलोड करें",
+    "nextPdfAnnotation": "अगला: पीडीएफ एनोटेशन"
+}

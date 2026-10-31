@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useInstituteQuery } from '@/services/student-list-section/getInstituteDetails';
 import { GetFilterData } from '@/routes/manage-students/students-list/-constants/all-filters';
 import { MyTable, TableData } from '@/components/design-system/table';
@@ -18,7 +19,7 @@ import { SmartErrorPage } from '@/components/core/SmartErrorPage';
 import { StudentListHeader } from '@/routes/manage-students/students-list/-components/students-list/student-list-section/student-list-header';
 import { StudentFilters } from '@/routes/manage-students/students-list/-components/students-list/student-list-section/student-filters';
 import { BulkActions } from '@/routes/manage-students/students-list/-components/students-list/bulk-actions';
-import { myAssessmentColumns } from './assessment-columns';
+import { buildAssessmentColumns } from './assessment-columns';
 import { UseFormReturn } from 'react-hook-form';
 import { z } from 'zod';
 import testAccessSchema from '../-utils/add-participants-schema';
@@ -39,6 +40,8 @@ export const getCurrentSession = (): string => {
 };
 
 export const StudentListTab = ({ form }: { form: UseFormReturn<TestAccessFormType> }) => {
+    const { t } = useTranslation('assessmentColumns');
+    const assessmentColumns = useMemo(() => buildAssessmentColumns(t), [t]);
     const { assessmentId } = Route.useParams();
     const storeDataStep3 = useTestAccessStore((state) => state);
     const instituteId = getInstituteId();
@@ -65,7 +68,8 @@ export const StudentListTab = ({ form }: { form: UseFormReturn<TestAccessFormTyp
             id: session.id,
             name: session.session_name,
         })) || [];
-    const filters: FilterConfig[] = GetFilterData(instituteDetails, getCurrentSession());
+    const { t: tAllFilters } = useTranslation('manageStudentsAllFilters');
+    const filters: FilterConfig[] = GetFilterData(tAllFilters, instituteDetails, getCurrentSession());
     const [isAssessment] = useState(true);
     const { setValue } = form;
 
@@ -307,7 +311,7 @@ export const StudentListTab = ({ form }: { form: UseFormReturn<TestAccessFormTyp
                 <div className="max-w-full">
                     <MyTable<StudentTable>
                         data={studentTableFilteredData as TableData<StudentTable>}
-                        columns={isAssessment ? myAssessmentColumns : myColumns}
+                        columns={isAssessment ? assessmentColumns : myColumns}
                         isLoading={loadingData}
                         error={loadingError}
                         onSort={handleSort}

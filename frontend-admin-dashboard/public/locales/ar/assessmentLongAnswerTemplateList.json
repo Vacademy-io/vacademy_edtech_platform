@@ -1,0 +1,14 @@
+{
+    "settings": {
+        "title": "إعدادات الأسئلة",
+        "questionType": "نوع السؤال"
+    },
+    "comprehensionText": "نص الاستيعاب",
+    "question": {
+        "label": "السؤال"
+    },
+    "answer": "الإجابة",
+    "defaults": {
+        "explanation": "الشرح:"
+    }
+}

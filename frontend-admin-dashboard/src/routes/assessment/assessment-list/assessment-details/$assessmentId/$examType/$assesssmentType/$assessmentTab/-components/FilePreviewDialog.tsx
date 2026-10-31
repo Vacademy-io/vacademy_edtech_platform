@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DownloadSimple } from '@phosphor-icons/react';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
@@ -31,6 +32,7 @@ export const FilePreviewDialog = ({
     heading,
     downloadName,
 }: FilePreviewDialogProps) => {
+    const { t } = useTranslation('assessmentFilePreviewDialog');
     const [objectUrl, setObjectUrl] = useState<string | null>(null);
     const [kind, setKind] = useState<PreviewKind>('pdf');
     const [isLoading, setIsLoading] = useState(false);
@@ -101,10 +103,10 @@ export const FilePreviewDialog = ({
                     onAsyncClick={async () => {
                         if (fileUrl) await downloadFileFromUrl(fileUrl, downloadName);
                     }}
-                    loadingText="Downloading..."
+                    loadingText={t('downloading')}
                 >
                     <DownloadSimple size={18} />
-                    Download
+                    {t('download')}
                 </MyButton>
             }
         >
@@ -117,11 +119,10 @@ export const FilePreviewDialog = ({
                 ) : isError || !objectUrl ? (
                     <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
                         <p className="text-body text-neutral-600">
-                            Couldn&apos;t preview this file here.
+                            {t('previewError.title')}
                         </p>
                         <p className="text-caption text-neutral-500">
-                            Use Download below to save it with the correct extension and open it on
-                            your device.
+                            {t('previewError.description')}
                         </p>
                     </div>
                 ) : kind === 'image' ? (

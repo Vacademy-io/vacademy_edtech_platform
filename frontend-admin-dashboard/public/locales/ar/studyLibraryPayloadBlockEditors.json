@@ -1,0 +1,62 @@
+{
+    "flashcard": {
+        "title": "بطاقة تعليمية",
+        "flip": "قلب",
+        "front": "الوجه الأمامي",
+        "back": "الوجه الخلفي",
+        "frontPlaceholder": "الوجه الأمامي للبطاقة…",
+        "backPlaceholder": "الوجه الخلفي للبطاقة…",
+        "aspectRatio": "نسبة العرض إلى الارتفاع:"
+    },
+    "tabs": {
+        "title": "محتوى مبوّب",
+        "addTab": "إضافة علامة تبويب",
+        "tabDefaultLabel": "علامة التبويب {{number}}",
+        "tabLabelPlaceholder": "تسمية علامة التبويب",
+        "contentPlaceholder": "محتوى علامة التبويب…"
+    },
+    "quiz": {
+        "title": "اختبار",
+        "mcq": "اختيار من متعدد",
+        "trueFalse": "صح/خطأ",
+        "true": "صح",
+        "false": "خطأ",
+        "questionPlaceholder": "السؤال…",
+        "optionPlaceholder": "الخيار {{letter}}…",
+        "addOption": "إضافة خيار",
+        "explanationLabel": "الشرح (يظهر بعد الإجابة)",
+        "explanationPlaceholder": "لماذا هذه هي الإجابة الصحيحة؟"
+    },
+    "timeline": {
+        "title": "الجدول الزمني",
+        "addStep": "إضافة خطوة",
+        "stepDefaultTitle": "الخطوة {{number}}",
+        "stepTitlePlaceholder": "عنوان الخطوة",
+        "descriptionPlaceholder": "الوصف (اختياري)",
+        "stepColorAriaLabel": "لون الخطوة"
+    },
+    "columns": {
+        "title": "الأعمدة ({{count}})",
+        "addColumn": "إضافة عمود",
+        "removeLast": "إزالة الأخير",
+        "columnPlaceholder": "العمود {{number}}…"
+    },
+    "accordion": {
+        "title": "قائمة قابلة للطي",
+        "addSection": "إضافة قسم",
+        "sectionDefaultHeading": "القسم {{number}}",
+        "toggleSectionAriaLabel": "تبديل القسم",
+        "sectionHeadingPlaceholder": "عنوان القسم",
+        "sectionContentPlaceholder": "محتوى القسم…"
+    },
+    "code": {
+        "languageAriaLabel": "لغة الكود",
+        "placeholder": "// الكود"
+    },
+    "multiLangCode": {
+        "title": "محرر كود {{language}}",
+        "languageAriaLabel": "اللغة",
+        "placeholder": "# كود {{language}} — يحصل المتعلمون على مُشغّل تفاعلي",
+        "output": "المخرجات:"
+    }
+}

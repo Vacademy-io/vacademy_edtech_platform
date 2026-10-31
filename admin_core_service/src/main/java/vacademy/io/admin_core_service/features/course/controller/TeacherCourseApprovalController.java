@@ -98,6 +98,18 @@ public class TeacherCourseApprovalController {
     }
 
     /**
+     * Publish own draft course directly (no admin review). The FE only offers
+     * this when the role's "Require approval before publishing" toggle is off.
+     */
+    @PostMapping("/publish")
+    public ResponseEntity<String> publishCourse(
+            @RequestParam String courseId,
+            @RequestAttribute("user") CustomUserDetails teacher) {
+        String result = courseApprovalService.publishByTeacher(courseId, teacher);
+        return ResponseEntity.ok(result);
+    }
+
+    /**
      * Withdraw course from review (return to draft)
      */
     @PostMapping("/withdraw-from-review")

@@ -35,11 +35,23 @@ module.exports = {
                 // AI intake chat surface inside the create-page dialog — a
                 // named token because the design system bans arbitrary values.
                 'dialog-chat': 'min(65vh, 42rem)',
+                // Sandboxed live previews of the public audience form. Named for
+                // the same reason: the inline one sits beside the controls, the
+                // dialog one is the "show me properly" view.
+                'preview-inline': '22rem',
+                'preview-dialog': 'min(72vh, 44rem)',
+                // Full-height document dialogs (the answer-sheet viewer): a
+                // fixed height, not just a cap, so the PDF viewer inside has
+                // something to fill. Mirrors maxHeight.dialog-tall.
+                'dialog-tall': 'min(88vh, 56rem)',
             },
             maxHeight: {
                 // Tall dialogs that scroll their own body (section-variant
                 // previews). Named for the same reason as dialog-chat above.
                 'dialog-tall': 'min(88vh, 56rem)',
+                // A file / row list inside a dialog: scrolls itself so a
+                // 200-file upload never pushes the dialog's buttons off-screen.
+                'list-md': '16rem',
             },
             width: {
                 // DialogContent's base class is `w-[400px] max-w-[90vw]` — a
@@ -51,6 +63,31 @@ module.exports = {
                 'dialog-md': 'min(92vw, 42rem)',
                 'dialog-lg': 'min(92vw, 48rem)',
                 'dialog-xl': 'min(94vw, 64rem)',
+                // The internal sidebar shell: the desktop panel and the drawer
+                // it becomes on mobile. Named because several places (the
+                // slides footer bar among them) have to match the panel exactly
+                // — guessing the width is what made that footer misalign.
+                'internal-sidebar': '307px',
+                'internal-sidebar-drawer': '280px',
+            },
+            minWidth: {
+                // Floors for the slide-type dialogs in the slides sidebar. These
+                // are minimums, unlike the width.dialog-* tokens above which are
+                // viewport-capped fixed widths — hence the separate names.
+                'slide-dialog-sm': '25rem',
+                'slide-dialog-md': '31.25rem',
+                'slide-dialog-lg': '32.5rem',
+                // A data table inside an overflow-x-auto wrapper: below this it
+                // scrolls sideways instead of crushing its columns on a phone.
+                'table-sm': '40rem',
+            },
+            minHeight: {
+                // Floor for the multi-step send/compose dialogs, whose steps
+                // differ wildly in height. Without it the panel is only as tall
+                // as a closed template picker, so opening the list or moving to
+                // the message preview makes the whole dialog jump. Always below
+                // maxHeight.dialog-tall, at every viewport.
+                'dialog-md': 'min(80vh, 40rem)',
             },
             fontFamily: {
                 sans: ['Open Sans', 'sans-serif'],

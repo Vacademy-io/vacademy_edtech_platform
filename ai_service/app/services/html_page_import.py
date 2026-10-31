@@ -33,13 +33,16 @@ _SVG_TAGS = {
     "clipPath", "linearGradient", "radialGradient", "stop", "pattern", "filter",
     "feGaussianBlur", "feOffset", "feBlend", "feColorMatrix",
 }
+# del/ins/strike: see the note on _CUSTOM_HTML_TAGS in routers/page_builder.py
+# — nh3 keeps a disallowed tag's children, so a missing <del> silently degrades
+# a struck price to plain text and kills the `del { … }` rule that styles it.
 PAGE_HTML_TAGS = {
     "a", "article", "aside", "b", "blockquote", "br", "button", "caption",
-    "cite", "code", "dd", "div", "dl", "dt", "em", "figcaption", "figure",
-    "footer", "h1", "h2", "h3", "h4", "h5", "h6", "header", "hr", "i", "img",
-    "li", "main", "mark", "nav", "ol", "p", "pre", "s", "section", "small",
-    "span", "strong", "sub", "sup", "table", "tbody", "td", "tfoot", "th",
-    "thead", "time", "tr", "u", "ul",
+    "cite", "code", "dd", "del", "div", "dl", "dt", "em", "figcaption",
+    "figure", "footer", "h1", "h2", "h3", "h4", "h5", "h6", "header", "hr",
+    "i", "img", "ins", "li", "main", "mark", "nav", "ol", "p", "pre", "s",
+    "section", "small", "span", "strike", "strong", "sub", "sup", "table",
+    "tbody", "td", "tfoot", "th", "thead", "time", "tr", "u", "ul",
 } | _SVG_TAGS
 
 _SVG_ATTRS = {
@@ -70,7 +73,7 @@ _HREF_RE = re.compile(r'href=["\']([^"\']+)["\']', re.I)
 _BODY_RE = re.compile(r"<body\b[^>]*>(.*)</body\s*>", re.I | re.S)
 _CSS_IMPORT_RE = re.compile(r"@import\b[^;]*;", re.I)
 _CSS_URL_RE = re.compile(r"url\(\s*['\"]?([^'\")]+)['\"]?\s*\)", re.I)
-_BANNED_CSS_RE = re.compile(r"expression\s*\(|behavior\s*:|-moz-binding|javascript\s*:", re.I)
+_BANNED_CSS_RE = re.compile(r"expression\s*\(|(?<![\w-])behavior\s*:|-moz-binding|javascript\s*:", re.I)
 _SRC_RE = re.compile(r'(<img\b[^>]*?\bsrc=["\'])([^"\']*)(["\'])', re.I)
 _ANCHOR_RE = re.compile(r'<a\b([^>]*?)\bhref=["\']([^"\']*)["\']([^>]*)>', re.I)
 _REMOTE_RE = re.compile(r"^(https?:)?//", re.I)

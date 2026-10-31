@@ -1,0 +1,122 @@
+{
+    "statusBadge": {
+        "wrapped": "تم التسليم",
+        "halted": "متوقف",
+        "inProduction": "قيد الإنتاج"
+    },
+    "actions": {
+        "stopProduction": "إيقاف الإنتاج",
+        "auditTooltip": "افتح تدقيق المطورين — اطّلع على مسار الأنابيب الكامل والنماذج والإعدادات والروابط",
+        "audit": "تدقيق"
+    },
+    "haltedBanner": {
+        "title": "تم إيقاف الإنتاج",
+        "description": "توقف خط الأنابيب قبل تجميع النسخة النهائية. تستأنف إعادة المحاولة من آخر نقطة حفظ — لا تُعاد المراحل المكتملة بالفعل.",
+        "retry": "إعادة محاولة الإنتاج"
+    },
+    "stagesList": {
+        "heading": "جدول الإنتاج",
+        "pipelineLabel": "خط الأنابيب",
+        "shotPlannerFirst": "يبدأ بمخطط اللقطات"
+    },
+    "stats": {
+        "heading": "ميزانية الإنتاج",
+        "tokens": "الرموز",
+        "estCost": "التكلفة التقديرية",
+        "stills": "الصور الثابتة",
+        "aiVideo": "فيديو الذكاء الاصطناعي",
+        "aiVideoTooltip": "لقطات مولّدة بواسطة Veo (fal.ai). تتكلف كل لقطة بين {{min}} و{{max}} رصيد — بحد أقصى {{cap}}/فيديو.",
+        "aiVideoShots_zero": "{{count}} لقطة",
+        "aiVideoShots_one": "لقطة واحدة ({{count}})",
+        "aiVideoShots_two": "لقطتان ({{count}})",
+        "aiVideoShots_few": "{{count}} لقطات",
+        "aiVideoShots_many": "{{count}} لقطة",
+        "aiVideoShots_other": "{{count}} لقطة"
+    },
+    "assets": {
+        "heading": "أصول الإنتاج",
+        "screenplay": "السيناريو",
+        "narration": "السرد الصوتي",
+        "wordTimings": "توقيتات الكلمات",
+        "finalCut": "النسخة النهائية",
+        "empty": "ستظهر الأصول مع تقدّم الإنتاج…"
+    },
+    "actionsCard": {
+        "heading": "الإجراءات"
+    },
+    "share": {
+        "label": "رابط قابل للمشاركة",
+        "copyLinkTitle": "نسخ الرابط"
+    },
+    "embed": {
+        "getEmbedCode": "الحصول على كود التضمين",
+        "heading": "كود التضمين",
+        "copied": "تم النسخ",
+        "copy": "نسخ"
+    },
+    "edit": {
+        "openInEditor": "فتح في المحرر"
+    },
+    "render": {
+        "downloadMp4": "تنزيل MP4",
+        "clearTitle": "مسح الفيديو المخزّن مؤقتًا لإعادة العرض",
+        "startingRender": "جارٍ بدء العرض…",
+        "mastering": "جارٍ الإتقان النهائي…",
+        "masteringPercent": "جارٍ الإتقان النهائي… {{percent}}٪",
+        "masterTheCut": "إتقان النسخة النهائية (MP4)",
+        "retry": "إعادة المحاولة",
+        "timedOut": "انتهت مهلة العرض. يرجى المحاولة مرة أخرى.",
+        "readyToast": "الفيديو جاهز للتنزيل!",
+        "failedGeneric": "فشل العرض",
+        "failedToast": "فشل عرض الفيديو",
+        "startedToast": "بدأ عرض الفيديو. قد يستغرق ذلك بضع دقائق.",
+        "failedToStart": "فشل بدء العرض",
+        "failedToStartToast": "فشل بدء عرض الفيديو",
+        "clearedToast": "تم مسح الفيديو المخزّن. يمكنك العرض مرة أخرى.",
+        "failedToClear": "فشل مسح الفيديو المخزّن"
+    },
+    "counters": {
+        "sources_zero": "{{count}} مصدر",
+        "sources_one": "مصدر واحد ({{count}})",
+        "sources_two": "مصدران ({{count}})",
+        "sources_few": "{{count}} مصادر",
+        "sources_many": "{{count}} مصدرًا",
+        "sources_other": "{{count}} مصدر",
+        "screenshots_zero": "{{count}} 📸",
+        "screenshots_one": "لقطة شاشة واحدة ({{count}}) 📸",
+        "screenshots_two": "لقطتا شاشة ({{count}}) 📸",
+        "screenshots_few": "{{count}} لقطات شاشة 📸",
+        "screenshots_many": "{{count}} لقطة شاشة 📸",
+        "screenshots_other": "{{count}} لقطة شاشة 📸",
+        "urls_zero": "{{count}} رابط",
+        "urls_one": "رابط واحد ({{count}})",
+        "urls_two": "رابطان ({{count}})",
+        "urls_few": "{{count}} روابط",
+        "urls_many": "{{count}} رابطًا",
+        "urls_other": "{{count}} رابط",
+        "shots_zero": "{{count}} لقطة",
+        "shots_one": "لقطة واحدة ({{count}})",
+        "shots_two": "لقطتان ({{count}})",
+        "shots_few": "{{count}} لقطات",
+        "shots_many": "{{count}} لقطة",
+        "shots_other": "{{count}} لقطة",
+        "intrinsic_zero": "{{count}} أصلية",
+        "intrinsic_one": "لقطة أصلية واحدة ({{count}})",
+        "intrinsic_two": "لقطتان أصليتان ({{count}})",
+        "intrinsic_few": "{{count}} لقطات أصلية",
+        "intrinsic_many": "{{count}} لقطة أصلية",
+        "intrinsic_other": "{{count}} لقطة أصلية",
+        "words_zero": "{{count}} كلمة",
+        "words_one": "كلمة واحدة ({{count}})",
+        "words_two": "كلمتان ({{count}})",
+        "words_few": "{{count}} كلمات",
+        "words_many": "{{count}} كلمة",
+        "words_other": "{{count}} كلمة",
+        "silent_zero": "{{count}} صامتة",
+        "silent_one": "لقطة صامتة واحدة ({{count}})",
+        "silent_two": "لقطتان صامتتان ({{count}})",
+        "silent_few": "{{count}} لقطات صامتة",
+        "silent_many": "{{count}} لقطة صامتة",
+        "silent_other": "{{count}} لقطة صامتة"
+    }
+}

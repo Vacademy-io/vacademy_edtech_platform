@@ -1,0 +1,9 @@
+{
+    "menu": {
+        "shareCredentials": "Share Credentials",
+        "sendWhatsappMessage": "Send WhatsApp Message",
+        "sendEmail": "Send Email",
+        "acceptRequest": "Accept Request",
+        "declineRequest": "Decline Request"
+    }
+}

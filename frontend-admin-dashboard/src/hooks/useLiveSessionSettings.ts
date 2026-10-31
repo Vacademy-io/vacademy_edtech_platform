@@ -10,28 +10,16 @@ import {
     DEFAULT_LIVE_CLASS_SCHEDULING_SETTINGS,
 } from '@/types/display-settings';
 import { getDisplaySettingsWithFallback } from '@/services/display-settings';
-import { TokenKey } from '@/constants/auth/tokens';
-import {
-    getTokenDecodedData,
-    getTokenFromCookie,
-} from '@/lib/auth/sessionUtility';
+import { getRolesForCurrentInstitute } from '@/lib/auth/instituteUtils';
 
 export const LIVE_SESSION_SETTINGS_QUERY_KEY = ['institute-settings', 'LIVE_SESSION_SETTING'];
 export const ROLE_DISPLAY_SETTINGS_QUERY_KEY = ['role-display-settings'];
 
-/** Pick the display-settings key for the current admin's role from the JWT. */
+/** Pick the display-settings key for the current admin's role (current institute) from the JWT. */
 const resolveRoleKey = (): string => {
     try {
-        const accessToken = getTokenFromCookie(TokenKey.accessToken);
-        const tokenData = getTokenDecodedData(accessToken);
-        const roles: string[] = [];
-        if (tokenData?.authorities) {
-            for (const authority of Object.values(tokenData.authorities) as Array<{
-                roles?: string[];
-            }>) {
-                if (authority.roles) roles.push(...authority.roles);
-            }
-        }
+        // Roles in the institute being worked in — not every institute in the token.
+        const roles = getRolesForCurrentInstitute();
         if (roles.includes('ADMIN')) return ADMIN_DISPLAY_SETTINGS_KEY;
         if (roles.includes('TEACHER')) return TEACHER_DISPLAY_SETTINGS_KEY;
     } catch {

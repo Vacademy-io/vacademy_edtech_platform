@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { CheckCircle, Warning, WarningCircle, Info, CircleNotch } from '@phosphor-icons/react';
@@ -22,6 +24,7 @@ export function ConvertToLexicalDialog({
     onConfirm,
     converting = false,
 }: ConvertToLexicalDialogProps) {
+    const { t } = useTranslation('studyLibraryConvertToLexicalDialog');
     const [analysis, setAnalysis] = useState<ConversionAnalysis | null>(null);
 
     // Run the pre-flight when the dialog opens for a document.
@@ -44,9 +47,12 @@ export function ConvertToLexicalDialog({
         !!analysis &&
         (analysis.lostBlocks.length > 0 || analysis.lostMedia.length > 0 || analysis.textChanged);
 
+    const blockLabels = buildBlockLabels(t);
+    const humanBlock = (key: string): string => blockLabels[key] ?? key;
+
     return (
         <MyDialog
-            heading="Convert to new editor"
+            heading={t('convertToNewEditor')}
             open={open}
             onOpenChange={onOpenChange}
             dialogWidth="w-full max-w-lg"
@@ -58,7 +64,7 @@ export function ConvertToLexicalDialog({
                         disable={converting}
                         onClick={() => onOpenChange(false)}
                     >
-                        Cancel
+                        {t('cancel')}
                     </MyButton>
                     {analysis && analysis.convertedHtml && !hasHardLoss && (
                         <MyButton
@@ -67,7 +73,7 @@ export function ConvertToLexicalDialog({
                             disable={converting}
                             onClick={() => onConfirm(analysis.convertedHtml, false)}
                         >
-                            {converting ? 'Converting…' : 'Convert'}
+                            {converting ? t('convertingEllipsis') : t('convert')}
                         </MyButton>
                     )}
                     {analysis && analysis.convertedHtml && hasHardLoss && (
@@ -78,22 +84,19 @@ export function ConvertToLexicalDialog({
                             className="border-danger-400 text-danger-600 hover:bg-danger-50"
                             onClick={() => onConfirm(analysis.convertedHtml, true)}
                         >
-                            {converting ? 'Converting…' : 'Convert anyway'}
+                            {converting ? t('convertingEllipsis') : t('convertAnyway')}
                         </MyButton>
                     )}
                 </div>
             }
         >
             <div className="flex flex-col gap-3 text-subtitle text-neutral-600">
-                <p>
-                    This moves the document to the new editor. We first run a check to make sure
-                    nothing is lost.
-                </p>
+                <p>{t('intro')}</p>
 
                 {loading && (
                     <div className="flex items-center gap-2 rounded-md bg-neutral-50 p-3 text-neutral-500">
                         <CircleNotch className="size-4 animate-spin" />
-                        Checking the document…
+                        {t('checkingDocument')}
                     </div>
                 )}
 
@@ -101,11 +104,8 @@ export function ConvertToLexicalDialog({
                     <div className="flex items-start gap-2 rounded-md border border-danger-200 bg-danger-50 p-3 text-danger-700">
                         <WarningCircle className="mt-0.5 size-5 shrink-0" />
                         <div>
-                            <p className="font-medium">This document can’t be converted.</p>
-                            <p className="text-caption">
-                                It couldn’t be parsed by the new editor. Leave it on the current
-                                editor.
-                            </p>
+                            <p className="font-medium">{t('cannotConvertTitle')}</p>
+                            <p className="text-caption">{t('cannotConvertDescription')}</p>
                         </div>
                     </div>
                 )}
@@ -114,12 +114,8 @@ export function ConvertToLexicalDialog({
                     <div className="flex items-start gap-2 rounded-md border border-success-200 bg-success-50 p-3 text-success-700">
                         <CheckCircle className="mt-0.5 size-5 shrink-0" />
                         <div>
-                            <p className="font-medium">
-                                Safe to convert — no content will be lost.
-                            </p>
-                            <p className="text-caption">
-                                All text, media and interactive blocks carry over.
-                            </p>
+                            <p className="font-medium">{t('safeToConvertTitle')}</p>
+                            <p className="text-caption">{t('safeToConvertDescription')}</p>
                         </div>
                     </div>
                 )}
@@ -128,25 +124,24 @@ export function ConvertToLexicalDialog({
                     <div className="flex items-start gap-2 rounded-md border border-danger-200 bg-danger-50 p-3 text-danger-700">
                         <Warning className="mt-0.5 size-5 shrink-0" />
                         <div className="flex flex-col gap-1">
-                            <p className="font-medium">Converting would lose content:</p>
+                            <p className="font-medium">{t('wouldLoseContentTitle')}</p>
                             <ul className="ml-4 list-disc text-caption">
-                                {analysis.textChanged && <li>Some text would not carry over</li>}
+                                {analysis.textChanged && <li>{t('textWouldNotCarryOver')}</li>}
                                 {analysis.lostBlocks.length > 0 && (
                                     <li>
-                                        Blocks:{' '}
+                                        {t('blocksPrefix')}{' '}
                                         {analysis.lostBlocks.map((b) => humanBlock(b)).join(', ')}
                                     </li>
                                 )}
                                 {analysis.lostMedia.length > 0 && (
                                     <li>
-                                        {analysis.lostMedia.length} media/link item(s) would be
-                                        dropped
+                                        {t('mediaItemsDropped', {
+                                            count: analysis.lostMedia.length,
+                                        })}
                                     </li>
                                 )}
                             </ul>
-                            <p className="text-caption">
-                                Recommended: keep this document on the current editor.
-                            </p>
+                            <p className="text-caption">{t('keepOnCurrentEditorRecommended')}</p>
                         </div>
                     </div>
                 )}
@@ -155,10 +150,11 @@ export function ConvertToLexicalDialog({
                     <div className="flex items-start gap-2 rounded-md border border-warning-200 bg-warning-50 p-3 text-warning-700">
                         <Info className="mt-0.5 size-5 shrink-0" />
                         <div>
-                            <p className="font-medium">Minor styling may look different:</p>
+                            <p className="font-medium">{t('minorStylingTitle')}</p>
                             <p className="text-caption">
-                                {analysis.formattingWarnings.join(', ')}. Your content and blocks
-                                are kept — only some inline styling may not carry over.
+                                {t('minorStylingDescription', {
+                                    warnings: analysis.formattingWarnings.join(', '),
+                                })}
                             </p>
                         </div>
                     </div>
@@ -168,27 +164,25 @@ export function ConvertToLexicalDialog({
     );
 }
 
-const BLOCK_LABELS: Record<string, string> = {
-    flashcard: 'Flashcard',
-    tabbedContent: 'Tabs',
-    quizBlock: 'Quiz',
-    timeline: 'Timeline',
-    columnsLayout: 'Columns',
-    accordion: 'Accordion',
-    mermaid: 'Mermaid diagram',
-    mathBlock: 'Math',
-    audioPlayer: 'Audio',
-    pdfViewer: 'PDF',
-    fillBlanks: 'Fill in the blanks',
-    jupyterNotebook: 'Jupyter notebook',
-    scratchProject: 'Scratch project',
-    tableOfContents: 'Table of contents',
-    codeBlock: 'Code editor',
-    table: 'Table',
-    img: 'Image',
-    'media-embed': 'Video / embed',
-};
-
-function humanBlock(key: string): string {
-    return BLOCK_LABELS[key] ?? key;
+function buildBlockLabels(t: TFunction): Record<string, string> {
+    return {
+        flashcard: t('blocks.flashcard'),
+        tabbedContent: t('blocks.tabbedContent'),
+        quizBlock: t('blocks.quizBlock'),
+        timeline: t('blocks.timeline'),
+        columnsLayout: t('blocks.columnsLayout'),
+        accordion: t('blocks.accordion'),
+        mermaid: t('blocks.mermaid'),
+        mathBlock: t('blocks.mathBlock'),
+        audioPlayer: t('blocks.audioPlayer'),
+        pdfViewer: t('blocks.pdfViewer'),
+        fillBlanks: t('blocks.fillBlanks'),
+        jupyterNotebook: t('blocks.jupyterNotebook'),
+        scratchProject: t('blocks.scratchProject'),
+        tableOfContents: t('blocks.tableOfContents'),
+        codeBlock: t('blocks.codeBlock'),
+        table: t('blocks.table'),
+        img: t('blocks.img'),
+        'media-embed': t('blocks.mediaEmbed'),
+    };
 }

@@ -1,0 +1,20 @@
+{
+    "current": {
+        "heading": "العنوان الحالي"
+    },
+    "address": {
+        "label": "العنوان",
+        "placeholder": "أدخل العنوان الكامل"
+    },
+    "locality": {
+        "label": "أقرب حي",
+        "placeholder": "أدخل الحي/العلامة المميزة"
+    },
+    "sameAsPermanent": {
+        "label": "العنوان الحالي نفس العنوان الدائم"
+    },
+    "permanent": {
+        "heading": "العنوان الدائم",
+        "addressPlaceholder": "أدخل العنوان الدائم الكامل"
+    }
+}

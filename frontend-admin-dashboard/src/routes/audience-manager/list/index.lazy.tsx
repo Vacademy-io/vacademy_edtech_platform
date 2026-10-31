@@ -1,9 +1,11 @@
 import { createLazyFileRoute } from '@tanstack/react-router';
 import { LayoutContainer } from '@/components/common/layout-container/layout-container';
 import { AudienceInvite } from './-components/audience-invite/audience-invite';
+import { LeadListEnhancedHeader } from './-components/LeadListEnhancedHeader';
 import { AudienceInviteFormProvider } from './-context/useAudienceInviteFormContext';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CaretDown, CaretUp, ChartLineUp } from '@phosphor-icons/react';
 import { getInstituteId } from '@/constants/helper';
 import { getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
@@ -18,16 +20,22 @@ export const Route = createLazyFileRoute('/audience-manager/list/')({
 });
 
 export function AudienceManagerListPage() {
+    const { t } = useTranslation('audienceManagerListIndexLazy');
     const { setNavHeading } = useNavHeadingStore();
     const instituteId = getInstituteId();
 
     useEffect(() => {
-        setNavHeading(`Manage ${getTerminologyPlural(OtherTerms.AudienceList, SystemTerms.AudienceList)}`);
-    }, [setNavHeading]);
+        setNavHeading(
+            t('navHeading', {
+                term: getTerminologyPlural(OtherTerms.AudienceList, SystemTerms.AudienceList),
+            })
+        );
+    }, [setNavHeading, t]);
 
     return (
         <AudienceInviteFormProvider>
             <LayoutContainer>
+                <LeadListEnhancedHeader />
                 {instituteId && <PerformanceOverview instituteId={instituteId} />}
                 <AudienceInvite />
             </LayoutContainer>
@@ -49,6 +57,7 @@ export function AudienceManagerListPage() {
  * doesn't see it pop back open on every navigation.
  */
 function PerformanceOverview({ instituteId }: { instituteId: string }) {
+    const { t } = useTranslation('audienceManagerListIndexLazy');
     const [open, setOpen] = useState<boolean>(() => {
         if (typeof window === 'undefined') return true;
         return localStorage.getItem(PERFORMANCE_PANEL_KEY) !== '0';
@@ -71,10 +80,10 @@ function PerformanceOverview({ instituteId }: { instituteId: string }) {
                 <span className="flex items-center gap-2">
                     <ChartLineUp size={18} className="text-primary-600" />
                     <span className="text-h4 font-medium text-neutral-900">
-                        Performance overview
+                        {t('performanceOverview.title')}
                     </span>
                     <span className="hidden text-caption text-neutral-500 md:inline">
-                        Where conversions come from and how many calls your team makes per day
+                        {t('performanceOverview.description')}
                     </span>
                 </span>
                 {open ? (

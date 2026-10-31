@@ -13,6 +13,7 @@ import vacademy.io.assessment_service.features.assessment.repository.AiQuestionE
 import vacademy.io.assessment_service.features.assessment.repository.StudentAttemptRepository;
 import vacademy.io.assessment_service.features.learner_assessment.entity.QuestionWiseMarks;
 import vacademy.io.assessment_service.features.learner_assessment.repository.QuestionWiseMarksRepository;
+import vacademy.io.assessment_service.features.open_evaluation.policy.ResultLockGuard;
 import vacademy.io.common.exceptions.ResourceNotFoundException;
 
 import java.math.BigDecimal;
@@ -34,6 +35,12 @@ public class AiEvaluationReviewService {
     private final AiQuestionEvaluationRepository questionEvaluationRepository;
     private final QuestionWiseMarksRepository questionWiseMarksRepository;
     private final StudentAttemptRepository studentAttemptRepository;
+    private final TypedAnswerEvaluation typedAnswerEvaluation;
+    private final ResultLockGuard resultLockGuard;
+
+    /** Partner API feed: an override is a change the partner must see. Optional; null in unit tests. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.assessment_service.features.open_evaluation.submission.ApiSubmissionFeed submissionFeed;
 
     @Transactional
     public void overrideQuestion(String processId, String questionId, Double marks, String feedback,
@@ -41,8 +48,14 @@ public class AiEvaluationReviewService {
         AiEvaluationProcess process = processRepository.findByIdWithStudentAttempt(processId)
                 .orElseThrow(() -> new ResourceNotFoundException("Evaluation process not found: " + processId));
 
-        AiQuestionEvaluation row = questionEvaluationRepository
-                .findByEvaluationProcessIdAndQuestionId(processId, questionId)
+        // A released result on a partner-API exam is finalized: no edits until it is
+        // unfinalized (gate G8). Dashboard exams keep today's behaviour.
+        resultLockGuard.requireNotFinalizedForApiExam(process.getStudentAttempt());
+
+        // Newest row: a pre-V53 double dispatch left two, and a single-result
+        // lookup threw "2 results were returned" at the reviewer.
+        AiQuestionEvaluation row = AiQuestionEvaluationService.newest(questionEvaluationRepository
+                        .findAllByEvaluationProcessIdAndQuestionIdOrderByCreatedAtDesc(processId, questionId))
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Question evaluation not found for question " + questionId));
 
@@ -82,6 +95,9 @@ public class AiEvaluationReviewService {
         }
 
         recomputeAttemptTotals(process);
+        if (submissionFeed != null && attemptId != null) {
+            submissionFeed.touch(attemptId);
+        }
         log.info("[copy-check] question {} of process {} overridden to {} by {}",
                 questionId, processId, clamped, editorUserId);
     }
@@ -95,12 +111,9 @@ public class AiEvaluationReviewService {
         if (process.getStudentAttempt() == null) {
             return;
         }
-        var rows = questionEvaluationRepository
-                .findByEvaluationProcessIdOrderByQuestionNumberAsc(process.getId());
-        double total = rows.stream()
-                .filter(q -> "COMPLETED".equals(q.getStatus()) && q.getMarksAwarded() != null)
-                .mapToDouble(q -> q.getMarksAwarded().doubleValue())
-                .sum();
+        var rows = AiQuestionEvaluationService.newestPerQuestion(questionEvaluationRepository
+                .findByEvaluationProcessIdOrderByQuestionNumberAsc(process.getId()));
+
         // Non-COMPLETED, not just FAILED: a PENDING row mid-run counts as
         // ungraded, otherwise a teacher tweaking one already-graded question
         // while the AI is still working would promote the attempt (and its
@@ -110,6 +123,7 @@ public class AiEvaluationReviewService {
         StudentAttempt attempt = studentAttemptRepository.findById(process.getStudentAttempt().getId())
                 .orElse(null);
         if (attempt != null) {
+            double total = typedAnswerEvaluation.attemptTotal(attempt, rows);
             attempt.setTotalMarks(total);
             attempt.setResultMarks(total);
             // Counterpart of CopyCheckCallbackService.onComplete leaving the

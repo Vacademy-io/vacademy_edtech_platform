@@ -1,0 +1,39 @@
+{
+    "unknown": "अज्ञात",
+    "untitledSession": "शीर्षकहीन सत्र",
+    "codeLabel": "कोड: {{code}}",
+    "typeLabels": {
+        "packageSession": "बैच / पैकेज सत्र",
+        "audience": "ऑडियंस / कैंपेन",
+        "liveSession": "लाइव सत्र",
+        "enrollInvite": "नामांकन आमंत्रण",
+        "institute": "संस्थान",
+        "assessment": "मूल्यांकन",
+        "userPlan": "सदस्यता / यूज़र प्लान",
+        "payment": "भुगतान"
+    },
+    "institute": {
+        "appliesToWhole": "यह ट्रिगर पूरे संस्थान पर लागू होता है। किसी विशिष्ट एंटिटी चयन की आवश्यकता नहीं है।"
+    },
+    "manual": {
+        "restrictLabel": "विशिष्ट {{type}}(ओं) तक सीमित करें (वैकल्पिक)",
+        "pickFromList": "सूची से चुनें",
+        "placeholder": "{{type}} आईडी दर्ज करें, अल्पविराम से अलग करें, या सभी के लिए खाली छोड़ें",
+        "willFireForAll": "खाली छोड़ें और वर्कफ़्लो आपके संस्थान के हर {{type}} के लिए चलेगा।",
+        "willFireForSelected_one": "यह वर्कफ़्लो {{count}} चयनित {{type}} के लिए चलेगा।",
+        "willFireForSelected_other": "यह वर्कफ़्लो {{count}} चयनित {{type}}(ओं) के लिए चलेगा।"
+    },
+    "checklist": {
+        "selectLabel": "{{type}}(ओं) को चुनें — सभी के लिए अनचेक छोड़ें",
+        "enterIdManually": "आईडी मैन्युअल रूप से दर्ज करें",
+        "loading": "लोड हो रहा है...",
+        "noneFound": "कोई {{type}} नहीं मिला",
+        "summaryNone": "कोई चयन नहीं — वर्कफ़्लो आपके संस्थान के हर {{type}} के लिए चलेगा।",
+        "summarySelected_one": "वर्कफ़्लो केवल चयनित {{type}} के लिए चलेगा।",
+        "summarySelected_other": "वर्कफ़्लो {{count}} चयनित {{type}}(ओं) के लिए चलेगा। प्रत्येक चयन के लिए एक ट्रिगर पंक्ति बनाई जाएगी।",
+        "searchPlaceholder": "{{type}} खोजें...",
+        "noMatches": "“{{search}}” से कुछ भी मेल नहीं खाता।",
+        "hiddenBySearch_one": "{{count}} चयनित आइटम खोज के कारण छिपा है",
+        "hiddenBySearch_other": "{{count}} चयनित आइटम खोज के कारण छिपे हैं"
+    }
+}

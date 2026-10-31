@@ -1,0 +1,92 @@
+{
+    "description": "What the institute would owe its people for long service, and the statutory bonus for the year. These are provisions for the books — nothing here pays anyone until you materialize it into payroll.",
+    "tabs": {
+        "eosb": "End of service (EOSB)",
+        "gratuity": "Gratuity",
+        "bonus": "Statutory bonus"
+    },
+    "asOf": {
+        "label": "As of date",
+        "downloadCsv": "Download CSV",
+        "preparing": "Preparing…"
+    },
+    "gratuity": {
+        "downloadSuccess": "Gratuity provision downloaded",
+        "downloadError": "Could not download the gratuity provision.",
+        "computeError": "Could not compute the gratuity provision.",
+        "emptyTitle": "No employees to provision for",
+        "emptyDescription": "Nobody on the roster has service recorded as of this date.",
+        "stats": {
+            "employees": "Employees",
+            "totalLiability": "Total liability",
+            "vested": "Vested",
+            "monthlyRunRate": "Monthly run-rate"
+        },
+        "table": {
+            "employee": "Employee",
+            "years": "Years",
+            "monthlyBasic": "Monthly basic",
+            "liability": "Liability",
+            "runRate": "Run-rate",
+            "vested": "Vested"
+        },
+        "vestedChip": "Vested",
+        "notYetChip": "Not yet"
+    },
+    "eosb": {
+        "downloadSuccess": "EOSB provision downloaded",
+        "downloadError": "Could not download the EOSB provision.",
+        "description": "Statutory liability is what an employee could claim today; the accounting accrual is what the books should already carry. They differ before an employee qualifies.",
+        "computeError": "Could not compute the EOSB provision.",
+        "emptyTitle": "No employees to provision for",
+        "emptyDescription": "Nobody on the roster has service recorded as of this date.",
+        "stats": {
+            "employees": "Employees",
+            "statutoryLiability": "Statutory liability",
+            "accountingAccrual": "Accounting accrual",
+            "monthlyRunRate": "Monthly run-rate"
+        },
+        "table": {
+            "employee": "Employee",
+            "years": "Years",
+            "monthlyBasic": "Monthly basic",
+            "statutory": "Statutory",
+            "accrual": "Accrual",
+            "eligible": "Eligible"
+        },
+        "eligibleChip": "Eligible",
+        "notYetChip": "Not yet"
+    },
+    "bonus": {
+        "financialYear": "Financial year",
+        "rate": "Rate (%)",
+        "rateHint": "The Act allows 8.33% to 20%.",
+        "invalidRateTitle": "Enter a rate between 8.33 and 20",
+        "invalidRateDescription": "The Payment of Bonus Act sets those as the minimum and maximum.",
+        "computeError": "Could not compute the bonus.",
+        "emptyTitle": "Nobody to compute",
+        "emptyDescription": "No employees were on the roster during this financial year.",
+        "stats": {
+            "eligibleEmployees": "Eligible employees",
+            "totalBonus": "Total bonus",
+            "appliedRate": "Applied rate"
+        },
+        "payCardTitle": "Pay this bonus",
+        "payCardDescription": "Creates one BONUS-scoped adjustment per eligible employee. A bonus payroll run for that month pays and taxes them.",
+        "payoutLabel": "Payout",
+        "materializing": "Creating…",
+        "materialize": "Materialize",
+        "table": {
+            "employee": "Employee",
+            "monthlyBasic": "Monthly basic",
+            "months": "Months",
+            "wageBase": "Wage base",
+            "bonus": "Bonus"
+        },
+        "materializeSuccess_one": "{{count}} bonus adjustment created for {{period}}",
+        "materializeSuccess_other": "{{count}} bonus adjustments created for {{period}}",
+        "alreadyExisted_one": " · {{count}} already existed",
+        "alreadyExisted_other": " · {{count}} already existed",
+        "materializeError": "Could not create the bonus adjustments."
+    }
+}

@@ -1,0 +1,62 @@
+---
+title: "Your dashboard"
+description: "Where calls placed through the API show up: call log, queue, reports, credits."
+---
+
+Calls you place through the API appear in the same dashboard your team uses for every other AI call. This page lists where to look. Menu names are as they appear in the left menu; your admin may have hidden some items.
+
+<Note>
+API calls are visible to **admins**. Counsellors see only calls assigned to them, and API calls are not assigned to anyone.
+</Note>
+
+## Call Log
+
+**CRM → Calling → Call Log** (also under **CRM → Leads → Call Log**).
+
+Every call, newest first, with filters for date, direction, status, disposition, number and name. For an API call you see:
+
+| Column | Shows |
+|---|---|
+| Lead | The `contact.name` you sent, and the number |
+| Type | AI |
+| Status, Duration | As reported by the call |
+| Disposition | The agent's disposition and its one-line follow-up note |
+| Recording | **Play**, once the recording has been saved (usually within a minute of the call ending) |
+
+- **Find a call by name**: type part of `contact.name` in the lead name filter.
+- **Phone numbers are masked** by default. An admin can show full numbers under **Settings → Display Settings → Call Log phone numbers**.
+- API contacts are not leads in the Telleo CRM, so their rows have no **View lead** link and cannot be assigned to a counsellor. Your own CRM stays the record of the contact.
+- [Test calls](/concepts/test-mode) appear here too, as AI calls with a sample duration.
+
+The full outcome of an API call (summary, answers, rating, meeting, transcript) is in the API response and webhook; the Call Log shows the disposition and follow-up note.
+
+## Call Queue
+
+**CRM → Calling → Call Queue**. This item is **hidden by default**: an admin turns it on under **Settings → Display Settings → Admin sidebar → Call Queue**.
+
+It shows calls waiting for a line or for calling hours, calls being dialled now, and recent finished ones. API calls show the `contact.name` you sent and the source **API (your systems)**.
+
+<Warning>
+The queue controls act on API calls too. **Pause queue** holds them (they stay `queued` in the API until you resume), and **Cancel all waiting** or a row's **Cancel** cancels them (the API then reports `canceled` and sends `call.not_connected`).
+</Warning>
+
+## Reports
+
+**CRM → Leads → Reports → Calling** counts API calls in dials, connected calls and talk time, together with every other call. They are not assigned to a counsellor, so they sit outside the per-counsellor breakdown. Test calls are included in these counts.
+
+## Credits and billing
+
+The **AI Credits** badge in the top bar opens your balance and its tabs:
+
+- **Overview**: balance and recent usage.
+- **History**: every deduction. Call charges appear as `ai_call_out` (the AI conversation) and `voice_call_out` (the phone line).
+- **Analytics**: usage over time by type.
+- **Billing**: invoices for credit top-ups.
+
+The same numbers are available to your systems through [`GET /v1/credits`](/platform/credits-and-usage) and [`GET /v1/usage`](/platform/credits-and-usage).
+
+## AI Agents
+
+**CRM → Calling → AI Agents** is where agents are created and edited. Their ids for `agent_id` are listed in the **API & webhooks** card ([Getting API access](/getting-api-access)).
+
+Turning an agent off, or deleting it, affects API calls straight away: new requests naming it are refused (`409 agent_disabled` / `404 agent_not_found`), and its calls still waiting in the queue are canceled with the reason *The agent was turned off or deleted.*

@@ -1,0 +1,14 @@
+{
+    "stepGoalTitle": "Que souhaitez-vous automatiser ?",
+    "stepTemplateTitle": "Choisir un modèle",
+    "back": "Retour",
+    "noTemplatesForCategory": "Aucun modèle trouvé pour cette catégorie.",
+    "startFromBlankCanvas": "Démarrer avec un canevas vierge",
+    "goals": {
+        "notifications": { "label": "Envoyer des notifications", "description": "E-mail, WhatsApp ou notifications push aux apprenants" },
+        "enrollments": { "label": "Traiter les inscriptions", "description": "Automatiser l'inscription, l'intégration et les identifiants" },
+        "reminders": { "label": "Envoyer des rappels", "description": "Rappels de paiement, échéances, relances" },
+        "reports": { "label": "Générer des rapports", "description": "Agréger les données et envoyer des résumés" },
+        "custom": { "label": "Workflow personnalisé", "description": "Partir de zéro ou choisir un modèle" }
+    }
+}

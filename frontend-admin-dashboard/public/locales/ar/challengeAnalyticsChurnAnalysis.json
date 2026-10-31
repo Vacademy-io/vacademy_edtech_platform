@@ -1,0 +1,37 @@
+{
+    "title": "تحليل التسرب والاستنزاف",
+    "noData": "لا توجد بيانات متاحة لتحليل الاستنزاف",
+    "subtitle": "حدد نقاط التراجع وحسّن التفاعل",
+    "churnRate": "معدل الاستنزاف",
+    "retention": "الاحتفاظ",
+    "funnelHeading": "قمع تراجع المستخدمين",
+    "funnelInsufficientData": "بيانات غير كافية لتصور القمع",
+    "usersTooltip_zero": "لا يوجد مستخدمون ({{count}})",
+    "usersTooltip_one": "مستخدم واحد ({{count}})",
+    "usersTooltip_two": "مستخدمان ({{count}})",
+    "usersTooltip_few": "{{count}} مستخدمين",
+    "usersTooltip_many": "{{count}} مستخدمًا",
+    "usersTooltip_other": "{{count}} مستخدم",
+    "critical": "حرج",
+    "urgent": "عاجل",
+    "warning": "تحذير",
+    "noCriticalIssues": "لم يتم رصد أي مشكلات حرجة! التفاعل جيد.",
+    "recommendationsHeading": "التوصيات",
+    "alerts": {
+        "noOutgoingMessages": "اليوم {{dayNumber}} ليس به رسائل صادرة",
+        "lowResponseRate": "اليوم {{dayNumber}} لديه معدل استجابة {{rate}}%",
+        "suddenDrop": "انخفاض بنسبة {{dropPercentage}}% من اليوم {{previousDay}} إلى اليوم {{dayNumber}}"
+    },
+    "actions": {
+        "scheduleContentImmediately": "جدولة المحتوى فورًا",
+        "reviewAndOptimizeContent": "مراجعة المحتوى وتحسينه",
+        "investigateContentChange": "التحقيق في تغيير المحتوى"
+    },
+    "recommendations": {
+        "scheduleAutomatedMessages": "جدولة رسائل تلقائية للأيام التي لا تحتوي على محتوى",
+        "reviewContentStrategy": "مراجعة استراتيجية المحتوى - تم رصد انخفاضات كبيرة في التفاعل",
+        "addIncentives": "فكر في إضافة حوافز أو عناصر جذب للتفاعل في منتصف التحدي",
+        "abTestFormats": "اختبر أشكال رسائل مختلفة (A/B) لتحسين معدلات الاستجابة",
+        "healthyEngagement": "عمل رائع! مستويات التفاعل جيدة. فكر في استهداف المستخدمين الأكثر نشاطًا للإحالات."
+    }
+}

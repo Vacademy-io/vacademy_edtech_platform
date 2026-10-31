@@ -1,0 +1,223 @@
+{
+    "heading": {
+        "fallbackTitle": "ऑडियंस सूची",
+        "addResponse": "प्रतिक्रिया जोड़ें",
+        "loadingRespondents": "प्रतिवादी लोड हो रहे हैं…",
+        "respondentsCount_one": "{{formattedCount}} प्रतिवादी",
+        "respondentsCount_other": "{{formattedCount}} प्रतिवादी"
+    },
+    "filters": {
+        "tiers": {
+            "label": "सभी स्तर",
+            "hot": "हॉट",
+            "warm": "वॉर्म",
+            "cold": "कोल्ड"
+        },
+        "leadStatus": {
+            "label": "सभी लीड",
+            "active": "सक्रिय (नामांकित नहीं)",
+            "converted": "नामांकित / परिवर्तित"
+        },
+        "sla": {
+            "label": "सभी SLA स्थितियाँ",
+            "anyOverdue": "कोई भी विलंबित",
+            "reachOutOverdue": "संपर्क विलंबित",
+            "reachOutDueSoon": "संपर्क शीघ्र देय",
+            "followUpDue": "फ़ॉलो-अप देय",
+            "followUpOverdue": "फ़ॉलो-अप विलंबित"
+        },
+        "callHistory": {
+            "placeholder": "कॉल इतिहास",
+            "notCalled": "कॉल नहीं की गई",
+            "called": "कॉल की गई (कोई भी)",
+            "calledOnce": "एक बार कॉल की गई",
+            "calledTwicePlus": "2+ बार कॉल की गई",
+            "aiCalled": "AI द्वारा कॉल की गई",
+            "manualCalled": "मैन्युअल रूप से कॉल की गई"
+        },
+        "moreFilters": "अधिक फ़िल्टर",
+        "dateFrom": "से",
+        "dateTo": "तक",
+        "applyDates": "तारीखें लागू करें",
+        "clearAll": "सभी साफ़ करें"
+    },
+    "chips": {
+        "search": "खोजें: {{query}}",
+        "datePlaceholder": "…",
+        "date": "तारीख: {{from}} → {{to}}",
+        "tier": "स्तर: {{values}}",
+        "status": "स्थिति: {{values}}",
+        "statusActive": "सक्रिय",
+        "statusConverted": "परिवर्तित",
+        "sla": "SLA: {{values}}",
+        "counsellor": "काउंसलर: {{values}}",
+        "counsellorUnassigned": "अनसाइन्ड",
+        "counsellorSelected": "चयनित",
+        "customField": "{{fieldName}}: {{value}}",
+        "customFieldFallback": "फ़ील्ड",
+        "removeAriaLabel": "{{label}} हटाएं"
+    },
+    "toolbar": {
+        "sendMessage": "संदेश भेजें",
+        "importCsv": "CSV आयात करें",
+        "exporting": "निर्यात हो रहा है…",
+        "export": "निर्यात करें"
+    },
+    "search": {
+        "placeholder": "लीड खोजें",
+        "ariaLabel": "लीड खोजें",
+        "loadingResults": "परिणाम लोड हो रहे हैं…",
+        "resultsCount_one": "{{total}} में से {{shown}} परिणाम दिखाया जा रहा है",
+        "resultsCount_other": "{{total}} में से {{shown}} परिणाम दिखाए जा रहे हैं"
+    },
+    "bulkToolbar": {
+        "selectedCount_one": "{{count}} चयनित",
+        "selectedCount_other": "{{count}} चयनित",
+        "selecting": "चयन हो रहा है…",
+        "selectAll": "सभी {{count}} चुनें",
+        "clear": "साफ़ करें",
+        "bulkActions": "बल्क कार्रवाइयाँ",
+        "assignLeads": "लीड असाइन करें",
+        "unassignLeads": "लीड अनअसाइन करें",
+        "deleteLeads": "लीड हटाएं",
+        "sendMessage": "संदेश भेजें",
+        "changeStatus": null
+    },
+    "emptyState": {
+        "errorTitle": "प्रतिवादी लोड नहीं हो सके",
+        "errorDescription": "कैंपेन उपयोगकर्ताओं को लाने में कुछ गड़बड़ हुई। फिर से प्रयास करें।",
+        "noResultsTitle": "इन फ़िल्टरों से कोई प्रतिवादी मेल नहीं खाता",
+        "noResultsDescription": "अधिक परिणाम देखने के लिए फ़िल्टर साफ़ करने का प्रयास करें।",
+        "noDataTitle": "अभी तक कोई प्रतिवादी नहीं",
+        "noDataDescription": "जब लोग यह ऑडियंस फ़ॉर्म भरेंगे, तो वे यहाँ दिखाई देंगे।"
+    },
+    "exportColumns": {
+        "leadId": "लीड आईडी",
+        "submittedAt": "सबमिट किया गया",
+        "name": "नाम",
+        "email": "ईमेल",
+        "mobile": "मोबाइल",
+        "leadStatus": "लीड स्थिति",
+        "counsellor": "काउंसलर",
+        "activityNotes": "गतिविधि और नोट्स",
+        "notesCount": "नोट्स की संख्या",
+        "leadJourney": "लीड यात्रा (डिस्पोज़िशन और नोट्स)"
+    },
+    "csv": {
+        "headers": {
+            "leadId": "लीड आईडी",
+            "submittedAt": "सबमिट किया गया",
+            "name": "नाम",
+            "email": "ईमेल",
+            "mobile": "मोबाइल",
+            "leadStatus": "लीड स्थिति",
+            "counsellor": "काउंसलर",
+            "activityNotes": "गतिविधि और नोट्स",
+            "notesCount": "नोट्स की संख्या",
+            "leadJourney": "लीड यात्रा (डिस्पोज़िशन और नोट्स)"
+        },
+        "noteFallbackLabel": "नोट",
+        "updatedByLabel": "अपडेट किया गया",
+        "dateLabel": "तारीख"
+    },
+    "toasts": {
+        "selectAllFailed": "सभी लीड चुनने में विफल",
+        "noLeadsToExport": "निर्यात करने के लिए कोई लीड नहीं",
+        "exportStarting": "निर्यात शुरू हो रहा है…",
+        "noDataToExport": "निर्यात करने के लिए कोई डेटा नहीं",
+        "exportSuccess_one": "{{count}} लीड निर्यात की गई",
+        "exportSuccess_other": "{{count}} लीड निर्यात की गईं",
+        "exportFailed": "लीड निर्यात करने में विफल"
+    },
+    "campaignFields": {
+        "optedOutFrom": "इससे ऑप्ट-आउट किया"
+    },
+    "dialogs": {
+        "campaignFallbackName": "कैंपेन"
+    },
+    "detail": {
+        "status": {
+            "ACTIVE": "सक्रिय",
+            "DRAFT": "ड्राफ़्ट",
+            "INACTIVE": "निष्क्रिय"
+        },
+        "runs": "{{start}} → {{end}} तक चलती है",
+        "editList": "सूची संपादित करें",
+        "none": "सेट नहीं",
+        "loadingList": "सूची का विवरण लोड हो रहा है…",
+        "pool": {
+            "title": "इस सूची की लीड \"{{name}}\" पूल के ज़रिए असाइन होती हैं",
+            "members_one": "{{count}} काउंसलर",
+            "members_other": "{{count}} काउंसलर"
+        },
+        "tabs": {
+            "ariaLabel": "सूची के भाग",
+            "leads": "लीड",
+            "history": "भेजे गए संदेश",
+            "share": "शेयर और फ़ॉर्म",
+            "auto": "ऑटोमेशन"
+        },
+        "share": {
+            "linkTitle": "फ़ॉर्म लिंक",
+            "linkSub": "इसे कहीं भी शेयर करें — हर प्रतिक्रिया इसी सूची में आती है",
+            "copy": "लिंक कॉपी करें",
+            "copied": "लिंक कॉपी हो गया",
+            "copyFailed": "लिंक कॉपी नहीं हो सका",
+            "open": "सार्वजनिक फ़ॉर्म देखें",
+            "inactive": "शेयर करने योग्य लिंक पाने के लिए इस सूची को सक्रिय करें।",
+            "changeStatus": "स्थिति बदलें",
+            "qrTitle": "QR कोड",
+            "qrText": "पोस्टर और पर्चों के लिए — स्कैन करने पर यह फ़ॉर्म खुलता है।",
+            "qrOpen": "QR कोड दिखाएँ",
+            "embedTitle": "अपनी वेबसाइट पर लगाएँ",
+            "embedText": "पॉप-अप वाला बटन, या पूरा फ़ॉर्म iFrame में।",
+            "embedOpen": "एम्बेड कोड पाएँ",
+            "apiTitle": "API और Zapier",
+            "apiText": "अपने दूसरे टूल से लीड सीधे इस सूची में भेजें।",
+            "apiOpen": "API विवरण",
+            "fieldsTitle": "फ़ॉर्म फ़ील्ड",
+            "fieldsSub_one": "{{count}} फ़ील्ड",
+            "fieldsSub_other": "{{count}} फ़ील्ड",
+            "fieldsEmpty": "कोई कस्टम फ़ील्ड नहीं — फ़ॉर्म केवल सामान्य विवरण पूछता है।",
+            "editForm": "फ़ॉर्म संपादित करें",
+            "required": "अनिवार्य",
+            "optional": "वैकल्पिक",
+            "afterTitle": "सबमिट के बाद और रूप",
+            "afterText": "धन्यवाद स्क्रीन, रीडायरेक्ट और सार्वजनिक फ़ॉर्म का रूप।",
+            "afterEdit": "संपादित करें",
+            "objective": "उद्देश्य",
+            "description": "विवरण"
+        },
+        "auto": {
+            "workflowsTitle": "वर्कफ़्लो",
+            "workflowsSub_one": "लीड आने पर {{count}} वर्कफ़्लो चलता है",
+            "workflowsSub_other": "लीड आने पर {{count}} वर्कफ़्लो चलते हैं",
+            "viewAll": "सभी जुड़े वर्कफ़्लो देखें",
+            "configure": "वर्कफ़्लो सेट करें",
+            "loading": "वर्कफ़्लो लोड हो रहे हैं…",
+            "loadError": "वर्कफ़्लो लोड नहीं हो सके।",
+            "workflowsEmpty": "इस सूची में लीड आने पर कोई वर्कफ़्लो नहीं चलता।",
+            "thisList": "यह सूची",
+            "allLists": "सभी सूचियाँ",
+            "workflowsFoot": "इस सूची से लीड लेने वाले शेड्यूल्ड वर्कफ़्लो \"सभी जुड़े वर्कफ़्लो देखें\" में दिखते हैं।",
+            "bookingTitle": "बुकिंग पेज",
+            "bookingText": "लीड को सार्वजनिक पेज से कॉल या मीटिंग बुक करने दें।",
+            "bookingOpen": "बुकिंग सेटिंग्स",
+            "poolTitle": "काउंसलर पूल",
+            "poolNone": "कोई पूल नहीं जुड़ा",
+            "leadSettings": "लीड सेटिंग्स",
+            "poolEmpty": "जब तक कोई असाइन न करे, इस सूची की लीड बिना असाइन रहती हैं। लीड सेटिंग्स में इस सूची को किसी पूल में जोड़ें।",
+            "poolNoMembers": "इस पूल में कोई सक्रिय काउंसलर नहीं है।",
+            "counsellorFallback": "काउंसलर",
+            "monthlyTarget_one": "लक्ष्य {{count}} / माह",
+            "monthlyTarget_other": "लक्ष्य {{count}} / माह",
+            "notifyTitle": "सूचनाएँ और स्कोरिंग",
+            "edit": "संपादित करें",
+            "teamNotify": "टीम सूचनाएँ",
+            "respondentEmail": "प्रतिवादी को पुष्टि ईमेल",
+            "on": "चालू",
+            "off": "बंद",
+            "initialScore": "शुरुआती लीड स्कोर"
+        }
+    }
+}

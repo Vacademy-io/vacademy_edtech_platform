@@ -106,7 +106,7 @@ export const StudentProgressTable = ({ userActivity }: { userActivity: UserActiv
             {/* Summary Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 relative">
                 <Card className="shadow-none border-dashed bg-muted/30 [.ui-vibrant_&]:bg-gray-100/50 [.ui-play_&]:bg-white [.ui-play_&]:border [.ui-play_&]:border-solid [.ui-play_&]:border-border [.ui-play_&]:rounded-play-card-sm [.ui-play_&]:shadow-play-soft-card [.ui-cleaner-play_&]:border-solid [.ui-cleaner-play_&]:border-cp-border">
-                    <CardContent className="p-4 flex flex-col gap-1">
+                    <CardContent className="p-card flex flex-col gap-1">
                         <span className="text-sm font-medium text-muted-foreground">
                             {t("progressTable.totalSessions")}
                         </span>
@@ -117,7 +117,7 @@ export const StudentProgressTable = ({ userActivity }: { userActivity: UserActiv
                 </Card>
 
                 <Card className="shadow-none border-dashed bg-green-500/5 border-green-500/20 [.ui-vibrant_&]:bg-green-50 [.ui-vibrant_&]:border-green-200 [.ui-play_&]:bg-play-success-soft [.ui-play_&]:border [.ui-play_&]:border-solid [.ui-play_&]:border-border [.ui-play_&]:rounded-play-card-sm [.ui-play_&]:shadow-play-soft-card [.ui-cleaner-play_&]:border-solid [.ui-cleaner-play_&]:border-cp-border">
-                    <CardContent className="p-4 flex flex-col gap-1">
+                    <CardContent className="p-card flex flex-col gap-1">
                         <span className="text-sm font-medium text-green-600 [.ui-vibrant_&]:text-green-700 [.ui-play_&]:text-play-success-soft-ink [.ui-play_&]:font-black">
                             {t("progressTable.aboveAverage")}
                         </span>
@@ -128,7 +128,7 @@ export const StudentProgressTable = ({ userActivity }: { userActivity: UserActiv
                 </Card>
 
                 <Card className="shadow-none border-dashed bg-primary/5 border-primary/20 [.ui-vibrant_&]:bg-primary/10 [.ui-vibrant_&]:border-primary/30 [.ui-play_&]:bg-play-accent-soft [.ui-play_&]:border [.ui-play_&]:border-solid [.ui-play_&]:border-border [.ui-play_&]:rounded-play-card-sm [.ui-play_&]:shadow-play-soft-card [.ui-cleaner-play_&]:border-solid [.ui-cleaner-play_&]:border-cp-border">
-                    <CardContent className="p-4 flex flex-col gap-1">
+                    <CardContent className="p-card flex flex-col gap-1">
                         <span className="text-sm font-medium text-primary [.ui-vibrant_&]:text-primary-700 [.ui-play_&]:text-play-accent-soft-ink [.ui-play_&]:font-black">
                             {t("progressTable.consistency")}
                         </span>
@@ -207,7 +207,7 @@ export const StudentProgressTable = ({ userActivity }: { userActivity: UserActiv
                     const percentage = row.batch_millis > 0 ? ((row.user_millis / row.batch_millis) * 100) : 100;
                     return (
                         <Card key={index} className="shadow-none border">
-                            <CardContent className="p-4 space-y-3">
+                            <CardContent className="p-card space-y-3">
                                 <div className="flex justify-between items-start">
                                     <div className="flex flex-col">
                                         <span className="font-semibold">{row.date}</span>

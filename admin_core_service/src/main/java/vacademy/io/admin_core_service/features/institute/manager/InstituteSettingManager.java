@@ -94,7 +94,10 @@ public class InstituteSettingManager {
     // @Cacheable on "openInstituteDetails". Without this eviction, learner
     // surfaces (coupon-enabled toggle, drip conditions, branding, etc.) keep
     // reading the pre-toggle institute snapshot until cache TTL or restart.
-    @CacheEvict(value = { "openInstituteDetails", "openInstituteDetailsNonBatches" }, key = "#instituteId")
+    // "instituteById" backs the /internal/institute/v1/{id} endpoint that other
+    // services read — notification_service resolves email senders and their daily
+    // caps from it, so a cap set here must not keep serving the old value.
+    @CacheEvict(value = { "openInstituteDetails", "openInstituteDetailsNonBatches", "instituteById" }, key = "#instituteId")
     public ResponseEntity<String> saveGenericSetting(CustomUserDetails userDetails, String instituteId,
             String settingKey, GenericSettingRequest request) {
         Optional<Institute> institute = instituteRepository.findById(instituteId);

@@ -87,6 +87,25 @@ public class AuthService {
      * dies partway and leaves a half-charged run behind.
      */
     public List<UserDTO> getUsersByInstituteAndRoles(String instituteId, List<String> roles) {
+        try {
+            return requireUsersByInstituteAndRoles(instituteId, roles);
+        } catch (Exception e) {
+            log.warn("[reporting] could not expand roles {} for institute {} — no recipients resolved",
+                    roles, instituteId, e);
+            return List.of();
+        }
+    }
+
+    /**
+     * The same lookup, but a failure surfaces instead of collapsing to an empty
+     * list. Anything that RENDERS this as a roster must use this variant: an
+     * unreachable auth_service and an institute with no staff are the same empty
+     * list, and showing "no staff" for an outage is a lie the caller acts on.
+     *
+     * <p>auth_service returns ACTIVE memberships only — INVITED users are not
+     * included.
+     */
+    public List<UserDTO> requireUsersByInstituteAndRoles(String instituteId, List<String> roles) {
         if (instituteId == null || instituteId.isBlank() || roles == null || roles.isEmpty()) {
             return List.of();
         }
@@ -109,9 +128,8 @@ public class AuthService {
             return objectMapper.readValue(response.getBody(), new TypeReference<List<UserDTO>>() {
             });
         } catch (Exception e) {
-            log.warn("[reporting] could not expand roles {} for institute {} — no recipients resolved",
-                    roles, instituteId, e);
-            return List.of();
+            throw new VacademyException("Could not reach auth_service to resolve users for institute "
+                    + instituteId + ": " + e.getMessage());
         }
     }
 
@@ -135,7 +153,10 @@ public class AuthService {
                 path.append("&instituteId=").append(java.net.URLEncoder.encode(instituteId,
                         java.nio.charset.StandardCharsets.UTF_8));
             }
-            ResponseEntity<String> response = hmacClientUtils.makeHmacRequest(
+            // The query is already percent-encoded above; the plain makeHmacRequest would encode it
+            // again, so an email ("@" -> %40 -> %2540) or "+91" reached auth_service mangled and
+            // matched nobody.
+            ResponseEntity<String> response = hmacClientUtils.makeHmacRequestWithEncodedRoute(
                     clientName,
                     HttpMethod.GET.name(),
                     authServerBaseUrl,
@@ -309,6 +330,36 @@ public class AuthService {
         }
     }
 
+    /**
+     * Re-sends one user's current login details via auth-service, branded for
+     * {@code instituteId} and with the sign-in button pointing at {@code loginUrl}.
+     * Read-only on the user. Returns auth-service's {@code {sent, failed, message}} reply.
+     */
+    public Map<String, Object> resendLoginDetails(String userId, String instituteId, String loginUrl) {
+        try {
+            String endpoint = AuthServiceRoutes.RESEND_LOGIN_DETAILS
+                    + "?userId=" + userId
+                    + "&instituteId=" + instituteId;
+            if (loginUrl != null && !loginUrl.isBlank()) {
+                // Not pre-encoded: makeHmacRequest hands the URL to RestTemplate as a string, which
+                // encodes it once itself (see createUserFromAuthServiceForLearnerEnrollment).
+                endpoint += "&loginUrl=" + loginUrl.trim();
+            }
+            // Everything travels in the query string; an empty JSON body keeps the POST
+            // well-formed for RestTemplate and the ingress alike.
+            ResponseEntity<String> response = hmacClientUtils.makeHmacRequest(
+                    clientName,
+                    HttpMethod.POST.name(),
+                    authServerBaseUrl,
+                    endpoint,
+                    Map.of());
+            return new ObjectMapper().readValue(response.getBody(),
+                    new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {});
+        } catch (Exception e) {
+            throw new VacademyException("Failed to resend login details: " + e.getMessage());
+        }
+    }
+
     public String sendCredToUsers(List<String> userIds) {
         try {
             String endpoint = AuthServiceRoutes.SEND_CRED_TO_USERS;
@@ -361,6 +412,102 @@ public class AuthService {
             // rows have already been written.
             logger.warn("Failed to add roles {} to user {} in institute {}: {}",
                     roles, userId, instituteId, e.getMessage());
+        }
+    }
+
+    /**
+     * {@link #addRolesToUserInternal} that THROWS on failure: for a caller that must know the
+     * role was granted (the public API's counsellor create answers 201 only when it was).
+     */
+    public void addRolesToUserStrict(String userId, List<String> roles, String instituteId) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("user_id", userId);
+        body.put("roles", roles);
+        body.put("institute_id", instituteId);
+        try {
+            hmacClientUtils.makeHmacRequest(clientName, HttpMethod.POST.name(), authServerBaseUrl,
+                    AuthServiceRoutes.ADD_USER_ROLES_INTERNAL, body);
+        } catch (Exception e) {
+            throw new VacademyException("add-user-roles failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * The user with this email, or empty when none exists. THROWS when auth_service cannot
+     * answer, so "no such user" is never confused with "could not ask". The email is
+     * percent-encoded here (a '+' in a raw query string is read back as a space).
+     */
+    public Optional<UserDTO> findUserByEmailStrict(String email) {
+        if (email == null || email.isBlank()) return Optional.empty();
+        String encoded = java.net.URLEncoder.encode(email.trim().toLowerCase(java.util.Locale.ROOT),
+                java.nio.charset.StandardCharsets.UTF_8);
+        try {
+            ResponseEntity<String> response = hmacClientUtils.makeHmacRequestWithEncodedRoute(clientName,
+                    HttpMethod.GET.name(), authServerBaseUrl,
+                    AuthServiceRoutes.GET_USER_BY_EMAIL + "?email=" + encoded, null);
+            if (response == null || response.getStatusCode().value() == 404 || response.getBody() == null
+                    || response.getBody().isBlank()) {
+                return Optional.empty();
+            }
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            return Optional.ofNullable(objectMapper.readValue(response.getBody(), UserDTO.class));
+        } catch (HttpClientErrorException.NotFound nf) {
+            return Optional.empty();
+        } catch (Exception e) {
+            throw new VacademyException("user-by-email lookup failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Every role row the user holds, as maps with institute_id, role_name and status. THROWS
+     * when auth_service cannot answer.
+     */
+    public List<Map<String, String>> getRoleMembershipsStrict(String userId) {
+        if (userId == null || userId.isBlank()) return List.of();
+        try {
+            ResponseEntity<String> response = hmacClientUtils.makeHmacRequestWithEncodedRoute(clientName,
+                    HttpMethod.GET.name(), authServerBaseUrl,
+                    AuthServiceRoutes.USER_ROLE_MEMBERSHIPS + "?userId="
+                            + java.net.URLEncoder.encode(userId, java.nio.charset.StandardCharsets.UTF_8), null);
+            if (response == null || response.getBody() == null || !response.getStatusCode().is2xxSuccessful()) {
+                throw new VacademyException("memberships lookup failed");
+            }
+            List<Map<String, String>> out = new ObjectMapper().readValue(response.getBody(),
+                    new TypeReference<List<Map<String, String>>>() {
+                    });
+            return out == null ? List.of() : out;
+        } catch (VacademyException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new VacademyException("memberships lookup failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Pauses (DISABLED) or restores (ACTIVE) only the named roles of a user in one institute.
+     * Returns how many role rows changed. THROWS on failure.
+     */
+    public int updateRoleStatusForRoles(String instituteId, String userId, List<String> roles, String status) {
+        try {
+            String path = AuthServiceRoutes.USER_ROLE_STATUS_INTERNAL
+                    + "?instituteId=" + java.net.URLEncoder.encode(instituteId, java.nio.charset.StandardCharsets.UTF_8)
+                    + "&userId=" + java.net.URLEncoder.encode(userId, java.nio.charset.StandardCharsets.UTF_8)
+                    + "&status=" + java.net.URLEncoder.encode(status, java.nio.charset.StandardCharsets.UTF_8);
+            ResponseEntity<String> response = hmacClientUtils.makeHmacRequestWithEncodedRoute(clientName,
+                    HttpMethod.PUT.name(), authServerBaseUrl, path, roles);
+            if (response == null || response.getBody() == null || !response.getStatusCode().is2xxSuccessful()) {
+                throw new VacademyException("role-status update failed");
+            }
+            Map<String, Object> out = new ObjectMapper().readValue(response.getBody(),
+                    new TypeReference<Map<String, Object>>() {
+                    });
+            Object n = out == null ? null : out.get("updated");
+            return n instanceof Number num ? num.intValue() : 0;
+        } catch (VacademyException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new VacademyException("role-status update failed: " + e.getMessage());
         }
     }
 
@@ -626,6 +773,34 @@ public class AuthService {
      * down" and serve a stale value rather than silently flipping RBAC scope.
      */
     public List<String> getActiveUserIdsByRoles(String instituteId, List<String> roles) {
+        return getActiveUsersByRoles(instituteId, roles).stream()
+                // Null-element guard: before this method delegated, the mapping ran
+                // INSIDE the try below, so a null row would have surfaced as a
+                // VacademyException like every other failure here. Out here it would
+                // instead escape as a raw NPE and be rendered as a 511 by the generic
+                // RuntimeException handler. Unreachable in practice — auth_service
+                // builds the list with map(UserWithRolesDTO::new), which cannot emit
+                // null — but this path decides RBAC scope, so it does not get to
+                // depend on a remote service's serialiser staying well-behaved.
+                .filter(java.util.Objects::nonNull)
+                .map(vacademy.io.common.auth.dto.UserWithRolesDTO::getId)
+                .filter(id -> id != null && !id.isEmpty())
+                .distinct()
+                .toList();
+    }
+
+    /**
+     * Full user records (name / email / mobile / roles) of everyone holding ANY
+     * of the given roles in the institute — the same users-of-status call
+     * {@link #getActiveUserIdsByRoles} makes, without the second round trip
+     * through {@code getUsersFromAuthServiceByUserIds} just to recover names.
+     *
+     * <p>Same STRICT failure contract: throws rather than returning an empty
+     * list, so a caller can tell "no such users" apart from "auth_service is
+     * down".
+     */
+    public List<vacademy.io.common.auth.dto.UserWithRolesDTO> getActiveUsersByRoles(
+            String instituteId, List<String> roles) {
         if (instituteId == null || instituteId.isBlank() || roles == null || roles.isEmpty()) {
             return List.of();
         }
@@ -644,13 +819,8 @@ public class AuthService {
             }
             ObjectMapper objectMapper = new ObjectMapper();
             objectMapper.configure(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-            List<vacademy.io.common.auth.dto.UserWithRolesDTO> users = objectMapper.readValue(response.getBody(),
+            return objectMapper.readValue(response.getBody(),
                     new TypeReference<List<vacademy.io.common.auth.dto.UserWithRolesDTO>>() {});
-            return users.stream()
-                    .map(vacademy.io.common.auth.dto.UserWithRolesDTO::getId)
-                    .filter(id -> id != null && !id.isEmpty())
-                    .distinct()
-                    .toList();
         } catch (VacademyException ve) {
             throw ve;
         } catch (Exception e) {

@@ -18,6 +18,7 @@ import { CourseFormData } from '@/components/common/study-library/add-course/add
 import { Plus } from '@phosphor-icons/react';
 import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { useTranslation } from 'react-i18next';
 
 interface CreateInviteDialogProps {
     initialValues?: InviteForm;
@@ -50,6 +51,7 @@ export const CreateInviteDialog = ({
     isEditing,
     handleDisableCreateInviteButton,
 }: CreateInviteDialogProps) => {
+    const { t } = useTranslation('manageStudentsCreateInviteDialog');
     const {
         form,
         toggleIsRequired,
@@ -84,11 +86,11 @@ export const CreateInviteDialog = ({
 
         const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput);
         if (!isValidEmail) {
-            setEmailError('Please enter a valid email address');
+            setEmailError(t('validation.invalidEmail'));
         } else {
             setEmailError(null);
         }
-    }, [emailInput]);
+    }, [emailInput, t]);
 
     // Function to generate a unique ID
     const generateId = () => {
@@ -101,14 +103,14 @@ export const CreateInviteDialog = ({
 
         // Validate email format
         if (!email || !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-            setEmailError('Please enter a valid email address');
+            setEmailError(t('validation.invalidEmail'));
             return;
         }
 
         // Check if email already exists
         const currentEmails = getValues('inviteeEmails') || [];
         if (currentEmails.some((entry: EmailEntry) => entry.value === email)) {
-            setEmailError('This email has already been added');
+            setEmailError(t('validation.duplicateEmail'));
             return;
         }
 
@@ -139,10 +141,10 @@ export const CreateInviteDialog = ({
             { requestData: requestData },
             {
                 onSuccess: () => {
-                    toast.success('Batch created successfully');
+                    toast.success(t('toast.batchCreateSuccess'));
                 },
                 onError: () => {
-                    toast.error('Failed to create batch');
+                    toast.error(t('toast.batchCreateError'));
                 },
             }
         );
@@ -190,10 +192,10 @@ export const CreateInviteDialog = ({
 
     return (
         <MyDialog
-            heading="Invite Learner"
+            heading={t('dialog.heading')}
             footer={submitButton}
             trigger={triggerButton}
-            dialogWidth="w-[60vw]"
+            dialogWidth="w-dialog-xl"
             open={open}
             isTour={true}
             onOpenChange={onOpenChange}
@@ -209,12 +211,12 @@ export const CreateInviteDialog = ({
                                 // Other success handling
                                 form.reset();
                             } catch {
-                                toast.error('error updating/creating invite');
+                                toast.error(t('toast.inviteError'));
                             }
                         },
                         (errors) => {
                             console.log('Form validation errors:', errors);
-                            toast.error('Please fix the form errors before submitting');
+                            toast.error(t('toast.formErrors'));
                         }
                     )}
                 >
@@ -229,10 +231,10 @@ export const CreateInviteDialog = ({
                                         <FormControl>
                                             <MyInput
                                                 id="invite-link-name"
-                                                label="Invite Link Name"
+                                                label={t('inviteLink.label')}
                                                 required={true}
                                                 inputType="text"
-                                                inputPlaceholder="Enter invite link name"
+                                                inputPlaceholder={t('inviteLink.placeholder')}
                                                 input={field.value}
                                                 onChangeFunction={field.onChange}
                                                 className="w-full"
@@ -243,7 +245,9 @@ export const CreateInviteDialog = ({
                             />
 
                             <div className="flex w-fit gap-2" id="activate-link">
-                                <p className="text-subtitle font-semibold">Active Status</p>
+                                <p className="text-subtitle font-semibold">
+                                    {t('activeStatus.label')}
+                                </p>
                                 <FormField
                                     control={control}
                                     name="activeStatus"
@@ -275,7 +279,8 @@ export const CreateInviteDialog = ({
                         {instituteDetails?.batches_for_sessions.length == 0 ? (
                             <div className="flex flex-col gap-3" id="select-batch">
                                 <p className="text-subtitle font-semibold">
-                                    Batch Selection<span className="text-danger-600">*</span>
+                                    {t('batchSelection.label')}
+                                    <span className="text-danger-600">*</span>
                                 </p>
                                 <AddCourseButton
                                     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -293,7 +298,7 @@ export const CreateInviteDialog = ({
                                                 e.stopPropagation();
                                             }}
                                         >
-                                            <Plus /> Create Batch
+                                            <Plus /> {t('batchSelection.createBatch')}
                                         </MyButton>
                                     }
                                 />
@@ -301,7 +306,8 @@ export const CreateInviteDialog = ({
                         ) : (
                             <div className="flex flex-col gap-3" id="select-batch">
                                 <p className="text-subtitle font-semibold">
-                                    Batch Selection<span className="text-danger-600">*</span>
+                                    {t('batchSelection.label')}
+                                    <span className="text-danger-600">*</span>
                                 </p>
                                 <FormField
                                     control={form.control}
@@ -350,7 +356,7 @@ export const CreateInviteDialog = ({
                                                             htmlFor="contain_levels_true"
                                                             className="text-subtitle text-neutral-600"
                                                         >
-                                                            I want to assign batches
+                                                            {t('batchSelection.assignBatches')}
                                                         </label>
                                                     </div>
                                                     <div className="flex items-center space-x-2">
@@ -359,12 +365,15 @@ export const CreateInviteDialog = ({
                                                             htmlFor="contain_levels_false"
                                                             className="text-subtitle text-neutral-600"
                                                         >
-                                                            I want{' '}
-                                                            {getTerminology(
-                                                                RoleTerms.Learner,
-                                                                SystemTerms.Learner
-                                                            ).toLocaleLowerCase()}
-                                                            s to choose batches
+                                                            {t(
+                                                                'batchSelection.learnersChooseBatches',
+                                                                {
+                                                                    term: getTerminology(
+                                                                        RoleTerms.Learner,
+                                                                        SystemTerms.Learner
+                                                                    ).toLocaleLowerCase(),
+                                                                }
+                                                            )}
                                                         </label>
                                                     </div>
                                                 </RadioGroup>
@@ -523,9 +532,9 @@ export const CreateInviteDialog = ({
                                                                 <FormControl>
                                                                     <div className="flex items-center gap-2">
                                                                         <label className="text-body">
-                                                                            Enter max number of
-                                                                            batches a student can
-                                                                            select{' '}
+                                                                            {t(
+                                                                                'batchSelection.maxBatchesLabel'
+                                                                            )}{' '}
                                                                             <span className="text-danger-600">
                                                                                 *
                                                                             </span>
@@ -562,7 +571,7 @@ export const CreateInviteDialog = ({
                                                                                     e.target as HTMLInputElement
                                                                                 ).blur();
                                                                             }}
-                                                                            className="w-[50px] rounded-lg border border-neutral-300 px-2 py-1"
+                                                                            className="w-12 rounded-lg border border-neutral-300 px-2 py-1"
                                                                         />
                                                                         {errors.batches?.maxCourses
                                                                             ?.message && (
@@ -589,7 +598,9 @@ export const CreateInviteDialog = ({
 
                         {/* Student Expiry Date */}
                         <div className="flex items-center gap-6" id="student-access-duration">
-                            <p className="text-subtitle font-semibold">Link expiration days</p>
+                            <p className="text-subtitle font-semibold">
+                                {t('linkExpiration.label')}
+                            </p>
                             <div className="flex items-center gap-2">
                                 <FormField
                                     control={control}
@@ -609,13 +620,13 @@ export const CreateInviteDialog = ({
                                                         e.preventDefault();
                                                         (e.target as HTMLInputElement).blur(); // <- this line prevents scroll change
                                                     }}
-                                                    className="w-[70px]"
+                                                    className="w-16"
                                                 />
                                             </FormControl>
                                         </FormItem>
                                     )}
                                 />
-                                <p>days</p>
+                                <p>{t('linkExpiration.days')}</p>
                             </div>
                         </div>
 
@@ -628,10 +639,10 @@ export const CreateInviteDialog = ({
                                         name="inviteeEmail"
                                         render={({ field }) => (
                                             <FormItem className="w-full">
-                                                <p>Enter invitee email</p>
+                                                <p>{t('inviteeEmail.label')}</p>
                                                 <FormControl>
                                                     <MyInput
-                                                        placeholder="you@email.com"
+                                                        placeholder={t('inviteeEmail.placeholder')}
                                                         inputType="email"
                                                         input={field.value || ''}
                                                         onChangeFunction={field.onChange}
@@ -665,7 +676,7 @@ export const CreateInviteDialog = ({
                                             emailError || emptyEmailsError ? 'mb-7' : 'mb-0'
                                         }`}
                                     >
-                                        Add
+                                        {t('inviteeEmail.addButton')}
                                     </MyButton>
                                 </div>
 

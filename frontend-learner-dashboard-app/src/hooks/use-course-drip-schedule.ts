@@ -8,6 +8,7 @@ import {
 } from "@/services/drip-schedule";
 import { useDripClock } from "@/hooks/use-drip-clock";
 import {
+  enforceableCondition,
   resolveDripCondition,
   type DripConditionJson,
   type DripConditionLevel,
@@ -19,8 +20,9 @@ export interface CourseDripSchedule {
   /** Institute master switch — nothing locks when this is off. */
   enabled: boolean;
   /**
-   * Whether this institute has opted into enforcing the rules stored in its
-   * course settings. Off by default; see ResolvedDripConditions.
+   * Whether this institute has opted into enforcing PROGRESS rules stored in
+   * its course settings. Off by default; see ResolvedDripConditions. Time
+   * rules (fixed date, day-wise) are enforced regardless.
    */
   applyConfiguredRules: boolean;
   /** Day 1 for `relative_date` rules anchored to the learner's own enrollment. */
@@ -104,13 +106,15 @@ export function useCourseDripSchedule(
 
   const ruleTypesPresent = useMemo(() => {
     const types = new Set<string>();
-    if (!enabled || !applyConfiguredRules) return types;
+    if (!enabled) return types;
     conditions.forEach((condition) => {
       const configs = Array.isArray(condition.drip_condition)
         ? condition.drip_condition
         : [condition.drip_condition];
       configs.forEach((config) =>
-        config?.rules?.forEach((rule) => types.add(rule.type)),
+        enforceableCondition(config, applyConfiguredRules)?.rules.forEach(
+          (rule) => types.add(rule.type),
+        ),
       );
     });
     return types;
@@ -159,16 +163,17 @@ export function useCourseDripSchedule(
       now,
       enrollmentDate: cachedEnrollmentDate,
       sessionStartDate,
-      // The single gate. Until an institute opts in, no rule stored in the
-      // settings blob reaches a learner and the page behaves exactly as it
-      // did before this path existed.
+      // The institute switch is the only gate on time rules: a date or
+      // day-wise rule the admin saved locks as soon as it is saved. Progress
+      // rules additionally need the per-institute opt-in — resolveDripCondition
+      // narrows each condition to what this institute enforces.
       conditionFor: (level, levelId) =>
-        enabled && applyConfiguredRules
-          ? resolveDripCondition(conditions, {
-              level,
-              levelId,
-              packageId: courseId,
-            })
+        enabled
+          ? resolveDripCondition(
+              conditions,
+              { level, levelId, packageId: courseId },
+              { applyConfiguredRules },
+            )
           : null,
     }),
     [

@@ -1,0 +1,57 @@
+{
+    "heading": {
+        "titleLoading": "{{term}}",
+        "titleWithCount": "{{formattedCount}} {{term}}",
+        "subtitle": "إدارة ومشاركة {{term}} عبر الحملات."
+    },
+    "settingsButton": "إعدادات الجمهور",
+    "addButton": "إضافة {{term}}",
+    "status": {
+        "active": "نشط",
+        "draft": "مسودة",
+        "inactive": "غير نشط"
+    },
+    "statusFilter": {
+        "allStatus": "كل الحالات",
+        "placeholder": "تصفية حسب الحالة"
+    },
+    "typeFilter": {
+        "allTypes": "كل {{term}}",
+        "placeholder": "تصفية حسب {{term}}"
+    },
+    "toolbar": {
+        "searchPlaceholder": "البحث في {{term}}",
+        "searchAriaLabel": "البحث في {{term}}",
+        "subOrgPlaceholder": "تصفية حسب المؤسسة الفرعية",
+        "allSubOrgs": "كل المؤسسات الفرعية",
+        "subOrgFallback": "مؤسسة فرعية"
+    },
+    "errorState": {
+        "title": "تعذر تحميل {{term}}",
+        "subtitle": "حدث خطأ ما. حاول مرة أخرى."
+    },
+    "emptyState": {
+        "noMatches": "لا توجد {{term}} مطابقة لعوامل التصفية.",
+        "noneYet": "لم تُنشئ أي {{term}} بعد.",
+        "clearFilters": "مسح عوامل التصفية",
+        "createFirst": "أنشئ أول {{term}}"
+    },
+    "toast": {
+        "missingCampaignId": "تعذر فتح تفاصيل الحملة. معرّف الحملة مفقود."
+    },
+    "card": {
+        "openAriaLabel": "فتح {{campaignName}}",
+        "activateHint": "فعّل هذا {{term}} لإنشاء رابط قابل للمشاركة.",
+        "tagsAriaLabel": "الوسوم"
+    },
+    "actions": {
+        "addResponse": "إضافة رد",
+        "addResponseTooltip": "إضافة رد نيابةً عن المستجيب",
+        "qr": "QR",
+        "qrTooltip": "اعرض رمز QR يمكن للأشخاص مسحه لفتح هذا النموذج",
+        "api": "واجهة برمجة التطبيقات",
+        "apiTooltip": "الحصول على تفاصيل تكامل واجهة البرمجة للأتمتة",
+        "embed": "تضمين",
+        "embedTooltip": "الحصول على كود التضمين لموقعك"
+    }
+}

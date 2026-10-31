@@ -46,6 +46,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { format, subDays } from 'date-fns';
+import { useTranslation } from 'react-i18next';
 
 export const Route = createLazyFileRoute('/instructor-copilot/')({
     component: InstructorCopilotPage,
@@ -54,6 +55,7 @@ export const Route = createLazyFileRoute('/instructor-copilot/')({
 type AudioSource = 'upload' | 'record' | null;
 
 function InstructorCopilotPage() {
+    const { t } = useTranslation('instructorCopilotIndex');
     const { setNavHeading } = useNavHeadingStore();
 
     // Navigation State
@@ -96,21 +98,21 @@ function InstructorCopilotPage() {
     const createLogMutation = useMutation({
         mutationFn: createInstructorCopilotLog,
         onSuccess: (newLog) => {
-            toast.success('Content generation started successfully!');
+            toast.success(t('toast.generationStarted'));
             queryClient.invalidateQueries({ queryKey: ['instructor-copilot-logs'] });
             setSelectedLog(newLog);
             // Don't carry over audioUrl to log view as per previous logic
         },
         onError: (error) => {
             console.error('Error creating log:', error);
-            toast.error('Failed to start content generation.');
+            toast.error(t('toast.generationStartFailed'));
         },
     });
 
     const deleteLogMutation = useMutation({
         mutationFn: deleteInstructorCopilotLog,
         onSuccess: () => {
-            toast.success('Log deleted successfully');
+            toast.success(t('toast.logDeleted'));
             queryClient.invalidateQueries({ queryKey: ['instructor-copilot-logs'] });
             if (selectedLog) {
                 // If we delete the currently viewed log, go back to logs list
@@ -118,14 +120,14 @@ function InstructorCopilotPage() {
             }
         },
         onError: () => {
-            toast.error('Failed to delete log');
+            toast.error(t('toast.logDeleteFailed'));
         },
     });
 
     const retryLogMutation = useMutation({
         mutationFn: retryInstructorCopilotLog,
         onSuccess: () => {
-            toast.success('Content regeneration started!');
+            toast.success(t('toast.regenerationStarted'));
             setLastRegenerationTime(Date.now());
             setCanRegenerate(false);
             setTimeout(
@@ -137,7 +139,7 @@ function InstructorCopilotPage() {
             queryClient.invalidateQueries({ queryKey: ['instructor-copilot-logs'] });
         },
         onError: () => {
-            toast.error('Failed to regenerate content');
+            toast.error(t('toast.regenerationFailed'));
         },
     });
 
@@ -145,10 +147,10 @@ function InstructorCopilotPage() {
         setNavHeading(
             <div className="flex items-center gap-2">
                 <ChalkboardTeacher size={24} className="text-primary-500" />
-                <h1 className="text-lg font-semibold">Instructor Copilot</h1>
+                <h1 className="text-lg font-semibold">{t('navHeading')}</h1>
             </div>
         );
-    }, [setNavHeading]);
+    }, [setNavHeading, t]);
 
     // Cooldown countdown effect
     useEffect(() => {
@@ -174,30 +176,30 @@ function InstructorCopilotPage() {
     const handleFileSelected = async (file: File) => {
         try {
             setIsProcessing(true);
-            setProcessingStatus('Uploading audio file...');
-            toast.info('Uploading audio file...');
+            setProcessingStatus(t('status.uploadingAudio'));
+            toast.info(t('toast.uploadingAudio'));
 
             // Upload file
             const uploadUrl = await uploadAudioFile(file);
 
-            setProcessingStatus('Creating transcription job...');
-            toast.info('Processing transcription...');
+            setProcessingStatus(t('status.creatingTranscriptionJob'));
+            toast.info(t('toast.processingTranscription'));
 
             // Create transcription
             const transcriptId = await createTranscription(uploadUrl);
 
-            setProcessingStatus('Transcribing audio...');
+            setProcessingStatus(t('status.transcribingAudio'));
 
             // Wait for transcription
             const result = await waitForTranscription(transcriptId, (status) => {
-                setProcessingStatus(`Transcription status: ${status}`);
+                setProcessingStatus(t('status.transcriptionStatus', { status }));
             });
 
             if (result.status === 'completed' && result.text) {
                 setTranscription(result.text);
                 const fileUrl = URL.createObjectURL(file);
                 setAudioUrl(fileUrl);
-                toast.success('Transcription completed!');
+                toast.success(t('toast.transcriptionCompleted'));
 
                 // Auto-start content generation after transcription
                 await autoGenerateContent(result.text);
@@ -206,7 +208,7 @@ function InstructorCopilotPage() {
             }
         } catch (error) {
             console.error('Error processing audio:', error);
-            toast.error('Failed to process audio file');
+            toast.error(t('toast.audioProcessFailed'));
         } finally {
             setIsProcessing(false);
             setProcessingStatus('');
@@ -269,7 +271,7 @@ function InstructorCopilotPage() {
 
     const handleDeleteLog = async (id: string, e?: React.MouseEvent) => {
         e?.stopPropagation();
-        if (confirm('Are you sure you want to delete this log?')) {
+        if (confirm(t('confirmDeleteLog'))) {
             await deleteLogMutation.mutateAsync(id);
         }
     };
@@ -306,16 +308,17 @@ function InstructorCopilotPage() {
             <div className="flex items-center gap-4">
                 <Button variant="ghost" onClick={handleCloseLogDetail} className="gap-2">
                     <ArrowLeft size={16} />
-                    Back
+                    {t('back')}
                 </Button>
                 <div>
                     <h1 className="text-xl font-bold sm:text-2xl">
-                        {selectedLog?.title || 'Untitled Session'}
+                        {selectedLog?.title || t('untitledSession')}
                     </h1>
                     <p className="text-sm text-gray-500">
-                        Generated on{' '}
                         {selectedLog?.created_at &&
-                            format(new Date(selectedLog.created_at), 'PPP p')}
+                            t('generatedOn', {
+                                date: format(new Date(selectedLog.created_at), 'PPP p'),
+                            })}
                     </p>
                 </div>
                 {!selectedLog?.summary && (
@@ -326,10 +329,13 @@ function InstructorCopilotPage() {
                         className="gap-2"
                     >
                         {retryLogMutation.isPending
-                            ? 'Regenerating...'
+                            ? t('regenerating')
                             : !canRegenerate
-                              ? `Wait ${Math.floor(cooldownSeconds / 60)}:${String(cooldownSeconds % 60).padStart(2, '0')}`
-                              : 'Regenerate Content'}
+                              ? t('waitCountdown', {
+                                    minutes: Math.floor(cooldownSeconds / 60),
+                                    seconds: String(cooldownSeconds % 60).padStart(2, '0'),
+                                })
+                              : t('regenerateContent')}
                     </Button>
                 )}
             </div>
@@ -362,7 +368,7 @@ function InstructorCopilotPage() {
             <div className="flex items-center justify-between">
                 <Button variant="ghost" onClick={handleResetSession} size="sm" className="gap-2">
                     <ArrowLeft size={16} />
-                    Back to Selection
+                    {t('backToSelection')}
                 </Button>
             </div>
 
@@ -370,12 +376,12 @@ function InstructorCopilotPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle>
-                            {inLectureMode === 'record' ? 'Record Audio' : 'Upload Audio'}
+                            {inLectureMode === 'record' ? t('recordAudio') : t('uploadAudio')}
                         </CardTitle>
                         <CardDescription>
                             {inLectureMode === 'record'
-                                ? 'Record your live lecture directly.'
-                                : 'Upload a pre-recorded lecture audio file.'}
+                                ? t('recordLectureDescription')
+                                : t('uploadLectureDescription')}
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -413,7 +419,7 @@ function InstructorCopilotPage() {
                                                 <div className="flex items-center gap-3">
                                                     <div className="size-5 animate-spin rounded-full border-b-2 border-blue-600" />
                                                     <p className="text-sm font-medium text-blue-800">
-                                                        Generating content...
+                                                        {t('generatingContent')}
                                                     </p>
                                                 </div>
                                             </div>
@@ -423,7 +429,7 @@ function InstructorCopilotPage() {
                                             onClick={handleResetSession}
                                             className="w-full"
                                         >
-                                            Cancel
+                                            {t('cancel')}
                                         </Button>
                                     </div>
                                 </div>
@@ -448,9 +454,9 @@ function InstructorCopilotPage() {
                     className="gap-2"
                 >
                     <ArrowLeft size={16} />
-                    Back to Menu
+                    {t('backToMenu')}
                 </Button>
-                <h2 className="text-xl font-semibold">Previous Lecture Logs</h2>
+                <h2 className="text-xl font-semibold">{t('previousLectureLogs')}</h2>
             </div>
 
             {isLoadingLogs ? (
@@ -471,20 +477,22 @@ function InstructorCopilotPage() {
                                 <div className="flex items-start justify-between">
                                     <div className="space-y-1">
                                         <CardTitle className="line-clamp-1 text-base">
-                                            {log.title || 'Untitled Session'}
+                                            {log.title || t('untitledSession')}
                                         </CardTitle>
                                         <CardDescription className="text-xs">
                                             {format(new Date(log.created_at), 'PPP p')}
                                         </CardDescription>
                                     </div>
                                     <Badge variant={log.summary ? 'default' : 'secondary'}>
-                                        {log.summary ? 'Ready' : 'Processing'}
+                                        {log.summary
+                                            ? t('logStatus.ready')
+                                            : t('logStatus.processing')}
                                     </Badge>
                                 </div>
                             </CardHeader>
                             <CardContent className="grow">
                                 <p className="line-clamp-3 text-sm text-gray-500">
-                                    {log.summary || 'Content generation in progress...'}
+                                    {log.summary || t('contentGenerationInProgress')}
                                 </p>
                             </CardContent>
                             <CardFooter className="flex justify-between border-t p-4">
@@ -497,7 +505,7 @@ function InstructorCopilotPage() {
                                     <Trash size={16} />
                                 </Button>
                                 <Button size="sm" variant="outline">
-                                    View Details
+                                    {t('viewDetails')}
                                 </Button>
                             </CardFooter>
                         </Card>
@@ -506,8 +514,8 @@ function InstructorCopilotPage() {
             ) : (
                 <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12 text-center text-gray-500">
                     <FileText size={48} className="mb-4 text-gray-300" />
-                    <p className="text-lg font-medium">No sessions yet</p>
-                    <p className="text-sm">Start a new session to see your logs here.</p>
+                    <p className="text-lg font-medium">{t('noSessionsYet')}</p>
+                    <p className="text-sm">{t('startSessionToSeeLogs')}</p>
                 </div>
             )}
         </div>
@@ -516,11 +524,8 @@ function InstructorCopilotPage() {
     return (
         <LayoutContainer>
             <Helmet>
-                <title>Instructor Copilot</title>
-                <meta
-                    name="description"
-                    content="Manage your lectures, record sessions, and analyze performance with Instructor Copilot."
-                />
+                <title>{t('pageTitle')}</title>
+                <meta name="description" content={t('pageDescription')} />
             </Helmet>
 
             <div className="space-y-8 px-4 py-0 lg:px-0">
@@ -532,15 +537,15 @@ function InstructorCopilotPage() {
                         className="w-full"
                     >
                         <TabsList className="grid w-full grid-cols-2 lg:mx-auto lg:w-[400px]">
-                            <TabsTrigger value="lecture">Lecture</TabsTrigger>
-                            <TabsTrigger value="assessment">Assessment</TabsTrigger>
+                            <TabsTrigger value="lecture">{t('tabs.lecture')}</TabsTrigger>
+                            <TabsTrigger value="assessment">{t('tabs.assessment')}</TabsTrigger>
                         </TabsList>
 
                         <TabsContent value="assessment" className="mt-8 text-center">
                             <div className="flex flex-col items-center justify-center rounded-lg border border-dashed py-12 text-center text-gray-500">
                                 <FileText size={48} className="mb-4 text-gray-300" />
-                                <p className="text-lg font-medium">Assessment Tools</p>
-                                <p className="text-sm">Coming soon.</p>
+                                <p className="text-lg font-medium">{t('assessmentTools')}</p>
+                                <p className="text-sm">{t('comingSoon')}</p>
                             </div>
                         </TabsContent>
 

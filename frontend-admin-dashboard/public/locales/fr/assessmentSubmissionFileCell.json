@@ -1,0 +1,10 @@
+{
+    "checking": "Vérification en cours...",
+    "submitted": "Soumis",
+    "notSubmitted": "Non soumis",
+    "viewSubmission": "Voir la soumission",
+    "upload": "Téléverser",
+    "submissionHeading": "Soumission",
+    "fileNamePrefix": "Soumission",
+    "loadFailedError": "Échec du chargement de la soumission. Veuillez réessayer."
+}

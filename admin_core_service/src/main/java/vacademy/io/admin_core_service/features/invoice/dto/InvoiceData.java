@@ -37,6 +37,11 @@ public class InvoiceData {
     
     // Payment information
     private PaymentLog paymentLog;
+    /**
+     * Every payment this invoice covers. More than one course (an admission package) makes the
+     * receipt figures (fees, paid, due, next installment) cover all of them, not just the first.
+     */
+    private List<PaymentLog> receiptPaymentLogs;
     private List<PaymentLogLineItem> paymentLogLineItems;
     
     // Invoice details

@@ -1,0 +1,45 @@
+{
+    "title": "Option ID Mapping Demo",
+    "subtitle": "How option IDs are mapped to human-readable content",
+    "common": {
+        "questionLabel": "Question:",
+        "responseLabel": "Response:"
+    },
+    "before": {
+        "title": "Before (Raw Option IDs)",
+        "selectedOptions": "Selected options: {{ids}}"
+    },
+    "after": {
+        "title": "After (Mapped Content)",
+        "selected": "Selected: {{options}}"
+    },
+    "allOptions": {
+        "title": "All Available Options",
+        "selectedBadge": "Selected"
+    },
+    "process": {
+        "title": "Mapping Process:",
+        "steps": {
+            "fetchQuestions": {
+                "label": "Fetch Questions API:",
+                "description": "Get questions with options from the backend"
+            },
+            "createOptionsMap": {
+                "label": "Create Options Map:",
+                "description": "Map option IDs to their content text"
+            },
+            "parseResponse": {
+                "label": "Parse Response:",
+                "description": "Extract selected option IDs from user response"
+            },
+            "mapIdsToContent": {
+                "label": "Map IDs to Content:",
+                "description": "Replace option IDs with human-readable text"
+            },
+            "displayEnhancedUi": {
+                "label": "Display Enhanced UI:",
+                "description": "Show actual question content and selected options"
+            }
+        }
+    }
+}

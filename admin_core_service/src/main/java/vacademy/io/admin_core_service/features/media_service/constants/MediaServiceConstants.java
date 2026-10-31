@@ -9,6 +9,8 @@ public class MediaServiceConstants {
     public static final String GET_FILE_UPLOAD_ENDPOINT_PRIVATE = "/media-service/internal/upload-file-private";
     public static final String GET_MULTIPLE_FILES_BY_ID_ROUTE = "/media-service/internal/get-details/ids";
     public static final String GET_MULTIPLE_FILE_URLS_BY_ID_ROUTE = "/media-service/internal/get-url/id/many";
+    /** Permanent public (CDN) URLs for a batch of files; fails as a whole if ANY id is unknown. */
+    public static final String GET_MULTIPLE_PUBLIC_URLS_BY_ID_ROUTE = "/media-service/internal/get-public-url/id/many";
     /** Learner offline downloads: size/type/checksum for a batch of files (no URL, no raw S3 key). */
     public static final String GET_OFFLINE_ASSET_DETAILS_ROUTE = "/media-service/internal/offline-asset-details";
 }

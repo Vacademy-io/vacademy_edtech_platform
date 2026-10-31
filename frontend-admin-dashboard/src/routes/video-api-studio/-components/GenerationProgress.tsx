@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { VideoStage, ContentType, getContentTypeLabel } from '../-services/video-generation';
@@ -6,21 +7,21 @@ import { useEffectiveCreditRatio } from '@/services/ai-credits/use-credit-rate';
 import { formatCredits, usdToCredits } from '../-utils/credits';
 import {
     FileText,
-    Mic,
-    AlignLeft,
+    Microphone,
+    TextAlignLeft,
     Code,
-    CheckCircle2,
-    Loader2,
-    ChevronDown,
-    ChevronUp,
+    CheckCircle,
+    CircleNotch,
+    CaretDown,
+    CaretUp,
     Copy,
     Check,
     Clock,
-    Volume2,
-    Zap,
-    AlertTriangle,
+    SpeakerHigh,
+    Lightning,
+    Warning,
     Square,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 
 interface GenerationProgressProps {
     currentStage: VideoStage;
@@ -72,13 +73,13 @@ const STAGES: {
     {
         id: 'TTS',
         label: 'Audio',
-        icon: <Mic className="size-4" />,
+        icon: <Microphone className="size-4" />,
         description: 'Synthesizing voice',
     },
     {
         id: 'WORDS',
         label: 'Timing',
-        icon: <AlignLeft className="size-4" />,
+        icon: <TextAlignLeft className="size-4" />,
         description: 'Word alignment',
     },
     {
@@ -124,7 +125,7 @@ function ScriptContent({ url }: { url: string }) {
     if (loading)
         return (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Loader2 className="size-3 animate-spin" /> Loading script…
+                <CircleNotch className="size-3 animate-spin" /> Loading script…
             </div>
         );
     if (error) return <p className="text-xs text-destructive">Could not load script.</p>;
@@ -199,7 +200,7 @@ function AudioContent({ url }: { url: string }) {
                 <source src={url} type="audio/mpeg" />
                 Your browser does not support the audio element.
             </audio>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-2xs text-muted-foreground">
                 AI-synthesised narration — word-level timing will be computed next.
             </p>
         </div>
@@ -213,7 +214,7 @@ function WordsContent({ url }: { url: string }) {
     if (loading)
         return (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Loader2 className="size-3 animate-spin" /> Loading timing data…
+                <CircleNotch className="size-3 animate-spin" /> Loading timing data…
             </div>
         );
     if (error) return <p className="text-xs text-destructive">Could not load timing data.</p>;
@@ -236,7 +237,7 @@ function WordsContent({ url }: { url: string }) {
             {/* Stats row */}
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
-                    <AlignLeft className="size-3" />
+                    <TextAlignLeft className="size-3" />
                     {words.length} words
                 </span>
                 <span className="flex items-center gap-1">
@@ -250,14 +251,14 @@ function WordsContent({ url }: { url: string }) {
                 {sample.map((w, i) => (
                     <span
                         key={i}
-                        className="inline-flex items-baseline gap-0.5 rounded border border-blue-100 bg-blue-50 px-1.5 py-0.5 text-[11px] text-blue-800"
+                        className="inline-flex items-baseline gap-0.5 rounded border border-blue-100 bg-blue-50 px-1.5 py-0.5 text-2xs text-blue-800"
                     >
                         {w.word}
-                        <span className="text-[9px] text-blue-400">{w.start.toFixed(1)}s</span>
+                        <span className="text-2xs text-blue-400">{w.start.toFixed(1)}s</span>
                     </span>
                 ))}
                 {words.length > 48 && (
-                    <span className="px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                    <span className="px-1.5 py-0.5 text-2xs text-muted-foreground">
                         +{words.length - 48} more
                     </span>
                 )}
@@ -287,14 +288,14 @@ function StagePanel({
                 className="flex w-full items-center justify-between px-3 py-2 text-left transition-colors hover:bg-green-50/70"
             >
                 <div className="flex items-center gap-2">
-                    <CheckCircle2 className="size-3.5 shrink-0 text-green-600" />
+                    <CheckCircle className="size-3.5 shrink-0 text-green-600" />
                     <span className="text-green-700">{icon}</span>
                     <span className="text-sm font-medium">{title}</span>
                 </div>
                 {open ? (
-                    <ChevronUp className="size-3.5 text-muted-foreground" />
+                    <CaretUp className="size-3.5 text-muted-foreground" />
                 ) : (
-                    <ChevronDown className="size-3.5 text-muted-foreground" />
+                    <CaretDown className="size-3.5 text-muted-foreground" />
                 )}
             </button>
             {open && <div className="border-t border-green-100 px-3 pb-3 pt-2">{children}</div>}
@@ -333,6 +334,7 @@ function ShotProgress({
         narration_excerpt?: string;
     }>;
 }) {
+    const { t } = useTranslation('videoApiStudioCredits');
     const [errorsOpen, setErrorsOpen] = useState(false);
     const [planOpen, setPlanOpen] = useState(false);
     // Live USD→credits rate for the running-cost strip below.
@@ -364,14 +366,14 @@ function ShotProgress({
                 <div>
                     <button
                         onClick={() => setPlanOpen((o) => !o)}
-                        className="flex items-center gap-1.5 text-[11px] text-blue-600 hover:text-blue-700"
+                        className="flex items-center gap-1.5 text-2xs text-blue-600 hover:text-blue-700"
                     >
                         <Code className="size-3" />
                         Shot plan ({shotPlan!.length} shots)
                         {planOpen ? (
-                            <ChevronUp className="size-3" />
+                            <CaretUp className="size-3" />
                         ) : (
-                            <ChevronDown className="size-3" />
+                            <CaretDown className="size-3" />
                         )}
                     </button>
                     {planOpen && (
@@ -384,7 +386,7 @@ function ShotProgress({
                                 return (
                                     <div
                                         key={s.shot_index}
-                                        className={`flex items-start gap-2 rounded px-2 py-1 text-[11px] ${
+                                        className={`flex items-start gap-2 rounded px-2 py-1 text-2xs ${
                                             done
                                                 ? 'bg-green-50 text-green-800'
                                                 : current
@@ -394,9 +396,9 @@ function ShotProgress({
                                     >
                                         <span className="mt-0.5 shrink-0">
                                             {done ? (
-                                                <CheckCircle2 className="size-3 text-green-500" />
+                                                <CheckCircle className="size-3 text-green-500" />
                                             ) : current ? (
-                                                <Loader2 className="size-3 animate-spin text-blue-500" />
+                                                <CircleNotch className="size-3 animate-spin text-blue-500" />
                                             ) : (
                                                 <Clock className="size-3 opacity-40" />
                                             )}
@@ -405,7 +407,7 @@ function ShotProgress({
                                             {s.shot_index + 1}.
                                         </span>
                                         <span
-                                            className={`shrink-0 rounded px-1 text-[10px] font-medium ${
+                                            className={`shrink-0 rounded px-1 text-2xs font-medium ${
                                                 done
                                                     ? 'bg-green-100 text-green-700'
                                                     : current
@@ -434,17 +436,17 @@ function ShotProgress({
 
             {/* Token / cost strip */}
             {cumulativeTokens && (
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-2xs text-muted-foreground">
                     <span className="flex items-center gap-1">
-                        <Zap className="size-3 text-amber-500" />
+                        <Lightning className="size-3 text-amber-500" />
                         {cumulativeTokens.total_tokens.toLocaleString()} tokens
                     </span>
                     {cumulativeTokens.estimated_cost_usd != null && (
-                        <span className="font-mono text-[11px]">
+                        <span className="font-mono text-2xs">
                             ≈{' '}
                             {formatCredits(
                                 usdToCredits(cumulativeTokens.estimated_cost_usd, ratio),
-                                { precision: 1 }
+                                { precision: 1, t }
                             )}
                         </span>
                     )}
@@ -460,15 +462,15 @@ function ShotProgress({
                 <div>
                     <button
                         onClick={() => setErrorsOpen((o) => !o)}
-                        className="flex items-center gap-1.5 text-[11px] text-amber-600 hover:text-amber-700"
+                        className="flex items-center gap-1.5 text-2xs text-amber-600 hover:text-amber-700"
                     >
-                        <AlertTriangle className="size-3" />
+                        <Warning className="size-3" />
                         {recentErrors!.length} shot{' '}
                         {recentErrors!.length === 1 ? 'issue' : 'issues'}
                         {errorsOpen ? (
-                            <ChevronUp className="size-3" />
+                            <CaretUp className="size-3" />
                         ) : (
-                            <ChevronDown className="size-3" />
+                            <CaretDown className="size-3" />
                         )}
                     </button>
                     {errorsOpen && (
@@ -476,7 +478,7 @@ function ShotProgress({
                             {recentErrors!.map((e, i) => (
                                 <li
                                     key={i}
-                                    className="rounded bg-amber-50 px-2 py-1 text-[11px] text-amber-800"
+                                    className="rounded bg-amber-50 px-2 py-1 text-2xs text-amber-800"
                                 >
                                     <span className="font-medium">Shot {e.shot_index + 1}</span>
                                     {e.shot_type && (
@@ -514,8 +516,9 @@ export function GenerationProgress({
     shotPlan,
     onAbort,
 }: GenerationProgressProps) {
+    const { t } = useTranslation('videoApiStudioVideoGeneration');
     const currentIndex = getStageIndex(currentStage);
-    const contentLabel = getContentTypeLabel(contentType);
+    const contentLabel = getContentTypeLabel(contentType, t);
 
     const scriptReady = !!scriptUrl;
     const audioReady = !!audioUrl;
@@ -563,7 +566,7 @@ export function GenerationProgress({
                             >
                                 {stopping ? (
                                     <>
-                                        <Loader2 className="size-3 animate-spin" />
+                                        <CircleNotch className="size-3 animate-spin" />
                                         Stopping…
                                     </>
                                 ) : (
@@ -599,9 +602,9 @@ export function GenerationProgress({
                                     `}
                                 >
                                     {isCompleted ? (
-                                        <CheckCircle2 className="size-3.5" />
+                                        <CheckCircle className="size-3.5" />
                                     ) : isCurrent ? (
-                                        <Loader2 className="size-3.5 animate-spin" />
+                                        <CircleNotch className="size-3.5 animate-spin" />
                                     ) : (
                                         stage.icon
                                     )}
@@ -619,7 +622,7 @@ export function GenerationProgress({
                                         {stage.label}
                                     </div>
                                     {isCurrent && (
-                                        <div className="mt-0.5 text-[10px] leading-none text-blue-400">
+                                        <div className="mt-0.5 text-2xs leading-none text-blue-400">
                                             {stage.description}
                                         </div>
                                     )}
@@ -670,7 +673,7 @@ export function GenerationProgress({
                 {audioReady && (
                     <StagePanel
                         title="Audio Ready"
-                        icon={<Volume2 className="size-3.5" />}
+                        icon={<SpeakerHigh className="size-3.5" />}
                         defaultOpen={!wordsReady}
                     >
                         <AudioContent url={audioUrl} />
@@ -680,7 +683,7 @@ export function GenerationProgress({
                 {wordsReady && (
                     <StagePanel
                         title="Word Timing Ready"
-                        icon={<AlignLeft className="size-3.5" />}
+                        icon={<TextAlignLeft className="size-3.5" />}
                         defaultOpen={currentStage === 'WORDS' || currentStage === 'HTML'}
                     >
                         <WordsContent url={wordsUrl} />

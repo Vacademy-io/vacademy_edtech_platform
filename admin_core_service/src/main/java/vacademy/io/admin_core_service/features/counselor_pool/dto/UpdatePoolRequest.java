@@ -36,4 +36,11 @@ public class UpdatePoolRequest {
      */
     @JsonProperty("shift_aware")
     private Boolean shiftAware;
+
+    /**
+     * Rotate in one pool-wide order instead of each list's own order. Null means
+     * "leave unchanged". Ignored for MANUAL pools.
+     */
+    @JsonProperty("unified_rotation_order")
+    private Boolean unifiedRotationOrder;
 }

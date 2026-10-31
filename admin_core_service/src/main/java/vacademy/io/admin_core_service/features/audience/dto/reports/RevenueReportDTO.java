@@ -23,6 +23,10 @@ import java.util.List;
  * {@code best_source_type} / {@code assigned_counselor_id} — the same identity the rest of the
  * report suite scopes on. Payments from non-lead students never appear here.
  *
+ * Alongside the cash view, {@code admissions} / {@code bookedRevenue} count converted leads ENROLLED
+ * in the window (institute-TZ enrolled_date) and the full fee on those enrolments' plans, collected
+ * or not — the number counsellors are measured on.
+ *
  * All amounts are in {@link #currency} (the modal currency across the institute's PAID payments).
  */
 @Data
@@ -53,6 +57,10 @@ public class RevenueReportDTO {
         private long payments;
         /** revenue / payingLeads — null when payingLeads = 0. */
         private Double avgDealValue;
+        /** Distinct converted leads enrolled in-window. */
+        private long admissions;
+        /** Full fee (all non-cancelled installments) on those in-window enrolments. */
+        private double bookedRevenue;
     }
 
     @Data
@@ -82,6 +90,8 @@ public class RevenueReportDTO {
         private long payingLeads;
         private long payments;
         private Double avgDealValue;
+        private long admissions;
+        private double bookedRevenue;
     }
 
     @Data

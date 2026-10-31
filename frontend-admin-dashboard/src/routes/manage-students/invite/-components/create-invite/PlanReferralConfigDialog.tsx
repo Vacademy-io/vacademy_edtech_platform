@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
     Dialog as ShadDialog,
     DialogContent as ShadDialogContent,
@@ -26,6 +27,7 @@ interface PlanReferralConfigDialogProps {
 }
 
 export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps) {
+    const { t } = useTranslation('manageStudentsPlanReferralConfigDialog');
     const { data: referralProgramDetails } = useSuspenseQuery(handleGetReferralProgramDetails());
     const [currentStep, setCurrentStep] = useState<'selectPlan' | 'selectReferral'>('selectPlan');
     const [selectedPlanId, setSelectedPlanId] = useState<string>('');
@@ -115,7 +117,7 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                 if (!open) handleClose();
             }}
         >
-            <ShadDialogContent className="flex h-[70vh] min-w-[60vw] max-w-4xl flex-col">
+            <ShadDialogContent className="flex max-h-dialog-tall w-dialog-lg flex-col">
                 <ShadDialogHeader>
                     <div className="flex items-center gap-2">
                         {currentStep === 'selectReferral' && (
@@ -132,13 +134,15 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                         <div>
                             <ShadDialogTitle>
                                 {currentStep === 'selectPlan'
-                                    ? 'Select Payment Plan'
-                                    : `Configure Referral for ${selectedPlanName}`}
+                                    ? t('dialog.titleSelectPlan')
+                                    : t('dialog.titleConfigureReferral', {
+                                          planName: selectedPlanName,
+                                      })}
                             </ShadDialogTitle>
                             <ShadDialogDescription>
                                 {currentStep === 'selectPlan'
-                                    ? 'Choose which payment plan to configure referral settings for'
-                                    : 'Choose a referral program for this payment plan'}
+                                    ? t('dialog.descriptionSelectPlan')
+                                    : t('dialog.descriptionSelectReferral')}
                             </ShadDialogDescription>
                         </div>
                     </div>
@@ -151,7 +155,7 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                                 <div className="flex items-center justify-center py-8 text-gray-500">
                                     <div className="text-center">
                                         <Gear size={32} className="mx-auto mb-2 opacity-50" />
-                                        <p>No payment plans available</p>
+                                        <p>{t('planList.empty')}</p>
                                     </div>
                                 </div>
                             ) : (
@@ -182,7 +186,7 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                                                 <div className="flex items-center gap-2">
                                                     {!isConfigured && (
                                                         <span className="text-sm text-gray-500">
-                                                            No referral configured
+                                                            {t('planList.noReferralConfigured')}
                                                         </span>
                                                     )}
                                                     <ArrowRight
@@ -204,11 +208,12 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <div className="font-semibold text-amber-800">
-                                                Currently Configured: {currentReferral.name}
+                                                {t('currentReferral.configuredLabel', {
+                                                    name: currentReferral.name,
+                                                })}
                                             </div>
                                             <div className="text-sm text-amber-600">
-                                                Click on a different referral below to change, or
-                                                remove current one
+                                                {t('currentReferral.changeHint')}
                                             </div>
                                         </div>
                                         <MyButton
@@ -218,7 +223,7 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                                             onClick={handleRemoveReferral}
                                             className="border-amber-300 text-amber-700 hover:bg-amber-100"
                                         >
-                                            Remove
+                                            {t('currentReferral.remove')}
                                         </MyButton>
                                     </div>
                                 </Card>
@@ -229,7 +234,7 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                                 <div className="flex items-center justify-center py-8 text-gray-500">
                                     <div className="text-center">
                                         <TrendUp size={32} className="mx-auto mb-2 opacity-50" />
-                                        <p>No referral programs available</p>
+                                        <p>{t('referralList.empty')}</p>
                                     </div>
                                 </div>
                             ) : (
@@ -259,7 +264,7 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                                                         variant="default"
                                                         className="bg-blue-100 text-blue-800"
                                                     >
-                                                        Current
+                                                        {t('referralList.currentBadge')}
                                                     </Badge>
                                                 )}
                                             </div>
@@ -274,7 +279,7 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                                                             className="text-green-600"
                                                         />
                                                         <span className="text-sm font-medium text-gray-700">
-                                                            Referee Gets:
+                                                            {t('refereeBenefit.label')}
                                                         </span>
                                                     </div>
                                                     <div className="ml-6">
@@ -286,8 +291,17 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                                                                         ''
                                                                 )}
                                                                 <span className="text-sm font-medium">
-                                                                    {program?.refereeBenefit?.value}{' '}
-                                                                    free days
+                                                                    {t(
+                                                                        'refereeBenefit.freeDays',
+                                                                        {
+                                                                            count:
+                                                                                Number(
+                                                                                    program
+                                                                                        ?.refereeBenefit
+                                                                                        ?.value
+                                                                                ) || 0,
+                                                                        }
+                                                                    )}
                                                                 </span>
                                                             </div>
                                                         )}
@@ -304,7 +318,10 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                                                                             program?.refereeBenefit as {
                                                                                 title?: string;
                                                                             }
-                                                                        )?.title || 'Bonus Content'}
+                                                                        )?.title ||
+                                                                            t(
+                                                                                'refereeBenefit.bonusContentDefaultTitle'
+                                                                            )}
                                                                     </span>
                                                                 </div>
                                                                 {(
@@ -313,14 +330,20 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                                                                     }
                                                                 )?.contentType && (
                                                                     <div className="ml-6 text-xs text-purple-600">
-                                                                        Type:{' '}
+                                                                        {t(
+                                                                            'refereeBenefit.contentTypePrefix'
+                                                                        )}{' '}
                                                                         {(
                                                                             program?.refereeBenefit as {
                                                                                 contentType?: string;
                                                                             }
                                                                         )?.contentType === 'link'
-                                                                            ? 'External Link'
-                                                                            : 'File Upload'}
+                                                                            ? t(
+                                                                                  'refereeBenefit.contentTypeLink'
+                                                                              )
+                                                                            : t(
+                                                                                  'refereeBenefit.contentTypeFile'
+                                                                              )}
                                                                     </div>
                                                                 )}
                                                                 {(
@@ -329,7 +352,9 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                                                                     }
                                                                 )?.template && (
                                                                     <div className="ml-6 text-xs text-purple-600">
-                                                                        Template:{' '}
+                                                                        {t(
+                                                                            'refereeBenefit.templatePrefix'
+                                                                        )}{' '}
                                                                         {
                                                                             (
                                                                                 program?.refereeBenefit as {
@@ -349,8 +374,14 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                                                                         ''
                                                                 )}
                                                                 <span className="text-sm font-medium">
-                                                                    {program?.refereeBenefit?.value}
-                                                                    % discount
+                                                                    {t(
+                                                                        'refereeBenefit.discountPercentage',
+                                                                        {
+                                                                            value: program
+                                                                                ?.refereeBenefit
+                                                                                ?.value,
+                                                                        }
+                                                                    )}
                                                                 </span>
                                                             </div>
                                                         )}
@@ -362,9 +393,14 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                                                                         ''
                                                                 )}
                                                                 <span className="text-sm font-medium">
-                                                                    ₹
-                                                                    {program?.refereeBenefit?.value}{' '}
-                                                                    discount
+                                                                    {t(
+                                                                        'refereeBenefit.discountFixed',
+                                                                        {
+                                                                            value: program
+                                                                                ?.refereeBenefit
+                                                                                ?.value,
+                                                                        }
+                                                                    )}
                                                                 </span>
                                                             </div>
                                                         )}
@@ -377,7 +413,9 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                                                                             ?.type || ''
                                                                     )}
                                                                     <span className="text-sm font-medium">
-                                                                        Points System
+                                                                        {t(
+                                                                            'refereeBenefit.pointsSystemTitle'
+                                                                        )}
                                                                     </span>
                                                                 </div>
                                                                 {(
@@ -386,14 +424,19 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                                                                     }
                                                                 )?.pointsPerReferral && (
                                                                     <div className="ml-6 text-xs text-indigo-600">
-                                                                        {
-                                                                            (
-                                                                                program?.refereeBenefit as {
-                                                                                    pointsPerReferral?: number;
-                                                                                }
-                                                                            )?.pointsPerReferral
-                                                                        }{' '}
-                                                                        points per referral
+                                                                        {t(
+                                                                            'refereeBenefit.pointsPerReferral',
+                                                                            {
+                                                                                count:
+                                                                                    (
+                                                                                        program?.refereeBenefit as {
+                                                                                            pointsPerReferral?: number;
+                                                                                        }
+                                                                                    )
+                                                                                        ?.pointsPerReferral ||
+                                                                                    0,
+                                                                            }
+                                                                        )}
                                                                     </div>
                                                                 )}
                                                             </div>
@@ -413,8 +456,11 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                                                                         ''
                                                                 )}
                                                                 <span className="text-sm font-medium">
-                                                                    {program?.refereeBenefit?.value}{' '}
-                                                                    off
+                                                                    {t('refereeBenefit.genericOff', {
+                                                                        value: program
+                                                                            ?.refereeBenefit
+                                                                            ?.value,
+                                                                    })}
                                                                 </span>
                                                             </div>
                                                         )}
@@ -429,7 +475,7 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                                                             className="text-orange-600"
                                                         />
                                                         <span className="text-sm font-medium text-gray-700">
-                                                            Referrer Gets:
+                                                            {t('referrerBenefit.label')}
                                                         </span>
                                                     </div>
                                                     <div className="ml-6 space-y-1">
@@ -446,33 +492,46 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                                                                             benefit?.type || ''
                                                                         )}
                                                                         <span className="text-sm font-medium">
-                                                                            {benefit.referralCount >
-                                                                            1
-                                                                                ? `${benefit.referralCount} refs`
-                                                                                : 'Per ref'}
+                                                                            {t(
+                                                                                'referrerBenefit.refCount',
+                                                                                {
+                                                                                    count: benefit.referralCount,
+                                                                                }
+                                                                            )}
                                                                             :{' '}
                                                                             {benefit.type ===
                                                                             'points_system'
-                                                                                ? 'Points'
+                                                                                ? t(
+                                                                                      'referrerBenefit.typePoints'
+                                                                                  )
                                                                                 : benefit.type ===
                                                                                     'bonus_content'
-                                                                                  ? 'Content'
-                                                                                  : 'Reward'}
+                                                                                  ? t(
+                                                                                        'referrerBenefit.typeContent'
+                                                                                    )
+                                                                                  : t(
+                                                                                        'referrerBenefit.typeReward'
+                                                                                    )}
                                                                         </span>
                                                                     </div>
                                                                 ))
                                                         ) : (
                                                             <span className="text-sm text-gray-500">
-                                                                No rewards
+                                                                {t('referrerBenefit.noRewards')}
                                                             </span>
                                                         )}
                                                         {program.referrerBenefit &&
                                                             program.referrerBenefit.length > 2 && (
                                                                 <span className="text-xs text-gray-500">
-                                                                    +
-                                                                    {program.referrerBenefit
-                                                                        .length - 2}{' '}
-                                                                    more
+                                                                    {t(
+                                                                        'referrerBenefit.moreCount',
+                                                                        {
+                                                                            count:
+                                                                                program
+                                                                                    .referrerBenefit
+                                                                                    .length - 2,
+                                                                        }
+                                                                    )}
                                                                 </span>
                                                             )}
                                                     </div>
@@ -485,7 +544,9 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                                                     <div className="flex items-center gap-1 text-xs text-gray-600">
                                                         <Clock size={12} />
                                                         <span>
-                                                            {program.vestingPeriod}d vesting
+                                                            {t('vesting.label', {
+                                                                count: program.vestingPeriod,
+                                                            })}
                                                         </span>
                                                     </div>
                                                 )}
@@ -507,7 +568,7 @@ export function PlanReferralConfigDialog({ form }: PlanReferralConfigDialogProps
                             onClick={() => form.setValue('showAddReferralDialog', true)}
                             className="p-4"
                         >
-                            + Add New Referral Program
+                            {t('actions.addNewReferral')}
                         </MyButton>
                     </div>
                 )}

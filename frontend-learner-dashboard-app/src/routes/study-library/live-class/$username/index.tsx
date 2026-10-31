@@ -3,9 +3,9 @@ import { AuthPageBranding } from "@/components/common/institute-branding";
 import { useDomainRouting } from "@/hooks/use-domain-routing";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { getTokenFromStorage,
-  getDecodedAccessTokenFromStorage,
 } from "@/lib/auth/sessionUtility";
 import { TokenKey } from "@/constants/auth/tokens";
+import { getInstituteId } from "@/constants/helper";
 import { isNullOrEmptyOrUndefined } from "@/lib/utils";
 import { Preferences } from "@capacitor/preferences";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
@@ -23,7 +23,14 @@ import { SessionStreamingServiceType } from "@/routes/register/live-class/-types
 import { getLiveClassDisclaimer } from "@/services/live-class-disclaimer";
 import { DisclaimerVideoScreen } from "@/routes/study-library/live-class/-components/DisclaimerVideoScreen";
 import { useMarkAttendance } from "../-hooks/useMarkAttendance";
+import {
+  fetchLiveSessionPaymentStatus,
+  registerAndPayForLiveSession,
+} from "../-services/livePayment";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
+import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 
 
 export const Route = createFileRoute("/study-library/live-class/$username/")({
@@ -31,6 +38,7 @@ export const Route = createFileRoute("/study-library/live-class/$username/")({
 });
 
 function RouteComponent() {
+  const { t } = useTranslation("study");
   const params = Route.useParams();
   const navigate = useNavigate();
   const domainRouting = useDomainRouting();
@@ -87,6 +95,31 @@ function RouteComponent() {
   // Handle navigation to a specific session
   const proceedToSession = useCallback(
     async (session: SessionDetails, isInWaitingRoom: boolean) => {
+      // Paid class gate, same as the Live Classes list: BBB and plain links have
+      // no server-side payment check, so an unpaid learner must go via the
+      // invoice first. On lookup failure fall through — Zoom/Meet still enforce.
+      try {
+        const payStatus = await fetchLiveSessionPaymentStatus(session.session_id);
+        if (payStatus.payment_required && payStatus.payment_status !== "PAID") {
+          toast.info(
+            t("liveClass.toast.paymentRequired", {
+              session: getTerminology(ContentTerms.Session, SystemTerms.Session).toLowerCase(),
+            })
+          );
+          const registration = await registerAndPayForLiveSession(session.session_id);
+          if (registration.invoice_id) {
+            (navigate as any)({
+              to: "/pay/invoice/$invoiceId",
+              params: { invoiceId: registration.invoice_id },
+              search: { redirect: "/study-library/live-class" },
+            });
+            return;
+          }
+        }
+      } catch (error) {
+        console.error("Live-session payment status check failed:", error);
+      }
+
       // PRE_JOINING sessions join the live class directly during the
       // waiting-room window instead of entering the waiting-room screen.
       const isPreJoining = session.waiting_room_type === "PRE_JOINING";
@@ -130,7 +163,7 @@ function RouteComponent() {
           }
         } catch (error) {
           console.error("Failed to mark attendance:", error);
-          toast.error("Failed to mark attendance");
+          toast.error(t("liveClass.toast.markAttendanceFailed"));
 
           // Still proceed with navigation even if attendance marking fails
           if (isBbbSession(session.link_type)) {
@@ -154,7 +187,7 @@ function RouteComponent() {
         }
       }
     },
-    [navigate, markAttendance]
+    [navigate, markAttendance, t]
   );
 
   /**
@@ -168,9 +201,9 @@ function RouteComponent() {
    */
   const handleNavigateToSession = useCallback(
     async (session: SessionDetails, isInWaitingRoom: boolean) => {
-      const instituteId = Object.keys(
-        (await getDecodedAccessTokenFromStorage())?.authorities ?? {}
-      )[0];
+      // The institute the learner is logged into (selectedInstituteId), not the
+      // token's first key — for a learner in two institutes that is arbitrary.
+      const instituteId = await getInstituteId();
       if (instituteId) {
         const disclaimer = await getLiveClassDisclaimer(
           instituteId,
@@ -383,8 +416,9 @@ function RouteComponent() {
       <div className="bg-white border-t">
         <div className="mx-auto px-4 py-4">
           <p className="text-center text-sm text-gray-500">
-            Need help? Contact support for assistance with accessing your live
-            session.
+            {t("liveClass.usernameLogin.footerHelp", {
+              liveSession: getTerminology(ContentTerms.LiveSession, SystemTerms.LiveSession).toLowerCase(),
+            })}
           </p>
         </div>
       </div>

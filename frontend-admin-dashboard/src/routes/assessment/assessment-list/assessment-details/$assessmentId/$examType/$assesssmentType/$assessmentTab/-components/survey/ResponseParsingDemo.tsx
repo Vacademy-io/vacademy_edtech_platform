@@ -1,27 +1,33 @@
 import React from 'react';
+import i18next from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
 // Helper functions to parse response data (same as in SurveyIndividualRespondentsTab)
 const formatMcqAnswer = (responseData: any): string => {
   if (responseData.optionIds && responseData.optionIds.length > 0) {
-    return `Selected options: ${responseData.optionIds.join(', ')}`;
+    return i18next.t('assessmentResponseParsingDemo:response.selectedOptions', {
+      options: responseData.optionIds.join(', '),
+    });
   }
-  return 'No options selected';
+  return i18next.t('assessmentResponseParsingDemo:response.noOptionsSelected');
 };
 
 const formatNumericAnswer = (responseData: any): string => {
   if (responseData.validAnswer !== null && responseData.validAnswer !== undefined) {
-    return `Answer: ${responseData.validAnswer}`;
+    return i18next.t('assessmentResponseParsingDemo:response.answerValue', {
+      value: responseData.validAnswer,
+    });
   }
-  return 'No numeric answer provided';
+  return i18next.t('assessmentResponseParsingDemo:response.noNumericAnswer');
 };
 
 const formatTextAnswer = (responseData: any): string => {
   if (responseData.answer && responseData.answer.trim() !== '') {
     return responseData.answer;
   }
-  return 'No text answer provided';
+  return i18next.t('assessmentResponseParsingDemo:response.noTextAnswer');
 };
 
 const formatAnswerByType = (responseData: any): string => {
@@ -36,7 +42,7 @@ const formatAnswerByType = (responseData: any): string => {
     case 'LONG_ANSWER':
       return formatTextAnswer(responseData);
     default:
-      return 'Unknown response type';
+      return i18next.t('assessmentResponseParsingDemo:response.unknownType');
   }
 };
 
@@ -54,8 +60,8 @@ const parseResponseData = (responseString: string) => {
 };
 
 const createParsedResponse = (response: any, responseData: any, formattedAnswer: string) => ({
-  questionId: response.questionId || 'Unknown',
-  questionType: responseData.type || 'Unknown',
+  questionId: response.questionId || i18next.t('assessmentResponseParsingDemo:response.unknown'),
+  questionType: responseData.type || i18next.t('assessmentResponseParsingDemo:response.unknown'),
   formattedAnswer,
   timeTaken: response.timeTakenInSeconds || 0,
   durationLeft: response.questionDurationLeftInSeconds || 0,
@@ -65,9 +71,9 @@ const createParsedResponse = (response: any, responseData: any, formattedAnswer:
 });
 
 const createErrorResponse = (responseString: string) => ({
-  questionId: 'Unknown',
-  questionType: 'Unknown',
-  formattedAnswer: 'Error parsing response data',
+  questionId: i18next.t('assessmentResponseParsingDemo:response.unknown'),
+  questionType: i18next.t('assessmentResponseParsingDemo:response.unknown'),
+  formattedAnswer: i18next.t('assessmentResponseParsingDemo:response.parseError'),
   timeTaken: 0,
   durationLeft: 0,
   isVisited: false,
@@ -100,11 +106,13 @@ const exampleResponses = [
 ];
 
 export const ResponseParsingDemo: React.FC = () => {
+  const { t } = useTranslation('assessmentResponseParsingDemo');
+
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Response Parsing Demo</h2>
-        <p className="text-gray-600">Before vs After: How responses are now displayed</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">{t('header.title')}</h2>
+        <p className="text-gray-600">{t('header.subtitle')}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -116,7 +124,7 @@ export const ResponseParsingDemo: React.FC = () => {
               <CardHeader>
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="text-lg font-semibold flex-1">
-                    Q{index + 1}. Survey Question {index + 1}
+                    {t('card.title', { number: index + 1 })}
                   </CardTitle>
                   <div className="flex items-center gap-2">
                     <Badge className="bg-primary-100 text-primary-800 border-primary-200">
@@ -124,12 +132,12 @@ export const ResponseParsingDemo: React.FC = () => {
                     </Badge>
                     {parsedResponse.isVisited && (
                       <Badge variant="outline" className="text-xs">
-                        Visited
+                        {t('card.visited')}
                       </Badge>
                     )}
                     {parsedResponse.isMarkedForReview && (
                       <Badge variant="outline" className="text-xs">
-                        Marked for Review
+                        {t('card.markedForReview')}
                       </Badge>
                     )}
                   </div>
@@ -139,7 +147,7 @@ export const ResponseParsingDemo: React.FC = () => {
                 <div className="space-y-4">
                   {/* Before - Raw JSON */}
                   <div>
-                    <div className="text-sm font-medium text-red-700 mb-2">❌ Before (Raw JSON):</div>
+                    <div className="text-sm font-medium text-red-700 mb-2">{t('card.beforeLabel')}</div>
                     <div className="p-3 bg-red-50 rounded-lg border border-red-200">
                       <p className="text-xs font-mono text-red-800 break-all">
                         {response.answer}
@@ -149,7 +157,7 @@ export const ResponseParsingDemo: React.FC = () => {
 
                   {/* After - Parsed Response */}
                   <div>
-                    <div className="text-sm font-medium text-green-700 mb-2">✅ After (Parsed):</div>
+                    <div className="text-sm font-medium text-green-700 mb-2">{t('card.afterLabel')}</div>
                     <div className="p-4 bg-green-50 rounded-lg border border-green-200">
                       <p className="text-sm font-medium text-green-800">
                         {parsedResponse.formattedAnswer}
@@ -160,10 +168,10 @@ export const ResponseParsingDemo: React.FC = () => {
                   {/* Response Metadata */}
                   <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t">
                     <div className="flex items-center gap-4">
-                      <span>Time Taken: {parsedResponse.timeTaken}s</span>
-                      <span>Duration Left: {parsedResponse.durationLeft}s</span>
+                      <span>{t('card.timeTaken', { seconds: parsedResponse.timeTaken })}</span>
+                      <span>{t('card.durationLeft', { seconds: parsedResponse.durationLeft })}</span>
                     </div>
-                    <span>Question ID: {parsedResponse.questionId}</span>
+                    <span>{t('card.questionId', { id: parsedResponse.questionId })}</span>
                   </div>
                 </div>
               </CardContent>
@@ -173,14 +181,14 @@ export const ResponseParsingDemo: React.FC = () => {
       </div>
 
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <h3 className="font-semibold text-blue-900 mb-2">✨ Key Improvements:</h3>
+        <h3 className="font-semibold text-blue-900 mb-2">{t('improvements.title')}</h3>
         <ul className="text-sm text-blue-800 space-y-1">
-          <li>• <strong>Human-readable responses</strong> instead of raw JSON</li>
-          <li>• <strong>Question type badges</strong> for easy identification</li>
-          <li>• <strong>Response status indicators</strong> (Visited, Marked for Review)</li>
-          <li>• <strong>Time tracking</strong> (Time Taken, Duration Left)</li>
-          <li>• <strong>Question ID reference</strong> for debugging</li>
-          <li>• <strong>Survey-specific handling</strong> (no correct answers needed)</li>
+          <li>• <strong>{t('improvements.humanReadable.bold')}</strong> {t('improvements.humanReadable.text')}</li>
+          <li>• <strong>{t('improvements.questionTypeBadges.bold')}</strong> {t('improvements.questionTypeBadges.text')}</li>
+          <li>• <strong>{t('improvements.statusIndicators.bold')}</strong> {t('improvements.statusIndicators.text')}</li>
+          <li>• <strong>{t('improvements.timeTracking.bold')}</strong> {t('improvements.timeTracking.text')}</li>
+          <li>• <strong>{t('improvements.questionIdReference.bold')}</strong> {t('improvements.questionIdReference.text')}</li>
+          <li>• <strong>{t('improvements.surveySpecific.bold')}</strong> {t('improvements.surveySpecific.text')}</li>
         </ul>
       </div>
     </div>

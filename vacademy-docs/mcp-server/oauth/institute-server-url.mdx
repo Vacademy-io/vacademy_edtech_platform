@@ -1,0 +1,55 @@
+---
+title: "Your institute's server URL"
+sidebarTitle: "Institute server URL"
+description: "Why the server URL names your institute, where to find it, and what to do with more than one institute."
+icon: "link"
+---
+
+Each institute has its own server URL. It looks like this:
+
+```text
+https://<your backend>/ai-service/mcp/i/<institute_id>
+```
+
+Do not type it by hand. Copy it from **Settings → MCP Server → Connect your AI app → Server URL** in your admin portal. The page shows it once the server is switched on.
+
+## Why the URL names your institute
+
+Because the institute is in the URL, the server knows who is connecting before anyone signs in. That gives you:
+
+- **Your own sign-in page.** The approval page opens on your institute's admin portal, at your portal's address and with your brand, using the session people already have.
+- **No institute picker.** People who belong to several institutes are not asked to choose.
+- **Only your members can approve.** Someone signed in to a different institute is told to sign in to yours first.
+- **Tokens that stay put.** A token issued through your URL works only with your URL.
+
+If your institute has its own admin portal address, the approval page opens there. Otherwise it opens on the default admin portal.
+
+## The shared URL without an institute
+
+The server also answers on a shorter, shared URL:
+
+```text
+https://<your backend>/ai-service/mcp
+```
+
+It exists so that older connections keep working. With it, the approval page opens on the default admin portal and asks the person to pick an institute. Use your institute's URL for every new connection.
+
+Tokens are not shared between the two. An app connected through one URL is refused on the other with *"This token was issued for a different server URL. Reconnect using the URL shown in your institute's MCP settings."* To switch, remove the server from the app and add it again with the institute URL.
+
+## More than one institute
+
+One connection works with one institute. If you work for several institutes:
+
+1. Copy the server URL from each institute's **Settings → MCP Server**.
+2. Add each one to your AI app as a separate server, with a name that tells them apart, for example `north-campus` and `south-campus`.
+3. Sign in to each one with your account for that institute.
+
+Each connection then sees only its own institute's data, under that institute's settings.
+
+## Sharing the URL
+
+The URL is not a secret. Having it does not give access: a person must still sign in, belong to your institute, and hold an allowed role. You can paste it in a team chat or an onboarding document.
+
+<Note>
+  The name you type when you add the server is the one your team sees in most apps. A few apps also show the name the server reports for itself. That is a technical label, and it does not change which institute you are connected to.
+</Note>

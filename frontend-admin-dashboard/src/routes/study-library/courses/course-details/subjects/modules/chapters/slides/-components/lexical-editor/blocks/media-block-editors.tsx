@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
@@ -48,6 +49,7 @@ function UploadPlaceholder({
     uploading: boolean;
     onFile: (file: File) => void;
 }) {
+    const { t } = useTranslation('studyLibraryMediaBlockEditors');
     const inputRef = useRef<HTMLInputElement>(null);
     return (
         <div className="my-2 flex flex-col items-center gap-2 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-6">
@@ -68,7 +70,7 @@ function UploadPlaceholder({
                 onClick={() => inputRef.current?.click()}
             >
                 <UploadSimple size={14} className="mr-1" />
-                {uploading ? 'Uploading…' : label}
+                {uploading ? t('uploading') : label}
             </MyButton>
         </div>
     );
@@ -80,13 +82,15 @@ export function ImageBlockEditor({
     setPayload,
     readOnly,
 }: BlockEditorProps<ImagePayload>) {
+    const { t } = useTranslation('studyLibraryMediaBlockEditors');
     const [uploading, setUploading] = useState(false);
 
     if (!payload.src) {
-        if (readOnly) return <div className="text-caption text-neutral-400">No image</div>;
+        if (readOnly)
+            return <div className="text-caption text-neutral-400">{t('noImage')}</div>;
         return (
             <UploadPlaceholder
-                label="Upload image"
+                label={t('uploadImage')}
                 accept="image/*"
                 uploading={uploading}
                 onFile={async (file) => {
@@ -94,7 +98,7 @@ export function ImageBlockEditor({
                     const url = await uploadToS3(file);
                     setUploading(false);
                     if (url) setPayload({ ...payload, src: url });
-                    else toast.error('Image upload failed');
+                    else toast.error(t('imageUploadFailed'));
                 }}
             />
         );
@@ -110,7 +114,7 @@ export function ImageBlockEditor({
                 <div className="mt-1">
                     <MyInput
                         inputType="text"
-                        inputPlaceholder="Alt text (optional)"
+                        inputPlaceholder={t('altTextPlaceholder')}
                         input={payload.alt}
                         onChangeFunction={(e) => setPayload({ ...payload, alt: e.target.value })}
                         size="small"
@@ -127,13 +131,15 @@ export function VideoBlockEditor({
     setPayload,
     readOnly,
 }: BlockEditorProps<VideoPayload>) {
+    const { t } = useTranslation('studyLibraryMediaBlockEditors');
     const [uploading, setUploading] = useState(false);
 
     if (!payload.src) {
-        if (readOnly) return <div className="text-caption text-neutral-400">No video</div>;
+        if (readOnly)
+            return <div className="text-caption text-neutral-400">{t('noVideo')}</div>;
         return (
             <UploadPlaceholder
-                label="Upload video"
+                label={t('uploadVideo')}
                 accept="video/*"
                 uploading={uploading}
                 onFile={async (file) => {
@@ -141,7 +147,7 @@ export function VideoBlockEditor({
                     const url = await uploadToS3(file);
                     setUploading(false);
                     if (url) setPayload({ src: url });
-                    else toast.error('Video upload failed');
+                    else toast.error(t('videoUploadFailed'));
                 }}
             />
         );
@@ -158,13 +164,14 @@ export function VideoBlockEditor({
 
 // ---------- File ----------
 export function FileBlockEditor({ payload, setPayload, readOnly }: BlockEditorProps<FilePayload>) {
+    const { t } = useTranslation('studyLibraryMediaBlockEditors');
     const [uploading, setUploading] = useState(false);
 
     if (!payload.href) {
-        if (readOnly) return <div className="text-caption text-neutral-400">No file</div>;
+        if (readOnly) return <div className="text-caption text-neutral-400">{t('noFile')}</div>;
         return (
             <UploadPlaceholder
-                label="Upload file"
+                label={t('uploadFile')}
                 accept="*/*"
                 uploading={uploading}
                 onFile={async (file) => {
@@ -172,7 +179,7 @@ export function FileBlockEditor({ payload, setPayload, readOnly }: BlockEditorPr
                     const url = await uploadToS3(file);
                     setUploading(false);
                     if (url) setPayload({ href: url, name: file.name });
-                    else toast.error('File upload failed');
+                    else toast.error(t('fileUploadFailed'));
                 }}
             />
         );
@@ -185,7 +192,7 @@ export function FileBlockEditor({ payload, setPayload, readOnly }: BlockEditorPr
             className="my-2 inline-flex items-center gap-2 rounded-md border border-neutral-200 px-3 py-2 text-caption text-primary-500 no-underline"
         >
             <FileArrowDown size={16} />
-            {payload.name || 'Download file'}
+            {payload.name || t('downloadFile')}
         </a>
     );
 }
@@ -196,16 +203,17 @@ export function EmbedBlockEditor({
     setPayload,
     readOnly,
 }: BlockEditorProps<EmbedPayload>) {
+    const { t } = useTranslation('studyLibraryMediaBlockEditors');
     const [draft, setDraft] = useState('');
 
     if (!payload.src) {
-        if (readOnly) return <div className="text-caption text-neutral-400">No embed</div>;
+        if (readOnly) return <div className="text-caption text-neutral-400">{t('noEmbed')}</div>;
         return (
             <div className="my-2 flex items-center gap-2 rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-4">
                 <LinkIcon size={16} className="text-neutral-400" />
                 <MyInput
                     inputType="text"
-                    inputPlaceholder="Paste a YouTube / Vimeo / Loom / any URL"
+                    inputPlaceholder={t('embedUrlPlaceholder')}
                     input={draft}
                     onChangeFunction={(e) => setDraft(e.target.value)}
                     size="small"
@@ -216,7 +224,7 @@ export function EmbedBlockEditor({
                     disable={!draft.trim()}
                     onClick={() => setPayload({ ...payload, src: toEmbedUrl(draft) })}
                 >
-                    Embed
+                    {t('embed')}
                 </MyButton>
             </div>
         );
@@ -227,7 +235,7 @@ export function EmbedBlockEditor({
             className="my-2 w-full rounded-md border-none"
             style={{ height: payload.height }}
             allowFullScreen
-            title="Embedded content"
+            title={t('embeddedContentTitle')}
         />
     );
 }
@@ -238,6 +246,7 @@ export function CalloutBlockEditor({
     setPayload,
     readOnly,
 }: BlockEditorProps<CalloutPayload>) {
+    const { t } = useTranslation('studyLibraryMediaBlockEditors');
     const theme = CALLOUT_THEMES[payload.theme] ?? CALLOUT_THEMES.info;
     return (
         <div
@@ -255,27 +264,27 @@ export function CalloutBlockEditor({
                     className="w-full resize-none border-none bg-transparent outline-none"
                     style={{ color: theme.color }}
                     rows={Math.max(1, payload.text.split('\n').length)}
-                    placeholder="Write a callout…"
+                    placeholder={t('calloutPlaceholder')}
                     value={payload.text}
                     onChange={(e) => setPayload({ ...payload, text: e.target.value })}
                 />
             )}
             {!readOnly && (
                 <div className="mt-2 flex gap-1">
-                    {(Object.keys(CALLOUT_THEMES) as CalloutPayload['theme'][]).map((t) => (
+                    {(Object.keys(CALLOUT_THEMES) as CalloutPayload['theme'][]).map((themeKey) => (
                         <button
-                            key={t}
+                            key={themeKey}
                             type="button"
-                            aria-label={`${t} theme`}
+                            aria-label={t('themeAriaLabel', { theme: themeKey })}
                             className={cn(
                                 'size-5 rounded-full border',
-                                payload.theme === t && 'ring-2 ring-primary-400'
+                                payload.theme === themeKey && 'ring-2 ring-primary-400'
                             )}
                             style={{
-                                background: CALLOUT_THEMES[t].bg,
-                                borderColor: CALLOUT_THEMES[t].border,
+                                background: CALLOUT_THEMES[themeKey].bg,
+                                borderColor: CALLOUT_THEMES[themeKey].border,
                             }}
-                            onClick={() => setPayload({ ...payload, theme: t })}
+                            onClick={() => setPayload({ ...payload, theme: themeKey })}
                         />
                     ))}
                 </div>

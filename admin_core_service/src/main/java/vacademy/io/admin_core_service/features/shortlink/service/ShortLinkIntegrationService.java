@@ -151,16 +151,21 @@ public class ShortLinkIntegrationService {
 
         String cacheKey = instituteId != null && !instituteId.isBlank() ? instituteId : "DEFAULT";
 
-        // Only serve from cache if the key is present (don't cache failures)
+        // Cache every answer media-service actually gave, including the default
+        // host for institutes without a custom domain — those used to miss the
+        // cache and cost one media-service call per short URL, i.e. per invite
+        // row in every invite list. Failures are still not cached.
         String cachedHost = baseUrlCache.get(cacheKey);
         String host;
         if (cachedHost != null) {
             host = cachedHost;
         } else {
-            host = fetchBaseUrlFromMediaService(instituteId);
-            if (!host.equals(shortLinkBaseUrl)) {
-                // Only cache custom domain hits — not fallbacks caused by failure
-                baseUrlCache.put(cacheKey, host);
+            String fetched = fetchBaseUrlFromMediaService(instituteId);
+            if (fetched != null) {
+                baseUrlCache.put(cacheKey, fetched);
+                host = fetched;
+            } else {
+                host = shortLinkBaseUrl;
             }
         }
 
@@ -172,6 +177,7 @@ public class ShortLinkIntegrationService {
         return host + "/s/" + shortCode;
     }
 
+    /** The host media-service reports for this institute, or null if the call failed. */
     private String fetchBaseUrlFromMediaService(String instituteId) {
         String route = "/media-service/internal/v1/short-link/base-url"
                 + (instituteId != null && !instituteId.isBlank() ? "?instituteId=" + instituteId : "");
@@ -199,7 +205,7 @@ public class ShortLinkIntegrationService {
             shortUrlLogger.error("Failed to fetch base URL from media service for institute {}: {}",
                     instituteId, e.getMessage(), e);
         }
-        return shortLinkBaseUrl;
+        return null;
     }
 
     public String generateRandomCode() {

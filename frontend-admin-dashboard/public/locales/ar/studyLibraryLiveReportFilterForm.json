@@ -1,0 +1,17 @@
+{
+    "validation": {
+        "startDateRequired": "تاريخ البدء مطلوب",
+        "endDateRequired": "تاريخ الانتهاء مطلوب",
+        "learnerRequired": "المتعلم مطلوب",
+        "dateRangeWithinMonth": "يجب أن يكون نطاق التاريخ خلال شهر واحد.",
+        "batchRequired": "اختر دفعة واحدة على الأقل"
+    },
+    "selectPlaceholder": "اختر {{term}}",
+    "searchPlaceholder": "ابحث عن {{term}}...",
+    "loading": "جارٍ التحميل…",
+    "generateReport": "إنشاء التقرير",
+    "fixFollowing": "يرجى تصحيح ما يلي:",
+    "learnerNotInBatches": "هذا المتعلم غير مسجل في أي من الدفعات المختارة.",
+    "learnerHint": "{{count}} متاح",
+    "pickBatchFirst": "اختر {{batch}} أولًا."
+}

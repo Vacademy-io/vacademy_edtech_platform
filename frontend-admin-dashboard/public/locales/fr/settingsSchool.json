@@ -1,0 +1,15 @@
+{
+    "loading": "Chargement...",
+    "header": {
+        "title": "Paramètres de l'école",
+        "description": "Configurez les paramètres à l'échelle de l'établissement pour la gestion des demandes et les opérations"
+    },
+    "actions": {
+        "save": "Enregistrer les modifications",
+        "saving": "Enregistrement..."
+    },
+    "toasts": {
+        "updateSuccess": "Paramètres de l'école mis à jour avec succès",
+        "updateFailed": "Échec de la mise à jour des paramètres"
+    }
+}

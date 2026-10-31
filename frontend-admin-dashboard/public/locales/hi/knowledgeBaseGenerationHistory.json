@@ -1,0 +1,47 @@
+{
+    "artifactType": {
+        "questionPaper": "प्रश्न पत्र",
+        "course": "कोर्स",
+        "presentation": "प्रस्तुति",
+        "quiz": "क्विज़",
+        "assessment": "मूल्यांकन",
+        "notes": "नोट्स",
+        "summary": "सारांश",
+        "lessonPlan": "पाठ योजना",
+        "worksheet": "वर्कशीट"
+    },
+    "status": {
+        "draft": "ड्राफ्ट",
+        "generating": "बनाया जा रहा है",
+        "notSavedYet": "अभी सहेजा नहीं गया",
+        "saved": "सहेजा गया",
+        "failed": "विफल"
+    },
+    "time": {
+        "justNow": "अभी",
+        "minutesAgo_one": "{{count}} मिनट पहले",
+        "minutesAgo_other": "{{count}} मिनट पहले",
+        "hoursAgo_one": "{{count}} घंटे पहले",
+        "hoursAgo_other": "{{count}} घंटे पहले"
+    },
+    "progress": {
+        "questions_one": "{{planned}} में से {{delivered}} प्रश्न",
+        "questions_other": "{{planned}} में से {{delivered}} प्रश्न",
+        "credits_one": "{{count}} क्रेडिट",
+        "credits_other": "{{count}} क्रेडिट"
+    },
+    "emptyState": {
+        "title": "इस नॉलेज बेस से अभी तक कुछ नहीं बनाया गया है।",
+        "description": "आपके बनाए गए पेपर और कोर्स यहाँ सूचीबद्ध होंगे ताकि आप उन पर वापस आ सकें।"
+    },
+    "actions": {
+        "tryAgain": "फिर कोशिश करें",
+        "open": "खोलें",
+        "inQuestionBank": "प्रश्न बैंक में",
+        "remove": "हटाएँ"
+    },
+    "toast": {
+        "removed": "इतिहास से हटाया गया",
+        "removeFailed": "उस प्रविष्टि को हटाया नहीं जा सका"
+    }
+}

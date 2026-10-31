@@ -1,0 +1,56 @@
+{
+    "dialog": {
+        "titleSelectPlan": "Sélectionner le plan de paiement",
+        "titleConfigureReferral": "Configurer le parrainage pour {{planName}}",
+        "descriptionSelectPlan": "Choisissez le plan de paiement pour lequel configurer les paramètres de parrainage",
+        "descriptionSelectReferral": "Choisissez un programme de parrainage pour ce plan de paiement"
+    },
+    "planList": {
+        "empty": "Aucun plan de paiement disponible",
+        "noReferralConfigured": "Aucun parrainage configuré"
+    },
+    "currentReferral": {
+        "configuredLabel": "Actuellement configuré : {{name}}",
+        "changeHint": "Cliquez sur un autre parrainage ci-dessous pour le modifier, ou supprimez celui en cours",
+        "remove": "Supprimer"
+    },
+    "referralList": {
+        "empty": "Aucun programme de parrainage disponible",
+        "currentBadge": "Actuel"
+    },
+    "refereeBenefit": {
+        "label": "Le filleul reçoit :",
+        "freeDays_one": "{{count}} jour gratuit",
+        "freeDays_many": "{{count}} jours gratuits",
+        "freeDays_other": "{{count}} jours gratuits",
+        "bonusContentDefaultTitle": "Contenu bonus",
+        "contentTypePrefix": "Type :",
+        "contentTypeLink": "Lien externe",
+        "contentTypeFile": "Téléversement de fichier",
+        "templatePrefix": "Modèle :",
+        "discountPercentage": "{{value}} % de réduction",
+        "discountFixed": "₹{{value}} de réduction",
+        "pointsSystemTitle": "Système de points",
+        "pointsPerReferral_one": "{{count}} point par parrainage",
+        "pointsPerReferral_many": "{{count}} points par parrainage",
+        "pointsPerReferral_other": "{{count}} points par parrainage",
+        "genericOff": "{{value}} de réduction"
+    },
+    "referrerBenefit": {
+        "label": "Le parrain reçoit :",
+        "refCount_one": "{{count}} parrainage",
+        "refCount_many": "{{count}} parrainages",
+        "refCount_other": "{{count}} parrainages",
+        "typePoints": "Points",
+        "typeContent": "Contenu",
+        "typeReward": "Récompense",
+        "noRewards": "Aucune récompense",
+        "moreCount": "+{{count}} de plus"
+    },
+    "vesting": {
+        "label": "{{count}} j d'acquisition"
+    },
+    "actions": {
+        "addNewReferral": "+ Ajouter un nouveau programme de parrainage"
+    }
+}

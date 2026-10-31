@@ -13,6 +13,9 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
+import { PerLeadExports } from './per-lead-exports';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     Alarm,
     CalendarCheck,
@@ -52,16 +55,21 @@ const BUCKET_ORDER: FollowupAgingBucketKey[] = [
     'UPCOMING',
 ];
 
-const BUCKET_META: Record<
+/** Bucket display labels — built with `t` so they re-localize on language change. */
+function buildBucketMeta(
+    t: TFunction
+): Record<
     FollowupAgingBucketKey,
     { label: string; tone: 'warning' | 'danger' | 'info' | 'primary' | 'default' }
-> = {
-    DUE_TODAY: { label: 'Due Today', tone: 'warning' },
-    OVERDUE_1_3: { label: 'Overdue 1–3d', tone: 'danger' },
-    OVERDUE_3_7: { label: 'Overdue 3–7d', tone: 'danger' },
-    OVERDUE_7_PLUS: { label: 'Overdue 7d+', tone: 'danger' },
-    UPCOMING: { label: 'Upcoming', tone: 'info' },
-};
+> {
+    return {
+        DUE_TODAY: { label: t('buckets.dueToday'), tone: 'warning' },
+        OVERDUE_1_3: { label: t('buckets.overdue1to3'), tone: 'danger' },
+        OVERDUE_3_7: { label: t('buckets.overdue3to7'), tone: 'danger' },
+        OVERDUE_7_PLUS: { label: t('buckets.overdue7plus'), tone: 'danger' },
+        UPCOMING: { label: t('buckets.upcoming'), tone: 'info' },
+    };
+}
 
 type SortKey =
     | 'name'
@@ -81,6 +89,8 @@ export function FollowupsTab({
     audienceId,
 }: ReportTabProps) {
     const navigate = useNavigate();
+    const { t } = useTranslation('audienceManagerFollowupsTab');
+    const BUCKET_META = useMemo(() => buildBucketMeta(t), [t]);
     const params = { instituteId, fromDate, toDate, teamId, counsellorUserId, audienceId };
 
     const query = useQuery({
@@ -138,6 +148,16 @@ export function FollowupsTab({
 
     return (
         <div className="flex flex-col gap-6">
+            {/* Per-lead overdue export — only for institutes that turned it on. */}
+            <PerLeadExports
+                kinds={['overdue']}
+                instituteId={instituteId}
+                fromDate={fromDate}
+                toDate={toDate}
+                teamId={teamId}
+                counsellorUserId={counsellorUserId}
+                audienceId={audienceId}
+            />
             {/* Aging bucket tiles */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 {BUCKET_ORDER.map((key) => (
@@ -161,7 +181,7 @@ export function FollowupsTab({
 
             {/* Per-counsellor aging table */}
             <ReportSection
-                title="Aging by counsellor"
+                title={t('section.agingByCounsellor')}
                 icon={<Users size={18} />}
                 actions={
                     <ExportWithColumnPickerButton
@@ -169,13 +189,13 @@ export function FollowupsTab({
                         disabled={rows.length === 0}
                         getHeadersAndRows={() => ({
                             headers: [
-                                'Counsellor',
-                                'Due today',
-                                'Overdue 1-3d',
-                                'Overdue 3-7d',
-                                'Overdue 7d+',
-                                'Upcoming',
-                                'Oldest overdue (days)',
+                                t('csv.headers.counsellor'),
+                                t('csv.headers.dueToday'),
+                                t('csv.headers.overdue1to3'),
+                                t('csv.headers.overdue3to7'),
+                                t('csv.headers.overdue7plus'),
+                                t('csv.headers.upcoming'),
+                                t('csv.headers.oldestOverdueDays'),
                             ],
                             rows: rows.map((r) => [
                                 r.name ?? r.user_id,
@@ -191,14 +211,14 @@ export function FollowupsTab({
                 }
             >
                 {rows.length === 0 ? (
-                    <EmptyHint message="No open follow-ups right now." />
+                    <EmptyHint message={t('empty.noOpenFollowups')} />
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b border-neutral-200 text-left text-xs uppercase tracking-wide text-neutral-500">
                                     <SortableHeader
-                                        label="Counsellor"
+                                        label={t('table.headers.counsellor')}
                                         sortKey="name"
                                         current={sortKey}
                                         dir={sortDir}
@@ -206,42 +226,42 @@ export function FollowupsTab({
                                         align="left"
                                     />
                                     <SortableHeader
-                                        label="Due today"
+                                        label={t('table.headers.dueToday')}
                                         sortKey="due_today"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                     />
                                     <SortableHeader
-                                        label="1–3d"
+                                        label={t('table.headers.days1to3')}
                                         sortKey="overdue_1_3"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                     />
                                     <SortableHeader
-                                        label="3–7d"
+                                        label={t('table.headers.days3to7')}
                                         sortKey="overdue_3_7"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                     />
                                     <SortableHeader
-                                        label="7d+"
+                                        label={t('table.headers.days7plus')}
                                         sortKey="overdue_7_plus"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                     />
                                     <SortableHeader
-                                        label="Upcoming"
+                                        label={t('table.headers.upcoming')}
                                         sortKey="upcoming"
                                         current={sortKey}
                                         dir={sortDir}
                                         onClick={toggleSort}
                                     />
                                     <SortableHeader
-                                        label="Oldest overdue"
+                                        label={t('table.headers.oldestOverdue')}
                                         sortKey="oldest_overdue_days"
                                         current={sortKey}
                                         dir={sortDir}
@@ -296,7 +316,9 @@ export function FollowupsTab({
                                                 {r.oldest_overdue_days != null ? (
                                                     <span className="inline-flex items-center gap-1 font-medium text-red-600">
                                                         <WarningCircle size={12} weight="fill" />
-                                                        {r.oldest_overdue_days}d
+                                                        {t('table.oldestOverdueValue', {
+                                                            count: r.oldest_overdue_days,
+                                                        })}
                                                     </span>
                                                 ) : (
                                                     <span className="text-neutral-400">—</span>
@@ -312,9 +334,9 @@ export function FollowupsTab({
             </ReportSection>
 
             {/* Closure reasons */}
-            <ReportSection title="Closure reasons (last 30 days)" icon={<ClipboardText size={18} />}>
+            <ReportSection title={t('section.closureReasons')} icon={<ClipboardText size={18} />}>
                 {(report?.closure_reasons ?? []).length === 0 ? (
-                    <EmptyHint message="No follow-ups closed in the last 30 days." />
+                    <EmptyHint message={t('empty.noClosures')} />
                 ) : (
                     <div className="flex flex-col gap-3">
                         {(report?.closure_reasons ?? []).map((r) => (

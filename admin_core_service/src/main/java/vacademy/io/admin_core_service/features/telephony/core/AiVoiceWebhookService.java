@@ -122,6 +122,13 @@ public class AiVoiceWebhookService {
         row.setCallStart(report.getCallStart());
         row.setTranscript(report.getTranscript());
         row.setRawPayload(report.getRawPayload());
+        // Follow-up gist + measured engagement (V510). Nulls are meaningful here: a null
+        // followUp is "not assessed" (never CALL) and a null callerWordCount is
+        // "not measured" (never 0), so they are written through verbatim rather than
+        // defaulted — a provider that sends none simply leaves them null.
+        row.setFollowUp(report.getFollowUp());
+        row.setFollowUpGist(report.getFollowUpGist());
+        row.setCallerWordCount(report.getCallerWordCount());
         applyDiagnostics(row, report);
 
         repo.save(row);

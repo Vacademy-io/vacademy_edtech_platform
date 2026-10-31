@@ -1,0 +1,16 @@
+{
+    "placeholders": {
+        "select": "Select {{term}}"
+    },
+    "buttons": {
+        "enroll": "Enroll"
+    },
+    "toasts": {
+        "courseCreatedSuccess": "Course created successfully",
+        "createBatchFailed": "Failed to create batch",
+        "itemAddedSuccess": "{{term}} added successfully",
+        "addItemFailed": "Failed to add {{term}}",
+        "levelAddedSuccess": "Level added successfully",
+        "addLevelFailedFallback": "Failed to add course"
+    }
+}

@@ -1,0 +1,27 @@
+{
+    "intro": "Un modèle indique comment chaque composant est dérivé du CTC (rémunération globale) d'un employé. Affectez un employé à un modèle et ses montants mensuels sont calculés, pas saisis.",
+    "columns": {
+        "template": "Modèle",
+        "default": "Par défaut",
+        "components": "Composants",
+        "status": "Statut"
+    },
+    "status": {
+        "active": "Actif",
+        "inactive": "Inactif"
+    },
+    "actions": {
+        "edit": "Modifier",
+        "view": "Voir",
+        "newTemplate": "Nouveau modèle",
+        "retry": "Réessayer",
+        "retrying": "Nouvelle tentative…"
+    },
+    "errors": {
+        "loadFailed": "Impossible de charger les modèles de salaire."
+    },
+    "empty": {
+        "title": "Aucun modèle pour le moment",
+        "description": "Créez-en un pour chaque type de rémunération que vous utilisez — généralement une structure standard pour le personnel et une pour les fonctions d'enseignement."
+    }
+}

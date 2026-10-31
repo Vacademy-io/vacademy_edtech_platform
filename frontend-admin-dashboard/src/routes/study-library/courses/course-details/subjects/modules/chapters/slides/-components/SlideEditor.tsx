@@ -8,6 +8,7 @@ import type React from 'react';
 import { useRef, useCallback, useEffect, useState } from 'react';
 import { getTokenFromCookie, getTokenDecodedData } from '@/lib/auth/sessionUtility';
 import { TokenKey } from '@/constants/auth/tokens';
+import { useTranslation } from 'react-i18next';
 
 interface SlideEditorProps {
     slideId: string;
@@ -34,6 +35,7 @@ const SlideEditor: React.FC<SlideEditorProps> = ({
     onEditorReady,
     onBusyStateChange,
 }) => {
+    const { t } = useTranslation('studyLibrarySlideEditor');
     const excalidrawRef = useRef<ExcalidrawImperativeAPI | null>(null);
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const rescheduleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -114,7 +116,7 @@ const SlideEditor: React.FC<SlideEditorProps> = ({
                 setHasLoadedInitialData(true);
             } catch (error) {
                 console.error(`[SlideEditor] Error loading slide data:`, error);
-                setError(error instanceof Error ? error.message : 'An unknown error occurred');
+                setError(error instanceof Error ? error.message : t('unknownError'));
                 setHasLoadedInitialData(true); // Set this even on error to prevent retries
             } finally {
                 setIsLoading(false);
@@ -338,7 +340,7 @@ const SlideEditor: React.FC<SlideEditorProps> = ({
             >
                 <div className="text-center">
                     <div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
-                    <p className="text-gray-600">Loading slide data...</p>
+                    <p className="text-gray-600">{t('loadingSlideData')}</p>
                 </div>
             </div>
         );
@@ -352,13 +354,13 @@ const SlideEditor: React.FC<SlideEditorProps> = ({
                 style={{ height: '85vh' }}
             >
                 <div className="text-center text-red-600">
-                    <p className="mb-2">Error loading slide data:</p>
+                    <p className="mb-2">{t('errorLoadingSlideData')}</p>
                     <p className="text-sm">{error}</p>
                     <button
                         onClick={() => window.location.reload()}
                         className="mt-4 rounded bg-red-100 px-4 py-2 text-red-700 hover:bg-red-200"
                     >
-                        Retry
+                        {t('retry')}
                     </button>
                 </div>
             </div>

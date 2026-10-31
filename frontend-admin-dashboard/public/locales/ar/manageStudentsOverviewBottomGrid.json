@@ -1,0 +1,19 @@
+{
+    "enrolment": {
+        "heading": "تفاصيل التسجيل",
+        "rows": {
+            "plan": "الخطة",
+            "enrollmentNo": "رقم التسجيل",
+            "session": "الدورة",
+            "gender": "الجنس",
+            "school": "المدرسة"
+        }
+    },
+    "contact": {
+        "heading": "التواصل",
+        "rows": {
+            "mobileNo": "رقم الجوال",
+            "email": "البريد الإلكتروني"
+        }
+    }
+}

@@ -1,0 +1,73 @@
+{
+    "loading": "Loading GTM settings…",
+    "card": {
+        "title": "Google Tag Manager",
+        "description": {
+            "part1": "Inject your GTM container on learner enrollment pages. This enables conversion tracking, remarketing pixels, and any tags you configure in your GTM workspace. An ",
+            "part2": " event is pushed to the dataLayer on successful registration."
+        }
+    },
+    "toggle": {
+        "enabled": "Enabled",
+        "disabled": "Disabled"
+    },
+    "containerId": {
+        "label": "Container ID",
+        "placeholder": "GTM-XXXXXXX",
+        "hint": "Find your Container ID in GTM → Admin → Container Settings."
+    },
+    "errors": {
+        "invalidContainerId": "Invalid GTM Container ID. Expected format: GTM-XXXXXXX"
+    },
+    "toasts": {
+        "saveSuccess": "GTM settings saved",
+        "saveError": "Failed to save GTM settings"
+    },
+    "footer": {
+        "save": "Save GTM Settings",
+        "saving": "Saving…"
+    },
+    "utm": {
+        "card": {
+            "title": "UTM Link Builder",
+            "description": "Generate campaign-tagged links for audience forms, live sessions, assessments, enrolment invites, product pages and catalogue sites. Off by default — when on, a “Generate UTM link” action appears in each of those share menus."
+        },
+        "surfacesHint": "Applies to: audience forms, live sessions, assessments, enrolment invites, product pages and catalogue sites.",
+        "defaultSource": {
+            "label": "Default source",
+            "placeholder": "whatsapp"
+        },
+        "defaultMedium": {
+            "label": "Default medium",
+            "placeholder": "social"
+        },
+        "sources": {
+            "label": "Allowed sources",
+            "placeholder": "whatsapp, instagram, google",
+            "hint": "Comma separated. Offered first in the builder so campaign naming stays consistent."
+        },
+        "mediums": {
+            "label": "Allowed mediums",
+            "placeholder": "social, cpc, email",
+            "hint": "Comma separated. Offered first in the builder so campaign naming stays consistent."
+        },
+        "requireCampaign": {
+            "label": "Require a campaign name",
+            "hint": "Blocks generating a link until utm_campaign is filled in. Source and medium without a campaign is the usual reason a report is unreadable."
+        },
+        "anyPage": {
+            "label": "Build a link for any other page",
+            "hint": "The login, sign-up or any landing page has no share menu. Pick one or type a path, then generate the tagged link.",
+            "placeholder": "/login",
+            "action": "Generate UTM link",
+            "presets": {
+                "login": "Login page",
+                "signup": "Sign-up page",
+                "home": "Home"
+            }
+        },
+        "footer": {
+            "save": "Save Campaign Link Settings"
+        }
+    }
+}

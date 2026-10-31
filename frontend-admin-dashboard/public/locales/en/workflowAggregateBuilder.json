@@ -1,0 +1,16 @@
+{
+    "aggTypes": {
+        "COUNT": "Count",
+        "SUM": "Sum",
+        "AVG": "Average",
+        "MIN": "Minimum",
+        "MAX": "Maximum"
+    },
+    "operationLabel": "Operation {{index}}",
+    "typeLabel": "Type",
+    "saveAsLabel": "Save as",
+    "saveAsPlaceholder": "e.g. totalCount",
+    "fieldToLabel": "Field to {{operation}}",
+    "fieldPlaceholder": "e.g. score, amount",
+    "addOperation": "Add Operation"
+}

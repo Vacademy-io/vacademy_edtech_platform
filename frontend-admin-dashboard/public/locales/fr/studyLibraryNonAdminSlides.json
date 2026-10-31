@@ -1,0 +1,25 @@
+{
+    "toasts": {
+        "createdAndAutoPublished": "Diapositive créée et publiée automatiquement pour relecture",
+        "assignmentPublished": "Diapositive de devoir publiée avec succès",
+        "questionPublished": "Diapositive de question publiée avec succès",
+        "quizPublished": "Diapositive de quiz publiée avec succès",
+        "videoPublished": "Diapositive vidéo publiée avec succès",
+        "videoDataMissing": "Les données de la diapositive vidéo sont manquantes",
+        "audioPublished": "Diapositive audio publiée avec succès",
+        "audioDataMissing": "Les données de la diapositive audio sont manquantes",
+        "presentationPublished": "Présentation publiée avec succès",
+        "slidePublished": "Diapositive publiée avec succès",
+        "saveFailed": "Échec de l'enregistrement de la diapositive",
+        "alreadyUpToDate": "{{slideType}} est déjà à jour !"
+    },
+    "slideTypes": {
+        "codeEditor": "Éditeur de code",
+        "jupyterNotebook": "Notebook Jupyter",
+        "scratchProject": "Projet Scratch",
+        "interactiveSlide": "Diapositive interactive"
+    },
+    "confirm": {
+        "unsavedChanges": "Vous avez des modifications non enregistrées dans « {{slideTitle}} ». Voulez-vous les enregistrer ?"
+    }
+}

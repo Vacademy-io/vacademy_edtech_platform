@@ -10,11 +10,13 @@ from __future__ import annotations
 
 from typing import Optional
 import logging
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy.orm import Session
 from uuid import UUID
 
+from ..core.security import decode_access_token, get_current_user, require_institute_member
 from ..db import db_dependency
+from ..schemas.auth import CustomUserDetails
 from ..repositories.ai_api_keys_repository import AiApiKeysRepository
 from ..schemas.api_keys import (
     ApiKeyCreateRequest,
@@ -28,6 +30,21 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api-keys", tags=["api-keys"])
 
 
+def _require_self(authorization: Optional[str], user_id: str) -> None:
+    """
+    User-level keys belong to one user: only that user's own token may read or
+    change them. Verified locally (signature + expiry) instead of through
+    get_current_user, because the learner app calls without a clientId header
+    and the auth-service lookup needs one.
+    """
+    token = authorization[len("Bearer "):] if authorization and authorization.startswith("Bearer ") else None
+    claims = decode_access_token(token) if token else None
+    if claims is None:
+        raise HTTPException(status_code=401, detail="Authentication required.")
+    if str(claims.get("user") or "") != str(user_id):
+        raise HTTPException(status_code=403, detail="You can only manage your own API keys.")
+
+
 @router.post(
     "/v1/institute/{institute_id}",
     response_model=ApiKeyResponse,
@@ -37,6 +54,8 @@ async def create_or_update_institute_keys(
     institute_id: str,
     payload: ApiKeyCreateRequest,
     db: Session = Depends(db_dependency),
+    current_user: CustomUserDetails = Depends(get_current_user),
+    authorization: Optional[str] = Header(None),
 ) -> ApiKeyResponse:
     """
     Create or update API keys for an institute.
@@ -44,6 +63,7 @@ async def create_or_update_institute_keys(
     If keys already exist for this institute, they will be updated.
     Only provided fields will be updated.
     """
+    require_institute_member(authorization, institute_id, admin=True)
     try:
         institute_uuid = UUID(institute_id)
     except ValueError:
@@ -79,6 +99,7 @@ async def create_or_update_user_keys(
     payload: ApiKeyCreateRequest,
     institute_id: Optional[str] = Query(default=None, description="Optional institute context"),
     db: Session = Depends(db_dependency),
+    authorization: Optional[str] = Header(None),
 ) -> ApiKeyResponse:
     """
     Create or update API keys for a user.
@@ -86,6 +107,9 @@ async def create_or_update_user_keys(
     If keys already exist for this user, they will be updated.
     Only provided fields will be updated.
     """
+    _require_self(authorization, user_id)
+    if institute_id:
+        require_institute_member(authorization, institute_id)
     try:
         user_uuid = UUID(user_id)
     except ValueError:
@@ -127,12 +151,15 @@ async def create_or_update_user_keys(
 async def get_institute_keys(
     institute_id: str,
     db: Session = Depends(db_dependency),
+    current_user: CustomUserDetails = Depends(get_current_user),
+    authorization: Optional[str] = Header(None),
 ) -> ApiKeyResponse:
     """
     Get API keys for an institute.
     
     Returns key information (but not the actual keys for security).
     """
+    require_institute_member(authorization, institute_id, admin=True)
     try:
         institute_uuid = UUID(institute_id)
     except ValueError:
@@ -156,6 +183,7 @@ async def get_user_keys(
     user_id: str,
     institute_id: Optional[str] = Query(default=None, description="Optional institute for fallback lookup"),
     db: Session = Depends(db_dependency),
+    authorization: Optional[str] = Header(None),
 ) -> ApiKeyResponse:
     """
     Get API keys for a user.
@@ -163,6 +191,9 @@ async def get_user_keys(
     Checks user-level keys first, then falls back to institute-level if provided.
     Returns key information (but not the actual keys for security).
     """
+    _require_self(authorization, user_id)
+    if institute_id:
+        require_institute_member(authorization, institute_id)
     try:
         user_uuid = UUID(user_id)
     except ValueError:
@@ -193,6 +224,8 @@ async def update_institute_keys(
     institute_id: str,
     payload: ApiKeyUpdateRequest,
     db: Session = Depends(db_dependency),
+    current_user: CustomUserDetails = Depends(get_current_user),
+    authorization: Optional[str] = Header(None),
 ) -> ApiKeyResponse:
     """
     Update existing institute-level API keys.
@@ -200,6 +233,7 @@ async def update_institute_keys(
     Only provided fields will be updated.
     Set a key to empty string to remove it.
     """
+    require_institute_member(authorization, institute_id, admin=True)
     try:
         institute_uuid = UUID(institute_id)
     except ValueError:
@@ -238,6 +272,7 @@ async def update_user_keys(
     user_id: str,
     payload: ApiKeyUpdateRequest,
     db: Session = Depends(db_dependency),
+    authorization: Optional[str] = Header(None),
 ) -> ApiKeyResponse:
     """
     Update existing user-level API keys.
@@ -245,6 +280,7 @@ async def update_user_keys(
     Only provided fields will be updated.
     Set a key to empty string to remove it.
     """
+    _require_self(authorization, user_id)
     try:
         user_uuid = UUID(user_id)
     except ValueError:
@@ -284,10 +320,13 @@ async def update_user_keys(
 async def deactivate_institute_keys(
     institute_id: str,
     db: Session = Depends(db_dependency),
+    current_user: CustomUserDetails = Depends(get_current_user),
+    authorization: Optional[str] = Header(None),
 ) -> dict:
     """
     Deactivate (soft delete) institute-level API keys.
     """
+    require_institute_member(authorization, institute_id, admin=True)
     try:
         institute_uuid = UUID(institute_id)
     except ValueError:
@@ -312,10 +351,12 @@ async def deactivate_institute_keys(
 async def deactivate_user_keys(
     user_id: str,
     db: Session = Depends(db_dependency),
+    authorization: Optional[str] = Header(None),
 ) -> dict:
     """
     Deactivate (soft delete) user-level API keys.
     """
+    _require_self(authorization, user_id)
     try:
         user_uuid = UUID(user_id)
     except ValueError:
@@ -343,6 +384,8 @@ async def deactivate_user_keys(
 async def delete_institute_keys(
     institute_id: str,
     db: Session = Depends(db_dependency),
+    current_user: CustomUserDetails = Depends(get_current_user),
+    authorization: Optional[str] = Header(None),
 ) -> dict:
     """
     Permanently delete institute-level API keys from the database.
@@ -350,6 +393,7 @@ async def delete_institute_keys(
     This is a hard delete - the keys will be completely removed.
     No key value needs to be provided, only the institute_id.
     """
+    require_institute_member(authorization, institute_id, admin=True)
     try:
         institute_uuid = UUID(institute_id)
     except ValueError:
@@ -379,6 +423,7 @@ async def delete_institute_keys(
 async def delete_user_keys(
     user_id: str,
     db: Session = Depends(db_dependency),
+    authorization: Optional[str] = Header(None),
 ) -> dict:
     """
     Permanently delete user-level API keys from the database.
@@ -386,6 +431,7 @@ async def delete_user_keys(
     This is a hard delete - the keys will be completely removed.
     No key value needs to be provided, only the user_id.
     """
+    _require_self(authorization, user_id)
     try:
         user_uuid = UUID(user_id)
     except ValueError:

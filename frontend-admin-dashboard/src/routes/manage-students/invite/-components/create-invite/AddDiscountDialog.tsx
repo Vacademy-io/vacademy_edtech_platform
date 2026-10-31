@@ -16,6 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { MyButton } from '@/components/design-system/button';
 import { UseFormReturn } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { AddDiscountFormValues, InviteLinkFormValues } from './GenerateInviteLinkSchema';
 
 interface AddDiscountDialogProps {
@@ -29,6 +30,7 @@ export function AddDiscountDialog({
     addDiscountForm,
     handleAddDiscount,
 }: AddDiscountDialogProps) {
+    const { t } = useTranslation('manageStudentsAddDiscountDialog');
     return (
         <ShadDialog
             open={form.watch('showAddDiscountDialog')}
@@ -36,7 +38,7 @@ export function AddDiscountDialog({
         >
             <ShadDialogContent className="max-w-md">
                 <ShadDialogHeader>
-                    <ShadDialogTitle>Add New Discount</ShadDialogTitle>
+                    <ShadDialogTitle>{t('title')}</ShadDialogTitle>
                 </ShadDialogHeader>
                 <Form {...addDiscountForm}>
                     <form
@@ -48,9 +50,12 @@ export function AddDiscountDialog({
                             name="title"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Discount Title</FormLabel>
+                                    <FormLabel>{t('fields.title.label')}</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Enter discount title" {...field} />
+                                        <Input
+                                            placeholder={t('fields.title.placeholder')}
+                                            {...field}
+                                        />
                                     </FormControl>
                                 </FormItem>
                             )}
@@ -60,9 +65,12 @@ export function AddDiscountDialog({
                             name="code"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Discount Code</FormLabel>
+                                    <FormLabel>{t('fields.code.label')}</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Enter discount code" {...field} />
+                                        <Input
+                                            placeholder={t('fields.code.placeholder')}
+                                            {...field}
+                                        />
                                     </FormControl>
                                 </FormItem>
                             )}
@@ -72,17 +80,21 @@ export function AddDiscountDialog({
                             name="type"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Discount Type</FormLabel>
+                                    <FormLabel>{t('fields.type.label')}</FormLabel>
                                     <FormControl>
                                         <Select value={field.value} onValueChange={field.onChange}>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Select type" />
+                                                <SelectValue
+                                                    placeholder={t('fields.type.placeholder')}
+                                                />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="percent">
-                                                    Percentage Off
+                                                    {t('fields.type.options.percent')}
                                                 </SelectItem>
-                                                <SelectItem value="rupees">Rupees Off</SelectItem>
+                                                <SelectItem value="rupees">
+                                                    {t('fields.type.options.rupees')}
+                                                </SelectItem>
                                             </SelectContent>
                                         </Select>
                                     </FormControl>
@@ -94,14 +106,14 @@ export function AddDiscountDialog({
                             name="value"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Discount Value</FormLabel>
+                                    <FormLabel>{t('fields.value.label')}</FormLabel>
                                     <FormControl>
                                         <Input
                                             type="number"
                                             placeholder={
                                                 addDiscountForm.watch('type') === 'percent'
-                                                    ? 'Enter percentage (e.g. 10)'
-                                                    : 'Enter amount (e.g. 500)'
+                                                    ? t('fields.value.placeholderPercent')
+                                                    : t('fields.value.placeholderRupees')
                                             }
                                             {...field}
                                             onChange={(e) => field.onChange(Number(e.target.value))}
@@ -115,7 +127,7 @@ export function AddDiscountDialog({
                             name="expires"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Expiry Date</FormLabel>
+                                    <FormLabel>{t('fields.expires.label')}</FormLabel>
                                     <FormControl>
                                         <Input type="date" {...field} />
                                     </FormControl>
@@ -124,7 +136,7 @@ export function AddDiscountDialog({
                         />
                         <div className="flex justify-end">
                             <MyButton type="submit" scale="small" buttonType="primary">
-                                Save
+                                {t('actions.save')}
                             </MyButton>
                         </div>
                     </form>

@@ -1,0 +1,20 @@
+{
+    "zoomModal": {
+        "closeTitle": "बंद करें (Esc)"
+    },
+    "block": {
+        "clickToZoom": "ज़ूम करने के लिए क्लिक करें",
+        "header": "Mermaid डायग्राम",
+        "done": "हो गया",
+        "editCode": "कोड संपादित करें",
+        "diagramCodeLabel": "डायग्राम कोड",
+        "diagramCodePlaceholder": "Mermaid कोड टाइप करें, जैसे:",
+        "livePreviewHintPrefix": "नीचे लाइव प्रीव्यू देखें। यह फ़्लोचार्ट",
+        "livePreviewHintSuffix": ", सीक्वेंस, क्लास, गैंट, पाई आदि को सपोर्ट करता है।",
+        "insertExample": "उदाहरण जोड़ें",
+        "renderingDiagram": "डायग्राम रेंडर हो रहा है…",
+        "renderError": "इस डायग्राम को रेंडर नहीं किया जा सका — Mermaid सिंटैक्स जांचें।",
+        "noDiagram": "कोई डायग्राम नहीं",
+        "clickToAdd": "Mermaid डायग्राम कोड जोड़ने के लिए क्लिक करें"
+    }
+}

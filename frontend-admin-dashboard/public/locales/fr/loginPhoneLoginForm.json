@@ -1,0 +1,30 @@
+{
+    "whatsappLabel": "Numéro WhatsApp",
+    "sendingOtp": "Envoi du code en cours...",
+    "sendOtpWhatsapp": "Envoyer le code (WhatsApp)",
+    "toast": {
+        "otpSent": "Code envoyé sur WhatsApp avec succès",
+        "accountNotFound": "Compte introuvable. Veuillez vous inscrire pour continuer.",
+        "sendOtpFailedFallback": "Échec de l'envoi du code via WhatsApp",
+        "sendOtpFailedGeneric": "Échec de l'envoi du code. Veuillez réessayer.",
+        "loginMissingCredentials": "Connexion réussie, mais les identifiants de session sont manquants.",
+        "loginProcessingError": "Erreur lors du traitement des données de connexion",
+        "invalidOtpFallback": "Code invalide",
+        "invalidOtpDescription": "Veuillez vérifier votre code et réessayer.",
+        "invalidOtpGenericDescription": "Veuillez réessayer",
+        "fillAllOtpFields": "Veuillez remplir tous les champs du code"
+    },
+    "checkWhatsapp": "Consultez votre WhatsApp",
+    "codeSentTo": "Nous avons envoyé un code à 6 chiffres au",
+    "backToPhoneEntry": "Retour à la saisie du numéro",
+    "resendIn_one": "Renvoyer dans {{count}}s",
+    "resendIn_many": "Renvoyer dans {{count}}s",
+    "resendIn_other": "Renvoyer dans {{count}}s",
+    "resendCode": "Renvoyer le code",
+    "verifying": "Vérification en cours...",
+    "verifyAndSignIn": "Vérifier et se connecter",
+    "useEmailOtp": "Utiliser le code par e-mail",
+    "useUsernamePassword": "Utiliser identifiant et mot de passe",
+    "noAccount": "Vous n'avez pas de compte ?",
+    "signUpHere": "Inscrivez-vous ici"
+}

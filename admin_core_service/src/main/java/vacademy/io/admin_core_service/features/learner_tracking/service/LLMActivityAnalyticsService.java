@@ -323,6 +323,7 @@ public class LLMActivityAnalyticsService {
                 double defaultNegative = quizSlide != null && quizSlide.getNegativeMarking() != null
                                 ? quizSlide.getNegativeMarking()
                                 : 0.0;
+                boolean partialMarking = quizSlide != null && Boolean.TRUE.equals(quizSlide.getPartialMarking());
 
                 List<Map<String, Object>> questions = new ArrayList<>();
                 double totalScore = 0.0;
@@ -333,7 +334,7 @@ public class LLMActivityAnalyticsService {
 
                 for (int i = 0; i < responses.size(); i++) {
                         Map<String, Object> questionData = buildQuizQuestionData(responses.get(i), i + 1,
-                                        defaultMarks, defaultNegative);
+                                        defaultMarks, defaultNegative, partialMarking);
                         if (questionData.isEmpty()) {
                                 continue;
                         }
@@ -381,9 +382,10 @@ public class LLMActivityAnalyticsService {
          * @param defaultMarks    quiz-level marks per question, used when the question
          *                        carries no override
          * @param defaultNegative quiz-level negative marking, likewise
+         * @param partialMarking  quiz-level partial marking for multiple-correct questions
          */
         private Map<String, Object> buildQuizQuestionData(QuizSideActivityLogDTO quizItem, int order,
-                        double defaultMarks, double defaultNegative) {
+                        double defaultMarks, double defaultNegative, boolean partialMarking) {
                 Map<String, Object> questionData = new LinkedHashMap<>();
 
                 try {
@@ -424,13 +426,11 @@ public class LLMActivityAnalyticsService {
                         }
 
                         List<String> optionIdsInOrder = new ArrayList<>(optionTextById.keySet());
-                        putIfPresent(questionData, "correct_answer", joinAsText(
-                                        autoEvaluationScorer.correctAnswerIds(question.getAutoEvaluationJson(),
-                                                        () -> optionIdsInOrder),
-                                        optionTextById));
-                        putIfPresent(questionData, "student_answer", joinAsText(
-                                        autoEvaluationScorer.selectedAnswerIds(quizItem.getResponseJson()),
-                                        optionTextById));
+                        Set<String> correctIds = autoEvaluationScorer.correctAnswerIds(
+                                        question.getAutoEvaluationJson(), () -> optionIdsInOrder);
+                        Set<String> selectedIds = autoEvaluationScorer.selectedAnswerIds(quizItem.getResponseJson());
+                        putIfPresent(questionData, "correct_answer", joinAsText(correctIds, optionTextById));
+                        putIfPresent(questionData, "student_answer", joinAsText(selectedIds, optionTextById));
 
                         String status = normaliseStatus(quizItem.getResponseStatus());
                         questionData.put("status", status);
@@ -445,7 +445,12 @@ public class LLMActivityAnalyticsService {
                         if (STATUS_CORRECT.equals(status)) {
                                 questionData.put("marks_obtained", round(marks));
                         } else if (STATUS_INCORRECT.equals(status)) {
-                                questionData.put("marks_obtained", round(-negative));
+                                double partial = partialMarking
+                                                && AutoEvaluationScorer.isMultiSelect(question.getQuestionType())
+                                                && autoEvaluationScorer.isMarkedPartial(quizItem.getResponseJson())
+                                                ? AutoEvaluationScorer.partialCreditFraction(correctIds, selectedIds)
+                                                : 0.0;
+                                questionData.put("marks_obtained", round(partial > 0 ? marks * partial : -negative));
                         } else {
                                 questionData.put("marks_obtained", 0.0);
                         }

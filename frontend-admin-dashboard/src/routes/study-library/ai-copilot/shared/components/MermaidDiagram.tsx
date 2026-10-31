@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import mermaid from 'mermaid';
+import { useTranslation } from 'react-i18next';
 import { sanitizeMermaidCode } from '../utils/mermaidSanitizer';
 
 // Use a window flag so all mermaid instances coordinate.
@@ -39,6 +40,7 @@ interface MermaidDiagramProps {
 
 /** Portal-based zoom modal — renders at document.body so it's never clipped */
 function MermaidZoomModal({ svg, onClose }: { svg: string; onClose: () => void }) {
+    const { t } = useTranslation('studyLibraryMermaidDiagram');
     useEffect(() => {
         const handler = (e: KeyboardEvent) => {
             if (e.key === 'Escape') onClose();
@@ -89,7 +91,7 @@ function MermaidZoomModal({ svg, onClose }: { svg: string; onClose: () => void }
                     backdropFilter: 'blur(4px)',
                     zIndex: 100000,
                 }}
-                title="Close (Esc)"
+                title={t('closeEsc')}
             >
                 ✕
             </button>
@@ -140,6 +142,7 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
     className = '',
     id,
 }) => {
+    const { t } = useTranslation('studyLibraryMermaidDiagram');
     const diagramIdRef = useRef<string>(
         id || `mermaid-${Math.random().toString(36).substr(2, 9)}`
     );
@@ -221,7 +224,7 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
                     maxWidth: '100%',
                 }}
                 onClick={() => setIsZoomed(true)}
-                title="Click to zoom"
+                title={t('clickToZoom')}
             >
                 {/* Zoom hint badge */}
                 <div
@@ -239,7 +242,7 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({
                         letterSpacing: '0.02em',
                     }}
                 >
-                    🔍 Click to zoom
+                    🔍 {t('clickToZoom')}
                 </div>
 
                 <div

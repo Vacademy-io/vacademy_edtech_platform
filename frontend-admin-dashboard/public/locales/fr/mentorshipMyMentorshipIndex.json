@@ -1,0 +1,92 @@
+{
+    "navHeading": "Mon mentorat",
+    "pageTitle": "Mon mentorat",
+    "pageSubtitle": "Vos mentorés, votre disponibilité et votre lien de réservation",
+    "retry": "Réessayer",
+    "connectGoogleError": "Impossible de démarrer la connexion Google. Veuillez réessayer.",
+    "chatError": "Impossible d'ouvrir la discussion. Veuillez réessayer.",
+    "notMentor": {
+        "title": "Vous n'êtes pas configuré comme mentor ici",
+        "description": "Cette page est l'espace de travail personnel d'un mentor — ses mentorés, sa disponibilité et son lien de réservation. Pour gérer le mentorat de tous, utilisez Aperçu, Mentors, Sessions ou Demandes."
+    },
+    "profile": {
+        "youFallback": "Vous",
+        "mentorFallback": "Mentor",
+        "menteesAssigned_one": "{{count}} mentoré assigné",
+        "menteesAssigned_many": "{{count}} mentorés assignés",
+        "menteesAssigned_other": "{{count}} mentorés assignés",
+        "ratingChip_one": "{{rating}} · {{count}} rating",
+        "ratingChip_other": "{{rating}} · {{count}} ratings",
+        "expertise": "Expertise: {{tags}}"
+    },
+    "googleCalendar": {
+        "title": "Google Agenda",
+        "connected": "Connecté",
+        "connectedDescription": "Les réservations créent automatiquement un Google Meet et ajoutent l'événement à votre agenda.",
+        "disconnectedDescription": "Connectez votre compte Google pour que les réservations obtiennent un lien Meet et un événement d'agenda.",
+        "redirecting": "Redirection…",
+        "connect": "Connecter Google"
+    },
+    "bookingLink": {
+        "title": "Votre lien de réservation 1:1",
+        "shareDescription": "Partagez ce lien pour que les apprenants puissent réserver une session avec vous.",
+        "notSetUpDescription": "La réservation n'est pas encore configurée. Demandez à votre administrateur d'activer votre page de réservation.",
+        "editAvailability": "Modifier la disponibilité",
+        "editAvailabilityTitle": "Définissez vos horaires hebdomadaires, le lieu de rencontre et les types de session",
+        "copyLink": "Copier le lien",
+        "copyLinkTitle": "Copiez votre lien de réservation à partager avec les apprenants",
+        "copiedToast": "Lien de réservation copié",
+        "copyFailedToast": "Impossible de copier le lien",
+        "open": "Ouvrir",
+        "openTitle": "Ouvrir votre page de réservation dans un nouvel onglet"
+    },
+    "awaitingReview": {
+        "heading_one": "{{count}} session à enregistrer",
+        "heading_many": "{{count}} sessions à enregistrer",
+        "heading_other": "{{count}} sessions à enregistrer",
+        "description": "Tant que vous ne l'enregistrez pas, une session n'est considérée comme effectuée nulle part.",
+        "menteeFallback": "Mentoré",
+        "record": "Enregistrer",
+        "notCounted": "Not counted yet"
+    },
+    "mentees": {
+        "heading": "Mentorés",
+        "subtitle": "Étudiants qui vous sont assignés pour le mentorat.",
+        "filteredCount": "{{count}} sur {{total}}",
+        "searchPlaceholder": "Rechercher par nom, e-mail ou téléphone",
+        "loadError": "Impossible de charger vos mentorés.",
+        "emptyTitle": "Aucun étudiant assigné pour le moment",
+        "emptyDescription": "Votre administrateur vous assignera des étudiants ici.",
+        "noSearchMatch": "Aucun mentoré ne correspond à « {{query}} »",
+        "clearSearch": "Effacer la recherche"
+    },
+    "table": {
+        "student": "Étudiant",
+        "phone": "Téléphone",
+        "assigned": "Assigné",
+        "autoAssigned": "Assigné automatiquement",
+        "actions": "Actions",
+        "defaultStudentLabel": "cet étudiant",
+        "openProfileTitle": "Ouvrir le profil de cet étudiant",
+        "scheduleAriaLabel": "Planifier un 1:1 avec {{name}}",
+        "scheduleTitle": "Réserver un 1:1 — l'étudiant n'a rien à faire",
+        "messageAriaLabel": "Envoyer un message à {{name}}",
+        "openAriaLabel": "Ouvrir {{name}}",
+        "openRowTitle": "Progression d'apprentissage, notes et appels planifiés"
+    },
+    "header": {
+        "schedule": "Schedule 1:1"
+    },
+    "kpi": {
+        "mentees": "My mentees",
+        "menteesLeft_one": "{{count}} place left of {{cap}}",
+        "menteesLeft_other": "{{count}} places left of {{cap}}",
+        "menteesNoLimit": "No limit set",
+        "rating": "My average rating",
+        "ratingDetail_one": "{{count}} rated session",
+        "ratingDetail_other": "{{count}} rated sessions",
+        "ratingNone": "No ratings yet",
+        "toRecord": "Sessions to record",
+        "toRecordDetail": "Not counted as delivered until recorded"
+    }
+}

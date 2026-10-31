@@ -1,0 +1,18 @@
+{
+    "running": "جارٍ التشغيل...",
+    "run": "تشغيل",
+    "view": "عرض",
+    "edit": "تعديل",
+    "loadingEditor": "جارٍ تحميل المحرر...",
+    "loadingEditorLower": "جارٍ تحميل المحرر...",
+    "outputLabel": "الناتج:",
+    "previewLabel": "معاينة:",
+    "previewTitle": "معاينة",
+    "cssPreviewArea": "منطقة معاينة CSS",
+    "failedToLoadCodeEditor": "فشل تحميل محرر الكود",
+    "compileErrorPrefix": "خطأ في الترجمة: ",
+    "noOutputProduced": "لم يتم إنتاج أي ناتج",
+    "noOutput": "لا يوجد ناتج",
+    "errorPrefix": "خطأ: ",
+    "errorRunningCodePrefix": "خطأ أثناء تشغيل الكود: "
+}

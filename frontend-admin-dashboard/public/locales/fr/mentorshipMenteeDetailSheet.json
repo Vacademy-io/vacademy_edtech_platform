@@ -1,0 +1,37 @@
+{
+    "toast": {
+        "noteAdded": "Note ajoutée",
+        "addNoteFailed": "Échec de l'ajout de la note",
+        "chatOpenFailed": "Impossible d'ouvrir la discussion. Veuillez réessayer."
+    },
+    "schedule": {
+        "button": "Planifier un 1:1",
+        "buttonTitle": "Réserver un 1:1 pour cet étudiant — il n'a rien à faire"
+    },
+    "message": {
+        "button": "Message",
+        "off": "La messagerie est désactivée pour cet établissement.",
+        "turnOn": "Activer les messages intégrés",
+        "offSuffix": "pour envoyer des messages aux étudiants depuis ici."
+    },
+    "sections": {
+        "learning": "Apprentissage",
+        "scheduledCalls": "Appels planifiés",
+        "notes": "Notes"
+    },
+    "learning": {
+        "empty": "Cet étudiant n'a encore commencé aucun cours."
+    },
+    "calls": {
+        "empty": "Aucune séance réservée avec cet étudiant pour le moment.",
+        "defaultTitle": "Séance",
+        "join": "Rejoindre"
+    },
+    "notes": {
+        "sharedHint": "Partagé avec la chronologie d'activité de votre équipe pour cet étudiant.",
+        "addPlaceholder": "Ajouter une note…",
+        "label": "Note",
+        "add": "Ajouter",
+        "empty": "Pas encore de note — ajoutez-en une ci-dessus pour suivre cet étudiant."
+    }
+}

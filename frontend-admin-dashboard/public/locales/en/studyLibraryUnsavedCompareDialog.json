@@ -1,0 +1,7 @@
+{
+    "heading": "Compare with saved version",
+    "description": "Left is the last saved version of this {{slide}}; right is your current unsaved edit (kept only in this browser). Use Save Draft or Publish to keep the current version, or Discard changes to return to the saved one.",
+    "saved": "Saved",
+    "currentUnsaved": "Current (unsaved)",
+    "noSavedVersion": "No saved version yet"
+}

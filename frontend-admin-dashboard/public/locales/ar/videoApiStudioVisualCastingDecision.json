@@ -1,0 +1,32 @@
+{
+    "header": {
+        "title_zero": "اختر المرئيات ({{count}} لقطة)",
+        "title_one": "اختر المرئيات (لقطة واحدة، {{count}})",
+        "title_two": "اختر المرئيات (لقطتان، {{count}})",
+        "title_few": "اختر المرئيات ({{count}} لقطات)",
+        "title_many": "اختر المرئيات ({{count}} لقطة)",
+        "title_other": "اختر المرئيات ({{count}} لقطة)"
+    },
+    "empty": {
+        "noCandidates": "لا توجد عناصر مرئية للمراجعة.",
+        "continue": "متابعة"
+    },
+    "shot": {
+        "queryFallback": "مرئي",
+        "generateWithAi": "إنشاء بالذكاء الاصطناعي",
+        "searchPlaceholderClips": "ابحث عن مقاطع…",
+        "searchPlaceholderPhotos": "ابحث عن صور…",
+        "search": "بحث",
+        "upload": "رفع",
+        "noCandidates": "لا توجد عناصر — ابحث أو ارفع صورة أو دع الذكاء الاصطناعي ينشئها.",
+        "yours": "خاصتك"
+    },
+    "footer": {
+        "letAiDoAll": "دع الذكاء الاصطناعي يقوم بكل شيء",
+        "useThese": "استخدم هذه"
+    },
+    "toast": {
+        "noResults": "لا توجد نتائج — جرّب مصطلحات مختلفة.",
+        "uploadFailed": "فشل الرفع. جرّب صورة أصغر حجمًا."
+    }
+}

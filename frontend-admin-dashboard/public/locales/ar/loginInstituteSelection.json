@@ -1,0 +1,17 @@
+{
+    "noAccessTokenFound": "لم يتم العثور على رمز وصول",
+    "invalidTokenData": "بيانات الرمز غير صالحة",
+    "instituteFallbackName": "المعهد {{idPrefix}}...",
+    "noInstituteAccess": "ليس لديك صلاحية الوصول إلى أي معهد",
+    "pleaseSelectAnInstitute": "يرجى اختيار معهد",
+    "selectedInstituteNotFound": "لم يتم العثور على المعهد المحدد",
+    "loadingInstitutes": "جارٍ تحميل المعاهد...",
+    "selectYourInstitute": "اختر معهدك",
+    "chooseInstituteToAccess": "اختر المعهد الذي تريد الوصول إليه",
+    "loadingInstituteDetails": "جارٍ تحميل تفاصيل المعهد...",
+    "selectInstituteLabel": "اختر المعهد",
+    "selectAnInstitute": "اختر معهدًا",
+    "pleaseSelectAnInstituteToContinue": "يرجى اختيار معهد للمتابعة",
+    "continueToDashboard": "المتابعة إلى لوحة التحكم",
+    "backToLogin": "العودة إلى تسجيل الدخول"
+}

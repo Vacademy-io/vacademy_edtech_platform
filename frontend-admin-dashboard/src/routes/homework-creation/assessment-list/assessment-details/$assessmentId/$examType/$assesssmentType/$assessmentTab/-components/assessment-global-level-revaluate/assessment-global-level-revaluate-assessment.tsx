@@ -1,6 +1,7 @@
 import { SelectedFilterRevaluateInterface } from '@/types/assessments/assessment-revaluate-question-wise';
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getRevaluateStudentResult } from '../../-services/assessment-details-services';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
@@ -8,10 +9,11 @@ import { Route } from '../..';
 import { getInstituteId } from '@/constants/helper';
 import { MyButton } from '@/components/design-system/button';
 import { WarningCircle } from '@phosphor-icons/react';
-import { getTerminology, getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
+import { getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
 import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 const AssessmentGlobalLevelRevaluateAssessment = () => {
+    const { t } = useTranslation('homeworkCreationGlobalRevaluateAssessment');
     const [openDialog, setOpenDialog] = useState(false);
     const { assessmentId } = Route.useParams();
     const instituteId = getInstituteId();
@@ -37,13 +39,10 @@ const AssessmentGlobalLevelRevaluateAssessment = () => {
             selectedFilter: SelectedFilterRevaluateInterface;
         }) => getRevaluateStudentResult(assessmentId, instituteId, methodType, selectedFilter),
         onSuccess: () => {
-            toast.success(
-                'Attempt for this assessment has been revaluated for all students. Participants need to check their email!',
-                {
-                    className: 'success-toast',
-                    duration: 4000,
-                }
-            );
+            toast.success(t('toasts.revaluateSuccess'), {
+                className: 'success-toast',
+                duration: 4000,
+            });
             setOpenDialog(false);
         },
         onError: (error: unknown) => {
@@ -60,6 +59,8 @@ const AssessmentGlobalLevelRevaluateAssessment = () => {
         });
     };
 
+    const learnerTermPlural = getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner);
+
     return (
         <>
             <Dialog open={openDialog} onOpenChange={setOpenDialog}>
@@ -70,25 +71,22 @@ const AssessmentGlobalLevelRevaluateAssessment = () => {
                         buttonType="secondary"
                         className="font-medium"
                     >
-                        Entire Assessment
+                        {t('trigger.entireAssessment')}
                     </MyButton>
                 </DialogTrigger>
                 <DialogContent className="flex flex-col p-0">
                     <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
-                        Revaluate All {getTerminologyPlural(RoleTerms.Learner, SystemTerms.Learner)}
+                        {t('dialog.title', { term: learnerTermPlural })}
                     </h1>
                     <div className="flex flex-col gap-2 p-4">
                         <div className="flex items-center text-danger-600">
-                            <p>Attention</p>
+                            <p>{t('dialog.attention')}</p>
                             <WarningCircle size={18} />
                         </div>
                         <h1>
-                            Are you sure you want to revaluate for all{' '}
-                            {getTerminology(
-                                RoleTerms.Learner,
-                                SystemTerms.Learner
-                            ).toLocaleLowerCase()}
-                            s?
+                            {t('dialog.confirmText', {
+                                term: learnerTermPlural.toLocaleLowerCase(),
+                            })}
                         </h1>
                         <div className="flex justify-end">
                             <MyButton
@@ -98,7 +96,7 @@ const AssessmentGlobalLevelRevaluateAssessment = () => {
                                 className="mt-4 font-medium"
                                 onClick={handleRevaluateAllStudents}
                             >
-                                Yes
+                                {t('dialog.confirmButton')}
                             </MyButton>
                         </div>
                     </div>

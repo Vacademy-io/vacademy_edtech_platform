@@ -1,4 +1,6 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { useQuery, useQueries, queryOptions } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import {
@@ -11,7 +13,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ExternalLink, Workflow as WorkflowIcon, RefreshCw } from 'lucide-react';
+import { ArrowSquareOut, FlowArrow as WorkflowIcon, ArrowsClockwise } from '@phosphor-icons/react';
 import {
     getActiveWorkflowsQuery,
     getWorkflowForEditing,
@@ -56,6 +58,24 @@ interface LinkedWorkflow extends Workflow {
     matchReason: 'event-driven' | 'scheduled-query';
 }
 
+/**
+ * Translates a raw backend workflow status enum ('ACTIVE' | 'DRAFT' | 'INACTIVE')
+ * into a display label. Falls back to the raw value for any status this dialog
+ * doesn't know about, so an unrecognized value still renders something.
+ */
+function workflowStatusLabel(t: TFunction, status: string): string {
+    switch (status?.toUpperCase()) {
+        case 'ACTIVE':
+            return t('workflowStatus.active');
+        case 'DRAFT':
+            return t('workflowStatus.draft');
+        case 'INACTIVE':
+            return t('workflowStatus.inactive');
+        default:
+            return status;
+    }
+}
+
 /** Wraps getWorkflowForEditing as a queryOptions for use with useQueries. */
 function workflowDtoQuery(workflowId: string) {
     return queryOptions({
@@ -89,6 +109,7 @@ export function LinkedWorkflowsDialog({
     instituteId,
 }: LinkedWorkflowsDialogProps) {
     const navigate = useNavigate();
+    const { t } = useTranslation('audienceManagerLinkedWorkflowsDialog');
 
     // Force a fresh fetch every time the dialog opens. Without this, React
     // Query would return cached data from the menu's count-badge query and
@@ -140,16 +161,16 @@ export function LinkedWorkflowsDialog({
 
         for (const w of allWorkflows) {
             // ─── Event-driven match ───
-            const t = w.trigger;
+            const trigger = w.trigger;
             if (
-                t
-                && t.trigger_event_name
-                && AUDIENCE_TRIGGER_EVENTS.has(t.trigger_event_name)
-                && (t.event_id === audienceId || t.event_id === null)
+                trigger
+                && trigger.trigger_event_name
+                && AUDIENCE_TRIGGER_EVENTS.has(trigger.trigger_event_name)
+                && (trigger.event_id === audienceId || trigger.event_id === null)
             ) {
                 matches.push({
                     ...w,
-                    isSpecific: t.event_id === audienceId,
+                    isSpecific: trigger.event_id === audienceId,
                     matchReason: 'event-driven',
                 });
                 continue;
@@ -202,49 +223,47 @@ export function LinkedWorkflowsDialog({
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         <WorkflowIcon size={20} className="text-primary-500" />
-                        Workflows linked to <span className="font-semibold">&ldquo;{audienceName}&rdquo;</span>
+                        {t('dialog.titlePrefix')} <span className="font-semibold">&ldquo;{audienceName}&rdquo;</span>
                     </DialogTitle>
                     <DialogDescription>
-                        Workflows that fire for this campaign — either targeting it specifically,
-                        or running globally across all campaigns. Includes event-driven workflows
-                        (on lead submission) AND scheduled ones (e.g. follow-up emails).
+                        {t('dialog.description')}
                     </DialogDescription>
                 </DialogHeader>
 
                 {/* Manual refresh — shows that data is fetched fresh and lets user re-query */}
                 <div className="flex items-center justify-between -mt-1">
-                    <p className="text-[11px] text-gray-400">
+                    <p className="text-2xs text-gray-400">
                         {isFetching
-                            ? 'Refreshing…'
-                            : `${linked.length} workflow${linked.length === 1 ? '' : 's'} found`}
+                            ? t('status.refreshing')
+                            : t('status.foundCount', { count: linked.length })}
                     </p>
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 gap-1.5 text-[11px] text-gray-500"
+                        className="h-7 gap-1.5 text-2xs text-gray-500"
                         onClick={() => refetch()}
                         disabled={isFetching}
                     >
-                        <RefreshCw size={11} className={isFetching ? 'animate-spin' : ''} />
-                        Refresh
+                        <ArrowsClockwise size={11} className={isFetching ? 'animate-spin' : ''} />
+                        {t('actions.refresh')}
                     </Button>
                 </div>
 
                 <div className="space-y-2 max-h-96 overflow-y-auto py-2">
                     {showLoadingState && (
-                        <p className="text-sm text-gray-500 text-center py-8">Loading workflows…</p>
+                        <p className="text-sm text-gray-500 text-center py-8">{t('status.loading')}</p>
                     )}
                     {isError && (
                         <p className="text-sm text-red-500 text-center py-8">
-                            Failed to load workflows. Click Refresh to retry.
+                            {t('status.error')}
                         </p>
                     )}
                     {!showLoadingState && !isError && linked.length === 0 && (
                         <div className="text-center py-8 space-y-2">
                             <WorkflowIcon size={40} className="text-gray-300 mx-auto" />
-                            <p className="text-sm text-gray-500">No workflows linked to this campaign yet.</p>
+                            <p className="text-sm text-gray-500">{t('empty.title')}</p>
                             <p className="text-xs text-gray-400">
-                                Use &ldquo;Configure Workflow&rdquo; from the menu to create one.
+                                {t('empty.hint')}
                             </p>
                         </div>
                     )}
@@ -257,34 +276,34 @@ export function LinkedWorkflowsDialog({
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <span className="font-medium text-sm text-gray-800 truncate">{w.name}</span>
                                     {w.isSpecific ? (
-                                        <Badge variant="outline" className="bg-primary-50 text-primary-700 border-primary-200 text-[10px] font-medium">
-                                            This campaign
+                                        <Badge variant="outline" className="bg-primary-50 text-primary-700 border-primary-200 text-2xs font-medium">
+                                            {t('badge.specific')}
                                         </Badge>
                                     ) : (
-                                        <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200 text-[10px] font-medium">
-                                            All campaigns
+                                        <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200 text-2xs font-medium">
+                                            {t('badge.global')}
                                         </Badge>
                                     )}
-                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] font-medium">
-                                        {w.matchReason === 'event-driven' ? 'On submission' : 'Scheduled'}
+                                    <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-2xs font-medium">
+                                        {w.matchReason === 'event-driven' ? t('badge.matchReason.eventDriven') : t('badge.matchReason.scheduled')}
                                     </Badge>
                                     <Badge
                                         variant="outline"
                                         className={
                                             w.status === 'ACTIVE'
-                                                ? 'bg-green-50 text-green-700 border-green-200 text-[10px]'
-                                                : 'bg-gray-50 text-gray-600 border-gray-200 text-[10px]'
+                                                ? 'bg-green-50 text-green-700 border-green-200 text-2xs'
+                                                : 'bg-gray-50 text-gray-600 border-gray-200 text-2xs'
                                         }
                                     >
-                                        {w.status}
+                                        {workflowStatusLabel(t, w.status)}
                                     </Badge>
                                 </div>
                                 {w.description && (
                                     <p className="mt-1 text-xs text-gray-500 line-clamp-2">{w.description}</p>
                                 )}
                                 {w.trigger?.trigger_event_name && (
-                                    <p className="mt-1 text-[10px] text-gray-400 font-mono">
-                                        Trigger: {w.trigger.trigger_event_name}
+                                    <p className="mt-1 text-2xs text-gray-400 font-mono">
+                                        {t('workflow.triggerLabel', { name: w.trigger.trigger_event_name })}
                                     </p>
                                 )}
                             </div>
@@ -297,8 +316,8 @@ export function LinkedWorkflowsDialog({
                                     navigate({ to: `/workflow/${w.id}` as any } as any);
                                 }}
                             >
-                                Open
-                                <ExternalLink size={12} />
+                                {t('actions.open')}
+                                <ArrowSquareOut size={12} />
                             </Button>
                         </div>
                     ))}
@@ -306,7 +325,7 @@ export function LinkedWorkflowsDialog({
 
                 <DialogFooter>
                     <Button variant="outline" onClick={() => onOpenChange(false)}>
-                        Close
+                        {t('actions.close')}
                     </Button>
                 </DialogFooter>
             </DialogContent>

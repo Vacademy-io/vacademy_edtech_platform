@@ -38,4 +38,18 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
     List<AttendanceRecord> findByInstituteIdAndDate(
             @Param("instituteId") String instituteId,
             @Param("date") LocalDate date);
+
+    /** Open sessions for auto-checkout: checked in on this date, never checked out. */
+    @Query("SELECT a FROM AttendanceRecord a WHERE a.instituteId = :instituteId " +
+            "AND a.attendanceDate = :date AND a.checkInTime IS NOT NULL AND a.checkOutTime IS NULL")
+    List<AttendanceRecord> findOpenCheckIns(
+            @Param("instituteId") String instituteId,
+            @Param("date") LocalDate date);
+
+    /** Employee ids that already have ANY record on this date (auto-absent exclusion set). */
+    @Query("SELECT a.employee.id FROM AttendanceRecord a WHERE a.instituteId = :instituteId " +
+            "AND a.attendanceDate = :date")
+    List<String> findEmployeeIdsWithRecordOnDate(
+            @Param("instituteId") String instituteId,
+            @Param("date") LocalDate date);
 }

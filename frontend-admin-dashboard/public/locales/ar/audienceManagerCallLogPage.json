@@ -1,0 +1,27 @@
+{
+    "header": {
+        "navTitle": "سجل المكالمات",
+        "title": "سجل المكالمات",
+        "subtitle": "كل مكالمة عبر فريقك — بالذكاء الاصطناعي والبشري، واردة وصادرة، لكل المزوّدين. صفِّ، صنِّف وصدِّر.",
+        "callingSettings": "إعدادات المكالمات",
+        "refresh": "تحديث"
+    },
+    "filters": {
+        "presetLabel": "{{days}} يوم",
+        "from": "من",
+        "to": "إلى",
+        "apply": "تطبيق",
+        "reset": "إعادة تعيين",
+        "noInstitute": "اختر مؤسسة لعرض سجل المكالمات.",
+        "presetHours": "{{hours}} س",
+        "customHoursPlaceholder": "آخر N ساعة",
+        "customHoursLabel": "آخر N ساعة"
+    },
+    "counsellorPicker": {
+        "ariaLabel": "التصفية حسب المرشد",
+        "allCounsellors": "كل المرشدين"
+    },
+    "callIntelligence": {
+        "heading": "ذكاء المكالمات"
+    }
+}

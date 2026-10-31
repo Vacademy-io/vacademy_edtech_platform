@@ -10,6 +10,7 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import {
     Dialog,
@@ -37,6 +38,7 @@ interface Props {
 }
 
 export function FeatureRecipesDialog({ feature, enabledMap, onClose, onChanged }: Props) {
+    const { t } = useTranslation('settingsFeatureRecipesDialog');
     const queryClient = useQueryClient();
     const [configuring, setConfiguring] = useState<string | null>(null);
     const [confirmOff, setConfirmOff] = useState<AutomationRecipe | null>(null);
@@ -66,12 +68,12 @@ export function FeatureRecipesDialog({ feature, enabledMap, onClose, onChanged }
                 queryKey: ['GET_ACTIVE_WORKFLOWS_WITH_SCHEDULES'],
                 refetchType: 'all',
             });
-            toast.success('Automation turned off.');
+            toast.success(t('toasts.turnedOff'));
             onChanged();
             setConfirmOff(null);
         } catch (err) {
-            const msg = err instanceof Error ? err.message : 'Unknown error';
-            toast.error(`Could not turn it off: ${msg}`);
+            const msg = err instanceof Error ? err.message : t('toasts.unknownError');
+            toast.error(t('toasts.turnOffFailed', { message: msg }));
         } finally {
             setBusy(false);
         }
@@ -80,7 +82,7 @@ export function FeatureRecipesDialog({ feature, enabledMap, onClose, onChanged }
     return (
         <>
             <Dialog open={!!feature} onOpenChange={(open) => { if (!open) onClose(); }}>
-                <DialogContent className="w-[640px] max-h-[85vh] overflow-y-auto">
+                <DialogContent className="w-dialog-md max-h-dialog-tall overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-lg">
                             <span className="text-2xl">{feature.icon}</span>
@@ -129,7 +131,7 @@ export function FeatureRecipesDialog({ feature, enabledMap, onClose, onChanged }
                                                             onClick={() => handleStartSetup(recipe)}
                                                         >
                                                             <Plus size={12} weight="bold" />
-                                                            Set up
+                                                            {t('recipe.setUpButton')}
                                                         </Button>
                                                     )
                                                 )}
@@ -137,10 +139,10 @@ export function FeatureRecipesDialog({ feature, enabledMap, onClose, onChanged }
                                             <p className="mt-1 text-xs text-gray-500">
                                                 {recipe.whatHappens}
                                             </p>
-                                            <p className="mt-1 text-[11px] uppercase tracking-wide text-gray-400">
+                                            <p className="mt-1 text-2xs uppercase tracking-wide text-gray-400">
                                                 {recipe.mode === 'scheduled'
-                                                    ? 'Runs on a schedule'
-                                                    : 'Runs automatically when triggered'}
+                                                    ? t('recipe.modeScheduled')
+                                                    : t('recipe.modeTriggered')}
                                             </p>
                                         </div>
                                     </div>
@@ -168,19 +170,19 @@ export function FeatureRecipesDialog({ feature, enabledMap, onClose, onChanged }
             <Dialog open={!!confirmOff} onOpenChange={(open) => { if (!open) setConfirmOff(null); }}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Turn off automation?</DialogTitle>
+                        <DialogTitle>{t('turnOffDialog.title')}</DialogTitle>
                         <DialogDescription>
-                            This stops <strong>{confirmOff?.label}</strong>. Any scheduled or
-                            event-based emails set up by this automation will no longer be sent.
-                            You can turn it back on any time.
+                            {t('turnOffDialog.descriptionPart1')}
+                            <strong>{confirmOff?.label}</strong>
+                            {t('turnOffDialog.descriptionPart2')}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="gap-2">
                         <Button variant="ghost" onClick={() => setConfirmOff(null)} disabled={busy}>
-                            Cancel
+                            {t('turnOffDialog.cancel')}
                         </Button>
                         <MyButton buttonType="primary" disabled={busy} onClick={handleTurnOff}>
-                            {busy ? 'Turning off…' : 'Turn off'}
+                            {busy ? t('turnOffDialog.turningOff') : t('turnOffDialog.turnOff')}
                         </MyButton>
                     </DialogFooter>
                 </DialogContent>

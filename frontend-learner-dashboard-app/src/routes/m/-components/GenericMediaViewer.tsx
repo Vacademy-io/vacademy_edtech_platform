@@ -1,5 +1,6 @@
 import React from "react";
 import { FileText, Image, FilmStrip, FileDashed } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 import type { PublicMediaDetails } from "../-types/types";
 import { MediaSource } from "../-types/types";
 
@@ -12,6 +13,7 @@ export const GenericMediaViewer: React.FC<GenericMediaViewerProps> = ({
     mediaDetails,
     className = "",
 }) => {
+    const { t } = useTranslation("miscRoutesA");
     const { source, url, file_name, file_type } = mediaDetails;
 
     // PDF Viewer - responsive height for different devices
@@ -21,7 +23,7 @@ export const GenericMediaViewer: React.FC<GenericMediaViewerProps> = ({
                 <div className="relative w-full h-screen-60 sm:h-screen-70 md:h-screen-80 lg:h-screen-85">
                     <iframe
                         src={`${url}#toolbar=0&navpanes=0&scrollbar=1`}
-                        title={file_name || "PDF Document"}
+                        title={file_name || t("media.pdfDocument")}
                         className="w-full h-full border-0"
                     />
                 </div>
@@ -36,7 +38,7 @@ export const GenericMediaViewer: React.FC<GenericMediaViewerProps> = ({
                 <div className="relative flex items-center justify-center min-h-screen-40 sm:min-h-screen-50">
                     <img
                         src={url}
-                        alt={file_name || "Image"}
+                        alt={file_name || t("media.image")}
                         className="max-w-full max-h-screen-70 sm:max-h-screen-80 md:max-h-screen-85 object-contain"
                     />
                 </div>
@@ -57,7 +59,7 @@ export const GenericMediaViewer: React.FC<GenericMediaViewerProps> = ({
                         playsInline
                         className="w-full h-full object-contain"
                     >
-                        Your browser does not support the video tag.
+                        {t("media.videoNotSupported")}
                     </video>
                 </div>
             </div>
@@ -72,18 +74,16 @@ export const GenericMediaViewer: React.FC<GenericMediaViewerProps> = ({
                     {getMediaIcon(source, file_type)}
                 </div>
                 <h3 className="text-base sm:text-lg md:text-xl font-semibold text-white mb-2 line-clamp-2 px-2">
-                    {file_name || "Unknown File"}
+                    {file_name || t("media.unknownFile")}
                 </h3>
-                <p className="text-white/50 text-sm mb-4 sm:mb-6">
-                    This file type is not supported for preview
-                </p>
+                <p className="text-white/50 text-sm mb-4 sm:mb-6">{t("media.previewUnsupported")}</p>
                 <a
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-white/10 text-white text-sm sm:text-base font-medium rounded-lg hover:bg-white/20 transition-colors"
                 >
-                    <span>Open File</span>
+                    <span>{t("media.openFile")}</span>
                 </a>
             </div>
         </div>

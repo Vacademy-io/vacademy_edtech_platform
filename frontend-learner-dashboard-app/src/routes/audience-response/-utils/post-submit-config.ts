@@ -19,6 +19,26 @@ import DOMPurify from "dompurify";
 
 export type PostSubmitButtonVariant = "primary" | "secondary";
 
+/**
+ * Artwork the thank-you screen leads with. `none` drops the bubble entirely —
+ * for campaigns that supply their own `imageUrl` and want nothing under it.
+ */
+export type PostSubmitIcon =
+  | "check"
+  | "confetti"
+  | "heart"
+  | "envelope"
+  | "calendar"
+  | "none";
+
+/** Color family for the icon bubble and the primary action button. */
+export type PostSubmitAccent =
+  | "success"
+  | "primary"
+  | "info"
+  | "warning"
+  | "neutral";
+
 export interface PostSubmitButton {
   id: string;
   text: string;
@@ -37,6 +57,10 @@ export interface AudiencePostSubmitConfiguration {
   enabled: boolean;
   /** Blank hides the heading. */
   successTitle: string;
+  /** Illustration above the heading. Blank renders the icon bubble alone. */
+  imageUrl: string;
+  icon: PostSubmitIcon;
+  accent: PostSubmitAccent;
   successMessage: string;
   /** Optional rich-text/HTML body. When non-blank it replaces `successMessage`. */
   content: string;
@@ -52,6 +76,11 @@ export const DEFAULT_POST_SUBMIT_CONFIGURATION: AudiencePostSubmitConfiguration 
   {
     enabled: false,
     successTitle: "Registration Successful!",
+    // These three reproduce the screen this page rendered before the artwork
+    // was configurable: a green check bubble, no image.
+    imageUrl: "",
+    icon: "check",
+    accent: "success",
     successMessage:
       "Thank you for your response. Your form has been submitted successfully.",
     content: "",
@@ -153,6 +182,20 @@ export const parsePostSubmitConfiguration = (
   return {
     enabled: toBool(src.enabled, d.enabled),
     successTitle: toStr(src.successTitle, d.successTitle),
+    // Guarded like a button URL: an image src is a live network reference on an
+    // anonymous page, so `javascript:` / `data:` / `//evil.com` resolve to "no
+    // image" rather than rendering.
+    imageUrl: resolvePostSubmitUrl(toStr(src.imageUrl, ""), {}) ?? d.imageUrl,
+    icon: toEnum<PostSubmitIcon>(
+      src.icon,
+      ["check", "confetti", "heart", "envelope", "calendar", "none"],
+      d.icon
+    ),
+    accent: toEnum<PostSubmitAccent>(
+      src.accent,
+      ["success", "primary", "info", "warning", "neutral"],
+      d.accent
+    ),
     successMessage: toStr(src.successMessage, d.successMessage),
     content: toStr(src.content, d.content),
     buttons: toButtons(src.buttons, src),
@@ -177,6 +220,9 @@ export const isDefaultPostSubmitConfiguration = (
   if (!config.enabled) return true;
   return (
     config.successTitle === d.successTitle &&
+    config.imageUrl === d.imageUrl &&
+    config.icon === d.icon &&
+    config.accent === d.accent &&
     config.successMessage === d.successMessage &&
     config.content === d.content &&
     config.buttons.length === 0 &&

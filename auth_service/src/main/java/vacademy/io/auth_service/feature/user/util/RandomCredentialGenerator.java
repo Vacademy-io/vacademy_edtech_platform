@@ -27,7 +27,10 @@ public class RandomCredentialGenerator {
 
     private static String generateUsername(String fullName) {
         // Ensure full name has at least 4 characters, else pad with "X"
-        String namePart = fullName.replaceAll("\\s+", "").substring(0, Math.min(fullName.length(), 4)).toLowerCase();
+        // Bound the cut by the stripped length: "A B C" strips to 3 characters while the
+        // raw length is 5, and cutting 4 threw StringIndexOutOfBoundsException.
+        String stripped = fullName == null ? "" : fullName.replaceAll("\\s+", "");
+        String namePart = stripped.substring(0, Math.min(stripped.length(), 4)).toLowerCase();
         if (namePart.length() < 4) {
             namePart = String.format("%-4s", namePart).replace(' ', 'X');
         }

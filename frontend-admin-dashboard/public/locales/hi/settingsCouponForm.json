@@ -1,0 +1,96 @@
+{
+    "schema": {
+        "codeMinLength": "कोड कम से कम 3 अक्षरों का होना चाहिए",
+        "codeMaxLength": "कोड अधिकतम 32 अक्षरों का होना चाहिए",
+        "codeFormat": "बड़े अक्षर, अंक, _ या - का उपयोग करें",
+        "discountValueRequired": "छूट मूल्य आवश्यक है",
+        "discountValuePositive": "छूट मूल्य 0 से अधिक होना चाहिए",
+        "usageLimitInvalid": "एक संख्या दर्ज करें या खाली छोड़ें",
+        "percentageMax": "प्रतिशत 100 से अधिक नहीं हो सकता",
+        "endDateAfterStart": "समाप्ति तिथि आरंभ तिथि के बाद होनी चाहिए"
+    },
+    "priceLine": {
+        "percentOff": "{{value}}% की छूट",
+        "percentOffWithMax": "{{value}}% की छूट, अधिकतम {{max}}",
+        "flatOff": "{{amount}} की छूट",
+        "withExpiry": "{{discount}} · {{date}} तक मान्य"
+    },
+    "dialog": {
+        "editHeading": "कूपन {{code}} संपादित करें",
+        "newHeading": "नया कूपन"
+    },
+    "footer": {
+        "cancel": "रद्द करें",
+        "saving": "सहेजा जा रहा है…",
+        "saveChanges": "बदलाव सहेजें",
+        "createCoupon": "कूपन बनाएं"
+    },
+    "toasts": {
+        "updated": "कूपन अपडेट किया गया",
+        "created": "कूपन \"{{code}}\" बनाया गया",
+        "saveFailed": "कूपन सहेजा नहीं जा सका"
+    },
+    "basics": {
+        "title": "मूल जानकारी",
+        "code": {
+            "label": "कूपन कोड",
+            "placeholder": "SAVE20"
+        },
+        "discountType": {
+            "label": "छूट प्रकार",
+            "percentage": "प्रतिशत (%)",
+            "flat": "निश्चित राशि"
+        },
+        "value": {
+            "labelPercentage": "मूल्य (%)",
+            "labelFlat": "मूल्य (₹)",
+            "placeholderPercentage": "20",
+            "placeholderFlat": "500"
+        },
+        "maxCap": {
+            "label": "अधिकतम सीमा (₹)",
+            "placeholder": "कोई कैप नहीं",
+            "noCapHint": "(खाली = कोई कैप नहीं)"
+        }
+    },
+    "validity": {
+        "title": "वैधता",
+        "startDate": {
+            "label": "आरंभ तिथि",
+            "optional": "(वैकल्पिक)"
+        },
+        "endDate": {
+            "label": "समाप्ति तिथि",
+            "noExpiryHint": "(खाली = कभी एक्सपायर नहीं)"
+        },
+        "usageLimit": {
+            "label": "उपयोग सीमा",
+            "unlimitedHint": "(खाली = असीमित)",
+            "placeholder": "असीमित"
+        }
+    },
+    "emailRestriction": {
+        "restrictLabel": "विशिष्ट ईमेल तक सीमित करें",
+        "restrictHint": "केवल सूचीबद्ध {{term}} ईमेल ही यह कूपन लागू कर सकते हैं",
+        "allowedEmailsLabel": "स्वीकृत ईमेल",
+        "allowedEmailsPlaceholder": "alice@example.com, bob@example.com",
+        "emailsCaptured_one": "{{count}} ईमेल दर्ज किया गया",
+        "emailsCaptured_other": "{{count}} ईमेल दर्ज किए गए"
+    },
+    "scope": {
+        "title": "यह कहाँ लागू होता है",
+        "locked": "(लॉक — कूपन भुनाया जा चुका है)"
+    },
+    "livePreview": {
+        "heading": "{{term}} पूर्वावलोकन",
+        "codePlaceholder": "YOURCODE",
+        "status": "स्थिति",
+        "usage": "उपयोग",
+        "scope": "दायरा",
+        "instituteWide": "पूरे संस्थान में",
+        "scopeCount": "{{count}} {{unit}}",
+        "emailRestricted": "ईमेल-सीमित",
+        "allowedCount": "{{count}} स्वीकृत"
+    },
+    "frozenNotice": "यह कूपन भुनाया जा चुका है। छूट और दायरा लॉक हैं; आप अभी भी समाप्ति तिथि बढ़ा सकते हैं, उपयोग सीमा बढ़ा सकते हैं, या स्थिति बदल सकते हैं।"
+}

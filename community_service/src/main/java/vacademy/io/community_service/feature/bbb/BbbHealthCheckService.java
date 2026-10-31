@@ -56,7 +56,7 @@ public class BbbHealthCheckService {
     @Value("${GH_ACTION_TOKEN:}")
     private String githubToken;
 
-    @Value("${bbb.github.repo:Vacademy-io/vacademy_platform}")
+    @Value("${bbb.github.repo:Vacademy-io/vacademy_edtech_platform}")
     private String githubRepo;
 
     /** admin_core_service base URL for pool queries */
@@ -72,11 +72,11 @@ public class BbbHealthCheckService {
     // -----------------------------------------------------------------------
 
     /**
-     * Scheduled start — Mon-Sat at 3:00 pm IST.
+     * Scheduled start — Mon-Sat at 2:30 pm IST.
      * Reads servers_to_start from admin_core_service, then dispatches the
      * GitHub Actions workflow with server_count parameter.
      */
-    @Scheduled(cron = "0 0 15 * * MON-SAT", zone = "Asia/Kolkata")
+    @Scheduled(cron = "0 30 14 * * MON-SAT", zone = "Asia/Kolkata")
     public void scheduledStart() {
         log.info("[BBB Pool] Scheduled START triggered");
 
@@ -87,20 +87,20 @@ public class BbbHealthCheckService {
     }
 
     /**
-     * Scheduled health check — Mon-Sat at 3:20 pm IST.
+     * Scheduled health check — Mon-Sat at 2:45 pm IST.
      * Checks all running servers from the pool and sends the WhatsApp health message.
      */
-    @Scheduled(cron = "0 20 15 * * MON-SAT", zone = "Asia/Kolkata")
+    @Scheduled(cron = "0 45 14 * * MON-SAT", zone = "Asia/Kolkata")
     public void scheduledHealthCheck() {
         log.info("[BBB Pool HealthCheck] Scheduled check triggered");
         runPoolHealthCheck(true);
     }
 
     /**
-     * Scheduled stop — Mon-Sat at 11:55 PM IST.
-     * Stops ALL running servers (snapshot + delete).
+     * Scheduled stop — 2:00 AM IST, Mon-SUN (runs on the calendar day after each
+     * class day)
      */
-    @Scheduled(cron = "0 55 23 * * MON-SAT", zone = "Asia/Kolkata")
+    @Scheduled(cron = "0 0 2 * * MON-SUN", zone = "Asia/Kolkata")
     public void scheduledStop() {
         log.info("[BBB Pool] Scheduled STOP triggered");
         triggerPoolAction("stop", "all", 0);
@@ -336,7 +336,18 @@ public class BbbHealthCheckService {
                     "{\"ref\":\"main\",\"inputs\":{\"action\":\"%s\",\"server_slug\":\"%s\",\"server_count\":\"%d\"}}",
                     action, serverSlug, serverCount);
 
-            restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body, headers), String.class);
+            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST,
+                    new HttpEntity<>(body, headers), String.class);
+
+            // A renamed repo answers a dispatch POST with 3xx, which RestTemplate does not
+            // treat as an error. Without this check the call is logged as "triggered" while
+            // GitHub never creates a run, so a start or stop fails silently.
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                String msg = "Dispatch not accepted: HTTP " + response.getStatusCode();
+                result.put("error", msg);
+                log.error("[BBB Pool] {} (url={}, action={})", msg, url, action);
+                return result;
+            }
 
             result.put("status", "triggered");
             result.put("message",

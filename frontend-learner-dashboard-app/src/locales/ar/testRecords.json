@@ -1,0 +1,277 @@
+{
+    "common": {
+        "correct": "صحيح",
+        "incorrect": "غير صحيح",
+        "skipped": "متروك",
+        "notAnswered": "لم تتم الإجابة",
+        "download": "تنزيل",
+        "downloadingEllipsis": "جارٍ التنزيل…",
+        "loadingEllipsis": "جارٍ التحميل…",
+        "tryAgain": "أعد المحاولة",
+        "view": "عرض",
+        "accuracy": "الدقة",
+        "timeTaken": "الوقت المستغرق",
+        "you": "أنت",
+        "marks": "الدرجات",
+        "percentile": "المئين",
+        "excellent": "ممتاز",
+        "good": "جيد",
+        "average": "متوسط",
+        "low": "منخفض",
+        "yourResponse": "إجابتك",
+        "explanation": "الشرح",
+        "resultReport": "تقرير النتيجة",
+        "classAverageValue": "متوسط الفصل: {{value}}",
+        "studentsCount_zero": "{{count}} طالب",
+        "studentsCount_one": "{{count}} طالب واحد",
+        "studentsCount_two": "{{count}} طالبان",
+        "studentsCount_few": "{{count}} طلاب",
+        "studentsCount_many": "{{count}} طالبًا",
+        "studentsCount_other": "{{count}} طالب"
+    },
+    "annotatedCopyDialog": {
+        "title": "نسخة الإجابة المُعلَّق عليها",
+        "toastError": "تعذّر تحميل النسخة المُعلَّق عليها."
+    },
+    "attemptPapersCard": {
+        "title": "أوراقك",
+        "opening": "جارٍ الفتح...",
+        "errors": {
+            "fileUnavailable": "لم يعد هذا الملف متاحًا.",
+            "popupBlocked": "حظر المتصفح النافذة المنبثقة. يرجى السماح بالنوافذ المنبثقة لهذا الموقع والمحاولة مرة أخرى.",
+            "openFailed": "تعذّر فتح هذا الملف. يرجى المحاولة مرة أخرى."
+        }
+    },
+    "evaluatedReportDialog": {
+        "defaultTitle": "الإجابة المُقيَّمة",
+        "downloadError": "تعذّر تنزيل الملف.",
+        "evaluatorRemark": "ملاحظة المقيّم"
+    },
+    "comparisonDashboard": {
+        "errors": {
+            "fileNotAvailable": "الملف غير متاح.",
+            "openFileFailed": "تعذّر فتح الملف.",
+            "downloadReportFailed": "تعذّر تنزيل التقرير."
+        },
+        "empty": {
+            "title": "لا توجد بيانات مقارنة بعد",
+            "description": "تظهر مقارنة الدفعة هنا بمجرد تقييم محاولتك والإعلان عن النتائج.",
+            "noQuestionsTitle": "لا توجد أسئلة في هذا القسم",
+            "noQuestionsDescription": "اختر علامة تبويب قسم آخر لمراجعة بقية إجاباتك."
+        },
+        "masthead": {
+            "reportType": "تقرير الأداء الفردي",
+            "attempted": "بدأت المحاولة في {{date}}",
+            "submitted": "أُرسلت في {{time}}"
+        },
+        "reportOptionsAriaLabel": "خيارات التقرير",
+        "menu": {
+            "downloadReport": "تنزيل التقرير",
+            "yourSubmission": "إجابتك المُرسَلة",
+            "viewEvaluated": "عرض الإجابة المُقيَّمة",
+            "viewSubmitted": "عرض الإجابة المُرسَلة",
+            "viewResultReport": "عرض تقرير النتيجة",
+            "viewAnnotatedCopy": "عرض النسخة المُعلَّق عليها"
+        },
+        "stats": {
+            "yourScore": "درجتك",
+            "classRank": "ترتيبك في الفصل",
+            "of": "من {{count}}",
+            "classAccuracy": "الفصل {{pct}}%",
+            "classDuration": "الفصل {{duration}}",
+            "highest": "الأعلى",
+            "lowest": "الأدنى",
+            "participants": "المشاركون"
+        },
+        "sections": {
+            "whereYouStand": "موقعك — الإجمالي (من أصل {{maxMarks}})",
+            "summaryTitle": "ملخص أدائك",
+            "vsClassAverage": "أداؤك مقابل متوسط الفصل",
+            "sectionWisePerformance": "الأداء حسب القسم",
+            "marksDistribution": "توزيع الدرجات — كل الطلاب",
+            "leaderboardPosition": "لوحة المتصدرين — موقعك",
+            "reviewAndPractice": "المراجعة والتدريب",
+            "answerReview": "مراجعة الإجابات",
+            "easyMissesCount": "الأخطاء السهلة — {{count}}",
+            "easyMissesNone": "الأخطاء السهلة — لا يوجد",
+            "expertiseCount": "نقاط تميّزك — {{count}}",
+            "expertiseNone": "نقاط تميّزك — لا يوجد"
+        },
+        "summary": {
+            "strengthsLead": "نقاط قوتك.",
+            "strengthsText": "{{section}} هو أفضل مجال لديك — أعلى بنحو {{delta}} درجة من متوسط الفصل.",
+            "weaknessLead": "مجال يحتاج إلى العمل.",
+            "weaknessText": "{{section}} — أقل بنحو {{delta}} درجة من متوسط الفصل، وهي أكبر فجوة في هذه الورقة.",
+            "paceLead": "وتيرتك.",
+            "paceTextAhead": "أنهيت الاختبار خلال {{duration}}، أسرع من متوسط الفصل البالغ {{avgDuration}}.",
+            "paceTextBehind": "أنهيت الاختبار خلال {{duration}}، مقابل متوسط الفصل البالغ {{avgDuration}}."
+        },
+        "compare": {
+            "you": "أنت {{value}}",
+            "avg": "المتوسط {{value}}"
+        },
+        "leaderboard": {
+            "rankOf": "الترتيب #{{rank}} من {{total}}",
+            "rank": "الترتيب",
+            "student": "الطالب",
+            "time": "الوقت"
+        },
+        "review": {
+            "everyQuestionDesc": "كل سؤال مع إجابتك، والإجابة الصحيحة، وكيف أجاب بقية الفصل.",
+            "viewAnswerReview": "عرض مراجعة الإجابات",
+            "noEasyMisses": "لم تُخطئ في أي سؤال أجاب عنه معظم الفصل بشكل صحيح — الدرجات التي فقدتها كانت في الأسئلة الأصعب في الورقة.",
+            "noExpertise": "لا يوجد بعد سؤال تفوقت فيه على معظم الفصل — واصل التدرب على المسائل الأصعب.",
+            "pctOfClassCorrect": "من الفصل أجابوا بشكل صحيح",
+            "moreInAnswerReview": "+ {{count}} أكثر في مراجعة الإجابات أدناه",
+            "questionsCount_zero": "{{count}} سؤال",
+            "questionsCount_one": "{{count}} سؤال واحد",
+            "questionsCount_two": "{{count}} سؤالان",
+            "questionsCount_few": "{{count}} أسئلة",
+            "questionsCount_many": "{{count}} سؤالًا",
+            "questionsCount_other": "{{count}} سؤال",
+            "classPctCorrect": "{{pct}}% من الفصل أجابوا بشكل صحيح",
+            "yourResponse": "إجابتك",
+            "marksAwardedDirectly": "درجات ممنوحة مباشرة ({{value}})",
+            "notAttempted": "لم تتم المحاولة",
+            "correctAnswer": "الإجابة الصحيحة",
+            "feedback": "الملاحظات",
+            "aiAssistedReviewed": "بمساعدة الذكاء الاصطناعي، وراجعها المعلم",
+            "aiAssisted": "بمساعدة الذكاء الاصطناعي",
+            "criteria": "المعيار",
+            "reason": "السبب",
+            "howClassAnswered": "كيف أجاب الفصل"
+        }
+    },
+    "marksBreakdown": {
+        "partiallyCorrect": "صحيح جزئيًا",
+        "wrongResponse": "إجابة خاطئة"
+    },
+    "marksChip": {
+        "markLabel_zero": "درجة",
+        "markLabel_one": "درجة",
+        "markLabel_two": "درجتان",
+        "markLabel_few": "درجات",
+        "markLabel_many": "درجة",
+        "markLabel_other": "درجة"
+    },
+    "marksDistributionChart": {
+        "yourScoreRange": "نطاق درجتك",
+        "restOfBatch": "بقية الدفعة"
+    },
+    "pdfDownloadButton": {
+        "downloading": "جارٍ التنزيل...",
+        "downloadFailed": "فشل التنزيل",
+        "downloadPdf": "تنزيل PDF"
+    },
+    "performanceBand": {
+        "tooltip": {
+            "classTopper": "الأول على الفصل: {{value}}",
+            "you": "أنت: {{value}}"
+        },
+        "legend": {
+            "classAverage": "متوسط الفصل",
+            "classTopper": "الأول على الفصل"
+        }
+    },
+    "pieChart": {
+        "noData": "لا تتوفر بيانات للرسم الدائري"
+    },
+    "questionResponseRenderer": {
+        "noResponse": "لا توجد إجابة",
+        "noOptionSelected": "لم يتم اختيار خيار",
+        "noOptionsSelected": "لم يتم اختيار خيارات",
+        "hiddenWord": "مخفي",
+        "sampleWord": "عيّنة",
+        "testsFraction": "{{passed}}/{{total}} اختبارات",
+        "scorePts": "· {{score}} نقطة",
+        "pasteAttempts_zero": "{{count}} محاولة لصق",
+        "pasteAttempts_one": "{{count}} محاولة لصق واحدة",
+        "pasteAttempts_two": "{{count}} محاولتا لصق",
+        "pasteAttempts_few": "{{count}} محاولات لصق",
+        "pasteAttempts_many": "{{count}} محاولة لصق",
+        "pasteAttempts_other": "{{count}} محاولة لصق",
+        "testCasesPassed": "حالات الاختبار الناجحة:",
+        "sampleFraction": "العيّنة: {{passed}}/{{total}}",
+        "timeTakenLabel": "الوقت المستغرق:",
+        "msValue": "{{value}} مللي ثانية",
+        "msAllowed": "/ {{value}} مللي ثانية مسموح بها",
+        "memoryLabel": "الذاكرة:",
+        "kbValue": "{{value}} كيلوبايت",
+        "kbAllowed": "/ {{value}} كيلوبايت مسموح بها",
+        "showSourceCode": "إظهار الشيفرة المصدرية المُرسَلة",
+        "testCasesHeading": "حالات الاختبار",
+        "testNumber": "اختبار {{number}}",
+        "hiddenParenthetical": "(مخفي)",
+        "noCorrectAnswerProvided": "لم تُقدَّم إجابة صحيحة",
+        "noAnswerProvided": "لم تُقدَّم إجابة",
+        "noCorrectOptionsProvided": "لم تُقدَّم خيارات صحيحة",
+        "codingTestCaseSummary": "{{visible}} ظاهرة + {{hidden}} مخفية من حالات الاختبار — طالع نتائج الاختبار في لوحة الاستجابة.",
+        "errorDisplayingResponse": "خطأ في عرض الإجابة",
+        "errorDisplayingCorrectAnswer": "خطأ في عرض الإجابة الصحيحة"
+    },
+    "responseBreakdown": {
+        "errorDisplayingResponseWithError": "خطأ في عرض الإجابة: {{error}}",
+        "errorDisplayingCorrectAnswerWithError": "خطأ في عرض الإجابة الصحيحة: {{error}}"
+    },
+    "sectionComparisonTable": {
+        "section": "القسم",
+        "yourMarks": "درجاتك",
+        "total": "الإجمالي",
+        "classAvg": "متوسط الفصل",
+        "classMax": "أعلى درجة في الفصل",
+        "cutOff": "الحد الأدنى للنجاح",
+        "status": "الحالة",
+        "pass": "ناجح",
+        "fail": "راسب"
+    },
+    "surveyReportDialog": {
+        "title": "تقرير الاستبيان",
+        "responseNotAvailable": "الإجابة غير متاحة",
+        "errorParsingResponse": "خطأ في تحليل الإجابة",
+        "noSurveyData": "لا تتوفر بيانات للاستبيان"
+    },
+    "testReportDialog": {
+        "navHeadingReport": "التقرير",
+        "attemptDate": "تاريخ المحاولة",
+        "duration": "المدة",
+        "startTime": "وقت البدء",
+        "endTime": "وقت الانتهاء",
+        "subjectLabel": "{{subject}}: {{name}}",
+        "papers": {
+            "answerSheetLabel": "ورقة إجابتك",
+            "answerSheetDescription": "الورقة التي قدّمتها، كما مسحها معهدك ضوئيًا.",
+            "checkedCopyLabel": "النسخة المُصحَّحة",
+            "checkedCopyDescription": "ورقة إجابتك مع علامات وملاحظات المقيّم.",
+            "resultReportDescription": "تقرير النتيجة الذي أعدّه معهدك."
+        },
+        "yourScore": "درجتك",
+        "marksFraction": "{{achieved}} / {{total}} درجة",
+        "veryGood": "جيد جدًا",
+        "needsImprovement": "يحتاج إلى تحسين",
+        "classRank": "ترتيب الفصل",
+        "notAvailable": "غير متاح",
+        "topPercentile": "ضمن أفضل {{pct}}% (المئين)",
+        "quickStats": "إحصاءات سريعة",
+        "performanceAnalytics": "تحليلات الأداء",
+        "performanceAnalyticsDesc": "تفصيل دقيق لإجاباتك ودرجاتك",
+        "responseBreakdown": "تفصيل الإجابات",
+        "attemptedCount": "تمت الإجابة: {{count}}",
+        "skippedCount": "تم التخطي: {{count}}",
+        "marksBreakdown": "تفصيل الدرجات",
+        "partial": "جزئي",
+        "marksAwardedWithPlus": "{{count}} (+{{marks}})",
+        "marksAwardedPlain": "{{count}} ({{marks}})",
+        "answerReview": "مراجعة الإجابات",
+        "answerReviewDesc": "تحليل تفصيلي لإجاباتك",
+        "sectionTotal": "إجمالي القسم: {{marks}} درجة",
+        "questionNumber": "السؤال {{number}}",
+        "correctAnswerLabel": "الإجابة الصحيحة",
+        "evaluatorFeedback": "ملاحظات المقيّم",
+        "noQuestionsAvailable": "لا توجد أسئلة متاحة للمراجعة",
+        "exporting": "جارٍ التصدير...",
+        "exportReport": "تصدير التقرير",
+        "viewEvaluatedCopy": "عرض النسخة المُقيَّمة",
+        "close": "إغلاق",
+        "evaluatedFileName": "الملف المُقيَّم.pdf"
+    }
+}

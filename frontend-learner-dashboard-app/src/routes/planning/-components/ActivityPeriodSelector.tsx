@@ -1,5 +1,6 @@
 import { MyButton } from "@/components/design-system/button";
 import { Calendar, CalendarDots, ListChecks } from "@phosphor-icons/react";
+import { useTranslation } from "react-i18next";
 
 export type ActivityPeriod = "today" | "tomorrow" | "all";
 
@@ -12,10 +13,11 @@ export default function ActivityPeriodSelector({
   selectedPeriod,
   onSelect,
 }: ActivityPeriodSelectorProps) {
+  const { t } = useTranslation("planning");
   const options: { id: ActivityPeriod; label: string; icon: any }[] = [
-    { id: "today", label: "Today", icon: Calendar },
-    { id: "tomorrow", label: "Tomorrow", icon: CalendarDots },
-    { id: "all", label: "All Activities", icon: ListChecks },
+    { id: "today", label: t("periodSelector.today"), icon: Calendar },
+    { id: "tomorrow", label: t("periodSelector.tomorrow"), icon: CalendarDots },
+    { id: "all", label: t("periodSelector.allActivities"), icon: ListChecks },
   ];
 
   return (

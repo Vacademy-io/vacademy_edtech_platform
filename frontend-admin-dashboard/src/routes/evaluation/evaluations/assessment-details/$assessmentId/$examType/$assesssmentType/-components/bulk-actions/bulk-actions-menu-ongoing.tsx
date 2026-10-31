@@ -8,6 +8,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { MyButton } from '@/components/design-system/button';
+import { useTranslation } from 'react-i18next';
 import { useSubmissionsBulkActionsDialogStoreOngoing } from '../bulk-actions-zustand-store/useSubmissionsBulkActionsDialogStoreOngoing';
 
 interface BulkActionsMenuProps {
@@ -18,6 +19,7 @@ interface BulkActionsMenuProps {
 }
 
 export const BulkActionsMenuOngoing = ({ selectedStudents, trigger }: BulkActionsMenuProps) => {
+    const { t } = useTranslation('evaluationBulkActionsMenuOngoing');
     const { openBulkIncreaseAssessmentTimeDialog, openBulkCloseSubmissionDialog } =
         useSubmissionsBulkActionsDialogStoreOngoing();
 
@@ -32,7 +34,7 @@ export const BulkActionsMenuOngoing = ({ selectedStudents, trigger }: BulkAction
         const bulkActionInfo: AssessmentSubmissionsBulkActionInfo = {
             selectedStudentIds: validStudents.map((student) => student.user_id),
             selectedStudents: validStudents,
-            displayText: `${validStudents.length} students`,
+            displayText: t('studentsCount', { count: validStudents.length }),
         };
 
         switch (value) {
@@ -63,13 +65,13 @@ export const BulkActionsMenuOngoing = ({ selectedStudents, trigger }: BulkAction
                         className="cursor-pointer"
                         onClick={() => handleMenuOptionsChange('Increase Assessment Time')}
                     >
-                        Increase Assessment Time
+                        {t('increaseAssessmentTime')}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                         className="cursor-pointer"
                         onClick={() => handleMenuOptionsChange('Close Submission')}
                     >
-                        Close Submission
+                        {t('closeSubmission')}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>

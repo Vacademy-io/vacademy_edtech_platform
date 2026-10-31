@@ -1,4 +1,5 @@
 import { Info } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import {
     Tooltip,
     TooltipContent,
@@ -12,13 +13,14 @@ import {
  * and the keyboard — unlike a native `title` attribute.
  */
 export function InfoHint({ text }: { text: string }) {
+    const { t } = useTranslation('challengeAnalyticsInfoHint');
     return (
         <TooltipProvider delayDuration={0}>
             <Tooltip>
                 <TooltipTrigger asChild>
                     <button
                         type="button"
-                        aria-label="More info"
+                        aria-label={t('moreInfo')}
                         className="inline-flex text-gray-400 transition-colors hover:text-gray-600"
                     >
                         <Info className="size-3.5" />

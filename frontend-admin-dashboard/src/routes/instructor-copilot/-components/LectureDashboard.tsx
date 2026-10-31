@@ -2,30 +2,33 @@ import { Card, CardContent } from '@/components/ui/card';
 import beforeLectureImg from '@/assets/instructor-copilot/before-lecture.png';
 import inLectureImg from '@/assets/instructor-copilot/in-lecture.png';
 import afterLectureImg from '@/assets/instructor-copilot/after-lecture.png';
+import { useTranslation } from 'react-i18next';
 
 interface LectureDashboardProps {
     onSelectStep: (step: 'before' | 'in' | 'after') => void;
 }
 
 export function LectureDashboard({ onSelectStep }: LectureDashboardProps) {
+    const { t } = useTranslation('instructorCopilotLectureDashboard');
+
     const steps = [
         {
             id: 'before',
-            title: 'Before Lecture',
+            title: t('steps.before.title'),
             image: beforeLectureImg,
-            description: 'Plan, schedule, and prepare materials.'
+            description: t('steps.before.description')
         },
         {
             id: 'in',
-            title: 'In Lecture',
+            title: t('steps.in.title'),
             image: inLectureImg,
-            description: 'Record, upload, or present interactively.'
+            description: t('steps.in.description')
         },
         {
             id: 'after',
-            title: 'After Lecture',
+            title: t('steps.after.title'),
             image: afterLectureImg,
-            description: 'Analyze performance and review logs.'
+            description: t('steps.after.description')
         }
     ] as const;
 

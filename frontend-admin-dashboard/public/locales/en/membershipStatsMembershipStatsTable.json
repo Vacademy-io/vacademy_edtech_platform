@@ -1,0 +1,16 @@
+{
+    "columns": {
+        "user": "User",
+        "userType": "User Type",
+        "joinedOn": "Joined On",
+        "roles": "Roles"
+    },
+    "newUser": "New User",
+    "retainer": "Retainer",
+    "noPackages": "No Packages",
+    "errorLoading": "Error loading membership stats",
+    "noRecordsFound": "No records found",
+    "tryAdjustingFilters": "Try adjusting your filters to see more results",
+    "showingRange_one": "Showing {{start}} - {{end}} of {{count}} record",
+    "showingRange_other": "Showing {{start}} - {{end}} of {{count}} records"
+}

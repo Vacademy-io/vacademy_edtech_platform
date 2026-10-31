@@ -14,6 +14,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
 import { DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
@@ -46,6 +47,7 @@ export function AssignSubOrgsDialog({
     onClose,
     refetchData,
 }: AssignSubOrgsDialogProps) {
+    const { t } = useTranslation('manageInstituteAssignSubOrgsDialog');
     const term = getTerminology(OtherTerms.SubOrg, SystemTerms.SubOrg);
     const termPlural = getTerminologyPlural(OtherTerms.SubOrg, SystemTerms.SubOrg);
     const instituteId = getCurrentInstituteId();
@@ -99,10 +101,14 @@ export function AssignSubOrgsDialog({
         },
         onSuccess: () => {
             const parts: string[] = [];
-            if (added.length) parts.push(`assigned ${added.length}`);
-            if (removed.length) parts.push(`removed ${removed.length}`);
+            if (added.length) parts.push(t('toast.assigned', { count: added.length }));
+            if (removed.length) parts.push(t('toast.removed', { count: removed.length }));
             toast.success(
-                `${userName || 'Member'} — ${parts.join(', ')} ${termPlural.toLowerCase()}`
+                t('toast.summary', {
+                    name: userName || t('defaultMemberName'),
+                    parts: parts.join(', '),
+                    subOrgPlural: termPlural.toLowerCase(),
+                })
             );
             // The Sub-Orgs column reads this cache; refresh so the chips update immediately.
             queryClient.invalidateQueries({ queryKey: ['SUB_ORG_USER_LINKS', instituteId] });
@@ -114,7 +120,7 @@ export function AssignSubOrgsDialog({
             toast.error(
                 e?.response?.data?.message ||
                     e?.response?.data?.ex ||
-                    `Couldn't update ${termPlural.toLowerCase()}`
+                    t('toast.updateFailed', { subOrgPlural: termPlural.toLowerCase() })
             );
         },
     });
@@ -123,7 +129,7 @@ export function AssignSubOrgsDialog({
         <DialogContent className="sm:max-w-lg">
             <DialogHeader>
                 <DialogTitle>
-                    {termPlural} for {userName || 'this member'}
+                    {t('title', { subOrgPlural: termPlural, name: userName || t('defaultMemberLabel') })}
                 </DialogTitle>
             </DialogHeader>
 
@@ -131,26 +137,24 @@ export function AssignSubOrgsDialog({
                 <DashboardLoader />
             ) : options.length === 0 ? (
                 <p className="py-4 text-center text-caption text-neutral-500">
-                    No {termPlural.toLowerCase()} exist in this institute yet.
+                    {t('noneExist', { subOrgPlural: termPlural.toLowerCase() })}
                 </p>
             ) : (
                 <div className="space-y-3 py-2">
                     <p className="text-caption text-neutral-500">
-                        Grants access to every course the {term.toLowerCase()}&apos;s active invites
-                        cover. This is separate from anything their role already grants.
+                        {t('grantsAccessDescription', { subOrg: term.toLowerCase() })}
                     </p>
                     <MultiSelectFilter
-                        label={`Select ${termPlural.toLowerCase()}`}
+                        label={t('selectLabel', { subOrgPlural: termPlural.toLowerCase() })}
                         options={options}
                         selected={selected}
                         onChange={setSelected}
-                        placeholder={`Search ${termPlural.toLowerCase()}…`}
+                        placeholder={t('searchPlaceholder', { subOrgPlural: termPlural.toLowerCase() })}
                         widthClass="w-full"
                     />
                     {selected.length === 0 ? (
                         <p className="text-caption text-neutral-500">
-                            None selected — this member keeps no individual {term.toLowerCase()}{' '}
-                            access.
+                            {t('noneSelected', { subOrg: term.toLowerCase() })}
                         </p>
                     ) : (
                         <div className="flex flex-wrap gap-1.5">
@@ -166,8 +170,8 @@ export function AssignSubOrgsDialog({
                     )}
                     {dirty && (
                         <p className="rounded-md bg-primary-50 px-3 py-2 text-caption text-neutral-600">
-                            {added.length > 0 && <>Adding {added.length}. </>}
-                            {removed.length > 0 && <>Removing {removed.length}.</>}
+                            {added.length > 0 && <>{t('adding', { count: added.length })} </>}
+                            {removed.length > 0 && <>{t('removing', { count: removed.length })}</>}
                         </p>
                     )}
                 </div>
@@ -175,14 +179,14 @@ export function AssignSubOrgsDialog({
 
             <div className="flex justify-end gap-2">
                 <MyButton buttonType="secondary" scale="small" onClick={onClose}>
-                    Cancel
+                    {t('actions.cancel')}
                 </MyButton>
                 <MyButton
                     scale="small"
                     disable={!dirty || save.isPending}
                     onClick={() => save.mutate()}
                 >
-                    {save.isPending ? 'Saving…' : 'Save'}
+                    {save.isPending ? t('actions.saving') : t('actions.save')}
                 </MyButton>
             </div>
         </DialogContent>

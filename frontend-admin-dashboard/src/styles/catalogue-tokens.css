@@ -362,6 +362,19 @@
     transform: translateY(-4px);
   }
 
+  /* Course page text (CourseDetailsView): authored descriptions arrive with
+     paragraphs centred or justified one by one in the editor; on the course
+     page they read as one column aligned to the start. Indents stay. */
+  .course-richtext p,
+  .course-richtext div,
+  .course-richtext h1,
+  .course-richtext h2,
+  .course-richtext h3,
+  .course-richtext h4,
+  .course-richtext li {
+    text-align: start !important;
+  }
+
   /* Image zoom-on-hover: wrapper clips, inner <img> scales on card hover. */
   .catalogue-img-zoom {
     overflow: hidden;
@@ -621,6 +634,16 @@
     border: 1px solid transparent;
   }
 
+  /* Icon-only button (close X, carousel arrows). The base padding above is
+     declared in this same utilities layer AFTER Tailwind's, so a `p-0` on the
+     element loses — a 36px button kept 32px of side padding and squeezed its
+     icon to 2px. Two classes outrank both that and the 44px mobile
+     min-height, so the element's own size-N decides the box. */
+  .catalogue-btn.catalogue-btn-icon {
+    padding: 0;
+    min-height: 0;
+  }
+
   /* Pressed feedback — the only signal a touch user gets that a tap landed. */
   .catalogue-btn:active {
     transform: scale(0.98);
@@ -652,7 +675,7 @@
 
   .catalogue-btn-primary {
     background-color: hsl(var(--primary-500));
-    color: hsl(var(--primary-foreground));
+    color: hsl(var(--catalogue-btn-primary-ink, var(--primary-foreground)));
   }
 
   .catalogue-btn-primary:hover {
@@ -1273,6 +1296,13 @@
      --brand-ink-l inline via buildPrimaryScaleVars. */
   [data-catalogue-theme] {
     --catalogue-brand-ink: var(--brand-ink-l, var(--primary-500, var(--catalogue-text-primary)));
+    /* Ink for the brand-filled button, frozen at the wrapper. The button used
+       to read --primary-foreground directly, and the app's global .dark rule
+       re-declares that token as near-black — so a brand button inside a dark
+       BAND (a navy hero marked `dark` on a light site) rendered dark-on-blue.
+       Substituting here means a nested .dark cannot reach it; a wrapper that is
+       itself .dark (site-wide dark mode) resolves exactly as before. */
+    --catalogue-btn-primary-ink: var(--primary-foreground);
   }
 
   /* On a dark canvas ink must go LIGHTER, not darker. */
@@ -1474,6 +1504,49 @@
     display: block;
     transform: translateZ(0);
     overflow: clip;
+  }
+
+  /* =============================================
+     MULTI-COURSE BASKET
+     A catalogue block can let a visitor collect several courses before
+     checking out (Product Page Offer → "Let visitors pick several courses").
+     Two surfaces need styling for that: the chosen card, and the bar that
+     carries the basket at the foot of the viewport.
+     ============================================= */
+
+  /* Chosen card. A ring rather than a thicker border, so selecting a card
+     never shifts it by a pixel inside a snapped carousel row. Doubled up with
+     .catalogue-card-elevated so it outranks that class's own :hover shadow —
+     both live in this layer, where specificity, not source order, decides. */
+  .catalogue-card-elevated.catalogue-card-selected,
+  .catalogue-card-elevated.catalogue-card-selected:hover {
+    border-color: hsl(var(--primary-500));
+    box-shadow: 0 0 0 2px hsl(var(--primary-500) / 0.35), var(--catalogue-elevation-2);
+  }
+
+  /* Clear of the iOS home indicator — the checkout button is the last thing
+     that should sit under it. */
+  .catalogue-checkout-bar {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* Room for the bar so it never covers the last row of cards or the footer.
+     min-height is border-box here, so the padding does not add a scrollbar. */
+  body.catalogue-has-checkout-bar [data-catalogue-theme] {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  /* The catalogue's mobile action bar (Login / Enquire) and the basket bar are
+     both fixed to bottom-0 on a phone, so they would stack on top of each
+     other. A half-filled basket is the more urgent of the two, so the action
+     bar stands down while it is open, and the WhatsApp bubble lifts clear. */
+  body.catalogue-has-checkout-bar .catalogue-mobile-action-bar {
+    display: none;
+  }
+
+  body.catalogue-has-checkout-bar .catalogue-fab,
+  body.catalogue-has-checkout-bar .catalogue-floating-cta {
+    bottom: 6.5rem;
   }
 }
 

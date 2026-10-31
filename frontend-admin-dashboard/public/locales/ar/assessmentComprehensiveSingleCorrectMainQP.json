@@ -1,0 +1,21 @@
+{
+    "emptyState": "يرجى إضافة سؤال لعرض تفاصيل السؤال",
+    "comprehension": {
+        "title": "نص الفهم",
+        "hint": "المقطع الذي يشير إليه كل سؤال في هذه المجموعة.",
+        "placeholder": "نص الفهم"
+    },
+    "question": {
+        "title": "السؤال",
+        "titleNumbered": "السؤال {{number}}",
+        "placeholder": "اكتب السؤال"
+    },
+    "answer": {
+        "typeFallback": "الإجابة"
+    },
+    "explanation": {
+        "typeFallback": "الشرح",
+        "hint": "يُعرض للمتعلمين مع نتيجتهم.",
+        "placeholder": "الشرح"
+    }
+}

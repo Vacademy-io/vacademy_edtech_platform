@@ -1,0 +1,51 @@
+{
+    "common": {
+        "open": "فتح",
+        "attention": "تنبيه",
+        "dateText": "التاريخ",
+        "timeText": "الوقت",
+        "reminderBodyPrefix": "سيتم إرسال تذكير بالواجب المنزلي إلى جميع",
+        "participants_zero": "لا يوجد مشاركون ({{count}})",
+        "participants_one": "مشارك واحد ({{count}})",
+        "participants_two": "مشاركان اثنان ({{count}})",
+        "participants_few": "{{count}} مشاركين",
+        "participants_many": "{{count}} مشاركًا",
+        "participants_other": "{{count}} مشارك",
+        "reminderBodySuffix": "الذين لم يظهروا بعد من الدفعات المخصصة."
+    },
+    "menu": {
+        "viewHomeworkDetails": "عرض تفاصيل الواجب المنزلي",
+        "deleteHomework": "حذف الواجب المنزلي"
+    },
+    "reminderDialog": {
+        "title": "إرسال تذكير",
+        "send": "إرسال"
+    },
+    "deleteDialog": {
+        "title": "حذف الواجب المنزلي",
+        "confirmPrefix": "هل أنت متأكد أنك تريد حذف",
+        "confirmSuffix": "؟",
+        "slidesDeleteFailedToast": "تم حذف الواجب المنزلي، ولكن تعذّرت إزالة شرائح الدورة الخاصة به.",
+        "successToast": "تم حذف الواجب المنزلي بنجاح!",
+        "delete": "حذف"
+    },
+    "pauseDialog": {
+        "title": "إيقاف الحالة المباشرة مؤقتًا",
+        "pauseUntilLabel": "الإيقاف المؤقت حتى",
+        "pause": "إيقاف مؤقت"
+    },
+    "resumeDialog": {
+        "title": "استئناف الحالة المباشرة",
+        "confirmPrefix": "هل تريد استئناف واجبك المنزلي المباشر",
+        "testName": "العين البشرية والعالم الملون",
+        "confirmSuffix": "؟",
+        "resume": "استئناف"
+    },
+    "reopenDialog": {
+        "title": "إعادة فتح الواجب المنزلي",
+        "selectDateTime": "اختر تاريخ ووقت إعادة فتح الواجب المنزلي",
+        "startDateTimeLabel": "تاريخ ووقت البدء",
+        "endDateTimeLabel": "تاريخ ووقت الانتهاء",
+        "reopen": "إعادة فتح"
+    }
+}

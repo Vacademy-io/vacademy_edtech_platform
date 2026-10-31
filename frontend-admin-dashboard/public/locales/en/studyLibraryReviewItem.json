@@ -1,0 +1,27 @@
+{
+    "timeAgo": {
+        "secondsAgo_one": "{{count}}s ago",
+        "secondsAgo_other": "{{count}}s ago",
+        "minutesAgo_one": "{{count}}m ago",
+        "minutesAgo_other": "{{count}}m ago",
+        "hoursAgo_one": "{{count}}h ago",
+        "hoursAgo_other": "{{count}}h ago",
+        "daysAgo_one": "{{count}}d ago",
+        "daysAgo_other": "{{count}}d ago"
+    },
+    "toasts": {
+        "updateFailed": "Failed to update rating",
+        "unexpectedError": "An unexpected error occurred"
+    },
+    "actions": {
+        "approve": "Approve",
+        "decline": "Decline",
+        "delete": "Delete"
+    },
+    "deleteDialog": {
+        "title": "Are you sure you want to delete this comment?",
+        "description": "This action cannot be undone. This will permanently delete this comment from the course.",
+        "cancel": "Cancel",
+        "confirm": "Confirm"
+    }
+}

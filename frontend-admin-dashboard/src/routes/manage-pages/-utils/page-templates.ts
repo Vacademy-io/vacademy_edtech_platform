@@ -1,26 +1,36 @@
 import { v4 as uuidv4 } from 'uuid';
+import type { TFunction } from 'i18next';
 import { Page, Component } from '../-types/editor-types';
-import { componentTemplates } from './component-templates';
+import { buildComponentTemplates } from './component-templates';
+import { buildDesignRecipeTemplates } from './design-pattern-presets';
 
 // Helper to create a component from a template with a fresh ID
-const makeComponent = (type: string, overrides?: Partial<Component>): Component => ({
-    id: uuidv4(),
-    type,
-    enabled: true,
-    ...componentTemplates[type],
-    ...overrides,
-    props: {
-        ...componentTemplates[type]?.props,
-        ...overrides?.props,
-    },
-});
+const makeComponent = (t: TFunction, type: string, overrides?: Partial<Component>): Component => {
+    const componentTemplates = buildComponentTemplates(t);
+    return {
+        id: uuidv4(),
+        type,
+        enabled: true,
+        ...componentTemplates[type],
+        ...overrides,
+        props: {
+            ...componentTemplates[type]?.props,
+            ...overrides?.props,
+        },
+    };
+};
 
 export interface PageTemplate {
     id: string;
     name: string;
     description: string;
     category: 'page' | 'section';
-    getComponents: () => Component[];
+    getComponents: (t: TFunction) => Component[];
+    /**
+     * Site-chrome templates: the globalSettings.layout (header / footer) they produce
+     * from the current one. The page's own components are left alone.
+     */
+    applyLayout?: (layout: Record<string, any> | undefined, t: TFunction) => Record<string, any>;
 }
 
 export const PAGE_TEMPLATES: PageTemplate[] = [
@@ -30,11 +40,11 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
         name: 'Landing Page',
         description: 'Header + Hero + Stats + Course Catalog + Testimonials + Footer',
         category: 'page',
-        getComponents: () => [
-            makeComponent('header'),
-            makeComponent('heroSection', {
+        getComponents: (t) => [
+            makeComponent(t, 'header'),
+            makeComponent(t, 'heroSection', {
                 props: {
-                    ...componentTemplates['heroSection']?.props,
+                    ...buildComponentTemplates(t)['heroSection']?.props,
                     layout: 'split',
                     left: {
                         title: 'Learn Something New Today',
@@ -43,10 +53,10 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
                     },
                 },
             }),
-            makeComponent('statsHighlights'),
-            makeComponent('courseCatalog'),
-            makeComponent('testimonialSection'),
-            makeComponent('footer'),
+            makeComponent(t, 'statsHighlights'),
+            makeComponent(t, 'courseCatalog'),
+            makeComponent(t, 'testimonialSection'),
+            makeComponent(t, 'footer'),
         ],
     },
     {
@@ -54,11 +64,11 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
         name: 'Course Landing',
         description: 'Header + Hero (course-focused) + Course Catalog + Buy/Rent + Footer',
         category: 'page',
-        getComponents: () => [
-            makeComponent('header'),
-            makeComponent('heroSection', {
+        getComponents: (t) => [
+            makeComponent(t, 'header'),
+            makeComponent(t, 'heroSection', {
                 props: {
-                    ...componentTemplates['heroSection']?.props,
+                    ...buildComponentTemplates(t)['heroSection']?.props,
                     layout: 'centered',
                     left: {
                         title: 'Master Your Skills',
@@ -67,9 +77,9 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
                     },
                 },
             }),
-            makeComponent('courseCatalog'),
-            makeComponent('buyRentSection'),
-            makeComponent('footer'),
+            makeComponent(t, 'courseCatalog'),
+            makeComponent(t, 'buyRentSection'),
+            makeComponent(t, 'footer'),
         ],
     },
     {
@@ -77,11 +87,11 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
         name: 'About Page',
         description: 'Header + Hero + Stats + Testimonials + Footer',
         category: 'page',
-        getComponents: () => [
-            makeComponent('header'),
-            makeComponent('heroSection', {
+        getComponents: (t) => [
+            makeComponent(t, 'header'),
+            makeComponent(t, 'heroSection', {
                 props: {
-                    ...componentTemplates['heroSection']?.props,
+                    ...buildComponentTemplates(t)['heroSection']?.props,
                     layout: 'centered',
                     left: {
                         title: 'About Us',
@@ -90,9 +100,9 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
                     },
                 },
             }),
-            makeComponent('statsHighlights'),
-            makeComponent('testimonialSection'),
-            makeComponent('footer'),
+            makeComponent(t, 'statsHighlights'),
+            makeComponent(t, 'testimonialSection'),
+            makeComponent(t, 'footer'),
         ],
     },
     {
@@ -100,11 +110,11 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
         name: 'Book Store',
         description: 'Header + Hero + Book Catalog + Footer',
         category: 'page',
-        getComponents: () => [
-            makeComponent('header'),
-            makeComponent('heroSection'),
-            makeComponent('bookCatalogue'),
-            makeComponent('footer'),
+        getComponents: (t) => [
+            makeComponent(t, 'header'),
+            makeComponent(t, 'heroSection'),
+            makeComponent(t, 'bookCatalogue'),
+            makeComponent(t, 'footer'),
         ],
     },
 
@@ -114,10 +124,10 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
         name: 'Hero (Centered)',
         description: 'Fullscreen centered hero section',
         category: 'section',
-        getComponents: () => [
-            makeComponent('heroSection', {
+        getComponents: (t) => [
+            makeComponent(t, 'heroSection', {
                 props: {
-                    ...componentTemplates['heroSection']?.props,
+                    ...buildComponentTemplates(t)['heroSection']?.props,
                     layout: 'centered',
                 },
             }),
@@ -128,9 +138,9 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
         name: 'Social Proof',
         description: 'Stats + Testimonials block',
         category: 'section',
-        getComponents: () => [
-            makeComponent('statsHighlights'),
-            makeComponent('testimonialSection'),
+        getComponents: (t) => [
+            makeComponent(t, 'statsHighlights'),
+            makeComponent(t, 'testimonialSection'),
         ],
     },
     {
@@ -138,8 +148,8 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
         name: 'Course Showcase',
         description: 'Course grid catalog section',
         category: 'section',
-        getComponents: () => [
-            makeComponent('courseCatalog'),
+        getComponents: (t) => [
+            makeComponent(t, 'courseCatalog'),
         ],
     },
     {
@@ -147,8 +157,8 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
         name: 'Media Carousel',
         description: 'Sliding image/video showcase',
         category: 'section',
-        getComponents: () => [
-            makeComponent('mediaShowcase'),
+        getComponents: (t) => [
+            makeComponent(t, 'mediaShowcase'),
         ],
     },
     // ── Niche kits ──────────────────────────────────────────────────────
@@ -163,11 +173,11 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
         name: 'Coaching Institute — Home',
         description: 'Announcement ticker + hero + why-us + programme blocks + enquiry form + FAQ + CTA',
         category: 'page',
-        getComponents: () => [
-            makeComponent('marquee'),
-            makeComponent('heroSection', {
+        getComponents: (t) => [
+            makeComponent(t, 'marquee'),
+            makeComponent(t, 'heroSection', {
                 props: {
-                    ...componentTemplates['heroSection']?.props,
+                    ...buildComponentTemplates(t)['heroSection']?.props,
                     layout: 'split',
                     left: {
                         eyebrow: 'Admissions open',
@@ -180,25 +190,85 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
                     },
                 },
             }),
-            makeComponent('statsHighlights'),
-            makeComponent('sectionHeading', {
-                props: { ...componentTemplates['sectionHeading']?.props, eyebrow: 'Why us', title: 'Built around how students actually learn' },
+            makeComponent(t, 'statsHighlights'),
+            makeComponent(t, 'sectionHeading', {
+                props: { ...buildComponentTemplates(t)['sectionHeading']?.props, eyebrow: 'Why us', title: 'Built around how students actually learn' },
             }),
-            makeComponent('featureGrid'),
-            makeComponent('sectionHeading', {
-                props: { ...componentTemplates['sectionHeading']?.props, eyebrow: 'Our programs', title: 'Every batch, in detail' },
+            makeComponent(t, 'featureGrid'),
+            makeComponent(t, 'sectionHeading', {
+                props: { ...buildComponentTemplates(t)['sectionHeading']?.props, eyebrow: 'Our programs', title: 'Every batch, in detail' },
             }),
-            makeComponent('detailBlocks'),
-            makeComponent('testimonialSection'),
-            makeComponent('leadForm', {
+            makeComponent(t, 'detailBlocks'),
+            makeComponent(t, 'testimonialSection'),
+            makeComponent(t, 'leadForm', {
                 props: {
-                    ...componentTemplates['leadForm']?.props,
+                    ...buildComponentTemplates(t)['leadForm']?.props,
                     title: 'Book your free demo class',
                     subtitle: 'Tell us your class and we will call you back today.',
                 },
             }),
-            makeComponent('faqSection'),
-            makeComponent('ctaBanner'),
+            makeComponent(t, 'faqSection'),
+            makeComponent(t, 'ctaBanner'),
+        ],
+    },
+    // The shape a subject/level catalogue converges on: one hero, one live
+    // course block a visitor can pick SEVERAL courses from, and the reassurance
+    // blocks that answer "why you" before they reach checkout. Built from the
+    // iThinkers Olympiad catalogue, which had to be hand-assembled block by
+    // block (and its cart hand-written into the page JSON) the first time.
+    {
+        id: 'course-catalogue-multi-pick',
+        name: 'Course Catalogue — Multi-pick',
+        description: 'Hero + course rail with a basket + why-us + FAQ + CTA. For sites where one visitor buys several courses.',
+        category: 'page',
+        getComponents: (t) => [
+            makeComponent(t, 'heroSection', {
+                props: {
+                    ...buildComponentTemplates(t)['heroSection']?.props,
+                    layout: 'split',
+                    eyebrow: { text: 'ADMISSIONS OPEN', style: 'badge' },
+                    left: {
+                        title: 'Pick the courses that fit',
+                        description:
+                            '<p>Choose a class, add the subjects you want, and enrol for all of them in one go.</p>',
+                        buttons: [
+                            { text: 'Browse courses', variant: 'primary', action: 'navigate', target: '#courses' },
+                            { text: 'Talk to us', variant: 'secondary', action: 'openLeadCollection' },
+                        ],
+                    },
+                },
+            }),
+            // The one block that has to be wired by hand — it needs a product
+            // page, and the pre-publish check says so if it is left unset.
+            makeComponent(t, 'productPageOffer', {
+                props: {
+                    ...buildComponentTemplates(t)['productPageOffer']?.props,
+                    title: 'Our Courses',
+                    subtitle: 'Pick the ones you want — add as many as you like, then check out once.',
+                    layout: 'carousel',
+                    columns: 4,
+                    align: 'left',
+                    headerScale: 'md',
+                    // A basket only earns its place when a visitor genuinely
+                    // buys more than one; that is the whole premise here, so it
+                    // ships on rather than as something to discover later.
+                    enableCart: true,
+                    // Every course in the rail: with a Course Finder narrowing
+                    // the list to one class, the whole class fits in one row.
+                    pageSize: 0,
+                    railMaxCards: 12,
+                    showDescription: false,
+                },
+            }),
+            makeComponent(t, 'featureGrid', {
+                props: {
+                    ...buildComponentTemplates(t)['featureGrid']?.props,
+                    headerText: 'Why learners choose us',
+                },
+            }),
+            makeComponent(t, 'statsHighlights'),
+            makeComponent(t, 'faqSection'),
+            makeComponent(t, 'ctaBanner'),
         ],
     },
     {
@@ -206,17 +276,17 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
         name: 'Programs Directory',
         description: 'Compact header + one detailed block per programme + CTA (no prices)',
         category: 'page',
-        getComponents: () => [
-            makeComponent('sectionHeading', {
+        getComponents: (t) => [
+            makeComponent(t, 'sectionHeading', {
                 props: {
-                    ...componentTemplates['sectionHeading']?.props,
+                    ...buildComponentTemplates(t)['sectionHeading']?.props,
                     eyebrow: 'Everything we teach',
                     title: 'All our programs, in full detail',
                     lead: 'What each program covers, who it is for, and how it runs.',
                 },
             }),
-            makeComponent('detailBlocks'),
-            makeComponent('ctaBanner'),
+            makeComponent(t, 'detailBlocks'),
+            makeComponent(t, 'ctaBanner'),
         ],
     },
     {
@@ -224,18 +294,18 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
         name: 'Enquiry / Contact',
         description: 'Campaign enquiry form + contact details + map',
         category: 'page',
-        getComponents: () => [
-            makeComponent('sectionHeading', {
+        getComponents: (t) => [
+            makeComponent(t, 'sectionHeading', {
                 props: {
-                    ...componentTemplates['sectionHeading']?.props,
+                    ...buildComponentTemplates(t)['sectionHeading']?.props,
                     eyebrow: 'Talk to us',
                     title: 'Ask us anything',
                     lead: 'Fill this in and our counsellors will get back to you.',
                 },
             }),
-            makeComponent('leadForm'),
-            makeComponent('contactForm'),
-            makeComponent('mapEmbed'),
+            makeComponent(t, 'leadForm'),
+            makeComponent(t, 'contactForm'),
+            makeComponent(t, 'mapEmbed'),
         ],
     },
     {
@@ -243,11 +313,27 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
         name: 'Programme Blocks',
         description: 'Heading + one detailed block per programme',
         category: 'section',
-        getComponents: () => [
-            makeComponent('sectionHeading', {
-                props: { ...componentTemplates['sectionHeading']?.props, eyebrow: 'Our programs', title: 'What we offer' },
+        getComponents: (t) => [
+            makeComponent(t, 'sectionHeading', {
+                props: { ...buildComponentTemplates(t)['sectionHeading']?.props, eyebrow: 'Our programs', title: 'What we offer' },
             }),
-            makeComponent('detailBlocks'),
+            makeComponent(t, 'detailBlocks'),
+        ],
+    },
+    {
+        id: 'course-basket-section',
+        name: 'Course Basket',
+        description: 'One course rail a visitor can pick several courses from, checking out once',
+        category: 'section',
+        getComponents: (t) => [
+            makeComponent(t, 'productPageOffer', {
+                props: {
+                    ...buildComponentTemplates(t)['productPageOffer']?.props,
+                    title: 'Our Courses',
+                    subtitle: 'Pick the ones you want — add as many as you like, then check out once.',
+                    enableCart: true,
+                },
+            }),
         ],
     },
     {
@@ -255,30 +341,34 @@ export const PAGE_TEMPLATES: PageTemplate[] = [
         name: 'Enquiry Form',
         description: 'A campaign-backed lead form section',
         category: 'section',
-        getComponents: () => [makeComponent('leadForm')],
+        getComponents: (t) => [makeComponent(t, 'leadForm')],
     },
     {
         id: 'lead-hero',
         name: 'Lead Hero',
         description: 'Hero + Stats to drive lead capture',
         category: 'section',
-        getComponents: () => [
-            makeComponent('heroSection'),
-            makeComponent('statsHighlights'),
+        getComponents: (t) => [
+            makeComponent(t, 'heroSection'),
+            makeComponent(t, 'statsHighlights'),
         ],
     },
+    // ── Design recipes (generated from the learner's design-pattern registry) ──
+    // "Editorial catalogue", "Learning paths", "Brand chrome": the opt-in looks the
+    // Brahm Varchas site was built from, with every id left for the admin to pick.
+    ...buildDesignRecipeTemplates(),
 ];
 
 /** Apply a template to a page: replaces all components */
-export const applyPageTemplate = (page: Page, template: PageTemplate): Page => ({
+export const applyPageTemplate = (page: Page, template: PageTemplate, t: TFunction): Page => ({
     ...page,
-    components: template.getComponents(),
+    components: template.getComponents(t),
 });
 
 /** Apply a section template: inserts components before footer (or at end) */
-export const applySectionTemplate = (page: Page, template: PageTemplate): Page => {
+export const applySectionTemplate = (page: Page, template: PageTemplate, t: TFunction): Page => {
     const footerIndex = page.components.findIndex((c) => c.type === 'footer');
-    const newComponents = template.getComponents();
+    const newComponents = template.getComponents(t);
     if (footerIndex >= 0) {
         const updated = [...page.components];
         updated.splice(footerIndex, 0, ...newComponents);

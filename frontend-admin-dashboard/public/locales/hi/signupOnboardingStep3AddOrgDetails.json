@@ -1,0 +1,23 @@
+{
+    "heading": "संस्थान में अपनी प्रोफ़ाइल बनाएं",
+    "fullNameLabel": "पूरा नाम",
+    "fullNamePlaceholder": "पूरा नाम (पहला और अंतिम)",
+    "usernameLabel": "उपयोगकर्ता नाम",
+    "usernamePlaceholder": "उपयोगकर्ता नाम दर्ज करें",
+    "emailLabel": "ईमेल",
+    "emailPlaceholder": "ईमेल दर्ज करें",
+    "passwordLabel": "पासवर्ड",
+    "confirmPasswordLabel": "पासवर्ड की पुष्टि करें",
+    "finish": "समाप्त करें",
+    "schema": {
+        "nameRequired": "नाम आवश्यक है",
+        "usernameRequired": "उपयोगकर्ता नाम आवश्यक है",
+        "usernameNoUppercase": "उपयोगकर्ता नाम में बड़े अक्षर नहीं होने चाहिए",
+        "emailRequired": "ईमेल आवश्यक है",
+        "emailInvalid": "ईमेल प्रारूप अमान्य है",
+        "passwordMinLength": "पासवर्ड कम से कम 6 अक्षरों का होना चाहिए",
+        "confirmPasswordRequired": "पासवर्ड की पुष्टि आवश्यक है",
+        "roleTypeRequired": "कम से कम एक भूमिका प्रकार आवश्यक है",
+        "passwordsMismatch": "पासवर्ड मेल नहीं खाते"
+    }
+}

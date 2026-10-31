@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { SpinnerGap, X } from '@phosphor-icons/react';
 import { useAssistDock } from './store';
 import { useInstituteBrand } from './useInstituteBrand';
@@ -10,6 +11,7 @@ import { fetchBrandedTutorial, tutorialUrl } from './loadTutorial';
  * falls back to a plain cross-origin <iframe src> with the default chrome.
  */
 export function TutorialViewer() {
+    const { t } = useTranslation('tutorialViewer');
     const activeTutorial = useAssistDock((s) => s.activeTutorial);
     const closeTutorial = useAssistDock((s) => s.closeTutorial);
     const brand = useInstituteBrand();
@@ -61,7 +63,7 @@ export function TutorialViewer() {
                     <p className="truncate text-subtitle font-semibold text-neutral-800">{title}</p>
                     <button
                         type="button"
-                        aria-label="Close tutorial"
+                        aria-label={t('closeTutorial')}
                         onClick={closeTutorial}
                         className="flex size-8 items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-neutral-100"
                     >
@@ -72,7 +74,7 @@ export function TutorialViewer() {
                     {loading && (
                         <div className="absolute inset-0 flex items-center justify-center gap-2 text-neutral-500">
                             <SpinnerGap size={22} className="animate-spin text-primary-500" />
-                            <span className="text-caption">Loading tutorial…</span>
+                            <span className="text-caption">{t('loadingTutorial')}</span>
                         </div>
                     )}
                     {srcDoc && (

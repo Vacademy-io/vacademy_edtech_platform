@@ -37,6 +37,24 @@ public class LeadFilterDTO {
     private Timestamp submittedFromLocal;
     private Timestamp submittedToLocal;
 
+    // ── "Worked in the last N days" windows ──
+    // Deliberately separate from submittedFrom/To: that pair answers when the lead
+    // ARRIVED, while counsellors want to know what they have touched recently
+    // ("how many did I call in the last 24h / 7d"). Two independent windows so the
+    // two questions stay answerable on their own:
+    //   called*   -> last telephony_call_log entry for the lead (response, LEAD
+    //                subject, or institute-scoped user link -- the same three
+    //                linkages callHistoryFilter matches on).
+    //   activity* -> last timeline_event for the lead (note, call log, status
+    //                change, follow-up) -- the same feed the Activity column shows,
+    //                so filtering and sorting it agree.
+    // A lead never called / never touched is excluded as soon as the matching
+    // window has either bound set.
+    private Timestamp calledFromLocal;
+    private Timestamp calledToLocal;
+    private Timestamp activityFromLocal;
+    private Timestamp activityToLocal;
+
     // ── Lead Score Filters ──
     private Integer minLeadScore;           // Filter leads with score >= this
     private Integer maxLeadScore;           // Filter leads with score <= this
@@ -53,6 +71,28 @@ public class LeadFilterDTO {
     // (lead_status_id NULL and no profile conversion_status) - the "No status"
     // column on the Lead Board.
     private String leadStatusId;
+    /**
+     * Status keys to EXCLUDE, comma separated. Lets a saved view say "everything except New"
+     * instead of listing the other nine statuses, so it keeps working when a status is added.
+     * A lead with no status at all is never excluded.
+     */
+    private String leadStatusExcludeId;
+
+    /**
+     * Follow-ups page. {@code followUpPending} narrows to leads carrying an OPEN, scheduled
+     * follow-up; the two bounds then slice that into the page's buckets. The caller sends the
+     * window because "today" is the USER's day — computing it from NOW() here would put an
+     * Asia/Calcutta counsellor in the wrong bucket for five and a half hours every night.
+     */
+    private Boolean followUpPending;
+    private Timestamp followUpFrom;
+    private Timestamp followUpTo;
+    /**
+     * Follow-ups page: keep only leads whose OPEN follow-up carries one of these
+     * interest levels (lead_followup.interest_level, the institute's own labels).
+     * Null / empty = no filter.
+     */
+    private java.util.List<String> followUpInterestLevels;
 
     // ── Status Filters ──
     private java.util.List<String> overallStatuses;    // ENQUIRY, APPLICATION, ADMITTED, etc.
@@ -60,6 +100,11 @@ public class LeadFilterDTO {
 
     // ── Dedup Filter ──
     private Boolean excludeDuplicates;      // True = hide duplicates (default behavior)
+    /**
+     * EXCLUDE = hide enquiries flagged as duplicates of a lead they repeat, ONLY = just those
+     * (a Duplicate Leads tab). Null = no filter. Driven by the sidebar route, per tab.
+     */
+    private String duplicateFilter;
 
     // ── Search ──
     private String searchQuery;             // Searches parent name, email, mobile
@@ -114,10 +159,19 @@ public class LeadFilterDTO {
     // values.
     private java.util.List<CustomFieldFilter> customFieldFilters;
 
+    // ── Campaign (UTM) attribution filter ──
+    // Narrows to leads whose person has a recorded utm_attribution touch
+    // matching every dimension sent (OR within a dimension, AND across), or —
+    // with untagged_only — to leads with no touch at all. Resolved up-front
+    // into a response-id set and intersected with the custom-field match set,
+    // so the native queries below are untouched. See UtmListFilterDTO.
+    private vacademy.io.admin_core_service.features.utm_attribution.dto.UtmListFilterDTO utmFilters;
+
     // Pagination
     private Integer page;
     private Integer size;
-    private String sortBy;                  // SUBMITTED_AT, LEAD_SCORE, LEAD_TIER, STATUS, PARENT_NAME, CUSTOM_FIELD
+    private String sortBy;                  // SUBMITTED_AT, LEAD_SCORE, LEAD_TIER, STATUS, PARENT_NAME,
+                                            // LAST_ACTIVITY, LAST_CALLED, CUSTOM_FIELD
     private String sortDirection;           // ASC, DESC
     // When sortBy = CUSTOM_FIELD: the custom_field_id to sort by. The latest
     // AUDIENCE_RESPONSE-scoped answer per lead is the sort key — numeric-aware

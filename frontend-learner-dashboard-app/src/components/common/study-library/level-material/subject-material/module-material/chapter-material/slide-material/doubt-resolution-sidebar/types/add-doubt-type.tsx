@@ -13,11 +13,27 @@ export interface DoubtType {
     content_type: string;
     html_text: string;
     status: 'ACTIVE' | 'RESOLVED' | 'DELETED';
+    /**
+     * Read-only, from the server: what the learner should be shown for the doubt's current
+     * (institute-configurable) status — a clean label plus its kind. Echoed back untouched on
+     * updates; the backend ignores it.
+     */
+    learner_status?: DoubtLearnerStatus | null;
+    /** Read-only echo of the configurable status key; never set it from the learner app. */
+    workflow_status?: string | null;
     parent_id: string | null;
     parent_level: number;
     doubt_assignee_request_user_ids: string[];
     batch_id: string;
     id?:string;
+  }
+
+  export type DoubtLearnerStatusKind = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+
+  export interface DoubtLearnerStatus {
+    key: string;
+    label: string;
+    kind: DoubtLearnerStatusKind;
   }
   
   export interface StudentDetailsType {

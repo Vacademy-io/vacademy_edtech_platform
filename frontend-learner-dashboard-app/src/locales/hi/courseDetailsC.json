@@ -1,0 +1,84 @@
+{
+  "certificateDialog": {
+    "title": "{{course}} पूर्ण",
+    "subtitle": "बधाई हो! आपने एक प्रमाणपत्र अर्जित किया है।",
+    "courseLabel": "{{course}}:",
+    "sessionLabel": "{{session}}:",
+    "levelLabel": "{{level}}:"
+  },
+  "videoPlayer": {
+    "vimeoTitle": "Vimeo वीडियो प्लेयर",
+    "unsupported": "आपका ब्राउज़र वीडियो टैग को सपोर्ट नहीं करता।"
+  },
+  "youtubePlayer": {
+    "title": "YouTube वीडियो प्लेयर"
+  },
+  "contentSections": {
+    "whatYoullLearn": "आप क्या सीखेंगे",
+    "aboutCourse": "इस {{course}} के बारे में",
+    "whoShouldJoin": "किन्हें शामिल होना चाहिए"
+  },
+  "enrollment": {
+    "configTitle": "{{course}} कॉन्फ़िगरेशन",
+    "previewModeLabel": "{{course}} प्रीव्यू मोड",
+    "previewModeDescription": "{{course}} की संरचना देखें। {{slides}} और सामग्री तक पहुँचने के लिए नामांकन करें।",
+    "noSessionForCourse": "इस {{course}} के लिए कोई {{session}} उपलब्ध नहीं है",
+    "notEnrolledInSession": "आप इस {{course}} के किसी भी {{session}} में नामांकित नहीं हैं",
+    "noActiveSessionsConfigured": "हो सकता है इस {{course}} में कोई सक्रिय {{session}} कॉन्फ़िगर न हो।",
+    "contactToEnroll": "कृपया नामांकन के लिए अपने {{teacher}} या {{admin}} से संपर्क करें।",
+    "selectSessionPlaceholder": "{{session}} चुनें",
+    "selectLevelPlaceholder": "{{level}} चुनें",
+    "certificateAvailable": "प्रमाणपत्र उपलब्ध है",
+    "certificateDescription": "अब आप अपना प्रमाणपत्र देख या डाउनलोड कर सकते हैं।",
+    "enrollButton": "नामांकन करें"
+  },
+  "ratings": {
+    "heading": "रेटिंग और समीक्षाएँ",
+    "subheading": "सामुदायिक प्रतिक्रिया और रेटिंग",
+    "feedbackLabel": "आपकी प्रतिक्रिया",
+    "feedbackPlaceholder": "अपनी प्रतिक्रिया लिखें...",
+    "ratingLabel": "रेटिंग",
+    "starCount_one": "{{count}} स्टार",
+    "starCount_other": "{{count}} स्टार",
+    "submitting": "सबमिट हो रहा है...",
+    "submitFeedback": "प्रतिक्रिया सबमिट करें",
+    "notAvailable": "उपलब्ध नहीं",
+    "totalReviews": "{{count}} समीक्षाएँ",
+    "noReviewsTitle": "अभी तक कोई समीक्षा नहीं",
+    "noReviewsDescription": "इस {{course}} के साथ अपना अनुभव साझा करने वाले पहले व्यक्ति बनें",
+    "noReviewText": "कोई समीक्षा टेक्स्ट प्रदान नहीं किया गया",
+    "toast": {
+      "failedToSubmit": "रेटिंग सबमिट करने में विफल",
+      "unexpectedError": "एक अनपेक्षित त्रुटि हुई",
+      "selectRatingRequired": "कृपया सबमिट करने से पहले एक रेटिंग चुनें",
+      "thankYou": "आपकी प्रतिक्रिया के लिए धन्यवाद!"
+    }
+  },
+  "errorPage": {
+    "title": "सामग्री उपलब्ध नहीं है",
+    "description": "हम इस सामग्री का विवरण लोड नहीं कर सके। हो सकता है इसे हटा दिया गया हो, या हमारे सर्वर पर कोई समस्या हो।"
+  },
+  "subjectsRoute": {
+    "title": "लर्निंग सेंटर",
+    "metaDescription": "लर्निंग सेंटर पेज"
+  },
+  "slideCounts": {
+    "video": "वीडियो स्लाइड",
+    "code": "कोड स्लाइड",
+    "pdf": "PDF स्लाइड",
+    "document": "डॉक्यूमेंट स्लाइड",
+    "question": "प्रश्न स्लाइड",
+    "assignment": "असाइनमेंट स्लाइड",
+    "presentation": "प्रेजेंटेशन स्लाइड",
+    "jupyterNotebook": "Jupyter नोटबुक स्लाइड",
+    "scratchProject": "Scratch प्रोजेक्ट स्लाइड",
+    "quiz": "क्विज़ स्लाइड",
+    "codeEditor": "कोड एडिटर स्लाइड",
+    "genericFallback": "{{type}} स्लाइड"
+  },
+  "common": {
+    "close": "बंद करें",
+    "viewCertificate": "प्रमाणपत्र देखें",
+    "goBack": "वापस जाएँ"
+  }
+}

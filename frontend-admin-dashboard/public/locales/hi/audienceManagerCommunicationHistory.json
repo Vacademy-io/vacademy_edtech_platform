@@ -1,0 +1,42 @@
+{
+    "loading": "संचार इतिहास लोड हो रहा है...",
+    "emptyState": "इस ऑडियंस को अभी तक कोई संदेश नहीं भेजा गया है।",
+    "heading": "संचार इतिहास",
+    "noValuePlaceholder": "—",
+    "failedCount_one": "{{count}} विफल",
+    "failedCount_other": "{{count}} विफल",
+    "pageOf": "पृष्ठ {{current}} में से {{total}}",
+    "table": {
+        "channel": "चैनल",
+        "templateSubject": "टेम्पलेट / विषय",
+        "recipients": "प्राप्तकर्ता",
+        "result": "परिणाम",
+        "status": "स्थिति",
+        "sentAt": "भेजने का समय"
+    },
+    "channels": {
+        "whatsapp": "व्हाट्सएप",
+        "email": "ईमेल",
+        "push": "पुश सूचना",
+        "systemAlert": "सिस्टम अलर्ट"
+    },
+    "statuses": {
+        "completed": "पूर्ण",
+        "processing": "प्रक्रिया में",
+        "partial": "आंशिक",
+        "failed": "विफल",
+        "pending": "लंबित"
+    },
+    "subtitle": "इस सूची को भेजे गए संदेश",
+    "sendMessage": "संदेश भेजें",
+    "summary": {
+        "sent": "भेजे गए संदेश",
+        "sentDetail": "अब तक इस सूची को",
+        "recipients": "प्राप्तकर्ता",
+        "accepted": "स्वीकृत",
+        "acceptedDetail": "{{total}} में से {{accepted}} स्वीकृत",
+        "failed": "विफल",
+        "latest_one": "पिछली {{count}} बार भेजने में",
+        "latest_other": "पिछली {{count}} बार भेजने में"
+    }
+}

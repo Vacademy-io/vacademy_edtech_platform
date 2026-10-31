@@ -21,6 +21,7 @@ import vacademy.io.admin_core_service.features.live_session.dto.ScheduleDetailDT
 import vacademy.io.admin_core_service.features.live_session.dto.StudentAttendanceReportDTO;
 import vacademy.io.admin_core_service.features.live_session.service.AttendanceReportService;
 import vacademy.io.admin_core_service.features.live_session.service.GetLiveSessionService;
+import vacademy.io.admin_core_service.features.live_session.service.LiveSessionAttendanceOnlyModeService;
 import vacademy.io.admin_core_service.features.student_analysis.client.AssessmentServiceClient;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
@@ -81,11 +82,17 @@ public class ParentAssistantService {
     private final AssessmentServiceClient assessmentServiceClient;
     private final LearnerReportService learnerReportService;
     private final GetLiveSessionService getLiveSessionService;
+    private final LiveSessionAttendanceOnlyModeService attendanceOnlyModeService;
     private final CertificateReadService certificateReadService;
     private final LeaderboardService leaderboardService;
     private final AiServiceCompletionClient aiServiceCompletionClient;
 
-    @Value("${parent.assistant.model:google/gemini-2.5-flash}")
+    /**
+     * Optional override, blank by default: ai_service then resolves the 'parent_assistant'
+     * row in ai_model_defaults (GLM by default). Note ai_service only honours a body model
+     * from platform staff, so this is effectively an operator escape hatch.
+     */
+    @Value("${parent.assistant.model:}")
     private String model;
 
     /**
@@ -106,7 +113,8 @@ public class ParentAssistantService {
 
         // The LLM key lives ONLY in ai_service; this returns null when the
         // completion is unavailable, and the caller falls back to preset answers.
-        return aiServiceCompletionClient.complete(prompt, model, child.instituteId(), caller.getUserId());
+        String override = model == null || model.isBlank() ? null : model.trim();
+        return aiServiceCompletionClient.complete(prompt, override, child.instituteId(), caller.getUserId());
     }
 
     /** Assemble a compact, plain-text snapshot of the guarded child's data for the prompt. */
@@ -171,10 +179,12 @@ public class ParentAssistantService {
         }
 
         // Upcoming classes — "does my child have class tomorrow?"
+        // Attendance-only institutes: only classes marked show_to_learners.
         if (primaryBatch != null) {
             try {
                 List<GroupedSessionsByDateDTO> groups = getLiveSessionService
-                        .getLiveAndUpcomingSessionsForUserAndBatch(primaryBatch, child.childUserId(), 0, null, null, null, caller);
+                        .getLiveAndUpcomingSessionsForUserAndBatch(primaryBatch, child.childUserId(), child.instituteId(), 0, null, null, null, caller,
+                                attendanceOnlyModeService.isEnabled(child.instituteId()));
                 if (groups != null && !groups.isEmpty()) {
                     sb.append("Upcoming classes:\n");
                     groups.stream().limit(6).forEach(g -> {

@@ -43,6 +43,8 @@ public class SourcePerformanceReportDTO {
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     public static class Row {
         private String sourceType;   // WEBSITE / GOOGLE_ADS / … ('UNKNOWN' when untagged); null on totals
+        /** Set when sourceType is the leads' campaign type (see ReportSourceSql). */
+        private String campaignType;
         private long leads;
         private long connectedLeads;
         private long interested;

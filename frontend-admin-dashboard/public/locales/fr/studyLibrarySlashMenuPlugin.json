@@ -1,0 +1,44 @@
+{
+    "options": {
+        "text": {
+            "title": "Texte",
+            "description": "Commencer à écrire du texte brut."
+        },
+        "heading1": {
+            "title": "Titre 1",
+            "description": "Grand titre de section"
+        },
+        "heading2": {
+            "title": "Titre 2",
+            "description": "Titre de section moyen"
+        },
+        "heading3": {
+            "title": "Titre 3",
+            "description": "Petit titre de section"
+        },
+        "quote": {
+            "title": "Citation",
+            "description": "Ajouter une citation"
+        },
+        "bulletedList": {
+            "title": "Liste à puces",
+            "description": "Liste à puces simple"
+        },
+        "numberedList": {
+            "title": "Liste numérotée",
+            "description": "Liste numérotée"
+        },
+        "todoList": {
+            "title": "Liste de tâches",
+            "description": "Liste avec cases à cocher"
+        },
+        "table": {
+            "title": "Tableau",
+            "description": "Ajouter un tableau simple"
+        },
+        "divider": {
+            "title": "Séparateur",
+            "description": "Séparer vos blocs"
+        }
+    }
+}

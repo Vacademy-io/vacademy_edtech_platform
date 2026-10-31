@@ -1,4 +1,5 @@
 import React, { useState, KeyboardEvent, forwardRef, useImperativeHandle } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface MultiEmailInputProps {
     value: string[];
@@ -20,6 +21,7 @@ const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 
 const MultiEmailInput = forwardRef<MultiEmailInputHandle, MultiEmailInputProps>(
     ({ value, onChange, placeholder, error }, ref) => {
+        const { t } = useTranslation('audienceManagerMultiEmailInput');
         const [input, setInput] = useState('');
 
         // Commit whatever is currently typed into the box. Splits on commas,
@@ -93,7 +95,7 @@ const MultiEmailInput = forwardRef<MultiEmailInputHandle, MultiEmailInputProps>(
                     <input
                         type="text"
                         className="mt-2 w-full rounded-lg border border-neutral-300 px-4 py-2.5 text-sm transition-all focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
-                        placeholder={placeholder || 'Enter email & press Enter'}
+                        placeholder={placeholder || t('placeholder')}
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyDown}

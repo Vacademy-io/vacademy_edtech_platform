@@ -1,0 +1,50 @@
+{
+    "validation": {
+        "notApplicable": "غير متاح",
+        "fieldRequired": {
+            "message": "{{field}} مطلوب",
+            "resolution": "يرجى إدخال قيمة لـ {{field}}"
+        },
+        "invalidValue": {
+            "message": "قيمة غير صالحة لـ {{field}}",
+            "resolution": "يجب أن تكون القيمة إحدى القيم التالية: {{options}}"
+        },
+        "invalidDate": {
+            "message": "تنسيق تاريخ غير صالح لـ {{field}}",
+            "resolution": "يجب أن يكون التاريخ بالتنسيق: {{format}}"
+        },
+        "invalidFormat": {
+            "message": "تنسيق غير صالح لـ {{field}}",
+            "resolution": "يرجى التحقق من التنسيق"
+        }
+    },
+    "errors": {
+        "unknownError": "خطأ غير معروف"
+    },
+    "emptyState": {
+        "noData": "لم يتم العثور على بيانات مرفوعة!"
+    },
+    "editingMode": {
+        "label": "تفعيل وضع التحرير",
+        "hint": "انقر على الخلية للتحرير"
+    },
+    "summary": {
+        "foundIssuesInRows": "تم العثور على {{issues}} في {{rows}}",
+        "issuesCount_zero": "{{count}} مشكلة تحقق",
+        "issuesCount_one": "{{count}} مشكلة تحقق واحدة",
+        "issuesCount_two": "{{count}} مشكلتا تحقق",
+        "issuesCount_few": "{{count}} مشكلات تحقق",
+        "issuesCount_many": "{{count}} مشكلة تحقق",
+        "issuesCount_other": "{{count}} مشكلة تحقق",
+        "rowsCount_zero": "{{count}} صف",
+        "rowsCount_one": "{{count}} صف واحد",
+        "rowsCount_two": "{{count}} صفان",
+        "rowsCount_few": "{{count}} صفوف",
+        "rowsCount_many": "{{count}} صفًا",
+        "rowsCount_other": "{{count}} صف"
+    },
+    "buttons": {
+        "downloadErrorCases": "تنزيل حالات الخطأ",
+        "downloadValidData": "تنزيل البيانات الصالحة"
+    }
+}

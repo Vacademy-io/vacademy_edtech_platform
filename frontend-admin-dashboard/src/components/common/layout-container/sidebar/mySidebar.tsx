@@ -22,7 +22,8 @@
  * popover with the tabs for that category.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Sidebar, SidebarContent, useSidebar } from '@/components/ui/sidebar';
 import {
     SidebarStateType,
@@ -38,8 +39,8 @@ import {
 } from '@/services/student-list-section/getInstituteDetails';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { filterMenuItems } from './helper';
-import { getTokenFromCookie, getUserRoles } from '@/lib/auth/sessionUtility';
-import { TokenKey } from '@/constants/auth/tokens';
+import { useActiveSidebarSection } from './use-active-sidebar-section';
+import { useTitleStore } from '@/stores/useTitleStore';
 import {
     ADMIN_DISPLAY_SETTINGS_KEY,
     TEACHER_DISPLAY_SETTINGS_KEY,
@@ -58,6 +59,7 @@ import {
     getEffectiveInstituteLogoFileId,
     getValidSelectedSubOrgId,
     getSelectedSubOrgLinkageType,
+    isCallerSubOrgAdmin,
 } from '@/lib/auth/facultyAccessUtils';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { getActiveRoleDisplaySettingsKey } from '@/lib/auth/instituteUtils';
@@ -65,12 +67,18 @@ import { getActiveRoleDisplaySettingsKey } from '@/lib/auth/instituteUtils';
 import { Lightning } from '@phosphor-icons/react';
 import { CategoryRail, type CategoryId } from './category-rail';
 import { SidebarPanel } from './sidebar-panel';
-import {
-    useCallIntelligenceEnabled,
-    useHasCallIntelligenceData,
-} from '@/components/shared/leads';
+import { useCallIntelligenceEnabled, useHasCallIntelligenceData } from '@/components/shared/leads';
 import { useIsMentor } from '@/hooks/use-is-mentor';
+import { useMyEmployeeProfile } from '@/hooks/use-my-employee-profile';
 
+import type { SidebarCategory } from '@/types/layout-container/layout-container-types';
+import { useLeadSettings } from '@/hooks/use-lead-settings';
+import { useEntitlement, useNavSnapshotStore } from '@/lib/capabilities/use-entitlement';
+import {
+    categoriesWithItems,
+    filterSidebarByEntitlement,
+    pickActiveCategory,
+} from '@/lib/capabilities/nav-access';
 // Sidebar sub-items under "Assessments and Tests" that deep-link into the
 // create-assessment wizard. Hidden together with the Create Assessment button.
 const ASSESSMENT_CREATE_SUB_ITEM_IDS = new Set([
@@ -104,12 +112,24 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
 
     const [isVoltSubdomain, setIsVoltSubdomain] = useState(false);
     const [activeCategory, setActiveCategory] = useState<CategoryId>('CRM');
+    // Route the category sync last ran for — tells a real navigation apart from
+    // a re-run caused by roleDisplay loading on the same page.
+    const lastSyncedRouteRef = useRef<string | null>(null);
     const [roleDisplay, setRoleDisplay] = useState<DisplaySettingsData | null>(null);
+    // True once this role's display settings are known (or failed to load), so the
+    // published sidebar is the role's real one, not the defaults.
+    const [roleDisplayResolved, setRoleDisplayResolved] = useState(false);
     const [mainInstituteLogoUrl, setMainInstituteLogoUrl] = useState<string>('');
 
     // Subscribe to naming-settings changes so the sidebar re-renders with
     // the new terms the moment they are saved on the settings page.
     useNamingSettingsVersion();
+
+    // Same rationale for language: getSidebarItemsData() resolves its labels
+    // through the i18next singleton, so without a subscription here the nav
+    // would keep the old language until some unrelated state change forced a
+    // re-render.
+    useTranslation('sidebar');
 
     // IMPORTANT: use the *validated* selector here. The plain getter returns
     // whatever's in localStorage, which can be a stale id from a previous session
@@ -154,6 +174,17 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
     const onMentorshipRoute = currentRoute.startsWith('/mentorship');
     const { isMentor } = useIsMentor(mentorshipEntryVisible && onMentorshipRoute);
 
+    // ERP > My HR is the employee's OWN workspace; every screen behind it 404s
+    // for someone with no HR profile (most staff, at an institute that has not
+    // onboarded payroll). Unlike the mentorship probe this cannot wait until the
+    // user is already on the route — the entry IS the way in — so it runs
+    // whenever the institute has ERP switched on at all. That is one request per
+    // session, cached for its lifetime, and none at all for the institutes that
+    // never enable ERP.
+    const myHrEntryVisible = isTabVisible('erp-my-hr');
+    const { employeeId: myEmployeeId } = useMyEmployeeProfile(myHrEntryVisible);
+    const hasEmployeeProfile = !!myEmployeeId;
+
     // AI Intelligence (Leads > AI Intelligence) rides on Call Intelligence. The
     // entry is available when the feature is ON, or when it's off but the institute
     // has previously-analyzed data to look back on (the page then shows historical
@@ -162,9 +193,26 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
     // Fail closed: both hooks return false while loading, so it stays hidden until
     // the settings/data resolve. The has-data probe is skipped when the feature is
     // on (the entry shows regardless), avoiding an extra analytics call.
+    // Check Lead is off for every institute until one turns it on, so without a
+    // gate the entry is a dead page for everyone else.
+    //
+    // Like every gate in this file (see project notes on sidebar feature-gates),
+    // this costs a request on NON-CRM pages too — the sidebar is in the layout.
+    // It shares the ['lead-settings-config'] cache the CRM screens already fill,
+    // 5-min staleTime, and hits the same /institute/setting/v1/get that the
+    // call-intelligence gate right below already calls on every page. So it is
+    // one more cached GET per session, not one per navigation.
+    const { leadLookup } = useLeadSettings();
+    const isLeadLookupEnabled = leadLookup.enabled;
+
     const isCrmIntelligenceEnabled = useCallIntelligenceEnabled();
     const hasCrmIntelligenceData = useHasCallIntelligenceData(!isCrmIntelligenceEnabled);
     const isCrmIntelligenceAvailable = isCrmIntelligenceEnabled || hasCrmIntelligenceData;
+
+    // Institute plan (modules). FULL_ENTITLEMENT — nothing filtered — unless the
+    // institute is MANAGED and the catalogue loaded (INSTITUTE_MODULES spec §9).
+    const entitlement = useEntitlement();
+    const setNavSnapshot = useNavSnapshotStore((s) => s.setSnapshot);
 
     useEffect(() => {
         setIsVoltSubdomain(
@@ -172,96 +220,18 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
         );
     }, []);
 
-    // Sync active category with current route
-    useEffect(() => {
-        // If on /settings, always show as SETTINGS category
-        if (currentRoute.startsWith('/settings')) {
-            setActiveCategory('SETTINGS');
-            return;
-        }
-
-        const checkCategoryVisibility = (cat: 'CRM' | 'LMS' | 'AI') => {
-            if (!roleDisplay?.sidebarCategories) return true;
-            const cfg = roleDisplay.sidebarCategories.find((c) => c.id === cat);
-            return cfg ? cfg.visible !== false : true;
-        };
-
-        // Collect every category whose tab/sub-tab/custom-tab matches the current
-        // route. Custom tabs (saved in roleDisplay.sidebar) participate too — without
-        // this, an LMS custom tab pointing to a CRM route loses to the static CRM
-        // entry and the wrong category gets activated.
-        const findMatchingCategories = (): Array<'CRM' | 'LMS' | 'AI'> => {
-            if (isVoltSubdomain) return ['LMS'];
-            const hits: Array<'CRM' | 'LMS' | 'AI'> = [];
-            const push = (cat?: 'CRM' | 'LMS' | 'AI') => {
-                const c = cat || 'CRM';
-                if (!hits.includes(c)) hits.push(c);
-            };
-
-            for (const item of getSidebarItemsData()) {
-                if (item.id === 'settings') continue;
-                if (item.to && currentRoute.startsWith(item.to)) push(item.category);
-                if (item.subItems) {
-                    for (const sub of item.subItems) {
-                        const link = sub.subItemLink || '';
-                        if (link && currentRoute.startsWith(link)) push(item.category);
-                    }
-                }
-            }
-
-            // Custom tabs from the saved role config — these have their own category.
-            const customTabs = roleDisplay?.sidebar?.filter((t) => t.isCustom) || [];
-            for (const t of customTabs) {
-                if (t.route && currentRoute.startsWith(t.route)) {
-                    push(t.category as 'CRM' | 'LMS' | 'AI' | undefined);
-                }
-                for (const s of t.subTabs || []) {
-                    if (s.route && currentRoute.startsWith(s.route)) {
-                        push(t.category as 'CRM' | 'LMS' | 'AI' | undefined);
-                    }
-                }
-            }
-
-            return hits;
-        };
-
-        const matches = findMatchingCategories();
-        // Prefer a visible match; if none of the matches are visible, prefer the
-        // default visible category from sidebarCategories; otherwise fall through.
-        const visibleMatch = matches.find((c) => checkCategoryVisibility(c));
-        let targetCategory: 'CRM' | 'LMS' | 'AI' | null = visibleMatch ?? null;
-
-        if (!targetCategory && roleDisplay?.sidebarCategories) {
-            // Find a visible category to land on. Try `default && visible`, then
-            // any visible by order. Skipping plain `default` here — a category
-            // that's marked default but hidden isn't a usable landing target.
-            const cats = roleDisplay.sidebarCategories
-                .slice()
-                .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-            const defVisible = cats.find((c) => c.default && c.visible !== false);
-            const anyVisible = cats.find((c) => c.visible !== false);
-            targetCategory = (defVisible?.id || anyVisible?.id || null) as
-                | 'CRM'
-                | 'LMS'
-                | 'AI'
-                | null;
-        }
-
-        if (targetCategory && activeCategory !== 'RECENT' && activeCategory !== 'SETTINGS') {
-            setActiveCategory(targetCategory);
-        }
-    }, [currentRoute, isVoltSubdomain, roleDisplay]);
-
     // Load display settings
     useEffect(() => {
         const roleKey = getActiveRoleDisplaySettingsKey();
         const cached = getDisplaySettingsFromCache(roleKey);
         if (cached) {
             setRoleDisplay(cached);
+            setRoleDisplayResolved(true);
         } else {
             getDisplaySettings(roleKey)
                 .then(setRoleDisplay)
-                .catch(() => setRoleDisplay(null));
+                .catch(() => setRoleDisplay(null))
+                .finally(() => setRoleDisplayResolved(true));
         }
     }, []);
 
@@ -269,15 +239,16 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
     // hook — the hook would fire a second identical fetch on a cold cache.
     const canCreateAssessment = roleDisplay?.assessmentPage?.showCreateAssessment !== false;
 
-    // Compute final sidebar items (same logic as before)
-    const finalSidebarItems = (() => {
+    // Compute the role's sidebar items (same logic as before)
+    const roleSidebarItems = (() => {
         const rawBase = isVoltSubdomain
             ? voltSidebarData
             : filterMenuItems(
                   getSidebarItemsData(),
                   data?.id || '',
                   isTabVisible,
-                  isSubItemVisible
+                  isSubItemVisible,
+                  roleDisplay
               );
         // Chat is OFF by default. Strip the Communications > Chat sub-item unless the
         // institute has explicitly enabled chat. Fail closed: isChatEnabled is false
@@ -292,16 +263,26 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
         // straight into the create wizard, so leaving them would contradict the
         // hidden Create Assessment button.
         const needsSubItemFilter =
-            !isChatEnabled || !isCrmIntelligenceAvailable || !canCreateAssessment || !isMentor;
-        const base = !needsSubItemFilter
+            !isChatEnabled ||
+            !isCrmIntelligenceAvailable ||
+            !canCreateAssessment ||
+            !isMentor ||
+            !isLeadLookupEnabled;
+        // Drop My HR entirely for non-employees — it is a whole module, not a
+        // sub-item, so it is filtered from the item list rather than within one.
+        const rawBaseWithHr = hasEmployeeProfile
             ? rawBase
-            : rawBase.map((item) => ({
+            : rawBase.filter((item) => item.id !== 'erp-my-hr');
+        const base = !needsSubItemFilter
+            ? rawBaseWithHr
+            : rawBaseWithHr.map((item) => ({
                   ...item,
                   subItems: item.subItems?.filter(
                       (s) =>
                           (isChatEnabled || s.subItemId !== 'chat') &&
                           (isCrmIntelligenceAvailable || s.subItemId !== 'ai-intelligence') &&
                           (isMentor || s.subItemId !== 'mentorship-my-mentorship') &&
+                          (isLeadLookupEnabled || s.subItemId !== 'lead-lookup') &&
                           (canCreateAssessment ||
                               !ASSESSMENT_CREATE_SUB_ITEM_IDS.has(s.subItemId || ''))
                   ),
@@ -329,8 +310,12 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
                 // system defaults (i.e. no naming-settings applied). Match =
                 // seeded, fall back to dynamic item.title. Mismatch = user
                 // explicitly customized the label, respect it.
+                // defaultItem is resolved in English (the language every seed
+                // was written in); item.title covers a seed saved while a
+                // non-English UI was active. Either match = not a customization.
                 const defaultItem = defaultItemsById.get(item.id);
-                const isSeededTitle = !cfg.label || cfg.label === defaultItem?.title;
+                const isSeededTitle =
+                    !cfg.label || cfg.label === defaultItem?.title || cfg.label === item.title;
                 // Custom sub-tabs the admin added under this tab (ids that are
                 // not among the tab's hardcoded default subItems, e.g.
                 // "custom-sub-…"). The built-in flow below only draws from the
@@ -369,7 +354,10 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
                         .map((s) => {
                             const c = subVis.get(s.subItemId);
                             const defaultSub = defaultSubsById.get(s.subItemId);
-                            const isSeededSubLabel = !c?.label || c.label === defaultSub?.subItem;
+                            const isSeededSubLabel =
+                                !c?.label ||
+                                c.label === defaultSub?.subItem ||
+                                c.label === s.subItem;
                             return {
                                 ...s,
                                 subItem: isSeededSubLabel ? s.subItem : (c?.label as string),
@@ -448,6 +436,137 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
             return ao - bo;
         });
     })();
+    // Then the institute's plan. In LEGACY this returns roleSidebarItems itself.
+    const entitledItems = filterSidebarByEntitlement(roleSidebarItems, entitlement);
+    // The LMS Dashboard holds the learning cards that the CRM Dashboard took off the
+    // home page, so it exists only where the home page is the CRM Dashboard: people
+    // who can see Leads (sub-org admins keep their own dashboard). Everyone else keeps
+    // their dashboard as before.
+    // It always heads the LMS section: a role whose sidebar order was saved before the
+    // tab existed would otherwise rank it after every saved tab.
+    const finalSidebarItems =
+        !isCallerSubOrgAdmin() && entitledItems.some((item) => item.id === 'leads' && !item.locked)
+            ? [
+                  ...entitledItems.filter((item) => item.id === 'lms-dashboard'),
+                  ...entitledItems.filter((item) => item.id !== 'lms-dashboard'),
+              ]
+            : entitledItems.filter((item) => item.id !== 'lms-dashboard');
+    // MANAGED: the rail categories with anything left to show (the rail draws only
+    // these). A string so the category sync below re-runs only when it changes.
+    const availableCategoriesKey = entitlement.managed
+        ? Array.from(categoriesWithItems(finalSidebarItems, data?.id)).sort().join(',')
+        : null;
+
+    // Sync active category with current route
+    useEffect(() => {
+        // If on /settings, always show as SETTINGS category
+        if (currentRoute.startsWith('/settings')) {
+            setActiveCategory('SETTINGS');
+            return;
+        }
+
+        // Collect every category whose tab/sub-tab/custom-tab matches the current
+        // route. Custom tabs (saved in roleDisplay.sidebar) are collected first so
+        // they win over a static entry for the same route — e.g. an ERP custom tab
+        // pointing at /manage-students/students-list, which CRM > Manage Contacts
+        // also links to, must not flip the rail to CRM.
+        const findMatchingCategories = (): Array<SidebarCategory> => {
+            if (isVoltSubdomain) return ['LMS'];
+            const hits: Array<SidebarCategory> = [];
+            const push = (cat?: SidebarCategory) => {
+                const c = cat || 'CRM';
+                if (!hits.includes(c)) hits.push(c);
+            };
+
+            // Custom tabs from the saved role config — these have their own category.
+            const customTabs = roleDisplay?.sidebar?.filter((t) => t.isCustom) || [];
+            for (const t of customTabs) {
+                if (t.route && currentRoute.startsWith(t.route)) {
+                    push(t.category as SidebarCategory | undefined);
+                }
+                for (const s of t.subTabs || []) {
+                    if (s.route && currentRoute.startsWith(s.route)) {
+                        push(t.category as SidebarCategory | undefined);
+                    }
+                }
+            }
+
+            for (const item of getSidebarItemsData()) {
+                if (item.id === 'settings') continue;
+                if (item.to && currentRoute.startsWith(item.to)) push(item.category);
+                if (item.subItems) {
+                    for (const sub of item.subItems) {
+                        const link = sub.subItemLink || '';
+                        if (link && currentRoute.startsWith(link)) push(item.category);
+                    }
+                }
+            }
+
+            return hits;
+        };
+
+        const matches = findMatchingCategories();
+        // When the user navigates and the category they are in also owns the new
+        // route, stay there — they clicked it from that panel. Skipped on the first
+        // sync (initial state is just a 'CRM' placeholder) and on same-route re-runs.
+        const isNavigation =
+            lastSyncedRouteRef.current !== null && lastSyncedRouteRef.current !== currentRoute;
+        lastSyncedRouteRef.current = currentRoute;
+        // Prefer a visible match, then the role's default visible category. MANAGED:
+        // only categories with something to show — a page outside the plan matches
+        // the static LMS/AI/ERP entries (or nothing) and would open an empty panel.
+        const targetCategory = pickActiveCategory({
+            matches,
+            activeCategory,
+            isNavigation,
+            sidebarCategories: roleDisplay?.sidebarCategories,
+            available:
+                availableCategoriesKey === null
+                    ? null
+                    : new Set(
+                          availableCategoriesKey.split(',').filter(Boolean) as SidebarCategory[]
+                      ),
+        });
+
+        if (targetCategory && activeCategory !== 'RECENT' && activeCategory !== 'SETTINGS') {
+            setActiveCategory(targetCategory);
+        }
+    }, [currentRoute, isVoltSubdomain, roleDisplay, availableCategoriesKey]);
+
+    // Publish what the user can see for the route guard (locked deep links) —
+    // only when it actually changed, since this list is rebuilt every render.
+    const navSignature = JSON.stringify(
+        finalSidebarItems.map((i) => [
+            i.id,
+            i.to,
+            i.title,
+            i.category,
+            i.showForInstitute,
+            !!i.locked,
+            i.subItems?.map((s) => [s.subItemId, s.subItemLink, s.subItem, !!s.locked]),
+        ])
+    );
+    const categoriesSignature = JSON.stringify(roleDisplay?.sidebarCategories ?? null);
+    useEffect(() => {
+        if (!data?.id) return;
+        setNavSnapshot({
+            instituteId: data.id,
+            items: finalSidebarItems,
+            sidebarCategories: roleDisplay?.sidebarCategories ?? null,
+            settingsReady: roleDisplayResolved,
+        });
+        // finalSidebarItems/roleDisplay are captured through the signatures.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [navSignature, categoriesSignature, roleDisplayResolved, data?.id, setNavSnapshot]);
+
+    // Browser tab title leads with the section ("All Leads · I2CAN"), so several
+    // tabs open on lists that share one page can still be told apart.
+    const activeSectionLabel = useActiveSidebarSection()?.label ?? null;
+    const setSectionTitle = useTitleStore((s) => s.setSectionTitle);
+    useEffect(() => {
+        setSectionTitle(activeSectionLabel);
+    }, [activeSectionLabel, setSectionTitle]);
+    useEffect(() => () => setSectionTitle(null), [setSectionTitle]);
 
     // Logo
     const { getPublicUrl } = useFileUpload();
@@ -513,6 +632,7 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
                                 roleDisplay={roleDisplay}
                                 sidebarItems={finalSidebarItems}
                                 instituteId={data?.id}
+                                hideEmptyCategories={entitlement.managed}
                             />
 
                             {/* Panel */}
@@ -558,6 +678,7 @@ export const MySidebar = ({ sidebarComponent }: { sidebarComponent?: React.React
                         roleDisplay={roleDisplay}
                         sidebarItems={finalSidebarItems}
                         instituteId={data?.id}
+                        hideEmptyCategories={entitlement.managed}
                     />
 
                     {/* Right: Panel (always mounted, animates width) */}

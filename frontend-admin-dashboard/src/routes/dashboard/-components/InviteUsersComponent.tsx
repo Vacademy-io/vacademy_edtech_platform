@@ -11,8 +11,10 @@ import { getInstituteId } from '@/constants/helper';
 import { useMutation } from '@tanstack/react-query';
 import { handleInviteUsers } from '../-services/dashboard-services';
 import { useState, useEffect, lazy, Suspense } from 'react'; // Added useEffect
-import { Loader2 } from 'lucide-react';
+import { CircleNotch } from '@phosphor-icons/react';
 import { mapRoleToCustomName } from '@/utils/roleUtils';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 const LazyBatchSubjectForm = lazy(() =>
     import('./BatchAndSubjectSelection').catch(() => {
@@ -21,6 +23,8 @@ const LazyBatchSubjectForm = lazy(() =>
     })
 );
 
+// Kept for backward compatibility: other files (InviteInstructorForm, BatchAndSubjectSelection,
+// dashboard-services) import this static schema/type directly. Do not rename or remove.
 export const inviteUsersSchema = z.object({
     name: z.string().min(1, 'Full name is required'),
     email: z.string().min(1, 'Email is required').email('Invalid email format'),
@@ -36,12 +40,30 @@ export const inviteUsersSchema = z.object({
 });
 export type inviteUsersFormValues = z.infer<typeof inviteUsersSchema>;
 
+// Translated variant used internally by this component so validation messages render in the
+// active locale, without changing the shape or the exported static schema above.
+const buildInviteUsersSchema = (t: TFunction) =>
+    z.object({
+        name: z.string().min(1, t('validation.nameRequired')),
+        email: z.string().min(1, t('validation.emailRequired')).email(t('validation.emailInvalid')),
+        roleType: z.array(z.string()).min(1, t('validation.roleRequired')),
+        batch_subject_mappings: z
+            .array(
+                z.object({
+                    batchId: z.string(),
+                    subjectIds: z.array(z.string()),
+                })
+            )
+            .optional(),
+    });
+
 const InviteUsersComponent = ({ refetchData, availableRoles }: { refetchData: () => void; availableRoles?: { id: string; name: string }[] }) => {
+    const { t } = useTranslation('dashboardInviteUsersComponent');
     const roleOptions = availableRoles || RoleType;
     const [open, setOpen] = useState(false);
     const instituteId = getInstituteId();
     const form = useForm<inviteUsersFormValues>({
-        resolver: zodResolver(inviteUsersSchema),
+        resolver: zodResolver(buildInviteUsersSchema(t)),
         defaultValues: {
             name: '',
             email: '',
@@ -107,12 +129,12 @@ const InviteUsersComponent = ({ refetchData, availableRoles }: { refetchData: ()
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger>
                 <MyButton buttonType="primary" scale="large" layoutVariant="default">
-                    Invite Users
+                    {t('trigger.inviteUsers')}
                 </MyButton>
             </DialogTrigger>
-            <DialogContent className="flex max-h-[600px] w-[420px] flex-col overflow-y-scroll p-0">
+            <DialogContent className="flex max-h-[600px] w-[420px] flex-col overflow-y-scroll p-0">{/* design-lint-ignore: compact invite-form dialog intentionally smaller than the named w-dialog-md/lg/xl tokens (all >=672px); no standard max-h-* step is close to 600px */}
                 <h1 className="rounded-t-md bg-primary-50 p-4 font-semibold text-primary-500">
-                    Invite User
+                    {t('dialog.title')}
                 </h1>
                 <FormProvider {...form}>
                     <form className="flex flex-col items-start justify-center gap-4 px-4">
@@ -124,13 +146,13 @@ const InviteUsersComponent = ({ refetchData, availableRoles }: { refetchData: ()
                                     <FormControl>
                                         <MyInput
                                             inputType="text"
-                                            inputPlaceholder="Full name (First and Last)"
+                                            inputPlaceholder={t('form.namePlaceholder')}
                                             input={value}
                                             onChangeFunction={onChange}
                                             required={true}
                                             error={form.formState.errors.name?.message}
                                             size="large"
-                                            label="Full Name"
+                                            label={t('form.nameLabel')}
                                             {...field}
                                             className="w-96"
                                         />
@@ -146,13 +168,13 @@ const InviteUsersComponent = ({ refetchData, availableRoles }: { refetchData: ()
                                     <FormControl>
                                         <MyInput
                                             inputType="email"
-                                            inputPlaceholder="Enter Email"
+                                            inputPlaceholder={t('form.emailPlaceholder')}
                                             input={value}
                                             onChangeFunction={onChange}
                                             required={true}
                                             error={form.formState.errors.email?.message}
                                             size="large"
-                                            label="Email"
+                                            label={t('form.emailLabel')}
                                             {...field}
                                             className="w-96"
                                         />
@@ -162,7 +184,7 @@ const InviteUsersComponent = ({ refetchData, availableRoles }: { refetchData: ()
                         />
                         <MultiSelectDropdown
                             form={form}
-                            label="Role Type"
+                            label={t('form.roleTypeLabel')}
                             name="roleType"
                             options={roleOptions.map((option, index) => ({
                                 value: option.name,
@@ -178,7 +200,7 @@ const InviteUsersComponent = ({ refetchData, availableRoles }: { refetchData: ()
                             <Suspense
                                 fallback={
                                     <div className="flex w-full justify-center py-4">
-                                        <Loader2 className="size-6 animate-spin text-primary-500" />
+                                        <CircleNotch className="size-6 animate-spin text-primary-500" />
                                     </div>
                                 }
                             >
@@ -195,7 +217,7 @@ const InviteUsersComponent = ({ refetchData, availableRoles }: { refetchData: ()
                                 disable={!isValid || !checkIsTeacherValid()}
                                 onClick={form.handleSubmit(onSubmit)}
                             >
-                                Invite User
+                                {t('form.submit')}
                             </MyButton>
                         </div>
                     </form>

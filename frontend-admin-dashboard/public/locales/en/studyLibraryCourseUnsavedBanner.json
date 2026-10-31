@@ -1,0 +1,5 @@
+{
+    "unsavedInCourse_one": "{{count}} unsaved in this {{course}}",
+    "unsavedInCourse_other": "{{count}} unsaved in this {{course}}",
+    "review": "Review"
+}

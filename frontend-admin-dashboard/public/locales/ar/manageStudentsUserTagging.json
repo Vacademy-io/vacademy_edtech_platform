@@ -1,0 +1,29 @@
+{
+  "errors": {
+    "loadTitle": "تعذّر تحميل الوسوم",
+    "loadHint": "حدث خطأ أثناء جلب وسوم هذا المتعلم."
+  },
+  "toast": {
+    "addSuccess": "تمت إضافة الوسم بنجاح",
+    "addError": "فشلت إضافة الوسم",
+    "removeSuccess": "تمت إزالة الوسم بنجاح",
+    "removeError": "فشلت إزالة الوسم"
+  },
+  "activeSection": {
+    "heading": "الوسوم",
+    "activeCount_zero": "{{count}} وسم نشط",
+    "activeCount_one": "{{count}} وسم نشط",
+    "activeCount_two": "{{count}} وسم نشط",
+    "activeCount_few": "{{count}} وسوم نشطة",
+    "activeCount_many": "{{count}} وسمًا نشطًا",
+    "activeCount_other": "{{count}} وسم نشط",
+    "inputPlaceholder": "أضف وسمًا (مثل VIP، أداء عالٍ)",
+    "addButton": "إضافة",
+    "defaultLabel": "(افتراضي)",
+    "removeAriaLabel": "إزالة الوسم {{tagName}}",
+    "emptyState": "لا توجد وسوم بعد — أضف واحدًا أعلاه لبدء تصنيف هذا المتعلم."
+  },
+  "inactiveSection": {
+    "heading": "الوسوم غير النشطة"
+  }
+}

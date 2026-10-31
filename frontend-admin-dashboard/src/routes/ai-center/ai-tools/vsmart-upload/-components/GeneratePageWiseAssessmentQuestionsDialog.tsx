@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FormProvider, useFieldArray, UseFormReturn } from 'react-hook-form';
 import { transformQuestionsToGenerateAssessmentAI } from '@/routes/ai-center/-utils/helper';
 import { Sortable, SortableDragHandle, SortableItem } from '@/components/ui/sortable';
@@ -53,9 +54,12 @@ const GeneratePageWiseAssessmentQuestionsDialog = ({
     setIsMoreQuestionsDialog,
     loadingState,
 }: GeneratePageWiseAssessmentProps) => {
+    const { t } = useTranslation('aiCenterGeneratePageWiseAssessmentQuestionsDialog');
+    const { t: tHelper } = useTranslation('aiCenterHelper');
     const { instituteLogo } = useInstituteLogoStore();
     const transformQuestionsData = transformQuestionsToGenerateAssessmentAI(
-        assessmentData?.questions
+        assessmentData?.questions,
+        tHelper
     );
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
@@ -122,10 +126,10 @@ const GeneratePageWiseAssessmentQuestionsDialog = ({
                     {loadingState === 'pending' ? (
                         <>
                             <div className="mr-2 size-4 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
-                            <span>Extracting...</span>
+                            <span>{t('trigger.extracting')}</span>
                         </>
                     ) : (
-                        'Extract Copied Questions'
+                        t('trigger.extractCopiedQuestions')
                     )}
                 </MyButton>
             </DialogTrigger>
@@ -139,7 +143,7 @@ const GeneratePageWiseAssessmentQuestionsDialog = ({
                                     <div className="flex items-center gap-3">
                                         <img
                                             src={instituteLogo}
-                                            alt="logo"
+                                            alt={t('header.instituteLogoAlt')}
                                             className="size-9 rounded-full border bg-muted object-contain"
                                         />
                                         <span className="text-sm font-bold leading-tight text-foreground/90">
@@ -159,18 +163,18 @@ const GeneratePageWiseAssessmentQuestionsDialog = ({
                                                 buttonType="secondary"
                                                 className="text-primary hover:text-primary/80"
                                             >
-                                                Generate More
+                                                {t('generateMore.triggerLabel')}
                                             </MyButton>
                                         </DialogTrigger>
                                         <DialogContent className="p-0 sm:max-w-md overflow-hidden rounded-lg">
                                             <div className="bg-primary/5 p-4 border-b">
                                                 <h1 className="font-semibold text-primary">
-                                                    Generate more questions
+                                                    {t('generateMore.dialogTitle')}
                                                 </h1>
                                             </div>
                                             <div className="flex flex-col gap-4 p-6">
                                                 <Input
-                                                    placeholder="Enter topics to generate questions"
+                                                    placeholder={t('generateMore.inputPlaceholder')}
                                                     value={propmtInput}
                                                     onChange={(e) => setPropmtInput(e.target.value)}
                                                     className="border-muted-foreground/20"
@@ -182,7 +186,7 @@ const GeneratePageWiseAssessmentQuestionsDialog = ({
                                                         buttonType="primary"
                                                         onClick={handleGenerateQuestionsForAssessment}
                                                     >
-                                                        Generate Questions
+                                                        {t('generateMore.submitLabel')}
                                                     </MyButton>
                                                 </div>
                                             </div>
@@ -197,10 +201,10 @@ const GeneratePageWiseAssessmentQuestionsDialog = ({
                                         type="button"
                                         scale="small"
                                         buttonType="secondary"
-                                        className="text-muted-foreground hover:text-foreground md:min-w-[80px]"
+                                        className="text-muted-foreground hover:text-foreground md:min-w-20"
                                         onClick={() => setOpenCompleteAssessmentDialog(false)}
                                     >
-                                        Close
+                                        {t('closeButton')}
                                     </MyButton>
                                 </div>
                             </div>
@@ -217,7 +221,7 @@ const GeneratePageWiseAssessmentQuestionsDialog = ({
                                             }
                                         >
                                             <div style={{ height: containerHeight, overflow: 'hidden' }}>
-                                                <div ref={contentRef} className="origin-top-left scale-[0.28] w-[350%] flex flex-col gap-6 pb-20">
+                                                <div ref={contentRef} className="origin-top-left scale-[0.28] w-[350%] flex flex-col gap-6 pb-20"> {/* design-lint-ignore: counteracts scale-[0.28] transform to preserve canvas proportions, no percentage token above 100% exists */}
                                                     {fields.map((field, index) => {
                                                         const isSelected = currentQuestionIndex === index;
                                                         return (
@@ -243,7 +247,7 @@ const GeneratePageWiseAssessmentQuestionsDialog = ({
                                                                                 <h1 className={`text-5xl font-bold ${isSelected ? 'text-blue-600' : 'text-gray-400'}`}>
                                                                                     {index + 1}
                                                                                 </h1>
-                                                                                <span className="text-3xl font-medium text-gray-500 truncate max-w-[400px]">
+                                                                                <span className="text-3xl font-medium text-gray-500 truncate max-w-sm">
                                                                                     {getPPTViewTitle(
                                                                                         getValues(
                                                                                             `questions.${index}.questionType`
@@ -273,7 +277,7 @@ const GeneratePageWiseAssessmentQuestionsDialog = ({
                                                                                             }}
                                                                                         >
                                                                                             <Copy className="mr-3 size-5" />
-                                                                                            Duplicate
+                                                                                            {t('pageActions.duplicate')}
                                                                                         </DropdownMenuItem>
                                                                                         <DropdownMenuItem
                                                                                             className="py-3 text-lg text-destructive focus:text-destructive"
@@ -286,7 +290,7 @@ const GeneratePageWiseAssessmentQuestionsDialog = ({
                                                                                             }}
                                                                                         >
                                                                                             <Trash className="mr-3 size-5" />
-                                                                                            Delete
+                                                                                            {t('pageActions.delete')}
                                                                                         </DropdownMenuItem>
                                                                                     </DropdownMenuContent>
                                                                                 </DropdownMenu>
@@ -332,11 +336,11 @@ const GeneratePageWiseAssessmentQuestionsDialog = ({
                                 <div className="flex-1 h-full w-full bg-muted/10 relative overflow-hidden">
                                     {questions && questions.length === 0 ? (
                                         <div className="flex h-full w-full items-center justify-center">
-                                            <h1 className="text-muted-foreground font-medium">No Question Exists.</h1>
+                                            <h1 className="text-muted-foreground font-medium">{t('emptyState.noQuestions')}</h1>
                                         </div>
                                     ) : (
                                         <div className="h-full w-full overflow-y-auto p-8">
-                                            <div className="mx-auto w-full max-w-5xl rounded-xl bg-background border shadow-sm min-h-[600px] p-10">
+                                            <div className="mx-auto w-full max-w-5xl rounded-xl bg-background border shadow-sm min-h-[600px] p-10"> {/* design-lint-ignore: fixed editor canvas min-height, no spacing-scale token close to 600px */}
                                                 <MainViewComponentFactory
                                                     key={currentQuestionIndex}
                                                     type={

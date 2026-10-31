@@ -1,0 +1,15 @@
+{
+    "title": "छूट सेटिंग्स चुनें",
+    "description": "एक छूट कूपन चुनें या नया बनाएं",
+    "badge": {
+        "active": "सक्रिय"
+    },
+    "discount": {
+        "percentOff": "{{value}}% की छूट",
+        "rupeesOff": "₹{{value}} की छूट",
+        "expires": "समाप्ति: {{date}}"
+    },
+    "actions": {
+        "addNew": "+ नई छूट जोड़ें"
+    }
+}

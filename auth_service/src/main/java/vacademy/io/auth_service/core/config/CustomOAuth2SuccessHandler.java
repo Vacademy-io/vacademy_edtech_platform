@@ -168,7 +168,9 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
         try {
             OAuth2User oauthUser = oauthToken.getPrincipal();
             Map<String, Object> attributes = oauthUser.getAttributes();
-            String provider = oauthToken.getAuthorizedClientRegistrationId();
+            // An institute's own client ("google@<institute>@<fp>") is still Google: same vendor rows and linking.
+            String provider = InstituteAwareClientRegistrationRepository.baseRegistrationIdOf(
+                    oauthToken.getAuthorizedClientRegistrationId());
             log.debug("OAuth2 user attributes count: {}", attributes.size());
 
             UserInfo userInfo = extractUserInfo(attributes, provider, response, redirectUrl,instituteId);

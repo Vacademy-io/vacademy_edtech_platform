@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Eye, ArrowClockwise, CheckCircle, MagnifyingGlass } from '@phosphor-icons/react';
+import {
+    ArrowLeft,
+    Eye,
+    ArrowClockwise,
+    CheckCircle,
+    MagnifyingGlass,
+    Rows,
+} from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
+import { ScreenHeader } from '@/components/shared/crm-enhance/screen-header';
 import { useNavHeadingStore } from '@/stores/layout-container/useNavHeadingStore';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { useBulkCreate } from '../-hooks/useBulkCreate';
@@ -19,6 +28,7 @@ import { getTerminology, getTerminologyPlural } from '@/components/common/layout
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 export function BulkCreatePage() {
+    const { t } = useTranslation('adminPackageManagement');
     const { setNavHeading } = useNavHeadingStore();
     const queryClient = useQueryClient();
     const [localLevels, setLocalLevels] = useState<LevelOption[]>([]);
@@ -103,7 +113,7 @@ export function BulkCreatePage() {
 
     if (isLoadingPaymentOptions) {
         return (
-            <div className="flex min-h-[400px] items-center justify-center">
+            <div className="flex min-h-96 items-center justify-center">
                 <DashboardLoader />
             </div>
         );
@@ -115,59 +125,68 @@ export function BulkCreatePage() {
     return (
         <section className="animate-fadeIn flex max-w-full flex-col gap-4 p-3 sm:p-4">
             {/* Header Actions */}
-            <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-white p-3 shadow-sm sm:p-4 lg:flex-row lg:flex-wrap lg:items-center lg:justify-between lg:gap-4">
-                <div>
-                    <h2 className="text-base font-semibold text-neutral-800">
-                        Create Multiple {getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)}
-                    </h2>
-                    <p className="text-sm text-neutral-500">
-                        Add {getTerminologyPlural(ContentTerms.Course, SystemTerms.Course).toLowerCase()} quickly with global defaults and individual customization
-                    </p>
-                </div>
-                <div className="grid grid-cols-2 gap-2 lg:flex lg:flex-wrap lg:items-center">
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowSimilarPackages(true)}
-                        className="h-9 min-w-0 justify-center"
+            <ScreenHeader
+                icon={Rows}
+                back={
+                    <Link
+                        to="/admin-package-management"
+                        className="inline-flex w-fit items-center gap-1.5 text-caption font-semibold text-neutral-500 hover:text-primary-500"
                     >
-                        <MagnifyingGlass className="mr-1 size-4 shrink-0" />
-                        <span className="truncate">
-                            Search already added {getTerminologyPlural(ContentTerms.Package, SystemTerms.Package)}
-                        </span>
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowCsvImport(true)}
-                        className="h-9 min-w-0 justify-center"
-                    >
-                        <FileCsv className="mr-1 size-4 shrink-0" />
-                        <span className="truncate">Import CSV</span>
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleReset}
-                        className="h-9 min-w-0 justify-center"
-                    >
-                        <ArrowClockwise className="mr-1 size-4 shrink-0" />
-                        <span className="truncate">Reset</span>
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleValidate}
-                        disabled={isValidating || courseCount === 0}
-                        className="h-9 min-w-0 justify-center"
-                    >
-                        <Eye className="mr-1 size-4 shrink-0" />
-                        <span className="truncate">
-                            {isValidating ? 'Validating...' : 'Validate & Preview'}
-                        </span>
-                    </Button>
-                </div>
-            </div>
+                        <ArrowLeft className="size-4" />
+                        {t('title', {
+                            package: getTerminology(ContentTerms.Package, SystemTerms.Package),
+                        })}
+                    </Link>
+                }
+                title={`Create Multiple ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course)}`}
+                subtitle={`Add ${getTerminologyPlural(ContentTerms.Course, SystemTerms.Course).toLowerCase()} quickly with global defaults and individual customization`}
+                actions={
+                    <div className="grid w-full grid-cols-2 gap-2 lg:flex lg:w-auto lg:flex-wrap lg:items-center">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowSimilarPackages(true)}
+                            className="h-9 min-w-0 justify-center"
+                        >
+                            <MagnifyingGlass className="mr-1 size-4 shrink-0" />
+                            <span className="truncate">
+                                Search already added{' '}
+                                {getTerminologyPlural(ContentTerms.Package, SystemTerms.Package)}
+                            </span>
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowCsvImport(true)}
+                            className="h-9 min-w-0 justify-center"
+                        >
+                            <FileCsv className="mr-1 size-4 shrink-0" />
+                            <span className="truncate">Import CSV</span>
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleReset}
+                            className="h-9 min-w-0 justify-center"
+                        >
+                            <ArrowClockwise className="mr-1 size-4 shrink-0" />
+                            <span className="truncate">Reset</span>
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={handleValidate}
+                            disabled={isValidating || courseCount === 0}
+                            className="h-9 min-w-0 justify-center"
+                        >
+                            <Eye className="mr-1 size-4 shrink-0" />
+                            <span className="truncate">
+                                {isValidating ? 'Validating...' : 'Validate & Preview'}
+                            </span>
+                        </Button>
+                    </div>
+                }
+            />
 
             {/* Validation Errors Summary */}
             {hasErrors && (

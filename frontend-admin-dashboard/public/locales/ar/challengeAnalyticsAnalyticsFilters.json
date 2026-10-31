@@ -1,0 +1,17 @@
+{
+    "leadSourceLabel": "مصدر العميل المحتمل:",
+    "selectSourcePlaceholder": "اختر المصدر",
+    "zohoForms": "نماذج زوهو",
+    "facebookLeads": "عملاء فيسبوك المحتملون",
+    "startDate": "تاريخ البدء",
+    "endDate": "تاريخ الانتهاء",
+    "to": "إلى",
+    "quick": "سريع:",
+    "last7Days": "آخر 7 أيام",
+    "last14Days": "آخر 14 يومًا",
+    "last30Days": "آخر 30 يومًا",
+    "last90Days": "آخر 90 يومًا",
+    "thisMonth": "هذا الشهر",
+    "lastMonth": "الشهر الماضي",
+    "refresh": "تحديث"
+}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { MyDropdown } from '@/components/design-system/dropdown';
 import { CaretUpDown, XCircle, ChatCircle, Envelope } from '@phosphor-icons/react';
@@ -13,10 +14,7 @@ interface AttendanceBulkActionsProps {
     onSendEmail: () => void;
 }
 
-const ATTENDANCE_BULK_ACTION_OPTIONS = [
-    'Send WhatsApp Message',
-    'Send Email',
-];
+const ATTENDANCE_BULK_ACTION_VALUES = ['sendWhatsApp', 'sendEmail'] as const;
 
 export const AttendanceBulkActions = ({
     selectedCount,
@@ -26,6 +24,7 @@ export const AttendanceBulkActions = ({
     onSendWhatsApp,
     onSendEmail,
 }: AttendanceBulkActionsProps) => {
+    const { t } = useTranslation('studyLibraryAttendanceBulkActions');
     const [isOpen, setIsOpen] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
 
@@ -47,10 +46,10 @@ export const AttendanceBulkActions = ({
         setIsOpen(false);
 
         switch (value) {
-            case 'Send WhatsApp Message':
+            case 'sendWhatsApp':
                 onSendWhatsApp();
                 break;
-            case 'Send Email':
+            case 'sendEmail':
                 onSendEmail();
                 break;
         }
@@ -58,17 +57,17 @@ export const AttendanceBulkActions = ({
 
     const getIcon = (option: string) => {
         switch (option) {
-            case 'Send WhatsApp Message':
+            case 'sendWhatsApp':
                 return <ChatCircle className="mr-2 size-4" />;
-            case 'Send Email':
+            case 'sendEmail':
                 return <Envelope className="mr-2 size-4" />;
             default:
                 return null;
         }
     };
 
-    const dropdownList = ATTENDANCE_BULK_ACTION_OPTIONS.map((option) => ({
-        label: option,
+    const dropdownList = ATTENDANCE_BULK_ACTION_VALUES.map((option) => ({
+        label: t(`options.${option}`),
         value: option,
         icon: getIcon(option),
     }));
@@ -80,7 +79,7 @@ export const AttendanceBulkActions = ({
                     {selectedCount}
                 </div>
                 <span className="text-sm font-medium text-primary-700">
-                    {selectedCount === 1 ? 'Student Selected' : 'Students Selected'}
+                    {t('studentsSelected', { count: selectedCount })}
                 </span>
             </div>
 
@@ -93,7 +92,7 @@ export const AttendanceBulkActions = ({
                     onClick={onReset}
                 >
                     <XCircle className="size-4 transition-transform duration-200 group-hover:rotate-90" />
-                    Clear Selection
+                    {t('clearSelection')}
                 </MyButton>
 
                 <MyDropdown
@@ -106,7 +105,7 @@ export const AttendanceBulkActions = ({
                         layoutVariant="default"
                         className="flex w-full cursor-pointer items-center justify-between gap-2"
                     >
-                        <span>Bulk Actions</span>
+                        <span>{t('bulkActions')}</span>
                         <CaretUpDown className="size-4" />
                     </MyButton>
                 </MyDropdown>

@@ -1,0 +1,3 @@
+{
+    "disabledMessage": "This feature is currently disabled for your institute. An admin can turn it on under <bold>Settings → Admin Display Settings → {{settingsLabel}}</bold>."
+}

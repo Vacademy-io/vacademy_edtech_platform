@@ -1,0 +1,87 @@
+---
+title: "Introduction"
+description: "Use your own AI app with your institute's courses, website, learners and leads. Each person signs in as themselves."
+icon: "house"
+---
+
+Vacademy MCP lets your team work with your institute's data from the AI app they already use: Claude, ChatGPT, Cursor, Claude Code or VS Code.
+
+A counsellor can ask *"Who should I call first today?"*. A course manager can say *"Draft a 6-chapter course on organic chemistry from this outline"*. An admin can ask *"Which lead campaigns brought in the most enquiries this month?"*. The AI app reads and changes your data through Vacademy MCP. It can only do what you allow.
+
+<Note>
+MCP stands for **Model Context Protocol**. It is an open standard for connecting AI apps to other software. You don't need to know how it works to use it. If you are curious, see [How it works](/mcp-server/how-it-works).
+</Note>
+
+## Who it is for
+
+<CardGroup cols={3}>
+  <Card title="Admins and owners" icon="user-shield" href="/mcp-server/quickstart">
+    Turn the server on, choose which roles can connect, and decide what AI apps may view or change.
+  </Card>
+  <Card title="Staff" icon="users" href="/mcp-server/connect/claude">
+    Counsellors, teachers and managers connect their AI app and sign in with their own account. Counsellors: read [this 3-minute page](/mcp-server/for-counsellors) first.
+  </Card>
+  <Card title="Technical teams" icon="terminal" href="/mcp-server/connect/claude-code">
+    Wire up Claude Code, Cursor or VS Code, or any other app that speaks MCP.
+  </Card>
+</CardGroup>
+
+## What it can do
+
+Your admin chooses, area by area, whether AI apps can only **view** or also **make changes**.
+
+| Area | What the AI app can do |
+| :--- | :--- |
+| Who is connected | Know your name and your institute's name, logo and terminology. Always on. |
+| Institute stats | Read the institute profile, outstanding fees, classes live now and learner counts. |
+| Website | Read pages and traffic. Build and edit pages as drafts. Optionally publish. |
+| Lead forms | Read lead campaigns and their leads. Create campaigns and add form fields. |
+| Automations | Read workflows and their runs. Draft new workflows and message templates. |
+| Blog | Read posts. Write new posts as drafts. |
+| Courses | Read course content, drip rules and invite links. Build draft courses. |
+| Learners | Find learners. Optionally enrol them or edit their details. |
+| Progress reports | Read the data behind a learner's progress report, so the AI app can write it. |
+| CRM | Leads, calls, meetings, messages and CRM reports, for institutes that use the CRM. |
+
+See the [tool catalogue](/mcp-server/tools/catalogue) for the full list.
+
+## What stays safe
+
+- **Each person signs in as themselves.** A connection always acts as the person who approved it, inside your institute only. The AI app cannot switch to another person or another institute.
+- **You decide what each role can reach.** In **Settings → MCP Server**, an admin sets every area to Off, View or Edit, for everyone or per role.
+- **The CRM follows your lead visibility.** A counsellor who sees only their own leads in the CRM sees only those leads in their AI app.
+- **Staff only.** Learners and parents can never connect, whatever the settings say.
+- **Off until you turn it on.** Nothing is reachable until an admin turns the server on. Switching it on pre-selects most areas, which you review before saving. See [Turn on the server](/mcp-server/settings/enable-the-server).
+- **Changes are previewed.** Most edits save drafts that you publish yourself. Edits that are turned on separately and go live, and anything that calls or messages a person, show a preview first and run only after you say yes in the chat. One exception: invite-link and enrolment-form edits in Courses, and a course's images or intro video, apply at once. See [Risk levels](/mcp-server/settings/risk-levels) and [Confirmations](/mcp-server/usage/confirmations).
+- **Every call is logged.** Admins can revoke any connection at any time.
+
+## What it costs
+
+Reading data and building drafts does **not** use your institute's AI credits. The thinking is done by your AI app, under your own Claude, ChatGPT or Cursor plan.
+
+Some CRM actions start real work, such as placing an AI call. Those can use calling or messaging credits, the same as in your admin portal. The preview tells you before anything is spent.
+
+<Warning>
+Whatever the AI app reads is sent to that AI provider (for example Anthropic or OpenAI) and handled under their terms. This can include names, phone numbers and notes. Use a business or enterprise plan with your AI provider where you can. See [Data and privacy](/mcp-server/security/data-and-pii).
+</Warning>
+
+## Your brand
+
+Vacademy is used by many institutes under their own brand. When you connect, you sign in on **your institute's own admin portal**. The approval page shows your institute's name and brand. In your AI app, give the connection your institute's name when you add it.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/mcp-server/quickstart">
+    Turn it on and run your first prompt in about five minutes.
+  </Card>
+  <Card title="How it works" icon="diagram-project" href="/mcp-server/how-it-works">
+    Sign-in, the three access checks, and what the AI app can see.
+  </Card>
+  <Card title="Connect your AI app" icon="plug" href="/mcp-server/connect/claude">
+    Step-by-step for Claude, ChatGPT, Cursor, Claude Code and VS Code.
+  </Card>
+  <Card title="Security" icon="shield-check" href="/mcp-server/security/overview">
+    How access, data and logging work.
+  </Card>
+</CardGroup>

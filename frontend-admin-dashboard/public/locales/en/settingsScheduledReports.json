@@ -1,0 +1,147 @@
+{
+    "page": {
+        "title": "Scheduled Reports",
+        "description": "Send institute activity to your team on a schedule, instead of waiting for someone to come and look.",
+        "save": "Save",
+        "saving": "Saving…"
+    },
+    "toggles": {
+        "enable": {
+            "label": "Enable scheduled reports",
+            "description": "When off, nothing is generated and nothing is charged."
+        },
+        "timezone": {
+            "label": "Timezone",
+            "description": "Report days and windows are worked out in this timezone."
+        },
+        "skip": {
+            "label": "Skip when there is nothing to report",
+            "description": "Recommended. Otherwise a quiet week still sends an empty report."
+        }
+    },
+    "defaultNames": {
+        "daily": "Daily digest",
+        "weekly": "Weekly digest",
+        "monthly": "Monthly digest"
+    },
+    "schedule": {
+        "remove": "Remove",
+        "sectionsLabel": "Sections",
+        "namesLearnersBadge": "names learners",
+        "noDataBadge": "no data in the last 30 days",
+        "sectionsError": "Could not load the available sections. Refresh to try again — this is not the same as having no data.",
+        "sectionsLoading": "Checking which sections have data…",
+        "noSectionsAvailable": "No section has data for this institute yet.",
+        "hourSuffix": "hour ({{timezone}})",
+        "checkReports": "Check how many reports",
+        "previewButton": "Preview",
+        "building": "Building…",
+        "sendNow": "Send now",
+        "sendToLabel": "Send to"
+    },
+    "frequency": {
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "monthly": "Monthly"
+    },
+    "days": {
+        "MON": "MON",
+        "TUE": "TUE",
+        "WED": "WED",
+        "THU": "THU",
+        "FRI": "FRI",
+        "SAT": "SAT",
+        "SUN": "SUN"
+    },
+    "scopes": {
+        "INSTITUTE": "Whole institute",
+        "BATCH": "Per batch",
+        "SUBJECT": "Per subject",
+        "FACULTY": "Per faculty"
+    },
+    "roles": {
+        "ADMIN": "ADMIN",
+        "TEACHER": "TEACHER",
+        "EVALUATOR": "EVALUATOR"
+    },
+    "preview": {
+        "reportsPerRun_one": "report per run ×",
+        "reportsPerRun_other": "reports per run ×",
+        "runsEqualsMonth": "runs =",
+        "aMonth": "a month.",
+        "exceedsCap": "That is above the {{max}}-per-run limit and will not run. Narrow the scope.",
+        "freeNoAi": "Free — no AI analysis on this schedule.",
+        "creditsPerReport": "credits per report",
+        "perRun": "per run,",
+        "aMonthAiAnalysis": "a month for the AI analysis. The report itself is free; recipients are free; scope is what multiplies.",
+        "exampleLabel": "e.g."
+    },
+    "ai": {
+        "label": "Add AI analysis",
+        "badge": "2 credits per report",
+        "description": "Reads the figures below and writes what to do about them — what to fix, who to reach, what learners are asking for. The report itself is free; only this is charged, and only when an analysis is actually produced."
+    },
+    "creditCap": {
+        "prefix": "Refuse a run costing more than",
+        "placeholder": "no cap",
+        "suffix": "credits"
+    },
+    "recipients": {
+        "helperText": "Only people with an account can receive these — reports can name learners, so there is no free-text email option. Teachers are automatically limited to their own batches."
+    },
+    "addSchedule": "Add a schedule",
+    "history": {
+        "title": "Recent reports",
+        "loadError": "Could not load delivery history.",
+        "empty": "Nothing sent yet. Reports appear here once a schedule runs.",
+        "columns": {
+            "when": "When",
+            "report": "Report",
+            "status": "Status",
+            "recipients": "Recipients",
+            "learnersNamed": "Learners named",
+            "whoReceivedIt": "Who received it"
+        },
+        "statusWithSkipReason": "{{status}} — {{skipReason}}"
+    },
+    "whoReceivedDialog": {
+        "heading": "Who received it",
+        "instituteReportFallback": "Institute report",
+        "loading": "Loading…",
+        "emptyState": "Nobody received this run. If it was skipped, the reason is above.",
+        "noEmail": "(no email on file)",
+        "unknownRole": "unknown role",
+        "delivered": "delivered",
+        "notDelivered": "not delivered",
+        "namedLearners_one": "{{count}} learner named",
+        "namedLearners_other": "{{count}} learners named"
+    },
+    "reportPreviewDialog": {
+        "heading": "Report preview",
+        "iframeTitle": "Report preview",
+        "subtitle": "Exactly what you would receive. Nothing has been sent and nothing has been charged.",
+        "openInNewTab": "Open in new tab",
+        "downloadHtml": "Download HTML",
+        "nothingToSend": "Nothing would be sent for this schedule."
+    },
+    "toasts": {
+        "previewScopeError": "Could not work out how many reports this would create",
+        "previewBuildError": "Could not build the preview",
+        "sendError": "Could not send the report",
+        "saveSuccess": "Scheduled reports saved",
+        "saveError": "Could not save scheduled reports",
+        "recipientsLoadError": "Could not load the recipient list for this run.",
+        "popupBlocked": "Allow pop-ups to open the preview in a new tab."
+    },
+    "confirmSend": {
+        "message": "Send \"{{name}}\" now to {{who}}?\n\nThis sends real email, charges credits, and cannot be recalled. Use Preview if you only want to see it.",
+        "roleAudience": "everyone with the {{roles}} role",
+        "selectedAudience_one": "{{count}} selected recipient",
+        "selectedAudience_other": "{{count}} selected recipients"
+    },
+    "validation": {
+        "exceedsCap": "\"{{name}}\" would create {{documentsPerRun}} reports per run, above the {{max}} limit. Narrow the scope first.",
+        "noSections": "\"{{name}}\" has no sections selected.",
+        "noRecipients": "\"{{name}}\" has no recipients."
+    }
+}

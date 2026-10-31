@@ -4,7 +4,12 @@ import { cn } from "@/lib/utils";
 import { ProgressRing } from "./ProgressRing";
 import heroGreeting from "@/assets/cleaner-play/hero-greeting.webp";
 import { SessionDetails } from "@/routes/study-library/live-class/-types/types";
-import { useDashboardHeroData } from "./useDashboardHeroData";
+import {
+  streakCountdown,
+  streakPrompt,
+  useDashboardHeroData,
+  type DailyTaskProgress,
+} from "./useDashboardHeroData";
 
 export interface PlayDashboardHeroProps {
   userName: string | null;
@@ -13,6 +18,10 @@ export interface PlayDashboardHeroProps {
   hasAnyProgress: boolean;
   studyLibraryLoaded: boolean;
   onJoinSession: (session: SessionDetails) => void;
+  /** The institute's gamification flag. Off hides the streak and the points goal. */
+  showGamification?: boolean;
+  /** Today's daily tasks while a plan runs; the goal ring then tracks them. */
+  taskProgress?: DailyTaskProgress | null;
 }
 
 /** Playful pulsing placeholder shown while the study library loads. */
@@ -38,6 +47,7 @@ function HeroSkeleton(): JSX.Element {
 
 export function PlayDashboardHero(props: PlayDashboardHeroProps): JSX.Element {
   const { t } = useTranslation("dashboard");
+  const { t: tE } = useTranslation("dashboardEngagement");
   const {
     userName,
     liveSessions,
@@ -45,19 +55,36 @@ export function PlayDashboardHero(props: PlayDashboardHeroProps): JSX.Element {
     hasAnyProgress,
     studyLibraryLoaded,
     onJoinSession,
+    showGamification = true,
+    taskProgress = null,
   } = props;
 
   const {
     greeting,
     streak,
+    streakState,
     goalPercent,
+    taskProgress: goalTasks,
     resume,
     imminent,
     liveClassTerm,
     isContinue,
     ctaCaption,
     goToCta,
-  } = useDashboardHeroData({ userName, liveSessions, hasAnyProgress });
+  } = useDashboardHeroData({
+    userName,
+    liveSessions,
+    hasAnyProgress,
+    showGamification,
+    taskProgress,
+  });
+  const prompt = showGamification && streakState.status === "atRisk"
+    ? streakPrompt(streakState, tE)
+    : null;
+  const countdown = showGamification ? streakCountdown(streakState, tE) : null;
+  // The goal ring is shown when it measures tasks (a plan runs) or, with
+  // gamification on, today's points.
+  const showGoal = Boolean(goalTasks) || showGamification;
 
   const ctaLabel = isContinue ? t("hero.ctaContinueUpper") : t("hero.ctaStartUpper");
 
@@ -66,7 +93,7 @@ export function PlayDashboardHero(props: PlayDashboardHeroProps): JSX.Element {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-stack">
       {/* Live / imminent class banner */}
       {isLoadingLive ? (
         <div className="h-11 w-full max-w-md animate-pulse self-start rounded-full bg-play-surface" />
@@ -122,33 +149,60 @@ export function PlayDashboardHero(props: PlayDashboardHeroProps): JSX.Element {
             <div className="min-w-0">
               <h1 className="text-h2 font-bold text-play-ink">{greeting}!</h1>
               <div className="mt-2.5 flex flex-wrap items-center gap-2">
-                {/* Streak flame chip */}
-                <span className="inline-flex h-11 items-center gap-1.5 rounded-full bg-white px-3 shadow-play-soft">
-                  <Fire
-                    weight="fill"
-                    size={20}
-                    className={streak > 0 ? "text-play-warn" : "text-play-muted"}
-                  />
-                  <span className="text-body font-black tabular-nums text-play-ink">
-                    {streak}
+                {/* Streak flame chip: the server streak, with its kept /
+                    at-risk / zero states (filled, outlined, muted flame). */}
+                {showGamification && (
+                  <span className="inline-flex h-11 items-center gap-1.5 rounded-full bg-white px-3 shadow-play-soft">
+                    <Fire
+                      weight={streakState.status === "kept" ? "fill" : "regular"}
+                      size={20}
+                      className={streak > 0 ? "text-play-warn" : "text-play-muted"}
+                    />
+                    {streakState.status === "zero" ? (
+                      <span className="text-caption font-bold text-play-ink">
+                        {tE("streakStatus.start")}
+                      </span>
+                    ) : (
+                      <>
+                        <span className="text-body font-black tabular-nums text-play-ink">
+                          {streak}
+                        </span>
+                        <span className="text-caption font-bold text-play-ink">
+                          {t("hero.dayStreakChip")}
+                        </span>
+                      </>
+                    )}
                   </span>
-                  <span className="text-caption font-bold text-play-ink">
-                    {t("hero.dayStreakChip")}
+                )}
+                {/* Daily goal ring chip: today's tasks while a plan runs,
+                    else today's points. */}
+                {showGoal && (
+                  <span className="inline-flex h-11 items-center gap-2 rounded-full bg-white px-3 shadow-play-soft">
+                    <ProgressRing
+                      value={goalPercent}
+                      size={30}
+                      strokeWidth={5}
+                      showLabel={false}
+                    />
+                    <span className="text-caption font-bold tabular-nums text-play-ink">
+                      {goalTasks
+                        ? tE("heroGoal.tasks", {
+                            done: goalTasks.done,
+                            count: goalTasks.scheduled,
+                          })
+                        : t("hero.dailyGoal")}
+                    </span>
                   </span>
-                </span>
-                {/* Daily goal ring chip */}
-                <span className="inline-flex h-11 items-center gap-2 rounded-full bg-white px-3 shadow-play-soft">
-                  <ProgressRing
-                    value={goalPercent}
-                    size={30}
-                    strokeWidth={5}
-                    showLabel={false}
-                  />
-                  <span className="text-caption font-bold text-play-ink">
-                    {t("hero.dailyGoal")}
-                  </span>
-                </span>
+                )}
               </div>
+              {prompt && (
+                <p className="mt-2 text-caption font-bold text-play-warn-soft-ink">
+                  {prompt}
+                  {countdown && (
+                    <span className="font-black"> · {countdown}</span>
+                  )}
+                </p>
+              )}
             </div>
           </div>
 

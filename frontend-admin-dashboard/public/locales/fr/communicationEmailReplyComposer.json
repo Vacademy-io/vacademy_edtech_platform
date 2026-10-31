@@ -1,0 +1,19 @@
+{
+    "reply": "Répondre",
+    "loadingSenders": "Chargement des expéditeurs…",
+    "noSenderConfigured": "Aucun expéditeur configuré pour cet établissement. Ajoutez-en un dans Paramètres → Paramètres de notification → Paramètres e-mail pour activer les réponses.",
+    "from": "De",
+    "subject": "Objet",
+    "writeReplyPlaceholder": "Écrire une réponse…",
+    "sending": "Envoi en cours…",
+    "bodyEmpty": "Le message ne peut pas être vide",
+    "pickSender": "Choisissez un expéditeur",
+    "replySent": "Réponse envoyée",
+    "failedToSendReply": "Échec de l'envoi de la réponse",
+    "send": "Envoyer",
+    "discard": "Supprimer le brouillon",
+    "editSubject": "Modifier l'objet",
+    "noSubject": "(sans objet)",
+    "replyQueued": "Réponse en file d'attente — elle partira quand la limite d'envoi du jour sera réinitialisée",
+    "sendShortcut": "Envoyer (Ctrl/⌘ + Entrée)"
+}

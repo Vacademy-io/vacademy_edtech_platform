@@ -1,0 +1,29 @@
+{
+    "emptyHint": {
+        "default": "Aucune donnée sur cette période."
+    },
+    "skeleton": {
+        "ariaLabel": "Chargement du rapport"
+    },
+    "errorState": {
+        "deployPendingTitle": "Ce rapport nécessite la dernière version du backend — déploiement en attente",
+        "genericTitle": "Impossible de charger ce rapport",
+        "deployPendingBody": "Le point de terminaison de cet onglet n'est pas encore disponible sur cet environnement. Il s'activera automatiquement après le prochain déploiement du backend.",
+        "genericBody": "Une erreur s'est produite lors du chargement des données. Vérifiez votre connexion et réessayez.",
+        "retry": "Réessayer"
+    },
+    "export": {
+        "defaultLabel": "Exporter en CSV",
+        "dialogTitle": "Choisir les colonnes à exporter",
+        "selectAll": "Tout sélectionner",
+        "deselectAll": "Tout désélectionner",
+        "columnsSelected": "{{selected}} / {{total}} colonnes",
+        "cancel": "Annuler",
+        "export": "Exporter"
+    },
+    "breakdownBar": {
+        "converted_one": "({{count}} conv.)",
+        "converted_many": "({{count}} conv.)",
+        "converted_other": "({{count}} conv.)"
+    }
+}

@@ -1,0 +1,29 @@
+{
+    "header": {
+        "questionsSettings": "Questions Settings",
+        "questionTypeLabel": "Question Type",
+        "marksLabel": "Marks",
+        "negativeMarkingLabel": "Negative Marking"
+    },
+    "timeLimit": {
+        "title": "Time Limit",
+        "hrs": "hrs",
+        "min": "min"
+    },
+    "comprehensionText": "Comprehension Text",
+    "question": {
+        "label": "Question"
+    },
+    "answer": {
+        "label": "Answer:"
+    },
+    "explanation": {
+        "label": "Explanation:"
+    },
+    "optionLabels": {
+        "a": "(a.)",
+        "b": "(b.)",
+        "c": "(c.)",
+        "d": "(d.)"
+    }
+}

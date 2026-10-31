@@ -1,0 +1,30 @@
+{
+    "dialogs": {
+        "attentionLabel": "ध्यान दें",
+        "yes": "हां",
+        "provideReattempt": {
+            "title": "पुनः प्रयास प्रदान करें",
+            "confirmMessagePrefix": "क्या आप वाकई निम्न को पुनः प्रयास का अवसर प्रदान करना चाहते हैं"
+        },
+        "releaseResult": {
+            "title": "परिणाम जारी करें",
+            "confirmMessagePrefix": "क्या आप वाकई निम्न के लिए परिणाम जारी करना चाहते हैं"
+        },
+        "revaluateEntireAssessment": {
+            "title": "संपूर्ण मूल्यांकन का पुनर्मूल्यांकन करें",
+            "confirmMessagePrefix": "क्या आप वाकई निम्न के लिए पुनर्मूल्यांकन करना चाहते हैं",
+            "confirmMessageSuffix": "संपूर्ण मूल्यांकन के लिए?"
+        }
+    },
+    "dropdown": {
+        "provideReattempt": "पुनः प्रयास प्रदान करें",
+        "revaluate": "पुनर्मूल्यांकन करें",
+        "questionWise": "प्रश्न के अनुसार",
+        "entireAssessment": "संपूर्ण मूल्यांकन",
+        "releaseResult": "परिणाम जारी करें"
+    },
+    "toasts": {
+        "releaseResultSuccess": "इस मूल्यांकन के लिए आपके प्रयास का पुनर्मूल्यांकन कर दिया गया है। कृपया अपना ईमेल जांचें!",
+        "revaluateSuccess": "इस मूल्यांकन के लिए आपके प्रयास का पुनर्मूल्यांकन कर दिया गया है। कृपया अपना ईमेल जांचें!"
+    }
+}

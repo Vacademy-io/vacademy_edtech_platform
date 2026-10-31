@@ -1,0 +1,15 @@
+{
+    "heading": {
+        "uploadResponse": "نتيجة الرفع",
+        "previewData": "معاينة البيانات"
+    },
+    "buttons": {
+        "close": "إغلاق",
+        "done": "تم"
+    },
+    "error": {
+        "uploadFailed": "فشل الرفع",
+        "checkDetails": "تحقق من تفاصيل الخطأ لمزيد من المعلومات",
+        "unknownError": "خطأ غير معروف"
+    }
+}

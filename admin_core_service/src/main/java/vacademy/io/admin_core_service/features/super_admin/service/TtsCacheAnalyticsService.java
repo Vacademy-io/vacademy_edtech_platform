@@ -189,9 +189,36 @@ public class TtsCacheAnalyticsService {
                 ORDER BY COALESCE(sum(e.hits), 0) DESC
                 """).setParameter("inst", blank(instituteId)).getResultList();
 
+        // Last 7 days per agent, from what the calls measured.
+        Map<String, Object[]> week = new java.util.HashMap<>();
+        for (Object[] w : (List<Object[]>) em.createNativeQuery("""
+                SELECT r.campaign_id, max(a.tts_model), count(*),
+                       COALESCE(sum(CAST(NULLIF(r.diagnostics->'tts'->>'cacheHits', '') AS bigint)), 0),
+                       COALESCE(sum(CAST(NULLIF(r.diagnostics->'tts'->>'cacheMisses', '') AS bigint)), 0),
+                       COALESCE(sum(CAST(NULLIF(r.diagnostics->'tts'->>'cacheCharsSaved', '') AS bigint)), 0),
+                       COALESCE(sum(CAST(NULLIF(r.diagnostics->'tts'->>'chars', '') AS bigint)), 0)
+                FROM ai_call_result r
+                JOIN ai_agent a ON a.id = r.campaign_id
+                WHERE r.diagnostics IS NOT NULL AND r.created_at >= now() - interval '7 days'
+                  AND (CAST(:inst AS text) IS NULL OR r.institute_id = CAST(:inst AS text))
+                GROUP BY r.campaign_id
+                """).setParameter("inst", blank(instituteId)).getResultList()) {
+            week.put((String) w[0], w);
+        }
         List<TtsCacheDTOs.Agent> out = new ArrayList<>();
         for (Object[] r : rows) {
             String engine = (String) r[4];
+            Object[] w = week.get((String) r[0]);
+            Long calls7 = w == null ? null : num(w[2]).longValue();
+            Double hitRate7 = null, charShare7 = null, inr7 = null, inrPerCall7 = null;
+            if (w != null) {
+                long h = num(w[3]).longValue(), m = num(w[4]).longValue();
+                long saved = num(w[5]).longValue(), vendor = num(w[6]).longValue();
+                hitRate7 = h + m > 0 ? round((double) h / (h + m) * 100) : null;
+                charShare7 = saved + vendor > 0 ? round((double) saved / (saved + vendor) * 100) : null;
+                inr7 = inrFor(card, (String) w[1], saved);
+                inrPerCall7 = inr7 != null && calls7 > 0 ? round(inr7 / calls7) : null;
+            }
             long hits = num(r[11]).longValue();
             long sightings = num(r[12]).longValue();
             long charsSaved = num(r[13]).longValue();
@@ -209,9 +236,64 @@ public class TtsCacheAnalyticsService {
                     .charsSaved(charsSaved)
                     .inrSaved(inrFor(card, engine, charsSaved))
                     .lastHitAt(date(r[14])).reportedAt(date(r[15]))
+                    .calls7d(calls7).hitRate7d(hitRate7).charShare7d(charShare7)
+                    .inrSaved7d(inr7).inrSavedPerCall7d(inrPerCall7)
                     .build());
         }
         return out;
+    }
+
+    // ── the switch: every agent's speech-cache tier ─────────────────────────
+
+    private static final java.util.Set<String> MODES = java.util.Set.of("OFF", "FIXED", "FULL");
+
+    /** Every AI agent with its tier — including agents that never cached, so
+     *  an OFF agent can be switched on from the portal. */
+    @Transactional(readOnly = true)
+    public List<TtsCacheDTOs.AgentMode> agentModes(String instituteId) {
+        List<Object[]> rows = em.createNativeQuery("""
+                SELECT a.id, a.name, a.institute_id, i.name, a.tts_model, a.voice,
+                       COALESCE(a.speech_cache_mode, 'OFF'), a.updated_at
+                FROM ai_agent a
+                LEFT JOIN institutes i ON i.id = a.institute_id
+                WHERE (CAST(:inst AS text) IS NULL OR a.institute_id = CAST(:inst AS text))
+                ORDER BY i.name NULLS LAST, a.name
+                """).setParameter("inst", blank(instituteId)).getResultList();
+        List<TtsCacheDTOs.AgentMode> out = new ArrayList<>();
+        for (Object[] r : rows) {
+            out.add(TtsCacheDTOs.AgentMode.builder()
+                    .agentId((String) r[0]).agentName((String) r[1])
+                    .instituteId((String) r[2]).instituteName((String) r[3])
+                    .ttsModel((String) r[4]).voice((String) r[5])
+                    .speechCacheMode((String) r[6]).updatedAt(date(r[7]))
+                    .build());
+        }
+        return out;
+    }
+
+    /**
+     * Set one agent's speech-cache tier. The bot reads it at the start of every
+     * call, so it takes effect on the next call — no restart, no deploy. Until
+     * this existed the only way was SQL on the primary.
+     */
+    @Transactional
+    public TtsCacheDTOs.ModeChange setMode(String agentId, String mode, String userId) {
+        String m = mode == null ? "" : mode.trim().toUpperCase();
+        if (!MODES.contains(m)) {
+            throw new IllegalArgumentException("speech cache mode must be OFF, FIXED or FULL, got " + mode);
+        }
+        List<?> prev = em.createNativeQuery(
+                "SELECT COALESCE(speech_cache_mode, 'OFF') FROM ai_agent WHERE id = :id")
+                .setParameter("id", agentId).getResultList();
+        if (prev.isEmpty()) {
+            throw new IllegalArgumentException("no AI agent " + agentId);
+        }
+        em.createNativeQuery("UPDATE ai_agent SET speech_cache_mode = :m, updated_at = now() WHERE id = :id")
+                .setParameter("m", m).setParameter("id", agentId).executeUpdate();
+        log.info("tts-cache: agent {} speech cache {} -> {} by super-admin {}",
+                agentId, prev.get(0), m, userId);
+        return TtsCacheDTOs.ModeChange.builder()
+                .agentId(agentId).previousMode((String) prev.get(0)).speechCacheMode(m).build();
     }
 
     // ── screen 2: the sentences ─────────────────────────────────────────────
@@ -247,17 +329,26 @@ public class TtsCacheAnalyticsService {
     @Transactional(readOnly = true)
     @SuppressWarnings("unchecked")
     public TtsCacheDTOs.Page<TtsCacheDTOs.Entry> misses(String agentId, int page, int size) {
+        return misses(agentId, page, size, null);
+    }
+
+    /** @param days only sentences said in the last {@code days} days — the weekly review — or all when null. */
+    @Transactional(readOnly = true)
+    @SuppressWarnings("unchecked")
+    public TtsCacheDTOs.Page<TtsCacheDTOs.Entry> misses(String agentId, int page, int size, Integer days) {
         Map<String, Double> card = callService.rateCard();
         String where = """
                 FROM tts_cache_entry e
                 WHERE e.agent_id = :a AND NOT e.rendered
+                  AND (CAST(:d AS integer) IS NULL
+                       OR e.last_seen_at >= now() - CAST(:d AS integer) * interval '1 day')
                 """;
         Query sel = em.createNativeQuery("""
                 SELECT e.cache_key, e.sentence, e.chars, e.is_fixed, e.engine, e.voice,
                        e.sightings, e.hits, e.rendered, e.bytes, e.duration_ms,
                        e.first_seen_at, e.last_seen_at, e.last_hit_at
                 """ + where + " ORDER BY e.sightings * e.chars DESC OFFSET :off LIMIT :lim");
-        sel.setParameter("a", agentId).setParameter("off", (long) page * size)
+        sel.setParameter("a", agentId).setParameter("d", days).setParameter("off", (long) page * size)
                 .setParameter("lim", size);
         List<TtsCacheDTOs.Entry> content = new ArrayList<>();
         for (Object[] r : (List<Object[]>) sel.getResultList()) {
@@ -279,10 +370,116 @@ public class TtsCacheAnalyticsService {
             content.add(entryOf(r, reason, wasted));
         }
         Query cnt = em.createNativeQuery("SELECT count(*) " + where);
-        cnt.setParameter("a", agentId);
+        cnt.setParameter("a", agentId).setParameter("d", days);
         long total = num(cnt.getSingleResult()).longValue();
         return TtsCacheDTOs.Page.<TtsCacheDTOs.Entry>builder()
                 .content(content).totalElements(total).page(page).pageSize(size).build();
+    }
+
+    // ── screen 3b: the trend — is the cache paying, and did a prompt edit reset it ──
+
+    /**
+     * Per-day hit rate and rupees saved for one agent, from what each call MEASURED
+     * (diagnostics.tts: cacheHits / cacheMisses / cacheCharsSaved / chars), not from
+     * the ledger's lifetime counters. A prompt change shows up here as a dip: its
+     * new lines have to be warmed or relearned before they hit.
+     */
+    @Transactional(readOnly = true)
+    @SuppressWarnings("unchecked")
+    public List<TtsCacheDTOs.TrendDay> trend(String agentId, int days) {
+        Map<String, Double> card = callService.rateCard();
+        List<?> model = em.createNativeQuery("SELECT tts_model FROM ai_agent WHERE id = :a")
+                .setParameter("a", agentId).getResultList();
+        String engine = model.isEmpty() ? null : (String) model.get(0);
+        List<Object[]> rows = em.createNativeQuery("""
+                SELECT to_char(r.created_at + interval '5 hours 30 minutes', 'YYYY-MM-DD') AS d,
+                       count(*),
+                       COALESCE(sum(CAST(NULLIF(r.diagnostics->'tts'->>'cacheHits', '') AS bigint)), 0),
+                       COALESCE(sum(CAST(NULLIF(r.diagnostics->'tts'->>'cacheMisses', '') AS bigint)), 0),
+                       COALESCE(sum(CAST(NULLIF(r.diagnostics->'tts'->>'cacheCharsSaved', '') AS bigint)), 0),
+                       COALESCE(sum(CAST(NULLIF(r.diagnostics->'tts'->>'chars', '') AS bigint)), 0)
+                FROM ai_call_result r
+                WHERE r.campaign_id = :a AND r.diagnostics IS NOT NULL
+                  AND r.created_at >= now() - CAST(:d AS integer) * interval '1 day'
+                GROUP BY 1 ORDER BY 1
+                """).setParameter("a", agentId).setParameter("d", days).getResultList();
+        List<TtsCacheDTOs.TrendDay> out = new ArrayList<>();
+        for (Object[] r : rows) {
+            long calls = num(r[1]).longValue();
+            long hits = num(r[2]).longValue();
+            long misses = num(r[3]).longValue();
+            long saved = num(r[4]).longValue();
+            long vendor = num(r[5]).longValue();
+            Double inr = inrFor(card, engine, saved);
+            out.add(TtsCacheDTOs.TrendDay.builder()
+                    .day((String) r[0]).calls(calls).cacheHits(hits).cacheMisses(misses)
+                    .hitRate(hits + misses > 0 ? round((double) hits / (hits + misses) * 100) : null)
+                    .charShare(saved + vendor > 0 ? round((double) saved / (saved + vendor) * 100) : null)
+                    .charsSaved(saved).vendorChars(vendor)
+                    .inrSaved(inr)
+                    .inrSavedPerCall(inr != null && calls > 0 ? round(inr / calls) : null)
+                    .build());
+        }
+        return out;
+    }
+
+    // ── screen 3c: one line, several cache entries ──────────────────────────
+
+    /**
+     * Sentences that differ only by punctuation, spacing or an address word
+     * (सर/मैम/जी) are separate cache entries — the key is an exact hash — so each
+     * form is learned and paid for on its own. Grouped here so the prompt can pin
+     * ONE form. Measured on Shreya's week: merging them is worth ~3 points of
+     * cacheable characters, so this is a clean-up list, not the main lever.
+     */
+    @Transactional(readOnly = true)
+    @SuppressWarnings("unchecked")
+    public List<TtsCacheDTOs.VariantGroup> variants(String agentId, int days) {
+        Map<String, Double> card = callService.rateCard();
+        List<Object[]> rows = em.createNativeQuery("""
+                SELECT e.cache_key, e.sentence, e.chars, e.is_fixed, e.engine, e.voice,
+                       e.sightings, e.hits, e.rendered, e.bytes, e.duration_ms,
+                       e.first_seen_at, e.last_seen_at, e.last_hit_at
+                FROM tts_cache_entry e
+                WHERE e.agent_id = :a
+                  AND e.last_seen_at >= now() - CAST(:d AS integer) * interval '1 day'
+                ORDER BY e.sightings DESC
+                LIMIT 5000
+                """).setParameter("a", agentId).setParameter("d", days).getResultList();
+        Map<String, List<Object[]>> groups = new LinkedHashMap<>();
+        for (Object[] r : rows) {
+            String k = canonicalLine((String) r[1]);
+            if (k.length() >= 8) groups.computeIfAbsent(k, x -> new ArrayList<>()).add(r);
+        }
+        List<TtsCacheDTOs.VariantGroup> out = new ArrayList<>();
+        for (List<Object[]> g : groups.values()) {
+            if (g.size() < 2) continue;
+            long total = 0;
+            for (Object[] r : g) total += num(r[6]).longValue();
+            Object[] top = g.get(0);                      // rows arrive most-said first
+            long split = total - num(top[6]).longValue();
+            long splitChars = 0;
+            for (int i = 1; i < g.size(); i++) {
+                splitChars += num(g.get(i)[6]).longValue() * num(g.get(i)[2]).longValue();
+            }
+            List<TtsCacheDTOs.Entry> vs = new ArrayList<>();
+            for (Object[] r : g) vs.add(entryOf(r, null, null));
+            out.add(TtsCacheDTOs.VariantGroup.builder()
+                    .canonical((String) top[1]).totalSightings(total).splitSightings(split)
+                    .inrLost(inrFor(card, (String) top[4], splitChars))
+                    .variants(vs).build());
+        }
+        out.sort((a, b) -> Long.compare(b.getSplitSightings(), a.getSplitSightings()));
+        return out.size() > 100 ? out.subList(0, 100) : out;
+    }
+
+    /** Punctuation, spacing, case and address words removed — the sentence as spoken content. */
+    static String canonicalLine(String s) {
+        if (s == null) return "";
+        String t = s.toLowerCase(java.util.Locale.ROOT)
+                .replaceAll("[\\p{Punct}।॥…“”‘’—–]+", " ");
+        t = (" " + t + " ").replaceAll("\\s(सर|मैम|मैडम|जी|sir|ma'am|madam)(?=\\s)", " ");
+        return t.replaceAll("\\s+", " ").trim();
     }
 
     // ── screen 4: flush ─────────────────────────────────────────────────────

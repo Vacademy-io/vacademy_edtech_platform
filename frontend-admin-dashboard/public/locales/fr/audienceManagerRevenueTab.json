@@ -1,0 +1,35 @@
+{
+    "column": {
+        "revenue": "Encaissé",
+        "admissions": "Inscriptions",
+        "bookedRevenue": "Frais réservés",
+        "payingLeads": "Prospects payants",
+        "payments": "Paiements",
+        "avgDealValue": "Valeur moyenne de la transaction",
+        "source": "Source",
+        "counsellor": "Conseiller"
+    },
+    "kpi": {
+        "revenueSub": "Perçu sur les prospects convertis",
+        "admissionsSub": "Prospects convertis inscrits sur la période",
+        "bookedRevenueSub": "Frais complets de ces inscriptions, payés ou non"
+    },
+    "dailyRevenue": {
+        "title": "Revenu quotidien",
+        "barTooltip_one": "{{date}} : {{amount}} ({{count}} paiement)",
+        "barTooltip_many": "{{date}} : {{amount}} ({{count}} paiements)",
+        "barTooltip_other": "{{date}} : {{amount}} ({{count}} paiements)",
+        "footnote": "Le revenu est comptabilisé à la date de paiement pour les prospects dont le profil est converti."
+    },
+    "bySource": {
+        "title": "Revenu par source"
+    },
+    "byCounsellor": {
+        "title": "Revenu par conseiller",
+        "footnote": "Les inscriptions et les frais réservés suivent la date d'inscription ; l'encaissé suit la date de paiement et inclut donc aussi les échéances d'inscriptions antérieures."
+    },
+    "empty": {
+        "noRevenue": "Aucun revenu sur cette période.",
+        "noCounsellorRevenue": "Aucun revenu attribué à un conseiller sur cette période."
+    }
+}

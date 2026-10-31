@@ -1,0 +1,84 @@
+{
+    "dialogTitle": "Remove from {{term}}",
+    "config": {
+        "removePrompt": "Remove <strong>{{name}}</strong> from selected courses.",
+        "noCourses": "No courses to de-assign",
+        "unnamedCourse": "Unnamed Course",
+        "removalMode": "Removal Mode",
+        "softCancel": {
+            "label": "Soft Cancel",
+            "description": "— Access continues until plan expires. Status → CANCELED"
+        },
+        "lastAccessDate": {
+            "label": "Last access date",
+            "ariaLabel": "Last access date",
+            "pickAriaLabel": "Pick last access date from calendar",
+            "hintSelected": "Access ends on the selected date.",
+            "hintDefaultWithDate": "Leave empty to keep access until the plan's own expiry — {{date}}.",
+            "hintDefaultNoDate": "Leave empty to keep access until the plan's own expiry.",
+            "reset": "Reset to plan expiry"
+        },
+        "hardTerminate": {
+            "label": "Hard Terminate",
+            "description": "— Immediate access revocation. Status → TERMINATED",
+            "cannotUndo": "⚠ Cannot be undone"
+        },
+        "reason": {
+            "label": "Reason for termination",
+            "optional": "(optional)",
+            "placeholder": "Why is this learner being terminated?"
+        },
+        "deletePaymentHistory": {
+            "label": "Also delete payment history",
+            "description": "Permanently removes this course's payments, installments, invoices and fee plan, so they no longer show in Payment History, Manage Payments or reports. Online (gateway) payments cannot be deleted.",
+            "warning": "Collected amounts in past reports will go down. This cannot be undone."
+        },
+        "notifyLearners": "Notify learner about removal"
+    },
+    "preview": {
+        "title": "Preview — Dry Run Results",
+        "reason": "Reason:",
+        "willBeRemoved_one": "{{count}} will be removed",
+        "willBeRemoved_other": "{{count}} will be removed",
+        "skipped_one": "{{count}} skipped",
+        "skipped_other": "{{count}} skipped",
+        "failed_one": "{{count}} failed",
+        "failed_other": "{{count}} failed",
+        "tableHeaders": {
+            "course": "Course",
+            "action": "Action",
+            "status": "Status"
+        }
+    },
+    "results": {
+        "title": "De-assignment Complete",
+        "removed_one": "{{count}} removed",
+        "removed_other": "{{count}} removed",
+        "skipped_one": "{{count}} skipped",
+        "skipped_other": "{{count}} skipped",
+        "failed_one": "{{count}} failed",
+        "failed_other": "{{count}} failed",
+        "tableHeaders": {
+            "course": "Course",
+            "status": "Status",
+            "message": "Message"
+        }
+    },
+    "footer": {
+        "cancel": "Cancel",
+        "loading": "Loading...",
+        "previewButton_one": "Preview ({{count}} course)",
+        "previewButton_other": "Preview ({{count}} courses)",
+        "back": "← Back",
+        "removing": "Removing...",
+        "confirmRemoval": "✓ Confirm Removal",
+        "done": "Done"
+    },
+    "toasts": {
+        "previewFailed": "Preview failed",
+        "deassignFailed": "De-assignment failed",
+        "deassignSuccess_one": "{{count}} course de-assigned successfully!",
+        "deassignSuccess_other": "{{count}} courses de-assigned successfully!",
+        "deassignPartial": "{{successful}} removed, {{failed}} failed."
+    }
+}

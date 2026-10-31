@@ -1,0 +1,7 @@
+{
+    "selectedCount": "{{count}} sélectionné(s)",
+    "search": {
+        "placeholder": "Rechercher {{label}}...",
+        "noResults": "Aucun résultat trouvé."
+    }
+}

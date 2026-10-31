@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import { ArrowCounterClockwise, ArrowLeft, CaretLeft, CaretRight, CurrencyInr, DownloadSimple, PencilSimple, Spinner, Wallet, WarningCircle, X } from '@phosphor-icons/react';
 import dayjs from 'dayjs';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { StudentFeePaymentRowDTO, StudentFeeDueDTO } from '@/types/manage-finances';
 import {
@@ -17,24 +19,26 @@ import { useTheme } from '@/providers/theme/theme-provider';
 import { InvoiceActionDialog } from './InvoiceActionDialog';
 import { AdjustmentDialog } from './AdjustmentDialog';
 import { cn } from '@/lib/utils';
+import { MyButton } from '@/components/design-system/button';
+import { StatStrip } from '@/components/shared/crm-enhance';
 
 const PAGE_SIZE = 10;
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 const STATUS_STYLES: Record<string, { bg: string; text: string; dot: string }> = {
-    PAID: { bg: 'bg-emerald-50', text: 'text-emerald-700', dot: 'bg-emerald-500' },
-    OVERDUE: { bg: 'bg-red-50', text: 'text-red-700', dot: 'bg-red-500' },
-    PARTIAL_PAID: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
-    PARTIAL: { bg: 'bg-amber-50', text: 'text-amber-700', dot: 'bg-amber-500' },
-    PENDING: { bg: 'bg-slate-100', text: 'text-slate-600', dot: 'bg-slate-400' },
+    PAID: { bg: 'bg-success-50', text: 'text-success-700', dot: 'bg-success-500' },
+    OVERDUE: { bg: 'bg-danger-50', text: 'text-danger-700', dot: 'bg-danger-500' },
+    PARTIAL_PAID: { bg: 'bg-warning-50', text: 'text-warning-700', dot: 'bg-warning-500' },
+    PARTIAL: { bg: 'bg-warning-50', text: 'text-warning-700', dot: 'bg-warning-500' },
+    PENDING: { bg: 'bg-neutral-100', text: 'text-neutral-600', dot: 'bg-neutral-400' },
 };
 
 function StatusPill({ status }: { status: string }) {
     const style = STATUS_STYLES[status] || STATUS_STYLES['PENDING']!;
     return (
         <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${style.bg} ${style.text}`}
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-caption font-semibold uppercase tracking-wide ${style.bg} ${style.text}`}
         >
             <span className={`inline-block h-1.5 w-1.5 rounded-full ${style.dot}`} />
             {status}
@@ -45,13 +49,45 @@ function StatusPill({ status }: { status: string }) {
 const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
 
-const FILTER_STATUS_CONFIG = [
-    { value: 'ALL', label: 'All', activeBg: 'bg-blue-100', activeText: 'text-blue-700', activeBorder: 'border-blue-300' },
-    { value: 'OVERDUE', label: 'Overdue', activeBg: 'bg-red-100', activeText: 'text-red-700', activeBorder: 'border-red-300' },
-    { value: 'PENDING', label: 'Due', activeBg: 'bg-orange-100', activeText: 'text-orange-700', activeBorder: 'border-orange-300' },
-    { value: 'PARTIAL_PAID', label: 'Partial', activeBg: 'bg-amber-100', activeText: 'text-amber-700', activeBorder: 'border-amber-300' },
-    { value: 'PAID', label: 'Paid', activeBg: 'bg-emerald-100', activeText: 'text-emerald-700', activeBorder: 'border-emerald-300' },
-];
+function buildFilterStatusConfig(t: TFunction) {
+    return [
+        {
+            value: 'ALL',
+            label: t('filters.all'),
+            activeBg: 'bg-primary-100',
+            activeText: 'text-primary-600',
+            activeBorder: 'border-primary-300',
+        },
+        {
+            value: 'OVERDUE',
+            label: t('filters.overdue'),
+            activeBg: 'bg-danger-100',
+            activeText: 'text-danger-700',
+            activeBorder: 'border-danger-300',
+        },
+        {
+            value: 'PENDING',
+            label: t('filters.due'),
+            activeBg: 'bg-warning-100',
+            activeText: 'text-warning-700',
+            activeBorder: 'border-warning-300',
+        },
+        {
+            value: 'PARTIAL_PAID',
+            label: t('filters.partial'),
+            activeBg: 'bg-warning-100',
+            activeText: 'text-warning-700',
+            activeBorder: 'border-warning-300',
+        },
+        {
+            value: 'PAID',
+            label: t('filters.paid'),
+            activeBg: 'bg-success-100',
+            activeText: 'text-success-700',
+            activeBorder: 'border-success-300',
+        },
+    ];
+}
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
@@ -66,8 +102,10 @@ export function InstallmentSelectionStep({
     onBack,
     onProceedToPayment,
 }: InstallmentSelectionStepProps) {
+    const { t } = useTranslation('financialManagementInstallmentSelectionStep');
     const { getPrimaryColorCode } = useTheme();
     const queryClient = useQueryClient();
+    const filterStatusConfig = useMemo(() => buildFilterStatusConfig(t), [t]);
 
     // Filters + pagination
     const [statusFilter, setStatusFilter] = useState('ALL');
@@ -168,9 +206,13 @@ export function InstallmentSelectionStep({
                 }
                 return next;
             });
-            toast.success(`Selected ${allMatching.content.filter((d) => d.status !== 'PAID').length} installments`);
+            toast.success(
+                t('toast.selectedInstallments', {
+                    count: allMatching.content.filter((d) => d.status !== 'PAID').length,
+                })
+            );
         } catch {
-            toast.error('Failed to select all');
+            toast.error(t('toast.selectAllFailed'));
         } finally {
             setIsSelectingAll(false);
         }
@@ -188,7 +230,7 @@ export function InstallmentSelectionStep({
             const data = await getReceiptUrlForInstallment(installmentId);
             window.open(data.download_url, '_blank');
         } catch {
-            toast.error('No receipt found for this installment');
+            toast.error(t('toast.noReceiptFound'));
         } finally {
             setDownloadingReceiptId(null);
         }
@@ -200,14 +242,14 @@ export function InstallmentSelectionStep({
         onSuccess: (data) => {
             if (data.download_url) {
                 window.open(data.download_url, '_blank');
-                toast.success('Invoice downloaded successfully');
+                toast.success(t('toast.invoiceDownloaded'));
                 setShowInvoiceDialog(false);
             } else {
-                toast.error('Invoice generated but download URL not available');
+                toast.error(t('toast.invoiceDownloadUrlMissing'));
             }
         },
         onError: (err: any) => {
-            toast.error(err?.response?.data?.error || err?.message || 'Failed to generate invoice');
+            toast.error(err?.response?.data?.error || err?.message || t('toast.invoiceGenerateFailed'));
         },
     });
 
@@ -217,15 +259,15 @@ export function InstallmentSelectionStep({
                 student.student_id,
                 Array.from(selectedIds)
             );
-            if (!data.download_url) throw new Error('Download URL not available');
+            if (!data.download_url) throw new Error(t('toast.invoiceDownloadUrlMissing'));
             await sendInvoiceEmail(email, student.student_name, data.download_url, getPrimaryColorCode());
         },
         onSuccess: () => {
-            toast.success('Invoice sent to email successfully');
+            toast.success(t('toast.invoiceEmailed'));
             setShowInvoiceDialog(false);
         },
         onError: (err: any) => {
-            toast.error(err?.response?.data?.error || err?.message || 'Failed to send invoice email');
+            toast.error(err?.response?.data?.error || err?.message || t('toast.invoiceEmailFailed'));
         },
     });
 
@@ -241,10 +283,10 @@ export function InstallmentSelectionStep({
 
     if (error) {
         return (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-8 text-center">
-                <p className="font-semibold text-red-800">Unable to load installments</p>
-                <p className="mt-2 text-sm text-red-600">
-                    {error instanceof Error ? error.message : 'Please try again.'}
+            <div className="rounded-xl border border-danger-200 bg-danger-50 p-8 text-center">
+                <p className="font-semibold text-danger-700">{t('errors.unableToLoad')}</p>
+                <p className="mt-2 text-sm text-danger-600">
+                    {error instanceof Error ? error.message : t('errors.tryAgain')}
                 </p>
             </div>
         );
@@ -255,30 +297,32 @@ export function InstallmentSelectionStep({
             {/* ── Top section ── */}
             <div className="space-y-4 mb-4">
                 {/* Header */}
-                <div className="flex items-center gap-4 bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                <div className="flex items-center gap-4 rounded-xl border border-neutral-100 bg-white p-4 shadow-sm">
                     <button
                         onClick={onBack}
-                        className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-blue-600 transition-colors"
+                        className="flex items-center gap-1.5 text-sm text-neutral-500 transition-colors hover:text-primary-600"
                     >
                         <ArrowLeft size={16} />
-                        Change Student
+                        {t('changeStudent')}
                     </button>
-                    <div className="h-5 w-px bg-gray-200" />
+                    <div className="h-5 w-px bg-neutral-200" />
                     <div>
-                        <span className="font-semibold text-gray-800">
+                        <span className="font-semibold text-neutral-800">
                             {student.student_name}
                         </span>
                         {student.phone && (
-                            <span className="ml-2 text-sm text-gray-400">{student.phone}</span>
+                            <span className="ml-2 text-sm text-neutral-400">{student.phone}</span>
                         )}
                     </div>
                 </div>
 
                 {totalElements === 0 && !hasActiveFilters && (
-                    <div className="rounded-xl border border-gray-200 bg-white p-12 text-center">
-                        <p className="text-lg font-semibold text-gray-600">No dues found.</p>
-                        <p className="mt-2 text-sm text-gray-400">
-                            This student has no pending installments.
+                    <div className="rounded-xl border border-neutral-200 bg-white p-12 text-center">
+                        <p className="text-lg font-semibold text-neutral-600">
+                            {t('emptyState.noDues')}
+                        </p>
+                        <p className="mt-2 text-sm text-neutral-400">
+                            {t('emptyState.noPendingInstallments')}
                         </p>
                     </div>
                 )}
@@ -287,61 +331,39 @@ export function InstallmentSelectionStep({
             {(totalElements > 0 || hasActiveFilters) && (
                 <>
                     {/* Summary Cards */}
-                    <div className="grid grid-cols-3 gap-4 mb-4">
-                        {[
-                            {
-                                title: 'Total Fee',
-                                value: formatCurrency(summaryTotals.totalFee),
-                                icon: CurrencyInr,
-                                iconColor: 'text-blue-600',
-                                borderColor: 'border-blue-100',
-                                valueColor: 'text-gray-800',
-                            },
-                            {
-                                title: 'Paid',
-                                value: formatCurrency(summaryTotals.totalPaid),
-                                icon: Wallet,
-                                iconColor: 'text-emerald-600',
-                                borderColor: 'border-emerald-100',
-                                valueColor: 'text-emerald-700',
-                            },
-                            {
-                                title: 'Due',
-                                value: formatCurrency(summaryTotals.totalDue),
-                                icon: WarningCircle,
-                                iconColor: 'text-red-600',
-                                borderColor: 'border-red-100',
-                                valueColor: 'text-red-600',
-                            },
-                        ].map((card, idx) => (
-                            <div
-                                key={idx}
-                                className={`bg-white border ${card.borderColor} rounded-xl p-4 shadow-sm flex flex-col transition hover:shadow-md`}
-                            >
-                                <div className="flex justify-between items-start mb-1">
-                                    <span className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
-                                        {card.title}
-                                    </span>
-                                    <div
-                                        className={`p-1.5 bg-gray-50/50 rounded-full ${card.iconColor}`}
-                                    >
-                                        <card.icon size={18} weight="duotone" />
-                                    </div>
-                                </div>
-                                <div
-                                    className={`text-xl font-extrabold mt-1 ${card.valueColor}`}
-                                >
-                                    {card.value}
-                                </div>
-                            </div>
-                        ))}
+                    <div className="mb-4">
+                        <StatStrip
+                            items={[
+                                {
+                                    key: 'totalFee',
+                                    icon: CurrencyInr,
+                                    tint: 'info',
+                                    label: t('summaryCards.totalFee'),
+                                    value: formatCurrency(summaryTotals.totalFee),
+                                },
+                                {
+                                    key: 'paid',
+                                    icon: Wallet,
+                                    tint: 'success',
+                                    label: t('summaryCards.paid'),
+                                    value: formatCurrency(summaryTotals.totalPaid),
+                                },
+                                {
+                                    key: 'due',
+                                    icon: WarningCircle,
+                                    tint: 'danger',
+                                    label: t('summaryCards.due'),
+                                    value: formatCurrency(summaryTotals.totalDue),
+                                },
+                            ]}
+                        />
                     </div>
 
                     {/* Filters */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-4">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-                            <div className="flex items-center gap-2 flex-wrap">
-                                {FILTER_STATUS_CONFIG.map((s) => (
+                    <div className="mb-4 rounded-xl border border-neutral-100 bg-white p-4 shadow-sm">
+                        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+                            <div className="flex flex-wrap items-center gap-2">
+                                {filterStatusConfig.map((s) => (
                                     <button
                                         key={s.value}
                                         onClick={() => setStatusFilter(s.value)}
@@ -349,7 +371,7 @@ export function InstallmentSelectionStep({
                                             'px-3 py-1.5 text-xs font-semibold rounded-full border transition-colors',
                                             statusFilter === s.value
                                                 ? `${s.activeBg} ${s.activeText} ${s.activeBorder}`
-                                                : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
+                                                : 'border-neutral-200 bg-white text-neutral-500 hover:bg-neutral-50'
                                         )}
                                     >
                                         {s.label}
@@ -357,32 +379,36 @@ export function InstallmentSelectionStep({
                                 ))}
                             </div>
 
-                            <div className="h-5 w-px bg-gray-200 hidden sm:block" />
+                            <div className="hidden h-5 w-px bg-neutral-200 sm:block" />
 
                             <div className="flex items-center gap-2">
-                                <label className="text-xs font-medium text-gray-500">From:</label>
+                                <label className="text-xs font-medium text-neutral-500">
+                                    {t('filters.from')}
+                                </label>
                                 <input
                                     type="date"
                                     value={dueDateFrom}
                                     onChange={(e) => setDueDateFrom(e.target.value)}
-                                    className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    className="rounded-lg border border-neutral-200 px-2 py-1.5 text-sm text-neutral-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
                                 />
-                                <label className="text-xs font-medium text-gray-500">To:</label>
+                                <label className="text-xs font-medium text-neutral-500">
+                                    {t('filters.to')}
+                                </label>
                                 <input
                                     type="date"
                                     value={dueDateTo}
                                     onChange={(e) => setDueDateTo(e.target.value)}
-                                    className="text-sm border border-gray-200 rounded-lg px-2 py-1.5 text-gray-700 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    className="rounded-lg border border-neutral-200 px-2 py-1.5 text-sm text-neutral-700 focus:outline-none focus:ring-1 focus:ring-primary-500"
                                 />
                             </div>
 
                             {hasActiveFilters && (
                                 <button
                                     onClick={clearFilters}
-                                    className="flex items-center gap-1 text-xs font-medium text-gray-500 hover:text-red-600 transition-colors"
+                                    className="flex items-center gap-1 text-xs font-medium text-neutral-500 transition-colors hover:text-danger-600"
                                 >
                                     <X size={14} />
-                                    Clear
+                                    {t('filters.clear')}
                                 </button>
                             )}
                         </div>
@@ -390,73 +416,103 @@ export function InstallmentSelectionStep({
 
                     {/* Select all filtered banner */}
                     {pageFullySelected && totalElements > pageContent.length && (
-                        <div className="mb-2 rounded-lg border border-blue-100 bg-blue-50/60 px-4 py-2 flex items-center justify-between text-xs text-blue-800">
+                        <div className="mb-2 flex items-center justify-between rounded-lg border border-primary-100 bg-primary-50/60 px-4 py-2 text-xs text-primary-600">
                             <span>
-                                All <span className="font-bold">{pageSelectable.length}</span> selectable row{pageSelectable.length !== 1 ? 's' : ''} on this page selected.
+                                {t('selectAllBanner.allSelectedOnPage', {
+                                    count: pageSelectable.length,
+                                })}
                             </span>
                             <button
                                 type="button"
                                 onClick={handleSelectAllFiltered}
                                 disabled={isSelectingAll}
-                                className="font-semibold underline hover:text-blue-900 disabled:opacity-50"
+                                className="font-semibold underline hover:text-primary-600 disabled:opacity-50"
                             >
                                 {isSelectingAll
-                                    ? 'Selecting…'
-                                    : `Select all ${totalElements} filtered row${totalElements !== 1 ? 's' : ''}`}
+                                    ? t('selectAllBanner.selecting')
+                                    : t('selectAllBanner.selectAllFiltered', {
+                                          count: totalElements,
+                                      })}
                             </button>
                         </div>
                     )}
 
                     {/* ── Refresh + Table ── */}
                     <div className="flex items-center justify-between mb-2">
-                        <div className="text-xs text-gray-500">
-                            Showing <span className="font-semibold text-gray-700">{pageContent.length === 0 ? 0 : page * PAGE_SIZE + 1}</span>
+                        <div className="text-xs text-neutral-500">
+                            {t('resultsRange.showing')}{' '}
+                            <span className="font-semibold text-neutral-700">
+                                {pageContent.length === 0 ? 0 : page * PAGE_SIZE + 1}
+                            </span>
                             {'\u2013'}
-                            <span className="font-semibold text-gray-700">{page * PAGE_SIZE + pageContent.length}</span>
-                            {' of '}
-                            <span className="font-semibold text-gray-700">{totalElements}</span>
+                            <span className="font-semibold text-neutral-700">
+                                {page * PAGE_SIZE + pageContent.length}
+                            </span>{' '}
+                            {t('resultsRange.of')}{' '}
+                            <span className="font-semibold text-neutral-700">{totalElements}</span>
                         </div>
                         <button
                             type="button"
                             onClick={() => refetch()}
                             disabled={isFetching}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                            className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-medium text-neutral-600 transition-colors hover:bg-neutral-50 disabled:opacity-50"
                         >
                             <ArrowCounterClockwise size={14} className={isFetching ? 'animate-spin' : ''} />
-                            Refresh
+                            {t('refresh')}
                         </button>
                     </div>
-                    <div className="flex-1 min-h-0 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-4">
-                        <div className="overflow-auto h-full">
-                            <table className="w-full text-left border-collapse min-w-[900px]">
+                    <div className="mb-4 min-h-0 flex-1 overflow-hidden rounded-xl border border-neutral-100 bg-white shadow-sm">
+                        <div className="h-full overflow-auto">
+                            <table className="w-full min-w-max border-collapse text-left">
                                 <thead className="sticky top-0 z-10">
-                                    <tr className="border-b-2 border-gray-200 bg-gray-50/95 backdrop-blur-sm">
+                                    <tr className="border-b-2 border-neutral-200 bg-neutral-50/95 backdrop-blur-sm">
                                         <th className="py-3 px-4 w-10">
                                             <input
                                                 type="checkbox"
                                                 checked={pageFullySelected}
                                                 onChange={togglePageSelection}
                                                 disabled={pageSelectable.length === 0}
-                                                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-30"
+                                                className="size-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500 disabled:opacity-30"
                                             />
                                         </th>
-                                        <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Fee Type</th>
-                                        <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">CPO / Plan</th>
-                                        <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Expected</th>
-                                        <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Adjustment</th>
-                                        <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Paid</th>
-                                        <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Due</th>
-                                        <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Due / Overdue</th>
-                                        <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Due Date</th>
-                                        <th className="py-3 px-4 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th className="py-3 px-4 w-10" />
+                                        <th className="px-4 py-3 text-caption font-semibold uppercase tracking-wider text-neutral-500">
+                                            {t('table.feeType')}
+                                        </th>
+                                        <th className="px-4 py-3 text-caption font-semibold uppercase tracking-wider text-neutral-500">
+                                            {t('table.cpoPlan')}
+                                        </th>
+                                        <th className="px-4 py-3 text-caption font-semibold uppercase tracking-wider text-neutral-500">
+                                            {t('table.expected')}
+                                        </th>
+                                        <th className="px-4 py-3 text-caption font-semibold uppercase tracking-wider text-neutral-500">
+                                            {t('table.adjustment')}
+                                        </th>
+                                        <th className="px-4 py-3 text-caption font-semibold uppercase tracking-wider text-neutral-500">
+                                            {t('table.paid')}
+                                        </th>
+                                        <th className="px-4 py-3 text-caption font-semibold uppercase tracking-wider text-neutral-500">
+                                            {t('table.due')}
+                                        </th>
+                                        <th className="px-4 py-3 text-caption font-semibold uppercase tracking-wider text-neutral-500">
+                                            {t('table.dueOverdue')}
+                                        </th>
+                                        <th className="px-4 py-3 text-caption font-semibold uppercase tracking-wider text-neutral-500">
+                                            {t('table.dueDate')}
+                                        </th>
+                                        <th className="px-4 py-3 text-caption font-semibold uppercase tracking-wider text-neutral-500">
+                                            {t('table.status')}
+                                        </th>
+                                        <th className="w-10 px-4 py-3" />
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-gray-100 text-sm font-medium">
+                                <tbody className="divide-y divide-neutral-100 text-sm font-medium">
                                     {pageContent.length === 0 && (
                                         <tr>
-                                            <td colSpan={10} className="py-12 text-center text-gray-400">
-                                                No installments match the selected filters.
+                                            <td
+                                                colSpan={10}
+                                                className="py-12 text-center text-neutral-400"
+                                            >
+                                                {t('table.noResults')}
                                             </td>
                                         </tr>
                                     )}
@@ -468,8 +524,8 @@ export function InstallmentSelectionStep({
                                                 key={inst.id}
                                                 className={`transition-colors ${
                                                     isSelected
-                                                        ? 'bg-blue-50/40'
-                                                        : 'hover:bg-gray-50/60'
+                                                        ? 'bg-primary-50/40'
+                                                        : 'hover:bg-neutral-50/60'
                                                 } ${!isSelectable ? 'opacity-50' : 'cursor-pointer'}`}
                                                 onClick={() => isSelectable && toggleSelect(inst.id, inst)}
                                             >
@@ -480,30 +536,57 @@ export function InstallmentSelectionStep({
                                                         disabled={!isSelectable}
                                                         onChange={() => toggleSelect(inst.id, inst)}
                                                         onClick={(e) => e.stopPropagation()}
-                                                        className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-30"
+                                                        className="size-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500 disabled:opacity-30"
                                                     />
                                                 </td>
-                                                <td className="py-3 px-4 text-gray-800 font-semibold">{inst.fee_type_name}</td>
-                                                <td className="py-3 px-4 text-gray-600">{inst.cpo_name || '\u2014'}</td>
-                                                <td className="py-3 px-4 text-gray-700">{formatCurrency(inst.amount_expected)}</td>
-                                                <td className="py-3 px-4 text-gray-500">
+                                                <td className="px-4 py-3 font-semibold text-neutral-800">
+                                                    {inst.fee_type_name}
+                                                </td>
+                                                <td className="px-4 py-3 text-neutral-600">
+                                                    {inst.cpo_name || '\u2014'}
+                                                </td>
+                                                <td className="px-4 py-3 text-neutral-700">
+                                                    {formatCurrency(inst.amount_expected)}
+                                                </td>
+                                                <td className="px-4 py-3 text-neutral-500">
                                                     <div className="flex items-center gap-2">
                                                         {inst.adjustment_status ? (
                                                             <div className="flex flex-col gap-1">
-                                                                <span className={cn(
-                                                                    'text-xs font-medium',
-                                                                    inst.adjustment_type === 'PENALTY' ? 'text-red-600' : 'text-emerald-600'
-                                                                )}>
-                                                                    {inst.adjustment_type === 'PENALTY' ? '+' : '-'}
-                                                                    {formatCurrency(inst.adjustment_amount)}
+                                                                <span
+                                                                    className={cn(
+                                                                        'text-xs font-medium',
+                                                                        inst.adjustment_type ===
+                                                                            'PENALTY'
+                                                                            ? 'text-danger-600'
+                                                                            : 'text-success-600'
+                                                                    )}
+                                                                >
+                                                                    {inst.adjustment_type ===
+                                                                    'PENALTY'
+                                                                        ? '+'
+                                                                        : '-'}
+                                                                    {formatCurrency(
+                                                                        inst.adjustment_amount
+                                                                    )}
                                                                 </span>
-                                                                <span className={cn(
-                                                                    'inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase w-fit',
-                                                                    inst.adjustment_status === 'APPROVED' && 'bg-emerald-100 text-emerald-700',
-                                                                    inst.adjustment_status === 'PENDING_FOR_APPROVAL' && 'bg-amber-100 text-amber-700',
-                                                                    inst.adjustment_status === 'REJECTED' && 'bg-red-100 text-red-700',
-                                                                )}>
-                                                                    {inst.adjustment_status === 'PENDING_FOR_APPROVAL' ? 'Pending' : inst.adjustment_status}
+                                                                <span
+                                                                    className={cn(
+                                                                        'inline-flex w-fit items-center rounded-full px-1.5 py-0.5 text-caption font-semibold uppercase',
+                                                                        inst.adjustment_status ===
+                                                                            'APPROVED' &&
+                                                                            'bg-success-100 text-success-700',
+                                                                        inst.adjustment_status ===
+                                                                            'PENDING_FOR_APPROVAL' &&
+                                                                            'bg-warning-100 text-warning-700',
+                                                                        inst.adjustment_status ===
+                                                                            'REJECTED' &&
+                                                                            'bg-danger-100 text-danger-700'
+                                                                    )}
+                                                                >
+                                                                    {inst.adjustment_status ===
+                                                                    'PENDING_FOR_APPROVAL'
+                                                                        ? t('adjustment.pending')
+                                                                        : inst.adjustment_status}
                                                                 </span>
                                                             </div>
                                                         ) : (
@@ -512,42 +595,54 @@ export function InstallmentSelectionStep({
                                                         {isSelectable && (
                                                             <button
                                                                 type="button"
-                                                                title="Adjust"
+                                                                title={t('adjustment.adjustTooltip')}
                                                                 onClick={(e) => {
                                                                     e.stopPropagation();
                                                                     setAdjustmentDialogInstallment(inst);
                                                                 }}
-                                                                className="flex items-center justify-center h-6 w-6 rounded-md text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                                                                className="flex size-6 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-primary-50 hover:text-primary-600"
                                                             >
                                                                 <PencilSimple size={13} weight="bold" />
                                                             </button>
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td className="py-3 px-4 text-emerald-700 font-semibold">{formatCurrency(inst.amount_paid)}</td>
-                                                <td className="py-3 px-4 text-red-600 font-semibold">
-                                                    {inst.amount_due > 0 ? formatCurrency(inst.amount_due) : '\u2014'}
+                                                <td className="px-4 py-3 font-semibold text-success-700">
+                                                    {formatCurrency(inst.amount_paid)}
+                                                </td>
+                                                <td className="px-4 py-3 font-semibold text-danger-600">
+                                                    {inst.amount_due > 0
+                                                        ? formatCurrency(inst.amount_due)
+                                                        : '—'}
                                                 </td>
                                                 <td className="py-3 px-4">
                                                     {inst.is_overdue ? (
-                                                        <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide bg-red-50 text-red-700">
-                                                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-500" />
-                                                            Overdue
+                                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-danger-50 px-2.5 py-0.5 text-caption font-semibold uppercase tracking-wide text-danger-700">
+                                                            <span className="inline-block size-1.5 rounded-full bg-danger-500" />
+                                                            {t('status.overdue')}
                                                             {inst.days_overdue > 0 && (
-                                                                <span className="text-red-500 font-normal">({inst.days_overdue}d)</span>
+                                                                <span className="font-normal text-danger-500">
+                                                                    {t('status.daysOverdue', {
+                                                                        count: inst.days_overdue,
+                                                                    })}
+                                                                </span>
                                                             )}
                                                         </span>
                                                     ) : inst.amount_due > 0 ? (
-                                                        <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide bg-orange-50 text-orange-700">
-                                                            <span className="inline-block h-1.5 w-1.5 rounded-full bg-orange-500" />
-                                                            Due
+                                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-warning-50 px-2.5 py-0.5 text-caption font-semibold uppercase tracking-wide text-warning-700">
+                                                            <span className="inline-block size-1.5 rounded-full bg-warning-500" />
+                                                            {t('status.due')}
                                                         </span>
                                                     ) : (
-                                                        <span className="text-gray-400">{'\u2014'}</span>
+                                                        <span className="text-neutral-400">
+                                                            {'\u2014'}
+                                                        </span>
                                                     )}
                                                 </td>
-                                                <td className="py-3 px-4 text-gray-600">
-                                                    {inst.due_date ? dayjs(inst.due_date).format('D MMM YYYY') : '\u2014'}
+                                                <td className="px-4 py-3 text-neutral-600">
+                                                    {inst.due_date
+                                                        ? dayjs(inst.due_date).format('D MMM YYYY')
+                                                        : '\u2014'}
                                                 </td>
                                                 <td className="py-3 px-4">
                                                     <StatusPill status={inst.status} />
@@ -555,10 +650,14 @@ export function InstallmentSelectionStep({
                                                 <td className="py-3 px-2">
                                                     {inst.status === 'PAID' && (
                                                         <button
-                                                            title="Download Receipt"
-                                                            onClick={(e) => handleDownloadReceipt(inst.id, e)}
-                                                            disabled={downloadingReceiptId === inst.id}
-                                                            className="flex items-center justify-center h-7 w-7 rounded-md text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 transition-colors disabled:opacity-50"
+                                                            title={t('downloadReceiptTooltip')}
+                                                            onClick={(e) =>
+                                                                handleDownloadReceipt(inst.id, e)
+                                                            }
+                                                            disabled={
+                                                                downloadingReceiptId === inst.id
+                                                            }
+                                                            className="flex size-7 items-center justify-center rounded-md text-neutral-400 transition-colors hover:bg-success-50 hover:text-success-600 disabled:opacity-50"
                                                         >
                                                             {downloadingReceiptId === inst.id
                                                                 ? <Spinner size={14} className="animate-spin" />
@@ -582,47 +681,53 @@ export function InstallmentSelectionStep({
                                 type="button"
                                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                                 disabled={page === 0 || isFetching}
-                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                className="flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-600 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
                             >
                                 <CaretLeft size={12} weight="bold" />
-                                Prev
+                                {t('pagination.prev')}
                             </button>
-                            <span className="text-xs text-gray-500 px-3">
-                                Page <span className="font-bold text-gray-800">{page + 1}</span> of{' '}
-                                <span className="font-bold text-gray-800">{totalPages}</span>
+                            <span className="px-3 text-xs text-neutral-500">
+                                {t('pagination.page')}{' '}
+                                <span className="font-bold text-neutral-800">{page + 1}</span>{' '}
+                                {t('pagination.of')}{' '}
+                                <span className="font-bold text-neutral-800">{totalPages}</span>
                             </span>
                             <button
                                 type="button"
                                 onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
                                 disabled={page >= totalPages - 1 || isFetching}
-                                className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                className="flex items-center gap-1 rounded-lg border border-neutral-200 bg-white px-3 py-1.5 text-xs font-semibold text-neutral-600 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
                             >
-                                Next
+                                {t('pagination.next')}
                                 <CaretRight size={12} weight="bold" />
                             </button>
                         </div>
                     )}
 
                     {/* ── Fixed bottom action bar ── */}
-                    <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-4">
-                        <div className="flex items-center gap-4">
-                            <div className="text-sm text-gray-600">
-                                <span className="font-bold text-gray-800">{selectedDuesMap.size}</span>{' '}
-                                installment{selectedDuesMap.size !== 1 ? 's' : ''} selected
+                    <div className="sticky bottom-0 z-10 rounded-xl border border-neutral-200 bg-white p-4 shadow-lg">
+                        <div className="flex flex-wrap items-center gap-4">
+                            <div className="text-sm text-neutral-600">
+                                <span className="font-bold text-neutral-800">
+                                    {selectedDuesMap.size}
+                                </span>{' '}
+                                {t('bottomBar.installmentsSelected', {
+                                    count: selectedDuesMap.size,
+                                })}
                                 {selectedDuesMap.size > 0 && (
                                     <>
                                         {' \u00b7 '}
-                                        Total due:{' '}
-                                        <span className="font-bold text-gray-800">
+                                        {t('bottomBar.totalDue')}{' '}
+                                        <span className="font-bold text-neutral-800">
                                             {formatCurrency(totalSelectedDue)}
                                         </span>
                                         {' \u00b7 '}
                                         <button
                                             type="button"
                                             onClick={clearSelection}
-                                            className="text-xs font-medium text-gray-500 hover:text-red-600 transition-colors underline"
+                                            className="text-xs font-medium text-neutral-500 underline transition-colors hover:text-danger-600"
                                         >
-                                            Clear
+                                            {t('filters.clear')}
                                         </button>
                                     </>
                                 )}
@@ -631,20 +736,27 @@ export function InstallmentSelectionStep({
                             <div className="flex-1" />
 
                             <div className="flex items-center gap-3">
-                                <button
+                                <MyButton
+                                    type="button"
+                                    buttonType="secondary"
+                                    scale="medium"
                                     onClick={() => setShowInvoiceDialog(true)}
-                                    disabled={selectedDuesMap.size === 0}
-                                    className="px-5 py-2 bg-white text-gray-700 text-sm font-semibold rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                                    disable={selectedDuesMap.size === 0}
+                                    className="whitespace-nowrap"
                                 >
-                                    Generate Invoice
-                                </button>
-                                <button
+                                    {t('bottomBar.generateInvoice')}
+                                </MyButton>
+                                <MyButton
+                                    type="button"
+                                    buttonType="primary"
+                                    scale="medium"
                                     onClick={() => onProceedToPayment(selectedDues)}
-                                    disabled={selectedDuesMap.size === 0}
-                                    className="px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+                                    disable={selectedDuesMap.size === 0}
+                                    className="whitespace-nowrap"
                                 >
-                                    Proceed to Pay
-                                </button>
+                                    {t('bottomBar.proceedToPay')}
+                                    <CaretRight size={14} weight="bold" className="ml-1" />
+                                </MyButton>
                             </div>
                         </div>
                     </div>

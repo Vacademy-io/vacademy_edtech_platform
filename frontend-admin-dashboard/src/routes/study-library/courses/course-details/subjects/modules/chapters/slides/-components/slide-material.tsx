@@ -17,12 +17,14 @@ import { ActivityStatsSidebar } from './stats-dialog/activity-sidebar';
 import { useContentStore } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-stores/chapter-sidebar-store';
 import { EmptySlideMaterial } from '@/assets/svgs';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { html } from '@yoopta/exports';
 import { SlidesMenuOption } from './slides-menu-options/slides-menu-option';
 import { plugins, TOOLS, MARKS } from '@/constants/study-library/yoopta-editor-plugins-tools';
 import { useRouter, useBlocker } from '@tanstack/react-router';
 import { getPublicUrl } from '@/services/upload_file';
 import DeckPlayer from './deck-player';
+import { PlanComposerDialog } from '@/routes/engagement/-components/PlanComposerDialog';
 import { PublishDialog } from './publish-slide-dialog';
 import { UnpublishDialog } from './unpublish-slide-dialog';
 import {
@@ -40,6 +42,7 @@ import {
 import { StudyLibraryQuestionsPreview } from './questions-preview';
 import StudyLibraryAssignmentPreview from './assignment-preview';
 import VideoSlidePreview from './video-slide-preview';
+import { TeachingDescriptionCard } from './teaching-description-card';
 import { MyDialog } from '@/components/design-system/dialog';
 import { AddVimeoDialog } from './slides-sidebar/add-vimeo-dialog';
 import { AddVideoDialog } from './slides-sidebar/add-video-dialog';
@@ -263,6 +266,8 @@ export const SlideMaterial = ({
     hidePublishButtons?: boolean;
     customSaveFunction?: (slide: Slide) => Promise<void>;
 }) => {
+    const { t } = useTranslation('slideEditor');
+    const { t: tPublish } = useTranslation('studyLibraryHandlePublishSlide');
     // Role display settings for toggles like Manage Doubts visibility
     const [roleDisplay, setRoleDisplay] = useState<DisplaySettingsData | null>(null);
     useEffect(() => {
@@ -488,20 +493,18 @@ export const SlideMaterial = ({
         integrity: { lost: string[]; imagesInsideTables: number },
         action: 'saved' | 'published'
     ): string => {
+        const actionLabel =
+            action === 'saved' ? t('integrity.actionSaved') : t('integrity.actionPublished');
         if (integrity.imagesInsideTables > 0) {
-            const n = integrity.imagesInsideTables;
-            return (
-                `This slide has ${n} image${n > 1 ? 's' : ''} inside a table, which the editor ` +
-                `cannot open or keep. It was NOT ${action}, so nothing is lost — your slide is ` +
-                `safe as-is. To edit it, the image${n > 1 ? 's' : ''} must be moved out of the ` +
-                'table first; please contact support.'
-            );
+            return t('integrity.imagesInTable', {
+                count: integrity.imagesInsideTables,
+                action: actionLabel,
+            });
         }
-        return (
-            'This slide did not load completely (' +
-            integrity.lost.join(', ') +
-            ` missing). To protect your content it was NOT ${action}. Please reload the page and try again.`
-        );
+        return t('integrity.incomplete', {
+            missing: integrity.lost.join(', '),
+            action: actionLabel,
+        });
     };
 
     // Dedup guard to prevent double-save on add + switch happening together
@@ -534,6 +537,40 @@ export const SlideMaterial = ({
         searchParams;
 
     const [isPublishDialogOpen, setIsPublishDialogOpen] = useState(false);
+    // "Assign as task": opens the engagement composer preloaded with this slide.
+    const [isAssignTaskOpen, setIsAssignTaskOpen] = useState(false);
+    // Memoised on the slide and its route ids: an inline object was a new value on
+    // every render, and each one re-seeded the composer over the teacher's edits.
+    const assignTaskSlideId = activeItem?.id;
+    const assignTaskSlideTitle = activeItem?.title;
+    const assignTaskSlideType = activeItem?.source_type;
+    const presetSlide = useMemo(
+        () =>
+            assignTaskSlideId
+                ? {
+                      slideId: assignTaskSlideId,
+                      slideTitle: assignTaskSlideTitle ?? 'Lesson',
+                      slideType: assignTaskSlideType ?? undefined,
+                      courseId: courseId ?? undefined,
+                      sessionId: sessionId ?? undefined,
+                      levelId: levelId ?? undefined,
+                      subjectId: subjectId ?? '',
+                      moduleId: moduleId ?? '',
+                      chapterId: chapterId ?? '',
+                  }
+                : null,
+        [
+            assignTaskSlideId,
+            assignTaskSlideTitle,
+            assignTaskSlideType,
+            courseId,
+            sessionId,
+            levelId,
+            subjectId,
+            moduleId,
+            chapterId,
+        ]
+    );
     // Bumped after a version-history restore to force loadContent to re-run (and
     // re-deserialize) even when the slide's id/status didn't change — the effect's
     // deps intentionally exclude document_slide.data for DOC slides.
@@ -831,6 +868,7 @@ export const SlideMaterial = ({
         addUpdateAudioSlide,
         addUpdateScormSlide,
         addUpdateAssessmentSlide,
+        addUpdateHtmlVideoSlide,
     } = useSlidesMutations(
             chapterId || '',
             moduleId || '',
@@ -2017,7 +2055,7 @@ export const SlideMaterial = ({
                     // Show toast notification for auto-publish and trigger approval button
                     if (activeItem.status !== 'PUBLISHED') {
                         import('sonner').then(({ toast }) => {
-                            toast.success('Presentation auto-published for review');
+                            toast.success(t('slideEditor:presentation.autoPublished'));
                         });
                         // Trigger approval button for non-admin users
                         localStorage.setItem('triggerApprovalButton', Date.now().toString());
@@ -2138,9 +2176,7 @@ export const SlideMaterial = ({
                     '⚠️ Skipping DOC auto-save — editor serialization was degraded (a block failed to serialize). ' +
                         'Refusing to overwrite stored content to avoid silently dropping that block.'
                 );
-                toast.warning(
-                    'Some content on the previous slide could not be saved automatically. Open it and click Save to retry.'
-                );
+                toast.warning(t('slideEditor:doc.degradedSkip'));
                 return;
             }
 
@@ -2167,10 +2203,7 @@ export const SlideMaterial = ({
                         `stored (${storedDocHtml.length}B); refusing to overwrite (likely a truncation). ` +
                         'Reopen the slide and Save explicitly if this shrink was intentional.'
                 );
-                toast.warning(
-                    'The previous slide became much shorter than what was saved, so it was NOT overwritten. ' +
-                        'Please reopen it to check your content is intact.'
-                );
+                toast.warning(t('slideEditor:doc.shrunkSkip'));
                 return;
             }
 
@@ -2186,7 +2219,7 @@ export const SlideMaterial = ({
                 processedHtmlString = processedHtml;
 
                 if (failedUploads > 0) {
-                    toast.error(`Warning: ${failedUploads} images failed to upload`);
+                    toast.error(t('slideEditor:images.someFailedToUpload', { count: failedUploads }));
                 }
                 if (uploadedImages > 0) {
                     console.log(`Successfully processed ${uploadedImages} images`);
@@ -2200,7 +2233,7 @@ export const SlideMaterial = ({
             stashDocDraftLocally(slide.id, processedHtmlString);
         } catch (error) {
             console.error('Error auto-publishing DOC slide:', error);
-            toast.error('Failed to auto-save changes');
+            toast.error(t('slideEditor:doc.autoSaveFailed'));
         }
     }
     interface YTPlayer {
@@ -2250,10 +2283,10 @@ export const SlideMaterial = ({
                             <Trash size={24} className="text-red-500" />
                         </div>
                         <h3 className="mb-2 text-lg font-semibold text-slate-600">
-                            This slide has been deleted
+                            {t('ui.slideDeletedTitle')}
                         </h3>
                         <p className="text-sm text-slate-400">
-                            The slide content is no longer available
+                            {t('ui.slideDeletedBody')}
                         </p>
                     </div>
                 </div>
@@ -2338,10 +2371,10 @@ export const SlideMaterial = ({
                                 };
 
                                 await addUpdateVideoSlide(videoSlidePayload);
-                                toast.success('Split screen project saved successfully!');
+                                toast.success(t('slideEditor:splitScreen.savedSuccess'));
                             } catch (error) {
                                 console.error('Error auto-saving split screen data:', error);
-                                toast.error('Failed to save split screen data automatically');
+                                toast.error(t('slideEditor:splitScreen.autoSaveFailed'));
                             }
                         }}
                     />
@@ -2350,10 +2383,14 @@ export const SlideMaterial = ({
                 // Key on the URL too so editing the external link remounts the
                 // player (YouTube/Vimeo) and the new link renders immediately.
                 setContent(
-                    <VideoSlidePreview
-                        key={`${activeItem.id}-${activeItem.video_slide?.url ?? ''}`}
-                        activeItem={activeItem}
-                    />
+                    <div className="flex h-full flex-col">
+                        <VideoSlidePreview
+                            key={`${activeItem.id}-${activeItem.video_slide?.url ?? ''}`}
+                            activeItem={activeItem}
+                        />
+                        {/* Live AI Tutor: the only way a video slide can be taught. */}
+                        {!isLearnerView && <TeachingDescriptionCard slideId={activeItem.id} kind="video" />}
+                    </div>
                 );
             }
 
@@ -2386,10 +2423,10 @@ export const SlideMaterial = ({
                     <div className="flex h-[500px] flex-col items-center justify-center rounded-lg py-10">
                         <div className="text-center">
                             <h3 className="mb-2 text-lg font-semibold text-red-600">
-                                Assignment Error
+                                {t('ui.assignmentError')}
                             </h3>
                             <p className="text-gray-600">
-                                Failed to load assignment: {errorMessage}
+                                {t('ui.assignmentLoadFailed', { message: errorMessage })}
                             </p>
                         </div>
                     </div>
@@ -2430,7 +2467,7 @@ export const SlideMaterial = ({
                                     <div className="flex flex-col items-center">
                                         <div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-b-2 border-primary-600"></div>
                                         <span className="text-sm text-slate-500">
-                                            Loading editor...
+                                            {t('ui.loadingEditor')}
                                         </span>
                                     </div>
                                 </div>
@@ -2510,11 +2547,15 @@ export const SlideMaterial = ({
 
                 const url = await getPublicUrl(data || '');
                 setContent(
-                    <Suspense
-                        fallback={<div className="h-full w-full animate-pulse bg-gray-100" />}
-                    >
-                        <PDFViewer pdfUrl={url} />
-                    </Suspense>
+                    <div className="flex h-full flex-col">
+                        <Suspense
+                            fallback={<div className="h-full w-full animate-pulse bg-gray-100" />}
+                        >
+                            <PDFViewer pdfUrl={url} />
+                        </Suspense>
+                        {/* Live AI Tutor: the only way a PDF slide can be taught. */}
+                        {!isLearnerView && <TeachingDescriptionCard slideId={activeItem.id} kind="pdf" />}
+                    </div>
                 );
                 return;
             }
@@ -2600,7 +2641,7 @@ export const SlideMaterial = ({
                                             'triggerApprovalButton',
                                             Date.now().toString()
                                         );
-                                        toast.success('Slide auto-published for review');
+                                        toast.success(t('slideEditor:slide.autoPublished'));
                                     }
 
                                     // Re-render by reloading content with fresh store data
@@ -2608,7 +2649,7 @@ export const SlideMaterial = ({
                                     loadContent();
                                 } catch (error) {
                                     console.error('Error saving Jupyter notebook data:', error);
-                                    toast.error('Failed to save notebook changes');
+                                    toast.error(t('slideEditor:notebook.saveFailed'));
                                 }
                             }}
                         />
@@ -2696,7 +2737,7 @@ export const SlideMaterial = ({
                                             'triggerApprovalButton',
                                             Date.now().toString()
                                         );
-                                        toast.success('Slide auto-published for review');
+                                        toast.success(t('slideEditor:slide.autoPublished'));
                                     }
 
                                     // Re-render by reloading content with fresh store data
@@ -2704,7 +2745,7 @@ export const SlideMaterial = ({
                                     loadContent();
                                 } catch (error) {
                                     console.error('Error saving Scratch project data:', error);
-                                    toast.error('Failed to save Scratch project changes');
+                                    toast.error(t('slideEditor:scratch.saveFailed'));
                                 }
                             }}
                         />
@@ -2778,7 +2819,7 @@ export const SlideMaterial = ({
                                     });
                                 } catch (error) {
                                     console.error('Error saving code editor data:', error);
-                                    toast.error('Failed to save code changes');
+                                    toast.error(t('slideEditor:code.saveFailed'));
                                 }
                             }}
                         />
@@ -2853,7 +2894,7 @@ export const SlideMaterial = ({
                                     });
                                 } catch (error) {
                                     console.error('Error saving split screen data:', error);
-                                    toast.error('Failed to save split screen data');
+                                    toast.error(t('slideEditor:splitScreen.saveFailed'));
                                 }
                             }}
                         />
@@ -2868,11 +2909,10 @@ export const SlideMaterial = ({
                                     <AlertCircle className="size-8 text-red-600" />
                                 </div>
                                 <h3 className="mb-2 text-lg font-semibold">
-                                    Split Screen Loading Error
+                                    {t('ui.splitScreenLoadingError')}
                                 </h3>
                                 <p className="mb-4 text-gray-600">
-                                    Failed to load the split screen component. This is usually a
-                                    temporary issue.
+                                    {t('ui.splitScreenLoadingErrorBody')}
                                 </p>
                                 <MyButton
                                     buttonType="primary"
@@ -2880,7 +2920,7 @@ export const SlideMaterial = ({
                                     onClick={() => loadContent()}
                                     className="mr-2"
                                 >
-                                    Retry
+                                    {t('ui.retry')}
                                 </MyButton>
                                 <MyButton
                                     buttonType="secondary"
@@ -2888,12 +2928,12 @@ export const SlideMaterial = ({
                                     onClick={() =>
                                         setContent(
                                             <div className="flex h-[400px] items-center justify-center text-gray-500">
-                                                Split screen component unavailable
+                                                {t('ui.splitScreenUnavailable')}
                                             </div>
                                         )
                                     }
                                 >
-                                    Show Fallback
+                                    {t('ui.showFallback')}
                                 </MyButton>
                             </div>
                         </div>
@@ -3147,7 +3187,7 @@ export const SlideMaterial = ({
         { silent }: { silent: boolean }
     ): Promise<boolean> => {
         if (!htmlString || isHtmlDocEmpty(htmlString)) {
-            if (!silent) toast.error('Could not read editor content. Please try again.');
+            if (!silent) toast.error(t('slideEditor:doc.readError'));
             return false;
         }
         const status =
@@ -3160,7 +3200,7 @@ export const SlideMaterial = ({
             const { processedHtml, failedUploads } = await processHtmlImages(htmlString);
             processedHtmlString = processedHtml;
             if (failedUploads > 0 && !silent) {
-                toast.error(`Warning: ${failedUploads} images failed to upload`);
+                toast.error(t('slideEditor:images.someFailedToUpload', { count: failedUploads }));
             }
         }
 
@@ -3214,7 +3254,7 @@ export const SlideMaterial = ({
                 await doSave(true);
                 return true;
             }
-            if (!silent) toast.error(serverMessage || 'Error in saving the slide');
+            if (!silent) toast.error(serverMessage || t('slideEditor:slide.saveErrorGeneric'));
             else console.error('[html-doc] autosave failed:', error);
             return false;
         }
@@ -3295,9 +3335,9 @@ export const SlideMaterial = ({
                     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                     // @ts-expect-error
                     await updateAssignmentOrder(convertedData!);
-                    toast.success(`slide saved in draft successfully!`);
+                    toast.success(t('slideEditor:slide.savedDraft'));
                 } catch {
-                    toast.error(`Error in publishing the slide`);
+                    toast.error(t('slideEditor:slide.publishErrorGeneric'));
                 }
                 return;
             }
@@ -3342,7 +3382,7 @@ export const SlideMaterial = ({
                 };
                 try {
                     await addUpdateVideoSlide(videoSlidePayload);
-                    toast.success(`Split screen slide saved successfully!`);
+                    toast.success(t('slideEditor:splitScreen.slideSavedSuccess'));
 
                     // Update the local state to reflect saved changes and clear the new split screen flag
                     const updatedSlide = {
@@ -3355,7 +3395,7 @@ export const SlideMaterial = ({
                 } catch (error) {
                     console.error('Error saving split screen slide:', error);
                     console.error('Payload that failed:', videoSlidePayload);
-                    toast.error(`Error saving split screen slide: ${error}`);
+                    toast.error(t('slideEditor:splitScreen.slideSaveError', { error: String(error) }));
                 }
                 // Split-screen VIDEO is fully handled here. Return so it does
                 // not fall through to the DOC path below and get overwritten as
@@ -3371,9 +3411,9 @@ export const SlideMaterial = ({
                 });
                 try {
                     await addUpdateVideoSlide(convertedData);
-                    toast.success(`slide saved in draft successfully!`);
+                    toast.success(t('slideEditor:slide.savedDraft'));
                 } catch {
-                    toast.error(`Error in saving the slide`);
+                    toast.error(t('slideEditor:slide.saveErrorGeneric'));
                 }
                 // VIDEO is fully handled here. Without this return the slide
                 // would continue into the DOC path below and risk being
@@ -3403,9 +3443,9 @@ export const SlideMaterial = ({
                     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                     // @ts-expect-error
                     await updateQuestionOrder(convertedData!);
-                    toast.success(`slide saved in draft successfully!`);
+                    toast.success(t('slideEditor:slide.savedDraft'));
                 } catch {
-                    toast.error('error saving slide');
+                    toast.error(t('slideEditor:slide.genericSaveErrorLower'));
                 }
                 return;
             }
@@ -3419,17 +3459,17 @@ export const SlideMaterial = ({
                     });
 
                     await addUpdateQuizSlide(payload);
-                    toast.success(`Quiz saved in draft successfully!`);
+                    toast.success(t('slideEditor:quiz.savedDraft'));
                 } catch (error) {
                     console.error('Error saving quiz slide:', error);
-                    toast.error('Error saving quiz slide');
+                    toast.error(t('slideEditor:quiz.saveError'));
                 }
                 return;
             }
 
             if (activeItem?.source_type === 'AUDIO') {
                 if (!activeItem.audio_slide) {
-                    toast.error('Audio slide data is missing');
+                    toast.error(t('slideEditor:audio.missingData'));
                     return;
                 }
                 try {
@@ -3452,10 +3492,10 @@ export const SlideMaterial = ({
                             transcript: activeItem.audio_slide.transcript || null,
                         },
                     });
-                    toast.success('Audio slide saved successfully!');
+                    toast.success(t('slideEditor:audio.savedSuccess'));
                 } catch (error) {
                     console.error('Error saving audio slide:', error);
-                    toast.error('Error saving audio slide');
+                    toast.error(t('slideEditor:audio.saveError'));
                 }
                 return;
             }
@@ -3463,7 +3503,7 @@ export const SlideMaterial = ({
             // Handle SCORM slides
             if (activeItem?.source_type === 'SCORM') {
                 if (!activeItem.scorm_slide) {
-                    toast.error('SCORM slide data is missing');
+                    toast.error(t('slideEditor:scorm.missingData'));
                     return;
                 }
                 try {
@@ -3483,10 +3523,10 @@ export const SlideMaterial = ({
                             id: activeItem.scorm_slide.id,
                         },
                     });
-                    toast.success('SCORM slide saved successfully!');
+                    toast.success(t('slideEditor:scorm.savedSuccess'));
                 } catch (error) {
                     console.error('Error saving SCORM slide:', error);
-                    toast.error('Error saving SCORM slide');
+                    toast.error(t('slideEditor:scorm.saveError'));
                 }
                 return;
             }
@@ -3494,7 +3534,7 @@ export const SlideMaterial = ({
             // Handle ASSESSMENT slides (assessment linked to a slide)
             if (activeItem?.source_type === 'ASSESSMENT') {
                 if (!activeItem.assessment_slide) {
-                    toast.error('Assessment slide data is missing');
+                    toast.error(t('slideEditor:assessment.missingData'));
                     return;
                 }
                 try {
@@ -3516,10 +3556,10 @@ export const SlideMaterial = ({
                             show_result: activeItem.assessment_slide.show_result ?? true,
                         },
                     });
-                    toast.success('Assessment slide saved successfully!');
+                    toast.success(t('slideEditor:assessment.savedSuccess'));
                 } catch (error) {
                     console.error('Error saving assessment slide:', error);
-                    toast.error('Error saving assessment slide');
+                    toast.error(t('slideEditor:assessment.saveError'));
                 }
                 return;
             }
@@ -3574,11 +3614,11 @@ export const SlideMaterial = ({
 
                     const successMessage =
                         slide?.status === 'PUBLISHED'
-                            ? 'Presentation saved as draft (unsync from published version)!'
-                            : 'Presentation saved successfully!';
+                            ? t('slideEditor:presentation.savedUnsync')
+                            : t('slideEditor:presentation.savedSuccess');
                     toast.success(successMessage);
                 } catch {
-                    toast.error('Error saving presentation');
+                    toast.error(t('slideEditor:presentation.saveError'));
                 }
                 return;
             }
@@ -3615,7 +3655,7 @@ export const SlideMaterial = ({
                                     : activeItem.document_slide.type?.startsWith('SPLIT_')
                                       ? `Split Screen ${activeItem.document_slide.type.replace('SPLIT_', '')}`
                                       : 'Interactive Slide';
-                        toast.success(`${slideTypeName} is already up to date!`);
+                        toast.success(t('slideEditor:slide.typeUpToDate', { type: slideTypeName }));
                         lastSaveDraftOutcomeRef.current = 'success'; // no-op, nothing to persist
                         return;
                     }
@@ -3651,13 +3691,11 @@ export const SlideMaterial = ({
                                 : activeItem.document_slide.type?.startsWith('SPLIT_')
                                   ? `Split Screen ${activeItem.document_slide.type.replace('SPLIT_', '')}`
                                   : 'Interactive Slide';
-                    toast.success(`${slideTypeName} saved successfully!`);
+                    toast.success(t('slideEditor:slide.typeSavedSuccess', { type: slideTypeName }));
                     lastSaveDraftOutcomeRef.current = 'success';
                 } catch (error) {
                     console.error(`Error saving ${activeItem.document_slide.type} slide:`, error);
-                    toast.error(
-                        `Error saving ${activeItem.document_slide.type.toLowerCase()} slide`
-                    );
+                    toast.error(t('slideEditor:slide.typeSaveError', { type: activeItem.document_slide.type.toLowerCase() }));
                 }
                 return;
             }
@@ -3680,7 +3718,7 @@ export const SlideMaterial = ({
                     '';
                 const saved = await saveHtmlDocDraft(slide, htmlString, { silent: false });
                 if (saved) {
-                    toast.success('slide saved in draft successfully!');
+                    toast.success(t('slideEditor:slide.savedDraft'));
                     lastSaveDraftOutcomeRef.current = 'success';
                 }
                 return;
@@ -3730,10 +3768,10 @@ export const SlideMaterial = ({
                         new_slide: false,
                         notify: false,
                     });
-                    toast.success(`slide saved in draft successfully!`);
+                    toast.success(t('slideEditor:slide.savedDraft'));
                     lastSaveDraftOutcomeRef.current = 'success';
                 } catch {
-                    toast.error(`Error in saving the slide`);
+                    toast.error(t('slideEditor:slide.saveErrorGeneric'));
                 }
                 return;
             }
@@ -3759,9 +3797,7 @@ export const SlideMaterial = ({
             // auto-save and publish paths do. (This used to warn and save anyway.)
             if (lastSerializeDegradedRef.current) {
                 toast.error(
-                    'This slide could not be read correctly, so it was NOT saved. ' +
-                        'Your saved content is safe — reload the page to get it back, then redo ' +
-                        'any recent edits.'
+                    t('slideEditor:doc.corruptNotSaved')
                 );
                 return;
             }
@@ -3780,11 +3816,11 @@ export const SlideMaterial = ({
                 uploadedImagesCount = uploadedImages;
 
                 if (failedUploads > 0) {
-                    toast.error(`Warning: ${failedUploads} images failed to upload`);
+                    toast.error(t('slideEditor:images.someFailedToUpload', { count: failedUploads }));
                 }
                 if (uploadedImages > 0) {
                     console.log(`Successfully processed ${uploadedImages} images`);
-                    toast.success(`Slide saved with ${uploadedImages} images uploaded!`);
+                    toast.success(t('slideEditor:images.savedWithImages', { count: uploadedImages }));
                 }
             }
 
@@ -3799,7 +3835,7 @@ export const SlideMaterial = ({
                     '⚠️ Skipping SaveDraft for DOC — editor returned empty content. html:',
                     processedHtmlString
                 );
-                toast.error('Could not read editor content. Please try again.');
+                toast.error(t('slideEditor:doc.readError'));
                 return;
             }
 
@@ -3838,7 +3874,7 @@ export const SlideMaterial = ({
                 await saveDocDraft(false);
                 lastSaveDraftOutcomeRef.current = 'success';
                 if (!containsBase64Images(currentHtml) || uploadedImagesCount === 0) {
-                    toast.success(`slide saved in draft successfully!`);
+                    toast.success(t('slideEditor:slide.savedDraft'));
                 }
             } catch (error) {
                 const response = (
@@ -3854,14 +3890,14 @@ export const SlideMaterial = ({
                     if (!confirmed) return;
                     try {
                         await saveDocDraft(true);
-                        toast.success('Slide saved (forced override).');
+                        toast.success(t('slideEditor:slide.forcedOverride'));
                         lastSaveDraftOutcomeRef.current = 'success';
                     } catch {
-                        toast.error('Error in saving the slide');
+                        toast.error(t('slideEditor:slide.saveErrorGeneric'));
                     }
                     return;
                 }
-                toast.error(serverMessage || `Error in saving the slide`);
+                toast.error(serverMessage || t('slideEditor:slide.saveErrorGeneric'));
             }
         } finally {
             setIsSaving(false);
@@ -3875,14 +3911,14 @@ export const SlideMaterial = ({
         try {
             // Step 1: Get current state from Excalidraw editor
             if (!getCurrentExcalidrawStateRef.current) {
-                toast.error('Editor not ready. Please try again.');
+                toast.error(t('slideEditor:presentation.editorNotReady'));
                 return;
             }
 
             const currentState = getCurrentExcalidrawStateRef.current();
 
             if (!currentState.elements || currentState.elements.length === 0) {
-                toast.error('No content to publish. Please add some content first.');
+                toast.error(t('slideEditor:presentation.noContentToPublish'));
                 return;
             }
 
@@ -3920,7 +3956,7 @@ export const SlideMaterial = ({
             );
 
             if (!publishedFileId) {
-                toast.error('Failed to upload presentation data');
+                toast.error(t('slideEditor:presentation.uploadFailed'));
                 return;
             }
 
@@ -3960,10 +3996,10 @@ export const SlideMaterial = ({
             };
             setActiveItem(updatedActiveItem);
 
-            toast.success('Presentation published successfully!');
+            toast.success(t('slideEditor:presentation.publishedSuccess'));
         } catch (error) {
             console.error('Error publishing presentation:', error);
-            toast.error('Failed to publish presentation');
+            toast.error(t('slideEditor:presentation.publishFailed'));
         }
     };
 
@@ -3997,7 +4033,7 @@ export const SlideMaterial = ({
                                   ? `Split Screen ${activeItem.document_slide.type.replace('SPLIT_', '')}`
                                   : 'Interactive Slide';
 
-                    toast.success(`${slideTypeName} is up to date! Changes are auto-saved.`);
+                    toast.success(t('slideEditor:slide.typeUpToDateAutoSaved', { type: slideTypeName }));
                     return;
                 }
             }
@@ -4037,7 +4073,7 @@ export const SlideMaterial = ({
                 clearLocalDraft(activeItem?.id);
             }
         } catch {
-            toast.error('error saving document');
+            toast.error(t('slideEditor:doc.saveErrorGeneric'));
         }
     };
 
@@ -4300,10 +4336,10 @@ export const SlideMaterial = ({
             } as Slide);
             setHistoryRestoreNonce((n) => n + 1);
             setIsConvertOpen(false);
-            toast.success('Converted to the new editor.');
+            toast.success(t('slideEditor:doc.convertedToLexical'));
         } catch (error) {
             console.error('Convert to Lexical failed:', error);
-            toast.error('Could not convert this document. Please try again.');
+            toast.error(t('slideEditor:doc.convertFailed'));
         } finally {
             setIsConverting(false);
         }
@@ -4319,7 +4355,7 @@ export const SlideMaterial = ({
         lastLoadContentSlideIdRef.current = null;
         setHistoryRestoreNonce((n) => n + 1);
         setIsDiscardConfirmOpen(false);
-        toast.success('Changes discarded — restored to the last saved version.');
+        toast.success(t('slideEditor:slide.discardedRestored'));
     };
 
     // A version-history snapshot was copied into this slide's draft on the
@@ -4405,7 +4441,7 @@ export const SlideMaterial = ({
             )}
             {/* Confirm discarding the active slide's unsaved local edits. */}
             <MyDialog
-                heading="Discard changes"
+                heading={t('ui.discardDialogHeading')}
                 open={isDiscardConfirmOpen}
                 onOpenChange={setIsDiscardConfirmOpen}
                 dialogWidth="w-full max-w-md"
@@ -4416,7 +4452,7 @@ export const SlideMaterial = ({
                             scale="medium"
                             onClick={() => setIsDiscardConfirmOpen(false)}
                         >
-                            Keep editing
+                            {t('ui.keepEditing')}
                         </MyButton>
                         <MyButton
                             buttonType="secondary"
@@ -4424,15 +4460,15 @@ export const SlideMaterial = ({
                             className="border-danger-400 text-danger-600 hover:bg-danger-50"
                             onClick={handleDiscardActiveDraft}
                         >
-                            Discard changes
+                            {t('ui.discardChanges')}
                         </MyButton>
                     </div>
                 }
             >
                 <p className="text-subtitle text-neutral-600">
-                    This will throw away the unsaved edits on this{' '}
-                    {getTerminology(ContentTerms.Slide, SystemTerms.Slide).toLowerCase()} and
-                    restore the last saved version. This cannot be undone.
+                    {t('ui.discardDialogBody', {
+                        term: getTerminology(ContentTerms.Slide, SystemTerms.Slide).toLowerCase(),
+                    })}
                 </p>
             </MyDialog>
             {/* Convert legacy (Yoopta) DOC → new (Lexical) editor, with a
@@ -4473,7 +4509,11 @@ export const SlideMaterial = ({
                                             addUpdateDocumentSlide,
                                             addUpdateQuizSlide, // <-- pass this for QUIZ support
                                             updateAssignmentOrder, // <-- pass for ASSIGNMENT
-                                            updateQuestionOrder // <-- pass for QUESTION
+                                            updateQuestionOrder, // <-- pass for QUESTION
+                                            addUpdateAudioSlide,
+                                            addUpdateScormSlide,
+                                            addUpdateAssessmentSlide,
+                                            addUpdateHtmlVideoSlide
                                         )
                                     }
                                     className="cursor-pointer hover:text-primary-500"
@@ -4575,16 +4615,41 @@ export const SlideMaterial = ({
                                         {isSaving ? (
                                             <>
                                                 <Loader2 className="size-4 animate-spin text-primary-500 " />
-                                                Saving...
+                                                {t('ui.saving')}
                                             </>
                                         ) : hidePublishButtons ? (
                                             <FloppyDisk size={18} />
                                         ) : (
                                             <>
                                                 <FloppyDisk size={18} className="md:hidden" />
-                                                <span className="hidden md:inline">Save Draft</span>
+                                                <span className="hidden md:inline">{t('ui.saveDraft')}</span>
                                             </>
                                         )}
+                                    </MyButton>
+                                )}
+
+                                {/* Assign this slide as a daily-engagement task. Offered only for a
+                                    PUBLISHED slide: a draft is invisible to learners, so scheduling
+                                    one would create a task nobody could open. */}
+                                {!hidePublishButtons && activeItem.status === 'PUBLISHED' && (
+                                    <MyButton
+                                        buttonType="secondary"
+                                        scale="medium"
+                                        layoutVariant="default"
+                                        onClick={() => setIsAssignTaskOpen(true)}
+                                    >
+                                        <span className="hidden md:inline">
+                                            {t('slideAction.assignTask', {
+                                                ns: 'engagement',
+                                                defaultValue: 'Assign as task',
+                                            })}
+                                        </span>
+                                        <span className="md:hidden">
+                                            {t('slideAction.task', {
+                                                ns: 'engagement',
+                                                defaultValue: 'Task',
+                                            })}
+                                        </span>
                                     </MyButton>
                                 )}
 
@@ -4602,8 +4667,8 @@ export const SlideMaterial = ({
                                                 layoutVariant="default"
                                                 onClick={() => setIsUnpublishDialogOpen(true)}
                                             >
-                                                <span className="hidden sm:inline">Unpublish</span>
-                                                <span className="text-xs sm:hidden">Unpub</span>
+                                                <span className="hidden sm:inline">{t('ui.unpublish')}</span>
+                                                <span className="text-xs sm:hidden">{t('ui.unpublishShort')}</span>
                                             </MyButton>
                                         }
                                         handlePublishUnpublishSlide={() =>
@@ -4635,8 +4700,8 @@ export const SlideMaterial = ({
                                                 layoutVariant="default"
                                                 onClick={() => setIsPublishDialogOpen(true)}
                                             >
-                                                <span className="hidden sm:inline">Publish</span>
-                                                <span className="text-xs sm:hidden">Pub</span>
+                                                <span className="hidden sm:inline">{t('ui.publish')}</span>
+                                                <span className="text-xs sm:hidden">{t('ui.publishShort')}</span>
                                             </MyButton>
                                         }
                                         handlePublishUnpublishSlide={async (_setIsOpen, notify) => {
@@ -4685,9 +4750,7 @@ export const SlideMaterial = ({
                                                     // they've merely ADDED content — they click OK
                                                     // and the lesson is gone.
                                                     if (lastSerializeDegradedRef.current) {
-                                                        toast.error(
-                                                            'Some blocks on this slide could not be read, so publishing was stopped to protect your content. Please reload the page and try again.'
-                                                        );
+                                                        toast.error(t('slideEditor:doc.corruptNotPublished'));
                                                         setIsPublishDialogOpen(false);
                                                         return;
                                                     }
@@ -4730,9 +4793,7 @@ export const SlideMaterial = ({
                                                         !currentHtml ||
                                                         isHtmlDocEmpty(currentHtml)
                                                     ) {
-                                                        toast.error(
-                                                            'Could not read editor content. Please try again.'
-                                                        );
+                                                        toast.error(t('slideEditor:doc.readError'));
                                                         setIsPublishDialogOpen(false);
                                                         return;
                                                     }
@@ -4760,7 +4821,8 @@ export const SlideMaterial = ({
                                                     SaveDraft,
                                                     playerRef,
                                                     addUpdateAssessmentSlide,
-                                                    () => clearLocalDraft(activeItem?.id)
+                                                    () => clearLocalDraft(activeItem?.id),
+                                                    tPublish
                                                 );
                                             }
                                         }}
@@ -4807,7 +4869,7 @@ export const SlideMaterial = ({
                                 <MyButton
                                     layoutVariant="icon"
                                     buttonType="secondary"
-                                    title="Open Doubt Resolution Sidebar"
+                                    title={t('ui.openDoubtSidebar')}
                                     onClick={() => setSidebarOpen(true)}
                                 >
                                     <ChatCircleDots className="size-5" />
@@ -4831,19 +4893,19 @@ export const SlideMaterial = ({
             {!isLearnerView && activeSlideHasRealChanges && (
                 <div
                     role="region"
-                    aria-label="Unsaved changes"
+                    aria-label={t('ui.unsavedChanges')}
                     className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-full border border-warning-300 bg-white/95 py-1.5 pl-4 pr-2 shadow-xl backdrop-blur animate-in fade-in slide-in-from-bottom-2"
                 >
                     <div className="flex items-center gap-2 whitespace-nowrap text-sm font-medium text-neutral-700">
                         <Warning className="size-4 shrink-0 text-warning-600" weight="fill" />
-                        Unsaved changes
+                        {t('ui.unsavedChanges')}
                     </div>
                     <MyButton
                         buttonType="text"
                         scale="small"
                         onClick={() => setIsCompareOpen(true)}
                     >
-                        View changes
+                        {t('ui.viewChanges')}
                     </MyButton>
                     <MyButton
                         buttonType="secondary"
@@ -4851,7 +4913,7 @@ export const SlideMaterial = ({
                         onClick={() => setIsDiscardConfirmOpen(true)}
                         className="!rounded-full border-danger-300 text-danger-600 hover:bg-danger-50"
                     >
-                        Discard changes
+                        {t('ui.discardChanges')}
                     </MyButton>
                 </div>
             )}
@@ -4916,6 +4978,17 @@ export const SlideMaterial = ({
 
             {/* ✅ Doubt Sidebar (mounted only if allowed) */}
             {showManageDoubts && <DoubtResolutionSidebar />}
+
+            {/* Schedule this slide as a daily-engagement task. Opens preloaded with the
+                slide, so the teacher only chooses batches and a time window. */}
+            {isAssignTaskOpen && presetSlide && (
+                <PlanComposerDialog
+                    open={isAssignTaskOpen}
+                    onOpenChange={setIsAssignTaskOpen}
+                    onCreated={() => setIsAssignTaskOpen(false)}
+                    presetSlide={presetSlide}
+                />
+            )}
         </div>
     );
 };

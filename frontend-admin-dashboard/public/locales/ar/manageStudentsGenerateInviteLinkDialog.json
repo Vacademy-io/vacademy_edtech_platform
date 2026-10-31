@@ -1,0 +1,25 @@
+{
+    "dialogTitle": {
+        "update": "تحديث رابط {{term}}",
+        "create": "إنشاء رابط {{term}}"
+    },
+    "inviteLink": {
+        "copyTitle": "نسخ رابط الدعوة",
+        "copiedToast": "تم نسخ رابط الدعوة إلى الحافظة"
+    },
+    "toast": {
+        "updateSuccess": "تم تحديث رابط الدعوة بنجاح!",
+        "createSuccess": "تم إنشاء رابط الدعوة بنجاح!",
+        "saveError": "فشل حفظ رابط الدعوة",
+        "unexpectedError": "حدث خطأ غير متوقع",
+        "validationFailed": "فشل التحقق في: {{fields}}"
+    },
+    "actions": {
+        "close": "إغلاق",
+        "updating": "جارٍ التحديث...",
+        "creating": "جارٍ الإنشاء..."
+    },
+    "customField": {
+        "defaultOptionLabel": "خيار {{number}}"
+    }
+}

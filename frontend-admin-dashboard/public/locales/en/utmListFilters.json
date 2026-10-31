@@ -1,0 +1,22 @@
+{
+    "dimensions": {
+        "source": "UTM Source",
+        "medium": "UTM Medium",
+        "campaign": "UTM Campaign",
+        "content": "UTM Content",
+        "term": "UTM Term",
+        "sourceType": "UTM Channel"
+    },
+    "sourceTypes": {
+        "audience": "Audience form",
+        "liveSession": "Live class",
+        "assessment": "Assessment",
+        "enrollInvite": "Enrol invite",
+        "productPage": "Product page",
+        "catalogue": "Catalogue site",
+        "custom": "Other page"
+    },
+    "untagged": "No campaign (untagged)",
+    "searchPlaceholder": "Search {{dimension}}…",
+    "chip": "{{dimension}}: {{value}}"
+}

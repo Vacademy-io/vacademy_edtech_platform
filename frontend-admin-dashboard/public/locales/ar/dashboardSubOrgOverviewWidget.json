@@ -1,0 +1,26 @@
+{
+    "header": {
+        "title": "لمحة عن {{plural}}",
+        "subtitle": "نظرة سريعة على شبكة {{singular}} الخاصة بك"
+    },
+    "manage": "إدارة",
+    "stats": {
+        "total": {
+            "label": "إجمالي {{plural}}",
+            "subtitle": "{{plural}} المسجّلة"
+        },
+        "active": {
+            "label": "نشطة",
+            "subtitle": "لديها خطة نشطة"
+        },
+        "learners": {
+            "label": "المتعلمون",
+            "subtitle": "المسجّلون عبر {{plural}}"
+        },
+        "seats": {
+            "label": "المقاعد",
+            "subtitleOccupied": "المشغولة من السعة",
+            "subtitleNoCap": "لا يوجد حد أقصى معيّن"
+        }
+    }
+}

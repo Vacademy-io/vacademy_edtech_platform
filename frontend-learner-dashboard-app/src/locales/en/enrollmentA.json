@@ -1,0 +1,270 @@
+{
+  "common": {
+    "error": "Error",
+    "unexpectedError": "An unexpected error occurred. Please try again.",
+    "amountToPay": "Amount to Pay:"
+  },
+  "inviteUnavailable": {
+    "notStarted": "Enrollment for this {{course}} hasn't opened yet. Please check back later.",
+    "closed": "Enrollment for this {{course}} is currently closed."
+  },
+  "applyReferral": {
+    "title": "Referral Code",
+    "placeholder": "Enter referral code",
+    "apply": "Apply",
+    "applying": "Applying...",
+    "applied": "Applied",
+    "errors": {
+      "empty": "Please enter a referral code",
+      "invalid": "Invalid referral code",
+      "applyFailed": "Failed to apply referral code. Please try again."
+    }
+  },
+  "cashfreeCheckout": {
+    "title": "Cashfree Payment",
+    "description": "Click below to open Cashfree's secure payment page. You will enter your card details there.",
+    "notReady": "Payment not ready. Please wait.",
+    "gatewayUnavailable": "Payment gateway not available.",
+    "initFailed": "Payment initialization failed.",
+    "processFailed": "Payment could not be processed.",
+    "redirecting": "Redirecting...",
+    "proceed": "Proceed to Payment",
+    "preparing": "Preparing payment...",
+    "loading": "Loading payment form...",
+    "securedBy": "Your payment is secured by Cashfree",
+    "methods": "Cards, UPI, Net Banking, Wallets & more"
+  },
+  "razorpayCheckout": {
+    "title": "Razorpay Payment",
+    "description": "Click \"Complete Enrollment\" to proceed with payment",
+    "defaultCourseName": "{{course}} Enrollment",
+    "defaultCourseDescription": "Payment for {{course}} enrollment",
+    "scriptLoadFailed": "Failed to load Razorpay payment gateway",
+    "gatewayLoadFailed": "Failed to load payment gateway",
+    "gatewayNotReady": "Payment gateway not ready",
+    "gatewayNotInitialized": "Payment gateway not initialized",
+    "paymentCancelled": "Payment cancelled. The enrollment is created but payment is pending.",
+    "gatewayOpenFailed": "Failed to open payment gateway",
+    "securedBy": "Your payment is secured by Razorpay",
+    "methods": "Razorpay supports Credit/Debit Cards, Net Banking, UPI & Wallets"
+  },
+  "stripeCheckout": {
+    "title": "Secure Payment",
+    "description": "Enter your card details below.",
+    "notLoaded": "Stripe is not loaded yet. Please try again.",
+    "cardElementNotFound": "Card element not found. Please refresh the page.",
+    "processingError": "An error occurred during payment processing.",
+    "createMethodFailed": "Failed to create payment method."
+  },
+  "ewayCardForm": {
+    "cardNumber": "Card Number",
+    "cardNumberPlaceholder": "1234 5678 9012 3456",
+    "cardholderName": "Cardholder Name",
+    "cardholderNamePlaceholder": "John Smith",
+    "expiryDate": "Expiry Date",
+    "expiryPlaceholder": "MM/YY",
+    "cvv": "CVV",
+    "cvvPlaceholder": "123",
+    "cvvPlaceholderAmex": "1234",
+    "securityNotice": "Your card details are encrypted before being sent. We never store your card information.",
+    "browserUnsupported": "Your browser does not support secure payment encryption. Please use a modern browser like Chrome, Firefox, Safari, or Edge.",
+    "errors": {
+      "expiryRequired": "Expiry date is required",
+      "nameRequired": "Name is required"
+    }
+  },
+  "courseInfoCard": {
+    "learnersWillGain": "What {{learners}} Will Gain",
+    "aboutCourse": "About the {{course}}"
+  },
+  "cpoInstallment": {
+    "title": "Select Installments",
+    "subtitle": "Choose which installments you'd like to pay now",
+    "selectAll": "Select All",
+    "selectOverdue": "Select Overdue ({{count}})",
+    "clear": "Clear",
+    "installmentFallback": "Installment",
+    "paid": "Paid",
+    "due": "Due: {{date}}",
+    "daysOverdue": "{{days}}d overdue",
+    "overdue": "Overdue",
+    "settled": "Settled",
+    "paidSoFar": "Paid so far: {{amount}}",
+    "customAmountLabel": "Enter a custom amount instead",
+    "amountPlaceholder": "0.00",
+    "allocationHint": "Payment will be allocated across selected installments in order of due date.",
+    "customAmount": "Custom amount",
+    "installmentsSelected_one": "{{count}} installment selected",
+    "installmentsSelected_other": "{{count}} installments selected",
+    "totalOutstanding": "Total outstanding: {{amount}}",
+    "noDuesFound": "No dues found",
+    "allSettled": "All installments appear to be settled."
+  },
+  "enrollmentPolicy": {
+    "thisCourse": "this {{course}}",
+    "successTitle": "Enrollment Successful",
+    "completeStepsPrefix": "Complete the following steps to activate your access to",
+    "whatsappVerification": "WhatsApp Verification",
+    "alreadyEnrolledTitle": "Already Enrolled",
+    "alreadyEnrolledMessage": "You are already enrolled in this {{course}}. Please complete your current enrollment first.",
+    "wantToUpgrade": "Want to Upgrade?",
+    "upgradePremiumFallback": "Upgrade to get access to premium features.",
+    "upgradeNow": "Upgrade Now",
+    "close": "Close",
+    "goToDashboard": "Go to Dashboard",
+    "loginNow": "Login now",
+    "readyToContinue": "Ready to continue ?",
+    "reenrollmentBlockedFallback": "Re-enrollment is not available just yet. Please try again later.",
+    "upgradeToContinueLearning": "Upgrade to Continue Learning",
+    "clickBelowToJoin": "Click below to join membership.",
+    "activeMembershipTitle": "You have an active membership",
+    "activeMembershipMessage": "You are in our active membership plan. Please check whatsapp message and use link from text or email to join {{session}} everyday. "
+  },
+  "navigationButtons": {
+    "previous": "Previous",
+    "processing": "Processing...",
+    "completeEnrollment": "Complete Enrollment",
+    "payNow": "Pay Now",
+    "confirmAndPay": "Confirm & Pay",
+    "next": "Next"
+  },
+  "onetimePlan": {
+    "percentOff": "{{amount}}% off",
+    "fixedOff": "{{currency}}{{amount}} off"
+  },
+  "paymentGatewayWrapper": {
+    "unsupportedTitle": "Unsupported Payment Gateway",
+    "unsupportedMessage": "The payment gateway \"{{vendor}}\" is not supported."
+  },
+  "paymentInfoStep": {
+    "securePayment": "Secure Payment",
+    "enterCardDetails": "Enter your card details below.",
+    "loadingStripeConfig": "Loading Stripe configuration...",
+    "stripeConfigErrorTitle": "Stripe Configuration Error",
+    "stripeLoadFailed": "Failed to load Stripe configuration. Please try again.",
+    "stripeUnavailable": "Unable to load Stripe payment gateway. Please contact support.",
+    "instituteId": "Institute ID: {{instituteId}}",
+    "errorDetail": "Error: {{error}}",
+    "stripeKeyMissingTitle": "Stripe Key Missing",
+    "stripeKeyMissingMessage": "Stripe publishable key not found in configuration.",
+    "availableKeys": "Available keys: {{keys}}",
+    "loadingPaymentForm": "Loading payment form...",
+    "gatewayNotConfiguredTitle": "Payment Gateway Not Configured",
+    "gatewayNotConfiguredMessage": "The payment gateway \"{{vendor}}\" is not yet supported. Please contact support.",
+    "phonepe": {
+      "title": "Pay with PhonePe",
+      "description": "You'll be securely redirected to PhonePe to complete your payment. After paying, you'll be brought back here automatically.",
+      "descriptionWithAmount": "You'll be securely redirected to PhonePe to complete your payment of {{currency}} {{amount}}. After paying, you'll be brought back here automatically.",
+      "clickPrefix": "Click",
+      "clickSuffix": "below to continue."
+    }
+  },
+  "paymentPending": {
+    "title": "Payment Pending",
+    "subtitle": "Complete your payment to proceed",
+    "amount": "Amount:",
+    "status": "Status:",
+    "completePayment": "Complete Payment",
+    "viewInvoice": "View Invoice",
+    "redirectNotice": "You will be redirected to a secure payment page",
+    "securityNotice": "Payments are processed securely"
+  },
+  "paymentSelection": {
+    "donation": {
+      "title": "Make a Donation",
+      "subtitle": "Support our cause with your generous contribution",
+      "suggestedAmounts": "Suggested Amounts",
+      "customAmount": "Custom Amount",
+      "minimumPlaceholder": "Minimum {{amount}}",
+      "minimumAmount": "Minimum donation amount: {{amount}}",
+      "yourDonation": "Your Donation:"
+    },
+    "regular": {
+      "title": "Select Payment Plan",
+      "subtitle": "Choose the payment option that best suits your needs"
+    }
+  },
+  "registrationStep": {
+    "title": "Registration Details",
+    "subtitle": "Fill in your details to enroll in the {{course}}",
+    "phonePlaceholder": "123 456 7890",
+    "reset": "Reset",
+    "next": "Next",
+    "sending": "Sending...",
+    "billingContact": {
+      "fullNameLabel": "Billing Contact Full Name",
+      "emailLabel": "Billing Contact Email",
+      "roleLabel": "Role",
+      "addSeparate": "Add a separate billing contact",
+      "addSeparateHint": "Choose this if the person who will receive invoices and renewal notices for this enrollment is different from you (e.g. a parent / guardian, your employer, or your finance team).",
+      "namePlaceholder": "First name & last name",
+      "selectPlaceholder": "Select…"
+    },
+    "errors": {
+      "fillRequiredFields": "Please fill in all required fields",
+      "enterEmail": "Please enter your email address",
+      "enterValidEmail": "Please enter a valid email address",
+      "pleaseEnterField": "Please enter {{field}}",
+      "pleaseEnterValidField": "Please enter a valid {{field}}"
+    },
+    "otp": {
+      "title": "Verify Your Email",
+      "sentTo": "We've sent a verification code to",
+      "cantFindEmail": "Can't find the email?",
+      "checkSpamPrefix": "Check your",
+      "spam": "Spam",
+      "orWord": "or",
+      "junk": "Junk",
+      "folderSuffix": "folder",
+      "checkEmailCorrect": "Make sure the email address is correct",
+      "waitAndRefresh": "Wait a few seconds and refresh your inbox",
+      "enterCodeLabel": "Enter Verification Code",
+      "enterCodePlaceholder": "Enter 6-digit code",
+      "verifying": "Verifying...",
+      "verifiedProceeding": "Verified! Proceeding...",
+      "verifyAndContinue": "Verify & Continue",
+      "editDetails": "Edit Details",
+      "resendCode": "Resend Code",
+      "codeSent": "Verification code sent to your email",
+      "sendFailed": "Failed to send verification code. Please try again",
+      "codeResent": "Verification code resent",
+      "resendFailed": "Failed to resend. Please try again",
+      "enterValidCode": "Please enter a valid verification code",
+      "verifiedSuccess": "Email verified successfully!",
+      "invalidCode": "Invalid code. Please check and try again"
+    }
+  },
+  "reviewStep": {
+    "orderSummary": "Order Summary",
+    "reviewOrder": "Review your order before proceeding to payment",
+    "courseBannerAlt": "{{course}} Banner",
+    "planDetails": "Plan Details",
+    "plan": "Plan:",
+    "validity": "Validity:",
+    "referralBenefits": "Referral Benefits",
+    "pricing": {
+      "title": "Pricing",
+      "price": "Price:",
+      "discount": "Discount:",
+      "referralDiscount": "Referral Discount:",
+      "percentageSuffix": " ({{percentage}}%)",
+      "couponLabel": "Coupon ({{code}}):",
+      "totalPrice": "Total Price:",
+      "allPricesIn": "All prices in {{currency}}",
+      "free": "Free",
+      "months_one": "{{count}} month",
+      "months_other": "{{count}} months",
+      "days_one": "{{count}} day",
+      "days_other": "{{count}} days"
+    },
+    "benefits": {
+      "freeMembershipDays": "{{days}} Free Membership Days 🎉",
+      "bonusContent": "You will get bonus content {{deliveryText}} after enrolling in the {{course}}. 🎉",
+      "rewardPoints": "Earn {{points}} reward points ⭐️ after enrolling in the {{course}}. 🎉",
+      "mediumEmail": "Email",
+      "mediumWhatsapp": "WhatsApp",
+      "onOneMedium": " on {{medium}}",
+      "onTwoMediums": " on {{medium1}} and {{medium2}}"
+    }
+  }
+}

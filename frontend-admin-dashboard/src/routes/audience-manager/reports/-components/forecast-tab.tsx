@@ -8,6 +8,7 @@
  * fixed trailing-history window.
  */
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { ChartLineUp, Info, TrendUp } from '@phosphor-icons/react';
 import { fetchRevenueForecast, forecastQueryKey } from '../-services/get-revenue-reports';
 import {
@@ -28,6 +29,7 @@ export function ForecastTab({
     teamId,
     counsellorUserId,
 }: ReportTabProps) {
+    const { t } = useTranslation('audienceManagerForecastTab');
     // fromDate/toDate are part of the shared key but the forecast endpoint ignores them.
     const params = { instituteId, fromDate, toDate, teamId, counsellorUserId };
     const query = useQuery({
@@ -48,9 +50,9 @@ export function ForecastTab({
 
     return (
         <div className="flex flex-col gap-6">
-            <ReportSection title="Revenue forecast" icon={<TrendUp size={18} />}>
+            <ReportSection title={t('title')} icon={<TrendUp size={18} />}>
                 {horizons.length === 0 ? (
-                    <EmptyHint message="Not enough history to forecast yet." />
+                    <EmptyHint message={t('empty.noHistory')} />
                 ) : (
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                         {horizons.map((h) => (
@@ -59,21 +61,27 @@ export function ForecastTab({
                                 className="flex flex-col gap-3 rounded-xl border border-neutral-200 bg-white p-5 shadow-sm"
                             >
                                 <span className="text-xs font-medium uppercase tracking-wide text-neutral-500">
-                                    Next {h.days} days
+                                    {t('horizon.label', { count: h.days })}
                                 </span>
                                 <span className="text-3xl font-bold tracking-tight text-green-700">
                                     {fmtCurrency(h.blended_revenue, currency)}
                                 </span>
-                                <span className="text-xs text-neutral-500">Blended estimate</span>
+                                <span className="text-xs text-neutral-500">
+                                    {t('horizon.blendedEstimate')}
+                                </span>
                                 <div className="mt-1 flex flex-col gap-1.5 border-t border-neutral-100 pt-3 text-xs">
                                     <div className="flex items-center justify-between">
-                                        <span className="text-neutral-500">Run-rate</span>
+                                        <span className="text-neutral-500">
+                                            {t('horizon.runRate')}
+                                        </span>
                                         <span className="font-medium text-neutral-800">
                                             {fmtCurrency(h.run_rate_revenue, currency)}
                                         </span>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-neutral-500">Pipeline-weighted</span>
+                                        <span className="text-neutral-500">
+                                            {t('horizon.pipelineWeighted')}
+                                        </span>
                                         <span className="font-medium text-neutral-800">
                                             {fmtCurrency(h.pipeline_revenue, currency)}
                                         </span>
@@ -86,43 +94,42 @@ export function ForecastTab({
             </ReportSection>
 
             {a && (
-                <ReportSection title="How this is calculated" icon={<Info size={18} />}>
+                <ReportSection title={t('calculationTitle')} icon={<Info size={18} />}>
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                         <Assumption
-                            label={`Revenue (last ${a.trailing_days}d)`}
+                            label={t('assumptions.revenueLastDays', { days: a.trailing_days })}
                             value={fmtCurrency(a.trailing_revenue, currency)}
                         />
                         <Assumption
-                            label="Avg daily revenue"
+                            label={t('assumptions.avgDailyRevenue')}
                             value={fmtCurrency(a.avg_daily_revenue, currency)}
                         />
                         <Assumption
-                            label={`Leads (last ${a.trailing_days}d)`}
+                            label={t('assumptions.leadsLastDays', { days: a.trailing_days })}
                             value={fmtNumber(a.trailing_leads)}
                         />
                         <Assumption
-                            label={`Conversions (last ${a.trailing_days}d)`}
+                            label={t('assumptions.conversionsLastDays', {
+                                days: a.trailing_days,
+                            })}
                             value={fmtNumber(a.trailing_conversions)}
                         />
                         <Assumption
-                            label="Historical conv. rate"
+                            label={t('assumptions.historicalConvRate')}
                             value={fmtPct(a.historical_conversion_rate)}
                         />
                         <Assumption
-                            label="Avg deal value"
+                            label={t('assumptions.avgDealValue')}
                             value={fmtCurrency(a.avg_deal_value, currency)}
                         />
                         <Assumption
-                            label="Open pipeline leads"
+                            label={t('assumptions.openPipelineLeads')}
                             value={fmtNumber(a.open_pipeline_leads)}
                         />
                     </div>
                     <p className="flex items-start gap-1.5 text-xs text-neutral-400">
                         <ChartLineUp size={13} className="mt-0.5 shrink-0" />
-                        Run-rate = average daily revenue × horizon. Pipeline-weighted = open leads ×
-                        historical conversion rate × avg deal value, ramped in by horizon. Blended
-                        is the average of the two. The forecast uses a fixed trailing window, not
-                        the page date filter.
+                        {t('assumptions.footnote')}
                     </p>
                 </ReportSection>
             )}

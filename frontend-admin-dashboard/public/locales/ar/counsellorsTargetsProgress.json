@@ -1,0 +1,13 @@
+{
+    "noTargetSet": "لم يتم تحديد هدف",
+    "metricFull": {
+        "CONVERSIONS": "التحويلات",
+        "LEADS_ASSIGNED": "العملاء المحتملون المُسندون",
+        "CALLS_MADE": "المكالمات التي تمت"
+    },
+    "metricShort": {
+        "CONVERSIONS": "تحويل",
+        "LEADS_ASSIGNED": "عملاء",
+        "CALLS_MADE": "مكالمات"
+    }
+}

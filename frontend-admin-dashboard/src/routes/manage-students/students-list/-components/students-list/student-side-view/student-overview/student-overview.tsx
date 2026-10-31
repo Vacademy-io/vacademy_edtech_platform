@@ -12,8 +12,9 @@ import {
 } from '@phosphor-icons/react';
 import { useStudentSidebar } from '@/routes/manage-students/students-list/-context/selected-student-sidebar-context';
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { OverViewData, OverviewDetailsType } from './overview';
+import { buildOverviewData, OverviewDetailsType, OverviewFieldKey, OverviewSectionKey } from './overview';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { useStudentCredentialsStore } from '@/stores/students/students-list/useStudentCredentialsStore';
 import { useGetStudentDetails } from '@/services/get-student-details';
@@ -24,10 +25,13 @@ import { getCustomFieldSettingsFromCache } from '@/services/custom-field-setting
 import type { FieldGroup } from '@/services/custom-field-settings';
 import { getPublicUrl } from '@/services/upload_file';
 import { ProfileSectionCard, ProfileFieldRow, ProfileEmpty } from '../profile-ui';
+import { ContactCallButton } from '@/components/shared/telephony/contact-call-button';
 import { EditStudentDetails } from './EditStudentDetails';
 import { EditLeadDetails } from './EditLeadDetails';
-import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
-import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import { StudentAttribution } from '../student-attribution/student-attribution';
+import { StudentReferral } from '../student-referral/student-referral';
+import { OverviewRemarks } from './overview-remarks';
+import { OverviewOtherContacts } from './overview-other-contacts';
 
 /**
  * Overview tab — intentionally simple: a clean stack of label/value section
@@ -37,12 +41,14 @@ import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingS
  * recent-activity) were removed in favour of this scannable, professional layout.
  */
 export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean }) => {
+    const { t } = useTranslation('manageStudentsOverview');
     const { selectedStudent } = useStudentSidebar();
 
     const [overviewData, setOverviewData] = useState<OverviewDetailsType[] | null>(null);
     const [copiedField, setCopiedField] = useState<string>('');
     const [customFields, setCustomFields] = useState<FieldForLocation[]>([]);
     const [fieldGroups, setFieldGroups] = useState<FieldGroup[]>([]);
+    const [otherFields, setOtherFields] = useState<{ id: string; name: string }[]>([]);
     const [tncFileUrl, setTncFileUrl] = useState<string | null>(null);
     const userId = isSubmissionTab ? selectedStudent?.id : selectedStudent?.user_id;
     const { data: studentDetails, isLoading, isError, error } = useGetStudentDetails(userId || '');
@@ -51,7 +57,7 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
     const { getCredentials } = useStudentCredentialsStore();
     const [password, setPassword] = useState(
         getCredentials(isSubmissionTab ? selectedStudent?.id || '' : selectedStudent?.user_id || '')
-            ?.password || 'password not found'
+            ?.password || t('password.notFound')
     );
 
     // Load custom fields and groups for the side view. We gate on the "Learner's
@@ -88,9 +94,29 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
 
             setCustomFields(individualFields);
             setFieldGroups(filteredGroups);
+
+            // Fields switched off for the Learner's List (e.g. ones added only on a
+            // product page / invite / form) are still listed when this learner filled
+            // them — otherwise the answer is saved but never visible to the admin.
+            const shownIds = new Set([
+                ...individualFields.map((f) => f.id),
+                ...Array.from(fieldIdsInGroups),
+            ]);
+            const namesById = new Map<string, string>();
+            [
+                ...settings.customFields,
+                ...settings.fixedFields,
+                ...settings.fieldGroups.flatMap((group) => group.fields),
+            ].forEach((field) => {
+                if (!shownIds.has(field.id) && !namesById.has(field.id)) {
+                    namesById.set(field.id, field.name);
+                }
+            });
+            setOtherFields(Array.from(namesById, ([id, name]) => ({ id, name })));
         } else {
             setCustomFields(fields);
             setFieldGroups([]);
+            setOtherFields([]);
         }
     }, []);
 
@@ -104,15 +130,17 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
         }
     }, [selectedStudent?.tnc_file_id]);
 
-    // Copy function with feedback
-    const handleCopy = async (text: string, fieldName: string) => {
+    // Copy function with feedback. `fieldKey` is the stable dispatch key used to
+    // track which row shows the "copied" state; `displayLabel` is the translated
+    // label shown in the toast message.
+    const handleCopy = async (text: string, displayLabel: string, fieldKey: string) => {
         try {
             await navigator.clipboard.writeText(text);
-            setCopiedField(fieldName);
-            toast.success(`${fieldName} copied to clipboard!`);
+            setCopiedField(fieldKey);
+            toast.success(t('toast.copiedToClipboard', { field: displayLabel }));
             setTimeout(() => setCopiedField(''), 2000);
         } catch (error) {
-            toast.error(`Failed to copy ${fieldName}`);
+            toast.error(t('toast.copyFailed', { field: displayLabel }));
         }
     };
 
@@ -121,9 +149,12 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
             const credentials = getCredentials(
                 isSubmissionTab ? selectedStudent.id : selectedStudent.user_id
             );
-            setPassword(credentials?.password || 'password not found');
+            setPassword(credentials?.password || t('password.notFound'));
         }
-    }, [selectedStudent]);
+        // `t` is a dependency: it changes identity when the language switches, and
+        // this effect bakes translated text into state, so without it the stored
+        // string stays in the previous language.
+    }, [selectedStudent, t]);
 
     useEffect(() => {
         const details = getDetailsFromPackageSessionId({
@@ -181,14 +212,14 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
                 ? { ...selectedStudent, ...student }
                 : selectedStudent;
         setOverviewData(
-            OverViewData({
+            buildOverviewData(t, {
                 selectedStudent: learner,
                 packageSessionDetails: details,
                 password: password,
             })
         );
 
-    }, [selectedStudent, instituteDetails, password, studentDetails]);
+    }, [selectedStudent, instituteDetails, password, studentDetails, t]);
 
     if (isLoading) {
         return <DashboardLoader />;
@@ -196,30 +227,61 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
 
     if (isError) {
         console.error(error);
-        return <div>Error fetching student details</div>;
+        return <div>{t('errors.fetchStudentDetails')}</div>;
     }
+
+    // Hidden-but-filled fields, minus the ones that only repeat the learner's
+    // name / email / phone (forms often re-ask these as "Student Name", "WhatsApp
+    // Number" etc.) — those are already shown in General Details / Contact.
+    const lastTenDigits = (value?: string | null) => (value || '').replace(/\D/g, '').slice(-10);
+    const learnerPhone = lastTenDigits(selectedStudent?.mobile_number);
+    const learnerNameAndEmail = [selectedStudent?.full_name, selectedStudent?.email]
+        .map((v) => (v || '').trim().toLowerCase())
+        .filter(Boolean);
+    const filledOtherFields = otherFields.filter((field) => {
+        const value = (selectedStudent?.custom_fields?.[field.id] || '').trim();
+        if (!value) return false;
+        if (learnerNameAndEmail.includes(value.toLowerCase())) return false;
+        return !(learnerPhone.length === 10 && lastTenDigits(value) === learnerPhone);
+    });
 
     // Copy icon is intentionally limited to Mobile No. + Email Id only — every
     // other field (IDs, custom fields, address, etc.) shows no copy affordance.
-    const COPYABLE_LABELS = new Set(['Mobile No.', 'Email Id']);
+    // Matched on overview.tsx's stable field keys, NOT the translated label, so
+    // this keeps working in every locale.
+    const COPYABLE_FIELD_KEYS = new Set<string>([OverviewFieldKey.MobileNo, OverviewFieldKey.EmailId]);
+
+    // Click-to-call sits on the learner's OWN mobile row only. The guardian rows
+    // are other people's numbers, and the backend dials the number on the
+    // subject's record — offering a button there would silently dial the wrong
+    // person. The button hides itself when the institute has no calling
+    // configured, so this costs nothing for institutes that don't call.
+    //
+    // This sidebar is shared: Manage Students, the attendance tracker and an
+    // assessment's participants all open it, and so do the lead surfaces. Leads
+    // carry a `_response_id` and are usually not enrolled, so pass it through —
+    // the backend then takes the lead path instead of the learner path.
+    const leadResponseId = (selectedStudent as unknown as Record<string, unknown> | null)
+        ?._response_id as string | undefined;
 
     // Enrolment-derived rows (Course / Level / Session) are intentionally hidden
-    // from the Overview tab — they live on the Courses / enrolment surfaces. Match
-    // on the resolved terminology labels so renamed terms still get filtered.
-    const HIDDEN_GENERAL_LABELS = new Set([
-        getTerminology(ContentTerms.Course, SystemTerms.Course),
-        getTerminology(ContentTerms.Level, SystemTerms.Level),
-        getTerminology(ContentTerms.Session, SystemTerms.Session),
+    // from the Overview tab — they live on the Courses / enrolment surfaces.
+    // Matched on the stable field keys so renamed/translated terms still filter.
+    const HIDDEN_GENERAL_FIELD_KEYS = new Set<string>([
+        OverviewFieldKey.Course,
+        OverviewFieldKey.Level,
+        OverviewFieldKey.Session,
     ]);
 
-    // Section icon keyed by heading (the section order is data-driven, so an
-    // index-based map would drift when toggles add/remove sections).
+    // Section icon keyed by the section's stable key (the section order is
+    // data-driven, so an index-based map would drift when toggles add/remove
+    // sections, and the translated heading is locale-dependent).
     const SECTION_ICONS: Record<string, typeof User> = {
-        'General Details': GraduationCap,
-        'Contact Information': Phone,
-        'Location Details': MapPin,
-        "Parent/Guardian's Details": Users,
-        'Referral Details': HandCoinsIcon,
+        [OverviewSectionKey.GeneralDetails]: GraduationCap,
+        [OverviewSectionKey.ContactInformation]: Phone,
+        [OverviewSectionKey.LocationDetails]: MapPin,
+        [OverviewSectionKey.GuardianDetails]: Users,
+        [OverviewSectionKey.ReferralDetails]: HandCoinsIcon,
     };
 
     return (
@@ -237,21 +299,27 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
                 )}
             </div>
 
+            {/* Remarks + Call — the academic-staff loop (call the learner, note the
+                outcome) lives at the top so it is reachable without scrolling past
+                the profile sections. */}
+            <OverviewRemarks
+                userId={userId}
+                userName={selectedStudent?.full_name}
+                phone={selectedStudent?.mobile_number || studentDetails?.mobile_number}
+                leadResponseId={leadResponseId}
+            />
+
             {/* Detail sections — clean label/value cards (General Details,
                 Contact Information, Location Details, Parent/Guardian's Details, …).
                 Account Credentials is intentionally skipped here; it lives on the
                 Portal Access tab. */}
             {selectedStudent != null ? (
                 overviewData?.map((studentDetail, key) => {
-                    const heading = (studentDetail.heading || '').trim();
-                    if (heading === 'Account Credentials') return null;
-                    const SectionIcon = SECTION_ICONS[heading] ?? User;
-                    const rows = (studentDetail.content || []).filter((obj) => {
-                        const colonIdx = obj.indexOf(':');
-                        const fieldName =
-                            colonIdx >= 0 ? obj.slice(0, colonIdx).trim() : obj.trim();
-                        return !HIDDEN_GENERAL_LABELS.has(fieldName);
-                    });
+                    if (studentDetail.headingKey === OverviewSectionKey.AccountCredentials) return null;
+                    const SectionIcon = SECTION_ICONS[studentDetail.headingKey] ?? User;
+                    const rows = (studentDetail.content || []).filter(
+                        (fieldRow) => !HIDDEN_GENERAL_FIELD_KEYS.has(fieldRow.key)
+                    );
                     if (rows.length === 0) return null;
 
                     return (
@@ -261,38 +329,68 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
                             heading={studentDetail.heading}
                         >
                             <dl>
-                                {rows.map((obj, key2) => {
-                                    const colonIdx = obj.indexOf(':');
-                                    const fieldName =
-                                        colonIdx >= 0
-                                            ? obj.slice(0, colonIdx).trim()
-                                            : obj.trim();
-                                    const value =
-                                        colonIdx >= 0 ? obj.slice(colonIdx + 1).trim() : '';
+                                {rows.map((fieldRow, key2) => {
                                     const canCopy =
-                                        COPYABLE_LABELS.has(fieldName) &&
-                                        !!value &&
-                                        value !== 'N/A';
+                                        COPYABLE_FIELD_KEYS.has(fieldRow.key) && !fieldRow.isEmpty;
                                     return (
                                         <ProfileFieldRow
                                             key={key2}
-                                            label={fieldName}
-                                            value={value}
-                                            copied={copiedField === fieldName}
+                                            label={fieldRow.label}
+                                            value={fieldRow.value}
+                                            copied={copiedField === fieldRow.key}
                                             onCopy={
                                                 canCopy
-                                                    ? () => handleCopy(value, fieldName)
+                                                    ? () =>
+                                                          handleCopy(
+                                                              fieldRow.value,
+                                                              fieldRow.label,
+                                                              fieldRow.key
+                                                          )
                                                     : undefined
+                                            }
+                                            action={
+                                                fieldRow.key === OverviewFieldKey.MobileNo &&
+                                                !fieldRow.isEmpty ? (
+                                                    <ContactCallButton
+                                                        userId={selectedStudent?.user_id}
+                                                        responseId={leadResponseId}
+                                                        phone={fieldRow.value}
+                                                        name={selectedStudent?.full_name}
+                                                    />
+                                                ) : undefined
                                             }
                                         />
                                     );
                                 })}
                             </dl>
+                            {/* Refer a friend: code, shareable link and who they referred.
+                                Members only (a lead or a form submission has no code), and
+                                it renders nothing unless one of their courses takes referrals. */}
+                            {studentDetail.headingKey === OverviewSectionKey.ReferralDetails &&
+                                !isSubmissionTab &&
+                                !leadResponseId && (
+                                    <StudentReferral
+                                        userId={selectedStudent?.user_id}
+                                        instituteId={instituteDetails?.id}
+                                    />
+                                )}
                         </ProfileSectionCard>
                     );
                 })
             ) : (
-                <ProfileEmpty icon={User} title="No overview data available" />
+                <ProfileEmpty icon={User} title={t('empty.noOverviewData')} />
+            )}
+
+            {/* Other phones / emails this lead's person enquired with (leads only;
+                renders nothing when there are none). */}
+            {leadResponseId && (
+                <OverviewOtherContacts
+                    responseId={leadResponseId}
+                    mainPhone={studentDetails?.mobile_number || selectedStudent?.mobile_number}
+                    mainEmail={studentDetails?.email || selectedStudent?.email}
+                    copiedField={copiedField}
+                    onCopy={handleCopy}
+                />
             )}
 
             {/* Custom field groups */}
@@ -301,7 +399,7 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
                     <dl>
                         {group.fields.map((field) => {
                             const value =
-                                selectedStudent?.custom_fields?.[field.id] || 'N/A';
+                                selectedStudent?.custom_fields?.[field.id] || t('fallback.notAvailable');
                             return (
                                 <ProfileFieldRow
                                     key={field.id}
@@ -315,12 +413,12 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
             ))}
 
             {/* Individual custom fields */}
-            {customFields.length > 0 && (
-                <ProfileSectionCard icon={Tag} heading="Custom Fields">
+            {(customFields.length > 0 || filledOtherFields.length > 0) && (
+                <ProfileSectionCard icon={Tag} heading={t('sections.customFields')}>
                     <dl>
                         {customFields.map((field) => {
                             const value =
-                                selectedStudent?.custom_fields?.[field.id] || 'N/A';
+                                selectedStudent?.custom_fields?.[field.id] || t('fallback.notAvailable');
                             return (
                                 <ProfileFieldRow
                                     key={field.id}
@@ -329,32 +427,48 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
                                 />
                             );
                         })}
+                        {filledOtherFields.map((field) => (
+                            <ProfileFieldRow
+                                key={field.id}
+                                label={field.name}
+                                value={selectedStudent?.custom_fields?.[field.id] || ''}
+                            />
+                        ))}
                     </dl>
                 </ProfileSectionCard>
             )}
 
+            {/* Campaign source — renders only when this learner actually arrived
+                on a tagged link; silent otherwise. */}
+            <StudentAttribution
+                userId={selectedStudent?.user_id}
+                instituteId={instituteDetails?.id}
+                email={selectedStudent?.email}
+                mobileNumber={selectedStudent?.mobile_number}
+            />
+
             {/* Terms & Conditions — always shown so admins can see signing status
                 at a glance (Signed / Not Signed), with the signed date + PDF when
                 available. */}
-            <ProfileSectionCard icon={FileText} heading="Terms & Conditions">
+            <ProfileSectionCard icon={FileText} heading={t('sections.termsAndConditions')}>
                 <dl>
                     <ProfileFieldRow
-                        label="Status"
+                        label={t('fields.status')}
                         value={
                             selectedStudent?.tnc_accepted ? (
                                 <span className="inline-flex items-center rounded-full bg-success-50 px-2 py-0.5 text-caption font-semibold text-success-700 ring-1 ring-success-200">
-                                    Signed
+                                    {t('status.signed')}
                                 </span>
                             ) : (
                                 <span className="inline-flex items-center rounded-full bg-warning-50 px-2 py-0.5 text-caption font-semibold text-warning-700 ring-1 ring-warning-200">
-                                    Not Signed
+                                    {t('status.notSigned')}
                                 </span>
                             )
                         }
                     />
                     {selectedStudent?.tnc_accepted && selectedStudent?.tnc_accepted_date && (
                         <ProfileFieldRow
-                            label="Signed on"
+                            label={t('fields.signedOn')}
                             value={new Date(
                                 selectedStudent.tnc_accepted_date
                             ).toLocaleDateString()}
@@ -362,7 +476,7 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
                     )}
                     {selectedStudent?.tnc_accepted && tncFileUrl && (
                         <ProfileFieldRow
-                            label="Signed PDF"
+                            label={t('fields.signedPdf')}
                             value={
                                 <a
                                     href={tncFileUrl}
@@ -371,7 +485,7 @@ export const StudentOverview = ({ isSubmissionTab }: { isSubmissionTab?: boolean
                                     className="inline-flex items-center gap-1 text-body font-medium text-primary-600 hover:text-primary-800 hover:underline"
                                 >
                                     <DownloadSimple className="size-3.5" />
-                                    Download
+                                    {t('actions.download')}
                                 </a>
                             }
                         />

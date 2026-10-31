@@ -1,3 +1,4 @@
+import i18next from 'i18next';
 import { createBlockNode, setAttrs } from './block-node-factory';
 import {
     MathBlockEditor,
@@ -24,6 +25,14 @@ import {
 const esc = (s: string): string =>
     s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const escAttr = (s: string): string => esc(s).replace(/"/g, '&quot;');
+
+// These builders run outside React (invoked by the Yoopta/Lexical export
+// pipeline, not rendered from a component), so useTranslation isn't
+// available — read the current locale off the shared i18next instance
+// instead, matching the module-scope-function pattern used elsewhere
+// (e.g. Payment/utils/utils.ts).
+const t = (key: string, options?: Record<string, unknown>): string =>
+    i18next.t(`studyLibrarySimpleAttrNodes:${key}`, options) as string;
 
 const CARD_STYLE =
     'border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin: 8px 0; background: #fafafa;'; // design-lint-ignore: serialized learner HTML needs literal colours
@@ -116,7 +125,7 @@ export const AudioBlock = createBlockNode<AudioPayload>({
             ['style', CARD_STYLE + (p.audioUrl ? '' : ' text-align: center; color: #999;')], // design-lint-ignore: serialized learner HTML needs literal colours
         ]);
         if (!p.audioUrl) {
-            el.textContent = 'No audio uploaded';
+            el.textContent = t('audio.noAudio');
             return el;
         }
         el.innerHTML =
@@ -168,7 +177,7 @@ export const PdfBlock = createBlockNode<PdfPayload>({
                 ['data-title', p.title],
                 ['style', CARD_STYLE + ' text-align: center; color: #999;'], // design-lint-ignore: serialized learner HTML needs literal colours
             ]);
-            el.textContent = 'No PDF uploaded';
+            el.textContent = t('pdf.noPdf');
             return el;
         }
         setAttrs(el, [
@@ -182,7 +191,7 @@ export const PdfBlock = createBlockNode<PdfPayload>({
             (p.title
                 ? `<div style="font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #333;">${esc(p.title)}</div>` // design-lint-ignore: serialized learner HTML needs literal colours
                 : '') +
-            `<a href="${escAttr(p.pdfUrl)}" target="_blank" rel="noreferrer noopener" style="color: #3366cc; font-size: 13px;">Open PDF in new tab</a>`; // design-lint-ignore: serialized learner HTML needs literal colours
+            `<a href="${escAttr(p.pdfUrl)}" target="_blank" rel="noreferrer noopener" style="color: #3366cc; font-size: 13px;">${esc(t('pdf.openInNewTab'))}</a>`; // design-lint-ignore: serialized learner HTML needs literal colours
         return el;
     },
     Component: ({ payload, setPayload, readOnly }) => (
@@ -216,7 +225,7 @@ export const FillBlanksBlock = createBlockNode<FillBlanksPayload>({
             '<span style="display: inline-block; min-width: 80px; border-bottom: 2px solid #007acc; text-align: center; padding: 2px 8px; margin: 0 4px; color: transparent;" data-answer="$1">$1</span>' // design-lint-ignore: serialized learner HTML needs literal colours
         );
         el.innerHTML =
-            '<div style="font-weight: 600; font-size: 13px; color: #666; margin-bottom: 8px;">Fill in the Blanks</div>' + // design-lint-ignore: serialized learner HTML needs literal colours
+            `<div style="font-weight: 600; font-size: 13px; color: #666; margin-bottom: 8px;">${esc(t('fillBlanks.title'))}</div>` + // design-lint-ignore: serialized learner HTML needs literal colours
             `<div style="font-size: 16px; line-height: 2.2; color: #333;">${displayHtml}</div>`; // design-lint-ignore: serialized learner HTML needs literal colours
         return el;
     },
@@ -277,16 +286,16 @@ export const JupyterBlock = createBlockNode<JupyterPayload>({
             el.innerHTML =
                 '<div style="display: flex; align-items: center; color: #666;">' + // design-lint-ignore: serialized learner HTML needs literal colours
                 '<span style="font-size: 32px; margin-right: 16px;">📓</span>' +
-                '<div><p style="font-size: 16px; margin: 0 0 8px 0;">No notebook configured</p>' +
-                '<p style="font-size: 14px; color: #999; margin: 0;">Project name and content URL needed to display Jupyter notebook</p></div></div>'; // design-lint-ignore: serialized learner HTML needs literal colours
+                `<div><p style="font-size: 16px; margin: 0 0 8px 0;">${esc(t('jupyter.notConfigured'))}</p>` +
+                `<p style="font-size: 14px; color: #999; margin: 0;">${esc(t('jupyter.notConfiguredDetail'))}</p></div></div>`; // design-lint-ignore: serialized learner HTML needs literal colours
             return el;
         }
         const binderUrl = `https://mybinder.org/v2/gh/${p.contentUrl.replace('https://github.com/', '')}/${p.contentBranch}?labpath=${p.notebookLocation}`;
         el.innerHTML =
-            `<h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 600; color: #333;">📓 Jupyter Notebook: ${esc(p.projectName)}</h3>` + // design-lint-ignore: serialized learner HTML needs literal colours
+            `<h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 600; color: #333;">📓 ${esc(t('jupyter.heading', { name: p.projectName }))}</h3>` + // design-lint-ignore: serialized learner HTML needs literal colours
             (p.activeTab === 'preview'
-                ? `<div style="width: 100%; height: 500px; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;"><iframe src="${escAttr(binderUrl)}" width="100%" height="100%" style="border: none;" title="Jupyter Notebook Preview"></iframe></div>` // design-lint-ignore: serialized learner HTML needs literal colours
-                : `<div style="padding: 12px; background: #e8f5e8; border-radius: 4px; font-size: 14px; color: #2d5a2d;"><div><strong>Repository:</strong> ${esc(p.contentUrl)}</div><div><strong>Branch:</strong> ${esc(p.contentBranch)}</div><div><strong>Location:</strong> ${esc(p.notebookLocation)}</div></div>`); // design-lint-ignore: serialized learner HTML needs literal colours
+                ? `<div style="width: 100%; height: 500px; border: 1px solid #ddd; border-radius: 6px; overflow: hidden;"><iframe src="${escAttr(binderUrl)}" width="100%" height="100%" style="border: none;" title="${escAttr(t('jupyter.previewTitle'))}"></iframe></div>` // design-lint-ignore: serialized learner HTML needs literal colours
+                : `<div style="padding: 12px; background: #e8f5e8; border-radius: 4px; font-size: 14px; color: #2d5a2d;"><div><strong>${esc(t('jupyter.repository'))}</strong> ${esc(p.contentUrl)}</div><div><strong>${esc(t('jupyter.branch'))}</strong> ${esc(p.contentBranch)}</div><div><strong>${esc(t('jupyter.location'))}</strong> ${esc(p.notebookLocation)}</div></div>`); // design-lint-ignore: serialized learner HTML needs literal colours
         return el;
     },
     Component: ({ payload, setPayload, readOnly }) => (
@@ -329,13 +338,13 @@ export const ScratchBlock = createBlockNode<ScratchPayload>({
             el.innerHTML =
                 '<div style="display: flex; align-items: center; color: #666;">' + // design-lint-ignore: serialized learner HTML needs literal colours
                 '<span style="font-size: 32px; margin-right: 16px;">🐱</span>' +
-                '<div><p style="font-size: 16px; margin: 0 0 8px 0;">No Scratch project configured</p>' +
-                '<p style="font-size: 14px; color: #999; margin: 0;">Project ID needed to display Scratch project</p></div></div>'; // design-lint-ignore: serialized learner HTML needs literal colours
+                `<div><p style="font-size: 16px; margin: 0 0 8px 0;">${esc(t('scratch.notConfigured'))}</p>` +
+                `<p style="font-size: 14px; color: #999; margin: 0;">${esc(t('scratch.notConfiguredDetail'))}</p></div></div>`; // design-lint-ignore: serialized learner HTML needs literal colours
             return el;
         }
         el.innerHTML =
-            '<h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 600; color: #333;">🐱 Scratch Project</h3>' + // design-lint-ignore: serialized learner HTML needs literal colours
-            `<div style="width: 100%; height: 500px; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; background-color: white;"><iframe src="https://scratch.mit.edu/projects/${escAttr(p.scratchId)}/embed" width="100%" height="100%" style="border: none;" title="Scratch Project" allowfullscreen></iframe></div>`; // design-lint-ignore: serialized learner HTML needs literal colours
+            `<h3 style="margin: 0 0 12px 0; font-size: 18px; font-weight: 600; color: #333;">🐱 ${esc(t('scratch.heading'))}</h3>` + // design-lint-ignore: serialized learner HTML needs literal colours
+            `<div style="width: 100%; height: 500px; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; background-color: white;"><iframe src="https://scratch.mit.edu/projects/${escAttr(p.scratchId)}/embed" width="100%" height="100%" style="border: none;" title="${escAttr(t('scratch.heading'))}" allowfullscreen></iframe></div>`; // design-lint-ignore: serialized learner HTML needs literal colours
         return el;
     },
     Component: ({ payload, setPayload, readOnly }) => (
@@ -359,8 +368,8 @@ export const TocBlock = createBlockNode<TocPayload>({
             ['style', CARD_STYLE],
         ]);
         el.innerHTML =
-            '<div style="font-weight: 600; font-size: 15px; color: #333; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">Table of Contents</div>' + // design-lint-ignore: serialized learner HTML needs literal colours
-            '<div style="color: #666; font-size: 13px;">Outline is auto-generated from document headings.</div>'; // design-lint-ignore: serialized learner HTML needs literal colours
+            `<div style="font-weight: 600; font-size: 15px; color: #333; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">${esc(t('toc.title'))}</div>` + // design-lint-ignore: serialized learner HTML needs literal colours
+            `<div style="color: #666; font-size: 13px;">${esc(t('toc.subtitle'))}</div>`; // design-lint-ignore: serialized learner HTML needs literal colours
         return el;
     },
     Component: () => <TocBlockEditor />,

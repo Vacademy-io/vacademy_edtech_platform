@@ -1,0 +1,25 @@
+{
+    "emptyState": {
+        "title": "No {{term}} Found",
+        "description": "No {{termLower}} data matches your current filters. Try adjusting your search criteria or add new {{termLower}} to get started.",
+        "inviteButton": "Invite {{term}}",
+        "clearFiltersButton": "Clear Filters"
+    },
+    "loadingData": "Loading {{termLower}} data...",
+    "bulkActionsBar": {
+        "selecting": "Selecting…",
+        "selectAllCount_one": "Select all {{count}}",
+        "selectAllCount_other": "Select all {{count}}",
+        "allMatchingFilters": "all {{term}} matching your filters",
+        "selectAllError": "Could not select everyone — try again."
+    },
+    "table": {
+        "counsellorHeader": "Counsellor",
+        "assignButton": "Assign",
+        "reassignTooltip": "Click to reassign"
+    },
+    "noCourseDialog": {
+        "enrollStudentsLabel": "Enroll Students",
+        "defaultContent": "You need to create a course and add a subject in it before"
+    }
+}

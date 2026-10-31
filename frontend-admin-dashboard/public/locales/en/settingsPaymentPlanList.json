@@ -1,0 +1,46 @@
+{
+    "header": {
+        "title": "Payment Options"
+    },
+    "emptyState": {
+        "title": "No payment options created yet",
+        "subtitle": "Create your first payment option to start accepting payments"
+    },
+    "badge": {
+        "default": "Default"
+    },
+    "actions": {
+        "viewDetails": "View Details",
+        "hide": "Hide",
+        "makeDefault": "Make Default"
+    },
+    "currency": "Currency: {{currency}}",
+    "priceDetails": {
+        "noConfig": "No configuration available",
+        "percentOff": "{{amount}}% off",
+        "amountOff": "{{symbol}}{{amount}} off",
+        "fullPriceLabel": "Full Price:",
+        "fullPriceValue": "Full Price: {{symbol}}{{price}}",
+        "suggestedAmounts": "Suggested Amounts: {{symbol}}{{amount}}",
+        "minimumAmount": "Minimum Amount: {{symbol}}{{amount}}",
+        "feeTypeCount_one": "{{count}} fee type",
+        "feeTypeCount_other": "{{count}} fee types",
+        "total": "Total: ₹{{total}}",
+        "batchLinked_one": "{{count}} batch linked",
+        "batchLinked_other": "{{count}} batches linked",
+        "clickViewDetails": "Click \"View Details\" to see fee breakdown"
+    },
+    "cpo": {
+        "feeTypesTitle": "Fee Types",
+        "loadingDetails": "Loading installment details…",
+        "noFeeTypes": "No fee types found.",
+        "installmentCount_one": "{{count}} installment",
+        "installmentCount_other": "{{count}} installments",
+        "refundable": "Refundable",
+        "penalty": "Penalty {{percent}}%",
+        "columnNumber": "#",
+        "columnAmount": "Amount",
+        "totalLabel": "Total",
+        "oneTimePayment": "One-time payment of ₹{{amount}}"
+    }
+}

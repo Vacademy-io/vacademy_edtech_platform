@@ -1,0 +1,62 @@
+{
+    "cornerLabel": "RAPPORT DE CLASSE EN DIRECT",
+    "subtitle": "Rapport de présence et d'engagement",
+    "fields": {
+        "course": "Cours",
+        "batch": "Groupe",
+        "period": "Période",
+        "learner": "Apprenant",
+        "attendance": "Présence",
+        "engagement": "Engagement"
+    },
+    "batch": {
+        "title": "Rapport de classe en direct du groupe",
+        "classWiseAttendance": "Présence par classe",
+        "cards": {
+            "avgAttendance": "Présence moyenne",
+            "learnersCount_one": "{{count}} apprenant",
+            "learnersCount_many": "{{count}} d'apprenants",
+            "learnersCount_other": "{{count}} apprenants",
+            "classesHeld": "Classes tenues",
+            "avgDuration": "Durée moyenne",
+            "perPresentLearner": "par apprenant présent",
+            "avgEngagement": "Engagement moyen",
+            "participationPoints": "points de participation"
+        }
+    },
+    "leaderboard": {
+        "title": "Classement"
+    },
+    "learner": {
+        "title": "Rapport de classe en direct de l'apprenant",
+        "classHistory": "Historique des classes",
+        "cards": {
+            "batchPct": "Groupe {{pct}} %",
+            "classesAttended": "Classes suivies",
+            "batchDuration": "Groupe {{duration}}",
+            "batchAvgPts": "Moyenne du groupe {{points}} pts"
+        }
+    },
+    "tableHeaders": {
+        "date": "Date",
+        "class": "Classe",
+        "present": "Présent",
+        "absent": "Absent",
+        "attendance": "Présence",
+        "avgDuration": "Durée moyenne",
+        "engagement": "Engagement",
+        "rank": "Rang",
+        "name": "Nom",
+        "classes": "Classes",
+        "status": "Statut",
+        "duration": "Durée",
+        "talkTime": "Temps de parole",
+        "chats": "Discussions",
+        "polls": "Sondages",
+        "raiseHand": "Main levée"
+    },
+    "status": {
+        "present": "Présent",
+        "absent": "Absent"
+    }
+}

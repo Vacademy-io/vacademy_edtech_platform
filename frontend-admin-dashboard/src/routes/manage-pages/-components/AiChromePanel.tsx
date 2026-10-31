@@ -96,8 +96,10 @@ export const AiChromePanel = () => {
     }
 
     return (
-        <div className="flex h-full flex-col">
-            <div className="border-b p-3">
+        // min-h-0 flex-1, not h-full: the rail also holds a tab strip, so a
+        // 100%-height panel overflowed it and hid the send button.
+        <div className="flex min-h-0 flex-1 flex-col">
+            <div className="shrink-0 border-b p-3">
                 <p className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
                     <Sparkle className="size-4 text-primary-500" weight="duotone" />
                     Header, footer &amp; theme
@@ -142,28 +144,36 @@ export const AiChromePanel = () => {
                 )}
             </div>
 
-            <div className="border-t p-3">
-                <div className="flex items-end gap-2">
-                    <Textarea
-                        value={input}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                send(input);
-                            }
-                        }}
-                        rows={2}
-                        placeholder="e.g. add Programs and Contact to the menu"
-                        className="max-h-40 min-h-9 flex-1 resize-none text-xs"
-                    />
+            <div className="shrink-0 border-t p-3">
+                <Textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            send(input);
+                        }
+                    }}
+                    rows={2}
+                    placeholder="e.g. add Programs and Contact to the menu"
+                    className="max-h-40 min-h-9 w-full resize-none text-xs"
+                />
+                <div className="mt-2 flex items-center gap-2">
+                    <span className="min-w-0 flex-1 truncate text-caption text-gray-500">
+                        Enter to send
+                    </span>
                     <Button
                         size="sm"
-                        className="h-9 shrink-0 px-3"
+                        className="h-8 shrink-0 px-3"
                         onClick={() => send(input)}
                         disabled={!input.trim() || mutation.isPending}
                     >
-                        <PaperPlaneRight className="size-4" />
+                        {mutation.isPending ? (
+                            <CircleNotch className="size-4 animate-spin" />
+                        ) : (
+                            <PaperPlaneRight className="size-4" />
+                        )}
+                        Send
                     </Button>
                 </div>
                 <p className="mt-1.5 text-caption text-gray-400">

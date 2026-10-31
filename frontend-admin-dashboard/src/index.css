@@ -549,15 +549,22 @@ html {
         background: transparent;
     }
 
+    /* --primary-* are HSL channel triplets ("32 88% 83%"), so rgb() produced an
+       invalid color and the thumb silently fell back to the chunky UA default. */
     .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: rgb(
-            var(--primary-200)
-        ); /* assuming primary-200 is defined in your CSS variables */
+        background: hsl(var(--primary-200));
         border-radius: 4px;
     }
 
     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: rgb(var(--primary-300));
+        background: hsl(var(--primary-300));
+    }
+
+    /* Firefox has no ::-webkit pseudo-elements — without this it keeps the full
+       -width scrollbar while every other browser gets the slim one. */
+    .custom-scrollbar {
+        scrollbar-width: thin;
+        scrollbar-color: hsl(var(--primary-200)) transparent;
     }
 }
 

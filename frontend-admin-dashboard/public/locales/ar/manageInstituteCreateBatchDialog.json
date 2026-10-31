@@ -1,0 +1,21 @@
+{
+    "trigger": {
+        "createBatch": "إنشاء دفعة"
+    },
+    "toast": {
+        "studyMaterialCopiedSuccess": "تم نسخ المواد الدراسية بنجاح",
+        "studyMaterialCopyFailed": "فشل نسخ المواد الدراسية",
+        "batchCreatedSuccess": "تم إنشاء الدفعة بنجاح",
+        "batchCreateFailed": "فشل إنشاء الدفعة"
+    },
+    "button": {
+        "back": "رجوع",
+        "nextStep": "الخطوة التالية"
+    },
+    "step": {
+        "selectTerm": "اختر {{term}}"
+    },
+    "dialog": {
+        "heading": "إنشاء {{batchTerm}} - الخطوة {{step}}: {{title}}"
+    }
+}

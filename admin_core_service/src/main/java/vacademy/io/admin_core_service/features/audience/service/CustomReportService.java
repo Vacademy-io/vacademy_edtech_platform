@@ -60,9 +60,47 @@ public class CustomReportService {
     private record Dim(String label, String expr) {
     }
 
+    /** The lead's source as every report names it (its campaign's type, else its channel). */
+    private static final String SOURCE_EXPR =
+            ReportSourceSql.effective("COALESCE(ulp.best_source_type, sar.source_type)", "sa.campaign_type");
+
+    /** The lead's best-scoring enquiry and its campaign, for SOURCE_EXPR. */
+    private static final String SOURCE_JOINS = """
+            LEFT JOIN audience_response sar ON sar.id = ulp.best_score_response_id
+            LEFT JOIN audience sa ON sa.id = sar.audience_id
+            """;
+
+    /** Key of the "last follow-up response" field (needs FOLLOWUP_JOIN). */
+    private static final String FOLLOWUP_RESPONSE_KEY = "followup_response";
+
+    /** The lead's campaign name (the list it came in through). */
+    private static final String CAMPAIGN_EXPR = "COALESCE(NULLIF(TRIM(sa.campaign_name), ''), 'UNKNOWN')";
+
+    /** The response recorded on the lead's latest answered follow-up (e.g. CNR, Call later). */
+    private static final String FOLLOWUP_RESPONSE_EXPR = "COALESCE(NULLIF(TRIM(lfr.student_response), ''), 'NO_RESPONSE')";
+
+    /**
+     * Latest follow-up of any of the lead's enquiries that has a response. Joined only when the
+     * report asks for it: it reads the follow-ups of every lead in the range.
+     */
+    private static final String FOLLOWUP_JOIN = """
+            LEFT JOIN LATERAL (
+                SELECT f.student_response
+                FROM lead_followup f
+                JOIN audience_response fr ON fr.id = f.audience_response_id
+                WHERE fr.user_id = ulp.user_id
+                  AND f.institute_id = ulp.institute_id
+                  AND NULLIF(TRIM(f.student_response), '') IS NOT NULL
+                ORDER BY COALESCE(f.closed_at, f.updated_at, f.created_at) DESC
+                LIMIT 1
+            ) lfr ON true
+            """;
+
     private static final Map<String, Dim> DIMENSIONS = new LinkedHashMap<>();
     static {
-        DIMENSIONS.put("source_type", new Dim("Source", "COALESCE(ulp.best_source_type, 'UNKNOWN')"));
+        DIMENSIONS.put("source_type", new Dim("Source", SOURCE_EXPR));
+        DIMENSIONS.put("campaign", new Dim("Campaign", CAMPAIGN_EXPR));
+        DIMENSIONS.put(FOLLOWUP_RESPONSE_KEY, new Dim("Last follow-up response", FOLLOWUP_RESPONSE_EXPR));
         DIMENSIONS.put("lead_tier", new Dim("Tier", "COALESCE(ulp.lead_tier, 'UNCLASSIFIED')"));
         // conversion_status holds the lead's CURRENT status_key — the bidirectional
         // list↔side-view mirror keeps it in sync with audience_response.lead_status_id,
@@ -100,7 +138,8 @@ public class CustomReportService {
 
     private static final Map<String, Filt> FILTERS = new LinkedHashMap<>();
     static {
-        FILTERS.put("source_type", new Filt("Source", "COALESCE(ulp.best_source_type, 'UNKNOWN')"));
+        FILTERS.put("source_type", new Filt("Source", SOURCE_EXPR));
+        FILTERS.put(FOLLOWUP_RESPONSE_KEY, new Filt("Last follow-up response", FOLLOWUP_RESPONSE_EXPR));
         FILTERS.put("lead_tier", new Filt("Tier", "COALESCE(ulp.lead_tier, 'UNCLASSIFIED')"));
         FILTERS.put(STATUS_KEY, new Filt("Current status", "ulp.conversion_status"));
         FILTERS.put(COUNSELLOR_KEY, new Filt("Counsellor", "ulp.assigned_counselor_id"));
@@ -114,6 +153,8 @@ public class CustomReportService {
                 WHERE pl.payment_status = 'PAID' AND pl.payment_amount IS NOT NULL
                 GROUP BY pl.user_id
             ) rev ON rev.user_id = ulp.user_id
+            """ + SOURCE_JOINS + """
+            %FOLLOWUP_JOIN%
             WHERE ulp.institute_id = :instituteId
               AND COALESCE(ulp.created_at, ulp.last_calculated_at) >= :fromTs
               AND COALESCE(ulp.created_at, ulp.last_calculated_at) <  :toTs
@@ -138,7 +179,8 @@ public class CustomReportService {
         // Pre-resolved filter options for the enumerable fields.
         List<CustomReportCatalogDTO.FilterField> filters = new ArrayList<>();
         filters.add(filterField("source_type", "Source", distinctSourceOptions(instituteId)));
-        filters.add(filterField("lead_tier", "Tier", staticOptions("HOT", "WARM", "COLD", "UNCLASSIFIED")));
+        filters.add(filterField(FOLLOWUP_RESPONSE_KEY, "Last follow-up response", followupResponseOptions(instituteId)));
+        filters.add(filterField("lead_tier", "Tier", tierOptions(instituteId)));
         filters.add(filterField(STATUS_KEY, "Current status", statusOptions(instituteId)));
         filters.add(filterField(COUNSELLOR_KEY, "Counsellor", counsellorOptions(instituteId, callerUserId)));
 
@@ -183,7 +225,7 @@ public class CustomReportService {
 
         StringBuilder sql = new StringBuilder("SELECT ")
                 .append(String.join(", ", selectExprs))
-                .append(' ').append(BASE_FROM);
+                .append(' ').append(BASE_FROM.replace("%FOLLOWUP_JOIN%", usesFollowupResponse(req, dims) ? FOLLOWUP_JOIN : ""));
 
         // Dynamic filters — each value list binds as an IN parameter.
         List<CustomReportRequest.Filter> reqFilters = req.getFilters() == null ? List.of() : req.getFilters();
@@ -279,11 +321,31 @@ public class CustomReportService {
     // Catalog option helpers
     // ─────────────────────────────────────────────────────────────────────
 
+    private static boolean usesFollowupResponse(CustomReportRequest req, List<String> dims) {
+        return dims.contains(FOLLOWUP_RESPONSE_KEY) || (req.getFilters() != null && req.getFilters().stream()
+                .anyMatch(f -> f != null && FOLLOWUP_RESPONSE_KEY.equals(trimToNull(f.getField()))));
+    }
+
+    /** Responses recorded on this institute's follow-ups, plus the no-response bucket. */
+    private List<CustomReportCatalogDTO.Option> followupResponseOptions(String instituteId) {
+        try {
+            List<String> values = new ArrayList<>(jdbc.queryForList(
+                    "SELECT DISTINCT TRIM(student_response) AS r FROM lead_followup "
+                            + "WHERE institute_id = :instituteId AND NULLIF(TRIM(student_response), '') IS NOT NULL ORDER BY r",
+                    new MapSqlParameterSource("instituteId", instituteId), String.class));
+            values.add("NO_RESPONSE");
+            return values.stream().map(v -> CustomReportCatalogDTO.Option.builder().value(v).label(v).build())
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
     private List<CustomReportCatalogDTO.Option> distinctSourceOptions(String instituteId) {
         try {
             List<String> values = jdbc.queryForList(
-                    "SELECT DISTINCT COALESCE(best_source_type, 'UNKNOWN') AS s FROM user_lead_profile "
-                            + "WHERE institute_id = :instituteId ORDER BY s",
+                    "SELECT DISTINCT " + SOURCE_EXPR + " AS s FROM user_lead_profile ulp " + SOURCE_JOINS
+                            + " WHERE ulp.institute_id = :instituteId ORDER BY s",
                     new MapSqlParameterSource("instituteId", instituteId), String.class);
             return values.stream().map(v -> CustomReportCatalogDTO.Option.builder().value(v).label(v).build())
                     .collect(Collectors.toList());
@@ -364,6 +426,28 @@ public class CustomReportService {
         } catch (Exception e) {
             return List.of();
         }
+    }
+
+    /** Institute tier catalog (falls back to the legacy trio), plus UNCLASSIFIED for unscored leads. */
+    private List<CustomReportCatalogDTO.Option> tierOptions(String instituteId) {
+        List<CustomReportCatalogDTO.Option> out = new ArrayList<>();
+        try {
+            List<Map<String, Object>> rows = jdbc.queryForList(
+                    "SELECT tier_key, label FROM lead_tier WHERE institute_id = :instituteId "
+                            + "AND is_active = true ORDER BY display_order, tier_key",
+                    new MapSqlParameterSource("instituteId", instituteId));
+            for (Map<String, Object> r : rows) {
+                String key = String.valueOf(r.get("tier_key"));
+                Object label = r.get("label");
+                out.add(CustomReportCatalogDTO.Option.builder()
+                        .value(key).label(label != null ? label.toString() : key).build());
+            }
+        } catch (Exception ignored) {
+            // table missing or query failure: fall through to the legacy trio
+        }
+        if (out.isEmpty()) out.addAll(staticOptions("HOT", "WARM", "COLD"));
+        out.add(CustomReportCatalogDTO.Option.builder().value("UNCLASSIFIED").label("UNCLASSIFIED").build());
+        return out;
     }
 
     private static List<CustomReportCatalogDTO.Option> staticOptions(String... values) {

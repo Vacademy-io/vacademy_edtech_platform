@@ -4,8 +4,9 @@ import { X } from "@phosphor-icons/react";
 import { Preferences } from "@capacitor/preferences";
 import { useEffect, useState } from "react";
 import type { ListPlanningLogsRequest, IntervalType } from "../-types/types";
-import { getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
+import { getTerminology, getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
 import { ContentTerms, SystemTerms } from "@/types/naming-settings";
+import { useTranslation } from "react-i18next";
 
 interface PlanningFiltersProps {
   filters: ListPlanningLogsRequest;
@@ -19,6 +20,8 @@ export default function PlanningFilters({
   onChange,
   hideIntervalTypeFilter = false,
 }: PlanningFiltersProps) {
+  const { t } = useTranslation("planning");
+  const batchTerm = getTerminology(ContentTerms.Batch, SystemTerms.Batch);
   const [localBatches, setLocalBatches] = useState<any[]>([]);
 
   // Fetch enrolled package session IDs and local batches from student data
@@ -74,10 +77,10 @@ export default function PlanningFilters({
   }, []);
 
   const intervalTypeOptions: { id: IntervalType; label: string }[] = [
-    { id: "weekly", label: "Day of week" },
-    { id: "monthly", label: "Weekly" },
-    { id: "yearly_month", label: "Monthly" },
-    { id: "yearly_quarter", label: "Quarterly" },
+    { id: "weekly", label: t("intervalTypeOptions.dayOfWeek") },
+    { id: "monthly", label: t("intervalTypeOptions.weekly") },
+    { id: "yearly_month", label: t("intervalTypeOptions.monthly") },
+    { id: "yearly_quarter", label: t("intervalTypeOptions.quarterly") },
   ];
 
   const toggleIntervalType = (intervalType: IntervalType) => {
@@ -114,7 +117,7 @@ export default function PlanningFilters({
   return (
     <div className="space-y-4 rounded-lg border bg-card p-4 shadow-sm">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold">Filters</h3>
+        <h3 className="text-sm font-semibold">{t("common.filters")}</h3>
         {hasActiveFilters && (
           <Button
             variant="ghost"
@@ -122,7 +125,7 @@ export default function PlanningFilters({
             onClick={clearAllFilters}
             className="h-auto p-1 text-xs"
           >
-            Clear all
+            {t("planningFilters.clearAll")}
           </Button>
         )}
       </div>
@@ -137,7 +140,7 @@ export default function PlanningFilters({
               const batchName =
                 batch.package_dto?.package_name ||
                 batch.session?.session_name ||
-                "Unnamed Batch";
+                t("planningFilters.unnamedBatch", { batch: batchTerm });
               const isSelected = filters.entity_ids?.includes(batchId);
 
               return (
@@ -159,7 +162,7 @@ export default function PlanningFilters({
       {/* Interval Type Filter */}
       {!hideIntervalTypeFilter && (
         <div className="space-y-2">
-          <label className="text-sm font-medium">Interval Type</label>
+          <label className="text-sm font-medium">{t("planningFilters.intervalType")}</label>
           <div className="flex flex-wrap gap-2">
             {intervalTypeOptions.map((option) => {
               const isSelected = filters.interval_types?.includes(option.id);

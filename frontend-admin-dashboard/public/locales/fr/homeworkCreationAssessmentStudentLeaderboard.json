@@ -1,0 +1,12 @@
+{
+    "heading": "Classement",
+    "table": {
+        "duration": "{{minutes}} min {{seconds}} sec",
+        "percentileLabel": "Centile",
+        "marksLabel": "Points"
+    },
+    "export": {
+        "pdfSuccess": "Les données du classement ont été exportées en PDF avec succès",
+        "csvSuccess": "Les données du classement ont été exportées en CSV avec succès"
+    }
+}

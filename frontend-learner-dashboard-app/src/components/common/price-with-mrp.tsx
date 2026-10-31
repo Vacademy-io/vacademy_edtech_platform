@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { formatCurrency, getCurrencySymbol } from "@/utils/currency";
 import { cn } from "@/lib/utils";
 import { Sparkle } from "@phosphor-icons/react";
@@ -76,6 +77,7 @@ export const PriceWithMrp = ({
   freeForZero = true,
   className,
 }: PriceWithMrpProps) => {
+  const { t } = useTranslation("layoutCommonA");
   // Reader mode (iOS / reader-mode institutes): hide all pricing. This is the
   // global choke point for every price / MRP / "% off" in the app.
   if (shouldHidePaidPurchaseUI()) {
@@ -87,7 +89,11 @@ export const PriceWithMrp = ({
   }
 
   if (freeForZero && actual === 0) {
-    return <span className={cn("text-green-600 font-semibold", className)}>Free</span>;
+    return (
+      <span className={cn("text-green-600 font-semibold", className)}>
+        {t("priceWithMrp.free")}
+      </span>
+    );
   }
 
   const percent = computeMrpPercent(actual, elevated);
@@ -107,7 +113,7 @@ export const PriceWithMrp = ({
             </span>
             {!hideBadge && (
               <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs font-semibold text-green-700">
-                {percent}% off
+                {t("priceWithMrp.percentOff", { percent })}
               </span>
             )}
           </>
@@ -121,7 +127,7 @@ export const PriceWithMrp = ({
     <span className={cn("inline-flex flex-col items-start gap-0.5", className)}>
       {hasMrp && (
         <span className={cn(sizing.mrp, "text-gray-500")}>
-          M.R.P.{" "}
+          {t("priceWithMrp.mrpLabel")}{" "}
           <span className="line-through">
             {formatPriceAmount(elevated as number, currency)}
           </span>
@@ -133,7 +139,7 @@ export const PriceWithMrp = ({
         </span>
         {hasMrp && !hideBadge && (
           <span className="rounded bg-green-100 px-1.5 py-0.5 text-xs font-semibold text-green-700">
-            {percent}% off
+            {t("priceWithMrp.percentOff", { percent })}
           </span>
         )}
       </span>
@@ -152,6 +158,7 @@ export interface OfferBadgeProps {
 }
 
 export const OfferBadge = ({ actual, elevated, className }: OfferBadgeProps) => {
+  const { t } = useTranslation("layoutCommonA");
   // Reader mode: hide all offer/discount/FREE ribbons alongside pricing.
   if (shouldHidePaidPurchaseUI()) {
     return null;
@@ -169,7 +176,7 @@ export const OfferBadge = ({ actual, elevated, className }: OfferBadgeProps) => 
         )}
       >
         <Sparkle weight="fill" className="size-3" />
-        FREE
+        {t("priceWithMrp.freeRibbon")}
       </span>
     );
   }
@@ -182,7 +189,7 @@ export const OfferBadge = ({ actual, elevated, className }: OfferBadgeProps) => 
         className
       )}
     >
-      {percent}% OFF
+      {t("priceWithMrp.percentOffRibbon", { percent })}
     </span>
   );
 };

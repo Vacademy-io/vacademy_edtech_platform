@@ -1,0 +1,17 @@
+{
+    "noAccessTokenFound": "No access token found",
+    "invalidTokenData": "Invalid token data",
+    "instituteFallbackName": "Institute {{idPrefix}}...",
+    "noInstituteAccess": "You do not have access to any institutes",
+    "pleaseSelectAnInstitute": "Please select an institute",
+    "selectedInstituteNotFound": "Selected institute not found",
+    "loadingInstitutes": "Loading institutes...",
+    "selectYourInstitute": "Select Your Institute",
+    "chooseInstituteToAccess": "Choose the institute you want to access",
+    "loadingInstituteDetails": "Loading institute details...",
+    "selectInstituteLabel": "Select Institute",
+    "selectAnInstitute": "Select an institute",
+    "pleaseSelectAnInstituteToContinue": "Please select an institute to continue",
+    "continueToDashboard": "Continue to Dashboard",
+    "backToLogin": "Back to Login"
+}

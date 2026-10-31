@@ -1,0 +1,19 @@
+{
+    "errors": {
+        "loadTags": "टैग लोड नहीं हो सके।",
+        "loadCustomFields": "कस्टम फ़ील्ड लोड नहीं हो सके।",
+        "loadSenders": "प्रेषक पते लोड नहीं हो सके।",
+        "loadEmailTemplates": "ईमेल टेम्पलेट लोड नहीं हो सके।",
+        "loadWhatsappTemplates": "व्हाट्सएप टेम्पलेट लोड नहीं हो सके।",
+        "syncFailed": "सिंक विफल रहा। सेटिंग्स में व्हाट्सएप कनेक्शन जांचें।",
+        "loadTemplate": "वह टेम्पलेट लोड नहीं हो सका।",
+        "loadCampaigns": "अभियान लोड नहीं हो सके।"
+    },
+    "toast": {
+        "templateApplied": "\"{{name}}\" लागू किया गया",
+        "templateCachedCopy": "इस टेम्पलेट की कैश्ड प्रति लोड की गई — नवीनतम पाने के लिए फिर से खोलें।",
+        "templatesSynced_one": "मेटा से {{count}} टेम्पलेट सिंक किया गया।",
+        "templatesSynced_other": "मेटा से {{count}} टेम्पलेट सिंक किए गए।",
+        "templatesUpToDate": "टेम्पलेट पहले से अद्यतन हैं।"
+    }
+}

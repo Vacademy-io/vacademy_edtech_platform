@@ -1,0 +1,25 @@
+{
+    "sections": {
+        "quickAccess": "الوصول السريع",
+        "programming": "البرمجة",
+        "optionBased": "قائم على الخيارات",
+        "mathBased": "قائم على الرياضيات",
+        "writingSkills": "مهارات الكتابة",
+        "readingSkills": "مهارات القراءة"
+    },
+    "questionTypes": {
+        "mcqSingle": "أسئلة اختيار من متعدد (إجابة صحيحة واحدة)",
+        "mcqMultiple": "أسئلة اختيار من متعدد (إجابات صحيحة متعددة)",
+        "numerical": "عددي",
+        "trueFalse": "صح خطأ",
+        "coding": "سؤال برمجي",
+        "longAnswer": "إجابة طويلة",
+        "singleWord": "كلمة واحدة",
+        "comprehensionMcqSingle": "أسئلة اختيار من متعدد للفهم (إجابة صحيحة واحدة)",
+        "comprehensionMcqMultiple": "أسئلة اختيار من متعدد للفهم (إجابات صحيحة متعددة)",
+        "comprehensionNumeric": "سؤال عددي للفهم"
+    },
+    "dialog": {
+        "title": "إنشاء ورقة أسئلة يدويًا"
+    }
+}

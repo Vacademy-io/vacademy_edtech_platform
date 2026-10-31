@@ -1,0 +1,29 @@
+{
+    "checkIn": {
+        "title": "Camera check-in",
+        "descriptionRequired": "This assessment is proctored. Your camera stays on during the attempt and small snapshots are kept for your teacher to review. Allow the camera to continue.",
+        "descriptionOptional": "This assessment is proctored. Your camera stays on during the attempt and small snapshots are kept for your teacher to review.",
+        "allowCamera": "Allow camera",
+        "starting": "Starting camera…",
+        "faceLooking": "Looking for your face…",
+        "faceOk": "Looks good — one face in frame.",
+        "faceNone": "We can't see a face. Face the camera and make sure the room is lit.",
+        "faceMany": "More than one face is in frame. Only you should be visible.",
+        "noDetector": "Make sure your face is clearly visible, then continue.",
+        "confirm": "Looks good, continue",
+        "deniedRequired": "Camera access was refused. This assessment cannot start without it — allow the camera in your browser settings and try again.",
+        "deniedOptional": "Camera access was refused. You can continue, but the refusal will be noted for your teacher.",
+        "retry": "Try again",
+        "done": "Camera ready. You are set to begin.",
+        "continueAnyway": "Continue anyway",
+        "overrideNote": "Still not detected? You can continue — your teacher will check the photo."
+    },
+    "selfView": {
+        "recording": "On camera",
+        "denied": "Camera blocked",
+        "lost": "Camera turned off",
+        "noFace": "Face not visible",
+        "manyFaces": "More than one face",
+        "flags": "Flags: {{count}} of {{max}}"
+    }
+}

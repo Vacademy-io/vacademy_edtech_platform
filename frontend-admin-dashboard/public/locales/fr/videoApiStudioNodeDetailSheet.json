@@ -1,0 +1,288 @@
+{
+    "scene": {
+        "label": "Scène {{index}}",
+        "dataNotAvailable": "Données de la scène indisponibles."
+    },
+    "stateBadge": {
+        "wrapped": "Terminé",
+        "inProduction": "En production",
+        "scheduled": "Planifié",
+        "cut": "Retiré de la production",
+        "reshoot": "Reprise nécessaire"
+    },
+    "runSummary": {
+        "productionBudget": "Budget de production",
+        "totalTokens": "Total des tokens",
+        "promptTokens": "· Invite",
+        "completionTokens": "· Complétion",
+        "imagesGenerated": "Images générées",
+        "ttsCharacters": "Caractères TTS",
+        "estimatedCost": "Coût estimé",
+        "elapsed": "Temps écoulé",
+        "noTokenData": "La télémétrie des tokens et du coût n'a pas été enregistrée pour cette exécution. (Anciennes vidéos antérieures au suivi des tokens.)",
+        "cumulativeNote": "Cumulé sur l'ensemble de l'exécution. La répartition par étape n'est pas encore disponible.",
+        "artifacts": "Fichiers produits",
+        "run": "Exécution"
+    },
+    "artifactLabel": {
+        "script": "Script",
+        "narration": "Narration",
+        "wordTimings": "Minutage des mots",
+        "timeline": "Chronologie",
+        "renderedMp4": "MP4 rendu",
+        "audio": "Audio"
+    },
+    "shotPlanner": {
+        "legacyRun": "ShotPlanner ne s'est pas exécuté pour cette vidéo — il s'agit d'une exécution de pipeline v2 (héritée).",
+        "awaitingBrief": "En attente de la validation du brief avant de planifier les plans.",
+        "inProduction": "ShotPlanner interroge le LLM — il génère la liste complète des plans avec intent_role, audio_policy, background_treatment, transition_in, et tous les recurring_motifs du plan en un seul appel.",
+        "planSummary": "Résumé du plan",
+        "shots": "plans",
+        "narrated": "narrés",
+        "intrinsic": "intrinsèques",
+        "recurringMotifs": "Motifs récurrents",
+        "noMotifs": "Le planificateur n'a enregistré aucun motif transversal pour cette vidéo.",
+        "where": "Où :",
+        "when": "Quand :",
+        "distribution": "Répartition",
+        "intentRoles": "Rôles d'intention",
+        "backgrounds": "Arrière-plans (contrat ≤2)",
+        "shotGrid": "Grille des plans ({{count}})"
+    },
+    "narrationWriter": {
+        "legacyRun": "NarrationWriter ne s'est pas exécuté — il s'agit d'une exécution de pipeline v2 (le nœud Narration monolithique couvre la même fonction).",
+        "waitingForShotPlan": "La salle des scénaristes attend le plan des plans.",
+        "inProduction": "NarrationWriter rédige la narration plan par plan en un seul appel LLM. Chaque plan reçoit une réplique calibrée à ~150 mots/min × durée ; les plans intrinsic_only reçoivent une chaîne vide et n'ont pas de TTS par plan.",
+        "authoredCopy": "Texte rédigé",
+        "totalWords": "mots au total",
+        "shotsVoiced": "plans narrés",
+        "avgWordsPerShot": "moy. mots/plan",
+        "silentShots_one": "{{count}} plan resté silencieux (intrinsic_only — l'audio Veo ou du clip source joue seul).",
+        "silentShots_many": "{{count}} plans restés silencieux (intrinsic_only — l'audio Veo ou du clip source joue seul).",
+        "silentShots_other": "{{count}} plans restés silencieux (intrinsic_only — l'audio Veo ou du clip source joue seul).",
+        "perShotWordCount": "Nombre de mots par plan",
+        "noShotsAuthored": "Aucun plan rédigé pour l'instant.",
+        "masterConcat": "Concaténation principale"
+    },
+    "beats": {
+        "noRun": "BeatPlanner ne s'est pas exécuté pour cette vidéo.",
+        "notStarted": "Le plan des temps forts n'a pas encore commencé.",
+        "inProduction": "BeatPlanner esquisse les temps forts de l'histoire. Le réalisateur les utilisera comme cadre de planification pour délimiter les plans — les estimations de durée sont calibrées à ~150 mots/minute.",
+        "planHeading": "Plan des temps forts",
+        "summary_one": "{{count}} temps fort alimente le plan des plans du réalisateur.",
+        "summary_many": "{{count}} temps forts alimentent le plan des plans du réalisateur.",
+        "summary_other": "{{count}} temps forts alimentent le plan des plans du réalisateur.",
+        "planLocked": "Plan des temps forts verrouillé. Le réalisateur a utilisé ces temps forts pour délimiter les plans avant le TTS.",
+        "wpmNote": " Estimations de durée à {{wpm}} mots/min.",
+        "beatFallbackLabel": "Temps fort {{number}}"
+    },
+    "pitch": {
+        "brief": "Le brief",
+        "promptUnavailable": "Texte de l'invite indisponible pour cette exécution.",
+        "briefCaption": "L'invite d'origine à l'origine de cette production.",
+        "configuration": "Configuration",
+        "configUnavailable": "L'instantané de configuration n'a pas été enregistré pour cette exécution. (Les anciennes vidéos sont antérieures à l'instantané user_selections dans /status.)",
+        "advanced": "Avancé",
+        "noAdvancedOverrides": "Aucune surcharge avancée enregistrée.",
+        "field": {
+            "contentType": "Type de contenu",
+            "qualityTier": "Niveau de qualité",
+            "orientation": "Orientation",
+            "targetDuration": "Durée cible",
+            "targetAudience": "Public cible",
+            "language": "Langue",
+            "voice": "Voix",
+            "voiceId": "ID de la voix",
+            "captions": "Sous-titres",
+            "backgroundMusic": "Musique de fond",
+            "soundEffects": "Effets sonores",
+            "hostAvatar": "Avatar présentateur",
+            "referenceFiles": "Fichiers de référence",
+            "targetStage": "Étape cible",
+            "model": "Modèle",
+            "htmlQuality": "Qualité HTML",
+            "subShotsEnabled": "Sous-plans activés",
+            "routingOverrides": "Surcharges de routage",
+            "visualPreferences": "Préférences visuelles",
+            "avatarImageUrl": "URL de l'image de l'avatar",
+            "inputVideoIds": "ID des vidéos sources",
+            "inputVideoAudio": "Audio des vidéos sources",
+            "muteTtsOnSourceClips": "Couper le TTS sur les clips sources",
+            "backgroundMusicVolume": "Volume de la musique de fond"
+        }
+    },
+    "format": {
+        "on": "Activé",
+        "off": "Désactivé",
+        "none": "Aucun",
+        "avatarWithId": "Avatar ({{id}})",
+        "avatar": "Avatar",
+        "rawClips": "Clips bruts"
+    },
+    "research": {
+        "notNeeded": "Aucune recherche externe n'était nécessaire pour ce brief.",
+        "notOpened": "Le pôle recherche n'a pas encore ouvert.",
+        "investigating": "Investigation des sources en cours… les résultats apparaîtront au fur et à mesure que le routeur d'intentions termine son balayage.",
+        "urlsScraped": "URL analysées",
+        "pageCaptures": "Captures de pages",
+        "captureAlt": "capture {{number}}",
+        "scrapedExcerpt": "Extrait analysé",
+        "webSearchQuery": "Requête de recherche web",
+        "synthesizedAnswer": "Réponse synthétisée",
+        "citedSources": "Sources citées",
+        "noArtifacts": "Recherche terminée, mais les éléments capturés ne sont pas disponibles pour cette exécution."
+    },
+    "screenplay": {
+        "notFinished": "Le scénario n'est pas encore terminé — patientez pendant que la salle des scénaristes rédige la narration.",
+        "openRawFile": "Ouvrir le fichier brut",
+        "copied": "Copié !",
+        "copyScript": "Copier le script",
+        "loading": "Chargement du scénario…",
+        "urlUnavailable": "URL du scénario indisponible pour cette exécution. L'audio de narration et le minutage des mots restent accessibles depuis le nœud Narration.",
+        "previewFailed": "L'aperçu intégré n'a pas pu se charger. Utilisez <bold>Ouvrir le fichier brut</bold> ci-dessus pour consulter le scénario directement.",
+        "previewFailedNote": "(CORS S3, coupure réseau, ou le fichier n'est plus présent à l'URL enregistrée.)",
+        "couldNotLoad": "Impossible de charger le texte du scénario."
+    },
+    "narration": {
+        "notRecorded": "La narration n'est pas encore enregistrée.",
+        "voiceover": "Voix off",
+        "openAudioFile": "Ouvrir le fichier audio"
+    },
+    "wordTimings": {
+        "heading": "Minutage des mots",
+        "count_one": "{{count}} mot",
+        "count_many": "{{count}} mots",
+        "count_other": "{{count}} mots",
+        "loading": "Chargement du minutage…",
+        "couldNotLoad": "Impossible de charger le minutage."
+    },
+    "storyboard": {
+        "notMapped": "Le storyboard n'est pas encore cartographié — le réalisateur planifie encore les plans.",
+        "noSceneDetails": "Plan des plans finalisé — les détails des scènes ne sont pas disponibles pour cette exécution, mais chaque scène apparaît toujours comme son propre nœud dans le diagramme.",
+        "scenesMapped_one": "{{count}} scène cartographiée",
+        "scenesMapped_many": "{{count}} scènes cartographiées",
+        "scenesMapped_other": "{{count}} scènes cartographiées"
+    },
+    "filming": {
+        "scenesWrapped": "Scènes terminées",
+        "scenesFilmed": "Scènes tournées",
+        "wrappedNoCounters": "Tournage terminé — les compteurs par scène ne sont pas disponibles pour cette exécution.",
+        "notStarted": "Le tournage n'a pas encore commencé.",
+        "diagramHint": "Chaque scène apparaît comme son propre nœud dans le diagramme à partir du niveau Premium — cliquez sur une scène pour voir son extrait de narration et ses images fixes."
+    },
+    "sceneDetail": {
+        "intentRoleTitle": "Rôle d'intention : {{value}}",
+        "backgroundTreatmentTitle": "Traitement de l'arrière-plan : {{value}}",
+        "transitionInTitle": "Transition d'entrée : {{value}}",
+        "bgPrefix": "arr.-plan ·",
+        "aiVideoBadge": "VIDÉO IA",
+        "aiVideoTitle": "Généré par fal.ai Veo 3.1 Lite",
+        "intrinsicAudioBadge": "AUDIO INTRINSÈQUE",
+        "intrinsicAudioTitle": "audio_policy=intrinsic_only — la narration principale est coupée dans cette fenêtre ; l'audio propre au plan joue seul.",
+        "aiVideoHeading": "Plan vidéo généré par IA",
+        "aiVideoBody": "Ce plan a été généré avec fal.ai Veo. Le coût s'ajoute au plafond vidéo IA par vidéo. Le modifier dans l'éditeur relance l'appel Veo.",
+        "intrinsicHeading": "Politique audio intrinsèque uniquement",
+        "intrinsicBody": "La narration principale est coupée dans la fenêtre [{{start}}s, {{end}}s] de cette scène. Le plan joue son propre audio ({{audioSource}}) seul. Le TTS par plan a été ignoré — re-narrer via le média source, pas ce panneau.",
+        "veoGeneratedAudio": "audio généré par Veo",
+        "sourceClipAudio": "audio du clip source",
+        "liveProgress": "Progression en direct",
+        "elapsedSuffix": "{{sec}}s écoulées",
+        "currentSubstage": "Sous-étape actuelle :",
+        "regenAttempts": "Tentatives de régénération par filtre",
+        "verdictLog": "Journal des verdicts",
+        "verdict": {
+            "pass": "réussi",
+            "shippedOriginal": "original conservé"
+        },
+        "externalCalls": "Appels externes",
+        "callState": {
+            "done": "terminé",
+            "failed": "échoué",
+            "polling": "interrogation",
+            "queued": "en attente"
+        },
+        "sceneAlt": "Scène {{number}}",
+        "textDrivenScene": "Scène pilotée par le texte — pas d'image fixe ni de plan de coupe sur ce temps fort",
+        "assets": "Fichiers",
+        "stillLabel": "Image fixe",
+        "brollClipLabel": "Plan de coupe (B-roll)",
+        "productionError": "Erreur de production"
+    },
+    "sceneNarration": {
+        "heading": "Narration",
+        "plannerBrief": "Brief du planificateur",
+        "spokenNarration": "Narration parlée",
+        "intrinsicNote": "Plan intrinsic_only — aucune narration par plan n'a été rédigée. L'audio propre au plan joue seul."
+    },
+    "perShotAudio": {
+        "heading": "Voix off par plan",
+        "mp3": "mp3",
+        "wordTimings": "minutage des mots",
+        "scriptTxt": "script.txt"
+    },
+    "aiVideoTelemetry": {
+        "heading": "Télémétrie vidéo IA",
+        "cost": "coût",
+        "elapsed": "temps écoulé",
+        "veoAudio": "Audio Veo",
+        "on": "activé",
+        "off": "désactivé",
+        "openVeoOutput": "Ouvrir le résultat Veo",
+        "segments_one": "Segment ({{count}})",
+        "segments_many": "Segments ({{count}})",
+        "segments_other": "Segments ({{count}})",
+        "seg": "seg",
+        "cached": "en cache"
+    },
+    "regenerate": {
+        "describeChangeError": "Décrivez ce qu'il faut changer avant de régénérer.",
+        "regenerationFailedFallback": "Échec de la régénération",
+        "successToast": "Scène régénérée. Refaites le rendu du MP4 pour voir le changement.",
+        "saveFailedFallback": "Échec de l'enregistrement",
+        "cta": "Régénérer cette scène avec l'IA",
+        "heading": "Régénérer la scène {{number}}",
+        "close": "Fermer",
+        "placeholder": "Décrivez ce qu'il faut changer… ex. « Rendre le titre vert et ajouter un fondu enchaîné subtil pour le sous-titre »",
+        "readyNotice": "✓ Nouvelle version prête. Acceptez pour l'appliquer, ou annulez pour essayer une autre invite.",
+        "acceptSave": "Accepter et enregistrer",
+        "discard": "Annuler",
+        "generating": "Génération… (10–60 s)",
+        "generate": "Générer",
+        "footerNote": "L'IA réécrit uniquement le HTML de ce plan — la narration, le minutage et les autres plans restent inchangés. Une fois accepté, refaites le rendu du MP4 pour voir le résultat."
+    },
+    "htmlPreviewTitle": "HTML de la scène {{number}}",
+    "narrationPlayer": {
+        "pause": "Pause",
+        "play": "Jouer ce temps fort avec la narration",
+        "playbackErrorFallback": "Impossible de démarrer la lecture"
+    },
+    "talent": {
+        "noHost": "Aucun présentateur configuré pour cette exécution.",
+        "onCallSheet": "Le talent figure sur la feuille de service — l'enregistrement démarre une fois le storyboard verrouillé.",
+        "takesRecorded": "Prises enregistrées",
+        "inProductionNote": "Chaque prise associe une image d'identité Seedream à un extrait de l'audio de narration, puis fal.ai génère la tête parlante synchronisée aux lèvres. Les aperçus par prise apparaissent une fois le lot d'avatars terminé.",
+        "takesInTheCan": "Prises dans la boîte",
+        "takesCount_one": "{{count}} prise",
+        "takesCount_many": "{{count}} prises",
+        "takesCount_other": "{{count}} prises",
+        "takeAlt": "Prise {{number}}",
+        "noPreview": "Aucun aperçu",
+        "takeLabel": "Prise {{number}}",
+        "wrappedNoPreviews": "La performance est terminée — les aperçus par prise ne sont pas disponibles pour cette exécution."
+    },
+    "score": {
+        "noScore": "Aucune musique de fond n'a été générée pour cette exécution.",
+        "notArrived": "Le compositeur n'est pas encore arrivé sur le plateau.",
+        "chunksComposed": "Segments composés",
+        "inProductionNote": "Google Lyria génère la musique par segments (~30 s chacun), puis un worker de rendu les concatène en une piste finale associée à la narration.",
+        "defaultLabel": "Musique de fond",
+        "wrappedNote": "Musique terminée — la piste fusionnée est intégrée au montage final.",
+        "composedIn_one": "Composé en {{count}} segment via Lyria.",
+        "composedIn_many": "Composé en {{count}} segments via Lyria.",
+        "composedIn_other": "Composé en {{count}} segments via Lyria."
+    },
+    "finalCut": {
+        "notAssembled": "Le montage final n'est pas encore assemblé.",
+        "description": "Le montage final est la chronologie assemblée avec la voix off. Le lecteur intégré du nœud Montage final propose le même contenu ; cliquer sur <bold>Regarder en plein écran</bold> ouvre la vue pleine page."
+    }
+}

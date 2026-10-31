@@ -1,0 +1,60 @@
+{
+    "actionBar": {
+        "title": "{{label}} रिपोर्ट",
+        "checkStatus": "स्थिति जाँचें",
+        "checking": "जाँच हो रही है..."
+    },
+    "status": {
+        "processing": "प्रोसेस हो रहा है",
+        "completed": "पूर्ण",
+        "failed": "असफल"
+    },
+    "error": {
+        "title": "रिपोर्ट लोड नहीं हो सकीं",
+        "hint": "रिपोर्ट लाने में कुछ गड़बड़ हो गई। कृपया फिर से प्रयास करें।"
+    },
+    "empty": {
+        "title": "अभी तक कोई रिपोर्ट नहीं",
+        "hint": "विद्यार्थी के प्रदर्शन का विश्लेषण करने के लिए नई रिपोर्ट जनरेट करें।"
+    },
+    "card": {
+        "createdOn": "बनाई गई {{date}}",
+        "view": "देखें",
+        "loading": "लोड हो रहा है…",
+        "defaultTitle": "विश्लेषण रिपोर्ट"
+    },
+    "pagination": {
+        "pageOf": "{{page}} / {{total}}"
+    },
+    "toast": {
+        "reportDataNotAvailable": "रिपोर्ट डेटा अभी उपलब्ध नहीं है",
+        "loadDetailsFailed": "रिपोर्ट विवरण लोड करने में विफल",
+        "reportsCompleted_one": "{{count}} रिपोर्ट सफलतापूर्वक पूर्ण हुई",
+        "reportsCompleted_other": "{{count}} रिपोर्ट सफलतापूर्वक पूर्ण हुईं",
+        "reportsFailed_one": "{{count}} रिपोर्ट असफल रही",
+        "reportsFailed_other": "{{count}} रिपोर्ट असफल रहीं",
+        "reportsPending_one": "{{count}} रिपोर्ट अभी भी प्रोसेस हो रही है",
+        "reportsPending_other": "{{count}} रिपोर्ट अभी भी प्रोसेस हो रही हैं",
+        "checkStatusFailed": "रिपोर्ट स्थिति जाँचने में विफल"
+    },
+    "learned": {
+        "heading": "AI चैट से मिली जानकारी",
+        "subtitle": "AI ट्यूटर से बातचीत के दौरान इस छात्र के बारे में जो देखा गया। जो गलत लगे उसे हटा दें।",
+        "seenTimes_one": "{{count}} बार देखा गया",
+        "seenTimes_other": "{{count}} बार देखा गया",
+        "stated": "छात्र ने खुद बताया",
+        "dismiss": "यह नोट हटाएँ",
+        "dismissed": "नोट हटा दिया गया",
+        "dismissFailed": "नोट नहीं हटाया जा सका",
+        "kind": {
+            "GOAL": "लक्ष्य",
+            "PREFERENCE": "पसंद",
+            "STRENGTH": "मज़बूती",
+            "WEAKNESS": "कमज़ोरी",
+            "MISCONCEPTION": "गलत धारणा",
+            "INTEREST": "रुचि"
+        },
+        "showAll": "सभी {{count}} देखें",
+        "showLess": "कम दिखाएँ"
+    }
+}

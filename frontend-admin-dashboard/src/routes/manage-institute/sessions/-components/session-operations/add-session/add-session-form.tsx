@@ -18,6 +18,7 @@ import { LevelType, levelWithDetails } from '@/schemas/student/student-list/inst
 import { SessionData } from '@/types/study-library/session-types';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import { useTranslation } from 'react-i18next';
 
 const formSchema = z.object({
     id: z.string().nullable(),
@@ -60,6 +61,7 @@ export const AddSessionForm = ({
     setDisableAddButton: Dispatch<SetStateAction<boolean>>;
     submitForm: (submitFn: () => void) => void;
 }) => {
+    const { t } = useTranslation('manageInstituteAddSessionForm');
     const { instituteDetails, getPackageWiseLevels } = useInstituteDetailsStore();
 
     const [packageWithLevels, setPackageWithLevels] = useState(getPackageWiseLevels());
@@ -288,19 +290,20 @@ export const AddSessionForm = ({
             {
                 onSuccess: () => {
                     toast.success(
-                        ` ${getTerminology(
-                            ContentTerms.Course,
-                            SystemTerms.Course
-                        )} added successfully`
+                        t('toast.courseAddedSuccess', {
+                            term: getTerminology(ContentTerms.Course, SystemTerms.Course),
+                        })
                     );
                 },
                 onError: (error) => {
                     toast.error(
                         error.message ||
-                            `Failed to add ${getTerminology(
-                                ContentTerms.Course,
-                                SystemTerms.Course
-                            ).toLocaleLowerCase()}`
+                            t('toast.courseAddFailed', {
+                                term: getTerminology(
+                                    ContentTerms.Course,
+                                    SystemTerms.Course
+                                ).toLocaleLowerCase(),
+                            })
                     );
                 },
             }
@@ -335,13 +338,15 @@ export const AddSessionForm = ({
                         <FormItem>
                             <FormControl>
                                 <MyInput
-                                    label={
-                                        getTerminology(ContentTerms.Session, SystemTerms.Session) +
-                                        ' Name'
-                                    }
+                                    label={t('form.sessionNameLabel', {
+                                        term: getTerminology(
+                                            ContentTerms.Session,
+                                            SystemTerms.Session
+                                        ),
+                                    })}
                                     required={true}
                                     inputType="text"
-                                    inputPlaceholder="Eg. 2024-2025"
+                                    inputPlaceholder={t('form.sessionNamePlaceholder')}
                                     className="w-full"
                                     input={field.value}
                                     onChangeFunction={(e) => field.onChange(e.target.value)}
@@ -358,10 +363,10 @@ export const AddSessionForm = ({
                         <FormItem>
                             <FormControl>
                                 <MyInput
-                                    label="Start Date"
+                                    label={t('form.startDateLabel')}
                                     required={true}
                                     inputType="date"
-                                    inputPlaceholder="YYYY-MM-DD" // Updated placeholder
+                                    inputPlaceholder={t('form.startDatePlaceholder')} // Updated placeholder
                                     className="w-full"
                                     input={field.value}
                                     onChangeFunction={(e) => field.onChange(e.target.value)}
@@ -373,7 +378,9 @@ export const AddSessionForm = ({
                 />
 
                 <div className="flex flex-col gap-4">
-                    <p className="text-body text-neutral-500">Select levels from courses</p>
+                    <p className="text-body text-neutral-500">
+                        {t('form.selectLevelsHeading')}
+                    </p>
                     <FormField
                         control={form.control}
                         name="levels"
@@ -548,11 +555,13 @@ export const AddSessionForm = ({
                                                             e.stopPropagation();
                                                         }}
                                                     >
-                                                        <Plus /> Add{' '}
-                                                        {getTerminology(
-                                                            ContentTerms.Course,
-                                                            SystemTerms.Course
-                                                        ).toLocaleLowerCase()}
+                                                        <Plus />{' '}
+                                                        {t('button.addCourse', {
+                                                            term: getTerminology(
+                                                                ContentTerms.Course,
+                                                                SystemTerms.Course
+                                                            ).toLocaleLowerCase(),
+                                                        })}
                                                     </MyButton>
                                                 }
                                             />

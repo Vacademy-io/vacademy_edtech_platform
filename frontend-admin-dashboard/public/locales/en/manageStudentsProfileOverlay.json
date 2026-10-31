@@ -1,0 +1,26 @@
+{
+    "header": {
+        "title": "{{term}} Profile",
+        "unknownName": "Unknown",
+        "photoAlt": "Profile photo"
+    },
+    "leadTier": {
+        "hot": "Hot",
+        "warm": "Warm",
+        "cold": "Cold",
+        "titleSimple": "Lead tier {{tier}}",
+        "titleWithScore": "Lead tier {{tier}} · score {{score}}"
+    },
+    "nav": {
+        "prevLearner": "Previous learner (←)",
+        "nextLearner": "Next learner (→)",
+        "close": "Close (Esc)"
+    },
+    "contextStrip": {
+        "enrollmentNo": "Enrollment No",
+        "joined": "Joined",
+        "city": "City",
+        "email": "Email",
+        "phone": "Phone"
+    }
+}

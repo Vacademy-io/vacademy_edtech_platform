@@ -1,0 +1,51 @@
+{
+    "channels": {
+        "title": "Delivery channels",
+        "description": "How this reaches people outside the product. Pick as many as you need.",
+        "noneSelectedHint": "Nothing is selected — the announcement will only appear inside the product."
+    },
+    "push": {
+        "title": "Push notification",
+        "description": "Short, glanceable copy. Delivered to installed apps and web push."
+    },
+    "email": {
+        "title": "Email",
+        "description": "Pick a saved template or send the content you wrote on step 1."
+    },
+    "whatsapp": {
+        "title": "WhatsApp",
+        "description": "Meta only delivers approved templates, so pick one and map its variables."
+    },
+    "schedule": {
+        "title": "When should it go out?",
+        "type": {
+            "immediate": {
+                "label": "Send now",
+                "hint": "As soon as you confirm"
+            },
+            "oneTime": {
+                "label": "Schedule",
+                "hint": "Once, at a set time"
+            },
+            "recurring": {
+                "label": "Repeat",
+                "hint": "On a recurring schedule"
+            }
+        },
+        "timezone": {
+            "label": "Timezone",
+            "hint": "Scheduled times are read in this timezone, not your browser's."
+        },
+        "oneTime": {
+            "sendAt": "Send at"
+        },
+        "quickPick": {
+            "today5pm": "Today, 5 PM",
+            "tomorrow9am": "Tomorrow, 9 AM",
+            "nextMonday9am": "Next Monday, 9 AM"
+        },
+        "recurring": {
+            "cronExpression": "Cron expression"
+        }
+    }
+}

@@ -1,0 +1,58 @@
+{
+    "dialog": {
+        "heading": "إضافة تسوية — {{month}}"
+    },
+    "actions": {
+        "cancel": "إلغاء",
+        "adding": "جارٍ الإضافة…",
+        "addAdjustment": "إضافة تسوية"
+    },
+    "fields": {
+        "employee": {
+            "label": "الموظف"
+        },
+        "type": {
+            "label": "النوع"
+        },
+        "code": {
+            "label": "الرمز",
+            "placeholder": "INCENTIVE",
+            "description": "يصبح رمز العنصر في قسيمة الراتب."
+        },
+        "label": {
+            "label": "التسمية",
+            "placeholder": "حافز أداء الربع الثاني",
+            "description": "ما يراه الموظف على قسيمة راتبه."
+        },
+        "amount": {
+            "label": "المبلغ",
+            "placeholder": "5000",
+            "description": "دائمًا رقم موجب — النوع يحدد الاتجاه."
+        },
+        "currency": {
+            "label": "العملة"
+        },
+        "runScope": {
+            "label": "نطاق الدورة"
+        },
+        "notes": {
+            "label": "ملاحظات",
+            "placeholder": "سياق داخلي — سبب منح هذا المبلغ أو استرداده."
+        }
+    },
+    "toast": {
+        "added": "تمت إضافة التسوية"
+    },
+    "errors": {
+        "addFailed": "تعذّرت إضافة التسوية."
+    },
+    "validation": {
+        "employeeRequired": "اختر موظفًا",
+        "codeMinLength": "يجب ألا تقل الرموز عن حرفين",
+        "codeFormat": "أحرف كبيرة وأرقام وشرطات سفلية فقط — بلا مسافات (مثل INCENTIVE, ARREARS)",
+        "labelRequired": "أدخل تسمية سيتعرّف عليها الموظف",
+        "amountRequired": "أدخل المبلغ",
+        "amountPositive": "أدخل مبلغًا أكبر من صفر",
+        "notesMaxLength": "اجعل الملاحظات أقل من 500 حرف"
+    }
+}

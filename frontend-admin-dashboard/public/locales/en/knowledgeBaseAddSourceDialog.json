@@ -1,0 +1,82 @@
+{
+    "heading": "Add to this knowledge base",
+    "cancelButton": "Cancel",
+    "addButton": "Add",
+    "addingButton": "Adding…",
+    "uploadingButton": "Uploading…",
+    "typedNotesFree": "Typed notes are free to add.",
+    "tabs": {
+        "document": "Document",
+        "webPage": "Web page",
+        "youtube": "YouTube",
+        "note": "Note"
+    },
+    "pdf": {
+        "choosePdf": "Choose a PDF",
+        "dropHint": "Textbooks, notes, past papers. Scanned books work too.",
+        "uploaded": "Uploaded",
+        "uploading": "Uploading…",
+        "pagesRead_one": "{{formatted}} page",
+        "pagesRead_other": "{{formatted}} pages",
+        "pageCountOnServer": "page count will be read on the server",
+        "titleLabel": "Title",
+        "titlePlaceholder": "e.g. NCERT Class 9 Science",
+        "untitledDocument": "Untitled document",
+        "ocrNote": "Pages that already have selectable text are read for free. Only scanned pages need paid OCR, and any page that comes out unreliable is flagged for you rather than used silently."
+    },
+    "url": {
+        "linkLabel": "Web page link",
+        "linkPlaceholder": "https://…",
+        "titlePlaceholder": "Optional",
+        "hint": "Good for syllabus pages and notices. Long pages are shortened, so upload a book as a PDF instead.",
+        "showCostButton": "Show cost"
+    },
+    "youtube": {
+        "linkLabel": "YouTube link",
+        "linkPlaceholder": "https://www.youtube.com/watch?v=…",
+        "hint": "Uses the video's captions, so it only works for videos that have them.",
+        "showCostButton": "Show cost"
+    },
+    "text": {
+        "titlePlaceholder": "e.g. Fee refund policy",
+        "contentLabel": "Content",
+        "contentPlaceholder": "Type or paste anything the AI should know — policies, timings, exam rules, FAQs…"
+    },
+    "costPreview": {
+        "loading": "Working out the cost…",
+        "pagesCount_one": "{{formatted}} page",
+        "pagesCount_other": "{{formatted}} pages",
+        "creditsApprox_one": "≈{{formatted}} credit",
+        "creditsApprox_other": "≈{{formatted}} credits",
+        "creditsAbout_one": "About {{formatted}} credit",
+        "creditsAbout_other": "About {{formatted}} credits",
+        "balance_one": "You have {{formatted}} credit",
+        "balance_other": "You have {{formatted}} credits",
+        "balanceAfter_one": " — {{formatted}} left after this.",
+        "balanceAfter_other": " — {{formatted}} left after this.",
+        "balanceEnd": ".",
+        "notEnough": "Not enough credits. Top up from AI Credits before adding this.",
+        "chargedNote": "Charged once, on the pages actually read. Re-indexing later is free."
+    },
+    "errors": {
+        "onlyPdf": "Only PDF files can be added right now",
+        "tooManyPages_one": "That document has {{formatted}} page.",
+        "tooManyPages_other": "That document has {{formatted}} pages.",
+        "pageLimit_one": "The limit per upload is {{formatted}} — please split it.",
+        "pageLimit_other": "The limit per upload is {{formatted}} — please split it.",
+        "identifyAccountFailed": "Could not identify your account. Please sign in again.",
+        "uploadFailed": "Upload failed. Please try again.",
+        "stillUploading": "Still uploading — one moment",
+        "choosePdfFirst": "Choose a PDF first",
+        "pasteLinkFirst": "Paste a link first",
+        "typeSomethingFirst": "Type or paste something first",
+        "notEnoughCredits": "Not enough credits.",
+        "addFailed": "Could not add this source"
+    },
+    "toasts": {
+        "alreadyAdded": "Already added — nothing was charged.",
+        "addedProcessing": "Added. Reading it now — this can take a few minutes.",
+        "addedProcessingShort": "Added. Reading it now.",
+        "added": "Added."
+    }
+}

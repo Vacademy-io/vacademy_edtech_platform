@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { format } from 'date-fns';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 
@@ -11,7 +12,8 @@ import { useNavigate, useSearch } from '@tanstack/react-router';
  *   view        — 'list' (default) | 'calendar'
  *   monthStr    — yyyy-MM (local) for the calendar's month
  *   selectedDateStr — yyyy-MM-dd (local) for the calendar's selected day
- *   counsellorFilter — userId, or the supplied `allValue` sentinel when "all"
+ *   counsellorFilters — userIds; the URL carries them comma-separated and an
+ *                       empty list means "all counsellors" (param omitted)
  */
 export type FollowUpsView = 'list' | 'calendar';
 
@@ -22,29 +24,33 @@ export interface FollowUpsViewState {
     setMonthStr: (m: string) => void;
     selectedDateStr: string;
     setSelectedDateStr: (d: string) => void;
-    counsellorFilter: string;
-    setCounsellorFilter: (v: string) => void;
+    counsellorFilters: string[];
+    setCounsellorFilters: (v: string[]) => void;
 }
 
-export const useFollowUpsViewState = (allCounsellorsValue: string): FollowUpsViewState => {
+export const useFollowUpsViewState = (): FollowUpsViewState => {
     const search = useSearch({ from: '/audience-manager/follow-ups/' });
     const navigate = useNavigate({ from: '/audience-manager/follow-ups/' });
 
     const view: FollowUpsView = search.view ?? 'list';
     const monthStr = search.month ?? format(new Date(), 'yyyy-MM');
     const selectedDateStr = search.date ?? format(new Date(), 'yyyy-MM-dd');
-    const counsellorFilter = search.counsellor ?? allCounsellorsValue;
+    // A single ?counsellor=<id> link still parses — it is just a one-item list.
+    const counsellorFilters = useMemo(
+        () => (search.counsellor ? search.counsellor.split(',').filter(Boolean) : []),
+        [search.counsellor]
+    );
 
     const setView = (v: FollowUpsView) =>
         navigate({ search: (prev) => ({ ...prev, view: v === 'list' ? undefined : v }) });
     const setMonthStr = (m: string) => navigate({ search: (prev) => ({ ...prev, month: m }) });
     const setSelectedDateStr = (d: string) =>
         navigate({ search: (prev) => ({ ...prev, date: d }) });
-    const setCounsellorFilter = (v: string) =>
+    const setCounsellorFilters = (v: string[]) =>
         navigate({
             search: (prev) => ({
                 ...prev,
-                counsellor: v === allCounsellorsValue ? undefined : v,
+                counsellor: v.length > 0 ? v.join(',') : undefined,
             }),
         });
 
@@ -55,7 +61,7 @@ export const useFollowUpsViewState = (allCounsellorsValue: string): FollowUpsVie
         setMonthStr,
         selectedDateStr,
         setSelectedDateStr,
-        counsellorFilter,
-        setCounsellorFilter,
+        counsellorFilters,
+        setCounsellorFilters,
     };
 };

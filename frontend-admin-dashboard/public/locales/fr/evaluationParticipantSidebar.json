@@ -1,0 +1,14 @@
+{
+    "participantDetails": "Détails du participant",
+    "faceProfileAlt": "photo de profil",
+    "attemptUploadSuccess": "Tentative téléchargée avec succès",
+    "fileUploadSuccess": "Fichier téléchargé avec succès",
+    "uploadFailedRetry": "Échec du téléchargement. Veuillez réessayer.",
+    "uploading": "Téléchargement en cours",
+    "uploadAttempt": "Téléverser la tentative",
+    "submit": "Envoyer",
+    "evaluate": "Évaluer",
+    "confirmUploadHeading": "Confirmer le téléchargement ?",
+    "confirmUploadBody": "Le téléchargement d'un nouveau fichier remplacera la réponse existante de l'élève. Voulez-vous vraiment continuer ?",
+    "upload": "Téléverser"
+}

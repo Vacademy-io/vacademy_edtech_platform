@@ -1,0 +1,255 @@
+{
+    "common": {
+        "submit": "Submit",
+        "returnToTest": "Return to Test",
+        "yourAnswer": "Your answer",
+        "questionNumber": "Question {{number}}",
+        "tabSwitchWarning": "Warning: You are attempting to leave the test environment. This is warning {{count}} of 3. If you attempt to leave again, your test will be automatically submitted.",
+        "tools": {
+            "calculator": "Calculator",
+            "scratchpad": "Scratchpad"
+        }
+    },
+    "preview": {
+        "header": {
+            "title": "Preview",
+            "subtitle": "Read-only — answering starts when this ends"
+        },
+        "nav": {
+            "sectionsAriaLabel": "Sections"
+        },
+        "actions": {
+            "starting": "Starting...",
+            "startTest": "Start Test"
+        }
+    },
+    "navbar": {
+        "autoSave": {
+            "saved": "Saved",
+            "saving": "Saving…",
+            "notSaved": "Not saved"
+        },
+        "timer": {
+            "title": "Time remaining"
+        },
+        "help": {
+            "ariaLabel": "Help and requests",
+            "menu": {
+                "instructions": "Instructions",
+                "alerts": "Assessment Alerts",
+                "reattempt": "Request Reattempt",
+                "timeIncrease": "Request Time Increase"
+            }
+        },
+        "questionPanel": {
+            "hide": "Hide question panel",
+            "show": "Show question panel"
+        },
+        "pdf": {
+            "preview": "Preview PDF",
+            "upload": "Upload",
+            "uploading": "Uploading...",
+            "back": "Back",
+            "replace": "Replace PDF"
+        },
+        "exitWarning": {
+            "description": "Your test is still in progress. You cannot go back while attempting. Use the Submit button when you have finished — your answers are saved automatically."
+        },
+        "toast": {
+            "missingAttemptId": "Submission failed: Attempt ID is missing.",
+            "submitSuccess": "Assessment submitted successfully!",
+            "retrying": "Submission failed. Retrying ({{attempt}}/{{max}})...",
+            "submitFailed": "Failed to submit your assessment. Please check your connection and try again."
+        }
+    },
+    "networkStatus": {
+        "offline": {
+            "title": "No internet connection",
+            "description": "Your answers are held on this device and re-sent when you are back online."
+        },
+        "saveFailed": {
+            "title": "Answers not syncing",
+            "description": "They are safe on this device. Tap retry to sync now."
+        },
+        "online": {
+            "title": "Back online",
+            "description": "Your network connection was restored."
+        },
+        "retry": "Retry"
+    },
+    "footer": {
+        "actions": {
+            "questionPalette": "Question palette",
+            "tools": "Tools",
+            "closeToolsMenu": "Close tools menu"
+        },
+        "markForReview": {
+            "mark": "Mark for review",
+            "unmark": "Unmark for review",
+            "marked": "Marked for review"
+        },
+        "clearResponse": {
+            "ariaLabel": "Clear response",
+            "label": "Clear"
+        },
+        "nav": {
+            "previous": "Previous",
+            "previousAriaLabel": "Previous question",
+            "next": "Next",
+            "saveAndNext": "Save & Next"
+        }
+    },
+    "coding": {
+        "problem": {
+            "missing": "(No problem statement)"
+        },
+        "badges": {
+            "maxPoints": "Max points: {{max}}",
+            "cpu": "CPU {{seconds}}s",
+            "tests": "Tests: {{count}}"
+        },
+        "actions": {
+            "run": "Run"
+        },
+        "loadingRuntime": "Loading Python runtime…",
+        "tabs": {
+            "tests": "Tests",
+            "output": "Output"
+        },
+        "tests": {
+            "noneProvided": "No sample tests provided.",
+            "sampleFallback": "Sample {{number}}",
+            "hiddenFallback": "Hidden {{number}}",
+            "input": "Input",
+            "expected": "Expected",
+            "empty": "(empty)",
+            "compilerError": "Compiler / runtime error",
+            "yourOutput": "Your output",
+            "hiddenBadge": "hidden"
+        },
+        "output": {
+            "none": "No output yet.",
+            "testFallback": "Test {{number}}",
+            "stdoutLabel": "stdout",
+            "stderrLabel": "stderr / compiler"
+        }
+    },
+    "longAnswer": {
+        "wordCount_one": "{{count}} word",
+        "wordCount_other": "{{count}} words",
+        "placeholder": "Write your answer here. Marks are given for reasoning, not length."
+    },
+    "oneWord": {
+        "placeholder": "Type your one-word answer"
+    },
+    "numeric": {
+        "ariaLabel": "Your numeric answer",
+        "noNegativeMarking": "No negative marking on this question.",
+        "pad": {
+            "show": "Show number pad",
+            "hide": "Hide number pad",
+            "decimalPointAriaLabel": "Decimal point",
+            "backspaceAriaLabel": "Backspace"
+        }
+    },
+    "paragraph": {
+        "readMore": "Read more",
+        "readLess": "Read less"
+    },
+    "page": {
+        "toast": {
+            "savingResumed": "Your responses are being saved again",
+            "savingFailed": "Your responses are not being recorded"
+        }
+    },
+    "questionDisplay": {
+        "selectPrompt": "Select a question to begin",
+        "sectionTimeUp": "Time is up for this section. Please move to the next available section.",
+        "ofTotal": "of {{total}}",
+        "codingMissingConfig": "Coding question is missing configuration.",
+        "answerOptionsAriaLabel": "Answer options",
+        "unsupportedType": "This question type cannot be displayed here."
+    },
+    "questionList": {
+        "itemAriaLabel": "Question {{number}}, {{status}}"
+    },
+    "questionNavigator": {
+        "sectionFallback": "Section",
+        "questionCount_one": "{{count}} question",
+        "questionCount_other": "{{count}} questions",
+        "legendAriaLabel": "Question status legend",
+        "submitPaper": "Submit paper",
+        "hidePanel": "Hide question panel"
+    },
+    "questionPassage": {
+        "label": "Passage",
+        "tapToRead": "Tap to read"
+    },
+    "questionStatus": {
+        "answered": "Answered",
+        "answeredMarked": "Answered & marked",
+        "marked": "Marked for review",
+        "notAnswered": "Not answered",
+        "notVisited": "Not visited"
+    },
+    "sectionTabs": {
+        "ariaLabel": "Assessment sections"
+    },
+    "sectionTimer": {
+        "ariaLabel": "Section time remaining: {{minutes}} minutes {{seconds}} seconds"
+    },
+    "sidebar": {
+        "paletteAriaLabel": "Question palette"
+    },
+    "calculator": {
+        "genericError": "Error",
+        "errors": {
+            "factorialWholeNumber": "Factorial needs a whole number",
+            "tooLarge": "Too large",
+            "unexpectedChar": "Unexpected \"{{char}}\"",
+            "malformedNumber": "Malformed number",
+            "divideByZero": "Divide by zero",
+            "outOfDomain": "Out of domain",
+            "unknownFunction": "Unknown function",
+            "incompleteExpression": "Incomplete expression",
+            "missingParen": "Missing )",
+            "empty": "Empty",
+            "unbalancedParen": "Unbalanced )",
+            "notANumber": "Not a number",
+            "outOfRange": "Out of range"
+        },
+        "keys": {
+            "clear": "Clear",
+            "backspace": "Backspace",
+            "percent": "Percent",
+            "divide": "Divide",
+            "multiply": "Multiply",
+            "minus": "Minus",
+            "plus": "Plus",
+            "decimalPoint": "Decimal point",
+            "equals": "Equals",
+            "secondFunction": "Second function",
+            "toggleAngleUnit": "Toggle degrees or radians",
+            "openBracket": "Open bracket",
+            "closeBracket": "Close bracket",
+            "squareRoot": "Square root",
+            "square": "Square",
+            "power": "Power",
+            "pi": "Pi",
+            "eulersNumber": "Euler's number",
+            "toggleSign": "Toggle sign",
+            "factorial": "Factorial"
+        }
+    },
+    "scratchpad": {
+        "placeholder": "Rough work — not submitted with your paper.",
+        "ariaLabel": "Scratchpad for rough work"
+    },
+    "toolPanel": {
+        "closeAriaLabel": "Close {{title}}"
+    },
+    "viewToggle": {
+        "grid": "Grid view",
+        "list": "List view"
+    }
+}

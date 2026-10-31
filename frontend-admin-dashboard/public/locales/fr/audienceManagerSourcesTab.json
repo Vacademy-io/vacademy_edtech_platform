@@ -1,0 +1,26 @@
+{
+    "title": "Performance des sources",
+    "columns": {
+        "source": "Source",
+        "leads": "Prospects",
+        "connected": "Joints",
+        "interested": "Intéressés",
+        "won": "Gagnés",
+        "convRate": "Taux conv. %",
+        "revenue": "Revenu",
+        "spend": "Dépense",
+        "cpl": "CPL",
+        "roi": "ROI"
+    },
+    "csvTotalRow": "TOTAL",
+    "footerTotal": "Total",
+    "unknownSource": "Inconnu",
+    "emptyMessage": "Aucun prospect sur cette période.",
+    "waveTwoCell": {
+        "comingSoon": "Disponible avec le suivi des dépenses"
+    },
+    "footnote": {
+        "connected": "Joints = prospects ayant reçu au moins un appel connecté (selon vos paramètres de téléphonie).",
+        "interested": "Intéressés = prospects passés en statut « intéressé » sur cette période."
+    }
+}

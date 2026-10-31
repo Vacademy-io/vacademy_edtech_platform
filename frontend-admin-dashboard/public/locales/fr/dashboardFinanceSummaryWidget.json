@@ -1,0 +1,12 @@
+{
+    "header": {
+        "title": "Aperçu financier",
+        "description": "Le flux d'argent en un coup d'œil",
+        "openButton": "Ouvrir"
+    },
+    "tiles": {
+        "outstanding": "Impayé",
+        "overdue": "En retard",
+        "approvals": "Approbations"
+    }
+}

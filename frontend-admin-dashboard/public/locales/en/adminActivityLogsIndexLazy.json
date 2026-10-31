@@ -1,0 +1,11 @@
+{
+    "navHeading": "Admin Activity Logs",
+    "pageTitle": "Admin Activity Logs",
+    "pageDescription": "Forensic record of admin actions — who did what, when, and on which resource.",
+    "helmet": {
+        "title": "Admin Activity Logs",
+        "description": "Audit trail of administrative actions across the institute."
+    },
+    "totalEntries_one": "{{count}} total entry",
+    "totalEntries_other": "{{count}} total entries"
+}

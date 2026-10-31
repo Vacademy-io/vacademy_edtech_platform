@@ -162,10 +162,11 @@ def _construct_pipeline(
     constructor tolerates this and the per-shot path doesn't need stock
     media for TEXT_DIAGRAM/KINETIC_TITLE/INFOGRAPHIC_SVG shots.
 
-    `html_model` overrides the constructor's hard-coded default
-    (`xiaomi/mimo-v2-flash:free`, deprecated). Caller is responsible for
-    resolving the right model — see VideoGenerationService for the
-    tier-aware routing the main pipeline uses."""
+    `html_model` overrides the constructor's default (GLM_DEFAULT, the
+    client's last resort). Pass None to let every call resolve the
+    registry's video default (`ai_model_defaults`), which this pipeline uses
+    anyway: it has no stage map, so a call that names no model goes to the
+    registry default before the client default."""
     try:
         from automation_pipeline import VideoGenerationPipeline
     except ImportError as exc:
@@ -179,8 +180,7 @@ def _construct_pipeline(
     if html_model:
         # Both `script_model` and `html_model` are set: the per-shot
         # path only uses html_client, but the script_client is built
-        # eagerly in __init__ so we keep them in sync to avoid quietly
-        # paying for a deprecated default.
+        # eagerly in __init__ so we keep them in sync.
         kwargs["script_model"] = html_model
         kwargs["html_model"] = html_model
     return VideoGenerationPipeline(**kwargs)
@@ -225,6 +225,7 @@ def _attach_minimal_state(pipeline, *, video_width: int, video_height: int) -> N
     pipeline._progress_callback = None
     pipeline._background_music_enabled_override = None
     pipeline._background_music_volume_override = None
+    pipeline._background_music_choice = None
     # Thread-safe token accounting. The per-shot path acquires
     # `_token_lock` after the LLM call to bump cumulative totals — these
     # are normally created in `pipeline.generate()`, which we don't call.

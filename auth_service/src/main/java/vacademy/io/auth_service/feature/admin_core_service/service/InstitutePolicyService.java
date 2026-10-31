@@ -2,6 +2,9 @@ package vacademy.io.auth_service.feature.admin_core_service.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +32,31 @@ public class InstitutePolicyService {
 
     @Value("${admin.core.service.base_url}")
     private String adminCoreServiceBaseUrl;
+
+    private static final long POLICY_CACHE_TTL_MS = 5 * 60 * 1000L;
+
+    private record CachedPolicy(InstituteSignupPolicy policy, long fetchedAt) {
+    }
+
+    private final Map<String, CachedPolicy> policyCache = new ConcurrentHashMap<>();
+
+    /**
+     * Same as {@link #fetchSignupPolicy} but reuses the answer for five minutes. User
+     * creation calls this once per new learner, and a CSV of hundreds of rows must not
+     * turn into hundreds of calls to admin-core. A failed fetch (null) is cached too.
+     */
+    public InstituteSignupPolicy fetchSignupPolicyCached(String instituteId) {
+        if (!StringUtils.hasText(instituteId))
+            return null;
+        long now = System.currentTimeMillis();
+        CachedPolicy cached = policyCache.get(instituteId);
+        if (cached != null && now - cached.fetchedAt() < POLICY_CACHE_TTL_MS) {
+            return cached.policy();
+        }
+        InstituteSignupPolicy policy = fetchSignupPolicy(instituteId);
+        policyCache.put(instituteId, new CachedPolicy(policy, now));
+        return policy;
+    }
 
     public InstituteSignupPolicy fetchSignupPolicy(String instituteId) {
         if (!StringUtils.hasText(instituteId))
@@ -58,6 +86,10 @@ public class InstitutePolicyService {
             String passwordStrategy = null;
             String passwordDelivery = null;
             String usernameStrategy = null;
+            String usernameCustomFieldId = null;
+            String usernamePrefix = null;
+            boolean usernameApplyToAll = false;
+            boolean usernameOverrideTyped = false;
             boolean allowCreateCourses = false;
 
             JsonNode studentDisplay = settingNode.get("STUDENT_DISPLAY_SETTINGS");
@@ -71,6 +103,12 @@ public class InstitutePolicyService {
                         passwordDelivery = signup.get("passwordDelivery").asText();
                     if (signup.has("usernameStrategy"))
                         usernameStrategy = signup.get("usernameStrategy").asText();
+                    if (signup.hasNonNull("usernameCustomFieldId"))
+                        usernameCustomFieldId = signup.get("usernameCustomFieldId").asText();
+                    if (signup.hasNonNull("usernamePrefix"))
+                        usernamePrefix = signup.get("usernamePrefix").asText();
+                    usernameApplyToAll = signup.path("usernameApplyToAll").asBoolean(false);
+                    usernameOverrideTyped = signup.path("usernameOverrideTyped").asBoolean(false);
                 }
             }
 
@@ -87,6 +125,10 @@ public class InstitutePolicyService {
                     .passwordDelivery(passwordDelivery)
                     .allowLearnersToCreateCourses(allowCreateCourses)
                     .userNameStrategy(usernameStrategy)
+                    .usernameCustomFieldId(usernameCustomFieldId)
+                    .usernamePrefix(usernamePrefix)
+                    .usernameApplyToAll(usernameApplyToAll)
+                    .usernameOverrideTyped(usernameOverrideTyped)
                     .build();
         } catch (Exception e) {
             return null;
@@ -144,6 +186,44 @@ public class InstitutePolicyService {
                             + "student.username and the assessment-service copies still hold the OLD username; "
                             + "replay with POST /admin-core-service/internal/learner/v1/username-changed",
                     userId, oldUsername, newUsername, e.getMessage());
+        }
+    }
+
+    /**
+     * userId -> the LMS site each learner signs in to (admin_core owns LMS_SETTING and the
+     * enrolments), for the login link in credential emails. Learners with no connected LMS
+     * are absent from the map. Never throws: a failed lookup returns an empty map so the
+     * email still goes out with the learner-portal link.
+     */
+    public Map<String, String> fetchLmsLoginUrls(java.util.List<String> userIds, String instituteId) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Map.of();
+        }
+        try {
+            Map<String, Object> body = new java.util.HashMap<>();
+            body.put("user_ids", userIds);
+            body.put("institute_id", instituteId);
+            ResponseEntity<String> resp = internalClientUtils.makeHmacRequest(
+                    applicationName,
+                    HttpMethod.POST.name(),
+                    adminCoreServiceBaseUrl,
+                    "/admin-core-service/internal/learner/v1/lms-login-urls",
+                    body);
+            if (resp == null || !StringUtils.hasText(resp.getBody())) {
+                return Map.of();
+            }
+            JsonNode node = new ObjectMapper().readTree(resp.getBody());
+            Map<String, String> urls = new java.util.HashMap<>();
+            node.fields().forEachRemaining(e -> {
+                if (StringUtils.hasText(e.getValue().asText(""))) {
+                    urls.put(e.getKey(), e.getValue().asText());
+                }
+            });
+            return urls;
+        } catch (Exception e) {
+            log.warn("LMS login-URL lookup failed for {} user(s), institute {}: {}",
+                    userIds.size(), instituteId, e.getMessage());
+            return Map.of();
         }
     }
 

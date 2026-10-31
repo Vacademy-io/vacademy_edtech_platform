@@ -4,14 +4,15 @@ import com.google.common.util.concurrent.RateLimiter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import vacademy.io.notification_service.constants.NotificationConstants;
+import vacademy.io.notification_service.features.announcements.client.AdminCoreServiceClient;
 import vacademy.io.notification_service.features.announcements.client.AuthServiceClient;
+import vacademy.io.notification_service.features.announcements.dto.TestSendAnnouncementRequest;
+import vacademy.io.notification_service.features.announcements.dto.TestSendAnnouncementResponse;
 import vacademy.io.notification_service.features.announcements.entity.Announcement;
 import vacademy.io.notification_service.features.announcements.entity.AnnouncementMedium;
 import vacademy.io.notification_service.features.announcements.entity.RecipientMessage;
@@ -39,6 +40,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +66,11 @@ public class AnnouncementDeliveryService {
 
     // Service clients for user resolution
     private final AuthServiceClient authServiceClient;
+    private final AdminCoreServiceClient adminCoreServiceClient;
+
+    /** Per-recipient referral placeholders, resolved from admin-core only when a template uses one. */
+    private static final List<String> REFERRAL_TOKENS =
+            List.of("{{short_referral_link}}", "{{referral_link}}", "{{referral_code}}");
     
     // Configuration for batch processing
     @Value("${notification.user.batch.size:100}")
@@ -179,6 +186,10 @@ public class AnnouncementDeliveryService {
         String resolvedEmailType = determineEmailType((String) emailConfig.get("emailType"));
         String templateName = (String) emailConfig.get("template");
         String previewText = (String) emailConfig.get("previewText");
+        // Same referral placeholders as the WhatsApp path, fetched only when the email uses one.
+        boolean needsReferral = content.getContent() != null
+                && REFERRAL_TOKENS.stream().anyMatch(content.getContent()::contains);
+        String referralInviteId = (String) emailConfig.get("referral_enroll_invite_id");
         
         log.info("Delivering announcement {} via email with type: {}, from: {}, subject: {}", 
                  announcement.getId(), resolvedEmailType, fromEmail, subject);
@@ -220,23 +231,24 @@ public class AnnouncementDeliveryService {
         int totalFailed = 0;
         long overallStartTime = System.currentTimeMillis();
         
-        // Process in batches (pagination)
+        // Process in batches, keyset-paged by id (see the repository method for why not page numbers)
         int pageNumber = 0;
-        Page<RecipientMessage> page;
-        
+        String lastId = "";
+        List<RecipientMessage> batch;
+
         do {
-            Pageable pageable = PageRequest.of(pageNumber, deliveryBatchSize);
-            page = recipientMessageRepository.findByAnnouncementIdAndStatusAndMediumType(
-                announcement.getId(), 
-                MessageStatus.PENDING, 
+            batch = recipientMessageRepository.findByAnnouncementIdAndStatusAndMediumTypeAndIdGreaterThanOrderByIdAsc(
+                announcement.getId(),
+                MessageStatus.PENDING,
                 MediumType.EMAIL,
-                pageable
+                lastId,
+                PageRequest.of(0, deliveryBatchSize)
             );
             
-            List<RecipientMessage> batch = page.getContent();
             if (batch.isEmpty()) {
                 break;
             }
+            lastId = batch.get(batch.size() - 1).getId();
             
             log.debug("Processing batch {} with {} messages for announcement {}", 
                     pageNumber + 1, batch.size(), announcement.getId());
@@ -250,6 +262,9 @@ public class AnnouncementDeliveryService {
             Map<String, User> userEmailMap = batchResolveUsers(userIds);
             Map<String, String> passwordByUserId = needsPasswords
                     ? batchResolvePasswords(userIds)
+                    : Map.of();
+            Map<String, Map<String, String>> referralLinks = needsReferral
+                    ? adminCoreServiceClient.getReferralLinks(announcement.getInstituteId(), userIds, referralInviteId)
                     : Map.of();
 
             // Process each message in this batch
@@ -288,8 +303,18 @@ public class AnnouncementDeliveryService {
                         continue;
                     }
 
+                    // No link for this member: send exactly as before this change (placeholder
+                    // untouched) rather than fail a message that used to go out.
+                    Map<String, String> referral = referralLinks.get(message.getUserId());
+                    if (needsReferral && referral == null) {
+                        log.warn("Announcement {}: no referral link for user {} — placeholders left as is",
+                                announcement.getId(), message.getUserId());
+                    }
+
                     // Process HTML content with variables (use cached users - no additional API calls)
-                    String processedContent = processHtmlVariables(content.getContent(), message, announcement, userEmailMap, passwordByUserId, resolvedInstituteEmail);
+                    String processedContent = applyReferralTokens(
+                            processHtmlVariables(content.getContent(), message, announcement, userEmailMap, passwordByUserId, resolvedInstituteEmail),
+                            referral);
 
                         // RATE LIMITING: Acquire permit before sending (blocks if limit exceeded)
                         rateLimiter.acquire();
@@ -371,7 +396,7 @@ public class AnnouncementDeliveryService {
             
             pageNumber++;
             
-        } while (page.hasNext());
+        } while (batch.size() == deliveryBatchSize);
         
         // Final summary
         long totalTimeSeconds = (System.currentTimeMillis() - overallStartTime) / 1000;
@@ -380,6 +405,95 @@ public class AnnouncementDeliveryService {
                 "Average rate: {:.1f} emails/second", 
                 announcement.getId(), totalSuccess, totalRecipients, totalSuccess, totalFailed, 
                 totalTimeSeconds, averageRate);
+    }
+
+    /** Shown in place of {{password}} on a test send — a real password must never reach a test inbox. */
+    private static final String TEST_PASSWORD_PLACEHOLDER = "********";
+
+    /**
+     * Send an announcement's email to a few addresses before the real send. Placeholders resolve
+     * the same way delivery resolves them; an address that belongs to a user gets that user's
+     * values, any other address gets the address itself as its name. Nothing is persisted, no
+     * recipient_messages rows are created and unsubscribe preferences are not consulted, because
+     * the admin is sending to themselves.
+     */
+    public TestSendAnnouncementResponse sendTestEmails(TestSendAnnouncementRequest request) {
+        Map<String, Object> config = request.getEmailMedium() != null && request.getEmailMedium().getConfig() != null
+                ? request.getEmailMedium().getConfig()
+                : Map.of();
+        String configuredSubject = (String) config.get("subject");
+        String subject = "[Test] " + (StringUtils.hasText(configuredSubject) ? configuredSubject : request.getTitle());
+        String fromEmail = (String) config.get("fromEmail");
+        String fromName = (String) config.get("fromName");
+        String emailType = determineEmailType((String) config.get("emailType"));
+        String previewText = (String) config.get("previewText");
+        String html = request.getContent().getContent();
+
+        // Transient — only feeds processHtmlVariables, never saved.
+        Announcement announcement = new Announcement();
+        announcement.setId("test-send");
+        announcement.setTitle(request.getTitle());
+        announcement.setInstituteId(request.getInstituteId());
+        announcement.setCreatedByName(request.getCreatedByName());
+
+        String instituteEmail = null;
+        if (html != null && html.contains("{{institute_email}}")) {
+            try {
+                InstituteInfoDTO info = instituteInternalService.getInstituteByInstituteId(request.getInstituteId());
+                instituteEmail = info != null ? info.getEmail() : null;
+            } catch (Exception ex) {
+                log.warn("Test send: failed to resolve institute email for {}: {}", request.getInstituteId(), ex.getMessage());
+            }
+        }
+
+        List<TestSendAnnouncementResponse.Result> results = new ArrayList<>();
+        for (String rawEmail : request.getEmails().stream().map(String::trim).distinct().toList()) {
+            User user = authServiceClient.getUserByEmail(rawEmail);
+            boolean matchedUser = user != null;
+            if (user == null) {
+                user = new User();
+                user.setId("test-recipient");
+                user.setEmail(rawEmail);
+            }
+            RecipientMessage message = new RecipientMessage();
+            message.setUserId(user.getId());
+            message.setUserName(rawEmail);
+
+            try {
+                String body = processHtmlVariables(html, message, announcement, Map.of(user.getId(), user),
+                        Map.of(user.getId(), TEST_PASSWORD_PLACEHOLDER), instituteEmail);
+                getEmailRateLimiter().acquire();
+                // No userId: the admin is testing on their own inbox, so the matched user's
+                // unsubscribe preference must not silently swallow the test.
+                UnifiedSendResponse response = unifiedSendService.routeSync(UnifiedSendRequest.builder()
+                        .instituteId(request.getInstituteId())
+                        .channel("EMAIL")
+                        .recipients(List.of(UnifiedSendRequest.Recipient.builder()
+                                .email(rawEmail).build()))
+                        .options(UnifiedSendRequest.SendOptions.builder()
+                                .emailSubject(subject)
+                                .emailBody(body)
+                                .emailType(emailType)
+                                .fromEmail(fromEmail)
+                                .fromName(fromName)
+                                .previewText(previewText)
+                                .source("announcement-test-send")
+                                .build())
+                        .build());
+                UnifiedSendResponse.RecipientResult outcome = response != null && response.getResults() != null
+                        && !response.getResults().isEmpty() ? response.getResults().get(0) : null;
+                boolean sent = outcome != null && outcome.isSuccess();
+                String error = outcome == null ? "No result from email sender" : (sent ? null : outcome.getError());
+                results.add(new TestSendAnnouncementResponse.Result(rawEmail, sent, matchedUser, error));
+            } catch (Exception e) {
+                String detailed = extractSmtpDetails(e);
+                log.warn("Test send to {} failed: {}", rawEmail, detailed);
+                results.add(new TestSendAnnouncementResponse.Result(rawEmail, false, matchedUser, detailed));
+            }
+        }
+        log.info("Test send for institute {}: {} of {} sent", request.getInstituteId(),
+                results.stream().filter(TestSendAnnouncementResponse.Result::isSent).count(), results.size());
+        return new TestSendAnnouncementResponse(results);
     }
 
     /**
@@ -400,6 +514,11 @@ public class AnnouncementDeliveryService {
         // supplied on the send, so thread the admin's chosen media through.
         String headerType = (String) whatsAppConfig.get("header_type");
         String headerUrl = (String) whatsAppConfig.get("header_url");
+        // Members' referral links are fetched only when the template asks for one. An optional
+        // referral_enroll_invite_id makes the links open that invite (e.g. the trial a friend
+        // should join) instead of whichever invite the member enrolled through.
+        boolean needsReferral = usesReferralTokens(dynamicValues);
+        String referralInviteId = (String) whatsAppConfig.get("referral_enroll_invite_id");
 
         if (templateName == null) {
             log.error("WhatsApp medium for announcement {} has no template_name in its config ({}); "
@@ -416,21 +535,27 @@ public class AnnouncementDeliveryService {
         int pageNumber = 0;
         int totalSuccess = 0;
         int totalFailed = 0;
-        Page<RecipientMessage> page;
+        String lastId = "";
+        List<RecipientMessage> batch;
 
         do {
-            Pageable pageable = PageRequest.of(pageNumber, deliveryBatchSize);
-            page = recipientMessageRepository.findByAnnouncementIdAndStatusAndMediumType(
-                    announcement.getId(), MessageStatus.PENDING, MediumType.WHATSAPP, pageable);
+            // Keyset-paged by id, same as email (see the repository method for why not page numbers)
+            batch = recipientMessageRepository.findByAnnouncementIdAndStatusAndMediumTypeAndIdGreaterThanOrderByIdAsc(
+                    announcement.getId(), MessageStatus.PENDING, MediumType.WHATSAPP, lastId,
+                    PageRequest.of(0, deliveryBatchSize));
 
-            List<RecipientMessage> batch = page.getContent();
             if (batch.isEmpty()) break;
+            lastId = batch.get(batch.size() - 1).getId();
 
             // Resolve the recipients' user records once per page, mirroring the email path. Without
             // this, dynamic_values could only ever carry the announcement's own fields, so a
             // template asking for {{name}} or {{email}} received the literal placeholder.
             Map<String, User> userCache = batchResolveUsers(
                     batch.stream().map(RecipientMessage::getUserId).distinct().toList());
+            Map<String, Map<String, String>> referralLinks = needsReferral
+                    ? adminCoreServiceClient.getReferralLinks(instituteId,
+                            batch.stream().map(RecipientMessage::getUserId).distinct().toList(), referralInviteId)
+                    : Map.of();
 
             // Build unified send recipients for this batch
             List<UnifiedSendRequest.Recipient> recipients = new java.util.ArrayList<>();
@@ -462,9 +587,17 @@ public class AnnouncementDeliveryService {
                         continue;
                     }
 
+                    // No link for this member: send exactly as before this change (placeholder
+                    // untouched) rather than fail a message that used to go out.
+                    Map<String, String> referral = referralLinks.get(message.getUserId());
+                    if (needsReferral && referral == null) {
+                        log.warn("Announcement {}: no referral link for user {} — placeholders left as is",
+                                announcement.getId(), message.getUserId());
+                    }
+
                     Map<String, String> userSpecificValues = prepareDynamicValues(
                             dynamicValues, message, announcement, content,
-                            userCache.get(message.getUserId()), userPhone);
+                            userCache.get(message.getUserId()), userPhone, referral);
 
                     recipients.add(UnifiedSendRequest.Recipient.builder()
                             .phone(userPhone)
@@ -539,7 +672,7 @@ public class AnnouncementDeliveryService {
                     pageNumber + 1, announcement.getId(), totalSuccess, totalFailed);
             pageNumber++;
 
-        } while (page.hasNext());
+        } while (batch.size() == deliveryBatchSize);
 
         log.info("WhatsApp delivery completed for announcement {}: {} success, {} failed out of {}",
                 announcement.getId(), totalSuccess, totalFailed, totalRecipients);
@@ -624,6 +757,15 @@ public class AnnouncementDeliveryService {
             }
             notificationLog.setInstituteId(announcement.getInstituteId());
             notificationLog.setNotificationDate(Instant.now());
+            // This method is called for BOTH outcomes — an unsubscribed recipient, a missing
+            // address and a thrown send all land here with status=FAILED. Record that, or the row
+            // is indistinguishable from a successful send and every read surface has to guess.
+            // Successes stay null so SES tracking events remain the source of truth for them.
+            if ("FAILED".equalsIgnoreCase(status)) {
+                notificationLog.setDeliveryStatus("FAILED");
+                notificationLog.setDeliveryErrorMessage(truncateForColumn(errorMessage, 500));
+                notificationLog.setDeliveryUpdatedAt(Instant.now());
+            }
 
             log.info("Saving EMAIL notification log: sourceId={}, channelId={}, userId={}",
                 notificationLog.getSourceId(), notificationLog.getChannelId(), notificationLog.getUserId());
@@ -636,6 +778,16 @@ public class AnnouncementDeliveryService {
                 announcement.getId(), message.getUserId(), userEmail, e);
             throw e; // Re-throw to be caught by the calling method
         }
+    }
+
+    /**
+     * Clip a value to its column width. delivery_error_message is varchar(500) and the failure
+     * text can be a full exception message; this method re-throws on save failure, so an
+     * oversized reason would turn a logging detail into a delivery error.
+     */
+    private String truncateForColumn(String value, int maxLen) {
+        if (value == null) return null;
+        return value.length() <= maxLen ? value : value.substring(0, maxLen);
     }
 
     private String resolveUserPhone(String userId) {
@@ -808,9 +960,23 @@ public class AnnouncementDeliveryService {
      * an announcement email also works in an announcement WhatsApp template — previously only four
      * tokens resolved here, and everything else was delivered as the literal placeholder text.
      */
+    private static String applyReferralTokens(String html, Map<String, String> referral) {
+        if (html == null || referral == null) {
+            return html;
+        }
+        return html.replace("{{short_referral_link}}", nullToEmpty(referral.get("short_referral_link")))
+                .replace("{{referral_link}}", nullToEmpty(referral.get("referral_link")))
+                .replace("{{referral_code}}", nullToEmpty(referral.get("referral_code")));
+    }
+
+    private static boolean usesReferralTokens(Map<String, String> dynamicValues) {
+        return dynamicValues != null && dynamicValues.values().stream()
+                .anyMatch(v -> v != null && REFERRAL_TOKENS.stream().anyMatch(v::contains));
+    }
+
     private Map<String, String> prepareDynamicValues(Map<String, String> template, RecipientMessage message,
                                                     Announcement announcement, RichTextData content,
-                                                    User user, String userPhone) {
+                                                    User user, String userPhone, Map<String, String> referral) {
         Map<String, String> values = new HashMap<>();
         if (template == null) return values;
 
@@ -854,6 +1020,11 @@ public class AnnouncementDeliveryService {
         tokens.put("{{mobile_number}}", phone);
         tokens.put("{{student_phone}}", phone);
         tokens.put("{{student_id}}", user != null ? nullToEmpty(user.getId()) : nullToEmpty(message.getUserId()));
+        if (referral != null) {
+            tokens.put("{{short_referral_link}}", nullToEmpty(referral.get("short_referral_link")));
+            tokens.put("{{referral_link}}", nullToEmpty(referral.get("referral_link")));
+            tokens.put("{{referral_code}}", nullToEmpty(referral.get("referral_code")));
+        }
 
         for (Map.Entry<String, String> entry : template.entrySet()) {
             String value = entry.getValue();

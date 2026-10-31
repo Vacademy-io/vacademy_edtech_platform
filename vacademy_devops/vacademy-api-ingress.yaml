@@ -1,0 +1,127 @@
+# vacademy-api-ingress: public host for the Catalogue API v1 (institute websites list
+# courses / streams / learning paths and send enquiries with a publishable vak_pub_ key).
+#
+#   https://api.vacademy.ai/catalog/v1/<rest>  ->  admin-core-service:8072
+#                                                  /admin-core-service/open/catalog/v1/<rest>
+#   anything else on api.vacademy.ai            ->  404 (ingress-nginx default backend)
+#
+# Same pattern as evalezy-api-ingress.yaml and telleo-api-ingress.yaml; read
+# evalezy-api-ingress.yaml for the full reasoning (path regex, ';' refusal, no
+# per-IP limits behind Cloudflare, Origin CA fallback). Differences here:
+#   - The path is /catalog/v1/, so other APIs can live under their own prefix
+#     on this host later (each with its own Ingress for api.vacademy.ai).
+#   - BROWSERS call this host (the institute's site fetches from the page), so:
+#       * do NOT turn Browser Integrity Check on for this host (keep it Off, step
+#         3b): besides browsers, Next.js servers fetch it server-side with
+#         non-browser user agents, and a challenge page breaks SSR;
+#       * CORS is answered by Spring (global CORS '*'; preflights carry no key).
+#         Do NOT add nginx CORS annotations: they would duplicate the headers.
+#       * The origin lock (only the institute's verified websites, or localhost)
+#         and the per-key rate limits live in admin_core (CatalogApiAuth).
+#   - api.vacademy.ai is in its own Cloudflare zone (vacademy.ai), not the zone of
+#     backend-stage.vacademy.io: the cross-zone caveats of the evalezy/telleo
+#     files apply (an A record to the origin IP, not a CNAME to backend-stage).
+#
+# NOT part of the `vac` Helm release: nothing in CI applies this file, and
+# enabling it must never involve a `helm upgrade` of `vac`. Apply / roll back
+# by hand:
+#   kubectl apply  -f vacademy_devops/vacademy-api-ingress.yaml
+#   kubectl delete -f vacademy_devops/vacademy-api-ingress.yaml
+#   (then, optionally: kubectl delete secret vacademy-api-tls)
+#
+# Safe to apply at any time once DNS exists: before the admin_core build with
+# the Catalogue API controller is live, /catalog/v1/* just gets Spring's 404.
+#
+# ---------------------------------------------------------------------------
+# Before apply
+# ---------------------------------------------------------------------------
+# 0. Read-only checks (expected results in brackets):
+#      kubectl get clusterissuer vacademy-stage-letsencrypt-prod-cert-issuer   [READY True]
+#      kubectl get ingress -A | grep -i 'api.vacademy.ai'   [nothing: no other Ingress may claim the host]
+#      kubectl -n ingress-nginx get pods -o wide            [the NODE(s) running the controller]
+#    Also check in Cloudflare that api.vacademy.ai is not already a record
+#    (e.g. pointing at an old service).
+#
+# 1. Cloudflare DNS (zone vacademy.ai):
+#      Type A, Name api, IPv4 = EXACTLY the A record content of
+#      backend-stage.vacademy.io (read it in the dashboard, not with dig: that
+#      record is proxied). TTL Auto.
+#      Proxy: DNS only (grey cloud) until the certificate is issued (step 2),
+#      then Proxied (step 3).
+#
+# 2. kubectl apply -f vacademy_devops/vacademy-api-ingress.yaml
+#      kubectl get certificate vacademy-api-tls -n default -w      [READY True, ~2 min]
+#    If it stays False: kubectl describe certificate vacademy-api-tls;
+#    kubectl get challenges -A.
+#
+# 3. Once READY True, Cloudflare (zone vacademy.ai):
+#    a. Switch the api record to Proxied (orange cloud). The API needs it: the
+#       per-visitor enquiry limit reads CF-Connecting-IP.
+#    b. Configuration Rule, hostname equals api.vacademy.ai:
+#         SSL: Full (strict); Browser Integrity Check: Off.
+#    c. Cache Rule, hostname equals api.vacademy.ai: BYPASS CACHE. REQUIRED.
+#       Responses carry Cache-Control: public, max-age=60 and Vary: Origin,
+#       X-API-Key for the institute's own caches, but Cloudflare ignores Vary:
+#       a Cloudflare cache would serve one institute's catalogue to another
+#       institute's key.
+#    d. Bot Fight Mode / WAF: make sure nothing challenges api.vacademy.ai
+#       (server-side fetches from Next.js / Vercel have no browser to solve a
+#       challenge). On Pro+ add a WAF skip rule for the hostname.
+#
+# ---------------------------------------------------------------------------
+# Verify after apply (and again after step 3)
+# ---------------------------------------------------------------------------
+#   H=https://api.vacademy.ai
+#   curl -s -w '\n%{http_code}\n' $H/catalog/v1/site
+#     -> 401 {"error":{"code":"missing_api_key",...}}
+#   curl -s -w '\n%{http_code}\n' -H 'X-API-Key: vak_pub_000000000000000000000000000000000000000000000000' $H/catalog/v1/site
+#     -> 401 invalid_api_key
+#   curl -s -o /dev/null -w '%{http_code}\n' -X OPTIONS $H/catalog/v1/site \
+#        -H 'Origin: https://example.com' -H 'Access-Control-Request-Method: GET' \
+#        -H 'Access-Control-Request-Headers: x-api-key'
+#     -> 200 (Spring answers the preflight)
+#   # Everything else is 404 from nginx, never a backend:
+#   for p in / /catalog /catalog/v2/site /admin-core-service/open/catalog/v1/site \
+#            /admin-core-service/internal/api-keys/v1/verify '/catalog/v1/..;/..;/internal/x' \
+#            '/catalog/v1/x;/../../internal' /catalog/v1/%2e%2e/%2e%2e/admin-core-service/internal/x \
+#            /v1/agents; do
+#     printf '%-70s %s\n' "$p" "$(curl -s -o /dev/null -w '%{http_code}' --path-as-is "$H$p")"
+#   done
+#     -> every line 404 (never 2xx)
+#   curl -sI $H/catalog/v1/site | grep -i -E '^(server|cf-ray|cf-cache-status):'
+#     -> server: cloudflare; cf-cache-status: DYNAMIC or BYPASS, never HIT (after step 3)
+#   curl -s -o /dev/null -w '%{http_code}\n' https://backend-stage.vacademy.io/admin-core-service/actuator/health
+#     -> unchanged from before apply
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: vacademy-api
+  namespace: default
+  labels:
+    app: vacademy-api
+  annotations:
+    cert-manager.io/cluster-issuer: vacademy-stage-letsencrypt-prod-cert-issuer
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /admin-core-service/open/catalog/v1/$1
+    # JSON reads and small enquiry bodies only.
+    nginx.ingress.kubernetes.io/proxy-body-size: "1m"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "10"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - api.vacademy.ai
+      secretName: vacademy-api-tls
+  rules:
+    - host: api.vacademy.ai
+      http:
+        paths:
+          - path: /catalog/v1/([^;]*)$
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: admin-core-service
+                port:
+                  number: 8072

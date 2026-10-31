@@ -2,13 +2,14 @@ package vacademy.io.notification_service.features.announcements.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.notification_service.features.announcements.dto.MessageInteractionRequest;
-import vacademy.io.notification_service.features.announcements.dto.AnnouncementEvent;
 import vacademy.io.notification_service.features.announcements.enums.EventType;
+import vacademy.io.notification_service.features.announcements.event.MessageInteractionEvent;
 import vacademy.io.notification_service.features.announcements.dto.UserMessagesResponse;
 import vacademy.io.notification_service.features.announcements.entity.*;
 import vacademy.io.notification_service.features.announcements.enums.InteractionType;
@@ -34,6 +35,7 @@ public class UserMessageService {
     private final MessageReplyRepository messageReplyRepository;
     private final AuthServiceClient authServiceClient;
     private final AnnouncementEventService eventService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public Page<UserMessagesResponse> getUserMessages(String userId, Pageable pageable) {
@@ -79,19 +81,16 @@ public class UserMessageService {
             messageInteractionRepository.save(interaction);
             log.debug("Marked message {} as read for user {}", recipientMessageId, userId);
 
-            // Emit SSE event to all participants of this announcement
+            // Hand the receipt to MessageInteractionListener, which emits it AFTER this
+            // transaction commits and off the request thread. Emitting inline meant the learner
+            // waited on the whole SSE fan-out while holding a pooled DB connection.
             try {
-                recipientMessageRepository.findById(recipientMessageId).ifPresent(rm -> {
-                    AnnouncementEvent event = AnnouncementEvent.builder()
-                            .type(EventType.MESSAGE_READ)
-                            .announcementId(rm.getAnnouncementId())
-                            .data(Map.of("recipientMessageId", recipientMessageId, "userId", userId))
-                            .build();
-                    event.setModeType(rm.getModeType());
-                    eventService.sendToMessageRecipients(recipientMessageId, event);
-                });
+                recipientMessageRepository.findById(recipientMessageId).ifPresent(rm ->
+                        eventPublisher.publishEvent(new MessageInteractionEvent(
+                                this, rm.getAnnouncementId(), recipientMessageId, userId,
+                                EventType.MESSAGE_READ, rm.getModeType())));
             } catch (Exception e) {
-                log.warn("Failed to emit MESSAGE_READ SSE for {}", recipientMessageId, e);
+                log.warn("Failed to publish MESSAGE_READ receipt for {}", recipientMessageId, e);
             }
         }
     }
@@ -111,19 +110,14 @@ public class UserMessageService {
             messageInteractionRepository.save(interaction);
             log.debug("Dismissed message {} for user {}", recipientMessageId, userId);
 
-            // Emit SSE event to all participants of this announcement
+            // Same after-commit hand-off as markAsRead above.
             try {
-                recipientMessageRepository.findById(recipientMessageId).ifPresent(rm -> {
-                    AnnouncementEvent event = AnnouncementEvent.builder()
-                            .type(EventType.MESSAGE_DISMISSED)
-                            .announcementId(rm.getAnnouncementId())
-                            .data(Map.of("recipientMessageId", recipientMessageId, "userId", userId))
-                            .build();
-                    event.setModeType(rm.getModeType());
-                    eventService.sendToMessageRecipients(recipientMessageId, event);
-                });
+                recipientMessageRepository.findById(recipientMessageId).ifPresent(rm ->
+                        eventPublisher.publishEvent(new MessageInteractionEvent(
+                                this, rm.getAnnouncementId(), recipientMessageId, userId,
+                                EventType.MESSAGE_DISMISSED, rm.getModeType())));
             } catch (Exception e) {
-                log.warn("Failed to emit MESSAGE_DISMISSED SSE for {}", recipientMessageId, e);
+                log.warn("Failed to publish MESSAGE_DISMISSED receipt for {}", recipientMessageId, e);
             }
         }
     }

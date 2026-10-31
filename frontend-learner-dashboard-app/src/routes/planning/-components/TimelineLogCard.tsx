@@ -6,6 +6,8 @@ import {
   formatIntervalType,
   formatIntervalTypeId,
 } from "../-utils/intervalTypeIdFormatter";
+import { useTranslation } from "react-i18next";
+import { formatDate } from "@/lib/formatters";
 
 interface TimelineLogCardProps {
   log: PlanningLog;
@@ -20,6 +22,7 @@ export default function TimelineLogCard({
   highlightText,
   searchQuery = "",
 }: TimelineLogCardProps) {
+  const { t } = useTranslation("planning");
   const displayText = (text: string) => {
     if (highlightText && searchQuery) {
       return highlightText(text, searchQuery);
@@ -33,10 +36,10 @@ export default function TimelineLogCard({
         {/* Primary: Interval Type and Period */}
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline" className="px-3 py-1 text-sm font-semibold">
-            {formatIntervalType(log.interval_type)}
+            {formatIntervalType(log.interval_type, t)}
           </Badge>
           <span className="text-base font-bold text-foreground">
-            {formatIntervalTypeId(log.interval_type_id)}
+            {formatIntervalTypeId(log.interval_type_id, t)}
           </span>
         </div>
 
@@ -54,9 +57,9 @@ export default function TimelineLogCard({
 
         {/* Meta information */}
         <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-          <span>By: {log.created_by}</span>
+          <span>{t("timelineCard.by", { name: log.created_by })}</span>
           <span>
-            {new Date(log.created_at).toLocaleDateString("en-US", {
+            {formatDate(log.created_at, {
               month: "short",
               day: "numeric",
               year: "numeric",
@@ -68,7 +71,7 @@ export default function TimelineLogCard({
         <div className="flex gap-2 pt-2">
           <Button variant="outline" size="sm" onClick={() => onView(log)}>
             <Eye className="me-2 size-4" />
-            View Details
+            {t("timelineCard.viewDetails")}
           </Button>
         </div>
       </div>

@@ -1,0 +1,44 @@
+{
+    "validation": {
+        "notApplicable": "N/A",
+        "fieldRequired": {
+            "message": "{{field}} est requis",
+            "resolution": "Veuillez fournir une valeur pour {{field}}"
+        },
+        "invalidValue": {
+            "message": "Valeur invalide pour {{field}}",
+            "resolution": "La valeur doit être l'une des suivantes : {{options}}"
+        },
+        "invalidDate": {
+            "message": "Format de date invalide pour {{field}}",
+            "resolution": "La date doit être au format : {{format}}"
+        },
+        "invalidFormat": {
+            "message": "Format invalide pour {{field}}",
+            "resolution": "Veuillez vérifier le format"
+        }
+    },
+    "errors": {
+        "unknownError": "Erreur inconnue"
+    },
+    "emptyState": {
+        "noData": "Aucune donnée importée trouvée !"
+    },
+    "editingMode": {
+        "label": "Activer le mode édition",
+        "hint": "Cliquez sur une cellule pour la modifier"
+    },
+    "summary": {
+        "foundIssuesInRows": "{{issues}} trouvé(s) dans {{rows}}",
+        "issuesCount_one": "{{count}} problème de validation",
+        "issuesCount_many": "{{count}} problème de validation",
+        "issuesCount_other": "{{count}} problèmes de validation",
+        "rowsCount_one": "{{count}} ligne",
+        "rowsCount_many": "{{count}} ligne",
+        "rowsCount_other": "{{count}} lignes"
+    },
+    "buttons": {
+        "downloadErrorCases": "Télécharger les cas en erreur",
+        "downloadValidData": "Télécharger les données valides"
+    }
+}

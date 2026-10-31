@@ -1,0 +1,122 @@
+{
+    "navHeading": "Engine",
+    "backToAll": "All engines",
+    "loadError": "Could not load this engine.",
+    "viewTaskInbox": "View task inbox",
+    "detail": {
+        "activeMember_one": "active member",
+        "activeMember_other": "active members",
+        "resolveAudience": "Add people now",
+        "resolving": "Adding people…"
+    },
+    "statusActions": {
+        "DRY_RUN": "Start dry run",
+        "ACTIVE": "Activate",
+        "PAUSED": "Pause",
+        "ARCHIVED": "Archive"
+    },
+    "templatesPendingBanner": "This engine sends on WhatsApp — approve at least one template below before it can go live.",
+    "brief": {
+        "title": "The brief",
+        "amend": "Amend",
+        "empty": "No brief set.",
+        "version": "version {{version}}"
+    },
+    "config": {
+        "title": "Configuration",
+        "channels": "Channels",
+        "noChannels": "None",
+        "language": "Language",
+        "cadenceLabel": "Checks in",
+        "cadence": "every {{hours}}h",
+        "quietHours": "Quiet hours",
+        "dataPoints": "Data points",
+        "noDataPoints": "Only the basics"
+    },
+    "amendDialog": {
+        "heading": "Amend the brief",
+        "description": "The brief grows by amendment — this is appended, the original is never rewritten. It applies at each person's next natural check-in.",
+        "placeholder": "e.g. Also mention the new weekend batch starting next month.",
+        "cancel": "Cancel",
+        "submit": "Add amendment",
+        "saving": "Saving…"
+    },
+    "autonomy": {
+        "title": "Auto-send",
+        "allowAutoSend": "Allow auto-send",
+        "keepAsCopilot": "Stop auto-send",
+        "autoSendChannels": "Auto-send channels",
+        "noAutoSend": "No channel sends on its own. Every message waits for you in the task inbox.",
+        "holdout": "Test group",
+        "holdoutValue": "{{pct}}% (added, never messaged)",
+        "badge": {
+            "off": "Auto-send off — you check each message",
+            "ramping": "On trial · {{approved}} of {{target}} approved",
+            "sendingAutonomously": "Sending autonomously",
+            "dryRun": "Dry run (simulated)",
+            "onEngineStatus": "Autonomy on · engine {{status}}"
+        },
+        "statusFor": "{{channel}} status",
+        "rampingHintChannel_one": "You check every {{channel}} message for now. Approve {{count}} more and {{channel}} starts sending on its own.",
+        "rampingHintChannel_other": "You check every {{channel}} message for now. Approve {{count}} more and {{channel}} starts sending on its own.",
+        "rampingHintShort": "Approve {{count}} more to send on its own."
+    },
+    "archiveDialog": {
+        "title": "Archive this engine?",
+        "description": "It stops deciding and sending for good. Tasks already in the inbox and past messages stay.",
+        "cancel": "Keep it",
+        "confirm": "Archive"
+    },
+    "kpi": {
+        "members": "Active members",
+        "holdout": "{{pct}}% in test group (never messaged)",
+        "noHoldout": "No holdout",
+        "approved": "Approved sends",
+        "graduateAfter": "Auto-send starts after {{n}} approvals",
+        "cadence": "Checks in",
+        "quiet": "Quiet hours {{window}}",
+        "nextRun": "Next check-in",
+        "notScheduled": "Not scheduled",
+        "lastRun": "Last check-in {{when}}"
+    },
+    "status": {
+        "title": "Status & audience",
+        "sources": "Picked from",
+        "people": "people",
+        "change": "Change status",
+        "noTransitions": "Archived engines can’t change status.",
+        "footnote": "Pause stops all messages. “Stop auto-send” keeps drafting messages for you to check.",
+        "noSources": "Nothing picked",
+        "sourcesMore": "+{{count}} more"
+    },
+    "retry": "Try again",
+    "approvalsWaiting": {
+        "title_one": "{{count}} action is waiting for your approval",
+        "title_other": "{{count}} actions are waiting for your approval",
+        "aiCalls_one": "Includes {{count}} AI call. It is placed only after you approve it in the inbox.",
+        "aiCalls_other": "Includes {{count}} AI calls. They are placed only after you approve them in the inbox.",
+        "text": "Nothing runs until you approve it in the inbox.",
+        "open": "Review in inbox"
+    },
+    "noPeople": {
+        "title": "No one is in this engine yet",
+        "text": "Add the people from the batches and lists you picked. Nothing is sent until you activate the engine."
+    },
+    "activateDialog": {
+        "title_one": "Start this engine for {{count}} person?",
+        "title_other": "Start this engine for {{count}} people?",
+        "descriptionAuto": "It starts contacting people now. Channels set to send on their own will send without asking once their trial is done; everything else waits for you in the task inbox.",
+        "descriptionCopilot": "It starts drafting messages now. Every message waits for you in the task inbox; nothing goes out without your approval.",
+        "noPeople": "No one has been added yet, so there is nobody to contact. Press “Add people now” first.",
+        "cancel": "Not yet",
+        "confirm": "Start engine"
+    },
+    "contacts": {
+        "title": "Alert contacts",
+        "subtitle": "Who is told when this engine needs a person",
+        "change": "Change",
+        "fallback": "Nobody is picked. The engine's creator is told.",
+        "fallbackCreator": "Nobody is picked, so {{name}} (who created this engine) is told.",
+        "counsellorNote": "Each lead's own counsellor is told as well. Alerts go as a bell alert and an email."
+    }
+}

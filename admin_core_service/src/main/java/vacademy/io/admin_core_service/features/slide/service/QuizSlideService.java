@@ -102,6 +102,11 @@ public class QuizSlideService {
         quizSlide.setMarksPerQuestion(dto.getMarksPerQuestion() != null ? dto.getMarksPerQuestion() : 1.0);
         quizSlide.setNegativeMarking(dto.getNegativeMarking() != null ? dto.getNegativeMarking() : 0.0);
         quizSlide.setPassPercentage(dto.getPassPercentage());
+        // Null = the caller does not know about this setting (older payload builders):
+        // keep what is stored rather than silently switching partial marking off.
+        if (dto.getPartialMarking() != null) {
+            quizSlide.setPartialMarking(dto.getPartialMarking());
+        }
         quizSlide.setReAttemptCount(dto.getReAttemptCount());
         addOrUpdateQuestionsInBulk(quizSlide, dto.getQuestions());
     }
@@ -284,6 +289,7 @@ public class QuizSlideService {
         newQuizSlide.setMarksPerQuestion(originalQuizSlide.getMarksPerQuestion() != null ? originalQuizSlide.getMarksPerQuestion() : 1.0);
         newQuizSlide.setNegativeMarking(originalQuizSlide.getNegativeMarking() != null ? originalQuizSlide.getNegativeMarking() : 0.0);
         newQuizSlide.setPassPercentage(originalQuizSlide.getPassPercentage());
+        newQuizSlide.setPartialMarking(Boolean.TRUE.equals(originalQuizSlide.getPartialMarking()));
         newQuizSlide.setReAttemptCount(originalQuizSlide.getReAttemptCount());
 
         // Copy description RichTextData if it exists

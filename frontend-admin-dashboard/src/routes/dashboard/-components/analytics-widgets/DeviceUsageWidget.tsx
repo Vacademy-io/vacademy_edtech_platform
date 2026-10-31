@@ -1,6 +1,7 @@
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { fetchAnalyticsEngagementTrends } from '../../-services/dashboard-services';
 import { useTheme } from '@/providers/theme/theme-provider';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
@@ -11,6 +12,7 @@ interface DeviceUsageWidgetProps {
 }
 
 export default function DeviceUsageWidget({ instituteId }: DeviceUsageWidgetProps) {
+    const { t, i18n } = useTranslation('dashboardDeviceUsageWidget');
     const { primaryColor } = useTheme();
 
     const { data, isLoading, error } = useQuery({
@@ -44,9 +46,9 @@ export default function DeviceUsageWidget({ instituteId }: DeviceUsageWidgetProp
 
     // Colors for different device types
     const COLORS = {
-        desktop: '#3B82F6', // Blue
-        mobile: '#10B981', // Green
-        tablet: '#F59E0B', // Amber
+        desktop: 'hsl(var(--info-500))', // Blue
+        mobile: 'hsl(var(--success-500))', // Green
+        tablet: 'hsl(var(--warning-500))', // Amber
     };
 
     const getDeviceIcon = (deviceType: string) => {
@@ -62,16 +64,35 @@ export default function DeviceUsageWidget({ instituteId }: DeviceUsageWidgetProp
         }
     };
 
+    const getDeviceLabel = (deviceType: string) => {
+        switch (deviceType?.toLowerCase()) {
+            case 'desktop':
+                return t('device.desktop');
+            case 'mobile':
+                return t('device.mobile');
+            case 'tablet':
+                return t('device.tablet');
+            default:
+                return deviceType;
+        }
+    };
+
     const CustomTooltip = ({ active, payload }: any) => {
         if (active && payload && payload.length) {
             const data = payload[0].payload;
             return (
                 <div className="rounded-lg border bg-white p-3 shadow-lg">
-                    <p className="font-semibold capitalize text-gray-800">{data.name}</p>
-                    <p className="text-sm text-gray-600">Usage: {data.value.toLocaleString()}</p>
-                    <p className="text-sm text-gray-600">Users: {data.users.toLocaleString()}</p>
+                    <p className="font-semibold capitalize text-gray-800">
+                        {getDeviceLabel(data.name)}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                        {t('tooltip.usage', { value: data.value.toLocaleString(i18n.language) })}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                        {t('tooltip.users', { value: data.users.toLocaleString(i18n.language) })}
+                    </p>
                     <p className="text-primary-600 text-sm font-medium">
-                        {data.percentage}% of total
+                        {t('tooltip.percentOfTotal', { percentage: data.percentage })}
                     </p>
                 </div>
             );
@@ -99,10 +120,10 @@ export default function DeviceUsageWidget({ instituteId }: DeviceUsageWidgetProp
                         </motion.div>
                         <div>
                             <CardTitle className="text-lg font-bold text-gray-800">
-                                Device Usage
+                                {t('header.title')}
                             </CardTitle>
                             <CardDescription className="text-sm text-gray-600">
-                                Platform distribution across users
+                                {t('header.subtitle')}
                             </CardDescription>
                         </div>
                     </div>
@@ -120,12 +141,12 @@ export default function DeviceUsageWidget({ instituteId }: DeviceUsageWidgetProp
                     ) : error ? (
                         <div className="py-8 text-center text-red-500">
                             <DeviceTablet size={32} className="mx-auto mb-2 opacity-50" />
-                            <p className="text-sm">Failed to load device data</p>
+                            <p className="text-sm">{t('error.message')}</p>
                         </div>
                     ) : deviceData.length === 0 ? (
                         <div className="py-8 text-center text-gray-500">
                             <DeviceTablet size={32} className="mx-auto mb-2 opacity-50" />
-                            <p className="text-sm">No device data available</p>
+                            <p className="text-sm">{t('empty.message')}</p>
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -149,7 +170,7 @@ export default function DeviceUsageWidget({ instituteId }: DeviceUsageWidgetProp
                                                     key={`cell-${index}`}
                                                     fill={
                                                         COLORS[entry.name as keyof typeof COLORS] ||
-                                                        '#8884D8'
+                                                        'hsl(var(--muted-foreground))'
                                                     }
                                                 />
                                             ))}
@@ -164,7 +185,7 @@ export default function DeviceUsageWidget({ instituteId }: DeviceUsageWidgetProp
                                 {deviceData.map((device: any, index: number) => {
                                     const DeviceIcon = getDeviceIcon(device.name);
                                     const color =
-                                        COLORS[device.name as keyof typeof COLORS] || '#8884D8';
+                                        COLORS[device.name as keyof typeof COLORS] || 'hsl(var(--muted-foreground))';
 
                                     return (
                                         <motion.div
@@ -181,7 +202,7 @@ export default function DeviceUsageWidget({ instituteId }: DeviceUsageWidgetProp
                                                 />
                                                 <DeviceIcon size={16} style={{ color }} />
                                                 <span className="text-sm font-medium capitalize text-gray-700">
-                                                    {device.name}
+                                                    {getDeviceLabel(device.name)}
                                                 </span>
                                             </div>
                                             <div className="text-right">
@@ -189,7 +210,7 @@ export default function DeviceUsageWidget({ instituteId }: DeviceUsageWidgetProp
                                                     {device.percentage}%
                                                 </div>
                                                 <div className="text-xs text-gray-500">
-                                                    {device.users} users
+                                                    {t('stats.users', { count: device.users })}
                                                 </div>
                                             </div>
                                         </motion.div>

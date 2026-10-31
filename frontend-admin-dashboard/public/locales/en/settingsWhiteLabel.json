@@ -1,0 +1,325 @@
+{
+    "roles": {
+        "learnerPortal": "Learner Portal",
+        "adminPortal": "Admin Portal",
+        "teacherPortal": "Teacher Portal"
+    },
+    "status": {
+        "configured": "Configured",
+        "notConfigured": "Not Configured"
+    },
+    "configValue": {
+        "yes": "✓ Yes",
+        "no": "✗ No"
+    },
+    "imageUpload": {
+        "uploadFailed": "Failed to upload image",
+        "changeImage": "Change image",
+        "removeImage": "Remove image",
+        "iconPreviewAlt": "Icon preview",
+        "fileUuidPlaceholder": "or enter file UUID"
+    },
+    "pagesDomain": {
+        "cnameHint": "If this is a custom (non-vacademy.io) domain, add a CNAME at your DNS provider:",
+        "sslHint": "SSL activates automatically once Cloudflare validates it."
+    },
+    "configForm": {
+        "branding": {
+            "heading": "Branding",
+            "tabTitleLabel": "Tab Title",
+            "tabTitlePlaceholder": "My School",
+            "tabIconLabel": "Tab Icon File ID",
+            "themeLabel": "Theme / Color",
+            "themePlaceholder": "#4F46E5 or theme-name",
+            "fontFamilyLabel": "Font Family",
+            "fontFamilyPlaceholder": "Inter, Roboto, etc.",
+            "hideNameLabel": "Hide institute name",
+            "hideNameHint": "Enable if your logo already contains the institute name. Hides the name in the sidebar and login page.",
+            "stackNameLabel": "Stack name below logo",
+            "stackNameHint": "Render the institute name centered underneath the logo instead of beside it, in the sidebar header.",
+            "logoWidthLabel": "Logo width (px)",
+            "logoWidthHint": "Leave blank to use default. Set 250+ AND clear the height to make the sidebar logo span the full width, edge to edge.",
+            "logoHeightLabel": "Logo height (px)",
+            "logoHeightHint": "Leave blank to scale proportionally to the width (required for a full-width sidebar logo). Set a value to fit the logo inside a fixed box instead."
+        },
+        "auth": {
+            "heading": "Authentication",
+            "allowSignup": "Allow Sign Up",
+            "googleAuth": "Google Auth",
+            "githubAuth": "GitHub Auth",
+            "emailOtpAuth": "Email OTP Auth",
+            "phoneAuth": "Phone Auth",
+            "usernamePasswordAuth": "Username/Password Auth",
+            "convertUsernameLowercase": "Convert Username to Lowercase"
+        },
+        "phone": {
+            "heading": "Phone Input Preferences",
+            "preferredCountriesLabel": "Preferred Countries",
+            "preferredCountriesHint": "The first selected country is pre-selected in phone inputs across the learner and admin portals. The full list determines the order of the country picker. Use the ↑ / ↓ arrows on each chip to reorder.",
+            "geoModeLabel": "When a form is opened abroad",
+            "geoModePreview": "You are in {{detected}}. With these settings a phone field on this portal would start on {{resolved}}. Add ?phoneCountry=ru to any form URL to preview another country.",
+            "geoModePreviewUnknown": "Your region could not be detected from this browser, so the fallback applies: a phone field on this portal would start on {{resolved}}.",
+            "geoModes": {
+                "INSTITUTE_FIRST": {
+                    "label": "Preferred countries win",
+                    "hint": "The list above decides. The country a form is opened from is used only if you have selected no preferred countries — so a form opened in Russia starts on +7 rather than defaulting to India."
+                },
+                "GEO_FIRST": {
+                    "label": "Follow the visitor's country",
+                    "hint": "The country a form is opened from is pre-selected; your preferred countries still order the rest of the picker. Best when you take enrolments from several countries."
+                },
+                "INSTITUTE_ONLY": {
+                    "label": "Preferred countries only",
+                    "hint": "Never look at where a form is opened from. Choose this if every phone number you collect belongs to one country."
+                }
+            }
+        },
+        "routes": {
+            "heading": "Routes",
+            "redirectLabel": "Redirect URL",
+            "redirectPlaceholder": "/dashboard",
+            "afterLoginLabel": "After Login Route",
+            "afterLoginPlaceholder": "/dashboard",
+            "afterLogoutLabel": "After Logout Route",
+            "afterLogoutPlaceholder": "/login",
+            "homeClickLabel": "Home Icon Click Route",
+            "homeClickPlaceholder": "/"
+        },
+        "links": {
+            "heading": "Links",
+            "privacyPolicyLabel": "Privacy Policy URL",
+            "privacyPolicyPlaceholder": "https://myschool.com/privacy",
+            "termsLabel": "Terms & Conditions URL",
+            "termsPlaceholder": "https://myschool.com/terms",
+            "playStoreLabel": "Play Store Link",
+            "playStorePlaceholder": "https://play.google.com/...",
+            "appStoreLabel": "App Store Link",
+            "appStorePlaceholder": "https://apps.apple.com/...",
+            "windowsLabel": "Windows App Link",
+            "macLabel": "Mac App Link",
+            "genericUrlPlaceholder": "https://..."
+        }
+    },
+    "notAvailable": {
+        "strong": "Not available on this deployment.",
+        "description": "Cloudflare API credentials are not configured. Contact your platform administrator."
+    },
+    "header": {
+        "title": "White-Label Domain Setup",
+        "description": "Configure custom domains, branding, auth settings and more for each portal.",
+        "refreshStatus": "Refresh status"
+    },
+    "currentConfig": {
+        "title": "Current Configuration",
+        "primaryUrlsLabel": "Primary Portal URLs (Institute Default)",
+        "noPortalUrls": "No portal URLs set.",
+        "domainRoutingEntries": "Domain Routing Entries",
+        "totalBadge": "{{count}} total"
+    },
+    "setupCard": {
+        "titleUpdate": "Add / Update Domains",
+        "titleNew": "New Setup",
+        "descriptionPart1": "Add domain entries below. Click",
+        "settingsLabel": "⚙ Settings",
+        "descriptionPart2": "on each entry to configure branding, authentication, routes, and links.",
+        "tip": {
+            "label": "Tip:",
+            "enterPrefix": "Enter",
+            "vacademySuffix": "for Vacademy subdomains, or",
+            "customSuffix": "for custom domains. Mark one per role as ⭐ Primary."
+        },
+        "roleLabel": "Role",
+        "domainLabel": "Domain",
+        "domainPlaceholder": "learn.myschool.com",
+        "primary": "Primary",
+        "setPrimary": "Set primary",
+        "primaryTooltip": "Portal URL for this role — used in emails once the domain is active",
+        "setPrimaryTooltip": "Use this domain as the portal URL for this role",
+        "settingsToggle": "Settings",
+        "toggleSettingsTooltip": "Toggle settings",
+        "removeTooltip": "Remove",
+        "addAnotherDomain": "Add another domain",
+        "configuring": "Configuring…",
+        "updateButton": "Update White-Label Setup",
+        "applyButton": "Apply White-Label Setup",
+        "preservedHint": "Existing entries are preserved. Only listed domains are created/updated.",
+        "draftRestored": "Restored the domains you were adding before you left this tab. Nothing is live until you apply the setup.",
+        "discardDraft": "Discard and reload saved domains",
+        "unsavedChanges": "Unsaved changes — click Apply to save them."
+    },
+    "toast": {
+        "noInstituteSelected": "No institute selected",
+        "addAtLeastOneDomain": "Add at least one domain entry",
+        "setupCompleted": "White-label setup completed! 🎉",
+        "setupFailed": "Setup failed.",
+        "portalUrlAdopted": "{{roles}} portal URL is now live and saved."
+    },
+    "setupResult": {
+        "title": "Setup Complete",
+        "pagesCustomDomains": "Pages Custom Domains",
+        "pagesHint": "These attach the host to the app so it is actually served. A DNS record alone is not enough.",
+        "dnsRecordsConfigured": "DNS Records Configured"
+    },
+    "routingEntryCard": {
+        "cloudflareStatusTooltip": "Cloudflare custom-domain status",
+        "tabPrefix": "Tab: {{value}}",
+        "themePrefix": "Theme: {{value}}",
+        "showDetailsTooltip": "Show details",
+        "cnameInstructionPrefix": "Add this DNS record at your provider for",
+        "cnameInstructionSuffix": "to activate this domain:",
+        "dnsType": "Type",
+        "dnsName": "Name",
+        "dnsValue": "Value",
+        "sslAutoActivate": "SSL activates automatically once Cloudflare validates the record.",
+        "defaultCountryTooltip": "Default selected country",
+        "preferredCountries": "Preferred Countries",
+        "fields": {
+            "domain": "Domain",
+            "subdomain": "Subdomain",
+            "tabTitle": "Tab Title",
+            "tabIcon": "Tab Icon",
+            "theme": "Theme",
+            "font": "Font",
+            "redirect": "Redirect",
+            "afterLogin": "After Login",
+            "afterLogout": "After Logout",
+            "homeClick": "Home Click",
+            "signUp": "Sign Up",
+            "googleAuth": "Google Auth",
+            "githubAuth": "GitHub Auth",
+            "emailOtp": "Email OTP",
+            "phoneAuth": "Phone Auth",
+            "userPassAuth": "User/Pass Auth",
+            "privacyPolicy": "Privacy Policy",
+            "terms": "Terms",
+            "playStore": "Play Store",
+            "appStore": "App Store",
+            "windows": "Windows",
+            "mac": "Mac",
+            "hideInstituteName": "Hide Institute Name",
+            "logoWidth": "Logo Width (px)",
+            "logoHeight": "Logo Height (px)",
+            "stackNameBelowLogo": "Stack Name Below Logo"
+        },
+        "portalUrl": "Portal URL",
+        "portalUrlTooltip": "Emails and shared links currently use this domain",
+        "primaryPending": "Primary · pending",
+        "primaryPendingTooltip": "Chosen as the portal URL — saved once this domain goes active",
+        "willBeAdoptedOnceActive": "Chosen as the portal URL. It is saved automatically once this domain goes active — until then, emails and links keep using the current portal URL."
+    },
+    "subOrg": {
+        "label": "Sub-organization",
+        "none": "Parent institute",
+        "untitled": "Untitled sub-organization",
+        "badgeTooltip": "This portal is branded for, and restricted to, this sub-organization",
+        "searchPlaceholder": "Search sub-organizations…",
+        "searchEmpty": "No sub-organization matches that name."
+    },
+    "shortLinkDns": {
+        "title": "Short Link Domain",
+        "description": "Send this record to the customer along with the portal CNAMEs, so their short links run on their own domain instead of u.vacademy.io.",
+        "hostLabel": "Short links will be served from",
+        "dnsType": "Type",
+        "dnsName": "Name",
+        "dnsValue": "Value",
+        "dnsTtl": "TTL",
+        "dnsProxy": "Proxy",
+        "ttlAuto": "Auto",
+        "proxyOff": "DNS only — do not proxy",
+        "copy": "Copy record",
+        "copied": "DNS record copied",
+        "copyFailed": "Could not copy — select the values manually",
+        "platformNote": "The record alone does nothing: the platform team must also add this host to the ingress and register the domain for this institute. Register the domain before the record is live and short links will break instead of falling back to u.vacademy.io."
+    },
+    "googleSignIn": {
+        "title": "Google sign-in branding",
+        "description": "Show your brand's name, instead of vacademy.io, on Google's \"Continue with Google\" screen. You create the OAuth client in your own Google Cloud project and paste it here.",
+        "status": {
+            "notSet": "Not set up",
+            "active": "Active",
+            "paused": "Paused"
+        },
+        "loading": "Loading Google sign-in settings…",
+        "loadFailed": "Could not load Google sign-in settings",
+        "notSetHint": "Until this is set up, Google shows vacademy.io to your learners on the sign-in screen.",
+        "redirectUriLabel": "Authorized redirect URI (add this to your Google OAuth client)",
+        "copy": "Copy",
+        "copied": "Copied",
+        "copyFailed": "Could not copy. Select the text and copy it manually.",
+        "clientIdLabel": "Client ID",
+        "clientIdPlaceholder": "1234567890-abc123.apps.googleusercontent.com",
+        "clientIdInvalid": "A Google client ID ends with .apps.googleusercontent.com",
+        "clientSecretLabel": "Client secret",
+        "clientSecretPlaceholder": "GOCSPX-…",
+        "clientSecretKeepPlaceholder": "Saved. Leave blank to keep the current secret",
+        "clientSecretHint": "Stored encrypted. It is never shown again after saving.",
+        "enabledLabel": "Use this client for Google sign-in",
+        "enabledHint": "Turn off to go back to the default (vacademy.io) screen without deleting your settings.",
+        "beforeSaveWarning": "Save only after your app is Published and Google has verified it (Verification Center shows \"Verified\"). Otherwise learners see \"Access blocked\", or Google still shows vacademy.io.",
+        "save": "Save",
+        "saving": "Saving…",
+        "saved": "Saved. It takes effect within 5 minutes.",
+        "saveFailed": "Could not save the Google client",
+        "remove": "Remove",
+        "removeConfirm": "Google sign-in goes back to the default vacademy.io screen. You can add the client again at any time.",
+        "removed": "Removed. Google sign-in is back to the default.",
+        "removeFailed": "Could not remove the Google client",
+        "lastUpdated": "Last updated {{date}}",
+        "guideTitle": "Step-by-step setup guide",
+        "guideIntro": "About 30 minutes of work, then 2–3 working days for Google's review. You need a Google account, access to your domain's DNS, and a public website for your brand.",
+        "downloadPdf": "Download the PDF guide (with screenshots)",
+        "privacyFallback": "your privacy policy URL (https://<your learner portal>/privacy-policy)",
+        "guide": {
+            "project": {
+                "title": "Create a Google Cloud project",
+                "body": "Open console.cloud.google.com/projectcreate, name it after your brand and click Create. Check that the new project is selected at the top of the page."
+            },
+            "owner": {
+                "title": "Add Vacademy as a project Owner",
+                "body": "IAM & Admin → IAM → Grant access → {{account}} → Role: Basic → Owner → Save. Google sign-in finishes on vacademy.io, and Google only verifies your app when a project owner has verified that domain."
+            },
+            "consent": {
+                "title": "Start the OAuth consent screen",
+                "body": "APIs & Services → OAuth consent screen → Get started. App name: your brand exactly as written on your website. Audience: External. Add your contact email, accept the policy, then Create."
+            },
+            "branding": {
+                "title": "Fill in Branding",
+                "body": "Logo: square, 120×120 px. Home page: your public website. Privacy policy: {{privacyUrl}}. Authorized domains: your website's domain and vacademy.io. Then Save."
+            },
+            "scopes": {
+                "title": "Add the three sign-in scopes",
+                "body": "Data Access → Add or remove scopes → tick only userinfo.email, userinfo.profile and openid → Update → Save. Any other scope makes Google's review take weeks."
+            },
+            "client": {
+                "title": "Create the OAuth client",
+                "body": "Clients → Create client → Web application → Authorized redirect URIs → add {{redirectUri}} → Create. Download the JSON straight away: Google shows the secret only once."
+            },
+            "domain": {
+                "title": "Verify your domain",
+                "body": "Google Search Console → Add property → Domain → your domain. Add the TXT record it gives you at your DNS provider, then click Verify. DNS can take up to an hour."
+            },
+            "footer": {
+                "title": "Link the privacy policy from your website",
+                "body": "Add a footer link on your home page to {{privacyUrl}}. Google rejects apps whose home page does not link to the privacy policy."
+            },
+            "publish": {
+                "title": "Publish the app",
+                "body": "Audience → Publish app → Confirm. The status changes to \"In production\"."
+            },
+            "verify": {
+                "title": "Submit for verification",
+                "body": "Verification Center → submit for brand verification. Google usually replies by email within 2–3 working days. Answer any questions quickly."
+            },
+            "save": {
+                "title": "Paste the client here",
+                "body": "When Verification Center shows \"Verified\", paste the Client ID and Client secret above and click Save. Then try \"Continue with Google\" on your learner portal: Google should show your brand's name."
+            }
+        },
+        "validation": {
+            "clientIdRequired": "Enter the Client ID from your Google OAuth client",
+            "clientSecretRequired": "Enter the Client secret from your Google OAuth client"
+        },
+        "removeTitle": "Remove your Google client?",
+        "cancel": "Cancel"
+    }
+}

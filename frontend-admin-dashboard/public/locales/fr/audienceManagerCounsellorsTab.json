@@ -1,0 +1,39 @@
+{
+    "title": "Performance des conseillers",
+    "summary": {
+        "counsellorCount_one": "{{count}} conseiller",
+        "counsellorCount_many": "{{count}} conseillers",
+        "counsellorCount_other": "{{count}} conseillers",
+        "avgResponse": "réponse moy.",
+        "avgConversion": "conv. moy."
+    },
+    "csv": {
+        "headers": {
+            "counsellor": "Conseiller",
+            "assigned": "Attribués",
+            "responded": "Répondus",
+            "conversions": "Conversions",
+            "convRate": "Taux de conversion %",
+            "avgResponse": "Réponse moyenne (min)",
+            "tatMet": "TAT respecté %",
+            "open": "Ouverts",
+            "overdue": "En retard"
+        }
+    },
+    "table": {
+        "loading": "Chargement des conseillers…",
+        "empty": "Aucune activité de conseiller sur cette période.",
+        "topPerformer": "Meilleur performeur",
+        "headers": {
+            "counsellor": "Conseiller",
+            "assigned": "Attribués",
+            "responded": "Répondus",
+            "conversions": "Conversions",
+            "convRate": "Taux de conversion",
+            "avgResponse": "Réponse moyenne",
+            "tatMet": "TAT respecté",
+            "open": "Ouverts",
+            "overdue": "En retard"
+        }
+    }
+}

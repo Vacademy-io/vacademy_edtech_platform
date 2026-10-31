@@ -1,0 +1,22 @@
+{
+    "timestampLabel": "الطابع الزمني: {{time}}",
+    "correctBadge": "صحيح",
+    "questionsList": {
+        "timeStampLine": "{{index}}. الطابع الزمني - {{time}}"
+    },
+    "deleteDialog": {
+        "title": "حذف السؤال",
+        "confirmMessage": "هل أنت متأكد أنك تريد حذف هذا السؤال؟",
+        "description": "سيؤدي هذا إلى إزالة السؤال عند هذا الطابع الزمني بشكل نهائي ولا يمكن التراجع عنه.",
+        "cancel": "إلغاء",
+        "delete": "حذف"
+    },
+    "toasts": {
+        "questionDeleted": "تم حذف السؤال",
+        "videoJumpedTo": "تم الانتقال في الفيديو إلى {{time}}"
+    },
+    "errors": {
+        "deleteQuestionFailed": "فشل حذف السؤال",
+        "seekFailed": "فشل الانتقال في الفيديو"
+    }
+}

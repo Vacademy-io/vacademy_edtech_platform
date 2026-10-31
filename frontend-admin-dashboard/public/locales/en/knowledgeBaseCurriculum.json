@@ -1,0 +1,25 @@
+{
+    "board": "Board",
+    "class": "Class",
+    "subject": "Subject",
+    "choose": "Choose…",
+    "classLabel": "Class {{number}}",
+    "whichBook": "Which book?",
+    "chapters_one": "{{count}} chapter",
+    "chapters_other": "{{count}} chapters",
+    "pages_one": "{{formatted}} page",
+    "pages_other": "{{formatted}} pages",
+    "pickHeading": "From the curriculum",
+    "orOwn": "…or one of your own knowledge bases:",
+    "browser": {
+        "heading": "Textbooks",
+        "description": "NCERT textbooks, chapter by chapter, free to use. Pick a class, open a book, and build a test or a course from the chapters you choose.",
+        "empty": "Nothing loaded for this class yet.",
+        "createPaper": "Create question paper",
+        "createCourse": "Create course"
+    },
+    "boardOrExam": "Board / Exam",
+    "loading": "Loading…",
+    "stateBoards": "State boards",
+    "competitiveExams": "Competitive exams"
+}

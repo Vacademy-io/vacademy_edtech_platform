@@ -1,0 +1,9 @@
+{
+    "menu": {
+        "shareCredentials": "क्रेडेंशियल साझा करें",
+        "sendWhatsappMessage": "व्हाट्सएप संदेश भेजें",
+        "sendEmail": "ईमेल भेजें",
+        "acceptRequest": "अनुरोध स्वीकार करें",
+        "declineRequest": "अनुरोध अस्वीकार करें"
+    }
+}

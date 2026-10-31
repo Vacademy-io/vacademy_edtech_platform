@@ -1,0 +1,43 @@
+{
+    "statusFilters": {
+        "all": "الكل",
+        "ready": "جاهز",
+        "inProgress": "قيد التنفيذ",
+        "failed": "فشل"
+    },
+    "dateBuckets": {
+        "today": "اليوم",
+        "yesterday": "أمس",
+        "earlierThisWeek": "في وقت سابق من هذا الأسبوع",
+        "older": "أقدم"
+    },
+    "taskCard": {
+        "download": "تنزيل"
+    },
+    "dialog": {
+        "viewAll": "عرض الكل",
+        "refresh": "تحديث",
+        "close": "إغلاق",
+        "searchPlaceholder": "ابحث بالاسم أو اسم الملف…",
+        "clearSearch": "مسح البحث",
+        "itemCount_zero": "{{count}} عنصر",
+        "itemCount_one": "{{count}} عنصر واحد",
+        "itemCount_two": "{{count}} عنصران",
+        "itemCount_few": "{{count}} عناصر",
+        "itemCount_many": "{{count}} عنصرًا",
+        "itemCount_other": "{{count}} عنصر"
+    },
+    "emptyState": {
+        "nothingHereYet": "لا يوجد شيء هنا بعد",
+        "nothingHereYetDescription": "سيظهر هنا كل ما تنشئه باستخدام هذه الأداة.",
+        "noMatches": "لا توجد نتائج مطابقة",
+        "noMatchesDescription": "جرّب مصطلح بحث أو عامل تصفية مختلفًا.",
+        "clearFilters": "مسح عوامل التصفية"
+    },
+    "pagination": {
+        "showingRange": "عرض {{start}}–{{end}} من {{total}}",
+        "prev": "السابق",
+        "next": "التالي",
+        "pageOf": "صفحة {{current}} من {{total}}"
+    }
+}

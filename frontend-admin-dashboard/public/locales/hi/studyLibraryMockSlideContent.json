@@ -1,0 +1,5 @@
+{
+    "defaultObjectives": "<h2>सीखने के उद्देश्य</h2><p>इस सत्र के अंत तक, छात्र {{sessionTitle}} के लिए बताए गए सीखने के लक्ष्यों को प्राप्त कर लेंगे।</p>",
+    "defaultTopic": "<h2>{{slideTitle}}</h2><p>यह विषय {{sessionTitle}} से जुड़ी महत्वपूर्ण अवधारणाओं को कवर करता है।</p>",
+    "defaultAssignment": "{{sessionTitle}} के लिए असाइनमेंट पूरा करें।"
+}

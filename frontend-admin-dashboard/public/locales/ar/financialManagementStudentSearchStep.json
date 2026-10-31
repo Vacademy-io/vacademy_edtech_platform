@@ -1,0 +1,25 @@
+{
+    "searchPlaceholder": "ابحث باسم الطالب أو رقم الهاتف...",
+    "table": {
+        "coursePackage": "الدورة / الباقة",
+        "due": "المستحق",
+        "overdue": "متأخر",
+        "status": "الحالة"
+    },
+    "errors": {
+        "unableToLoad": "تعذر تحميل الطلاب",
+        "tryAgain": "يرجى المحاولة مرة أخرى."
+    },
+    "empty": {
+        "noStudentsFound": "لم يتم العثور على طلاب.",
+        "trySearching": "جرّب البحث بالاسم أو رقم الهاتف."
+    },
+    "pagination": {
+        "showing": "عرض",
+        "of": "من"
+    },
+    "redesign": {
+        "findTitle": "Find the {{learner}}",
+        "findHint": "click a {{learner}} to see their installments"
+    }
+}

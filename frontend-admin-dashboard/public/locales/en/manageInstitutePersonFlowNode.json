@@ -1,0 +1,5 @@
+{
+    "fallbackName": "User {{id}}",
+    "editPositionLabel": "Edit position label",
+    "removeFromTeam": "Remove from this team"
+}

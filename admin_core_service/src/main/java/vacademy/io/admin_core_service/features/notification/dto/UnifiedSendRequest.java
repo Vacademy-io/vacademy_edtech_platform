@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.notification.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -87,5 +88,16 @@ public class UnifiedSendRequest {
 
         private String source;
         private String sourceId;
+
+        /**
+         * Who is sending (see {@link MessageOrigin}) — shown in the WhatsApp Inbox and timeline.
+         * Left off the JSON when unset, so every other send's request body is unchanged.
+         */
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private String originType;
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private String originId;
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private String originName;
     }
 }

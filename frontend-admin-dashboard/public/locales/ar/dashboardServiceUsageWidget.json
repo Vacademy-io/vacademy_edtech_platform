@@ -1,0 +1,29 @@
+{
+    "header": {
+        "title": "استخدام الخدمات",
+        "subtitle": "الخدمات وواجهات البرمجة الأكثر نشاطًا"
+    },
+    "tooltip": {
+        "usage": "الاستخدام: {{value}}",
+        "users": "المستخدمون: {{value}}",
+        "avgResponse": "متوسط زمن الاستجابة: {{value}} مللي ثانية"
+    },
+    "empty": {
+        "message": "لا تتوفر بيانات خدمات"
+    },
+    "error": {
+        "widgetName": "استخدام الخدمات"
+    },
+    "list": {
+        "users_zero": "{{count}} مستخدم",
+        "users_one": "{{count}} مستخدم واحد",
+        "users_two": "{{count}} مستخدمان",
+        "users_few": "{{count}} مستخدمين",
+        "users_many": "{{count}} مستخدمًا",
+        "users_other": "{{count}} مستخدم"
+    },
+    "footer": {
+        "avgResponseTime": "متوسط زمن الاستجابة:",
+        "ms": "{{value}} مللي ثانية"
+    }
+}

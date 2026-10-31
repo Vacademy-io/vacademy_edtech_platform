@@ -1,0 +1,15 @@
+{
+    "header": {
+        "title": "تسجيل {{term}}",
+        "description": "إدارة تسجيل {{term}} والدعوات"
+    },
+    "badges": {
+        "learnerCount": "{{count}} {{term}}",
+        "batchCount": "{{count}} {{term}}"
+    },
+    "actions": {
+        "inviteNew": "دعوة {{term}} جدد",
+        "manageList": "إدارة قائمة {{term}}",
+        "enrollmentRequests": "طلبات التسجيل"
+    }
+}

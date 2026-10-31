@@ -1,0 +1,7 @@
+{
+    "title": "Team Notifications",
+    "description": "Enter email addresses of team members who should be notified whenever someone fills this invite form. Leave empty to send no notifications.",
+    "emailInput": {
+        "placeholder": "Enter email addresses"
+    }
+}

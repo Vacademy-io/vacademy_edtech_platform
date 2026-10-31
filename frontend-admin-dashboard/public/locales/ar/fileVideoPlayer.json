@@ -1,0 +1,30 @@
+{
+    "unsupportedFormat": "متصفحك لا يدعم علامة الفيديو أو تنسيق هذا الفيديو.",
+    "controls": {
+        "play": "تشغيل",
+        "pause": "إيقاف مؤقت",
+        "mute": "كتم الصوت",
+        "unmute": "إلغاء كتم الصوت",
+        "fullScreen": "ملء الشاشة",
+        "exitFullScreen": "الخروج من ملء الشاشة",
+        "moreOptions": "خيارات إضافية",
+        "rewindSeconds_zero": "الرجوع {{count}} ثانية",
+        "rewindSeconds_one": "الرجوع ثانية واحدة",
+        "rewindSeconds_two": "الرجوع ثانيتين",
+        "rewindSeconds_few": "الرجوع {{count}} ثوانٍ",
+        "rewindSeconds_many": "الرجوع {{count}} ثانية",
+        "rewindSeconds_other": "الرجوع {{count}} ثانية",
+        "forwardSeconds_zero": "التقدم {{count}} ثانية",
+        "forwardSeconds_one": "التقدم ثانية واحدة",
+        "forwardSeconds_two": "التقدم ثانيتين",
+        "forwardSeconds_few": "التقدم {{count}} ثوانٍ",
+        "forwardSeconds_many": "التقدم {{count}} ثانية",
+        "forwardSeconds_other": "التقدم {{count}} ثانية"
+    },
+    "menu": {
+        "playbackSpeed": "سرعة التشغيل",
+        "normalSpeed": "عادي",
+        "pictureInPicture": "صورة داخل صورة",
+        "download": "تنزيل"
+    }
+}

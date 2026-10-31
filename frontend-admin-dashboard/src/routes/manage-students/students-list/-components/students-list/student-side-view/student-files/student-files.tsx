@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     UploadSimple,
     Link,
@@ -85,58 +87,70 @@ type MediaTypeConfig = {
     chipClass: string;
 };
 
-const MEDIA_TYPES: MediaTypeConfig[] = [
+const buildMediaTypes = (t: TFunction): MediaTypeConfig[] => [
     {
         value: 'video',
-        label: 'Video',
+        label: t('mediaTypes.video'),
         icon: FileVideo,
         chipClass: 'bg-primary-50 border-primary-200 text-primary-700',
     },
     {
         value: 'audio',
-        label: 'Audio',
+        label: t('mediaTypes.audio'),
         icon: FileAudio,
         chipClass: 'bg-info-50 border-info-200 text-info-700',
     },
     {
         value: 'pdf',
-        label: 'PDF Document',
+        label: t('mediaTypes.pdf'),
         icon: FilePdf,
         chipClass: 'bg-danger-50 border-danger-200 text-danger-700',
     },
     {
         value: 'doc',
-        label: 'Word Document',
+        label: t('mediaTypes.doc'),
         icon: FileDoc,
         chipClass: 'bg-primary-50 border-primary-200 text-primary-700',
     },
     {
         value: 'image',
-        label: 'Image',
+        label: t('mediaTypes.image'),
         icon: FileImage,
         chipClass: 'bg-warning-50 border-warning-200 text-warning-700',
     },
     {
         value: 'note',
-        label: 'Note',
+        label: t('mediaTypes.note'),
         icon: Note,
         chipClass: 'bg-warning-50 border-warning-100 text-warning-700',
     },
     {
         value: 'unknown',
-        label: 'Other',
+        label: t('mediaTypes.other'),
         icon: File,
         chipClass: 'bg-neutral-100 border-neutral-200 text-neutral-600',
     },
 ];
 
-const mediaTypeMap = Object.fromEntries(
-    MEDIA_TYPES.map((m) => [m.value, m])
-) as Record<MediaType, MediaTypeConfig>;
+const buildMediaTypeMap = (mediaTypes: MediaTypeConfig[]): Record<MediaType, MediaTypeConfig> =>
+    Object.fromEntries(mediaTypes.map((m) => [m.value, m])) as Record<MediaType, MediaTypeConfig>;
 
 // ── File type tabs ─────────────────────────────────────────────────────────────
 
 type FileTypeTab = 'File' | 'Url' | 'Note';
+
+// Internal key lookups (not translated strings themselves — safe as static maps)
+const FILE_TYPE_TAB_LABEL_KEYS: Record<FileTypeTab, string> = {
+    File: 'addDialog.tabs.file',
+    Url: 'addDialog.tabs.url',
+    Note: 'addDialog.tabs.note',
+};
+
+const FILE_TYPE_LABEL_KEYS: Record<FileType, string> = {
+    File: 'fileTypes.file',
+    Url: 'fileTypes.url',
+    Html: 'fileTypes.note',
+};
 
 // ── Grouped files by folder ────────────────────────────────────────────────────
 
@@ -149,9 +163,11 @@ type GroupedFiles = {
 const MediaIcon = ({
     mediaType,
     className,
+    mediaTypeMap,
 }: {
     mediaType: MediaType;
     className?: string;
+    mediaTypeMap: Record<MediaType, MediaTypeConfig>;
 }) => {
     const cfg = mediaTypeMap[mediaType] ?? mediaTypeMap.unknown;
     const Icon = cfg.icon;
@@ -192,13 +208,16 @@ const FileRow = ({
     onDownload,
     onManageAccess,
     onDelete,
+    mediaTypeMap,
 }: {
     file: SystemFile;
     onView: (f: SystemFile) => void;
     onDownload: (f: SystemFile) => void;
     onManageAccess: (f: SystemFile) => void;
     onDelete: (id: string) => void;
+    mediaTypeMap: Record<MediaType, MediaTypeConfig>;
 }) => {
+    const { t } = useTranslation('manageStudentsFiles');
     const cfg = mediaTypeMap[file.media_type] ?? mediaTypeMap.unknown;
 
     return (
@@ -210,7 +229,7 @@ const FileRow = ({
                     cfg.chipClass
                 )}
             >
-                <MediaIcon mediaType={file.media_type} className="size-4" />
+                <MediaIcon mediaType={file.media_type} className="size-4" mediaTypeMap={mediaTypeMap} />
             </span>
 
             {/* Name + meta */}
@@ -222,7 +241,7 @@ const FileRow = ({
                     {file.name}
                 </p>
                 <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-neutral-500">
-                    <span className="capitalize">{file.media_type}</span>
+                    <span>{cfg.label}</span>
                     <span aria-hidden>·</span>
                     <span className="flex items-center gap-1">
                         <User className="size-3" />
@@ -246,7 +265,7 @@ const FileRow = ({
                             e.stopPropagation();
                             onView(file);
                         }}
-                        title="View Note"
+                        title={t('row.viewNote')}
                     >
                         <Eye className="size-3.5" />
                     </MyButton>
@@ -258,7 +277,7 @@ const FileRow = ({
                             e.stopPropagation();
                             onDownload(file);
                         }}
-                        title={file.file_type === 'File' ? 'Download' : 'Open Link'}
+                        title={file.file_type === 'File' ? t('row.download') : t('row.openLink')}
                     >
                         {file.file_type === 'File' ? (
                             <DownloadSimple className="size-3.5" />
@@ -274,7 +293,7 @@ const FileRow = ({
                         e.stopPropagation();
                         onManageAccess(file);
                     }}
-                    title="Manage Access"
+                    title={t('row.manageAccess')}
                 >
                     <Gear className="size-3.5" />
                 </MyButton>
@@ -285,7 +304,7 @@ const FileRow = ({
                         e.stopPropagation();
                         onDelete(file.id);
                     }}
-                    title="Delete"
+                    title={t('row.delete')}
                 >
                     <Trash className="size-3.5 text-danger-500" />
                 </MyButton>
@@ -297,7 +316,11 @@ const FileRow = ({
 // ── Main component ─────────────────────────────────────────────────────────────
 
 export const StudentFiles = () => {
+    const { t } = useTranslation('manageStudentsFiles');
     const { selectedStudent } = useStudentSidebar();
+
+    const mediaTypes = useMemo(() => buildMediaTypes(t), [t]);
+    const mediaTypeMap = useMemo(() => buildMediaTypeMap(mediaTypes), [mediaTypes]);
 
     // Dialog state
     const [showAddDialog, setShowAddDialog] = useState(false);
@@ -355,7 +378,7 @@ export const StudentFiles = () => {
         } catch (error) {
             console.error('Error loading student files:', error);
             setLoadError(true);
-            toast.error('Failed to load student files');
+            toast.error(t('toasts.loadFilesFailed'));
         } finally {
             setIsLoading(false);
         }
@@ -384,12 +407,12 @@ export const StudentFiles = () => {
     // Handle add file submission
     const handleAddFile = async () => {
         if (!selectedStudent?.user_id || !selectedStudent?.institute_id) {
-            toast.error('No student selected');
+            toast.error(t('toasts.noStudentSelected'));
             return;
         }
 
         if (!fileName.trim()) {
-            toast.error('Please enter a file name');
+            toast.error(t('toasts.enterFileName'));
             return;
         }
 
@@ -410,7 +433,7 @@ export const StudentFiles = () => {
 
             if (fileTypeTab === 'File') {
                 if (!selectedFile) {
-                    toast.error('Please select a file');
+                    toast.error(t('toasts.selectFile'));
                     return;
                 }
                 fileData.file_type = 'File';
@@ -421,10 +444,10 @@ export const StudentFiles = () => {
                     fileData,
                     setIsUploading
                 );
-                toast.success('File uploaded successfully');
+                toast.success(t('toasts.fileUploaded'));
             } else if (fileTypeTab === 'Url') {
                 if (!fileUrl.trim()) {
-                    toast.error('Please enter a URL');
+                    toast.error(t('toasts.enterUrl'));
                     return;
                 }
                 fileData.file_type = 'Url';
@@ -436,10 +459,10 @@ export const StudentFiles = () => {
                     fileData,
                     setIsUploading
                 );
-                toast.success('URL added successfully');
+                toast.success(t('toasts.urlAdded'));
             } else if (fileTypeTab === 'Note') {
                 if (!htmlContent.trim()) {
-                    toast.error('Please enter note content');
+                    toast.error(t('toasts.enterNoteContent'));
                     return;
                 }
                 await createHtmlSystemFile(
@@ -474,7 +497,7 @@ export const StudentFiles = () => {
                     },
                     selectedStudent.user_id
                 );
-                toast.success('Note created successfully');
+                toast.success(t('toasts.noteCreated'));
             }
 
             await loadStudentFiles();
@@ -482,7 +505,7 @@ export const StudentFiles = () => {
             resetForm();
         } catch (error) {
             console.error('Error adding file:', error);
-            toast.error('Failed to add file');
+            toast.error(t('toasts.addFileFailed'));
         } finally {
             setIsUploading(false);
         }
@@ -493,11 +516,11 @@ export const StudentFiles = () => {
         if (!selectedStudent?.institute_id) return;
         try {
             await deleteSystemFile(fileId, selectedStudent.institute_id);
-            toast.success('File deleted successfully');
+            toast.success(t('toasts.fileDeleted'));
             await loadStudentFiles();
         } catch (error) {
             console.error('Error deleting file:', error);
-            toast.error('Failed to delete file');
+            toast.error(t('toasts.deleteFileFailed'));
         } finally {
             setShowDeleteDialog(false);
             setFileToDelete(null);
@@ -515,7 +538,7 @@ export const StudentFiles = () => {
         setIsRefreshing(true);
         await loadStudentFiles();
         setIsRefreshing(false);
-        toast.success('Files refreshed');
+        toast.success(t('toasts.filesRefreshed'));
     };
 
     // Handle view note
@@ -548,7 +571,7 @@ export const StudentFiles = () => {
             setHasEditAccess(studentEditAccess);
         } catch (error) {
             console.error('Error loading file access:', error);
-            toast.error('Failed to load file access details');
+            toast.error(t('toasts.loadAccessFailed'));
             setShowAccessDialog(false);
         } finally {
             setIsLoadingAccess(false);
@@ -568,7 +591,7 @@ export const StudentFiles = () => {
                     selectedStudent.institute_id
                 );
                 setHasViewAccess(false);
-                toast.success('View access revoked');
+                toast.success(t('toasts.viewAccessRevoked'));
             } else {
                 await grantUserAccess(
                     editingFile.id,
@@ -577,12 +600,12 @@ export const StudentFiles = () => {
                     selectedStudent.institute_id
                 );
                 setHasViewAccess(true);
-                toast.success('View access granted');
+                toast.success(t('toasts.viewAccessGranted'));
             }
             await loadStudentFiles();
         } catch (error) {
             console.error('Error toggling view access:', error);
-            toast.error('Failed to update view access');
+            toast.error(t('toasts.updateViewAccessFailed'));
         } finally {
             setIsLoadingAccess(false);
         }
@@ -601,7 +624,7 @@ export const StudentFiles = () => {
                     selectedStudent.institute_id
                 );
                 setHasEditAccess(false);
-                toast.success('Edit access revoked');
+                toast.success(t('toasts.editAccessRevoked'));
             } else {
                 await grantUserAccess(
                     editingFile.id,
@@ -610,12 +633,12 @@ export const StudentFiles = () => {
                     selectedStudent.institute_id
                 );
                 setHasEditAccess(true);
-                toast.success('Edit access granted');
+                toast.success(t('toasts.editAccessGranted'));
             }
             await loadStudentFiles();
         } catch (error) {
             console.error('Error toggling edit access:', error);
-            toast.error('Failed to update edit access');
+            toast.error(t('toasts.updateEditAccessFailed'));
         } finally {
             setIsLoadingAccess(false);
         }
@@ -629,14 +652,14 @@ export const StudentFiles = () => {
                 if (publicUrl) {
                     window.open(publicUrl, '_blank');
                 } else {
-                    toast.error('Failed to get file URL');
+                    toast.error(t('toasts.getFileUrlFailed'));
                 }
             } else if (file.file_type === 'Url') {
                 window.open(file.data, '_blank');
             }
         } catch (error) {
             console.error('Error opening file:', error);
-            toast.error('Failed to open file');
+            toast.error(t('toasts.openFileFailed'));
         }
     };
 
@@ -685,8 +708,8 @@ export const StudentFiles = () => {
     } else if (loadError) {
         body = (
             <ProfileError
-                title="Couldn't load files"
-                hint="Something went wrong while fetching the student's files."
+                title={t('error.title')}
+                hint={t('error.hint')}
                 onRetry={loadStudentFiles}
             />
         );
@@ -694,8 +717,8 @@ export const StudentFiles = () => {
         body = (
             <ProfileEmpty
                 icon={File}
-                title="No files yet"
-                hint="Upload a file, add a URL, or create a note for this student."
+                title={t('empty.title')}
+                hint={t('empty.hint')}
                 action={
                     <MyButton
                         buttonType="secondary"
@@ -706,7 +729,7 @@ export const StudentFiles = () => {
                         }}
                     >
                         <Plus className="size-3.5" />
-                        Add First File
+                        {t('empty.addFirstFile')}
                     </MyButton>
                 }
             />
@@ -717,7 +740,7 @@ export const StudentFiles = () => {
                 {folderNames.map((folderKey) => {
                     const folderFiles = groupedFiles[folderKey];
                     // @ts-expect-error : Ignore TS error for folder_name
-                    const displayFolderName = folderFiles[0]?.folder_name || 'Uncategorized';
+                    const displayFolderName = folderFiles[0]?.folder_name || t('folders.uncategorized');
 
                     return (
                         <ProfileSectionCard
@@ -736,15 +759,14 @@ export const StudentFiles = () => {
                                     }}
                                 >
                                     <Plus className="size-3.5" />
-                                    <span className="text-xs">Add to folder</span>
+                                    <span className="text-xs">{t('folders.addToFolder')}</span>
                                 </MyButton>
                             }
                             bodyClassName="flex flex-col gap-2"
                         >
                             {/* File count badge */}
                             <p className="mb-1 text-xs text-neutral-500">
-                                {folderFiles?.length}{' '}
-                                {folderFiles?.length === 1 ? 'file' : 'files'}
+                                {t('folders.fileCount', { count: folderFiles?.length ?? 0 })}
                             </p>
 
                             {folderFiles?.map((file) => (
@@ -755,6 +777,7 @@ export const StudentFiles = () => {
                                     onDownload={handleFileDownload}
                                     onManageAccess={handleManageAccess}
                                     onDelete={handleDeleteClick}
+                                    mediaTypeMap={mediaTypeMap}
                                 />
                             ))}
                         </ProfileSectionCard>
@@ -770,19 +793,19 @@ export const StudentFiles = () => {
             {(totalFiles > 0 || totalFolders > 0 || recentCount > 0) && (
                 <div className="flex gap-3">
                     <ProfileHeroStat
-                        label="Total Files"
+                        label={t('heroStats.totalFiles')}
                         value={totalFiles}
                         tone="primary"
                         icon={File}
                     />
                     <ProfileHeroStat
-                        label="Folders"
+                        label={t('heroStats.folders')}
                         value={totalFolders}
                         tone="neutral"
                         icon={FolderOpen}
                     />
                     <ProfileHeroStat
-                        label="Recent (7d)"
+                        label={t('heroStats.recent')}
                         value={recentCount}
                         tone={recentCount > 0 ? 'success' : 'neutral'}
                         icon={CalendarBlank}
@@ -801,7 +824,7 @@ export const StudentFiles = () => {
                     }}
                 >
                     <UploadSimple className="size-3.5" />
-                    Upload File
+                    {t('actionBar.uploadFile')}
                 </MyButton>
                 <MyButton
                     buttonType="secondary"
@@ -812,7 +835,7 @@ export const StudentFiles = () => {
                     }}
                 >
                     <Link className="size-3.5" />
-                    Add Link
+                    {t('actionBar.addLink')}
                 </MyButton>
                 <MyButton
                     buttonType="secondary"
@@ -823,14 +846,14 @@ export const StudentFiles = () => {
                     }}
                 >
                     <Note className="size-3.5" />
-                    Add Note
+                    {t('actionBar.addNote')}
                 </MyButton>
                 <MyButton
                     buttonType="text"
                     scale="small"
                     onClick={handleRefresh}
                     disable={isRefreshing || isLoading}
-                    title="Refresh files"
+                    title={t('actionBar.refreshFiles')}
                 >
                     <ArrowClockwise className={cn('size-3.5', isRefreshing && 'animate-spin')} />
                 </MyButton>
@@ -843,15 +866,17 @@ export const StudentFiles = () => {
                 <DialogContent className="overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle className="text-sm font-semibold">
-                            Add File for{' '}
-                            {getTerminology(RoleTerms.Learner, SystemTerms.Learner)}
+                            {t('addDialog.titleFor', {
+                                term: getTerminology(RoleTerms.Learner, SystemTerms.Learner),
+                            })}
                         </DialogTitle>
                         <DialogDescription>
-                            Upload a file, add a URL, or create a note for this{' '}
-                            {getTerminology(
-                                RoleTerms.Learner,
-                                SystemTerms.Learner
-                            ).toLocaleLowerCase()}
+                            {t('addDialog.descriptionFor', {
+                                term: getTerminology(
+                                    RoleTerms.Learner,
+                                    SystemTerms.Learner
+                                ).toLocaleLowerCase(),
+                            })}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -864,15 +889,15 @@ export const StudentFiles = () => {
                             <TabsList className="grid w-full grid-cols-3">
                                 <TabsTrigger value="File">
                                     <UploadSimple className="mr-2 size-4" />
-                                    File
+                                    {t(FILE_TYPE_TAB_LABEL_KEYS.File)}
                                 </TabsTrigger>
                                 <TabsTrigger value="Url">
                                     <Link className="mr-2 size-4" />
-                                    URL
+                                    {t(FILE_TYPE_TAB_LABEL_KEYS.Url)}
                                 </TabsTrigger>
                                 <TabsTrigger value="Note">
                                     <Note className="mr-2 size-4" />
-                                    Note
+                                    {t(FILE_TYPE_TAB_LABEL_KEYS.Note)}
                                 </TabsTrigger>
                             </TabsList>
 
@@ -880,7 +905,7 @@ export const StudentFiles = () => {
                             <TabsContent value="File" className="flex flex-col gap-3">
                                 <div className="flex flex-col gap-1.5">
                                     <Label htmlFor="file-upload" className="text-xs font-medium text-neutral-700">
-                                        Select File *
+                                        {t('addDialog.selectFileLabel')}
                                     </Label>
                                     <div className="flex items-center gap-2">
                                         <Input
@@ -904,15 +929,17 @@ export const StudentFiles = () => {
                                     </div>
                                     {selectedFile && (
                                         <p className="text-xs text-neutral-500">
-                                            Selected: {selectedFile.name} (
-                                            {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB)
+                                            {t('addDialog.selected', {
+                                                name: selectedFile.name,
+                                                size: (selectedFile.size / (1024 * 1024)).toFixed(2),
+                                            })}
                                         </p>
                                     )}
                                 </div>
 
                                 <div className="flex flex-col gap-1.5">
                                     <Label htmlFor="media-type" className="text-xs font-medium text-neutral-700">
-                                        Media Type *
+                                        {t('addDialog.mediaTypeLabel')}
                                     </Label>
                                     <Select
                                         value={mediaType}
@@ -922,7 +949,7 @@ export const StudentFiles = () => {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {MEDIA_TYPES.map((type) => {
+                                            {mediaTypes.map((type) => {
                                                 const Icon = type.icon;
                                                 return (
                                                     <SelectItem key={type.value} value={type.value}>
@@ -942,23 +969,23 @@ export const StudentFiles = () => {
                             <TabsContent value="Url" className="flex flex-col gap-3">
                                 <div className="flex flex-col gap-1.5">
                                     <Label htmlFor="file-url" className="text-xs font-medium text-neutral-700">
-                                        URL *
+                                        {t('addDialog.urlLabel')}
                                     </Label>
                                     <Input
                                         id="file-url"
                                         type="url"
-                                        placeholder="https://example.com/resource"
+                                        placeholder={t('addDialog.urlPlaceholder')}
                                         value={fileUrl}
                                         onChange={(e) => setFileUrl(e.target.value)}
                                     />
                                     <p className="text-xs text-neutral-500">
-                                        Enter a valid URL to an external resource
+                                        {t('addDialog.urlHint')}
                                     </p>
                                 </div>
 
                                 <div className="flex flex-col gap-1.5">
                                     <Label htmlFor="url-media-type" className="text-xs font-medium text-neutral-700">
-                                        Media Type *
+                                        {t('addDialog.mediaTypeLabel')}
                                     </Label>
                                     <Select
                                         value={mediaType}
@@ -968,7 +995,7 @@ export const StudentFiles = () => {
                                             <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {MEDIA_TYPES.map((type) => {
+                                            {mediaTypes.map((type) => {
                                                 const Icon = type.icon;
                                                 return (
                                                     <SelectItem key={type.value} value={type.value}>
@@ -988,17 +1015,17 @@ export const StudentFiles = () => {
                             <TabsContent value="Note" className="flex flex-col gap-3">
                                 <div className="flex flex-col gap-1.5">
                                     <Label htmlFor="note-content" className="text-xs font-medium text-neutral-700">
-                                        Note Content *
+                                        {t('addDialog.noteContentLabel')}
                                     </Label>
                                     <div className="rounded-lg border border-neutral-200">
                                         <RichTextEditor
                                             value={htmlContent}
                                             onChange={setHtmlContent}
-                                            placeholder="Write your note here..."
+                                            placeholder={t('addDialog.notePlaceholder')}
                                         />
                                     </div>
                                     <p className="text-xs text-neutral-500">
-                                        Create a rich text note for this student
+                                        {t('addDialog.noteHint')}
                                     </p>
                                 </div>
                             </TabsContent>
@@ -1008,12 +1035,12 @@ export const StudentFiles = () => {
                         <div className="flex flex-col gap-3 border-t border-neutral-200 pt-4">
                             <div className="flex flex-col gap-1.5">
                                 <Label htmlFor="file-name" className="text-xs font-medium text-neutral-700">
-                                    File Name *
+                                    {t('addDialog.fileNameLabel')}
                                 </Label>
                                 <Input
                                     id="file-name"
                                     type="text"
-                                    placeholder="e.g., Tutorial Video - React Basics"
+                                    placeholder={t('addDialog.fileNamePlaceholder')}
                                     value={fileName}
                                     onChange={(e) => setFileName(e.target.value)}
                                 />
@@ -1021,17 +1048,17 @@ export const StudentFiles = () => {
 
                             <div className="flex flex-col gap-1.5">
                                 <Label htmlFor="folder-name" className="text-xs font-medium text-neutral-700">
-                                    Folder Name
+                                    {t('addDialog.folderNameLabel')}
                                     {isFolderNameReadonly && (
                                         <Badge variant="secondary" className="ml-2 text-xs">
-                                            Pre-selected
+                                            {t('addDialog.folderNamePreselected')}
                                         </Badge>
                                     )}
                                 </Label>
                                 <Input
                                     id="folder-name"
                                     type="text"
-                                    placeholder="e.g., Assignments, Certificates, Resources"
+                                    placeholder={t('addDialog.folderNamePlaceholder')}
                                     value={folderName}
                                     onChange={(e) => setFolderName(e.target.value)}
                                     readOnly={isFolderNameReadonly}
@@ -1042,8 +1069,8 @@ export const StudentFiles = () => {
                                 />
                                 <p className="text-xs text-neutral-500">
                                     {isFolderNameReadonly
-                                        ? 'Adding file to selected folder'
-                                        : 'Optional: Organize files into folders (case-insensitive)'}
+                                        ? t('addDialog.folderNameHintPreselected')
+                                        : t('addDialog.folderNameHintDefault')}
                                 </p>
                             </div>
 
@@ -1060,7 +1087,7 @@ export const StudentFiles = () => {
                                     htmlFor="edit-access"
                                     className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                                 >
-                                    Also grant edit access to the student
+                                    {t('addDialog.grantEditAccessLabel')}
                                 </label>
                             </div>
                         </div>
@@ -1076,7 +1103,7 @@ export const StudentFiles = () => {
                             }}
                             disable={isUploading}
                         >
-                            Cancel
+                            {t('addDialog.cancel')}
                         </MyButton>
                         <MyButton
                             onClick={(e) => {
@@ -1094,12 +1121,16 @@ export const StudentFiles = () => {
                             {isUploading ? (
                                 <>
                                     <Spinner className="mr-2 size-4 animate-spin" />
-                                    {fileTypeTab === 'File' ? 'Uploading...' : 'Adding...'}
+                                    {fileTypeTab === 'File'
+                                        ? t('addDialog.uploading')
+                                        : t('addDialog.adding')}
                                 </>
                             ) : (
                                 <>
                                     <Plus className="mr-2 size-4" />
-                                    Add {fileTypeTab}
+                                    {t('addDialog.addSubmit', {
+                                        type: t(FILE_TYPE_TAB_LABEL_KEYS[fileTypeTab]),
+                                    })}
                                 </>
                             )}
                         </MyButton>
@@ -1113,10 +1144,10 @@ export const StudentFiles = () => {
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-sm font-semibold">
                             <Note className="size-4" />
-                            {viewingNote?.name || 'View Note'}
+                            {viewingNote?.name || t('viewNoteDialog.titleFallback')}
                         </DialogTitle>
                         <DialogDescription>
-                            View the note content for this student
+                            {t('viewNoteDialog.description')}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -1128,7 +1159,7 @@ export const StudentFiles = () => {
                                     dangerouslySetInnerHTML={{ __html: viewingNote.data }}
                                 />
                             ) : (
-                                <p className="text-sm text-neutral-500">No content available</p>
+                                <p className="text-sm text-neutral-500">{t('viewNoteDialog.noContent')}</p>
                             )}
                         </div>
                     </div>
@@ -1142,7 +1173,7 @@ export const StudentFiles = () => {
                                 setViewingNote(null);
                             }}
                         >
-                            Close
+                            {t('viewNoteDialog.close')}
                         </MyButton>
                     </DialogFooter>
                 </DialogContent>
@@ -1154,10 +1185,10 @@ export const StudentFiles = () => {
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-sm font-semibold">
                             <Trash className="size-4 text-danger-600" />
-                            Delete File
+                            {t('deleteDialog.title')}
                         </DialogTitle>
                         <DialogDescription>
-                            Are you sure you want to delete this file? This action cannot be undone.
+                            {t('deleteDialog.description')}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -1170,7 +1201,7 @@ export const StudentFiles = () => {
                                 setFileToDelete(null);
                             }}
                         >
-                            Cancel
+                            {t('deleteDialog.cancel')}
                         </MyButton>
                         <MyButton
                             buttonType="primary"
@@ -1180,7 +1211,7 @@ export const StudentFiles = () => {
                             }}
                         >
                             <Trash className="mr-2 size-4" />
-                            Delete
+                            {t('deleteDialog.confirm')}
                         </MyButton>
                     </DialogFooter>
                 </DialogContent>
@@ -1192,11 +1223,12 @@ export const StudentFiles = () => {
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-sm font-semibold">
                             <Gear className="size-4 text-primary-600" />
-                            Manage{' '}
-                            {getTerminology(RoleTerms.Learner, SystemTerms.Learner)} Access
+                            {t('accessDialog.titleFor', {
+                                term: getTerminology(RoleTerms.Learner, SystemTerms.Learner),
+                            })}
                         </DialogTitle>
                         <DialogDescription>
-                            Control what access the student has to this file
+                            {t('accessDialog.description')}
                         </DialogDescription>
                     </DialogHeader>
 
@@ -1223,6 +1255,7 @@ export const StudentFiles = () => {
                                                 <MediaIcon
                                                     mediaType={editingFile.media_type}
                                                     className="size-4"
+                                                    mediaTypeMap={mediaTypeMap}
                                                 />
                                             )}
                                         </span>
@@ -1234,8 +1267,11 @@ export const StudentFiles = () => {
                                                 {editingFile?.name}
                                             </p>
                                             <p className="text-xs text-neutral-500">
-                                                {editingFile?.file_type} ·{' '}
-                                                {editingFile?.media_type.toUpperCase()}
+                                                {editingFile && t(FILE_TYPE_LABEL_KEYS[editingFile.file_type])} ·{' '}
+                                                {editingFile &&
+                                                    (mediaTypeMap[editingFile.media_type] ??
+                                                        mediaTypeMap.unknown
+                                                    ).label}
                                             </p>
                                         </div>
                                     </div>
@@ -1259,14 +1295,15 @@ export const StudentFiles = () => {
                                             <UserCheck className="size-5 text-success-600" />
                                             <div>
                                                 <p className="text-sm font-medium text-neutral-800">
-                                                    View Access
+                                                    {t('accessDialog.viewAccessTitle')}
                                                 </p>
                                                 <p className="text-xs text-neutral-500">
-                                                    {getTerminology(
-                                                        RoleTerms.Learner,
-                                                        SystemTerms.Learner
-                                                    )}{' '}
-                                                    can view this file
+                                                    {t('accessDialog.viewAccessHint', {
+                                                        term: getTerminology(
+                                                            RoleTerms.Learner,
+                                                            SystemTerms.Learner
+                                                        ),
+                                                    })}
                                                 </p>
                                             </div>
                                         </div>
@@ -1279,7 +1316,7 @@ export const StudentFiles = () => {
                                             }}
                                             disable={isLoadingAccess}
                                         >
-                                            {hasViewAccess ? 'Revoke' : 'Grant'}
+                                            {hasViewAccess ? t('accessDialog.revoke') : t('accessDialog.grant')}
                                         </MyButton>
                                     </div>
 
@@ -1289,14 +1326,15 @@ export const StudentFiles = () => {
                                             <UserMinus className="size-5 text-warning-600" />
                                             <div>
                                                 <p className="text-sm font-medium text-neutral-800">
-                                                    Edit Access
+                                                    {t('accessDialog.editAccessTitle')}
                                                 </p>
                                                 <p className="text-xs text-neutral-500">
-                                                    {getTerminology(
-                                                        RoleTerms.Learner,
-                                                        SystemTerms.Learner
-                                                    )}{' '}
-                                                    can edit this file
+                                                    {t('accessDialog.editAccessHint', {
+                                                        term: getTerminology(
+                                                            RoleTerms.Learner,
+                                                            SystemTerms.Learner
+                                                        ),
+                                                    })}
                                                 </p>
                                             </div>
                                         </div>
@@ -1309,14 +1347,14 @@ export const StudentFiles = () => {
                                             }}
                                             disable={isLoadingAccess}
                                         >
-                                            {hasEditAccess ? 'Revoke' : 'Grant'}
+                                            {hasEditAccess ? t('accessDialog.revoke') : t('accessDialog.grant')}
                                         </MyButton>
                                     </div>
                                 </div>
 
                                 {/* Help Text */}
                                 <div className="rounded-lg bg-neutral-50 p-3 text-xs text-neutral-500">
-                                    <p>Edit access will allow the student to modify the file.</p>
+                                    <p>{t('accessDialog.helpText')}</p>
                                 </div>
                             </>
                         )}
@@ -1331,7 +1369,7 @@ export const StudentFiles = () => {
                                 setEditingFile(null);
                             }}
                         >
-                            Close
+                            {t('accessDialog.close')}
                         </MyButton>
                     </DialogFooter>
                 </DialogContent>

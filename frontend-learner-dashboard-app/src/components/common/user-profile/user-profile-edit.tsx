@@ -2,6 +2,7 @@
 
 import type React from "react";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { shouldHidePaidPurchaseUI } from "@/utils/ios-iap-compliance";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -65,6 +66,7 @@ interface UpdateStudentRequest {
 }
 
 export default function EditProfile() {
+  const { t } = useTranslation("userProfileExtra");
   const [studentData, setStudentData] = useState<Student | null>(null);
   const [formData, setFormData] = useState<UpdateStudentRequest>({
     user_id: "",
@@ -310,7 +312,7 @@ export default function EditProfile() {
           <div className="p-6 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
             <h1 className="text-xl font-bold text-gray-900 flex items-center gap-2">
               <PencilSimple className="w-5 h-5 text-primary-500" />
-              Edit Profile
+              {t("profileEdit.header")}
             </h1>
             <button
               onClick={handleCancel}
@@ -328,7 +330,7 @@ export default function EditProfile() {
                   {profileImageUrl ? (
                     <img
                       src={profileImageUrl || "/placeholder.svg"}
-                      alt="Profile"
+                      alt={t("profileEdit.profileImageAlt")}
                       className="h-full w-full object-cover"
                     />
                   ) : (
@@ -355,7 +357,7 @@ export default function EditProfile() {
                         setIsMenuOpen(false);
                       }}
                     >
-                      Upload New
+                      {t("profileEdit.uploadNew")}
                     </DropdownMenuItem>
                     <DropdownMenuItem
                       onSelect={(e) => {
@@ -365,7 +367,7 @@ export default function EditProfile() {
                       }}
                       className="text-red-600"
                     >
-                      Remove Photo
+                      {t("profileEdit.removePhoto")}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -381,7 +383,7 @@ export default function EditProfile() {
                   }}
                 />
               </div>
-              <p className="mt-3 text-sm text-gray-500">Allowed *.jpeg, *.jpg, *.png, *.gif</p>
+              <p className="mt-3 text-sm text-gray-500">{t("profileEdit.allowedFileTypes")}</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -391,19 +393,19 @@ export default function EditProfile() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-lg font-semibold text-gray-900 border-b pb-2">
                     <User size={20} className="text-primary-500" weight="bold" />
-                    <h3>General Details</h3>
+                    <h3>{t("profileEdit.sections.generalDetails")}</h3>
                   </div>
 
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="full_name" className="text-xs uppercase font-medium text-gray-500">
-                        Full Name*
+                        {t("profileEdit.fields.fullName")}
                       </Label>
                       <Input
                         id="full_name"
                         value={formData.full_name}
                         onChange={(e) => handleChange("full_name", e.target.value)}
-                        placeholder="Enter your full name"
+                        placeholder={t("profileEdit.fields.fullNamePlaceholder")}
                         required
                         className="h-11 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
                       />
@@ -412,19 +414,19 @@ export default function EditProfile() {
                     {isFieldVisible("GENDER") && (
                       <div className="space-y-2">
                         <Label htmlFor="gender" className="text-xs uppercase font-medium text-gray-500">
-                          Gender*
+                          {t("profileEdit.fields.gender")}
                         </Label>
                         <Select
                           value={formData.gender}
                           onValueChange={(value) => handleChange("gender", value)}
                         >
                           <SelectTrigger className="h-11 bg-gray-50 border-gray-200 focus:bg-white transition-colors">
-                            <SelectValue placeholder="Select gender" />
+                            <SelectValue placeholder={t("profileEdit.fields.genderPlaceholder")} />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Male">Male</SelectItem>
-                            <SelectItem value="Female">Female</SelectItem>
-                            <SelectItem value="Other">Other</SelectItem>
+                            <SelectItem value="Male">{t("profileEdit.fields.genderMale")}</SelectItem>
+                            <SelectItem value="Female">{t("profileEdit.fields.genderFemale")}</SelectItem>
+                            <SelectItem value="Other">{t("profileEdit.fields.genderOther")}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -434,14 +436,14 @@ export default function EditProfile() {
                       isFieldVisible("LINKED_INSTITUTE_NAME") && (
                       <div className="space-y-2">
                         <Label htmlFor="institute_name" className="text-xs uppercase font-medium text-gray-500">
-                          College/School Name
+                          {t("profileEdit.fields.instituteName")}
                         </Label>
                         <div className="relative">
                           <Input
                             id="institute_name"
                             value={formData.institute_name}
                             onChange={(e) => handleChange("institute_name", e.target.value)}
-                            placeholder="Enter institute name"
+                            placeholder={t("profileEdit.fields.instituteNamePlaceholder")}
                             className="h-11 ps-10 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
                           />
                           <GraduationCap
@@ -458,19 +460,19 @@ export default function EditProfile() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-lg font-semibold text-gray-900 border-b pb-2">
                     <EnvelopeSimple size={20} className="text-secondary-500" weight="bold" />
-                    <h3>Contact Information</h3>
+                    <h3>{t("profileEdit.sections.contactInformation")}</h3>
                   </div>
 
                   <div className="space-y-4">
                     {isFieldVisible("MOBILE_NUMBER") && (
                       <div className="space-y-2">
                         <Label htmlFor="contact_number" className="text-xs uppercase font-medium text-gray-500">
-                          Mobile Number*
+                          {t("profileEdit.fields.mobileNumber")}
                         </Label>
                         <PhoneInputField
                           label=""
                           name="contact_number"
-                          placeholder="Enter mobile number"
+                          placeholder={t("profileEdit.fields.mobileNumberPlaceholder")}
                           control={methods.control}
                           value={formData.contact_number}
                           onChange={(value) => handleChange("contact_number", value)}
@@ -481,7 +483,7 @@ export default function EditProfile() {
                     {isFieldVisible("EMAIL") && (
                       <div className="space-y-2">
                         <Label htmlFor="email" className="text-xs uppercase font-medium text-gray-500">
-                          Email*
+                          {t("profileEdit.fields.email")}
                         </Label>
                         <div className="relative">
                           <Input
@@ -489,7 +491,7 @@ export default function EditProfile() {
                             type="email"
                             value={formData.email}
                             onChange={(e) => handleChange("email", e.target.value)}
-                            placeholder="Enter email address"
+                            placeholder={t("profileEdit.fields.emailPlaceholder")}
                             required
                             className="h-11 ps-10 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
                           />
@@ -510,20 +512,20 @@ export default function EditProfile() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 text-lg font-semibold text-gray-900 border-b pb-2">
                     <MapPin size={20} className="text-tertiary-500" weight="bold" />
-                    <h3>Location Details</h3>
+                    <h3>{t("profileEdit.sections.locationDetails")}</h3>
                   </div>
 
                   {showForInstitutes([HOLISTIC_INSTITUTE_ID]) ? (
                     <div className="space-y-2">
                       <Label htmlFor="country" className="text-xs uppercase font-medium text-gray-500">
-                        Country
+                        {t("profileEdit.fields.country")}
                       </Label>
                       <div className="relative">
                         <Input
                           id="country"
                           value={formData.country}
                           onChange={(e) => handleChange("country", e.target.value)}
-                          placeholder="Enter country"
+                          placeholder={t("profileEdit.fields.countryPlaceholder")}
                           className="h-11 ps-10 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
                         />
                         <GlobeSimple
@@ -536,14 +538,14 @@ export default function EditProfile() {
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label htmlFor="address_line" className="text-xs uppercase font-medium text-gray-500">
-                          Address Line 1
+                          {t("profileEdit.fields.addressLine")}
                         </Label>
                         <div className="relative">
                           <Input
                             id="address_line"
                             value={formData.address_line}
                             onChange={(e) => handleChange("address_line", e.target.value)}
-                            placeholder="Enter address"
+                            placeholder={t("profileEdit.fields.addressLinePlaceholder")}
                             className="h-11 ps-10 bg-gray-50 border-gray-200 focus:bg-white transition-colors"
                           />
                           <Buildings
@@ -557,7 +559,7 @@ export default function EditProfile() {
                         {isFieldVisible("CITY") && (
                           <div className="space-y-2">
                             <Label htmlFor="city" className="text-xs uppercase font-medium text-gray-500">
-                              City/Village
+                              {t("profileEdit.fields.city")}
                             </Label>
                             <Input
                               id="city"
@@ -571,7 +573,7 @@ export default function EditProfile() {
                         {isFieldVisible("REGION") && (
                           <div className="space-y-2">
                             <Label htmlFor="state" className="text-xs uppercase font-medium text-gray-500">
-                              State
+                              {t("profileEdit.fields.state")}
                             </Label>
                             <Input
                               id="state"
@@ -584,7 +586,7 @@ export default function EditProfile() {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="pin_code" className="text-xs uppercase font-medium text-gray-500">
-                          Pincode
+                          {t("profileEdit.fields.pincode")}
                         </Label>
                         <Input
                           id="pin_code"
@@ -606,14 +608,14 @@ export default function EditProfile() {
                   <div className="space-y-4">
                     <div className="flex items-center gap-2 text-lg font-semibold text-gray-900 border-b pb-2">
                       <Users size={20} className="text-gray-500" weight="bold" />
-                      <h3>Guardian Details</h3>
+                      <h3>{t("profileEdit.sections.guardianDetails")}</h3>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {isFieldVisible("FATHER_NAME") && (
                         <div className="space-y-2">
                           <Label htmlFor="father_name" className="text-xs uppercase font-medium text-gray-500">
-                            Father's Name
+                            {t("profileEdit.fields.fatherName")}
                           </Label>
                           <Input
                             id="father_name"
@@ -626,7 +628,7 @@ export default function EditProfile() {
                       {isFieldVisible("MOTHER_NAME") && (
                         <div className="space-y-2">
                           <Label htmlFor="mother_name" className="text-xs uppercase font-medium text-gray-500">
-                            Mother's Name
+                            {t("profileEdit.fields.motherName")}
                           </Label>
                           <Input
                             id="mother_name"
@@ -641,7 +643,7 @@ export default function EditProfile() {
                     {isFieldVisible("PARENTS_EMAIL") && (
                       <div className="space-y-2">
                         <Label htmlFor="parents_email" className="text-xs uppercase font-medium text-gray-500">
-                          Guardian's Email
+                          {t("profileEdit.fields.guardianEmail")}
                         </Label>
                         <div className="relative">
                           <Input
@@ -662,12 +664,12 @@ export default function EditProfile() {
                     {isFieldVisible("PARENTS_MOBILE_NUMBER") && (
                       <div className="space-y-2">
                         <Label htmlFor="parents_mobile_number" className="text-xs uppercase font-medium text-gray-500">
-                          Guardian's Mobile
+                          {t("profileEdit.fields.guardianMobile")}
                         </Label>
                         <PhoneInputField
                           label=""
                           name="parents_mobile_number"
-                          placeholder="Enter mobile number"
+                          placeholder={t("profileEdit.fields.mobileNumberPlaceholder")}
                           control={methods.control}
                           value={formData.parents_mobile_number}
                           onChange={(value) => handleChange("parents_mobile_number", value)}
@@ -688,7 +690,7 @@ export default function EditProfile() {
                 layoutVariant="default"
                 onClick={handleCancel}
               >
-                Cancel
+                {t("common.cancel")}
               </MyButton>
               <MyButton
                 type="submit"
@@ -700,10 +702,10 @@ export default function EditProfile() {
                 {isLoading ? (
                   <>
                     <SpinnerGap className="h-4 w-4 animate-spin me-2" />
-                    Saving...
+                    {t("common.saving")}
                   </>
                 ) : (
-                  "Save Changes"
+                  t("profileEdit.saveChanges")
                 )}
               </MyButton>
             </div>

@@ -1,0 +1,33 @@
+{
+    "frameTitle": "Aperçu du site",
+    "loading": "Chargement du site…",
+    "failed": {
+        "title": "L'aperçu du site n'a pas pu se charger ici.",
+        "hint": "Utilisez <b>Structure</b> ci-dessus pour continuer à modifier, avec les aperçus des blocs, ou ouvrez <b>Voir en ligne</b>.",
+        "showPreviews": "Afficher les aperçus des blocs"
+    },
+    "toolbar": {
+        "select": "Sélectionner",
+        "selectHint": "Cliquez sur un bloc de la page pour le modifier",
+        "browse": "Parcourir",
+        "browseHint": "Utilisez la page comme un visiteur : ouvrez les menus, filtres et onglets. Un lien vers une autre page ouvre cette page ici.",
+        "desktopWidthHint": "Largeur bureau",
+        "widthPx": "{{width}} px",
+        "fit": "Ajuster",
+        "fitHint": "Réduire la page pour qu'elle tienne dans le canevas",
+        "actualSize": "100 %",
+        "actualSizeHint": "Afficher la page à sa taille réelle avec défilement horizontal",
+        "scaledTo": "Affichée à {{percent}} %",
+        "draft": "Vos modifications",
+        "draftHint": "Le site avec vos modifications non enregistrées",
+        "live": "Site en ligne",
+        "liveHint": "Le site tel que les visiteurs le voient, sans vos modifications"
+    },
+    "notAPage": "Ce lien ouvre {{target}}, qui n'est pas une page de ce site. Utilisez Voir en ligne pour le suivre.",
+    "leftPreview": {
+        "title": "Ce lien a quitté l'aperçu : vos modifications ne s'affichent plus ici.",
+        "back": "Revenir à la page"
+    },
+    "livePageMissing": "Cette page n’est pas encore sur le site en ligne : la première page du site en ligne est affichée.",
+    "liveClick": "Ceci est le site en ligne. Passez à « Vos modifications » pour choisir un bloc à modifier."
+}

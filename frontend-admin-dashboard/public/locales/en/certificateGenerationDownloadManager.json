@@ -1,0 +1,24 @@
+{
+    "errors": {
+        "downloadFailed": "Failed to download certificate for {{name}}",
+        "noCertificatesAvailable": "No certificates available for download"
+    },
+    "summary": {
+        "title": "Certificate Generation Summary",
+        "generatedOn": "Generated on: {{timestamp}}",
+        "totalStudents": "Total Students: {{count}}",
+        "successful": "Successful: {{count}}",
+        "errorsLabel": "Errors: {{count}}",
+        "successfulCertificatesHeading": "Successful Certificates:",
+        "errorsHeading": "Errors:"
+    },
+    "fileSize": {
+        "zeroBytes": "0 Bytes",
+        "units": {
+            "bytes": "Bytes",
+            "kb": "KB",
+            "mb": "MB",
+            "gb": "GB"
+        }
+    }
+}

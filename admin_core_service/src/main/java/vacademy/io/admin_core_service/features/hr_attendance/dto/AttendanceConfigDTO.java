@@ -15,6 +15,7 @@ public class AttendanceConfigDTO {
     private String id;
     private String instituteId;
     private String mode;
+    private String timezone;
     private Boolean autoCheckoutEnabled;
     private LocalTime autoCheckoutTime;
     private Boolean geoFenceEnabled;

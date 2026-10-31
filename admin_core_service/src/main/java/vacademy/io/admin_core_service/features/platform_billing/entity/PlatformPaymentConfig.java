@@ -62,6 +62,28 @@ public class PlatformPaymentConfig {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive;
 
+    // ── V590: document / email identity ──────────────────────────────
+    /** Trade name shown next to the legal supplier in VACADEMY brand mode. */
+    @Column(name = "trade_name", nullable = false, length = 120)
+    private String tradeName = "Vacademy";
+
+    /** Logo shown in VACADEMY brand mode (never in NEUTRAL). */
+    @Column(name = "brand_logo_url", columnDefinition = "TEXT")
+    private String brandLogoUrl;
+
+    /** Short brand-free name for NEUTRAL surfaces (e.g. the Razorpay checkout name). */
+    @Column(name = "neutral_display_name", nullable = false, length = 120)
+    private String neutralDisplayName = "Vidyayatan Technologies";
+
+    @Column(name = "billing_support_email", length = 255)
+    private String billingSupportEmail;
+
+    @Column(name = "billing_from_name", length = 120)
+    private String billingFromName;
+
+    @Column(name = "billing_from_email", length = 255)
+    private String billingFromEmail;
+
     @Column(name = "created_at", nullable = false, insertable = false, updatable = false)
     private LocalDateTime createdAt;
 

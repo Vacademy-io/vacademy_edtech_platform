@@ -1,0 +1,14 @@
+{
+    "categories": {
+        "crm": "CRM",
+        "lms": "LMS",
+        "ai": "एआई",
+        "erp": "ERP"
+    },
+    "search": "खोजें",
+    "recent": "हाल का",
+    "status": "स्थिति",
+    "serviceStatus": "सेवा स्थिति",
+    "settings": "सेटिंग्स",
+    "categoryFeatureLabel": "{{category}} श्रेणी"
+}

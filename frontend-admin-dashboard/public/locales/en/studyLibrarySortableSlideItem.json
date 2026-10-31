@@ -1,0 +1,64 @@
+{
+    "labels": {
+        "videoScript": "Video Script",
+        "mermaidDiagramCode": "Mermaid Diagram Code",
+        "codeSnippet": "Code Snippet",
+        "diagramPreview": "Diagram Preview",
+        "mermaidCode": "Mermaid Code",
+        "video": "Video",
+        "code": "Code",
+        "output": "Output",
+        "aiVideo": "AI Video",
+        "aiGeneratedVideo": "AI Generated Video",
+        "quizContent": "Quiz Content",
+        "content": "Content",
+        "assignment": "Assignment",
+        "aiPrompt": "AI Prompt"
+    },
+    "actions": {
+        "regenerate": "Regenerate",
+        "regenerateVideoScript": "Regenerate Video Script",
+        "regenerateDiagram": "Regenerate Diagram",
+        "regenerateCode": "Regenerate Code",
+        "regenerateContent": "Regenerate Content",
+        "regenerateQuiz": "Regenerate Quiz",
+        "regenerateAssignment": "Regenerate Assignment",
+        "regenerateSection": "Regenerate {{label}}",
+        "runCode": "Run Code",
+        "running": "Running...",
+        "showOutput": "Show Output",
+        "save": "Save",
+        "cancel": "Cancel",
+        "edit": "Edit",
+        "delete": "Delete",
+        "watchOnYoutube": "▶ Watch on YouTube",
+        "hideAiPrompt": "Hide AI prompt",
+        "viewAiPrompt": "View AI prompt",
+        "hideContent": "Hide content",
+        "viewContent": "View content"
+    },
+    "status": {
+        "generatingDocument": "Generating document...",
+        "generatingQuiz": "Generating quiz...",
+        "generatingVideo": "Generating video...",
+        "generatingContent": "Generating content...",
+        "generatingVideoProgress": "Generating video... {{progress}}%",
+        "noContentAvailable": "No content available yet",
+        "noVideoAvailable": "No video available",
+        "videoNotAvailableYet": "Video not available yet",
+        "loadingPythonEnv": "Loading Python environment (this may take a few seconds on first run)...",
+        "noOutputYet": "No output yet. Click \"Run Code\" to execute.",
+        "failedToLoadScript": "Failed to load script",
+        "mermaidSectionEmpty": "⚠️ Mermaid section has no content",
+        "youtubeVideoAvailable": "YouTube Video Available",
+        "noVideoUrlFound": "No Video URL Found",
+        "checkContentForYoutubeLinks": "Please check the content for YouTube links"
+    },
+    "alt": {
+        "videoThumbnail": "Video thumbnail"
+    },
+    "quizNote": {
+        "label": "Note:",
+        "body": "Format questions as \"Question 1\", \"Question 2\", etc. with ordered lists for options. Write the correct answer below the options list as \"Correct Answer: [option text]\"."
+    }
+}

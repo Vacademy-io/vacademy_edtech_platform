@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import jakarta.servlet.http.HttpServletRequest;
+import vacademy.io.admin_core_service.features.institute.util.PublicSettingRedactor;
 import vacademy.io.admin_core_service.features.institute.dto.PaginatedPackageSessionResponse;
 import vacademy.io.admin_core_service.features.institute.dto.BatchesSummaryResponse;
 import vacademy.io.admin_core_service.features.institute.dto.BatchLookupResponse;
@@ -156,7 +157,11 @@ public class InstituteInitManager {
                 dto.setInstituteLogoFileId(institute.getLogoFileId());
                 dto.setCoverImageFileId(institute.getCoverImageFileId());
                 dto.setCoverTextJson(institute.getCoverTextJson());
-                dto.setSetting(institute.getSetting());
+                // The public (no login) details carry no credentials: the blob holds the
+                // SMTP password, WhatsApp apiKey and LMS tokens alongside display settings.
+                dto.setSetting(includePrivateFields
+                                ? institute.getSetting()
+                                : PublicSettingRedactor.redact(institute.getSetting()));
 
                 // School-specific fields
                 dto.setBoard(institute.getBoard());
@@ -176,10 +181,15 @@ public class InstituteInitManager {
                 String instId = institute.getId();
                 List<String> activeStatuses = List.of(PackageSessionStatusEnum.ACTIVE.name());
 
-                // Trace tags lookup
-                dto.setTags(PerformanceTracer.traceDbQuery(
-                                "packageRepository.findAllDistinctTagsByInstituteId",
-                                () -> packageRepository.findAllDistinctTagsByInstituteId(instId)));
+                // Trace tags lookup. Admin callers see the tags of unpublished courses too;
+                // the public catalogue keeps seeing only published ones.
+                dto.setTags(includePrivateFields
+                                ? PerformanceTracer.traceDbQuery(
+                                                "packageRepository.findAllDistinctAdminTagsByInstituteId",
+                                                () -> packageRepository.findAllDistinctAdminTagsByInstituteId(instId))
+                                : PerformanceTracer.traceDbQuery(
+                                                "packageRepository.findAllDistinctTagsByInstituteId",
+                                                () -> packageRepository.findAllDistinctTagsByInstituteId(instId)));
 
                 // Trace sessions lookup
                 dto.setSessions(PerformanceTracer.traceDbQuery(
@@ -273,7 +283,8 @@ public class InstituteInitManager {
                 String instId = institute.getId();
                 List<String> activeStatuses = List.of(PackageSessionStatusEnum.ACTIVE.name());
 
-                idto.setTags(packageRepository.findAllDistinctTagsByInstituteId(instId));
+                // Only the authenticated admin setup endpoints build this DTO.
+                idto.setTags(packageRepository.findAllDistinctAdminTagsByInstituteId(instId));
                 idto.setLevels(packageRepository.findDistinctLevelsByInstituteIdAndStatusIn(instId, activeStatuses)
                                 .stream().map(LevelDTO::new).toList());
                 idto.setPackageGroups(packageGroupMappingRepository.findAllByInstituteId(instId)

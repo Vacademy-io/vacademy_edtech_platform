@@ -21,6 +21,12 @@ import java.util.Map;
  * ({@code POST /chat/v1/complete}). The LLM API key lives ONLY in ai_service —
  * admin_core never holds it. Returns {@code null} on any failure (unreachable,
  * empty content, error) so callers can fall back gracefully.
+ *
+ * <p>The endpoint is service-to-service only: every call carries
+ * {@code X-Internal-Service-Token} (same secret as the credits / copy-check
+ * clients). The model comes from the {@code parent_assistant} use case in
+ * ai_model_defaults; ai_service ignores a body {@code model} unless the user is
+ * platform staff.
  */
 @Slf4j
 @Component
@@ -33,6 +39,12 @@ public class AiServiceCompletionClient {
     private String aiServiceUrl;
 
     private static final String COMPLETE_PATH = "/ai-service/chat/v1/complete";
+    private static final String USE_CASE = "parent_assistant";
+
+    // Same resolution as AssignmentCopyCheckClient / CreditClient: INTERNAL_SERVICE_TOKEN
+    // (relaxed binding) or the older ai.service.internal-token property.
+    @Value("${internal.service.token:${ai.service.internal-token:}}")
+    private String internalServiceToken;
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
@@ -41,12 +53,14 @@ public class AiServiceCompletionClient {
         try {
             Map<String, Object> body = new HashMap<>();
             body.put("prompt", prompt);
+            body.put("use_case", USE_CASE);
             if (model != null) body.put("model", model);
             if (instituteId != null) body.put("institute_id", instituteId);
             if (userId != null) body.put("user_id", userId);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("X-Internal-Service-Token", internalServiceToken == null ? "" : internalServiceToken);
             HttpEntity<String> entity = new HttpEntity<>(objectMapper.writeValueAsString(body), headers);
 
             ResponseEntity<String> response = restTemplate.exchange(

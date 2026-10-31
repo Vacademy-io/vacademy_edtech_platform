@@ -1,0 +1,8 @@
+{
+    "noBookingPage": "This mentor has no booking page yet, so there are no slots to pick. Enable booking for them from the mentor list first.",
+    "previousWeek": "Previous week",
+    "nextWeek": "Next week",
+    "couldNotLoadSlots": "Couldn't load available slots.",
+    "retry": "Retry",
+    "noFreeSlots": "No free slots this week. Try the next one, or widen the mentor's availability."
+}

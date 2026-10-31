@@ -1,0 +1,29 @@
+{
+    "emptyState": {
+        "title": "لم يتم العثور على {{term}}",
+        "description": "لا توجد بيانات {{termLower}} تطابق عوامل التصفية الحالية. جرّب تعديل معايير البحث أو أضف {{termLower}} جديدًا للبدء.",
+        "inviteButton": "دعوة {{term}}",
+        "clearFiltersButton": "مسح عوامل التصفية"
+    },
+    "loadingData": "جارٍ تحميل بيانات {{termLower}}...",
+    "bulkActionsBar": {
+        "selecting": "جارٍ التحديد…",
+        "selectAllCount_zero": "تحديد الكل ({{count}})",
+        "selectAllCount_one": "تحديد الكل ({{count}})",
+        "selectAllCount_two": "تحديد الكل ({{count}})",
+        "selectAllCount_few": "تحديد الكل ({{count}})",
+        "selectAllCount_many": "تحديد الكل ({{count}})",
+        "selectAllCount_other": "تحديد الكل ({{count}})",
+        "allMatchingFilters": "جميع {{term}} المطابقة لعوامل التصفية الخاصة بك",
+        "selectAllError": "تعذر تحديد الجميع — حاول مرة أخرى."
+    },
+    "table": {
+        "counsellorHeader": "المستشار",
+        "assignButton": "تعيين",
+        "reassignTooltip": "انقر لإعادة التعيين"
+    },
+    "noCourseDialog": {
+        "enrollStudentsLabel": "تسجيل الطلاب",
+        "defaultContent": "يلزم إنشاء دورة وإضافة مادة إليها قبل"
+    }
+}

@@ -1,0 +1,11 @@
+{
+    "ratingTooltip_one": "{{count}} रेट की गई सेशन का औसत — फ़ीडबैक पढ़ने के लिए क्लिक करें",
+    "ratingTooltip_other": "{{count}} रेट की गई सेशंस का औसत — फ़ीडबैक पढ़ने के लिए क्लिक करें",
+    "noCapTooltip": "फिलहाल इस मेंटर को सौंपे गए छात्र (कोई सीमा तय नहीं)",
+    "atCapacityTooltip": "क्षमता पूरी — सीमा बढ़ाए जाने या किसी मेंटी को हटाए जाने तक नए छात्र नहीं जोड़े जा सकते",
+    "placesOpenTooltip_one": "{{cap}} में से {{count}} जगह अभी भी खाली है",
+    "placesOpenTooltip_other": "{{cap}} में से {{count}} जगहें अभी भी खाली हैं",
+    "fullSuffix": "पूर्ण",
+    "studentsSuffix_one": "छात्र",
+    "studentsSuffix_other": "छात्र"
+}

@@ -1,0 +1,19 @@
+{
+    "chips": {
+        "defaultTooltip": "Pays sélectionné par défaut dans les champs téléphoniques",
+        "moveUp": "Monter (plus tôt dans l'ordre)",
+        "moveDown": "Descendre (plus tard dans l'ordre)",
+        "remove": "Supprimer"
+    },
+    "emptyState": "Aucun pays préféré sélectionné — les champs téléphoniques utiliseront l'ordre par défaut de la plateforme.",
+    "trigger": {
+        "selectPlaceholder": "Sélectionner des pays…",
+        "addOrRemove_one": "Ajouter ou retirer ({{count}} sélectionné)",
+        "addOrRemove_many": "Ajouter ou retirer ({{count}} sélectionnés)",
+        "addOrRemove_other": "Ajouter ou retirer ({{count}} sélectionnés)"
+    },
+    "search": {
+        "placeholder": "Rechercher des pays…",
+        "empty": "Aucun pays trouvé."
+    }
+}

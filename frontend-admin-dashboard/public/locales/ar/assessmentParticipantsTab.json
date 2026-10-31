@@ -1,0 +1,33 @@
+{
+    "header": {
+        "title": "مشاركو التقييم"
+    },
+    "internalParticipants": {
+        "count_zero": "لا يوجد مشاركون (داخلي) ({{count}})",
+        "count_one": "مشارك واحد (داخلي) ({{count}})",
+        "count_two": "مشاركان (داخلي) ({{count}})",
+        "count_few": "{{count}} مشاركين (داخلي)",
+        "count_many": "{{count}} مشاركًا (داخلي)",
+        "count_other": "{{count}} مشارك (داخلي)"
+    },
+    "joinLink": {
+        "title": "رابط الانضمام",
+        "privateWarning": "لا يعمل هذا الرابط إلا عندما يكون التقييم Public. اضبطه على Public في الخطوة 3 قبل المشاركة."
+    },
+    "qrCode": {
+        "title": "رمز الاستجابة السريعة"
+    },
+    "notifications": {
+        "title": "إخطار المشاركين عبر البريد الإلكتروني:",
+        "whenCreated": "عند إنشاء التقييم:",
+        "beforeLive": "قبل بدء التقييم مباشرة:",
+        "minutesBeforeLive_zero": "{{count}} دقيقة",
+        "minutesBeforeLive_one": "دقيقة واحدة ({{count}})",
+        "minutesBeforeLive_two": "دقيقتان ({{count}})",
+        "minutesBeforeLive_few": "{{count}} دقائق",
+        "minutesBeforeLive_many": "{{count}} دقيقة",
+        "minutesBeforeLive_other": "{{count}} دقيقة",
+        "whenLive": "عند بدء التقييم مباشرة:",
+        "whenReportsGenerated": "عند إنشاء تقارير التقييم:"
+    }
+}

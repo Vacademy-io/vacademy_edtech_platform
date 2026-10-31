@@ -1,0 +1,45 @@
+{
+    "title": "عملاء الإحالة المحتملون",
+    "subtitle": "عملاء محتملون تم اكتسابهم من خلال حملات الإحالة",
+    "referralUsers": "مستخدمو الإحالة",
+    "referralRate": "معدل الإحالة",
+    "selectCampaign": "اختر الحملة:",
+    "selectCampaignPlaceholder": "اختر حملة إحالة",
+    "campaignUsers_zero": "{{name}} (لا يوجد مستخدمون)",
+    "campaignUsers_one": "{{name}} (مستخدم واحد)",
+    "campaignUsers_two": "{{name}} (مستخدمان)",
+    "campaignUsers_few": "{{name}} ({{count}} مستخدمين)",
+    "campaignUsers_many": "{{name}} ({{count}} مستخدمًا)",
+    "campaignUsers_other": "{{name}} ({{count}} مستخدم)",
+    "exportCsv": "تصدير CSV",
+    "noCampaigns": "لم يتم العثور على حملات إحالة",
+    "loadingLeads": "جارٍ تحميل العملاء المحتملين...",
+    "noLeads": "لم يتم العثور على عملاء محتملين للحملة والفترة الزمنية المحددة",
+    "table": {
+        "index": "#",
+        "user": "المستخدم",
+        "contact": "التواصل",
+        "source": "المصدر",
+        "submitted": "تاريخ التقديم",
+        "anonymous": "مجهول",
+        "idLabel": "المعرف: {{id}}..."
+    },
+    "csv": {
+        "name": "الاسم",
+        "email": "البريد الإلكتروني",
+        "phone": "الهاتف",
+        "source": "المصدر",
+        "submittedAt": "تاريخ التقديم",
+        "notAvailable": "غير متاح"
+    },
+    "pagination": {
+        "showing_zero": "عرض {{from}} - {{to}} دون نتائج",
+        "showing_one": "عرض {{from}} - {{to}} من أصل عميل محتمل واحد",
+        "showing_two": "عرض {{from}} - {{to}} من أصل عميلين محتملين",
+        "showing_few": "عرض {{from}} - {{to}} من أصل {{count}} عملاء محتملين",
+        "showing_many": "عرض {{from}} - {{to}} من أصل {{count}} عميلاً محتملاً",
+        "showing_other": "عرض {{from}} - {{to}} من أصل {{count}} عميل محتمل",
+        "previous": "السابق",
+        "next": "التالي"
+    }
+}

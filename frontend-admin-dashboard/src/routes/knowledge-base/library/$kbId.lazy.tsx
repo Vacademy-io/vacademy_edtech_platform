@@ -2,6 +2,8 @@ import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
 import { Helmet } from 'react-helmet';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import {
     ArrowLeft,
     CaretRight,
@@ -41,13 +43,14 @@ const errorMessage = (error: unknown, fallback: string): string => {
 };
 
 /** What a library can be turned into. Grows as capabilities land. */
-const CAPABILITIES = [
-    { icon: Exam, label: 'Question papers', available: true },
-    { icon: FileText, label: 'Assessment sections', available: true },
-    { icon: GraduationCap, label: 'Courses', available: false },
+const buildCapabilities = (t: TFunction) => [
+    { icon: Exam, label: t('capabilities.questionPapers'), available: true },
+    { icon: FileText, label: t('capabilities.assessmentSections'), available: true },
+    { icon: GraduationCap, label: t('capabilities.courses'), available: false },
 ];
 
 function LibraryDetailPage() {
+    const { t } = useTranslation('knowledgeBaseLibraryKbIdIndex');
     const { kbId } = Route.useParams();
     const navigate = useNavigate();
     const { setNavHeading } = useNavHeadingStore();
@@ -57,10 +60,11 @@ function LibraryDetailPage() {
     const [topics, setTopics] = useState<KbTopic[] | null>(null);
     const [expanded, setExpanded] = useState<Set<string>>(new Set());
     const [unlocking, setUnlocking] = useState(false);
+    const CAPABILITIES = buildCapabilities(t);
 
     useEffect(() => {
-        setNavHeading('Library');
-    }, [setNavHeading]);
+        setNavHeading(t('navHeading'));
+    }, [setNavHeading, t]);
 
     useEffect(() => {
         let cancelled = false;
@@ -85,11 +89,11 @@ function LibraryDetailPage() {
             setListing({ ...listing, unlocked: true });
             toast.success(
                 result.already_owned
-                    ? 'You already have this library'
-                    : `${listing.title} is yours. It will not be charged again.`
+                    ? t('toast.alreadyOwned')
+                    : t('toast.unlocked', { title: listing.title })
             );
         } catch (error) {
-            toast.error(errorMessage(error, 'Could not unlock this library'));
+            toast.error(errorMessage(error, t('toast.unlockFailed')));
         } finally {
             setUnlocking(false);
         }
@@ -108,13 +112,13 @@ function LibraryDetailPage() {
             <LayoutContainer>
                 <Card className="flex flex-col items-center gap-3 p-10 text-center">
                     <Lock className="size-7 text-neutral-300" />
-                    <p className="text-body text-neutral-600">This library is not available</p>
+                    <p className="text-body text-neutral-600">{t('notFound.message')}</p>
                     <MyButton
                         buttonType="secondary"
                         scale="medium"
                         onClick={() => navigate({ to: '/knowledge-base' })}
                     >
-                        Back to Knowledge Base
+                        {t('notFound.back')}
                     </MyButton>
                 </Card>
             </LayoutContainer>
@@ -133,8 +137,12 @@ function LibraryDetailPage() {
     }
 
     const facts = [
-        listing.sources ? `${formatCount(listing.sources)} sources` : null,
-        listing.pages ? `${formatCount(listing.pages)} pages` : null,
+        listing.sources
+            ? t('facts.sources', { count: listing.sources, formatted: formatCount(listing.sources) })
+            : null,
+        listing.pages
+            ? t('facts.pages', { count: listing.pages, formatted: formatCount(listing.pages) })
+            : null,
         listing.language,
         listing.board,
     ].filter(Boolean) as string[];
@@ -142,7 +150,7 @@ function LibraryDetailPage() {
     return (
         <LayoutContainer>
             <Helmet>
-                <title>{listing.title} — Library</title>
+                <title>{t('pageTitle', { title: listing.title })}</title>
             </Helmet>
 
             <div className="flex flex-col gap-5">
@@ -153,7 +161,7 @@ function LibraryDetailPage() {
                     onClick={() => navigate({ to: '/knowledge-base' })}
                 >
                     <ArrowLeft className="mr-1 size-4" />
-                    Library
+                    {t('backButton')}
                 </MyButton>
 
                 {/* ---- Header ---- */}
@@ -178,7 +186,7 @@ function LibraryDetailPage() {
                             {listing.unlocked && (
                                 <StatusChip
                                     status="SUCCESS"
-                                    text="Unlocked"
+                                    text={t('unlocked.chip')}
                                     textSize="text-caption"
                                     showIcon={false}
                                 />
@@ -209,7 +217,7 @@ function LibraryDetailPage() {
                         {listing.description && (
                             <Card className="p-5">
                                 <h2 className="mb-2 text-body font-semibold text-neutral-700">
-                                    About this library
+                                    {t('about.heading')}
                                 </h2>
                                 <p className="whitespace-pre-line break-words text-body text-neutral-600">
                                     {listing.description}
@@ -220,18 +228,17 @@ function LibraryDetailPage() {
                         {/* ---- The topic tree does the convincing ---- */}
                         <Card className="p-5">
                             <h2 className="mb-1 text-body font-semibold text-neutral-700">
-                                What&apos;s inside
+                                {t('topics.heading')}
                             </h2>
                             <p className="mb-3 text-caption text-neutral-500">
-                                Every topic this library covers. Questions are written from these,
-                                and each one cites the page it came from.
+                                {t('topics.description')}
                             </p>
 
                             {topics === null && <Skeleton className="h-40 w-full rounded-lg" />}
 
                             {topics?.length === 0 && (
                                 <p className="text-caption text-neutral-400">
-                                    Topics for this library are still being prepared.
+                                    {t('topics.preparing')}
                                 </p>
                             )}
 
@@ -301,12 +308,11 @@ function LibraryDetailPage() {
                                             className="text-success-500"
                                         />
                                         <p className="text-body font-medium text-neutral-700">
-                                            Yours to use
+                                            {t('unlocked.heading')}
                                         </p>
                                     </div>
                                     <p className="text-caption text-neutral-500">
-                                        This library is available wherever you build question papers
-                                        or assessments.
+                                        {t('unlocked.description')}
                                     </p>
                                     <MyButton
                                         buttonType="primary"
@@ -320,17 +326,16 @@ function LibraryDetailPage() {
                                         }
                                     >
                                         <Sparkle className="mr-1.5 size-4" />
-                                        Create a question paper
+                                        {t('unlocked.createPaper')}
                                     </MyButton>
                                 </>
                             ) : (
                                 <>
                                     <p className="text-h3 font-semibold text-neutral-700">
-                                        {listing.unlock_credits} credits
+                                        {t('locked.credits', { count: listing.unlock_credits })}
                                     </p>
                                     <p className="text-caption text-neutral-500">
-                                        One-time. Yours permanently, including material we add to
-                                        this library later.
+                                        {t('locked.description')}
                                     </p>
                                     <MyButton
                                         buttonType="primary"
@@ -338,10 +343,10 @@ function LibraryDetailPage() {
                                         disable={unlocking}
                                         onClick={unlock}
                                     >
-                                        {unlocking ? 'Unlocking…' : 'Unlock this library'}
+                                        {unlocking ? t('locked.unlocking') : t('locked.unlockButton')}
                                     </MyButton>
                                     <p className="text-caption text-neutral-400">
-                                        Generating papers uses credits as usual on top of this.
+                                        {t('locked.creditNote')}
                                     </p>
                                 </>
                             )}
@@ -349,7 +354,7 @@ function LibraryDetailPage() {
 
                         <Card className="flex flex-col gap-2 p-5">
                             <h2 className="text-body font-semibold text-neutral-700">
-                                What you can make
+                                {t('capabilities.heading')}
                             </h2>
                             {CAPABILITIES.map(({ icon: Icon, label, available }) => (
                                 <div key={label} className="flex items-center gap-2">
@@ -369,8 +374,8 @@ function LibraryDetailPage() {
                                         {label}
                                     </span>
                                     {!available && (
-                                        <span className="ml-auto text-caption text-neutral-400">
-                                            Coming soon
+                                        <span className="ms-auto text-caption text-neutral-400">
+                                            {t('capabilities.comingSoon')}
                                         </span>
                                     )}
                                 </div>

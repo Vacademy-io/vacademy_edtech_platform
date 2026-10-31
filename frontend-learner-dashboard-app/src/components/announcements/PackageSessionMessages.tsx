@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +12,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { formatLocalDateTime } from '@/helpers/formatISOTime';
 import type { UserMessage } from '@/types/announcement';
 import { announcementApi } from '@/services/announcementApi';
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { ContentTerms, SystemTerms } from '@/types/naming-settings';
 
 interface PackageSessionMessagesProps {
   packageSessionId: string;
@@ -21,6 +24,7 @@ export const PackageSessionMessages: React.FC<PackageSessionMessagesProps> = ({
   packageSessionId,
   className = '',
 }) => {
+  const { t } = useTranslation('courseComponentsExtra');
   const {
     stream,
     loading,
@@ -133,7 +137,7 @@ export const PackageSessionMessages: React.FC<PackageSessionMessagesProps> = ({
       data-mode-type={modeType}
       onClick={() => handleMessageClick(message)}
     >
-      <CardContent className="p-4">
+      <CardContent className="p-card">
         <div className="flex items-start justify-between mb-2">
           <div className="flex items-center gap-2">
             {message.title && (
@@ -183,7 +187,7 @@ export const PackageSessionMessages: React.FC<PackageSessionMessagesProps> = ({
           {message.repliesCount > 0 && (
             <span className="flex items-center gap-1">
               <ChatText className="h-3 w-3" />
-              {message.repliesCount} {message.repliesCount === 1 ? 'reply' : 'replies'}
+              {t('packageSessionMessages.repliesCount', { count: message.repliesCount })}
             </span>
           )}
         </div>
@@ -200,13 +204,13 @@ export const PackageSessionMessages: React.FC<PackageSessionMessagesProps> = ({
             <Card className="w-full max-w-4xl max-h-screen-90 overflow-hidden">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Discussion</CardTitle>
+                  <CardTitle className="text-lg">{t('packageSessionMessages.discussion')}</CardTitle>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowReplies(false)}
                   >
-                    Close
+                    {t('packageSessionMessages.close')}
                   </Button>
                 </div>
               </CardHeader>
@@ -224,7 +228,7 @@ export const PackageSessionMessages: React.FC<PackageSessionMessagesProps> = ({
                       {/* Reply Composer */}
                       <div className="border rounded-lg p-3">
                         <Textarea
-                          placeholder="Write a reply..."
+                          placeholder={t('packageSessionMessages.writeReplyPlaceholder')}
                           value={replyContent}
                           onChange={(e) => setReplyContent(e.target.value)}
                           className="min-h-20 resize-none"
@@ -232,7 +236,7 @@ export const PackageSessionMessages: React.FC<PackageSessionMessagesProps> = ({
                         <div className="flex items-center justify-between mt-2">
                           <div className="flex items-center gap-2 text-xs text-gray-500">
                             <Info className="h-3 w-3" />
-                            <span>Your reply will be visible to all participants</span>
+                            <span>{t('packageSessionMessages.replyVisibilityNotice')}</span>
                           </div>
                           <Button
                             size="sm"
@@ -242,24 +246,24 @@ export const PackageSessionMessages: React.FC<PackageSessionMessagesProps> = ({
                             {isPostingReply ? (
                               <>
                                 <SpinnerGap className="h-4 w-4 animate-spin me-2" />
-                                Posting...
+                                {t('packageSessionMessages.posting')}
                               </>
                             ) : (
                               <>
                                 <PaperPlaneTilt className="h-4 w-4 me-2" />
-                                Post Reply
+                                {t('packageSessionMessages.postReply')}
                               </>
                             )}
                           </Button>
                         </div>
                       </div>
-                      
+
                       {/* Replies List */}
                       <div className="space-y-3">
                         {/* TODO: Implement replies list */}
-                        <div className="text-center py-8 text-gray-500">
-                          <ChatText className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                          <p>Replies will appear here</p>
+                        <div className="text-center py-8 text-gray-500 space-y-2">
+                          <ChatText className="h-8 w-8 mx-auto text-gray-400" />
+                          <p>{t('packageSessionMessages.repliesWillAppearHere')}</p>
                         </div>
                       </div>
                     </div>
@@ -285,7 +289,9 @@ export const PackageSessionMessages: React.FC<PackageSessionMessagesProps> = ({
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-lg">
               <ChatText className="h-5 w-5 text-blue-600" />
-              Course Discussion
+              {t('packageSessionMessages.courseDiscussion', {
+                course: getTerminology(ContentTerms.Course, SystemTerms.Course),
+              })}
             </CardTitle>
             <Button
               variant="ghost"
@@ -293,34 +299,34 @@ export const PackageSessionMessages: React.FC<PackageSessionMessagesProps> = ({
               onClick={refresh}
               disabled={loading}
             >
-              {loading ? <SpinnerGap className="h-4 w-4 animate-spin" /> : 'Refresh'}
+              {loading ? <SpinnerGap className="h-4 w-4 animate-spin" /> : t('common.refresh')}
             </Button>
           </div>
         </CardHeader>
-        
+
         <CardContent className="pt-0">
-          
+
           {stream.error && (
             <div className="flex items-center gap-2 text-sm text-red-600 mb-4 p-3 bg-red-50 rounded-md">
               <WarningCircle className="h-4 w-4" />
               {stream.error}
             </div>
           )}
-          
+
           {stream.loading && stream.items.length === 0 ? (
             <div className="flex items-center justify-center py-8">
               <SpinnerGap className="h-6 w-6 animate-spin text-gray-400" />
-              <span className="ms-2 text-sm text-gray-500">Loading stream messages...</span>
+              <span className="ms-2 text-sm text-gray-500">{t('packageSessionMessages.loadingStreamMessages')}</span>
             </div>
           ) : stream.items.length === 0 ? (
-            <div className="text-center py-8">
-              <ChatText className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">No stream messages</p>
+            <div className="text-center py-8 space-y-2">
+              <ChatText className="h-8 w-8 text-gray-400 mx-auto" />
+              <p className="text-sm text-gray-500">{t('packageSessionMessages.noStreamMessages')}</p>
             </div>
           ) : (
             <div className="space-y-4">
               {stream.items.map((message) => renderMessageCard(message, 'STREAM'))}
-              
+
               {stream.hasMore && (
                 <div className="text-center pt-4">
                   <Button
@@ -332,10 +338,10 @@ export const PackageSessionMessages: React.FC<PackageSessionMessagesProps> = ({
                     {stream.loading ? (
                       <>
                         <SpinnerGap className="h-4 w-4 animate-spin me-2" />
-                        Loading...
+                        {t('common.loading')}
                       </>
                     ) : (
-                      'Load More'
+                      t('common.loadMore')
                     )}
                   </Button>
                 </div>

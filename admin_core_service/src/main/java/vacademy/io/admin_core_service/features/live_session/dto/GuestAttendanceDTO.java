@@ -16,5 +16,8 @@ public interface GuestAttendanceDTO {
     String getStatusType();
     String getEngagementData();
     Integer getProviderTotalDurationMinutes();
+
+    /** Exact seconds when the provider reports them (BBB); NULL for Zoom. */
+    Integer getProviderTotalDurationSeconds();
 }
 

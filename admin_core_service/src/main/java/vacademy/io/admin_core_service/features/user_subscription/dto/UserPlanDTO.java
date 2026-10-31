@@ -36,6 +36,11 @@ public class UserPlanDTO {
      */
     private CouponSnapshotDTO appliedCoupon;
 
+    /** Admin who attached the discount (ad-hoc or a picked coupon); null for learner coupons. */
+    private String discountGrantedByUserId;
+    private Date discountGrantedAt;
+    private Integer discountCyclesApplied;
+
     private String enrollInviteId;
 
     private String paymentOptionId;

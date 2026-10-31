@@ -1,0 +1,116 @@
+{
+    "navHeading": "Moteur",
+    "backToAll": "Tous les moteurs",
+    "loadError": "Impossible de charger ce moteur.",
+    "viewTaskInbox": "Voir la boîte de tâches",
+    "detail": {
+        "activeMember_one": "membre actif",
+        "activeMember_many": "membres actifs",
+        "activeMember_other": "membres actifs",
+        "resolveAudience": "Ajouter les personnes",
+        "resolving": "Ajout en cours…"
+    },
+    "statusActions": {
+        "DRY_RUN": "Lancer un essai à blanc",
+        "ACTIVE": "Activer",
+        "PAUSED": "Mettre en pause",
+        "ARCHIVED": "Archiver"
+    },
+    "templatesPendingBanner": "Ce moteur envoie des messages sur WhatsApp — approuvez au moins un modèle ci-dessous avant sa mise en ligne.",
+    "brief": {
+        "title": "Le brief",
+        "amend": "Modifier",
+        "empty": "Aucun brief défini.",
+        "version": "version {{version}}"
+    },
+    "config": {
+        "title": "Configuration",
+        "channels": "Canaux",
+        "noChannels": "Aucun",
+        "language": "Langue",
+        "cadenceLabel": "Contact",
+        "cadence": "toutes les {{hours}} h",
+        "quietHours": "Quiet hours",
+        "dataPoints": "Data points",
+        "noDataPoints": "L'essentiel uniquement"
+    },
+    "amendDialog": {
+        "heading": "Modifier le brief",
+        "description": "Le brief s'enrichit par ajout — le texte original n'est jamais réécrit. La modification s'applique au prochain point de contact naturel de chaque personne.",
+        "placeholder": "ex. : mentionner aussi le nouveau groupe du week-end qui démarre le mois prochain.",
+        "cancel": "Annuler",
+        "submit": "Ajouter la modification",
+        "saving": "Enregistrement…"
+    },
+    "autonomy": {
+        "title": "Envoi automatique",
+        "allowAutoSend": "Autoriser l'envoi auto",
+        "keepAsCopilot": "Arrêter l'envoi auto",
+        "autoSendChannels": "Canaux d'envoi automatique",
+        "noAutoSend": "Aucun canal n'envoie seul. Chaque message vous attend dans la boîte des tâches.",
+        "holdout": "Groupe témoin",
+        "holdoutValue": "{{pct}} % (ajoutés, jamais contactés)",
+        "badge": {
+            "off": "Envoi auto désactivé — vous vérifiez chaque message",
+            "ramping": "En essai · {{approved}} sur {{target}} approuvés",
+            "sendingAutonomously": "Envoi autonome en cours",
+            "dryRun": "Essai à blanc (simulé)",
+            "onEngineStatus": "Autonomie activée · moteur {{status}}"
+        },
+        "statusFor": "Statut {{channel}}",
+        "rampingHintChannel_one": "Pour le moment, vous vérifiez chaque message {{channel}}. Approuvez-en encore {{count}} et {{channel}} enverra seul.",
+        "rampingHintChannel_many": "Encore en mode copilote sur {{channel}}. Envoyez {{count}} brouillons {{channel}} approuvés de plus et ce canal passera à l'envoi autonome.",
+        "rampingHintChannel_other": "Pour le moment, vous vérifiez chaque message {{channel}}. Approuvez-en encore {{count}} et {{channel}} enverra seul."
+    },
+    "archiveDialog": {
+        "title": "Archiver ce moteur ?",
+        "description": "Il cesse définitivement de décider et d'envoyer. Les tâches déjà dans la boîte de réception et les messages envoyés sont conservés.",
+        "cancel": "Le garder",
+        "confirm": "Archiver"
+    },
+    "kpi": {
+        "members": "Active members",
+        "holdout": "{{pct}} % en groupe témoin (jamais contactés)",
+        "noHoldout": "No holdout",
+        "approved": "Approved sends",
+        "graduateAfter": "L'envoi auto démarre après {{n}} approbations",
+        "cadence": "Contact",
+        "quiet": "Quiet hours {{window}}",
+        "nextRun": "Next check-in",
+        "notScheduled": "Not scheduled",
+        "lastRun": "Dernier passage {{when}}"
+    },
+    "status": {
+        "title": "Status & audience",
+        "sources": "Choisis parmi",
+        "people": "people",
+        "change": "Change status",
+        "noTransitions": "Archived engines can’t change status.",
+        "footnote": "Pause arrête tous les messages. « Arrêter l'envoi auto » continue de rédiger des messages pour que vous les vérifiiez.",
+        "noSources": "Rien de choisi",
+        "sourcesMore": "+{{count}} de plus"
+    },
+    "retry": "Réessayer",
+    "approvalsWaiting": {
+        "title_one": "{{count}} action attend votre accord",
+        "title_many": "{{count}} actions attendent votre accord",
+        "title_other": "{{count}} actions attendent votre accord",
+        "aiCalls_one": "Dont {{count}} appel IA, passé seulement après votre accord dans la boîte de réception.",
+        "aiCalls_many": "Dont {{count}} appels IA, passés seulement après votre accord dans la boîte de réception.",
+        "aiCalls_other": "Dont {{count}} appels IA, passés seulement après votre accord dans la boîte de réception.",
+        "text": "Rien ne s’exécute avant votre accord dans la boîte de réception.",
+        "open": "Voir dans la boîte"
+    },
+    "noPeople": {
+        "title": "Personne dans ce moteur pour l'instant",
+        "text": "Ajoutez les personnes des groupes et listes choisis. Rien n'est envoyé avant l'activation du moteur."
+    },
+    "activateDialog": {
+        "title": "Démarrer ce moteur pour {{count}} personne(s) ?",
+        "descriptionAuto": "Il commence à contacter les personnes maintenant. Les canaux réglés pour envoyer seuls le feront sans demander après leur essai ; le reste vous attend dans la boîte des tâches.",
+        "descriptionCopilot": "Il commence à rédiger des messages maintenant. Chaque message vous attend dans la boîte des tâches ; rien ne part sans votre accord.",
+        "noPeople": "Personne n'a encore été ajouté, il n'y a donc personne à contacter. Cliquez d'abord sur « Ajouter les personnes ».",
+        "cancel": "Pas encore",
+        "confirm": "Démarrer le moteur"
+    }
+}

@@ -1,0 +1,169 @@
+{
+    "contentTypes": {
+        "video": {
+            "label": "वीडियो",
+            "description": "एनिमेशन और विज़ुअल के साथ वर्णित वीडियो"
+        },
+        "slides": {
+            "label": "स्लाइड्स",
+            "description": "छवियों, चार्ट और आरेखों वाली स्लाइड डेक"
+        },
+        "quiz": {
+            "label": "क्विज़",
+            "description": "ज्ञान परखने के लिए इंटरैक्टिव क्विज़"
+        },
+        "storybook": {
+            "label": "कहानी की किताब",
+            "description": "पलटकर पढ़ने वाली सचित्र कहानियाँ"
+        },
+        "interactiveGame": {
+            "label": "इंटरैक्टिव गेम",
+            "description": "इंटरैक्शन के ज़रिए सिखाने वाले खेलने योग्य गेम"
+        },
+        "puzzleBook": {
+            "label": "पहेली पुस्तक",
+            "description": "क्रॉसवर्ड, वर्ड सर्च और दिमागी पहेलियाँ"
+        },
+        "simulation": {
+            "label": "सिमुलेशन",
+            "description": "व्यावहारिक विज्ञान और भौतिकी सिमुलेशन"
+        },
+        "flashcards": {
+            "label": "फ्लैशकार्ड",
+            "description": "त्वरित याद के लिए अध्ययन फ्लैशकार्ड"
+        },
+        "mapExploration": {
+            "label": "मानचित्र अन्वेषण",
+            "description": "क्लिक करके खोजे जाने वाले इंटरैक्टिव मानचित्र"
+        },
+        "worksheet": {
+            "label": "वर्कशीट",
+            "description": "अभ्यास और उत्तरों के साथ अभ्यास वर्कशीट"
+        },
+        "codePlayground": {
+            "label": "कोड प्लेग्राउंड",
+            "description": "लाइव एडिटर के साथ कोडिंग चुनौतियाँ"
+        },
+        "timeline": {
+            "label": "समयरेखा",
+            "description": "इंटरैक्टिव, स्क्रॉल करने योग्य घटना समयरेखाएँ"
+        },
+        "conversation": {
+            "label": "बातचीत",
+            "description": "वास्तविक दुनिया की बातचीत के सिमुलेशन"
+        }
+    },
+    "visualPreferenceFamilies": {
+        "stockVideo": "स्टॉक वीडियो / वास्तविक फुटेज",
+        "aiImagery": "AI-जनित इमेजरी",
+        "svgIllustrated": "SVG / चित्रित आरेख",
+        "motionGraphics": "मोशन ग्राफिक्स",
+        "appUiMockup": "ऐप / डिवाइस UI मॉकअप",
+        "aiVideo": "AI-जनित वीडियो (Veo)"
+    },
+    "aiVideoModels": {
+        "veo31": {
+            "label": "Veo 3.1 — सर्वश्रेष्ठ गुणवत्ता",
+            "hint": "बेहतरीन फोटोरियलिस्टिक गुणवत्ता + प्रॉम्प्ट के अनुरूप। ~$0.20/सेकंड (≈$1.60 प्रति 8 सेकंड क्लिप)।"
+        },
+        "veo31Fast": {
+            "label": "Veo 3.1 Fast — संतुलित",
+            "hint": "पूर्ण-मॉडल जैसी गुणवत्ता, कम कीमत में। ~$0.10/सेकंड (≈$0.80 प्रति 8 सेकंड क्लिप)।"
+        },
+        "veo31Lite": {
+            "label": "Veo 3.1 Lite — किफायती",
+            "hint": "सबसे कम गुणवत्ता, सबसे सस्ता। ~$0.03/सेकंड (≈$0.24 प्रति 8 सेकंड क्लिप)।"
+        }
+    },
+    "overridableStages": {
+        "shotPlanner": {
+            "label": "शॉट प्लानिंग",
+            "hint": "पूरे वीडियो की शॉट-दर-शॉट योजना बनाता है।"
+        },
+        "narrationWriter": {
+            "label": "नैरेशन लेखन",
+            "hint": "प्रत्येक शॉट के लिए नैरेशन टेक्स्ट लिखता है।"
+        },
+        "perShotHtml": {
+            "label": "प्रति-शॉट HTML",
+            "hint": "हर शॉट के लिए HTML बनाता है — सबसे बड़ी टोकन खपत।"
+        },
+        "actPlanner": {
+            "label": "एक्ट प्लानर",
+            "hint": "शॉट प्लानिंग से पहले इरादे को एक्ट्स में विभाजित करता है।"
+        },
+        "regenHtml": {
+            "label": "HTML पुनर्जनन",
+            "hint": "विफल सत्यापन के लिए सुधारात्मक पुनर्जनन।"
+        }
+    },
+    "avatarModels": {
+        "flashtalk": "FlashTalk (तेज़, किफायती)",
+        "klingStandard": "Kling AI Avatar v2 (मानक)",
+        "veedFabric": "VEED Fabric 1.0",
+        "heygenAvatar4": "HeyGen Avatar 4",
+        "klingPro": "Kling AI Avatar v2 (प्रो)",
+        "ltx23": "LTX 2.3 (ऑडियो-टू-वीडियो)",
+        "seedance20": "Seedance 2.0 (रेफरेंस-टू-वीडियो)"
+    },
+    "qualityTiers": {
+        "free": {
+            "label": "मुफ़्त",
+            "description": "तेज़ जनरेशन, बुनियादी गुणवत्ता"
+        },
+        "standard": {
+            "label": "स्टैंडर्ड",
+            "description": "विविधता और सत्यापन के साथ स्मार्ट विज़ुअल"
+        },
+        "premium": {
+            "label": "प्रीमियम",
+            "description": "स्क्रिप्ट समीक्षा + इमेज एन्हांसमेंट"
+        },
+        "ultra": {
+            "label": "अल्ट्रा",
+            "description": "सर्वश्रेष्ठ गुणवत्ता — सभी एन्हांसमेंट सक्षम",
+            "badge": "डिफ़ॉल्ट"
+        },
+        "superUltra": {
+            "label": "सुपर अल्ट्रा",
+            "description": "क्रॉसफ़ेड ट्रांज़िशन + फ़्रेम-सटीक वर्ड सिंक वाले काइनेटिक टेक्स्ट शॉट्स",
+            "badge": "नया"
+        }
+    },
+    "voiceGenders": {
+        "female": "महिला",
+        "male": "पुरुष"
+    },
+    "ttsProviders": {
+        "standard": {
+            "label": "स्टैंडर्ड",
+            "description": "Microsoft Edge TTS (मुफ़्त)"
+        },
+        "premium": {
+            "label": "प्रीमियम",
+            "description": "Google Cloud / Sarvam AI (2x क्रेडिट)"
+        }
+    },
+    "targetAudiences": {
+        "class1to2": "कक्षा 1-2 (आयु 6-7)",
+        "class3to4": "कक्षा 3-4 (आयु 8-9)",
+        "class5": "कक्षा 5 (आयु 10-11)",
+        "class6to8": "कक्षा 6-8 (आयु 11-14)",
+        "class9to10": "कक्षा 9-10 (आयु 14-16)",
+        "class11to12": "कक्षा 11-12 (आयु 16-18)",
+        "undergraduate": "स्नातक (अंडरग्रेजुएट)",
+        "graduateProfessional": "स्नातकोत्तर/प्रोफेशनल",
+        "generalAdult": "सामान्य/वयस्क"
+    },
+    "targetDurations": {
+        "seconds30": "30 सेकंड",
+        "minute1": "1 मिनट",
+        "minutes2to3": "2-3 मिनट",
+        "minutes5": "5 मिनट",
+        "minutes10": "10 मिनट"
+    },
+    "errors": {
+        "insufficientCredits": "अपर्याप्त क्रेडिट",
+        "rateLimited": "बहुत अधिक अनुरोध। कृपया कुछ देर प्रतीक्षा करें और फिर से प्रयास करें।"
+    }
+}

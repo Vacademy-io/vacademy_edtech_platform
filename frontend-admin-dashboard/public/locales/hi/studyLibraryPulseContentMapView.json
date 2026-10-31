@@ -1,0 +1,19 @@
+{
+    "untitledSlide": "शीर्षकहीन स्लाइड",
+    "untitledChapter": "शीर्षकहीन अध्याय",
+    "untitledModule": "शीर्षकहीन मॉड्यूल",
+    "untitledSubject": "शीर्षकहीन विषय",
+    "frictionUsually": "रुकावट · सामान्यतः {{duration}}",
+    "avgDuration": "औसत {{duration}}",
+    "loadError": "कंटेंट मैप लोड नहीं हो सका।",
+    "retry": "पुनः प्रयास करें",
+    "emptyTitle": "अभी कोई सक्रिय कंटेंट नहीं है",
+    "emptySubtitle": "जैसे ही शिक्षार्थी कोर्स में स्लाइड खोलते हैं, वे यहाँ दिखाई देने लगती हैं।",
+    "summary": {
+        "learners_one": "{{count}} शिक्षार्थी",
+        "learners_other": "{{count}} शिक्षार्थी",
+        "subjects_one": "{{count}} विषय",
+        "subjects_other": "{{count}} विषय",
+        "across": "{{learners}}, {{subjects}} में"
+    }
+}

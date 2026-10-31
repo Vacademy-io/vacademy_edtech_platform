@@ -1,0 +1,38 @@
+{
+    "dialogTitle": "Code d'intégration - {{campaignName}}",
+    "dialogDescription": "Intégrez ce formulaire sur votre site web ou toute autre page pour collecter des réponses.",
+    "tabs": {
+        "buttonPopup": "Bouton + Fenêtre modale",
+        "directEmbed": "Intégration directe"
+    },
+    "defaults": {
+        "buttonText": "S'inscrire maintenant",
+        "popupTitle": "Formulaire d'inscription"
+    },
+    "buttonPanel": {
+        "heading": "Personnaliser le bouton",
+        "buttonTextLabel": "Texte du bouton",
+        "bgColorLabel": "Couleur de fond",
+        "textColorLabel": "Couleur du texte",
+        "borderRadiusLabel": "Rayon des bordures (px)",
+        "popupTitleLabel": "Titre de la fenêtre modale",
+        "previewLabel": "Aperçu"
+    },
+    "iframePanel": {
+        "heading": "Personnaliser l'iFrame",
+        "widthLabel": "Largeur",
+        "heightLabel": "Hauteur initiale (px) — s’adapte au formulaire",
+        "previewScaledLabel": "Aperçu (réduit)",
+        "formPreviewTitle": "Aperçu du formulaire",
+        "tipPrefix": "Astuce : utilisez",
+        "tipSuffix": "pour une largeur adaptative, ou indiquez des pixels comme"
+    },
+    "copyButton": {
+        "copy": "Copier",
+        "copied": "Copié"
+    },
+    "toasts": {
+        "copiedToClipboard": "Copié dans le presse-papiers !",
+        "copyFailed": "Échec de la copie"
+    }
+}

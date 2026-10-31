@@ -43,6 +43,9 @@ export type StudentDashboardWidgetId =
   | "coursesStat"
   | "evaluationStat"
   | "continueLearning"
+  // The learner's enrolled courses with per-course progress and a way back
+  // in. Distinct from coursesStat, which is only the count tile.
+  | "enrolledCourses"
   | "learningAnalytics"
   | "liveClasses"
   | "thisWeekAttendance"
@@ -55,6 +58,15 @@ export type StudentDashboardWidgetId =
   // widget and the "go buy more" button can be controlled independently.
   | "exploreMemberships"
   | "exploreBooks"
+  // "Get the app" download card. Shows the store/download links configured on
+  // the institute's domain-routing row — the same source the sidebar footer
+  // uses, so an institute can carry them in the sidebar, the dashboard, both,
+  // or neither (see `sidebar.appLinks`). Self-hides when no link is set.
+  | "getApp"
+  // Today's teacher-scheduled tasks (the Daily Engagement module). Renders
+  // nothing for an institute with no plan running. Placed first in the rail
+  // at lg and up, else right under the hero; see the dashboard route.
+  | "todayTasks"
   | "custom";
 
 export interface StudentDashboardWidgetConfig {
@@ -98,6 +110,9 @@ export interface StudentSignupSettings {
   passwordStrategy: PasswordStrategy;
   passwordDelivery: PasswordDelivery;
   presentation?: StudentAuthPresentation;
+  // /login opens the AuthModal (Sign in first, Sign up one tap away) instead
+  // of the full login page. Default: false.
+  loginPageAsModal?: boolean;
 }
 
 // Course details
@@ -197,10 +212,20 @@ export interface StudentCourseDetailsSettings {
   ratingsAndReviewsVisible: boolean;
   /** Hide the "Author" row in the course-details Course Overview panel. Default false (author shown). */
   hideAuthorName?: boolean;
-  /** Show the Teachers/Instructors section on the course-details page. Default false (hidden). */
+  /** Hide the whole Course Overview card (author, time, counts) on course details. Default false (shown). */
+  hideOverviewCard?: boolean;
+  /** Hide the Course Progress card (completion %) on course details. Default false (shown). */
+  hideProgressCard?: boolean;
+  /**
+   * List EVERY teacher of the batch on the course-details page. Default false:
+   * only the first author is shown (with photo, subtitle and bio). Learners
+   * never see email addresses either way.
+   */
   showInstructors?: boolean;
   // New flags
   showCourseConfiguration: boolean;
+  /** Hide the course's tag chips (ENGLISH, E-LEARNING…) above its title. Default false (shown). */
+  hideTags?: boolean;
   showCourseContentPrefixes: boolean;
   courseOverview: { visible: boolean; showSlidesData: boolean };
   slidesView: {
@@ -289,15 +314,63 @@ export interface StudentAllCoursesTabConfig {
   visible: boolean;
 }
 
+/**
+ * Admin-defined Courses-page tab listing every catalogue course that carries
+ * ANY of `tags`. Lives outside `tabs` so builds that predate it ignore it
+ * instead of mapping the unknown id to In Progress. `order` shares the
+ * built-in tabs' numbering.
+ */
+/**
+ * What a custom Courses-page tab shows. Absent on tabs saved before types
+ * existed — those are TAG tabs.
+ * - TAG: catalogue courses carrying ANY of `tags`
+ * - COURSES: the catalogue courses picked in `courseIds`
+ * - FREE_COURSES: catalogue courses whose cheapest plan costs 0
+ * - LIVE_SESSIONS: the learner's live/upcoming sessions (incl. public webinars)
+ * - PRODUCT_PAGES: cards opening the product pages in `productPages`
+ */
+export type StudentAllCoursesCustomTabType =
+  | "TAG"
+  | "COURSES"
+  | "FREE_COURSES"
+  | "LIVE_SESSIONS"
+  | "PRODUCT_PAGES";
+
+export interface StudentAllCoursesCustomTabProductPage {
+  code: string;
+  name: string;
+}
+
+export interface StudentAllCoursesCustomTab {
+  id: string;
+  label: string;
+  type?: StudentAllCoursesCustomTabType;
+  tags: string[];
+  courseIds?: string[];
+  productPages?: StudentAllCoursesCustomTabProductPage[];
+  order: number;
+  visible: boolean;
+}
+
 export interface StudentAllCoursesSettings {
   tabs: StudentAllCoursesTabConfig[];
+  customTabs?: StudentAllCoursesCustomTab[];
   defaultTab: StudentAllCoursesTabId;
   /** Hide the instructor/teacher name block on each course card in the All Courses list. Default false (shown). */
   hideInstructorName?: boolean;
+  /** Courses per page on the All Courses list. Default 10. */
+  pageSize?: number;
+  /** Dashboard "My courses": list every enrolled course instead of the first 4. Default false. */
+  showAllEnrolledOnDashboard?: boolean;
 }
 
 // UI
-export type StudentUIType = "default" | "vibrant" | "play" | "cleanerPlay";
+export type StudentUIType =
+  | "default"
+  | "vibrant"
+  | "play"
+  | "cleanerPlay"
+  | "corporate";
 
 export interface StudentUISettings {
   type: StudentUIType;
@@ -317,6 +390,15 @@ export interface StudentProfileSettings {
   // Whether the "Membership Status" card (Access Days + expiry date) is shown
   // on the learner's Profile tab. Default: false (hidden).
   showMembershipStatus: boolean;
+  // Per-card switches for the Profile tab. All default to false (shown); a
+  // card that already hides itself when empty still does.
+  hideProgressStats?: boolean;
+  hideBadgesRank?: boolean;
+  hideLanguage?: boolean;
+  hideAcademicJourney?: boolean;
+  hideContactLocation?: boolean;
+  hideGuardianInfo?: boolean;
+  hideTermsCard?: boolean;
 }
 
 // Notifications
@@ -363,8 +445,17 @@ export interface StudentCourseSettingsQuiz {
   showReportAndCorrectAnswers: boolean;
 }
 
+/** Assignment slide. Both off by default (today's slide). */
+export interface StudentCourseSettingsAssignment {
+  /** Hide the "Attempts Allowed: …" line. */
+  hideAttemptsAllowed: boolean;
+  /** Hide the card title when it only repeats the slide name shown above it. */
+  hideRepeatedTitle: boolean;
+}
+
 export interface StudentCourseSettings {
   quiz: StudentCourseSettingsQuiz;
+  assignment: StudentCourseSettingsAssignment;
 }
 
 export interface ConcentrationSettings {
@@ -384,8 +475,108 @@ export interface ConcentrationSettings {
 }
 
 // Root
+// Layout (header / navigation / footer bar / wallpaper)
+//
+// Every field is optional and every absent value means "today's behaviour",
+// so an institute that never opens the Layout card renders exactly as before.
+
+/** Screen class the learner is on: < 768px, 768–1023px, ≥ 1024px. */
+export type StudentLayoutDevice = "mobile" | "tablet" | "desktop";
+
+/**
+ * Where the main navigation lives on a device.
+ * - "auto": today's behaviour — sidebar everywhere, plus the bottom tab bar
+ *   on phones for the Play / Cleaner Play skins.
+ * - "sidebar": sidebar only (a slide-in menu on phones), no bottom bar.
+ * - "bottomBar": bottom tab bar only, no sidebar.
+ * - "both": sidebar and bottom tab bar.
+ * - "rail": a slim icon rail on the left with the footer-bar tabs
+ *   (tablet / website / Windows app; on phones it falls back to the bottom bar).
+ */
+export type StudentNavPlacement = "auto" | "sidebar" | "bottomBar" | "both" | "rail";
+
+/** Header items an institute can switch off. Absent = shown. */
+export interface StudentHeaderSettings {
+  showLogo?: boolean;
+  showPageTitle?: boolean;
+  /** Back arrow on inner pages. Absent = follows showBackHome. */
+  showBack?: boolean;
+  /** Home button on inner pages. Absent = follows showBackHome. */
+  showHome?: boolean;
+  /** Legacy single switch for Back + Home, read when the two above are absent. */
+  showBackHome?: boolean;
+  /** Badges / points pill. */
+  showAchievements?: boolean;
+  showLanguage?: boolean;
+  /** Tutorials help button and the raise-a-query icon. */
+  showHelp?: boolean;
+  showNotifications?: boolean;
+}
+
+export interface StudentBottomBarItem {
+  id: string;
+  label?: string;
+  /** In-app route ("/study-library") or a full https:// URL. */
+  route: string;
+  /** Key from the shared nav icon library (STUDENT_NAV_ICON_KEYS). */
+  icon?: string;
+  /** Uploaded icon image; wins over `icon`. */
+  iconUrl?: string;
+  order: number;
+  visible: boolean;
+  isCustom?: boolean;
+  /** The big raised button in the middle of the bar (one tab at most). */
+  highlight?: boolean;
+}
+
+/**
+ * - "classic": full-width bar stuck to the bottom edge (today's look).
+ * - "floating": a rounded bar floating above the edge, app-style.
+ */
+export type StudentBottomBarStyle = "classic" | "floating";
+
+export interface StudentBottomBarSettings {
+  /** Default "classic". */
+  style?: StudentBottomBarStyle;
+  /** Absent or empty = mirror the sidebar tabs (today's behaviour). */
+  items?: StudentBottomBarItem[];
+  /** Tabs before the rest go under "More". 3–5, default 4. */
+  maxVisible?: number;
+  /** Text under the icons. Default true. */
+  showLabels?: boolean;
+}
+
+export interface StudentWallpaperSettings {
+  enabled?: boolean;
+  imageUrl?: string;
+  /** Phone-specific image; falls back to imageUrl. */
+  mobileImageUrl?: string;
+  /** Hex colour laid over the image to keep text readable. */
+  overlayColor?: string;
+  /** 0–90 (%). Default 0. */
+  overlayOpacity?: number;
+  /** Every page, or the dashboard only. Default "all". */
+  scope?: "all" | "dashboard";
+}
+
+export interface StudentLayoutSettings {
+  navigation?: Partial<Record<StudentLayoutDevice, StudentNavPlacement>>;
+  header?: StudentHeaderSettings;
+  bottomBar?: StudentBottomBarSettings;
+  wallpaper?: StudentWallpaperSettings;
+}
+
 export interface StudentDisplaySettingsData {
-  sidebar: { visible: boolean; tabs: StudentSidebarTabConfig[] };
+  sidebar: {
+    visible: boolean;
+    tabs: StudentSidebarTabConfig[];
+    /**
+     * Whether the sidebar footer carries the "Apps & Portals" download row.
+     * Defaults to true (the historical behaviour). Turn it off to move those
+     * links to the dashboard's `getApp` widget instead of showing both.
+     */
+    appLinks?: boolean;
+  };
   dashboard: { widgets: StudentDashboardWidgetConfig[] };
   signup: StudentSignupSettings;
   permissions: StudentPermissions;
@@ -398,4 +589,6 @@ export interface StudentDisplaySettingsData {
   concentration: ConcentrationSettings;
   ui: StudentUISettings;
   postLoginRedirectRoute: string;
+  /** Header, navigation placement, footer bar and wallpaper. */
+  layout?: StudentLayoutSettings;
 }

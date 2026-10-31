@@ -1,0 +1,44 @@
+{
+    "loadingAccounts": "Loading Zoom accounts…",
+    "notSetUpMessage": "Zoom integration isn't set up for this institute. Add a Zoom account under <strong>Settings → Live Session → Zoom Integration</strong>, or paste a meeting link in the Live Class Link field below.",
+    "zoomMeetingSettings": "Zoom Meeting Settings",
+    "zoomAccount": "Zoom account",
+    "defaultSuffix": "(default)",
+    "section": {
+        "entrySecurity": "Entry & security",
+        "audioVideoDefaults": "Audio / Video defaults",
+        "inMeetingFeatures": "In-meeting features"
+    },
+    "field": {
+        "enableWaitingRoom": "Enable waiting room",
+        "allowJoinBeforeHost": "Allow join before host",
+        "requireZoomLogin": "Require Zoom login to join",
+        "registrationApproval": "Registration approval",
+        "alternativeHosts": "Alternative hosts (comma-separated emails)",
+        "alternativeHostsPlaceholder": "e.g. cohost1@inst.edu, cohost2@inst.edu",
+        "muteOnEntry": "Mute participants on entry",
+        "startHostVideoOn": "Start host video on",
+        "startParticipantVideoOn": "Start participant video on",
+        "audio": "Audio",
+        "enableBreakoutRooms": "Enable breakout rooms",
+        "startInFocusMode": "Start in focus mode",
+        "allowMultipleDevices": "Allow join from multiple devices",
+        "addIdentityWatermark": "Add identity watermark",
+        "automaticRecording": "Automatic recording"
+    },
+    "approval": {
+        "noneRequired": "No registration required",
+        "automatic": "Automatically approve",
+        "manual": "Manually approve"
+    },
+    "audio": {
+        "computerAndTelephony": "Computer + Telephony",
+        "computerOnly": "Computer audio only",
+        "telephonyOnly": "Telephony only"
+    },
+    "recording": {
+        "cloud": "Record to Zoom cloud",
+        "local": "Local recording (host machine)",
+        "none": "Don't record"
+    }
+}

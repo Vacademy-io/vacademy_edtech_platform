@@ -1,0 +1,70 @@
+{
+    "pageTitle": "Enquiries",
+    "selectEnquiryPlaceholder": "Select Enquiry",
+    "enquiryTypeLabel": "Enquiry type: {{type}}",
+    "addNewEnquiryResponse": "Add New Enquiry Response",
+    "copyFormLink": "Copy Form Link",
+    "copyLinkTitle": "Copy enquiry link to clipboard",
+    "walkInRegister": "Walk-in Register",
+    "walkInRegisterTitle": "Open walk-in registration form",
+    "toast": {
+        "linkCopied": "Enquiry link copied to clipboard!",
+        "copyFailed": "Failed to copy link"
+    },
+    "filters": {
+        "status": "Status",
+        "source": "Source",
+        "dateRange": "Date Range",
+        "class": "Class"
+    },
+    "searchPlaceholder": "Search by name or mobile...",
+    "sortBy": {
+        "placeholder": "Sort by...",
+        "defaultOrder": "Default Order",
+        "dateSubmitted": "Date Submitted",
+        "leadScore": "Lead Score",
+        "parentName": "Parent Name"
+    },
+    "showDuplicates": "Show duplicates",
+    "clearAll": "Clear All",
+    "selectEnquiryPrompt": "Please select an enquiry to view responses",
+    "createNewEnquiryForm": "Create New Enquiry Form",
+    "walkInRegistration": "Walk-in Registration",
+    "walkInRegistrationFormTitle": "Walk-in Registration Form",
+    "dateRanges": {
+        "today": "Today",
+        "last7Days": "Last 7 Days",
+        "last30Days": "Last 30 Days",
+        "last3Months": "Last 3 Months",
+        "last6Months": "Last 6 Months",
+        "lastYear": "Last Year"
+    },
+    "enquiryStatuses": {
+        "new": "New",
+        "contacted": "Contacted",
+        "notEligible": "Not Eligible",
+        "qualified": "Qualified",
+        "followUp": "Follow up",
+        "closed": "Closed",
+        "converted": "Converted",
+        "admitted": "Admitted"
+    },
+    "sourceTypes": {
+        "website": "Website",
+        "googleAds": "Google Ads",
+        "facebook": "Facebook",
+        "instagram": "Instagram",
+        "referral": "Referral",
+        "other": "Other"
+    },
+    "leadTiers": {
+        "hot": "HOT",
+        "warm": "WARM",
+        "cold": "COLD"
+    },
+    "pageSubtitle": "Responses to your enquiry forms — follow up, then convert to an application or admission.",
+    "formStatus": "Form {{status}}",
+    "quickViews": {
+        "all": "All enquiries"
+    }
+}

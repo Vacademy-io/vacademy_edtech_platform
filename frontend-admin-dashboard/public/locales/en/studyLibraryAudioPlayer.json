@@ -1,0 +1,13 @@
+{
+    "audioPlayer": "Audio Player",
+    "replace": "Replace",
+    "noAudioUploaded": "No audio uploaded",
+    "uploadingEllipsis": "Uploading...",
+    "clickOrDragHint": "Click or drag audio file here",
+    "supportedFormats": "MP3, WAV, OGG, M4A supported",
+    "titlePlaceholder": "Audio title (optional)",
+    "selectAudioFile": "Please select an audio file",
+    "uploadFailedError": "Upload failed",
+    "failedToGetUrl": "Failed to get URL",
+    "uploadFailedAlert": "Failed to upload audio file"
+}

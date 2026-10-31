@@ -1,0 +1,291 @@
+{
+  "slideDisplayUtils": {
+    "untitled": "بدون عنوان",
+    "item": "عنصر"
+  },
+  "fileUploader": {
+    "types": {
+      "pdf": "PDF",
+      "image": "صورة",
+      "doc": "DOC/DOCX",
+      "video": "فيديو",
+      "audio": "صوت"
+    },
+    "anyFile": "أي ملف",
+    "clickToUpload": "انقر للرفع",
+    "orDragAndDrop": "أو اسحب وأفلت",
+    "sizeLimit": "{{hint}} بحد أقصى 10 ميجابايت",
+    "uploading": "جارٍ الرفع...",
+    "selectFile": "اختيار ملف",
+    "uploadedFiles": "الملفات المرفوعة",
+    "onlyTypesAllowed": "يُسمح فقط بملفات {{types}} لهذا الواجب."
+  },
+  "htmlSlideIframe": {
+    "documentTitle": "مستند"
+  },
+  "jupyterSlide": {
+    "loadingNotebook": "جارٍ تحميل دفتر Jupyter...",
+    "loadingInterface": "جارٍ تحميل واجهة دفتر الملاحظات...",
+    "openInNewTab": "فتح في تبويب جديد",
+    "errors": {
+      "loadConfigFailed": "تعذّر تحميل إعدادات دفتر الملاحظات",
+      "loadFailed": "تعذّر تحميل دفتر الملاحظات"
+    },
+    "verification": {
+      "prompt": "نتأكد فقط من أنك تتعلم بفاعلية، يُرجى النقر على الرقم <num>{{number}}</num> خلال <cnt>{{countdown}}</cnt> ثانية."
+    },
+    "paused": {
+      "title": "تم إيقاف دفتر Jupyter مؤقتًا",
+      "body_zero": "لم تُبدّل بين علامات التبويب ({{count}} مرة). يُرجى النقر أدناه لاستئناف جلسة دفتر الملاحظات.",
+      "body_one": "بدّلت بين علامات التبويب {{count}} مرة واحدة. يُرجى النقر أدناه لاستئناف جلسة دفتر الملاحظات.",
+      "body_two": "بدّلت بين علامات التبويب {{count}} مرتين. يُرجى النقر أدناه لاستئناف جلسة دفتر الملاحظات.",
+      "body_few": "بدّلت علامات التبويب {{count}} مرات. يُرجى النقر أدناه لاستئناف جلسة دفتر الملاحظات.",
+      "body_many": "بدّلت علامات التبويب {{count}} مرة. يُرجى النقر أدناه لاستئناف جلسة دفتر الملاحظات.",
+      "body_other": "بدّلت علامات التبويب {{count}} مرة. يُرجى النقر أدناه لاستئناف جلسة دفتر الملاحظات.",
+      "resume": "استئناف دفتر الملاحظات"
+    },
+    "header": {
+      "branchLocation": "الفرع: {{branch}} • الموقع: {{location}}"
+    },
+    "footer": {
+      "type": "النوع: دفتر Jupyter",
+      "activeTab": "التبويب النشط: {{tab}}",
+      "interactive": "تفاعلي"
+    }
+  },
+  "lessonListSidebar": {
+    "locked": "مُقفَل",
+    "slideCount": "{{count}} {{term}}",
+    "progressCompleted": "{{done}} / {{total}} مكتمل",
+    "noSlides": "لا يوجد {{term}}",
+    "loadOutlineFailed": "تعذّر تحميل مخطط الدورة.",
+    "courseProgress": "{{done}} / {{total}} {{term}} مكتمل",
+    "noModulesYet": "لا يوجد {{term}} بعد"
+  },
+  "leaseLockOverlay": {
+    "leaseExpired": {
+      "title": "اتصل بالإنترنت للحفاظ على الوصول دون اتصال",
+      "body": "يعيد هذا الجهاز التحقق دوريًا من المحتوى غير المتصل. أعد الاتصال لفترة وجيزة لتجديد الوصول ومواصلة مشاهدة هذه الدورة دون اتصال."
+    },
+    "revoked": {
+      "title": "تمت إزالة الوصول دون اتصال",
+      "body": "ألغت مؤسستك الوصول دون اتصال لهذا الجهاز. أعد الاتصال لمعرفة ما هو متاح حاليًا."
+    }
+  },
+  "requiresInternetSlide": {
+    "title": "يتطلب هذا المحتوى اتصالاً بالإنترنت",
+    "bodyWithType": "محتوى {{type}} مستضاف خارجيًا ولا يمكن تنزيله للاستخدام دون اتصال. أعد الاتصال لعرضه.",
+    "bodyGeneric": "هذا المحتوى مستضاف خارجيًا ولا يمكن تنزيله للاستخدام دون اتصال. أعد الاتصال لعرضه.",
+    "waiting": "بانتظار الاتصال"
+  },
+  "pdfViewer": {
+    "loading": "جارٍ التحميل…"
+  },
+  "questionSlide": {
+    "toast": {
+      "savedOffline": "تم الحفظ — ستتم المزامنة عند الاتصال بالإنترنت"
+    },
+    "placeholders": {
+      "oneWord": "اكتب إجابتك المكوّنة من كلمة واحدة",
+      "longAnswer": "اكتب إجابتك...",
+      "decimal": "أدخل قيمة عشرية",
+      "integer": "أدخل قيمة صحيحة"
+    },
+    "numericPad": {
+      "clear": "مسح"
+    },
+    "unsupportedType": "نوع سؤال غير مدعوم: {{type}}",
+    "questionLabel": "السؤال:",
+    "prompts": {
+      "mcqs": "اختر إجابة واحدة:",
+      "trueFalse": "اختر صح أو خطأ:",
+      "mcqm": "اختر كل ما ينطبق:",
+      "oneWord": "أدخل إجابتك:",
+      "longAnswer": "اكتب إجابتك:",
+      "numeric": "أدخل قيمة رقمية:"
+    },
+    "buttons": {
+      "submitting": "جارٍ الإرسال...",
+      "submitted": "تم الإرسال",
+      "resubmit": "إعادة الإرسال",
+      "submit": "إرسال"
+    },
+    "explanation": {
+      "hide": "إخفاء شرح الإجابة",
+      "show": "إظهار شرح الإجابة"
+    }
+  },
+  "quizViewer": {
+    "selectAllThatApply": "قد تكون أكثر من إجابة صحيحة — اختر كل ما ينطبق",
+    "questionTypeDescriptions": {
+      "mcqs": "أسئلة اختيار من متعدد - إجابة صحيحة واحدة",
+      "mcqm": "أسئلة اختيار من متعدد - إجابات صحيحة متعددة",
+      "numeric": "إجابة رقمية",
+      "oneWord": "إجابة من كلمة واحدة",
+      "text": "إجابة قصيرة - رد نصي",
+      "longAnswer": "إجابة طويلة - رد تفصيلي",
+      "trueFalse": "صح أو خطأ",
+      "match": "طابق بين العناصر",
+      "fillInTheBlank": "املأ الفراغ",
+      "comprehensionPrefix": "استيعاب المقروء - {{description}}",
+      "genericQuestion": "سؤال"
+    },
+    "noQuestionsAvailable": "لا توجد أسئلة اختبار متاحة.",
+    "toast": {
+      "noAttemptsRemaining": "لا توجد محاولات متبقية لهذا الاختبار.",
+      "missingContext": "تعذّر إرسال الاختبار — بيانات السياق ناقصة. يُرجى إعادة فتح هذه الشريحة.",
+      "savedOffline": "تم الحفظ — ستتم المزامنة عند الاتصال بالإنترنت",
+      "quizSubmitted": "تم إرسال الاختبار!",
+      "quizSubmittedSuccessfully": "تم إرسال الاختبار بنجاح!",
+      "submitFailed": "تعذّر إرسال الاختبار. يُرجى المحاولة مرة أخرى.",
+      "incorrectAnswer": "إجابة غير صحيحة. يُرجى المحاولة مرة أخرى."
+    },
+    "invalidNumber": "يُرجى إدخال رقم صحيح",
+    "placeholders": {
+      "numeric": "أدخل قيمة رقمية",
+      "text": "اكتب إجابتك",
+      "longAnswer": "اكتب إجابتك..."
+    },
+    "questionOf": "السؤال {{current}} من {{total}}",
+    "passageLabel": "المقطع:",
+    "showLess": "عرض أقل",
+    "showMore": "عرض المزيد",
+    "questionLabel": "السؤال:",
+    "questionTextUnavailable": "نص السؤال غير متاح",
+    "buttons": {
+      "previous": "السابق",
+      "submitting": "جارٍ الإرسال...",
+      "finish": "إنهاء",
+      "next": "التالي"
+    },
+    "answered": "تمت الإجابة",
+    "notAnswered": "لم تتم الإجابة",
+    "incorrectTryAgain": "غير صحيح. حاول مرة أخرى."
+  },
+  "scormSlide": {
+    "errors": {
+      "dataNotFound": "بيانات شريحة SCORM غير موجودة",
+      "launchPathNotConfigured": "مسار تشغيل SCORM غير مُهيَّأ",
+      "loadFailed": "تعذّر تحميل محتوى SCORM"
+    },
+    "loading": "جارٍ تحميل محتوى SCORM...",
+    "urlNotAvailable": "رابط محتوى SCORM غير متاح",
+    "defaultTitle": "محتوى SCORM"
+  },
+  "scratchSlide": {
+    "loadingProject": "جارٍ تحميل مشروع Scratch...",
+    "loadingInterface": "جارٍ تحميل واجهة Scratch...",
+    "openInScratch": "فتح في Scratch",
+    "editInScratch": "تعديل في Scratch",
+    "errors": {
+      "loadConfigFailed": "تعذّر تحميل إعدادات المشروع",
+      "loadFailed": "تعذّر تحميل المشروع"
+    },
+    "verification": {
+      "prompt": "نتأكد فقط من أنك تتعلم بفاعلية، يُرجى النقر على الرقم <num>{{number}}</num> خلال <cnt>{{countdown}}</cnt> ثانية."
+    },
+    "paused": {
+      "title": "تم إيقاف مشروع Scratch مؤقتًا",
+      "body_zero": "لم تُبدّل بين علامات التبويب ({{count}} مرة). يُرجى النقر أدناه لاستئناف مشروع Scratch.",
+      "body_one": "بدّلت بين علامات التبويب {{count}} مرة واحدة. يُرجى النقر أدناه لاستئناف مشروع Scratch.",
+      "body_two": "بدّلت بين علامات التبويب {{count}} مرتين. يُرجى النقر أدناه لاستئناف مشروع Scratch.",
+      "body_few": "بدّلت علامات التبويب {{count}} مرات. يُرجى النقر أدناه لاستئناف مشروع Scratch.",
+      "body_many": "بدّلت علامات التبويب {{count}} مرة. يُرجى النقر أدناه لاستئناف مشروع Scratch.",
+      "body_other": "بدّلت علامات التبويب {{count}} مرة. يُرجى النقر أدناه لاستئناف مشروع Scratch.",
+      "resume": "استئناف المشروع"
+    },
+    "header": {
+      "projectId": "معرّف المشروع: {{id}}"
+    },
+    "footer": {
+      "type": "النوع: مشروع Scratch",
+      "embedType": "نوع التضمين: {{type}}",
+      "autoStart": "بدء تلقائي",
+      "interactive": "تفاعلي"
+    }
+  },
+  "videoQuestionOverlay": {
+    "title": "سؤال الفيديو",
+    "skipQuestion": "تخطي السؤال",
+    "answerRequired": "الإجابة مطلوبة للمتابعة",
+    "questionLabel": "السؤال: ",
+    "questionContextAlt": "سياق السؤال {{index}}",
+    "placeholders": {
+      "oneWord": "أدخل إجابتك",
+      "longAnswer": "اكتب إجابتك التفصيلية هنا...",
+      "decimal": "أدخل قيمة عشرية",
+      "integer": "أدخل قيمة صحيحة"
+    },
+    "numericPad": {
+      "clear": "مسح"
+    },
+    "prompts": {
+      "mcqs": "اختر إجابة واحدة:",
+      "trueFalse": "اختر صح أو خطأ:",
+      "mcqm": "اختر كل ما ينطبق:",
+      "oneWord": "أدخل إجابتك:",
+      "longAnswer": "قدّم إجابة تفصيلية:",
+      "numeric": "أدخل القيمة الرقمية:",
+      "generic": "أجب عن السؤال:"
+    },
+    "evaluation": {
+      "submittedSuccessfully": "تم إرسال الإجابة بنجاح.",
+      "correctWellDone": "صحيح! أحسنت.",
+      "incorrectAnswerIs": "غير صحيح. الإجابة الصحيحة هي: {{answer}}",
+      "notFound": "غير موجود",
+      "correctAllSelected": "صحيح! لقد اخترت جميع الإجابات الصحيحة.",
+      "incorrectAnswersAre": "غير صحيح. الإجابات الصحيحة هي: {{answers}}",
+      "explanationSuffix": "\n\nالشرح: {{explanation}}",
+      "imagePlaceholder": "[صورة: {{content}}]"
+    },
+    "submitError": "حدث خطأ أثناء معالجة إجابتك. يُرجى المحاولة مرة أخرى.",
+    "correct": "صحيح!",
+    "incorrect": "غير صحيح",
+    "buttons": {
+      "continueVideo": "متابعة الفيديو",
+      "submitting": "جارٍ الإرسال...",
+      "submitAnswer": "إرسال الإجابة"
+    }
+  },
+  "vimeoPlayer": {
+    "unavailable": {
+      "title": "هذا الفيديو غير متاح",
+      "body": "تعذّر تحميله. يُرجى التواصل مع المسؤول لديك."
+    },
+    "verification": {
+      "selectMiddleNumber": "اختر الرقم الأوسط للمتابعة",
+      "timeRemaining": "الوقت المتبقي: {{seconds}} ثانية"
+    }
+  },
+  "youtubePlayer": {
+    "verification": {
+      "title": "فحص تركيز نشط",
+      "prompt": "اختر <num>{{number}}</num> للحفاظ على سلسلة تعلّمك.",
+      "closingIn": "سيُغلق خلال {{seconds}} ثانية"
+    },
+    "controls": {
+      "exitFullscreen": "الخروج من ملء الشاشة",
+      "goToLive": "الانتقال إلى البث المباشر",
+      "live": "مباشر",
+      "speed": "السرعة"
+    },
+    "manualPlay": {
+      "ariaLabel": "بدء الفيديو",
+      "tapToStart": "اضغط لبدء الفيديو",
+      "autoplayHint": "سيتم تشغيل الفيديو تلقائيًا"
+    },
+    "questionMarker": {
+      "title": "السؤال {{index}}",
+      "answered": " (تمت الإجابة)",
+      "skippable": " (يمكن تخطيه)",
+      "required": " (مطلوب)",
+      "navigationDisabled": " (التنقل معطّل)"
+    },
+    "live": {
+      "ended": "انتهت هذه الجلسة",
+      "notStarted": "تبدأ في الوقت المحدد",
+      "endedHint": "لا يوجد شيء آخر للتشغيل. يمكنك مغادرة هذه الصفحة.",
+      "notStartedHint": "سيبدأ التشغيل تلقائيًا عند بدء الحصة."
+    }
+  }
+}

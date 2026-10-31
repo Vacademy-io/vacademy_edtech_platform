@@ -1,0 +1,324 @@
+{
+    "common": {
+        "copy": "Copy",
+        "paramTable": {
+            "field": "Field",
+            "type": "Type",
+            "required": "Required",
+            "default": "Default",
+            "description": "Description",
+            "yes": "Yes",
+            "no": "No"
+        },
+        "sectionTitles": {
+            "queryParameters": "Query Parameters",
+            "codeExamples": "Code Examples",
+            "response": "Response",
+            "requestBody": "Request Body",
+            "requestBodyParameters": "Request Body Parameters"
+        }
+    },
+    "overview": {
+        "cardTitle": "Vacademy Content Generation API",
+        "cardDescription": "Generate AI-powered educational content — videos, quizzes, flashcards, games and more — via a single REST endpoint.",
+        "features": {
+            "sse": {
+                "title": "SSE Streaming",
+                "description": "Get live progress as each stage completes."
+            },
+            "backgroundJobs": {
+                "title": "Background Jobs",
+                "description": "Generation continues even if you close the connection."
+            },
+            "restPolling": {
+                "title": "REST Polling",
+                "description": "Simple alternative — start then poll /urls/{id}."
+            }
+        },
+        "baseUrlLabel": "Base URL",
+        "authHeaderLabel": "Authentication header",
+        "authHeaderNote": "Every request must include this header. Generate keys from the API Keys tab above."
+    },
+    "contentTypes": {
+        "sectionTitle": "Supported Content Types",
+        "video": {
+            "description": "Time-synced HTML slides with narration audio & captions."
+        },
+        "slides": {
+            "description": "HTML presentation deck with images, tables & diagrams."
+        },
+        "quiz": {
+            "description": "Multiple-choice question set with explanations."
+        },
+        "storybook": {
+            "description": "Page-by-page illustrated narrative."
+        },
+        "flashcards": {
+            "description": "Flip-card deck for spaced-repetition learning."
+        },
+        "interactiveGame": {
+            "description": "Self-contained educational HTML game."
+        },
+        "puzzleBook": {
+            "description": "Crossword, word search or logic puzzles."
+        },
+        "simulation": {
+            "description": "Interactive physics/science/economics sandbox."
+        },
+        "mapExploration": {
+            "description": "Clickable SVG map with region facts."
+        },
+        "worksheet": {
+            "description": "Printable or fillable homework worksheet."
+        },
+        "codePlayground": {
+            "description": "In-browser coding exercise with instructions."
+        },
+        "timeline": {
+            "description": "Chronological event visualization."
+        },
+        "conversation": {
+            "description": "Dialogue-based language learning exercise."
+        },
+        "navigationModeLabel": "Navigation mode",
+        "navAutoPlays": "auto-plays with audio",
+        "navUserClicks": "user clicks through pages",
+        "navSelfContained": "fully interactive HTML app"
+    },
+    "generationStages": {
+        "sectionTitle": "Generation Stages",
+        "tableHeaders": {
+            "stage": "Stage",
+            "outputFile": "Output file",
+            "s3UrlsKey": "s3_urls key",
+            "description": "Description"
+        },
+        "script": {
+            "description": "LLM generates narration script & content plan."
+        },
+        "tts": {
+            "description": "Text-to-speech converts script to audio."
+        },
+        "words": {
+            "description": "Word-level timestamp alignment for captions."
+        },
+        "html": {
+            "description": "✅ Recommended stop point. HTML slides synced to audio timestamps."
+        },
+        "render": {
+            "description": "Full video render (slow, only needed for download/export)."
+        },
+        "footer": "The <1>target_stage</1> query parameter on <3>POST /generate</3> controls which stage to stop at. Default is <5>HTML</5>."
+    },
+    "tabs": {
+        "generate": "Generate",
+        "polling": "REST Polling",
+        "history": "History",
+        "status": "Status",
+        "urls": "URLs",
+        "frames": "Frame Edit",
+        "events": "SSE Events"
+    },
+    "generateTab": {
+        "streamBadge": "SSE Stream",
+        "cardTitle": "Generate Content — SSE Streaming",
+        "cardDescription": "Starts a generation job and streams real-time progress via <1>Server-Sent Events</1>. The job runs as a background task on the server — closing the connection will NOT cancel generation. Use <3>GET /urls/{video_id}</3> to fetch the result later.",
+        "targetStageDescription": "Stop generation at this stage. Recommended: HTML (full content, no render). Options: SCRIPT · TTS · WORDS · HTML · RENDER.",
+        "responseTitle": "Response (SSE event stream)",
+        "responseNote": "Content-Type: <1>text/event-stream</1>. Each line is prefixed with <3>data: </3> followed by a JSON object."
+    },
+    "generateParams": {
+        "prompt": {
+            "description": "Natural language description of the content to generate."
+        },
+        "contentType": {
+            "description": "Type of content. One of: VIDEO, SLIDES, QUIZ, STORYBOOK, FLASHCARDS, INTERACTIVE_GAME, PUZZLE_BOOK, SIMULATION, MAP_EXPLORATION, WORKSHEET, CODE_PLAYGROUND, TIMELINE, CONVERSATION."
+        },
+        "language": {
+            "description": "Language for narration & content. E.g. \"English (India)\", \"Hindi\", \"Spanish\"."
+        },
+        "voiceGender": {
+            "description": "\"female\" or \"male\"."
+        },
+        "ttsProvider": {
+            "description": "\"standard\" (Edge TTS, free) or \"premium\" (Google Cloud / Sarvam AI, 2x credits). Premium auto-routes: Indian languages → Sarvam, global → Google."
+        },
+        "voiceId": {
+            "description": "Specific voice for premium TTS. Sarvam voices: \"shubh\", \"priya\", etc. Google voices: \"en-US-Journey-F\", etc. Use GET /tts/voices to list available options."
+        },
+        "captionsEnabled": {
+            "description": "Whether to embed word-level caption data in the output."
+        },
+        "htmlQuality": {
+            "description": "\"classic\" (faster, simpler layouts) or \"advanced\" (richer, more complex)."
+        },
+        "targetAudience": {
+            "description": "Age/level description used to calibrate complexity. E.g. \"Class 5 (Ages 10-11)\", \"Undergraduate\"."
+        },
+        "targetDuration": {
+            "description": "Approximate output length. Options: \"30 seconds\", \"1 minute\", \"2-3 minutes\", \"5 minutes\", \"10 minutes\"."
+        },
+        "model": {
+            "description": "LLM model ID to use. Leave blank for the recommended default."
+        },
+        "videoId": {
+            "description": "Custom stable identifier for this generation. Auto-generated if omitted. Use the same ID to resume."
+        }
+    },
+    "pollingTab": {
+        "badge": "REST Polling",
+        "cardTitle": "Generate Content — REST Polling",
+        "cardDescription": "Simpler alternative to SSE streaming. Start the generation (you can immediately close the HTTP connection — the server keeps running), then periodically call <1>GET /urls/{video_id}</1> until <3>html_url</3> is populated.",
+        "whenToUseTitle": "When to use polling vs SSE",
+        "sseBullet": "<0>SSE</0>: Best for UI dashboards that need live progress bars (stage %, messages).",
+        "pollingBullet": "<0>Polling</0>: Best for backend scripts, cron jobs, or when you don't need real-time updates.",
+        "sameEndpointBullet": "Both use the same endpoint — the difference is just whether you read the response stream.",
+        "flowTitle": "Polling Flow",
+        "steps": {
+            "1": {
+                "label": "POST /generate",
+                "description": "Start the job. Include a stable video_id you control."
+            },
+            "2": {
+                "label": "Close (or ignore) the SSE stream",
+                "description": "Generation continues on the server regardless."
+            },
+            "3": {
+                "label": "Poll GET /urls/{video_id} every 10 s",
+                "description": "Repeat until html_url is present."
+            },
+            "4": {
+                "label": "Use the returned URLs",
+                "description": "Pass html_url + audio_url to your player."
+            }
+        }
+    },
+    "historyTab": {
+        "cardTitle": "Get Generation History",
+        "cardDescription": "Returns the last N content generations for your institute, ordered newest-first. Maximum 50 per request.",
+        "limitParamDescription": "Number of items to return. Capped at 50."
+    },
+    "statusTab": {
+        "cardTitle": "Get Video Status",
+        "cardDescription": "Returns the full status record for a generation including all available S3 URLs. Use this to check which stages have completed.",
+        "statusValuesLabel": "Status values (<1>status</1> field)",
+        "values": {
+            "pending": {
+                "description": "Queued, not started"
+            },
+            "inProgress": {
+                "description": "Actively generating"
+            },
+            "completed": {
+                "description": "All stages done"
+            },
+            "failed": {
+                "description": "Error occurred"
+            }
+        }
+    },
+    "urlsTab": {
+        "cardTitle": "Get Player URLs",
+        "cardDescription": "Returns the specific URLs needed to embed the content in a player. This is the most efficient endpoint for polling — smaller response than <1>/status</1>.",
+        "howToDetectTitle": "How to detect generation complete",
+        "videoBullet": "<0>VIDEO</0>: wait for <2>html_url != null AND audio_url != null</2>",
+        "slidesBullet": "<0>SLIDES / QUIZ / etc.</0>: wait for <2>html_url != null</2> (no audio required)",
+        "failedBullet": "<0>Failed</0>: <2>status === \"FAILED\"</2>",
+        "urlFileDescriptionsTitle": "URL file descriptions",
+        "params": {
+            "htmlUrl": {
+                "description": "time_based_frame.json — array of {timestamp, html} objects. Feed to AIContentPlayer."
+            },
+            "audioUrl": {
+                "description": "narration.mp3 — AI-synthesised narration audio."
+            },
+            "wordsUrl": {
+                "description": "narration.words.json — array of {word, start, end} for caption display."
+            },
+            "avatarUrl": {
+                "description": "avatar_video.mp4 — talking-head avatar video (if generate_avatar was true)."
+            }
+        }
+    },
+    "framesTab": {
+        "regenerate": {
+            "cardTitle": "Regenerate a Frame",
+            "cardDescription": "Ask the AI to rewrite the HTML of a specific slide/frame based on a prompt. Returns the new HTML for <1>preview only</1> — does not modify the timeline yet. Confirm by calling <3>/frame/update</3>.",
+            "params": {
+                "videoId": {
+                    "description": "ID of the generated content."
+                },
+                "timestamp": {
+                    "description": "Time in seconds of the frame to edit. The nearest frame will be selected."
+                },
+                "userPrompt": {
+                    "description": "Instruction for how to change the frame. E.g. \"Change background to dark blue and font to yellow.\""
+                }
+            }
+        },
+        "update": {
+            "cardTitle": "Commit Frame Update",
+            "cardDescription": "Writes the confirmed HTML change into the stored timeline (time_based_frame.json). Call this after the user approves the preview from <1>/frame/regenerate</1>.",
+            "params": {
+                "videoId": {
+                    "description": "ID of the generated content."
+                },
+                "frameIndex": {
+                    "description": "Zero-based index of the frame to update. Use the value returned by /frame/regenerate."
+                },
+                "newHtml": {
+                    "description": "Full HTML string to store. Typically the new_html from /frame/regenerate."
+                }
+            }
+        }
+    },
+    "eventsTab": {
+        "cardTitle": "SSE Event Reference",
+        "cardDescription": "Every event in the <1>POST /generate</1> SSE stream is a JSON object on a <3>data: </3> line. There are four event types.",
+        "progress": {
+            "sectionTitle": "progress — stage update",
+            "note": "Emitted at the start and end of each stage. The <1>files</1> field is populated as each stage completes."
+        },
+        "completed": {
+            "sectionTitle": "completed — generation finished",
+            "note": "Final event. All requested stages are done."
+        },
+        "info": {
+            "sectionTitle": "info — informational message",
+            "note": "Non-critical status messages (e.g. skipped stages on resume)."
+        },
+        "error": {
+            "sectionTitle": "error — generation failed",
+            "note": "Sent when the pipeline fails. The <1>stage</1> field indicates which stage failed."
+        },
+        "heartbeatNote": "<0>Heartbeat</0> — every 60 s of silence the server sends an SSE comment line (<2>: heartbeat</2>) to keep proxies alive. These are not <4>data:</4> events and should be ignored by your parser."
+    },
+    "errors": {
+        "cardTitle": "HTTP Error Reference",
+        "tableHeaders": {
+            "code": "Code",
+            "meaning": "Meaning",
+            "cause": "Common cause"
+        },
+        "unauthorized": {
+            "meaning": "Unauthorized",
+            "cause": "Missing or invalid X-Institute-Key header."
+        },
+        "forbidden": {
+            "meaning": "Forbidden",
+            "cause": "API key is revoked or belongs to another institute."
+        },
+        "notFound": {
+            "meaning": "Not Found",
+            "cause": "video_id does not exist in the database."
+        },
+        "validationError": {
+            "meaning": "Validation Error",
+            "cause": "Missing required field or invalid parameter value."
+        },
+        "internalServerError": {
+            "meaning": "Internal Server Error",
+            "cause": "Pipeline failure. Check the SSE error event for details."
+        }
+    }
+}

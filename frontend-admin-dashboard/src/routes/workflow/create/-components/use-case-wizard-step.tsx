@@ -5,23 +5,26 @@
  * and auto-generates the workflow nodes.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft, Wrench, Lightning, CheckCircle, ArrowRight, Sparkle } from '@phosphor-icons/react';
+import type { TFunction } from 'i18next';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { INIT_INSTITUTE, AUDIENCE_CAMPAIGNS_LIST, CREATE_MESSAGE_TEMPLATE, MESSAGE_TEMPLATE_EXISTS } from '@/constants/urls';
 import { getMessageTemplates } from '@/services/message-template-service';
+import { getTemplatesByTypeQuery, whatsappTemplateParamKeys, type TemplateItem } from '@/services/workflow-service';
 import { useWorkflowBuilderStore } from '../-stores/workflow-builder-store';
-import { getTemplatesForTrigger, type UseCaseTemplate, type WizardQuestion } from './use-case-templates';
-import { SAMPLE_TEMPLATES } from './sample-email-templates';
+import { declaredParamsKey, getTemplatesForTrigger, isQuestionApplicable, type UseCaseTemplate, type WizardQuestion } from './use-case-templates';
+import { buildSampleTemplates } from './sample-email-templates';
 import { getInstituteId } from '@/constants/helper';
 
 // ─── Hooks for fetching dropdown options ───
 
-function useBatchOptions(instituteId: string) {
+function useBatchOptions(instituteId: string, t: TFunction) {
     return useQuery({
         queryKey: ['wizard-batches', instituteId],
         queryFn: async () => {
@@ -34,7 +37,7 @@ function useBatchOptions(instituteId: string) {
                 const session = (batch.session ?? {}) as Record<string, string>;
                 return {
                     value: (batch.id as string) ?? '',
-                    label: `${pkg.package_name ?? 'Unknown'} - ${level.level_name ?? ''} / ${session.session_name ?? ''}`.replace(/ - \/ $/, '').replace(/ \/ $/, ''),
+                    label: `${pkg.package_name ?? t('unknown')} - ${level.level_name ?? ''} / ${session.session_name ?? ''}`.replace(/ - \/ $/, '').replace(/ \/ $/, ''),
                 };
             });
         },
@@ -48,7 +51,7 @@ function useBatchOptions(instituteId: string) {
  * INIT_INSTITUTE response we already use for batches. Each batch carries its
  * parent package, so we dedupe on package_dto.id. No new backend endpoint needed.
  */
-function usePackageOptions(instituteId: string) {
+function usePackageOptions(instituteId: string, t: TFunction) {
     return useQuery({
         queryKey: ['wizard-packages', instituteId],
         queryFn: async () => {
@@ -62,7 +65,7 @@ function usePackageOptions(instituteId: string) {
                 const id = pkg.id;
                 if (id && !seen.has(id)) {
                     seen.add(id);
-                    packages.push({ value: id, label: pkg.package_name ?? 'Unknown course' });
+                    packages.push({ value: id, label: pkg.package_name ?? t('unknownCourse') });
                 }
             }
             return packages.sort((a, b) => a.label.localeCompare(b.label));
@@ -72,7 +75,7 @@ function usePackageOptions(instituteId: string) {
     });
 }
 
-function useAudienceOptions(instituteId: string) {
+function useAudienceOptions(instituteId: string, t: TFunction) {
     return useQuery({
         queryKey: ['wizard-audiences', instituteId],
         queryFn: async () => {
@@ -85,7 +88,7 @@ function useAudienceOptions(instituteId: string) {
             if (!Array.isArray(content)) return [];
             return content.map((item: Record<string, string>) => ({
                 value: item.campaign_id ?? item.id ?? '',
-                label: item.campaign_name ?? item.name ?? 'Unknown',
+                label: item.campaign_name ?? item.name ?? t('unknown'),
             }));
         },
         staleTime: 5 * 60 * 1000,
@@ -93,38 +96,53 @@ function useAudienceOptions(instituteId: string) {
     });
 }
 
-function useEmailTemplateOptions() {
+function useEmailTemplateOptions(t: TFunction) {
     return useQuery({
         queryKey: ['wizard-email-templates'],
         queryFn: async () => {
             const result = await getMessageTemplates('EMAIL', 0, 100);
-            return (result.templates ?? []).map((t: { name?: string; id?: string }) => ({
-                value: t.name ?? t.id ?? '',
-                label: t.name ?? 'Untitled',
+            return (result.templates ?? []).map((tmpl: { name?: string; id?: string }) => ({
+                value: tmpl.name ?? tmpl.id ?? '',
+                label: tmpl.name ?? t('untitled'),
             }));
         },
         staleTime: 5 * 60 * 1000,
     });
 }
 
-function useWhatsappTemplateOptions() {
-    return useQuery({
-        queryKey: ['wizard-whatsapp-templates'],
-        queryFn: async () => {
-            const result = await getMessageTemplates('WHATSAPP', 0, 100);
-            const seen = new Set<string>();
-            const options: Array<{ value: string; label: string }> = [];
-            for (const t of (result.templates ?? []) as Array<{ name?: string; id?: string }>) {
-                const value = t.name ?? t.id ?? '';
-                if (!value || seen.has(value)) continue;
-                seen.add(value);
-                options.push({ value, label: t.name ?? 'Untitled' });
-            }
-            return options;
-        },
-        staleTime: 5 * 60 * 1000,
-    });
+/**
+ * Approved WhatsApp templates for this institute.
+ *
+ * WhatsApp templates live in notification-service (`whatsapp-templates/list`,
+ * synced from Meta) — NOT in admin-core's `template` table that the paginated
+ * message-template endpoint reads, which has no WHATSAPP rows and so returned
+ * an always-empty list here. Reuse the same query the node-config panel uses so
+ * the wizard and the visual builder offer the same names off one cache entry.
+ */
+function useWhatsappTemplateOptions(instituteId: string, t: TFunction) {
+    const { data, isLoading } = useQuery(getTemplatesByTypeQuery(instituteId, 'WHATSAPP'));
+    const options = useMemo(() => {
+        const seen = new Set<string>();
+        const list: Array<{ value: string; label: string; params: string[] }> = [];
+        for (const tmpl of (data ?? []) as TemplateItem[]) {
+            // SEND_WHATSAPP sends by template NAME, so that is the answer value.
+            const value = tmpl.name ?? tmpl.id ?? '';
+            if (!value || seen.has(value)) continue;
+            seen.add(value);
+            // Carry the declared body placeholders so the generator can trim
+            // its templateVars to them — Meta rejects a mismatched count.
+            list.push({ value, label: tmpl.name ?? t('untitled'), params: whatsappTemplateParamKeys(tmpl) });
+        }
+        return list;
+    }, [data, t]);
+    return { data: options, isLoading };
 }
+
+/**
+ * Show the search box only once a list is long enough to need it — a filter
+ * over four batches is noise, over four hundred it is the only way through.
+ */
+const SEARCHABLE_FROM = 8;
 
 // ─── Question renderer ───
 
@@ -137,16 +155,26 @@ function QuestionField({
 }: {
     question: WizardQuestion;
     value: string | number | string[] | undefined;
-    onChange: (val: string | number | string[]) => void;
+    /**
+     * `extras` lets a question record derived answers alongside its own value
+     * — the WhatsApp picker uses it to stash the template's declared body
+     * placeholders, which the generator needs and the name alone can't carry.
+     */
+    onChange: (val: string | number | string[], extras?: Record<string, string | number | string[]>) => void;
     instituteId: string;
     useCaseId?: string;
 }) {
-    const { data: batchOptions = [], isLoading: batchLoading } = useBatchOptions(instituteId);
-    const { data: packageOptions = [], isLoading: packageLoading } = usePackageOptions(instituteId);
-    const { data: audienceOptions = [], isLoading: audienceLoading } = useAudienceOptions(instituteId);
-    const { data: templateOptions = [], isLoading: templateLoading } = useEmailTemplateOptions();
-    const { data: waTemplateOptions = [], isLoading: waTemplateLoading } = useWhatsappTemplateOptions();
+    const { t } = useTranslation('workflowUseCaseWizardStep');
+    const { t: tSampleTemplate } = useTranslation('workflowSampleEmailTemplates');
+    const sampleTemplates = useMemo(() => buildSampleTemplates(tSampleTemplate), [tSampleTemplate]);
+    const { data: batchOptions = [], isLoading: batchLoading } = useBatchOptions(instituteId, t);
+    const { data: packageOptions = [], isLoading: packageLoading } = usePackageOptions(instituteId, t);
+    const { data: audienceOptions = [], isLoading: audienceLoading } = useAudienceOptions(instituteId, t);
+    const { data: templateOptions = [], isLoading: templateLoading } = useEmailTemplateOptions(t);
+    const { data: waTemplateOptions = [], isLoading: waTemplateLoading } = useWhatsappTemplateOptions(instituteId, t);
     const [creatingSample, setCreatingSample] = useState(false);
+    // One box per question is enough — a question renders at most one list.
+    const [search, setSearch] = useState('');
     const queryClient = useQueryClient();
 
     const renderDropdown = (
@@ -160,8 +188,8 @@ function QuestionField({
             value={(value as string) ?? ''}
             onChange={(e) => onChange(e.target.value)}
         >
-            <option value="">{allowEmpty ? `All (no restriction)` : placeholder}</option>
-            {loading && <option disabled>Loading...</option>}
+            <option value="">{allowEmpty ? t('dropdown.allNoRestriction') : placeholder}</option>
+            {loading && <option disabled>{t('dropdown.loading')}</option>}
             {options.map((opt) => (
                 <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
@@ -186,16 +214,37 @@ function QuestionField({
                 : [...selected, id];
             onChange(next);
         };
+        // Filter the list, never the selection: an institute with hundreds of
+        // batches is unusable without search, but hiding an already-ticked row
+        // must not untick it. `selected` stays whole, and the counter below
+        // keeps reporting the true total while a search is active.
+        const needle = search.trim().toLowerCase();
+        const visible = needle
+            ? options.filter((opt) => opt.label.toLowerCase().includes(needle))
+            : options;
         return (
             <div className="space-y-2">
+                {options.length > SEARCHABLE_FROM && (
+                    <Input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder={t('multiSelect.searchPlaceholder')}
+                        className="h-8 text-sm"
+                    />
+                )}
                 <div className="max-h-48 overflow-y-auto rounded-lg border border-gray-300 bg-white">
                     {loading && (
-                        <div className="px-3 py-2 text-xs text-gray-400">Loading...</div>
+                        <div className="px-3 py-2 text-xs text-gray-400">{t('dropdown.loading')}</div>
                     )}
                     {!loading && options.length === 0 && (
-                        <div className="px-3 py-2 text-xs text-gray-400">No options available</div>
+                        <div className="px-3 py-2 text-xs text-gray-400">{t('dropdown.noOptions')}</div>
                     )}
-                    {options.map((opt) => {
+                    {!loading && options.length > 0 && visible.length === 0 && (
+                        <div className="px-3 py-2 text-xs text-gray-400">
+                            {t('multiSelect.noMatches', { search: search.trim() })}
+                        </div>
+                    )}
+                    {visible.map((opt) => {
                         const checked = selected.includes(opt.value);
                         return (
                             <label
@@ -218,9 +267,12 @@ function QuestionField({
                 <p className="text-[10px] text-gray-400">
                     {selected.length === 0
                         ? emptyLabel
-                        : selected.length === 1
-                            ? '1 selected'
-                            : `${selected.length} selected`}
+                        : t('multiSelect.selectedCount', { count: selected.length })}
+                    {/* Say so when the filter is hiding ticked rows, so the
+                        count above doesn't look wrong against what's visible. */}
+                    {needle && selected.length > 0
+                        && selected.some((id) => !visible.some((opt) => opt.value === id))
+                        && ` — ${t('multiSelect.someHiddenBySearch')}`}
                 </p>
             </div>
         );
@@ -236,20 +288,20 @@ function QuestionField({
                 <p className="text-xs text-gray-400">{question.helpText}</p>
             )}
 
-            {question.type === 'batch_select' && renderDropdown(batchOptions, batchLoading, '-- Select a batch --', !question.required)}
+            {question.type === 'batch_select' && renderDropdown(batchOptions, batchLoading, t('batch.selectPlaceholder'), !question.required)}
             {question.type === 'batch_multi_select' && renderMultiSelect(
                 batchOptions,
                 batchLoading,
                 question.required
-                    ? 'Select at least one batch.'
-                    : 'No selection — runs across all active batches in your institute.'
+                    ? t('batch.emptyRequired')
+                    : t('batch.emptyOptional')
             )}
             {question.type === 'audience_select' && renderMultiSelect(
                 audienceOptions,
                 audienceLoading,
                 question.required
-                    ? 'Select at least one campaign.'
-                    : 'No selection — runs across all campaigns.'
+                    ? t('audience.emptyRequired')
+                    : t('audience.emptyOptional')
             )}
             {question.type === 'template_select' && (() => {
                 // Resolve which sample (if any) to offer for this specific
@@ -258,10 +310,10 @@ function QuestionField({
                 // use-case has multiple template_select questions that need
                 // different samples (e.g. LIVE_SESSION_END recap: present vs absent).
                 const sampleKey = question.sampleTemplateKey ?? useCaseId;
-                const sample = sampleKey ? SAMPLE_TEMPLATES[sampleKey] : undefined;
+                const sample = sampleKey ? sampleTemplates[sampleKey] : undefined;
                 return (
                 <div className="space-y-2">
-                    {renderDropdown(templateOptions, templateLoading, '-- Select an email template --')}
+                    {renderDropdown(templateOptions, templateLoading, t('template.emailPlaceholder'))}
                     {/* Sample template option */}
                     {sample && (
                         <button
@@ -349,10 +401,10 @@ function QuestionField({
                             <Sparkle size={16} weight="fill" className="text-primary-500 shrink-0" />
                             <div className="flex-1">
                                 <div className="text-xs font-semibold text-primary-700">
-                                    {creatingSample ? 'Creating...' : `Use sample: "${sample.name}"`}
+                                    {creatingSample ? t('template.creating') : t('template.useSample', { name: sample.name })}
                                 </div>
                                 <div className="text-[10px] text-primary-400 mt-0.5">
-                                    Pre-built template with the right variables — added to your template library
+                                    {t('template.useSampleHint')}
                                 </div>
                             </div>
                         </button>
@@ -360,23 +412,56 @@ function QuestionField({
                 </div>
                 );
             })()}
-            {question.type === 'whatsapp_template_select' && (
+            {question.type === 'whatsapp_template_select' && (() => {
+                const selected = waTemplateOptions.find((opt) => opt.value === value);
+                return (
                 <div className="space-y-1">
-                    {renderDropdown(waTemplateOptions, waTemplateLoading, '-- Select a WhatsApp template --')}
+                    {/* Not renderDropdown: picking a template also records the
+                        body placeholders it declares, which the generator needs
+                        to keep Meta's parameter count exact. */}
+                    <select
+                        className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                        value={(value as string) ?? ''}
+                        onChange={(e) => {
+                            const opt = waTemplateOptions.find((o) => o.value === e.target.value);
+                            onChange(e.target.value, {
+                                [declaredParamsKey(question.id)]: opt?.params ?? [],
+                            });
+                        }}
+                    >
+                        <option value="">{t('template.whatsappPlaceholder')}</option>
+                        {waTemplateLoading && <option disabled>{t('dropdown.loading')}</option>}
+                        {waTemplateOptions.map((opt) => (
+                            <option key={opt.value} value={opt.value}>{opt.label}</option>
+                        ))}
+                    </select>
                     {!waTemplateLoading && waTemplateOptions.length === 0 && (
                         <p className="text-caption text-gray-400">
-                            No WhatsApp templates found. Create one in Settings → Templates (type WHATSAPP) first.
+                            {t('template.noWhatsappTemplates')}
+                        </p>
+                    )}
+                    {selected && selected.params.length > 0 && (
+                        // Meta needs a value for every declared placeholder and
+                        // rejects the send if the count is off. The generator
+                        // fills the ones it recognises by name; positional ones
+                        // ({{1}}, {{2}}) it cannot guess without putting wrong
+                        // text in front of a real person.
+                        <p className="text-caption text-amber-600">
+                            {t('template.whatsappVarsNeedMapping', {
+                                vars: selected.params.map((p) => `{{${p}}}`).join(', '),
+                            })}
                         </p>
                     )}
                 </div>
-            )}
-            {question.type === 'live_session_select' && renderDropdown([], false, '-- Select a live session --', !question.required)}
-            {question.type === 'invite_select' && renderDropdown([], false, '-- Select an invite --', !question.required)}
+                );
+            })()}
+            {question.type === 'live_session_select' && renderDropdown([], false, t('template.livesessionPlaceholder'), !question.required)}
+            {question.type === 'invite_select' && renderDropdown([], false, t('template.invitePlaceholder'), !question.required)}
 
             {question.type === 'package_select' && renderDropdown(
                 packageOptions,
                 packageLoading,
-                '-- Select a course --',
+                t('template.coursePlaceholder'),
                 !question.required,
             )}
 
@@ -389,7 +474,7 @@ function QuestionField({
                     try {
                         const parsed = JSON.parse(raw);
                         if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-                            parseError = 'Payload must be a JSON object (not an array or primitive).';
+                            parseError = t('jsonPayload.invalidObject');
                         }
                     } catch (e) {
                         parseError = e instanceof Error ? e.message : 'Invalid JSON.';
@@ -412,9 +497,9 @@ function QuestionField({
                             spellCheck={false}
                         />
                         {parseError ? (
-                            <p className="text-[11px] text-red-500">⚠ {parseError}</p>
+                            <p className="text-[11px] text-red-500">{t('jsonPayload.errorPrefix', { error: parseError })}</p>
                         ) : raw.trim() ? (
-                            <p className="text-[11px] text-emerald-600">✓ Valid JSON</p>
+                            <p className="text-[11px] text-emerald-600">{t('jsonPayload.valid')}</p>
                         ) : null}
                     </div>
                 );
@@ -465,8 +550,16 @@ export function UseCaseWizardStep({
     onBack: () => void;
     instituteId: string;
 }) {
+    const { t } = useTranslation('workflowUseCaseWizardStep');
+    // Subscribing here is what makes the catalog below resolve: the template
+    // titles come from the 'workflowUseCaseTemplates' namespace via the
+    // i18next singleton, which only loads a namespace once something asks for
+    // it. Without this the cards render their raw keys, and this re-render on
+    // load is how they get replaced with real strings.
+    useTranslation('workflowUseCaseTemplates');
     const { workflowType, triggerConfig, setNodes, setEdges, setWorkflowName, setWorkflowDescription, setEditingWorkflowId, setEditingWorkflowStatus } = useWorkflowBuilderStore();
 
+    // Deliberately not memoised — a memo would capture the pre-load strings.
     const templates = getTemplatesForTrigger(triggerConfig.eventName || undefined, workflowType);
 
     const [selectedTemplate, setSelectedTemplate] = useState<UseCaseTemplate | null>(null);
@@ -489,14 +582,10 @@ export function UseCaseWizardStep({
 
     const canGenerate = selectedTemplate
         ? selectedTemplate.questions
-            // Skip required-but-hidden questions (conditional via showIf) — otherwise
-            // a hidden required question would permanently block the Generate button.
-            .filter((q) => {
-                if (!q.required) return false;
-                if (!q.showIf) return true;
-                const depVal = String(answers[q.showIf.questionId] ?? '');
-                return q.showIf.values.includes(depVal);
-            })
+            // Skip required-but-hidden questions (showIf, or answered by the
+            // trigger) — otherwise a hidden required question would permanently
+            // block the Generate button.
+            .filter((q) => q.required && isQuestionApplicable(q, answers, triggerConfig.eventName || undefined))
             .every((q) => {
                 const val = answers[q.id];
                 if (val === undefined) return false;
@@ -562,16 +651,16 @@ export function UseCaseWizardStep({
         return (
             <div className="space-y-6">
                 <div>
-                    <h2 className="text-xl font-semibold text-gray-800">How would you like to build this workflow?</h2>
+                    <h2 className="text-xl font-semibold text-gray-800">{t('picker.heading')}</h2>
                     <p className="mt-1 text-sm text-gray-500">
-                        Pick a ready-made template below, or build your workflow from scratch using the visual editor.
+                        {t('picker.subheading')}
                     </p>
                 </div>
 
                 {/* Template cards */}
                 {templates.length > 0 && (
                     <div className="space-y-3">
-                        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Templates for this trigger</h3>
+                        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">{t('picker.templatesForTrigger')}</h3>
                         <div className="grid grid-cols-1 gap-3">
                             {templates.map((tmpl) => (
                                 <button
@@ -587,7 +676,7 @@ export function UseCaseWizardStep({
                                             </h4>
                                             <p className="mt-1 text-sm text-gray-500">{tmpl.description}</p>
                                             <div className="mt-2 flex items-center gap-1.5 text-xs text-primary-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                                                Use this template <ArrowRight size={12} />
+                                                {t('picker.useThisTemplate')} <ArrowRight size={12} />
                                             </div>
                                         </div>
                                     </div>
@@ -599,8 +688,8 @@ export function UseCaseWizardStep({
 
                 {templates.length === 0 && (
                     <div className="rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 p-8 text-center">
-                        <p className="text-sm text-gray-500">No pre-built templates available for this trigger yet.</p>
-                        <p className="mt-1 text-xs text-gray-400">Use the advanced builder to create your workflow from scratch.</p>
+                        <p className="text-sm text-gray-500">{t('picker.noTemplates')}</p>
+                        <p className="mt-1 text-xs text-gray-400">{t('picker.noTemplatesHint')}</p>
                     </div>
                 )}
 
@@ -608,7 +697,7 @@ export function UseCaseWizardStep({
                 <div className="relative">
                     <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-gray-200" /></div>
                     <div className="relative flex justify-center">
-                        <span className="bg-gray-50 px-4 text-xs text-gray-400 uppercase tracking-wider">or</span>
+                        <span className="bg-gray-50 px-4 text-xs text-gray-400 uppercase tracking-wider">{t('picker.or')}</span>
                     </div>
                 </div>
 
@@ -622,9 +711,9 @@ export function UseCaseWizardStep({
                             <Wrench size={24} className="text-gray-500" />
                         </div>
                         <div>
-                            <h4 className="text-base font-semibold text-gray-800">Build from scratch</h4>
+                            <h4 className="text-base font-semibold text-gray-800">{t('picker.buildFromScratch')}</h4>
                             <p className="mt-0.5 text-sm text-gray-500">
-                                Use the visual drag-and-drop editor to build a custom workflow with full control.
+                                {t('picker.buildFromScratchHint')}
                             </p>
                         </div>
                     </div>
@@ -632,7 +721,7 @@ export function UseCaseWizardStep({
 
                 <div className="flex justify-start">
                     <Button variant="outline" size="lg" onClick={onBack} className="gap-2">
-                        <ArrowLeft size={16} /> Back
+                        <ArrowLeft size={16} /> {t('picker.back')}
                     </Button>
                 </div>
             </div>
@@ -640,11 +729,9 @@ export function UseCaseWizardStep({
     }
 
     // ─── Question wizard view ───
-    const visibleQuestions = selectedTemplate.questions.filter((q) => {
-        if (!q.showIf) return true;
-        const depVal = String(answers[q.showIf.questionId] ?? '');
-        return q.showIf.values.includes(depVal);
-    });
+    const visibleQuestions = selectedTemplate.questions.filter((q) =>
+        isQuestionApplicable(q, answers, triggerConfig.eventName || undefined)
+    );
 
     return (
         <div className="space-y-6">
@@ -653,7 +740,7 @@ export function UseCaseWizardStep({
                     className="flex items-center gap-1.5 text-sm text-primary-500 hover:text-primary-700 mb-3 transition-colors"
                     onClick={() => setSelectedTemplate(null)}
                 >
-                    <ArrowLeft size={14} /> Back to templates
+                    <ArrowLeft size={14} /> {t('wizard.backToTemplates')}
                 </button>
                 <div className="flex items-center gap-3">
                     <span className="text-3xl">{selectedTemplate.icon}</span>
@@ -665,14 +752,14 @@ export function UseCaseWizardStep({
             </div>
 
             <div className="rounded-xl border bg-white p-6 space-y-5">
-                <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Configure your workflow</h3>
+                <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">{t('wizard.configureHeading')}</h3>
 
                 {visibleQuestions.map((q) => (
                     <QuestionField
                         key={q.id}
                         question={q}
                         value={answers[q.id]}
-                        onChange={(val) => setAnswers((prev) => ({ ...prev, [q.id]: val }))}
+                        onChange={(val, extras) => setAnswers((prev) => ({ ...prev, [q.id]: val, ...(extras ?? {}) }))}
                         instituteId={instituteId}
                         useCaseId={selectedTemplate.id}
                     />
@@ -681,13 +768,23 @@ export function UseCaseWizardStep({
 
             {/* Preview — auto-detect pipeline shape from template */}
             <div className="rounded-xl border border-primary-100 bg-primary-50/50 p-4">
-                <h4 className="text-xs font-semibold text-primary-600 uppercase tracking-wide mb-2">What will be created</h4>
+                <h4 className="text-xs font-semibold text-primary-600 uppercase tracking-wide mb-2">{t('wizard.whatWillBeCreated')}</h4>
                 <div className="flex flex-wrap items-center gap-1.5 text-sm text-primary-700">
                     {(() => {
-                        // Generate a preview by running the generator with placeholder answers
-                        const previewAnswers: Record<string, string | number> = {};
+                        // Run the generator against what the user has actually
+                        // answered, falling back to defaults/placeholders only
+                        // for questions still untouched. Building this purely
+                        // from defaults made the preview permanently show the
+                        // default channel's nodes (SEND_EMAIL) even after the
+                        // user picked WhatsApp.
+                        const previewAnswers: Record<string, string | number | string[]> = {};
                         selectedTemplate.questions.forEach((q) => {
-                            if (q.defaultValue !== undefined) previewAnswers[q.id] = q.defaultValue;
+                            const given = answers[q.id];
+                            const hasGiven = Array.isArray(given)
+                                ? given.length > 0
+                                : given !== undefined && given !== '';
+                            if (hasGiven) previewAnswers[q.id] = given!;
+                            else if (q.defaultValue !== undefined) previewAnswers[q.id] = q.defaultValue;
                             else if (q.type === 'text') previewAnswers[q.id] = 'admin@example.com';
                             else if (q.type === 'number') previewAnswers[q.id] = 1;
                             else previewAnswers[q.id] = 'preview';
@@ -718,10 +815,10 @@ export function UseCaseWizardStep({
 
             <div className="flex justify-between">
                 <Button variant="outline" size="lg" onClick={() => setSelectedTemplate(null)} className="gap-2">
-                    <ArrowLeft size={16} /> Back
+                    <ArrowLeft size={16} /> {t('wizard.back')}
                 </Button>
                 <Button size="lg" onClick={handleGenerate} disabled={!canGenerate} className="gap-2 px-8">
-                    <CheckCircle size={16} /> Generate Workflow
+                    <CheckCircle size={16} /> {t('wizard.generate')}
                 </Button>
             </div>
         </div>

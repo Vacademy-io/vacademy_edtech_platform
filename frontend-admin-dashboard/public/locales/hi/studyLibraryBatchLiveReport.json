@@ -1,0 +1,104 @@
+{
+    "duration": {
+        "none": "—",
+        "minutes_one": "{{count}} मि",
+        "minutes_other": "{{count}} मि",
+        "hours_one": "{{count}} घं",
+        "hours_other": "{{count}} घं",
+        "hoursMinutes": "{{h}} घं {{m}} मि"
+    },
+    "engagement": {
+        "talkTime_one": "{{count}} मि बातचीत",
+        "talkTime_other": "{{count}} मि बातचीत",
+        "chats_one": "{{count}} चैट",
+        "chats_other": "{{count}} चैट",
+        "polls_one": "{{count}} पोल",
+        "polls_other": "{{count}} पोल",
+        "raiseHand_one": "{{count}} हाथ",
+        "raiseHand_other": "{{count}} हाथ",
+        "emojis_one": "{{count}} इमोजी",
+        "emojis_other": "{{count}} इमोजी",
+        "none": "कोई सहभागिता नहीं"
+    },
+    "table": {
+        "date": "तारीख",
+        "class": "कक्षा",
+        "present": "उपस्थित",
+        "absent": "अनुपस्थित",
+        "attendance": "उपस्थिति",
+        "avgDuration": "औसत अवधि",
+        "engagement": "सहभागिता",
+        "rank": "रैंक",
+        "name": "नाम",
+        "classesAttended": "उपस्थित कक्षाएं"
+    },
+    "export": {
+        "generatedOn": "{{date}} को तैयार किया गया",
+        "exportSuccess": "लाइव क्लास रिपोर्ट निर्यात हुई",
+        "exportFailed": "PDF निर्यात करने में विफल",
+        "csvExportSuccess": "CSV निर्यात हो गया",
+        "csvExportFailed": "CSV निर्यात विफल"
+    },
+    "errors": {
+        "loadFailed": "रिपोर्ट लोड करने में कुछ गड़बड़ हुई। कृपया फिर से प्रयास करें।",
+        "batchLoadFailed": "{{name}} की रिपोर्ट लोड नहीं हो सकी।"
+    },
+    "emptyState": {
+        "title": "कोई लाइव क्लास नहीं मिली",
+        "description": "चयनित अवधि में इस बैच के लिए कोई लाइव क्लास आयोजित नहीं हुई।"
+    },
+    "actions": {
+        "attendanceTracker": "उपस्थिति ट्रैकर",
+        "exporting": "निर्यात हो रहा है…",
+        "exportPdf": "PDF निर्यात करें",
+        "exportCsv": "CSV निर्यात करें"
+    },
+    "metrics": {
+        "avgAttendance": "औसत उपस्थिति",
+        "learnersCount_one": "{{count}} शिक्षार्थी",
+        "learnersCount_other": "{{count}} शिक्षार्थी",
+        "classesHeld": "आयोजित कक्षाएं",
+        "avgDurationPerClass": "औसत अवधि / कक्षा",
+        "presentLearners": "उपस्थित शिक्षार्थी",
+        "avgEngagement": "औसत सहभागिता",
+        "participationPoints": "सहभागिता अंक",
+        "engagementInfo": "सहभागिता अंक — कक्षा में भागीदारी का भारांकित योग (बातचीत का समय सबसे अधिक मायने रखता है, फिर पोल, चैट और हाथ उठाना), अवधि की सभी कक्षाओं में जोड़ा गया। अधिक = अधिक सक्रिय; इसकी कोई ऊपरी सीमा नहीं है। केवल प्रोवाइडर-सिंक (Zoom/BBB) कक्षाओं के लिए उपलब्ध।"
+    },
+    "sections": {
+        "attendanceTrendTitle": "उपस्थिति रुझान",
+        "attendanceTrendSubtitle": "चयनित अवधि में कक्षा-दर-कक्षा उपस्थिति दर",
+        "classBreakdownTitle": "कक्षा-वार विवरण",
+        "classBreakdownSubtitle": "आयोजित हर कक्षा के लिए उपस्थिति, अवधि और सहभागिता",
+        "leaderboardTitle": "लीडरबोर्ड",
+        "leaderboardSubtitle": "उपस्थिति के अनुसार, फिर सहभागिता के अनुसार क्रमबद्ध। सहभागिता का कुल योग चयनित अवधि की सभी कक्षाओं में जोड़ा गया है।"
+    },
+    "multiBatchTitle": "{{term}} रिपोर्ट · {{count}} चयनित",
+    "comparison": {
+        "title": "{{term}} तुलना",
+        "subtitle": "चुने गए हर बैच की उपस्थिति, अवधि और सहभागिता एक साथ",
+        "learners": "शिक्षार्थी"
+    },
+    "csv": {
+        "fileStem": "live-class-report",
+        "summaryTitle": "सारांश",
+        "startDate": "आरंभ तिथि",
+        "endDate": "समाप्ति तिथि",
+        "avgAttendancePct": "औसत उपस्थिति (%)",
+        "avgDurationMin": "औसत अवधि (मिनट)",
+        "avgEngagementIndex": "औसत सहभागिता (अंक)",
+        "classesTitle": "कक्षा-वार विवरण",
+        "unmarked": "अचिह्नित",
+        "invited": "आमंत्रित",
+        "attendancePct": "उपस्थिति (%)",
+        "leaderboardTitle": "लीडरबोर्ड",
+        "attended": "उपस्थित कक्षाएँ",
+        "totalClasses": "कुल कक्षाएँ",
+        "engagementIndex": "सहभागिता (अंक)",
+        "engagementScore": "सहभागिता स्कोर (0-100)",
+        "talkTimeMin": "बोलने का समय (मिनट)",
+        "chats": "चैट",
+        "polls": "पोल वोट",
+        "raiseHands": "हाथ उठाना",
+        "emojis": "इमोजी"
+    }
+}

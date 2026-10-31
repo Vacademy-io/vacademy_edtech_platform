@@ -1,0 +1,66 @@
+{
+    "overview": {
+        "loading": "Loading survey data...",
+        "errorTitle": "Error Loading Survey Data",
+        "tryAgain": "Try Again",
+        "emptyTitle": "No Survey Data Available",
+        "emptyDescription": "No survey responses found for this assessment.",
+        "totalParticipants": "Total Participants",
+        "responded": "responded",
+        "outOf": "out of",
+        "completionRate": "Completion Rate",
+        "individualResponsesTitle": "Individual Responses",
+        "loadingResponses": "Loading responses...",
+        "loadingQuestionsData": "Loading questions data...",
+        "loadingBatchData": "Loading batch data...",
+        "noResponsesForQuestion": "No responses found for this question.",
+        "questionIdLabel": "Question ID: {{id}}",
+        "tableName": "Name",
+        "tableEmail": "Email",
+        "tableBatch": "Batch",
+        "tableResponse": "Response",
+        "notApplicable": "N/A"
+    },
+    "question": {
+        "number": "Q{{number}}",
+        "viewIndividualResponses": "View Individual Responses",
+        "unsupportedType": "Unsupported question type"
+    },
+    "common": {
+        "responseCount_one": "{{count}} response",
+        "responseCount_other": "{{count}} responses"
+    },
+    "charts": {
+        "tooltipResponsesPercent_one": "{{count}} response ({{percentage}}%)",
+        "tooltipResponsesPercent_other": "{{count}} responses ({{percentage}}%)",
+        "countLabel": "Count"
+    },
+    "legend": {
+        "percentResponses_one": "{{percentage}}% ({{count}} response)",
+        "percentResponses_other": "{{percentage}}% ({{count}} responses)"
+    },
+    "trueFalse": {
+        "true": "True",
+        "false": "False",
+        "tooltipPercent_one": "{{percentage}}% ({{count}} response)",
+        "tooltipPercent_other": "{{percentage}}% ({{count}} responses)"
+    },
+    "textQuestion": {
+        "recentResponses_one": "Recent Responses ({{count}} total response):",
+        "recentResponses_other": "Recent Responses ({{count}} total responses):",
+        "similarResponses_one": "{{count}} similar response",
+        "similarResponses_other": "{{count}} similar responses"
+    },
+    "numerical": {
+        "responseDistribution": "Response Distribution:",
+        "responsesPercent_one": "{{count}} response ({{percentage}}%)",
+        "responsesPercent_other": "{{count}} responses ({{percentage}}%)"
+    },
+    "responses": {
+        "noOptionsSelected": "No options selected",
+        "noNumericAnswer": "No numeric answer provided",
+        "noTextAnswer": "No text answer provided",
+        "unknownType": "Unknown response type",
+        "errorParsing": "Error parsing response data"
+    }
+}

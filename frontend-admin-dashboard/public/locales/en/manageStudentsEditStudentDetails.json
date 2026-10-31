@@ -1,0 +1,106 @@
+{
+    "trigger": "Edit Details",
+    "dialogHeading": "Edit {{term}} Profile",
+    "discardConfirm": "Discard unsaved changes?",
+    "unsavedChanges": "Unsaved changes",
+    "allChangesSaved": "All changes saved",
+    "cancel": "Cancel",
+    "saving": "Saving...",
+    "saveChanges": "Save Changes",
+    "noStudentFound": "No Student Found",
+    "validation": {
+        "required": "This field is required",
+        "invalidEmail": "Invalid email address",
+        "invalidEmailShort": "Invalid email"
+    },
+    "sections": {
+        "photo": {
+            "title": "Profile photo",
+            "helper": "Square image, at least 200×200. Max 5 MB."
+        },
+        "identity": {
+            "title": "Identity",
+            "helper": "Their name and basic info."
+        },
+        "contact": {
+            "title": "Contact",
+            "helper": "Primary channels for reach-out."
+        },
+        "address": {
+            "title": "Address",
+            "helper": "Where they live."
+        },
+        "institute": {
+            "title": "Institute",
+            "helper": "Their primary place of study."
+        },
+        "family": {
+            "title": "Family",
+            "helper": "Guardians and emergency contacts."
+        },
+        "custom": {
+            "title": "Additional info",
+            "helper": "Custom fields configured for your institute."
+        }
+    },
+    "subgroups": {
+        "father": "Father / Male guardian",
+        "mother": "Mother / Female guardian"
+    },
+    "photo": {
+        "alt": "Profile",
+        "upload": "Upload",
+        "replace": "Replace",
+        "remove": "Remove"
+    },
+    "fields": {
+        "fullName": {
+            "label": "Full Name",
+            "placeholder": "e.g. Himang Sharma"
+        },
+        "gender": {
+            "label": "Gender",
+            "placeholder": "Select Gender"
+        },
+        "email": {
+            "label": "Email",
+            "placeholder": "name@example.com"
+        },
+        "mobile": {
+            "label": "Mobile Number",
+            "placeholder": "123 456 7890"
+        },
+        "addressLine": {
+            "label": "Address Line",
+            "placeholder": "House / street / locality"
+        },
+        "city": {
+            "label": "City",
+            "placeholder": "City"
+        },
+        "state": {
+            "label": "State",
+            "placeholder": "State"
+        },
+        "pincode": {
+            "label": "Pincode",
+            "placeholder": "e.g. 425562"
+        },
+        "instituteName": {
+            "label": "Institute Name",
+            "placeholder": "School / College / Institute"
+        },
+        "fatherName": {
+            "label": "Name",
+            "placeholder": "Father / male guardian name"
+        },
+        "motherName": {
+            "label": "Name",
+            "placeholder": "Mother / female guardian name"
+        }
+    },
+    "customField": {
+        "selectPlaceholder": "Select {{name}}",
+        "enterPlaceholder": "Enter {{name}}"
+    }
+}

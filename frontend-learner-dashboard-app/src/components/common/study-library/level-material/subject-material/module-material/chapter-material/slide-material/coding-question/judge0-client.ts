@@ -10,6 +10,7 @@
 //
 // Decision: production will use a managed Judge0 with API key, NOT self-hosted.
 
+import i18n from "@/i18n";
 import { getLanguageDef } from "./language-registry";
 import { LangId } from "./types";
 
@@ -132,7 +133,7 @@ export async function executeOnJudge0(
           timeMs: Math.round(parseFloat(json.time || "0") * 1000),
           memoryKb: Number(json.memory ?? 0),
           statusId: json.status?.id ?? 0,
-          statusDescription: json.status?.description ?? "Unknown",
+          statusDescription: json.status?.description ?? i18n.t("libraryCommonA:codeExecution.unknownStatus"),
         };
       }
 
@@ -155,7 +156,7 @@ function sleep(ms: number): Promise<void> {
 }
 
 export function judge0OutputToConsoleText(r: Judge0RunResult): string {
-  if (r.compileOutput) return `Compile Error:\n${r.compileOutput}`;
+  if (r.compileOutput) return i18n.t("libraryCommonA:codeExecution.compileErrorPrefix", { output: r.compileOutput });
   if (r.stderr) return `${r.stdout}${r.stdout && r.stderr ? "\n" : ""}${r.stderr}`;
-  return r.stdout || `(no output) — ${r.statusDescription}`;
+  return r.stdout || i18n.t("libraryCommonA:codeExecution.noOutputWithStatus", { status: r.statusDescription });
 }

@@ -1,0 +1,24 @@
+{
+    "block": {
+        "title": "Texte à trous",
+        "preview": "Aperçu",
+        "edit": "Modifier"
+    },
+    "editor": {
+        "usageHintPrefix": "Utilisez",
+        "usageHintSuffix": "pour créer des trous.",
+        "exampleLabel": "Exemple :",
+        "exampleSentence": "La capitale de la France est {blank:Paris}",
+        "textareaPlaceholder": "Le {blank:Sun} est le centre de notre {blank:solar system}.",
+        "blanksDetected_one": "{{count}} trou détecté :",
+        "blanksDetected_many": "{{count}} trous détectés :",
+        "blanksDetected_other": "{{count}} trous détectés :"
+    },
+    "preview": {
+        "blankPlaceholder": "trou {{index}}",
+        "checkAnswers": "Vérifier les réponses",
+        "reset": "Réinitialiser",
+        "correct": "correct",
+        "emptyState": "Cliquez sur Modifier pour ajouter une phrase à trous"
+    }
+}

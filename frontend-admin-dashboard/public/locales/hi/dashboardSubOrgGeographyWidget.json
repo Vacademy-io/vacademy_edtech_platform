@@ -1,0 +1,43 @@
+{
+    "header": {
+        "title": "{{term}} स्थान के अनुसार",
+        "subtitle": "आपके {{term}} कहाँ स्थित हैं"
+    },
+    "groupBy": {
+        "ariaLabel": "समूह बनाएं"
+    },
+    "dims": {
+        "state": "राज्य",
+        "city": "शहर",
+        "pincode": "पिनकोड"
+    },
+    "manage": "प्रबंधित करें",
+    "registered": "पंजीकृत",
+    "dateRange": {
+        "ariaLabel": "पंजीकरण तिथि सीमा",
+        "all": "सभी",
+        "last24h": "24घं",
+        "last3d": "3दि",
+        "last7d": "7दि",
+        "custom": "कस्टम",
+        "fromDate": "प्रारंभ तिथि",
+        "toDate": "अंतिम तिथि",
+        "to": "से"
+    },
+    "stats": {
+        "states": "राज्य",
+        "cities": "शहर",
+        "pincodes": "पिनकोड",
+        "located": "स्थान सहित"
+    },
+    "topLocations": {
+        "state": "शीर्ष राज्य",
+        "city": "शीर्ष शहर",
+        "pincode": "शीर्ष पिनकोड"
+    },
+    "table": {
+        "active": "सक्रिय",
+        "seats": "सीटें"
+    },
+    "notSpecified": "निर्दिष्ट नहीं"
+}

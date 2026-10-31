@@ -14,14 +14,18 @@ export type TtsModelId =
     | 'smallest'
     | 'smallest_pro'
     | 'deepgram'
+    | 'navana'
     | 'rumik'
-    | 'sarvam';
+    | 'sarvam'
+    | 'sarvam_v4';
 
 export interface VoiceOption {
     id: string;
     gender: string;
     /** Which engine this voice belongs to. Palettes do not overlap. */
     model: string;
+    /** Display name when the id is not readable on its own (Bulbul v4: "Shubh · Hinglish · ads"). */
+    label?: string;
 }
 
 export interface TtsModelMeta {
@@ -89,10 +93,27 @@ export const TTS_MODELS: TtsModelMeta[] = [
         defaultVoice: 'aura-2-asteria-en',
     },
     {
+        id: 'navana',
+        label: 'Navana (Bodhi)',
+        // One voice id speaks all ten languages (bn en gu hi kn ml mr or ta te);
+        // the agent's language picks which. Genders are read from the names.
+        note: 'Indian voices; one voice speaks all ten languages. New — audition first.',
+        defaultVoice: 'bhavana',
+    },
+    {
         id: 'rumik',
         label: 'Rumik Silk Mulberry 1.5',
         note: 'Cheapest, but mispronounces some Hindi words over the phone.',
         defaultVoice: 'ira',
+    },
+    {
+        id: 'sarvam_v4',
+        label: 'Sarvam Bulbul v4 Flash',
+        // Its OWN engine, not a v3 variant: persona voices ("shubh_enhi_ads") share
+        // no id with v3 and the API rejects a v3 name — a silent call. Rs 1/1K chars,
+        // a third of v3, so no surcharge. Voices come from GET /ai-agents/voices.
+        note: 'New — 200+ persona voices in 10 Indian languages, no extra charge. Audition first.',
+        defaultVoice: 'shubh_enhi_ads',
     },
     {
         id: 'sarvam',
@@ -109,14 +130,28 @@ export const TTS_MODELS: TtsModelMeta[] = [
 // ⚠️ CASE IS SIGNIFICANT — Google voice names are exact resource ids. Never
 // lowercase them on the way to the API (see voiceIdOf below).
 const GOOGLE_MALE = [
-    'hi-IN-Chirp3-HD-Achird', 'hi-IN-Chirp3-HD-Charon', 'hi-IN-Chirp3-HD-Fenrir',
-    'hi-IN-Chirp3-HD-Orus', 'hi-IN-Chirp3-HD-Puck', 'hi-IN-Chirp3-HD-Schedar',
-    'hi-IN-Neural2-B', 'hi-IN-Neural2-C', 'hi-IN-Wavenet-B', 'hi-IN-Wavenet-C',
+    'hi-IN-Chirp3-HD-Achird',
+    'hi-IN-Chirp3-HD-Charon',
+    'hi-IN-Chirp3-HD-Fenrir',
+    'hi-IN-Chirp3-HD-Orus',
+    'hi-IN-Chirp3-HD-Puck',
+    'hi-IN-Chirp3-HD-Schedar',
+    'hi-IN-Neural2-B',
+    'hi-IN-Neural2-C',
+    'hi-IN-Wavenet-B',
+    'hi-IN-Wavenet-C',
 ];
 const GOOGLE_FEMALE = [
-    'hi-IN-Chirp3-HD-Achernar', 'hi-IN-Chirp3-HD-Aoede', 'hi-IN-Chirp3-HD-Kore',
-    'hi-IN-Chirp3-HD-Leda', 'hi-IN-Chirp3-HD-Zephyr', 'hi-IN-Chirp3-HD-Sulafat',
-    'hi-IN-Neural2-A', 'hi-IN-Neural2-D', 'hi-IN-Wavenet-A', 'hi-IN-Wavenet-D',
+    'hi-IN-Chirp3-HD-Achernar',
+    'hi-IN-Chirp3-HD-Aoede',
+    'hi-IN-Chirp3-HD-Kore',
+    'hi-IN-Chirp3-HD-Leda',
+    'hi-IN-Chirp3-HD-Zephyr',
+    'hi-IN-Chirp3-HD-Sulafat',
+    'hi-IN-Neural2-A',
+    'hi-IN-Neural2-D',
+    'hi-IN-Wavenet-A',
+    'hi-IN-Wavenet-D',
 ];
 
 // Smallest.ai Lightning v3.1 (standard) Hindi voices, Indian accent, from its
@@ -134,25 +169,68 @@ const SMALLEST_PRO_FEMALE = ['manasi', 'mrunal', 'ketaki', 'meher'];
 // any tier. Genders are Deepgram's own metadata tags, not inferred from the
 // mythological names: Janus and Juno are both FEMALE there.
 const DEEPGRAM_MALE = [
-    'aura-2-apollo-en', 'aura-2-arcas-en', 'aura-2-atlas-en',
-    'aura-2-hermes-en', 'aura-2-mars-en', 'aura-2-odysseus-en',
+    'aura-2-apollo-en',
+    'aura-2-arcas-en',
+    'aura-2-atlas-en',
+    'aura-2-hermes-en',
+    'aura-2-mars-en',
+    'aura-2-odysseus-en',
 ];
 const DEEPGRAM_FEMALE = [
-    'aura-2-asteria-en', 'aura-2-athena-en', 'aura-2-helena-en', 'aura-2-hera-en',
-    'aura-2-luna-en', 'aura-2-cordelia-en', 'aura-2-harmonia-en', 'aura-2-electra-en',
+    'aura-2-asteria-en',
+    'aura-2-athena-en',
+    'aura-2-helena-en',
+    'aura-2-hera-en',
+    'aura-2-luna-en',
+    'aura-2-cordelia-en',
+    'aura-2-harmonia-en',
+    'aura-2-electra-en',
 ];
 
 const RUMIK_FEMALE = ['ira', 'emma', 'mia', 'sophia', 'ava', 'siya', 'aisha', 'zoya'];
 const RUMIK_MALE = ['adam', 'lucas', 'noah', 'theo'];
 
 const SARVAM_FEMALE = [
-    'ritu', 'priya', 'neha', 'pooja', 'simran', 'kavya', 'ishita', 'shreya',
-    'roopa', 'tanya', 'shruti', 'suhani', 'kavitha', 'rupali', 'niharika',
+    'ritu',
+    'priya',
+    'neha',
+    'pooja',
+    'simran',
+    'kavya',
+    'ishita',
+    'shreya',
+    'roopa',
+    'tanya',
+    'shruti',
+    'suhani',
+    'kavitha',
+    'rupali',
+    'niharika',
 ];
 const SARVAM_MALE = [
-    'shubh', 'aditya', 'rahul', 'rohan', 'amit', 'dev', 'ratan', 'varun',
-    'manan', 'sumit', 'kabir', 'aayan', 'ashutosh', 'advait', 'anand', 'tarun',
-    'sunny', 'mani', 'gokul', 'vijay', 'mohit', 'rehan', 'soham',
+    'shubh',
+    'aditya',
+    'rahul',
+    'rohan',
+    'amit',
+    'dev',
+    'ratan',
+    'varun',
+    'manan',
+    'sumit',
+    'kabir',
+    'aayan',
+    'ashutosh',
+    'advait',
+    'anand',
+    'tarun',
+    'sunny',
+    'mani',
+    'gokul',
+    'vijay',
+    'mohit',
+    'rehan',
+    'soham',
 ];
 
 // Microsoft Edge read-aloud. Only five voices exist for India; names are
@@ -160,6 +238,67 @@ const SARVAM_MALE = [
 // belongs to another vendor.
 const EDGE_FEMALE = ['hi-IN-SwaraNeural', 'en-IN-NeerjaNeural', 'en-IN-NeerjaExpressiveNeural'];
 const EDGE_MALE = ['hi-IN-MadhurNeural', 'en-IN-PrabhatNeural'];
+
+// Navana (Bodhi): every id speaks all ten languages. Genders read from the names.
+const NAVANA_MALE = [
+    'achu',
+    'anirban',
+    'basava',
+    'basheer',
+    'bijay',
+    'chhotu',
+    'elango',
+    'faizal',
+    'gurdeep',
+    'imran',
+    'kannan',
+    'kishan',
+    'murugan',
+    'savio',
+    'shivanna',
+    'srinu',
+    'sulaiman',
+    'tanaji',
+    'temjen',
+    'vetri',
+    'xavier',
+];
+const NAVANA_FEMALE = [
+    'ammu',
+    'ann',
+    'arasi',
+    'ayesha',
+    'bhavana',
+    'bimla',
+    'champa',
+    'falguni',
+    'flavia',
+    'harleen',
+    'ipsita',
+    'jayita',
+    'jessy',
+    'kayal',
+    'mahadevi',
+    'malar',
+    'maria',
+    'merin',
+    'mukta',
+    'nasrin',
+    'nayeema',
+    'netra',
+    'nila',
+    'ponni',
+    'porkavi',
+    'rukhiya',
+    'rukhsana',
+    'selvi',
+    'shabnam',
+    'sharon',
+    'shikha',
+    'vanaja',
+    'yasmin',
+    'zoya',
+];
 
 const tag = (ids: string[], gender: string, model: TtsModelId): VoiceOption[] =>
     ids.map((id) => ({ id, gender, model }));
@@ -176,6 +315,8 @@ export const FALLBACK_VOICES: VoiceOption[] = [
     ...tag(SMALLEST_PRO_FEMALE, 'female', 'smallest_pro'),
     ...tag(DEEPGRAM_MALE, 'male', 'deepgram'),
     ...tag(DEEPGRAM_FEMALE, 'female', 'deepgram'),
+    ...tag(NAVANA_MALE, 'male', 'navana'),
+    ...tag(NAVANA_FEMALE, 'female', 'navana'),
     ...tag(RUMIK_FEMALE, 'female', 'rumik'),
     ...tag(RUMIK_MALE, 'male', 'rumik'),
     ...tag(SARVAM_FEMALE, 'female', 'sarvam'),
@@ -190,10 +331,13 @@ export function normalizeTtsModel(raw?: string | null): TtsModelId | null {
     if (m === 'muga' || m.startsWith('silk-muga') || m.startsWith('silk_muga')) return null;
     if (m === 'rumik' || m.startsWith('rumik') || m.startsWith('silk') || m.startsWith('mulberry'))
         return 'rumik';
+    // v4 FIRST — 'sarvam_v4' also startsWith('sarvam'), and a v4 voice on v3 is silence.
+    if (/^(sarvam[_-]v4|bulbul[:_-]v4)/.test(m)) return 'sarvam_v4';
     if (m === 'sarvam' || m.startsWith('sarvam') || m.startsWith('bulbul')) return 'sarvam';
     if (m === 'google' || m.startsWith('google') || m.startsWith('chirp')) return 'google';
     if (m === 'edge' || m.startsWith('edge') || m.startsWith('microsoft')) return 'edge';
     if (m === 'deepgram' || m.startsWith('deepgram') || m.startsWith('aura')) return 'deepgram';
+    if (m === 'navana' || m.startsWith('navana') || m.startsWith('bodhi')) return 'navana';
     // Pro FIRST — 'smallest_pro' also startsWith('smallest'), so the generic test
     // below would swallow it and offer standard voices for the pro model, which the
     // vendor rejects outright. Mirrors TtsVoiceCatalog.normalizeModel on the server.
@@ -235,6 +379,12 @@ export function resolveTtsModel(agent: { id?: string; ttsModel?: string }): TtsM
     // both read a missing value as sarvam — so show that, not a cheerier guess.
     // An unsaved draft has no history to preserve and gets the default engine.
     return normalizeTtsModel(agent.ttsModel) ?? (agent.id ? 'sarvam' : 'google');
+}
+
+/** What the picker shows for a voice: its label when it has one, else the capitalised id. */
+export function voiceLabel(v: VoiceOption): string {
+    if (v.label) return v.label;
+    return v.id.charAt(0).toUpperCase() + v.id.slice(1);
 }
 
 export function voicesForModel(voices: VoiceOption[], model: TtsModelId): VoiceOption[] {

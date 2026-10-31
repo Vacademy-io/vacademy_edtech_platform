@@ -1,0 +1,13 @@
+{
+    "noTargetSet": "Aucun objectif défini",
+    "metricFull": {
+        "CONVERSIONS": "Conversions",
+        "LEADS_ASSIGNED": "Prospects assignés",
+        "CALLS_MADE": "Appels passés"
+    },
+    "metricShort": {
+        "CONVERSIONS": "Conv",
+        "LEADS_ASSIGNED": "Prospects",
+        "CALLS_MADE": "Appels"
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "description": "الأيام التي يكون فيها المعهد مغلقًا. يضع الحضور علامة HOLIDAY عليها تلقائيًا، لذا فإن يومًا مفقودًا من هذا التقويم يُحتسب يوم عمل لم يحضر فيه أحد.",
+    "actions": {
+        "addSeveral": "إضافة عدة أيام",
+        "addHoliday": "إضافة عطلة",
+        "addYearsHolidays": "إضافة عطلات السنة",
+        "edit": "تعديل {{name}}",
+        "remove": "إزالة {{name}}",
+        "editFallback": "العطلة",
+        "keepIt": "الإبقاء عليها",
+        "removeConfirm": "إزالة"
+    },
+    "count_zero": "لا توجد عطلات في {{year}}",
+    "count_one": "عطلة واحدة في {{year}}",
+    "count_two": "عطلتان في {{year}}",
+    "count_few": "{{count}} عطلات في {{year}}",
+    "count_many": "{{count}} عطلة في {{year}}",
+    "count_other": "{{count}} عطلة في {{year}}",
+    "errors": {
+        "loadFailed": "تعذّر تحميل تقويم العطلات.",
+        "removeFailed": "تعذّرت إزالة العطلة."
+    },
+    "empty": {
+        "title": "لا توجد عطلات محددة لعام {{year}}",
+        "description": "انشر تقويم السنة هنا — يقرأه كل من الحضور وكشوف المرتبات."
+    },
+    "months": {
+        "unknown": "الشهر {{month}}",
+        "january": "يناير",
+        "february": "فبراير",
+        "march": "مارس",
+        "april": "أبريل",
+        "may": "مايو",
+        "june": "يونيو",
+        "july": "يوليو",
+        "august": "أغسطس",
+        "september": "سبتمبر",
+        "october": "أكتوبر",
+        "november": "نوفمبر",
+        "december": "ديسمبر"
+    },
+    "holiday": {
+        "defaultName": "عطلة",
+        "optional": "اختيارية"
+    },
+    "toast": {
+        "removed": "تمت إزالة العطلة"
+    },
+    "deleteDialog": {
+        "title": "هل تريد إزالة هذه العطلة؟",
+        "description": "ستصبح {{name}} في {{date}} يوم عمل عاديًا. لن يتغير الحضور المسجل بالفعل لهذا اليوم.",
+        "defaultName": "هذه العطلة",
+        "unknownDate": "تاريخ غير معروف"
+    }
+}

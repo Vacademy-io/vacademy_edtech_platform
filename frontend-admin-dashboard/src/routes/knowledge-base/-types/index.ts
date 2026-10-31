@@ -37,6 +37,26 @@ export interface KnowledgeBase {
     /** Present on the detail response; PLATFORM libraries are read-only. */
     writable?: boolean;
     sources?: KnowledgeSource[];
+    /** Free-form per-base metadata (V517), e.g. topic_tree_mode. */
+    meta?: Record<string, unknown>;
+    /**
+     * Set only for pre-loaded curriculum libraries (NCERT etc.). Access to
+     * these is granted by the institute's CURRICULUM_LIBRARY_SETTING, not by
+     * an unlock; the picker groups them Board → Class → Subject.
+     */
+    curriculum?: CurriculumFacets | null;
+}
+
+export interface CurriculumFacets {
+    board: string;
+    /** Class as a string ("6" … "12", or "UG" for entrance exams). */
+    class: string;
+    subject: string;
+    medium: string | null;
+    /** "SYLLABUS" when the base is the board's syllabus rather than a textbook. */
+    kind?: 'SYLLABUS' | null;
+    /** Listing title — distinguishes several books of one class+subject. */
+    book: string | null;
 }
 
 export interface KnowledgeSource {

@@ -45,6 +45,9 @@ public class CouponRedemptionService {
     public void consume(AppliedCouponDiscount appliedDiscount) {
         if (appliedDiscount == null) return;
         CouponCode coupon = appliedDiscount.getCouponCode();
+        if (coupon == null && AdminDiscountService.SOURCE_ADMIN.equals(appliedDiscount.getDiscountSource())) {
+            return; // admin discount — no coupon, nothing to redeem
+        }
         if (coupon == null) {
             log.warn("AppliedCouponDiscount {} has no parent CouponCode — skipping decrement",
                     appliedDiscount.getId());

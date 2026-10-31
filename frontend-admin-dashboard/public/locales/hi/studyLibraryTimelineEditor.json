@@ -1,0 +1,9 @@
+{
+    "blockLabel": "टाइमलाइन / चरण",
+    "preview": "पूर्वावलोकन",
+    "edit": "संपादित करें",
+    "defaultStepTitle": "चरण {{number}}",
+    "stepTitlePlaceholder": "चरण शीर्षक",
+    "stepDescriptionPlaceholder": "चरण विवरण (वैकल्पिक)",
+    "addStep": "+ चरण जोड़ें"
+}

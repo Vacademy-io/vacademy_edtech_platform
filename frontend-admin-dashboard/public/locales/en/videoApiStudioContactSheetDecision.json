@@ -1,0 +1,21 @@
+{
+    "header": {
+        "title_one": "Contact sheet · {{count}} shot",
+        "title_other": "Contact sheet · {{count}} shots"
+    },
+    "empty": "No shots to review — approve to continue.",
+    "shot": {
+        "label": "Shot {{number}}",
+        "type": "· {{type}}",
+        "keepIt": "Keep it",
+        "redo": "Redo",
+        "notePlaceholder": "What should change? e.g. use a real product screenshot, bigger headline…"
+    },
+    "footer": {
+        "regenNote_one": "{{count}} shot will be regenerated with your notes.",
+        "regenNote_other": "{{count}} shots will be regenerated with your notes.",
+        "allGood": "Everything look good?",
+        "submitRedo": "Redo {{count}} & finish",
+        "submitApprove": "Approve & finish"
+    }
+}

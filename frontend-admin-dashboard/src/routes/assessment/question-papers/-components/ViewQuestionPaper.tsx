@@ -6,6 +6,7 @@ import { QuestionPaperTemplate } from './QuestionPaperTemplate';
 import { Dispatch, ReactNode, SetStateAction, useEffect } from 'react';
 import { getLevelNameById, getSubjectNameById } from '../-utils/helper';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
+import { useTranslation } from 'react-i18next';
 
 export const ViewQuestionPaper = ({
     questionPaperId,
@@ -33,6 +34,7 @@ export const ViewQuestionPaper = ({
     triggerVariant?: 'plain' | 'secondary';
 }) => {
     const { instituteDetails } = useInstituteDetailsStore();
+    const { t } = useTranslation('assessmentViewQuestionPaper');
 
     console.log('👁️ Creating ViewQuestionPaper form with examType:', {
         examType,
@@ -80,7 +82,9 @@ export const ViewQuestionPaper = ({
                     questionPaperId={questionPaperId}
                     isViewMode={true}
                     refetchData={refetchData}
-                    buttonText={buttonText ?? (isAssessment ? 'View' : 'View Question Paper')}
+                    buttonText={
+                        buttonText ?? (isAssessment ? t('trigger.view') : t('trigger.viewQuestionPaper'))
+                    }
                     isAssessment={isAssessment}
                     currentQuestionIndex={currentQuestionIndex}
                     setCurrentQuestionIndex={setCurrentQuestionIndex}

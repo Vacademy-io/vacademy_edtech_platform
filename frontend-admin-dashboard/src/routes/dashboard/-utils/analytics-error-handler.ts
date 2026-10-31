@@ -1,3 +1,5 @@
+import type { TFunction } from 'i18next';
+
 export interface AnalyticsErrorDetails {
     message: string;
     actionRequired: boolean;
@@ -5,7 +7,7 @@ export interface AnalyticsErrorDetails {
     iconType: 'warning' | 'error' | 'info';
 }
 
-export const getAnalyticsErrorDetails = (error: any): AnalyticsErrorDetails => {
+export const getAnalyticsErrorDetails = (error: any, t: TFunction): AnalyticsErrorDetails => {
     // Handle axios error responses
     if (error?.response?.status) {
         const status = error.response.status;
@@ -13,7 +15,7 @@ export const getAnalyticsErrorDetails = (error: any): AnalyticsErrorDetails => {
         switch (status) {
             case 511:
                 return {
-                    message: 'Authentication required. Please refresh the page or log in again.',
+                    message: t('dashboardAnalyticsErrorHandler:errors.authRequired'),
                     actionRequired: true,
                     retryable: false,
                     iconType: 'warning',
@@ -21,7 +23,7 @@ export const getAnalyticsErrorDetails = (error: any): AnalyticsErrorDetails => {
 
             case 401:
                 return {
-                    message: 'Session expired. Please log in again.',
+                    message: t('dashboardAnalyticsErrorHandler:errors.sessionExpired'),
                     actionRequired: true,
                     retryable: false,
                     iconType: 'warning',
@@ -29,7 +31,7 @@ export const getAnalyticsErrorDetails = (error: any): AnalyticsErrorDetails => {
 
             case 403:
                 return {
-                    message: "Access denied. You don't have permission to view this data.",
+                    message: t('dashboardAnalyticsErrorHandler:errors.accessDenied'),
                     actionRequired: true,
                     retryable: false,
                     iconType: 'error',
@@ -37,7 +39,7 @@ export const getAnalyticsErrorDetails = (error: any): AnalyticsErrorDetails => {
 
             case 404:
                 return {
-                    message: 'Analytics data not found for this institute.',
+                    message: t('dashboardAnalyticsErrorHandler:errors.notFound'),
                     actionRequired: false,
                     retryable: true,
                     iconType: 'info',
@@ -45,7 +47,7 @@ export const getAnalyticsErrorDetails = (error: any): AnalyticsErrorDetails => {
 
             case 429:
                 return {
-                    message: 'Too many requests. Please wait a moment and try again.',
+                    message: t('dashboardAnalyticsErrorHandler:errors.tooManyRequests'),
                     actionRequired: false,
                     retryable: true,
                     iconType: 'warning',
@@ -56,7 +58,7 @@ export const getAnalyticsErrorDetails = (error: any): AnalyticsErrorDetails => {
             case 503:
             case 504:
                 return {
-                    message: "Server temporarily unavailable. We're working on it.",
+                    message: t('dashboardAnalyticsErrorHandler:errors.serverUnavailable'),
                     actionRequired: false,
                     retryable: true,
                     iconType: 'error',
@@ -64,7 +66,7 @@ export const getAnalyticsErrorDetails = (error: any): AnalyticsErrorDetails => {
 
             default:
                 return {
-                    message: `Service error (${status}). Please try again later.`,
+                    message: t('dashboardAnalyticsErrorHandler:errors.serviceError', { status }),
                     actionRequired: false,
                     retryable: true,
                     iconType: 'error',
@@ -75,7 +77,7 @@ export const getAnalyticsErrorDetails = (error: any): AnalyticsErrorDetails => {
     // Handle network errors
     if (error?.code === 'NETWORK_ERROR' || error?.message?.includes('Network Error')) {
         return {
-            message: 'Connection lost. Please check your internet and try again.',
+            message: t('dashboardAnalyticsErrorHandler:errors.connectionLost'),
             actionRequired: false,
             retryable: true,
             iconType: 'warning',
@@ -85,7 +87,7 @@ export const getAnalyticsErrorDetails = (error: any): AnalyticsErrorDetails => {
     // Handle timeout errors
     if (error?.code === 'ECONNABORTED' || error?.message?.includes('timeout')) {
         return {
-            message: 'Request timed out. The server is taking too long to respond.',
+            message: t('dashboardAnalyticsErrorHandler:errors.requestTimedOut'),
             actionRequired: false,
             retryable: true,
             iconType: 'warning',
@@ -98,7 +100,7 @@ export const getAnalyticsErrorDetails = (error: any): AnalyticsErrorDetails => {
         error?.message?.includes('log in again')
     ) {
         return {
-            message: 'Authentication required. Please refresh the page or log in again.',
+            message: t('dashboardAnalyticsErrorHandler:errors.authRequired'),
             actionRequired: true,
             retryable: false,
             iconType: 'warning',
@@ -107,15 +109,15 @@ export const getAnalyticsErrorDetails = (error: any): AnalyticsErrorDetails => {
 
     // Generic fallback
     return {
-        message: 'Unable to load data. Please try again later.',
+        message: t('dashboardAnalyticsErrorHandler:errors.genericFallback'),
         actionRequired: false,
         retryable: true,
         iconType: 'error',
     };
 };
 
-export const shouldShowRetryButton = (error: any): boolean => {
-    const details = getAnalyticsErrorDetails(error);
+export const shouldShowRetryButton = (error: any, t: TFunction): boolean => {
+    const details = getAnalyticsErrorDetails(error, t);
     return details.retryable && !details.actionRequired;
 };
 

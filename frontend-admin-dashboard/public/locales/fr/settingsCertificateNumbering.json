@@ -1,0 +1,104 @@
+{
+    "heading": {
+        "title": "Numérotation des certificats",
+        "description": "Les numéros proviennent d'un compteur propre à cet établissement, ils sont donc séquentiels et ne se répètent jamais. Choisissez la forme ci-dessous, et le point de départ du compte."
+    },
+    "presets": {
+        "label": "Partir d'un format courant",
+        "options": {
+            "standard": "EDU2026001",
+            "dashed": "EDU-2026-0001",
+            "slash": "EDU/26/001",
+            "compact": "EDU0001"
+        }
+    },
+    "format": {
+        "label": "Format",
+        "hint": "Tout ce qui est en dehors de { } est imprimé tel quel. Cliquez sur une valeur ci-dessous pour l'ajouter."
+    },
+    "prefix": {
+        "label": "Préfixe",
+        "hintBefore": "Si vide, utilise ",
+        "hintAfter": ", tiré du nom de votre établissement."
+    },
+    "padding": {
+        "label": "Largeur du numéro",
+        "hint": "Nombre de chiffres dans un <1>{SEQ}</1> non formaté. Au-delà de cette largeur, les numéros s'allongent au lieu de repartir de zéro."
+    },
+    "suffix": {
+        "label": "Suffixe (facultatif)",
+        "hint": "Imprimé uniquement si votre format contient <1>{SUFFIX}</1>."
+    },
+    "tokens": {
+        "label": "Ajouter une valeur",
+        "seq": {
+            "label": "Numéro",
+            "hint": "Le compteur — 001, 002, 003. Obligatoire."
+        },
+        "seqPadded": {
+            "label": "Numéro (4 chiffres)",
+            "hint": "0001, 0002 — définissez vous-même la largeur"
+        },
+        "prefix": {
+            "label": "Préfixe",
+            "hint": "Le préfixe défini à côté de ce champ"
+        },
+        "year": {
+            "label": "Année",
+            "hint": "2026"
+        },
+        "yearShort": {
+            "label": "Année (2 chiffres)",
+            "hint": "26"
+        },
+        "suffix": {
+            "label": "Suffixe",
+            "hint": "Le suffixe défini à côté de ce champ"
+        },
+        "courseCode": {
+            "label": "Code du cours",
+            "hint": "Vide pour les cours sans code"
+        }
+    },
+    "seriesStart": {
+        "title": "Point de départ de la série",
+        "issuedInfo": "Cet établissement a émis jusqu'au numéro #{{issued}}. Le prochain certificat prendra le #{{next}}.",
+        "noneIssued": "Aucun certificat n'a encore été émis à partir de ce compteur.",
+        "startField": {
+            "label": "Commencer la numérotation à",
+            "placeholder": "Laisser vide pour continuer",
+            "hint": "Définissez ceci si vos certificats poursuivent des registres papier ou un autre système — saisissez 1500 et le prochain émis sera le #1500."
+        },
+        "resetField": {
+            "label": "Redémarrer le compte chaque année",
+            "on": "Retour au départ chaque 1er janvier",
+            "off": "Une série continue à travers les années",
+            "hint": "Désactivé, le compte continue : #1500 en {{year}} sera suivi de #1501 l'année suivante."
+        }
+    },
+    "warnings": {
+        "startFromIgnored": {
+            "title": "Le #{{start}} a déjà été émis, ce numéro de départ est donc ignoré.",
+            "body": "La numérotation continue à partir du #{{next}}. Les numéros ne sont jamais réutilisés — le #{{start}} figure déjà sur un certificat détenu par quelqu'un. Choisissez un numéro supérieur au #{{issued}} pour faire avancer la série."
+        },
+        "noYearToken": {
+            "title": "Ce format ne contient pas d'année, mais le compte redémarre chaque année.",
+            "body": "Le premier certificat de janvier répéterait un numéro déjà émis. Ajoutez <1>{YYYY}</1> au format, ou désactivez le redémarrage annuel."
+        },
+        "noSequence": {
+            "title": "Ce format ne contient pas de compteur, chaque certificat obtiendrait donc le même numéro.",
+            "body": "Ajoutez <1>{SEQ}</1> à l'endroit où le numéro doit apparaître — taper des chiffres vous-même imprime toujours les mêmes chiffres. Tant que vous ne le faites pas, le compteur est ajouté à la fin pour garder des numéros uniques."
+        }
+    },
+    "info": {
+        "resetRestart": "Le compte redémarre chaque janvier, il recommencera donc au #{{start}} l'année prochaine. Désactivez le redémarrage annuel pour une série continue unique.",
+        "footer": "Changer le format affecte les certificats émis à partir de maintenant. Le compteur lui-même n'avance jamais en arrière — les numéros déjà émis ne sont jamais réutilisés, c'est pourquoi un numéro de départ inférieur à #{{min}} n'a aucun effet."
+    },
+    "preview": {
+        "title": "Les trois prochains certificats",
+        "startingAt": "à partir du #{{next}}",
+        "emptySample": "—",
+        "usingDefaultBefore": "Utilisation du format par défaut, ",
+        "usingDefaultAfter": "."
+    }
+}

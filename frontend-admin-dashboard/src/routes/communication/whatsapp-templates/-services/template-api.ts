@@ -46,9 +46,18 @@ export async function createTemplateDraft(dto: WhatsAppTemplateDTO): Promise<Wha
     return data;
 }
 
-export async function listTemplates(instituteId: string): Promise<WhatsAppTemplateDTO[]> {
+/**
+ * The institute's notification templates. `notification_template` holds every channel, so pass
+ * `channelType` to get just the EMAIL or WHATSAPP ones; omit it for all of them.
+ */
+export async function listTemplates(
+    instituteId: string,
+    channelType?: 'WHATSAPP' | 'EMAIL' | 'SMS' | 'PUSH'
+): Promise<WhatsAppTemplateDTO[]> {
+    const params: Record<string, string> = { instituteId };
+    if (channelType) params.channelType = channelType;
     const { data } = await authenticatedAxiosInstance.get(`${WHATSAPP_TEMPLATE_BASE}/list`, {
-        params: { instituteId },
+        params,
     });
     return data;
 }

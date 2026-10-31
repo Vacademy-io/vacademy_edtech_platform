@@ -1,0 +1,85 @@
+{
+    "changeStudent": "Change Student",
+    "refresh": "Refresh",
+    "downloadReceiptTooltip": "Download Receipt",
+    "filters": {
+        "all": "All",
+        "overdue": "Overdue",
+        "due": "Due",
+        "partial": "Partial",
+        "paid": "Paid",
+        "from": "From:",
+        "to": "To:",
+        "clear": "Clear"
+    },
+    "emptyState": {
+        "noDues": "No dues found.",
+        "noPendingInstallments": "This student has no pending installments."
+    },
+    "summaryCards": {
+        "totalFee": "Total Fee",
+        "paid": "Paid",
+        "due": "Due"
+    },
+    "selectAllBanner": {
+        "allSelectedOnPage_one": "All {{count}} selectable row on this page selected.",
+        "allSelectedOnPage_other": "All {{count}} selectable rows on this page selected.",
+        "selecting": "Selecting…",
+        "selectAllFiltered_one": "Select all {{count}} filtered row",
+        "selectAllFiltered_other": "Select all {{count}} filtered rows"
+    },
+    "resultsRange": {
+        "showing": "Showing",
+        "of": "of"
+    },
+    "table": {
+        "feeType": "Fee Type",
+        "cpoPlan": "CPO / Plan",
+        "expected": "Expected",
+        "adjustment": "Adjustment",
+        "paid": "Paid",
+        "due": "Due",
+        "dueOverdue": "Due / Overdue",
+        "dueDate": "Due Date",
+        "status": "Status",
+        "noResults": "No installments match the selected filters."
+    },
+    "adjustment": {
+        "pending": "Pending",
+        "adjustTooltip": "Adjust"
+    },
+    "status": {
+        "overdue": "Overdue",
+        "due": "Due",
+        "daysOverdue_one": "({{count}}d)",
+        "daysOverdue_other": "({{count}}d)"
+    },
+    "pagination": {
+        "prev": "Prev",
+        "next": "Next",
+        "page": "Page",
+        "of": "of"
+    },
+    "bottomBar": {
+        "installmentsSelected_one": "installment selected",
+        "installmentsSelected_other": "installments selected",
+        "totalDue": "Total due:",
+        "generateInvoice": "Generate Invoice",
+        "proceedToPay": "Proceed to Pay"
+    },
+    "errors": {
+        "unableToLoad": "Unable to load installments",
+        "tryAgain": "Please try again."
+    },
+    "toast": {
+        "selectedInstallments_one": "Selected {{count}} installment",
+        "selectedInstallments_other": "Selected {{count}} installments",
+        "selectAllFailed": "Failed to select all",
+        "noReceiptFound": "No receipt found for this installment",
+        "invoiceDownloaded": "Invoice downloaded successfully",
+        "invoiceDownloadUrlMissing": "Invoice generated but download URL not available",
+        "invoiceGenerateFailed": "Failed to generate invoice",
+        "invoiceEmailed": "Invoice sent to email successfully",
+        "invoiceEmailFailed": "Failed to send invoice email"
+    }
+}

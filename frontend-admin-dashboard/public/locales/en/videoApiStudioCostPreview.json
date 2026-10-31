@@ -1,0 +1,72 @@
+{
+    "hook": {
+        "previewFailedFallback": "Preview failed"
+    },
+    "avatarRow": {
+        "presetAvatar": "Preset avatar",
+        "customAvatar": "Custom avatar",
+        "labelWithName": "{{label}} — {{name}}",
+        "perShotIdentityImages": "Per-shot identity images"
+    },
+    "inline": {
+        "expectedCredits_one": "~{{value}} credit",
+        "expectedCredits_other": "~{{value}} credits",
+        "range": "({{low}}–{{high}})",
+        "balanceAvailable": "{{value}} available"
+    },
+    "modal": {
+        "title": "Confirm generation",
+        "estimating": "Estimating cost…",
+        "loadFailed": "Couldn’t load estimate: {{error}}. You can still proceed.",
+        "selections": {
+            "heading": "Your selections",
+            "quality": "Quality",
+            "model": "Model",
+            "modelDefault": "default",
+            "duration": "Duration",
+            "orientation": "Orientation",
+            "orientationLandscape": "Landscape",
+            "orientationPortrait": "Portrait",
+            "audience": "Audience",
+            "language": "Language",
+            "voice": "Voice",
+            "captions": "Captions",
+            "backgroundMusic": "Background music",
+            "soundEffects": "Sound effects",
+            "reviewMode": "Review mode",
+            "reviewModeOn": "on (stop at script)",
+            "attachments": "Attachments",
+            "attachmentsValue_one": "{{count}} file",
+            "attachmentsValue_other": "{{count}} files"
+        },
+        "cost": {
+            "heading": "Estimated cost",
+            "component": "Component",
+            "credits": "Credits",
+            "expectedTotal": "Expected total",
+            "range": "Range: {{low}}–{{high}} credits"
+        },
+        "balance": {
+            "current": "Current balance",
+            "currentValue": "{{value}} credits",
+            "afterExpected": "After expected charge",
+            "afterHigh": "Worst case (high)",
+            "insufficient": "Insufficient credits to cover the worst-case estimate."
+        },
+        "assumptions": {
+            "summary": "Assumptions"
+        },
+        "footer": {
+            "cancel": "Cancel",
+            "insufficientTopUp": "Insufficient credits — top up",
+            "confirm": "Confirm & generate",
+            "confirmCredits_one": " · {{value}} credit",
+            "confirmCredits_other": " · {{value}} credits"
+        }
+    },
+    "common": {
+        "on": "on",
+        "off": "off",
+        "emptyValue": "—"
+    }
+}

@@ -1,0 +1,16 @@
+{
+    "form": {
+        "sessionNameLabel": "{{term}} Name",
+        "sessionNamePlaceholder": "Eg. 2024-2025",
+        "startDateLabel": "Start Date",
+        "startDatePlaceholder": "YYYY-MM-DD",
+        "selectLevelsHeading": "Select levels from courses"
+    },
+    "toast": {
+        "courseAddedSuccess": "{{term}} added successfully",
+        "courseAddFailed": "Failed to add {{term}}"
+    },
+    "button": {
+        "addCourse": "Add {{term}}"
+    }
+}

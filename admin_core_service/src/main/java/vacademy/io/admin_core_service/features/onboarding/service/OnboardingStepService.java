@@ -23,6 +23,8 @@ import vacademy.io.common.exceptions.ResourceNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -71,9 +73,45 @@ public class OnboardingStepService {
         if (request.getSendsLoginCredentials() != null) step.setSendsLoginCredentials(request.getSendsLoginCredentials());
         if (request.getRoleAccess() != null) step.setRoleAccess(toJson(request.getRoleAccess()));
         if (request.getFields() != null) {
-            step.setFieldsConfig(toJson(resolveFieldConfigs(instituteId, stepId, request.getFields())));
+            List<OnboardingStepFieldConfigDTO> resolved = resolveFieldConfigs(instituteId, stepId, request.getFields());
+            step.setFieldsConfig(toJson(resolved));
+            deactivateMappingsNotIn(instituteId, stepId, resolved);
         }
         return onboardingStepRepository.save(step);
+    }
+
+    /**
+     * Soft-deletes the step's ONBOARDING_STEP mappings that this save no longer lists.
+     *
+     * <p>Removing a field from the builder used to drop it from fields_config and leave its
+     * institute_custom_fields mapping ACTIVE forever, so the two sources of "which fields does
+     * this step have" silently diverged -- and they are read by different screens: the builder
+     * (and anything else using the feature-fields lookup) reads the MAPPINGS, while every form
+     * renders from FIELDS_CONFIG. A field present in one and not the other is therefore visible
+     * in the step but absent from the form it's supposed to appear on, with nothing to explain
+     * the difference. Making a removal actually deactivate the mapping is what lets the builder
+     * safely union the two on load (see the frontend's step-dialog hydration): anything in the
+     * mappings but not in fields_config is then genuine drift to restore, rather than a field
+     * someone deliberately deleted coming back from the dead.
+     */
+    private void deactivateMappingsNotIn(String instituteId, String stepId,
+                                          List<OnboardingStepFieldConfigDTO> keptFields) {
+        Set<String> keptIds = keptFields.stream()
+                .map(OnboardingStepFieldConfigDTO::getInstituteCustomFieldId)
+                .filter(StringUtils::hasText)
+                .collect(Collectors.toSet());
+        List<InstituteCustomField> existing = instituteCustomFieldRepository
+                .findByInstituteIdAndTypeAndTypeIdAndStatusIn(instituteId,
+                        CustomFieldTypeEnum.ONBOARDING_STEP.name(), stepId, List.of(StatusEnum.ACTIVE.name()));
+        for (InstituteCustomField mapping : existing) {
+            if (keptIds.contains(mapping.getId())) continue;
+            // Soft-delete only: the master custom_fields row and any already-submitted
+            // custom_field_values answers are untouched, matching how the shared custom-field
+            // machinery deletes mappings everywhere else -- re-attaching the field later
+            // reactivates it and brings the existing answers back with it.
+            mapping.setStatus(StatusEnum.DELETED.name());
+            instituteCustomFieldRepository.save(mapping);
+        }
     }
 
     public void deleteStep(String stepId) {

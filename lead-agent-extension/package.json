@@ -1,0 +1,10 @@
+{
+  "name": "vacademy-lead-agent-extension",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Chrome extension (MV3) for the Vacademy Lead Agent. No dependencies, no build step.",
+  "scripts": {
+    "test": "node --test test/"
+  }
+}

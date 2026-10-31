@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sparkle, PencilSimple, FileText, Plus, Minus } from '@phosphor-icons/react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import {
     CriteriaJson,
     CriteriaItem,
@@ -45,6 +46,7 @@ export const AddEditCriteriaDialog = ({
     onSave,
     onClose,
 }: AddEditCriteriaDialogProps) => {
+    const { t } = useTranslation('assessmentAddEditCriteriaDialog');
     const [selectedTab, setSelectedTab] = useState<'ai' | 'manual' | 'template'>('manual');
     const [aiGeneratedCriteria, setAiGeneratedCriteria] = useState<CriteriaJson | null>(null);
     const [selectedTemplate, setSelectedTemplate] = useState<string | null>(null);
@@ -64,10 +66,10 @@ export const AddEditCriteriaDialog = ({
             }),
         onSuccess: (data) => {
             setAiGeneratedCriteria(data);
-            toast.success('Criteria generated successfully!');
+            toast.success(t('toasts.criteriaGenerated'));
         },
         onError: () => {
-            toast.error('Failed to generate criteria. Please try again.');
+            toast.error(t('toasts.generateFailed'));
         },
     });
 
@@ -86,10 +88,10 @@ export const AddEditCriteriaDialog = ({
     const createTemplateMutation = useMutation({
         mutationFn: createCriteriaTemplate,
         onSuccess: () => {
-            toast.success('Criteria saved as template!');
+            toast.success(t('toasts.templateSaved'));
         },
         onError: () => {
-            toast.error('Failed to save template');
+            toast.error(t('toasts.templateSaveFailed'));
         },
     });
 
@@ -105,7 +107,7 @@ export const AddEditCriteriaDialog = ({
             const validation = validateCriteriaMarks(totalMarks, question.max_marks);
 
             if (!validation.isValid) {
-                toast.error(validation.message || 'Invalid marks distribution');
+                toast.error(validation.message || t('toasts.invalidMarksDistribution'));
                 return;
             }
 
@@ -132,9 +134,9 @@ export const AddEditCriteriaDialog = ({
                 }
             }
         } else if (selectedTab === 'template' && selectedTemplate) {
-            const template = templates.find((t) => t.id === selectedTemplate);
-            if (template) {
-                criteriaToSave = template.criteriaJson;
+            const matchedTemplate = templates.find((tpl) => tpl.id === selectedTemplate);
+            if (matchedTemplate) {
+                criteriaToSave = matchedTemplate.criteriaJson;
                 source = 'template';
             }
         }
@@ -142,9 +144,9 @@ export const AddEditCriteriaDialog = ({
         if (criteriaToSave) {
             onSave(criteriaToSave, source);
             onClose();
-            toast.success('Criteria saved successfully!');
+            toast.success(t('toasts.criteriaSaved'));
         } else {
-            toast.error('Please complete the criteria before saving');
+            toast.error(t('toasts.incompleteCriteria'));
         }
     };
 
@@ -169,15 +171,15 @@ export const AddEditCriteriaDialog = ({
         <MyDialog
             open={open}
             onOpenChange={onClose}
-            heading={`${existingCriteria ? 'Edit' : 'Add'} Evaluation Criteria`}
+            heading={existingCriteria ? t('dialog.headingEdit') : t('dialog.headingAdd')}
             dialogWidth="max-w-3xl"
             footer={
                 <>
                     <MyButton type="button" scale="large" buttonType="secondary" onClick={onClose}>
-                        Cancel
+                        {t('footer.cancel')}
                     </MyButton>
                     <MyButton type="button" scale="large" buttonType="primary" onClick={handleSave}>
-                        Save Criteria
+                        {t('footer.save')}
                     </MyButton>
                 </>
             }
@@ -185,10 +187,10 @@ export const AddEditCriteriaDialog = ({
             {/* Question Info */}
             <div className="mb-4 rounded-md border border-neutral-200 bg-neutral-50 p-4">
                 <p className="text-sm text-neutral-600">
-                    <strong>Question Type:</strong> {question.question_type}
+                    <strong>{t('questionInfo.typeLabel')}</strong> {question.question_type}
                 </p>
                 <p className="text-sm text-neutral-600">
-                    <strong>Max Marks:</strong> {question.max_marks}
+                    <strong>{t('questionInfo.maxMarksLabel')}</strong> {question.max_marks}
                 </p>
             </div>
 
@@ -201,15 +203,15 @@ export const AddEditCriteriaDialog = ({
                 <TabsList className="grid w-full grid-cols-3 bg-neutral-100">
                     <TabsTrigger value="manual" className="flex items-center gap-2">
                         <PencilSimple size={16} weight="bold" />
-                        Manual
+                        {t('tabs.manual')}
                     </TabsTrigger>
                     <TabsTrigger value="ai" className="flex items-center gap-2">
                         <Sparkle size={16} weight="fill" />
-                        AI Generate
+                        {t('tabs.ai')}
                     </TabsTrigger>
                     <TabsTrigger value="template" className="flex items-center gap-2">
                         <FileText size={16} weight="fill" />
-                        Use Template
+                        {t('tabs.template')}
                     </TabsTrigger>
                 </TabsList>
 
@@ -223,7 +225,7 @@ export const AddEditCriteriaDialog = ({
                             >
                                 <div className="flex items-center justify-between">
                                     <h4 className="font-medium text-neutral-700">
-                                        Criteria {index + 1}
+                                        {t('manual.criteriaHeading', { index: index + 1 })}
                                     </h4>
                                     {manualCriteria.length > 1 && (
                                         <button
@@ -236,8 +238,8 @@ export const AddEditCriteriaDialog = ({
                                 </div>
                                 <MyInput
                                     inputType="text"
-                                    inputPlaceholder="e.g., Content Quality"
-                                    label="Criteria Name"
+                                    inputPlaceholder={t('manual.namePlaceholder')}
+                                    label={t('manual.nameLabel')}
                                     input={item.name}
                                     onChangeFunction={(e) =>
                                         updateManualCriteria(index, 'name', e.target.value)
@@ -246,8 +248,8 @@ export const AddEditCriteriaDialog = ({
                                 />
                                 <MyInput
                                     inputType="text"
-                                    inputPlaceholder="e.g., Depth and accuracy of content"
-                                    label="Description"
+                                    inputPlaceholder={t('manual.descriptionPlaceholder')}
+                                    label={t('manual.descriptionLabel')}
                                     input={item.description}
                                     onChangeFunction={(e) =>
                                         updateManualCriteria(index, 'description', e.target.value)
@@ -255,8 +257,8 @@ export const AddEditCriteriaDialog = ({
                                 />
                                 <MyInput
                                     inputType="number"
-                                    inputPlaceholder="0"
-                                    label="Max Marks"
+                                    inputPlaceholder={t('manual.maxMarksPlaceholder')}
+                                    label={t('manual.maxMarksLabel')}
                                     input={String(item.max_marks)}
                                     onChangeFunction={(e) =>
                                         updateManualCriteria(
@@ -277,7 +279,7 @@ export const AddEditCriteriaDialog = ({
                         onClick={addManualCriteriaRow}
                     >
                         <Plus size={16} className="mr-2" />
-                        Add Criteria
+                        {t('manual.addCriteria')}
                     </MyButton>
 
                     {/* Save as Template Checkbox */}
@@ -293,8 +295,10 @@ export const AddEditCriteriaDialog = ({
                             htmlFor="saveAsTemplate"
                             className="cursor-pointer text-sm font-medium text-primary-700"
                         >
-                            Save as template for reuse ({question.question_type} -{' '}
-                            {question.max_marks} marks)
+                            {t('manual.saveAsTemplateLabel', {
+                                questionType: question.question_type,
+                                count: question.max_marks,
+                            })}
                         </label>
                     </div>
 
@@ -304,8 +308,13 @@ export const AddEditCriteriaDialog = ({
                         <p
                             className={`text-sm font-medium ${isManualValid ? 'text-green-700' : 'text-yellow-700'}`}
                         >
-                            Total: {manualTotalMarks} / {question.max_marks} marks
-                            {isManualValid ? ' ✓' : ' (must match question marks)'}
+                            {t('manual.totalMarks', {
+                                achieved: manualTotalMarks,
+                                count: question.max_marks,
+                            })}
+                            {isManualValid
+                                ? t('manual.totalMarksValidSuffix')
+                                : t('manual.totalMarksInvalidSuffix')}
                         </p>
                     </div>
                 </TabsContent>
@@ -318,7 +327,7 @@ export const AddEditCriteriaDialog = ({
                         <>
                             <div className="rounded-md border border-green-200 bg-green-50 p-3">
                                 <p className="text-sm font-medium text-green-700">
-                                    ✓ Criteria generated successfully!
+                                    {t('ai.generatedBanner')}
                                 </p>
                             </div>
                             <div className="space-y-3">
@@ -337,7 +346,7 @@ export const AddEditCriteriaDialog = ({
                                                 </p>
                                             </div>
                                             <span className="ml-3 rounded-md bg-primary-50 px-2 py-1 text-sm font-semibold text-primary-600">
-                                                {item.max_marks} marks
+                                                {t('ai.marksBadge', { count: item.max_marks })}
                                             </span>
                                         </div>
                                     </div>
@@ -352,15 +361,13 @@ export const AddEditCriteriaDialog = ({
                                     generateMutation.mutate();
                                 }}
                             >
-                                Regenerate
+                                {t('ai.regenerate')}
                             </MyButton>
                         </>
                     ) : (
                         <div className="flex flex-col items-center justify-center py-8">
                             <Sparkle size={48} weight="fill" className="mb-4 text-primary-400" />
-                            <p className="mb-4 text-neutral-600">
-                                Let AI generate evaluation criteria for this question
-                            </p>
+                            <p className="mb-4 text-neutral-600">{t('ai.emptyPrompt')}</p>
                             <MyButton
                                 type="button"
                                 scale="large"
@@ -368,7 +375,7 @@ export const AddEditCriteriaDialog = ({
                                 onClick={() => generateMutation.mutate()}
                             >
                                 <Sparkle size={16} weight="fill" className="mr-2" />
-                                Generate with AI
+                                {t('ai.generateButton')}
                             </MyButton>
                         </div>
                     )}
@@ -381,13 +388,13 @@ export const AddEditCriteriaDialog = ({
                     ) : templates.length === 0 ? (
                         <div className="flex flex-col items-center justify-center py-8">
                             <FileText size={48} className="mb-4 text-neutral-300" />
-                            <p className="text-neutral-500">
-                                No templates found for this question type
-                            </p>
+                            <p className="text-neutral-500">{t('template.emptyState')}</p>
                         </div>
                     ) : (
                         <>
-                            <p className="text-sm text-neutral-600">Select a template to use:</p>
+                            <p className="text-sm text-neutral-600">
+                                {t('template.selectPrompt')}
+                            </p>
                             <div className="space-y-2">
                                 {templates.map((template) => (
                                     <div
@@ -406,8 +413,13 @@ export const AddEditCriteriaDialog = ({
                                             {template.description}
                                         </p>
                                         <p className="mt-2 text-xs text-neutral-500">
-                                            {template.criteriaJson.criteria.length} criteria •{' '}
-                                            {template.criteriaJson.max_marks} marks
+                                            {t('template.criteriaCount', {
+                                                count: template.criteriaJson.criteria.length,
+                                            })}{' '}
+                                            •{' '}
+                                            {t('template.marksCount', {
+                                                count: template.criteriaJson.max_marks,
+                                            })}
                                         </p>
                                     </div>
                                 ))}

@@ -1,0 +1,18 @@
+{
+    "header": {
+        "title": "Select Batch and {{subjectPlural}}"
+    },
+    "search": {
+        "placeholder": "Search batches..."
+    },
+    "subjects": {
+        "selectLabel": "Select Subjects",
+        "selectPlaceholder": "Select subjects",
+        "description": "You can select multiple subjects for this batch",
+        "requiredError": "At least one subject is required"
+    },
+    "emptyState": {
+        "noMatchingBatches": "No matching batches",
+        "noBatchesAvailable": "No batches available"
+    }
+}

@@ -1,0 +1,28 @@
+{
+    "header": {
+        "title": "{{term}} प्रबंधन",
+        "counts": {
+            "total": "कुल",
+            "active": "सक्रिय",
+            "inactive": "निष्क्रिय",
+            "invited": "आमंत्रित"
+        },
+        "actions": {
+            "invite": "आमंत्रित करें",
+            "enroll": "नामांकन करें",
+            "enrollType": "{{term}} नामांकित करें",
+            "noCourseContent": "इससे पहले आपको एक कोर्स बनाना होगा और उसमें एक विषय जोड़ना होगा"
+        }
+    },
+    "inviteLinksDialog": {
+        "invitePage": "आमंत्रण पृष्ठ",
+        "unknownSession": "अज्ञात सत्र",
+        "dialogTitle": "📨 आमंत्रण लिंक - {{sessionName}}",
+        "unknownLevel": "अज्ञात स्तर",
+        "courseLabel": "कोर्स:",
+        "levelLabel": "स्तर:",
+        "sessionLabel": "सत्र:",
+        "inviteLinkLabel": "आमंत्रण लिंक:",
+        "noBatchesFound": "इस सत्र के लिए कोई बैच नहीं मिला"
+    }
+}

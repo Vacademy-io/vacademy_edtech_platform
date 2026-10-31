@@ -1,0 +1,14 @@
+{
+    "trigger": {
+        "releaseResult": "Release Result"
+    },
+    "dialog": {
+        "title": "Release Result For All {{learnerPlural}}",
+        "attention": "Attention",
+        "confirmText": "Are you sure you want to release result for all {{learnerLower}}s?",
+        "confirmButton": "Yes"
+    },
+    "toasts": {
+        "releaseResultSuccess": "Result for this assessment has been released for all students. Participants need to check their email!"
+    }
+}

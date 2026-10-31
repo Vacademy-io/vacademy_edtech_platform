@@ -35,5 +35,13 @@ public class UnifiedSendResponse {
         private boolean success;
         private String status; // SENT, FAILED, SKIPPED_OPT_OUT, QUEUED
         private String error;
+
+        /**
+         * Provider message id (WhatsApp wamid) for an accepted send. The caller needs it to ask what
+         * actually happened afterwards: this response can only report that the provider took the
+         * message, and the delivery verdict arrives later on the status webhook. Null for channels
+         * or paths that issue no id, and for a send the provider refused outright.
+         */
+        private String messageId;
     }
 }

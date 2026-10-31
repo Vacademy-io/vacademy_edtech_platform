@@ -1,0 +1,9 @@
+{
+  "emptyState": {
+    "message": "Aucun utilisateur de l'établissement n'existe."
+  },
+  "status": {
+    "active": "Actif",
+    "disabled": "Désactivé"
+  }
+}

@@ -3,6 +3,7 @@ import { Doubt } from '@/routes/study-library/courses/course-details/subjects/mo
 import { isUserAdmin } from '@/utils/userDetails';
 import { BookOpen, ChatsCircle, Clock, Eye, GraduationCap, User } from '@phosphor-icons/react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MyDialog } from '@/components/design-system/dialog';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
@@ -14,9 +15,14 @@ import { useInstituteDetailsStore } from '@/stores/students/students-list/useIns
 import { useDoubtTable } from '../../-hooks/useDoubtTable';
 import { convertCapitalToTitleCase } from '@/lib/utils';
 import { AssigneeCell } from './assignee-cell';
+import type { TFunction } from 'i18next';
 
-const calculateTimeDifference = (raisedTime: string, resolvedTime: string | null) => {
-    if (!resolvedTime) return 'Not resolved yet';
+const calculateTimeDifference = (
+    raisedTime: string,
+    resolvedTime: string | null,
+    t: TFunction
+) => {
+    if (!resolvedTime) return t('notResolvedYet');
 
     const raised = new Date(raisedTime);
     const resolved = new Date(resolvedTime);
@@ -28,12 +34,12 @@ const calculateTimeDifference = (raisedTime: string, resolvedTime: string | null
     const seconds = Math.floor((diffInMs % (1000 * 60)) / 1000);
 
     const parts = [];
-    if (days > 0) parts.push(`${days}d`);
-    if (hours > 0) parts.push(`${hours}h`);
-    if (minutes > 0) parts.push(`${minutes}m`);
-    if (seconds > 0) parts.push(`${seconds}s`);
+    if (days > 0) parts.push(t('durationUnits.days', { count: days }));
+    if (hours > 0) parts.push(t('durationUnits.hours', { count: hours }));
+    if (minutes > 0) parts.push(t('durationUnits.minutes', { count: minutes }));
+    if (seconds > 0) parts.push(t('durationUnits.seconds', { count: seconds }));
 
-    return parts.join(' ') || '0s';
+    return parts.join(' ') || t('durationUnits.seconds', { count: 0 });
 };
 
 const getInitials = (name?: string) => {
@@ -66,6 +72,7 @@ export const ActionsCell = ({ doubt, refetch }: { doubt: Doubt; refetch: () => v
 };
 
 export const DoubtDetailsDialog = ({ doubt, refetch }: { doubt: Doubt; refetch: () => void }) => {
+    const { t } = useTranslation('studyLibraryActionsCell');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const isAdmin = isUserAdmin();
     const { instituteDetails } = useInstituteDetailsStore();
@@ -77,7 +84,7 @@ export const DoubtDetailsDialog = ({ doubt, refetch }: { doubt: Doubt; refetch: 
     const isGuest = !doubt.user_id && !!doubt.guest_name;
     const learnerName = isGuest
         ? doubt.guest_name!
-        : userDetailsRecord[doubt.user_id]?.name ?? 'Anonymous';
+        : userDetailsRecord[doubt.user_id]?.name ?? t('anonymous');
     const batchName = batch
         ? convertCapitalToTitleCase(batch.level.level_name) +
           ' ' +
@@ -86,7 +93,7 @@ export const DoubtDetailsDialog = ({ doubt, refetch }: { doubt: Doubt; refetch: 
           convertCapitalToTitleCase(batch.session.session_name)
         : '';
     const isResolved = doubt.status === 'RESOLVED';
-    const resolveTime = calculateTimeDifference(doubt.raised_time, doubt.resolved_time);
+    const resolveTime = calculateTimeDifference(doubt.raised_time, doubt.resolved_time, t);
 
     return (
         <MyDialog
@@ -94,12 +101,12 @@ export const DoubtDetailsDialog = ({ doubt, refetch }: { doubt: Doubt; refetch: 
                 <button
                     type="button"
                     className="flex size-8 items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-primary-600"
-                    aria-label="View doubt details"
+                    aria-label={t('viewDoubtDetails')}
                 >
                     <Eye size={18} />
                 </button>
             }
-            heading="Doubt Details"
+            heading={t('doubtDetails')}
             open={isDialogOpen}
             onOpenChange={setIsDialogOpen}
             dialogWidth="w-[95vw] sm:min-w-[640px] sm:w-auto"
@@ -110,7 +117,7 @@ export const DoubtDetailsDialog = ({ doubt, refetch }: { doubt: Doubt; refetch: 
                         <section className="flex flex-col gap-2">
                             <SectionHeading
                                 icon={<BookOpen size={16} weight="duotone" />}
-                                title="Doubt Description"
+                                title={t('doubtDescription')}
                             />
                             <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3 text-sm text-neutral-800">
                                 <div dangerouslySetInnerHTML={{ __html: doubt.html_text }} />
@@ -120,12 +127,12 @@ export const DoubtDetailsDialog = ({ doubt, refetch }: { doubt: Doubt; refetch: 
                         <section className="flex flex-col gap-2">
                             <SectionHeading
                                 icon={<BookOpen size={16} weight="duotone" />}
-                                title="Content Information"
+                                title={t('contentInformation')}
                             />
                             <div className="grid grid-cols-1 gap-2 rounded-lg border border-neutral-200 bg-white p-3 text-sm sm:grid-cols-3">
                                 <div className="flex flex-col gap-1">
                                     <span className="text-xs uppercase tracking-wide text-neutral-400">
-                                        Type
+                                        {t('type')}
                                     </span>
                                     <Badge
                                         variant="outline"
@@ -136,7 +143,7 @@ export const DoubtDetailsDialog = ({ doubt, refetch }: { doubt: Doubt; refetch: 
                                 </div>
                                 <div className="flex flex-col gap-1">
                                     <span className="text-xs uppercase tracking-wide text-neutral-400">
-                                        Title
+                                        {t('title')}
                                     </span>
                                     <span className="truncate font-medium text-neutral-800">
                                         {doubt.source_name || '—'}
@@ -144,7 +151,7 @@ export const DoubtDetailsDialog = ({ doubt, refetch }: { doubt: Doubt; refetch: 
                                 </div>
                                 <div className="flex flex-col gap-1">
                                     <span className="text-xs uppercase tracking-wide text-neutral-400">
-                                        Location
+                                        {t('location')}
                                     </span>
                                     <div className="flex items-center">
                                         <TimestampCell doubt={doubt} />
@@ -157,7 +164,7 @@ export const DoubtDetailsDialog = ({ doubt, refetch }: { doubt: Doubt; refetch: 
                             <section className="flex flex-col gap-2">
                                 <SectionHeading
                                     icon={<GraduationCap size={16} weight="duotone" />}
-                                    title="Assign Teacher"
+                                    title={t('assignTeacher')}
                                 />
                                 <div className="rounded-lg border border-neutral-200 bg-white p-3">
                                     <AssigneeCell doubt={doubt} />
@@ -168,11 +175,13 @@ export const DoubtDetailsDialog = ({ doubt, refetch }: { doubt: Doubt; refetch: 
                         <section className="flex flex-col gap-2">
                             <SectionHeading
                                 icon={<ChatsCircle size={16} weight="duotone" />}
-                                title={`Conversation${
+                                title={
                                     doubt.replies && doubt.replies.length > 0
-                                        ? ` (${doubt.replies.length})`
-                                        : ''
-                                }`}
+                                        ? t('conversationWithCount', {
+                                              count: doubt.replies.length,
+                                          })
+                                        : t('conversation')
+                                }
                             />
                             <div className="rounded-lg border border-neutral-200 bg-white p-3">
                                 <ShowReplies parent={doubt} refetch={refetch} />
@@ -188,7 +197,7 @@ export const DoubtDetailsDialog = ({ doubt, refetch }: { doubt: Doubt; refetch: 
                         <section className="flex flex-col gap-2">
                             <SectionHeading
                                 icon={<User size={16} weight="duotone" />}
-                                title="Learner"
+                                title={t('learner')}
                             />
                             <div className="flex items-center gap-3 rounded-lg border border-neutral-200 bg-white p-3">
                                 <Avatar className="size-11 bg-primary-50">
@@ -201,7 +210,7 @@ export const DoubtDetailsDialog = ({ doubt, refetch }: { doubt: Doubt; refetch: 
                                         {learnerName}
                                         {isGuest && (
                                             <span className="shrink-0 rounded-full bg-neutral-100 px-1.5 py-0.5 text-caption font-semibold text-neutral-500">
-                                                Guest
+                                                {t('guest')}
                                             </span>
                                         )}
                                     </span>
@@ -215,7 +224,7 @@ export const DoubtDetailsDialog = ({ doubt, refetch }: { doubt: Doubt; refetch: 
                         <section className="flex flex-col gap-2">
                             <SectionHeading
                                 icon={<Clock size={16} weight="duotone" />}
-                                title="Summary"
+                                title={t('summary')}
                             />
                             <div
                                 className={`flex flex-col gap-1 rounded-lg border p-3 ${
@@ -225,7 +234,7 @@ export const DoubtDetailsDialog = ({ doubt, refetch }: { doubt: Doubt; refetch: 
                                 }`}
                             >
                                 <span className="text-xs uppercase tracking-wide text-neutral-500">
-                                    Resolve Time
+                                    {t('resolveTime')}
                                 </span>
                                 <span
                                     className={`text-lg font-semibold ${
@@ -236,7 +245,9 @@ export const DoubtDetailsDialog = ({ doubt, refetch }: { doubt: Doubt; refetch: 
                                 </span>
                                 <Separator className="my-1" />
                                 <span className="text-xs text-neutral-500">
-                                    Status: {isResolved ? 'Resolved' : 'Unresolved'}
+                                    {t('statusLabel', {
+                                        status: isResolved ? t('resolved') : t('unresolved'),
+                                    })}
                                 </span>
                             </div>
                         </section>

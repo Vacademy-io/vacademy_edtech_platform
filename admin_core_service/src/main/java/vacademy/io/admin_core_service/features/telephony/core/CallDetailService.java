@@ -129,7 +129,10 @@ public class CallDetailService {
             if (ai == null) return;
 
             out.diagHealth(ai.getDiagHealth())
-               .diagFaults(splitFaults(ai.getDiagFaults()));
+               .diagFaults(splitFaults(ai.getDiagFaults()))
+               .followUp(ai.getFollowUp())
+               .followUpGist(ai.getFollowUpGist())
+               .callerWordCount(ai.getCallerWordCount());
 
             Map<String, Object> blob = ai.getDiagnostics();
             if (blob == null || blob.isEmpty()) return;

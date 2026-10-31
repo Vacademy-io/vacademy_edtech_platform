@@ -1,3 +1,4 @@
+import type { TFunction } from 'i18next';
 import { SlideGeneration, SessionProgress } from '../../../shared/types';
 
 /**
@@ -22,7 +23,10 @@ export function getSessionProgress(sessionSlides: SlideGeneration[]): number {
 /**
  * Group slides by session and calculate progress for each session
  */
-export function getSessionsWithProgress(slides: SlideGeneration[]): SessionProgress[] {
+export function getSessionsWithProgress(
+    slides: SlideGeneration[],
+    t: TFunction
+): SessionProgress[] {
     // Group slides by sessionId
     const slidesBySession = new Map<string, SlideGeneration[]>();
     
@@ -43,7 +47,7 @@ export function getSessionsWithProgress(slides: SlideGeneration[]): SessionProgr
     
     slidesBySession.forEach((sessionSlides, sessionId) => {
         // Get session title from first slide
-        const sessionTitle = sessionSlides[0]?.sessionTitle || 'Untitled Session';
+        const sessionTitle = sessionSlides[0]?.sessionTitle || t('sessionUtils.untitledSession');
         
         // Calculate progress
         const progress = getSessionProgress(sessionSlides);

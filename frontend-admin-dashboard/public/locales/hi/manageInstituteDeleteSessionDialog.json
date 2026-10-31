@@ -1,0 +1,11 @@
+{
+    "heading": "{{session}} हटाएं",
+    "attention": "ध्यान दें",
+    "confirmMessage": "{{session}} का सारा डेटा हटा दिया जाएगा। क्या आप वाकई {{session}} हटाना चाहते हैं",
+    "no": "नहीं",
+    "yes": "हां",
+    "toast": {
+        "deleted": " {{session}} सफलतापूर्वक हटाया गया!",
+        "deleteFailed": "{{session}} हटाने में विफल"
+    }
+}

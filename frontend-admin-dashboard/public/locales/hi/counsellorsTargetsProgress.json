@@ -1,0 +1,13 @@
+{
+    "noTargetSet": "कोई लक्ष्य निर्धारित नहीं है",
+    "metricFull": {
+        "CONVERSIONS": "रूपांतरण",
+        "LEADS_ASSIGNED": "असाइन की गई लीड",
+        "CALLS_MADE": "की गई कॉलें"
+    },
+    "metricShort": {
+        "CONVERSIONS": "रूपां.",
+        "LEADS_ASSIGNED": "लीड",
+        "CALLS_MADE": "कॉलें"
+    }
+}

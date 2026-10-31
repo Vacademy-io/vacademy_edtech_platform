@@ -1,0 +1,360 @@
+{
+    "design": {
+        "heading": "Design"
+    },
+    "sections": {
+        "spacing": "Espacement",
+        "layoutWidth": "Mise en page et largeur",
+        "background": "Arrière-plan",
+        "borderShadow": "Bordure et ombre",
+        "premiumEffects": "Effets premium",
+        "decorations": "Décorations",
+        "effects": "Effets",
+        "typography": "Typographie",
+        "animation": "Animation",
+        "visibility": "Visibilité"
+    },
+    "presetRow": {
+        "custom": "Personnalisé ({{value}})"
+    },
+    "spacing": {
+        "paddingTop": "Marge intérieure haute",
+        "paddingBottom": "Marge intérieure basse",
+        "paddingLeft": "Marge intérieure gauche",
+        "paddingRight": "Marge intérieure droite",
+        "marginTop": "Marge extérieure haute",
+        "marginBottom": "Marge extérieure basse"
+    },
+    "layoutWidth": {
+        "description": "Enveloppe de section : l'arrière-plan s'étend sur toute la largeur de la page tandis que le contenu reste dans une colonne centrée. Laissez tout désactivé pour la mise en page classique en bloc unique.",
+        "contentWidth": {
+            "label": "Largeur du contenu",
+            "options": {
+                "off": "Désactivé",
+                "text": "Texte",
+                "narrow": "Étroite",
+                "default": "Par défaut",
+                "wide": "Large",
+                "full": "Pleine"
+            }
+        },
+        "customMaxWidth": {
+            "label": "Largeur maximale personnalisée",
+            "placeholder": "ex. 820px (remplace le préréglage)"
+        },
+        "overlapTop": {
+            "label": "Chevauchement de la section précédente",
+            "options": {
+                "none": "Aucun"
+            }
+        },
+        "overlapHint": "Les chevauchements sont automatiquement aplatis sur mobile.",
+        "zIndex": {
+            "label": "Ordre d'empilement (z-index)",
+            "options": {
+                "auto": "Auto"
+            }
+        },
+        "minHeight": {
+            "label": "Hauteur minimale",
+            "options": {
+                "off": "Désactivé",
+                "fullScreen": "Plein écran"
+            }
+        },
+        "verticalAlign": {
+            "label": "Alignement vertical (dans la hauteur minimale)",
+            "options": {
+                "top": "Haut",
+                "center": "Centre",
+                "bottom": "Bas"
+            }
+        },
+        "sticky": {
+            "label": "Épingler pendant le défilement (sticky)",
+            "options": {
+                "off": "Désactivé",
+                "top80": "Haut 80",
+                "top96": "Haut 96",
+                "top120": "Haut 120"
+            },
+            "hint": "Épingle ce bloc à l'intérieur d'une mise en page en colonnes — réglez l'alignement vertical de la mise en page sur « Étirer » pour qu'il ait de la place pour se déplacer."
+        }
+    },
+    "background": {
+        "color": {
+            "label": "Couleur d'arrière-plan"
+        },
+        "image": {
+            "label": "Image d'arrière-plan",
+            "placeholder": "URL de l'image ou téléversement"
+        },
+        "size": {
+            "label": "Taille de l'arrière-plan",
+            "options": {
+                "cover": "Couvrir",
+                "contain": "Contenir",
+                "auto": "Auto"
+            }
+        },
+        "overlayColor": {
+            "label": "Couleur de superposition"
+        },
+        "gradient": {
+            "label": "Dégradé",
+            "enabled": "Activé",
+            "off": "Désactivé",
+            "type": {
+                "label": "Type",
+                "options": {
+                    "linear": "Linéaire",
+                    "radial": "Radial"
+                }
+            },
+            "angle": {
+                "label": "Angle ({{angle}}°)"
+            },
+            "stop": {
+                "label": "Point {{index}}"
+            },
+            "addStop": "+ Ajouter un point"
+        }
+    },
+    "borderShadow": {
+        "borderWidth": {
+            "label": "Épaisseur de la bordure"
+        },
+        "borderColor": {
+            "label": "Couleur de la bordure"
+        },
+        "borderStyle": {
+            "label": "Style de bordure",
+            "options": {
+                "solid": "Pleine",
+                "dashed": "Tirets",
+                "dotted": "Pointillés"
+            }
+        },
+        "borderRadius": {
+            "label": "Rayon de bordure",
+            "options": {
+                "none": "Aucun",
+                "full": "Complet"
+            }
+        },
+        "boxShadow": {
+            "label": "Ombre portée",
+            "options": {
+                "none": "Aucune",
+                "sm": "P",
+                "md": "M",
+                "lg": "G",
+                "xl": "TG",
+                "xxl": "2TG"
+            }
+        }
+    },
+    "premiumEffects": {
+        "glassSurface": {
+            "label": "Surface verre",
+            "options": {
+                "off": "Désactivé",
+                "subtle": "Subtile",
+                "medium": "Moyenne",
+                "strong": "Forte"
+            }
+        },
+        "glow": {
+            "label": "Lueur",
+            "options": {
+                "off": "Désactivée",
+                "soft": "Douce",
+                "medium": "Moyenne",
+                "bold": "Marquée"
+            }
+        },
+        "borderGradient": {
+            "label": "Dégradé de bordure",
+            "options": {
+                "off": "Désactivé",
+                "primary": "Principal",
+                "bold": "Marqué",
+                "aurora": "Aurora"
+            },
+            "hint": "Le dégradé de bordure s'approprie la surface — les calques d'arrière-plan et les images sont ignorés tant qu'il est actif."
+        },
+        "meshBackground": {
+            "label": "Arrière-plan maillé",
+            "options": {
+                "off": "Désactivé",
+                "soft": "Doux",
+                "bold": "Marqué",
+                "aurora": "Aurora"
+            }
+        },
+        "imageOverlay": {
+            "label": "Superposition d'image",
+            "options": {
+                "off": "Désactivée",
+                "scrim": "Voile",
+                "bottom": "Bas",
+                "light": "Clair",
+                "brand": "Marque"
+            }
+        }
+    },
+    "decorations": {
+        "ornaments": {
+            "label": "Ornements",
+            "off": "Désactivé"
+        },
+        "ornamentsHint": "Formes d'ambiance dessinées derrière le contenu, colorées selon le thème actif. Discrètes par conception.",
+        "divider": {
+            "labelTop": "Séparateur · bord supérieur",
+            "labelBottom": "Séparateur · bord inférieur",
+            "options": {
+                "off": "Désactivé",
+                "wave": "Vague",
+                "angle": "Angle",
+                "curve": "Courbe"
+            }
+        },
+        "dividerHeight": {
+            "label": "Hauteur du séparateur",
+            "options": {
+                "s": "P",
+                "m": "M",
+                "l": "G"
+            },
+            "hint": "Le séparateur est découpé dans la couleur d'arrière-plan de la page, fondant cette section avec ses voisines. Donnez à la section son propre arrière-plan pour que la forme soit visible."
+        }
+    },
+    "effects": {
+        "opacity": {
+            "label": "Opacité ({{percent}} %)"
+        },
+        "maxWidth": {
+            "label": "Largeur maximale",
+            "layoutHint": "La largeur est contrôlée par « Mise en page et largeur » tant que l'enveloppe de section est active (utilisez sa largeur maximale personnalisée là-bas).",
+            "options": {
+                "none": "Aucune"
+            }
+        },
+        "minHeight": {
+            "label": "Hauteur minimale (personnalisée — préréglages dans Mise en page et largeur)",
+            "placeholder": "ex. 400px"
+        },
+        "customClass": {
+            "label": "Classe CSS personnalisée",
+            "placeholder": "ex. my-hero-section"
+        }
+    },
+    "typography": {
+        "fontFamily": {
+            "label": "Police",
+            "default": "Par défaut",
+            "serifSuffix": "{{label}} (serif)"
+        },
+        "fontSize": {
+            "label": "Taille de police"
+        },
+        "fontWeight": {
+            "label": "Graisse de police",
+            "options": {
+                "regular": "Normale",
+                "medium": "Moyenne",
+                "semi": "Semi-grasse",
+                "bold": "Grasse",
+                "extra": "Extra-grasse"
+            }
+        },
+        "lineHeight": {
+            "label": "Hauteur de ligne ({{value}})"
+        },
+        "letterSpacing": {
+            "label": "Espacement des lettres",
+            "options": {
+                "tight": "Serré",
+                "normal": "Normal",
+                "wide": "Large",
+                "wider": "Plus large"
+            }
+        },
+        "textColor": {
+            "label": "Couleur du texte"
+        },
+        "textAlign": {
+            "label": "Alignement du texte",
+            "options": {
+                "left": "Gauche",
+                "center": "Centre",
+                "right": "Droite"
+            }
+        },
+        "textTransform": {
+            "label": "Transformation du texte",
+            "options": {
+                "none": "Aucune",
+                "upper": "MAJUSCULES",
+                "lower": "minuscules",
+                "title": "Titre"
+            }
+        }
+    },
+    "animation": {
+        "entrance": {
+            "label": "Animation d'entrée",
+            "options": {
+                "none": "Aucune",
+                "fadeIn": "Fondu entrant",
+                "fadeUp": "Fondu vers le haut",
+                "fadeDown": "Fondu vers le bas",
+                "fadeLeft": "Fondu vers la gauche",
+                "fadeRight": "Fondu vers la droite",
+                "scaleUp": "Zoom avant",
+                "slideUp": "Glissement vers le haut"
+            }
+        },
+        "stagger": {
+            "label": "Décalage des enfants (cartes/éléments en cascade)",
+            "options": {
+                "off": "Désactivé",
+                "fast": "Rapide",
+                "normal": "Normal",
+                "slow": "Lent"
+            }
+        },
+        "duration": {
+            "label": "Durée ({{ms}}ms)"
+        },
+        "delay": {
+            "label": "Délai ({{ms}}ms)"
+        },
+        "easing": {
+            "label": "Courbe d'accélération",
+            "options": {
+                "ease": "Progressif",
+                "easeIn": "Accélération",
+                "easeOut": "Décélération",
+                "easeInOut": "Accélération-décélération"
+            }
+        },
+        "hover": {
+            "label": "Effet au survol",
+            "options": {
+                "none": "Aucun",
+                "lift": "Soulèvement",
+                "glow": "Lueur",
+                "scale": "Zoom",
+                "brighten": "Éclaircissement"
+            }
+        }
+    },
+    "visibility": {
+        "viewports": {
+            "desktop": "Ordinateur",
+            "tablet": "Tablette",
+            "mobile": "Mobile"
+        }
+    }
+}

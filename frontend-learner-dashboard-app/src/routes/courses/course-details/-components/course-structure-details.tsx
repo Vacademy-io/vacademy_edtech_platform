@@ -1,4 +1,5 @@
 import { useNavHeadingStore } from "@/stores/layout-container/useNavHeadingStore";
+import { useTranslation } from "react-i18next";
 import { useEffect, useState, useCallback } from "react";
 import { PullToRefreshWrapper } from "@/components/design-system/pull-to-refresh";
 import { fetchStudyLibraryDetails } from "@/services/study-library/getStudyLibraryDetails";
@@ -34,37 +35,23 @@ import { ContentTerms, SystemTerms } from "@/types/naming-settings";
 import { getTerminology } from "@/components/common/layout-container/sidebar/utils";
 import { getPublicUrlWithoutLogin } from "@/services/upload_file";
 
-export interface Chapter {
-  id: string;
-  chapter_name: string;
-  status: string;
-  description: string;
-  file_id: string | null;
-  chapter_order: number;
-}
-export interface ChapterMetadata {
-  chapter: Chapter;
-  slides_count: {
-    video_count: number;
-    pdf_count: number;
-    doc_count: number;
-    unknown_count: number;
-  };
-  chapter_in_package_sessions: string[];
-}
-export interface Module {
-  id: string;
-  module_name: string;
-  status: string;
-  description: string;
-  thumbnail_id: string;
-}
-export interface ModuleWithChapters {
-  module: Module;
-  module_order: number | null;
-  chapters: Chapter[];
-}
-export type SubjectModulesMap = { [subjectId: string]: ModuleWithChapters[] };
+// Course-structure data contract — shared with the other course-details view so
+// the two cannot drift on the server payload. Re-exported because existing call
+// sites import these types from this module.
+import type {
+  Chapter,
+  ChapterMetadata,
+  Module,
+  ModuleWithChapters,
+  SubjectModulesMap,
+} from "@/types/course-structure";
+export type {
+  Chapter,
+  ChapterMetadata,
+  Module,
+  ModuleWithChapters,
+  SubjectModulesMap,
+};
 
 export const CourseStructureDetails = ({
   selectedSession,
@@ -82,6 +69,7 @@ export const CourseStructureDetails = ({
   onModulesLoadingChange?: (loading: boolean) => void;
 }) => {
   // courseStructure value: ${courseStructure}
+  const { t } = useTranslation("coursesRouteB");
   const { setNavHeading } = useNavHeadingStore();
 
   const [studyLibraryData, setStudyLibraryData] = useState<SubjectType[]>([]);
@@ -422,10 +410,14 @@ export const CourseStructureDetails = ({
   useEffect(() => {
     setNavHeading(
       <div className="flex items-center gap-2">
-        <div>Course Details</div>
+        <div>
+          {t("courseStructure.navHeading", {
+            course: getTerminology(ContentTerms.Course, SystemTerms.Course),
+          })}
+        </div>
       </div>
     );
-  }, []);
+  }, [t]);
 
   // Mount/unmount tracking removed for cleaner console
 
@@ -443,8 +435,9 @@ export const CourseStructureDetails = ({
           <div className="flex items-center gap-2">
             <TreeStructure size={18} className="text-primary-600" />
             <span className="text-sm font-medium text-neutral-700">
-              {getTerminology(ContentTerms.Course, SystemTerms.Course)}{" "}
-              Structure
+              {t("courseStructure.heading", {
+                course: getTerminology(ContentTerms.Course, SystemTerms.Course),
+              })}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -457,12 +450,12 @@ export const CourseStructureDetails = ({
               {isAllExpanded ? (
                 <>
                   <FolderOpen size={14} className="me-1.5" />
-                  Collapse All
+                  {t("courseStructure.collapseAll")}
                 </>
               ) : (
                 <>
                   <Folder size={14} className="me-1.5" />
-                  Expand All
+                  {t("courseStructure.expandAll")}
                 </>
               )}
             </Button>
@@ -827,7 +820,7 @@ export const CourseStructureDetails = ({
                                             {(slidesMap[ch.id] ?? []).length ===
                                             0 ? (
                                               <div className="text-xs px-2 py-1 text-neutral-400 italic bg-neutral-50/50 rounded">
-                                                No slides in this chapter.
+                                                {t("courseStructure.noSlides")}
                                               </div>
                                             ) : (
                                               (slidesMap[ch.id] ?? []).map(
@@ -929,7 +922,7 @@ export const CourseStructureDetails = ({
                                           {(slidesMap[ch.id] ?? []).length ===
                                           0 ? (
                                             <div className="text-xs px-2 py-1 text-neutral-400 italic bg-neutral-50/50 rounded">
-                                              No slides in this chapter.
+                                              {t("courseStructure.noSlides")}
                                             </div>
                                           ) : (
                                             (slidesMap[ch.id] ?? []).map(
@@ -1005,7 +998,7 @@ export const CourseStructureDetails = ({
                                           {(slidesMap[ch.id] ?? []).length ===
                                           0 ? (
                                             <div className="text-xs px-2 text-neutral-400 italic bg-neutral-50/50 rounded">
-                                              No slides in this chapter.
+                                              {t("courseStructure.noSlides")}
                                             </div>
                                           ) : (
                                             (slidesMap[ch.id] ?? []).map(
