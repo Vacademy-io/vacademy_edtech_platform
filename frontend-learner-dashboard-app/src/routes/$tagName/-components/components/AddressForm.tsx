@@ -28,6 +28,8 @@ interface AddressFormProps {
    * we can't reliably parse them back out of the stored addressLine.
    */
   initial?: { city?: string; region?: string; pinCode?: string };
+  /** Called with the PIN whenever it changes (typed or pre-filled), e.g. to price shipping by PIN. */
+  onPinCodeChange?: (pinCode: string) => void;
 }
 
 const INDIAN_STATES = [
@@ -51,7 +53,7 @@ const inputDefault = "border-gray-200 focus:ring-primary-50 focus:border-primary
 const inputError = "border-red-300 focus:ring-red-50";
 const errorText = "text-red-500 text-caption font-semibold";
 
-export const AddressForm = forwardRef<AddressFormHandle, AddressFormProps>(({ initial }, ref) => {
+export const AddressForm = forwardRef<AddressFormHandle, AddressFormProps>(({ initial, onPinCodeChange }, ref) => {
   const { t } = useTranslation("coursePlayerB");
   const [houseNo, setHouseNo] = useState("");
   const [area, setArea] = useState("");
@@ -80,6 +82,9 @@ export const AddressForm = forwardRef<AddressFormHandle, AddressFormProps>(({ in
   useEffect(() => {
     if (initial?.pinCode) setPinCode(initial.pinCode);
   }, [initial?.pinCode]);
+  useEffect(() => {
+    onPinCodeChange?.(pinCode);
+  }, [pinCode, onPinCodeChange]);
 
   // Debounced India Post lookup. Fires once `pinCode` is a clean 6-digit
   // string. Auto-fills state + district + Post Office list. User can still

@@ -18,8 +18,10 @@ import { Preferences } from "@capacitor/preferences";
 import { PriceWithMrp } from "@/components/common/price-with-mrp";
 import {
   resolveAdditionalCharges,
+  resolveZoneCharges,
   sumChargeAmounts,
   ResolvedCharge,
+  UnresolvedCharge,
 } from "../../-utils/additional-charges-util";
 import {
   PENDING_ORDER_CHECK_WINDOW_MS,
@@ -654,6 +656,13 @@ export const CartComponent: React.FC<CartComponentProps> = ({
     if (isRentMode) return [];
     return resolveAdditionalCharges(globalSettings, "buy", buyModeItemQty);
   }, [globalSettings, isRentMode, buyModeItemQty]);
+  // PIN-priced (zone) shipping has no amount until the learner enters a delivery PIN at
+  // checkout, so the cart lists it as "calculated at checkout" and keeps it out of the
+  // total. With no PIN every such charge is unresolved, which is what lists it here.
+  const pendingZoneCharges = useMemo<UnresolvedCharge[]>(() => {
+    if (isRentMode) return [];
+    return resolveZoneCharges(globalSettings, "buy", buyModeItemQty, null).unresolved;
+  }, [globalSettings, isRentMode, buyModeItemQty]);
   const additionalChargesTotal = sumChargeAmounts(resolvedAdditionalCharges);
   const buyModeSubtotal = getTotal();
   const buyModeGrandTotal = buyModeSubtotal + additionalChargesTotal;
@@ -887,6 +896,12 @@ export const CartComponent: React.FC<CartComponentProps> = ({
                 <span className="font-medium">₹{charge.amount.toFixed(2)}</span>
               </div>
             ))}
+            {pendingZoneCharges.map((charge) => (
+              <div key={charge.key} className="flex justify-between items-center gap-3 text-sm text-gray-700">
+                <span>{charge.label}</span>
+                <span className="text-end text-gray-500">{t("cart.chargeCalculatedAtCheckout")}</span>
+              </div>
+            ))}
             <div className="flex justify-between items-center pt-2 border-t border-gray-200">
               <span className="text-base sm:text-lg font-semibold text-gray-900">{t("cart.total")}</span>
               <span className="text-base sm:text-lg font-bold text-gray-900">₹{buyModeGrandTotal.toFixed(2)}</span>
@@ -916,6 +931,8 @@ export const CartComponent: React.FC<CartComponentProps> = ({
         isPreviewMode={isPreviewMode}
         isRentMode={false}
         additionalCharges={resolvedAdditionalCharges}
+        globalSettings={globalSettings}
+        bookQuantity={buyModeItemQty}
         catalogueTag={tagName}
       />
     </div>

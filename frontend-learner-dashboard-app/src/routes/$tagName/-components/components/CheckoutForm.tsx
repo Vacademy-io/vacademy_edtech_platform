@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Cross2Icon } from "@radix-ui/react-icons";
@@ -32,13 +32,19 @@ import { performFullAuthCycle } from "@/services/auth-cycle-service";
 import { loginEnrolledUser } from "@/services/signup-api";
 import { AddressForm, AddressFormHandle } from "./AddressForm";
 import {
+    ChargeResolution,
     ResolvedCharge,
     buildChargeEnrollmentEntries,
+    resolveZoneCharges,
     sumChargeAmounts,
 } from "../../-utils/additional-charges-util";
+import type { GlobalSettings } from "../../-types/course-catalogue-types";
 import { clearPendingCheckout, useCartStore } from "../../-stores/cart-store";
 import { pollPaymentOutcome } from "../../-utils/payment-confirmation";
 import { releaseStockHold } from "@/components/common/enroll-by-invite/-services/enroll-invite-services";
+
+/** A cart with no PIN-priced charge: nothing to resolve from the delivery PIN. */
+const NO_ZONE_CHARGES: ChargeResolution = { resolved: [], unresolved: [] };
 
 /**
  * Notes the order whose payment is still to be confirmed, with when it was
@@ -58,7 +64,16 @@ interface CheckoutFormProps {
     items: any[];
     membershipPlan?: any;
     isRentMode?: boolean;
+    /** Quantity-based and flat charges, already resolved by the cart and counted in
+     *  `totalAmount`. PIN-priced (zone) charges are not here: see `globalSettings`. */
     additionalCharges?: ResolvedCharge[];
+    /** The catalogue's settings. A buy checkout resolves its PIN-priced (zone) charges
+     *  from these, live, as the learner types the delivery PIN. They are added on top
+     *  of `totalAmount`. */
+    globalSettings?: GlobalSettings | null;
+    /** Total book copies in the cart; a PIN-priced charge applies once per order when
+     *  this is at least 1. */
+    bookQuantity?: number;
     /** The storefront catalogue tag the learner is on. A buy checkout sends it so the
      *  server checks the shipping tier against that catalogue. */
     catalogueTag?: string;
@@ -76,6 +91,8 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
     membershipPlan,
     isRentMode = false,
     additionalCharges = [],
+    globalSettings,
+    bookQuantity = 0,
     catalogueTag,
     isPreviewMode = false,
 }) => {
@@ -133,6 +150,33 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
     const otpInputRef = React.useRef<HTMLInputElement>(null);
 
     const clearCart = useCartStore((state) => state.clearCart);
+
+    // The delivery PIN as typed so far. Only kept while the cart has a PIN-priced
+    // (zone) charge; see the effect below.
+    const [deliveryPin, setDeliveryPin] = useState("");
+
+    // PIN-priced charges (e.g. shipping by zone), priced from the delivery PIN.
+    // `resolved` are those the PIN prices; `unresolved` say why the rest are not.
+    // A cart without such a charge gets the empty result, so nothing below changes.
+    const zoneResolution = useMemo<ChargeResolution>(
+        () =>
+            isRentMode
+                ? NO_ZONE_CHARGES
+                : resolveZoneCharges(globalSettings, "buy", bookQuantity, deliveryPin),
+        [isRentMode, globalSettings, bookQuantity, deliveryPin],
+    );
+    const hasZoneCharges = zoneResolution.resolved.length + zoneResolution.unresolved.length > 0;
+    const zoneChargesTotal = sumChargeAmounts(zoneResolution.resolved);
+    // The PIN is valid but no zone delivers to it: the order cannot be placed.
+    const deliveryUnavailable = zoneResolution.unresolved.some(
+        (charge) => charge.reason === "NOT_DELIVERABLE",
+    );
+
+    // AddressForm reports the PIN as it is typed (onPinCodeChange below); forget it when the
+    // dialog closes or the cart has no PIN-priced charge.
+    useEffect(() => {
+        if (!open || !hasZoneCharges) setDeliveryPin("");
+    }, [open, hasZoneCharges]);
 
     // What the labels count: copies in buy mode (4 copies of one book are 4 items),
     // titles in rent mode (a rented book has no quantity).
@@ -391,6 +435,23 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
 
         const addressValue = addressFormRef.current!.getValue();
 
+        // Price the PIN-priced charges from the PIN being submitted, not the live state
+        // above, which AddressForm reports from an effect a render later. validate()
+        // already insists on a 6-digit PIN, so what can remain unresolved here is an
+        // undeliverable PIN.
+        const submitZoneCharges = isRentMode
+            ? NO_ZONE_CHARGES
+            : resolveZoneCharges(globalSettings, "buy", bookQuantity, addressValue.pinCode);
+        const blockedCharge = submitZoneCharges.unresolved[0];
+        if (blockedCharge) {
+            toast.error(
+                blockedCharge.reason === "NOT_DELIVERABLE"
+                    ? t("checkoutForm.errors.deliveryNotAvailable")
+                    : t("checkoutForm.summary.shippingNeedPin"),
+            );
+            return;
+        }
+
         setLoading(true);
         // The payment log the enroll call creates (its `payment_response.order_id`).
         // The stock for the order is held from then until it is paid or released.
@@ -521,18 +582,20 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                     };
                 });
 
-                // Append one enrollment entry per additional charge (e.g. shipping tier).
+                // Append one enrollment entry per additional charge (e.g. shipping tier, or
+                // the delivery zone the PIN falls in).
                 // Backend treats each entry identically — UserPlan + PaymentLog per entry,
                 // grouped under the same MP order ID. Amount is validated against the sum
                 // of each entry's PaymentPlan.actualPrice.
-                const chargeEnrollments = buildChargeEnrollmentEntries(additionalCharges);
+                const allCharges = [...additionalCharges, ...submitZoneCharges.resolved];
+                const chargeEnrollments = buildChargeEnrollmentEntries(allCharges);
                 const learnerPackageSessionEnrollments = [...bookEnrollments, ...chargeEnrollments];
 
                 const booksSubtotal = items.reduce(
                     (total, item) => total + (item.price * (item.quantity || 1)),
                     0
                 );
-                const calculatedTotalAmount = booksSubtotal + sumChargeAmounts(additionalCharges);
+                const calculatedTotalAmount = booksSubtotal + sumChargeAmounts(allCharges);
 
                 const buyPayload = {
                     user: userPayload,
@@ -646,7 +709,8 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                 let paymentSubmitted = false;
                 const options = {
                     key: razorpayKeyId,
-                    amount: response.data?.payment_response?.response_data?.amountDue || (totalAmount * 100),
+                    amount: response.data?.payment_response?.response_data?.amountDue ||
+                        ((totalAmount + sumChargeAmounts(submitZoneCharges.resolved)) * 100),
                     currency: response.data?.payment_response?.response_data?.currency || "INR",
                     name: t("checkoutForm.header.title"),
                     description: t("checkoutForm.razorpayDescription", {
@@ -759,7 +823,8 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                 clearPendingCheckout();
             }
             // The server explains a refusal in `ex`: "Only N left" for a 409 out of
-            // stock, the quantity or shipping problem for a 400.
+            // stock, the quantity or shipping problem for a 400 (such as "Delivery is
+            // not available to this PIN code").
             const errorMessage = error.response?.data?.ex || error.response?.data?.message || error.message || t("checkoutForm.toast.checkoutFailedDefault");
             toast.error(errorMessage);
         } finally {
@@ -912,10 +977,14 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                                     pincode (auto-fills state/district/post office via India
                                     Post), city. Concats granular fields into addressLine for
                                     the backend on submit. */}
-                                <AddressForm ref={addressFormRef} initial={initialAddressInputs} />
+                                <AddressForm
+                                    ref={addressFormRef}
+                                    initial={initialAddressInputs}
+                                    onPinCodeChange={hasZoneCharges ? setDeliveryPin : undefined}
+                                />
 
                                 {/* Compact Summary */}
-                                {additionalCharges.length > 0 ? (
+                                {additionalCharges.length > 0 || hasZoneCharges ? (
                                     <div className="bg-gray-50 rounded-catalogue-lg p-3 border border-gray-100 space-y-1">
                                         <div className="flex justify-between text-xs text-gray-700">
                                             <span>{t("checkoutForm.summary.subtotalCount", { count: itemCount })}</span>
@@ -927,9 +996,31 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                                                 <span className="font-medium">₹{charge.amount.toFixed(2)}</span>
                                             </div>
                                         ))}
+                                        {zoneResolution.resolved.map((charge) => (
+                                            <div key={charge.key} className="flex justify-between gap-3 text-xs text-gray-700">
+                                                <span>
+                                                    {t("checkoutForm.summary.chargeWithZone", {
+                                                        charge: charge.label,
+                                                        zone: charge.zone?.label ?? "",
+                                                    })}
+                                                </span>
+                                                <span className="font-medium">₹{charge.amount.toFixed(2)}</span>
+                                            </div>
+                                        ))}
+                                        {zoneResolution.unresolved.map((charge) =>
+                                            charge.reason === "NOT_DELIVERABLE" ? (
+                                                <p key={charge.key} role="alert" className="text-xs font-medium text-danger-600">
+                                                    {t("checkoutForm.errors.deliveryNotAvailable")}
+                                                </p>
+                                            ) : (
+                                                <p key={charge.key} className="text-xs text-gray-500">
+                                                    {t("checkoutForm.summary.shippingNeedPin")}
+                                                </p>
+                                            ),
+                                        )}
                                         <div className="flex justify-between items-center pt-1.5 border-t border-gray-200">
                                             <span className="text-caption text-gray-500 font-bold uppercase tracking-tight">{t("checkoutForm.summary.orderTotal")}</span>
-                                            <span className="text-base font-black text-primary-600">₹{totalAmount.toFixed(2)}</span>
+                                            <span className="text-base font-black text-primary-600">₹{(totalAmount + zoneChargesTotal).toFixed(2)}</span>
                                         </div>
                                     </div>
                                 ) : (
@@ -958,7 +1049,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                             layoutVariant="default"
                             className="w-full h-11 text-base font-bold shadow-lg shadow-primary-100 active:scale-[0.98] transition-all rounded-catalogue-md flex items-center justify-center gap-2"
                             onClick={handleCheckout}
-                            disabled={loading || isInitializing || !isPhoneVerified || awaitingConfirmation}
+                            disabled={loading || isInitializing || !isPhoneVerified || awaitingConfirmation || deliveryUnavailable}
                         >
                             {loading ? (
                                 <SpinnerGap className="animate-spin h-5 w-5" />
