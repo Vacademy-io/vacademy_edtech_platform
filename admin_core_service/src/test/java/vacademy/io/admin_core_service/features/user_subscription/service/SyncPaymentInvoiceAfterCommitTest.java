@@ -9,11 +9,14 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
+import vacademy.io.admin_core_service.features.enroll_invite.service.EnrollInviteEmailOverrideService;
+import vacademy.io.admin_core_service.features.institute.entity.Template;
 import vacademy.io.admin_core_service.features.invoice.entity.Invoice;
 import vacademy.io.admin_core_service.features.invoice.enums.InvoicePdfPlacement;
 import vacademy.io.admin_core_service.features.invoice.service.InvoiceService;
 import vacademy.io.admin_core_service.features.notification_service.service.PaymentNotificatonService;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentLog;
+import vacademy.io.admin_core_service.features.user_subscription.entity.UserPlan;
 import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentLogRepository;
 import vacademy.io.common.auth.dto.UserDTO;
 
@@ -103,6 +106,24 @@ class SyncPaymentInvoiceAfterCommitTest {
         commit();
         verify(invoiceService).generateInvoiceWithResultForCommittedPayment("pl-1", "inst", true);
         verifyNoInteractions(notifications);
+    }
+
+    @Test
+    @DisplayName("a CUSTOM_ONLY invite gets one confirmation carrying the PDF even in separate-invoice mode")
+    void customOnlyInviteConsolidates() {
+        when(invoiceService.getInvoicePdfPlacement("inst")).thenReturn(InvoicePdfPlacement.INVOICE_EMAIL);
+        EnrollInviteEmailOverrideService override = mock(EnrollInviteEmailOverrideService.class);
+        when(override.customOnlyTemplate("invite-1")).thenReturn(Optional.of(new Template()));
+        ReflectionTestUtils.setField(service, "enrollInviteEmailOverrideService", override);
+        UserPlan plan = new UserPlan();
+        plan.setEnrollInviteId("invite-1");
+        paymentLog.setUserPlan(plan);
+
+        service.scheduleSyncInvoiceAfterCommit(paymentLog, "inst");
+
+        verify(invoiceService).generateInvoiceWithResultForCommittedPayment("pl-1", "inst", false);
+        verify(notifications).sendPaymentConfirmationNotification(eq("inst"), any(), any(), any(),
+                eq(new byte[] {1}), eq("INV-1"), any(), any());
     }
 
     @Test

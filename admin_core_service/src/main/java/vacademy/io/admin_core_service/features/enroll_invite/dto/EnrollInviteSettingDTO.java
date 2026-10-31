@@ -36,8 +36,38 @@ public class EnrollInviteSettingDTO {
         @JsonProperty("NOTIFICATION_SETTING")
         private NotificationSetting notificationSetting;
 
+        /**
+         * Learner-facing emails for a paid enrollment through this invite. Absent = the
+         * institute's normal emails.
+         */
+        @JsonProperty("ENROLLMENT_EMAIL_SETTING")
+        private EnrollmentEmailSetting enrollmentEmailSetting;
+
 
         // You can add other top-level setting blocks here
+    }
+
+    // --- Enrollment Email Setting Block ---
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class EnrollmentEmailSetting {
+
+        /** Mode value: send only {@link #templateId} and none of the default learner emails. */
+        public static final String MODE_CUSTOM_ONLY = "CUSTOM_ONLY";
+
+        /**
+         * {@code CUSTOM_ONLY}: after payment the learner gets just one email, rendered from
+         * {@link #templateId} with the payment-confirmation variables and the invoice PDF
+         * attached. The credential mail, LEARNER_ENROLL / referral notifications, the separate
+         * invoice mail and the institute's payment confirmation are skipped. Any other value
+         * (or null) leaves the defaults in place.
+         */
+        @JsonProperty("MODE")
+        private String mode;
+
+        /** Id of an EMAIL row in {@code templates} belonging to the invite's institute. */
+        @JsonProperty("TEMPLATE_ID")
+        private String templateId;
     }
 
     // --- Team Notification Setting Block ---
