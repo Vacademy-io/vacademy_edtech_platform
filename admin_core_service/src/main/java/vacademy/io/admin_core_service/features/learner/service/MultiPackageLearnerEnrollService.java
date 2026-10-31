@@ -245,9 +245,11 @@ public class MultiPackageLearnerEnrollService {
         String orderInstituteId = resolveOrderInstituteId(request, items.get(0));
 
         // 0.4 Shipping / additional charges must match the catalogue's tier for the number
-        // of copies, and must not be dropped. Storefront orders only.
+        // of copies (or its zone for the delivery PIN), and must not be dropped. Storefront
+        // orders only.
         if (!isManual && paymentInit.getAmount() != null && paymentInit.getAmount() > 0) {
-            additionalChargeValidator.validate(orderInstituteId, request.getCatalogueTag(), items);
+            additionalChargeValidator.validate(orderInstituteId, request.getCatalogueTag(), items,
+                    request.getUser().getPinCode());
         }
 
         // 1. Ensure a consistent OrderId for the entire multi-package transaction

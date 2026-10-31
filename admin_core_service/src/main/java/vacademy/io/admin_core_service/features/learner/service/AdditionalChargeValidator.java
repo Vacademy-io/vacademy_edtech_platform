@@ -32,8 +32,14 @@ import java.util.stream.Collectors;
  * storefront resolves them the same way (additional-charges-util.ts): the first tier whose range
  * holds the number of copies in the cart wins.
  *
+ * <p>A charge with a non-empty {@code zones[{key, pinPrefixes, excludePinPrefixes, planId, amount}]}
+ * is priced by the delivery PIN instead (its tiers and flat plan are ignored): once per order,
+ * whatever the copies, at the plan of the first zone that serves the PIN (ShippingZoneMatcher).
+ * Such an order needs a valid six-digit PIN; a PIN no zone serves, or whose zone has no plan and
+ * amount, is not deliverable (the cart blocks checkout for both rather than ship for free).
+ *
  * <ul>
- *   <li>A charge line must carry the plan of that tier. Its config is looked up in the tagged
+ *   <li>A charge line must carry the plan of that tier (or zone). Its config is looked up in the tagged
  *       catalogue first, else in any catalogue of the institute (the browser picks the tag, so
  *       two catalogues with different tiers for one charge item are both accepted). A charge
  *       item no catalogue configures is allowed with a warning: an unknown setup, not an
@@ -53,6 +59,9 @@ public class AdditionalChargeValidator {
     static final String CHARGE_MISMATCH_MESSAGE = "Shipping charge does not match the number of items";
     static final String CHARGE_MISSING_MESSAGE =
             "Shipping charge is missing from this order. Please reload the cart and try again.";
+    static final String PIN_INVALID_MESSAGE = "Enter a valid 6-digit delivery PIN code";
+    static final String PIN_NOT_SERVED_MESSAGE = "Delivery is not available to this PIN code";
+    static final String ZONE_MISMATCH_MESSAGE = "Shipping charge does not match the delivery PIN code";
 
     /** {@code applicableTo} value of a buy-mode (storefront cart) charge. */
     private static final String BUY_MODE = "COURSE";
@@ -72,13 +81,16 @@ public class AdditionalChargeValidator {
 
     /**
      * @param items the order's lines, quantities already normalised (null counts as 1)
-     * @throws InvalidRequestException (400) on a wrong tier plan or a missing charge line
+     * @param deliveryPinCode the order's delivery PIN as sent (trimmed here); only zone charges read it
+     * @throws InvalidRequestException (400) on a wrong tier/zone plan, a missing charge line, or —
+     *         for a zone charge — a missing/invalid PIN or one no zone delivers to
      */
     public void validate(String instituteId, String catalogueTag,
-                         List<LearnerPackageSessionEnrollmentItemDTO> items) {
+                         List<LearnerPackageSessionEnrollmentItemDTO> items, String deliveryPinCode) {
         if (items == null || items.isEmpty()) {
             return;
         }
+        String pin = ShippingZoneMatcher.normalisePin(deliveryPinCode);
         List<ChargeConfig> taggedCharges = StringUtils.hasText(catalogueTag)
                 ? taggedCatalogueCharges(instituteId, catalogueTag.trim())
                 : List.of();
@@ -116,13 +128,13 @@ public class AdditionalChargeValidator {
             }
             int copies = bookQuantity;
             boolean matches = configs.stream()
-                    .map(config -> config.expectedPlanId(copies))
+                    .map(config -> config.expectedPlanId(copies, pin))
                     .anyMatch(planId -> planId != null && planId.equals(chargeItem.getPlanId()));
             if (!matches) {
-                log.warn("Charge plan mismatch on institute {}: item {} sent plan {}, {} copies expect {}",
-                        instituteId, chargeItem.getPackageSessionId(), chargeItem.getPlanId(), copies,
-                        configs.stream().map(config -> config.expectedPlanId(copies)).toList());
-                throw new InvalidRequestException(CHARGE_MISMATCH_MESSAGE);
+                log.warn("Charge plan mismatch on institute {}: item {} sent plan {}, {} copies (PIN {}) expect {}",
+                        instituteId, chargeItem.getPackageSessionId(), chargeItem.getPlanId(), copies, pin,
+                        configs.stream().map(config -> config.expectedPlanId(copies, pin)).toList());
+                throw new InvalidRequestException(rejectedChargeMessage(configs, copies, pin));
             }
         }
 
@@ -132,10 +144,11 @@ public class AdditionalChargeValidator {
                     .filter(Objects::nonNull)
                     .collect(Collectors.toSet());
             for (ChargeConfig config : taggedCharges) {
-                if (config.chargedInBuyCart(bookQuantity) && !orderedSessions.contains(config.packageSessionId())) {
+                if (config.chargedInBuyCart(bookQuantity, pin)
+                        && !orderedSessions.contains(config.packageSessionId())) {
                     log.warn("Order on catalogue {} of institute {} with {} copies is missing charge {} ({})",
                             catalogueTag, instituteId, bookQuantity, config.key(), config.packageSessionId());
-                    throw new InvalidRequestException(CHARGE_MISSING_MESSAGE);
+                    throw new InvalidRequestException(missingChargeMessage(config, pin));
                 }
             }
         } else if (bookQuantity > 0 && chargeItems.isEmpty()) {
@@ -147,14 +160,38 @@ public class AdditionalChargeValidator {
             }
             int copies = bookQuantity;
             Optional<ChargeConfig> owed = instituteCharges.stream()
-                    .filter(config -> config.chargedInBuyCart(copies))
+                    .filter(config -> config.chargedInBuyCart(copies, pin))
                     .findFirst();
             if (owed.isPresent()) {
                 log.warn("Tag-less order on institute {} with {} copies is missing charge {} ({})",
                         instituteId, bookQuantity, owed.get().key(), owed.get().packageSessionId());
-                throw new InvalidRequestException(CHARGE_MISSING_MESSAGE);
+                throw new InvalidRequestException(missingChargeMessage(owed.get(), pin));
             }
         }
+    }
+
+    /**
+     * Why no config accepts a charge line. A zone charge on an order with copies fails on its PIN
+     * first (the buyer can fix that); anything else is a plan that does not match.
+     */
+    private static String rejectedChargeMessage(List<ChargeConfig> configs, int copies, String pin) {
+        List<ChargeConfig> zoned = configs.stream().filter(ChargeConfig::zoned).toList();
+        if (copies > 0 && !zoned.isEmpty()) {
+            if (pin == null) {
+                return PIN_INVALID_MESSAGE;
+            }
+            if (zoned.stream().allMatch(config -> config.pinProblem(pin) != null)) {
+                return PIN_NOT_SERVED_MESSAGE;
+            }
+            return ZONE_MISMATCH_MESSAGE;
+        }
+        return CHARGE_MISMATCH_MESSAGE;
+    }
+
+    /** A missing zone charge reports its PIN problem, if any: dropping the line must not dodge it. */
+    private static String missingChargeMessage(ChargeConfig config, String pin) {
+        String pinProblem = config.pinProblem(pin);
+        return pinProblem != null ? pinProblem : CHARGE_MISSING_MESSAGE;
     }
 
     private static int quantityOf(LearnerPackageSessionEnrollmentItemDTO item) {
@@ -234,6 +271,20 @@ public class AdditionalChargeValidator {
                             textOrNull(tier.get("planId"))));
                 }
             }
+            // Any non-empty zones array makes this a zone charge, even if no entry is readable
+            // (then no PIN is deliverable) — the cart decides the same way from the array alone.
+            JsonNode zonesNode = charge.path("zones");
+            boolean zoned = zonesNode.isArray() && zonesNode.size() > 0;
+            List<ShippingZoneMatcher.Zone> zones = new ArrayList<>();
+            for (JsonNode zone : zonesNode) {
+                if (zone.isObject()) {
+                    JsonNode amount = zone.get("amount");
+                    zones.add(new ShippingZoneMatcher.Zone(textOrNull(zone.get("key")),
+                            prefixes(zone.get("pinPrefixes")), prefixes(zone.get("excludePinPrefixes")),
+                            textOrNull(zone.get("planId")),
+                            amount != null && amount.isNumber() ? amount.doubleValue() : null));
+                }
+            }
             configs.add(new ChargeConfig(
                     textOrNull(charge.get("key")),
                     textOrNull(charge.get("packageSessionId")),
@@ -243,13 +294,30 @@ public class AdditionalChargeValidator {
                             && StringUtils.hasText(textOrNull(charge.get("paymentOptionId"))),
                     tiers,
                     textOrNull(charge.get("planId")),
-                    charge.hasNonNull("amount") && charge.get("amount").isNumber()));
+                    charge.hasNonNull("amount") && charge.get("amount").isNumber(),
+                    zoned,
+                    zones));
         }
         return configs;
     }
 
     private static String textOrNull(JsonNode node) {
         return node != null && node.isTextual() && StringUtils.hasText(node.asText()) ? node.asText() : null;
+    }
+
+    /**
+     * A PIN prefix list as the cart reads it: anything but an array is absent (null), and an entry
+     * that is not a string stays as null — it never matches, but the list is still not empty.
+     */
+    private static List<String> prefixes(JsonNode node) {
+        if (node == null || !node.isArray()) {
+            return null;
+        }
+        List<String> prefixes = new ArrayList<>();
+        for (JsonNode prefix : node) {
+            prefixes.add(prefix.isTextual() ? prefix.asText() : null);
+        }
+        return prefixes;
     }
 
     private static Integer intOrNull(JsonNode node) {
@@ -276,12 +344,23 @@ public class AdditionalChargeValidator {
         }
     }
 
-    /** One {@code additionalCharges[]} entry. */
+    /** One {@code additionalCharges[]} entry; {@code zoned} = priced by {@code zones}, not tiers/flat. */
     private record ChargeConfig(String key, String packageSessionId, Set<String> applicableTo, boolean linked,
-                                List<Tier> tiers, String flatPlanId, boolean flatHasAmount) {
+                                List<Tier> tiers, String flatPlanId, boolean flatHasAmount,
+                                boolean zoned, List<ShippingZoneMatcher.Zone> zones) {
 
-        /** The plan this charge must carry for {@code quantity} copies, or null when it applies to none. */
-        String expectedPlanId(int quantity) {
+        /**
+         * The plan this charge must carry for {@code quantity} copies delivered to {@code pin}
+         * (normalised, null when invalid), or null when it applies to none. A zone charge is one
+         * line per order whatever the copies, so only "any copies at all" matters for it.
+         */
+        String expectedPlanId(int quantity, String pin) {
+            if (zoned) {
+                return quantity > 0
+                        ? zoneFor(pin).filter(ShippingZoneMatcher.Zone::priced)
+                                .map(ShippingZoneMatcher.Zone::planId).orElse(null)
+                        : null;
+            }
             if (!tiers.isEmpty()) {
                 for (Tier tier : tiers) {
                     if (tier.holds(quantity)) {
@@ -293,14 +372,40 @@ public class AdditionalChargeValidator {
             return flatPlanId;
         }
 
-        /** Whether the storefront's buy cart adds this charge for {@code quantity} copies. */
-        boolean chargedInBuyCart(int quantity) {
+        /**
+         * Whether the storefront's buy cart adds this charge for {@code quantity} copies. A zone
+         * charge is owed for any copies, whatever the PIN: when the PIN cannot be priced the cart
+         * blocks checkout, and the order fails on the PIN instead (see pinProblem).
+         */
+        boolean chargedInBuyCart(int quantity, String pin) {
             if (!linked || !applicableTo.contains(BUY_MODE)) {
                 return false;
             }
+            if (zoned) {
+                return quantity > 0;
+            }
             return tiers.isEmpty()
                     ? flatPlanId != null && flatHasAmount
-                    : expectedPlanId(quantity) != null;
+                    : expectedPlanId(quantity, pin) != null;
+        }
+
+        Optional<ShippingZoneMatcher.Zone> zoneFor(String pin) {
+            return ShippingZoneMatcher.match(zones, pin);
+        }
+
+        /**
+         * For a zone charge: the 400 message when {@code pin} is missing/invalid, or when the first
+         * zone serving it is none or has no plan and amount (the cart calls both "not deliverable"
+         * rather than ship for free); else null.
+         */
+        String pinProblem(String pin) {
+            if (!zoned) {
+                return null;
+            }
+            if (pin == null) {
+                return PIN_INVALID_MESSAGE;
+            }
+            return zoneFor(pin).filter(ShippingZoneMatcher.Zone::priced).isPresent() ? null : PIN_NOT_SERVED_MESSAGE;
         }
     }
 }
