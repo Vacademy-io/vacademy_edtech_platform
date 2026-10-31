@@ -72,6 +72,9 @@ public class PaymentNotificatonService {
     @Autowired
     private vacademy.io.admin_core_service.features.invoice.util.CourseTagResolver courseTagResolver;
 
+    @Autowired
+    private vacademy.io.admin_core_service.features.enroll_invite.service.EnrollInviteEmailOverrideService enrollInviteEmailOverrideService;
+
     public boolean sendPaymentConfirmationNotification(
             String instituteId,
             PaymentResponseDTO paymentResponseDTO,
@@ -177,7 +180,7 @@ public class PaymentNotificatonService {
             return false;
         }
 
-        Template template = resolvePaymentConfirmationTemplate(instituteId);
+        Template template = resolvePaymentConfirmationTemplate(instituteId, paymentLog);
         if (template == null || !StringUtils.hasText(template.getContent())) {
             SentryLogger.logError(
                     new IllegalStateException("No PAYMENT_CONFIRMATION email template resolved"),
@@ -335,6 +338,19 @@ public class PaymentNotificatonService {
                     .send();
             return false;
         }
+    }
+
+    /**
+     * The template of the enroll invite the payment came through when that invite is in
+     * ENROLLMENT_EMAIL_SETTING CUSTOM_ONLY mode (its one email replaces this confirmation);
+     * otherwise the institute's PAYMENT_CONFIRMATION template.
+     */
+    private Template resolvePaymentConfirmationTemplate(String instituteId, PaymentLog paymentLog) {
+        String enrollInviteId = paymentLog != null && paymentLog.getUserPlan() != null
+                ? paymentLog.getUserPlan().getEnrollInviteId()
+                : null;
+        Optional<Template> inviteTemplate = enrollInviteEmailOverrideService.customOnlyTemplate(enrollInviteId);
+        return inviteTemplate.orElseGet(() -> resolvePaymentConfirmationTemplate(instituteId));
     }
 
     /**

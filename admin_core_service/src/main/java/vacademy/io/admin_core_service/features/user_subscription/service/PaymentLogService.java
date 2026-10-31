@@ -157,6 +157,9 @@ public class PaymentLogService {
     private InvoiceService invoiceService;
 
     @Autowired
+    private vacademy.io.admin_core_service.features.enroll_invite.service.EnrollInviteEmailOverrideService enrollInviteEmailOverrideService;
+
+    @Autowired
     private vacademy.io.admin_core_service.features.user_account.service.UserAccountLedgerService userAccountLedgerService;
 
     @Autowired
@@ -474,7 +477,11 @@ public class PaymentLogService {
         // so in consolidated mode the separate invoice email is suppressed and the single
         // payment-confirmation email (with the PDF attached) is sent from here.
         InvoicePdfPlacement pdfPlacement = invoiceService.getInvoicePdfPlacement(instituteId);
-        boolean attachInvoiceToConfirmation = pdfPlacement == InvoicePdfPlacement.PAYMENT_CONFIRMATION_EMAIL;
+        // Same rule as the webhook path: a CUSTOM_ONLY invite's single email carries the PDF.
+        boolean inviteSendsCustomEmailOnly = paymentLog.getUserPlan() != null && enrollInviteEmailOverrideService
+                .customOnlyTemplate(paymentLog.getUserPlan().getEnrollInviteId()).isPresent();
+        boolean attachInvoiceToConfirmation = inviteSendsCustomEmailOnly
+                || pdfPlacement == InvoicePdfPlacement.PAYMENT_CONFIRMATION_EMAIL;
         String paymentLogId = paymentLog.getId();
         Runnable task = () -> {
             try {
@@ -840,7 +847,12 @@ public class PaymentLogService {
             // PAYMENT_CONFIRMATION_EMAIL we suppress the separate invoice email and attach the PDF
             // to the confirmation email instead — so the learner gets exactly one mail.
             InvoicePdfPlacement pdfPlacement = invoiceService.getInvoicePdfPlacement(instituteId);
-            boolean attachInvoiceToConfirmation = pdfPlacement == InvoicePdfPlacement.PAYMENT_CONFIRMATION_EMAIL;
+            // An invite in CUSTOM_ONLY email mode replaces the confirmation with its own single
+            // email, so the invoice always rides on that one mail rather than a separate one.
+            boolean inviteSendsCustomEmailOnly = enrollInviteEmailOverrideService
+                    .customOnlyTemplate(paymentLog.getUserPlan().getEnrollInviteId()).isPresent();
+            boolean attachInvoiceToConfirmation = inviteSendsCustomEmailOnly
+                    || pdfPlacement == InvoicePdfPlacement.PAYMENT_CONFIRMATION_EMAIL;
             byte[] invoicePdfBytes = null;
             String invoiceNumber = null;
             // In consolidated mode (the invoice PDF rides on the confirmation email) we reuse the

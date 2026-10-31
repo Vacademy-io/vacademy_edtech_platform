@@ -76,6 +76,9 @@ public class UserPlanService {
     private PackageSessionEnrollInviteToPaymentOptionService packageSessionEnrollInviteToPaymentOptionService;
 
     @Autowired
+    private vacademy.io.admin_core_service.features.enroll_invite.service.EnrollInviteEmailOverrideService enrollInviteEmailOverrideService;
+
+    @Autowired
     private vacademy.io.admin_core_service.features.institute_learner.repository.StudentSessionInstituteGroupMappingRepository studentSessionInstituteGroupMappingRepository;
 
     @Autowired
@@ -1011,6 +1014,14 @@ public class UserPlanService {
             List<String> packageSessionIds) {
         try {
             logger.info("Sending enrollment notifications for PAID enrollment. UserPlan ID: {}", userPlan.getId());
+
+            // An invite in CUSTOM_ONLY email mode sends its own single email with the payment
+            // confirmation (PaymentLogService), so none of the enrollment mails go out here.
+            if (enrollInviteEmailOverrideService.customOnlyTemplate(enrollInvite).isPresent()) {
+                logger.info("Skipping enrollment notifications for UserPlan {}: invite {} uses "
+                        + "ENROLLMENT_EMAIL_SETTING CUSTOM_ONLY", userPlan.getId(), enrollInvite.getId());
+                return;
+            }
 
             // Get user details
             UserDTO userDTO = authService.getUsersFromAuthServiceByUserIds(List.of(userPlan.getUserId())).get(0);
