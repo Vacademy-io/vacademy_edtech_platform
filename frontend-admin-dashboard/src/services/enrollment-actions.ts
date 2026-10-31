@@ -1,5 +1,12 @@
+import axios from 'axios';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
-import { ENROLL_LEARNER_V2_ADMIN, CANCEL_USER_PLAN, PACKAGE_AUTOCOMPLETE_URL, GET_STUDENTS } from '@/constants/urls';
+import {
+    ENROLL_LEARNER_V2,
+    ENROLL_LEARNER_V2_ADMIN,
+    CANCEL_USER_PLAN,
+    PACKAGE_AUTOCOMPLETE_URL,
+    GET_STUDENTS,
+} from '@/constants/urls';
 
 export interface EnrollmentItem {
     package_session_id: string;
@@ -47,11 +54,34 @@ export const fetchPackageSessionDetails = async (packageSessionIds: string[], in
 };
 
 /**
- * Enroll a learner into a book/membership (Rent/Buy/Purchase)
+ * Whether the server has no handler for the request's route. Admin-core forwards an
+ * unknown route to Spring's /error page, which the security filter refuses (ACCESS_DENIED
+ * on path "/error"), so it carries none of our own `ex` error body.
+ */
+const isUnknownRoute = (error: unknown): boolean => {
+    if (!axios.isAxiosError(error) || !error.response) return false;
+    const data = error.response.data as { path?: string; ex?: string } | undefined;
+    return [403, 404, 405].includes(error.response.status) && data?.path === '/error' && !data?.ex;
+};
+
+/**
+ * Enroll a learner into a book/membership (Rent/Buy/Purchase).
+ *
+ * Goes to the admin-only endpoint. An admin-core deployed before that endpoint existed
+ * doesn't know the route, and still takes MANUAL enrollments on the public one, so retry
+ * there. Deploy the dashboard first: the new admin-core refuses MANUAL on the public
+ * endpoint, so this retry can never get past its admin check. Remove the fallback once
+ * the admin-only endpoint is live everywhere.
  */
 export const enrollLearnerV2 = async (payload: EnrollRequestV2) => {
-    const response = await authenticatedAxiosInstance.post(ENROLL_LEARNER_V2_ADMIN, payload);
-    return response.data;
+    try {
+        const response = await authenticatedAxiosInstance.post(ENROLL_LEARNER_V2_ADMIN, payload);
+        return response.data;
+    } catch (error) {
+        if (!isUnknownRoute(error)) throw error;
+        const response = await authenticatedAxiosInstance.post(ENROLL_LEARNER_V2, payload);
+        return response.data;
+    }
 };
 
 /**
