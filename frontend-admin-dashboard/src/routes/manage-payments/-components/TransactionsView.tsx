@@ -54,6 +54,7 @@ import { DateRangeDropdown } from './DateRangeDropdown';
 import { exportEntriesToCsv, fetchAllPaymentLogs } from '../-utils/exportPaymentLogsCsv';
 import { fetchPaymentLogs, fetchPaymentLogsSummary } from '@/services/payment-logs';
 import { summaryFromStatusTotals, summarizeBucketAmount } from '../-utils/paymentSummary';
+import { formatMoney } from '@/utils/payment-currency';
 import { ALL_TIME_RANGE, type DateRangeValue } from '../-utils/dateRange';
 import { resolvePaymentLogInvoices } from '../-utils/resolvePaymentLogInvoices';
 import { buildPaymentModeGroups, paymentModeFilterTokens } from '../-utils/paymentModeOptions';
@@ -934,7 +935,11 @@ export function TransactionsView() {
 
     // Subline: "N payments · ₹X collected · M need attention". Abandoned checkouts are not
     // "attention" — nothing can be done about a gateway order that has already expired.
-    const collectedAmount = summarizeBucketAmount(paymentSummary.paid.amountByCurrency).display;
+    // Collected reads the same figure as the Collected card (the server's PAID total), so the two
+    // never disagree; the paid records are only the fallback while that figure is unavailable.
+    const collectedAmount = billing
+        ? formatMoney(billing.collected, billing.currency, { maximumFractionDigits: 0 })
+        : summarizeBucketAmount(paymentSummary.paid.amountByCurrency).display;
     const needAttention = paymentSummary.pending.count + paymentSummary.failed.count;
 
     return (
