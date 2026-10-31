@@ -15,7 +15,7 @@ export interface ManagePaymentsSettings {
     hide_payment_plan_filter?: boolean;
 }
 
-const queryKey = (instituteId: string | null) => ['manage-payments-settings', instituteId];
+const queryKey = (instituteId: string | undefined) => ['manage-payments-settings', instituteId];
 
 export const fetchManagePaymentsSettings = async (
     instituteId: string
