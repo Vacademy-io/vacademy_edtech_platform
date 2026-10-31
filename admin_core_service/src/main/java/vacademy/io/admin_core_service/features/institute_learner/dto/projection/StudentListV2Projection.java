@@ -14,6 +14,7 @@ public interface StudentListV2Projection {
     String getAddressLine();
     String getRegion();
     String getCity();
+    String getCountry();
     String getPinCode();
     String getDateOfBirth();
     String getGender();

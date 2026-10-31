@@ -799,6 +799,7 @@ public class StudentListManager {
             dto.setAddressLine(p.getAddressLine());
             dto.setRegion(p.getRegion());
             dto.setCity(p.getCity());
+            dto.setCountry(p.getCountry());
             dto.setPinCode(p.getPinCode());
             dto.setMobileNumber(p.getPhone());
 

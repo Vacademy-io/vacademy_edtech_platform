@@ -56,6 +56,7 @@ public class InstituteStudentRepositoryImpl implements InstituteStudentRepositor
                 s.address_line AS addressLine,
                 s.region AS region,
                 s.city AS city,
+                s.country AS country,
                 s.pin_code AS pinCode,
                 s.date_of_birth AS dateOfBirth,
                 s.gender AS gender,
@@ -141,7 +142,7 @@ public class InstituteStudentRepositoryImpl implements InstituteStudentRepositor
     private static final String GROUP_BY = """
             GROUP BY s.id, s.username, s.full_name, s.email, s.mobile_number,
                      ssigm.package_session_id, ssigm.enrolled_date, ssigm.expiry_date,
-                     last_pl.payment_status, s.user_id, s.address_line, s.region, s.city,
+                     last_pl.payment_status, s.user_id, s.address_line, s.region, s.city, s.country,
                      s.pin_code, s.date_of_birth, s.gender, s.fathers_name, s.mothers_name,
                      s.parents_mobile_number, s.parents_email, s.linked_institute_name,
                      s.created_at, s.updated_at, s.face_file_id, s.parents_to_mother_mobile_number,
@@ -525,6 +526,7 @@ public class InstituteStudentRepositoryImpl implements InstituteStudentRepositor
             public String getAddressLine() { return str("addressline"); }
             public String getRegion() { return str("region"); }
             public String getCity() { return str("city"); }
+            public String getCountry() { return str("country"); }
             public String getPinCode() { return str("pincode"); }
             public String getDateOfBirth() { return str("dateofbirth"); }
             public String getGender() { return str("gender"); }

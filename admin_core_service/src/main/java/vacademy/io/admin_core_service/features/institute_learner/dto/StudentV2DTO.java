@@ -20,6 +20,7 @@ public class StudentV2DTO {
     private String addressLine;
     private String region;
     private String city;
+    private String country;
     private String pinCode;
     private String mobileNumber;
     private Date dateOfBirth;
