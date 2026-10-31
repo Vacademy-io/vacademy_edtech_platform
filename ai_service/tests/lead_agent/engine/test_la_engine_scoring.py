@@ -13,7 +13,9 @@ from app.services.lead_agent.engine.research.contacts import Contact
 from app.services.lead_agent.engine.research.extract import PageText
 from app.services.lead_agent.engine.research.lead import build_lead
 from app.services.lead_agent.engine.schemas import AccountExtraction
-from app.services.lead_agent.engine.scoring import DEFAULT_GATE, gate, score_lead, send_bar, signal_age_days
+from app.services.lead_agent.engine.scoring import (
+    DEFAULT_GATE, GATE_RULES, flag_words, gate, gate_fingerprint, score_lead, send_bar, signal_age_days,
+)
 
 TODAY = date(2026, 10, 25)
 SITE = "https://www.alpha-academy.in/"
@@ -224,7 +226,36 @@ def test_a_hard_reject_comes_before_everything_else():
 def test_validity_flags_at_or_above_the_bar_wait_for_a_person(flag, words, score):
     decision, reasons = gate(_scored(score, [flag]), LIKELY, {"send_score": 50})
     assert decision == "REVIEW" and words in reasons[-1], reasons
-    assert gate(_scored(score, [flag]), GENERAL, {"send_score": 50, "require_intent": True})[0] == "REVIEW"
+    assert gate(_scored(score, [flag]), LIKELY, {"send_score": 50, "require_approval": True})[0] == "REVIEW"
+
+
+@pytest.mark.parametrize("flag", ["maps_only", "possible_duplicate:quantumcoaching.in"])
+def test_a_held_lead_failing_the_lists_own_rules_is_rejected_unless_the_list_approves_every_lead(flag):
+    """Review of PR 3569 (2026-10-31): a held lead at the bar went to REVIEW before min_contact / require_intent
+    were read, so on a list that needs no approval a lead failing the list's rules waited in REVIEW, and
+    approving it would have sent it. The list's own rules come first now."""
+    assert gate(_scored(80, [flag], level="general"), GENERAL, {"send_score": 50}) == (
+        "REJECT", ["Best contact is general; this list needs at least likely"])
+    assert gate(_scored(80, [flag]), LIKELY, {"send_score": 50, "require_intent": True}) == (
+        "REJECT", ["No buying signal, and this list requires one"])
+    # a list that approves every lead: a person sees it, with every reason
+    decision, reasons = gate(_scored(80, [flag]), LIKELY, {"require_intent": True, "require_approval": True})
+    assert decision == "REVIEW" and reasons[0] == "No buying signal, and this list requires one"
+    assert reasons[1] == flag_words(flag)
+    # meeting them, it waits for a person as before
+    assert gate(_scored(80, [flag], has_intent=True), LIKELY, {"require_intent": True})[0] == "REVIEW"
+
+
+def test_the_gate_fingerprint_names_what_decides_and_nothing_else():
+    assert gate_fingerprint(None) == gate_fingerprint({}) == gate_fingerprint(DEFAULT_GATE) == (
+        f"v{GATE_RULES}:send=50:contact=likely:intent=0:competitors=0:approval=0")
+    # read as the gate reads them: the old bars, effort and a None are not settings that decide
+    assert gate_fingerprint({"auto_score": 70, "review_score": 45, "effort": "DEEP", "send_score": None}) \
+        == gate_fingerprint({})
+    assert gate_fingerprint({"send_score": "60"}) == gate_fingerprint({"send_score": 60}) != gate_fingerprint({})
+    for change in ({"min_contact": "direct"}, {"require_intent": True}, {"auto_competitor_users": True},
+                   {"require_approval": True}):
+        assert gate_fingerprint(change) != gate_fingerprint({}), change
 
 
 @pytest.mark.parametrize("score", [5, 49])

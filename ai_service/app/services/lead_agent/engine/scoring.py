@@ -15,11 +15,12 @@ A lead that passes the gate is called and messaged automatically, so the score a
   score = clamp(0.35 * fit + 0.30 * intent + 0.35 * reach - 0.5 * risk)
 
 Hard rejects (no usable contact, site not readable, not the target segment, pages of another
-organisation, a country outside the markets, selling the offer itself, an excluded kind or a
-deal-breaker) are flagged and always REJECT. Rank and fill (2026-10-30): one bar, the agent's
-send_score. A lead at or above it is sent (best score first, up to the daily quota), one below it is
-rejected; the risk penalty ranks a competitor's user or a very large organisation lower
-instead of holding it back. Only validity goes to a person, and only at or above the bar: a lead judged
+organisation, outside the markets (another country, or none of the agent's cities and states), selling
+the offer itself, an excluded kind or a deal-breaker) are flagged and always REJECT. Rank and fill
+(2026-10-30): one bar, the agent's send_score. A lead at or above it is sent (best score first, up to
+the daily quota), one below it is rejected; the risk penalty ranks a competitor's user or a very large
+organisation lower instead of holding it back. Only validity goes to a person, and only at or above the
+bar and within the list's own rules (min_contact, require_intent): a lead judged
 from its Google Maps listing alone (its website could not be read: flag "maps_only", research.py) and a
 possible duplicate of another lead. An agent with require_approval sends nothing a person has not approved.
 
@@ -35,11 +36,14 @@ from typing import Any
 import phonenumbers
 
 from .discovery.exclusions import _SCHOOL, _TRAINING_SCHOOL, _pattern, left_out
+from .discovery.pipeline import METRO_AREAS, _has_phrase, place_keys, place_names
+from .discovery.pipeline import _words as _place_words
 from .fingerprint import VENDORS_BY_KEY
 from .offer import LEGACY_FIT_POINTS, as_offer
 from .research.catalogue import SIGNALS
 from .research.contacts import country_region, domain_region, number_region, phone_region, region_name
 from .research.lead import is_national_brand
+from .research.maps_listing import _STATES
 
 # ------------------------------------------------------------------------------------ constants
 
@@ -71,8 +75,9 @@ RISK_COMPETITOR = 40  # already runs on a platform that competes with the offer 
 RISK_ENTERPRISE = 30  # national-scale brand: not a self-serve buyer
 RISK_MICRO = 25  # a single tutor or home tuition
 
-# Flags that send a lead to a person when its score reaches the send bar (below it: rejected, since nobody
-# reviews in this funnel), and flags that always reject it. Validity first: outreach after delivery is
+# Flags that send a lead to a person when its score reaches the send bar and it meets the list's own rules
+# (min_contact, require_intent; below the bar or failing them: rejected, since nobody reviews in this funnel),
+# and flags that always reject it. Validity first: outreach after delivery is
 # automated, so a lead that may name the wrong organisation waits for a person instead of going out.
 # maps_only: judged from its Google Maps listing because the website could not be read (2026-10-29 audit:
 # 202 of 237 "No readable page" rejects on "Leads for Vacademy" had a listing with a phone); a listing
@@ -91,6 +96,11 @@ RISK_FLAGS = ("competitor_platform", "enterprise", "micro")
 # agent's gate_json; the gate ignores them.
 DEFAULT_GATE = {"send_score": 50, "require_approval": False, "min_contact": "likely", "require_intent": False,
                 "auto_competitor_users": False}
+# gate()'s own rules, part of gate_fingerprint: bumped when gate() decides differently from the same stored
+# score and settings, so the REVIEW queue is judged again once (scheduler.rejudge_waiting skips a row
+# already judged under the current fingerprint). 2: the list's own rules (min_contact, require_intent)
+# before the held flags (2026-10-31).
+GATE_RULES = 2
 
 
 def _clamp(value: float) -> int:
@@ -257,19 +267,60 @@ def _evidence_text(lead: dict[str, Any]) -> str:
     return "\n".join(parts)
 
 
+def _part(market: dict[str, Any], key: str) -> str:
+    """A market's city, state or country as written, spaces tidied ('' when it has none)."""
+    return " ".join(str(market.get(key) or "").split())
+
+
+def _place_text(*texts: Any) -> str:
+    """Texts written as words for place matching (lower case, accents dropped: discovery's spelling)."""
+    return " ".join(_place_words(" ".join(str(t or "") for t in texts)))
+
+
+def _names_place(place: str, text: str) -> bool:
+    """The text (as _place_text writes it) names the place, or another name of it (Gurgaon / Gurugram,
+    Bangalore / Bengaluru: discovery's table of Indian city renamings), as whole words."""
+    key = " ".join(_place_words(place))
+    return bool(key) and any(_has_phrase(name, text) for name in place_names(key))
+
+
+def _names_market_place(place: str, text: str) -> bool:
+    """_names_place, or a place of the metro area a market city stands for (Noida, Gurugram for Delhi;
+    Thane for Mumbai: discovery's METRO_AREAS). For the city/state market rule only: a lead in the metro area
+    is in the market, though it earns no FIT_LOCATION points for it."""
+    if _names_place(place, text):
+        return True
+    words = " ".join(_place_words(place))
+    city = place_names(words)[0] if words else ""
+    return any(_names_place(area, text) for area in METRO_AREAS.get(city, ()))
+
+
+def _location_text(lead: dict[str, Any]) -> str:
+    """Everything that may say where the organisation is: its city, branches, Google Maps listing address,
+    description and evidence."""
+    org = lead.get("organisation") or {}
+    branches = " ".join(str(b.get("city") or b.get("value") or "") for b in org.get("branches") or []
+                        if isinstance(b, dict))
+    return _place_text(org.get("city"), branches, _listing_address(lead), org.get("what_they_do"),
+                       _evidence_text(lead))
+
+
+def _listing_address(lead: dict[str, Any]) -> str:
+    listing = lead.get("maps_listing")
+    return str(listing.get("address") or "") if isinstance(listing, dict) else ""
+
+
 def _location_match(lead: dict[str, Any], markets: list[dict[str, Any]]) -> str | None:
     """Which market the lead is in, as a reason; None when it is not shown to be in any."""
     if not markets:
         return "no market restriction"
     org = lead.get("organisation") or {}
-    places = " ".join([org.get("city") or "", " ".join(b.get("city") or b.get("value") or ""
-                                                       for b in org.get("branches") or [])])
-    text = f"{places}\n{org.get('what_they_do') or ''}\n{_evidence_text(lead)}".lower()
+    text = _location_text(lead)
     for market in markets:
         for key in ("city", "state"):
-            place = (market.get(key) or "").strip().lower()
-            if place and re.search(rf"\b{re.escape(place)}\b", text):
-                return f"in {market[key]}"
+            place = _part(market, key)
+            if place and _names_place(place, text):
+                return f"in {place}"
     for market in markets:
         if not market.get("city") and not market.get("state") and market.get("country"):
             region = phone_region(None, market["country"])
@@ -292,7 +343,8 @@ def outside_markets(lead: dict[str, Any], markets: list[dict[str, Any]] | None) 
     market country and the domain is not a market country's (.in is India). Never for an agent without
     markets, a market whose country the tables do not know (or "Worldwide"), an unknown location (a phone
     without a country code, a generic domain: .com, .org, .io) or a city or state inside a market country
-    (prod audit 2026-10-30: Delhi colleges on a Rajasthan + Delhi agent were real leads)."""
+    (prod audit 2026-10-30: Delhi colleges on a Rajasthan + Delhi agent were real leads); the agent's
+    cities and states are outside_market_places'."""
     homes = [country_region(m.get("country")) for m in markets or [] if isinstance(m, dict)]
     if not homes or None in homes:
         return None
@@ -312,6 +364,66 @@ def outside_markets(lead: dict[str, Any], markets: list[dict[str, Any]] | None) 
     if tld:  # a country-code domain outside the markets, and no phone from a market country
         return f"its website is on .{domain.rsplit('.', 1)[-1].lower()} ({region_name(tld)})"
     return None
+
+
+# Indian states and union territories an address may name. Those that are also cities (Delhi, Chandigarh,
+# Puducherry) are left out: naming one says nothing about which state an organisation is in.
+_OTHER_STATES = tuple(sorted(_STATES - {"delhi", "new delhi", "chandigarh", "puducherry", "pondicherry"}))
+
+
+def _lead_countries(lead: dict[str, Any]) -> set[str]:
+    """The countries the lead is shown to be in: its usable phones' country codes, a country-code domain."""
+    found = {number_region(c.get("value")) for c in lead.get("contacts") or []
+             if c.get("kind") in _PHONE_KINDS and c.get("quality") != "avoid"}
+    found.add(domain_region((lead.get("organisation") or {}).get("domain")))
+    return {r for r in found if r}
+
+
+def outside_market_places(lead: dict[str, Any], markets: list[dict[str, Any]] | None) -> str | None:
+    """Positive evidence that the organisation is in none of the agent's cities and states, in words ("it
+    is in Mumbai; your markets are Jaipur"), or None. Since 2026-10-30 is_target_segment is the kind only
+    and discovery never judges the place, so being elsewhere cost a lead only FIT_LOCATION (3.5 points): a
+    Mumbai coaching institute that is hiring scored about 57 on an agent whose only market is Jaipur, and
+    was sent and charged (review of PR 3569, 2026-10-31).
+
+    Conservative on purpose. It fires only when all of these hold:
+      * the organisation's city is known (from its pages or its Google Maps listing; never a country or
+        "online"), and nothing about it (city, branches, listing address, description, evidence) names a
+        market's city or state, another name of one (Gurgaon / Gurugram, Bombay / Mumbai) or a place of
+        the metro area a market city stands for (Noida for Delhi, Thane for Mumbai: METRO_AREAS; "delhi"
+        stored as a state counts, as Evalezy's market is);
+      * every market in its country names a city or a state: a country-wide market takes every place in
+        that country. With a country-wide market somewhere, the lead must be shown (a phone's country code,
+        a country-code domain) to be in a country where the agent names only cities or states;
+      * a market that names a state and no city is ruled out only when the organisation's city or listing
+        address names another state: a city rarely carries its state's name (Kota, Udaipur for Rajasthan),
+        so a city alone never rules a state out.
+    Never for an agent without markets, a "Worldwide" market or a market country the tables do not know.
+    The 2026-10-30 audit case (Delhi colleges on a "Rajasthan, India" + "delhi, India" agent) names a
+    market, so it stays."""
+    markets = [m for m in markets or [] if isinstance(m, dict)]
+    org = lead.get("organisation") or {}
+    city = " ".join(str(org.get("city") or "").split())
+    if not markets or not place_keys(city):
+        return None
+    local = [m for m in markets if _part(m, "city") or _part(m, "state")]
+    wide = {country_region(m.get("country")) for m in markets if not (_part(m, "city") or _part(m, "state"))}
+    if wide:
+        found = _lead_countries(lead)
+        if None in wide or not found or found & wide:
+            return None
+        local = [m for m in local if country_region(m.get("country")) in found]
+        if not local:
+            return None  # a country with no market at all: outside_markets' rule
+    text = _location_text(lead)
+    located = _place_text(city, _listing_address(lead))
+    for market in local:
+        if _names_market_place(_part(market, "city"), text) or _names_market_place(_part(market, "state"), text):
+            return None
+        if not _part(market, "city") and not any(_names_place(state, located) for state in _OTHER_STATES):
+            return None  # a state market, and nothing names another state
+    names = ", ".join(dict.fromkeys(_part(m, "city") or _part(m, "state") for m in local))
+    return f"it is in {city[:80]}; your markets are {names}"
 
 
 def _fmt(n: int) -> str:
@@ -420,7 +532,8 @@ def score_lead(lead: dict, brief: dict, platforms: list[dict], size: dict, *, to
     # Pages of another organisation (pages_match_organisation false: a link shortener, a portal, a directory
     # page) are their own reject, not "not the kind": 34 of 179 "not the kind" rejects in the 2026-10-30 prod
     # audit were that. The kind and a seller verdict read from those pages say nothing about this organisation.
-    # The kind is the kind only: a city or state counts in fit (FIT_LOCATION); another country is outside_market.
+    # The kind is the kind only: a market city or state counts in fit (FIT_LOCATION); another country, or a
+    # place shown to be none of the agent's cities and states, is outside_market.
     wrong_site = org.get("pages_match_organisation") is False
     if wrong_site:
         flags.append("wrong_site")
@@ -431,8 +544,10 @@ def score_lead(lead: dict, brief: dict, platforms: list[dict], size: dict, *, to
     if org.get("sells_the_offer") and not wrong_site:
         flags.append("sells_the_offer")
         reasons.append(f"Sells what is being sold ({offer.name}): a competitor or reseller, not a buyer")
-    # Another country, shown by its phones or its country-code domain (outside_markets); never a city or state.
-    elsewhere = None if wrong_site else outside_markets(lead, list(brief.get("markets") or []))
+    # Another country, shown by its phones or its country-code domain (outside_markets); or a known city that is
+    # none of the agent's cities and states (outside_market_places). Never read from another organisation's pages.
+    markets = list(brief.get("markets") or [])
+    elsewhere = None if wrong_site else (outside_markets(lead, markets) or outside_market_places(lead, markets))
     if elsewhere:
         flags.append(f"outside_market:{elsewhere}")
         reasons.append(_flag_words(f"outside_market:{elsewhere}"))
@@ -483,31 +598,47 @@ def send_bar(gate_cfg: dict | None) -> int:
     return max(0, min(100, value))
 
 
+def _settings(gate_cfg: dict | None) -> dict:
+    """The gate's settings as gate() reads them: DEFAULT_GATE fills what an agent never saved (or saved as
+    None), send_score clamped to 0-100, an unknown min_contact read as the default."""
+    cfg = {**DEFAULT_GATE, **{k: v for k, v in (gate_cfg or {}).items() if v is not None}}
+    min_contact = cfg["min_contact"] if cfg["min_contact"] in CONTACT_ORDER else DEFAULT_GATE["min_contact"]
+    return {"send_score": send_bar(cfg), "require_approval": bool(cfg.get("require_approval")),
+            "min_contact": min_contact, "require_intent": bool(cfg.get("require_intent")),
+            "auto_competitor_users": bool(cfg.get("auto_competitor_users"))}
+
+
+def gate_fingerprint(gate_cfg: dict | None) -> str:
+    """Everything that decides gate()'s answer for a stored score, in one string ("v2:send=50:contact=likely:
+    intent=0:competitors=0:approval=0"): the settings as gate() reads them and GATE_RULES. A lead kept in
+    REVIEW is stamped with it (score_json.rejudged_for) and not judged again until it changes."""
+    cfg = _settings(gate_cfg)
+    return (f"v{GATE_RULES}:send={cfg['send_score']}:contact={cfg['min_contact']}:intent={int(cfg['require_intent'])}"
+            f":competitors={int(cfg['auto_competitor_users'])}:approval={int(cfg['require_approval'])}")
+
+
 def gate(scored: dict, lead: dict, gate_cfg: dict) -> tuple[str, list[str]]:
     """("AUTO" | "REVIEW" | "REJECT", reasons in plain words). Rank and fill (2026-10-30), in order:
 
       1. a hard-reject flag -> REJECT;
-      2. maps_only or possible_duplicate at or above send_score -> REVIEW (validity first: a person
-         decides); below it -> REJECT ("Judged from its Google Maps listing only: score X is below the
-         send bar (Y)" for a Maps-only lead): nobody reviews in this funnel, so REVIEW holds only leads
-         worth a person's look;
-      3. score below send_score -> REJECT (the score after the risk penalty: a competitor's user or a very
-         large organisation is ranked lower, never held back);
-      4. at or above it, but the best contact is below min_contact, or require_intent and no buying
-         signal -> REVIEW when require_approval, else REJECT;
+      2. score below send_score -> REJECT (the score after the risk penalty: a competitor's user or a very
+         large organisation is ranked lower, never held back). A Maps-only lead or a possible duplicate too
+         ("Judged from its Google Maps listing only: score X is below the send bar (Y)" for a Maps-only
+         lead): nobody reviews in this funnel, so REVIEW holds only leads worth a person's look;
+      3. the best contact below min_contact, or require_intent and no buying signal -> REVIEW when
+         require_approval, else REJECT. Before the held flags (2026-10-31): a lead that fails the list's
+         own rules must not wait in REVIEW on a list that needs no approval, where approving it sends it;
+      4. maps_only or possible_duplicate -> REVIEW (validity first: a person decides);
       5. otherwise REVIEW ("waiting for your approval") when require_approval, else AUTO.
 
     auto_competitor_users: a list that takes organisations on a competitor's platform like any other;
     they are judged on their score without that penalty (the other risks still count).
     auto_score / review_score, the bars before rank and fill, are ignored when an old agent still has them."""
-    cfg = {**DEFAULT_GATE, **{k: v for k, v in (gate_cfg or {}).items() if v is not None}}
-    bar = send_bar(cfg)
-    approval = bool(cfg.get("require_approval"))
-    min_contact = cfg["min_contact"] if cfg["min_contact"] in CONTACT_ORDER else DEFAULT_GATE["min_contact"]
+    cfg = _settings(gate_cfg)
+    bar, approval, min_contact = cfg["send_score"], cfg["require_approval"], cfg["min_contact"]
     flags = list(scored.get("flags") or [])
     score = int(scored.get("score") or 0)
-    switch_ok = bool(cfg.get("auto_competitor_users")) and any(
-        _flag_kind(f) == "competitor_platform" for f in flags)
+    switch_ok = cfg["auto_competitor_users"] and any(_flag_kind(f) == "competitor_platform" for f in flags)
     if switch_ok:  # the other risks (enterprise, micro) still count
         score = _clamp(int(scored.get("base_score") or 0)
                        - WEIGHT_RISK * max(0, int(scored.get("risk") or 0) - RISK_COMPETITOR))
@@ -520,12 +651,6 @@ def gate(scored: dict, lead: dict, gate_cfg: dict) -> tuple[str, list[str]]:
         flags.append("maps_only")
     held = [f for f in flags if _flag_kind(f) in ALWAYS_REVIEW_FLAGS]
     maps_only = any(_flag_kind(f) == "maps_only" for f in held)
-    if held and score >= bar:
-        reasons = [_flag_words(f) for f in held]
-        if maps_only:
-            reasons.insert(0, f"Score {score} counts only what is known without the website: a person should decide")
-        return "REVIEW", reasons
-
     if score < bar:
         risks = [_flag_words(f) for f in flags if _flag_kind(f) in RISK_FLAGS
                  and not (switch_ok and _flag_kind(f) == "competitor_platform")]
@@ -537,10 +662,15 @@ def gate(scored: dict, lead: dict, gate_cfg: dict) -> tuple[str, list[str]]:
     blockers: list[str] = []
     if CONTACT_ORDER.get(level, 0) < CONTACT_ORDER[min_contact]:
         blockers.append(f"Best contact is {level}; this list needs at least {min_contact}")
-    if cfg.get("require_intent") and not scored.get("has_intent"):
+    if cfg["require_intent"] and not scored.get("has_intent"):
         blockers.append("No buying signal, and this list requires one")
+    held_words = [_flag_words(f) for f in held]
     if blockers:
-        return ("REVIEW" if approval else "REJECT"), blockers
+        return ("REVIEW", [*blockers, *held_words]) if approval else ("REJECT", blockers)
+    if held:
+        if maps_only:
+            held_words.insert(0, f"Score {score} counts only what is known without the website: a person should decide")
+        return "REVIEW", held_words
     met = [f"Score {score} meets the send bar ({bar}) with a {level} contact"]
     if switch_ok:
         met.append("Already uses a competitor's platform: this list takes them without review")

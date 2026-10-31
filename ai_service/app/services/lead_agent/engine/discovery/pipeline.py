@@ -46,6 +46,7 @@ from ..offer import Offer, as_offer
 from ..schemas import DiscoverySelection, ResearchPlan, SignalSelection
 from .domains import homepage, is_excluded, is_portal_name, registered_domain
 from .exclusions import left_out
+from .kinds import industry_names
 from .search import SearchBlocked, SearchFailed, SearchResult
 from .sources import (
     DEFAULT_KEYWORD_CHANNELS, KEYWORD_CHANNELS, KEYWORD_SEARCH, ORGANISATION_SEARCH, SIGNAL_SOURCES, as_places, clean_roles,
@@ -177,6 +178,26 @@ _PLACE_ALIASES = (
     ("mangaluru", "mangalore"), ("belagavi", "belgaum"), ("hubballi", "hubli"),
 )
 _PLACE_NAMES = {name: group for group in _PLACE_ALIASES for name in group}
+
+# Indian metro areas: a market named after the city means the area around it too ("Delhi" almost always
+# means NCR to a customer). Read only by the scoring's city/state market rule (scoring.outside_market_places),
+# never by discovery's place checks. Keys are a city's names as place_keys spells them; each area name is
+# matched with its other names too (Gurgaon for Gurugram). Bengaluru and Chennai are listed with their own
+# names only (Bangalore and Madras are in _PLACE_ALIASES). Only whole areas a customer would count as the
+# city: a market named after a suburb (Noida) never takes in the city or the rest of the area.
+_METRO_AREAS: tuple[tuple[tuple[str, ...], tuple[str, ...]], ...] = (
+    (("delhi", "new delhi"), ("new delhi", "noida", "greater noida", "gurugram", "ghaziabad", "faridabad")),
+    (("mumbai",), ("thane", "navi mumbai", "kalyan", "vasai virar", "vasai", "virar", "mira bhayandar",
+                   "mira road", "bhayandar")),
+    (("bengaluru",), ()),
+    (("hyderabad",), ("secunderabad", "cyberabad")),
+    (("kolkata",), ("howrah", "salt lake", "bidhannagar", "new town")),
+    (("chennai",), ()),
+    (("pune",), ("pimpri chinchwad", "pimpri", "chinchwad")),
+    (("ahmedabad",), ("gandhinagar",)),
+    (("chandigarh",), ("mohali", "panchkula")),
+)
+METRO_AREAS: dict[str, tuple[str, ...]] = {city: areas for cities, areas in _METRO_AREAS for city in cities}
 
 
 def place_names(key: str) -> tuple[str, ...]:
@@ -523,11 +544,11 @@ def _team(offer: Offer) -> str:
 
 def kinds_wanted(plan: ResearchPlan, industries: list[dict[str, Any]] | None) -> list[str]:
     """The kinds of organisation the brief targets: every one of its industries, as the brief names them
-    (the plan's own one-line segment only when there are none). The plan's segment is the planner's
-    rewording in at most 120 characters, and it dropped kinds (2026-10-30 audit: Voomsales' edtech and
-    hospitals, Telleo's brokers, Evalezy's colleges and exam bodies)."""
-    names = [str(i.get("name") or i.get("search_term") or "").strip() for i in industries or []]
-    return list(dict.fromkeys(n for n in names if n)) or [plan.segment]
+    (kinds.industry_names, which research's extraction prompt lists too), the plan's own one-line segment
+    only when there are none. The plan's segment is the planner's rewording in at most 120 characters, and
+    it dropped kinds (2026-10-30 audit: Voomsales' edtech and hospitals, Telleo's brokers, Evalezy's
+    colleges and exam bodies)."""
+    return industry_names(industries) or [plan.segment]
 
 
 def build_selection_prompt(plan: ResearchPlan, results: list[SearchResult], need: int,

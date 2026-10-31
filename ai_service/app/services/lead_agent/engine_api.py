@@ -94,6 +94,12 @@ def market_names(markets: Optional[List[dict]]) -> List[str]:
     return _m("planning").market_names(markets)
 
 
+def industry_names(industries: Optional[List[dict]]) -> List[str]:
+    """The brief's industries by name, spaces tidied, each once: the kinds the agent targets, listed the
+    same way by discovery's selection prompt and research's extraction prompt (engine.discovery.kinds)."""
+    return _m("discovery.kinds").industry_names(industries)
+
+
 def build_profile_prompt(products: List[str], brief: Optional[str], page_text: Optional[str],
                          name: Optional[str] = None, seller: Optional[str] = None):
     return _m("profiles").build_profile_prompt(products, brief, page_text, name, seller)
@@ -318,15 +324,20 @@ def gate(scored: dict, lead: dict, gate_cfg: dict):
     return _m("scoring").gate(scored, lead, gate_cfg)
 
 
-def always_review_flags() -> tuple:
-    """Score flags the gate sends to a person when the score reaches the send bar (maps_only,
-    possible_duplicate)."""
-    return tuple(_m("scoring").ALWAYS_REVIEW_FLAGS)
-
-
 def send_bar(gate_cfg: Optional[dict]) -> int:
     """The agent's send_score as the gate reads it (50 for an agent saved before it had one)."""
     return _m("scoring").send_bar(gate_cfg)
+
+
+def default_gate() -> dict:
+    """The gate's settings for an agent that saved none (engine.scoring.DEFAULT_GATE), a copy."""
+    return dict(_m("scoring").DEFAULT_GATE)
+
+
+def gate_fingerprint(gate_cfg: Optional[dict]) -> str:
+    """The gate's settings and rules in one string: a REVIEW lead judged under it is not judged again until
+    it changes (scheduler.rejudge_waiting)."""
+    return _m("scoring").gate_fingerprint(gate_cfg)
 
 
 def flag_words(flag: str) -> str:

@@ -205,7 +205,7 @@ def test_sells_the_offer_needs_a_quote_found_on_the_page():
 
 # ------------------------------------------------------------------------------------- another country
 
-INDIA = [{"country": "India"}]
+INDIA = ({"country": "India"},)
 
 
 def _located(phones=(), domain="acmeprep.com", city="Pune", markets=INDIA):
@@ -232,21 +232,22 @@ def test_a_lead_whose_phones_are_all_in_another_country_is_rejected():
     assert "outside_market" in HARD_REJECT_FLAGS
     decision, reasons = gate(scored, lead, DEFAULT_GATE)
     assert decision == "REJECT" and "Outside your markets: its phones are +1 (United States)" in reasons
-    _lead_, one = _located(["+44 20 7946 0958"], domain="acme.co.uk")
+    one = _located(["+44 20 7946 0958"], domain="acme.co.uk")[1]
     assert _outside(one) == ["outside_market:its phone is +44 (United Kingdom)"]
 
 
 def test_a_country_code_domain_outside_the_markets_with_no_phone_from_them_is_rejected():
-    _lead_, scored = _located([], domain="acme.co.uk")
+    scored = _located([], domain="acme.co.uk")[1]
     assert _outside(scored) == ["outside_market:its website is on .uk (United Kingdom)"]
 
 
-def test_another_city_or_state_in_a_market_country_is_never_outside():
-    # The audit's Delhi colleges on a Rajasthan + Delhi agent, and a Pune institute: same country.
-    _lead_, scored = _located(["+91 98100 12345"], city="Pune", markets=EVALEZY_MARKETS)
+def test_another_state_in_a_market_country_is_not_outside_on_its_city_alone():
+    # The audit's Delhi colleges on a Rajasthan + Delhi agent, and a Pune institute: same country, and nothing
+    # names a state other than the markets' (outside_market_places: a state market needs that).
+    scored = _located(["+91 98100 12345"], city="Pune", markets=EVALEZY_MARKETS)[1]
     assert _outside(scored) == [] and "wrong_site" not in scored["flags"]
-    _lead_, delhi = _located(["+91 11 2766 7011"], domain="du.ac.in", city="New Delhi",
-                             markets=[{"state": "Rajasthan", "country": "India"}])
+    delhi = _located(["+91 11 2766 7011"], domain="du.ac.in", city="New Delhi",
+                     markets=[{"state": "Rajasthan", "country": "India"}])[1]
     assert _outside(delhi) == []
 
 
@@ -260,6 +261,122 @@ def test_unknown_or_mixed_evidence_is_never_outside():
     assert _outside(_located(["+1 347-353-1469"], markets=[{"country": "Worldwide"}])[1]) == []
     assert _outside(_located(["+1 347-353-1469"], markets=[{"country": "India"}, {"country": "Japan"}])[1]) == []
     assert _outside(_located(["+1 347-353-1469"], markets=[{"country": "India"}, {"country": "USA"}])[1]) == []
+
+
+# ------------------------------------------------------------------------------- the agent's cities and states
+
+JAIPUR = [{"country": "India", "state": "Rajasthan", "city": "Jaipur"}]
+RAJASTHAN = [{"country": "India", "state": "Rajasthan"}]
+INDIAN_PHONE = ["+91 98100 12345"]
+
+
+def _rescored(lead, markets):
+    return score_lead(lead, {**VACADEMY, "markets": markets}, [], {})
+
+
+def test_a_known_city_outside_every_market_city_is_rejected():
+    """Review of PR 3569 (2026-10-31): a Mumbai coaching institute that is hiring scored about 57 on an agent whose
+    only market is "Jaipur, Rajasthan, India" and was sent and charged; being elsewhere cost only FIT_LOCATION."""
+    lead, scored = _located(INDIAN_PHONE, city="Mumbai", markets=JAIPUR)
+    assert _outside(scored) == ["outside_market:it is in Mumbai; your markets are Jaipur"]
+    decision, reasons = gate(scored, lead, DEFAULT_GATE)
+    assert decision == "REJECT" and "Outside your markets: it is in Mumbai; your markets are Jaipur" in reasons
+    two = [*JAIPUR, {"country": "India", "city": "Gurugram"}]
+    assert _outside(_located(INDIAN_PHONE, city="Kota", markets=two)[1]) == [
+        "outside_market:it is in Kota; your markets are Jaipur, Gurugram"]
+
+
+def test_a_market_city_or_state_named_anywhere_or_by_its_other_name_is_in_the_market():
+    for city in ("Jaipur", "Malviya Nagar, Jaipur", "Kota, Rajasthan"):
+        assert _outside(_located(INDIAN_PHONE, city=city, markets=JAIPUR)[1]) == [], city
+    # Indian city renamings are one place (discovery's table)
+    assert _outside(_located(INDIAN_PHONE, city="Gurgaon", markets=[{"country": "India", "city": "Gurugram"}])[1]) == []
+    assert _outside(_located(INDIAN_PHONE, city="Bengaluru", markets=[{"country": "India", "city": "Bangalore"}])[1]) \
+        == []
+    # a branch, the description or the Google Maps address in a market city
+    lead, _scored = _located(INDIAN_PHONE, city="Mumbai", markets=JAIPUR)
+    branch = {"value": "Vaishali Nagar centre", "city": "Jaipur", "quote": "x", "url": SITE}
+    assert _outside(_rescored({**lead, "organisation": {**lead["organisation"], "branches": [branch]}}, JAIPUR)) == []
+    described = {**lead["organisation"], "what_they_do": "JEE coaching with centres in Mumbai and Jaipur"}
+    assert _outside(_rescored({**lead, "organisation": described}, JAIPUR)) == []
+    assert _outside(_rescored({**lead, "maps_listing": {"address": "Tonk Rd, Jaipur, Rajasthan 302015"}}, JAIPUR)) == []
+
+
+def test_an_unknown_city_or_a_country_wide_market_is_never_outside():
+    for city in (None, "", "Online", "India", "Pan India"):
+        assert _outside(_located(INDIAN_PHONE, city=city, markets=JAIPUR)[1]) == [], city
+    assert _outside(_located(INDIAN_PHONE, city="Mumbai", markets=INDIA)[1]) == []
+    assert _outside(_located(INDIAN_PHONE, city="Mumbai", markets=[*JAIPUR, {"country": "India"}])[1]) == []
+    assert _outside(_located(INDIAN_PHONE, city="Mumbai", markets=[*JAIPUR, {"country": "Worldwide"}])[1]) == []
+    assert _outside(_located(INDIAN_PHONE, city="Mumbai", markets=[])[1]) == []
+    assert _outside(_located(INDIAN_PHONE, city="Mumbai", markets=None)[1]) == []
+
+
+def test_the_audit_case_stays_a_lead():
+    """2026-10-30 prod audit: Delhi colleges on an agent with markets "Rajasthan, India" + "delhi, India"."""
+    for city in ("New Delhi", "Delhi", "North Campus, Delhi"):
+        scored = _located(["+91 11 2766 7011"], domain="du.ac.in", city=city, markets=EVALEZY_MARKETS)[1]
+        assert _outside(scored) == [] and "in delhi" in scored["reasons"][0], city  # and it earns the location points
+
+
+def test_a_country_wide_market_elsewhere_needs_the_lead_shown_in_a_country_where_only_cities_are_named():
+    markets = [*JAIPUR, {"country": "UAE"}]
+    assert _outside(_located(INDIAN_PHONE, city="Mumbai", markets=markets)[1]) == [
+        "outside_market:it is in Mumbai; your markets are Jaipur"]
+    assert _outside(_located(INDIAN_PHONE, domain="acmeprep.in", city="Mumbai", markets=markets)[1]) != []
+    assert _outside(_located([], city="Mumbai", markets=markets)[1]) == []  # nothing shows its country
+    assert _outside(_located(["+971 4 330 0000"], city="Dubai", markets=markets)[1]) == []  # the UAE market
+
+
+def test_a_state_market_is_ruled_out_only_by_another_state_named_where_it_is():
+    # a city rarely carries its state's name: Kota or Pune alone never rules a state market out
+    assert _outside(_located(INDIAN_PHONE, city="Kota", markets=RAJASTHAN)[1]) == []
+    assert _outside(_located(INDIAN_PHONE, city="Pune", markets=RAJASTHAN)[1]) == []
+    # its city or Google Maps address naming another state does
+    assert _outside(_located(INDIAN_PHONE, city="Pune, Maharashtra", markets=RAJASTHAN)[1]) == [
+        "outside_market:it is in Pune, Maharashtra; your markets are Rajasthan"]
+    lead, _scored = _located(INDIAN_PHONE, city="Pune", markets=EVALEZY_MARKETS)
+    listed = {**lead, "maps_listing": {"address": "FC Road, Shivajinagar, Pune, Maharashtra 411004"}}
+    assert _outside(_rescored(listed, EVALEZY_MARKETS)) == [
+        "outside_market:it is in Pune; your markets are Rajasthan, delhi"]
+    # not a branch in another state, nor a city that is a union territory too (Delhi, Chandigarh)
+    lead, _scored = _located(INDIAN_PHONE, city="Kota", markets=RAJASTHAN)
+    branch = {"value": "Bhopal centre", "city": "Bhopal, Madhya Pradesh", "quote": "x", "url": SITE}
+    with_branch = {**lead, "organisation": {**lead["organisation"], "branches": [branch]}}
+    assert _outside(_rescored(with_branch, RAJASTHAN)) == []
+    assert _outside(_located(INDIAN_PHONE, city="Chandigarh", markets=[{"country": "India", "state": "Punjab"}])[1]) \
+        == []
+
+
+def test_a_market_city_takes_in_its_metro_area():
+    """A "Delhi" customer almost always means NCR (Evalezy's markets: "Rajasthan, India" + "delhi, India")."""
+    delhi = [{"country": "India", "city": "Delhi"}]
+    for city in ("Noida", "Greater Noida", "Gurgaon", "Gurugram", "Ghaziabad", "Faridabad"):
+        assert _outside(_located(INDIAN_PHONE, city=city, markets=delhi)[1]) == [], city
+    mumbai = [{"country": "India", "state": "Maharashtra", "city": "Mumbai"}]
+    for city in ("Thane", "Navi Mumbai", "Vasai-Virar", "Mira Road"):
+        assert _outside(_located(INDIAN_PHONE, city=city, markets=mumbai)[1]) == [], city
+    assert _outside(_located(INDIAN_PHONE, city="Thane", markets=[{"country": "India", "city": "Bombay"}])[1]) == []
+    assert _outside(_located(INDIAN_PHONE, city="Mohali", markets=[{"country": "India", "city": "Chandigarh"}])[1]) \
+        == []
+    # Evalezy stores Delhi as a state: an NCR lead whose Maps address names Uttar Pradesh or Haryana stays a lead
+    for city, address in (("Noida", "Sector 62, Noida, Uttar Pradesh 201309"),
+                          ("Gurgaon", "DLF Phase 3, Gurugram, Haryana 122002")):
+        lead, _scored = _located(INDIAN_PHONE, city=city, markets=EVALEZY_MARKETS)
+        assert _outside(_rescored({**lead, "maps_listing": {"address": address}}, EVALEZY_MARKETS)) == [], city
+    # only the metro area of a market city, and only that way round
+    assert _outside(_located(INDIAN_PHONE, city="Mumbai", markets=JAIPUR)[1]) == [
+        "outside_market:it is in Mumbai; your markets are Jaipur"]
+    assert _outside(_located(INDIAN_PHONE, city="Pune", markets=mumbai)[1]) == [
+        "outside_market:it is in Pune; your markets are Mumbai"]
+    assert _outside(_located(INDIAN_PHONE, city="Mumbai", markets=[{"country": "India", "city": "Thane"}])[1]) == [
+        "outside_market:it is in Mumbai; your markets are Thane"]
+
+
+def test_pages_of_another_organisation_say_nothing_about_where_it_is():
+    lead, _scored = _located(INDIAN_PHONE, city="Mumbai", markets=JAIPUR)
+    other = {**lead, "organisation": {**lead["organisation"], "pages_match_organisation": False}}
+    assert _outside(_rescored(other, JAIPUR)) == []
 
 
 # --------------------------------------------------------------------------- what research sends the model

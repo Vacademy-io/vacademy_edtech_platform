@@ -101,6 +101,15 @@ _BROAD = re.compile(
 _ONLINE = re.compile(r"\b(?:ed-?tech|online|e-?learning|platforms?|apps?|digital|software|virtual)\b", re.I)
 
 
+def industry_names(industries: list[dict[str, Any]] | None) -> list[str]:
+    """The brief's industries by name (its search term when it has no name), spaces tidied, each once, in
+    order: the kinds of organisation the agent targets, as discovery's selection prompt (pipeline.kinds_wanted)
+    and research's extraction prompt (lead_agent research.industry_names) both list them."""
+    names = [" ".join(str(i.get("name") or i.get("search_term") or "").split())
+             for i in industries or [] if isinstance(i, dict)]
+    return list(dict.fromkeys(n for n in names if n))
+
+
 def kinds_of(text: str | None) -> set[str]:
     """The kinds in this table that a category, name or industry shows ('Medical college' -> health and
     education); empty when it shows none."""
@@ -139,4 +148,4 @@ def other_kind(category: str | None, name: str | None, industries: list[dict[str
     return sorted(shown)[0]
 
 
-__all__ = ["KINDS", "kinds_of", "brief_kinds", "other_kind"]
+__all__ = ["KINDS", "industry_names", "kinds_of", "brief_kinds", "other_kind"]
